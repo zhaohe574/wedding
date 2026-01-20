@@ -155,6 +155,144 @@
             }
         },
         {
+            "path": "pages/order/order",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/order_detail/order_detail",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/dynamic/dynamic",
+            "style": {
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/dynamic_detail/dynamic_detail",
+            "style": {
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/dynamic_publish/dynamic_publish",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/order_change/list",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/order_change/change_detail",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/order_change/apply_date",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/order_change/apply_transfer",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/order_change/apply_pause",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/order_change/transfer_detail",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/order_change/pause_detail",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/order_change/apply_add_item",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/order_change/apply_staff",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/review/list",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/review/publish",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
             "path": "uni_modules/vk-uview-ui/components/u-avatar-cropper/u-avatar-cropper",
             "style": {
                 "navigationBarTitleText": "头像裁剪",
@@ -201,7 +339,61 @@
 				"meta": {
                     "auth": true
                 }
-			}
+			},
+            {
+                "path": "pages/staff_list/staff_list",
+                "style": {
+                    "navigationBarTitleText": "服务人员"
+                }
+            },
+            {
+                "path": "pages/staff_detail/staff_detail",
+                "style": {
+                    "navigationBarTitleText": "人员详情"
+                }
+            },
+            {
+                "path": "pages/staff_favorite/staff_favorite",
+                "style": {
+                    "navigationBarTitleText": "我的收藏"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/schedule_calendar/schedule_calendar",
+                "style": {
+                    "navigationBarTitleText": "选择档期"
+                }
+            },
+            {
+                "path": "pages/cart/cart",
+                "style": {
+                    "navigationBarTitleText": "购物车"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/cart_plan/cart_plan",
+                "style": {
+                    "navigationBarTitleText": "我的方案"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/waitlist/waitlist",
+                "style": {
+                    "navigationBarTitleText": "我的候补"
+                },
+                "meta": {
+                    "auth": true
+                }
+            }
 		]
 	}],
     "globalStyle": {
