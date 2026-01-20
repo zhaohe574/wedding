@@ -287,18 +287,29 @@
 | 暂停详情页面 | ✅ 完成 | `uniapp/src/pages/order_change/pause_detail.vue` |
 | 订单变更API | ✅ 完成 | `uniapp/src/api/orderChange.ts` |
 
-### 4.1.6 订单高级功能 - 其他
-| 任务 | 状态 | 说明 |
-|------|------|------|
-| 婚礼倒计时时间轴功能 | ⏳ 待开发 | 根据婚期生成任务清单与时间轴提醒 |
+### 4.1.6 订单高级功能 - 时间轴功能
+| 任务 | 状态 | 文件路径 |
+|------|------|----------|
+| 时间轴数据库表 | ✅ 完成 | `server/sql/wedding/007_create_timeline_tables.sql` |
+| TimelineTemplate模型 | ✅ 完成 | `server/app/common/model/timeline/TimelineTemplate.php` |
+| OrderTimeline模型 | ✅ 完成 | `server/app/common/model/timeline/OrderTimeline.php` |
+| 时间轴Validate | ✅ 完成 | `server/app/adminapi/validate/timeline/TimelineValidate.php` |
+| 时间轴Lists | ✅ 完成 | `server/app/adminapi/lists/timeline/TimelineLists.php` |
+| 时间轴Logic | ✅ 完成 | `server/app/adminapi/logic/timeline/TimelineLogic.php` |
+| 时间轴Controller | ✅ 完成 | `server/app/adminapi/controller/timeline/TimelineController.php` |
+| 时间轴生成服务 | ✅ 完成 | `server/app/common/service/TimelineGeneratorService.php` |
+| 管理后台时间轴页面 | ✅ 完成 | `admin/src/views/timeline/lists/index.vue` |
+| 管理后台时间轴API | ✅ 完成 | `admin/src/api/timeline.ts` |
 
 ### 4.2 档期管理增强
-| 任务 | 状态 | 说明 |
-|------|------|------|
+| 任务 | 状态 | 文件路径/说明 |
+|------|------|----------|
+| Redis分布式锁防超卖 | ✅ 完成 | `server/app/api/logic/ScheduleLogic.php`, `server/app/adminapi/logic/schedule/ScheduleLogic.php` |
+| RedisLockService服务 | ✅ 完成 | `server/app/common/service/RedisLockService.php` |
+| Schedule模型锁定方法 | ✅ 完成 | `server/app/common/model/schedule/Schedule.php` (lockScheduleWithRedis方法) |
 | 档期锁定和预留功能 | ⏳ 待开发 | 支持 VIP 锁定档期及内部预留，见 `doc/功能设计汇总.md` 5.4 节 |
 | 档期共享功能 | ⏳ 待开发 | 支持多人员联合服务共享档期，见 `doc/功能设计汇总.md` 5.4 节 |
 | 一键导入外部日历功能 | ⏳ 待开发 | 支持导入飞书/钉钉/iCal 等外部日历，见 `doc/功能设计汇总.md` 5.4 节 |
-| 防重复接单机制 | ⏳ 待开发 | Redis 分布式锁 + 二次确认防超卖，见 `doc/功能设计汇总.md` 5.4 节、7.1 接口与 6.1 风控 |
 
 ### 4.3 动态社区增强
 | 任务 | 状态 | 说明 |
@@ -307,12 +318,33 @@
 | 客片交付系统 | ⏳ 待开发 | 自动创建云相册并关联尾款支付，见 `doc/功能设计汇总.md` 5.5 节 |
 
 ### 4.4 CRM 和客户跟进
-| 任务 | 状态 | 说明 |
-|------|------|------|
-| 客户意向等级管理 | ⏳ 待开发 | A/B/C/D 级客户分层与标签，见 `doc/功能设计汇总.md` 5.11 节 |
-| 跟进记录系统 | ⏳ 待开发 | 记录通话、到店、试妆等跟进信息，见 `doc/功能设计汇总.md` 5.11 节 |
-| 自动分配销售顾问功能 | ⏳ 待开发 | 按区域/负载/专长自动分配，见 `doc/功能设计汇总.md` 5.11 节 |
-| 客户流失预警 | ⏳ 待开发 | 长时间未跟进与流失风险预警，见 `doc/功能设计汇总.md` 5.11 节 |
+| 任务 | 状态 | 文件路径 |
+|------|------|----------|
+| CRM数据库表 | ✅ 完成 | `server/sql/wedding/010_create_crm_tables.sql` |
+| Customer模型 | ✅ 完成 | `server/app/common/model/crm/Customer.php` |
+| SalesAdvisor模型 | ✅ 完成 | `server/app/common/model/crm/SalesAdvisor.php` |
+| FollowRecord模型 | ✅ 完成 | `server/app/common/model/crm/FollowRecord.php` |
+| CustomerAssignLog模型 | ✅ 完成 | `server/app/common/model/crm/CustomerAssignLog.php` |
+| CustomerLossWarning模型 | ✅ 完成 | `server/app/common/model/crm/CustomerLossWarning.php` |
+| CustomerController | ✅ 完成 | `server/app/adminapi/controller/crm/CustomerController.php` |
+| CustomerLogic | ✅ 完成 | `server/app/adminapi/logic/crm/CustomerLogic.php` |
+| CustomerLists | ✅ 完成 | `server/app/adminapi/lists/crm/CustomerLists.php` |
+| CustomerValidate | ✅ 完成 | `server/app/adminapi/validate/crm/CustomerValidate.php` |
+| SalesAdvisorController | ✅ 完成 | `server/app/adminapi/controller/crm/SalesAdvisorController.php` |
+| SalesAdvisorLogic | ✅ 完成 | `server/app/adminapi/logic/crm/SalesAdvisorLogic.php` |
+| SalesAdvisorLists | ✅ 完成 | `server/app/adminapi/lists/crm/SalesAdvisorLists.php` |
+| SalesAdvisorValidate | ✅ 完成 | `server/app/adminapi/validate/crm/SalesAdvisorValidate.php` |
+| FollowRecordController | ✅ 完成 | `server/app/adminapi/controller/crm/FollowRecordController.php` |
+| FollowRecordLogic | ✅ 完成 | `server/app/adminapi/logic/crm/FollowRecordLogic.php` |
+| FollowRecordLists | ✅ 完成 | `server/app/adminapi/lists/crm/FollowRecordLists.php` |
+| FollowRecordValidate | ✅ 完成 | `server/app/adminapi/validate/crm/FollowRecordValidate.php` |
+| CustomerLossWarningController | ✅ 完成 | `server/app/adminapi/controller/crm/CustomerLossWarningController.php` |
+| CustomerLossWarningLogic | ✅ 完成 | `server/app/adminapi/logic/crm/CustomerLossWarningLogic.php` |
+| CustomerLossWarningLists | ✅ 完成 | `server/app/adminapi/lists/crm/CustomerLossWarningLists.php` |
+| 管理后台客户管理页面 | ✅ 完成 | `admin/src/views/crm/customer/index.vue` |
+| 管理后台顾问管理页面 | ✅ 完成 | `admin/src/views/crm/advisor/index.vue` |
+| 管理后台流失预警页面 | ✅ 完成 | `admin/src/views/crm/warning/index.vue` |
+| 管理后台CRM API | ✅ 完成 | `admin/src/api/crm.ts` |
 
 ### 4.5 现场服务管理
 | 任务 | 状态 | 说明 |
@@ -405,10 +437,10 @@
 | 用户分析与 RFM 模型 | ⏳ 待开发 | 用户画像、增长/留存分析与 RFM 分层，见 `doc/功能设计汇总.md` 5.9 节 |
 
 ### 4.13 风控与合规
-| 任务 | 状态 | 说明 |
-|------|------|------|
+| 任务 | 状态 | 文件路径/说明 |
+|------|------|----------|
 | 防跳单机制 | ⏳ 待开发 | 联系方式脱敏、水印与跳单黑名单机制，见 `doc/功能设计汇总.md` 风险控制 6.1 节 |
-| 防超卖机制 | ⏳ 待开发 | Redis 分布式锁、数据库乐观锁与二次确认及赔偿机制，见 `doc/功能设计汇总.md` 5.4 节、风险控制 6.1 节 |
+| 防超卖机制(Redis分布式锁) | ✅ 完成 | `server/app/common/service/RedisLockService.php`, `server/app/common/model/schedule/Schedule.php` |
 | 用户流失控制与候补锁档 | ⏳ 待开发 | 替代人员推荐、优惠券挽留与候补锁档策略，见 `doc/功能设计汇总.md` 风险控制 6.1 节 |
 | 吉日冲突提醒与黄历事件 | ⏳ 待开发 | 热门吉日拥堵视图与黄历事件表支持，见 `doc/功能设计汇总.md` 风险控制 6.1 节、数据库设计 7.1 节 |
 | 高并发与系统稳定性 | ⏳ 待开发 | 缓存、消息队列、熔断限流与监控告警方案，见 `doc/功能设计汇总.md` 风险控制 6.2 节 |
@@ -524,12 +556,31 @@
 | 阶段一 | 20 | 20 | 100% |
 | 阶段二 | 18 | 18 | 100% |
 | 阶段三 | 35 | 35 | 100% |
-| 阶段四 | 84 | 65 | 77% |
-| **总计** | **157** | **138** | **88%** |
+| 阶段四 | 116 | 104 | 90% |
+| **总计** | **189** | **177** | **94%** |
 
 ---
 
 ## 更新日志
+
+### 2026-01-20 (第二次更新)
+- ✅ 完成订单时间轴管理模块
+  - 创建时间轴数据库表(la_timeline_template, la_order_timeline)
+  - 完成TimelineTemplate、OrderTimeline Model层
+  - 完成管理后台API(Controller, Logic, Lists, Validate)
+  - 完成时间轴生成服务(TimelineGeneratorService)
+  - 完成管理后台时间轴Vue页面
+  - 创建管理后台时间轴API服务文件
+- ✅ 完成CRM客户管理模块
+  - 创建CRM数据库表(la_crm_customer, la_crm_sales_advisor, la_crm_follow_record, la_crm_customer_assign_log, la_crm_customer_loss_warning)
+  - 完成Customer、SalesAdvisor、FollowRecord、CustomerAssignLog、CustomerLossWarning Model层
+  - 完成管理后台API(客户管理、顾问管理、跟进记录、流失预警)
+  - 完成管理后台CRM Vue页面(客户管理、顾问管理、流失预警)
+  - 创建管理后台CRM API服务文件
+- ✅ 完成Redis分布式锁集成
+  - 创建RedisLockService服务类
+  - 扩展Schedule模型lockScheduleWithRedis方法
+  - 集成Redis锁到档期预约流程(api端和admin端)
 
 ### 2026-01-20
 - ✅ 完成财务与结算管理模块
