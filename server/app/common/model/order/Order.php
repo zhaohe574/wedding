@@ -295,7 +295,21 @@ class Order extends BaseModel
             // 记录日志
             OrderLog::addLog($orderId, $operatorType, $operatorId, 'cancel', $beforeStatus, self::STATUS_CANCELLED, '取消订单：' . $reason);
 
-            // TODO: 已支付订单需要退款
+            // 已支付订单自动创建退款申请
+            if ($beforeStatus == self::STATUS_PAID && $order->pay_status == self::PAY_STATUS_PAID) {
+                $refundResult = Refund::createSystemRefund(
+                    $orderId,
+                    $operatorId,
+                    $order->paid_amount > 0 ? $order->paid_amount : $order->pay_amount,
+                    '订单取消自动退款：' . $reason,
+                    $operatorType == OrderLog::OPERATOR_USER ? Refund::TYPE_USER : Refund::TYPE_ADMIN
+                );
+                
+                if (!$refundResult[0]) {
+                    // 退款创建失败，记录日志但不影响取消操作
+                    OrderLog::addLog($orderId, OrderLog::OPERATOR_SYSTEM, 0, 'refund_create_fail', 0, 0, '自动退款创建失败：' . $refundResult[1]);
+                }
+            }
 
             Db::commit();
             return [true, '订单已取消'];

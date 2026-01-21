@@ -293,6 +293,93 @@
             }
         },
         {
+            "path": "pages/coupon/list",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/coupon/center",
+            "style": {
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/notification/index",
+            "style": {
+                "navigationStyle": "custom"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/aftersale/index",
+            "style": {
+                "navigationBarTitleText": "售后服务"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/aftersale/ticket",
+            "style": {
+                "navigationBarTitleText": "我的工单"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/aftersale/ticket_detail",
+            "style": {
+                "navigationBarTitleText": "工单详情"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/aftersale/complaint",
+            "style": {
+                "navigationBarTitleText": "我的投诉"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/aftersale/reshoot",
+            "style": {
+                "navigationBarTitleText": "补拍申请"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/aftersale/apply_reshoot",
+            "style": {
+                "navigationBarTitleText": "申请补拍"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/aftersale/callback",
+            "style": {
+                "navigationBarTitleText": "回访问卷"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
             "path": "uni_modules/vk-uview-ui/components/u-avatar-cropper/u-avatar-cropper",
             "style": {
                 "navigationBarTitleText": "头像裁剪",

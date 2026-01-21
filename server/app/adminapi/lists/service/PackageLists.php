@@ -26,7 +26,7 @@ class PackageLists extends BaseAdminDataLists implements ListsSearchInterface, L
     public function setSearch(): array
     {
         return [
-            '=' => ['category_id', 'is_show', 'is_recommend'],
+            '=' => ['category_id', 'is_show', 'is_recommend', 'package_type', 'staff_id'],
             '%like%' => ['name'],
         ];
     }
@@ -41,7 +41,8 @@ class PackageLists extends BaseAdminDataLists implements ListsSearchInterface, L
     public function lists(): array
     {
         $list = ServicePackage::where($this->searchWhere)
-            ->append(['category_name', 'is_show_desc', 'is_recommend_desc', 'duration_desc'])
+            ->with(['staff'])
+            ->append(['category_name', 'is_show_desc', 'is_recommend_desc', 'duration_desc', 'package_type_desc', 'staff_name'])
             ->order($this->sortOrder ?: ['sort' => 'desc', 'id' => 'desc'])
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
@@ -69,6 +70,8 @@ class PackageLists extends BaseAdminDataLists implements ListsSearchInterface, L
             'id' => 'ID',
             'name' => '套餐名称',
             'category_name' => '所属分类',
+            'package_type_desc' => '套餐类型',
+            'staff_name' => '所属员工',
             'price' => '价格',
             'original_price' => '原价',
             'duration_desc' => '服务时长',

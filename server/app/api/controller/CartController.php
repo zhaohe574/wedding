@@ -87,7 +87,7 @@ class CartController extends BaseApiController
      */
     public function toggleSelect()
     {
-        $params = (new CartValidate())->post()->goCheck('delete');
+        $params = (new CartValidate())->post()->goCheck('toggleSelect');
         $result = CartLogic::toggleSelect($params['id'], $this->userId);
         return $result ? $this->success('操作成功') : $this->fail('操作失败');
     }

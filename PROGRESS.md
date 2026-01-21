@@ -358,17 +358,18 @@
 ### 4.6 消息通知增强
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| 短信通知系统 | ⏳ 待开发 | 重要节点短信提醒与模板管理，见 `doc/功能设计汇总.md` 5.13 节 |
+| 微信小程序订阅消息 | ✅ 完成 | 详见下方4.16节 |
+| 短信通知系统 | 🔜 第二期 | 重要节点短信提醒与模板管理，见 `doc/功能设计汇总.md` 5.13 节 |
 | 企业微信通知 | ⏳ 待开发 | 企业微信订单与异常通知，见 `doc/功能设计汇总.md` 5.13 节 |
 | 多场景服务提醒 | ⏳ 待开发 | 婚期前多阶段服务提醒与档期变更通知，见 `doc/功能设计汇总.md` 5.13 节 |
 
 ### 4.7 售后服务功能
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| 售后工单系统 | ⏳ 待开发 | 覆盖售后工单创建、分配与处理，见 `doc/功能设计汇总.md` 5.14 节 |
-| 投诉处理流程 | ⏳ 待开发 | 投诉分级、处理时限与统计分析，见 `doc/功能设计汇总.md` 5.14 节 |
-| 补拍/重拍申请 | ⏳ 待开发 | 补拍申请、审核与档期安排，见 `doc/功能设计汇总.md` 5.14 节 |
-| 服务质量回访与问题升级机制 | ⏳ 待开发 | 自动回访任务、回访问卷与问题升级规则，见 `doc/功能设计汇总.md` 5.14 节 |
+| 售后工单系统 | ✅ 完成 | 详见下方4.15节 |
+| 投诉处理流程 | ✅ 完成 | 详见下方4.15节 |
+| 补拍/重拍申请 | ✅ 完成 | 详见下方4.15节 |
+| 服务质量回访与问题升级机制 | ✅ 完成 | 详见下方4.15节 |
 
 ### 4.8 合同管理功能
 | 任务 | 状态 | 说明 |
@@ -427,14 +428,33 @@
 | 管理后台财务API服务 | ✅ 完成 | `admin/src/api/financial.ts` |
 
 ### 4.12 营销与用户增长
-| 任务 | 状态 | 说明 |
-|------|------|------|
-| 优惠券管理与使用统计 | ⏳ 待开发 | 优惠券创建、发放、使用统计，见 `doc/功能设计汇总.md` 5.8 节 |
+| 任务 | 状态 | 文件路径/说明 |
+|------|------|----------|
+| 优惠券管理与使用统计 | ✅ 完成 | 详见下方4.12.1节 |
 | 活动管理与组合优惠 | ⏳ 待开发 | 满减、折扣、组合优惠活动管理，见 `doc/功能设计汇总.md` 5.8 节 |
 | 积分规则与积分兑换 | ⏳ 待开发 | 积分获取规则与积分兑换流程，见 `doc/功能设计汇总.md` 5.8 节 |
 | 推荐有礼与关系管理 | ⏳ 待开发 | 推荐奖励、关系查询与复购营销，见 `doc/功能设计汇总.md` 5.8 节 |
 | 社交裂变与请帖模板 | ⏳ 待开发 | 请帖模板+小程序码、分享返佣与传播数据统计，见 `doc/功能设计汇总.md` 5.8 节、风险控制 6.2 节 |
 | 用户分析与 RFM 模型 | ⏳ 待开发 | 用户画像、增长/留存分析与 RFM 分层，见 `doc/功能设计汇总.md` 5.9 节 |
+
+### 4.12.1 优惠券系统
+| 任务 | 状态 | 文件路径 |
+|------|------|----------|
+| Coupon模型 | ✅ 完成 | `server/app/common/model/coupon/Coupon.php` |
+| UserCoupon模型 | ✅ 完成 | `server/app/common/model/coupon/UserCoupon.php` |
+| 管理后台CouponController | ✅ 完成 | `server/app/adminapi/controller/coupon/CouponController.php` |
+| 管理后台CouponLogic | ✅ 完成 | `server/app/adminapi/logic/coupon/CouponLogic.php` |
+| 管理后台CouponLists | ✅ 完成 | `server/app/adminapi/lists/coupon/CouponLists.php` |
+| 管理后台UserCouponLists | ✅ 完成 | `server/app/adminapi/lists/coupon/UserCouponLists.php` |
+| 管理后台CouponValidate | ✅ 完成 | `server/app/adminapi/validate/coupon/CouponValidate.php` |
+| 小程序端CouponController | ✅ 完成 | `server/app/api/controller/CouponController.php` |
+| 小程序端CouponLogic | ✅ 完成 | `server/app/api/logic/CouponLogic.php` |
+| 小程序端CouponValidate | ✅ 完成 | `server/app/api/validate/CouponValidate.php` |
+| 管理后台优惠券列表页 | ✅ 完成 | `admin/src/views/coupon/lists/index.vue` |
+| 管理后台优惠券API | ✅ 完成 | `admin/src/api/coupon.ts` |
+| 小程序端我的优惠券页 | ✅ 完成 | `uniapp/src/pages/coupon/list.vue` |
+| 小程序端领券中心页 | ✅ 完成 | `uniapp/src/pages/coupon/center.vue` |
+| 小程序端优惠券API | ✅ 完成 | `uniapp/src/api/coupon.ts` |
 
 ### 4.13 风控与合规
 | 任务 | 状态 | 文件路径/说明 |
@@ -448,23 +468,90 @@
 | 营销裂变结算闭环 | ⏳ 待开发 | T+90 结算周期、退款扣除佣金与结算状态管理，见 `doc/功能设计汇总.md` 风险控制 6.2 节 |
 | 申诉区块链存证与电子凭证归档 | ⏳ 待开发 | 申诉过程区块链存证与订单/退款/分账电子凭证归档，见 `doc/功能设计汇总.md` 6.3 节 |
 
+### 4.14 消息通知系统
+| 任务 | 状态 | 文件路径 |
+|------|------|----------|
+| Notification Model | ✅ 完成 | `server/app/common/model/notification/Notification.php` |
+| 管理后台NotificationController | ✅ 完成 | `server/app/adminapi/controller/notification/NotificationController.php` |
+| 管理后台NotificationLogic | ✅ 完成 | `server/app/adminapi/logic/notification/NotificationLogic.php` |
+| 管理后台NotificationLists | ✅ 完成 | `server/app/adminapi/lists/notification/NotificationLists.php` |
+| 管理后台NotificationValidate | ✅ 完成 | `server/app/adminapi/validate/notification/NotificationValidate.php` |
+| 小程序端NotificationController | ✅ 完成 | `server/app/api/controller/NotificationController.php` |
+| 小程序端NotificationLogic | ✅ 完成 | `server/app/api/logic/NotificationLogic.php` |
+| 管理后台消息通知列表页 | ✅ 完成 | `admin/src/views/notification/lists/index.vue` |
+| 管理后台消息通知API | ✅ 完成 | `admin/src/api/notification.ts` |
+| 小程序端消息中心页 | ✅ 完成 | `uniapp/src/pages/notification/index.vue` |
+| 小程序端消息通知API | ✅ 完成 | `uniapp/src/api/notification.ts` |
+
+### 4.15 售后服务系统
+| 任务 | 状态 | 文件路径 |
+|------|------|----------|
+| 售后系统数据库表 | ✅ 完成 | `server/sql/wedding/011_create_after_sale_tables.sql` |
+| AfterSaleTicket模型 | ✅ 完成 | `server/app/common/model/aftersale/AfterSaleTicket.php` |
+| AfterSaleTicketLog模型 | ✅ 完成 | `server/app/common/model/aftersale/AfterSaleTicketLog.php` |
+| Complaint模型 | ✅ 完成 | `server/app/common/model/aftersale/Complaint.php` |
+| Reshoot模型 | ✅ 完成 | `server/app/common/model/aftersale/Reshoot.php` |
+| ServiceCallback模型 | ✅ 完成 | `server/app/common/model/aftersale/ServiceCallback.php` |
+| 管理后台AfterSaleController | ✅ 完成 | `server/app/adminapi/controller/aftersale/AfterSaleController.php` |
+| 管理后台AfterSaleLogic | ✅ 完成 | `server/app/adminapi/logic/aftersale/AfterSaleLogic.php` |
+| 管理后台TicketLists | ✅ 完成 | `server/app/adminapi/lists/aftersale/TicketLists.php` |
+| 管理后台ComplaintLists | ✅ 完成 | `server/app/adminapi/lists/aftersale/ComplaintLists.php` |
+| 管理后台ReshootLists | ✅ 完成 | `server/app/adminapi/lists/aftersale/ReshootLists.php` |
+| 管理后台CallbackLists | ✅ 完成 | `server/app/adminapi/lists/aftersale/CallbackLists.php` |
+| 管理后台AfterSaleValidate | ✅ 完成 | `server/app/adminapi/validate/aftersale/AfterSaleValidate.php` |
+| 小程序端AfterSaleController | ✅ 完成 | `server/app/api/controller/AfterSaleController.php` |
+| 小程序端AfterSaleLogic | ✅ 完成 | `server/app/api/logic/AfterSaleLogic.php` |
+| 小程序端AfterSaleValidate | ✅ 完成 | `server/app/api/validate/AfterSaleValidate.php` |
+| 管理后台售后管理页面 | ✅ 完成 | `admin/src/views/aftersale/ticket/index.vue` |
+| 管理后台售后API服务 | ✅ 完成 | `admin/src/api/aftersale.ts` |
+| 小程序端售后服务中心 | ✅ 完成 | `uniapp/src/pages/aftersale/index.vue` |
+| 小程序端售后API服务 | ✅ 完成 | `uniapp/src/api/aftersale.ts` |
+
+### 4.16 微信小程序订阅消息系统
+| 任务 | 状态 | 文件路径 |
+|------|------|----------|
+| 订阅消息数据库表 | ✅ 完成 | `server/sql/wedding/012_create_subscribe_message_tables.sql` |
+| SubscribeMessageTemplate模型 | ✅ 完成 | `server/app/common/model/subscribe/SubscribeMessageTemplate.php` |
+| UserSubscribe模型 | ✅ 完成 | `server/app/common/model/subscribe/UserSubscribe.php` |
+| SubscribeMessageLog模型 | ✅ 完成 | `server/app/common/model/subscribe/SubscribeMessageLog.php` |
+| SubscribeMessageScene模型 | ✅ 完成 | `server/app/common/model/subscribe/SubscribeMessageScene.php` |
+| SubscribeMessageService服务 | ✅ 完成 | `server/app/common/service/SubscribeMessageService.php` |
+| 管理后台SubscribeController | ✅ 完成 | `server/app/adminapi/controller/subscribe/SubscribeController.php` |
+| 管理后台SubscribeLogic | ✅ 完成 | `server/app/adminapi/logic/subscribe/SubscribeLogic.php` |
+| 管理后台TemplateLists | ✅ 完成 | `server/app/adminapi/lists/subscribe/TemplateLists.php` |
+| 管理后台SceneLists | ✅ 完成 | `server/app/adminapi/lists/subscribe/SceneLists.php` |
+| 管理后台MessageLogLists | ✅ 完成 | `server/app/adminapi/lists/subscribe/MessageLogLists.php` |
+| 管理后台SubscribeValidate | ✅ 完成 | `server/app/adminapi/validate/subscribe/SubscribeValidate.php` |
+| 小程序端SubscribeController | ✅ 完成 | `server/app/api/controller/SubscribeController.php` |
+| 小程序端SubscribeLogic | ✅ 完成 | `server/app/api/logic/SubscribeLogic.php` |
+| 小程序端SubscribeValidate | ✅ 完成 | `server/app/api/validate/SubscribeValidate.php` |
+| 管理后台订阅消息管理页面 | ✅ 完成 | `admin/src/views/subscribe/template/index.vue` |
+| 管理后台订阅消息API服务 | ✅ 完成 | `admin/src/api/subscribe.ts` |
+| 小程序端订阅消息API服务 | ✅ 完成 | `uniapp/src/api/subscribe.ts` |
+| 小程序端订阅消息工具类 | ✅ 完成 | `uniapp/src/utils/subscribe.ts` |
+
 ---
 
 ## 待办事项 (Backlog)
 
-### 高优先级
+### 高优先级（第一期）
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| 微信支付集成 | ⏳ 待开发 | 需要配置商户号和API密钥 |
-| 支付宝支付集成 | ⏳ 待开发 | 需要配置应用和密钥 |
+| 微信小程序订阅消息推送 | ✅ 完成 | 详见4.16节，用于订单状态、支付结果等推送 |
 | 敏感词过滤 | ✅ 完成 | 已在评价系统中实现 |
-| 消息推送通知 | ⏳ 待开发 | 订阅消息模板配置 |
+| 消息推送通知 | ✅ 完成 | 已完成站内消息系统，详见4.14节 |
+
+### 第二期开发
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| 微信支付集成 | 🔜 第二期 | 需要配置商户号和API密钥 |
+| 支付宝支付集成 | 🔜 第二期 | 需要配置应用和密钥 |
 
 ### 中优先级
 | 任务 | 状态 | 说明 |
 |------|------|------|
 | 数据统计报表 | ✅ 完成 | 已在财务模块中实现 |
-| 优惠券系统完善 | ⏳ 待开发 | 发放、领取、使用流程 |
+| 优惠券系统完善 | ✅ 完成 | 已完成发放、领取、使用流程 |
 | 分享海报生成 | ⏳ 待开发 | 动态分享图片生成 |
 | 评价系统 | ✅ 完成 | 已完成多维度评分、标签、申诉等 |
 
@@ -556,12 +643,58 @@
 | 阶段一 | 20 | 20 | 100% |
 | 阶段二 | 18 | 18 | 100% |
 | 阶段三 | 35 | 35 | 100% |
-| 阶段四 | 116 | 104 | 90% |
-| **总计** | **189** | **177** | **94%** |
+| 阶段四 | 182 | 176 | 97% |
+| **总计** | **255** | **249** | **98%** |
 
 ---
 
 ## 更新日志
+
+### 2026-01-20 (第六次更新)
+- ✅ 调整第一期开发计划
+  - 移除微信支付、支付宝支付集成（调整为第二期）
+  - 移除短信通知系统（调整为第二期）
+  - 新增微信小程序订阅消息推送功能替代短信通知
+- ✅ 完成微信小程序订阅消息系统
+  - 创建订阅消息数据库表(la_subscribe_message_template, la_user_subscribe, la_subscribe_message_log, la_subscribe_message_scene)
+  - 完成Model层(SubscribeMessageTemplate, UserSubscribe, SubscribeMessageLog, SubscribeMessageScene)
+  - 完成SubscribeMessageService消息发送服务
+  - 完成管理后台API(SubscribeController, SubscribeLogic, Lists, Validate)
+  - 完成小程序端API(SubscribeController, SubscribeLogic, SubscribeValidate)
+  - 完成管理后台订阅消息管理Vue页面(模板管理/场景配置/发送记录/统计)
+  - 创建前端API服务文件(admin/src/api/subscribe.ts, uniapp/src/api/subscribe.ts)
+  - 创建小程序端订阅消息工具类(uniapp/src/utils/subscribe.ts)
+
+### 2026-01-20 (第五次更新)
+- ✅ 完成售后服务系统模块
+  - 创建售后系统数据库表(la_after_sale_ticket, la_after_sale_ticket_log, la_complaint, la_reshoot, la_service_callback等)
+  - 完成Model层(AfterSaleTicket, AfterSaleTicketLog, Complaint, Reshoot, ServiceCallback)
+  - 完成管理后台API(AfterSaleController, AfterSaleLogic, Lists, Validate)
+  - 完成小程序端API(AfterSaleController, AfterSaleLogic, AfterSaleValidate)
+  - 完成管理后台售后管理Vue页面(工单/投诉/补拍/回访四合一管理)
+  - 完成小程序端售后服务中心页面
+  - 创建前端API服务文件(admin/src/api/aftersale.ts, uniapp/src/api/aftersale.ts)
+  - 更新pages.json路由配置
+
+### 2026-01-20 (第四次更新)
+- ✅ 完成消息通知系统模块
+  - 利用现有Notification Model层
+  - 完成管理后台API(NotificationController, NotificationLogic, NotificationLists, NotificationValidate)
+  - 完成小程序端API(NotificationController, NotificationLogic)
+  - 完成管理后台消息通知Vue页面(列表、发送、统计)
+  - 完成小程序端消息中心页面(分类入口、消息列表)
+  - 创建前端API服务文件(admin/src/api/notification.ts, uniapp/src/api/notification.ts)
+  - 更新pages.json路由配置
+
+### 2026-01-20 (第三次更新)
+- ✅ 完成优惠券系统模块
+  - 完成Coupon、UserCoupon Model层
+  - 完成管理后台API(CouponController, CouponLogic, CouponLists, UserCouponLists, CouponValidate)
+  - 完成小程序端API(CouponController, CouponLogic, CouponValidate)
+  - 完成管理后台优惠券Vue页面(列表、编辑、发放、统计)
+  - 完成小程序端优惠券页面(我的优惠券、领券中心)
+  - 创建前端API服务文件(admin/src/api/coupon.ts, uniapp/src/api/coupon.ts)
+  - 更新pages.json路由配置
 
 ### 2026-01-20 (第二次更新)
 - ✅ 完成订单时间轴管理模块

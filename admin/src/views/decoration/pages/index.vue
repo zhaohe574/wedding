@@ -77,7 +77,19 @@ const menus: Record<
         type: 1,
         name: '首页装修',
         pageMeta: generatePageData(['page-meta']),
-        pageData: generatePageData(['search', 'banner', 'nav', 'news'])
+        pageData: generatePageData([
+            'search',
+            'banner', 
+            'nav',
+            'middle-banner',
+            'staff-showcase',
+            'service-packages',
+            'portfolio-gallery',
+            'customer-reviews',
+            'activity-zone',
+            'order-quick-entry',
+            'news'
+        ])
     },
     [pagesTypeEnum.USER]: {
         id: 2,

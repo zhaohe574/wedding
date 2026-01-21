@@ -79,6 +79,21 @@ export function packageAll(params?: any) {
     return request.get({ url: '/service.package/all', params })
 }
 
+// 更新套餐时段价格
+export function packageUpdateSlotPrices(params: any) {
+    return request.post({ url: '/service.package/updateSlotPrices', params })
+}
+
+// 检查套餐可用性
+export function packageCheckAvailability(params: any) {
+    return request.get({ url: '/service.package/checkAvailability', params })
+}
+
+// 获取套餐预约日历
+export function packageGetBookingCalendar(params: any) {
+    return request.get({ url: '/service.package/getBookingCalendar', params })
+}
+
 // ==================== 风格标签 ====================
 
 // 标签列表

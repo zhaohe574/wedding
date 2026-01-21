@@ -10,6 +10,7 @@ namespace app\adminapi\validate\service;
 use app\common\validate\BaseValidate;
 use app\common\model\service\ServicePackage;
 use app\common\model\service\ServiceCategory;
+use app\common\model\staff\Staff;
 
 /**
  * 服务套餐验证器
@@ -34,6 +35,9 @@ class PackageValidate extends BaseValidate
         'sort' => 'integer|egt:0',
         'is_show' => 'in:0,1',
         'is_recommend' => 'in:0,1',
+        'staff_id' => 'integer|egt:0|checkStaff',
+        'package_type' => 'in:1,2',
+        'slot_prices' => 'array|checkSlotPrices',
     ];
 
     /**
@@ -59,6 +63,10 @@ class PackageValidate extends BaseValidate
         'sort.egt' => '排序必须大于等于0',
         'is_show.in' => '显示状态值错误',
         'is_recommend.in' => '推荐状态值错误',
+        'staff_id.integer' => '员工ID必须为整数',
+        'staff_id.egt' => '员工ID必须大于等于0',
+        'package_type.in' => '套餐类型值错误',
+        'slot_prices.array' => '时段价格格式错误',
     ];
 
     /**
@@ -66,11 +74,12 @@ class PackageValidate extends BaseValidate
      * @var array
      */
     protected $scene = [
-        'add' => ['category_id', 'name', 'price', 'original_price', 'duration', 'content', 'description', 'sort', 'is_show', 'is_recommend'],
-        'edit' => ['id', 'category_id', 'name', 'price', 'original_price', 'duration', 'content', 'description', 'sort', 'is_show', 'is_recommend'],
+        'add' => ['category_id', 'name', 'price', 'original_price', 'duration', 'content', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id', 'package_type', 'slot_prices'],
+        'edit' => ['id', 'category_id', 'name', 'price', 'original_price', 'duration', 'content', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id', 'package_type', 'slot_prices'],
         'detail' => ['id'],
         'delete' => ['id'],
         'status' => ['id', 'is_show'],
+        'slotPrices' => ['id', 'slot_prices'],
     ];
 
     /**
@@ -102,6 +111,70 @@ class PackageValidate extends BaseValidate
         if (!$category) {
             return '所属分类不存在';
         }
+        return true;
+    }
+
+    /**
+     * @notes 验证员工是否存在
+     * @param $value
+     * @param $rule
+     * @param $data
+     * @return bool|string
+     */
+    protected function checkStaff($value, $rule, $data)
+    {
+        if (empty($value) || $value == 0) {
+            return true; // 0表示全局套餐，不需要验证
+        }
+        $staff = Staff::find($value);
+        if (!$staff) {
+            return '所属员工不存在';
+        }
+        return true;
+    }
+
+    /**
+     * @notes 验证时段价格格式
+     * @param $value
+     * @param $rule
+     * @param $data
+     * @return bool|string
+     */
+    protected function checkSlotPrices($value, $rule, $data)
+    {
+        if (empty($value)) {
+            return true;
+        }
+
+        if (!is_array($value)) {
+            return '时段价格格式错误';
+        }
+
+        foreach ($value as $index => $slot) {
+            if (!isset($slot['start_time']) || !isset($slot['end_time']) || !isset($slot['price'])) {
+                return "时段价格第" . ($index + 1) . "项缺少必要字段";
+            }
+
+            // 验证时间格式 HH:mm
+            if (!preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $slot['start_time'])) {
+                return "时段价格第" . ($index + 1) . "项开始时间格式错误，应为HH:mm格式";
+            }
+
+            if (!preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $slot['end_time'])) {
+                return "时段价格第" . ($index + 1) . "项结束时间格式错误，应为HH:mm格式";
+            }
+
+            // 验证价格
+            if (!is_numeric($slot['price']) || $slot['price'] < 0) {
+                return "时段价格第" . ($index + 1) . "项价格必须为大于等于0的数字";
+            }
+
+            // 验证结束时间大于开始时间
+            if (strtotime($slot['end_time']) <= strtotime($slot['start_time'])) {
+                return "时段价格第" . ($index + 1) . "项结束时间必须大于开始时间";
+            }
+        }
+
         return true;
     }
 }

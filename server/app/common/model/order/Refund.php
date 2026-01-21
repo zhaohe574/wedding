@@ -129,6 +129,60 @@ class Refund extends BaseModel
     }
 
     /**
+     * @notes 系统自动创建退款（订单取消时使用）
+     * @param int $orderId
+     * @param int $operatorId
+     * @param float $refundAmount
+     * @param string $reason
+     * @param int $refundType
+     * @return array [bool $success, string $message, Refund|null $refund]
+     */
+    public static function createSystemRefund(int $orderId, int $operatorId, float $refundAmount, string $reason, int $refundType = self::TYPE_SYSTEM): array
+    {
+        $order = Order::find($orderId);
+        if (!$order) {
+            return [false, '订单不存在', null];
+        }
+
+        // 检查是否有未处理的退款申请
+        $existsRefund = self::where('order_id', $orderId)
+            ->whereIn('refund_status', [self::STATUS_PENDING, self::STATUS_APPROVED, self::STATUS_PROCESSING])
+            ->find();
+        
+        if ($existsRefund) {
+            return [false, '存在未处理的退款申请', null];
+        }
+
+        // 验证退款金额
+        if ($refundAmount <= 0 || $refundAmount > $order->pay_amount) {
+            $refundAmount = $order->paid_amount > 0 ? $order->paid_amount : $order->pay_amount;
+        }
+
+        try {
+            $refund = self::create([
+                'refund_sn' => self::generateRefundSn(),
+                'order_id' => $orderId,
+                'payment_id' => 0,
+                'user_id' => $order->user_id,
+                'refund_type' => $refundType,
+                'refund_amount' => $refundAmount,
+                'refund_reason' => $reason,
+                'refund_status' => self::STATUS_PENDING, // 待审核，管理员审核后执行退款
+                'create_time' => time(),
+                'update_time' => time(),
+            ]);
+
+            // 记录日志
+            $operatorType = $refundType == self::TYPE_USER ? OrderLog::OPERATOR_USER : OrderLog::OPERATOR_SYSTEM;
+            OrderLog::addLog($orderId, $operatorType, $operatorId, 'refund_create', $order->order_status, $order->order_status, '创建退款申请：' . $reason);
+
+            return [true, '退款申请已创建', $refund];
+        } catch (\Exception $e) {
+            return [false, '创建失败：' . $e->getMessage(), null];
+        }
+    }
+
+    /**
      * @notes 审核退款
      * @param int $refundId
      * @param int $adminId

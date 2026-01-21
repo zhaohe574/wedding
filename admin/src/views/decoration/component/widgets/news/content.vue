@@ -31,7 +31,7 @@
 
 <script lang="ts" setup>
 import type { PropType } from 'vue'
-
+import { onMounted } from 'vue'
 import { getDecorateArticle } from '@/api/decoration'
 
 import type options from './options'
@@ -49,12 +49,23 @@ defineProps({
 })
 const newsList = ref<any[]>([])
 const getData = async () => {
-    const data = await getDecorateArticle({
-        limit: 10
-    })
-    newsList.value = data
+    try {
+        const data = await getDecorateArticle({
+            limit: 10
+        })
+        newsList.value = data
+    } catch (error: any) {
+        // 忽略取消请求的错误
+        if (error?.code !== 'ERR_CANCELED') {
+            console.error('获取资讯列表失败:', error)
+        }
+    }
 }
-getData()
+
+// 在组件挂载后再获取数据
+onMounted(() => {
+    getData()
+})
 </script>
 
 <style lang="scss" scoped>

@@ -325,23 +325,48 @@ class Cart extends BaseModel
             ->toArray();
 
         $conflicts = [];
-        $checked = [];
+        $checkedPairs = []; // 记录已检查的配对，避免重复
 
-        foreach ($items as $item) {
-            $key = $item['staff_id'] . '_' . $item['schedule_date'];
-            
-            // 全天与其他时间段冲突
-            if ($item['time_slot'] == 0) {
-                foreach ($items as $other) {
-                    if ($other['id'] != $item['id'] && 
-                        $other['staff_id'] == $item['staff_id'] && 
-                        $other['schedule_date'] == $item['schedule_date']) {
-                        $conflicts[] = [
-                            'type' => 'time_conflict',
-                            'cart_ids' => [$item['id'], $other['id']],
-                            'message' => '全天预约与其他时间段冲突',
-                        ];
-                    }
+        foreach ($items as $index => $item) {
+            foreach ($items as $otherIndex => $other) {
+                // 跳过相同项和不同人员或不同日期
+                if ($item['id'] == $other['id'] || 
+                    $item['staff_id'] != $other['staff_id'] || 
+                    $item['schedule_date'] != $other['schedule_date']) {
+                    continue;
+                }
+
+                // 生成唯一配对键，避免重复检测
+                $pairKey = min($item['id'], $other['id']) . '_' . max($item['id'], $other['id']);
+                if (isset($checkedPairs[$pairKey])) {
+                    continue;
+                }
+                $checkedPairs[$pairKey] = true;
+
+                $hasConflict = false;
+                $conflictMessage = '';
+
+                // 检测冲突类型
+                if ($item['time_slot'] == 0 || $other['time_slot'] == 0) {
+                    // 全天预约与其他时间段冲突
+                    $hasConflict = true;
+                    $conflictMessage = '全天预约与其他时间段冲突';
+                } elseif ($item['time_slot'] == $other['time_slot']) {
+                    // 同一时间段的重复预约
+                    $hasConflict = true;
+                    $slotNames = [0 => '全天', 1 => '上午', 2 => '下午', 3 => '晚上'];
+                    $conflictMessage = '同一人员在' . $item['schedule_date'] . '的' . ($slotNames[$item['time_slot']] ?? '未知') . '时段重复预约';
+                }
+
+                if ($hasConflict) {
+                    $conflicts[] = [
+                        'type' => 'time_conflict',
+                        'cart_ids' => [$item['id'], $other['id']],
+                        'staff_id' => $item['staff_id'],
+                        'date' => $item['schedule_date'],
+                        'time_slots' => [$item['time_slot'], $other['time_slot']],
+                        'message' => $conflictMessage,
+                    ];
                 }
             }
         }

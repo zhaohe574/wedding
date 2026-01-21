@@ -40,6 +40,33 @@ export function staffStatistics() {
     return request.get({ url: '/staff.staff/statistics' })
 }
 
+// ==================== 套餐配置管理 ====================
+
+// 配置员工套餐关联
+export function staffConfigurePackages(params: any) {
+    return request.post({ url: '/staff.staff/configurePackages', params })
+}
+
+// 获取员工套餐配置
+export function staffGetPackageConfig(params: any) {
+    return request.get({ url: '/staff.staff/getPackageConfig', params })
+}
+
+// 创建员工专属套餐
+export function staffCreatePackage(params: any) {
+    return request.post({ url: '/staff.staff/createStaffPackage', params })
+}
+
+// 更新单个套餐配置
+export function staffUpdatePackageConfig(params: any) {
+    return request.post({ url: '/staff.staff/updatePackageConfig', params })
+}
+
+// 删除员工专属套餐
+export function staffDeletePackage(params: any) {
+    return request.post({ url: '/staff.staff/deleteStaffPackage', params })
+}
+
 // ==================== 作品管理 ====================
 
 // 作品列表

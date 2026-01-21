@@ -112,4 +112,120 @@ class StaffController extends BaseAdminController
         $result = StaffLogic::statistics();
         return $this->data($result);
     }
+
+    /**
+     * @notes 配置员工套餐关联
+     * @return \think\response\Json
+     */
+    public function configurePackages()
+    {
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+        $packages = $params['packages'] ?? [];
+
+        if ($staffId <= 0) {
+            return $this->fail('请选择员工');
+        }
+
+        $result = StaffLogic::configurePackages($staffId, $packages);
+        if (true === $result) {
+            return $this->success('配置成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 获取员工套餐配置
+     * @return \think\response\Json
+     */
+    public function getPackageConfig()
+    {
+        $staffId = intval($this->request->get('staff_id', 0));
+        $includeGlobal = boolval($this->request->get('include_global', false));
+
+        if ($staffId <= 0) {
+            return $this->fail('请选择员工');
+        }
+
+        $result = StaffLogic::getPackageConfig($staffId, $includeGlobal);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 创建员工专属套餐
+     * @return \think\response\Json
+     */
+    public function createStaffPackage()
+    {
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+
+        if ($staffId <= 0) {
+            return $this->fail('请选择员工');
+        }
+
+        // 验证套餐数据
+        if (empty($params['name'])) {
+            return $this->fail('请输入套餐名称');
+        }
+
+        $packageId = StaffLogic::createStaffPackage($staffId, $params);
+        if ($packageId) {
+            return $this->success('创建成功', ['package_id' => $packageId], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 更新单个套餐配置
+     * @return \think\response\Json
+     */
+    public function updatePackageConfig()
+    {
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+        $packageId = intval($params['package_id'] ?? 0);
+
+        if ($staffId <= 0 || $packageId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $data = [];
+        if (isset($params['custom_price'])) {
+            $data['custom_price'] = $params['custom_price'];
+        }
+        if (isset($params['custom_slot_prices'])) {
+            $data['custom_slot_prices'] = $params['custom_slot_prices'];
+        }
+        if (isset($params['status'])) {
+            $data['status'] = $params['status'];
+        }
+
+        $result = StaffLogic::updatePackageConfig($staffId, $packageId, $data);
+        if (true === $result) {
+            return $this->success('更新成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 删除员工专属套餐
+     * @return \think\response\Json
+     */
+    public function deleteStaffPackage()
+    {
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+        $packageId = intval($params['package_id'] ?? 0);
+
+        if ($staffId <= 0 || $packageId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $result = StaffLogic::deleteStaffPackage($staffId, $packageId);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
 }

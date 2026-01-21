@@ -86,6 +86,15 @@ class CartValidate extends BaseValidate
     }
 
     /**
+     * @notes 切换选中场景
+     * @return CartValidate
+     */
+    public function sceneToggleSelect()
+    {
+        return $this->only(['id']);
+    }
+
+    /**
      * @notes 批量删除场景
      * @return CartValidate
      */

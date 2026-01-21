@@ -12,7 +12,7 @@ export function setDecoratePages(params: any) {
 
 // 获取首页文章数据
 export function getDecorateArticle(params?: any) {
-    return request.get({ url: '/decorate.data/article', params })
+    return request.get({ url: '/decorate.data/article', params }, { ignoreCancelToken: true })
 }
 
 // 底部导航详情

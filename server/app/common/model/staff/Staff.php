@@ -124,6 +124,25 @@ class Staff extends BaseModel
     }
 
     /**
+     * @notes 获取完整手机号（用于订单确认后显示）
+     * @return string
+     */
+    public function getMobileFullAttr()
+    {
+        // 优先返回mobile_full字段，如果没有则返回原始mobile字段
+        return $this->getAttr('mobile_full') ?: $this->getData('mobile');
+    }
+
+    /**
+     * @notes 获取原始手机号（不经过脱敏）
+     * @return string
+     */
+    public function getRawMobile(): string
+    {
+        return $this->getData('mobile') ?: '';
+    }
+
+    /**
      * @notes 分类名称获取器
      * @param $value
      * @param $data

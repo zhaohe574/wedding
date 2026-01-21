@@ -105,4 +105,54 @@ class PackageController extends BaseAdminController
         $result = PackageLogic::getAll($params);
         return $this->data($result);
     }
+
+    /**
+     * @notes 更新套餐时段价格
+     * @return \think\response\Json
+     */
+    public function updateSlotPrices()
+    {
+        $params = (new PackageValidate())->post()->goCheck('slotPrices');
+        $result = PackageLogic::updateSlotPrices($params);
+        if (true === $result) {
+            return $this->success('保存成功', [], 1, 1);
+        }
+        return $this->fail(PackageLogic::getError());
+    }
+
+    /**
+     * @notes 检查套餐可用性
+     * @return \think\response\Json
+     */
+    public function checkAvailability()
+    {
+        $packageId = $this->request->get('package_id', 0, 'intval');
+        $date = $this->request->get('date', '');
+        $staffId = $this->request->get('staff_id', 0, 'intval');
+        
+        if (empty($packageId) || empty($date)) {
+            return $this->fail('参数错误');
+        }
+        
+        $result = PackageLogic::checkAvailability($packageId, $date, $staffId);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 获取套餐预约日历
+     * @return \think\response\Json
+     */
+    public function getBookingCalendar()
+    {
+        $packageId = $this->request->get('package_id', 0, 'intval');
+        $startDate = $this->request->get('start_date', '');
+        $endDate = $this->request->get('end_date', '');
+        
+        if (empty($packageId) || empty($startDate) || empty($endDate)) {
+            return $this->fail('参数错误');
+        }
+        
+        $result = PackageLogic::getBookingCalendar($packageId, $startDate, $endDate);
+        return $this->data($result);
+    }
 }

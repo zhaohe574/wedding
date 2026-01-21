@@ -12,7 +12,22 @@
             <!-- 冲突提示 -->
             <view class="conflict-tip" v-if="cartData.conflicts.length > 0">
                 <text class="iconfont icon-warning"></text>
-                <text>{{ cartData.conflicts.length }}个项目档期已不可用，请处理</text>
+                <text>{{ cartData.conflicts.length }}个项目存在冲突，请处理</text>
+            </view>
+
+            <!-- 套餐预订冲突提示 -->
+            <view class="package-conflict-tip" v-if="packageConflicts.length > 0">
+                <text class="iconfont icon-info-circle"></text>
+                <text>{{ packageConflicts.length }}个套餐当日已被预订</text>
+                <view class="conflict-detail" @click="showConflictDetail = !showConflictDetail">
+                    <text>{{ showConflictDetail ? '收起' : '查看详情' }}</text>
+                </view>
+            </view>
+            <view class="conflict-list" v-if="showConflictDetail && packageConflicts.length > 0">
+                <view class="conflict-item" v-for="conflict in packageConflicts" :key="conflict.package_id">
+                    <text class="package-name">{{ conflict.package_name }}</text>
+                    <text class="conflict-date">{{ conflict.date }} 已被预订</text>
+                </view>
             </view>
 
             <!-- 全选 -->
@@ -86,7 +101,7 @@
             </view>
             <button 
                 class="btn-checkout" 
-                :disabled="cartData.selected_count === 0 || cartData.conflicts.length > 0"
+                :disabled="cartData.selected_count === 0 || cartData.conflicts.length > 0 || packageConflicts.length > 0"
                 @click="handleCheckout"
             >
                 去结算
@@ -130,11 +145,18 @@ const cartData = ref<any>({
     total_price: 0,
     total_count: 0,
     conflicts: [],
+    package_conflicts: [], // 套餐预订冲突（单日唯一限制）
     selected_count: 0
 })
 
 const planPopup = ref()
 const planName = ref('')
+const showConflictDetail = ref(false)
+
+// 套餐预订冲突列表
+const packageConflicts = computed(() => {
+    return cartData.value.package_conflicts || []
+})
 
 // 是否全选
 const isAllSelected = computed(() => {
@@ -237,6 +259,10 @@ const handleCheckout = () => {
         uni.showToast({ title: '请先处理不可用的项目', icon: 'none' })
         return
     }
+    if (packageConflicts.value.length > 0) {
+        uni.showToast({ title: '存在套餐预订冲突，请处理', icon: 'none' })
+        return
+    }
     // 跳转到订单确认页
     uni.navigateTo({ url: '/packages/pages/order_confirm/order_confirm' })
 }
@@ -301,6 +327,52 @@ onShow(() => {
     
     .iconfont {
         margin-right: 10rpx;
+    }
+}
+
+.package-conflict-tip {
+    background: #e8f4fd;
+    padding: 20rpx 30rpx;
+    display: flex;
+    align-items: center;
+    font-size: 26rpx;
+    color: #0c5460;
+    
+    .iconfont {
+        margin-right: 10rpx;
+    }
+    
+    .conflict-detail {
+        margin-left: auto;
+        color: #007bff;
+        font-size: 24rpx;
+    }
+}
+
+.conflict-list {
+    background: #f8f9fa;
+    padding: 20rpx 30rpx;
+    
+    .conflict-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16rpx 0;
+        border-bottom: 1rpx solid #e9ecef;
+        
+        &:last-child {
+            border-bottom: none;
+        }
+        
+        .package-name {
+            font-size: 26rpx;
+            color: #333;
+        }
+        
+        .conflict-date {
+            font-size: 24rpx;
+            color: #dc3545;
+        }
     }
 }
 

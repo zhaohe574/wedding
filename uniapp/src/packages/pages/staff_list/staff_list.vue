@@ -6,45 +6,6 @@
         />
     </page-meta>
     <view class="staff-list">
-        <!-- 搜索和筛选 -->
-        <view class="filter-bar bg-white px-[24rpx] py-[20rpx]">
-            <view class="search-box mb-[20rpx]">
-                <u-search
-                    v-model="keyword"
-                    placeholder="搜索人员姓名"
-                    :show-action="false"
-                    @search="handleSearch"
-                    @clear="handleSearch"
-                ></u-search>
-            </view>
-            <scroll-view scroll-x class="category-scroll">
-                <view class="category-list flex">
-                    <view
-                        v-for="item in categories"
-                        :key="item.id"
-                        class="category-item"
-                        :class="{ active: currentCategoryId === item.id }"
-                        @click="handleCategoryChange(item.id)"
-                    >
-                        {{ item.name }}
-                    </view>
-                </view>
-            </scroll-view>
-        </view>
-
-        <!-- 排序栏 -->
-        <view class="sort-bar bg-white px-[24rpx] py-[16rpx] flex items-center">
-            <view
-                v-for="item in sortOptions"
-                :key="item.value"
-                class="sort-item mr-[40rpx]"
-                :class="{ active: currentSort === item.value }"
-                @click="handleSortChange(item.value)"
-            >
-                {{ item.label }}
-            </view>
-        </view>
-
         <!-- 人员列表 -->
         <z-paging
             ref="pagingRef"
@@ -52,6 +13,47 @@
             @query="queryList"
             :auto="false"
         >
+            <!-- 顶部固定区域 -->
+            <template #top>
+                <!-- 搜索和筛选 -->
+                <view class="filter-bar bg-white px-[24rpx] py-[20rpx]">
+                    <view class="search-box mb-[20rpx]">
+                        <u-search
+                            v-model="keyword"
+                            placeholder="搜索人员姓名"
+                            :show-action="false"
+                            @search="handleSearch"
+                            @clear="handleSearch"
+                        ></u-search>
+                    </view>
+                    <scroll-view scroll-x class="category-scroll">
+                        <view class="category-list flex">
+                            <view
+                                v-for="item in categories"
+                                :key="item.id"
+                                class="category-item"
+                                :class="{ active: currentCategoryId === item.id }"
+                                @click="handleCategoryChange(item.id)"
+                            >
+                                {{ item.name }}
+                            </view>
+                        </view>
+                    </scroll-view>
+                </view>
+
+                <!-- 排序栏 -->
+                <view class="sort-bar bg-white px-[24rpx] py-[16rpx] flex items-center">
+                    <view
+                        v-for="item in sortOptions"
+                        :key="item.value"
+                        class="sort-item mr-[40rpx]"
+                        :class="{ active: currentSort === item.value }"
+                        @click="handleSortChange(item.value)"
+                    >
+                        {{ item.label }}
+                    </view>
+                </view>
+            </template>
             <view class="staff-cards px-[24rpx] pt-[20rpx]">
                 <view
                     v-for="item in staffList"
@@ -107,8 +109,8 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { ref, reactive, nextTick } from 'vue'
+import { onLoad, onReady } from '@dcloudio/uni-app'
 import { getStaffList, toggleStaffFavorite } from '@/api/staff'
 import { getServiceCategories } from '@/api/service'
 
@@ -211,7 +213,11 @@ onLoad((options) => {
         currentCategoryId.value = options.category_id
     }
     getCategories()
-    pagingRef.value.reload()
+})
+
+onReady(() => {
+    // 组件渲染完成后再调用 reload
+    pagingRef.value?.reload()
 })
 </script>
 

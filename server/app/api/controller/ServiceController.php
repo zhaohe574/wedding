@@ -16,7 +16,10 @@ use app\api\logic\ServiceLogic;
  */
 class ServiceController extends BaseApiController
 {
-    public array $notNeedLogin = ['categories', 'categoryTree', 'packages', 'packageDetail', 'tags'];
+    public array $notNeedLogin = [
+        'categories', 'categoryTree', 'packages', 'packageDetail', 'tags',
+        'checkPackageAvailability', 'batchCheckAvailability', 'packageSlotPrices', 'calculatePrice'
+    ];
 
     /**
      * @notes 服务分类列表
@@ -76,6 +79,76 @@ class ServiceController extends BaseApiController
         $type = $this->request->get('type/d', 0);
         $grouped = $this->request->get('grouped/d', 0);
         $result = ServiceLogic::tags($type, (bool)$grouped);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 检查套餐可用性（单日唯一限制）
+     * @return \think\response\Json
+     */
+    public function checkPackageAvailability()
+    {
+        $packageId = $this->request->get('package_id/d');
+        $date = $this->request->get('date/s', '');
+
+        if (empty($packageId) || empty($date)) {
+            return $this->fail('参数错误');
+        }
+
+        $result = ServiceLogic::checkPackageAvailability($packageId, $date);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 批量检查套餐可用性
+     * @return \think\response\Json
+     */
+    public function batchCheckAvailability()
+    {
+        $packageIds = $this->request->post('package_ids/a', []);
+        $date = $this->request->post('date/s', '');
+
+        if (empty($packageIds) || empty($date)) {
+            return $this->fail('参数错误');
+        }
+
+        $result = ServiceLogic::batchCheckAvailability($packageIds, $date);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 获取套餐时段价格
+     * @return \think\response\Json
+     */
+    public function packageSlotPrices()
+    {
+        $packageId = $this->request->get('package_id/d');
+        $staffId = $this->request->get('staff_id/d', 0);
+
+        if (empty($packageId)) {
+            return $this->fail('参数错误');
+        }
+
+        $result = ServiceLogic::getPackageSlotPrices($packageId, $staffId);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 计算套餐最终价格
+     * @return \think\response\Json
+     */
+    public function calculatePrice()
+    {
+        $packageId = $this->request->get('package_id/d');
+        $staffId = $this->request->get('staff_id/d', 0);
+        $startTime = $this->request->get('start_time/s', '');
+        $endTime = $this->request->get('end_time/s', '');
+
+        if (empty($packageId)) {
+            return $this->fail('参数错误');
+        }
+
+        $result = ServiceLogic::calculatePrice($packageId, $staffId, $startTime, $endTime);
         return $this->data($result);
     }
 }

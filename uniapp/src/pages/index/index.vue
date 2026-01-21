@@ -8,12 +8,10 @@
         <!-- #endif -->
     </page-meta>
     <view class="index" :style="pageStyle">
-        <!-- 组件 -->
-        <template
-            v-for="(item, index) in state.pages"
-            :key="index"
-        >
-            <template v-if="item.name == 'search'">
+        <!-- 动态装修组件渲染 -->
+        <template v-for="(item, index) in state.pages" :key="index">
+            <!-- 搜索组件 -->
+            <template v-if="item.name == 'search' && isComponentEnabled(item)">
                 <w-search
                     :pageMeta="state.meta"
                     :content="item.content"
@@ -22,7 +20,8 @@
                     :isLargeScreen="isLargeScreen"
                 />
             </template>
-            <template v-if="item.name == 'banner'">
+            <!-- 轮播图组件 -->
+            <template v-if="item.name == 'banner' && isComponentEnabled(item)">
                 <w-banner
                     :content="item.content"
                     :styles="item.styles"
@@ -30,19 +29,44 @@
                     @change="handleBanner"
                 />
             </template>
-            <template v-if="item.name == 'nav'">
+            <!-- 导航菜单组件 -->
+            <template v-if="item.name == 'nav' && isComponentEnabled(item)">
                 <w-nav :content="item.content" :styles="item.styles"/>
             </template>
-            <template v-if="item.name == 'middle-banner'">
+            <!-- 中间banner组件 -->
+            <template v-if="item.name == 'middle-banner' && isComponentEnabled(item)">
                 <w-middle-banner :content="item.content" :styles="item.styles" />
+            </template>
+            <!-- 人员推荐组件 -->
+            <template v-if="item.name == 'staff-showcase' && isComponentEnabled(item)">
+                <w-staff-showcase :content="item.content" :styles="item.styles" />
+            </template>
+            <!-- 服务套餐组件 -->
+            <template v-if="item.name == 'service-packages' && isComponentEnabled(item)">
+                <w-service-packages :content="item.content" :styles="item.styles" />
+            </template>
+            <!-- 案例作品组件 -->
+            <template v-if="item.name == 'portfolio-gallery' && isComponentEnabled(item)">
+                <w-portfolio-gallery :content="item.content" :styles="item.styles" />
+            </template>
+            <!-- 客户评价组件 -->
+            <template v-if="item.name == 'customer-reviews' && isComponentEnabled(item)">
+                <w-customer-reviews :content="item.content" :styles="item.styles" />
+            </template>
+            <!-- 活动专区组件 -->
+            <template v-if="item.name == 'activity-zone' && isComponentEnabled(item)">
+                <w-activity-zone :content="item.content" :styles="item.styles" />
+            </template>
+            <!-- 订单快捷入口组件 -->
+            <template v-if="item.name == 'order-quick-entry' && isComponentEnabled(item)">
+                <w-order-quick-entry :content="item.content" :styles="item.styles" />
             </template>
         </template>
 
-        <view class="article" v-if="state.article.length">
-            <view
-                class="flex items-center article-title mx-[20rpx] my-[30rpx] text-lg font-medium"
-            >
-                最新资讯
+        <!-- 最新资讯（根据装修配置显示） -->
+        <view class="article" v-if="showNewsSection && state.article.length">
+            <view class="flex items-center article-title mx-[20rpx] my-[30rpx] text-lg font-medium">
+                {{ newsConfig?.content?.title || '最新资讯' }}
             </view>
             <news-card
                 v-for="item in state.article"
@@ -58,9 +82,7 @@
                 class="mx-1 text-xs text-[#495770]"
                 :to="{
                     path: '/pages/webview/webview',
-                    query: {
-                        url: item.value
-                    }
+                    query: { url: item.value }
                 }"
                 v-for="item in appStore.getCopyrightConfig"
                 :key="item.key"
@@ -79,11 +101,9 @@
                 color: '#000',
                 boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.1)'
             }"
-        >
-        </u-back-top>
+        ></u-back-top>
 
         <!--  #ifdef MP  -->
-        <!--  微信小程序隐私弹窗  -->
         <MpPrivacyPopup></MpPrivacyPopup>
         <!--  #endif  -->
 
@@ -92,16 +112,17 @@
 </template>
 
 <script setup lang="ts">
-import {getIndex} from '@/api/shop'
-import {onLoad, onPageScroll} from "@dcloudio/uni-app";
-import {computed, reactive, ref} from 'vue'
-import {useAppStore} from '@/stores/app'
+import { getIndex } from '@/api/shop'
+import { onLoad, onPageScroll, onShow } from "@dcloudio/uni-app"
+import { computed, reactive, ref } from 'vue'
+import { useAppStore } from '@/stores/app'
 
 // #ifdef MP
 import MpPrivacyPopup from './component/mp-privacy-popup.vue'
 // #endif
 
 const appStore = useAppStore()
+
 const state = reactive<{
     pages: any[]
     meta: any[]
@@ -113,41 +134,69 @@ const state = reactive<{
     article: [],
     bannerImage: ''
 })
+
 const scrollTop = ref<number>(0)
 const percent = ref<number>(0)
 
+// 判断组件是否启用
+const isComponentEnabled = (item: any) => {
+    return item.content?.enabled !== 0
+}
+
 // 是否联动背景图
 const isLinkage = computed(() => {
-    return state.pages.find((item: any) => item.name === 'banner')?.content.bg_style === 1
+    return state.pages.find((item: any) => item.name === 'banner')?.content?.bg_style === 1
 })
+
 // 是否大屏banner
 const isLargeScreen = computed(() => {
-    return state.pages.find((item: any) => item.name === 'banner')?.content.style === 2
+    return state.pages.find((item: any) => item.name === 'banner')?.content?.style === 2
+})
+
+// 最新资讯配置
+const newsConfig = computed(() => {
+    return state.pages.find((item: any) => item.name === 'news')
+})
+
+// 是否显示最新资讯
+const showNewsSection = computed(() => {
+    const config = newsConfig.value
+    return config && config.content?.enabled !== 0
 })
 
 // 根页面样式
 const pageStyle = computed(() => {
-    const {bg_type, bg_color, bg_image} = state.meta[0]?.content ?? {}
+    const { bg_type, bg_color, bg_image } = state.meta[0]?.content ?? {}
     if (!isLinkage.value) {
         return bg_type == 1 ?
-            {'background-color': bg_color} :
-            {'background-image': `url(${bg_image})`}
+            { 'background-color': bg_color || '#f8f8f8' } :
+            { 'background-image': `url(${bg_image})` }
     }
-    else return {'background-image': `url(${state.bannerImage})`}
+    return { 'background-image': `url(${state.bannerImage})` }
 })
 
 const handleBanner = (url: string) => {
     state.bannerImage = url
 }
 
+// 获取装修数据
 const getData = async () => {
-    const data = await getIndex()
-    state.pages = JSON.parse(data?.page?.data)
-    state.meta = JSON.parse(data?.page?.meta)
-    state.article = data.article
-    uni.setNavigationBarTitle({
-        title: state.meta[0].content.title
-    })
+    try {
+        const data = await getIndex()
+        if (data?.page?.data) {
+            state.pages = JSON.parse(data.page.data)
+        }
+        if (data?.page?.meta) {
+            state.meta = JSON.parse(data.page.meta)
+            const title = state.meta[0]?.content?.title
+            if (title) {
+                uni.setNavigationBarTitle({ title })
+            }
+        }
+        state.article = data?.article || []
+    } catch (e) {
+        console.error('获取首页数据失败:', e)
+    }
 }
 
 onPageScroll((event: any) => {
@@ -156,7 +205,14 @@ onPageScroll((event: any) => {
     percent.value = event.scrollTop / top > 1 ? 1 : event.scrollTop / top
 })
 
-onLoad(() => { getData() })
+onLoad(() => {
+    getData()
+})
+
+onShow(() => {
+    // 页面显示时刷新数据
+    getData()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -168,8 +224,10 @@ onLoad(() => { getData() })
     width: 100%;
     transition: all 1s;
     min-height: calc(100vh - env(safe-area-inset-bottom));
+    background-color: #f8f8f8;
 }
 
+// 资讯
 .article-title {
     &::before {
         content: '';

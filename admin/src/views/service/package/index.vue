@@ -19,6 +19,13 @@
                         clearable
                     />
                 </el-form-item>
+                <el-form-item class="w-[200px]" label="套餐类型">
+                    <el-select v-model="queryParams.package_type" placeholder="选择类型" clearable>
+                        <el-option label="全部" value="" />
+                        <el-option label="全局套餐" :value="1" />
+                        <el-option label="员工专属" :value="2" />
+                    </el-select>
+                </el-form-item>
                 <el-form-item class="w-[200px]" label="状态">
                     <el-select v-model="queryParams.is_show" placeholder="选择状态" clearable>
                         <el-option label="全部" value="" />
@@ -50,12 +57,35 @@
                 <el-table-column label="ID" prop="id" width="80" />
                 <el-table-column label="套餐名称" prop="name" min-width="150" />
                 <el-table-column label="服务分类" prop="category_name" width="120" />
-                <el-table-column label="价格" width="120">
+                <el-table-column label="套餐类型" width="140">
                     <template #default="{ row }">
-                        <span class="text-red-500 font-bold">¥{{ row.price }}</span>
-                        <span v-if="row.original_price > row.price" class="text-gray-400 line-through ml-2 text-xs">
-                            ¥{{ row.original_price }}
-                        </span>
+                        <el-tag v-if="row.package_type === 1" type="primary">全局套餐</el-tag>
+                        <el-tag v-else type="success">
+                            员工专属
+                            <span v-if="row.staff_name" class="ml-1">({{ row.staff_name }})</span>
+                        </el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column label="价格" width="150">
+                    <template #default="{ row }">
+                        <div class="flex items-center gap-2">
+                            <div>
+                                <span class="text-red-500 font-bold">¥{{ row.price }}</span>
+                                <span v-if="row.original_price > row.price" class="text-gray-400 line-through ml-2 text-xs">
+                                    ¥{{ row.original_price }}
+                                </span>
+                            </div>
+                            <el-tooltip content="配置时段价格" placement="top">
+                                <el-button
+                                    type="primary"
+                                    link
+                                    size="small"
+                                    @click="openSlotPriceDialog(row)"
+                                >
+                                    <icon name="el-icon-Clock" />
+                                </el-button>
+                            </el-tooltip>
+                        </div>
                     </template>
                 </el-table-column>
                 <el-table-column label="服务时长" prop="duration_desc" width="100" />
@@ -78,7 +108,7 @@
                 </el-table-column>
                 <el-table-column label="排序" prop="sort" width="80" />
                 <el-table-column label="创建时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="130" fixed="right">
+                <el-table-column label="操作" width="160" fixed="right">
                     <template #default="{ row }">
                         <el-button
                             v-perms="['service.package/edit']"
@@ -87,6 +117,14 @@
                             @click="handleEdit(row)"
                         >
                             编辑
+                        </el-button>
+                        <el-button
+                            v-if="row.package_type === 1"
+                            type="warning"
+                            link
+                            @click="openSlotPriceDialog(row)"
+                        >
+                            时段价格
                         </el-button>
                         <el-button
                             v-perms="['service.package/delete']"
@@ -127,6 +165,27 @@
                         placeholder="选择服务分类"
                         class="w-full"
                     />
+                </el-form-item>
+                <el-form-item label="套餐类型" prop="package_type">
+                    <el-radio-group v-model="editForm.package_type" :disabled="!!editForm.id">
+                        <el-radio :value="1">全局套餐</el-radio>
+                        <el-radio :value="2">员工专属</el-radio>
+                    </el-radio-group>
+                    <div v-if="editForm.package_type === 2" class="mt-2 w-full">
+                        <el-select
+                            v-model="editForm.staff_id"
+                            placeholder="选择所属员工"
+                            class="w-full"
+                            :disabled="!!editForm.id"
+                        >
+                            <el-option
+                                v-for="staff in optionsData.staffList"
+                                :key="staff.id"
+                                :label="staff.name"
+                                :value="staff.id"
+                            />
+                        </el-select>
+                    </div>
                 </el-form-item>
                 <div class="grid grid-cols-2 gap-4">
                     <el-form-item label="套餐价格" prop="price">
@@ -197,6 +256,72 @@
                 <el-button type="primary" @click="handleSave">保存</el-button>
             </template>
         </el-dialog>
+
+        <!-- 时段价格配置弹窗 -->
+        <el-dialog
+            v-model="showSlotPriceDialog"
+            title="时段价格配置"
+            width="650px"
+        >
+            <div class="mb-4">
+                <el-alert type="info" :closable="false">
+                    <template #title>
+                        套餐：<span class="font-bold">{{ currentSlotPackage?.name }}</span>
+                        <span class="ml-4">默认价格：<span class="text-red-500 font-bold">¥{{ currentSlotPackage?.price }}</span></span>
+                    </template>
+                </el-alert>
+            </div>
+            <div class="mb-4">
+                <el-button type="primary" size="small" @click="addSlotPrice">
+                    <icon name="el-icon-Plus" class="mr-1" />
+                    添加时段
+                </el-button>
+            </div>
+            <el-table :data="currentSlotPrices" border>
+                <el-table-column label="开始时间" width="150">
+                    <template #default="{ row, $index }">
+                        <el-time-picker
+                            v-model="row.start_time"
+                            format="HH:mm"
+                            value-format="HH:mm"
+                            placeholder="开始时间"
+                            class="w-full"
+                        />
+                    </template>
+                </el-table-column>
+                <el-table-column label="结束时间" width="150">
+                    <template #default="{ row, $index }">
+                        <el-time-picker
+                            v-model="row.end_time"
+                            format="HH:mm"
+                            value-format="HH:mm"
+                            placeholder="结束时间"
+                            class="w-full"
+                        />
+                    </template>
+                </el-table-column>
+                <el-table-column label="时段价格" width="150">
+                    <template #default="{ row }">
+                        <el-input-number
+                            v-model="row.price"
+                            :min="0"
+                            :precision="2"
+                            size="small"
+                            class="w-full"
+                        />
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" width="80">
+                    <template #default="{ $index }">
+                        <el-button type="danger" link @click="removeSlotPrice($index)">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <template #footer>
+                <el-button @click="showSlotPriceDialog = false">取消</el-button>
+                <el-button type="primary" @click="saveSlotPrice">保存</el-button>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -208,8 +333,10 @@ import {
     packageEdit,
     packageDelete,
     packageChangeStatus,
+    packageUpdateSlotPrices,
     categoryTree
 } from '@/api/service'
+import { staffAll } from '@/api/staff'
 import { useDictOptions } from '@/hooks/useDictOptions'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
@@ -217,6 +344,7 @@ import feedback from '@/utils/feedback'
 const queryParams = reactive({
     name: '',
     category_id: '',
+    package_type: '',
     is_show: ''
 })
 
@@ -229,6 +357,8 @@ const editForm = reactive({
     id: '',
     name: '',
     category_id: '',
+    package_type: 1,
+    staff_id: 0,
     price: 0,
     original_price: 0,
     duration: 1,
@@ -253,11 +383,65 @@ const { pager, getLists, resetPage, resetParams } = usePaging({
 
 const { optionsData } = useDictOptions<{
     categories: any[]
+    staffList: any[]
 }>({
     categories: {
         api: categoryTree
+    },
+    staffList: {
+        api: staffAll
     }
 })
+
+// 时段价格配置相关
+const showSlotPriceDialog = ref(false)
+const currentSlotPackage = ref<any>(null)
+const currentSlotPrices = ref<{ start_time: string; end_time: string; price: number }[]>([])
+
+const openSlotPriceDialog = (row: any) => {
+    currentSlotPackage.value = row
+    // 解析已有的时段价格
+    currentSlotPrices.value = row.slot_prices ? [...row.slot_prices] : []
+    showSlotPriceDialog.value = true
+}
+
+const addSlotPrice = () => {
+    currentSlotPrices.value.push({
+        start_time: '08:00',
+        end_time: '12:00',
+        price: currentSlotPackage.value?.price || 0
+    })
+}
+
+const removeSlotPrice = (index: number) => {
+    currentSlotPrices.value.splice(index, 1)
+}
+
+const saveSlotPrice = async () => {
+    // 验证时段
+    for (const slot of currentSlotPrices.value) {
+        if (!slot.start_time || !slot.end_time) {
+            feedback.msgError('请填写完整的时段信息')
+            return
+        }
+        if (slot.start_time >= slot.end_time) {
+            feedback.msgError('结束时间必须大于开始时间')
+            return
+        }
+        if (slot.price < 0) {
+            feedback.msgError('价格不能为负数')
+            return
+        }
+    }
+    
+    await packageUpdateSlotPrices({
+        id: currentSlotPackage.value.id,
+        slot_prices: currentSlotPrices.value
+    })
+    feedback.msgSuccess('保存成功')
+    showSlotPriceDialog.value = false
+    getLists()
+}
 
 const handleAddContent = () => {
     if (contentInputValue.value.trim()) {
@@ -272,6 +456,8 @@ const handleAdd = () => {
         id: '',
         name: '',
         category_id: '',
+        package_type: 1,
+        staff_id: 0,
         price: 0,
         original_price: 0,
         duration: 1,
@@ -289,6 +475,8 @@ const handleEdit = (row: any) => {
         id: row.id,
         name: row.name,
         category_id: row.category_id,
+        package_type: row.package_type || 1,
+        staff_id: row.staff_id || 0,
         price: row.price,
         original_price: row.original_price,
         duration: row.duration,
