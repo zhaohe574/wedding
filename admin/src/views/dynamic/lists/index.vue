@@ -28,6 +28,20 @@
                         <el-option label="官方" :value="3" />
                     </el-select>
                 </el-form-item>
+                <el-form-item class="w-[150px]" label="置顶">
+                    <el-select v-model="queryParams.is_top" placeholder="选择" clearable>
+                        <el-option label="全部" value="" />
+                        <el-option label="是" :value="1" />
+                        <el-option label="否" :value="0" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item class="w-[150px]" label="热门">
+                    <el-select v-model="queryParams.is_hot" placeholder="选择" clearable>
+                        <el-option label="全部" value="" />
+                        <el-option label="是" :value="1" />
+                        <el-option label="否" :value="0" />
+                    </el-select>
+                </el-form-item>
                 <el-form-item class="w-[200px]" label="内容">
                     <el-input
                         v-model="queryParams.content"
@@ -39,6 +53,12 @@
                 <el-form-item>
                     <el-button type="primary" @click="resetPage">查询</el-button>
                     <el-button @click="resetParams">重置</el-button>
+                    <el-button type="primary" @click="handleAdd">
+                        <template #icon>
+                            <icon name="el-icon-Plus" />
+                        </template>
+                        发布动态
+                    </el-button>
                 </el-form-item>
             </el-form>
         </el-card>
@@ -132,6 +152,13 @@
                         </el-tag>
                     </template>
                 </el-table-column>
+                <el-table-column label="评论状态" width="100">
+                    <template #default="{ row }">
+                        <el-tag :type="row.allow_comment === 1 ? 'success' : 'danger'" size="small">
+                            {{ row.allow_comment === 1 ? '允许评论' : '禁止评论' }}
+                        </el-tag>
+                    </template>
+                </el-table-column>
                 <el-table-column label="置顶/热门" width="100">
                     <template #default="{ row }">
                         <el-tag v-if="row.is_top" type="warning" size="small">置顶</el-tag>
@@ -142,6 +169,12 @@
                 <el-table-column label="发布时间" prop="create_time" width="170" />
                 <el-table-column label="操作" width="220" fixed="right">
                     <template #default="{ row }">
+                        <el-button 
+                            v-if="row.user_type === 3" 
+                            type="primary" 
+                            link 
+                            @click="handleEdit(row)"
+                        >编辑</el-button>
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
                         <el-button 
                             v-if="row.status === 0" 
@@ -182,6 +215,9 @@
                 <pagination v-model="pager" @change="getLists" />
             </div>
         </el-card>
+
+        <!-- 编辑弹窗 -->
+        <edit-popup ref="editRef" @success="handleSuccess" />
 
         <!-- 详情弹窗 -->
         <el-dialog v-model="detailVisible" title="动态详情" width="700px">
@@ -289,11 +325,16 @@ import {
 } from '@/api/dynamic'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
+import EditPopup from './edit.vue'
+
+const editRef = shallowRef<InstanceType<typeof EditPopup>>()
 
 const queryParams = reactive({
     dynamic_type: '',
     status: '',
     user_type: '',
+    is_top: '',
+    is_hot: '',
     content: ''
 })
 
@@ -389,6 +430,20 @@ const handleDelete = async (row: any) => {
     await feedback.confirm('确定要删除该动态吗？')
     await dynamicDelete({ id: row.id })
     feedback.msgSuccess('删除成功')
+    getLists()
+    getStatistics()
+}
+
+const handleAdd = () => {
+    editRef.value?.open('add')
+}
+
+const handleEdit = async (row: any) => {
+    editRef.value?.open('edit')
+    await editRef.value?.getDetail(row)
+}
+
+const handleSuccess = () => {
     getLists()
     getStatistics()
 }

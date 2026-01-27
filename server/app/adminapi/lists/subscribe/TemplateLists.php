@@ -45,6 +45,11 @@ class TemplateLists extends BaseAdminDataLists implements ListsSearchInterface
             ->toArray();
 
         foreach ($list as &$item) {
+            // PHP 8 类型转换
+            $item['create_time'] = (int)$item['create_time'];
+            $item['scene'] = (int)$item['scene'];
+            $item['status'] = (int)$item['status'];
+            
             $item['scene_desc'] = SubscribeMessageTemplate::getSceneDesc($item['scene']);
             $item['status_desc'] = $item['status'] == 1 ? '启用' : '禁用';
             $item['create_time'] = $item['create_time'] ? date('Y-m-d H:i:s', $item['create_time']) : '';

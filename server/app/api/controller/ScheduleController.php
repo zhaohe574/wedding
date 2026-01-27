@@ -126,10 +126,12 @@ class ScheduleController extends BaseApiController
     public function cancelWaitlist()
     {
         $params = (new ScheduleValidate())->post()->goCheck('cancelWaitlist');
-        $result = ScheduleLogic::cancelWaitlist($params['id'], $this->userId);
-        if ($result['success']) {
-            return $this->success($result['message']);
+        // 确保 id 是整数类型
+        $result = ScheduleLogic::cancelWaitlist((int)$params['id'], $this->userId);
+        // $result 是索引数组 [bool, string]
+        if ($result[0]) {
+            return $this->success($result[1]);
         }
-        return $this->fail($result['message']);
+        return $this->fail($result[1]);
     }
 }

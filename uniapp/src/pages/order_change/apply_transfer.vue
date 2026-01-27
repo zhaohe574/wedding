@@ -18,15 +18,22 @@
             <view class="section-title">转让订单</view>
             <view class="order-card">
                 <view class="text-sm text-gray-500">订单号: {{ orderInfo.order_sn }}</view>
-                <view class="flex items-center mt-2" v-if="orderInfo.items && orderInfo.items.length > 0">
-                    <image 
-                        :src="orderInfo.items[0].staff?.avatar || '/static/images/default-avatar.png'" 
+                <view
+                    class="flex items-center mt-2"
+                    v-if="orderInfo.items && orderInfo.items.length > 0"
+                >
+                    <image
+                        :src="
+                            orderInfo.items[0].staff?.avatar || '/static/images/default-avatar.png'
+                        "
                         class="w-12 h-12 rounded-lg mr-3"
                         mode="aspectFill"
                     />
                     <view class="flex-1">
                         <view class="text-sm font-medium">{{ orderInfo.items[0].staff_name }}</view>
-                        <view class="text-xs text-gray-400">{{ orderInfo.items[0].package_name }}</view>
+                        <view class="text-xs text-gray-400">{{
+                            orderInfo.items[0].package_name
+                        }}</view>
                     </view>
                     <view class="text-right">
                         <view class="text-primary font-bold">¥{{ orderInfo.pay_amount }}</view>
@@ -41,8 +48,8 @@
             <view class="section-title">接收方信息</view>
             <view class="form-item">
                 <text class="label required">接收方姓名</text>
-                <input 
-                    v-model="formData.to_user_name" 
+                <input
+                    v-model="formData.to_user_name"
                     class="input"
                     placeholder="请输入接收方姓名"
                     maxlength="20"
@@ -50,8 +57,8 @@
             </view>
             <view class="form-item">
                 <text class="label required">接收方手机号</text>
-                <input 
-                    v-model="formData.to_user_mobile" 
+                <input
+                    v-model="formData.to_user_mobile"
                     class="input"
                     type="number"
                     placeholder="请输入接收方手机号"
@@ -63,8 +70,8 @@
         <!-- 转让原因 -->
         <view class="bg-white mt-3 p-4">
             <view class="section-title">转让原因</view>
-            <textarea 
-                v-model="formData.reason" 
+            <textarea
+                v-model="formData.reason"
                 class="reason-input"
                 placeholder="请填写转让原因（选填）"
                 maxlength="200"
@@ -224,7 +231,7 @@ onLoad((options: any) => {
     padding: 24rpx 30rpx;
     background: #fffbe6;
     gap: 12rpx;
-    
+
     .tip-text {
         flex: 1;
         font-size: 24rpx;
@@ -253,20 +260,20 @@ onLoad((options: any) => {
     align-items: center;
     padding: 24rpx 0;
     border-bottom: 1rpx solid #f5f5f5;
-    
+
     .label {
         font-size: 28rpx;
         color: #333;
         width: 200rpx;
         flex-shrink: 0;
-        
+
         &.required::before {
             content: '*';
             color: #ff3b30;
             margin-right: 4rpx;
         }
     }
-    
+
     .input {
         flex: 1;
         font-size: 28rpx;
@@ -337,7 +344,7 @@ onLoad((options: any) => {
     right: 0;
     padding: 20rpx 30rpx;
     background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
 }
 
 .btn-submit {
@@ -349,7 +356,7 @@ onLoad((options: any) => {
     border-radius: 44rpx;
     font-size: 30rpx;
     border: none;
-    
+
     &[disabled] {
         opacity: 0.6;
     }

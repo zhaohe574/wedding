@@ -32,7 +32,7 @@ class ServiceLogic extends BaseLogic
             ->where('is_show', 1)
             ->where('pid', $pid)
             ->order('sort desc, id asc')
-            ->field('id, pid, name, icon, level')
+            ->field('id, pid, name, icon')
             ->select()
             ->toArray();
     }

@@ -13,7 +13,7 @@
                 :style="styles"
                 class="border border-dotted border-light flex w-full h-full flex-col items-center justify-center text-muted text-xs box-border rounded"
             >
-                <u-icon name="plus" :size="36" />
+                <tn-icon name="plus" :size="36" />
                 添加图片
             </div>
         </slot>

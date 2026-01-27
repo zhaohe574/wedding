@@ -1,10 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
+        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
         <!-- #endif -->
     </page-meta>
     <view
@@ -14,37 +11,37 @@
             <view class="text-2xl font-medium mb-[60rpx]">
                 {{ type == 'set' ? '设置登录密码' : '修改登录密码' }}
             </view>
-            <u-form borderBottom :label-width="150">
-                <u-form-item label="原密码" borderBottom v-if="type != 'set'">
-                    <u-input
-                        class="flex-1"
+            <view class="space-y-4">
+                <view class="border-b border-gray-200 pb-4" v-if="type != 'set'">
+                    <view class="text-sm text-gray-600 mb-2">原密码</view>
+                    <tn-input
                         type="password"
                         v-model="formData.old_password"
                         :border="false"
                         placeholder="请输入原来的密码"
                     />
-                </u-form-item>
-                <u-form-item label="新密码" borderBottom>
-                    <u-input
-                        class="flex-1"
+                </view>
+                <view class="border-b border-gray-200 pb-4">
+                    <view class="text-sm text-gray-600 mb-2">新密码</view>
+                    <tn-input
                         type="password"
                         v-model="formData.password"
                         placeholder="6-20位数字+字母或符号组合"
                         :border="false"
                     />
-                </u-form-item>
-                <u-form-item label="确认密码" borderBottom>
-                    <u-input
-                        class="flex-1"
+                </view>
+                <view class="border-b border-gray-200 pb-4">
+                    <view class="text-sm text-gray-600 mb-2">确认密码</view>
+                    <tn-input
                         type="password"
                         v-model="formData.password_confirm"
                         placeholder="再次输入新密码"
                         :border="false"
                     />
-                </u-form-item>
-            </u-form>
+                </view>
+            </view>
             <view class="mt-[100rpx]">
-                <u-button type="primary" shape="circle" @click="handleConfirm"> 确定 </u-button>
+                <tn-button type="primary" shape="round" @click="handleConfirm"> 确定 </tn-button>
             </view>
         </view>
     </view>

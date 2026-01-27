@@ -91,11 +91,15 @@ class PackageValidate extends BaseValidate
      */
     protected function checkPackage($value, $rule, $data)
     {
-        $package = ServicePackage::find($value);
-        if (!$package) {
-            return '套餐不存在';
+        try {
+            $package = ServicePackage::find($value);
+            if (!$package) {
+                return '套餐不存在';
+            }
+            return true;
+        } catch (\Exception $e) {
+            return '验证套餐失败: ' . $e->getMessage();
         }
-        return true;
     }
 
     /**

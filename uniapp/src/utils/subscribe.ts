@@ -1,20 +1,25 @@
 /**
  * 微信小程序订阅消息工具类
  */
-import { checkSceneSubscribe, recordSubscribe, batchRecordSubscribe, getSceneList } from '@/api/subscribe'
+import {
+    checkSceneSubscribe,
+    recordSubscribe,
+    batchRecordSubscribe,
+    getSceneList
+} from '@/api/subscribe'
 
 // 场景类型
-export type SubscribeScene = 
-    | 'order_create'      // 订单创建
-    | 'order_paid'        // 支付成功
-    | 'order_confirm'     // 订单确认
-    | 'order_complete'    // 服务完成
-    | 'schedule_remind'   // 档期提醒
-    | 'refund_result'     // 退款结果
-    | 'callback_remind'   // 回访提醒
-    | 'ticket_update'     // 工单更新
-    | 'change_result'     // 变更审核
-    | 'schedule_change'   // 档期变更
+export type SubscribeScene =
+    | 'order_create' // 订单创建
+    | 'order_paid' // 支付成功
+    | 'order_confirm' // 订单确认
+    | 'order_complete' // 服务完成
+    | 'schedule_remind' // 档期提醒
+    | 'refund_result' // 退款结果
+    | 'callback_remind' // 回访提醒
+    | 'ticket_update' // 工单更新
+    | 'change_result' // 变更审核
+    | 'schedule_change' // 档期变更
 
 interface SubscribeResult {
     success: boolean
@@ -36,7 +41,10 @@ interface SceneInfo {
  * @param scene 场景
  * @returns 订阅结果
  */
-export async function requestSubscribe(templateId: string, scene?: string): Promise<SubscribeResult> {
+export async function requestSubscribe(
+    templateId: string,
+    scene?: string
+): Promise<SubscribeResult> {
     // #ifdef MP-WEIXIN
     return new Promise((resolve) => {
         uni.requestSubscribeMessage({
@@ -44,7 +52,7 @@ export async function requestSubscribe(templateId: string, scene?: string): Prom
             success: async (res: any) => {
                 const result = res[templateId]
                 const accepted = result === 'accept'
-                
+
                 // 记录订阅结果到后端
                 try {
                     await recordSubscribe({
@@ -55,7 +63,7 @@ export async function requestSubscribe(templateId: string, scene?: string): Prom
                 } catch (e) {
                     console.error('记录订阅结果失败', e)
                 }
-                
+
                 resolve({
                     success: accepted,
                     templateId,
@@ -72,7 +80,7 @@ export async function requestSubscribe(templateId: string, scene?: string): Prom
         })
     })
     // #endif
-    
+
     // #ifndef MP-WEIXIN
     return { success: false, errMsg: '当前平台不支持订阅消息' }
     // #endif
@@ -84,18 +92,21 @@ export async function requestSubscribe(templateId: string, scene?: string): Prom
  * @param scene 场景
  * @returns 订阅结果
  */
-export async function requestMultiSubscribe(templateIds: string[], scene?: string): Promise<Record<string, SubscribeResult>> {
+export async function requestMultiSubscribe(
+    templateIds: string[],
+    scene?: string
+): Promise<Record<string, SubscribeResult>> {
     // #ifdef MP-WEIXIN
     return new Promise((resolve) => {
         // 微信最多支持3个模板
         const ids = templateIds.slice(0, 3)
-        
+
         uni.requestSubscribeMessage({
             tmplIds: ids,
             success: async (res: any) => {
                 const results: Record<string, SubscribeResult> = {}
                 const backendResults: Record<string, 'accept' | 'reject'> = {}
-                
+
                 ids.forEach((id) => {
                     const result = res[id]
                     const accepted = result === 'accept'
@@ -106,7 +117,7 @@ export async function requestMultiSubscribe(templateIds: string[], scene?: strin
                     }
                     backendResults[id] = accepted ? 'accept' : 'reject'
                 })
-                
+
                 // 批量记录订阅结果
                 try {
                     await batchRecordSubscribe({
@@ -116,7 +127,7 @@ export async function requestMultiSubscribe(templateIds: string[], scene?: strin
                 } catch (e) {
                     console.error('记录订阅结果失败', e)
                 }
-                
+
                 resolve(results)
             },
             fail: (err: any) => {
@@ -133,7 +144,7 @@ export async function requestMultiSubscribe(templateIds: string[], scene?: strin
         })
     })
     // #endif
-    
+
     // #ifndef MP-WEIXIN
     const results: Record<string, SubscribeResult> = {}
     templateIds.forEach((id) => {
@@ -152,7 +163,7 @@ export async function requestSubscribeByScene(scene: SubscribeScene): Promise<Su
     try {
         // 检查场景订阅状态
         const sceneInfo = await checkSceneSubscribe(scene)
-        
+
         if (!sceneInfo.need_subscribe) {
             // 已订阅或场景未配置
             return {
@@ -161,7 +172,7 @@ export async function requestSubscribeByScene(scene: SubscribeScene): Promise<Su
                 errMsg: ''
             }
         }
-        
+
         // 请求订阅授权
         return await requestSubscribe(sceneInfo.template_id, scene)
     } catch (e: any) {
@@ -193,23 +204,23 @@ export async function getAllScenes(): Promise<SceneInfo[]> {
 export async function subscribeOrderScenes(): Promise<boolean> {
     try {
         const scenes = await getAllScenes()
-        const orderScenes = scenes.filter(s => 
+        const orderScenes = scenes.filter((s) =>
             ['order_create', 'order_paid', 'schedule_remind'].includes(s.scene)
         )
-        
+
         if (orderScenes.length === 0) {
             return true
         }
-        
-        const templateIds = orderScenes.map(s => s.template_id).filter(Boolean)
+
+        const templateIds = orderScenes.map((s) => s.template_id).filter(Boolean)
         if (templateIds.length === 0) {
             return true
         }
-        
+
         const results = await requestMultiSubscribe(templateIds, 'order')
-        
+
         // 检查是否有成功的订阅
-        return Object.values(results).some(r => r.success)
+        return Object.values(results).some((r) => r.success)
     } catch (e) {
         console.error('订阅订单场景失败', e)
         return false
@@ -222,21 +233,21 @@ export async function subscribeOrderScenes(): Promise<boolean> {
 export async function subscribeAfterSaleScenes(): Promise<boolean> {
     try {
         const scenes = await getAllScenes()
-        const afterSaleScenes = scenes.filter(s => 
+        const afterSaleScenes = scenes.filter((s) =>
             ['ticket_update', 'refund_result', 'callback_remind'].includes(s.scene)
         )
-        
+
         if (afterSaleScenes.length === 0) {
             return true
         }
-        
-        const templateIds = afterSaleScenes.map(s => s.template_id).filter(Boolean)
+
+        const templateIds = afterSaleScenes.map((s) => s.template_id).filter(Boolean)
         if (templateIds.length === 0) {
             return true
         }
-        
+
         const results = await requestMultiSubscribe(templateIds, 'aftersale')
-        return Object.values(results).some(r => r.success)
+        return Object.values(results).some((r) => r.success)
     } catch (e) {
         console.error('订阅售后场景失败', e)
         return false

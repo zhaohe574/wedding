@@ -4,24 +4,14 @@
         <view class="dialog" @tap.stop>
             <view class="title">隐私政策提示</view>
             <view class="content">
-                欢迎使用{{
-                    appStore.getWebsiteConfig.shop_name
-                }}小程序，请您在使用前点击
-                <text
-                    class="text-[#243245]"
-                    hover-class="hover"
-                    @click="openContract"
-                >
+                欢迎使用{{ appStore.getWebsiteConfig.shop_name }}小程序，请您在使用前点击
+                <text class="text-[#243245]" hover-class="hover" @click="openContract">
                     {{ name }}
                 </text>
                 并仔细阅读，如您同意全部内容，请点击同意开始使用我们的服务。
             </view>
             <view class="btn-box">
-                <button
-                    class="btn disagree"
-                    hover-class="hover"
-                    @click="disagreePrivacy"
-                >
+                <button class="btn disagree" hover-class="hover" @click="disagreePrivacy">
                     不同意
                 </button>
                 <button

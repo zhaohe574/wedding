@@ -321,6 +321,78 @@ class DynamicLogic extends BaseLogic
     }
 
     /**
+     * @notes 管理员发布动态
+     * @param int $adminId
+     * @param array $params
+     * @return bool
+     */
+    public static function add(int $adminId, array $params): bool
+    {
+        try {
+            $data = [
+                'user_id' => $adminId,
+                'user_type' => Dynamic::USER_TYPE_OFFICIAL, // 官方发布
+                'dynamic_type' => $params['dynamic_type'] ?? Dynamic::TYPE_IMAGE_TEXT,
+                'title' => $params['title'] ?? '',
+                'content' => $params['content'],
+                'images' => $params['images'] ?? [],
+                'video_url' => $params['video'] ?? '',
+                'video_cover' => $params['video_cover'] ?? '',
+                'location' => $params['location'] ?? '',
+                'latitude' => $params['latitude'] ?? 0,
+                'longitude' => $params['longitude'] ?? 0,
+                'tags' => is_array($params['tags'] ?? '') ? implode(',', $params['tags']) : ($params['tags'] ?? ''),
+                'allow_comment' => $params['allow_comment'] ?? 1, // 默认允许评论
+                'status' => Dynamic::STATUS_PUBLISHED, // 管理员发布直接通过
+                'create_time' => time(),
+                'update_time' => time(),
+            ];
+
+            Dynamic::create($data);
+            return true;
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 管理员编辑动态
+     * @param int $dynamicId
+     * @param array $params
+     * @return bool
+     */
+    public static function edit(int $dynamicId, array $params): bool
+    {
+        try {
+            $dynamic = Dynamic::find($dynamicId);
+            if (!$dynamic) {
+                self::setError('动态不存在');
+                return false;
+            }
+
+            $dynamic->dynamic_type = $params['dynamic_type'] ?? $dynamic->dynamic_type;
+            $dynamic->title = $params['title'] ?? $dynamic->title;
+            $dynamic->content = $params['content'] ?? $dynamic->content;
+            $dynamic->images = $params['images'] ?? $dynamic->images;
+            $dynamic->video_url = $params['video'] ?? $dynamic->video_url;
+            $dynamic->video_cover = $params['video_cover'] ?? $dynamic->video_cover;
+            $dynamic->location = $params['location'] ?? $dynamic->location;
+            $dynamic->latitude = $params['latitude'] ?? $dynamic->latitude;
+            $dynamic->longitude = $params['longitude'] ?? $dynamic->longitude;
+            $dynamic->tags = is_array($params['tags'] ?? '') ? implode(',', $params['tags']) : ($params['tags'] ?? $dynamic->tags);
+            $dynamic->allow_comment = $params['allow_comment'] ?? $dynamic->allow_comment; // 更新评论开关
+            $dynamic->update_time = time();
+            $dynamic->save();
+
+            return true;
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * @notes 获取动态类型选项
      * @return array
      */

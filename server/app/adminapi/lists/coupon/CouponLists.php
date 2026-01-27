@@ -103,16 +103,36 @@ class CouponLists extends BaseAdminDataLists implements ListsSearchInterface, Li
             ->toArray();
 
         foreach ($lists as &$item) {
+            // PHP 8 类型转换：确保数值字段为正确类型
+            $item['coupon_type'] = (int)$item['coupon_type'];
+            $item['valid_type'] = (int)$item['valid_type'];
+            $item['use_scope'] = (int)$item['use_scope'];
+            $item['status'] = (int)$item['status'];
+            $item['valid_start_time'] = (int)$item['valid_start_time'];
+            $item['valid_end_time'] = (int)$item['valid_end_time'];
+            $item['valid_days'] = (int)$item['valid_days'];
+            $item['total_count'] = (int)$item['total_count'];
+            $item['receive_count'] = (int)$item['receive_count'];
+            $item['used_count'] = (int)$item['used_count'];
+            $item['threshold_amount'] = (float)$item['threshold_amount'];
+            $item['discount_amount'] = (float)$item['discount_amount'];
+            $item['max_discount'] = (float)$item['max_discount'];
+            
             $item['coupon_type_text'] = Coupon::getTypeDesc($item['coupon_type']);
             $item['valid_type_text'] = Coupon::getValidTypeDesc($item['valid_type']);
             $item['use_scope_text'] = Coupon::getScopeDesc($item['use_scope']);
             $item['status_text'] = Coupon::getStatusDesc($item['status']);
-            $item['create_time_text'] = date('Y-m-d H:i:s', $item['create_time']);
+            
+            // 创建时间处理：先转换为整数，再格式化
+            $createTime = (int)$item['create_time'];
+            $item['create_time_text'] = $createTime > 0 ? date('Y-m-d H:i:s', $createTime) : '';
 
             // 有效期显示
             if ($item['valid_type'] == Coupon::VALID_TYPE_FIXED) {
-                $start = $item['valid_start_time'] ? date('Y-m-d', $item['valid_start_time']) : '';
-                $end = $item['valid_end_time'] ? date('Y-m-d', $item['valid_end_time']) : '';
+                $validStartTime = (int)$item['valid_start_time'];
+                $validEndTime = (int)$item['valid_end_time'];
+                $start = $validStartTime > 0 ? date('Y-m-d', $validStartTime) : '';
+                $end = $validEndTime > 0 ? date('Y-m-d', $validEndTime) : '';
                 $item['valid_period'] = $start . ' 至 ' . $end;
             } else {
                 $item['valid_period'] = '领取后' . $item['valid_days'] . '天内有效';

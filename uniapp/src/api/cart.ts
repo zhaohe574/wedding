@@ -99,3 +99,13 @@ export function copyPlanByShareCode(params: any) {
 export function compareCartPlans(params: any) {
     return request.get({ url: '/cart/comparePlans', params })
 }
+
+// 生成方案分享码
+export function generatePlanShareCode(params: any) {
+    return request.post({ url: '/cart/generatePlanShareCode', params })
+}
+
+// 通过分享码获取方案
+export function getPlanByShareCode(params: any) {
+    return request.get({ url: '/cart/getPlanByShareCode', params })
+}

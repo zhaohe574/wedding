@@ -18,7 +18,11 @@
         <!-- 联系信息 -->
         <view class="bg-white mx-3 -mt-6 rounded-lg p-4 relative z-10">
             <view class="flex items-center">
-                <image src="/static/images/icon-location.png" class="w-5 h-5 mr-2" mode="aspectFit" />
+                <image
+                    src="/static/images/icon-location.png"
+                    class="w-5 h-5 mr-2"
+                    mode="aspectFit"
+                />
                 <view class="flex-1">
                     <view class="flex items-center">
                         <text class="font-medium">{{ order.contact_name }}</text>
@@ -34,13 +38,13 @@
         <!-- 服务信息 -->
         <view class="bg-white mx-3 mt-3 rounded-lg overflow-hidden">
             <view class="px-4 py-3 border-b border-gray-100 font-medium">服务项目</view>
-            <view 
-                v-for="item in order.items" 
+            <view
+                v-for="item in order.items"
                 :key="item.id"
                 class="flex items-center p-4 border-b border-gray-100 last:border-0"
             >
-                <image 
-                    :src="item.staff?.avatar || '/static/images/default-avatar.png'" 
+                <image
+                    :src="item.staff?.avatar || '/static/images/default-avatar.png'"
                     class="w-20 h-20 rounded-lg mr-3"
                     mode="aspectFill"
                 />
@@ -149,72 +153,77 @@
 
         <!-- 底部按钮 -->
         <view class="fixed-bottom bg-white px-4 py-3 flex justify-end gap-3">
-            <button 
-                v-if="order.order_status === 0"
-                class="btn-outline"
-                @click="handleCancel"
-            >取消订单</button>
-            <button 
-                v-if="order.order_status === 0"
-                class="btn-primary"
-                @click="handlePay"
-            >立即支付 ¥{{ needPayAmount }}</button>
-            <button 
-                v-if="order.order_status === 2"
-                class="btn-primary"
-                @click="handleConfirm"
-            >确认完成</button>
-            <button 
+            <button v-if="order.order_status === 0" class="btn-outline" @click="handleCancel">
+                取消订单
+            </button>
+            <button v-if="order.order_status === 0" class="btn-primary" @click="handlePay">
+                立即支付 ¥{{ needPayAmount }}
+            </button>
+            <button v-if="order.order_status === 2" class="btn-primary" @click="handleConfirm">
+                确认完成
+            </button>
+            <button
                 v-if="order.order_status === 1 && !order.refund"
                 class="btn-outline"
                 @click="showRefundPopup = true"
-            >申请退款</button>
-            <button 
+            >
+                申请退款
+            </button>
+            <button
                 v-if="[3, 4, 5].includes(order.order_status)"
                 class="btn-outline"
                 @click="handleDelete"
-            >删除订单</button>
+            >
+                删除订单
+            </button>
         </view>
 
         <!-- 退款弹窗 -->
-        <u-popup v-model="showRefundPopup" mode="bottom" border-radius="20">
+        <tn-popup v-model="showRefundPopup" mode="bottom" border-radius="20">
             <view class="p-4">
                 <view class="text-center font-medium text-lg mb-4">申请退款</view>
                 <view class="mb-4">
                     <view class="text-sm text-gray-500 mb-2">退款金额</view>
-                    <u-input 
-                        v-model="refundForm.amount" 
-                        type="number" 
+                    <tn-input
+                        v-model="refundForm.amount"
+                        type="number"
                         :placeholder="`最多可退 ¥${order.pay_amount}`"
                     />
                 </view>
                 <view class="mb-4">
                     <view class="text-sm text-gray-500 mb-2">退款原因</view>
-                    <u-input 
-                        v-model="refundForm.reason" 
-                        type="textarea" 
+                    <tn-input
+                        v-model="refundForm.reason"
+                        type="textarea"
                         placeholder="请输入退款原因"
                         :maxlength="200"
                     />
                 </view>
                 <view class="flex gap-3">
-                    <button class="btn-outline flex-1" @click="showRefundPopup = false">取消</button>
+                    <button class="btn-outline flex-1" @click="showRefundPopup = false">
+                        取消
+                    </button>
                     <button class="btn-primary flex-1" @click="submitRefund">提交申请</button>
                 </view>
             </view>
-        </u-popup>
+        </tn-popup>
 
         <view class="h-20"></view>
     </view>
-    <view v-else class="py-20 text-center text-gray-400">
-        加载中...
-    </view>
+    <view v-else class="py-20 text-center text-gray-400"> 加载中... </view>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getOrderDetail, cancelOrder, confirmOrder, deleteOrder, applyRefund, orderPay } from '@/api/order'
+import {
+    getOrderDetail,
+    cancelOrder,
+    confirmOrder,
+    deleteOrder,
+    applyRefund,
+    orderPay
+} from '@/api/order'
 
 const orderId = ref(0)
 const order = ref<any>(null)
@@ -276,7 +285,7 @@ const copyOrderSn = () => {
 
 const handlePay = async () => {
     try {
-        const payType = !order.value.deposit_paid ? 1 : (!order.value.balance_paid ? 2 : 3)
+        const payType = !order.value.deposit_paid ? 1 : !order.value.balance_paid ? 2 : 3
         const res = await orderPay({ id: orderId.value, pay_way: 1, pay_type: payType })
         // 调用微信支付
         // @ts-ignore
@@ -388,12 +397,24 @@ onLoad((options: any) => {
     padding: 60rpx 30rpx 80rpx;
     color: #fff;
 
-    &.bg-orange { background: linear-gradient(135deg, #ff9a56 0%, #ff6b35 100%); }
-    &.bg-blue { background: linear-gradient(135deg, #56a4ff 0%, #3574ff 100%); }
-    &.bg-purple { background: linear-gradient(135deg, #a56bff 0%, #7c4dff 100%); }
-    &.bg-green { background: linear-gradient(135deg, #56c596 0%, #34a853 100%); }
-    &.bg-gray { background: linear-gradient(135deg, #999 0%, #666 100%); }
-    &.bg-red { background: linear-gradient(135deg, #ff6b6b 0%, #ee4d4d 100%); }
+    &.bg-orange {
+        background: linear-gradient(135deg, #ff9a56 0%, #ff6b35 100%);
+    }
+    &.bg-blue {
+        background: linear-gradient(135deg, #56a4ff 0%, #3574ff 100%);
+    }
+    &.bg-purple {
+        background: linear-gradient(135deg, #a56bff 0%, #7c4dff 100%);
+    }
+    &.bg-green {
+        background: linear-gradient(135deg, #56c596 0%, #34a853 100%);
+    }
+    &.bg-gray {
+        background: linear-gradient(135deg, #999 0%, #666 100%);
+    }
+    &.bg-red {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee4d4d 100%);
+    }
 }
 
 .info-item {

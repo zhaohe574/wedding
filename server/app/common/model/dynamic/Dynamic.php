@@ -143,6 +143,17 @@ class Dynamic extends BaseModel
     }
 
     /**
+     * @notes 评论开关描述获取器
+     * @param $value
+     * @param $data
+     * @return string
+     */
+    public function getAllowCommentDescAttr($value, $data): string
+    {
+        return ($data['allow_comment'] ?? 1) == 1 ? '允许' : '禁止';
+    }
+
+    /**
      * @notes 发布动态
      * @param int $userId
      * @param int $userType
@@ -166,6 +177,7 @@ class Dynamic extends BaseModel
                 'latitude' => $data['latitude'] ?? 0,
                 'longitude' => $data['longitude'] ?? 0,
                 'tags' => is_array($data['tags'] ?? '') ? implode(',', $data['tags']) : ($data['tags'] ?? ''),
+                'allow_comment' => $data['allow_comment'] ?? 1, // 默认允许评论
                 'order_id' => $data['order_id'] ?? 0,
                 'status' => self::STATUS_PENDING, // 需审核
                 'create_time' => time(),
@@ -258,9 +270,32 @@ class Dynamic extends BaseModel
 
         $list = $query->with(['user' => function ($q) {
                 $q->field('id, nickname, avatar');
+            }, 'staff' => function ($q) {
+                $q->field('id, name, avatar');
             }])
-            ->paginate($params['page_size'] ?? 10)
+            ->paginate((int)($params['page_size'] ?? 10))
             ->toArray();
+
+        // 处理用户信息显示
+        foreach ($list['data'] as &$item) {
+            if ($item['user_type'] == self::USER_TYPE_OFFICIAL) {
+                // 官方动态
+                $item['user'] = [
+                    'id' => 0,
+                    'nickname' => '官方',
+                    'avatar' => $item['user']['avatar'] ?? ''
+                ];
+            } elseif ($item['user_type'] == self::USER_TYPE_STAFF && !empty($item['staff'])) {
+                // 工作人员动态
+                $item['user'] = [
+                    'id' => $item['staff']['id'],
+                    'nickname' => $item['staff']['name'],
+                    'avatar' => $item['staff']['avatar']
+                ];
+            }
+            // 移除 staff 字段，避免冗余
+            unset($item['staff']);
+        }
 
         // 添加是否点赞、收藏信息
         if ($userId > 0 && !empty($list['data'])) {

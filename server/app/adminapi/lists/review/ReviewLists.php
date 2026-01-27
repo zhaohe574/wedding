@@ -120,6 +120,12 @@ class ReviewLists extends BaseAdminDataLists implements ListsSearchInterface, Li
             ->toArray();
 
         foreach ($lists as &$item) {
+            // PHP 8 类型转换
+            $item['create_time'] = (int)$item['create_time'];
+            $item['status'] = (int)$item['status'];
+            $item['score'] = (int)$item['score'];
+            $item['review_type'] = (int)$item['review_type'];
+            
             $item['status_text'] = Review::getStatusDesc($item['status']);
             $item['review_type_text'] = Review::getTypeDesc($item['review_type']);
             $item['score_level'] = Review::getScoreLevel($item['score']);

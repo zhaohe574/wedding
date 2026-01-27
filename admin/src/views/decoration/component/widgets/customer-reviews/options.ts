@@ -1,6 +1,7 @@
 export default () => ({
     title: '客户评价',
     name: 'customer-reviews',
+    pageScope: ['home'], // 仅在首页显示
     content: {
         enabled: 1,
         title: '客户好评',

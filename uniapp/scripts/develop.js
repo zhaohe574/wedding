@@ -47,9 +47,7 @@ class DevelopClientScript {
         return new Promise((resolve, reject) => {
             const isWindows = process.platform === 'win32'
             const command = isWindows ? 'cmd.exe' : 'npm'
-            const args = isWindows
-                ? ['/c', 'npm', 'run', scriptName]
-                : ['run', scriptName]
+            const args = isWindows ? ['/c', 'npm', 'run', scriptName] : ['run', scriptName]
 
             const runProcess = spawn(command, args)
 
@@ -63,11 +61,7 @@ class DevelopClientScript {
 
             runProcess.on('close', (code) => {
                 if (code !== 0) {
-                    reject(
-                        new Error(
-                            `运行错误，请查看以下报错信息寻找解决方法: ${error.message}`
-                        )
-                    )
+                    reject(new Error(`运行错误，请查看以下报错信息寻找解决方法: ${error.message}`))
                 } else {
                     resolve()
                 }

@@ -9,6 +9,7 @@ namespace app\adminapi\lists\dynamic;
 
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsExcelInterface;
+use app\common\lists\ListsSearchInterface;
 use app\common\model\dynamic\Dynamic;
 
 /**
@@ -16,7 +17,7 @@ use app\common\model\dynamic\Dynamic;
  * Class DynamicLists
  * @package app\adminapi\lists\dynamic
  */
-class DynamicLists extends BaseAdminDataLists implements ListsExcelInterface
+class DynamicLists extends BaseAdminDataLists implements ListsExcelInterface, ListsSearchInterface
 {
     /**
      * @notes 搜索条件
@@ -51,8 +52,13 @@ class DynamicLists extends BaseAdminDataLists implements ListsExcelInterface
             // 获取发布者信息
             $item['publisher'] = $this->getPublisher($item['user_type'], $item['user_id']);
             
-            // 图片处理
-            $item['images'] = $item['images'] ? json_decode($item['images'], true) : [];
+            // 图片处理 - 模型已经通过getImagesAttr自动转换为数组
+            if (!is_array($item['images'])) {
+                $item['images'] = $item['images'] ? json_decode($item['images'], true) : [];
+            }
+            
+            // 确保 allow_comment 字段存在且有默认值
+            $item['allow_comment'] = $item['allow_comment'] ?? 1;
         }
 
         return $lists;

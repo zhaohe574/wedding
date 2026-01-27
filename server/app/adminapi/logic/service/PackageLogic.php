@@ -26,15 +26,62 @@ class PackageLogic extends BaseLogic
      */
     public static function detail(int $id): array
     {
-        $package = ServicePackage::with(['category', 'staff'])->find($id);
-        if (!$package) {
+        try {
+            $package = ServicePackage::find($id);
+            if (!$package) {
+                return [];
+            }
+            
+            $data = $package->toArray();
+            
+            // 手动获取分类信息（避免关联查询失败）
+            if (!empty($data['category_id'])) {
+                try {
+                    $category = ServiceCategory::find($data['category_id']);
+                    if ($category) {
+                        $data['category'] = $category->toArray();
+                        $data['category_name'] = $category->name;
+                    }
+                } catch (\Exception $e) {
+                    // 忽略分类查询错误
+                    $data['category_name'] = '';
+                }
+            }
+            
+            // 手动获取员工信息（避免关联查询失败，兼容旧表结构）
+            if (isset($data['staff_id']) && !empty($data['staff_id'])) {
+                try {
+                    $staff = Staff::find($data['staff_id']);
+                    if ($staff) {
+                        $data['staff'] = $staff->toArray();
+                        $data['staff_name'] = $staff->name;
+                    }
+                } catch (\Exception $e) {
+                    // 忽略员工查询错误
+                    $data['staff_name'] = '';
+                }
+            } else {
+                $data['staff_name'] = '';
+            }
+            
+            // 添加描述字段（兼容旧表结构）
+            if (isset($data['package_type'])) {
+                $typeMap = [
+                    ServicePackage::TYPE_GLOBAL => '全局套餐',
+                    ServicePackage::TYPE_STAFF_ONLY => '人员专属',
+                ];
+                $data['package_type_desc'] = $typeMap[$data['package_type']] ?? '全局套餐';
+            } else {
+                $data['package_type_desc'] = '全局套餐';
+            }
+            
+            return $data;
+        } catch (\Exception $e) {
+            // 记录错误日志并返回空数组
+            trace('获取套餐详情失败: ' . $e->getMessage() . ' - File: ' . $e->getFile() . ' Line: ' . $e->getLine(), 'error');
+            // 不要抛出异常，返回空数组让控制器处理
             return [];
         }
-        $data = $package->toArray();
-        // 添加额外的描述字段
-        $data['package_type_desc'] = $package->package_type_desc;
-        $data['staff_name'] = $package->staff_name;
-        return $data;
     }
 
     /**
@@ -380,6 +427,48 @@ class PackageLogic extends BaseLogic
         } catch (\Exception $e) {
             self::setError($e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * @notes 批量获取套餐信息（用于装修组件）
+     * @param array $ids 套餐ID列表
+     * @param array $fields 需要的字段（可选）
+     * @return array 套餐数据列表，以ID为键的关联数组
+     */
+    public static function batchGetByIds(array $ids, array $fields = []): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        // 默认字段
+        $defaultFields = [
+            'id', 'name', 'image', 'description as desc',
+            'price', 'original_price', 'content', 'status'
+        ];
+
+        $fields = empty($fields) ? $defaultFields : $fields;
+
+        try {
+            $packageList = ServicePackage::whereIn('id', $ids)
+                ->where('delete_time', null)
+                ->where('is_show', 1)
+                ->field($fields)
+                ->select()
+                ->toArray();
+
+            // 转换为以 ID 为键的映射，方便查找
+            $result = [];
+            foreach ($packageList as $package) {
+                $result[$package['id']] = $package;
+            }
+
+            return $result;
+        } catch (\Exception $e) {
+            // 记录错误日志，返回空数组
+            trace('批量查询套餐数据失败: ' . $e->getMessage(), 'error');
+            return [];
         }
     }
 }

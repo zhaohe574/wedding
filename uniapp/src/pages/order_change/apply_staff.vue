@@ -22,8 +22,8 @@
         <view class="bg-white mt-3 p-4" v-if="currentItem">
             <view class="section-title">当前服务人员</view>
             <view class="staff-card current">
-                <image 
-                    :src="currentItem.staff?.avatar || '/static/images/default-avatar.png'" 
+                <image
+                    :src="currentItem.staff?.avatar || '/static/images/default-avatar.png'"
                     class="staff-avatar"
                     mode="aspectFill"
                 />
@@ -47,11 +47,11 @@
                     <uni-icons type="right" size="16" color="#999"></uni-icons>
                 </view>
             </view>
-            
+
             <!-- 新人员信息展示 -->
             <view v-if="selectedStaff" class="staff-card new mt-3">
-                <image 
-                    :src="selectedStaff.avatar || '/static/images/default-avatar.png'" 
+                <image
+                    :src="selectedStaff.avatar || '/static/images/default-avatar.png'"
                     class="staff-avatar"
                     mode="aspectFill"
                 />
@@ -60,7 +60,9 @@
                     <view class="staff-level">{{ selectedStaff.level_name || '普通级别' }}</view>
                     <view class="flex items-center mt-1">
                         <uni-icons type="star-filled" size="14" color="#ffc107"></uni-icons>
-                        <text class="text-xs text-yellow-500 ml-1">{{ selectedStaff.score || '5.0' }}</text>
+                        <text class="text-xs text-yellow-500 ml-1">{{
+                            selectedStaff.score || '5.0'
+                        }}</text>
                     </view>
                 </view>
                 <view class="new-tag">新</view>
@@ -70,7 +72,9 @@
             <view class="form-item mt-3" @click="showPackagePicker = true" v-if="selectedStaff">
                 <text class="label">服务套餐</text>
                 <view class="value-area">
-                    <text v-if="selectedPackage" class="text-primary">{{ selectedPackage.name }}</text>
+                    <text v-if="selectedPackage" class="text-primary">{{
+                        selectedPackage.name
+                    }}</text>
                     <text v-else class="placeholder">请选择套餐</text>
                     <uni-icons type="right" size="16" color="#999"></uni-icons>
                 </view>
@@ -89,7 +93,10 @@
                     <text class="text-sm text-gray-500">新服务价格</text>
                     <text class="text-sm">¥{{ newPrice }}</text>
                 </view>
-                <view class="price-row diff" :class="{ positive: priceDiff > 0, negative: priceDiff < 0 }">
+                <view
+                    class="price-row diff"
+                    :class="{ positive: priceDiff > 0, negative: priceDiff < 0 }"
+                >
                     <text class="text-sm font-medium">价格差额</text>
                     <text class="text-lg font-bold">
                         {{ priceDiff > 0 ? '+' : '' }}¥{{ priceDiff }}
@@ -102,15 +109,17 @@
             </view>
             <view class="tip-box success mt-3" v-else-if="priceDiff < 0">
                 <uni-icons type="info" size="14" color="#4caf50"></uni-icons>
-                <text class="text-xs text-green-500 ml-1">换人后可退差价 ¥{{ Math.abs(priceDiff) }}</text>
+                <text class="text-xs text-green-500 ml-1"
+                    >换人后可退差价 ¥{{ Math.abs(priceDiff) }}</text
+                >
             </view>
         </view>
 
         <!-- 申请原因 -->
         <view class="bg-white mt-3 p-4">
             <view class="section-title">申请原因</view>
-            <textarea 
-                v-model="formData.reason" 
+            <textarea
+                v-model="formData.reason"
                 class="reason-input"
                 placeholder="请填写换人原因（选填）"
                 maxlength="200"
@@ -122,8 +131,8 @@
         <view class="bg-white mt-3 p-4">
             <view class="section-title">附件图片（选填）</view>
             <view class="image-uploader">
-                <view 
-                    v-for="(img, index) in formData.attach_images" 
+                <view
+                    v-for="(img, index) in formData.attach_images"
                     :key="index"
                     class="image-item"
                 >
@@ -132,7 +141,11 @@
                         <uni-icons type="close" size="14" color="#fff"></uni-icons>
                     </view>
                 </view>
-                <view class="add-image" @click="chooseImage" v-if="formData.attach_images.length < 5">
+                <view
+                    class="add-image"
+                    @click="chooseImage"
+                    v-if="formData.attach_images.length < 5"
+                >
                     <uni-icons type="plusempty" size="40" color="#ccc"></uni-icons>
                     <text class="text-xs text-gray-400 mt-1">上传图片</text>
                 </view>
@@ -156,15 +169,15 @@
                     <text class="placeholder-btn"></text>
                 </view>
                 <scroll-view class="picker-list" scroll-y>
-                    <view 
-                        v-for="item in availableStaffList" 
+                    <view
+                        v-for="item in availableStaffList"
                         :key="item.id"
                         class="picker-item-card"
                         :class="{ active: selectedStaff?.id === item.id }"
                         @click="selectStaff(item)"
                     >
-                        <image 
-                            :src="item.avatar || '/static/images/default-avatar.png'" 
+                        <image
+                            :src="item.avatar || '/static/images/default-avatar.png'"
                             class="item-avatar"
                             mode="aspectFill"
                         />
@@ -173,13 +186,15 @@
                             <view class="item-desc">{{ item.level_name || '普通级别' }}</view>
                             <view class="flex items-center mt-1">
                                 <uni-icons type="star-filled" size="12" color="#ffc107"></uni-icons>
-                                <text class="text-xs text-yellow-500 ml-1">{{ item.score || '5.0' }}</text>
+                                <text class="text-xs text-yellow-500 ml-1">{{
+                                    item.score || '5.0'
+                                }}</text>
                             </view>
                         </view>
-                        <uni-icons 
-                            v-if="selectedStaff?.id === item.id" 
-                            type="checkmarkempty" 
-                            size="20" 
+                        <uni-icons
+                            v-if="selectedStaff?.id === item.id"
+                            type="checkmarkempty"
+                            size="20"
                             color="#ff6b35"
                         ></uni-icons>
                     </view>
@@ -199,8 +214,8 @@
                     <text class="placeholder-btn"></text>
                 </view>
                 <scroll-view class="picker-list" scroll-y>
-                    <view 
-                        v-for="item in staffPackageList" 
+                    <view
+                        v-for="item in staffPackageList"
                         :key="item.id"
                         class="picker-item-card"
                         :class="{ active: selectedPackage?.id === item.id }"
@@ -211,10 +226,10 @@
                             <view class="item-desc">{{ item.description }}</view>
                             <view class="item-price">¥{{ item.price }}</view>
                         </view>
-                        <uni-icons 
-                            v-if="selectedPackage?.id === item.id" 
-                            type="checkmarkempty" 
-                            size="20" 
+                        <uni-icons
+                            v-if="selectedPackage?.id === item.id"
+                            type="checkmarkempty"
+                            size="20"
                             color="#ff6b35"
                         ></uni-icons>
                     </view>
@@ -264,7 +279,7 @@ const packagePopup = ref()
 // 过滤掉当前人员的列表
 const availableStaffList = computed(() => {
     if (!currentItem.value) return staffList.value
-    return staffList.value.filter(s => s.id !== currentItem.value.staff_id)
+    return staffList.value.filter((s) => s.id !== currentItem.value.staff_id)
 })
 
 // 计算新价格
@@ -404,12 +419,18 @@ const handleSubmit = async () => {
 }
 
 // 监听弹窗显示
-watch(() => showStaffPicker.value, (val) => {
-    if (val) staffPopup.value?.open()
-})
-watch(() => showPackagePicker.value, (val) => {
-    if (val) packagePopup.value?.open()
-})
+watch(
+    () => showStaffPicker.value,
+    (val) => {
+        if (val) staffPopup.value?.open()
+    }
+)
+watch(
+    () => showPackagePicker.value,
+    (val) => {
+        if (val) packagePopup.value?.open()
+    }
+)
 
 onLoad((options: any) => {
     if (options.order_id) {
@@ -453,11 +474,11 @@ onLoad((options: any) => {
     background: #f9f9f9;
     border-radius: 12rpx;
     position: relative;
-    
+
     &.current {
         border: 2rpx solid #e0e0e0;
     }
-    
+
     &.new {
         border: 2rpx solid var(--primary-color, #ff6b35);
         background: rgba(255, 107, 53, 0.05);
@@ -521,18 +542,18 @@ onLoad((options: any) => {
     align-items: center;
     padding: 24rpx 0;
     border-bottom: 1rpx solid #f5f5f5;
-    
+
     .label {
         font-size: 28rpx;
         color: #333;
     }
-    
+
     .value-area {
         display: flex;
         align-items: center;
         gap: 8rpx;
     }
-    
+
     .placeholder {
         color: #ccc;
         font-size: 28rpx;
@@ -550,16 +571,16 @@ onLoad((options: any) => {
     justify-content: space-between;
     align-items: center;
     padding: 12rpx 0;
-    
+
     &.diff {
         border-top: 1rpx dashed #e0e0e0;
         margin-top: 12rpx;
         padding-top: 20rpx;
-        
+
         &.positive text:last-child {
             color: #f44336;
         }
-        
+
         &.negative text:last-child {
             color: #4caf50;
         }
@@ -572,7 +593,7 @@ onLoad((options: any) => {
     padding: 16rpx 20rpx;
     background: #fff7e6;
     border-radius: 8rpx;
-    
+
     &.success {
         background: #e8f5e9;
     }
@@ -611,7 +632,7 @@ onLoad((options: any) => {
     right: -10rpx;
     width: 36rpx;
     height: 36rpx;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -636,7 +657,7 @@ onLoad((options: any) => {
     right: 0;
     padding: 20rpx 30rpx;
     background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
 }
 
 .btn-submit {
@@ -648,7 +669,7 @@ onLoad((options: any) => {
     border-radius: 44rpx;
     font-size: 30rpx;
     border: none;
-    
+
     &[disabled] {
         opacity: 0.6;
     }
@@ -665,10 +686,18 @@ onLoad((options: any) => {
     align-items: center;
     padding: 30rpx;
     border-bottom: 1rpx solid #f5f5f5;
-    
-    .cancel { color: #999; font-size: 28rpx; }
-    .title { font-size: 30rpx; font-weight: bold; }
-    .placeholder-btn { width: 60rpx; }
+
+    .cancel {
+        color: #999;
+        font-size: 28rpx;
+    }
+    .title {
+        font-size: 30rpx;
+        font-weight: bold;
+    }
+    .placeholder-btn {
+        width: 60rpx;
+    }
 }
 
 .picker-list {
@@ -684,7 +713,7 @@ onLoad((options: any) => {
     background: #f9f9f9;
     border-radius: 12rpx;
     border: 2rpx solid transparent;
-    
+
     &.active {
         border-color: var(--primary-color, #ff6b35);
         background: rgba(255, 107, 53, 0.05);

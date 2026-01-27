@@ -4,10 +4,12 @@
             <!-- 工单状态 -->
             <view class="status-section">
                 <view class="status-icon" :class="getStatusClass(detail.status)">
-                    <u-icon :name="getStatusIcon(detail.status)" size="60" color="#fff"></u-icon>
+                    <tn-icon :name="getStatusIcon(detail.status)" size="60" color="#fff"></tn-icon>
                 </view>
                 <view class="status-info">
-                    <text class="status-text">{{ detail.status_desc || getStatusText(detail.status) }}</text>
+                    <text class="status-text">{{
+                        detail.status_desc || getStatusText(detail.status)
+                    }}</text>
                     <text class="status-time">{{ detail.update_time || detail.create_time }}</text>
                 </view>
             </view>
@@ -20,7 +22,9 @@
                 </view>
                 <view class="info-item">
                     <text class="info-label">工单类型</text>
-                    <text class="info-value">{{ detail.type_desc || getTypeText(detail.type) }}</text>
+                    <text class="info-value">{{
+                        detail.type_desc || getTypeText(detail.type)
+                    }}</text>
                 </view>
                 <view class="info-item">
                     <text class="info-label">创建时间</text>
@@ -34,10 +38,10 @@
                 <view class="content-title">{{ detail.title }}</view>
                 <view class="content-text" v-if="detail.content">{{ detail.content }}</view>
                 <view class="content-images" v-if="detail.images && detail.images.length">
-                    <image 
-                        v-for="(img, index) in detail.images" 
-                        :key="index" 
-                        :src="img" 
+                    <image
+                        v-for="(img, index) in detail.images"
+                        :key="index"
+                        :src="img"
                         mode="aspectFill"
                         @click="previewImage(detail.images, index)"
                     ></image>
@@ -68,15 +72,15 @@
         <!-- 操作按钮 -->
         <view class="action-bar" v-if="detail">
             <template v-if="detail.status === 0">
-                <u-button type="default" @click="handleCancel">取消工单</u-button>
+                <tn-button type="default" @click="handleCancel">取消工单</tn-button>
             </template>
             <template v-else-if="detail.status === 1">
-                <u-button type="primary" @click="showConfirmPopup = true">确认完成</u-button>
+                <tn-button type="primary" @click="showConfirmPopup = true">确认完成</tn-button>
             </template>
         </view>
 
         <!-- 确认完成弹窗 -->
-        <u-popup v-model="showConfirmPopup" mode="bottom" :border-radius="24">
+        <tn-popup v-model="showConfirmPopup" mode="bottom" :border-radius="24">
             <view class="confirm-popup">
                 <view class="popup-header">
                     <text class="popup-title">确认完成</text>
@@ -90,19 +94,19 @@
                     </view>
                     <view class="form-item">
                         <text class="form-label">备注</text>
-                        <textarea 
-                            class="form-textarea" 
-                            v-model="confirmForm.remark" 
+                        <textarea
+                            class="form-textarea"
+                            v-model="confirmForm.remark"
                             placeholder="请输入备注（选填）"
                         ></textarea>
                     </view>
                 </view>
                 <view class="popup-footer">
-                    <u-button type="default" @click="showConfirmPopup = false">取消</u-button>
-                    <u-button type="primary" @click="handleConfirm">确认</u-button>
+                    <tn-button type="default" @click="showConfirmPopup = false">取消</tn-button>
+                    <tn-button type="primary" @click="handleConfirm">确认</tn-button>
                 </view>
             </view>
-        </u-popup>
+        </tn-popup>
     </view>
 </template>
 
@@ -246,11 +250,19 @@ onLoad((options: any) => {
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.2);
-    
-    &.status-pending { background: rgba(250, 173, 20, 0.3); }
-    &.status-processing { background: rgba(24, 144, 255, 0.3); }
-    &.status-completed { background: rgba(82, 196, 26, 0.3); }
-    &.status-closed { background: rgba(153, 153, 153, 0.3); }
+
+    &.status-pending {
+        background: rgba(250, 173, 20, 0.3);
+    }
+    &.status-processing {
+        background: rgba(24, 144, 255, 0.3);
+    }
+    &.status-completed {
+        background: rgba(82, 196, 26, 0.3);
+    }
+    &.status-closed {
+        background: rgba(153, 153, 153, 0.3);
+    }
 }
 
 .status-info {
@@ -293,7 +305,9 @@ onLoad((options: any) => {
     color: #333;
 }
 
-.content-section, .progress-section, .result-section {
+.content-section,
+.progress-section,
+.result-section {
     padding: 30rpx;
     border-bottom: 1rpx solid #f5f5f5;
 }
@@ -323,7 +337,7 @@ onLoad((options: any) => {
     flex-wrap: wrap;
     gap: 16rpx;
     margin-top: 20rpx;
-    
+
     image {
         width: 200rpx;
         height: 200rpx;
@@ -339,7 +353,7 @@ onLoad((options: any) => {
     display: flex;
     position: relative;
     padding-bottom: 30rpx;
-    
+
     &:not(:last-child)::before {
         content: '';
         position: absolute;
@@ -358,7 +372,7 @@ onLoad((options: any) => {
     background: #eee;
     margin-right: 20rpx;
     margin-top: 8rpx;
-    
+
     &.active {
         background: #ff758c;
     }

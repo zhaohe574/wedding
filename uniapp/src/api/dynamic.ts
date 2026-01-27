@@ -47,7 +47,7 @@ export function deleteComment(params: any) {
 
 // 评论点赞
 export function likeComment(params: any) {
-    return request.post({ url: '/dynamic/likeComment', params })
+    return request.post({ url: '/dynamic/likeComment', params: { comment_id: params.id } })
 }
 
 // 获取我的动态

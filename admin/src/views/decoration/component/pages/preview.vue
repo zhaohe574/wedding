@@ -1,7 +1,7 @@
 <template>
     <div class="pages-preview-wrapper">
         <!-- 顶部操作按钮 -->
-        <div class="flex justify-center gap-2 py-3">
+        <div class="flex justify-center gap-2">
             <el-button v-if="pageMeta !== null" @click="handleClickPageMeta">页面设置</el-button>
             <el-button type="primary" @click="showWidgetSelector = true">添加组件</el-button>
         </div>
@@ -92,9 +92,9 @@
 
     <!-- 组件选择器弹窗 -->
     <el-dialog v-model="showWidgetSelector" title="添加组件" width="600px">
-        <div class="grid grid-cols-3 gap-4">
+        <div v-if="filteredAvailableWidgets.length > 0" class="grid grid-cols-3 gap-4">
             <div
-                v-for="item in availableWidgets"
+                v-for="item in filteredAvailableWidgets"
                 :key="item.name"
                 class="p-4 border rounded-lg cursor-pointer hover:border-primary hover:bg-blue-50 transition-colors"
                 :class="{ 'border-primary bg-blue-50': isWidgetAdded(item.name), 'opacity-50': isWidgetAdded(item.name) }"
@@ -111,6 +111,9 @@
                 </div>
             </div>
         </div>
+        <div v-else class="text-center py-8 text-gray-400">
+            暂无可添加的组件
+        </div>
         <template #footer>
             <el-button @click="showWidgetSelector = false">关闭</el-button>
         </template>
@@ -125,6 +128,16 @@ import { computed } from 'vue'
 import { getNonDuplicateID } from '@/utils/util'
 import widgets from '../widgets'
 
+// 页面类型定义
+type PageType = 'home' | 'user' | 'service'
+
+// 页面类型映射
+const pageTypeMap: Record<string, PageType> = {
+    '1': 'home',    // 首页
+    '2': 'user',    // 个人中心
+    '3': 'service'  // 客服设置
+}
+
 // 可用的组件列表
 const availableWidgets = [
     { name: 'search', title: '搜索框', icon: 'Search' },
@@ -138,6 +151,16 @@ const availableWidgets = [
     { name: 'activity-zone', title: '活动专区', icon: Ticket },
     { name: 'order-quick-entry', title: '订单快捷入口', icon: Document },
     { name: 'news', title: '最新资讯', icon: Document },
+
+    { name: 'quick-entry', title: '快捷入口', icon: Document },
+    { name: 'coupon-receive', title: '优惠券领取', icon: Ticket },
+    { name: 'data-stats', title: '数据统计', icon: Document },
+    { name: 'faq', title: '常见问题', icon: Document },
+    { name: 'service-process', title: '服务流程', icon: Document },
+    { name: 'notice-bar', title: '公告通知', icon: Document },
+    { name: 'hot-topics', title: '热门话题', icon: Document },
+    { name: 'store-map', title: '门店地图', icon: Document },
+    { name: 'wedding-countdown', title: '婚礼倒计时', icon: Calendar },
 ]
 
 const showWidgetSelector = ref(false)
@@ -154,6 +177,10 @@ const props = defineProps({
     modelValue: {
         type: Number,
         default: 0
+    },
+    activeMenu: {
+        type: String,
+        default: '1'
     }
 })
 
@@ -163,6 +190,37 @@ const emit = defineEmits<{
 }>()
 
 const oldModelValue = ref<number>(-1)
+
+// 获取当前页面类型
+const currentPageType = computed<PageType>(() => {
+    const pageType = pageTypeMap[props.activeMenu]
+    
+    if (!pageType) {
+        console.warn('未知的页面类型:', props.activeMenu, '使用默认值: home')
+        return 'home' // fallback
+    }
+    
+    return pageType
+})
+
+// 过滤可用组件
+const filteredAvailableWidgets = computed(() => {
+    const currentType = currentPageType.value
+    
+    return availableWidgets.filter(widget => {
+        const widgetConfig = widgets[widget.name]
+        const widgetOptions = widgetConfig?.options?.()
+        const pageScope = widgetOptions?.pageScope
+        
+        // 如果未定义pageScope，视为通用组件，在所有页面显示
+        if (!pageScope || !Array.isArray(pageScope)) {
+            return true
+        }
+        
+        // 检查当前页面类型是否在pageScope中
+        return pageScope.includes(currentType)
+    })
+})
 
 const handleClickPageMeta = () => {
     if (props.modelValue === -1) {
@@ -236,9 +294,17 @@ const handleAddWidget = (widgetInfo: any) => {
         return // 已添加的组件不能重复添加
     }
     
-    const widgetOptions = widgets[widgetInfo.name]?.options?.()
+    const widgetConfig = widgets[widgetInfo.name]
+    
+    if (!widgetConfig) {
+        console.error('组件配置不存在:', widgetInfo.name)
+        return
+    }
+    
+    const widgetOptions = widgetConfig.options?.()
+    
     if (!widgetOptions) {
-        console.error('组件不存在:', widgetInfo.name)
+        console.error('组件options方法不存在:', widgetInfo.name)
         return
     }
     
@@ -292,13 +358,13 @@ const handleDeleteWidget = (index: number) => {
 }
 
 .pages-preview-content {
-    padding: 0 80px 20px 30px; // 右侧留出空间给操作按钮
+    padding: 0 80px 10px 20px; // 减少内边距
 }
 
 .pages-preview {
     background-color: #f8f8f8;
     width: 360px;
-    min-height: 615px;
+    min-height: 500px; // 从 615px 减少到 500px
     color: #333;
 
     .select {

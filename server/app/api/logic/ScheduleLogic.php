@@ -28,12 +28,12 @@ class ScheduleLogic extends BaseLogic
      */
     public static function getStaffSchedule(array $params): array
     {
-        $staffId = $params['staff_id'];
-        $year = $params['year'] ?? date('Y');
-        $month = $params['month'] ?? date('m');
+        $staffId = (int)$params['staff_id'];
+        $year = (int)($params['year'] ?? date('Y'));
+        $month = (int)($params['month'] ?? date('m'));
 
         // 获取档期数据
-        $schedules = Schedule::getMonthSchedule($staffId, (int)$year, (int)$month);
+        $schedules = Schedule::getMonthSchedule($staffId, $year, $month);
 
         // 获取规则
         $rule = ScheduleRule::getStaffRule($staffId);
@@ -53,6 +53,16 @@ class ScheduleLogic extends BaseLogic
 
             // 判断是否可预约
             $isAvailable = self::checkDateAvailable($staffId, $currentDate, $rule);
+
+            // 检查是否有不可预约的档期状态
+            if ($daySchedules) {
+                foreach ($daySchedules as $schedule) {
+                    if ($schedule['status'] != 1) {
+                        $isAvailable = false;
+                        break;
+                    }
+                }
+            }
 
             $days[$currentDate] = [
                 'date' => $currentDate,
@@ -205,12 +215,12 @@ class ScheduleLogic extends BaseLogic
     {
         // 使用Redis分布式锁保证并发安全
         [$success, $message] = Schedule::lockScheduleWithRedis(
-            $params['staff_id'],
+            (int)$params['staff_id'],
             $params['date'],
-            $params['time_slot'] ?? 0,
-            $params['user_id'],
+            (int)($params['time_slot'] ?? 0),
+            (int)$params['user_id'],
             Schedule::LOCK_TYPE_NORMAL,
-            $params['lock_duration'] ?? 900
+            (int)($params['lock_duration'] ?? 900)
         );
 
         return ['success' => $success, 'message' => $message];
@@ -249,9 +259,9 @@ class ScheduleLogic extends BaseLogic
      */
     public static function releaseLock(array $params): array
     {
-        $schedule = Schedule::where('staff_id', $params['staff_id'])
+        $schedule = Schedule::where('staff_id', (int)$params['staff_id'])
             ->where('schedule_date', $params['date'])
-            ->where('time_slot', $params['time_slot'] ?? 0)
+            ->where('time_slot', (int)($params['time_slot'] ?? 0))
             ->find();
 
         if (!$schedule) {
@@ -259,7 +269,7 @@ class ScheduleLogic extends BaseLogic
         }
 
         // 只能释放自己锁定的
-        if ($schedule->lock_user_id != $params['user_id']) {
+        if ($schedule->lock_user_id != (int)$params['user_id']) {
             return ['success' => false, 'message' => '无权释放此档期'];
         }
 
@@ -275,11 +285,11 @@ class ScheduleLogic extends BaseLogic
     public static function joinWaitlist(array $params): array
     {
         [$success, $message, $waitlistId] = Waitlist::addToWaitlist(
-            $params['user_id'],
-            $params['staff_id'],
+            (int)$params['user_id'],
+            (int)$params['staff_id'],
             $params['date'],
-            $params['time_slot'] ?? 0,
-            $params['package_id'] ?? 0,
+            (int)($params['time_slot'] ?? 0),
+            (int)($params['package_id'] ?? 0),
             $params['remark'] ?? ''
         );
 

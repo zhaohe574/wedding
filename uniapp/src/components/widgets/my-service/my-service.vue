@@ -1,9 +1,6 @@
 <template>
     <div class="my-service bg-white mx-[20rpx] mt-[20rpx] rounded-lg p-[30rpx]">
-        <div
-            v-if="content.title"
-            class="title font-medium text-lg"
-        >
+        <div v-if="content.title" class="title font-medium text-lg">
             <div>{{ content.title }}</div>
         </div>
         <div v-if="content.style == 1" class="grid grid-cols-4 gap-x-9 gap-y-7">
@@ -13,7 +10,7 @@
                 class="flex flex-col items-center pt-[40rpx]"
                 @click="handleClick(item.link)"
             >
-                <u-image width="52" height="52" :src="getImageUrl(item.image)" alt="" />
+                <image width="52" height="52" :src="getImageUrl(item.image)" alt="" />
                 <div class="mt-[22rpx] text-sm">{{ item.name }}</div>
             </div>
         </div>
@@ -24,10 +21,10 @@
                 class="flex items-center border-light border-solid border-0 border-b h-[100rpx] px-[24rpx]"
                 @click="handleClick(item.link)"
             >
-                <u-image width="48" height="48" :src="getImageUrl(item.image)" alt="" />
+                <image width="48" height="48" :src="getImageUrl(item.image)" alt="" />
                 <div class="ml-[20rpx] flex-1 text-sm">{{ item.name }}</div>
                 <div class="text-muted">
-                    <u-icon name="arrow-right" />
+                    <tn-icon name="right" />
                 </div>
             </div>
         </div>

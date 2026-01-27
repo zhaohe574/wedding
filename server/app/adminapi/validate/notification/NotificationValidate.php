@@ -55,7 +55,7 @@ class NotificationValidate extends BaseValidate
         'detail' => ['id'],
         'send' => ['user_id', 'notify_type', 'title', 'content', 'target_type', 'target_id'],
         'batchSend' => ['user_ids', 'notify_type', 'title', 'content', 'target_type', 'target_id'],
-        'sendToAll' => ['notify_type', 'title', 'content', 'target_type', 'target_id'],
+        'sendToAll' => ['notify_type', 'title', 'content'],
         'batchDelete' => ['ids'],
     ];
 }

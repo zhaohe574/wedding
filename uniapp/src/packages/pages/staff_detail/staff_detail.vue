@@ -1,201 +1,327 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
+        <navigation-bar 
+            title="服务人员详情"
+            :front-color="$theme.navColor" 
+            :background-color="$theme.navBgColor" 
         />
     </page-meta>
+    
     <view class="staff-detail" v-if="staffInfo">
-        <!-- 头部信息 -->
-        <view class="header bg-white">
-            <view class="banner">
-                <swiper
-                    v-if="staffInfo.works && staffInfo.works.length"
-                    class="swiper"
-                    indicator-dots
-                    autoplay
-                    circular
-                >
-                    <swiper-item v-for="work in staffInfo.works" :key="work.id">
-                        <image :src="work.cover || work.images?.[0]" mode="aspectFill" class="swiper-image" />
-                    </swiper-item>
-                </swiper>
-                <image v-else :src="staffInfo.avatar" mode="aspectFill" class="banner-image" />
-            </view>
-            
-            <view class="info-card mx-[24rpx] -mt-[60rpx] relative z-10 bg-white rounded-[16rpx] p-[24rpx]">
-                <view class="flex items-start">
+        <!-- 头图轮播 -->
+        <view class="banner-section">
+            <swiper
+                v-if="staffInfo.works && staffInfo.works.length"
+                class="banner-swiper"
+                indicator-dots
+                :indicator-color="'rgba(255, 255, 255, 0.5)'"
+                :indicator-active-color="$theme.primaryColor"
+                autoplay
+                circular
+            >
+                <swiper-item v-for="work in staffInfo.works" :key="work.id">
                     <image
-                        class="avatar"
-                        :src="staffInfo.avatar || '/static/images/default-avatar.png'"
+                        :src="work.cover || work.images?.[0]"
                         mode="aspectFill"
+                        class="banner-image"
+                        lazy-load
                     />
-                    <view class="flex-1 ml-[20rpx]">
-                        <view class="flex items-center">
-                            <text class="name text-[36rpx] font-bold">{{ staffInfo.name }}</text>
-                            <view
-                                v-if="staffInfo.is_recommend"
-                                class="recommend-tag ml-[12rpx]"
-                            >
-                                推荐
-                            </view>
+                </swiper-item>
+            </swiper>
+            <image 
+                v-else 
+                :src="staffInfo.avatar || '/static/images/default-avatar.png'" 
+                mode="aspectFill" 
+                class="banner-image" 
+            />
+        </view>
+
+        <!-- 人员信息卡片 -->
+        <view class="info-card">
+            <view class="card-header">
+                <image
+                    class="staff-avatar"
+                    :src="staffInfo.avatar || '/static/images/default-avatar.png'"
+                    mode="aspectFill"
+                />
+                <view class="header-info">
+                    <view class="name-row">
+                        <text class="staff-name">{{ staffInfo.name }}</text>
+                        <!-- 认证标识 -->
+                        <view v-if="staffInfo.is_verified" class="verified-badge">
+                            <tn-icon name="check-circle-fill" size="32" :color="$theme.primaryColor" />
                         </view>
-                        <view class="category text-[26rpx] text-gray-500 mt-[8rpx]">
-                            {{ staffInfo.category?.name }}
-                            <text v-if="staffInfo.experience_years"> | {{ staffInfo.experience_years }}年经验</text>
+                        <!-- VIP标识 -->
+                        <view v-if="staffInfo.is_vip" class="vip-badge">
+                            <tn-icon name="vip-fill" size="32" color="#FFD700" />
                         </view>
-                        <view class="stats flex items-center mt-[12rpx]">
-                            <view class="stat-item">
-                                <text class="text-orange-500 text-[32rpx] font-bold">{{ staffInfo.rating }}</text>
-                                <text class="text-[22rpx] text-gray-500 ml-[4rpx]">评分</text>
-                            </view>
-                            <view class="stat-item ml-[40rpx]">
-                                <text class="text-[32rpx] font-bold">{{ staffInfo.order_count }}</text>
-                                <text class="text-[22rpx] text-gray-500 ml-[4rpx]">服务</text>
-                            </view>
-                            <view class="stat-item ml-[40rpx]">
-                                <text class="text-[32rpx] font-bold">{{ staffInfo.view_count }}</text>
-                                <text class="text-[22rpx] text-gray-500 ml-[4rpx]">浏览</text>
-                            </view>
+                        <!-- 推荐标识 -->
+                        <view v-if="staffInfo.is_recommend" class="recommend-badge">
+                            <text>推荐</text>
                         </view>
                     </view>
-                </view>
-                <view class="price-box flex items-center justify-between mt-[20rpx] pt-[20rpx] border-t border-gray-100">
-                    <view class="price">
-                        <text class="text-[24rpx] text-red-500">¥</text>
-                        <text class="text-[44rpx] font-bold text-red-500">{{ staffInfo.price }}</text>
-                        <text class="text-[24rpx] text-gray-400">/次起</text>
-                    </view>
-                    <view
-                        class="favorite-btn flex items-center"
-                        @click="handleToggleFavorite"
-                    >
-                        <u-icon
-                            :name="staffInfo.is_favorite ? 'heart-fill' : 'heart'"
-                            :color="staffInfo.is_favorite ? '#ff6b6b' : '#999'"
-                            size="36"
-                        />
-                        <text class="text-[26rpx] ml-[8rpx]" :class="staffInfo.is_favorite ? 'text-red-500' : 'text-gray-500'">
-                            {{ staffInfo.is_favorite ? '已收藏' : '收藏' }}
+                    
+                    <view class="category-row">
+                        <text class="category-text">{{ staffInfo.category?.name }}</text>
+                        <text v-if="staffInfo.experience_years" class="experience-text">
+                            {{ staffInfo.experience_years }}年经验
                         </text>
                     </view>
                 </view>
             </view>
-        </view>
 
-        <!-- 标签 -->
-        <view v-if="staffInfo.tags && staffInfo.tags.length" class="tags-section bg-white mt-[20rpx] p-[24rpx]">
-            <view class="section-title text-[30rpx] font-bold mb-[16rpx]">擅长风格</view>
-            <view class="tags flex flex-wrap">
-                <view v-for="(tag, index) in staffInfo.tags" :key="index" class="tag">
-                    {{ tag }}
+            <!-- 评分统计 -->
+            <view class="stats-row">
+                <view class="stat-item">
+                    <view class="stat-value">
+                        <tn-icon name="star-fill" size="32" :color="$theme.accentColor" />
+                        <text :style="{ color: $theme.accentColor }">{{ staffInfo.rating }}</text>
+                    </view>
+                    <text class="stat-label">评分</text>
+                </view>
+                <view class="stat-divider"></view>
+                <view class="stat-item">
+                    <text class="stat-value">{{ staffInfo.order_count }}</text>
+                    <text class="stat-label">服务次数</text>
+                </view>
+                <view class="stat-divider"></view>
+                <view class="stat-item">
+                    <text class="stat-value">{{ staffInfo.view_count || 0 }}</text>
+                    <text class="stat-label">浏览量</text>
+                </view>
+            </view>
+
+            <!-- 价格和收藏 -->
+            <view class="price-row">
+                <view class="price-wrapper">
+                    <text class="price-label">服务价格</text>
+                    <view class="price-amount">
+                        <text class="price-symbol">¥</text>
+                        <text class="price-value">{{ staffInfo.price }}</text>
+                        <text class="price-unit">/次起</text>
+                    </view>
+                </view>
+                <view class="favorite-btn" @click="handleToggleFavorite">
+                    <tn-icon
+                        :name="staffInfo.is_favorite ? 'star-fill' : 'star'"
+                        size="48"
+                        :color="staffInfo.is_favorite ? $theme.secondaryColor : '#CCCCCC'"
+                    />
                 </view>
             </view>
         </view>
 
-        <!-- 个人简介 -->
-        <view class="profile-section bg-white mt-[20rpx] p-[24rpx]">
-            <view class="section-title text-[30rpx] font-bold mb-[16rpx]">个人简介</view>
-            <view class="profile text-[28rpx] text-gray-600 leading-[1.8]">
-                {{ staffInfo.profile || '暂无简介' }}
-            </view>
-        </view>
-
-        <!-- 服务说明 -->
-        <view v-if="staffInfo.service_desc" class="service-section bg-white mt-[20rpx] p-[24rpx]">
-            <view class="section-title text-[30rpx] font-bold mb-[16rpx]">服务说明</view>
-            <view class="service-desc text-[28rpx] text-gray-600 leading-[1.8]">
-                {{ staffInfo.service_desc }}
-            </view>
-        </view>
-
-        <!-- 服务套餐 -->
-        <view v-if="staffInfo.packages && staffInfo.packages.length" class="packages-section bg-white mt-[20rpx] p-[24rpx]">
-            <view class="section-title text-[30rpx] font-bold mb-[16rpx]">服务套餐</view>
-            <view class="packages">
-                <view
-                    v-for="pkg in staffInfo.packages"
-                    :key="pkg.package_id"
-                    class="package-item flex items-center justify-between py-[20rpx] border-b border-gray-100 last:border-0"
+        <!-- 标签页切换 -->
+        <view class="tabs-section">
+            <view class="tabs-wrapper">
+                <view 
+                    v-for="tab in tabs" 
+                    :key="tab.key"
+                    class="tab-item"
+                    :class="{ active: currentTab === tab.key }"
+                    @click="currentTab = tab.key"
                 >
-                    <view class="flex-1">
-                        <view class="text-[28rpx]">{{ pkg.package?.name }}</view>
-                        <view class="text-[24rpx] text-gray-500 mt-[8rpx]">
-                            {{ pkg.package?.duration }}小时
+                    <text 
+                        class="tab-text"
+                        :style="currentTab === tab.key ? { color: $theme.primaryColor } : {}"
+                    >
+                        {{ tab.label }}
+                    </text>
+                    <view 
+                        v-if="currentTab === tab.key" 
+                        class="tab-indicator"
+                        :style="{ background: $theme.primaryColor }"
+                    ></view>
+                </view>
+            </view>
+        </view>
+
+        <!-- 标签页内容 -->
+        <view class="tab-content">
+            <!-- 简介标签页 -->
+            <view v-show="currentTab === 'intro'" class="content-section">
+                <!-- 擅长风格 -->
+                <view v-if="staffInfo.tags && staffInfo.tags.length" class="content-block">
+                    <view class="block-title">擅长风格</view>
+                    <view class="tags-wrapper">
+                        <view v-for="(tag, index) in staffInfo.tags" :key="index" class="tag-item">
+                            <text class="tag-text">{{ tag }}</text>
                         </view>
                     </view>
-                    <view class="price text-right">
-                        <text class="text-red-500 text-[32rpx] font-bold">¥{{ pkg.price || pkg.package?.price }}</text>
+                </view>
+
+                <!-- 个人简介 -->
+                <view class="content-block">
+                    <view class="block-title">个人简介</view>
+                    <text class="block-content">{{ staffInfo.profile || '暂无简介' }}</text>
+                </view>
+
+                <!-- 服务说明 -->
+                <view v-if="staffInfo.service_desc" class="content-block">
+                    <view class="block-title">服务说明</view>
+                    <text class="block-content">{{ staffInfo.service_desc }}</text>
+                </view>
+
+                <!-- 服务套餐 -->
+                <view v-if="staffInfo.packages && staffInfo.packages.length" class="content-block">
+                    <view class="block-title">服务套餐</view>
+                    <view class="packages-list">
+                        <view 
+                            v-for="pkg in staffInfo.packages" 
+                            :key="pkg.package_id"
+                            class="package-item"
+                        >
+                            <view class="package-info">
+                                <text class="package-name">{{ pkg.package?.name }}</text>
+                                <text class="package-duration">{{ pkg.package?.duration }}小时</text>
+                            </view>
+                            <text class="package-price">¥{{ pkg.price || pkg.package?.price }}</text>
+                        </view>
                     </view>
                 </view>
             </view>
-        </view>
 
-        <!-- 作品展示 -->
-        <view v-if="staffInfo.works && staffInfo.works.length" class="works-section bg-white mt-[20rpx] p-[24rpx]">
-            <view class="section-title text-[30rpx] font-bold mb-[16rpx]">作品展示</view>
-            <view class="works-grid">
-                <view
-                    v-for="work in staffInfo.works"
-                    :key="work.id"
-                    class="work-item"
-                    @click="previewImage(work)"
-                >
-                    <image :src="work.cover || work.images?.[0]" mode="aspectFill" />
-                    <view class="work-title">{{ work.title }}</view>
+            <!-- 作品标签页 -->
+            <view v-show="currentTab === 'works'" class="content-section">
+                <!-- 加载状态 -->
+                <view v-if="worksLoading" class="loading-state">
+                    <tn-loading mode="circle" />
                 </view>
-            </view>
-        </view>
-
-        <!-- 资质证书 -->
-        <view v-if="staffInfo.certificates && staffInfo.certificates.length" class="certs-section bg-white mt-[20rpx] p-[24rpx] mb-[160rpx]">
-            <view class="section-title text-[30rpx] font-bold mb-[16rpx]">资质证书</view>
-            <scroll-view scroll-x class="certs-scroll">
-                <view class="certs flex">
+                
+                <!-- 作品列表 -->
+                <view v-else-if="worksList.length" class="works-grid">
                     <view
-                        v-for="cert in staffInfo.certificates"
-                        :key="cert.id"
-                        class="cert-item mr-[20rpx]"
+                        v-for="work in worksList"
+                        :key="work.id"
+                        class="work-item"
+                        @click="previewImage(work)"
                     >
-                        <image :src="cert.image" mode="aspectFill" @click="previewCert(cert.image)" />
-                        <view class="cert-name">{{ cert.name }}</view>
+                        <image 
+                            :src="work.cover || work.images?.[0]" 
+                            mode="aspectFill"
+                            class="work-image"
+                            lazy-load
+                        />
+                        <view class="work-overlay">
+                            <text class="work-title">{{ work.title }}</text>
+                        </view>
                     </view>
                 </view>
-            </scroll-view>
+                
+                <!-- 空状态 -->
+                <view v-else class="empty-state">
+                    <tn-icon name="image" size="120" color="#CCCCCC" />
+                    <text class="empty-text">暂无作品</text>
+                </view>
+            </view>
+
+            <!-- 评价标签页 -->
+            <view v-show="currentTab === 'reviews'" class="content-section">
+                <!-- 资质证书 -->
+                <view v-if="staffInfo.certificates && staffInfo.certificates.length" class="content-block">
+                    <view class="block-title">资质证书</view>
+                    <scroll-view scroll-x class="certs-scroll">
+                        <view class="certs-wrapper">
+                            <view
+                                v-for="cert in staffInfo.certificates"
+                                :key="cert.id"
+                                class="cert-item"
+                                @click="previewCert(cert.image)"
+                            >
+                                <image :src="cert.image" mode="aspectFill" class="cert-image" />
+                                <text class="cert-name">{{ cert.name }}</text>
+                            </view>
+                        </view>
+                    </scroll-view>
+                </view>
+
+                <!-- 加载状态 -->
+                <view v-if="reviewsLoading" class="loading-state">
+                    <tn-loading mode="circle" />
+                </view>
+                
+                <!-- 用户评价列表（预留） -->
+                <view v-else-if="reviewsList.length" class="reviews-list">
+                    <!-- TODO: 评价列表组件 -->
+                </view>
+                
+                <!-- 空状态 -->
+                <view v-else class="empty-state">
+                    <tn-icon name="chat" size="120" color="#CCCCCC" />
+                    <text class="empty-text">暂无评价</text>
+                </view>
+            </view>
         </view>
+
+        <!-- 底部占位 -->
+        <view class="bottom-placeholder"></view>
 
         <!-- 底部操作栏 -->
-        <view class="bottom-bar fixed bottom-0 left-0 right-0 bg-white flex items-center px-[24rpx] py-[20rpx] border-t border-gray-100">
-            <view class="action-item" @click="handleContact">
-                <u-icon name="chat" size="44" color="#666" />
-                <text>咨询</text>
+        <view class="bottom-bar">
+            <view class="action-btns">
+                <view class="action-item" @click="handleContact">
+                    <tn-icon name="chat" size="48" color="#666666" />
+                    <text class="action-text">咨询</text>
+                </view>
+                <view class="action-item" @click="handleToggleFavorite">
+                    <tn-icon
+                        :name="staffInfo.is_favorite ? 'star-fill' : 'star'"
+                        size="48"
+                        :color="staffInfo.is_favorite ? $theme.secondaryColor : '#666666'"
+                    />
+                    <text class="action-text">{{ staffInfo.is_favorite ? '已收藏' : '收藏' }}</text>
+                </view>
             </view>
-            <view class="action-item" @click="handleToggleFavorite">
-                <u-icon
-                    :name="staffInfo.is_favorite ? 'heart-fill' : 'heart'"
-                    size="44"
-                    :color="staffInfo.is_favorite ? '#ff6b6b' : '#666'"
-                />
-                <text>{{ staffInfo.is_favorite ? '已收藏' : '收藏' }}</text>
-            </view>
-            <view class="flex-1 ml-[24rpx]">
-                <button class="book-btn" @click="handleBook">立即预约</button>
+            <view 
+                class="book-btn"
+                :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)` }"
+                @click="handleBook"
+            >
+                <tn-icon name="calendar" size="32" color="#FFFFFF" />
+                <text class="book-text">立即预约</text>
             </view>
         </view>
     </view>
-    
-    <view v-else class="loading flex items-center justify-center h-screen">
-        <u-loading mode="circle" />
+
+    <!-- 加载状态 -->
+    <view v-else class="loading-container">
+        <tn-loading mode="circle" />
     </view>
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getStaffDetail, toggleStaffFavorite } from '@/api/staff'
+import { getStaffDetail, toggleStaffFavorite, getStaffWorks } from '@/api/staff'
+import { useUserStore } from '@/stores/user'
 
 const staffId = ref<number>(0)
 const staffInfo = ref<any>(null)
+const currentTab = ref('intro')
+
+// 作品列表
+const worksList = ref<any[]>([])
+const worksLoading = ref(false)
+
+// 评价列表
+const reviewsList = ref<any[]>([])
+const reviewsLoading = ref(false)
+
+// 标签页配置
+const tabs = [
+    { key: 'intro', label: '简介' },
+    { key: 'works', label: '作品' },
+    { key: 'reviews', label: '评价' }
+]
+
+// 监听标签页切换
+watch(currentTab, (newTab) => {
+    if (newTab === 'works' && worksList.value.length === 0) {
+        loadWorks()
+    } else if (newTab === 'reviews' && reviewsList.value.length === 0) {
+        loadReviews()
+    }
+})
 
 // 获取详情
 const getDetail = async () => {
@@ -203,21 +329,69 @@ const getDetail = async () => {
         const data = await getStaffDetail({ id: staffId.value })
         staffInfo.value = data
     } catch (e: any) {
-        uni.showToast({ title: e.msg || '获取详情失败', icon: 'none' })
+        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '获取详情失败'
+        uni.showToast({ title: errorMsg, icon: 'none' })
+    }
+}
+
+// 加载作品列表
+const loadWorks = async () => {
+    if (worksLoading.value) return
+    
+    worksLoading.value = true
+    try {
+        const data = await getStaffWorks({ staff_id: staffId.value })
+        worksList.value = data || []
+    } catch (e: any) {
+        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加载作品失败'
+        uni.showToast({ title: errorMsg, icon: 'none' })
+    } finally {
+        worksLoading.value = false
+    }
+}
+
+// 加载评价列表（预留）
+const loadReviews = async () => {
+    if (reviewsLoading.value) return
+    
+    reviewsLoading.value = true
+    try {
+        // TODO: 调用评价接口
+        // const data = await getStaffReviews({ staff_id: staffId.value })
+        // reviewsList.value = data || []
+        
+        // 暂时模拟空数据
+        reviewsList.value = []
+    } catch (e: any) {
+        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加载评价失败'
+        uni.showToast({ title: errorMsg, icon: 'none' })
+    } finally {
+        reviewsLoading.value = false
     }
 }
 
 // 收藏/取消收藏
 const handleToggleFavorite = async () => {
+    // 检查登录状态
+    const userStore = useUserStore()
+    if (!userStore.isLogin) {
+        uni.showToast({ title: '请先登录', icon: 'none' })
+        setTimeout(() => {
+            uni.navigateTo({ url: '/pages/login/login' })
+        }, 1500)
+        return
+    }
+
     try {
         await toggleStaffFavorite({ id: staffId.value })
         staffInfo.value.is_favorite = !staffInfo.value.is_favorite
         uni.showToast({
             title: staffInfo.value.is_favorite ? '收藏成功' : '已取消收藏',
-            icon: 'none'
+            icon: 'success'
         })
     } catch (e: any) {
-        uni.showToast({ title: e.msg || '操作失败', icon: 'none' })
+        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '操作失败'
+        uni.showToast({ title: errorMsg, icon: 'none' })
     }
 }
 
@@ -230,8 +404,13 @@ const handleContact = () => {
 
 // 立即预约
 const handleBook = () => {
-    // TODO: 跳转到预约页面
-    uni.showToast({ title: '预约功能开发中', icon: 'none' })
+    if (!staffId.value || staffId.value === 0) {
+        uni.showToast({ title: '服务人员信息错误', icon: 'none' })
+        return
+    }
+    uni.navigateTo({
+        url: `/packages/pages/schedule_calendar/schedule_calendar?staff_id=${staffId.value}`
+    })
 }
 
 // 预览作品图片
@@ -261,70 +440,372 @@ onLoad((options) => {
 <style lang="scss" scoped>
 .staff-detail {
     min-height: 100vh;
-    background: #f5f5f5;
+    background: linear-gradient(180deg, var(--color-primary-light-9) 0%, #F5F5F5 100%);
     padding-bottom: env(safe-area-inset-bottom);
 }
 
-.banner {
-    height: 400rpx;
+/* 加载状态 */
+.loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+/* 头图轮播 */
+.banner-section {
+    width: 100%;
+    height: 500rpx;
+    position: relative;
     
-    .swiper, .banner-image {
+    .banner-swiper {
         width: 100%;
         height: 100%;
     }
     
-    .swiper-image {
+    .banner-image {
         width: 100%;
         height: 100%;
     }
 }
 
+/* 人员信息卡片 */
 .info-card {
-    box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+    margin: -80rpx 24rpx 0;
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    padding: 32rpx;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+    position: relative;
+    z-index: 10;
+}
+
+.card-header {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 24rpx;
     
-    .avatar {
-        width: 140rpx;
-        height: 140rpx;
-        border-radius: 12rpx;
+    .staff-avatar {
+        width: 120rpx;
+        height: 120rpx;
+        border-radius: 16rpx;
+        border: 4rpx solid #FFFFFF;
+        box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
     }
     
-    .recommend-tag {
-        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-        color: #fff;
-        font-size: 22rpx;
+    .header-info {
+        flex: 1;
+        margin-left: 20rpx;
+    }
+}
+
+.name-row {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    margin-bottom: 12rpx;
+    
+    .staff-name {
+        font-size: 36rpx;
+        font-weight: 700;
+        color: var(--color-main);
+    }
+    
+    .verified-badge,
+    .vip-badge {
+        display: flex;
+        align-items: center;
+    }
+    
+    .recommend-badge {
         padding: 4rpx 12rpx;
-        border-radius: 20rpx;
+        background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary) 100%);
+        border-radius: 12rpx;
+        
+        text {
+            font-size: 20rpx;
+            font-weight: 600;
+            color: #FFFFFF;
+        }
     }
 }
 
-.tags {
-    .tag {
-        background: #fff5f5;
-        color: #ff6b6b;
+.category-row {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    
+    .category-text {
+        font-size: 26rpx;
+        color: var(--color-content);
+    }
+    
+    .experience-text {
+        font-size: 26rpx;
+        color: var(--color-muted);
+        
+        &::before {
+            content: '|';
+            margin-right: 12rpx;
+            color: var(--color-light);
+        }
+    }
+}
+
+/* 评分统计 */
+.stats-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 24rpx 0;
+    border-top: 1rpx solid #F0F0F0;
+    border-bottom: 1rpx solid #F0F0F0;
+    margin-bottom: 24rpx;
+    
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8rpx;
+        
+        .stat-value {
+            display: flex;
+            align-items: center;
+            gap: 8rpx;
+            font-size: 32rpx;
+            font-weight: 700;
+            color: var(--color-main);
+        }
+        
+        .stat-label {
+            font-size: 24rpx;
+            color: var(--color-muted);
+        }
+    }
+    
+    .stat-divider {
+        width: 1rpx;
+        height: 48rpx;
+        background: #E5E5E5;
+    }
+}
+
+/* 价格行 */
+.price-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.price-wrapper {
+    flex: 1;
+    
+    .price-label {
         font-size: 24rpx;
-        padding: 8rpx 20rpx;
-        border-radius: 30rpx;
-        margin-right: 16rpx;
-        margin-bottom: 12rpx;
+        color: var(--color-muted);
+        margin-bottom: 8rpx;
+    }
+    
+    .price-amount {
+        display: flex;
+        align-items: baseline;
+        
+        .price-symbol {
+            font-size: 28rpx;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-right: 4rpx;
+        }
+        
+        .price-value {
+            font-size: 48rpx;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        
+        .price-unit {
+            font-size: 24rpx;
+            color: var(--color-muted);
+            margin-left: 8rpx;
+        }
     }
 }
 
+.favorite-btn {
+    width: 80rpx;
+    height: 80rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #F9FAFB;
+    border-radius: 40rpx;
+    transition: all 0.2s ease;
+    
+    &:active {
+        transform: scale(0.9);
+        background: #F0F0F0;
+    }
+}
+
+/* 标签页切换 */
+.tabs-section {
+    margin: 24rpx 24rpx 0;
+    background: #FFFFFF;
+    border-radius: 16rpx;
+    padding: 0 24rpx;
+}
+
+.tabs-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 48rpx;
+}
+
+.tab-item {
+    position: relative;
+    padding: 24rpx 0;
+    cursor: pointer;
+    
+    .tab-text {
+        font-size: 28rpx;
+        font-weight: 500;
+        color: var(--color-content);
+        transition: all 0.2s ease;
+    }
+    
+    &.active .tab-text {
+        font-weight: 700;
+    }
+    
+    .tab-indicator {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4rpx;
+        border-radius: 2rpx;
+    }
+}
+
+/* 标签页内容 */
+.tab-content {
+    margin: 16rpx 24rpx 0;
+}
+
+.content-section {
+    background: #FFFFFF;
+    border-radius: 16rpx;
+    padding: 32rpx;
+}
+
+.content-block {
+    margin-bottom: 32rpx;
+    
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.block-title {
+    font-size: 30rpx;
+    font-weight: 700;
+    color: var(--color-main);
+    margin-bottom: 20rpx;
+}
+
+.block-content {
+    font-size: 28rpx;
+    color: var(--color-content);
+    line-height: 1.8;
+}
+
+/* 标签 */
+.tags-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+}
+
+.tag-item {
+    padding: 8rpx 20rpx;
+    background: var(--color-primary-light-9);
+    border: 1rpx solid var(--color-primary-light-7);
+    border-radius: 16rpx;
+    
+    .tag-text {
+        font-size: 26rpx;
+        font-weight: 500;
+        color: var(--color-primary);
+    }
+}
+
+/* 服务套餐 */
+.packages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+}
+
+.package-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24rpx;
+    background: #F9FAFB;
+    border-radius: 12rpx;
+    
+    .package-info {
+        flex: 1;
+        
+        .package-name {
+            font-size: 28rpx;
+            font-weight: 600;
+            color: var(--color-main);
+            margin-bottom: 8rpx;
+        }
+        
+        .package-duration {
+            font-size: 24rpx;
+            color: var(--color-muted);
+        }
+    }
+    
+    .package-price {
+        font-size: 32rpx;
+        font-weight: 700;
+        color: var(--color-primary);
+    }
+}
+
+/* 作品网格 */
 .works-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 16rpx;
+}
+
+.work-item {
+    position: relative;
+    border-radius: 12rpx;
+    overflow: hidden;
     
-    .work-item {
-        image {
-            width: 100%;
-            height: 200rpx;
-            border-radius: 8rpx;
-        }
+    .work-image {
+        width: 100%;
+        height: 280rpx;
+    }
+    
+    .work-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 16rpx;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
         
         .work-title {
             font-size: 24rpx;
-            color: #666;
-            margin-top: 8rpx;
+            color: #FFFFFF;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -332,54 +813,119 @@ onLoad((options) => {
     }
 }
 
+/* 资质证书 */
 .certs-scroll {
     white-space: nowrap;
+}
+
+.certs-wrapper {
+    display: inline-flex;
+    gap: 16rpx;
 }
 
 .cert-item {
     display: inline-block;
     width: 240rpx;
     
-    image {
+    .cert-image {
         width: 240rpx;
         height: 160rpx;
-        border-radius: 8rpx;
+        border-radius: 12rpx;
     }
     
     .cert-name {
         font-size: 24rpx;
-        color: #666;
-        margin-top: 8rpx;
+        color: var(--color-content);
+        margin-top: 12rpx;
         text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }
 
-.bottom-bar {
-    box-shadow: 0 -2rpx 12rpx rgba(0, 0, 0, 0.05);
-    padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+/* 空状态 */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 120rpx 0;
     
-    .action-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 0 24rpx;
-        
-        text {
-            font-size: 22rpx;
-            color: #666;
-            margin-top: 4rpx;
-        }
+    .empty-text {
+        font-size: 28rpx;
+        color: var(--color-muted);
+        margin-top: 24rpx;
+    }
+}
+
+/* 加载状态 */
+.loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 120rpx 0;
+}
+
+/* 底部占位 */
+.bottom-placeholder {
+    height: 180rpx;
+}
+
+/* 底部操作栏 */
+.bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    padding: 20rpx 24rpx;
+    padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+    background: #FFFFFF;
+    box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.08);
+    z-index: 100;
+}
+
+.action-btns {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+}
+
+.action-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4rpx;
+    
+    .action-text {
+        font-size: 22rpx;
+        color: var(--color-content);
+    }
+}
+
+.book-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12rpx;
+    height: 88rpx;
+    border-radius: 48rpx;
+    box-shadow: 0 4rpx 16rpx rgba(124, 58, 237, 0.3);
+    transition: all 0.2s ease;
+    
+    &:active {
+        transform: scale(0.98);
+        box-shadow: 0 2rpx 8rpx rgba(124, 58, 237, 0.3);
     }
     
-    .book-btn {
-        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-        color: #fff;
+    .book-text {
         font-size: 32rpx;
-        font-weight: bold;
-        border-radius: 44rpx;
-        height: 88rpx;
-        line-height: 88rpx;
-        border: none;
+        font-weight: 600;
+        color: #FFFFFF;
     }
 }
 </style>

@@ -44,12 +44,13 @@ class CartLogic extends BaseLogic
      */
     public static function addToCart(array $params): array
     {
+        // Explicitly cast to int to handle string parameters from POST requests
         [$success, $message, $cartId] = Cart::addToCart(
-            $params['user_id'],
-            $params['staff_id'],
+            (int)$params['user_id'],
+            (int)$params['staff_id'],  // Cast string to int
             $params['date'],
-            $params['time_slot'] ?? 0,
-            $params['package_id'] ?? 0,
+            (int)($params['time_slot'] ?? 0),
+            (int)($params['package_id'] ?? 0),
             $params['remark'] ?? ''
         );
 
@@ -260,5 +261,26 @@ class CartLogic extends BaseLogic
     public static function comparePlans(int $planId1, int $planId2, int $userId): ?array
     {
         return CartPlan::comparePlans($planId1, $planId2, $userId);
+    }
+
+    /**
+     * @notes 生成方案分享码
+     * @param int $planId
+     * @param int $userId
+     * @return string|null
+     */
+    public static function generatePlanShareCode(int $planId, int $userId): ?string
+    {
+        return CartPlan::generateShareCode($planId, $userId);
+    }
+
+    /**
+     * @notes 通过分享码获取方案
+     * @param string $shareCode
+     * @return array|null
+     */
+    public static function getPlanByShareCode(string $shareCode): ?array
+    {
+        return CartPlan::getByShareCode($shareCode);
     }
 }

@@ -1,0 +1,202 @@
+/**
+ * 动效系统
+ * 基于UI设计规划.md中的动效设计规范
+ */
+
+/* 过渡时间常量 */
+$transition-fast: 0.15s;      // 快速过渡 - 颜色、透明度变化
+$transition-standard: 0.2s;   // 标准过渡 - 按钮、卡片hover
+$transition-slow: 0.3s;       // 慢速过渡 - 页面切换、大型元素
+
+/* 缓动函数 */
+$ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+$ease-out: cubic-bezier(0, 0, 0.2, 1);
+$ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+/* 通用过渡类 */
+.transition-fast {
+  transition: all $transition-fast $ease-in-out;
+}
+
+.transition-standard {
+  transition: all $transition-standard $ease-in-out;
+}
+
+.transition-slow {
+  transition: all $transition-slow $ease-in-out;
+}
+
+.transition-colors {
+  transition: color $transition-fast $ease-in-out,
+              background-color $transition-fast $ease-in-out,
+              border-color $transition-fast $ease-in-out;
+}
+
+.transition-transform {
+  transition: transform $transition-standard $ease-out;
+}
+
+.transition-opacity {
+  transition: opacity $transition-fast $ease-in-out;
+}
+
+/* 卡片hover效果 */
+.card-hover {
+  transition: all $transition-slow $ease-out;
+  
+  &:hover {
+    transform: translateY(-4rpx);
+    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
+  }
+  
+  &:active {
+    transform: translateY(-2rpx);
+  }
+}
+
+/* 按钮点击效果 */
+.button-feedback {
+  transition: all $transition-standard $ease-in-out;
+  
+  &:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+/* 淡入动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn $transition-standard $ease-in-out;
+}
+
+/* 滑入动画 */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in-up {
+  animation: slideInUp $transition-slow $ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in-down {
+  animation: slideInDown $transition-slow $ease-out;
+}
+
+/* 缩放动画 */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.scale-in {
+  animation: scaleIn $transition-standard $ease-out;
+}
+
+/* 脉冲动画（用于提示） */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.pulse {
+  animation: pulse 2s $ease-in-out infinite;
+}
+
+/* 旋转动画（用于加载） */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rotate {
+  animation: rotate 1s linear infinite;
+}
+
+/* 无障碍：尊重用户的减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .card-hover:hover {
+    transform: none;
+  }
+  
+  .button-feedback:active {
+    transform: none;
+  }
+}
+
+/* 触摸反馈（移动端） */
+.touch-feedback {
+  position: relative;
+  overflow: hidden;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.1);
+    transform: translate(-50%, -50%);
+    transition: width $transition-standard $ease-out,
+                height $transition-standard $ease-out,
+                opacity $transition-standard $ease-out;
+    opacity: 0;
+  }
+  
+  &:active::after {
+    width: 200%;
+    height: 200%;
+    opacity: 1;
+  }
+}

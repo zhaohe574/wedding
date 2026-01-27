@@ -1,176 +1,104 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            title="动态广场"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
+        <!-- #ifndef H5 -->
+        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <!-- #endif -->
     </page-meta>
     <view class="dynamic-page">
-        <!-- 类型筛选 -->
-        <view class="type-tabs bg-white sticky top-0 z-10">
-            <scroll-view scroll-x class="whitespace-nowrap">
-                <view 
-                    v-for="tab in typeTabs" 
-                    :key="tab.value"
-                    class="inline-block px-4 py-3 text-sm"
-                    :class="currentType === tab.value ? 'text-primary border-b-2 border-primary font-medium' : 'text-gray-500'"
-                    @click="changeType(tab.value)"
-                >
-                    {{ tab.label }}
+        <!-- 话题筛选提示 -->
+        <view v-if="currentTag" class="tag-filter-banner">
+            <view class="tag-filter-content">
+                <tn-icon name="fire" size="32" color="#FFFFFF" />
+                <text class="tag-text">话题：{{ currentTag }}</text>
+                <view class="clear-filter" @click="clearTagFilter">
+                    <tn-icon name="close" size="32" color="#FFFFFF" />
                 </view>
-            </scroll-view>
+            </view>
         </view>
-
-        <!-- 热门标签 -->
-        <view v-if="hotTags.length > 0" class="bg-white px-3 py-2 mb-2">
-            <scroll-view scroll-x class="whitespace-nowrap">
-                <view 
-                    v-for="tag in hotTags" 
-                    :key="tag.id"
-                    class="inline-block mr-2 px-3 py-1 text-xs rounded-full"
-                    :class="currentTag === tag.name ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'"
-                    @click="filterByTag(tag.name)"
+        
+        <!-- 类型筛选标签 -->
+        <view class="type-tabs-wrapper">
+            <view class="tabs-container">
+                <tn-tabs 
+                    v-model="currentTypeIndex" 
+                    :scroll="false" 
+                    height="70rpx" 
+                    class="tabs-main"
+                    :active-color="$theme.primaryColor"
+                    :bar-color="$theme.primaryColor"
                 >
-                    #{{ tag.name }}
+                    <tn-tabs-item
+                        v-for="(tab, index) in typeTabs"
+                        :key="index"
+                        :title="tab.label"
+                    />
+                </tn-tabs>
+                <view class="sort-btn" @click="toggleSortMenu">
+                    <tn-icon name="sort" size="32" :color="$theme.primaryColor" />
+                    <text class="sort-text">{{ currentSortLabel }}</text>
+                    <tn-icon :name="showSortMenu ? 'up' : 'down'" size="24" :color="$theme.primaryColor" />
                 </view>
-            </scroll-view>
+            </view>
+            
+            <!-- 排序菜单 -->
+            <view v-if="showSortMenu" class="sort-menu">
+                <view
+                    v-for="(item, index) in sortOptions"
+                    :key="index"
+                    class="sort-menu-item"
+                    :class="{ 'sort-menu-item-active': currentSort === item.value }"
+                    @click="selectSort(item.value)"
+                >
+                    <text class="sort-menu-text">{{ item.label }}</text>
+                    <tn-icon
+                        v-if="currentSort === item.value"
+                        name="check"
+                        size="32"
+                        :color="$theme.primaryColor"
+                    />
+                </view>
+            </view>
         </view>
 
         <!-- 动态列表 -->
-        <view class="p-3">
-            <view v-if="loading && dynamics.length === 0" class="py-20 text-center text-gray-400">
-                加载中...
+        <view class="dynamic-list-wrapper">
+            <!-- 加载中 -->
+            <view v-if="loading && dynamics.length === 0" class="loading-state">
+                <tn-loading size="60" mode="flower" />
+                <text class="loading-text">加载中...</text>
             </view>
-            <view v-else-if="dynamics.length === 0" class="py-20 text-center text-gray-400">
-                <image src="/static/images/empty.png" class="w-32 h-32 mx-auto mb-4" mode="aspectFit" />
-                <text>暂无动态</text>
+            
+            <!-- 空状态 -->
+            <view v-else-if="dynamics.length === 0" class="empty-state">
+                <view class="empty-icon-wrapper">
+                    <tn-icon name="file-text" size="120" color="#d1d5db" />
+                </view>
+                <text class="empty-title">暂无动态</text>
+                <text class="empty-subtitle">快来发布第一条动态吧~</text>
             </view>
-            <view v-else>
-                <!-- 动态卡片 -->
-                <view 
-                    v-for="item in dynamics" 
+            
+            <!-- 动态列表 - 使用DynamicCard组件 -->
+            <view v-else class="dynamic-list">
+                <dynamic-card
+                    v-for="item in dynamics"
                     :key="item.id"
-                    class="bg-white rounded-lg mb-3 overflow-hidden"
-                    @click="goDetail(item.id)"
-                >
-                    <!-- 用户信息 -->
-                    <view class="flex items-center px-4 py-3">
-                        <image 
-                            :src="item.user_avatar || '/static/images/default-avatar.png'" 
-                            class="w-10 h-10 rounded-full mr-3"
-                            mode="aspectFill"
-                        />
-                        <view class="flex-1">
-                            <view class="flex items-center">
-                                <text class="text-sm font-medium">{{ item.user_nickname }}</text>
-                                <view v-if="item.user_type === 2" class="ml-2 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded">
-                                    服务人员
-                                </view>
-                                <view v-if="item.user_type === 3" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-500 text-xs rounded">
-                                    官方
-                                </view>
-                            </view>
-                            <text class="text-xs text-gray-400">{{ item.create_time }}</text>
-                        </view>
-                        <view 
-                            v-if="!item.is_followed && item.user_id !== userId"
-                            class="px-3 py-1 text-xs border border-primary text-primary rounded-full"
-                            @click.stop="handleFollow(item)"
-                        >
-                            关注
-                        </view>
-                    </view>
+                    :dynamic="item"
+                    @click="goDetail"
+                    @like="handleLike"
+                    @comment="goDetail"
+                    @share="handleShare"
+                    @follow="handleFollow"
+                />
 
-                    <!-- 内容 -->
-                    <view class="px-4 pb-3">
-                        <!-- 类型标签 -->
-                        <view class="mb-2" v-if="item.dynamic_type">
-                            <text class="text-xs px-2 py-0.5 rounded" :class="getTypeClass(item.dynamic_type)">
-                                {{ getTypeText(item.dynamic_type) }}
-                            </text>
-                        </view>
-                        <!-- 文字内容 -->
-                        <view class="text-sm text-gray-700 leading-6 mb-2 line-clamp-3">
-                            {{ item.content }}
-                        </view>
-                        <!-- 图片 -->
-                        <view v-if="item.images && item.images.length > 0" class="grid gap-2" :class="getImageGridClass(item.images.length)">
-                            <image 
-                                v-for="(img, idx) in item.images.slice(0, 9)" 
-                                :key="idx"
-                                :src="img"
-                                class="w-full aspect-square rounded"
-                                mode="aspectFill"
-                                @click.stop="previewImage(item.images, idx)"
-                            />
-                        </view>
-                        <!-- 视频 -->
-                        <view v-if="item.video" class="relative rounded overflow-hidden">
-                            <video 
-                                :src="item.video" 
-                                class="w-full" 
-                                :poster="item.video_cover"
-                                object-fit="cover"
-                                @click.stop
-                            />
-                        </view>
-                    </view>
-
-                    <!-- 互动数据 -->
-                    <view class="px-4 py-3 border-t border-gray-100 flex items-center">
-                        <view class="flex-1 flex items-center gap-6">
-                            <view class="flex items-center text-gray-400 text-sm">
-                                <u-icon name="eye" size="32" class="mr-1" />
-                                <text>{{ formatCount(item.view_count) }}</text>
-                            </view>
-                            <view 
-                                class="flex items-center text-sm"
-                                :class="item.is_liked ? 'text-red-500' : 'text-gray-400'"
-                                @click.stop="handleLike(item)"
-                            >
-                                <u-icon :name="item.is_liked ? 'heart-fill' : 'heart'" size="32" class="mr-1" />
-                                <text>{{ formatCount(item.like_count) }}</text>
-                            </view>
-                            <view class="flex items-center text-gray-400 text-sm">
-                                <u-icon name="chat" size="32" class="mr-1" />
-                                <text>{{ formatCount(item.comment_count) }}</text>
-                            </view>
-                            <view 
-                                class="flex items-center text-sm"
-                                :class="item.is_collected ? 'text-yellow-500' : 'text-gray-400'"
-                                @click.stop="handleCollect(item)"
-                            >
-                                <u-icon :name="item.is_collected ? 'star-fill' : 'star'" size="32" class="mr-1" />
-                                <text>{{ formatCount(item.collect_count) }}</text>
-                            </view>
-                        </view>
-                        <view 
-                            class="text-gray-400"
-                            @click.stop="handleShare(item)"
-                        >
-                            <u-icon name="share" size="36" />
-                        </view>
-                    </view>
+                <!-- 加载更多提示 -->
+                <view v-if="hasMore" class="load-more">
+                    <text v-if="loading" class="load-more-text">加载中...</text>
+                    <text v-else class="load-more-text load-more-clickable" @click="loadMore">加载更多</text>
                 </view>
-
-                <!-- 加载更多 -->
-                <view v-if="hasMore" class="py-4 text-center text-gray-400 text-sm">
-                    <text v-if="loading">加载中...</text>
-                    <text v-else @click="loadMore">加载更多</text>
-                </view>
-                <view v-else-if="dynamics.length > 0" class="py-4 text-center text-gray-400 text-sm">
-                    没有更多了
+                <view v-else-if="dynamics.length > 0" class="load-more">
+                    <text class="load-more-text">没有更多了</text>
                 </view>
             </view>
-        </view>
-
-        <!-- 发布按钮 -->
-        <view 
-            class="fixed right-4 bottom-24 w-14 h-14 bg-primary rounded-full flex items-center justify-center shadow-lg"
-            @click="goPublish"
-        >
-            <u-icon name="plus" color="#fff" size="48" />
         </view>
 
         <tabbar />
@@ -178,18 +106,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { onLoad, onShow, onReachBottom, onShareAppMessage } from '@dcloudio/uni-app'
 import { useUserStore } from '@/stores/user'
-import { 
-    getDynamicList, 
-    getHotTags, 
-    likeDynamic, 
-    collectDynamic, 
-    toggleFollow 
+import { useThemeStore } from '@/stores/theme'
+import {
+    getDynamicList,
+    likeDynamic,
+    collectDynamic,
+    toggleFollow
 } from '@/api/dynamic'
+import DynamicCard from '@/components/business/DynamicCard.vue'
 
 const userStore = useUserStore()
+const themeStore = useThemeStore()
 const userId = computed(() => userStore.userInfo?.id)
 
 const typeTabs = [
@@ -200,49 +130,26 @@ const typeTabs = [
     { label: '活动', value: 4 }
 ]
 
-const currentType = ref<number | string>('')
-const currentTag = ref('')
+const sortOptions = [
+    { label: '最新发布', value: 'latest' },
+    { label: '最多点赞', value: 'like' },
+    { label: '最多评论', value: 'comment' },
+    { label: '最多浏览', value: 'view' }
+]
+
+const currentTypeIndex = ref(0)
+const currentType = computed(() => typeTabs[currentTypeIndex.value].value)
+const currentTag = ref('') // 当前筛选的标签
+const currentSort = ref('latest') // 当前排序方式
+const showSortMenu = ref(false) // 是否显示排序菜单
+const currentSortLabel = computed(() => {
+    const option = sortOptions.find(item => item.value === currentSort.value)
+    return option?.label || '最新发布'
+})
 const dynamics = ref<any[]>([])
-const hotTags = ref<any[]>([])
 const loading = ref(false)
 const page = ref(1)
 const hasMore = ref(true)
-
-const getTypeClass = (type: number) => {
-    const classes: Record<number, string> = {
-        1: 'bg-blue-100 text-blue-500',
-        2: 'bg-purple-100 text-purple-500',
-        3: 'bg-green-100 text-green-500',
-        4: 'bg-orange-100 text-orange-500'
-    }
-    return classes[type] || 'bg-gray-100 text-gray-500'
-}
-
-const getTypeText = (type: number) => {
-    const texts: Record<number, string> = {
-        1: '图文',
-        2: '视频',
-        3: '案例',
-        4: '活动'
-    }
-    return texts[type] || ''
-}
-
-const getImageGridClass = (count: number) => {
-    if (count === 1) return 'grid-cols-1'
-    if (count === 2 || count === 4) return 'grid-cols-2'
-    return 'grid-cols-3'
-}
-
-const formatCount = (count: number) => {
-    if (count >= 10000) {
-        return (count / 10000).toFixed(1) + 'w'
-    }
-    if (count >= 1000) {
-        return (count / 1000).toFixed(1) + 'k'
-    }
-    return count || 0
-}
 
 const fetchDynamics = async (refresh = false) => {
     if (loading.value) return
@@ -258,49 +165,79 @@ const fetchDynamics = async (refresh = false) => {
         if (currentType.value !== '') {
             params.dynamic_type = currentType.value
         }
+        // 添加标签筛选参数
         if (currentTag.value) {
             params.tag = currentTag.value
         }
+        // 添加排序参数
+        if (currentSort.value) {
+            params.sort = currentSort.value
+        }
 
         const res = await getDynamicList(params)
-        const list = res.data || []
-        
+        const list = (res.data || []).map((item: any) => {
+            // 处理标签数据
+            let tags: string[] = []
+            if (item.tags) {
+                if (typeof item.tags === 'string') {
+                    // 如果是字符串，按逗号分割
+                    tags = item.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+                } else if (Array.isArray(item.tags)) {
+                    tags = item.tags
+                }
+            }
+            
+            // 处理图片数据：如果是视频动态，将视频封面作为图片展示
+            let displayImages: string[] = []
+            if (item.video_url || item.video) {
+                // 视频动态：使用视频封面作为图片
+                if (item.video_cover) {
+                    displayImages = [item.video_cover]
+                }
+            } else if (item.images && item.images.length > 0) {
+                // 图文动态：使用原有图片
+                displayImages = item.images
+            }
+            
+            return {
+                id: item.id,
+                user: {
+                    id: item.user_id || item.user?.id,
+                    nickname: item.user?.nickname || '匿名用户',
+                    avatar: item.user?.avatar || '',
+                    isFollowed: item.is_followed || false
+                },
+                content: item.content || '',
+                images: displayImages,
+                topics: tags.map((tag: string, index: number) => ({
+                    id: index,
+                    name: tag
+                })),
+                location: item.location ? {
+                    name: item.location,
+                    lat: 0,
+                    lng: 0
+                } : undefined,
+                viewCount: item.view_count || 0,
+                likeCount: item.like_count || 0,
+                commentCount: item.comment_count || 0,
+                isLiked: item.is_liked || false,
+                createTime: item.create_time || item.created_at || ''
+            }
+        })
+
         if (refresh) {
             dynamics.value = list
         } else {
             dynamics.value.push(...list)
         }
-        
+
         hasMore.value = list.length === 10
     } catch (e) {
         console.error(e)
     } finally {
         loading.value = false
     }
-}
-
-const fetchHotTags = async () => {
-    try {
-        const res = await getHotTags()
-        hotTags.value = res || []
-    } catch (e) {
-        console.error(e)
-    }
-}
-
-const changeType = (type: number | string) => {
-    currentType.value = type
-    currentTag.value = ''
-    fetchDynamics(true)
-}
-
-const filterByTag = (tag: string) => {
-    if (currentTag.value === tag) {
-        currentTag.value = ''
-    } else {
-        currentTag.value = tag
-    }
-    fetchDynamics(true)
 }
 
 const loadMore = () => {
@@ -310,27 +247,50 @@ const loadMore = () => {
     }
 }
 
-const goDetail = (id: number) => {
+const goDetail = (dynamic: any) => {
+    // 处理不同的参数类型
+    let id: number | undefined
+    
+    if (typeof dynamic === 'number') {
+        id = dynamic
+    } else if (dynamic && typeof dynamic === 'object') {
+        id = dynamic.id
+    }
+    
+    if (!id) {
+        // 静默处理，不输出错误日志
+        return
+    }
+    
     uni.navigateTo({ url: `/pages/dynamic_detail/dynamic_detail?id=${id}` })
 }
 
 const goPublish = () => {
-    if (!userStore.isLogin) {
-        uni.navigateTo({ url: '/pages/login/login' })
-        return
-    }
-    uni.navigateTo({ url: '/pages/dynamic_publish/dynamic_publish' })
+    // 禁用用户发布动态功能
+    uni.showToast({ 
+        title: '动态发布功能已关闭，请联系管理员', 
+        icon: 'none',
+        duration: 2000
+    })
+    return
+    
+    // 以下代码已禁用
+    // if (!userStore.isLogin) {
+    //     uni.navigateTo({ url: '/pages/login/login' })
+    //     return
+    // }
+    // uni.navigateTo({ url: '/pages/dynamic_publish/dynamic_publish' })
 }
 
-const handleLike = async (item: any) => {
+const handleLike = async (dynamic: any) => {
     if (!userStore.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
         return
     }
     try {
-        await likeDynamic({ id: item.id })
-        item.is_liked = !item.is_liked
-        item.like_count += item.is_liked ? 1 : -1
+        await likeDynamic({ id: dynamic.id })
+        dynamic.isLiked = !dynamic.isLiked
+        dynamic.likeCount += dynamic.isLiked ? 1 : -1
     } catch (e: any) {
         uni.showToast({ title: e.message || '操作失败', icon: 'none' })
     }
@@ -351,25 +311,30 @@ const handleCollect = async (item: any) => {
     }
 }
 
-const handleFollow = async (item: any) => {
+const handleFollow = async (userId: number) => {
     if (!userStore.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
         return
     }
     try {
-        await toggleFollow({ 
-            follow_type: item.user_type, 
-            follow_id: item.user_id 
+        // 找到对应的动态并更新
+        const dynamic = dynamics.value.find(d => d.user.id === userId)
+        if (!dynamic) return
+        
+        await toggleFollow({
+            follow_type: 1, // 假设类型为1
+            follow_id: userId
         })
-        item.is_followed = true
+        dynamic.user.isFollowed = true
         uni.showToast({ title: '关注成功' })
     } catch (e: any) {
         uni.showToast({ title: e.message || '操作失败', icon: 'none' })
     }
 }
 
-const handleShare = (item: any) => {
+const handleShare = (dynamic: any) => {
     // 调用小程序分享
+    uni.showToast({ title: '分享功能开发中', icon: 'none' })
 }
 
 const previewImage = (images: string[], current: number) => {
@@ -379,8 +344,34 @@ const previewImage = (images: string[], current: number) => {
     })
 }
 
-onLoad(() => {
-    fetchHotTags()
+// 清除标签筛选
+const clearTagFilter = () => {
+    currentTag.value = ''
+    fetchDynamics(true)
+}
+
+// 切换排序菜单
+const toggleSortMenu = () => {
+    showSortMenu.value = !showSortMenu.value
+}
+
+// 选择排序方式
+const selectSort = (sort: string) => {
+    currentSort.value = sort
+    showSortMenu.value = false
+    fetchDynamics(true)
+}
+
+// 监听tabs切换
+watch(currentTypeIndex, () => {
+    fetchDynamics(true)
+})
+
+onLoad((options: any) => {
+    // 接收标签参数
+    if (options.tag) {
+        currentTag.value = decodeURIComponent(options.tag)
+    }
 })
 
 onShow(() => {
@@ -402,14 +393,200 @@ onShareAppMessage((res) => {
 <style lang="scss" scoped>
 .dynamic-page {
     min-height: 100vh;
-    background-color: #f5f5f5;
+    background: linear-gradient(180deg, var(--color-primary-light-9, #FAF5FF) 0%, #F5F5F5 100%);
     padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
-.line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+/* 话题筛选提示横幅 */
+.tag-filter-banner {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light-3) 100%);
+    padding: 16rpx 24rpx;
+    margin-bottom: 16rpx;
+    box-shadow: 0 2rpx 12rpx rgba(124, 58, 237, 0.2);
+}
+
+.tag-filter-content {
+    display: flex;
+    align-items: center;
+    gap: 16rpx; // 使用sm间距
+}
+
+.tag-text {
+    flex: 1;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #FFFFFF;
+}
+
+.clear-filter {
+    width: 48rpx;
+    height: 48rpx;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 24rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    
+    &:active {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(0.98);
+    }
+}
+
+/* 类型筛选标签 */
+.type-tabs-wrapper {
+    background: #ffffff;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin-bottom: 16rpx;
+}
+
+.tabs-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 24rpx; // 使用md间距
+}
+
+.tabs-main {
+    flex: 1;
+}
+
+.sort-btn {
+    display: flex;
+    align-items: center;
+    gap: 8rpx; // 使用xs间距
+    padding: 12rpx 16rpx; // 使用sm间距
+    background: var(--color-primary-light-9);
+    border-radius: 32rpx;
+    transition: all 0.2s ease;
+    
+    &:active {
+        transform: scale(0.98);
+        background: var(--color-primary-light-7);
+    }
+}
+
+.sort-text {
+    font-size: 24rpx;
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+/* 排序菜单 */
+.sort-menu {
+    background: #ffffff;
+    border-top: 1rpx solid var(--color-light);
+    padding: 16rpx 0; // 使用sm间距
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10rpx);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sort-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24rpx 32rpx; // 使用md和lg间距
+    transition: all 0.2s ease;
+    
+    &:active {
+        background: var(--color-primary-light-9);
+    }
+}
+
+.sort-menu-item-active {
+    background: linear-gradient(90deg, var(--color-primary-light-9) 0%, #ffffff 100%);
+}
+
+.sort-menu-text {
+    font-size: 28rpx;
+    color: var(--color-content);
+    
+    .sort-menu-item-active & {
+        color: var(--color-primary);
+        font-weight: 600;
+    }
+}
+
+/* 动态列表容器 */
+.dynamic-list-wrapper {
+    padding: 0 24rpx; // 使用md间距
+}
+
+/* 加载状态 */
+.loading-state {
+    padding: 160rpx 0;
+    text-align: center;
+}
+
+.loading-text {
+    display: block;
+    margin-top: 32rpx; // 使用lg间距
+    font-size: 28rpx;
+    color: var(--color-muted);
+}
+
+/* 空状态 */
+.empty-state {
+    padding: 160rpx 0;
+    text-align: center;
+}
+
+.empty-icon-wrapper {
+    width: 256rpx;
+    height: 256rpx;
+    margin: 0 auto 32rpx; // 使用lg间距
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-title {
+    display: block;
+    font-size: 32rpx;
+    color: var(--color-muted);
+}
+
+.empty-subtitle {
+    display: block;
+    margin-top: 16rpx; // 使用sm间距
+    font-size: 24rpx;
+    color: var(--color-disabled);
+}
+
+/* 动态列表 */
+.dynamic-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx; // 使用sm间距
+}
+
+/* 加载更多 */
+.load-more {
+    padding: 32rpx 0; // 使用lg间距
+    text-align: center;
+}
+
+.load-more-text {
+    font-size: 28rpx;
+    color: var(--color-muted);
+}
+
+.load-more-clickable {
+    color: var(--color-primary);
+    font-weight: 500;
 }
 </style>

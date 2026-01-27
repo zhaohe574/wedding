@@ -1,26 +1,35 @@
+// 员工展示组件数据项接口
+export interface StaffShowcaseItem {
+    staff_id: number
+    is_show: string
+    sort?: number
+    // 以下字段由后端动态填充，前端不保存
+    avatar?: string
+    name?: string
+    role?: string
+    rating?: string
+    order_count?: number
+    tags?: string[]
+    link?: {
+        path: string
+        query: { id: number }
+        type: string
+    }
+}
+
 export default () => ({
     title: '人员推荐',
     name: 'staff-showcase',
+    pageScope: ['home'], // 仅在首页显示
     content: {
         enabled: 1,
         title: '推荐人员',
-        style: 1, // 1=卡片样式, 2=列表样式
-        per_line: 2, // 每行显示数量（卡片样式）
-        show_count: 4, // 显示数量
+        style: 1, // 1=横向滑动卡片, 2=列表样式
+        show_count: 6, // 显示数量
         show_more: 0, // 是否显示查看更多
         more_link: {}, // 查看更多链接
-        data: [
-            {
-                is_show: '1',
-                avatar: '',
-                name: '人员名称',
-                role: '摄影师',
-                rating: '5.0',
-                order_count: 0,
-                tags: ['专业', '耐心'],
-                link: {}
-            }
-        ]
+        // 人员列表：只存储引用ID和控制信息，业务数据由后端动态填充
+        data: [] as StaffShowcaseItem[]
     },
     styles: {}
 })

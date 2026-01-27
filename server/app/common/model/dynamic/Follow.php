@@ -104,7 +104,7 @@ class Follow extends BaseModel
         }
 
         $list = $query->order('create_time', 'desc')
-            ->paginate($params['page_size'] ?? 20)
+            ->paginate((int)($params['page_size'] ?? 20))
             ->toArray();
 
         // 获取关注对象信息
@@ -153,7 +153,7 @@ class Follow extends BaseModel
             ->where('follow_id', $targetId);
 
         $list = $query->order('create_time', 'desc')
-            ->paginate($params['page_size'] ?? 20)
+            ->paginate((int)($params['page_size'] ?? 20))
             ->toArray();
 
         // 获取粉丝用户信息

@@ -1,6 +1,7 @@
 export default () => ({
     title: '案例作品',
     name: 'portfolio-gallery',
+    pageScope: ['home'], // 仅在首页显示
     content: {
         enabled: 1,
         title: '精选案例',

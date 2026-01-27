@@ -18,6 +18,7 @@ class DynamicValidate extends BaseValidate
 {
     protected $rule = [
         'id' => 'require|integer|gt:0',
+        'dynamic_id' => 'require|integer|gt:0',
         'comment_id' => 'require|integer|gt:0',
         'dynamic_type' => 'require|integer|in:1,2,3,4',
         'content' => 'require|max:2000',
@@ -36,6 +37,8 @@ class DynamicValidate extends BaseValidate
     protected $message = [
         'id.require' => '请选择动态',
         'id.integer' => '动态ID格式错误',
+        'dynamic_id.require' => '请选择动态',
+        'dynamic_id.integer' => '动态ID格式错误',
         'comment_id.require' => '请选择评论',
         'comment_id.integer' => '评论ID格式错误',
         'dynamic_type.require' => '请选择动态类型',
@@ -77,7 +80,7 @@ class DynamicValidate extends BaseValidate
      */
     public function sceneComment()
     {
-        return $this->only(['id', 'content', 'images', 'parent_id', 'reply_user_id'])
+        return $this->only(['dynamic_id', 'content', 'images', 'parent_id', 'reply_user_id'])
             ->remove('content', 'max')
             ->append('content', 'max:500');
     }
@@ -92,11 +95,14 @@ class DynamicValidate extends BaseValidate
     }
 
     /**
-     * @notes 关注场景
+     * @notes 评论列表场景
      * @return DynamicValidate
      */
-    public function sceneFollow()
+    public function sceneCommentList()
     {
-        return $this->only(['follow_type', 'follow_id']);
+        return $this->only(['id'])
+            ->remove('id', 'require')
+            ->append('id', 'require')
+            ->message(['id.require' => '请选择动态']);
     }
 }

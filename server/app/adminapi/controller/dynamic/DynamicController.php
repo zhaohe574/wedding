@@ -30,13 +30,41 @@ class DynamicController extends BaseAdminController
     }
 
     /**
+     * @notes 添加动态
+     * @return \think\response\Json
+     */
+    public function add()
+    {
+        $params = (new DynamicValidate())->post()->goCheck('add');
+        $result = DynamicLogic::add($this->adminId, $params);
+        if (true === $result) {
+            return $this->success('发布成功');
+        }
+        return $this->fail(DynamicLogic::getError());
+    }
+
+    /**
+     * @notes 编辑动态
+     * @return \think\response\Json
+     */
+    public function edit()
+    {
+        $params = (new DynamicValidate())->post()->goCheck('edit');
+        $result = DynamicLogic::edit((int)$params['id'], $params);
+        if (true === $result) {
+            return $this->success('编辑成功');
+        }
+        return $this->fail(DynamicLogic::getError());
+    }
+
+    /**
      * @notes 动态详情
      * @return \think\response\Json
      */
     public function detail()
     {
         $params = (new DynamicValidate())->goCheck('detail');
-        $result = DynamicLogic::detail($params['id']);
+        $result = DynamicLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('动态不存在');
         }
@@ -50,7 +78,7 @@ class DynamicController extends BaseAdminController
     public function audit()
     {
         $params = (new DynamicValidate())->post()->goCheck('audit');
-        $result = DynamicLogic::audit($params['id'], $this->adminId, $params['approved'], $params['remark'] ?? '');
+        $result = DynamicLogic::audit((int)$params['id'], $this->adminId, $params['approved'], $params['remark'] ?? '');
         if (true === $result) {
             return $this->success('审核成功');
         }
@@ -64,7 +92,7 @@ class DynamicController extends BaseAdminController
     public function offline()
     {
         $params = (new DynamicValidate())->post()->goCheck('offline');
-        $result = DynamicLogic::offline($params['id'], $this->adminId, $params['reason'] ?? '');
+        $result = DynamicLogic::offline((int)$params['id'], $this->adminId, $params['reason'] ?? '');
         if (true === $result) {
             return $this->success('下架成功');
         }
@@ -78,7 +106,7 @@ class DynamicController extends BaseAdminController
     public function setTop()
     {
         $params = (new DynamicValidate())->post()->goCheck('setTop');
-        $result = DynamicLogic::setTop($params['id'], $params['is_top']);
+        $result = DynamicLogic::setTop((int)$params['id'], (int)$params['is_top']);
         if (true === $result) {
             return $this->success('设置成功');
         }
@@ -92,7 +120,7 @@ class DynamicController extends BaseAdminController
     public function setHot()
     {
         $params = (new DynamicValidate())->post()->goCheck('setHot');
-        $result = DynamicLogic::setHot($params['id'], $params['is_hot']);
+        $result = DynamicLogic::setHot((int)$params['id'], (int)$params['is_hot']);
         if (true === $result) {
             return $this->success('设置成功');
         }
@@ -106,7 +134,7 @@ class DynamicController extends BaseAdminController
     public function delete()
     {
         $params = (new DynamicValidate())->post()->goCheck('detail');
-        $result = DynamicLogic::delete($params['id'], $this->adminId);
+        $result = DynamicLogic::delete((int)$params['id'], $this->adminId);
         if (true === $result) {
             return $this->success('删除成功');
         }
@@ -129,7 +157,7 @@ class DynamicController extends BaseAdminController
     public function deleteComment()
     {
         $params = (new DynamicValidate())->post()->goCheck('commentId');
-        $result = DynamicLogic::deleteComment($params['comment_id'], $this->adminId);
+        $result = DynamicLogic::deleteComment((int)$params['comment_id'], $this->adminId);
         if (true === $result) {
             return $this->success('删除成功');
         }
@@ -143,7 +171,7 @@ class DynamicController extends BaseAdminController
     public function setCommentTop()
     {
         $params = (new DynamicValidate())->post()->goCheck('setCommentTop');
-        $result = DynamicLogic::setCommentTop($params['comment_id'], $params['is_top']);
+        $result = DynamicLogic::setCommentTop((int)$params['comment_id'], (int)$params['is_top']);
         if (true === $result) {
             return $this->success('设置成功');
         }

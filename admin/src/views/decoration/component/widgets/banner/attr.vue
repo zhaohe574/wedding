@@ -21,6 +21,30 @@
                 开启背景联动后，需为轮播图设置背景图，轮播图切换时，背景图也跟随切换，此时该页面自身的“页面背景“设置将失效。
             </div>
         </el-card>
+        <el-card shadow="never" class="!border-none flex mt-2">
+            <div class="flex items-end mb-4">
+                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">轮播图高度</div>
+                <div class="text-xs text-tx-secondary ml-2">
+                    {{ heightTip }}
+                </div>
+            </div>
+            <el-form-item label="高度">
+                <el-input-number
+                    v-model="contentData.height"
+                    :min="100"
+                    :max="2000"
+                    :step="10"
+                    controls-position="right"
+                    :placeholder="defaultHeight.toString()"
+                    class="!w-full"
+                >
+                    <template #append>rpx</template>
+                </el-input-number>
+            </el-form-item>
+            <div v-if="showHeightWarning" class="text-warning text-xs mt-2">
+                {{ heightWarningText }}
+            </div>
+        </el-card>
         <el-card shadow="never" class="!border-none flex-1 mt-2">
             <div class="flex items-end">
                 <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">轮播图片</div>
@@ -147,6 +171,42 @@ const contentData = computed({
         emits('update:content', newValue)
     }
 })
+
+// 默认高度：常规模式321rpx，大屏模式1100rpx
+const defaultHeight = computed(() => {
+    return props.content.style === 1 ? 321 : 1100
+})
+
+// 高度提示文字
+const heightTip = computed(() => {
+    return props.content.style === 1 
+        ? '建议高度：250-500rpx' 
+        : '建议高度：800-1600rpx'
+})
+
+// 是否显示警告：超出建议范围但在有效范围内
+const showHeightWarning = computed(() => {
+    const height = contentData.value.height || defaultHeight.value
+    if (props.content.style === 1) {
+        return height < 250 || height > 500
+    } else {
+        return height < 800 || height > 1600
+    }
+})
+
+// 警告文字
+const heightWarningText = computed(() => {
+    return '当前高度超出建议范围，可能影响显示效果'
+})
+
+// 监听样式切换：当样式切换且高度未自定义时，使用新样式的默认高度
+watch(() => props.content.style, (newStyle, oldStyle) => {
+    if (newStyle !== oldStyle && !contentData.value.height) {
+        // 样式切换时，如果没有自定义高度，则使用新样式的默认高度
+        // 这里不需要手动设置，因为 defaultHeight 会自动更新
+    }
+})
+
 
 const handleAdd = () => {
     if (props.content.data?.length < limit) {

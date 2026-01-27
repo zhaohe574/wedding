@@ -1,15 +1,12 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
+        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
         <!-- #endif -->
     </page-meta>
     <view class="h-screen flex flex-col justify-center items-center">
         <view>
-            <u-empty text="对不起，您访问的页面不存在" mode="data"></u-empty>
+            <tn-empty text="对不起，您访问的页面不存在" mode="data"></tn-empty>
         </view>
         <view class="w-full px-[100rpx] mt-[40rpx]">
             <router-navigate

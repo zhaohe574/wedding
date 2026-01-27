@@ -157,7 +157,8 @@
         {
             "path": "pages/order/order",
             "style": {
-                "navigationStyle": "custom"
+                "navigationBarTitleText": "我的订单",
+                "enablePullDownRefresh": false
             },
             "meta": {
                 "auth": true
@@ -166,7 +167,8 @@
         {
             "path": "pages/order_detail/order_detail",
             "style": {
-                "navigationStyle": "custom"
+                "navigationBarTitleText": "订单详情",
+                "enablePullDownRefresh": false
             },
             "meta": {
                 "auth": true
@@ -175,13 +177,15 @@
         {
             "path": "pages/dynamic/dynamic",
             "style": {
-                "navigationStyle": "custom"
+                "navigationBarTitleText": "动态广场",
+                "enablePullDownRefresh": false
             }
         },
         {
             "path": "pages/dynamic_detail/dynamic_detail",
             "style": {
-                "navigationStyle": "custom"
+                "navigationBarTitleText": "动态详情",
+                "enablePullDownRefresh": false
             }
         },
         {
@@ -378,13 +382,6 @@
             "meta": {
                 "auth": true
             }
-        },
-        {
-            "path": "uni_modules/vk-uview-ui/components/u-avatar-cropper/u-avatar-cropper",
-            "style": {
-                "navigationBarTitleText": "头像裁剪",
-                "navigationBarBackgroundColor": "#000000"
-            }
         }
     ],
 	"subPackages": [{
@@ -480,6 +477,12 @@
                 "meta": {
                     "auth": true
                 }
+            },
+            {
+                "path": "pages/share_plan/share_plan",
+                "style": {
+                    "navigationBarTitleText": "输入分享码"
+                }
             }
 		]
 	}],
@@ -505,8 +508,8 @@
             {
                 "iconPath": "static/images/tabbar/news.png",
                 "selectedIconPath": "static/images/tabbar/news_s.png",
-                "pagePath": "pages/news/news",
-                "text": "资讯"
+                "pagePath": "pages/dynamic/dynamic",
+                "text": "动态"
             },
             {
                 "iconPath": "static/images/tabbar/user.png",
@@ -520,7 +523,9 @@
         "custom": {
             "router-navigate": "uniapp-router-next/components/router-navigate/router-navigate.vue",
             "^(?!z-paging-refresh|z-paging-load-more)z-paging(.*)": "z-paging/components/z-paging$1/z-paging$1.vue",
-            "^w-(.*)": "@/components/widgets/$1/$1.vue"
+            "^w-(.*)": "@/components/widgets/$1/$1.vue",
+            "^tn-(.*)-(item|group)$": "@tuniao/tnui-vue3-uniapp/components/$1/src/$1-$2.vue",
+            "^tn-(.*)": "@tuniao/tnui-vue3-uniapp/components/$1/src/$1.vue"
         }
     }
 }

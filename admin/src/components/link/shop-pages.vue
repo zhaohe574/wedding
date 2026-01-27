@@ -142,13 +142,23 @@ const linkList = ref([
     },
     // ===== 售后与评价 =====
     {
-        path: '/pages/aftersale/list/list',
+        path: '/pages/aftersale/index',
         name: '售后列表',
         type: LinkTypeEnum.SHOP_PAGES
     },
     {
-        path: '/pages/review/list/list',
+        path: '/pages/aftersale/ticket',
+        name: '我的工单',
+        type: LinkTypeEnum.SHOP_PAGES
+    },
+    {
+        path: '/pages/review/list',
         name: '我的评价',
+        type: LinkTypeEnum.SHOP_PAGES
+    },
+    {
+        path: '/pages/review/publish',
+        name: '发布评价',
         type: LinkTypeEnum.SHOP_PAGES
     },
     // ===== 动态社区 =====
@@ -164,12 +174,17 @@ const linkList = ref([
     },
     // ===== 优惠与消息 =====
     {
-        path: '/pages/coupon/coupon',
-        name: '优惠券',
+        path: '/pages/coupon/list',
+        name: '我的优惠券',
         type: LinkTypeEnum.SHOP_PAGES
     },
     {
-        path: '/pages/notification/notification',
+        path: '/pages/coupon/center',
+        name: '领券中心',
+        type: LinkTypeEnum.SHOP_PAGES
+    },
+    {
+        path: '/pages/notification/index',
         name: '消息通知',
         type: LinkTypeEnum.SHOP_PAGES
     },

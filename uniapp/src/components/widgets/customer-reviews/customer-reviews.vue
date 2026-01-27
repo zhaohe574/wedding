@@ -7,8 +7,10 @@
             <!-- 统计信息 -->
             <view v-if="content.show_stats" class="ml-auto flex items-center">
                 <view class="flex items-center mr-[24rpx]">
-                    <u-icon name="star-fill" size="16" color="#f59e0b"></u-icon>
-                    <text class="text-base font-bold text-amber-500 ml-[8rpx]">{{ avgRating }}</text>
+                    <tn-icon name="star-fill" size="16" color="#f59e0b"></tn-icon>
+                    <text class="text-base font-bold text-amber-500 ml-[8rpx]">{{
+                        avgRating
+                    }}</text>
                 </view>
                 <text class="text-sm text-gray-500">{{ showList.length }}条评价</text>
             </view>
@@ -23,7 +25,7 @@
             >
                 <!-- 用户信息 -->
                 <view class="flex items-center mb-[16rpx]">
-                    <u-image
+                    <image
                         width="80rpx"
                         height="80rpx"
                         :src="getImageUrl(item.avatar) || defaultAvatar"
@@ -34,13 +36,13 @@
                         <text class="text-base font-medium text-gray-900">{{ item.name }}</text>
                         <view class="flex items-center mt-[4rpx]">
                             <view class="flex items-center">
-                                <u-icon
+                                <tn-icon
                                     v-for="star in 5"
                                     :key="star"
                                     :name="star <= item.rating ? 'star-fill' : 'star'"
                                     size="14"
                                     :color="star <= item.rating ? '#f59e0b' : '#e5e7eb'"
-                                ></u-icon>
+                                ></tn-icon>
                             </view>
                             <text class="text-xs text-gray-400 ml-[12rpx]">{{ item.date }}</text>
                         </view>
@@ -50,18 +52,21 @@
                         <text class="text-xs text-primary">{{ item.tag }}</text>
                     </view>
                 </view>
-                
+
                 <!-- 评价内容 -->
                 <text class="text-sm text-gray-600 leading-relaxed">{{ item.content }}</text>
-                
+
                 <!-- 评价图片 -->
-                <view v-if="item.images && item.images.length" class="flex flex-wrap gap-[12rpx] mt-[16rpx]">
+                <view
+                    v-if="item.images && item.images.length"
+                    class="flex flex-wrap gap-[12rpx] mt-[16rpx]"
+                >
                     <view
                         v-for="(img, imgIndex) in item.images.slice(0, 4)"
                         :key="imgIndex"
                         class="relative"
                     >
-                        <u-image
+                        <image
                             width="160rpx"
                             height="160rpx"
                             :src="getImageUrl(img)"
@@ -77,7 +82,7 @@
                         </view>
                     </view>
                 </view>
-                
+
                 <!-- 服务项目 -->
                 <view v-if="item.service" class="mt-[16rpx] pt-[16rpx] border-t border-gray-100">
                     <text class="text-xs text-gray-400">服务项目：{{ item.service }}</text>
@@ -86,9 +91,9 @@
         </view>
 
         <!-- 横向滑动样式 -->
-        <scroll-view 
-            v-if="content.style == 2" 
-            scroll-x 
+        <scroll-view
+            v-if="content.style == 2"
+            scroll-x
             class="review-scroll"
             :show-scrollbar="false"
         >
@@ -101,7 +106,7 @@
                 >
                     <!-- 用户信息 -->
                     <view class="flex items-center mb-[16rpx]">
-                        <u-image
+                        <image
                             width="72rpx"
                             height="72rpx"
                             :src="getImageUrl(item.avatar) || defaultAvatar"
@@ -111,23 +116,26 @@
                         <view class="ml-[12rpx] flex-1">
                             <text class="text-sm font-medium text-gray-900">{{ item.name }}</text>
                             <view class="flex items-center mt-[4rpx]">
-                                <u-icon
+                                <tn-icon
                                     v-for="star in 5"
                                     :key="star"
                                     :name="star <= item.rating ? 'star-fill' : 'star'"
                                     size="12"
                                     :color="star <= item.rating ? '#f59e0b' : '#e5e7eb'"
-                                ></u-icon>
+                                ></tn-icon>
                             </view>
                         </view>
                     </view>
-                    
+
                     <!-- 评价内容 -->
                     <text class="text-sm text-gray-600 line-clamp-3">{{ item.content }}</text>
-                    
+
                     <!-- 评价图片 -->
-                    <view v-if="item.images && item.images.length" class="flex gap-[8rpx] mt-[12rpx]">
-                        <u-image
+                    <view
+                        v-if="item.images && item.images.length"
+                        class="flex gap-[8rpx] mt-[12rpx]"
+                    >
+                        <image
                             v-for="(img, imgIndex) in item.images.slice(0, 3)"
                             :key="imgIndex"
                             width="100rpx"
@@ -150,7 +158,7 @@
                 :class="{ 'border-b border-gray-100': index < showList.length - 1 }"
             >
                 <view class="flex items-start">
-                    <u-image
+                    <image
                         width="64rpx"
                         height="64rpx"
                         :src="getImageUrl(item.avatar) || defaultAvatar"
@@ -161,11 +169,15 @@
                         <view class="flex items-center justify-between">
                             <text class="text-sm font-medium text-gray-900">{{ item.name }}</text>
                             <view class="flex items-center">
-                                <u-icon name="star-fill" size="14" color="#f59e0b"></u-icon>
-                                <text class="text-sm text-amber-500 ml-[4rpx]">{{ item.rating }}</text>
+                                <tn-icon name="star-fill" size="14" color="#f59e0b"></tn-icon>
+                                <text class="text-sm text-amber-500 ml-[4rpx]">{{
+                                    item.rating
+                                }}</text>
                             </view>
                         </view>
-                        <text class="text-sm text-gray-600 mt-[8rpx] line-clamp-2">{{ item.content }}</text>
+                        <text class="text-sm text-gray-600 mt-[8rpx] line-clamp-2">{{
+                            item.content
+                        }}</text>
                         <text class="text-xs text-gray-400 mt-[8rpx]">{{ item.date }}</text>
                     </view>
                 </view>
@@ -173,13 +185,13 @@
         </view>
 
         <!-- 查看更多 -->
-        <view 
-            v-if="content.show_more" 
+        <view
+            v-if="content.show_more"
             class="flex items-center justify-center mt-[24rpx] py-[20rpx] bg-white rounded-xl"
             @click="handleMore"
         >
             <text class="text-sm text-primary">查看全部评价</text>
-            <u-icon name="arrow-right" size="14" color="#7c3aed" class="ml-[8rpx]"></u-icon>
+            <tn-icon name="right" size="14" color="#7c3aed" class="ml-[8rpx]"></tn-icon>
         </view>
     </view>
 </template>
@@ -241,7 +253,7 @@ const handleMore = () => {
             transform: scale(0.99);
         }
     }
-    
+
     .review-scroll {
         margin: 0 -20rpx;
         padding: 0 20rpx;

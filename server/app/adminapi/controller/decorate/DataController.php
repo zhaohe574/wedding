@@ -52,4 +52,56 @@ class DataController extends BaseAdminController
         return $this->data($result);
     }
 
+    /**
+     * @notes 优惠券列表（装修组件选择器）
+     * @return Json
+     * @author AI
+     * @date 2026/01/22
+     */
+    public function couponList(): Json
+    {
+        $params = $this->request->get();
+        $result = DecorateDataLogic::getCouponList($params);
+        return $this->success('获取成功', $result);
+    }
+
+    /**
+     * @notes 公告列表（装修组件选择器）
+     * @return Json
+     * @author AI
+     * @date 2026/01/22
+     */
+    public function noticeList(): Json
+    {
+        $params = $this->request->get();
+        $result = DecorateDataLogic::getNoticeList($params);
+        return $this->success('获取成功', $result);
+    }
+
+    /**
+     * @notes 话题列表（装修组件选择器）
+     * @return Json
+     * @author AI
+     * @date 2026/01/22
+     */
+    public function topicList(): Json
+    {
+        $params = $this->request->get();
+        $result = DecorateDataLogic::getTopicList($params);
+        return $this->success('获取成功', $result);
+    }
+
+    /**
+     * @notes 活动列表（装修组件选择器）
+     * @return Json
+     * @author AI
+     * @date 2026/01/24
+     */
+    public function activityList(): Json
+    {
+        $params = $this->request->get();
+        $result = DecorateDataLogic::getActivityList($params);
+        return $this->success('获取成功', $result);
+    }
+
 }

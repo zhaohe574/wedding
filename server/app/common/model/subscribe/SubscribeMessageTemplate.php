@@ -67,10 +67,10 @@ class SubscribeMessageTemplate extends BaseModel
 
     /**
      * @notes 获取场景描述
-     * @param string $scene
+     * @param string|int $scene
      * @return string
      */
-    public static function getSceneDesc(string $scene): string
+    public static function getSceneDesc(string|int $scene): string
     {
         $map = [
             self::SCENE_ORDER_CREATE => '订单创建通知',

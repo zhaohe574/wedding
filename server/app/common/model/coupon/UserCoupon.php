@@ -19,6 +19,12 @@ use app\common\model\order\Order;
 class UserCoupon extends BaseModel
 {
     protected $name = 'user_coupon';
+    
+    // 自动时间戳
+    protected $autoWriteTimestamp = true;
+    protected $createTime = 'create_time';
+    protected $updateTime = 'update_time';
+    protected $dateFormat = false; // 保持时间戳格式，不自动转换为日期时间字符串
 
     // 状态
     const STATUS_UNUSED = 0;    // 未使用

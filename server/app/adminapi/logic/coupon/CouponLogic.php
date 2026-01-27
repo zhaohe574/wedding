@@ -33,6 +33,23 @@ class CouponLogic extends BaseLogic
         }
 
         $data = $coupon->toArray();
+        
+        // PHP 8 类型转换
+        $data['coupon_type'] = (int)$data['coupon_type'];
+        $data['valid_type'] = (int)$data['valid_type'];
+        $data['use_scope'] = (int)$data['use_scope'];
+        $data['status'] = (int)$data['status'];
+        $data['valid_start_time'] = (int)$data['valid_start_time'];
+        $data['valid_end_time'] = (int)$data['valid_end_time'];
+        $data['valid_days'] = (int)$data['valid_days'];
+        $data['total_count'] = (int)$data['total_count'];
+        $data['receive_count'] = (int)$data['receive_count'];
+        $data['used_count'] = (int)$data['used_count'];
+        $data['per_limit'] = (int)$data['per_limit'];
+        $data['threshold_amount'] = (float)$data['threshold_amount'];
+        $data['discount_amount'] = (float)$data['discount_amount'];
+        $data['max_discount'] = (float)$data['max_discount'];
+        
         $data['coupon_type_text'] = Coupon::getTypeDesc($data['coupon_type']);
         $data['valid_type_text'] = Coupon::getValidTypeDesc($data['valid_type']);
         $data['use_scope_text'] = Coupon::getScopeDesc($data['use_scope']);
@@ -42,13 +59,9 @@ class CouponLogic extends BaseLogic
         $data['use_rate'] = $coupon->use_rate;
         $data['discount_desc'] = $coupon->discount_desc;
 
-        // 有效期时间格式化
-        if ($data['valid_start_time']) {
-            $data['valid_start_time_text'] = date('Y-m-d H:i:s', $data['valid_start_time']);
-        }
-        if ($data['valid_end_time']) {
-            $data['valid_end_time_text'] = date('Y-m-d H:i:s', $data['valid_end_time']);
-        }
+        // 有效期时间格式化（已经转换为int，直接使用）
+        $data['valid_start_time_text'] = $data['valid_start_time'] > 0 ? date('Y-m-d H:i:s', $data['valid_start_time']) : '';
+        $data['valid_end_time_text'] = $data['valid_end_time'] > 0 ? date('Y-m-d H:i:s', $data['valid_end_time']) : '';
 
         return $data;
     }
@@ -474,11 +487,18 @@ class CouponLogic extends BaseLogic
     public static function enabledList(): array
     {
         return Coupon::where('status', Coupon::STATUS_ENABLED)
-            ->field('id,name,coupon_type,threshold_amount,discount_amount')
+            ->field('id,name,coupon_type,threshold_amount,discount_amount,valid_type,valid_days,valid_start_time,valid_end_time,total_count,receive_count')
             ->order('create_time', 'desc')
             ->select()
             ->each(function ($item) {
                 $item->coupon_type_text = Coupon::getTypeDesc($item->coupon_type);
+                // 类型转换
+                $item->valid_type = (int)$item->valid_type;
+                $item->valid_days = (int)$item->valid_days;
+                $item->valid_start_time = (int)$item->valid_start_time;
+                $item->valid_end_time = (int)$item->valid_end_time;
+                $item->total_count = (int)$item->total_count;
+                $item->receive_count = (int)$item->receive_count;
                 return $item;
             })
             ->toArray();

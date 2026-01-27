@@ -1,24 +1,26 @@
 <template>
-    <view class="service-packages mx-[20rpx] mt-[20rpx]" v-if="content.enabled && showList.length">
+    <view class="service-packages mx-md mt-md" v-if="content.enabled && showList.length">
         <!-- 标题 -->
-        <view v-if="content.title" class="flex items-center mb-[24rpx]">
-            <view class="title-bar w-[8rpx] h-[34rpx] bg-primary rounded-full mr-[16rpx]"></view>
-            <text class="text-lg font-medium text-gray-900">{{ content.title }}</text>
+        <view v-if="content.title" class="flex items-center mb-md">
+            <view class="title-decoration">
+                <view class="title-line"></view>
+            </view>
+            <text class="title-text">{{ content.title }}</text>
             <view class="flex-1"></view>
-            <view 
-                v-if="content.show_more" 
-                class="flex items-center text-sm text-gray-500"
+            <view
+                v-if="content.show_more"
+                class="more-btn"
                 @click="handleMore"
             >
-                <text>查看更多</text>
-                <u-icon name="arrow-right" size="12" color="#9ca3af" class="ml-1"></u-icon>
+                <text class="more-text">查看更多</text>
+                <tn-icon name="right" size="24" :color="themeStore.themeColor1 || '#7c3aed'" class="ml-1"></tn-icon>
             </view>
         </view>
 
         <!-- 横向滑动样式 -->
-        <scroll-view 
-            v-if="content.style == 1" 
-            scroll-x 
+        <scroll-view
+            v-if="content.style == 1"
+            scroll-x
             class="package-scroll"
             :show-scrollbar="false"
         >
@@ -26,149 +28,126 @@
                 <view
                     v-for="(item, index) in showList"
                     :key="index"
-                    class="package-card flex-shrink-0 bg-white rounded-xl overflow-hidden shadow-sm"
+                    class="package-card"
                     :style="{ width: content.card_width || '520rpx' }"
-                    @click="handleClick(item.link)"
                 >
-                    <!-- 封面图 -->
-                    <view class="relative">
-                        <u-image
-                            width="100%"
-                            height="300rpx"
-                            :src="getImageUrl(item.image)"
-                            mode="aspectFill"
-                        />
-                        <!-- 热门/推荐标签 -->
-                        <view 
-                            v-if="item.tag" 
-                            class="absolute top-[16rpx] left-[16rpx] px-[16rpx] py-[6rpx] bg-gradient-to-r from-primary to-primary/80 rounded-full"
-                        >
-                            <text class="text-white text-xs">{{ item.tag }}</text>
+                    <!-- 卡片头部 -->
+                    <view class="card-header">
+                        <view class="card-header-content">
+                            <text class="card-title">{{ item.name }}</text>
+                            <view v-if="item.tag" class="tag-badge">
+                                <text class="tag-text">{{ item.tag }}</text>
+                            </view>
                         </view>
-                    </view>
-                    <!-- 信息 -->
-                    <view class="p-[24rpx]">
-                        <text class="text-base font-medium text-gray-900 line-clamp-1">{{ item.name }}</text>
-                        <view class="flex items-baseline mt-[12rpx]">
-                            <text class="text-xs text-primary">¥</text>
-                            <text class="text-xl font-bold text-primary">{{ item.price }}</text>
-                            <text v-if="item.original_price" class="text-xs text-gray-400 line-through ml-[12rpx]">
+                        <view class="price-wrapper">
+                            <view class="price-main">
+                                <text class="price-symbol">¥</text>
+                                <text class="price-value">{{ item.price }}</text>
+                            </view>
+                            <text v-if="item.original_price" class="price-original">
                                 ¥{{ item.original_price }}
                             </text>
                         </view>
-                        <!-- 服务项 -->
-                        <view v-if="item.services && item.services.length" class="mt-[16rpx]">
-                            <view class="flex flex-wrap gap-[8rpx]">
-                                <view
-                                    v-for="(service, sIndex) in item.services.slice(0, 4)"
-                                    :key="sIndex"
-                                    class="flex items-center text-xs text-gray-500"
-                                >
-                                    <u-icon name="checkmark" size="12" color="#7c3aed" class="mr-1"></u-icon>
-                                    <text>{{ service }}</text>
-                                </view>
-                            </view>
+                    </view>
+                    
+                    <!-- 服务项列表 -->
+                    <view v-if="item.services && item.services.length" class="services-list">
+                        <view
+                            v-for="(service, sIndex) in item.services"
+                            :key="sIndex"
+                            class="service-item"
+                        >
+                            <view class="service-dot"></view>
+                            <text class="service-text">{{ service }}</text>
                         </view>
                     </view>
+                    
+                    <!-- 描述 -->
+                    <text v-if="item.desc" class="card-desc">{{ item.desc }}</text>
                 </view>
             </view>
         </scroll-view>
 
         <!-- 纵向列表样式 -->
-        <view v-if="content.style == 2" class="package-list space-y-[20rpx]">
+        <view v-if="content.style == 2" class="package-list">
             <view
                 v-for="(item, index) in showList"
                 :key="index"
-                class="package-card bg-white rounded-xl overflow-hidden shadow-sm"
-                @click="handleClick(item.link)"
+                class="package-card-vertical"
             >
-                <view class="flex">
-                    <!-- 封面图 -->
-                    <view class="relative flex-shrink-0">
-                        <u-image
-                            width="240rpx"
-                            height="240rpx"
-                            :src="getImageUrl(item.image)"
-                            mode="aspectFill"
-                        />
-                        <!-- 热门/推荐标签 -->
-                        <view 
-                            v-if="item.tag" 
-                            class="absolute top-[12rpx] left-[12rpx] px-[12rpx] py-[4rpx] bg-gradient-to-r from-primary to-primary/80 rounded-full"
-                        >
-                            <text class="text-white text-xs">{{ item.tag }}</text>
-                        </view>
+                <!-- 卡片头部 -->
+                <view class="card-header-vertical">
+                    <view class="card-header-left">
+                        <text class="card-title-vertical">{{ item.name }}</text>
+                        <text v-if="item.desc" class="card-desc-vertical">{{ item.desc }}</text>
                     </view>
-                    <!-- 信息 -->
-                    <view class="flex-1 p-[24rpx] flex flex-col justify-between">
-                        <view>
-                            <text class="text-base font-medium text-gray-900 line-clamp-1">{{ item.name }}</text>
-                            <text v-if="item.desc" class="text-xs text-gray-500 mt-[8rpx] line-clamp-2">{{ item.desc }}</text>
-                        </view>
-                        <view class="flex items-center justify-between mt-[12rpx]">
-                            <view class="flex items-baseline">
-                                <text class="text-xs text-primary">¥</text>
-                                <text class="text-lg font-bold text-primary">{{ item.price }}</text>
-                                <text v-if="item.original_price" class="text-xs text-gray-400 line-through ml-[8rpx]">
-                                    ¥{{ item.original_price }}
-                                </text>
-                            </view>
-                            <view class="px-[20rpx] py-[8rpx] bg-primary rounded-full">
-                                <text class="text-white text-xs">查看详情</text>
-                            </view>
-                        </view>
+                    <view v-if="item.tag" class="tag-badge-vertical">
+                        <text class="tag-text-vertical">{{ item.tag }}</text>
+                    </view>
+                </view>
+                
+                <!-- 服务项列表 -->
+                <view v-if="item.services && item.services.length" class="services-list-vertical">
+                    <view
+                        v-for="(service, sIndex) in item.services"
+                        :key="sIndex"
+                        class="service-item-vertical"
+                    >
+                        <view class="service-dot-vertical"></view>
+                        <text class="service-text-vertical">{{ service }}</text>
+                    </view>
+                </view>
+                
+                <!-- 价格 -->
+                <view class="price-wrapper-vertical">
+                    <view class="price-main-vertical">
+                        <text class="price-symbol-vertical">¥</text>
+                        <text class="price-value-vertical">{{ item.price }}</text>
+                        <text v-if="item.original_price" class="price-original-vertical">
+                            ¥{{ item.original_price }}
+                        </text>
                     </view>
                 </view>
             </view>
         </view>
 
         <!-- 大卡片样式 -->
-        <view v-if="content.style == 3" class="package-grid space-y-[20rpx]">
+        <view v-if="content.style == 3" class="package-grid">
             <view
                 v-for="(item, index) in showList"
                 :key="index"
-                class="package-card bg-white rounded-xl overflow-hidden shadow-sm"
-                @click="handleClick(item.link)"
+                class="package-card-large"
             >
-                <!-- 封面图 -->
-                <view class="relative">
-                    <u-image
-                        width="100%"
-                        height="360rpx"
-                        :src="getImageUrl(item.image)"
-                        mode="aspectFill"
-                    />
-                    <!-- 热门/推荐标签 -->
-                    <view 
-                        v-if="item.tag" 
-                        class="absolute top-[20rpx] left-[20rpx] px-[20rpx] py-[8rpx] bg-gradient-to-r from-primary to-primary/80 rounded-full"
-                    >
-                        <text class="text-white text-sm">{{ item.tag }}</text>
-                    </view>
-                    <!-- 价格悬浮 -->
-                    <view class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-[24rpx]">
-                        <view class="flex items-baseline">
-                            <text class="text-sm text-white/80">¥</text>
-                            <text class="text-2xl font-bold text-white">{{ item.price }}</text>
-                            <text class="text-sm text-white/60 ml-[8rpx]">起</text>
+                <!-- 卡片头部 -->
+                <view class="card-header-large">
+                    <view class="card-header-large-top">
+                        <text class="card-title-large">{{ item.name }}</text>
+                        <view v-if="item.tag" class="tag-badge-large">
+                            <text class="tag-text-large">{{ item.tag }}</text>
                         </view>
+                    </view>
+                    <text v-if="item.desc" class="card-desc-large">{{ item.desc }}</text>
+                </view>
+                
+                <!-- 服务项网格 -->
+                <view v-if="item.services && item.services.length" class="services-grid">
+                    <view
+                        v-for="(service, sIndex) in item.services"
+                        :key="sIndex"
+                        class="service-badge"
+                    >
+                        <text class="service-badge-text">{{ service }}</text>
                     </view>
                 </view>
-                <!-- 信息 -->
-                <view class="p-[24rpx]">
-                    <text class="text-lg font-medium text-gray-900">{{ item.name }}</text>
-                    <text v-if="item.desc" class="text-sm text-gray-500 mt-[8rpx] line-clamp-2">{{ item.desc }}</text>
-                    <!-- 服务项 -->
-                    <view v-if="item.services && item.services.length" class="mt-[16rpx]">
-                        <view class="flex flex-wrap gap-[12rpx]">
-                            <view
-                                v-for="(service, sIndex) in item.services.slice(0, 6)"
-                                :key="sIndex"
-                                class="px-[16rpx] py-[6rpx] bg-gray-100 rounded-full text-xs text-gray-600"
-                            >
-                                {{ service }}
-                            </view>
-                        </view>
+                
+                <!-- 价格 -->
+                <view class="price-wrapper-large">
+                    <view class="price-main-large">
+                        <text class="price-symbol-large">¥</text>
+                        <text class="price-value-large">{{ item.price }}</text>
+                        <text v-if="item.original_price" class="price-original-large">
+                            ¥{{ item.original_price }}
+                        </text>
                     </view>
                 </view>
             </view>
@@ -178,13 +157,24 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useAppStore } from '@/stores/app'
 import { navigateTo } from '@/utils/util'
+import { useThemeStore } from '@/stores/theme'
+
+const themeStore = useThemeStore()
 
 const props = defineProps({
     content: {
         type: Object,
-        default: () => ({})
+        default: () => ({
+            data: [],
+            enabled: true,
+            title: '服务套餐',
+            show_more: true,
+            show_count: 10,
+            style: 1, // 1: 横向滑动, 2: 纵向列表, 3: 大卡片
+            card_width: '520rpx',
+            more_link: {}
+        })
     },
     styles: {
         type: Object,
@@ -192,21 +182,12 @@ const props = defineProps({
     }
 })
 
-const { getImageUrl } = useAppStore()
-
 // 过滤显示的列表
 const showList = computed(() => {
     const data = props.content.data?.filter((item: any) => item.is_show !== '0') || []
     const limit = props.content.show_count || data.length
     return data.slice(0, limit)
 })
-
-// 点击套餐卡片
-const handleClick = (link: any) => {
-    if (link && Object.keys(link).length > 0) {
-        navigateTo(link)
-    }
-}
 
 // 查看更多
 const handleMore = () => {
@@ -218,17 +199,385 @@ const handleMore = () => {
 
 <style lang="scss" scoped>
 .service-packages {
-    .package-card {
-        transition: transform 0.2s ease;
-        &:active {
-            transform: scale(0.98);
+    // 标题样式
+    .title-decoration {
+        position: relative;
+        width: 8rpx; // 使用xs间距
+        height: 34rpx;
+        margin-right: 16rpx; // 使用sm间距
+        
+        .title-line {
+            width: 100%;
+            height: 100%;
+            background: var(--tn-color-primary);
+            border-radius: 999rpx;
+            box-shadow: 0 2rpx 8rpx var(--tn-color-primary-light-7, rgba(124, 58, 237, 0.3));
         }
     }
     
+    .title-text {
+        font-size: 36rpx;
+        font-weight: 600;
+        color: #1f2937;
+        letter-spacing: 0.5rpx;
+    }
+    
+    .more-btn {
+        display: flex;
+        align-items: center;
+        padding: 8rpx 16rpx;
+        border-radius: 999rpx;
+        background: var(--tn-color-primary-light-9, rgba(124, 58, 237, 0.08));
+        transition: all 0.2s ease;
+        
+        &:active {
+            background: var(--tn-color-primary-light-7, rgba(124, 58, 237, 0.15));
+        }
+        
+        .more-text {
+            font-size: 24rpx;
+            color: var(--tn-color-primary);
+            font-weight: 500;
+        }
+    }
+
+    // 横向滑动样式
     .package-scroll {
         margin: 0 -20rpx;
         padding: 0 20rpx;
-        white-space: nowrap;
+    }
+
+    .package-card {
+        flex-shrink: 0;
+        background: #ffffff;
+        border-radius: 24rpx;
+        padding: 28rpx;
+        border: 2rpx solid #f3f4f6;
+        box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+        
+        .card-header {
+            .card-header-content {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 12rpx;
+                
+                .card-title {
+                    flex: 1;
+                    font-size: 32rpx;
+                    font-weight: 600;
+                    color: #111827;
+                    line-height: 1.4;
+                }
+                
+                .tag-badge {
+                    margin-left: 12rpx;
+                    padding: 6rpx 16rpx;
+                    background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+                    border-radius: 999rpx;
+                    box-shadow: 0 2rpx 8rpx rgba(249, 115, 22, 0.3);
+                    
+                    .tag-text {
+                        font-size: 20rpx;
+                        color: #ffffff;
+                        font-weight: 600;
+                    }
+                }
+            }
+            
+            .price-wrapper {
+                display: flex;
+                align-items: baseline;
+                margin-bottom: 20rpx;
+                
+                .price-main {
+                    display: flex;
+                    align-items: baseline;
+                    
+                    .price-symbol {
+                        font-size: 28rpx;
+                        color: var(--tn-color-primary);
+                        font-weight: 600;
+                        margin-right: 4rpx;
+                    }
+                    
+                    .price-value {
+                        font-size: 48rpx;
+                        color: var(--tn-color-primary);
+                        font-weight: 700;
+                        line-height: 1;
+                    }
+                }
+                
+                .price-original {
+                    font-size: 24rpx;
+                    color: #9ca3af;
+                    text-decoration: line-through;
+                    margin-left: 12rpx;
+                }
+            }
+        }
+        
+        .services-list {
+            padding: 20rpx 0;
+            border-top: 1rpx solid #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            gap: 12rpx;
+            
+            .service-item {
+                display: flex;
+                align-items: center;
+                
+                .service-dot {
+                    width: 10rpx;
+                    height: 10rpx;
+                    background: var(--tn-color-primary);
+                    border-radius: 50%;
+                    margin-right: 12rpx;
+                    flex-shrink: 0;
+                }
+                
+                .service-text {
+                    font-size: 26rpx;
+                    color: #4b5563;
+                    line-height: 1.5;
+                }
+            }
+        }
+        
+        .card-desc {
+            display: block;
+            font-size: 24rpx;
+            color: #6b7280;
+            line-height: 1.6;
+            margin-top: 16rpx;
+            padding-top: 16rpx;
+            border-top: 1rpx solid #f3f4f6;
+        }
+    }
+
+    // 纵向列表样式
+    .package-list {
+        display: flex;
+        flex-direction: column;
+        gap: 24rpx;
+    }
+    
+    .package-card-vertical {
+        background: #ffffff;
+        border-radius: 24rpx;
+        padding: 28rpx;
+        border: 2rpx solid #f3f4f6;
+        box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+        
+        .card-header-vertical {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 20rpx;
+            
+            .card-header-left {
+                flex: 1;
+                
+                .card-title-vertical {
+                    display: block;
+                    font-size: 32rpx;
+                    font-weight: 600;
+                    color: #111827;
+                    line-height: 1.4;
+                    margin-bottom: 8rpx;
+                }
+                
+                .card-desc-vertical {
+                    display: block;
+                    font-size: 24rpx;
+                    color: #6b7280;
+                    line-height: 1.6;
+                }
+            }
+            
+            .tag-badge-vertical {
+                margin-left: 16rpx;
+                padding: 6rpx 16rpx;
+                background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+                border-radius: 999rpx;
+                box-shadow: 0 2rpx 8rpx rgba(249, 115, 22, 0.3);
+                flex-shrink: 0;
+                
+                .tag-text-vertical {
+                    font-size: 20rpx;
+                    color: #ffffff;
+                    font-weight: 600;
+                }
+            }
+        }
+        
+        .services-list-vertical {
+            padding: 20rpx 0;
+            border-top: 1rpx solid #f3f4f6;
+            border-bottom: 1rpx solid #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            gap: 12rpx;
+            
+            .service-item-vertical {
+                display: flex;
+                align-items: center;
+                
+                .service-dot-vertical {
+                    width: 10rpx;
+                    height: 10rpx;
+                    background: var(--tn-color-primary);
+                    border-radius: 50%;
+                    margin-right: 12rpx;
+                    flex-shrink: 0;
+                }
+                
+                .service-text-vertical {
+                    font-size: 26rpx;
+                    color: #4b5563;
+                    line-height: 1.5;
+                }
+            }
+        }
+        
+        .price-wrapper-vertical {
+            margin-top: 20rpx;
+            
+            .price-main-vertical {
+                display: flex;
+                align-items: baseline;
+                
+                .price-symbol-vertical {
+                    font-size: 28rpx;
+                    color: var(--tn-color-primary);
+                    font-weight: 600;
+                    margin-right: 4rpx;
+                }
+                
+                .price-value-vertical {
+                    font-size: 48rpx;
+                    color: var(--tn-color-primary);
+                    font-weight: 700;
+                    line-height: 1;
+                }
+                
+                .price-original-vertical {
+                    font-size: 24rpx;
+                    color: #9ca3af;
+                    text-decoration: line-through;
+                    margin-left: 12rpx;
+                }
+            }
+        }
+    }
+
+    // 大卡片样式
+    .package-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 24rpx;
+    }
+    
+    .package-card-large {
+        background: #ffffff;
+        border-radius: 24rpx;
+        padding: 32rpx;
+        border: 2rpx solid #f3f4f6;
+        box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+        
+        .card-header-large {
+            margin-bottom: 24rpx;
+            
+            .card-header-large-top {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 12rpx;
+                
+                .card-title-large {
+                    flex: 1;
+                    font-size: 36rpx;
+                    font-weight: 600;
+                    color: #111827;
+                    line-height: 1.4;
+                }
+                
+                .tag-badge-large {
+                    margin-left: 16rpx;
+                    padding: 8rpx 20rpx;
+                    background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+                    border-radius: 999rpx;
+                    box-shadow: 0 2rpx 8rpx rgba(249, 115, 22, 0.3);
+                    
+                    .tag-text-large {
+                        font-size: 22rpx;
+                        color: #ffffff;
+                        font-weight: 600;
+                    }
+                }
+            }
+            
+            .card-desc-large {
+                display: block;
+                font-size: 26rpx;
+                color: #6b7280;
+                line-height: 1.6;
+            }
+        }
+        
+        .services-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12rpx;
+            padding: 24rpx 0;
+            border-top: 1rpx solid #f3f4f6;
+            border-bottom: 1rpx solid #f3f4f6;
+            
+            .service-badge {
+                padding: 12rpx 20rpx;
+                background: var(--tn-color-primary-light-9, rgba(124, 58, 237, 0.08));
+                border-radius: 999rpx;
+                border: 1rpx solid var(--tn-color-primary-light-7, rgba(124, 58, 237, 0.15));
+                
+                .service-badge-text {
+                    font-size: 24rpx;
+                    color: var(--tn-color-primary);
+                    font-weight: 500;
+                }
+            }
+        }
+        
+        .price-wrapper-large {
+            margin-top: 24rpx;
+            
+            .price-main-large {
+                display: flex;
+                align-items: baseline;
+                
+                .price-symbol-large {
+                    font-size: 32rpx;
+                    color: var(--tn-color-primary);
+                    font-weight: 600;
+                    margin-right: 4rpx;
+                }
+                
+                .price-value-large {
+                    font-size: 56rpx;
+                    color: var(--tn-color-primary);
+                    font-weight: 700;
+                    line-height: 1;
+                }
+                
+                .price-original-large {
+                    font-size: 28rpx;
+                    color: #9ca3af;
+                    text-decoration: line-through;
+                    margin-left: 16rpx;
+                }
+            }
+        }
     }
 }
 </style>

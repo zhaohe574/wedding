@@ -52,19 +52,24 @@ class NotificationLogic extends BaseLogic
     public static function send(array $params): bool
     {
         try {
-            $user = User::find($params['user_id']);
+            $userId = (int)$params['user_id'];
+            $user = User::find($userId);
             if (!$user) {
                 self::setError('用户不存在');
                 return false;
             }
 
+            // 类型转换 - PHP 8.0+ 严格类型检查
+            $notifyType = (int)$params['notify_type'];
+            $targetId = (int)($params['target_id'] ?? 0);
+
             Notification::send(
-                $params['user_id'],
-                $params['notify_type'],
+                $userId,
+                $notifyType,
                 $params['title'],
                 $params['content'],
                 $params['target_type'] ?? '',
-                $params['target_id'] ?? 0
+                $targetId
             );
 
             return true;
@@ -88,6 +93,9 @@ class NotificationLogic extends BaseLogic
                 return false;
             }
 
+            // 确保用户ID都是整数
+            $userIds = array_map('intval', $userIds);
+
             // 验证用户存在
             $existUserIds = User::whereIn('id', $userIds)->column('id');
             if (empty($existUserIds)) {
@@ -95,13 +103,17 @@ class NotificationLogic extends BaseLogic
                 return false;
             }
 
+            // 类型转换 - PHP 8.0+ 严格类型检查
+            $notifyType = (int)$params['notify_type'];
+            $targetId = (int)($params['target_id'] ?? 0);
+
             Notification::batchSend(
                 $existUserIds,
-                $params['notify_type'],
+                $notifyType,
                 $params['title'],
                 $params['content'],
                 $params['target_type'] ?? '',
-                $params['target_id'] ?? 0
+                $targetId
             );
 
             return true;
@@ -119,29 +131,40 @@ class NotificationLogic extends BaseLogic
     public static function sendToAll(array $params): bool
     {
         try {
-            // 获取所有用户ID
+            // 获取所有用户ID（软删除会自动过滤已删除的用户）
             $userIds = User::column('id');
             if (empty($userIds)) {
                 self::setError('暂无用户');
                 return false;
             }
 
+            // 类型转换 - PHP 8.0+ 严格类型检查
+            $notifyType = (int)$params['notify_type'];
+            $targetId = (int)($params['target_id'] ?? 0);
+
             // 分批发送，每批1000条
             $chunks = array_chunk($userIds, 1000);
+            $totalSent = 0;
             foreach ($chunks as $chunk) {
-                Notification::batchSend(
+                $sent = Notification::batchSend(
                     $chunk,
-                    $params['notify_type'],
+                    $notifyType,
                     $params['title'],
                     $params['content'],
                     $params['target_type'] ?? '',
-                    $params['target_id'] ?? 0
+                    $targetId
                 );
+                $totalSent += $sent;
+            }
+
+            if ($totalSent === 0) {
+                self::setError('发送失败，未能成功发送任何通知');
+                return false;
             }
 
             return true;
         } catch (\Exception $e) {
-            self::setError($e->getMessage());
+            self::setError('发送失败：' . $e->getMessage());
             return false;
         }
     }

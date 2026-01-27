@@ -1,41 +1,41 @@
 <template>
     <view class="complaint-page">
-        <z-paging
-            ref="paging"
-            v-model="dataList"
-            @query="queryList"
-        >
+        <z-paging ref="paging" v-model="dataList" @query="queryList">
             <!-- 状态筛选 -->
             <template #top>
                 <view class="filter-tabs">
-                    <view 
-                        class="tab-item" 
+                    <view
+                        class="tab-item"
                         :class="{ active: currentStatus === '' }"
                         @click="changeStatus('')"
-                    >全部</view>
-                    <view 
-                        class="tab-item" 
+                        >全部</view
+                    >
+                    <view
+                        class="tab-item"
                         :class="{ active: currentStatus === 0 }"
                         @click="changeStatus(0)"
-                    >待处理</view>
-                    <view 
-                        class="tab-item" 
+                        >待处理</view
+                    >
+                    <view
+                        class="tab-item"
                         :class="{ active: currentStatus === 1 }"
                         @click="changeStatus(1)"
-                    >处理中</view>
-                    <view 
-                        class="tab-item" 
+                        >处理中</view
+                    >
+                    <view
+                        class="tab-item"
                         :class="{ active: currentStatus === 2 }"
                         @click="changeStatus(2)"
-                    >已处理</view>
+                        >已处理</view
+                    >
                 </view>
             </template>
 
             <!-- 投诉列表 -->
             <view class="complaint-list">
-                <view 
-                    class="complaint-item" 
-                    v-for="item in dataList" 
+                <view
+                    class="complaint-item"
+                    v-for="item in dataList"
                     :key="item.id"
                     @click="goDetail(item.id)"
                 >
@@ -50,7 +50,9 @@
                     <view class="complaint-title">{{ item.title }}</view>
                     <view class="complaint-content" v-if="item.content">{{ item.content }}</view>
                     <view class="complaint-footer">
-                        <text class="complaint-type">{{ item.type_desc || getTypeText(item.type) }}</text>
+                        <text class="complaint-type">{{
+                            item.type_desc || getTypeText(item.type)
+                        }}</text>
                         <text class="complaint-time">{{ item.create_time }}</text>
                     </view>
                 </view>
@@ -59,7 +61,7 @@
             <!-- 空状态 -->
             <template #empty>
                 <view class="empty-state">
-                    <u-icon name="warning" size="120" color="#ccc"></u-icon>
+                    <tn-icon name="warning" size="120" color="#ccc"></tn-icon>
                     <text class="empty-text">暂无投诉记录</text>
                 </view>
             </template>
@@ -67,7 +69,7 @@
 
         <!-- 提交投诉按钮 -->
         <view class="create-btn" @click="goCreate">
-            <u-icon name="plus" size="40" color="#fff"></u-icon>
+            <tn-icon name="plus" size="40" color="#fff"></tn-icon>
         </view>
     </view>
 </template>
@@ -185,7 +187,7 @@ onLoad((options: any) => {
     font-size: 28rpx;
     color: #666;
     border-radius: 8rpx;
-    
+
     &.active {
         color: #f5576c;
         background: rgba(245, 87, 108, 0.1);
@@ -215,7 +217,7 @@ onLoad((options: any) => {
     font-size: 24rpx;
     padding: 6rpx 16rpx;
     border-radius: 8rpx;
-    
+
     &.level-low {
         color: #52c41a;
         background: rgba(82, 196, 26, 0.1);
@@ -234,7 +236,7 @@ onLoad((options: any) => {
     font-size: 24rpx;
     padding: 6rpx 16rpx;
     border-radius: 8rpx;
-    
+
     &.status-pending {
         color: #faad14;
         background: rgba(250, 173, 20, 0.1);

@@ -29,6 +29,11 @@ class DynamicComment extends BaseModel
     const STATUS_DELETED = 2;   // 已删除
     const STATUS_REJECTED = 3;  // 审核拒绝
 
+    // 审核状态
+    const REVIEW_STATUS_PENDING = 0;   // 待审核
+    const REVIEW_STATUS_APPROVED = 1;  // 已通过
+    const REVIEW_STATUS_REJECTED = 2;  // 已拒绝
+
     /**
      * @notes 关联动态
      * @return \think\model\relation\BelongsTo
@@ -100,8 +105,17 @@ class DynamicComment extends BaseModel
             return [false, '该动态不可评论', null];
         }
 
+        // 检查评论开关
+        if ($dynamic->allow_comment != 1) {
+            return [false, '该动态不允许评论', null];
+        }
+
         // 敏感词检测
         // TODO: 实现敏感词过滤
+
+        // 获取审核配置
+        $reviewEnabled = (int)\app\common\service\ConfigService::get('dynamic', 'comment_review_enabled', 0);
+        $reviewStatus = $reviewEnabled ? self::REVIEW_STATUS_PENDING : self::REVIEW_STATUS_APPROVED;
 
         try {
             $comment = self::create([
@@ -111,23 +125,28 @@ class DynamicComment extends BaseModel
                 'reply_user_id' => $replyUserId,
                 'content' => $content,
                 'images' => json_encode($images, JSON_UNESCAPED_UNICODE),
-                'status' => self::STATUS_NORMAL, // 可改为待审核
+                'status' => self::STATUS_NORMAL,
+                'review_status' => $reviewStatus, // 根据配置设置审核状态
                 'ip' => request()->ip(),
                 'create_time' => time(),
                 'update_time' => time(),
             ]);
 
-            // 更新动态评论数
-            Dynamic::where('id', $dynamicId)->inc('comment_count')->update();
+            // 只有审核通过的评论才更新计数
+            if ($reviewStatus == self::REVIEW_STATUS_APPROVED) {
+                // 更新动态评论数
+                Dynamic::where('id', $dynamicId)->inc('comment_count')->update();
 
-            // 更新父评论回复数
-            if ($parentId > 0) {
-                self::where('id', $parentId)->inc('reply_count')->update();
+                // 更新父评论回复数
+                if ($parentId > 0) {
+                    self::where('id', $parentId)->inc('reply_count')->update();
+                }
             }
 
             // TODO: 发送通知给动态作者/被回复者
 
-            return [true, '评论成功', $comment];
+            $message = $reviewEnabled ? '评论成功，等待审核' : '评论成功';
+            return [true, $message, $comment];
         } catch (\Exception $e) {
             return [false, '评论失败：' . $e->getMessage(), null];
         }
@@ -172,44 +191,86 @@ class DynamicComment extends BaseModel
      */
     public static function getCommentList(int $dynamicId, int $userId = 0, array $params = []): array
     {
+        // 如果传入了 parent_id,则获取子评论列表
+        $parentId = (int)($params['parent_id'] ?? 0);
+        
+        if ($parentId > 0) {
+            // 获取子评论列表
+            return self::getReplyList($parentId, $userId, $params);
+        }
+        
+        // 获取主评论列表
         $query = self::where('dynamic_id', $dynamicId)
             ->where('parent_id', 0)
-            ->where('status', self::STATUS_NORMAL);
+            ->where('status', self::STATUS_NORMAL)
+            ->where('review_status', self::REVIEW_STATUS_APPROVED); // 只显示已通过审核的评论
 
         // 排序
-        $query->order('is_top', 'desc')
-            ->order('like_count', 'desc')
-            ->order('create_time', 'desc');
+        $sort = $params['sort'] ?? 'hot';
+        if ($sort === 'new') {
+            $query->order('create_time', 'desc');
+        } else {
+            // 热门排序：置顶 > 点赞数 > 时间
+            $query->order('is_top', 'desc')
+                ->order('like_count', 'desc')
+                ->order('create_time', 'desc');
+        }
 
         $list = $query->with(['user' => function ($q) {
                 $q->field('id, nickname, avatar');
             }])
-            ->paginate($params['page_size'] ?? 10)
+            ->paginate((int)($params['page_size'] ?? 10))
             ->toArray();
 
-        // 获取子评论
-        if (!empty($list['data'])) {
-            $parentIds = array_column($list['data'], 'id');
-            $replies = self::whereIn('parent_id', $parentIds)
-                ->where('status', self::STATUS_NORMAL)
-                ->with(['user' => function ($q) {
-                    $q->field('id, nickname, avatar');
-                }, 'replyUser' => function ($q) {
-                    $q->field('id, nickname');
-                }])
-                ->order('create_time', 'asc')
-                ->select()
-                ->toArray();
+        // 不再默认加载子评论,只返回 reply_count
+        // 前端根据 reply_count 决定是否显示"查看更多"按钮
 
-            // 按parent_id分组
-            $repliesMap = [];
-            foreach ($replies as $reply) {
-                $repliesMap[$reply['parent_id']][] = $reply;
-            }
+        // 添加是否点赞信息
+        if ($userId > 0 && !empty($list['data'])) {
+            $commentIds = array_column($list['data'], 'id');
+            $likedIds = DynamicLike::where('user_id', $userId)
+                ->where('target_type', 2)
+                ->whereIn('target_id', $commentIds)
+                ->column('target_id');
 
             foreach ($list['data'] as &$item) {
-                $item['replies'] = $repliesMap[$item['id']] ?? [];
+                $item['is_liked'] = in_array($item['id'], $likedIds);
             }
+        }
+
+        return $list;
+    }
+
+    /**
+     * @notes 获取子评论列表
+     * @param int $parentId
+     * @param int $userId
+     * @param array $params
+     * @return array
+     */
+    public static function getReplyList(int $parentId, int $userId = 0, array $params = []): array
+    {
+        $query = self::where('parent_id', $parentId)
+            ->where('status', self::STATUS_NORMAL)
+            ->where('review_status', self::REVIEW_STATUS_APPROVED)
+            ->order('create_time', 'asc');
+
+        $list = $query->with(['user' => function ($q) {
+                $q->field('id, nickname, avatar');
+            }, 'replyUser' => function ($q) {
+                $q->field('id, nickname');
+            }])
+            ->paginate((int)($params['page_size'] ?? 20))
+            ->toArray();
+
+        // 处理用户信息
+        foreach ($list['data'] as &$item) {
+            $item['user_nickname'] = $item['user']['nickname'] ?? '匿名用户';
+            $item['user_avatar'] = $item['user']['avatar'] ?? '';
+            $item['reply_user_nickname'] = $item['reply_user']['nickname'] ?? '';
+            
+            // 移除原始关联数据
+            unset($item['user'], $item['reply_user']);
         }
 
         // 添加是否点赞信息
@@ -226,5 +287,85 @@ class DynamicComment extends BaseModel
         }
 
         return $list;
+    }
+
+    /**
+     * @notes 审核通过评论
+     * @param int $commentId
+     * @param int $adminId
+     * @return array [bool $success, string $message]
+     */
+    public static function approveComment(int $commentId, int $adminId): array
+    {
+        $comment = self::find($commentId);
+        if (!$comment) {
+            return [false, '评论不存在'];
+        }
+
+        if ($comment->review_status != self::REVIEW_STATUS_PENDING) {
+            return [false, '该评论已审核'];
+        }
+
+        $comment->review_status = self::REVIEW_STATUS_APPROVED;
+        $comment->review_admin_id = $adminId;
+        $comment->review_time = time();
+        $comment->save();
+
+        // 更新动态评论数
+        Dynamic::where('id', $comment->dynamic_id)->inc('comment_count')->update();
+
+        // 更新父评论回复数
+        if ($comment->parent_id > 0) {
+            self::where('id', $comment->parent_id)->inc('reply_count')->update();
+        }
+
+        // TODO: 发送通知给用户
+
+        return [true, '审核通过'];
+    }
+
+    /**
+     * @notes 拒绝评论
+     * @param int $commentId
+     * @param int $adminId
+     * @param string $remark
+     * @return array [bool $success, string $message]
+     */
+    public static function rejectComment(int $commentId, int $adminId, string $remark = ''): array
+    {
+        $comment = self::find($commentId);
+        if (!$comment) {
+            return [false, '评论不存在'];
+        }
+
+        if ($comment->review_status != self::REVIEW_STATUS_PENDING) {
+            return [false, '该评论已审核'];
+        }
+
+        $comment->review_status = self::REVIEW_STATUS_REJECTED;
+        $comment->review_admin_id = $adminId;
+        $comment->review_time = time();
+        $comment->review_remark = $remark;
+        $comment->save();
+
+        // TODO: 发送通知给用户
+
+        return [true, '已拒绝'];
+    }
+
+    /**
+     * @notes 审核状态描述获取器
+     * @param $value
+     * @param $data
+     * @return string
+     */
+    public function getReviewStatusDescAttr($value, $data): string
+    {
+        $map = [
+            self::REVIEW_STATUS_PENDING => '待审核',
+            self::REVIEW_STATUS_APPROVED => '已通过',
+            self::REVIEW_STATUS_REJECTED => '已拒绝',
+        ];
+        return $map[$data['review_status'] ?? 0] ?? '未知';
     }
 }

@@ -144,4 +144,16 @@ class UserController extends BaseApiController
         return $this->fail(UserLogic::getError());
     }
 
+    /**
+     * @notes 获取用户婚期信息
+     * @return \think\response\Json
+     * @author AI
+     * @date 2026/01/22
+     */
+    public function weddingDate()
+    {
+        $result = UserLogic::weddingDate($this->userId);
+        return $this->success('', $result);
+    }
+
 }

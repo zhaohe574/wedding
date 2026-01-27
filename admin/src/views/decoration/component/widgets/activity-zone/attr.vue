@@ -38,124 +38,90 @@
                 </el-radio-group>
             </el-card>
 
-            <!-- 活动列表 -->
+            <!-- 数据来源 -->
             <el-card shadow="never" class="!border-none flex mt-2">
                 <div class="flex items-end mb-4">
-                    <div class="text-base text-[#101010] font-medium">活动列表</div>
-                    <div class="text-xs text-tx-secondary ml-2">建议图片尺寸：750px*400px</div>
+                    <div class="text-base text-[#101010] font-medium">数据来源</div>
                 </div>
-                <div class="activity-list">
+                <el-radio-group v-model="contentData.data_source">
+                    <el-radio value="auto">自动获取最新活动</el-radio>
+                    <el-radio value="manual">手动选择活动</el-radio>
+                </el-radio-group>
+                
+                <!-- 手动选择活动 -->
+                <div v-if="contentData.data_source === 'manual'" class="mt-4">
+                    <div class="mb-2 flex items-center justify-between">
+                        <span class="text-sm text-gray-600">已选择 {{ selectedActivities.length }} 个活动</span>
+                        <el-button type="primary" size="small" @click="openActivityPicker">
+                            选择活动
+                        </el-button>
+                    </div>
+                    
+                    <!-- 已选活动列表 -->
                     <draggable
-                        v-model="contentData.data"
-                        item-key="index"
+                        v-if="selectedActivities.length"
+                        v-model="selectedActivities"
+                        item-key="id"
                         animation="300"
                         handle=".drag-handle"
+                        @end="handleDragEnd"
                     >
                         <template #item="{ element, index }">
-                            <div class="activity-item mb-4 p-4 bg-gray-50 rounded-lg">
-                                <div class="flex items-start">
-                                    <!-- 拖拽手柄 -->
-                                    <div class="drag-handle cursor-move mr-3 mt-2">
-                                        <icon name="el-icon-Rank" :size="18" color="#999" />
-                                    </div>
-                                    
-                                    <!-- 封面图 -->
-                                    <div class="mr-4">
-                                        <material-picker
-                                            v-model="element.image"
-                                            :limit="1"
-                                            upload-class="bg-body"
-                                        >
-                                            <div 
-                                                class="w-[150px] h-[80px] rounded overflow-hidden bg-gray-200 flex items-center justify-center cursor-pointer hover:opacity-80 transition"
-                                            >
-                                                <el-image
-                                                    v-if="element.image"
-                                                    :src="element.image"
-                                                    fit="cover"
-                                                    class="w-full h-full"
-                                                />
-                                                <icon v-else name="el-icon-Plus" :size="24" color="#999" />
-                                            </div>
-                                        </material-picker>
-                                    </div>
-
-                                    <!-- 信息表单 -->
-                                    <div class="flex-1">
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <el-form-item label="活动名称" label-width="70px" class="!mb-2">
-                                                <el-input v-model="element.title" placeholder="请输入活动名称" />
-                                            </el-form-item>
-                                            <el-form-item label="标签" label-width="70px" class="!mb-2">
-                                                <el-select v-model="element.tag" placeholder="选择标签" clearable>
-                                                    <el-option value="限时" label="限时" />
-                                                    <el-option value="热门" label="热门" />
-                                                    <el-option value="特惠" label="特惠" />
-                                                    <el-option value="新人专享" label="新人专享" />
-                                                    <el-option value="爆款" label="爆款" />
-                                                </el-select>
-                                            </el-form-item>
-                                            <el-form-item label="活动价" label-width="70px" class="!mb-2">
-                                                <el-input v-model="element.price" placeholder="可选">
-                                                    <template #prepend>¥</template>
-                                                </el-input>
-                                            </el-form-item>
-                                            <el-form-item label="原价" label-width="70px" class="!mb-2">
-                                                <el-input v-model="element.original_price" placeholder="可选">
-                                                    <template #prepend>¥</template>
-                                                </el-input>
-                                            </el-form-item>
-                                        </div>
-                                        <el-form-item label="活动描述" label-width="70px" class="!mb-2">
-                                            <el-input 
-                                                v-model="element.desc" 
-                                                type="textarea" 
-                                                :rows="2"
-                                                placeholder="请输入活动描述"
-                                            />
-                                        </el-form-item>
-                                        <el-form-item label="跳转链接" label-width="70px" class="!mb-2">
-                                            <link-picker v-model="element.link" />
-                                        </el-form-item>
-                                    </div>
-
-                                    <!-- 操作按钮 -->
-                                    <div class="ml-4 flex flex-col gap-2">
-                                        <el-switch
-                                            v-model="element.is_show"
-                                            active-value="1"
-                                            inactive-value="0"
-                                            active-text="显示"
-                                        />
-                                        <el-button 
-                                            type="danger" 
-                                            text 
-                                            :icon="Delete"
-                                            @click="handleDelete(index)"
-                                        >
-                                            删除
-                                        </el-button>
-                                    </div>
+                            <div class="selected-activity-item mb-2 p-3 bg-gray-50 rounded-lg flex items-center">
+                                <!-- 拖拽手柄 -->
+                                <div class="drag-handle cursor-move mr-3">
+                                    <icon name="el-icon-Rank" :size="18" color="#999" />
                                 </div>
+                                
+                                <!-- 封面 -->
+                                <div class="flex-shrink-0 mr-3">
+                                    <el-image
+                                        :src="element.cover_image"
+                                        fit="cover"
+                                        class="w-16 h-16 rounded"
+                                    >
+                                        <template #error>
+                                            <div class="w-16 h-16 flex items-center justify-center bg-gray-200 rounded">
+                                                <icon name="el-icon-Picture" :size="24" color="#ccc" />
+                                            </div>
+                                        </template>
+                                    </el-image>
+                                </div>
+                                
+                                <!-- 信息 -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-sm font-medium text-gray-900 truncate">{{ element.title }}</div>
+                                    <div class="text-xs text-gray-500 mt-1">{{ element.create_time_text }}</div>
+                                </div>
+                                
+                                <!-- 删除按钮 -->
+                                <el-button 
+                                    type="danger" 
+                                    text 
+                                    :icon="Delete"
+                                    @click="handleRemoveActivity(index)"
+                                />
                             </div>
                         </template>
                     </draggable>
-
-                    <!-- 添加按钮 -->
-                    <el-button type="primary" :icon="Plus" @click="handleAdd">
-                        添加活动
-                    </el-button>
+                    
+                    <el-empty v-else description="暂未选择活动" :image-size="80" />
                 </div>
             </el-card>
         </el-form>
+
+        <!-- 活动选择器 -->
+        <activity-picker ref="activityPickerRef" @confirm="handleActivityConfirm" />
     </div>
 </template>
 
 <script lang="ts" setup>
 import type { PropType } from 'vue'
-import { Delete, Plus } from '@element-plus/icons-vue'
+import { ref, computed, watch } from 'vue'
+import { Delete } from '@element-plus/icons-vue'
 import draggable from 'vuedraggable'
-import MaterialPicker from '@/components/material/picker.vue'
+import ActivityPicker from './activity-picker.vue'
+import { getDecorateActivityList } from '@/api/decoration'
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>
@@ -174,36 +140,74 @@ const props = defineProps({
 })
 
 const contentData = computed({
-    get: () => props.content,
+    get: () => {
+        // 确保data_source有默认值
+        if (!props.content.data_source) {
+            return {
+                ...props.content,
+                data_source: 'auto'
+            }
+        }
+        return props.content
+    },
     set: (newValue) => {
         emits('update:content', newValue)
     }
 })
 
-// 添加活动
-const handleAdd = () => {
-    contentData.value.data.push({
-        is_show: '1',
-        image: '',
-        title: '活动名称',
-        desc: '',
-        tag: '限时',
-        price: '',
-        original_price: '',
-        show_countdown: 0,
-        end_time: '',
-        link: {}
-    })
+const activityPickerRef = ref()
+const selectedActivities = ref<any[]>([])
+
+// 初始化时加载已选活动的详细信息
+watch(() => props.content.activity_ids, async (newIds) => {
+    if (newIds && newIds.length > 0) {
+        await loadSelectedActivities(newIds)
+    } else {
+        selectedActivities.value = []
+    }
+}, { immediate: true })
+
+// 加载已选活动的详细信息
+const loadSelectedActivities = async (ids: number[]) => {
+    try {
+        // 获取所有活动数据
+        const res = await getDecorateActivityList({ limit: 100 })
+        const allActivities = res.data || []
+        
+        // 按照ids的顺序筛选活动
+        selectedActivities.value = ids
+            .map(id => allActivities.find((item: any) => item.id === id))
+            .filter(Boolean)
+    } catch (error) {
+        console.error('加载活动详情失败:', error)
+    }
 }
 
-// 删除活动
-const handleDelete = (index: number) => {
-    contentData.value.data.splice(index, 1)
+// 打开活动选择器
+const openActivityPicker = () => {
+    activityPickerRef.value?.open(contentData.value.activity_ids || [])
+}
+
+// 确认选择活动
+const handleActivityConfirm = async (ids: number[]) => {
+    contentData.value.activity_ids = ids
+    await loadSelectedActivities(ids)
+}
+
+// 移除活动
+const handleRemoveActivity = (index: number) => {
+    selectedActivities.value.splice(index, 1)
+    contentData.value.activity_ids = selectedActivities.value.map(item => item.id)
+}
+
+// 拖拽结束
+const handleDragEnd = () => {
+    contentData.value.activity_ids = selectedActivities.value.map(item => item.id)
 }
 </script>
 
 <style lang="scss" scoped>
-.activity-item {
+.selected-activity-item {
     border: 1px solid #e5e7eb;
     transition: all 0.2s ease;
     

@@ -70,8 +70,12 @@ class StaffWork extends BaseModel
             return [];
         }
         $images = json_decode($value, true) ?: [];
+        if (!is_array($images)) {
+            return [];
+        }
         return array_map(function ($img) {
-            return FileService::getFileUrl($img);
+            $url = is_string($img) ? $img : (is_array($img) ? ($img['url'] ?? $img['path'] ?? '') : '');
+            return (is_string($url) && $url !== '') ? FileService::getFileUrl($url) : '';
         }, $images);
     }
 
@@ -88,8 +92,12 @@ class StaffWork extends BaseModel
         if (is_string($value)) {
             $value = json_decode($value, true) ?: [];
         }
+        if (!is_array($value)) {
+            return '';
+        }
         $images = array_map(function ($img) {
-            return FileService::setFileUrl($img);
+            $url = is_string($img) ? $img : (is_array($img) ? ($img['url'] ?? $img['path'] ?? '') : '');
+            return is_string($url) && $url !== '' ? FileService::setFileUrl($url) : '';
         }, $value);
         return json_encode($images, JSON_UNESCAPED_UNICODE);
     }

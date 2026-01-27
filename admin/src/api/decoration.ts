@@ -29,3 +29,18 @@ export function setDecorateTabbar(params: any) {
 export function getDecoratePc() {
     return request.get({ url: '/decorate.data/pc' })
 }
+
+// 获取公告列表（装修组件选择器用）
+export function getDecorateNoticeList(params?: any) {
+    return request.get({ url: '/decorate.data/noticeList', params })
+}
+
+// 获取话题列表（装修组件选择器用）
+export function getDecorateTopicList(params?: any) {
+    return request.get({ url: '/decorate.data/topicList', params })
+}
+
+// 获取活动列表（装修组件选择器用）
+export function getDecorateActivityList(params?: any) {
+    return request.get({ url: '/decorate.data/activityList', params })
+}

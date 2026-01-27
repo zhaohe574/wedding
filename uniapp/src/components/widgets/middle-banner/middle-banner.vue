@@ -14,7 +14,7 @@
                 :key="index"
                 @click="handleClick(item.link)"
             >
-                <u-image
+                <image
                     mode="widthFix"
                     width="100%"
                     height="100%"

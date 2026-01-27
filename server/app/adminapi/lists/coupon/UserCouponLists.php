@@ -114,6 +114,13 @@ class UserCouponLists extends BaseAdminDataLists implements ListsSearchInterface
             ->toArray();
 
         foreach ($lists as &$item) {
+            // PHP 8 类型转换
+            $item['receive_time'] = (int)$item['receive_time'];
+            $item['use_time'] = (int)$item['use_time'];
+            $item['valid_start_time'] = (int)$item['valid_start_time'];
+            $item['valid_end_time'] = (int)$item['valid_end_time'];
+            $item['status'] = (int)$item['status'];
+            
             $item['status_text'] = UserCoupon::getStatusDesc($item['status']);
             $item['receive_time_text'] = $item['receive_time'] ? date('Y-m-d H:i:s', $item['receive_time']) : '-';
             $item['use_time_text'] = $item['use_time'] ? date('Y-m-d H:i:s', $item['use_time']) : '-';

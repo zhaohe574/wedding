@@ -20,10 +20,20 @@ export const useUserStore = defineStore({
     },
     actions: {
         async getUser() {
-            const data = await getUserCenter({
-                token: this.token || this.temToken
-            })
-            this.userInfo = data
+            // 如果没有 token，跳过获取用户信息
+            if (!this.token && !this.temToken) {
+                return
+            }
+            
+            try {
+                const data = await getUserCenter({
+                    token: this.token || this.temToken
+                })
+                this.userInfo = data
+            } catch (error) {
+                // 静默处理错误，避免在未登录时显示错误提示
+                console.log('获取用户信息失败:', error)
+            }
         },
         login(token: string) {
             this.token = token

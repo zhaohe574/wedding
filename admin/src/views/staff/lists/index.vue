@@ -85,7 +85,7 @@
             <div>
                 <router-link
                     v-perms="['staff.staff/add']"
-                    :to="{ path: getRoutePath('staff.staff/add:edit') }"
+                    :to="{ path: staffEditPath }"
                 >
                     <el-button type="primary" class="mb-4">
                         <template #icon>
@@ -146,7 +146,7 @@
                         >
                             <router-link
                                 :to="{
-                                    path: getRoutePath('staff.staff/add:edit'),
+                                    path: staffEditPath,
                                     query: { id: row.id }
                                 }"
                             >
@@ -179,6 +179,9 @@ import { useDictOptions } from '@/hooks/useDictOptions'
 import { usePaging } from '@/hooks/usePaging'
 import { getRoutePath } from '@/router'
 import feedback from '@/utils/feedback'
+
+// 新增/编辑页路径：优先从权限路由获取，若无对应菜单则兜底（需执行 015_add_staff_add_edit_menu.sql）
+const staffEditPath = computed(() => getRoutePath('staff.staff/add:edit') || '/service/staff/edit')
 
 const queryParams = reactive({
     name: '',

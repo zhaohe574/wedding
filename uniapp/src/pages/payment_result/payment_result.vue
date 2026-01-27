@@ -1,33 +1,27 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
+        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
         <!-- #endif -->
     </page-meta>
     <!-- 页面状态 -->
     <page-status :status="status">
         <template #error>
-            <u-empty text="订单不存在" mode="order"></u-empty>
+            <tn-empty mode="data" text="订单不存在"></tn-empty>
         </template>
         <template #default>
             <view class="payment-result p-[20rpx]">
                 <view class="result bg-white p-[20rpx] rounded-md">
                     <view class="flex flex-col items-center my-[40rpx]">
                         <!-- 支付状态图片 -->
-                        <u-image
-                            class="status-image"
+                        <image
+                            class="status-image w-[200rpx] h-[200rpx]"
                             :src="paymentStatus['image']"
-                            width="100"
-                            height="100"
-                            shape="circle"
+                            mode="aspectFit"
                         />
                         <!-- 支付状态文字 -->
-                        <text class="text-2xl font-medium mt-[20rpx]">{{
-                                paymentStatus['text']
-                            }}
+                        <text class="text-2xl font-medium mt-[20rpx]"
+                            >{{ paymentStatus['text'] }}
                         </text>
                         <view class="text-3xl font-medium mt-[20rpx]">
                             ¥ {{ orderInfo.order.order_amount }}
@@ -57,26 +51,24 @@
                 </view>
                 <view class="mt-[40rpx]">
                     <view class="mb-[20rpx]">
-                        <u-button
+                        <tn-button
                             v-if="pageOptions.from == 'recharge'"
                             type="primary"
-                            shape="circle"
-                            hover-class="none"
+                            shape="round"
                             @click="goOrder"
                         >
                             继续充值
-                        </u-button>
+                        </tn-button>
                     </view>
                     <view class="mb-[20rpx]">
-                        <u-button
+                        <tn-button
                             type="primary"
-                            plain
-                            shape="circle"
-                            hover-class="none"
+                            :plain="true"
+                            shape="round"
                             @click="goHome"
                         >
                             返回首页
-                        </u-button>
+                        </tn-button>
                     </view>
                 </view>
             </view>
@@ -85,11 +77,11 @@
 </template>
 
 <script lang="ts" setup>
-import {getPayResult} from '@/api/pay'
-import {PageStatusEnum} from '@/enums/appEnums'
-import {onLoad} from '@dcloudio/uni-app'
-import {computed, reactive, ref} from 'vue'
-import {useRouter} from "uniapp-router-next";
+import { getPayResult } from '@/api/pay'
+import { PageStatusEnum } from '@/enums/appEnums'
+import { onLoad } from '@dcloudio/uni-app'
+import { computed, reactive, ref } from 'vue'
+import { useRouter } from 'uniapp-router-next'
 
 const router = useRouter()
 

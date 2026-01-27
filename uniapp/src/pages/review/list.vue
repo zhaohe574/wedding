@@ -9,15 +9,15 @@
     <view class="my-reviews-page">
         <!-- 标签页 -->
         <view class="tabs">
-            <view 
-                class="tab-item" 
+            <view
+                class="tab-item"
                 :class="{ active: currentTab === 'pending' }"
                 @click="switchTab('pending')"
             >
                 待评价
             </view>
-            <view 
-                class="tab-item" 
+            <view
+                class="tab-item"
                 :class="{ active: currentTab === 'reviewed' }"
                 @click="switchTab('reviewed')"
             >
@@ -28,18 +28,14 @@
         <!-- 待评价列表 -->
         <view v-if="currentTab === 'pending'">
             <view v-if="pendingList.length" class="list-wrap">
-                <view 
-                    v-for="item in pendingList" 
-                    :key="item.id"
-                    class="pending-card"
-                >
+                <view v-for="item in pendingList" :key="item.id" class="pending-card">
                     <view class="card-header">
                         <text class="order-sn">订单号: {{ item.order?.order_sn }}</text>
                         <text class="service-date">{{ item.order?.service_date }}</text>
                     </view>
                     <view class="card-body">
-                        <image 
-                            :src="item.staff?.avatar || '/static/images/default-avatar.png'" 
+                        <image
+                            :src="item.staff?.avatar || '/static/images/default-avatar.png'"
                             class="staff-avatar"
                             mode="aspectFill"
                         />
@@ -60,16 +56,16 @@
         <!-- 已评价列表 -->
         <view v-if="currentTab === 'reviewed'">
             <view v-if="reviewedList.length" class="list-wrap">
-                <view 
-                    v-for="item in reviewedList" 
+                <view
+                    v-for="item in reviewedList"
                     :key="item.id"
                     class="review-card"
                     @click="goDetail(item)"
                 >
                     <view class="card-header">
                         <view class="staff-info">
-                            <image 
-                                :src="item.staff?.avatar || '/static/images/default-avatar.png'" 
+                            <image
+                                :src="item.staff?.avatar || '/static/images/default-avatar.png'"
                                 class="staff-avatar-small"
                                 mode="aspectFill"
                             />
@@ -83,8 +79,8 @@
                     <view class="card-body">
                         <view class="content" v-if="item.content">{{ item.content }}</view>
                         <view class="images" v-if="item.images?.length">
-                            <image 
-                                v-for="(img, index) in item.images.slice(0, 3)" 
+                            <image
+                                v-for="(img, index) in item.images.slice(0, 3)"
                                 :key="index"
                                 :src="img"
                                 class="review-image"
@@ -142,25 +138,25 @@ const getStatusClass = (status: number) => {
 
 const loadPendingList = async (refresh = false) => {
     if (loading.value || (!refresh && !hasMorePending.value)) return
-    
+
     if (refresh) {
         pendingPage.value = 1
         hasMorePending.value = true
     }
-    
+
     loading.value = true
     try {
         const res = await getPendingOrders({
             page: pendingPage.value,
             limit: 10
         })
-        
+
         if (refresh) {
             pendingList.value = res.lists || []
         } else {
             pendingList.value.push(...(res.lists || []))
         }
-        
+
         hasMorePending.value = res.has_more
         pendingPage.value++
     } finally {
@@ -170,25 +166,25 @@ const loadPendingList = async (refresh = false) => {
 
 const loadReviewedList = async (refresh = false) => {
     if (loading.value || (!refresh && !hasMoreReviewed.value)) return
-    
+
     if (refresh) {
         reviewedPage.value = 1
         hasMoreReviewed.value = true
     }
-    
+
     loading.value = true
     try {
         const res = await getMyReviews({
             page: reviewedPage.value,
             limit: 10
         })
-        
+
         if (refresh) {
             reviewedList.value = res.lists || []
         } else {
             reviewedList.value.push(...(res.lists || []))
         }
-        
+
         hasMoreReviewed.value = res.has_more
         reviewedPage.value++
     } finally {
@@ -240,7 +236,7 @@ onMounted(() => {
     display: flex;
     background: #fff;
     padding: 0 30rpx;
-    
+
     .tab-item {
         flex: 1;
         text-align: center;
@@ -248,11 +244,11 @@ onMounted(() => {
         font-size: 28rpx;
         color: #666;
         position: relative;
-        
+
         &.active {
             color: var(--primary-color, #ff6b35);
             font-weight: bold;
-            
+
             &::after {
                 content: '';
                 position: absolute;
@@ -277,7 +273,7 @@ onMounted(() => {
     border-radius: 16rpx;
     margin-bottom: 20rpx;
     overflow: hidden;
-    
+
     .card-header {
         display: flex;
         justify-content: space-between;
@@ -286,36 +282,36 @@ onMounted(() => {
         font-size: 24rpx;
         color: #999;
     }
-    
+
     .card-body {
         display: flex;
         align-items: center;
         padding: 24rpx;
     }
-    
+
     .staff-avatar {
         width: 100rpx;
         height: 100rpx;
         border-radius: 50%;
         margin-right: 20rpx;
     }
-    
+
     .staff-info {
         flex: 1;
-        
+
         .staff-name {
             font-size: 30rpx;
             font-weight: bold;
             color: #333;
         }
-        
+
         .package-name {
             font-size: 24rpx;
             color: #999;
             margin-top: 8rpx;
         }
     }
-    
+
     .btn-review {
         padding: 16rpx 32rpx;
         background: var(--primary-color, #ff6b35);
@@ -331,31 +327,31 @@ onMounted(() => {
     border-radius: 16rpx;
     margin-bottom: 20rpx;
     padding: 24rpx;
-    
+
     .card-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 16rpx;
     }
-    
+
     .staff-info {
         display: flex;
         align-items: center;
         gap: 12rpx;
     }
-    
+
     .staff-avatar-small {
         width: 48rpx;
         height: 48rpx;
         border-radius: 50%;
     }
-    
+
     .staff-name {
         font-size: 28rpx;
         font-weight: 500;
     }
-    
+
     .score {
         display: flex;
         align-items: center;
@@ -363,7 +359,7 @@ onMounted(() => {
         font-size: 26rpx;
         color: #ff9800;
     }
-    
+
     .content {
         font-size: 28rpx;
         color: #333;
@@ -373,22 +369,22 @@ onMounted(() => {
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
-    
+
     .images {
         display: flex;
         gap: 12rpx;
         margin-top: 16rpx;
-        
+
         .review-image {
             width: 160rpx;
             height: 160rpx;
             border-radius: 8rpx;
         }
-        
+
         .more-count {
             width: 160rpx;
             height: 160rpx;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             border-radius: 8rpx;
             display: flex;
             align-items: center;
@@ -397,7 +393,7 @@ onMounted(() => {
             font-size: 28rpx;
         }
     }
-    
+
     .card-footer {
         display: flex;
         justify-content: space-between;
@@ -405,27 +401,27 @@ onMounted(() => {
         margin-top: 16rpx;
         padding-top: 16rpx;
         border-top: 1rpx solid #f0f0f0;
-        
+
         .time {
             font-size: 24rpx;
             color: #999;
         }
-        
+
         .status {
             font-size: 24rpx;
             padding: 4rpx 16rpx;
             border-radius: 4rpx;
-            
+
             &.pending {
                 background: #fff7e6;
                 color: #ff9800;
             }
-            
+
             &.approved {
                 background: #e8f5e9;
                 color: #4caf50;
             }
-            
+
             &.rejected {
                 background: #ffebee;
                 color: #f44336;
@@ -440,7 +436,7 @@ onMounted(() => {
     align-items: center;
     padding: 120rpx 0;
     color: #999;
-    
+
     .empty-icon {
         width: 200rpx;
         height: 200rpx;

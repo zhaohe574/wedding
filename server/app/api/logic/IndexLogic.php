@@ -21,6 +21,7 @@ use app\common\model\decorate\DecoratePage;
 use app\common\model\decorate\DecorateTabbar;
 use app\common\service\ConfigService;
 use app\common\service\FileService;
+use app\common\service\DecorateDataService;
 
 
 /**
@@ -43,7 +44,12 @@ class IndexLogic extends BaseLogic
     public static function getIndexData()
     {
         // 装修配置
-        $decoratePage = DecoratePage::findOrEmpty(1);
+        $decoratePage = DecoratePage::findOrEmpty(1)->toArray();
+        
+        // 动态填充装修数据
+        if (!empty($decoratePage)) {
+            $decoratePage = DecorateDataService::parsePageData($decoratePage);
+        }
 
         // 首页文章
         $field = [
@@ -90,8 +96,17 @@ class IndexLogic extends BaseLogic
      */
     public static function getDecorate($id)
     {
-        return DecoratePage::field(['type', 'name', 'data', 'meta'])
+        $pageData = DecoratePage::field(['type', 'name', 'data', 'meta'])
             ->findOrEmpty($id)->toArray();
+        
+        if (empty($pageData)) {
+            return [];
+        }
+        
+        // 动态填充业务数据
+        $pageData = DecorateDataService::parsePageData($pageData);
+        
+        return $pageData;
     }
 
 

@@ -7,14 +7,14 @@
         />
     </page-meta>
     <view class="change-detail">
-        <view v-if="loading" class="py-20 text-center text-gray-400">
-            加载中...
-        </view>
+        <view v-if="loading" class="py-20 text-center text-gray-400"> 加载中... </view>
         <template v-else-if="detail">
             <!-- 状态卡片 -->
             <view class="status-card" :class="getStatusBgClass(detail.change_status)">
                 <view class="text-lg font-bold">{{ detail.change_status_desc }}</view>
-                <view class="text-sm mt-1 opacity-80">{{ getStatusTip(detail.change_status) }}</view>
+                <view class="text-sm mt-1 opacity-80">{{
+                    getStatusTip(detail.change_status)
+                }}</view>
             </view>
 
             <!-- 基本信息 -->
@@ -47,7 +47,7 @@
             <!-- 变更内容 -->
             <view class="bg-white mt-3 p-4">
                 <view class="section-title">变更内容</view>
-                
+
                 <!-- 改期 -->
                 <template v-if="detail.change_type === 1">
                     <view class="change-content">
@@ -71,7 +71,11 @@
                         <view class="change-item">
                             <view class="change-label">原工作人员</view>
                             <view class="staff-info" v-if="detail.old_staff">
-                                <image :src="detail.old_staff.avatar" class="staff-avatar" mode="aspectFill" />
+                                <image
+                                    :src="detail.old_staff.avatar"
+                                    class="staff-avatar"
+                                    mode="aspectFill"
+                                />
                                 <text class="staff-name">{{ detail.old_staff.name }}</text>
                             </view>
                             <view class="change-price">¥{{ detail.old_price }}</view>
@@ -82,7 +86,11 @@
                         <view class="change-item">
                             <view class="change-label">新工作人员</view>
                             <view class="staff-info" v-if="detail.new_staff">
-                                <image :src="detail.new_staff.avatar" class="staff-avatar" mode="aspectFill" />
+                                <image
+                                    :src="detail.new_staff.avatar"
+                                    class="staff-avatar"
+                                    mode="aspectFill"
+                                />
                                 <text class="staff-name">{{ detail.new_staff.name }}</text>
                             </view>
                             <view class="change-price">¥{{ detail.new_price }}</view>
@@ -90,7 +98,10 @@
                     </view>
                     <view class="price-diff mt-4 text-center" v-if="detail.price_diff !== 0">
                         <text class="text-gray-500">差价: </text>
-                        <text :class="detail.price_diff > 0 ? 'text-red-500' : 'text-green-500'" class="text-lg font-bold">
+                        <text
+                            :class="detail.price_diff > 0 ? 'text-red-500' : 'text-green-500'"
+                            class="text-lg font-bold"
+                        >
                             {{ detail.price_diff > 0 ? '+' : '' }}{{ detail.price_diff }}元
                         </text>
                         <view class="text-xs text-gray-400 mt-1">
@@ -103,14 +114,24 @@
                 <template v-else-if="detail.change_type === 3">
                     <view class="add-item-content">
                         <view class="staff-card" v-if="detail.add_staff">
-                            <image :src="detail.add_staff.avatar" class="staff-avatar-large" mode="aspectFill" />
+                            <image
+                                :src="detail.add_staff.avatar"
+                                class="staff-avatar-large"
+                                mode="aspectFill"
+                            />
                             <view class="staff-info-detail">
                                 <view class="staff-name-large">{{ detail.add_staff.name }}</view>
-                                <view class="text-gray-400 text-sm">{{ detail.add_package_name }}</view>
-                                <view class="text-gray-400 text-sm">{{ detail.add_service_date }}</view>
+                                <view class="text-gray-400 text-sm">{{
+                                    detail.add_package_name
+                                }}</view>
+                                <view class="text-gray-400 text-sm">{{
+                                    detail.add_service_date
+                                }}</view>
                             </view>
                             <view class="add-price">
-                                <text class="text-red-500 font-bold text-lg">+¥{{ detail.add_price }}</text>
+                                <text class="text-red-500 font-bold text-lg"
+                                    >+¥{{ detail.add_price }}</text
+                                >
                             </view>
                         </view>
                     </view>
@@ -124,11 +145,14 @@
             </view>
 
             <!-- 附件图片 -->
-            <view class="bg-white mt-3 p-4" v-if="detail.attach_images && detail.attach_images.length > 0">
+            <view
+                class="bg-white mt-3 p-4"
+                v-if="detail.attach_images && detail.attach_images.length > 0"
+            >
                 <view class="section-title">附件图片</view>
                 <view class="image-list">
-                    <image 
-                        v-for="(img, index) in detail.attach_images" 
+                    <image
+                        v-for="(img, index) in detail.attach_images"
                         :key="index"
                         :src="img"
                         class="attach-image"
@@ -170,9 +194,7 @@
                 <button class="btn-cancel" @click="handleCancel">取消申请</button>
             </view>
         </template>
-        <view v-else class="py-20 text-center text-gray-400">
-            数据不存在
-        </view>
+        <view v-else class="py-20 text-center text-gray-400"> 数据不存在 </view>
     </view>
 </template>
 
@@ -273,12 +295,22 @@ onLoad((options: any) => {
 .status-card {
     padding: 40rpx 30rpx;
     color: #fff;
-    
-    &.bg-orange { background: linear-gradient(135deg, #ff9500, #ff6b00); }
-    &.bg-blue { background: linear-gradient(135deg, #007aff, #0056d6); }
-    &.bg-red { background: linear-gradient(135deg, #ff3b30, #d63027); }
-    &.bg-green { background: linear-gradient(135deg, #34c759, #28a745); }
-    &.bg-gray { background: linear-gradient(135deg, #8e8e93, #636366); }
+
+    &.bg-orange {
+        background: linear-gradient(135deg, #ff9500, #ff6b00);
+    }
+    &.bg-blue {
+        background: linear-gradient(135deg, #007aff, #0056d6);
+    }
+    &.bg-red {
+        background: linear-gradient(135deg, #ff3b30, #d63027);
+    }
+    &.bg-green {
+        background: linear-gradient(135deg, #34c759, #28a745);
+    }
+    &.bg-gray {
+        background: linear-gradient(135deg, #8e8e93, #636366);
+    }
 }
 
 .section-title {
@@ -296,14 +328,16 @@ onLoad((options: any) => {
     align-items: center;
     padding: 16rpx 0;
     border-bottom: 1rpx solid #f5f5f5;
-    
-    &:last-child { border-bottom: none; }
-    
+
+    &:last-child {
+        border-bottom: none;
+    }
+
     .label {
         color: #999;
         font-size: 26rpx;
     }
-    
+
     .value {
         color: #333;
         font-size: 26rpx;
@@ -338,9 +372,13 @@ onLoad((options: any) => {
 .change-value {
     font-size: 28rpx;
     font-weight: bold;
-    
-    &.old { color: #999; }
-    &.new { color: var(--primary-color, #ff6b35); }
+
+    &.old {
+        color: #999;
+    }
+    &.new {
+        color: var(--primary-color, #ff6b35);
+    }
 }
 
 .change-arrow {
@@ -430,7 +468,7 @@ onLoad((options: any) => {
     right: 0;
     padding: 20rpx 30rpx;
     background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
 }
 
 .btn-cancel {

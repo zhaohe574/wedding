@@ -247,6 +247,47 @@
                         <el-radio :label="3">指定人员</el-radio>
                     </el-radio-group>
                 </el-form-item>
+                <el-form-item v-if="editForm.use_scope === 2" label="选择分类" prop="scope_ids">
+                    <el-select 
+                        v-model="editForm.scope_ids" 
+                        multiple 
+                        placeholder="请选择服务分类"
+                        style="width: 100%"
+                        :disabled="!!editForm.id && editForm.receive_count > 0"
+                    >
+                        <el-option
+                            v-for="item in categoryOptions"
+                            :key="item.id"
+                            :label="item.name"
+                            :value="item.id"
+                        />
+                    </el-select>
+                    <div class="text-gray text-xs mt-1">选择后，优惠券仅可用于所选分类下的服务</div>
+                </el-form-item>
+                <el-form-item v-if="editForm.use_scope === 3" label="选择人员" prop="scope_ids">
+                    <el-select 
+                        v-model="editForm.scope_ids" 
+                        multiple 
+                        filterable
+                        placeholder="请选择工作人员"
+                        style="width: 100%"
+                        :disabled="!!editForm.id && editForm.receive_count > 0"
+                    >
+                        <el-option
+                            v-for="item in staffOptions"
+                            :key="item.id"
+                            :label="`${item.name} - ${item.category_name}`"
+                            :value="item.id"
+                        >
+                            <div class="flex items-center">
+                                <el-avatar :size="24" :src="item.avatar">{{ item.name?.charAt(0) }}</el-avatar>
+                                <span class="ml-2">{{ item.name }}</span>
+                                <span class="ml-2 text-gray text-xs">{{ item.category_name }}</span>
+                            </div>
+                        </el-option>
+                    </el-select>
+                    <div class="text-gray text-xs mt-1">选择后，优惠券仅可用于所选工作人员的服务</div>
+                </el-form-item>
                 <el-form-item label="状态" prop="status">
                     <el-switch v-model="editForm.status" :active-value="1" :inactive-value="0" />
                 </el-form-item>
@@ -384,12 +425,18 @@ import {
     revokeCoupon,
     getCouponStatistics
 } from '@/api/coupon'
+import { categoryAll } from '@/api/service'
+import { staffAll } from '@/api/staff'
 
 // 列表数据
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
 const statistics = ref<any>({})
+
+// 分类和人员选项
+const categoryOptions = ref<any[]>([])
+const staffOptions = ref<any[]>([])
 
 // 查询参数
 const queryParams = reactive({
@@ -683,9 +730,31 @@ const getUserCouponStatusType = (status: number) => {
     return types[status] || ''
 }
 
+// 获取分类选项
+const getCategoryOptions = async () => {
+    try {
+        const res = await categoryAll()
+        categoryOptions.value = res || []
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+// 获取人员选项
+const getStaffOptions = async () => {
+    try {
+        const res = await staffAll({ status: 1 })
+        staffOptions.value = res || []
+    } catch (error) {
+        console.error(error)
+    }
+}
+
 onMounted(() => {
     getList()
     getStatistics()
+    getCategoryOptions()
+    getStaffOptions()
 })
 </script>
 
@@ -779,4 +848,17 @@ onMounted(() => {
 .text-xs {
     font-size: 12px;
 }
+
+.mt-1 {
+    margin-top: 4px;
+}
+
+.flex {
+    display: flex;
+}
+
+.items-center {
+    align-items: center;
+}
+
 </style>

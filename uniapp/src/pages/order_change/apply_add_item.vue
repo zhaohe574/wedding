@@ -12,15 +12,22 @@
             <view class="section-title">当前订单</view>
             <view class="order-card">
                 <view class="text-sm text-gray-500">订单号: {{ orderInfo.order_sn }}</view>
-                <view class="flex items-center mt-2" v-if="orderInfo.items && orderInfo.items.length > 0">
-                    <image 
-                        :src="orderInfo.items[0].staff?.avatar || '/static/images/default-avatar.png'" 
+                <view
+                    class="flex items-center mt-2"
+                    v-if="orderInfo.items && orderInfo.items.length > 0"
+                >
+                    <image
+                        :src="
+                            orderInfo.items[0].staff?.avatar || '/static/images/default-avatar.png'
+                        "
                         class="w-12 h-12 rounded-lg mr-3"
                         mode="aspectFill"
                     />
                     <view class="flex-1">
                         <view class="text-sm font-medium">{{ orderInfo.items[0].staff_name }}</view>
-                        <view class="text-xs text-gray-400">{{ orderInfo.items[0].package_name }}</view>
+                        <view class="text-xs text-gray-400">{{
+                            orderInfo.items[0].package_name
+                        }}</view>
                     </view>
                 </view>
                 <view class="mt-2 text-sm text-gray-500">
@@ -33,20 +40,28 @@
         <view class="bg-white mt-3 p-4">
             <view class="section-title">加项类型</view>
             <view class="type-options">
-                <view 
+                <view
                     class="type-option"
                     :class="{ active: addType === 'package' }"
                     @click="addType = 'package'"
                 >
-                    <uni-icons type="shop" size="28" :color="addType === 'package' ? '#ff6b35' : '#999'"></uni-icons>
+                    <uni-icons
+                        type="shop"
+                        size="28"
+                        :color="addType === 'package' ? '#ff6b35' : '#999'"
+                    ></uni-icons>
                     <text>添加套餐</text>
                 </view>
-                <view 
+                <view
                     class="type-option"
                     :class="{ active: addType === 'staff' }"
                     @click="addType = 'staff'"
                 >
-                    <uni-icons type="person" size="28" :color="addType === 'staff' ? '#ff6b35' : '#999'"></uni-icons>
+                    <uni-icons
+                        type="person"
+                        size="28"
+                        :color="addType === 'staff' ? '#ff6b35' : '#999'"
+                    ></uni-icons>
                     <text>添加人员</text>
                 </view>
             </view>
@@ -58,21 +73,25 @@
             <view class="form-item" @click="showPackagePicker = true">
                 <text class="label">套餐</text>
                 <view class="value-area">
-                    <text v-if="selectedPackage" class="text-primary">{{ selectedPackage.name }}</text>
+                    <text v-if="selectedPackage" class="text-primary">{{
+                        selectedPackage.name
+                    }}</text>
                     <text v-else class="placeholder">请选择要添加的套餐</text>
                     <uni-icons type="right" size="16" color="#999"></uni-icons>
                 </view>
             </view>
             <view v-if="selectedPackage" class="selected-item mt-3">
                 <view class="flex items-center">
-                    <image 
-                        :src="selectedPackage.image || '/static/images/default-package.png'" 
+                    <image
+                        :src="selectedPackage.image || '/static/images/default-package.png'"
                         class="w-16 h-16 rounded-lg mr-3"
                         mode="aspectFill"
                     />
                     <view class="flex-1">
                         <view class="text-sm font-medium">{{ selectedPackage.name }}</view>
-                        <view class="text-xs text-gray-400 mt-1">{{ selectedPackage.description }}</view>
+                        <view class="text-xs text-gray-400 mt-1">{{
+                            selectedPackage.description
+                        }}</view>
                     </view>
                 </view>
                 <view class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
@@ -95,17 +114,21 @@
             </view>
             <view v-if="selectedStaff" class="selected-item mt-3">
                 <view class="flex items-center">
-                    <image 
-                        :src="selectedStaff.avatar || '/static/images/default-avatar.png'" 
+                    <image
+                        :src="selectedStaff.avatar || '/static/images/default-avatar.png'"
                         class="w-16 h-16 rounded-full mr-3"
                         mode="aspectFill"
                     />
                     <view class="flex-1">
                         <view class="text-sm font-medium">{{ selectedStaff.name }}</view>
-                        <view class="text-xs text-gray-400 mt-1">{{ selectedStaff.level_name || '普通级别' }}</view>
+                        <view class="text-xs text-gray-400 mt-1">{{
+                            selectedStaff.level_name || '普通级别'
+                        }}</view>
                         <view class="flex items-center mt-1">
                             <uni-icons type="star-filled" size="14" color="#ffc107"></uni-icons>
-                            <text class="text-xs text-yellow-500 ml-1">{{ selectedStaff.score || '5.0' }}</text>
+                            <text class="text-xs text-yellow-500 ml-1">{{
+                                selectedStaff.score || '5.0'
+                            }}</text>
                         </view>
                     </view>
                 </view>
@@ -116,10 +139,16 @@
             </view>
 
             <!-- 选择套餐（为人员选择套餐） -->
-            <view class="form-item mt-3" @click="showStaffPackagePicker = true" v-if="selectedStaff">
+            <view
+                class="form-item mt-3"
+                @click="showStaffPackagePicker = true"
+                v-if="selectedStaff"
+            >
                 <text class="label">关联套餐</text>
                 <view class="value-area">
-                    <text v-if="selectedStaffPackage" class="text-primary">{{ selectedStaffPackage.name }}</text>
+                    <text v-if="selectedStaffPackage" class="text-primary">{{
+                        selectedStaffPackage.name
+                    }}</text>
                     <text v-else class="placeholder">请选择服务套餐</text>
                     <uni-icons type="right" size="16" color="#999"></uni-icons>
                 </view>
@@ -132,7 +161,9 @@
             <view class="form-item" @click="openDatePicker">
                 <text class="label">服务日期</text>
                 <view class="value-area">
-                    <text v-if="formData.service_date" class="text-primary">{{ formData.service_date }}</text>
+                    <text v-if="formData.service_date" class="text-primary">{{
+                        formData.service_date
+                    }}</text>
                     <text v-else class="placeholder">请选择服务日期</text>
                     <uni-icons type="right" size="16" color="#999"></uni-icons>
                 </view>
@@ -156,8 +187,8 @@
         <!-- 申请原因 -->
         <view class="bg-white mt-3 p-4">
             <view class="section-title">申请原因</view>
-            <textarea 
-                v-model="formData.reason" 
+            <textarea
+                v-model="formData.reason"
                 class="reason-input"
                 placeholder="请填写加项原因（选填）"
                 maxlength="200"
@@ -169,8 +200,8 @@
         <view class="bg-white mt-3 p-4">
             <view class="section-title">附件图片（选填）</view>
             <view class="image-uploader">
-                <view 
-                    v-for="(img, index) in formData.attach_images" 
+                <view
+                    v-for="(img, index) in formData.attach_images"
                     :key="index"
                     class="image-item"
                 >
@@ -179,7 +210,11 @@
                         <uni-icons type="close" size="14" color="#fff"></uni-icons>
                     </view>
                 </view>
-                <view class="add-image" @click="chooseImage" v-if="formData.attach_images.length < 5">
+                <view
+                    class="add-image"
+                    @click="chooseImage"
+                    v-if="formData.attach_images.length < 5"
+                >
                     <uni-icons type="plusempty" size="40" color="#ccc"></uni-icons>
                     <text class="text-xs text-gray-400 mt-1">上传图片</text>
                 </view>
@@ -192,7 +227,9 @@
             <view class="section-title">费用预览</view>
             <view class="price-preview">
                 <view class="price-item">
-                    <text class="text-sm text-gray-500">{{ addType === 'package' ? '套餐费用' : '人员费用' }}</text>
+                    <text class="text-sm text-gray-500">{{
+                        addType === 'package' ? '套餐费用' : '人员费用'
+                    }}</text>
                     <text class="text-sm">¥{{ basePrice }}</text>
                 </view>
                 <view class="price-item" v-if="addType === 'staff' && selectedStaffPackage">
@@ -226,15 +263,15 @@
                     <text class="placeholder-btn"></text>
                 </view>
                 <scroll-view class="picker-list" scroll-y>
-                    <view 
-                        v-for="item in packageList" 
+                    <view
+                        v-for="item in packageList"
                         :key="item.id"
                         class="picker-item-card"
                         :class="{ active: selectedPackage?.id === item.id }"
                         @click="selectPackage(item)"
                     >
-                        <image 
-                            :src="item.image || '/static/images/default-package.png'" 
+                        <image
+                            :src="item.image || '/static/images/default-package.png'"
                             class="item-image"
                             mode="aspectFill"
                         />
@@ -243,10 +280,10 @@
                             <view class="item-desc">{{ item.description }}</view>
                             <view class="item-price">¥{{ item.price }}</view>
                         </view>
-                        <uni-icons 
-                            v-if="selectedPackage?.id === item.id" 
-                            type="checkmarkempty" 
-                            size="20" 
+                        <uni-icons
+                            v-if="selectedPackage?.id === item.id"
+                            type="checkmarkempty"
+                            size="20"
                             color="#ff6b35"
                         ></uni-icons>
                     </view>
@@ -266,15 +303,15 @@
                     <text class="placeholder-btn"></text>
                 </view>
                 <scroll-view class="picker-list" scroll-y>
-                    <view 
-                        v-for="item in staffList" 
+                    <view
+                        v-for="item in staffList"
                         :key="item.id"
                         class="picker-item-card"
                         :class="{ active: selectedStaff?.id === item.id }"
                         @click="selectStaff(item)"
                     >
-                        <image 
-                            :src="item.avatar || '/static/images/default-avatar.png'" 
+                        <image
+                            :src="item.avatar || '/static/images/default-avatar.png'"
                             class="item-avatar"
                             mode="aspectFill"
                         />
@@ -283,10 +320,10 @@
                             <view class="item-desc">{{ item.level_name || '普通级别' }}</view>
                             <view class="item-price">¥{{ item.price }}</view>
                         </view>
-                        <uni-icons 
-                            v-if="selectedStaff?.id === item.id" 
-                            type="checkmarkempty" 
-                            size="20" 
+                        <uni-icons
+                            v-if="selectedStaff?.id === item.id"
+                            type="checkmarkempty"
+                            size="20"
                             color="#ff6b35"
                         ></uni-icons>
                     </view>
@@ -306,8 +343,8 @@
                     <text class="placeholder-btn"></text>
                 </view>
                 <scroll-view class="picker-list" scroll-y>
-                    <view 
-                        v-for="item in staffPackageList" 
+                    <view
+                        v-for="item in staffPackageList"
                         :key="item.id"
                         class="picker-item-card"
                         :class="{ active: selectedStaffPackage?.id === item.id }"
@@ -318,10 +355,10 @@
                             <view class="item-desc">{{ item.description }}</view>
                             <view class="item-price">¥{{ item.price }}</view>
                         </view>
-                        <uni-icons 
-                            v-if="selectedStaffPackage?.id === item.id" 
-                            type="checkmarkempty" 
-                            size="20" 
+                        <uni-icons
+                            v-if="selectedStaffPackage?.id === item.id"
+                            type="checkmarkempty"
+                            size="20"
                             color="#ff6b35"
                         ></uni-icons>
                     </view>
@@ -340,16 +377,16 @@
                     <text class="title">选择日期</text>
                     <text class="confirm" @click="confirmDate">确定</text>
                 </view>
-                <picker-view 
-                    :value="datePickerValue" 
-                    @change="onDateChange"
-                    class="picker-view"
-                >
+                <picker-view :value="datePickerValue" @change="onDateChange" class="picker-view">
                     <picker-view-column>
-                        <view v-for="year in years" :key="year" class="picker-item">{{ year }}年</view>
+                        <view v-for="year in years" :key="year" class="picker-item"
+                            >{{ year }}年</view
+                        >
                     </picker-view-column>
                     <picker-view-column>
-                        <view v-for="month in months" :key="month" class="picker-item">{{ month }}月</view>
+                        <view v-for="month in months" :key="month" class="picker-item"
+                            >{{ month }}月</view
+                        >
                     </picker-view-column>
                     <picker-view-column>
                         <view v-for="day in days" :key="day" class="picker-item">{{ day }}日</view>
@@ -367,8 +404,8 @@
                     <text class="confirm" @click="confirmTime">确定</text>
                 </view>
                 <view class="time-options">
-                    <view 
-                        v-for="option in timeSlotOptions" 
+                    <view
+                        v-for="option in timeSlotOptions"
                         :key="option.value"
                         class="time-option"
                         :class="{ active: tempTimeSlot === option.value }"
@@ -469,7 +506,12 @@ const canSubmit = computed(() => {
     if (addType.value === 'package') {
         return selectedPackage.value && formData.service_date && formData.time_slot !== null
     } else {
-        return selectedStaff.value && selectedStaffPackage.value && formData.service_date && formData.time_slot !== null
+        return (
+            selectedStaff.value &&
+            selectedStaffPackage.value &&
+            formData.service_date &&
+            formData.time_slot !== null
+        )
     }
 })
 
@@ -563,11 +605,7 @@ const openDatePicker = () => {
     const yearIndex = years.indexOf(today.getFullYear())
     const monthIndex = today.getMonth()
     const dayIndex = today.getDate() - 1
-    datePickerValue.value = [
-        yearIndex >= 0 ? yearIndex : 0,
-        monthIndex,
-        dayIndex
-    ]
+    datePickerValue.value = [yearIndex >= 0 ? yearIndex : 0, monthIndex, dayIndex]
     datePopup.value?.open()
 }
 
@@ -644,15 +682,24 @@ const handleSubmit = async () => {
 }
 
 // 监听弹窗显示
-watch(() => showPackagePicker.value, (val) => {
-    if (val) packagePopup.value?.open()
-})
-watch(() => showStaffPicker.value, (val) => {
-    if (val) staffPopup.value?.open()
-})
-watch(() => showStaffPackagePicker.value, (val) => {
-    if (val) staffPackagePopup.value?.open()
-})
+watch(
+    () => showPackagePicker.value,
+    (val) => {
+        if (val) packagePopup.value?.open()
+    }
+)
+watch(
+    () => showStaffPicker.value,
+    (val) => {
+        if (val) staffPopup.value?.open()
+    }
+)
+watch(
+    () => showStaffPackagePicker.value,
+    (val) => {
+        if (val) staffPackagePopup.value?.open()
+    }
+)
 
 // 切换类型时重置选择
 watch(addType, () => {
@@ -709,17 +756,17 @@ onLoad((options: any) => {
     background: #f9f9f9;
     border-radius: 12rpx;
     border: 2rpx solid transparent;
-    
+
     text {
         font-size: 26rpx;
         color: #666;
         margin-top: 10rpx;
     }
-    
+
     &.active {
         border-color: var(--primary-color, #ff6b35);
         background: rgba(255, 107, 53, 0.05);
-        
+
         text {
             color: var(--primary-color, #ff6b35);
         }
@@ -738,18 +785,18 @@ onLoad((options: any) => {
     align-items: center;
     padding: 24rpx 0;
     border-bottom: 1rpx solid #f5f5f5;
-    
+
     .label {
         font-size: 28rpx;
         color: #333;
     }
-    
+
     .value-area {
         display: flex;
         align-items: center;
         gap: 8rpx;
     }
-    
+
     .placeholder {
         color: #ccc;
         font-size: 28rpx;
@@ -797,7 +844,7 @@ onLoad((options: any) => {
     right: -10rpx;
     width: 36rpx;
     height: 36rpx;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -826,7 +873,7 @@ onLoad((options: any) => {
     justify-content: space-between;
     align-items: center;
     padding: 12rpx 0;
-    
+
     &.total {
         border-top: 1rpx dashed #e0e0e0;
         margin-top: 12rpx;
@@ -841,7 +888,7 @@ onLoad((options: any) => {
     right: 0;
     padding: 20rpx 30rpx;
     background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
 }
 
 .btn-submit {
@@ -853,7 +900,7 @@ onLoad((options: any) => {
     border-radius: 44rpx;
     font-size: 30rpx;
     border: none;
-    
+
     &[disabled] {
         opacity: 0.6;
     }
@@ -870,11 +917,22 @@ onLoad((options: any) => {
     align-items: center;
     padding: 30rpx;
     border-bottom: 1rpx solid #f5f5f5;
-    
-    .cancel { color: #999; font-size: 28rpx; }
-    .title { font-size: 30rpx; font-weight: bold; }
-    .confirm { color: var(--primary-color, #ff6b35); font-size: 28rpx; }
-    .placeholder-btn { width: 60rpx; }
+
+    .cancel {
+        color: #999;
+        font-size: 28rpx;
+    }
+    .title {
+        font-size: 30rpx;
+        font-weight: bold;
+    }
+    .confirm {
+        color: var(--primary-color, #ff6b35);
+        font-size: 28rpx;
+    }
+    .placeholder-btn {
+        width: 60rpx;
+    }
 }
 
 .picker-list {
@@ -890,7 +948,7 @@ onLoad((options: any) => {
     background: #f9f9f9;
     border-radius: 12rpx;
     border: 2rpx solid transparent;
-    
+
     &.active {
         border-color: var(--primary-color, #ff6b35);
         background: rgba(255, 107, 53, 0.05);
@@ -965,7 +1023,7 @@ onLoad((options: any) => {
     border: 2rpx solid #eee;
     border-radius: 12rpx;
     font-size: 28rpx;
-    
+
     &.active {
         border-color: var(--primary-color, #ff6b35);
         color: var(--primary-color, #ff6b35);

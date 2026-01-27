@@ -53,7 +53,7 @@ class InvoiceController extends BaseAdminController
     /**
      * @notes 开票失败
      */
-    public function fail()
+    public function markFailed()
     {
         $params = (new InvoiceValidate())->goCheck('fail');
         $result = InvoiceLogic::fail($params);

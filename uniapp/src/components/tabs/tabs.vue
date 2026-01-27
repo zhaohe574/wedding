@@ -1,6 +1,6 @@
 <template>
     <view class="tabs">
-        <u-sticky :enable="isFixed" :bg-color="stickyBgColor" :offset-top="top" :h5-nav-height="0">
+        <tn-sticky :enable="isFixed" :bg-color="stickyBgColor" :offset-top="top" :h5-nav-height="0">
             <view
                 :id="id"
                 :style="{
@@ -23,18 +23,18 @@
                             @tap="clickTab(index)"
                             :style="[tabItemStyle(index)]"
                         >
-                            <u-badge
+                            <tn-badge
                                 :count="item[count] || item['dot'] || 0"
                                 :offset="offset"
-                                size="mini"
-                            ></u-badge>
+                                size="sm"
+                            ></tn-badge>
                             {{ item[name] || item['name'] }}
                         </view>
                         <view v-if="showBar" class="tab-bar" :style="[tabBarStyle]"></view>
                     </view>
                 </scroll-view>
             </view>
-        </u-sticky>
+        </tn-sticky>
         <view
             class="tab-content"
             @touchstart="onTouchStart"

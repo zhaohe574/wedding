@@ -49,7 +49,7 @@ router.afterEach((to, from) => {
 
 // 登录拦截
 router.beforeEach(async (to, from) => {
-    const userStore = useUserStore();
+    const userStore = useUserStore()
     if (!userStore.isLogin && to.meta.auth) {
         return '/pages/login/login'
     }

@@ -10,8 +10,8 @@
         <!-- 订单信息 -->
         <view class="bg-white p-4" v-if="orderItem">
             <view class="flex items-center">
-                <image 
-                    :src="orderItem.staff?.avatar || '/static/images/default-avatar.png'" 
+                <image
+                    :src="orderItem.staff?.avatar || '/static/images/default-avatar.png'"
                     class="w-16 h-16 rounded-full mr-3"
                     mode="aspectFill"
                 />
@@ -28,12 +28,12 @@
         <!-- 评分 -->
         <view class="bg-white mt-3 p-4">
             <view class="section-title">服务评分</view>
-            
+
             <view class="score-item">
                 <text class="score-label">综合评分</text>
                 <view class="score-stars">
-                    <uni-icons 
-                        v-for="i in 5" 
+                    <uni-icons
+                        v-for="i in 5"
                         :key="i"
                         :type="i <= formData.score ? 'star-filled' : 'star'"
                         size="28"
@@ -50,8 +50,8 @@
                 <view class="detail-score-item" v-for="item in detailScores" :key="item.key">
                     <text class="label">{{ item.label }}</text>
                     <view class="stars">
-                        <uni-icons 
-                            v-for="i in 5" 
+                        <uni-icons
+                            v-for="i in 5"
                             :key="i"
                             :type="i <= formData[item.key] ? 'star-filled' : 'star'"
                             size="20"
@@ -67,8 +67,8 @@
         <view class="bg-white mt-3 p-4" v-if="tags.length">
             <view class="section-title">选择标签</view>
             <view class="tag-list">
-                <view 
-                    v-for="tag in tags" 
+                <view
+                    v-for="tag in tags"
                     :key="tag.id"
                     class="tag-item"
                     :class="{ active: selectedTags.includes(tag.id) }"
@@ -82,8 +82,8 @@
         <!-- 评价内容 -->
         <view class="bg-white mt-3 p-4">
             <view class="section-title">评价内容</view>
-            <textarea 
-                v-model="formData.content" 
+            <textarea
+                v-model="formData.content"
                 class="content-input"
                 placeholder="分享您的服务体验，帮助更多人选择..."
                 maxlength="500"
@@ -95,11 +95,7 @@
         <view class="bg-white mt-3 p-4">
             <view class="section-title">上传图片/视频（选填）</view>
             <view class="media-uploader">
-                <view 
-                    v-for="(img, index) in formData.images" 
-                    :key="index"
-                    class="media-item"
-                >
+                <view v-for="(img, index) in formData.images" :key="index" class="media-item">
                     <image :src="img" class="media-image" mode="aspectFill" />
                     <view class="delete-btn" @click="removeImage(index)">
                         <uni-icons type="close" size="14" color="#fff"></uni-icons>
@@ -117,8 +113,8 @@
         <view class="bg-white mt-3 p-4">
             <view class="flex justify-between items-center">
                 <text class="text-sm">匿名评价</text>
-                <switch 
-                    :checked="formData.is_anonymous === 1" 
+                <switch
+                    :checked="formData.is_anonymous === 1"
                     @change="formData.is_anonymous = $event.detail.value ? 1 : 0"
                     color="#ff6b35"
                 />
@@ -128,7 +124,9 @@
         <!-- 奖励提示 -->
         <view class="reward-tip" v-if="rewardPoints > 0">
             <uni-icons type="gift" size="18" color="#ff6b35"></uni-icons>
-            <text>发布评价可获得 <text class="highlight">{{ rewardPoints }}</text> 积分奖励</text>
+            <text
+                >发布评价可获得 <text class="highlight">{{ rewardPoints }}</text> 积分奖励</text
+            >
         </view>
 
         <!-- 提交按钮 -->
@@ -176,14 +174,14 @@ const detailScores = [
 // 计算奖励积分
 const rewardPoints = computed(() => {
     if (!rewardConfig.value.length) return 0
-    
+
     let type = 1 // 文字评价
     if (formData.images.length > 0) type = 2 // 图文评价
     if (formData.video) type = 3 // 视频评价
-    
-    const config = rewardConfig.value.find(c => c.reward_type === type)
+
+    const config = rewardConfig.value.find((c) => c.reward_type === type)
     if (!config) return 0
-    
+
     let points = config.reward_points || 0
     if (formData.score >= 4 && config.extra_points_for_good) {
         points += config.extra_points_for_good
@@ -226,9 +224,12 @@ const loadRewardConfig = async () => {
 }
 
 // 监听评分变化，重新加载标签
-watch(() => formData.score, () => {
-    loadTags()
-})
+watch(
+    () => formData.score,
+    () => {
+        loadTags()
+    }
+)
 
 // 切换标签
 const toggleTag = (tagId: number) => {
@@ -285,7 +286,7 @@ const handleSubmit = async () => {
         }
 
         const res = await publishReview(params)
-        
+
         uni.showModal({
             title: '评价成功',
             content: res.reward_points > 0 ? `获得${res.reward_points}积分奖励` : '感谢您的评价',
@@ -329,18 +330,18 @@ onLoad((options: any) => {
     display: flex;
     align-items: center;
     padding: 20rpx 0;
-    
+
     .score-label {
         font-size: 28rpx;
         color: #333;
         width: 140rpx;
     }
-    
+
     .score-stars {
         display: flex;
         gap: 8rpx;
     }
-    
+
     .score-text {
         font-size: 26rpx;
         color: #ff9800;
@@ -360,12 +361,12 @@ onLoad((options: any) => {
         align-items: center;
         justify-content: space-between;
         padding: 16rpx 0;
-        
+
         .label {
             font-size: 26rpx;
             color: #666;
         }
-        
+
         .stars {
             display: flex;
             gap: 4rpx;
@@ -386,7 +387,7 @@ onLoad((options: any) => {
     font-size: 26rpx;
     color: #666;
     border: 2rpx solid transparent;
-    
+
     &.active {
         background: rgba(255, 107, 53, 0.1);
         color: var(--primary-color, #ff6b35);
@@ -427,7 +428,7 @@ onLoad((options: any) => {
     right: -10rpx;
     width: 36rpx;
     height: 36rpx;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -456,7 +457,7 @@ onLoad((options: any) => {
     border-radius: 12rpx;
     font-size: 26rpx;
     color: #666;
-    
+
     .highlight {
         color: var(--primary-color, #ff6b35);
         font-weight: bold;
@@ -470,7 +471,7 @@ onLoad((options: any) => {
     right: 0;
     padding: 20rpx 30rpx;
     background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
 }
 
 .btn-submit {
@@ -482,7 +483,7 @@ onLoad((options: any) => {
     border-radius: 44rpx;
     font-size: 30rpx;
     border: none;
-    
+
     &[disabled] {
         opacity: 0.6;
     }

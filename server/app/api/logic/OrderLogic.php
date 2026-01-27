@@ -48,7 +48,7 @@ class OrderLogic extends BaseLogic
                 $q->field('id, order_id, staff_id, staff_name, package_name, service_date, time_slot, price, quantity, subtotal');
             }])
             ->order('id', 'desc')
-            ->paginate($params['page_size'] ?? 10)
+            ->paginate((int)($params['page_size'] ?? 10))
             ->toArray();
 
         // 添加状态描述

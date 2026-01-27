@@ -21,6 +21,7 @@ use app\common\{enum\notice\NoticeEnum,
     logic\BaseLogic,
     model\user\User,
     model\user\UserAuth,
+    model\order\Order,
     service\FileService,
     service\sms\SmsDriver,
     service\wechat\WeChatMnpService};
@@ -285,6 +286,67 @@ class UserLogic extends BaseLogic
         } catch (\Exception $e) {
             self::setError($e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * @notes 获取用户婚期信息
+     * @param int $userId 用户ID
+     * @return array 婚期信息
+     * @author AI
+     * @date 2026/01/22
+     */
+    public static function weddingDate(int $userId): array
+    {
+        try {
+            // 查询用户最近的已支付订单
+            $order = Order::where('user_id', $userId)
+                ->where('pay_status', 1) // 已支付
+                ->whereNotNull('wedding_date')
+                ->where('wedding_date', '<>', '')
+                ->order('wedding_date', 'asc')
+                ->field('id, order_sn, wedding_date, service_date, contact_name')
+                ->findOrEmpty();
+
+            // 如果没有订单或没有婚期
+            if ($order->isEmpty()) {
+                return [
+                    'has_order' => false,
+                    'wedding_date' => '',
+                    'wedding_date_text' => '',
+                    'days_remaining' => 0,
+                    'service_date' => '',
+                    'order_sn' => '',
+                ];
+            }
+
+            // 计算剩余天数
+            $weddingTimestamp = strtotime($order->wedding_date);
+            $currentTimestamp = strtotime(date('Y-m-d'));
+            $daysRemaining = (int)ceil(($weddingTimestamp - $currentTimestamp) / 86400);
+
+            // 格式化日期文本
+            $weddingDateText = date('Y年m月d日', $weddingTimestamp);
+
+            return [
+                'has_order' => true,
+                'wedding_date' => $order->wedding_date,
+                'wedding_date_text' => $weddingDateText,
+                'days_remaining' => $daysRemaining,
+                'service_date' => $order->service_date ?? '',
+                'order_sn' => $order->order_sn,
+                'contact_name' => $order->contact_name ?? '',
+            ];
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return [
+                'has_order' => false,
+                'wedding_date' => '',
+                'wedding_date_text' => '',
+                'days_remaining' => 0,
+                'service_date' => '',
+                'order_sn' => '',
+            ];
         }
     }
 

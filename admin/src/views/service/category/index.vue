@@ -41,8 +41,6 @@
                 size="large"
                 v-loading="pager.loading"
                 :data="pager.lists"
-                row-key="id"
-                :tree-props="{ children: 'children' }"
             >
                 <el-table-column label="分类名称" prop="name" min-width="200" />
                 <el-table-column label="图标" width="80">
@@ -56,7 +54,6 @@
                         <span v-else>-</span>
                     </template>
                 </el-table-column>
-                <el-table-column label="上级分类" prop="parent_name" width="150" />
                 <el-table-column label="人员数" prop="staff_count" width="100" />
                 <el-table-column label="排序" prop="sort" width="80" />
                 <el-table-column label="状态" width="100">
@@ -71,16 +68,8 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="创建时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="200" fixed="right">
+                <el-table-column label="操作" width="120" fixed="right">
                     <template #default="{ row }">
-                        <el-button
-                            v-perms="['service.category/add']"
-                            type="primary"
-                            link
-                            @click="handleAdd(row.id)"
-                        >
-                            添加子分类
-                        </el-button>
                         <el-button
                             v-perms="['service.category/edit']"
                             type="primary"
@@ -117,16 +106,6 @@
                 :rules="editRules"
                 label-width="100px"
             >
-                <el-form-item label="上级分类" prop="pid">
-                    <el-cascader
-                        v-model="editForm.pid"
-                        :options="categoryTreeData"
-                        :props="{ value: 'id', label: 'name', checkStrictly: true, emitPath: false }"
-                        placeholder="选择上级分类（留空为顶级）"
-                        clearable
-                        class="w-full"
-                    />
-                </el-form-item>
                 <el-form-item label="分类名称" prop="name">
                     <el-input v-model="editForm.name" placeholder="请输入分类名称" maxlength="50" />
                 </el-form-item>
@@ -155,7 +134,6 @@
 import type { FormInstance } from 'element-plus'
 import {
     categoryLists,
-    categoryTree,
     categoryAdd,
     categoryEdit,
     categoryDelete,
@@ -171,11 +149,9 @@ const queryParams = reactive({
 
 const showEditDialog = ref(false)
 const editFormRef = shallowRef<FormInstance>()
-const categoryTreeData = ref<any[]>([])
 
 const editForm = reactive({
     id: '',
-    pid: 0,
     name: '',
     icon: '',
     sort: 0,
@@ -191,14 +167,9 @@ const { pager, getLists, resetPage, resetParams } = usePaging({
     params: queryParams
 })
 
-const getCategoryTree = async () => {
-    categoryTreeData.value = await categoryTree()
-}
-
-const handleAdd = (pid?: number) => {
+const handleAdd = () => {
     Object.assign(editForm, {
         id: '',
-        pid: pid || 0,
         name: '',
         icon: '',
         sort: 0,
@@ -210,7 +181,6 @@ const handleAdd = (pid?: number) => {
 const handleEdit = (row: any) => {
     Object.assign(editForm, {
         id: row.id,
-        pid: row.pid,
         name: row.name,
         icon: row.icon,
         sort: row.sort,
@@ -228,7 +198,6 @@ const handleSave = async () => {
     }
     showEditDialog.value = false
     getLists()
-    getCategoryTree()
 }
 
 const handleChangeStatus = async (is_show: any, id: number) => {
@@ -244,14 +213,11 @@ const handleDelete = async (id: number) => {
     await feedback.confirm('确定要删除该分类？')
     await categoryDelete({ id })
     getLists()
-    getCategoryTree()
 }
 
 onActivated(() => {
     getLists()
-    getCategoryTree()
 })
 
 getLists()
-getCategoryTree()
 </script>

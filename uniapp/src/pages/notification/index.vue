@@ -9,8 +9,8 @@
     <view class="notification-page">
         <!-- 消息分类入口 -->
         <view class="category-list">
-            <view 
-                class="category-item" 
+            <view
+                class="category-item"
                 :class="{ active: currentType === 0 }"
                 @click="switchType(0)"
             >
@@ -23,8 +23,8 @@
                 </view>
                 <view class="badge" v-if="unreadCount.total > 0">{{ unreadCount.total }}</view>
             </view>
-            <view 
-                class="category-item" 
+            <view
+                class="category-item"
                 :class="{ active: currentType === 1 }"
                 @click="switchType(1)"
             >
@@ -37,8 +37,8 @@
                 </view>
                 <view class="badge" v-if="unreadCount.system > 0">{{ unreadCount.system }}</view>
             </view>
-            <view 
-                class="category-item" 
+            <view
+                class="category-item"
                 :class="{ active: currentType === 2 }"
                 @click="switchType(2)"
             >
@@ -51,8 +51,8 @@
                 </view>
                 <view class="badge" v-if="unreadCount.order > 0">{{ unreadCount.order }}</view>
             </view>
-            <view 
-                class="category-item" 
+            <view
+                class="category-item"
                 :class="{ active: currentType === 3 }"
                 @click="switchType(3)"
             >
@@ -63,7 +63,9 @@
                     <view class="category-name">互动通知</view>
                     <view class="category-desc">点赞、评论、关注</view>
                 </view>
-                <view class="badge" v-if="unreadCount.interact > 0">{{ unreadCount.interact }}</view>
+                <view class="badge" v-if="unreadCount.interact > 0">{{
+                    unreadCount.interact
+                }}</view>
             </view>
         </view>
 
@@ -82,8 +84,8 @@
         <!-- 消息列表 -->
         <view v-if="currentType > 0" class="list-wrap">
             <view v-if="notificationList.length">
-                <view 
-                    v-for="item in notificationList" 
+                <view
+                    v-for="item in notificationList"
                     :key="item.id"
                     class="notification-card"
                     :class="{ unread: !item.is_read }"
@@ -113,7 +115,10 @@
         </view>
 
         <!-- 加载更多提示 -->
-        <view v-if="currentType > 0 && !loading && notificationList.length > 0" class="load-more-tip">
+        <view
+            v-if="currentType > 0 && !loading && notificationList.length > 0"
+            class="load-more-tip"
+        >
             <text v-if="hasMore">上拉加载更多</text>
             <text v-else>没有更多了</text>
         </view>
@@ -126,12 +131,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
-import { 
-    getNotificationList, 
-    getNotificationDetail, 
-    getUnreadCount, 
-    markAllNotificationRead, 
-    clearNotification 
+import {
+    getNotificationList,
+    getNotificationDetail,
+    getUnreadCount,
+    markAllNotificationRead,
+    clearNotification
 } from '@/api/notification'
 
 const loading = ref(false)

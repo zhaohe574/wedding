@@ -5,7 +5,7 @@
             <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item label="候补编号">
                     <el-input
-                        v-model="queryParams.waitlist_no"
+                        v-model="queryParams.id"
                         placeholder="请输入候补编号"
                         clearable
                         style="width: 200px"
@@ -81,7 +81,7 @@
                             <el-icon class="text-green-500 text-xl"><CircleCheck /></el-icon>
                         </div>
                         <div>
-                            <div class="text-gray-500 text-sm">已转正</div>
+                            <div class="text-gray-500 text-sm">已下单</div>
                             <div class="text-2xl font-bold text-green-500">{{ statistics.converted || 0 }}</div>
                         </div>
                     </div>
@@ -94,7 +94,7 @@
                             <el-icon class="text-gray-500 text-xl"><Warning /></el-icon>
                         </div>
                         <div>
-                            <div class="text-gray-500 text-sm">已失效</div>
+                            <div class="text-gray-500 text-sm">已过期</div>
                             <div class="text-2xl font-bold text-gray-500">{{ statistics.expired || 0 }}</div>
                         </div>
                     </div>
@@ -106,30 +106,18 @@
         <el-card class="!border-none" shadow="never">
             <el-table :data="tableData" v-loading="loading" style="width: 100%" @selection-change="handleSelectionChange">
                 <el-table-column type="selection" width="55" />
-                <el-table-column prop="waitlist_no" label="候补编号" width="160" />
+                <el-table-column prop="id" label="候补编号" width="80" />
                 <el-table-column prop="customer_name" label="客户姓名" width="120" />
                 <el-table-column prop="customer_phone" label="联系电话" width="130" />
-                <el-table-column prop="target_date" label="期望日期" width="120" />
-                <el-table-column prop="time_slot" label="时间段" width="100">
-                    <template #default="{ row }">
-                        <el-tag v-if="row.time_slot === 0" size="small">全天</el-tag>
-                        <el-tag v-else-if="row.time_slot === 1" type="success" size="small">上午</el-tag>
-                        <el-tag v-else-if="row.time_slot === 2" type="warning" size="small">下午</el-tag>
-                        <el-tag v-else-if="row.time_slot === 3" type="info" size="small">晚上</el-tag>
-                    </template>
-                </el-table-column>
+                <el-table-column prop="schedule_date" label="期望日期" width="120" />
+                <el-table-column prop="time_slot_desc" label="时间段" width="100" />
                 <el-table-column prop="service_name" label="候补服务" min-width="150" />
-                <el-table-column prop="priority" label="优先级" width="80">
+                <el-table-column prop="notify_status" label="状态" width="100">
                     <template #default="{ row }">
-                        <el-rate v-model="row.priority" disabled :max="5" size="small" />
-                    </template>
-                </el-table-column>
-                <el-table-column prop="status" label="状态" width="100">
-                    <template #default="{ row }">
-                        <el-tag v-if="row.status === 0" type="warning">等待中</el-tag>
-                        <el-tag v-else-if="row.status === 1" type="primary">已通知</el-tag>
-                        <el-tag v-else-if="row.status === 2" type="success">已转正</el-tag>
-                        <el-tag v-else type="info">已失效</el-tag>
+                        <el-tag v-if="row.notify_status === 0" type="warning">等待中</el-tag>
+                        <el-tag v-else-if="row.notify_status === 1" type="primary">已通知</el-tag>
+                        <el-tag v-else-if="row.notify_status === 2" type="success">已下单</el-tag>
+                        <el-tag v-else type="info">已过期</el-tag>
                     </template>
                 </el-table-column>
                 <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
@@ -137,13 +125,13 @@
                 <el-table-column label="操作" width="200" fixed="right">
                     <template #default="{ row }">
                         <el-button link type="primary" size="small" @click="handleView(row)">查看</el-button>
-                        <el-button v-if="row.status === 0" link type="success" size="small" @click="handleNotify(row)">
+                        <el-button v-if="row.notify_status === 0" link type="success" size="small" @click="handleNotify(row)">
                             通知
                         </el-button>
-                        <el-button v-if="row.status === 0 || row.status === 1" link type="warning" size="small" @click="handleConvert(row)">
+                        <el-button v-if="row.notify_status === 0 || row.notify_status === 1" link type="warning" size="small" @click="handleConvert(row)">
                             转正
                         </el-button>
-                        <el-button v-if="row.status === 0" link type="danger" size="small" @click="handleInvalidate(row)">
+                        <el-button v-if="row.notify_status === 0" link type="danger" size="small" @click="handleInvalidate(row)">
                             失效
                         </el-button>
                     </template>
@@ -169,23 +157,18 @@
         <el-dialog v-model="viewDialogVisible" title="候补详情" width="600px">
             <div v-if="currentRow" class="space-y-4">
                 <el-descriptions :column="2" border>
-                    <el-descriptions-item label="候补编号">{{ currentRow.waitlist_no }}</el-descriptions-item>
+                    <el-descriptions-item label="候补编号">{{ currentRow.id }}</el-descriptions-item>
                     <el-descriptions-item label="候补状态">
-                        <el-tag v-if="currentRow.status === 0" type="warning">等待中</el-tag>
-                        <el-tag v-else-if="currentRow.status === 1" type="primary">已通知</el-tag>
-                        <el-tag v-else-if="currentRow.status === 2" type="success">已转正</el-tag>
-                        <el-tag v-else type="info">已失效</el-tag>
+                        <el-tag v-if="currentRow.notify_status === 0" type="warning">等待中</el-tag>
+                        <el-tag v-else-if="currentRow.notify_status === 1" type="primary">已通知</el-tag>
+                        <el-tag v-else-if="currentRow.notify_status === 2" type="success">已下单</el-tag>
+                        <el-tag v-else type="info">已过期</el-tag>
                     </el-descriptions-item>
                     <el-descriptions-item label="客户姓名">{{ currentRow.customer_name }}</el-descriptions-item>
                     <el-descriptions-item label="联系电话">{{ currentRow.customer_phone }}</el-descriptions-item>
-                    <el-descriptions-item label="期望日期">{{ currentRow.target_date }}</el-descriptions-item>
-                    <el-descriptions-item label="时间段">
-                        {{ currentRow.time_slot === 0 ? '全天' : currentRow.time_slot === 1 ? '上午' : currentRow.time_slot === 2 ? '下午' : '晚上' }}
-                    </el-descriptions-item>
+                    <el-descriptions-item label="期望日期">{{ currentRow.schedule_date }}</el-descriptions-item>
+                    <el-descriptions-item label="时间段">{{ currentRow.time_slot_desc }}</el-descriptions-item>
                     <el-descriptions-item label="候补服务" :span="2">{{ currentRow.service_name }}</el-descriptions-item>
-                    <el-descriptions-item label="优先级" :span="2">
-                        <el-rate v-model="currentRow.priority" disabled :max="5" />
-                    </el-descriptions-item>
                     <el-descriptions-item label="备注" :span="2">{{ currentRow.remark || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="申请时间" :span="2">{{ currentRow.create_time }}</el-descriptions-item>
                 </el-descriptions>
@@ -195,12 +178,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { waitlistLists, waitlistBatchNotify, waitlistNotify, waitlistConvert, waitlistInvalidate, waitlistStatistics } from '@/api/waitlist'
 
 // 查询参数
 const queryParams = reactive({
-    waitlist_no: '',
+    id: '',
     customer_name: '',
     status: '',
 })
@@ -235,18 +219,39 @@ const viewDialogVisible = ref(false)
 const currentRow = ref<any>(null)
 
 // 查询
-const handleQuery = () => {
+const handleQuery = async () => {
     loading.value = true
-    // TODO: 调用API获取数据
-    setTimeout(() => {
+    try {
+        const params: any = {
+            page_no: pager.page_no,
+            page_size: pager.page_size,
+            ...queryParams
+        }
+
+        if (dateRange.value && dateRange.value.length === 2) {
+            params.start_date = dateRange.value[0]
+            params.end_date = dateRange.value[1]
+        }
+
+        const res = await waitlistLists(params)
+        tableData.value = res.lists || []
+        pager.total = res.count || 0
+
+        // 更新统计数据
+        if (res.extend) {
+            Object.assign(statistics, res.extend)
+        }
+    } catch (e: any) {
+        ElMessage.error(e.message || '获取数据失败')
+    } finally {
         loading.value = false
-    }, 500)
+    }
 }
 
 // 重置
 const handleReset = () => {
     Object.assign(queryParams, {
-        waitlist_no: '',
+        id: '',
         customer_name: '',
         status: '',
     })
@@ -272,7 +277,9 @@ const handleBatchNotify = async () => {
             cancelButtonText: '取消',
             type: 'warning'
         })
-        // TODO: 调用API批量通知
+        await waitlistBatchNotify({
+            ids: selectedRows.value.map((item: any) => item.id)
+        })
         ElMessage.success('通知成功')
         handleQuery()
     } catch (error) {
@@ -294,7 +301,7 @@ const handleNotify = async (row: any) => {
             cancelButtonText: '取消',
             type: 'warning'
         })
-        // TODO: 调用API通知客户
+        await waitlistNotify({ id: row.id })
         ElMessage.success('通知成功')
         handleQuery()
     } catch (error) {
@@ -310,7 +317,7 @@ const handleConvert = async (row: any) => {
             cancelButtonText: '取消',
             type: 'warning'
         })
-        // TODO: 调用API转正预约
+        await waitlistConvert({ id: row.id })
         ElMessage.success('转正成功')
         handleQuery()
     } catch (error) {
@@ -326,7 +333,7 @@ const handleInvalidate = async (row: any) => {
             cancelButtonText: '取消',
             type: 'warning'
         })
-        // TODO: 调用API标记失效
+        await waitlistInvalidate({ id: row.id })
         ElMessage.success('操作成功')
         handleQuery()
     } catch (error) {
@@ -334,8 +341,9 @@ const handleInvalidate = async (row: any) => {
     }
 }
 
-// 初始化
-handleQuery()
+onMounted(() => {
+    handleQuery()
+})
 </script>
 
 <style lang="scss" scoped>

@@ -31,130 +31,82 @@
                     <div class="text-base text-[#101010] font-medium">展示样式</div>
                 </div>
                 <el-radio-group v-model="contentData.style">
-                    <el-radio :value="1">卡片样式</el-radio>
+                    <el-radio :value="1">横向滑动卡片</el-radio>
                     <el-radio :value="2">列表样式</el-radio>
                 </el-radio-group>
-                <el-form-item v-if="contentData.style == 1" label="每行数量" class="mt-4">
-                    <el-select v-model="contentData.per_line" style="width: 300px">
-                        <el-option :value="1" label="1个" />
-                        <el-option :value="2" label="2个" />
-                        <el-option :value="3" label="3个" />
-                    </el-select>
-                </el-form-item>
+                <div v-if="contentData.style == 1" class="mt-2 text-xs text-gray-500">
+                    卡片将以横向滑动方式展示，用户可左右滑动查看更多人员
+                </div>
             </el-card>
 
-            <!-- 人员列表 -->
+            <!-- 人员列表：从「服务人员」中选择，选择后自动带出姓名、角色、评分等 -->
             <el-card shadow="never" class="!border-none flex mt-2">
                 <div class="flex items-end mb-4">
                     <div class="text-base text-[#101010] font-medium">人员列表</div>
-                    <div class="text-xs text-tx-secondary ml-2">建议头像尺寸：400px*400px</div>
+                    <div class="text-xs text-tx-secondary ml-2">从已存在的服务人员中选择，无需手动录入</div>
                 </div>
                 <div class="staff-list">
                     <draggable
-                        v-model="contentData.data"
-                        item-key="index"
+                        :model-value="Array.isArray(contentData.data) ? contentData.data : []"
+                        @update:model-value="(val: any[]) => emits('update:content', { ...props.content, data: val })"
+                        :item-key="(el: any, i: number) => (el && el.staff_id) ? el.staff_id : 'i'+i"
                         animation="300"
                         handle=".drag-handle"
                     >
                         <template #item="{ element, index }">
                             <div class="staff-item mb-4 p-4 bg-gray-50 rounded-lg">
                                 <div class="flex items-start">
-                                    <!-- 拖拽手柄 -->
                                     <div class="drag-handle cursor-move mr-3 mt-2">
                                         <icon name="el-icon-Rank" :size="18" color="#999" />
                                     </div>
-                                    
-                                    <!-- 头像 -->
-                                    <div class="mr-4">
-                                        <material-picker
-                                            v-model="element.avatar"
-                                            :limit="1"
-                                            upload-class="bg-body"
-                                        >
-                                            <div 
-                                                class="w-[80px] h-[80px] rounded-full overflow-hidden bg-gray-200 flex items-center justify-center cursor-pointer hover:opacity-80 transition"
-                                            >
-                                                <el-image
-                                                    v-if="element.avatar"
-                                                    :src="element.avatar"
-                                                    fit="cover"
-                                                    class="w-full h-full"
-                                                />
-                                                <icon v-else name="el-icon-Plus" :size="24" color="#999" />
-                                            </div>
-                                        </material-picker>
-                                    </div>
-
-                                    <!-- 信息表单 -->
-                                    <div class="flex-1">
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <el-form-item label="姓名" label-width="60px" class="!mb-2">
-                                                <el-input v-model="element.name" placeholder="请输入姓名" />
-                                            </el-form-item>
-                                            <el-form-item label="角色" label-width="60px" class="!mb-2">
-                                                <el-select v-model="element.role" placeholder="选择角色">
-                                                    <el-option value="摄影师" label="摄影师" />
-                                                    <el-option value="化妆师" label="化妆师" />
-                                                    <el-option value="策划师" label="策划师" />
-                                                    <el-option value="主持人" label="主持人" />
-                                                    <el-option value="摄像师" label="摄像师" />
-                                                    <el-option value="花艺师" label="花艺师" />
-                                                </el-select>
-                                            </el-form-item>
-                                            <el-form-item label="评分" label-width="60px" class="!mb-2">
-                                                <el-input-number 
-                                                    v-model="element.rating" 
-                                                    :min="0" 
-                                                    :max="5" 
-                                                    :step="0.1"
-                                                    :precision="1"
-                                                />
-                                            </el-form-item>
-                                            <el-form-item label="订单数" label-width="60px" class="!mb-2">
-                                                <el-input-number 
-                                                    v-model="element.order_count" 
-                                                    :min="0"
-                                                />
-                                            </el-form-item>
+                                    <!-- 头像展示 -->
+                                    <div class="mr-4 flex-shrink-0">
+                                        <div class="w-[80px] h-[80px] rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                                            <el-image
+                                                v-if="element.avatar"
+                                                :src="element.avatar"
+                                                fit="cover"
+                                                class="w-full h-full"
+                                            />
+                                            <icon v-else name="el-icon-User" :size="28" color="#999" />
                                         </div>
-                                        <el-form-item label="标签" label-width="60px" class="!mb-2">
+                                    </div>
+                                    <!-- 人员信息（只读）与更换 -->
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap mb-2">
+                                            <span class="font-medium text-gray-900">{{ element.name || '未选择' }}</span>
+                                            <span v-if="element.role" class="px-2 py-0.5 bg-primary/10 rounded text-xs text-primary">{{ element.role }}</span>
+                                        </div>
+                                        <div v-if="element.name" class="text-xs text-gray-500 mb-2">
+                                            ★ {{ element.rating || '5.0' }} · 已服务{{ element.order_count ?? 0 }}单
+                                            <span v-if="element.tags?.length"> · {{ element.tags.slice(0, 3).join('、') }}</span>
+                                        </div>
+                                        <el-form-item label="更换人员" class="!mb-0" label-width="80px">
                                             <el-select
-                                                v-model="element.tags"
-                                                multiple
+                                                :model-value="element.staff_id || ''"
+                                                placeholder="选择服务人员"
                                                 filterable
-                                                allow-create
-                                                default-first-option
-                                                placeholder="输入或选择标签"
-                                                style="width: 100%"
+                                                clearable
+                                                style="width: 220px"
+                                                @change="(id: number) => handleReplace(index, id)"
                                             >
-                                                <el-option value="专业" label="专业" />
-                                                <el-option value="耐心" label="耐心" />
-                                                <el-option value="细心" label="细心" />
-                                                <el-option value="创意" label="创意" />
-                                                <el-option value="热情" label="热情" />
-                                                <el-option value="经验丰富" label="经验丰富" />
-                                                <el-option value="好评如潮" label="好评如潮" />
+                                                <el-option
+                                                    v-for="s in staffOptions"
+                                                    :key="s.id"
+                                                    :label="`${s.name}${s.sn ? `（${s.sn}）` : ''}`"
+                                                    :value="s.id"
+                                                />
                                             </el-select>
                                         </el-form-item>
-                                        <el-form-item label="链接" label-width="60px" class="!mb-2">
-                                            <link-picker v-model="element.link" />
-                                        </el-form-item>
                                     </div>
-
-                                    <!-- 操作按钮 -->
-                                    <div class="ml-4 flex flex-col gap-2">
+                                    <div class="ml-4 flex flex-col gap-2 flex-shrink-0">
                                         <el-switch
                                             v-model="element.is_show"
                                             active-value="1"
                                             inactive-value="0"
                                             active-text="显示"
                                         />
-                                        <el-button 
-                                            type="danger" 
-                                            text 
-                                            :icon="Delete"
-                                            @click="handleDelete(index)"
-                                        >
+                                        <el-button type="danger" text :icon="Delete" @click="handleDelete(index)">
                                             删除
                                         </el-button>
                                     </div>
@@ -163,10 +115,25 @@
                         </template>
                     </draggable>
 
-                    <!-- 添加按钮 -->
-                    <el-button type="primary" :icon="Plus" @click="handleAdd">
-                        添加人员
-                    </el-button>
+                    <!-- 添加：选择服务人员后自动加入列表 -->
+                    <div class="mt-2">
+                        <span class="text-sm text-gray-500 mr-2">添加人员：</span>
+                        <el-select
+                            v-model="addStaffId"
+                            placeholder="请选择要推荐的服务人员"
+                            filterable
+                            clearable
+                            style="width: 280px"
+                            @change="handleAddByStaff"
+                        >
+                            <el-option
+                                v-for="s in staffOptions"
+                                :key="s.id"
+                                :label="`${s.name}${s.sn ? `（${s.sn}）` : ''}`"
+                                :value="s.id"
+                            />
+                        </el-select>
+                    </div>
                 </div>
             </el-card>
         </el-form>
@@ -175,10 +142,11 @@
 
 <script lang="ts" setup>
 import type { PropType } from 'vue'
-import { Delete, Plus } from '@element-plus/icons-vue'
+import { Delete } from '@element-plus/icons-vue'
 import draggable from 'vuedraggable'
-import MaterialPicker from '@/components/material/picker.vue'
+import { staffAll, staffDetail } from '@/api/staff'
 import type options from './options'
+import type { StaffShowcaseItem } from './options'
 
 type OptionsType = ReturnType<typeof options>
 
@@ -197,28 +165,81 @@ const props = defineProps({
 
 const contentData = computed({
     get: () => props.content,
-    set: (newValue) => {
-        emits('update:content', newValue)
-    }
+    set: (newValue) => { emits('update:content', newValue) }
 })
 
-// 添加人员
-const handleAdd = () => {
-    contentData.value.data.push({
-        is_show: '1',
-        avatar: '',
-        name: '人员名称',
-        role: '摄影师',
-        rating: 5.0,
-        order_count: 0,
-        tags: [],
-        link: {}
-    })
+function ensureDataArray() {
+    if (!Array.isArray(props.content?.data)) {
+        emits('update:content', { ...props.content, data: [] })
+    }
 }
 
-// 删除人员
-const handleDelete = (index: number) => {
-    contentData.value.data.splice(index, 1)
+const staffOptions = ref<{ id: number; name: string; sn?: string }[]>([])
+const addStaffId = ref<number | ''>('')
+const loading = ref(false)
+
+onMounted(() => {
+    ensureDataArray()
+    loadStaffOptions()
+})
+
+async function loadStaffOptions() {
+    try {
+        const res = await staffAll({})
+        staffOptions.value = Array.isArray(res) ? res : (res?.lists ?? res?.data ?? [])
+    } catch (e) {
+        console.error('加载服务人员列表失败', e)
+        staffOptions.value = []
+    }
+}
+
+function buildItemFromDetail(d: any, keepIsShow?: string): StaffShowcaseItem {
+    // 只保存引用ID和控制信息，不保存业务数据快照
+    return {
+        staff_id: d.id,
+        is_show: keepIsShow ?? '1',
+        sort: 0
+    }
+}
+
+async function handleReplace(index: number, staffId: number | '') {
+    if (!staffId) return
+    loading.value = true
+    try {
+        const d = await staffDetail({ id: staffId })
+        if (!d || !d.id) return
+        const list = Array.isArray(contentData.value.data) ? [...contentData.value.data] : []
+        const old = list[index] as StaffShowcaseItem
+        list[index] = { ...buildItemFromDetail(d, old?.is_show ?? '1') }
+        contentData.value = { ...contentData.value, data: list }
+    } catch (e) {
+        console.error('获取人员详情失败', e)
+    } finally {
+        loading.value = false
+    }
+}
+
+async function handleAddByStaff(staffId: number | '') {
+    if (!staffId) return
+    loading.value = true
+    addStaffId.value = ''
+    try {
+        const d = await staffDetail({ id: staffId })
+        if (!d || !d.id) return
+        const list = Array.isArray(contentData.value.data) ? [...contentData.value.data] : []
+        list.push(buildItemFromDetail(d))
+        contentData.value = { ...contentData.value, data: list }
+    } catch (e) {
+        console.error('获取人员详情失败', e)
+    } finally {
+        loading.value = false
+    }
+}
+
+function handleDelete(index: number) {
+    const list = Array.isArray(contentData.value.data) ? [...contentData.value.data] : []
+    list.splice(index, 1)
+    contentData.value = { ...contentData.value, data: list }
 }
 </script>
 
@@ -226,15 +247,7 @@ const handleDelete = (index: number) => {
 .staff-item {
     border: 1px solid #e5e7eb;
     transition: all 0.2s ease;
-    
-    &:hover {
-        border-color: var(--el-color-primary-light-5);
-    }
+    &:hover { border-color: var(--el-color-primary-light-5); }
 }
-
-.drag-handle {
-    &:hover {
-        color: var(--el-color-primary);
-    }
-}
+.drag-handle:hover { color: var(--el-color-primary); }
 </style>

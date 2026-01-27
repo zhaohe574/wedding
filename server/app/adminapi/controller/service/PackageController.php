@@ -34,9 +34,37 @@ class PackageController extends BaseAdminController
      */
     public function detail()
     {
-        $params = (new PackageValidate())->goCheck('detail');
-        $result = PackageLogic::detail($params['id']);
-        return $this->data($result);
+        try {
+            // 直接获取ID，不使用验证器
+            $id = $this->request->get('id', 0, 'intval');
+            
+            if (empty($id)) {
+                return $this->fail('参数错误：缺少套餐ID');
+            }
+            
+            // 直接查询，不使用Logic
+            $package = \app\common\model\service\ServicePackage::find($id);
+            
+            if (!$package) {
+                return $this->fail('套餐不存在');
+            }
+            
+            $result = $package->toArray();
+            
+            // 手动添加分类名称
+            if (!empty($result['category_id'])) {
+                $category = \app\common\model\service\ServiceCategory::find($result['category_id']);
+                if ($category) {
+                    $result['category_name'] = $category->name;
+                }
+            }
+            
+            return $this->data($result);
+            
+        } catch (\Exception $e) {
+            // 返回详细错误信息用于调试
+            return $this->fail('获取套餐详情失败: ' . $e->getMessage() . ' [' . $e->getFile() . ':' . $e->getLine() . ']');
+        }
     }
 
     /**

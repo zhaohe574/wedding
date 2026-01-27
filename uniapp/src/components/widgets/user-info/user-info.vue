@@ -1,29 +1,23 @@
 <template>
     <view class="user-info mb-[0rpx]">
         <!-- #ifndef H5 -->
-        <u-sticky
-            h5-nav-height="0"
-            bg-color="transparent"
-        >
-            <u-navbar
-                :is-back="false"
-                :is-fixed="false"
-                :title="metaData.title"
+        <tn-sticky h5-nav-height="0" bg-color="transparent">
+            <tn-navbar
+                :back-icon="false"
+                :home-icon="false"
                 :custom-title="metaData.title_type == 2"
                 :border-bottom="false"
                 :title-bold="true"
-                :background="{ background: 'rgba(256,256, 256, 0)' }"
-                :title-color="$theme.navColor"
+                :bg-color="'rgba(256,256, 256, 0)'"
+                :text-color="metaData.text_color == 2 ? '#000000' : '#ffffff'"
+                :safe-area-inset-right="false"
             >
-                <template #title>
-                    <image
-                        class="!h-[54rpx]"
-                        :src="metaData.title_img"
-                        mode="widthFix"
-                    ></image>
-                </template>
-            </u-navbar>
-        </u-sticky>
+                <!-- <template #title>
+                    <image class="!h-[54rpx]" :src="metaData.title_img" mode="widthFix"></image>
+                </template> -->
+                {{ metaData.title }}
+            </tn-navbar>
+        </tn-sticky>
         <!-- #endif -->
         <view class="flex items-center justify-between px-[50rpx] pb-[50rpx] pt-[40rpx]">
             <view
@@ -31,7 +25,7 @@
                 class="flex items-center"
                 @click="navigateTo('/pages/user_data/user_data')"
             >
-                <u-avatar :src="user.avatar" :size="120"></u-avatar>
+                <tn-avatar :src="user.avatar" :size="120"></tn-avatar>
                 <view class="text-white ml-[20rpx]">
                     <view class="text-2xl">{{ user.nickname }}</view>
                     <view class="text-xs mt-[18rpx]" @click.stop="copy(user.account)">
@@ -40,18 +34,18 @@
                 </view>
             </view>
             <navigator v-else class="flex items-center" hover-class="none" url="/pages/login/login">
-                <u-avatar src="/static/images/user/default_avatar.png" :size="120"></u-avatar>
+                <tn-avatar src="/static/images/user/default_avatar.png" :size="120"></tn-avatar>
                 <view class="text-white text-3xl ml-[20rpx]">未登录</view>
             </navigator>
             <navigator v-if="isLogin" hover-class="none" url="/pages/user_set/user_set">
-                <u-icon name="setting" color="#fff" :size="48"></u-icon>
+                <tn-icon name="setting" color="#fff" :size="48"></tn-icon>
             </navigator>
         </view>
     </view>
 </template>
 <script lang="ts" setup>
 import { useCopy } from '@/hooks/useCopy'
-import {computed} from "vue";
+import { computed } from 'vue'
 
 const props = defineProps({
     pageMeta: {
@@ -77,7 +71,15 @@ const props = defineProps({
 const { copy } = useCopy()
 
 const metaData: any = computed(() => {
-    return props.pageMeta[0].content
+    const meta = props.pageMeta[0]?.content || {}
+    // 如果没有设置标题，使用默认值
+    return {
+        title: meta.title || '个人中心',
+        title_type: meta.title_type || 1,
+        title_img: meta.title_img || '',
+        text_color: meta.text_color || '1', // 默认白色
+        ...meta
+    }
 })
 
 const navigateTo = (url: string) => {

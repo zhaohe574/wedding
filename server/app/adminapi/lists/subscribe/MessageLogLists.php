@@ -62,6 +62,12 @@ class MessageLogLists extends BaseAdminDataLists implements ListsSearchInterface
         }
 
         foreach ($list as &$item) {
+            // PHP 8 类型转换
+            $item['create_time'] = (int)$item['create_time'];
+            $item['send_time'] = (int)$item['send_time'];
+            $item['send_status'] = (int)$item['send_status'];
+            $item['scene'] = (int)$item['scene'];
+            
             $item['user_info'] = $users[$item['user_id']] ?? ['nickname' => '未知用户', 'avatar' => ''];
             $item['scene_desc'] = SubscribeMessageTemplate::getSceneDesc($item['scene']);
             $item['send_status_desc'] = $this->getSendStatusDesc($item['send_status']);

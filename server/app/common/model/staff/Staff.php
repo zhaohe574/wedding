@@ -97,7 +97,7 @@ class Staff extends BaseModel
      */
     public function getAvatarAttr($value)
     {
-        return trim($value) ? FileService::getFileUrl($value) : FileService::getFileUrl(config('project.default_image.user_avatar'));
+        return trim($value) ? FileService::getFileUrl($value) : FileService::getFileUrl((string)(config('project.default_image.user_avatar') ?? ''));
     }
 
     /**
@@ -130,7 +130,8 @@ class Staff extends BaseModel
     public function getMobileFullAttr()
     {
         // 优先返回mobile_full字段，如果没有则返回原始mobile字段
-        return $this->getAttr('mobile_full') ?: $this->getData('mobile');
+        // 使用 getData 取原始值，避免 getAttr 再次触发本 getter 导致无限递归
+        return $this->getData('mobile_full') ?: $this->getData('mobile');
     }
 
     /**

@@ -89,7 +89,7 @@ class DynamicCollect extends BaseModel
                 }]);
             }])
             ->order('create_time', 'desc')
-            ->paginate($params['page_size'] ?? 10)
+            ->paginate((int)($params['page_size'] ?? 10))
             ->toArray();
     }
 }

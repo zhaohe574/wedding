@@ -10,11 +10,15 @@
         <!-- 类型筛选 -->
         <view class="type-tabs bg-white sticky top-0 z-10">
             <scroll-view scroll-x class="whitespace-nowrap">
-                <view 
-                    v-for="tab in typeTabs" 
+                <view
+                    v-for="tab in typeTabs"
                     :key="tab.value"
                     class="inline-block px-4 py-3 text-sm"
-                    :class="currentType === tab.value ? 'text-primary border-b-2 border-primary font-medium' : 'text-gray-500'"
+                    :class="
+                        currentType === tab.value
+                            ? 'text-primary border-b-2 border-primary font-medium'
+                            : 'text-gray-500'
+                    "
                     @click="changeType(tab.value)"
                 >
                     {{ tab.label }}
@@ -28,14 +32,18 @@
                 加载中...
             </view>
             <view v-else-if="list.length === 0" class="py-20 text-center text-gray-400">
-                <image src="/static/images/empty.png" class="w-32 h-32 mx-auto mb-4" mode="aspectFit" />
+                <image
+                    src="/static/images/empty.png"
+                    class="w-32 h-32 mx-auto mb-4"
+                    mode="aspectFit"
+                />
                 <text>暂无申请记录</text>
             </view>
             <view v-else>
                 <!-- 变更申请列表 -->
                 <template v-if="currentType === 'change'">
-                    <view 
-                        v-for="item in list" 
+                    <view
+                        v-for="item in list"
                         :key="item.id"
                         class="bg-white rounded-lg mb-3 p-4"
                         @click="goChangeDetail(item.id)"
@@ -47,14 +55,17 @@
                                     <view class="tag" :class="getTypeClass(item.change_type)">
                                         {{ item.change_type_desc }}
                                     </view>
-                                    <view class="tag ml-2" :class="getStatusClass(item.change_status)">
+                                    <view
+                                        class="tag ml-2"
+                                        :class="getStatusClass(item.change_status)"
+                                    >
                                         {{ item.change_status_desc }}
                                     </view>
                                 </view>
                             </view>
                             <text class="text-xs text-gray-400">{{ item.create_time }}</text>
                         </view>
-                        
+
                         <!-- 改期 -->
                         <view v-if="item.change_type === 1" class="text-sm text-gray-600 mt-2">
                             <text>服务日期: </text>
@@ -62,20 +73,22 @@
                             <text class="mx-1">→</text>
                             <text class="text-primary">{{ item.new_service_date }}</text>
                         </view>
-                        
+
                         <!-- 换人 -->
                         <view v-else-if="item.change_type === 2" class="text-sm text-gray-600 mt-2">
                             <text>人员: </text>
                             <text class="text-gray-400">{{ item.old_staff_name }}</text>
                             <text class="mx-1">→</text>
                             <text class="text-primary">{{ item.new_staff_name }}</text>
-                            <text v-if="item.price_diff !== 0" 
-                                  :class="item.price_diff > 0 ? 'text-red-500' : 'text-green-500'"
-                                  class="ml-2">
+                            <text
+                                v-if="item.price_diff !== 0"
+                                :class="item.price_diff > 0 ? 'text-red-500' : 'text-green-500'"
+                                class="ml-2"
+                            >
                                 {{ item.price_diff > 0 ? '+' : '' }}{{ item.price_diff }}元
                             </text>
                         </view>
-                        
+
                         <!-- 加项 -->
                         <view v-else-if="item.change_type === 3" class="text-sm text-gray-600 mt-2">
                             <text>新增: </text>
@@ -83,14 +96,17 @@
                             <text class="text-gray-400 ml-1">({{ item.add_package_name }})</text>
                             <text class="text-red-500 ml-2">+{{ item.add_price }}元</text>
                         </view>
-                        
+
                         <view v-if="item.apply_reason" class="text-xs text-gray-400 mt-2">
                             原因: {{ item.apply_reason }}
                         </view>
-                        
+
                         <!-- 操作按钮 -->
                         <view v-if="item.change_status === 0" class="mt-3 flex justify-end">
-                            <button class="btn-outline text-red-500 border-red-500" @click.stop="handleCancelChange(item)">
+                            <button
+                                class="btn-outline text-red-500 border-red-500"
+                                @click.stop="handleCancelChange(item)"
+                            >
                                 取消申请
                             </button>
                         </view>
@@ -99,8 +115,8 @@
 
                 <!-- 转让申请列表 -->
                 <template v-if="currentType === 'transfer'">
-                    <view 
-                        v-for="item in list" 
+                    <view
+                        v-for="item in list"
                         :key="item.id"
                         class="bg-white rounded-lg mb-3 p-4"
                         @click="goTransferDetail(item.id)"
@@ -109,14 +125,17 @@
                             <view>
                                 <text class="text-xs text-gray-400">{{ item.transfer_sn }}</text>
                                 <view class="mt-1">
-                                    <view class="tag" :class="getTransferStatusClass(item.transfer_status)">
+                                    <view
+                                        class="tag"
+                                        :class="getTransferStatusClass(item.transfer_status)"
+                                    >
                                         {{ item.transfer_status_desc }}
                                     </view>
                                 </view>
                             </view>
                             <text class="text-xs text-gray-400">{{ item.create_time }}</text>
                         </view>
-                        
+
                         <view class="text-sm text-gray-600 mt-2">
                             <view class="flex items-center">
                                 <text class="text-gray-400 w-16">转让方:</text>
@@ -124,17 +143,25 @@
                             </view>
                             <view class="flex items-center mt-1">
                                 <text class="text-gray-400 w-16">接收方:</text>
-                                <text class="text-primary">{{ item.to_user_name }} ({{ item.to_user_mobile }})</text>
+                                <text class="text-primary"
+                                    >{{ item.to_user_name }} ({{ item.to_user_mobile }})</text
+                                >
                             </view>
                         </view>
-                        
+
                         <view v-if="item.transfer_reason" class="text-xs text-gray-400 mt-2">
                             原因: {{ item.transfer_reason }}
                         </view>
-                        
+
                         <!-- 操作按钮 -->
-                        <view v-if="item.transfer_status <= 1 && item.is_from_user" class="mt-3 flex justify-end">
-                            <button class="btn-outline text-red-500 border-red-500" @click.stop="handleCancelTransfer(item)">
+                        <view
+                            v-if="item.transfer_status <= 1 && item.is_from_user"
+                            class="mt-3 flex justify-end"
+                        >
+                            <button
+                                class="btn-outline text-red-500 border-red-500"
+                                @click.stop="handleCancelTransfer(item)"
+                            >
                                 取消转让
                             </button>
                         </view>
@@ -143,8 +170,8 @@
 
                 <!-- 暂停申请列表 -->
                 <template v-if="currentType === 'pause'">
-                    <view 
-                        v-for="item in list" 
+                    <view
+                        v-for="item in list"
                         :key="item.id"
                         class="bg-white rounded-lg mb-3 p-4"
                         @click="goPauseDetail(item.id)"
@@ -156,27 +183,35 @@
                                     <view class="tag" :class="getPauseTypeClass(item.pause_type)">
                                         {{ item.pause_type_desc }}
                                     </view>
-                                    <view class="tag ml-2" :class="getPauseStatusClass(item.pause_status)">
+                                    <view
+                                        class="tag ml-2"
+                                        :class="getPauseStatusClass(item.pause_status)"
+                                    >
                                         {{ item.pause_status_desc }}
                                     </view>
                                 </view>
                             </view>
                             <text class="text-xs text-gray-400">{{ item.create_time }}</text>
                         </view>
-                        
+
                         <view class="text-sm text-gray-600 mt-2">
                             <text>暂停时间: </text>
-                            <text class="text-primary">{{ item.pause_start_date }} ~ {{ item.pause_end_date }}</text>
+                            <text class="text-primary"
+                                >{{ item.pause_start_date }} ~ {{ item.pause_end_date }}</text
+                            >
                             <text class="text-gray-400 ml-2">({{ item.pause_days }}天)</text>
                         </view>
-                        
+
                         <view v-if="item.pause_reason" class="text-xs text-gray-400 mt-2">
                             原因: {{ item.pause_reason }}
                         </view>
-                        
+
                         <!-- 操作按钮 -->
                         <view v-if="item.pause_status === 0" class="mt-3 flex justify-end">
-                            <button class="btn-outline text-red-500 border-red-500" @click.stop="handleCancelPause(item)">
+                            <button
+                                class="btn-outline text-red-500 border-red-500"
+                                @click.stop="handleCancelPause(item)"
+                            >
                                 取消申请
                             </button>
                         </view>
@@ -199,10 +234,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad, onShow, onReachBottom } from '@dcloudio/uni-app'
-import { 
-    getChangeList, cancelChange,
-    getTransferList, cancelTransfer,
-    getPauseList, cancelPause 
+import {
+    getChangeList,
+    cancelChange,
+    getTransferList,
+    cancelTransfer,
+    getPauseList,
+    cancelPause
 } from '@/api/orderChange'
 
 const typeTabs = [
@@ -297,13 +335,13 @@ const fetchList = async (refresh = false) => {
         }
 
         const data = res.lists || []
-        
+
         if (refresh) {
             list.value = data
         } else {
             list.value.push(...data)
         }
-        
+
         hasMore.value = data.length === 10
     } catch (e) {
         console.error(e)

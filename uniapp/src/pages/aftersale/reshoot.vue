@@ -1,41 +1,41 @@
 <template>
     <view class="reshoot-page">
-        <z-paging
-            ref="paging"
-            v-model="dataList"
-            @query="queryList"
-        >
+        <z-paging ref="paging" v-model="dataList" @query="queryList">
             <!-- 状态筛选 -->
             <template #top>
                 <view class="filter-tabs">
-                    <view 
-                        class="tab-item" 
+                    <view
+                        class="tab-item"
                         :class="{ active: currentStatus === '' }"
                         @click="changeStatus('')"
-                    >全部</view>
-                    <view 
-                        class="tab-item" 
+                        >全部</view
+                    >
+                    <view
+                        class="tab-item"
                         :class="{ active: currentStatus === 0 }"
                         @click="changeStatus(0)"
-                    >待审核</view>
-                    <view 
-                        class="tab-item" 
+                        >待审核</view
+                    >
+                    <view
+                        class="tab-item"
                         :class="{ active: currentStatus === 1 }"
                         @click="changeStatus(1)"
-                    >已通过</view>
-                    <view 
-                        class="tab-item" 
+                        >已通过</view
+                    >
+                    <view
+                        class="tab-item"
                         :class="{ active: currentStatus === 2 }"
                         @click="changeStatus(2)"
-                    >已拒绝</view>
+                        >已拒绝</view
+                    >
                 </view>
             </template>
 
             <!-- 补拍申请列表 -->
             <view class="reshoot-list">
-                <view 
-                    class="reshoot-item" 
-                    v-for="item in dataList" 
+                <view
+                    class="reshoot-item"
+                    v-for="item in dataList"
                     :key="item.id"
                     @click="goDetail(item)"
                 >
@@ -48,11 +48,15 @@
                     <view class="reshoot-info">
                         <view class="info-row">
                             <text class="info-label">补拍类型：</text>
-                            <text class="info-value">{{ item.type_desc || getTypeText(item.type) }}</text>
+                            <text class="info-value">{{
+                                item.type_desc || getTypeText(item.type)
+                            }}</text>
                         </view>
                         <view class="info-row">
                             <text class="info-label">申请原因：</text>
-                            <text class="info-value">{{ item.reason_type_desc || getReasonText(item.reason_type) }}</text>
+                            <text class="info-value">{{
+                                item.reason_type_desc || getReasonText(item.reason_type)
+                            }}</text>
                         </view>
                         <view class="info-row" v-if="item.expect_date">
                             <text class="info-label">期望日期：</text>
@@ -61,7 +65,12 @@
                     </view>
                     <view class="reshoot-footer">
                         <text class="reshoot-time">{{ item.create_time }}</text>
-                        <text class="reshoot-action" v-if="item.status === 0" @click.stop="handleCancel(item.id)">取消申请</text>
+                        <text
+                            class="reshoot-action"
+                            v-if="item.status === 0"
+                            @click.stop="handleCancel(item.id)"
+                            >取消申请</text
+                        >
                     </view>
                 </view>
             </view>
@@ -69,7 +78,7 @@
             <!-- 空状态 -->
             <template #empty>
                 <view class="empty-state">
-                    <u-icon name="camera" size="120" color="#ccc"></u-icon>
+                    <tn-icon name="camera" size="120" color="#ccc"></tn-icon>
                     <text class="empty-text">暂无补拍申请</text>
                 </view>
             </template>
@@ -77,7 +86,7 @@
 
         <!-- 提交补拍按钮 -->
         <view class="create-btn" @click="goCreate">
-            <u-icon name="plus" size="40" color="#fff"></u-icon>
+            <tn-icon name="plus" size="40" color="#fff"></tn-icon>
         </view>
     </view>
 </template>
@@ -206,7 +215,7 @@ onLoad((options: any) => {
     font-size: 28rpx;
     color: #666;
     border-radius: 8rpx;
-    
+
     &.active {
         color: #4facfe;
         background: rgba(79, 172, 254, 0.1);
@@ -244,7 +253,7 @@ onLoad((options: any) => {
     font-size: 24rpx;
     padding: 6rpx 16rpx;
     border-radius: 8rpx;
-    
+
     &.status-pending {
         color: #faad14;
         background: rgba(250, 173, 20, 0.1);
@@ -270,7 +279,7 @@ onLoad((options: any) => {
 .info-row {
     display: flex;
     margin-bottom: 12rpx;
-    
+
     &:last-child {
         margin-bottom: 0;
     }

@@ -1,5 +1,5 @@
 <template>
-    <u-popup
+    <tn-popup
         v-model="showPay"
         mode="bottom"
         safe-area-inset-bottom
@@ -11,7 +11,7 @@
         <view class="h-[900rpx]">
             <page-status :status="popupStatus" :fixed="false">
                 <template #error>
-                    <u-empty text="订单信息错误，无法查询到订单信息" mode="order"></u-empty>
+                    <tn-empty text="订单信息错误，无法查询到订单信息" mode="order"></tn-empty>
                 </template>
                 <template #default>
                     <view class="payment h-full w-full flex flex-col">
@@ -27,18 +27,18 @@
                         <view class="main flex-1 mx-[20rpx]">
                             <view>
                                 <view class="payway-lists">
-                                    <u-radio-group v-model="payWay" class="w-full">
+                                    <tn-radio-group v-model="payWay" class="w-full">
                                         <view
                                             class="p-[20rpx] flex items-center w-full payway-item"
                                             v-for="(item, index) in payData.lists"
                                             :key="index"
                                             @click="selectPayWay(item.pay_way)"
                                         >
-                                            <u-icon
+                                            <tn-icon
                                                 class="flex-none"
                                                 :size="48"
                                                 :name="item.icon"
-                                            ></u-icon>
+                                            ></tn-icon>
                                             <view class="mx-[16rpx] flex-1">
                                                 <view class="payway-item--name flex-1">
                                                     {{ item.name }}
@@ -48,37 +48,41 @@
                                                 }}</view>
                                             </view>
 
-                                            <u-radio activeColor="var(--color-primary)" class="mr-[-20rpx]" :name="item.pay_way">
-                                            </u-radio>
+                                            <tn-radio
+                                                activeColor="var(--color-primary)"
+                                                class="mr-[-20rpx]"
+                                                :name="item.pay_way"
+                                            >
+                                            </tn-radio>
                                         </view>
-                                    </u-radio-group>
+                                    </tn-radio-group>
                                 </view>
                             </view>
                         </view>
 
                         <view class="submit-btn p-[20rpx]">
-                            <u-button
+                            <tn-button
                                 @click="handlePay"
-                                shape="circle"
+                                shape="round"
                                 type="primary"
                                 :loading="isLock"
                             >
                                 立即支付
-                            </u-button>
+                            </tn-button>
                         </view>
                     </view>
                 </template>
             </page-status>
         </view>
-    </u-popup>
+    </tn-popup>
 
-    <u-popup
+    <tn-popup
         class="pay-popup"
         v-model="showCheckPay"
         round
         mode="center"
-        borderRadius="10"
-        :maskCloseAble="false"
+        border-radius="10"
+        :mask-close-able="false"
     >
         <view class="content bg-white w-[560rpx] p-[40rpx]">
             <view class="text-2xl font-medium text-center"> 支付确认 </view>
@@ -87,33 +91,33 @@
             </view>
             <view class="flex">
                 <view class="flex-1 mr-[20rpx]">
-                    <u-button
-                        shape="circle"
+                    <tn-button
+                        shape="round"
                         type="primary"
                         plain
-                        size="medium"
+                        size="md"
                         hover-class="none"
-                        :customStyle="{ width: '100%' }"
+                        :custom-style="{ width: '100%' }"
                         @click="queryPayResult(false)"
                     >
                         重新支付
-                    </u-button>
+                    </tn-button>
                 </view>
                 <view class="flex-1">
-                    <u-button
-                        shape="circle"
+                    <tn-button
+                        shape="round"
                         type="primary"
-                        size="medium"
+                        size="md"
                         hover-class="none"
-                        :customStyle="{ width: '100%' }"
+                        :custom-style="{ width: '100%' }"
                         @click="queryPayResult()"
                     >
                         已完成支付
-                    </u-button>
+                    </tn-button>
                 </view>
             </view>
         </view>
-    </u-popup>
+    </tn-popup>
 </template>
 
 <script lang="ts" setup>

@@ -36,7 +36,7 @@ class CouponController extends BaseAdminController
     public function detail()
     {
         $params = (new CouponValidate())->goCheck('detail');
-        $result = CouponLogic::detail($params['id']);
+        $result = CouponLogic::detail((int)$params['id']);
         return $this->success('', $result);
     }
 
@@ -75,7 +75,7 @@ class CouponController extends BaseAdminController
     public function delete()
     {
         $params = (new CouponValidate())->post()->goCheck('detail');
-        $result = CouponLogic::delete($params['id']);
+        $result = CouponLogic::delete((int)$params['id']);
         if ($result === true) {
             return $this->success('删除成功');
         }
@@ -89,7 +89,7 @@ class CouponController extends BaseAdminController
     public function toggleStatus()
     {
         $params = (new CouponValidate())->post()->goCheck('detail');
-        $result = CouponLogic::toggleStatus($params['id']);
+        $result = CouponLogic::toggleStatus((int)$params['id']);
         if ($result === true) {
             return $this->success('操作成功');
         }
@@ -140,7 +140,7 @@ class CouponController extends BaseAdminController
     public function revoke()
     {
         $params = (new CouponValidate())->post()->goCheck('revoke');
-        $result = CouponLogic::revoke($params['user_coupon_id']);
+        $result = CouponLogic::revoke((int)$params['user_coupon_id']);
         if ($result === true) {
             return $this->success('撤回成功');
         }

@@ -1,10 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
+        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
         <!-- #endif -->
     </page-meta>
     <view class="news-detail bg-white">
@@ -37,11 +34,11 @@
         </view>
 
         <view class="panel-btn flex items-center px-[34rpx]" @click="handleAddCollect(newsData.id)">
-            <u-icon
+            <tn-icon
                 :name="newsData.collect ? 'star-fill' : 'star'"
                 size="40"
                 :color="newsData.collect ? '#F7BA47' : '#333'"
-            ></u-icon>
+            ></tn-icon>
             <text class="ml-[10rpx]">收藏</text>
         </view>
     </view>

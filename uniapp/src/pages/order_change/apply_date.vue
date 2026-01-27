@@ -12,15 +12,22 @@
             <view class="section-title">订单信息</view>
             <view class="order-card">
                 <view class="text-sm text-gray-500">订单号: {{ orderInfo.order_sn }}</view>
-                <view class="flex items-center mt-2" v-if="orderInfo.items && orderInfo.items.length > 0">
-                    <image 
-                        :src="orderInfo.items[0].staff?.avatar || '/static/images/default-avatar.png'" 
+                <view
+                    class="flex items-center mt-2"
+                    v-if="orderInfo.items && orderInfo.items.length > 0"
+                >
+                    <image
+                        :src="
+                            orderInfo.items[0].staff?.avatar || '/static/images/default-avatar.png'
+                        "
                         class="w-12 h-12 rounded-lg mr-3"
                         mode="aspectFill"
                     />
                     <view class="flex-1">
                         <view class="text-sm font-medium">{{ orderInfo.items[0].staff_name }}</view>
-                        <view class="text-xs text-gray-400">{{ orderInfo.items[0].package_name }}</view>
+                        <view class="text-xs text-gray-400">{{
+                            orderInfo.items[0].package_name
+                        }}</view>
                     </view>
                 </view>
                 <view class="mt-2 p-3 bg-orange-50 rounded-lg">
@@ -38,7 +45,9 @@
             <view class="form-item" @click="showDatePicker = true">
                 <text class="label">新服务日期</text>
                 <view class="value-area">
-                    <text v-if="formData.new_date" class="text-primary">{{ formData.new_date }}</text>
+                    <text v-if="formData.new_date" class="text-primary">{{
+                        formData.new_date
+                    }}</text>
                     <text v-else class="placeholder">请选择日期</text>
                     <uni-icons type="right" size="16" color="#999"></uni-icons>
                 </view>
@@ -58,8 +67,8 @@
         <!-- 申请原因 -->
         <view class="bg-white mt-3 p-4">
             <view class="section-title">申请原因</view>
-            <textarea 
-                v-model="formData.reason" 
+            <textarea
+                v-model="formData.reason"
                 class="reason-input"
                 placeholder="请填写改期原因（选填）"
                 maxlength="200"
@@ -71,8 +80,8 @@
         <view class="bg-white mt-3 p-4">
             <view class="section-title">附件图片（选填）</view>
             <view class="image-uploader">
-                <view 
-                    v-for="(img, index) in formData.attach_images" 
+                <view
+                    v-for="(img, index) in formData.attach_images"
                     :key="index"
                     class="image-item"
                 >
@@ -81,7 +90,11 @@
                         <uni-icons type="close" size="14" color="#fff"></uni-icons>
                     </view>
                 </view>
-                <view class="add-image" @click="chooseImage" v-if="formData.attach_images.length < 5">
+                <view
+                    class="add-image"
+                    @click="chooseImage"
+                    v-if="formData.attach_images.length < 5"
+                >
                     <uni-icons type="plusempty" size="40" color="#ccc"></uni-icons>
                     <text class="text-xs text-gray-400 mt-1">上传图片</text>
                 </view>
@@ -104,16 +117,16 @@
                     <text class="title">选择日期</text>
                     <text class="confirm" @click="confirmDate">确定</text>
                 </view>
-                <picker-view 
-                    :value="datePickerValue" 
-                    @change="onDateChange"
-                    class="picker-view"
-                >
+                <picker-view :value="datePickerValue" @change="onDateChange" class="picker-view">
                     <picker-view-column>
-                        <view v-for="year in years" :key="year" class="picker-item">{{ year }}年</view>
+                        <view v-for="year in years" :key="year" class="picker-item"
+                            >{{ year }}年</view
+                        >
                     </picker-view-column>
                     <picker-view-column>
-                        <view v-for="month in months" :key="month" class="picker-item">{{ month }}月</view>
+                        <view v-for="month in months" :key="month" class="picker-item"
+                            >{{ month }}月</view
+                        >
                     </picker-view-column>
                     <picker-view-column>
                         <view v-for="day in days" :key="day" class="picker-item">{{ day }}日</view>
@@ -131,8 +144,8 @@
                     <text class="confirm" @click="confirmTime">确定</text>
                 </view>
                 <view class="time-options">
-                    <view 
-                        v-for="option in timeSlotOptions" 
+                    <view
+                        v-for="option in timeSlotOptions"
                         :key="option.value"
                         class="time-option"
                         :class="{ active: tempTimeSlot === option.value }"
@@ -247,11 +260,7 @@ const openDatePicker = () => {
     const yearIndex = years.indexOf(today.getFullYear())
     const monthIndex = today.getMonth()
     const dayIndex = today.getDate() - 1
-    datePickerValue.value = [
-        yearIndex >= 0 ? yearIndex : 0,
-        monthIndex,
-        dayIndex
-    ]
+    datePickerValue.value = [yearIndex >= 0 ? yearIndex : 0, monthIndex, dayIndex]
     datePopup.value?.open()
 }
 
@@ -317,12 +326,18 @@ onLoad((options: any) => {
 })
 
 // 处理点击事件
-watch(() => showDatePicker.value, (val) => {
-    if (val) openDatePicker()
-})
-watch(() => showTimePicker.value, (val) => {
-    if (val) openTimePicker()
-})
+watch(
+    () => showDatePicker.value,
+    (val) => {
+        if (val) openDatePicker()
+    }
+)
+watch(
+    () => showTimePicker.value,
+    (val) => {
+        if (val) openTimePicker()
+    }
+)
 </script>
 
 <style lang="scss" scoped>
@@ -353,18 +368,18 @@ watch(() => showTimePicker.value, (val) => {
     align-items: center;
     padding: 24rpx 0;
     border-bottom: 1rpx solid #f5f5f5;
-    
+
     .label {
         font-size: 28rpx;
         color: #333;
     }
-    
+
     .value-area {
         display: flex;
         align-items: center;
         gap: 8rpx;
     }
-    
+
     .placeholder {
         color: #ccc;
         font-size: 28rpx;
@@ -404,7 +419,7 @@ watch(() => showTimePicker.value, (val) => {
     right: -10rpx;
     width: 36rpx;
     height: 36rpx;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -429,7 +444,7 @@ watch(() => showTimePicker.value, (val) => {
     right: 0;
     padding: 20rpx 30rpx;
     background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
 }
 
 .btn-submit {
@@ -441,7 +456,7 @@ watch(() => showTimePicker.value, (val) => {
     border-radius: 44rpx;
     font-size: 30rpx;
     border: none;
-    
+
     &[disabled] {
         opacity: 0.6;
     }
@@ -458,10 +473,19 @@ watch(() => showTimePicker.value, (val) => {
     align-items: center;
     padding: 30rpx;
     border-bottom: 1rpx solid #f5f5f5;
-    
-    .cancel { color: #999; font-size: 28rpx; }
-    .title { font-size: 30rpx; font-weight: bold; }
-    .confirm { color: var(--primary-color, #ff6b35); font-size: 28rpx; }
+
+    .cancel {
+        color: #999;
+        font-size: 28rpx;
+    }
+    .title {
+        font-size: 30rpx;
+        font-weight: bold;
+    }
+    .confirm {
+        color: var(--primary-color, #ff6b35);
+        font-size: 28rpx;
+    }
 }
 
 .picker-view {
@@ -488,7 +512,7 @@ watch(() => showTimePicker.value, (val) => {
     border: 2rpx solid #eee;
     border-radius: 12rpx;
     font-size: 28rpx;
-    
+
     &.active {
         border-color: var(--primary-color, #ff6b35);
         color: var(--primary-color, #ff6b35);

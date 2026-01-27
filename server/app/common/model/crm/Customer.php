@@ -211,7 +211,7 @@ class Customer extends BaseModel
         if (empty($value)) {
             return [];
         }
-        return is_array($value) ? $value : json_decode($value, true) ?: [];
+        return is_array($value) ? $value : (json_decode($value, true) ?: []);
     }
 
     /**
@@ -234,7 +234,7 @@ class Customer extends BaseModel
         if (empty($value)) {
             return [];
         }
-        return is_array($value) ? $value : json_decode($value, true) ?: [];
+        return is_array($value) ? $value : (json_decode($value, true) ?: []);
     }
 
     /**

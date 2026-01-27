@@ -10,7 +10,9 @@
         <!-- 提示信息 -->
         <view class="tip-card">
             <uni-icons type="info-filled" size="18" color="#ff9500"></uni-icons>
-            <text class="tip-text">暂停期间订单将处于冻结状态，暂停到期后需主动申请恢复或重新选择服务日期。</text>
+            <text class="tip-text"
+                >暂停期间订单将处于冻结状态，暂停到期后需主动申请恢复或重新选择服务日期。</text
+            >
         </view>
 
         <!-- 订单信息 -->
@@ -18,15 +20,22 @@
             <view class="section-title">暂停订单</view>
             <view class="order-card">
                 <view class="text-sm text-gray-500">订单号: {{ orderInfo.order_sn }}</view>
-                <view class="flex items-center mt-2" v-if="orderInfo.items && orderInfo.items.length > 0">
-                    <image 
-                        :src="orderInfo.items[0].staff?.avatar || '/static/images/default-avatar.png'" 
+                <view
+                    class="flex items-center mt-2"
+                    v-if="orderInfo.items && orderInfo.items.length > 0"
+                >
+                    <image
+                        :src="
+                            orderInfo.items[0].staff?.avatar || '/static/images/default-avatar.png'
+                        "
                         class="w-12 h-12 rounded-lg mr-3"
                         mode="aspectFill"
                     />
                     <view class="flex-1">
                         <view class="text-sm font-medium">{{ orderInfo.items[0].staff_name }}</view>
-                        <view class="text-xs text-gray-400">{{ orderInfo.items[0].package_name }}</view>
+                        <view class="text-xs text-gray-400">{{
+                            orderInfo.items[0].package_name
+                        }}</view>
                     </view>
                     <view class="text-right">
                         <view class="text-primary font-bold">¥{{ orderInfo.pay_amount }}</view>
@@ -40,14 +49,18 @@
         <view class="bg-white mt-3 p-4">
             <view class="section-title">暂停原因类型</view>
             <view class="type-options">
-                <view 
-                    v-for="type in pauseTypes" 
+                <view
+                    v-for="type in pauseTypes"
                     :key="type.value"
                     class="type-option"
                     :class="{ active: formData.pause_type === type.value }"
                     @click="formData.pause_type = type.value"
                 >
-                    <uni-icons :type="type.icon" size="24" :color="formData.pause_type === type.value ? '#ff6b35' : '#999'"></uni-icons>
+                    <uni-icons
+                        :type="type.icon"
+                        size="24"
+                        :color="formData.pause_type === type.value ? '#ff6b35' : '#999'"
+                    ></uni-icons>
                     <text class="type-label">{{ type.label }}</text>
                 </view>
             </view>
@@ -59,7 +72,9 @@
             <view class="form-item" @click="showStartPicker = true">
                 <text class="label required">开始日期</text>
                 <view class="value-area">
-                    <text v-if="formData.start_date" class="text-primary">{{ formData.start_date }}</text>
+                    <text v-if="formData.start_date" class="text-primary">{{
+                        formData.start_date
+                    }}</text>
                     <text v-else class="placeholder">请选择开始日期</text>
                     <uni-icons type="right" size="16" color="#999"></uni-icons>
                 </view>
@@ -67,7 +82,9 @@
             <view class="form-item" @click="showEndPicker = true">
                 <text class="label required">结束日期</text>
                 <view class="value-area">
-                    <text v-if="formData.end_date" class="text-primary">{{ formData.end_date }}</text>
+                    <text v-if="formData.end_date" class="text-primary">{{
+                        formData.end_date
+                    }}</text>
                     <text v-else class="placeholder">请选择结束日期</text>
                     <uni-icons type="right" size="16" color="#999"></uni-icons>
                 </view>
@@ -81,8 +98,8 @@
         <!-- 暂停原因 -->
         <view class="bg-white mt-3 p-4">
             <view class="section-title">详细说明</view>
-            <textarea 
-                v-model="formData.reason" 
+            <textarea
+                v-model="formData.reason"
                 class="reason-input"
                 placeholder="请详细说明暂停原因（必填）"
                 maxlength="500"
@@ -95,17 +112,17 @@
             <view class="section-title">证明材料（选填）</view>
             <view class="text-xs text-gray-400 mb-3">如有相关证明材料，请上传以加快审核</view>
             <view class="image-uploader">
-                <view 
-                    v-for="(img, index) in formData.proof_images" 
-                    :key="index"
-                    class="image-item"
-                >
+                <view v-for="(img, index) in formData.proof_images" :key="index" class="image-item">
                     <image :src="img" class="upload-image" mode="aspectFill" />
                     <view class="delete-btn" @click="removeImage(index)">
                         <uni-icons type="close" size="14" color="#fff"></uni-icons>
                     </view>
                 </view>
-                <view class="add-image" @click="chooseImage" v-if="formData.proof_images.length < 10">
+                <view
+                    class="add-image"
+                    @click="chooseImage"
+                    v-if="formData.proof_images.length < 10"
+                >
                     <uni-icons type="plusempty" size="40" color="#ccc"></uni-icons>
                     <text class="text-xs text-gray-400 mt-1">上传图片</text>
                 </view>
@@ -121,14 +138,14 @@
         </view>
 
         <!-- 日期选择器 -->
-        <uni-datetime-picker 
-            type="date" 
+        <uni-datetime-picker
+            type="date"
             v-model="formData.start_date"
             :start="today"
             @change="onStartDateChange"
         />
-        <uni-datetime-picker 
-            type="date" 
+        <uni-datetime-picker
+            type="date"
             v-model="formData.end_date"
             :start="formData.start_date || today"
             @change="onEndDateChange"
@@ -288,7 +305,7 @@ onLoad((options: any) => {
     padding: 24rpx 30rpx;
     background: #fffbe6;
     gap: 12rpx;
-    
+
     .tip-text {
         flex: 1;
         font-size: 24rpx;
@@ -326,18 +343,18 @@ onLoad((options: any) => {
     padding: 30rpx 20rpx;
     border: 2rpx solid #eee;
     border-radius: 12rpx;
-    
+
     &.active {
         border-color: var(--primary-color, #ff6b35);
         background: rgba(255, 107, 53, 0.05);
     }
-    
+
     .type-label {
         font-size: 26rpx;
         color: #666;
         margin-top: 12rpx;
     }
-    
+
     &.active .type-label {
         color: var(--primary-color, #ff6b35);
     }
@@ -349,24 +366,24 @@ onLoad((options: any) => {
     align-items: center;
     padding: 24rpx 0;
     border-bottom: 1rpx solid #f5f5f5;
-    
+
     .label {
         font-size: 28rpx;
         color: #333;
-        
+
         &.required::before {
             content: '*';
             color: #ff3b30;
             margin-right: 4rpx;
         }
     }
-    
+
     .value-area {
         display: flex;
         align-items: center;
         gap: 8rpx;
     }
-    
+
     .placeholder {
         color: #ccc;
         font-size: 28rpx;
@@ -414,7 +431,7 @@ onLoad((options: any) => {
     right: -10rpx;
     width: 36rpx;
     height: 36rpx;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -439,7 +456,7 @@ onLoad((options: any) => {
     right: 0;
     padding: 20rpx 30rpx;
     background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
 }
 
 .btn-submit {
@@ -451,7 +468,7 @@ onLoad((options: any) => {
     border-radius: 44rpx;
     font-size: 30rpx;
     border: none;
-    
+
     &[disabled] {
         opacity: 0.6;
     }

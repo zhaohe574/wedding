@@ -7,9 +7,7 @@
         />
     </page-meta>
     <view class="pause-detail">
-        <view v-if="loading" class="py-20 text-center text-gray-400">
-            加载中...
-        </view>
+        <view v-if="loading" class="py-20 text-center text-gray-400"> 加载中... </view>
         <template v-else-if="detail">
             <!-- 状态卡片 -->
             <view class="status-card" :class="getStatusBgClass(detail.pause_status)">
@@ -82,11 +80,14 @@
             </view>
 
             <!-- 证明材料 -->
-            <view class="bg-white mt-3 p-4" v-if="detail.proof_images && detail.proof_images.length > 0">
+            <view
+                class="bg-white mt-3 p-4"
+                v-if="detail.proof_images && detail.proof_images.length > 0"
+            >
                 <view class="section-title">证明材料</view>
                 <view class="image-list">
-                    <image 
-                        v-for="(img, index) in detail.proof_images" 
+                    <image
+                        v-for="(img, index) in detail.proof_images"
                         :key="index"
                         :src="img"
                         class="proof-image"
@@ -103,7 +104,10 @@
             </view>
 
             <!-- 服务日期变更 -->
-            <view class="bg-white mt-3 p-4" v-if="detail.original_service_date || detail.new_service_date">
+            <view
+                class="bg-white mt-3 p-4"
+                v-if="detail.original_service_date || detail.new_service_date"
+            >
                 <view class="section-title">服务日期</view>
                 <view class="info-row" v-if="detail.original_service_date">
                     <text class="label">原服务日期</text>
@@ -124,7 +128,9 @@
                         <text class="text-sm text-primary">查看订单 ></text>
                     </view>
                     <view class="flex justify-between mt-2">
-                        <text class="text-sm text-gray-600">服务日期: {{ detail.order.service_date }}</text>
+                        <text class="text-sm text-gray-600"
+                            >服务日期: {{ detail.order.service_date }}</text
+                        >
                         <text class="text-primary font-bold">¥{{ detail.order.pay_amount }}</text>
                     </view>
                 </view>
@@ -135,9 +141,7 @@
                 <button class="btn-cancel" @click="handleCancel">取消申请</button>
             </view>
         </template>
-        <view v-else class="py-20 text-center text-gray-400">
-            数据不存在
-        </view>
+        <view v-else class="py-20 text-center text-gray-400"> 数据不存在 </view>
     </view>
 </template>
 
@@ -248,18 +252,28 @@ onLoad((options: any) => {
 .status-card {
     padding: 40rpx 30rpx;
     color: #fff;
-    
-    &.bg-orange { background: linear-gradient(135deg, #ff9500, #ff6b00); }
-    &.bg-blue { background: linear-gradient(135deg, #007aff, #0056d6); }
-    &.bg-green { background: linear-gradient(135deg, #34c759, #28a745); }
-    &.bg-red { background: linear-gradient(135deg, #ff3b30, #d63027); }
-    &.bg-gray { background: linear-gradient(135deg, #8e8e93, #636366); }
+
+    &.bg-orange {
+        background: linear-gradient(135deg, #ff9500, #ff6b00);
+    }
+    &.bg-blue {
+        background: linear-gradient(135deg, #007aff, #0056d6);
+    }
+    &.bg-green {
+        background: linear-gradient(135deg, #34c759, #28a745);
+    }
+    &.bg-red {
+        background: linear-gradient(135deg, #ff3b30, #d63027);
+    }
+    &.bg-gray {
+        background: linear-gradient(135deg, #8e8e93, #636366);
+    }
 }
 
 .remain-days {
     margin-top: 20rpx;
     padding: 12rpx 24rpx;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 30rpx;
     display: inline-block;
     font-size: 26rpx;
@@ -280,11 +294,19 @@ onLoad((options: any) => {
     align-items: center;
     padding: 16rpx 0;
     border-bottom: 1rpx solid #f5f5f5;
-    
-    &:last-child { border-bottom: none; }
-    
-    .label { color: #999; font-size: 26rpx; }
-    .value { color: #333; font-size: 26rpx; }
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    .label {
+        color: #999;
+        font-size: 26rpx;
+    }
+    .value {
+        color: #333;
+        font-size: 26rpx;
+    }
 }
 
 .tag {
@@ -374,7 +396,7 @@ onLoad((options: any) => {
     right: 0;
     padding: 20rpx 30rpx;
     background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
 }
 
 .btn-cancel {

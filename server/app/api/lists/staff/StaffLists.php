@@ -133,6 +133,32 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
             }
         }
 
+        // 获取工作人员的标签信息
+        if (!empty($result)) {
+            $staffIds = array_column($result, 'id');
+            
+            // 查询标签关联
+            $staffTags = \app\common\model\staff\StaffTag::alias('st')
+                ->leftJoin('style_tag tag', 'st.tag_id = tag.id')
+                ->whereIn('st.staff_id', $staffIds)
+                ->where('tag.delete_time', null)
+                ->where('tag.is_show', 1)
+                ->field('st.staff_id, tag.name')
+                ->select()
+                ->toArray();
+            
+            // 按工作人员ID分组标签
+            $tagsByStaff = [];
+            foreach ($staffTags as $staffTag) {
+                $tagsByStaff[$staffTag['staff_id']][] = $staffTag['name'];
+            }
+            
+            // 将标签添加到结果中
+            foreach ($result as &$item) {
+                $item['tags'] = $tagsByStaff[$item['id']] ?? [];
+            }
+        }
+
         return $result;
     }
 

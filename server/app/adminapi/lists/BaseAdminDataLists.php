@@ -31,8 +31,9 @@ abstract class BaseAdminDataLists extends BaseDataLists
     public function __construct()
     {
         parent::__construct();
-        $this->adminInfo = $this->request->adminInfo;
-        $this->adminId = $this->request->adminId;
+        // PHP 8 严格类型检查：确保 adminInfo 始终是数组类型
+        $this->adminInfo = $this->request->adminInfo ?? [];
+        $this->adminId = $this->request->adminId ?? 0;
     }
 
 

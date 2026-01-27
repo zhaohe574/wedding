@@ -90,7 +90,12 @@
                 <text class="more" @click="navigateTo('ticket')">查看全部</text>
             </view>
             <view class="ticket-list">
-                <view class="ticket-item" v-for="item in recentTickets" :key="item.id" @click="viewTicket(item)">
+                <view
+                    class="ticket-item"
+                    v-for="item in recentTickets"
+                    :key="item.id"
+                    @click="viewTicket(item)"
+                >
                     <view class="ticket-header">
                         <text class="ticket-sn">{{ item.ticket_sn }}</text>
                         <view class="ticket-status" :class="getStatusClass(item.status)">
@@ -110,7 +115,12 @@
         <view class="faq-section">
             <view class="section-title">常见问题</view>
             <view class="faq-list">
-                <view class="faq-item" v-for="(item, index) in faqList" :key="index" @click="toggleFaq(index)">
+                <view
+                    class="faq-item"
+                    v-for="(item, index) in faqList"
+                    :key="index"
+                    @click="toggleFaq(index)"
+                >
                     <view class="faq-question">
                         <text>{{ item.question }}</text>
                         <tn-icon :name="item.expanded ? 'up' : 'down'" size="32rpx" color="#999" />
@@ -133,8 +143,8 @@
                     <view class="form-item">
                         <text class="form-label">工单类型</text>
                         <view class="type-options">
-                            <view 
-                                class="type-option" 
+                            <view
+                                class="type-option"
                                 :class="{ active: ticketForm.type === type.value }"
                                 v-for="type in ticketTypes"
                                 :key="type.value"
@@ -146,17 +156,25 @@
                     </view>
                     <view class="form-item">
                         <text class="form-label">标题</text>
-                        <input class="form-input" v-model="ticketForm.title" placeholder="请输入标题" />
+                        <input
+                            class="form-input"
+                            v-model="ticketForm.title"
+                            placeholder="请输入标题"
+                        />
                     </view>
                     <view class="form-item">
                         <text class="form-label">详细描述</text>
-                        <textarea class="form-textarea" v-model="ticketForm.content" placeholder="请详细描述您的问题" />
+                        <textarea
+                            class="form-textarea"
+                            v-model="ticketForm.content"
+                            placeholder="请详细描述您的问题"
+                        />
                     </view>
                     <view class="form-item">
                         <text class="form-label">图片凭证</text>
-                        <tn-image-upload 
-                            v-model="ticketForm.images" 
-                            :action="uploadUrl" 
+                        <tn-image-upload
+                            v-model="ticketForm.images"
+                            :action="uploadUrl"
                             :maxCount="5"
                         />
                     </view>
@@ -180,8 +198,8 @@
                     <view class="form-item">
                         <text class="form-label">投诉类型</text>
                         <view class="type-options">
-                            <view 
-                                class="type-option" 
+                            <view
+                                class="type-option"
                                 :class="{ active: complaintForm.type === type.value }"
                                 v-for="type in complaintTypes"
                                 :key="type.value"
@@ -194,8 +212,8 @@
                     <view class="form-item">
                         <text class="form-label">投诉等级</text>
                         <view class="type-options">
-                            <view 
-                                class="type-option" 
+                            <view
+                                class="type-option"
                                 :class="{ active: complaintForm.level === level.value }"
                                 v-for="level in complaintLevels"
                                 :key="level.value"
@@ -207,23 +225,36 @@
                     </view>
                     <view class="form-item">
                         <text class="form-label">投诉标题</text>
-                        <input class="form-input" v-model="complaintForm.title" placeholder="请输入投诉标题" />
+                        <input
+                            class="form-input"
+                            v-model="complaintForm.title"
+                            placeholder="请输入投诉标题"
+                        />
                     </view>
                     <view class="form-item">
                         <text class="form-label">详细描述</text>
-                        <textarea class="form-textarea" v-model="complaintForm.content" placeholder="请详细描述投诉内容" />
+                        <textarea
+                            class="form-textarea"
+                            v-model="complaintForm.content"
+                            placeholder="请详细描述投诉内容"
+                        />
                     </view>
                     <view class="form-item">
                         <text class="form-label">图片/视频凭证</text>
-                        <tn-image-upload 
-                            v-model="complaintForm.images" 
-                            :action="uploadUrl" 
+                        <tn-image-upload
+                            v-model="complaintForm.images"
+                            :action="uploadUrl"
                             :maxCount="9"
                         />
                     </view>
                 </view>
                 <view class="popup-footer">
-                    <tn-button type="primary" size="lg" :loading="submitting" @click="submitComplaint">
+                    <tn-button
+                        type="primary"
+                        size="lg"
+                        :loading="submitting"
+                        @click="submitComplaint"
+                    >
                         提交投诉
                     </tn-button>
                 </view>
@@ -234,11 +265,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { 
-    getMyStatistics, 
-    getTicketLists, 
-    createTicket, 
-    submitComplaint as submitComplaintApi 
+import {
+    getMyStatistics,
+    getTicketLists,
+    createTicket,
+    submitComplaint as submitComplaintApi
 } from '@/api/aftersale'
 
 // 统计数据
@@ -511,10 +542,18 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
 
-    &.ticket-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    &.complaint-icon { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-    &.reshoot-icon { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-    &.callback-icon { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    &.ticket-icon {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    &.complaint-icon {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    &.reshoot-icon {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    &.callback-icon {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
 }
 
 .stat-info {
@@ -635,11 +674,26 @@ onMounted(() => {
     padding: 4rpx 16rpx;
     border-radius: 8rpx;
 
-    &.status-pending { background: #f0f0f0; color: #666; }
-    &.status-processing { background: #fff7e6; color: #fa8c16; }
-    &.status-confirming { background: #e6f7ff; color: #1890ff; }
-    &.status-completed { background: #f6ffed; color: #52c41a; }
-    &.status-closed { background: #f5f5f5; color: #999; }
+    &.status-pending {
+        background: #f0f0f0;
+        color: #666;
+    }
+    &.status-processing {
+        background: #fff7e6;
+        color: #fa8c16;
+    }
+    &.status-confirming {
+        background: #e6f7ff;
+        color: #1890ff;
+    }
+    &.status-completed {
+        background: #f6ffed;
+        color: #52c41a;
+    }
+    &.status-closed {
+        background: #f5f5f5;
+        color: #999;
+    }
 }
 
 .ticket-title {

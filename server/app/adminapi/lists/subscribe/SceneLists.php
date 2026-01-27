@@ -55,6 +55,11 @@ class SceneLists extends BaseAdminDataLists implements ListsSearchInterface
         }
 
         foreach ($list as &$item) {
+            // PHP 8 类型转换
+            $item['create_time'] = (int)$item['create_time'];
+            $item['status'] = (int)$item['status'];
+            $item['is_auto'] = (int)$item['is_auto'];
+            
             $item['template_name'] = $templates[$item['template_id']] ?? '未绑定';
             $item['status_desc'] = $item['status'] == 1 ? '启用' : '禁用';
             $item['is_auto_desc'] = $item['is_auto'] == 1 ? '自动发送' : '手动触发';

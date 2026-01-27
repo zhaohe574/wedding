@@ -195,7 +195,8 @@ class ServicePackage extends BaseModel
             self::TYPE_GLOBAL => '全局套餐',
             self::TYPE_STAFF_ONLY => '人员专属',
         ];
-        return $typeMap[$data['package_type'] ?? self::TYPE_GLOBAL] ?? '未知';
+        $packageType = $data['package_type'] ?? self::TYPE_GLOBAL;
+        return $typeMap[$packageType] ?? '未知';
     }
 
     /**
@@ -209,7 +210,11 @@ class ServicePackage extends BaseModel
         if (empty($data['staff_id'])) {
             return '';
         }
-        $staff = Staff::find($data['staff_id']);
-        return $staff ? $staff->name : '';
+        try {
+            $staff = Staff::find($data['staff_id']);
+            return $staff ? $staff->name : '';
+        } catch (\Exception $e) {
+            return '';
+        }
     }
 }

@@ -1,36 +1,35 @@
 <template>
     <view class="callback-page">
-        <z-paging
-            ref="paging"
-            v-model="dataList"
-            @query="queryList"
-        >
+        <z-paging ref="paging" v-model="dataList" @query="queryList">
             <!-- 状态筛选 -->
             <template #top>
                 <view class="filter-tabs">
-                    <view 
-                        class="tab-item" 
+                    <view
+                        class="tab-item"
                         :class="{ active: currentStatus === '' }"
                         @click="changeStatus('')"
-                    >全部</view>
-                    <view 
-                        class="tab-item" 
+                        >全部</view
+                    >
+                    <view
+                        class="tab-item"
                         :class="{ active: currentStatus === 0 }"
                         @click="changeStatus(0)"
-                    >待填写</view>
-                    <view 
-                        class="tab-item" 
+                        >待填写</view
+                    >
+                    <view
+                        class="tab-item"
                         :class="{ active: currentStatus === 1 }"
                         @click="changeStatus(1)"
-                    >已完成</view>
+                        >已完成</view
+                    >
                 </view>
             </template>
 
             <!-- 回访列表 -->
             <view class="callback-list">
-                <view 
-                    class="callback-item" 
-                    v-for="item in dataList" 
+                <view
+                    class="callback-item"
+                    v-for="item in dataList"
                     :key="item.id"
                     @click="goFill(item)"
                 >
@@ -57,10 +56,10 @@
                         <text class="callback-time">{{ item.create_time }}</text>
                         <view class="callback-action" v-if="item.status === 0">
                             <text>立即填写</text>
-                            <u-icon name="arrow-right" size="24" color="#4facfe"></u-icon>
+                            <tn-icon name="right" size="24" color="#4facfe"></tn-icon>
                         </view>
                         <view class="callback-score" v-else-if="item.score">
-                            <u-icon name="star-fill" size="28" color="#FFB800"></u-icon>
+                            <tn-icon name="star-fill" size="28" color="#FFB800"></tn-icon>
                             <text>{{ item.score }}分</text>
                         </view>
                     </view>
@@ -70,7 +69,7 @@
             <!-- 空状态 -->
             <template #empty>
                 <view class="empty-state">
-                    <u-icon name="edit" size="120" color="#ccc"></u-icon>
+                    <tn-icon name="edit" size="120" color="#ccc"></tn-icon>
                     <text class="empty-text">暂无回访问卷</text>
                 </view>
             </template>
@@ -148,7 +147,7 @@ onLoad((options: any) => {
     font-size: 28rpx;
     color: #666;
     border-radius: 8rpx;
-    
+
     &.active {
         color: #43e97b;
         background: rgba(67, 233, 123, 0.1);
@@ -196,7 +195,7 @@ onLoad((options: any) => {
     font-size: 24rpx;
     padding: 6rpx 16rpx;
     border-radius: 8rpx;
-    
+
     &.status-pending {
         color: #faad14;
         background: rgba(250, 173, 20, 0.1);
@@ -214,7 +213,7 @@ onLoad((options: any) => {
 .info-row {
     display: flex;
     margin-bottom: 12rpx;
-    
+
     &:last-child {
         margin-bottom: 0;
     }
@@ -254,8 +253,8 @@ onLoad((options: any) => {
     display: flex;
     align-items: center;
     font-size: 26rpx;
-    color: #FFB800;
-    
+    color: #ffb800;
+
     text {
         margin-left: 8rpx;
     }

@@ -1,10 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
+        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
         <!-- #endif -->
     </page-meta>
     <z-paging
@@ -33,13 +30,13 @@
                     </navigator>
                 </view>
             </view>
-            <u-tabs
-                :list="tabList"
+            <tn-tabs
+                :data="tabList"
                 :is-scroll="false"
                 v-model="current"
                 activeColor="var(--color-primary)"
                 @change="changeType"
-            ></u-tabs>
+            ></tn-tabs>
 
             <view class="pt-2.5">
                 <view

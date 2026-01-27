@@ -346,7 +346,7 @@ const fetchStaffList = async () => {
 
 // 获取日历数据
 const fetchCalendar = async () => {
-    const [year, month] = currentMonth.value.split('-')
+    const [year, month] = currentMonth.value.split('-').map(Number)
     const res = await scheduleMonthCalendar({
         staff_id: queryParams.value.staff_id,
         year,

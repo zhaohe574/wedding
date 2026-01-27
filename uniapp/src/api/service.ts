@@ -74,11 +74,11 @@ export function getPackageSlotPrices(data: { package_id: number; staff_id?: numb
  * @param { string } end_time 结束时间 HH:mm（可选）
  * @return { Promise }
  */
-export function calculatePackagePrice(data: { 
+export function calculatePackagePrice(data: {
     package_id: number
     staff_id: number
     start_time?: string
-    end_time?: string 
+    end_time?: string
 }) {
     return request.get({ url: '/service/calculatePrice', data })
 }

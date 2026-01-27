@@ -3,7 +3,7 @@
         <!-- 标题栏 -->
         <view class="flex items-center justify-between mb-[20rpx]" v-if="content.title">
             <view class="text-lg font-medium text-[#1E293B]">{{ content.title }}</view>
-            <view 
+            <view
                 class="flex items-center text-sm text-[#64748B] cursor-pointer"
                 @click="navigateToOrderList"
             >
@@ -13,14 +13,15 @@
         </view>
 
         <!-- 订单状态入口 - 横向排列 -->
-        <view 
+        <view
             class="bg-white rounded-[16rpx] p-[30rpx]"
-            :style="{ 
-                boxShadow: content.show_shadow !== false ? '0 2rpx 12rpx rgba(0, 0, 0, 0.05)' : 'none'
+            :style="{
+                boxShadow:
+                    content.show_shadow !== false ? '0 2rpx 12rpx rgba(0, 0, 0, 0.05)' : 'none'
             }"
         >
             <view class="flex items-center justify-around">
-                <view 
+                <view
                     v-for="(item, index) in showList"
                     :key="index"
                     class="flex flex-col items-center cursor-pointer"
@@ -28,27 +29,27 @@
                 >
                     <!-- 图标 -->
                     <view class="relative mb-[16rpx]">
-                        <image 
+                        <image
                             v-if="item.icon"
                             :src="getImageUrl(item.icon)"
                             class="w-[56rpx] h-[56rpx]"
                             mode="aspectFit"
                         />
-                        <view 
+                        <view
                             v-else
                             class="w-[56rpx] h-[56rpx] rounded-full flex items-center justify-center"
                             :style="{ backgroundColor: getStatusColor(item.status) + '15' }"
                         >
-                            <text 
+                            <text
                                 class="text-[28rpx]"
                                 :style="{ color: getStatusColor(item.status) }"
-                            >{{ getStatusIcon(item.status) }}</text>
+                                >{{ getStatusIcon(item.status) }}</text
+                            >
                         </view>
                         <!-- 数量角标 -->
-                        <view 
+                        <view
                             v-if="item.count && item.count > 0"
-                            class="absolute -top-[10rpx] -right-[10rpx] min-w-[36rpx] h-[36rpx] 
-                                   bg-[#F97316] rounded-full flex items-center justify-center px-[8rpx]"
+                            class="absolute -top-[10rpx] -right-[10rpx] min-w-[36rpx] h-[36rpx] bg-[#F97316] rounded-full flex items-center justify-center px-[8rpx]"
                         >
                             <text class="text-white text-[22rpx] font-medium">
                                 {{ item.count > 99 ? '99+' : item.count }}
@@ -62,17 +63,18 @@
         </view>
 
         <!-- 最近订单预览 -->
-        <view 
+        <view
             v-if="content.show_recent && recentOrders.length > 0"
             class="mt-[20rpx] bg-white rounded-[16rpx] overflow-hidden"
-            :style="{ 
-                boxShadow: content.show_shadow !== false ? '0 2rpx 12rpx rgba(0, 0, 0, 0.05)' : 'none'
+            :style="{
+                boxShadow:
+                    content.show_shadow !== false ? '0 2rpx 12rpx rgba(0, 0, 0, 0.05)' : 'none'
             }"
         >
             <view class="p-[24rpx] border-b border-[#F1F5F9]">
                 <text class="text-[28rpx] font-medium text-[#1E293B]">最近订单</text>
             </view>
-            <view 
+            <view
                 v-for="(order, index) in recentOrders"
                 :key="order.id || index"
                 class="p-[24rpx] border-b border-[#F1F5F9] last:border-b-0 cursor-pointer active:bg-[#F8FAFC]"
@@ -81,10 +83,12 @@
                 <view class="flex items-center justify-between">
                     <view class="flex-1">
                         <view class="flex items-center mb-[8rpx]">
-                            <text class="text-[28rpx] text-[#1E293B] font-medium">{{ order.service_name || '服务订单' }}</text>
-                            <view 
+                            <text class="text-[28rpx] text-[#1E293B] font-medium">{{
+                                order.service_name || '服务订单'
+                            }}</text>
+                            <view
                                 class="ml-[16rpx] px-[12rpx] py-[4rpx] rounded-[6rpx] text-[22rpx]"
-                                :style="{ 
+                                :style="{
                                     backgroundColor: getStatusColor(order.status) + '15',
                                     color: getStatusColor(order.status)
                                 }"
@@ -145,20 +149,23 @@ interface ContentType {
     recent_orders?: OrderItem[]
 }
 
-const props = withDefaults(defineProps<{
-    content: ContentType
-    styles?: Record<string, any>
-}>(), {
-    content: () => ({
-        enabled: 1,
-        title: '我的订单',
-        show_shadow: true,
-        show_recent: false,
-        currency: '¥',
-        data: []
-    }),
-    styles: () => ({})
-})
+const props = withDefaults(
+    defineProps<{
+        content: ContentType
+        styles?: Record<string, any>
+    }>(),
+    {
+        content: () => ({
+            enabled: 1,
+            title: '我的订单',
+            show_shadow: true,
+            show_recent: false,
+            currency: '¥',
+            data: []
+        }),
+        styles: () => ({})
+    }
+)
 
 // 过滤显示的入口列表
 const showList = computed(() => {
@@ -173,12 +180,12 @@ const recentOrders = computed(() => {
 // 获取状态颜色
 const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-        'pending_pay': '#F97316',      // 待付款 - 橙色
-        'pending_confirm': '#3B82F6',  // 待确认 - 蓝色
-        'processing': '#8B5CF6',       // 进行中 - 紫色
-        'completed': '#22C55E',        // 已完成 - 绿色
-        'cancelled': '#94A3B8',        // 已取消 - 灰色
-        'refund': '#EF4444'            // 退款 - 红色
+        pending_pay: '#F97316', // 待付款 - 橙色
+        pending_confirm: '#3B82F6', // 待确认 - 蓝色
+        processing: '#8B5CF6', // 进行中 - 紫色
+        completed: '#22C55E', // 已完成 - 绿色
+        cancelled: '#94A3B8', // 已取消 - 灰色
+        refund: '#EF4444' // 退款 - 红色
     }
     return colors[status] || '#7C3AED'
 }
@@ -186,12 +193,12 @@ const getStatusColor = (status: string) => {
 // 获取状态图标
 const getStatusIcon = (status: string) => {
     const icons: Record<string, string> = {
-        'pending_pay': '付',
-        'pending_confirm': '待',
-        'processing': '进',
-        'completed': '完',
-        'cancelled': '消',
-        'refund': '退'
+        pending_pay: '付',
+        pending_confirm: '待',
+        processing: '进',
+        completed: '完',
+        cancelled: '消',
+        refund: '退'
     }
     return icons[status] || '单'
 }
@@ -199,12 +206,12 @@ const getStatusIcon = (status: string) => {
 // 获取状态文字
 const getStatusText = (status: string) => {
     const texts: Record<string, string> = {
-        'pending_pay': '待付款',
-        'pending_confirm': '待确认',
-        'processing': '进行中',
-        'completed': '已完成',
-        'cancelled': '已取消',
-        'refund': '退款中'
+        pending_pay: '待付款',
+        pending_confirm: '待确认',
+        processing: '进行中',
+        completed: '已完成',
+        cancelled: '已取消',
+        refund: '退款中'
     }
     return texts[status] || '未知'
 }

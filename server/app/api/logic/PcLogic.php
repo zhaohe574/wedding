@@ -23,6 +23,7 @@ use app\common\model\article\ArticleCollect;
 use app\common\model\decorate\DecoratePage;
 use app\common\service\ConfigService;
 use app\common\service\FileService;
+use app\common\service\DecorateDataService;
 
 
 /**
@@ -45,7 +46,13 @@ class PcLogic extends BaseLogic
     public static function getIndexData()
     {
         // 装修配置
-        $decoratePage = DecoratePage::findOrEmpty(4);
+        $decoratePage = DecoratePage::findOrEmpty(4)->toArray();
+        
+        // 动态填充装修数据
+        if (!empty($decoratePage)) {
+            $decoratePage = DecorateDataService::parsePageData($decoratePage);
+        }
+        
         // 最新资讯
         $newArticle = self::getLimitArticle('new', 7);
         // 全部资讯

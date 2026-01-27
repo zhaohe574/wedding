@@ -43,6 +43,8 @@ class DynamicLogic extends BaseLogic
     {
         $dynamic = Dynamic::with(['user' => function ($q) {
                 $q->field('id, nickname, avatar');
+            }, 'staff' => function ($q) {
+                $q->field('id, name, avatar');
             }])
             ->find($dynamicId);
 
@@ -56,18 +58,26 @@ class DynamicLogic extends BaseLogic
         $data = $dynamic->toArray();
         $data['type_desc'] = self::getTypeDesc($dynamic->dynamic_type);
 
-        // 获取发布者信息
-        if ($dynamic->user_type == Dynamic::USER_TYPE_STAFF && $dynamic->staff_id > 0) {
-            $staff = \app\common\model\staff\Staff::field('id, name, avatar')->find($dynamic->staff_id);
-            $data['publisher'] = $staff ? ['id' => $staff->id, 'nickname' => $staff->name, 'avatar' => $staff->avatar, 'type' => 'staff'] : null;
-        } elseif ($dynamic->user_type == Dynamic::USER_TYPE_OFFICIAL) {
-            $data['publisher'] = ['id' => 0, 'nickname' => '官方', 'avatar' => '', 'type' => 'official'];
+        // 处理发布者信息
+        if ($dynamic->user_type == Dynamic::USER_TYPE_OFFICIAL) {
+            // 官方动态
+            $data['user_nickname'] = '官方';
+            $data['user_avatar'] = '';
+        } elseif ($dynamic->user_type == Dynamic::USER_TYPE_STAFF && !empty($data['staff'])) {
+            // 工作人员动态
+            $data['user_nickname'] = $data['staff']['name'];
+            $data['user_avatar'] = $data['staff']['avatar'];
+        } elseif (!empty($data['user'])) {
+            // 普通用户动态
+            $data['user_nickname'] = $data['user']['nickname'];
+            $data['user_avatar'] = $data['user']['avatar'];
         } else {
-            $data['publisher'] = $data['user'] ?? null;
-            if ($data['publisher']) {
-                $data['publisher']['type'] = 'user';
-            }
+            $data['user_nickname'] = '匿名用户';
+            $data['user_avatar'] = '';
         }
+
+        // 移除原始的 user 和 staff 对象
+        unset($data['user'], $data['staff']);
 
         // 是否点赞/收藏
         if ($userId > 0) {
@@ -182,8 +192,8 @@ class DynamicLogic extends BaseLogic
             $dynamicId,
             $userId,
             $params['content'],
-            $params['parent_id'] ?? 0,
-            $params['reply_user_id'] ?? 0,
+            (int)($params['parent_id'] ?? 0),
+            (int)($params['reply_user_id'] ?? 0),
             $params['images'] ?? []
         );
 

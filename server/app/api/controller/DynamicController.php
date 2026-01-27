@@ -37,7 +37,7 @@ class DynamicController extends BaseApiController
     public function detail()
     {
         $params = (new DynamicValidate())->goCheck('detail');
-        $result = DynamicLogic::getDynamicDetail($params['id'], $this->userId);
+        $result = DynamicLogic::getDynamicDetail((int)$params['id'], $this->userId);
         if ($result === null) {
             return $this->fail('动态不存在');
         }
@@ -50,13 +50,17 @@ class DynamicController extends BaseApiController
      */
     public function publish()
     {
-        $params = (new DynamicValidate())->post()->goCheck('publish');
-        $params['user_id'] = $this->userId;
-        $result = DynamicLogic::publishDynamic($params);
-        if ($result['success']) {
-            return $this->success($result['message'], ['dynamic_id' => $result['dynamic_id']]);
-        }
-        return $this->fail($result['message']);
+        // 禁用用户端发布动态功能
+        return $this->fail('动态发布功能已关闭，请联系管理员');
+        
+        // 以下代码已禁用
+        // $params = (new DynamicValidate())->post()->goCheck('publish');
+        // $params['user_id'] = $this->userId;
+        // $result = DynamicLogic::publishDynamic($params);
+        // if ($result['success']) {
+        //     return $this->success($result['message'], ['dynamic_id' => $result['dynamic_id']]);
+        // }
+        // return $this->fail($result['message']);
     }
 
     /**
@@ -80,7 +84,7 @@ class DynamicController extends BaseApiController
     public function like()
     {
         $params = (new DynamicValidate())->post()->goCheck('detail');
-        $result = DynamicLogic::toggleLike($params['id'], $this->userId);
+        $result = DynamicLogic::toggleLike((int)$params['id'], $this->userId);
         return $this->success($result['message'], ['is_liked' => $result['is_liked']]);
     }
 
@@ -91,7 +95,7 @@ class DynamicController extends BaseApiController
     public function collect()
     {
         $params = (new DynamicValidate())->post()->goCheck('detail');
-        $result = DynamicLogic::toggleCollect($params['id'], $this->userId);
+        $result = DynamicLogic::toggleCollect((int)$params['id'], $this->userId);
         return $this->success($result['message'], ['is_collected' => $result['is_collected']]);
     }
 
@@ -101,8 +105,11 @@ class DynamicController extends BaseApiController
      */
     public function commentLists()
     {
-        $params = (new DynamicValidate())->goCheck('detail');
-        $result = DynamicLogic::getCommentList($params['id'], $this->userId, $this->request->get());
+        $dynamicId = $this->request->get('dynamic_id/d', 0);
+        if ($dynamicId <= 0) {
+            return $this->fail('请选择动态');
+        }
+        $result = DynamicLogic::getCommentList($dynamicId, $this->userId, $this->request->get());
         return $this->data($result);
     }
 
@@ -113,7 +120,7 @@ class DynamicController extends BaseApiController
     public function addComment()
     {
         $params = (new DynamicValidate())->post()->goCheck('comment');
-        $result = DynamicLogic::addComment($params['id'], $this->userId, $params);
+        $result = DynamicLogic::addComment((int)$params['dynamic_id'], $this->userId, $params);
         if ($result['success']) {
             return $this->success($result['message'], ['comment_id' => $result['comment_id']]);
         }
@@ -127,11 +134,11 @@ class DynamicController extends BaseApiController
     public function deleteComment()
     {
         $params = (new DynamicValidate())->post()->goCheck('commentId');
-        $result = DynamicLogic::deleteComment($params['comment_id'], $this->userId);
-        if ($result['success']) {
-            return $this->success($result['message']);
+        [$success, $message] = DynamicLogic::deleteComment((int)$params['comment_id'], $this->userId);
+        if ($success) {
+            return $this->success($message);
         }
-        return $this->fail($result['message']);
+        return $this->fail($message);
     }
 
     /**
@@ -141,7 +148,7 @@ class DynamicController extends BaseApiController
     public function likeComment()
     {
         $params = (new DynamicValidate())->post()->goCheck('commentId');
-        $result = DynamicLogic::toggleCommentLike($params['comment_id'], $this->userId);
+        $result = DynamicLogic::toggleCommentLike((int)$params['comment_id'], $this->userId);
         return $this->success($result['message'], ['is_liked' => $result['is_liked']]);
     }
 

@@ -79,6 +79,10 @@ class Notification extends BaseModel
      */
     public static function batchSend(array $userIds, int $notifyType, string $title, string $content, string $targetType = '', int $targetId = 0): int
     {
+        if (empty($userIds)) {
+            return 0;
+        }
+
         $data = [];
         $time = time();
         foreach ($userIds as $userId) {
@@ -95,7 +99,23 @@ class Notification extends BaseModel
             ];
         }
         
-        return (new self())->saveAll($data) ? count($data) : 0;
+        try {
+            self::insertAll($data);
+            return count($data);
+        } catch (\Exception $e) {
+            // 如果批量插入失败，尝试逐条插入
+            $count = 0;
+            foreach ($data as $item) {
+                try {
+                    self::create($item);
+                    $count++;
+                } catch (\Exception $e) {
+                    // 忽略单条插入失败，继续处理下一条
+                    continue;
+                }
+            }
+            return $count;
+        }
     }
 
     /**
@@ -151,7 +171,7 @@ class Notification extends BaseModel
         }
 
         return $query->order('create_time', 'desc')
-            ->paginate($params['page_size'] ?? 20)
+            ->paginate((int)($params['page_size'] ?? 20))
             ->toArray();
     }
 

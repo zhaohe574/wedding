@@ -9,13 +9,13 @@
     <view class="publish-page">
         <!-- 内容输入 -->
         <view class="bg-white p-4">
-            <textarea 
+            <textarea
                 v-model="form.content"
                 class="w-full text-base leading-7"
                 placeholder="分享你的婚礼故事、心得体验..."
                 :maxlength="2000"
                 :auto-height="true"
-                style="min-height: 300rpx;"
+                style="min-height: 300rpx"
             />
             <view class="text-right text-xs text-gray-400 mt-2">
                 {{ form.content.length }}/2000
@@ -28,49 +28,52 @@
                 <text class="text-sm font-medium">添加图片/视频</text>
                 <text class="text-xs text-gray-400 ml-2">(图片最多9张，或1个视频)</text>
             </view>
-            
+
             <!-- 图片上传 -->
             <view v-if="!form.video" class="flex flex-wrap gap-2">
-                <view 
-                    v-for="(img, idx) in form.images" 
+                <view
+                    v-for="(img, idx) in form.images"
                     :key="idx"
                     class="w-[30%] aspect-square relative"
                 >
                     <image :src="img" class="w-full h-full rounded" mode="aspectFill" />
-                    <view 
+                    <view
                         class="absolute -top-2 -right-2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center"
                         @click="removeImage(idx)"
                     >
-                        <u-icon name="close" color="#fff" size="24" />
+                        <tn-icon name="close" color="#fff" size="24" />
                     </view>
                 </view>
-                <view 
+                <view
                     v-if="form.images.length < 9"
                     class="w-[30%] aspect-square bg-gray-100 rounded flex flex-col items-center justify-center"
                     @click="chooseImage"
                 >
-                    <u-icon name="plus" size="48" color="#999" />
+                    <tn-icon name="plus" size="48" color="#999" />
                     <text class="text-xs text-gray-400 mt-1">添加图片</text>
                 </view>
             </view>
 
             <!-- 视频上传 -->
             <view v-if="form.images.length === 0" class="mt-3">
-                <view v-if="form.video" class="relative w-full aspect-video rounded overflow-hidden">
+                <view
+                    v-if="form.video"
+                    class="relative w-full aspect-video rounded overflow-hidden"
+                >
                     <video :src="form.video" class="w-full h-full" object-fit="cover" />
-                    <view 
+                    <view
                         class="absolute top-2 right-2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center"
                         @click="removeVideo"
                     >
-                        <u-icon name="close" color="#fff" size="32" />
+                        <tn-icon name="close" color="#fff" size="32" />
                     </view>
                 </view>
-                <view 
+                <view
                     v-else
                     class="w-[30%] aspect-square bg-gray-100 rounded flex flex-col items-center justify-center"
                     @click="chooseVideo"
                 >
-                    <u-icon name="play-right" size="48" color="#999" />
+                    <tn-icon name="play-right" size="48" color="#999" />
                     <text class="text-xs text-gray-400 mt-1">添加视频</text>
                 </view>
             </view>
@@ -80,11 +83,15 @@
         <view class="bg-white mt-2 p-4">
             <view class="text-sm font-medium mb-3">选择类型</view>
             <view class="flex flex-wrap gap-3">
-                <view 
-                    v-for="type in dynamicTypes" 
+                <view
+                    v-for="type in dynamicTypes"
                     :key="type.value"
                     class="px-4 py-2 rounded-full text-sm"
-                    :class="form.dynamic_type === type.value ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'"
+                    :class="
+                        form.dynamic_type === type.value
+                            ? 'bg-primary text-white'
+                            : 'bg-gray-100 text-gray-600'
+                    "
                     @click="form.dynamic_type = type.value"
                 >
                     {{ type.label }}
@@ -99,20 +106,20 @@
                 <text class="text-xs text-gray-400">最多5个</text>
             </view>
             <view class="flex flex-wrap gap-2 mb-3">
-                <view 
-                    v-for="(tag, idx) in form.tags" 
+                <view
+                    v-for="(tag, idx) in form.tags"
                     :key="idx"
                     class="flex items-center bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
                 >
                     <text>#{{ tag }}</text>
-                    <u-icon name="close" size="24" class="ml-1" @click="removeTag(idx)" />
+                    <tn-icon name="close" size="24" class="ml-1" @click="removeTag(idx)" />
                 </view>
-                <view 
+                <view
                     v-if="form.tags.length < 5"
                     class="flex items-center bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-sm"
                     @click="showTagInput = true"
                 >
-                    <u-icon name="plus" size="24" class="mr-1" />
+                    <tn-icon name="plus" size="24" class="mr-1" />
                     <text>添加话题</text>
                 </view>
             </view>
@@ -120,8 +127,8 @@
             <view v-if="hotTags.length > 0">
                 <text class="text-xs text-gray-400">热门话题</text>
                 <view class="flex flex-wrap gap-2 mt-2">
-                    <view 
-                        v-for="tag in hotTags" 
+                    <view
+                        v-for="tag in hotTags"
                         :key="tag.id"
                         class="text-xs px-2 py-1 bg-gray-50 text-gray-500 rounded"
                         @click="addHotTag(tag.name)"
@@ -136,10 +143,10 @@
         <view class="bg-white mt-2">
             <view class="flex items-center justify-between p-4" @click="chooseLocation">
                 <view class="flex items-center">
-                    <u-icon name="map" size="36" class="mr-2 text-gray-500" />
+                    <tn-icon name="map" size="36" class="mr-2 text-gray-500" />
                     <text class="text-sm">{{ form.location || '添加位置' }}</text>
                 </view>
-                <u-icon name="arrow-right" size="28" color="#999" />
+                <tn-icon name="right" size="28" color="#999" />
             </view>
         </view>
 
@@ -147,19 +154,22 @@
         <view class="bg-white mt-2">
             <view class="flex items-center justify-between p-4" @click="showVisiblePicker = true">
                 <view class="flex items-center">
-                    <u-icon name="eye" size="36" class="mr-2 text-gray-500" />
+                    <tn-icon name="eye" size="36" class="mr-2 text-gray-500" />
                     <text class="text-sm">谁可以看</text>
                 </view>
                 <view class="flex items-center text-gray-400">
                     <text class="text-sm mr-1">{{ getVisibleText() }}</text>
-                    <u-icon name="arrow-right" size="28" />
+                    <tn-icon name="right" size="28" />
                 </view>
             </view>
         </view>
 
         <!-- 底部按钮 -->
-        <view class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4" style="padding-bottom: calc(16rpx + env(safe-area-inset-bottom))">
-            <button 
+        <view
+            class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4"
+            style="padding-bottom: calc(16rpx + env(safe-area-inset-bottom))"
+        >
+            <button
                 class="w-full py-3 bg-primary text-white text-base font-medium rounded-full"
                 :disabled="!canPublish || publishing"
                 :class="{ 'opacity-50': !canPublish || publishing }"
@@ -170,12 +180,12 @@
         </view>
 
         <!-- 添加话题弹窗 -->
-        <u-popup v-model="showTagInput" mode="bottom" :safe-area-inset-bottom="true">
+        <tn-popup v-model="showTagInput" mode="bottom" :safe-area-inset-bottom="true">
             <view class="p-4">
                 <view class="text-center font-medium mb-4">添加话题</view>
                 <view class="flex items-center bg-gray-100 rounded-lg px-3">
                     <text class="text-primary text-lg">#</text>
-                    <input 
+                    <input
                         v-model="tagInput"
                         class="flex-1 py-3 px-2 text-sm"
                         placeholder="输入话题名称"
@@ -184,18 +194,24 @@
                     />
                 </view>
                 <view class="flex gap-3 mt-4">
-                    <button class="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg" @click="showTagInput = false">取消</button>
-                    <button class="flex-1 py-2 bg-primary text-white rounded-lg" @click="confirmAddTag">确定</button>
+                    <button
+                        class="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg"
+                        @click="showTagInput = false"
+                    >
+                        取消
+                    </button>
+                    <button
+                        class="flex-1 py-2 bg-primary text-white rounded-lg"
+                        @click="confirmAddTag"
+                    >
+                        确定
+                    </button>
                 </view>
             </view>
-        </u-popup>
+        </tn-popup>
 
         <!-- 可见范围选择器 -->
-        <u-action-sheet 
-            v-model="showVisiblePicker" 
-            :list="visibleOptions"
-            @click="selectVisible"
-        />
+        <tn-action-sheet v-model="showVisiblePicker" :data="visibleOptions" @click="selectVisible" />
     </view>
 </template>
 
@@ -242,7 +258,7 @@ const canPublish = computed(() => {
 })
 
 const getVisibleText = () => {
-    const item = visibleOptions.find(v => v.value === form.visible)
+    const item = visibleOptions.find((v) => v.value === form.visible)
     return item?.text || '公开'
 }
 
@@ -397,7 +413,7 @@ const handlePublish = async () => {
         }
 
         await publishDynamic(params)
-        
+
         uni.showToast({ title: '发布成功' })
         setTimeout(() => {
             uni.navigateBack()

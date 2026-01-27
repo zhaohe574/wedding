@@ -1,33 +1,23 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
+        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
         <!-- #endif -->
     </page-meta>
     <!-- #ifndef H5 -->
-    <u-sticky
-        h5-nav-height="0"
-        bg-color="transparent"
-    >
-        <u-navbar
-            :is-back="false"
-            :is-fixed="false"
+    <tn-sticky>
+        <tn-navbar
+            :back="false"
+            :fixed="false"
             title="资讯"
-            :border-bottom="false"
-            :title-bold="true"
-            :title-color="$theme.navColor"
-            :background="{ background: $theme.navBgColor }"
         >
-        </u-navbar>
-    </u-sticky>
+        </tn-navbar>
+    </tn-sticky>
     <!-- #endif -->
     <view class="news">
         <!-- 搜索 -->
         <navigator class="news-search px-[24rpx] py-[14rpx] bg-white" url="/pages/search/search">
-            <u-search placeholder="请输入关键词搜索" disabled :show-action="false"></u-search>
+            <tn-search-box placeholder="请输入关键词搜索" :disabled="true"></tn-search-box>
         </navigator>
 
         <!-- 内容 -->

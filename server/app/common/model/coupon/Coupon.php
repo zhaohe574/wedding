@@ -21,6 +21,12 @@ class Coupon extends BaseModel
 
     protected $name = 'coupon';
     protected $deleteTime = 'delete_time';
+    
+    // 自动时间戳
+    protected $autoWriteTimestamp = true;
+    protected $createTime = 'create_time';
+    protected $updateTime = 'update_time';
+    protected $dateFormat = false; // 保持时间戳格式，不自动转换为日期时间字符串
 
     // 优惠券类型
     const TYPE_FULL_REDUCTION = 1;  // 满减券
@@ -191,12 +197,18 @@ class Coupon extends BaseModel
      */
     public function getValidPeriodAttr($value, $data)
     {
-        if (($data['valid_type'] ?? 1) == self::VALID_TYPE_FIXED) {
-            $start = $data['valid_start_time'] ? date('Y-m-d', $data['valid_start_time']) : '';
-            $end = $data['valid_end_time'] ? date('Y-m-d', $data['valid_end_time']) : '';
+        // PHP 8 类型转换
+        $validType = (int)($data['valid_type'] ?? 1);
+        $validStartTime = (int)($data['valid_start_time'] ?? 0);
+        $validEndTime = (int)($data['valid_end_time'] ?? 0);
+        $validDays = (int)($data['valid_days'] ?? 0);
+        
+        if ($validType == self::VALID_TYPE_FIXED) {
+            $start = $validStartTime ? date('Y-m-d', $validStartTime) : '';
+            $end = $validEndTime ? date('Y-m-d', $validEndTime) : '';
             return $start . ' 至 ' . $end;
         } else {
-            return '领取后' . ($data['valid_days'] ?? 0) . '天内有效';
+            return '领取后' . $validDays . '天内有效';
         }
     }
 
@@ -208,11 +220,12 @@ class Coupon extends BaseModel
      */
     public function getRemainCountAttr($value, $data)
     {
-        $total = $data['total_count'] ?? 0;
+        // PHP 8 类型转换
+        $total = (int)($data['total_count'] ?? 0);
         if ($total == 0) {
             return '不限';
         }
-        $received = $data['receive_count'] ?? 0;
+        $received = (int)($data['receive_count'] ?? 0);
         return max(0, $total - $received);
     }
 
@@ -224,8 +237,9 @@ class Coupon extends BaseModel
      */
     public function getUseRateAttr($value, $data)
     {
-        $received = $data['receive_count'] ?? 0;
-        $used = $data['used_count'] ?? 0;
+        // PHP 8 类型转换
+        $received = (int)($data['receive_count'] ?? 0);
+        $used = (int)($data['used_count'] ?? 0);
         if ($received == 0) {
             return '0%';
         }
@@ -240,10 +254,11 @@ class Coupon extends BaseModel
      */
     public function getDiscountDescAttr($value, $data)
     {
-        $type = $data['coupon_type'] ?? 1;
-        $threshold = $data['threshold_amount'] ?? 0;
-        $discount = $data['discount_amount'] ?? 0;
-        $maxDiscount = $data['max_discount'] ?? 0;
+        // PHP 8 类型转换
+        $type = (int)($data['coupon_type'] ?? 1);
+        $threshold = (float)($data['threshold_amount'] ?? 0);
+        $discount = (float)($data['discount_amount'] ?? 0);
+        $maxDiscount = (float)($data['max_discount'] ?? 0);
 
         $thresholdText = $threshold > 0 ? "满{$threshold}元" : '无门槛';
 

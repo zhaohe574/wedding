@@ -7,7 +7,7 @@
         <!-- Loading -->
         <template v-if="status === PageStatusEnum['LOADING']">
             <slot name="loading">
-                <u-loading :size="60" mode="flower" />
+                <tn-loading :size="60" mode="flower" />
             </slot>
         </template>
         <!-- Error -->

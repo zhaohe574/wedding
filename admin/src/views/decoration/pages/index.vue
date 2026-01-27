@@ -12,6 +12,7 @@
             <preview
                 class="flex-1 scroll-view-content"
                 v-model="selectWidgetIndex"
+                :activeMenu="activeMenu"
                 @updatePageData="updatePageData"
                 :pageData="getPageData"
                 :pageMeta="getPageMeta"
@@ -23,7 +24,7 @@
                 @update:content="updateContent"
             />
         </div>
-        <footer-btns class="mt-4" :fixed="false" v-perms="['decorate:pages:save']">
+        <footer-btns class="mt-2" :fixed="false" v-perms="['decorate:pages:save']">
             <el-button type="primary" @click="setData">保存</el-button>
         </footer-btns>
     </div>
@@ -150,12 +151,12 @@ watch(
 )
 </script>
 <style lang="scss" scoped>
-$scroll-height: calc(100vh - var(--navbar-height) - 74px);
+$scroll-height: calc(100vh - var(--navbar-height) - 126px);
 .decoration-pages {
     height: $scroll-height;
     @apply flex flex-col;
     .scroll-view-content {
-        height: calc($scroll-height - 60px);
+        height: calc($scroll-height - 18px);
     }
 }
 </style>

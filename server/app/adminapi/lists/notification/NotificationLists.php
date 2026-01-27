@@ -91,8 +91,14 @@ class NotificationLists extends BaseAdminDataLists implements ListsSearchInterfa
         foreach ($lists as &$item) {
             $item['notify_type_text'] = $this->getTypeText($item['notify_type']);
             $item['is_read_text'] = $item['is_read'] ? '已读' : '未读';
-            $item['create_time_text'] = date('Y-m-d H:i:s', $item['create_time']);
-            $item['read_time_text'] = $item['read_time'] ? date('Y-m-d H:i:s', $item['read_time']) : '-';
+            
+            // 类型转换 - PHP 8.0+ 严格类型检查
+            // 处理 create_time 可能是字符串或整数的情况
+            $createTime = is_numeric($item['create_time']) ? (int)$item['create_time'] : strtotime($item['create_time']);
+            $readTime = is_numeric($item['read_time']) ? (int)$item['read_time'] : 0;
+            
+            $item['create_time_text'] = $createTime > 0 ? date('Y-m-d H:i:s', $createTime) : '';
+            $item['read_time_text'] = $readTime > 0 ? date('Y-m-d H:i:s', $readTime) : '-';
             $item['user'] = $users[$item['user_id']] ?? null;
         }
 

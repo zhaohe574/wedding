@@ -39,3 +39,7 @@ export function accountLog(data: any) {
     return request.get({ url: '/account_log/lists', data })
 }
 
+// 获取用户婚期
+export function getUserWeddingDate() {
+    return request.get({ url: '/user/weddingDate' }, { isAuth: true })
+}

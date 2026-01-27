@@ -17,7 +17,7 @@ export const useAppStore = defineStore({
         getTabbarConfig: (state) => state.config.tabbar || [],
         getStyleConfig: (state) => state.config.style || {},
         getH5Config: (state) => state.config.webPage || {},
-        getCopyrightConfig: (state) => state.config.copyright || [],
+        getCopyrightConfig: (state) => state.config.copyright || []
     },
     actions: {
         getImageUrl(url: string) {

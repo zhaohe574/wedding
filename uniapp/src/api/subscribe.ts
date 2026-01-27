@@ -6,12 +6,19 @@ export function getTemplateList(scene?: string) {
 }
 
 // 记录订阅结果
-export function recordSubscribe(data: { template_id: string; scene?: string; result: 'accept' | 'reject' }) {
+export function recordSubscribe(data: {
+    template_id: string
+    scene?: string
+    result: 'accept' | 'reject'
+}) {
     return request.post('/subscribe/recordSubscribe', data)
 }
 
 // 批量记录订阅结果
-export function batchRecordSubscribe(data: { results: Record<string, 'accept' | 'reject'>; scene?: string }) {
+export function batchRecordSubscribe(data: {
+    results: Record<string, 'accept' | 'reject'>
+    scene?: string
+}) {
     return request.post('/subscribe/batchRecordSubscribe', data)
 }
 

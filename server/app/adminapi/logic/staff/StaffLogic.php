@@ -41,7 +41,10 @@ class StaffLogic extends BaseLogic
         $data = $staff->toArray();
         $data['tag_ids'] = StaffTag::getTagIds($id);
         $data['packages'] = StaffPackage::getPackages($id);
-        $data['mobile_full'] = $staff->getData('mobile_full');
+        // 编辑场景需要完整手机号：优先 mobile_full，否则用原始 mobile（toArray 中 mobile 已被 getMobileAttr 脱敏）
+        $fullMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
+        $data['mobile'] = $fullMobile;
+        $data['mobile_full'] = $fullMobile;
 
         return $data;
     }
@@ -122,13 +125,15 @@ class StaffLogic extends BaseLogic
             if (!empty($params['mobile'])) {
                 $params['mobile_full'] = $params['mobile'];
             }
+            // 未传 mobile 时用原始完整号，不能用 $staff->mobile（getter 已脱敏）
+            $rawMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
 
             // 更新工作人员信息
             $staff->save([
                 'name' => $params['name'],
                 'avatar' => $params['avatar'] ?? $staff->avatar,
-                'mobile' => $params['mobile'] ?? $staff->mobile,
-                'mobile_full' => $params['mobile_full'] ?? $staff->mobile_full,
+                'mobile' => $params['mobile'] ?? $rawMobile,
+                'mobile_full' => $params['mobile_full'] ?? $rawMobile,
                 'category_id' => $params['category_id'] ?? $staff->category_id,
                 'price' => $params['price'] ?? $staff->price,
                 'experience_years' => $params['experience_years'] ?? $staff->experience_years,
@@ -140,19 +145,20 @@ class StaffLogic extends BaseLogic
                 'update_time' => time(),
             ]);
 
-            // 更新标签
+            // 更新标签（setTags/setPackages 要求 int，POST 的 id 为字符串）
+            $staffId = (int) $params['id'];
             if (isset($params['tag_ids'])) {
-                StaffTag::setTags($params['id'], $params['tag_ids']);
+                StaffTag::setTags($staffId, $params['tag_ids']);
             }
 
             // 更新套餐
             if (isset($params['packages'])) {
-                StaffPackage::setPackages($params['id'], $params['packages']);
+                StaffPackage::setPackages($staffId, $params['packages']);
             }
 
             Db::commit();
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
             self::setError($e->getMessage());
             return false;

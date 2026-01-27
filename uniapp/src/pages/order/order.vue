@@ -1,131 +1,87 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            title="我的订单"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
+        <!-- #ifndef H5 -->
+        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <!-- #endif -->
     </page-meta>
-    <view class="order-list">
-        <!-- 状态筛选 -->
-        <view class="status-tabs bg-white sticky top-0 z-10">
-            <scroll-view scroll-x class="whitespace-nowrap">
-                <view 
-                    v-for="tab in statusTabs" 
-                    :key="tab.value"
-                    class="inline-block px-4 py-3 text-sm"
-                    :class="currentStatus === tab.value ? 'text-primary border-b-2 border-primary font-medium' : 'text-gray-500'"
-                    @click="changeStatus(tab.value)"
-                >
-                    {{ tab.label }}
-                    <text v-if="statistics[tab.key] > 0" class="ml-1 text-xs">({{ statistics[tab.key] }})</text>
-                </view>
-            </scroll-view>
+    <view class="order-page">
+        <!-- 顶部导航栏 -->
+        <!-- #ifndef H5 -->
+        <base-navbar title="我的订单" :back-icon="false" />
+        <!-- #endif -->
+        
+        <!-- 状态筛选标签 -->
+        <view class="status-tabs-wrapper">
+            <tn-tabs v-model="currentTabIndex" :scroll="true" height="88rpx" class="tabs-main">
+                <tn-tabs-item
+                    v-for="(tab, index) in statusTabs"
+                    :key="index"
+                    :title="tab.label"
+                    :badge="statistics[tab.key] > 0 ? String(statistics[tab.key]) : ''"
+                />
+            </tn-tabs>
         </view>
 
         <!-- 订单列表 -->
-        <view class="p-3">
-            <view v-if="loading && orders.length === 0" class="py-20 text-center text-gray-400">
-                加载中...
+        <view class="order-list-wrapper">
+            <!-- 加载中 -->
+            <view v-if="loading && orders.length === 0" class="loading-state">
+                <tn-loading size="60" mode="flower" />
+                <text class="loading-text">加载中...</text>
             </view>
-            <view v-else-if="orders.length === 0" class="py-20 text-center text-gray-400">
-                <image src="/static/images/empty.png" class="w-32 h-32 mx-auto mb-4" mode="aspectFit" />
-                <text>暂无订单</text>
+            
+            <!-- 空状态 -->
+            <view v-else-if="orders.length === 0" class="empty-state">
+                <view class="empty-icon-wrapper">
+                    <tn-icon name="file-text" size="120" color="#d1d5db" />
+                </view>
+                <text class="empty-title">暂无订单</text>
+                <text class="empty-subtitle">快去预约服务吧~</text>
             </view>
-            <view v-else>
-                <view 
-                    v-for="order in orders" 
+            
+            <!-- 订单列表 - 使用OrderCard组件 -->
+            <view v-else class="order-list">
+                <order-card
+                    v-for="order in orders"
                     :key="order.id"
-                    class="bg-white rounded-lg mb-3 overflow-hidden"
-                    @click="goDetail(order.id)"
-                >
-                    <!-- 订单头部 -->
-                    <view class="flex justify-between items-center px-4 py-3 border-b border-gray-100">
-                        <text class="text-sm text-gray-500">订单号: {{ order.order_sn }}</text>
-                        <text class="text-sm" :class="getStatusColor(order.order_status)">
-                            {{ order.order_status_desc }}
-                        </text>
-                    </view>
+                    :order="order"
+                    @click="goDetail"
+                    @pay="handlePay"
+                    @cancel="handleCancel"
+                    @confirm="handleConfirm"
+                    @refund="handleRefund"
+                    @delete="handleDelete"
+                />
 
-                    <!-- 订单项 -->
-                    <view class="px-4 py-3">
-                        <view 
-                            v-for="item in order.items" 
-                            :key="item.id"
-                            class="flex items-center py-2"
-                        >
-                            <image 
-                                :src="item.staff?.avatar || '/static/images/default-avatar.png'" 
-                                class="w-16 h-16 rounded-lg mr-3"
-                                mode="aspectFill"
-                            />
-                            <view class="flex-1">
-                                <view class="text-sm font-medium">{{ item.staff_name }}</view>
-                                <view class="text-xs text-gray-400 mt-1">{{ item.package_name }}</view>
-                                <view class="text-xs text-gray-400">{{ item.service_date }}</view>
-                            </view>
-                            <view class="text-right">
-                                <view class="text-primary font-medium">¥{{ item.price }}</view>
-                            </view>
-                        </view>
-                    </view>
-
-                    <!-- 订单金额 -->
-                    <view class="px-4 py-3 border-t border-gray-100 flex justify-between items-center">
-                        <text class="text-xs text-gray-400">{{ order.create_time }}</text>
-                        <view>
-                            <text class="text-sm">实付: </text>
-                            <text class="text-primary font-bold text-lg">¥{{ order.pay_amount }}</text>
-                        </view>
-                    </view>
-
-                    <!-- 操作按钮 -->
-                    <view class="px-4 py-3 border-t border-gray-100 flex justify-end gap-3">
-                        <button 
-                            v-if="order.order_status === 0"
-                            class="btn-outline"
-                            @click.stop="handleCancel(order)"
-                        >取消订单</button>
-                        <button 
-                            v-if="order.order_status === 0"
-                            class="btn-primary"
-                            @click.stop="handlePay(order)"
-                        >立即支付</button>
-                        <button 
-                            v-if="order.order_status === 2"
-                            class="btn-primary"
-                            @click.stop="handleConfirm(order)"
-                        >确认完成</button>
-                        <button 
-                            v-if="order.order_status === 1"
-                            class="btn-outline"
-                            @click.stop="handleRefund(order)"
-                        >申请退款</button>
-                        <button 
-                            v-if="[3, 4, 5].includes(order.order_status)"
-                            class="btn-outline"
-                            @click.stop="handleDelete(order)"
-                        >删除订单</button>
-                    </view>
+                <!-- 加载更多提示 -->
+                <view v-if="hasMore" class="load-more">
+                    <text v-if="loading" class="load-more-text">加载中...</text>
+                    <text v-else class="load-more-text load-more-clickable" @click="loadMore">加载更多</text>
                 </view>
-
-                <!-- 加载更多 -->
-                <view v-if="hasMore" class="py-4 text-center text-gray-400 text-sm">
-                    <text v-if="loading">加载中...</text>
-                    <text v-else @click="loadMore">加载更多</text>
-                </view>
-                <view v-else-if="orders.length > 0" class="py-4 text-center text-gray-400 text-sm">
-                    没有更多了
+                <view v-else-if="orders.length > 0" class="load-more">
+                    <text class="load-more-text">没有更多了</text>
                 </view>
             </view>
         </view>
+
+        <tabbar />
     </view>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { onLoad, onShow, onReachBottom } from '@dcloudio/uni-app'
-import { getOrderList, getOrderStatistics, cancelOrder, confirmOrder, deleteOrder } from '@/api/order'
+import { useThemeStore } from '@/stores/theme'
+import {
+    getOrderList,
+    getOrderStatistics,
+    cancelOrder,
+    confirmOrder,
+    deleteOrder
+} from '@/api/order'
+import OrderCard from '@/components/business/OrderCard.vue'
+
+const themeStore = useThemeStore()
 
 const statusTabs = [
     { label: '全部', value: '', key: 'all' },
@@ -136,24 +92,20 @@ const statusTabs = [
     { label: '退款', value: 5, key: 'refund' }
 ]
 
-const currentStatus = ref<number | string>('')
+const currentTabIndex = ref(0)
+const currentStatus = computed(() => statusTabs[currentTabIndex.value].value)
 const orders = ref<any[]>([])
 const loading = ref(false)
 const page = ref(1)
 const hasMore = ref(true)
-const statistics = reactive<any>({})
-
-const getStatusColor = (status: number) => {
-    const colors: Record<number, string> = {
-        0: 'text-orange-500',
-        1: 'text-blue-500',
-        2: 'text-purple-500',
-        3: 'text-green-500',
-        4: 'text-gray-500',
-        5: 'text-red-500'
-    }
-    return colors[status] || 'text-gray-500'
-}
+const statistics = reactive<any>({
+    all: 0,
+    pending: 0,
+    paid: 0,
+    in_service: 0,
+    completed: 0,
+    refund: 0
+})
 
 const fetchOrders = async (refresh = false) => {
     if (loading.value) return
@@ -171,14 +123,32 @@ const fetchOrders = async (refresh = false) => {
         }
 
         const res = await getOrderList(params)
-        const list = res.data || []
-        
+        const list = (res.data || []).map((order: any) => ({
+            id: order.id,
+            orderSn: order.order_sn,
+            status: order.order_status,
+            statusText: order.order_status_desc,
+            createTime: order.create_time,
+            items: (order.items || []).map((item: any) => ({
+                id: item.id,
+                staffId: item.staff_id,
+                staffName: item.staff_name,
+                staffAvatar: item.staff?.avatar || '/static/images/default-avatar.png',
+                packageName: item.package_name,
+                serviceDate: item.service_date,
+                price: item.price
+            })),
+            totalAmount: order.total_amount,
+            discountAmount: order.discount_amount || 0,
+            payAmount: order.pay_amount
+        }))
+
         if (refresh) {
             orders.value = list
         } else {
             orders.value.push(...list)
         }
-        
+
         hasMore.value = list.length === 10
     } catch (e) {
         console.error(e)
@@ -196,11 +166,6 @@ const fetchStatistics = async () => {
     }
 }
 
-const changeStatus = (status: number | string) => {
-    currentStatus.value = status
-    fetchOrders(true)
-}
-
 const loadMore = () => {
     if (hasMore.value && !loading.value) {
         page.value++
@@ -208,22 +173,22 @@ const loadMore = () => {
     }
 }
 
-const goDetail = (id: number) => {
-    uni.navigateTo({ url: `/pages/order_detail/order_detail?id=${id}` })
+const goDetail = (orderId: number) => {
+    uni.navigateTo({ url: `/pages/order_detail/order_detail?id=${orderId}` })
 }
 
-const handlePay = (order: any) => {
-    uni.navigateTo({ url: `/pages/order_detail/order_detail?id=${order.id}&action=pay` })
+const handlePay = (orderId: number) => {
+    uni.navigateTo({ url: `/pages/order_detail/order_detail?id=${orderId}&action=pay` })
 }
 
-const handleCancel = async (order: any) => {
+const handleCancel = async (orderId: number) => {
     const res = await uni.showModal({
         title: '提示',
         content: '确定要取消该订单吗？'
     })
     if (res.confirm) {
         try {
-            await cancelOrder({ id: order.id, reason: '用户取消' })
+            await cancelOrder({ id: orderId, reason: '用户取消' })
             uni.showToast({ title: '订单已取消' })
             fetchOrders(true)
             fetchStatistics()
@@ -233,14 +198,14 @@ const handleCancel = async (order: any) => {
     }
 }
 
-const handleConfirm = async (order: any) => {
+const handleConfirm = async (orderId: number) => {
     const res = await uni.showModal({
         title: '提示',
         content: '确定服务已完成吗？'
     })
     if (res.confirm) {
         try {
-            await confirmOrder({ id: order.id })
+            await confirmOrder({ id: orderId })
             uni.showToast({ title: '订单已完成' })
             fetchOrders(true)
             fetchStatistics()
@@ -250,18 +215,18 @@ const handleConfirm = async (order: any) => {
     }
 }
 
-const handleRefund = (order: any) => {
-    uni.navigateTo({ url: `/pages/order_detail/order_detail?id=${order.id}&action=refund` })
+const handleRefund = (orderId: number) => {
+    uni.navigateTo({ url: `/pages/order_detail/order_detail?id=${orderId}&action=refund` })
 }
 
-const handleDelete = async (order: any) => {
+const handleDelete = async (orderId: number) => {
     const res = await uni.showModal({
         title: '提示',
         content: '确定要删除该订单吗？'
     })
     if (res.confirm) {
         try {
-            await deleteOrder({ id: order.id })
+            await deleteOrder({ id: orderId })
             uni.showToast({ title: '删除成功' })
             fetchOrders(true)
             fetchStatistics()
@@ -271,9 +236,18 @@ const handleDelete = async (order: any) => {
     }
 }
 
+// 监听标签切换
+watch(currentTabIndex, () => {
+    fetchOrders(true)
+})
+
 onLoad((options: any) => {
-    if (options.status) {
-        currentStatus.value = Number(options.status)
+    if (options.status !== undefined) {
+        const statusValue = Number(options.status)
+        const index = statusTabs.findIndex(tab => tab.value === statusValue)
+        if (index !== -1) {
+            currentTabIndex.value = index
+        }
     }
 })
 
@@ -288,26 +262,92 @@ onReachBottom(() => {
 </script>
 
 <style lang="scss" scoped>
-.order-list {
+.order-page {
     min-height: 100vh;
-    background-color: #f5f5f5;
+    background: linear-gradient(180deg, var(--color-primary-light-9, #FAF5FF) 0%, #F5F5F5 100%);
+    padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
-.btn-outline {
-    padding: 12rpx 24rpx;
-    font-size: 24rpx;
-    border: 1rpx solid #ddd;
-    border-radius: 8rpx;
-    background: #fff;
-    color: #666;
+/* 状态筛选标签 */
+.status-tabs-wrapper {
+    background: #ffffff;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin-bottom: 16rpx; // 使用sm间距
 }
 
-.btn-primary {
-    padding: 12rpx 24rpx;
+.tabs-main {
+    width: 100%;
+}
+
+/* 订单列表容器 */
+.order-list-wrapper {
+    padding: 0 24rpx; // 使用md间距
+}
+
+/* 加载状态 */
+.loading-state {
+    padding: 160rpx 0;
+    text-align: center;
+}
+
+.loading-text {
+    display: block;
+    margin-top: 32rpx; // 使用lg间距
+    font-size: 28rpx;
+    color: var(--color-muted);
+}
+
+/* 空状态 */
+.empty-state {
+    padding: 160rpx 0;
+    text-align: center;
+}
+
+.empty-icon-wrapper {
+    width: 256rpx;
+    height: 256rpx;
+    margin: 0 auto 32rpx; // 使用lg间距
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-title {
+    display: block;
+    font-size: 32rpx;
+    color: var(--color-muted);
+}
+
+.empty-subtitle {
+    display: block;
+    margin-top: 16rpx; // 使用sm间距
     font-size: 24rpx;
-    border: none;
-    border-radius: 8rpx;
-    background: var(--primary-color, #ff6b35);
-    color: #fff;
+    color: var(--color-disabled);
+}
+
+/* 订单列表 */
+.order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx; // 使用sm间距
+}
+
+/* 加载更多 */
+.load-more {
+    padding: 32rpx 0; // 使用lg间距
+    text-align: center;
+}
+
+.load-more-text {
+    font-size: 28rpx;
+    color: var(--color-muted);
+}
+
+.load-more-clickable {
+    color: var(--color-primary);
+    font-weight: 500;
 }
 </style>

@@ -237,7 +237,7 @@ export function issueInvoice(data: { id: number; invoice_no: string; invoice_url
 
 // 开票失败
 export function failInvoice(data: { id: number; fail_reason: string }) {
-    return request.post({ url: '/financial.invoice/fail', data })
+    return request.post({ url: '/financial.invoice/markFailed', data })
 }
 
 // 作废发票

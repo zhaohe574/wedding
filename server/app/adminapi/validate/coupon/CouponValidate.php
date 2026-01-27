@@ -27,9 +27,9 @@ class CouponValidate extends BaseValidate
         'total_count' => 'integer|egt:0',
         'per_limit' => 'integer|egt:0',
         'valid_type' => 'require|in:1,2',
-        'valid_start_time' => 'requireIf:valid_type,1|date',
-        'valid_end_time' => 'requireIf:valid_type,1|date',
-        'valid_days' => 'requireIf:valid_type,2|integer|gt:0',
+        'valid_start_time' => 'requireIf:valid_type,1',
+        'valid_end_time' => 'requireIf:valid_type,1',
+        'valid_days' => 'requireIf:valid_type,2|integer',
         'use_scope' => 'in:1,2,3',
         'scope_ids' => 'array',
         'status' => 'in:0,1',
@@ -101,7 +101,9 @@ class CouponValidate extends BaseValidate
     public function sceneAdd(): CouponValidate
     {
         return $this->only(['name', 'coupon_type', 'threshold_amount', 'discount_amount', 'max_discount', 'total_count', 'per_limit', 'valid_type', 'valid_start_time', 'valid_end_time', 'valid_days', 'use_scope', 'scope_ids', 'status', 'remark'])
-            ->append('discount_amount', 'checkDiscountAmount');
+            ->append('discount_amount', 'checkDiscountAmount')
+            ->append('valid_days', 'checkValidDays')
+            ->append('valid_start_time', 'checkValidTime');
     }
 
     /**
@@ -111,7 +113,9 @@ class CouponValidate extends BaseValidate
     public function sceneEdit(): CouponValidate
     {
         return $this->only(['id', 'name', 'coupon_type', 'threshold_amount', 'discount_amount', 'max_discount', 'total_count', 'per_limit', 'valid_type', 'valid_start_time', 'valid_end_time', 'valid_days', 'use_scope', 'scope_ids', 'status', 'remark'])
-            ->append('discount_amount', 'checkDiscountAmount');
+            ->append('discount_amount', 'checkDiscountAmount')
+            ->append('valid_days', 'checkValidDays')
+            ->append('valid_start_time', 'checkValidTime');
     }
 
     /**
@@ -136,6 +140,25 @@ class CouponValidate extends BaseValidate
     }
 
     /**
+     * @notes 验证有效天数
+     * @param $value
+     * @param $rule
+     * @param $data
+     * @return bool|string
+     */
+    protected function checkValidDays($value, $rule, $data)
+    {
+        // 只有当有效期类型为领取后生效时，才验证有效天数
+        if (($data['valid_type'] ?? 1) == Coupon::VALID_TYPE_DAYS) {
+            if (empty($value) || $value <= 0) {
+                return '有效天数必须大于0';
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @notes 验证有效期
      * @param $value
      * @param $rule
@@ -149,8 +172,17 @@ class CouponValidate extends BaseValidate
                 return '固定日期类型必须填写开始和结束时间';
             }
 
+            // 验证日期格式
             $startTime = strtotime($data['valid_start_time']);
             $endTime = strtotime($data['valid_end_time']);
+
+            if ($startTime === false) {
+                return '有效期开始时间格式错误';
+            }
+
+            if ($endTime === false) {
+                return '有效期结束时间格式错误';
+            }
 
             if ($endTime <= $startTime) {
                 return '结束时间必须大于开始时间';

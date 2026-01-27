@@ -1,10 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
+        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
         <!-- #endif -->
     </page-meta>
     <view class="customer-service">
@@ -26,7 +23,12 @@ const state = reactive<{
 })
 const getData = async () => {
     const data = await getDecorate({ id: 3 })
-    state.pages = JSON.parse(data.data)
+    // 处理 data.data，可能是字符串或对象
+    if (typeof data.data === 'string') {
+        state.pages = JSON.parse(data.data)
+    } else {
+        state.pages = data.data
+    }
 }
 getData()
 </script>

@@ -16,6 +16,7 @@ namespace app\adminapi\logic\decorate;
 
 use app\common\logic\BaseLogic;
 use app\common\model\decorate\DecoratePage;
+use app\common\service\DecorateDataService;
 
 
 /**
@@ -36,7 +37,16 @@ class DecoratePageLogic extends BaseLogic
      */
     public static function getDetail($id)
     {
-        return DecoratePage::findOrEmpty($id)->toArray();
+        $pageData = DecoratePage::findOrEmpty($id)->toArray();
+        
+        if (empty($pageData)) {
+            return [];
+        }
+        
+        // 解析并填充动态数据
+        $pageData = DecorateDataService::parsePageData($pageData);
+        
+        return $pageData;
     }
 
 

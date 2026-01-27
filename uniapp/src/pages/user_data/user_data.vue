@@ -1,10 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
+        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
         <!-- #endif -->
     </page-meta>
     <!-- Main Start -->
@@ -28,7 +25,7 @@
     >
         <view class="label">账号</view>
         <view class="content">{{ userInfo?.account }}</view>
-        <u-icon name="arrow-right" size="22" color="#666"></u-icon>
+        <tn-icon name="right" size="22" color="#666"></tn-icon>
     </view>
 
     <!-- 昵称 -->
@@ -38,14 +35,14 @@
     >
         <view class="label">昵称</view>
         <view class="content">{{ userInfo?.nickname }}</view>
-        <u-icon name="arrow-right" size="22" color="#666"></u-icon>
+        <tn-icon name="right" size="22" color="#666"></tn-icon>
     </view>
 
     <!-- 性别 -->
     <view class="item text-nr flex justify-between" @click="changeSex">
         <view class="label">性别</view>
         <view class="content">{{ userInfo?.sex }}</view>
-        <u-icon name="arrow-right" size="22" color="#666"></u-icon>
+        <tn-icon name="right" size="22" color="#666"></tn-icon>
     </view>
 
     <!-- 手机号 -->
@@ -56,27 +53,27 @@
         }}</view>
 
         <!-- #ifdef MP-WEIXIN -->
-        <u-button
+        <tn-button
             open-type="getPhoneNumber"
             @getphonenumber="getPhoneNumber"
             type="primary"
-            shape="circle"
-            size="mini"
+            shape="round"
+            size="sm"
             :plain="true"
         >
             {{ userInfo?.mobile == '' ? '绑定手机号' : '更换手机号' }}
-        </u-button>
+        </tn-button>
         <!-- #endif -->
         <!-- #ifndef MP-WEIXIN -->
-        <u-button
+        <tn-button
             @click="showMobilePop = true"
-            size="mini"
+            size="sm"
             type="primary"
-            shape="circle"
+            shape="round"
             :plain="true"
         >
             {{ userInfo?.mobile == '' ? '绑定手机号' : '更换手机号' }}
-        </u-button>
+        </tn-button>
         <!-- #endif -->
     </view>
 
@@ -87,17 +84,17 @@
     </view>
 
     <!-- 昵称修改组件 -->
-    <u-popup
+    <tn-popup
         v-model="showNickName"
-        :closeable="true"
+        :close-btn="true"
         mode="center"
-        :maskCloseAble="false"
+        :mask-close-able="false"
         border-radius="20"
     >
-        <view class="px-[50rpx] py-[40rpx] bg-white" style="width: 85vw">
+        <view class="px-[50rpx] py-[40rpx] bg-white rounded-[20rpx]" style="width: 85vw">
             <form @submit="changeNameConfirm">
                 <view class="mb-[70rpx] text-xl text-center">修改昵称</view>
-                <u-form-item borderBottom>
+                <view class="border-b border-gray-200 pb-2">
                     <input
                         class="nr h-[60rpx] w-full"
                         :value="userInfo.nickname"
@@ -105,12 +102,12 @@
                         type="nickname"
                         placeholder="请输入昵称"
                     />
-                </u-form-item>
+                </view>
                 <view class="mt-[80rpx]">
                     <button
                         class="bg-primary text-white w-full h-[80rpx] !text-lg !leading-[80rpx] rounded-full"
                         form-type="submit"
-                        size="mini"
+                        size="sm"
                         hover-class="none"
                     >
                         确定
@@ -118,75 +115,63 @@
                 </view>
             </form>
         </view>
-    </u-popup>
+    </tn-popup>
 
     <!-- 账号修改组件 -->
-    <u-popup v-model="showUserName" :closeable="true" mode="center" border-radius="20">
-        <view class="px-[50rpx] py-[40rpx] bg-white" style="width: 85vw">
+    <tn-popup v-model="showUserName" :close-btn="true" mode="center" border-radius="20">
+        <view class="px-[50rpx] py-[40rpx] bg-white rounded-[20rpx]" style="width: 85vw">
             <view class="mb-[70rpx] text-xl text-center">修改账号</view>
-            <u-form-item borderBottom>
-                <u-input
-                    class="flex-1"
+            <view class="border-b border-gray-200 pb-2">
+                <tn-input
                     v-model="newUsername"
                     placeholder="请输入账号"
-                    :border="false"
                 />
-            </u-form-item>
+            </view>
             <view class="mt-[80rpx]">
-                <u-button @click="changeUserNameConfirm" type="primary" shape="circle">
+                <tn-button @click="changeUserNameConfirm" type="primary" shape="round">
                     确定
-                </u-button>
+                </tn-button>
             </view>
         </view>
-    </u-popup>
+    </tn-popup>
 
     <!-- 性别修改组件 -->
-    <u-picker
-        mode="selector"
+    <tn-picker
         v-model="showPicker"
-        confirm-color="#4173FF"
-        :default-selector="[0]"
-        :range="sexList"
+        :data="sexList"
         @confirm="changeSexConfirm"
     />
 
-    <!-- 账号修改组件 -->
-    <u-popup v-model="showMobilePop" :closeable="true" mode="center" border-radius="20">
-        <view class="px-[50rpx] py-[40rpx] bg-white" style="width: 85vw">
-            <view class="mb-[70rpx] text-xl text-center">{{ userInfo?.mobile == '' ? '绑定手机号' : '更换手机号' }}</view>
-            <u-form-item borderBottom>
-                <u-input
-                    class="flex-1"
+    <!-- 手机号修改组件 -->
+    <tn-popup v-model="showMobilePop" :close-btn="true" mode="center" border-radius="20">
+        <view class="px-[50rpx] py-[40rpx] bg-white rounded-[20rpx]" style="width: 85vw">
+            <view class="mb-[70rpx] text-xl text-center">{{
+                userInfo?.mobile == '' ? '绑定手机号' : '更换手机号'
+            }}</view>
+            <view class="border-b border-gray-200 pb-2 mb-4">
+                <tn-input
                     v-model="newMobile"
                     placeholder="请输入新的手机号码"
-                    :border="false"
                 />
-            </u-form-item>
-            <u-form-item borderBottom>
-                <u-input
+            </view>
+            <view class="border-b border-gray-200 pb-2 flex items-center">
+                <tn-input
                     class="flex-1"
                     v-model="mobileCode"
                     placeholder="请输入验证码"
-                    :border="false"
                 />
                 <view
                     class="border-l border-solid border-0 border-light pl-3 text-muted leading-4 ml-3 w-[180rpx]"
                     @click="sendSms"
                 >
-                    <u-verification-code
-                        ref="uCodeRef"
-                        :seconds="60"
-                        @change="codeChange"
-                        change-text="x秒"
-                    />
-                    {{ codeTips }}
+                    {{ codeTips || '获取验证码' }}
                 </view>
-            </u-form-item>
+            </view>
             <view class="mt-[80rpx]">
-                <u-button @click="changeCodeMobile" type="primary" shape="circle"> 确定 </u-button>
+                <tn-button @click="changeCodeMobile" type="primary" shape="round"> 确定 </tn-button>
             </view>
         </view>
-    </u-popup>
+    </tn-popup>
 </template>
 
 <script lang="ts" setup>
@@ -221,30 +206,44 @@ const newMobile = ref<string>('')
 
 //修改手机验证码
 const mobileCode = ref<string>('')
-const codeTips = ref('')
-const uCodeRef = shallowRef()
+const codeTips = ref('获取验证码')
+const canGetCode = ref(true)
+let codeTimer: any = null
+
+// 验证码倒计时
+const startCodeCountdown = () => {
+    let seconds = 60
+    canGetCode.value = false
+    codeTips.value = `${seconds}秒`
+    
+    codeTimer = setInterval(() => {
+        seconds--
+        if (seconds > 0) {
+            codeTips.value = `${seconds}秒`
+        } else {
+            clearInterval(codeTimer)
+            codeTips.value = '获取验证码'
+            canGetCode.value = true
+        }
+    }, 1000)
+}
 
 // 获取用户信息
 const getUser = async (): Promise<void> => {
     userInfo.value = await getUserInfo()
 }
 
-// 获取验证码显示字段
-const codeChange = (text: string) => {
-    codeTips.value = text
-}
-
 // 发送验证码
 const sendSms = async () => {
     if (!newMobile.value) return uni.$u.toast('请输入新的手机号码')
-    if (uCodeRef.value?.canGetCode) {
-        await smsSend({
-            scene: userInfo.value.mobile ? SMSEnum.CHANGE_MOBILE : SMSEnum.BIND_MOBILE,
-            mobile: newMobile.value
-        })
-        uni.$u.toast('发送成功')
-        uCodeRef.value?.start()
-    }
+    if (!canGetCode.value) return
+    
+    await smsSend({
+        scene: userInfo.value.mobile ? SMSEnum.CHANGE_MOBILE : SMSEnum.BIND_MOBILE,
+        mobile: newMobile.value
+    })
+    uni.$u.toast('发送成功')
+    startCodeCountdown()
 }
 
 const handleAvatarChange = (value) => {

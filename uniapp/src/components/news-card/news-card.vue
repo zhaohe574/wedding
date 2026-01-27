@@ -2,7 +2,7 @@
     <navigator :url="`/pages/news_detail/news_detail?id=${newsId}`">
         <view class="news-card flex bg-white px-[20rpx] py-[32rpx]">
             <view class="mr-[20rpx]" v-if="item.image">
-                <u-image :src="item.image" width="240" height="180"></u-image>
+                <image :src="item.image" width="240" height="180"></image>
             </view>
             <view class="news-card-content flex flex-col justify-between flex-1">
                 <view class="news-card-content-title text-base">{{ item.title }}</view>

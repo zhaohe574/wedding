@@ -24,6 +24,15 @@ class DynamicValidate extends BaseValidate
         'reason' => 'max:255',
         'is_top' => 'require|in:0,1',
         'is_hot' => 'require|in:0,1',
+        'content' => 'require|max:2000',
+        'dynamic_type' => 'require|in:1,2,3,4',
+        'title' => 'max:100',
+        'images' => 'array',
+        'video' => 'max:255',
+        'video_cover' => 'max:255',
+        'location' => 'max:100',
+        'tags' => 'array',
+        'allow_comment' => 'integer|in:0,1',
     ];
 
     protected $message = [
@@ -39,6 +48,18 @@ class DynamicValidate extends BaseValidate
         'is_top.in' => '置顶参数错误',
         'is_hot.require' => '请选择是否热门',
         'is_hot.in' => '热门参数错误',
+        'content.require' => '请输入动态内容',
+        'content.max' => '内容最多2000个字符',
+        'dynamic_type.require' => '请选择动态类型',
+        'dynamic_type.in' => '动态类型错误',
+        'title.max' => '标题最多100个字符',
+        'images.array' => '图片格式错误',
+        'video.max' => '视频地址最多255个字符',
+        'video_cover.max' => '视频封面地址最多255个字符',
+        'location.max' => '位置最多100个字符',
+        'tags.array' => '标签格式错误',
+        'allow_comment.integer' => '评论开关格式错误',
+        'allow_comment.in' => '评论开关参数错误',
     ];
 
     /**
@@ -102,5 +123,23 @@ class DynamicValidate extends BaseValidate
     public function sceneSetCommentTop()
     {
         return $this->only(['comment_id', 'is_top']);
+    }
+
+    /**
+     * @notes 添加动态场景
+     * @return DynamicValidate
+     */
+    public function sceneAdd()
+    {
+        return $this->only(['content', 'dynamic_type', 'title', 'images', 'video', 'video_cover', 'location', 'tags', 'allow_comment']);
+    }
+
+    /**
+     * @notes 编辑动态场景
+     * @return DynamicValidate
+     */
+    public function sceneEdit()
+    {
+        return $this->only(['id', 'content', 'dynamic_type', 'title', 'images', 'video', 'video_cover', 'location', 'tags', 'allow_comment']);
     }
 }

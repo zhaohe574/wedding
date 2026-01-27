@@ -51,5 +51,36 @@ onLaunch(async () => {
 })
 </script>
 <style lang="scss">
-//
+@import '@tuniao/tn-style/dist/uniapp/index.css';
+@import '@tuniao/tn-icon/dist/index.css';
+@import './styles/animations.scss';
+@import './styles/utilities.scss';
+
+/* 全局样式重置 */
+page {
+  background-color: var(--color-page, #F6F6F6);
+  font-family: 'Source Han Sans CN', 'Helvetica Neue', 'Arial', sans-serif;
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: var(--color-main, #333333);
+}
+
+/* 全局滚动条样式（H5） */
+::-webkit-scrollbar {
+  width: 8rpx;
+  height: 8rpx;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F5F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CCCCCC;
+  border-radius: 4rpx;
+  
+  &:hover {
+    background: #999999;
+  }
+}
 </style>

@@ -21,24 +21,6 @@ class ServiceCategory extends BaseModel
     protected $deleteTime = 'delete_time';
 
     /**
-     * @notes 获取子分类
-     * @return \think\model\relation\HasMany
-     */
-    public function children()
-    {
-        return $this->hasMany(ServiceCategory::class, 'pid', 'id');
-    }
-
-    /**
-     * @notes 获取上级分类
-     * @return \think\model\relation\BelongsTo
-     */
-    public function parent()
-    {
-        return $this->belongsTo(ServiceCategory::class, 'pid', 'id');
-    }
-
-    /**
      * @notes 获取该分类下的工作人员数量
      * @return \think\model\relation\HasMany
      */
@@ -88,38 +70,41 @@ class ServiceCategory extends BaseModel
     }
 
     /**
-     * @notes 获取所有分类(树形结构)
+     * @notes 获取所有分类(扁平列表)
      * @return array
      */
-    public static function getCategoryTree()
+    public static function getCategoryList(): array
     {
-        $list = self::where('delete_time', null)
+        return self::where('delete_time', null)
             ->where('is_show', 1)
             ->order('sort desc, id asc')
             ->select()
             ->toArray();
-
-        return self::buildTree($list);
     }
 
     /**
-     * @notes 构建树形结构
-     * @param array $list
-     * @param int $pid
+     * @notes 获取分类树形结构
+     * @param int $pid 父级ID
      * @return array
      */
-    protected static function buildTree(array $list, int $pid = 0): array
+    public static function getCategoryTree(int $pid = 0): array
     {
-        $tree = [];
-        foreach ($list as $item) {
-            if ($item['pid'] == $pid) {
-                $children = self::buildTree($list, $item['id']);
-                if ($children) {
-                    $item['children'] = $children;
-                }
-                $tree[] = $item;
+        $list = self::where('delete_time', null)
+            ->where('is_show', 1)
+            ->where('pid', $pid)
+            ->order('sort desc, id asc')
+            ->field('id, pid, name, icon, sort')
+            ->select()
+            ->toArray();
+
+        foreach ($list as &$item) {
+            // 递归获取子分类
+            $children = self::getCategoryTree($item['id']);
+            if (!empty($children)) {
+                $item['children'] = $children;
             }
         }
-        return $tree;
+
+        return $list;
     }
 }

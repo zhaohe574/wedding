@@ -34,9 +34,18 @@ class StaffController extends BaseAdminController
      */
     public function detail()
     {
-        $params = (new StaffValidate())->goCheck('detail');
-        $result = StaffLogic::detail($params['id']);
-        return $this->data($result);
+        try {
+            $params = (new StaffValidate())->goCheck('detail');
+            $result = StaffLogic::detail((int) $params['id']);
+            return $this->data($result);
+        } catch (\Throwable $e) {
+            return $this->fail(
+                '详情加载失败: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine(),
+                [],
+                0,
+                1
+            );
+        }
     }
 
     /**
@@ -59,12 +68,21 @@ class StaffController extends BaseAdminController
      */
     public function edit()
     {
-        $params = (new StaffValidate())->post()->goCheck('edit');
-        $result = StaffLogic::edit($params);
-        if (true === $result) {
-            return $this->success('编辑成功', [], 1, 1);
+        try {
+            $params = (new StaffValidate())->post()->goCheck('edit');
+            $result = StaffLogic::edit($params);
+            if (true === $result) {
+                return $this->success('编辑成功', [], 1, 1);
+            }
+            return $this->fail(StaffLogic::getError());
+        } catch (\Throwable $e) {
+            return $this->fail(
+                '保存失败: ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine(),
+                [],
+                0,
+                1
+            );
         }
-        return $this->fail(StaffLogic::getError());
     }
 
     /**

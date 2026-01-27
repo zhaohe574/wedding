@@ -49,7 +49,7 @@ class CartController extends BaseApiController
     public function update()
     {
         $params = (new CartValidate())->post()->goCheck('update');
-        $result = CartLogic::updateCartItem($params['id'], $this->userId, $params);
+        $result = CartLogic::updateCartItem((int)$params['id'], $this->userId, $params);
         if ($result['success']) {
             return $this->success($result['message']);
         }
@@ -63,7 +63,7 @@ class CartController extends BaseApiController
     public function delete()
     {
         $params = (new CartValidate())->post()->goCheck('delete');
-        $result = CartLogic::removeFromCart($params['id'], $this->userId);
+        $result = CartLogic::removeFromCart((int)$params['id'], $this->userId);
         if ($result['success']) {
             return $this->success($result['message']);
         }
@@ -88,7 +88,7 @@ class CartController extends BaseApiController
     public function toggleSelect()
     {
         $params = (new CartValidate())->post()->goCheck('toggleSelect');
-        $result = CartLogic::toggleSelect($params['id'], $this->userId);
+        $result = CartLogic::toggleSelect((int)$params['id'], $this->userId);
         return $result ? $this->success('操作成功') : $this->fail('操作失败');
     }
 
@@ -151,7 +151,7 @@ class CartController extends BaseApiController
     public function generateShareCode()
     {
         $params = (new CartValidate())->post()->goCheck('delete');
-        $shareCode = CartLogic::generateShareCode($params['id'], $this->userId);
+        $shareCode = CartLogic::generateShareCode((int)$params['id'], $this->userId);
         if ($shareCode) {
             return $this->data(['share_code' => $shareCode]);
         }
@@ -204,7 +204,7 @@ class CartController extends BaseApiController
     public function planDetail()
     {
         $params = (new CartValidate())->goCheck('planDetail');
-        $result = CartLogic::getPlanDetail($params['plan_id'], $this->userId);
+        $result = CartLogic::getPlanDetail((int)$params['plan_id'], $this->userId);
         if ($result) {
             return $this->data($result);
         }
@@ -218,11 +218,12 @@ class CartController extends BaseApiController
     public function deletePlan()
     {
         $params = (new CartValidate())->post()->goCheck('planDetail');
-        $result = CartLogic::deletePlan($params['plan_id'], $this->userId);
-        if ($result['success']) {
-            return $this->success($result['message']);
+        $result = CartLogic::deletePlan((int)$params['plan_id'], $this->userId);
+        // $result 是索引数组 [bool, string]
+        if ($result[0]) {
+            return $this->success($result[1]);
         }
-        return $this->fail($result['message']);
+        return $this->fail($result[1]);
     }
 
     /**
@@ -232,7 +233,7 @@ class CartController extends BaseApiController
     public function setDefaultPlan()
     {
         $params = (new CartValidate())->post()->goCheck('planDetail');
-        $result = CartLogic::setDefaultPlan($params['plan_id'], $this->userId);
+        $result = CartLogic::setDefaultPlan((int)$params['plan_id'], $this->userId);
         if ($result['success']) {
             return $this->success($result['message']);
         }
@@ -260,10 +261,38 @@ class CartController extends BaseApiController
     public function comparePlans()
     {
         $params = (new CartValidate())->goCheck('compare');
-        $result = CartLogic::comparePlans($params['plan_id_1'], $params['plan_id_2'], $this->userId);
+        $result = CartLogic::comparePlans((int)$params['plan_id_1'], (int)$params['plan_id_2'], $this->userId);
         if ($result) {
             return $this->data($result);
         }
         return $this->fail('方案不存在');
+    }
+
+    /**
+     * @notes 生成方案分享码
+     * @return \think\response\Json
+     */
+    public function generatePlanShareCode()
+    {
+        $params = (new CartValidate())->post()->goCheck('planDetail');
+        $shareCode = CartLogic::generatePlanShareCode((int)$params['plan_id'], $this->userId);
+        if ($shareCode) {
+            return $this->data(['share_code' => $shareCode]);
+        }
+        return $this->fail('生成分享码失败');
+    }
+
+    /**
+     * @notes 通过分享码获取方案
+     * @return \think\response\Json
+     */
+    public function getPlanByShareCode()
+    {
+        $params = (new CartValidate())->goCheck('shareCode');
+        $result = CartLogic::getPlanByShareCode($params['share_code']);
+        if ($result) {
+            return $this->data($result);
+        }
+        return $this->fail('方案不存在或已过期');
     }
 }

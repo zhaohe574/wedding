@@ -455,6 +455,7 @@
 | 小程序端我的优惠券页 | ✅ 完成 | `uniapp/src/pages/coupon/list.vue` |
 | 小程序端领券中心页 | ✅ 完成 | `uniapp/src/pages/coupon/center.vue` |
 | 小程序端优惠券API | ✅ 完成 | `uniapp/src/api/coupon.ts` |
+| 优惠券列表时间显示Bug修复 | ✅ 完成 | 修复了 create_time 显示为 1970-01-01 的问题，详见 `doc/优惠券列表Bug修复.md` |
 
 ### 4.13 风控与合规
 | 任务 | 状态 | 文件路径/说明 |
@@ -650,6 +651,62 @@
 
 ## 更新日志
 
+### 2026-01-23 (第八次更新)
+- ✅ 修复优惠券列表 500 错误
+  - **问题**: 后台优惠券管理页面点击"编辑"按钮时，接口返回 500 错误
+  - **原因**: PHP 8.0+ 类型严格性问题，`date()` 函数要求时间戳参数必须是 `int` 类型
+  - **修复位置**: `server/app/adminapi/logic/coupon/CouponLogic.php` 的 `detail()` 方法
+  - **修复方法**: 使用智能类型转换 `is_numeric()` + `(int)` 或 `strtotime()`
+  - **影响范围**: 仅影响优惠券详情接口，其他方法已正确处理类型转换
+  - **文档**: `doc/优惠券列表500错误修复.md`
+  - **修复模式**: 遵循之前建立的 PHP 8 类型修复模式（参考候补列表、通知列表等修复）
+
+### 2026-01-21 (第七次更新)
+- ✅ 修复购物车功能相关问题
+  - 修复服务人员详情页"立即预约"按钮功能（从"功能开发中"改为跳转到档期选择页面）
+  - 修复档期选择页面 staffId 参数传递问题（uni-app 使用 data 字段而非 params）
+  - 修复后端类型转换问题（GET 参数为字符串需显式转换为 int）
+  - 添加未登录用户的登录检查和跳转
+  - 改进错误消息显示（显示后端返回的具体错误信息而非通用"操作失败"）
+  - **修复购物车所有接口的类型转换问题**
+    - 修复 addToCart 接口的 staffId 类型转换
+    - 修复 deletePlan 接口的 planId 类型转换
+    - 修复 updateCartItem 接口的 cartId 类型转换
+    - 修复 removeFromCart 接口的 cartId 类型转换
+    - 修复 toggleSelect 接口的 cartId 类型转换
+    - 修复 getPlanDetail 接口的 planId 类型转换
+    - 修复 setDefaultPlan 接口的 planId 类型转换
+    - 修复 comparePlans 接口的 planId1/planId2 类型转换
+    - 修复 generateShareCode 接口的 cartId 类型转换
+    - **原因**: POST/GET 参数为字符串，但 PHP 方法要求 int 类型
+  - **修复"保存为方案"弹窗问题**
+    - 将 `<uni-popup>` 改为 `<u-popup>`（使用正确的 vk-uview-ui 组件）
+    - 将 ref 方式改为 v-model 双向绑定方式
+    - 优化弹窗关闭逻辑和操作顺序
+    - **修复输入框无法点击输入的问题**
+      - 将原生 `<input>` 替换为 `<u-input>` 组件
+      - 配置 border、clearable、focus 等属性
+      - 调整弹窗样式和间距
+  - **实现方案分享功能**
+    - 后端：添加 `generatePlanShareCode` 和 `getPlanByShareCode` 方法到 CartLogic.php
+    - 后端：添加两个新接口到 CartController.php
+    - 前端：添加 API 定义到 cart.ts
+    - 前端：实现分享码生成和复制功能到 cart_plan.vue
+    - 用户可以生成分享码并复制给好友
+    - 好友可以通过分享码查看和复制方案
+    - **修复 CartLogic.php 语法错误**：将新添加的方法移到类内部，修复类结束大括号位置错误
+  - 使用 ui-ux-pro-max 设计系统重新设计购物车页面布局
+    - 应用 Soft UI Evolution 设计风格
+    - 使用紫色渐变主题 (#7C3AED)
+    - 改进视觉层次和卡片式布局
+    - 添加平滑过渡动画和更好的间距
+    - 优化空状态、提示卡片和结算栏
+- 📝 创建 staff-booking-fix 规范文档
+  - requirements.md（需求文档）
+  - design.md（设计文档）
+  - tasks.md（任务清单）
+  - debug-guide.md（调试指南）
+
 ### 2026-01-20 (第六次更新)
 - ✅ 调整第一期开发计划
   - 移除微信支付、支付宝支付集成（调整为第二期）
@@ -756,3 +813,54 @@
 
 ### 2026-01-15
 - ✅ 完成第一阶段所有任务
+
+
+---
+
+## 阶段五：页面装修系统增强
+
+### 5.1 首页轮播图高度自定义配置
+| 任务 | 状态 | 文件路径 |
+|------|------|----------|
+| 数据模型更新 | ✅ 完成 | `admin/src/views/decoration/component/widgets/banner/options.ts` |
+| 后台配置界面 | ✅ 完成 | `admin/src/views/decoration/component/widgets/banner/attr.vue` |
+| 后台预览组件 | ✅ 完成 | `admin/src/views/decoration/component/widgets/banner/content.vue` |
+| 移动端轮播图组件 | ✅ 完成 | `uniapp/src/components/widgets/banner/banner.vue` |
+| 功能文档 | ✅ 完成 | `doc/首页轮播图高度自定义配置功能实现.md` |
+
+**功能特性：**
+- ✅ 支持100-2000rpx范围的高度自定义配置
+- ✅ 提供建议高度范围提示（常规模式：250-500rpx，大屏模式：800-1600rpx）
+- ✅ 超出建议范围时显示警告提示
+- ✅ 实时预览配置效果
+- ✅ 完全向后兼容旧数据
+- ✅ 支持常规模式和大屏模式的不同默认高度
+
+**实现日期：** 2025-01-22
+
+
+---
+
+## 阶段五：装修系统优化
+
+### 5.1 装修组件动态数据加载
+| 任务 | 状态 | 文件路径 |
+|------|------|----------|
+| DecorateDataService服务 | ✅ 完成 | `server/app/common/service/DecorateDataService.php` |
+| 员工批量查询方法 | ✅ 完成 | `server/app/api/logic/StaffLogic.php` (batchGetByIds) |
+| 套餐批量查询方法 | ✅ 完成 | `server/app/adminapi/logic/service/PackageLogic.php` (batchGetByIds) |
+| 管理后台装修详情接口修改 | ✅ 完成 | `server/app/adminapi/logic/decorate/DecoratePageLogic.php` |
+| 前端装修数据接口修改 | ✅ 完成 | `server/app/api/logic/IndexLogic.php` |
+| PC端装修数据接口修改 | ✅ 完成 | `server/app/api/logic/PcLogic.php` |
+| 员工展示组件优化 | ✅ 完成 | `admin/src/views/decoration/component/widgets/staff-showcase/` |
+| 服务套餐组件优化 | ✅ 完成 | `admin/src/views/decoration/component/widgets/service-packages/` |
+| TypeScript类型定义 | ✅ 完成 | `admin/src/views/decoration/component/widgets/*/options.ts` |
+| 功能实现文档 | ✅ 完成 | `doc/装修组件动态数据加载功能实现.md` |
+
+**功能说明**：
+- 装修组件从"数据快照"模式改为"引用ID + 动态查询"模式
+- 管理员修改业务数据后，前端装修组件自动显示最新数据
+- 使用批量查询优化性能，避免N+1查询问题
+- 向后兼容旧格式数据，自动识别并处理
+- 详细文档见：`doc/装修组件动态数据加载功能实现.md`
+

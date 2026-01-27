@@ -29,40 +29,24 @@
 
         <!-- 标签页 -->
         <view class="tabs">
-            <view 
-                class="tab-item" 
-                :class="{ active: currentTab === '' }"
-                @click="switchTab('')"
-            >
+            <view class="tab-item" :class="{ active: currentTab === '' }" @click="switchTab('')">
                 全部
             </view>
-            <view 
-                class="tab-item" 
-                :class="{ active: currentTab === '0' }"
-                @click="switchTab('0')"
-            >
+            <view class="tab-item" :class="{ active: currentTab === '0' }" @click="switchTab('0')">
                 可使用
             </view>
-            <view 
-                class="tab-item" 
-                :class="{ active: currentTab === '1' }"
-                @click="switchTab('1')"
-            >
+            <view class="tab-item" :class="{ active: currentTab === '1' }" @click="switchTab('1')">
                 已使用
             </view>
-            <view 
-                class="tab-item" 
-                :class="{ active: currentTab === '2' }"
-                @click="switchTab('2')"
-            >
+            <view class="tab-item" :class="{ active: currentTab === '2' }" @click="switchTab('2')">
                 已过期
             </view>
         </view>
 
         <!-- 优惠券列表 -->
         <view v-if="couponList.length" class="list-wrap">
-            <view 
-                v-for="item in couponList" 
+            <view
+                v-for="item in couponList"
                 :key="item.id"
                 class="coupon-card"
                 :class="{ disabled: item.status !== 0 }"
@@ -79,7 +63,11 @@
                         </template>
                     </view>
                     <view class="coupon-threshold">
-                        {{ item.threshold_amount > 0 ? `满${item.threshold_amount}元可用` : '无门槛' }}
+                        {{
+                            item.threshold_amount > 0
+                                ? `满${item.threshold_amount}元可用`
+                                : '无门槛'
+                        }}
                     </view>
                 </view>
                 <view class="coupon-right">

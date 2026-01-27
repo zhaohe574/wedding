@@ -43,6 +43,11 @@ class ReviewAppealLists extends BaseAdminDataLists implements ListsSearchInterfa
             ->toArray();
 
         foreach ($lists as &$item) {
+            // PHP 8 类型转换
+            $item['create_time'] = (int)$item['create_time'];
+            $item['appeal_type'] = (int)$item['appeal_type'];
+            $item['status'] = (int)$item['status'];
+            
             $item['appeal_type_text'] = ReviewAppeal::getTypeDesc($item['appeal_type']);
             $item['status_text'] = ReviewAppeal::getStatusDesc($item['status']);
             $item['create_time_text'] = date('Y-m-d H:i:s', $item['create_time']);

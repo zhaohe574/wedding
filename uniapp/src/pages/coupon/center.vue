@@ -18,13 +18,9 @@
 
         <!-- 优惠券列表 -->
         <view class="section-title">可领取优惠券</view>
-        
+
         <view v-if="couponList.length" class="list-wrap">
-            <view 
-                v-for="item in couponList" 
-                :key="item.id"
-                class="coupon-card"
-            >
+            <view v-for="item in couponList" :key="item.id" class="coupon-card">
                 <view class="coupon-left">
                     <view class="coupon-value">
                         <template v-if="item.coupon_type === 2">
@@ -37,7 +33,11 @@
                         </template>
                     </view>
                     <view class="coupon-threshold">
-                        {{ item.threshold_amount > 0 ? `满${item.threshold_amount}元可用` : '无门槛' }}
+                        {{
+                            item.threshold_amount > 0
+                                ? `满${item.threshold_amount}元可用`
+                                : '无门槛'
+                        }}
                     </view>
                 </view>
                 <view class="coupon-right">
@@ -49,21 +49,17 @@
                     </view>
                 </view>
                 <view class="coupon-action">
-                    <button 
+                    <button
                         v-if="item.is_received && !item.can_receive"
                         class="btn-received"
                         disabled
                     >
                         已领取
                     </button>
-                    <button 
-                        v-else-if="item.remain_count === 0"
-                        class="btn-empty"
-                        disabled
-                    >
+                    <button v-else-if="item.remain_count === 0" class="btn-empty" disabled>
                         已领完
                     </button>
-                    <button 
+                    <button
                         v-else
                         class="btn-receive"
                         :loading="receivingId === item.id"
@@ -157,7 +153,7 @@ const handleReceive = async (item: any) => {
             title: '领取成功',
             icon: 'success'
         })
-        
+
         // 更新状态
         item.is_received = true
         item.can_receive = item.per_limit === 0 || false

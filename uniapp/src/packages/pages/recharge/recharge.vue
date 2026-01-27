@@ -1,10 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
+        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
         <!-- #endif -->
     </page-meta>
     <view class="recharge p-[20rpx]">
@@ -24,9 +21,9 @@
             </view>
         </view>
         <view class="mt-[40rpx]">
-            <u-button :loading="isLock" type="primary" shape="circle" @click="rechargeLock">
+            <tn-button :loading="isLock" type="primary" shape="round" @click="rechargeLock">
                 立即充值
-            </u-button>
+            </tn-button>
         </view>
         <view class="flex justify-center m-[60rpx]">
             <navigator url="/packages/pages/recharge_record/recharge_record" hover-class="none">

@@ -43,6 +43,11 @@ class SensitiveWordLists extends BaseAdminDataLists implements ListsSearchInterf
             ->toArray();
 
         foreach ($lists as &$item) {
+            // PHP 8 类型转换
+            $item['create_time'] = (int)$item['create_time'];
+            $item['type'] = (int)$item['type'];
+            $item['level'] = (int)$item['level'];
+            
             $item['type_text'] = SensitiveWord::getTypeDesc($item['type']);
             $item['level_text'] = SensitiveWord::getLevelDesc($item['level']);
             $item['create_time_text'] = date('Y-m-d H:i:s', $item['create_time']);

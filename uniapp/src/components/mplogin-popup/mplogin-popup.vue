@@ -1,6 +1,6 @@
 <template>
     <view>
-        <u-popup v-model="showPopup" mode="bottom" border-radius="14" :mask-close-able="false">
+        <tn-popup v-model="showPopup" mode="bottom" border-radius="14" :mask-close-able="false">
             <view class="h-[1000rpx] p-[40rpx]">
                 <view class="flex items-center">
                     <image
@@ -15,19 +15,25 @@
                 </view>
                 <view class="mt-[30rpx]">
                     <form @submit="handleSubmit">
-                        <u-form-item required label="头像" :labelWidth="120">
-                            <view class="flex-1">
+                        <view class="space-y-4">
+                            <view class="border-b border-gray-200 pb-4">
+                                <view class="text-sm text-gray-600 mb-2">
+                                    <text class="text-red-500 mr-1">*</text>头像
+                                </view>
                                 <avatar-upload v-model="avatar"></avatar-upload>
                             </view>
-                        </u-form-item>
-                        <u-form-item required label="昵称" :labelWidth="120">
-                            <input
-                                class="flex-1 h-[60rpx]"
-                                name="nickname"
-                                type="nickname"
-                                placeholder="请输入昵称"
-                            />
-                        </u-form-item>
+                            <view class="border-b border-gray-200 pb-4">
+                                <view class="text-sm text-gray-600 mb-2">
+                                    <text class="text-red-500 mr-1">*</text>昵称
+                                </view>
+                                <input
+                                    class="w-full h-[60rpx]"
+                                    name="nickname"
+                                    type="nickname"
+                                    placeholder="请输入昵称"
+                                />
+                            </view>
+                        </view>
                         <view class="mt-[80rpx]">
                             <button
                                 class="bg-primary rounded-full text-white text-lg h-[80rpx] leading-[80rpx]"
@@ -44,7 +50,7 @@
                     </form>
                 </view>
             </view>
-        </u-popup>
+        </tn-popup>
     </view>
 </template>
 
@@ -79,10 +85,8 @@ const avatar = ref()
 
 const handleSubmit = (e: any) => {
     const { nickname } = e.detail.value
-  if (!avatar.value)
-      return uni.$u.toast('请添加头像')
-  if (!nickname)
-      return uni.$u.toast('请输入昵称')
+    if (!avatar.value) return uni.$u.toast('请添加头像')
+    if (!nickname) return uni.$u.toast('请输入昵称')
     emit('update', {
         avatar: avatar.value,
         nickname

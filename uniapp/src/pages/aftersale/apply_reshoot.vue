@@ -7,7 +7,7 @@
                 <view class="order-select" @click="showOrderPicker = true">
                     <text v-if="form.order_id">{{ selectedOrder?.order_sn }}</text>
                     <text v-else class="placeholder">请选择关联订单</text>
-                    <u-icon name="arrow-right" size="28" color="#999"></u-icon>
+                    <tn-icon name="right" size="28" color="#999"></tn-icon>
                 </view>
             </view>
 
@@ -15,8 +15,8 @@
             <view class="form-section">
                 <view class="section-title">补拍类型</view>
                 <view class="type-options">
-                    <view 
-                        class="type-option" 
+                    <view
+                        class="type-option"
                         :class="{ active: form.type === type.value }"
                         v-for="type in typeOptions"
                         :key="type.value"
@@ -31,8 +31,8 @@
             <view class="form-section">
                 <view class="section-title">申请原因</view>
                 <view class="reason-options">
-                    <view 
-                        class="reason-option" 
+                    <view
+                        class="reason-option"
                         :class="{ active: form.reason_type === reason.value }"
                         v-for="reason in reasonOptions"
                         :key="reason.value"
@@ -46,9 +46,9 @@
             <!-- 详细说明 -->
             <view class="form-section">
                 <view class="section-title">详细说明</view>
-                <textarea 
-                    class="form-textarea" 
-                    v-model="form.reason" 
+                <textarea
+                    class="form-textarea"
+                    v-model="form.reason"
                     placeholder="请详细描述补拍原因（选填）"
                     maxlength="500"
                 ></textarea>
@@ -62,11 +62,11 @@
                         <view class="image-item" v-for="(img, index) in form.images" :key="index">
                             <image :src="img" mode="aspectFill"></image>
                             <view class="delete-btn" @click="removeImage(index)">
-                                <u-icon name="close" size="24" color="#fff"></u-icon>
+                                <tn-icon name="close" size="24" color="#fff"></tn-icon>
                             </view>
                         </view>
                         <view class="upload-btn" @click="chooseImage" v-if="form.images.length < 9">
-                            <u-icon name="plus" size="48" color="#999"></u-icon>
+                            <tn-icon name="plus" size="48" color="#999"></tn-icon>
                             <text>上传图片</text>
                         </view>
                     </view>
@@ -80,31 +80,27 @@
                 <view class="date-picker" @click="showDatePicker = true">
                     <text v-if="form.expect_date">{{ form.expect_date }}</text>
                     <text v-else class="placeholder">请选择期望日期（选填）</text>
-                    <u-icon name="calendar" size="32" color="#999"></u-icon>
+                    <tn-icon name="calendar" size="32" color="#999"></tn-icon>
                 </view>
             </view>
         </view>
 
         <!-- 提交按钮 -->
         <view class="submit-bar">
-            <u-button type="primary" :loading="submitting" @click="handleSubmit">提交申请</u-button>
+            <tn-button type="primary" :loading="submitting" @click="handleSubmit">提交申请</tn-button>
         </view>
 
         <!-- 订单选择器 -->
-        <u-picker 
-            v-model="showOrderPicker" 
+        <tn-picker
+            v-model="showOrderPicker"
             mode="selector"
             :range="orderOptions"
             range-key="label"
             @confirm="onOrderConfirm"
-        ></u-picker>
+        ></tn-picker>
 
         <!-- 日期选择器 -->
-        <u-picker 
-            v-model="showDatePicker" 
-            mode="time"
-            @confirm="onDateConfirm"
-        ></u-picker>
+        <tn-picker v-model="showDatePicker" mode="time" @confirm="onDateConfirm"></tn-picker>
     </view>
 </template>
 
@@ -174,7 +170,7 @@ const chooseImage = () => {
     uni.chooseImage({
         count: 9 - form.images.length,
         success: (res) => {
-            res.tempFilePaths.forEach(path => {
+            res.tempFilePaths.forEach((path) => {
                 // 实际项目中应该上传到服务器
                 form.images.push(path)
             })
@@ -231,7 +227,7 @@ onLoad((options: any) => {
 .form-section {
     padding: 30rpx;
     border-bottom: 1rpx solid #f5f5f5;
-    
+
     &:last-child {
         border-bottom: none;
     }
@@ -244,7 +240,8 @@ onLoad((options: any) => {
     margin-bottom: 20rpx;
 }
 
-.order-select, .date-picker {
+.order-select,
+.date-picker {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -253,25 +250,27 @@ onLoad((options: any) => {
     border-radius: 12rpx;
     font-size: 28rpx;
     color: #333;
-    
+
     .placeholder {
         color: #999;
     }
 }
 
-.type-options, .reason-options {
+.type-options,
+.reason-options {
     display: flex;
     flex-wrap: wrap;
     gap: 16rpx;
 }
 
-.type-option, .reason-option {
+.type-option,
+.reason-option {
     padding: 16rpx 32rpx;
     background: #f5f5f5;
     border-radius: 8rpx;
     font-size: 26rpx;
     color: #666;
-    
+
     &.active {
         background: rgba(79, 172, 254, 0.1);
         color: #4facfe;
@@ -305,12 +304,12 @@ onLoad((options: any) => {
     height: 200rpx;
     border-radius: 12rpx;
     overflow: hidden;
-    
+
     image {
         width: 100%;
         height: 100%;
     }
-    
+
     .delete-btn {
         position: absolute;
         top: 8rpx;
@@ -334,7 +333,7 @@ onLoad((options: any) => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    
+
     text {
         font-size: 24rpx;
         color: #999;

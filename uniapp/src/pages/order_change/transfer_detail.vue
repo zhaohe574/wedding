@@ -7,14 +7,14 @@
         />
     </page-meta>
     <view class="transfer-detail">
-        <view v-if="loading" class="py-20 text-center text-gray-400">
-            加载中...
-        </view>
+        <view v-if="loading" class="py-20 text-center text-gray-400"> 加载中... </view>
         <template v-else-if="detail">
             <!-- 状态卡片 -->
             <view class="status-card" :class="getStatusBgClass(detail.transfer_status)">
                 <view class="text-lg font-bold">{{ detail.transfer_status_desc }}</view>
-                <view class="text-sm mt-1 opacity-80">{{ getStatusTip(detail.transfer_status) }}</view>
+                <view class="text-sm mt-1 opacity-80">{{
+                    getStatusTip(detail.transfer_status)
+                }}</view>
             </view>
 
             <!-- 转让信息 -->
@@ -59,7 +59,11 @@
                         <view class="party-name">{{ detail.to_user_name }}</view>
                         <view class="party-mobile">{{ detail.to_user_mobile }}</view>
                         <view class="verify-status mt-2">
-                            <view v-if="detail.to_user_verified" class="tag bg-green-100 text-green-600">已验证</view>
+                            <view
+                                v-if="detail.to_user_verified"
+                                class="tag bg-green-100 text-green-600"
+                                >已验证</view
+                            >
                             <view v-else class="tag bg-gray-100 text-gray-600">未验证</view>
                         </view>
                     </view>
@@ -73,7 +77,10 @@
             </view>
 
             <!-- 审核结果 -->
-            <view class="bg-white mt-3 p-4" v-if="detail.transfer_status >= 4 && detail.reject_reason">
+            <view
+                class="bg-white mt-3 p-4"
+                v-if="detail.transfer_status >= 4 && detail.reject_reason"
+            >
                 <view class="section-title">拒绝原因</view>
                 <view class="text-red-500 text-sm">{{ detail.reject_reason }}</view>
             </view>
@@ -87,7 +94,9 @@
                         <text class="text-sm text-primary">查看订单 ></text>
                     </view>
                     <view class="flex justify-between mt-2">
-                        <text class="text-sm text-gray-600">服务日期: {{ detail.order.service_date }}</text>
+                        <text class="text-sm text-gray-600"
+                            >服务日期: {{ detail.order.service_date }}</text
+                        >
                         <text class="text-primary font-bold">¥{{ detail.order.pay_amount }}</text>
                     </view>
                 </view>
@@ -96,18 +105,20 @@
             <!-- 底部操作 -->
             <view class="bottom-actions" v-if="showActions">
                 <!-- 转让方可取消 -->
-                <button 
-                    v-if="detail.is_from_user && detail.transfer_status <= 1" 
-                    class="btn-cancel" 
+                <button
+                    v-if="detail.is_from_user && detail.transfer_status <= 1"
+                    class="btn-cancel"
                     @click="handleCancel"
-                >取消转让</button>
-                
+                >
+                    取消转让
+                </button>
+
                 <!-- 接收方确认 (待接收状态) -->
                 <template v-if="!detail.is_from_user && detail.transfer_status === 1">
                     <view class="accept-tip">请使用接收方手机号输入验证码确认接收</view>
                     <view class="code-input-area">
-                        <input 
-                            v-model="acceptCode" 
+                        <input
+                            v-model="acceptCode"
                             class="code-input"
                             type="number"
                             placeholder="请输入验证码"
@@ -120,9 +131,7 @@
                 </template>
             </view>
         </template>
-        <view v-else class="py-20 text-center text-gray-400">
-            数据不存在
-        </view>
+        <view v-else class="py-20 text-center text-gray-400"> 数据不存在 </view>
     </view>
 </template>
 
@@ -140,8 +149,10 @@ const accepting = ref(false)
 const showActions = computed(() => {
     if (!detail.value) return false
     // 转让方可取消，或接收方可确认
-    return (detail.value.is_from_user && detail.value.transfer_status <= 1) ||
-           (!detail.value.is_from_user && detail.value.transfer_status === 1)
+    return (
+        (detail.value.is_from_user && detail.value.transfer_status <= 1) ||
+        (!detail.value.is_from_user && detail.value.transfer_status === 1)
+    )
 })
 
 const getStatusBgClass = (status: number) => {
@@ -240,13 +251,25 @@ onLoad((options: any) => {
 .status-card {
     padding: 40rpx 30rpx;
     color: #fff;
-    
-    &.bg-orange { background: linear-gradient(135deg, #ff9500, #ff6b00); }
-    &.bg-blue { background: linear-gradient(135deg, #007aff, #0056d6); }
-    &.bg-purple { background: linear-gradient(135deg, #af52de, #8e44ad); }
-    &.bg-green { background: linear-gradient(135deg, #34c759, #28a745); }
-    &.bg-red { background: linear-gradient(135deg, #ff3b30, #d63027); }
-    &.bg-gray { background: linear-gradient(135deg, #8e8e93, #636366); }
+
+    &.bg-orange {
+        background: linear-gradient(135deg, #ff9500, #ff6b00);
+    }
+    &.bg-blue {
+        background: linear-gradient(135deg, #007aff, #0056d6);
+    }
+    &.bg-purple {
+        background: linear-gradient(135deg, #af52de, #8e44ad);
+    }
+    &.bg-green {
+        background: linear-gradient(135deg, #34c759, #28a745);
+    }
+    &.bg-red {
+        background: linear-gradient(135deg, #ff3b30, #d63027);
+    }
+    &.bg-gray {
+        background: linear-gradient(135deg, #8e8e93, #636366);
+    }
 }
 
 .section-title {
@@ -264,11 +287,19 @@ onLoad((options: any) => {
     align-items: center;
     padding: 16rpx 0;
     border-bottom: 1rpx solid #f5f5f5;
-    
-    &:last-child { border-bottom: none; }
-    
-    .label { color: #999; font-size: 26rpx; }
-    .value { color: #333; font-size: 26rpx; }
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    .label {
+        color: #999;
+        font-size: 26rpx;
+    }
+    .value {
+        color: #333;
+        font-size: 26rpx;
+    }
 }
 
 .transfer-parties {
@@ -325,7 +356,7 @@ onLoad((options: any) => {
     right: 0;
     padding: 20rpx 30rpx;
     background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
 }
 
 .btn-cancel {
@@ -371,7 +402,7 @@ onLoad((options: any) => {
     border-radius: 12rpx;
     font-size: 28rpx;
     border: none;
-    
+
     &[disabled] {
         opacity: 0.6;
     }
