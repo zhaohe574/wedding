@@ -90,12 +90,14 @@ class ServiceController extends BaseApiController
     {
         $packageId = $this->request->get('package_id/d');
         $date = $this->request->get('date/s', '');
+        $staffId = $this->request->get('staff_id/d', 0);
+        $timeSlot = $this->request->get('time_slot/d', 0);
 
         if (empty($packageId) || empty($date)) {
             return $this->fail('参数错误');
         }
 
-        $result = ServiceLogic::checkPackageAvailability($packageId, $date);
+        $result = ServiceLogic::checkPackageAvailability($packageId, $date, $staffId, $timeSlot);
         return $this->data($result);
     }
 
@@ -107,12 +109,14 @@ class ServiceController extends BaseApiController
     {
         $packageIds = $this->request->post('package_ids/a', []);
         $date = $this->request->post('date/s', '');
+        $staffId = $this->request->post('staff_id/d', 0);
+        $timeSlot = $this->request->post('time_slot/d', 0);
 
         if (empty($packageIds) || empty($date)) {
             return $this->fail('参数错误');
         }
 
-        $result = ServiceLogic::batchCheckAvailability($packageIds, $date);
+        $result = ServiceLogic::batchCheckAvailability($packageIds, $date, $staffId, $timeSlot);
         return $this->data($result);
     }
 
@@ -143,12 +147,13 @@ class ServiceController extends BaseApiController
         $staffId = $this->request->get('staff_id/d', 0);
         $startTime = $this->request->get('start_time/s', '');
         $endTime = $this->request->get('end_time/s', '');
+        $timeSlot = $this->request->get('time_slot/d', -1);
 
         if (empty($packageId)) {
             return $this->fail('参数错误');
         }
 
-        $result = ServiceLogic::calculatePrice($packageId, $staffId, $startTime, $endTime);
+        $result = ServiceLogic::calculatePrice($packageId, $staffId, $startTime, $endTime, $timeSlot);
         return $this->data($result);
     }
 }

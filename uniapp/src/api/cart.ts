@@ -90,6 +90,16 @@ export function setDefaultCartPlan(params: any) {
     return request.post({ url: '/cart/setDefaultPlan', params })
 }
 
+// 取消默认方案
+export function cancelDefaultCartPlan() {
+    return request.post({ url: '/cart/cancelDefaultPlan', params: {} })
+}
+
+
+// 应用方案到购物车
+export function applyCartPlan(params: any) {
+    return request.post({ url: '/cart/applyPlanToCart', params })
+}
 // 通过分享码复制方案
 export function copyPlanByShareCode(params: any) {
     return request.post({ url: '/cart/copyPlanByShareCode', params })

@@ -23,9 +23,9 @@ class Schedule extends BaseModel
 
     // 时间段
     const TIME_SLOT_ALL = 0;        // 全天
-    const TIME_SLOT_MORNING = 1;    // 上午
-    const TIME_SLOT_AFTERNOON = 2;  // 下午
-    const TIME_SLOT_EVENING = 3;    // 晚上
+    const TIME_SLOT_MORNING = 1;    // 早礼
+    const TIME_SLOT_AFTERNOON = 2;  // 午宴
+    const TIME_SLOT_EVENING = 3;    // 晚宴
 
     // 状态
     const STATUS_UNAVAILABLE = 0;   // 不可用
@@ -58,9 +58,9 @@ class Schedule extends BaseModel
     {
         $map = [
             self::TIME_SLOT_ALL => '全天',
-            self::TIME_SLOT_MORNING => '上午',
-            self::TIME_SLOT_AFTERNOON => '下午',
-            self::TIME_SLOT_EVENING => '晚上',
+            self::TIME_SLOT_MORNING => '早礼',
+            self::TIME_SLOT_AFTERNOON => '午宴',
+            self::TIME_SLOT_EVENING => '晚宴',
         ];
         return $map[$data['time_slot']] ?? '未知';
     }
@@ -92,26 +92,211 @@ class Schedule extends BaseModel
      */
     public static function isAvailable(int $staffId, string $date, int $timeSlot = 0): bool
     {
+        if (!self::checkRuleAvailable($staffId, $date)) {
+            return false;
+        }
+
+        if ($timeSlot == self::TIME_SLOT_ALL) {
+            $allDaySchedule = self::where('staff_id', $staffId)
+                ->where('schedule_date', $date)
+                ->where('time_slot', self::TIME_SLOT_ALL)
+                ->find();
+
+            if (!self::isScheduleRecordAvailable($allDaySchedule)) {
+                return false;
+            }
+
+            foreach ([self::TIME_SLOT_MORNING, self::TIME_SLOT_AFTERNOON, self::TIME_SLOT_EVENING] as $slot) {
+                $slotSchedule = self::where('staff_id', $staffId)
+                    ->where('schedule_date', $date)
+                    ->where('time_slot', $slot)
+                    ->find();
+                if (!self::isScheduleRecordAvailable($slotSchedule)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         $schedule = self::where('staff_id', $staffId)
             ->where('schedule_date', $date)
             ->where('time_slot', $timeSlot)
             ->find();
 
-        // 没有档期记录，检查规则
-        if (!$schedule) {
-            return self::checkRuleAvailable($staffId, $date);
+        if (!self::isScheduleRecordAvailable($schedule)) {
+            return false;
         }
 
-        // 检查锁定是否过期
+        $allDaySchedule = self::where('staff_id', $staffId)
+            ->where('schedule_date', $date)
+            ->where('time_slot', self::TIME_SLOT_ALL)
+            ->find();
+
+        return self::isScheduleRecordAvailable($allDaySchedule);
+    }
+
+    /**
+     * @notes 兼容旧调用的可用性检查
+     * @param int $staffId
+     * @param string $date
+     * @param int $timeSlot
+     * @return bool
+     */
+    public static function checkAvailable(int $staffId, string $date, int $timeSlot = 0): bool
+    {
+        return self::isAvailable($staffId, $date, $timeSlot);
+    }
+
+    /**
+     * @notes 检查档期是否可预约并返回原因
+     * @param int $staffId
+     * @param string $date
+     * @param int $timeSlot
+     * @return array [bool, string]
+     */
+    public static function checkAvailabilityWithReason(int $staffId, string $date, int $timeSlot = 0): array
+    {
+        [$ruleAllowed, $ruleReason] = ScheduleRule::checkDate($staffId, $date);
+        if (!$ruleAllowed) {
+            return [false, $ruleReason];
+        }
+
+        if ($timeSlot == self::TIME_SLOT_ALL) {
+            $allDaySchedule = self::where('staff_id', $staffId)
+                ->where('schedule_date', $date)
+                ->where('time_slot', self::TIME_SLOT_ALL)
+                ->find();
+            [$available, $reason] = self::isScheduleRecordAvailableWithReason($allDaySchedule, self::TIME_SLOT_ALL);
+            if (!$available) {
+                return [false, $reason];
+            }
+
+            foreach ([self::TIME_SLOT_MORNING, self::TIME_SLOT_AFTERNOON, self::TIME_SLOT_EVENING] as $slot) {
+                $slotSchedule = self::where('staff_id', $staffId)
+                    ->where('schedule_date', $date)
+                    ->where('time_slot', $slot)
+                    ->find();
+                [$available, $reason] = self::isScheduleRecordAvailableWithReason($slotSchedule, $slot);
+                if (!$available) {
+                    return [false, $reason];
+                }
+            }
+
+            return [true, ''];
+        }
+
+        $schedule = self::where('staff_id', $staffId)
+            ->where('schedule_date', $date)
+            ->where('time_slot', $timeSlot)
+            ->find();
+        [$available, $reason] = self::isScheduleRecordAvailableWithReason($schedule, $timeSlot);
+        if (!$available) {
+            return [false, $reason];
+        }
+
+        $allDaySchedule = self::where('staff_id', $staffId)
+            ->where('schedule_date', $date)
+            ->where('time_slot', self::TIME_SLOT_ALL)
+            ->find();
+        [$available, $reason] = self::isScheduleRecordAvailableWithReason($allDaySchedule, self::TIME_SLOT_ALL);
+        if (!$available) {
+            return [false, $reason];
+        }
+
+        return [true, ''];
+    }
+
+    /**
+     * @notes 判断单条档期记录是否可用（含锁定过期处理）
+     * @param Schedule|null $schedule
+     * @return bool
+     */
+    protected static function isScheduleRecordAvailable(?self $schedule): bool
+    {
+        if (!$schedule) {
+            return true;
+        }
+
         if ($schedule->status == self::STATUS_LOCKED && $schedule->lock_expire_time > 0) {
             if ($schedule->lock_expire_time < time()) {
-                // 锁定已过期，自动释放
                 self::releaseLock($schedule->id);
                 return true;
             }
         }
 
         return $schedule->status == self::STATUS_AVAILABLE;
+    }
+
+    /**
+     * @notes 判断单条档期记录是否可用并返回原因
+     * @param Schedule|null $schedule
+     * @param int $timeSlot
+     * @return array [bool, string]
+     */
+    protected static function isScheduleRecordAvailableWithReason(?self $schedule, int $timeSlot): array
+    {
+        if (!$schedule) {
+            return [true, ''];
+        }
+
+        if ($schedule->status == self::STATUS_LOCKED && $schedule->lock_expire_time > 0) {
+            if ($schedule->lock_expire_time < time()) {
+                self::releaseLock($schedule->id);
+                return [true, ''];
+            }
+        }
+
+        if ($schedule->status == self::STATUS_AVAILABLE) {
+            return [true, ''];
+        }
+
+        return [false, self::buildUnavailableReason($timeSlot, (int)$schedule->status)];
+    }
+
+    /**
+     * @notes 生成不可用原因
+     * @param int $timeSlot
+     * @param int $status
+     * @return string
+     */
+    protected static function buildUnavailableReason(int $timeSlot, int $status): string
+    {
+        $slotLabel = self::getTimeSlotLabel($timeSlot);
+        $prefix = $slotLabel ? ($slotLabel . '档期') : '档期';
+        return $prefix . self::getStatusReason($status);
+    }
+
+    /**
+     * @notes 状态原因文案
+     * @param int $status
+     * @return string
+     */
+    protected static function getStatusReason(int $status): string
+    {
+        $map = [
+            self::STATUS_UNAVAILABLE => '已设置为不可用',
+            self::STATUS_BOOKED => '已被预约',
+            self::STATUS_LOCKED => '已被锁定',
+            self::STATUS_RESERVED => '为内部预留',
+        ];
+        return $map[$status] ?? '不可用';
+    }
+
+    /**
+     * @notes 获取场次文案
+     * @param int $timeSlot
+     * @return string
+     */
+    protected static function getTimeSlotLabel(int $timeSlot): string
+    {
+        $map = [
+            self::TIME_SLOT_ALL => '全天',
+            self::TIME_SLOT_MORNING => '早礼',
+            self::TIME_SLOT_AFTERNOON => '午宴',
+            self::TIME_SLOT_EVENING => '晚宴',
+        ];
+        return $map[$timeSlot] ?? '未知';
     }
 
     /**
@@ -137,9 +322,8 @@ class Schedule extends BaseModel
             return true; // 无规则，默认可预约
         }
 
-        // 检查提前预约天数
         $daysDiff = (strtotime($date) - strtotime(date('Y-m-d'))) / 86400;
-        if ($daysDiff < $rule->advance_days) {
+        if ($daysDiff < 1) {
             return false;
         }
 
@@ -316,9 +500,9 @@ class Schedule extends BaseModel
     {
         return [
             ['value' => self::TIME_SLOT_ALL, 'label' => '全天'],
-            ['value' => self::TIME_SLOT_MORNING, 'label' => '上午'],
-            ['value' => self::TIME_SLOT_AFTERNOON, 'label' => '下午'],
-            ['value' => self::TIME_SLOT_EVENING, 'label' => '晚上'],
+            ['value' => self::TIME_SLOT_MORNING, 'label' => '早礼'],
+            ['value' => self::TIME_SLOT_AFTERNOON, 'label' => '午宴'],
+            ['value' => self::TIME_SLOT_EVENING, 'label' => '晚宴'],
         ];
     }
 

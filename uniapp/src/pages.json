@@ -470,6 +470,15 @@
                 }
             },
             {
+                "path": "pages/order_confirm/order_confirm",
+                "style": {
+                    "navigationBarTitleText": "订单确认"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
                 "path": "pages/waitlist/waitlist",
                 "style": {
                     "navigationBarTitleText": "我的候补"

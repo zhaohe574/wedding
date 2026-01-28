@@ -60,9 +60,11 @@ class PackageBooking extends BaseModel
      * @notes 检查套餐在指定日期是否可用
      * @param int $packageId 套餐ID
      * @param string $date 预订日期 Y-m-d
+     * @param int $staffId 服务人员ID
+     * @param int $timeSlot 时间段
      * @return array ['available' => bool, 'message' => string, 'booking' => array|null]
      */
-    public static function checkAvailability(int $packageId, string $date): array
+    public static function checkAvailability(int $packageId, string $date, int $staffId = 0, int $timeSlot = 0): array
     {
         // 先清理过期的临时锁定
         self::clearExpiredLocks();
@@ -70,6 +72,8 @@ class PackageBooking extends BaseModel
         // 查询该套餐在该日期是否有有效预订（临时锁定或已确认）
         $booking = self::where('package_id', $packageId)
             ->where('booking_date', $date)
+            ->where('staff_id', $staffId)
+            ->where('time_slot', $timeSlot)
             ->whereIn('status', [self::STATUS_TEMP_LOCK, self::STATUS_CONFIRMED])
             ->find();
 
@@ -94,6 +98,7 @@ class PackageBooking extends BaseModel
      * @param int $packageId 套餐ID
      * @param int $staffId 服务人员ID
      * @param string $date 预订日期
+     * @param int $timeSlot 时间段
      * @param int $userId 用户ID
      * @param string $startTime 开始时间（可选）
      * @param string $endTime 结束时间（可选）
@@ -103,6 +108,7 @@ class PackageBooking extends BaseModel
         int $packageId,
         int $staffId,
         string $date,
+        int $timeSlot,
         int $userId,
         string $startTime = '',
         string $endTime = ''
@@ -116,18 +122,51 @@ class PackageBooking extends BaseModel
             // 悲观锁检查是否已有有效预订
             $existingBooking = self::where('package_id', $packageId)
                 ->where('booking_date', $date)
+                ->where('staff_id', $staffId)
+                ->where('time_slot', $timeSlot)
                 ->whereIn('status', [self::STATUS_TEMP_LOCK, self::STATUS_CONFIRMED])
                 ->lock(true)
                 ->find();
 
             if ($existingBooking) {
+                if ($existingBooking->status == self::STATUS_TEMP_LOCK && (int)$existingBooking->user_id === $userId) {
+                    $existingBooking->lock_expire_time = time() + self::LOCK_DURATION;
+                    $existingBooking->save();
+                    Db::commit();
+                    return $existingBooking;
+                }
                 Db::rollback();
                 return null;
+            }
+
+            $releasedBooking = self::where('package_id', $packageId)
+                ->where('booking_date', $date)
+                ->where('staff_id', $staffId)
+                ->where('time_slot', $timeSlot)
+                ->where('status', self::STATUS_RELEASED)
+                ->lock(true)
+                ->find();
+
+            if ($releasedBooking) {
+                $releasedBooking->status = self::STATUS_TEMP_LOCK;
+                $releasedBooking->lock_expire_time = time() + self::LOCK_DURATION;
+                $releasedBooking->user_id = $userId;
+                $releasedBooking->order_id = null;
+                $releasedBooking->order_item_id = null;
+                $releasedBooking->start_time = $startTime ?: null;
+                $releasedBooking->end_time = $endTime ?: null;
+                $releasedBooking->version = $releasedBooking->version + 1;
+                $releasedBooking->update_time = time();
+                $releasedBooking->save();
+                Db::commit();
+                return $releasedBooking;
             }
 
             // 检查该用户是否已有该套餐的临时锁定（避免重复锁定）
             $userLock = self::where('package_id', $packageId)
                 ->where('booking_date', $date)
+                ->where('staff_id', $staffId)
+                ->where('time_slot', $timeSlot)
                 ->where('user_id', $userId)
                 ->where('status', self::STATUS_TEMP_LOCK)
                 ->find();
@@ -145,6 +184,7 @@ class PackageBooking extends BaseModel
             $booking->package_id = $packageId;
             $booking->staff_id = $staffId;
             $booking->booking_date = $date;
+            $booking->time_slot = $timeSlot;
             $booking->start_time = $startTime ?: null;
             $booking->end_time = $endTime ?: null;
             $booking->user_id = $userId;
@@ -249,6 +289,89 @@ class PackageBooking extends BaseModel
     }
 
     /**
+     * @notes 确认指定场次的预订（按用户选择）
+     * @param int $userId
+     * @param int $packageId
+     * @param int $staffId
+     * @param string $date
+     * @param int $timeSlot
+     * @param int $orderId
+     * @param int $orderItemId
+     * @return bool
+     */
+    public static function confirmSelection(
+        int $userId,
+        int $packageId,
+        int $staffId,
+        string $date,
+        int $timeSlot,
+        int $orderId,
+        int $orderItemId = 0
+    ): bool {
+        self::clearExpiredLocks();
+
+        $booking = self::where('package_id', $packageId)
+            ->where('staff_id', $staffId)
+            ->where('booking_date', $date)
+            ->where('time_slot', $timeSlot)
+            ->where('user_id', $userId)
+            ->where('status', self::STATUS_TEMP_LOCK)
+            ->find();
+
+        if ($booking) {
+            return $booking->confirmBooking($orderId, $orderItemId);
+        }
+
+        $existing = self::where('package_id', $packageId)
+            ->where('staff_id', $staffId)
+            ->where('booking_date', $date)
+            ->where('time_slot', $timeSlot)
+            ->whereIn('status', [self::STATUS_TEMP_LOCK, self::STATUS_CONFIRMED])
+            ->find();
+
+        if ($existing) {
+            return false;
+        }
+
+        $releasedBooking = self::where('package_id', $packageId)
+            ->where('staff_id', $staffId)
+            ->where('booking_date', $date)
+            ->where('time_slot', $timeSlot)
+            ->where('status', self::STATUS_RELEASED)
+            ->lock(true)
+            ->find();
+
+        if ($releasedBooking) {
+            $releasedBooking->status = self::STATUS_CONFIRMED;
+            $releasedBooking->order_id = $orderId;
+            $releasedBooking->order_item_id = $orderItemId;
+            $releasedBooking->user_id = $userId;
+            $releasedBooking->lock_expire_time = null;
+            $releasedBooking->version = $releasedBooking->version + 1;
+            $releasedBooking->update_time = time();
+            $releasedBooking->save();
+            return true;
+        }
+
+        self::create([
+            'package_id' => $packageId,
+            'staff_id' => $staffId,
+            'booking_date' => $date,
+            'time_slot' => $timeSlot,
+            'order_id' => $orderId,
+            'order_item_id' => $orderItemId,
+            'user_id' => $userId,
+            'status' => self::STATUS_CONFIRMED,
+            'lock_expire_time' => null,
+            'version' => 1,
+            'create_time' => time(),
+            'update_time' => time(),
+        ]);
+
+        return true;
+    }
+
+    /**
      * @notes 根据用户ID释放临时锁定
      * @param int $userId 用户ID
      * @return int 释放的记录数
@@ -256,6 +379,30 @@ class PackageBooking extends BaseModel
     public static function releaseByUserId(int $userId): int
     {
         return self::where('user_id', $userId)
+            ->where('status', self::STATUS_TEMP_LOCK)
+            ->update([
+                'status' => self::STATUS_RELEASED,
+                'lock_expire_time' => null,
+                'update_time' => time()
+            ]);
+    }
+
+    /**
+     * @notes 按场次释放临时锁定
+     * @param int $userId
+     * @param int $packageId
+     * @param int $staffId
+     * @param string $date
+     * @param int $timeSlot
+     * @return int
+     */
+    public static function releaseBySelection(int $userId, int $packageId, int $staffId, string $date, int $timeSlot): int
+    {
+        return self::where('user_id', $userId)
+            ->where('package_id', $packageId)
+            ->where('staff_id', $staffId)
+            ->where('booking_date', $date)
+            ->where('time_slot', $timeSlot)
             ->where('status', self::STATUS_TEMP_LOCK)
             ->update([
                 'status' => self::STATUS_RELEASED,
@@ -286,15 +433,24 @@ class PackageBooking extends BaseModel
      * @param string $endDate 结束日期
      * @return array 日期 => 状态 的映射
      */
-    public static function getBookingsByDateRange(int $packageId, string $startDate, string $endDate): array
+    public static function getBookingsByDateRange(int $packageId, string $startDate, string $endDate, int $staffId = 0, ?int $timeSlot = null): array
     {
         self::clearExpiredLocks();
 
-        $bookings = self::where('package_id', $packageId)
+        $query = self::where('package_id', $packageId)
             ->where('booking_date', '>=', $startDate)
             ->where('booking_date', '<=', $endDate)
-            ->whereIn('status', [self::STATUS_TEMP_LOCK, self::STATUS_CONFIRMED])
-            ->column('status', 'booking_date');
+            ->whereIn('status', [self::STATUS_TEMP_LOCK, self::STATUS_CONFIRMED]);
+
+        if ($staffId > 0) {
+            $query->where('staff_id', $staffId);
+        }
+
+        if ($timeSlot !== null) {
+            $query->where('time_slot', $timeSlot);
+        }
+
+        $bookings = $query->column('status', 'booking_date');
 
         return $bookings;
     }
@@ -305,12 +461,14 @@ class PackageBooking extends BaseModel
      * @param string $date 预订日期
      * @return array package_id => available 的映射
      */
-    public static function batchCheckAvailability(array $packageIds, string $date): array
+    public static function batchCheckAvailability(array $packageIds, string $date, int $staffId = 0, int $timeSlot = 0): array
     {
         self::clearExpiredLocks();
 
         $bookedPackages = self::whereIn('package_id', $packageIds)
             ->where('booking_date', $date)
+            ->where('staff_id', $staffId)
+            ->where('time_slot', $timeSlot)
             ->whereIn('status', [self::STATUS_TEMP_LOCK, self::STATUS_CONFIRMED])
             ->column('package_id');
 

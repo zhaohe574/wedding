@@ -21,7 +21,7 @@ CREATE TABLE `la_order_change` (
     -- 改期相关字段
     `old_service_date` DATE DEFAULT NULL COMMENT '原服务日期',
     `new_service_date` DATE DEFAULT NULL COMMENT '新服务日期',
-    `old_time_slot` TINYINT UNSIGNED DEFAULT 0 COMMENT '原时间段：0=全天,1=上午,2=下午,3=晚上',
+    `old_time_slot` TINYINT UNSIGNED DEFAULT 0 COMMENT '原时间段：0=全天,1=早礼,2=午宴,3=晚宴',
     `new_time_slot` TINYINT UNSIGNED DEFAULT 0 COMMENT '新时间段',
     
     -- 换人相关字段

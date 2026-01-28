@@ -9,8 +9,10 @@ namespace app\common\model\cart;
 
 use app\common\model\BaseModel;
 use app\common\model\staff\Staff;
+use app\common\model\staff\StaffPackage;
 use app\common\model\service\ServicePackage;
 use app\common\model\schedule\Schedule;
+use app\common\model\package\PackageBooking;
 use think\facade\Db;
 
 /**
@@ -50,9 +52,9 @@ class Cart extends BaseModel
     {
         $map = [
             0 => '全天',
-            1 => '上午',
-            2 => '下午',
-            3 => '晚上',
+            1 => '早礼',
+            2 => '午宴',
+            3 => '晚宴',
         ];
         return $map[$data['time_slot']] ?? '未知';
     }
@@ -69,6 +71,15 @@ class Cart extends BaseModel
      */
     public static function addToCart(int $userId, int $staffId, string $date, int $timeSlot = 0, int $packageId = 0, string $remark = ''): array
     {
+        if ($packageId <= 0) {
+            return [false, '请选择套餐', null];
+        }
+
+        [$valid, $message] = ServicePackage::validateTimeSlots($packageId, $staffId, [$timeSlot]);
+        if (!$valid) {
+            return [false, $message, null];
+        }
+
         // 检查是否已存在相同项
         $exists = self::where('user_id', $userId)
             ->where('staff_id', $staffId)
@@ -86,7 +97,7 @@ class Cart extends BaseModel
         }
 
         // 获取价格
-        $price = self::calculateItemPrice($staffId, $packageId, $date);
+        $price = self::calculateItemPrice($staffId, $packageId, $date, $timeSlot);
 
         try {
             $cart = self::create([
@@ -109,35 +120,113 @@ class Cart extends BaseModel
     }
 
     /**
+     * @notes 批量添加到购物车（多场次）
+     * @param int $userId
+     * @param int $staffId
+     * @param string $date
+     * @param array $timeSlots
+     * @param int $packageId
+     * @param string $remark
+     * @return array [bool $success, string $message, array $cartIds]
+     */
+    public static function addToCartMultiple(int $userId, int $staffId, string $date, array $timeSlots, int $packageId, string $remark = ''): array
+    {
+        $timeSlots = array_values(array_unique(array_map('intval', $timeSlots)));
+        if (empty($timeSlots)) {
+            return [false, '请选择时间段', []];
+        }
+
+        if ($packageId <= 0) {
+            return [false, '请选择套餐', []];
+        }
+
+        [$valid, $message] = ServicePackage::validateTimeSlots($packageId, $staffId, $timeSlots);
+        if (!$valid) {
+            return [false, $message, []];
+        }
+
+        foreach ($timeSlots as $timeSlot) {
+            if ($timeSlot < 0 || $timeSlot > 3) {
+                return [false, '时间段参数错误', []];
+            }
+            $exists = self::where('user_id', $userId)
+                ->where('staff_id', $staffId)
+                ->where('schedule_date', $date)
+                ->where('time_slot', $timeSlot)
+                ->find();
+            if ($exists) {
+                return [false, '该服务已在购物车中', []];
+            }
+
+            if (!Schedule::isAvailable($staffId, $date, $timeSlot)) {
+                return [false, '该档期不可预约', []];
+            }
+        }
+
+        Db::startTrans();
+        $cartIds = [];
+        try {
+            foreach ($timeSlots as $timeSlot) {
+                $price = self::calculateItemPrice($staffId, $packageId, $date, $timeSlot);
+
+                $cart = self::create([
+                    'user_id' => $userId,
+                    'staff_id' => $staffId,
+                    'package_id' => $packageId,
+                    'schedule_date' => $date,
+                    'time_slot' => $timeSlot,
+                    'price' => $price,
+                    'quantity' => 1,
+                    'remark' => $remark,
+                    'is_selected' => 1,
+                    'create_time' => time(),
+                    'update_time' => time(),
+                ]);
+                $cartIds[] = $cart->id;
+            }
+            Db::commit();
+            return [true, '添加成功', $cartIds];
+        } catch (\Exception $e) {
+            Db::rollback();
+            return [false, '添加失败：' . $e->getMessage(), []];
+        }
+    }
+
+    /**
      * @notes 计算单项价格
      * @param int $staffId
      * @param int $packageId
      * @param string $date
      * @return float
      */
-    public static function calculateItemPrice(int $staffId, int $packageId, string $date): float
+    public static function calculateItemPrice(int $staffId, int $packageId, string $date, int $timeSlot = 0): float
     {
-        // 优先使用档期特价
-        $schedule = Schedule::where('staff_id', $staffId)
-            ->where('schedule_date', $date)
-            ->find();
-        
-        if ($schedule && $schedule->price > 0) {
-            return (float)$schedule->price;
+        if ($packageId <= 0) {
+            return 0.00;
         }
 
-        // 使用套餐价格
-        if ($packageId > 0) {
-            $package = ServicePackage::find($packageId);
-            if ($package) {
-                return (float)$package->price;
+        $staffPackage = StaffPackage::where('staff_id', $staffId)
+            ->where('package_id', $packageId)
+            ->where('status', 1)
+            ->find();
+
+        if ($staffPackage) {
+            $customSlotPrice = $staffPackage->getCustomSlotPriceByTimeSlot($timeSlot);
+            if ($customSlotPrice !== null) {
+                return $customSlotPrice;
+            }
+            if ($staffPackage->custom_price !== null && $staffPackage->custom_price !== '') {
+                return (float)$staffPackage->custom_price;
             }
         }
 
-        // 使用工作人员基础价格
-        $staff = Staff::find($staffId);
-        if ($staff) {
-            return (float)$staff->price;
+        $package = ServicePackage::find($packageId);
+        if ($package) {
+            $slotPrice = $package->getSlotPriceByTimeSlot($timeSlot);
+            if ($slotPrice !== null) {
+                return $slotPrice;
+            }
+            return (float)$package->price;
         }
 
         return 0.00;
@@ -165,12 +254,45 @@ class Cart extends BaseModel
             $newDate = $data['schedule_date'] ?? $cart->schedule_date;
             $newTimeSlot = $data['time_slot'] ?? $cart->time_slot;
 
+            $changed = $newDate !== $cart->schedule_date || (int)$newTimeSlot !== (int)$cart->time_slot;
+            if ($changed) {
+                $exists = self::where('user_id', $userId)
+                    ->where('staff_id', $cart->staff_id)
+                    ->where('schedule_date', $newDate)
+                    ->where('time_slot', $newTimeSlot)
+                    ->where('id', '<>', $cart->id)
+                    ->find();
+                if ($exists) {
+                    return [false, '该服务已在购物车中'];
+                }
+
+                if ($cart->package_id > 0) {
+                    [$valid, $message] = ServicePackage::validateTimeSlots(
+                        (int)$cart->package_id,
+                        (int)$cart->staff_id,
+                        [(int)$newTimeSlot]
+                    );
+                    if (!$valid) {
+                        return [false, $message];
+                    }
+                }
+            }
+
             if (!Schedule::isAvailable($cart->staff_id, $newDate, $newTimeSlot)) {
                 return [false, '该档期不可预约'];
             }
 
             // 重新计算价格
-            $data['price'] = self::calculateItemPrice($cart->staff_id, $cart->package_id, $newDate);
+            $data['price'] = self::calculateItemPrice($cart->staff_id, $cart->package_id, $newDate, $newTimeSlot);
+            if ($changed && $cart->package_id > 0) {
+                PackageBooking::releaseBySelection(
+                    $userId,
+                    (int)$cart->package_id,
+                    (int)$cart->staff_id,
+                    (string)$cart->schedule_date,
+                    (int)$cart->time_slot
+                );
+            }
         }
 
         $data['update_time'] = time();
@@ -187,9 +309,25 @@ class Cart extends BaseModel
      */
     public static function removeFromCart(int $cartId, int $userId): array
     {
-        $result = self::where('id', $cartId)
+        $cart = self::where('id', $cartId)
             ->where('user_id', $userId)
-            ->delete();
+            ->find();
+
+        if (!$cart) {
+            return [false, '购物车项不存在'];
+        }
+
+        if ($cart->package_id > 0) {
+            PackageBooking::releaseBySelection(
+                $userId,
+                (int)$cart->package_id,
+                (int)$cart->staff_id,
+                (string)$cart->schedule_date,
+                (int)$cart->time_slot
+            );
+        }
+
+        $result = $cart->delete();
 
         return $result ? [true, '删除成功'] : [false, '删除失败'];
     }
@@ -202,6 +340,22 @@ class Cart extends BaseModel
      */
     public static function batchRemove(array $cartIds, int $userId): int
     {
+        $items = self::whereIn('id', $cartIds)
+            ->where('user_id', $userId)
+            ->select();
+
+        foreach ($items as $item) {
+            if ($item->package_id > 0) {
+                PackageBooking::releaseBySelection(
+                    $userId,
+                    (int)$item->package_id,
+                    (int)$item->staff_id,
+                    (string)$item->schedule_date,
+                    (int)$item->time_slot
+                );
+            }
+        }
+
         return self::whereIn('id', $cartIds)
             ->where('user_id', $userId)
             ->delete();
@@ -267,11 +421,13 @@ class Cart extends BaseModel
 
         // 检查每项的档期是否仍然可用
         foreach ($items as &$item) {
-            $item['is_available'] = Schedule::isAvailable(
-                $item['staff_id'],
-                $item['schedule_date'],
-                $item['time_slot']
+            [$available, $reason] = Schedule::checkAvailabilityWithReason(
+                (int)$item['staff_id'],
+                (string)$item['schedule_date'],
+                (int)$item['time_slot']
             );
+            $item['is_available'] = $available;
+            $item['unavailable_reason'] = $available ? '' : $reason;
         }
 
         return $items;
@@ -293,11 +449,14 @@ class Cart extends BaseModel
 
         foreach ($items as $item) {
             if (!$item['is_available']) {
+                $timeSlotDesc = $item['time_slot_desc'] ?? (new self())->getTimeSlotDescAttr('', [
+                    'time_slot' => $item['time_slot'] ?? 0,
+                ]);
                 $conflicts[] = [
                     'cart_id' => $item['id'],
                     'staff_name' => $item['staff']['name'] ?? '未知',
                     'date' => $item['schedule_date'],
-                    'time_slot' => $item['time_slot_desc'],
+                    'time_slot' => $timeSlotDesc,
                 ];
                 continue;
             }
@@ -354,7 +513,7 @@ class Cart extends BaseModel
                 } elseif ($item['time_slot'] == $other['time_slot']) {
                     // 同一时间段的重复预约
                     $hasConflict = true;
-                    $slotNames = [0 => '全天', 1 => '上午', 2 => '下午', 3 => '晚上'];
+                    $slotNames = [0 => '全天', 1 => '早礼', 2 => '午宴', 3 => '晚宴'];
                     $conflictMessage = '同一人员在' . $item['schedule_date'] . '的' . ($slotNames[$item['time_slot']] ?? '未知') . '时段重复预约';
                 }
 
@@ -421,6 +580,19 @@ class Cart extends BaseModel
      */
     public static function clearCart(int $userId): int
     {
+        $items = self::where('user_id', $userId)->select();
+        foreach ($items as $item) {
+            if ($item->package_id > 0) {
+                PackageBooking::releaseBySelection(
+                    $userId,
+                    (int)$item->package_id,
+                    (int)$item->staff_id,
+                    (string)$item->schedule_date,
+                    (int)$item->time_slot
+                );
+            }
+        }
+
         return self::where('user_id', $userId)->delete();
     }
 

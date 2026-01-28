@@ -103,7 +103,11 @@ class ScheduleController extends BaseApiController
         $params['user_id'] = $this->userId;
         $result = ScheduleLogic::joinWaitlist($params);
         if ($result['success']) {
-            return $this->success($result['message'], ['waitlist_id' => $result['waitlist_id']]);
+            return $this->success($result['message'], [
+                'waitlist_id' => $result['waitlist_id'],
+                'waitlist_ids' => $result['waitlist_ids'] ?? [],
+                'batch_no' => $result['batch_no'] ?? '',
+            ]);
         }
         return $this->fail($result['message']);
     }

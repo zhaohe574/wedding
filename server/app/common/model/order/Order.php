@@ -10,6 +10,7 @@ namespace app\common\model\order;
 use app\common\model\BaseModel;
 use app\common\model\user\User;
 use app\common\model\schedule\Schedule;
+use app\common\model\package\PackageBooking;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
 
@@ -214,7 +215,7 @@ class Order extends BaseModel
 
             // 创建订单项
             foreach ($cartItems as $item) {
-                OrderItem::create([
+                $orderItem = OrderItem::create([
                     'order_id' => $order->id,
                     'staff_id' => $item['staff_id'],
                     'package_id' => $item['package_id'] ?? 0,
@@ -240,6 +241,21 @@ class Order extends BaseModel
                         $order->id,
                         $userId
                     );
+                }
+
+                if (!empty($item['package_id'])) {
+                    $confirmed = PackageBooking::confirmSelection(
+                        $userId,
+                        (int)$item['package_id'],
+                        (int)$item['staff_id'],
+                        (string)$item['schedule_date'],
+                        (int)($item['time_slot'] ?? 0),
+                        (int)$order->id,
+                        (int)$orderItem->id
+                    );
+                    if (!$confirmed) {
+                        throw new \Exception('套餐预订锁定失败');
+                    }
                 }
             }
 
@@ -291,6 +307,9 @@ class Order extends BaseModel
                     Schedule::releaseLock($item->schedule_id);
                 }
             }
+
+            // 释放套餐预订锁
+            PackageBooking::releaseByOrderId($orderId);
 
             // 记录日志
             OrderLog::addLog($orderId, $operatorType, $operatorId, 'cancel', $beforeStatus, self::STATUS_CANCELLED, '取消订单：' . $reason);

@@ -91,9 +91,10 @@ class Waitlist extends BaseModel
      * @param int $packageId
      * @param string $remark
      * @param int $expireHours 过期时间（小时）
+     * @param string $batchNo 候补批次号
      * @return array [bool $success, string $message, int|null $waitlistId]
      */
-    public static function addToWaitlist(int $userId, int $staffId, string $date, int $timeSlot = 0, int $packageId = 0, string $remark = '', int $expireHours = 72): array
+    public static function addToWaitlist(int $userId, int $staffId, string $date, int $timeSlot = 0, int $packageId = 0, string $remark = '', int $expireHours = 72, string $batchNo = ''): array
     {
         // 检查是否已在候补名单中
         $exists = self::where('user_id', $userId)
@@ -114,6 +115,7 @@ class Waitlist extends BaseModel
                 'schedule_date' => $date,
                 'time_slot' => $timeSlot,
                 'package_id' => $packageId,
+                'batch_no' => $batchNo,
                 'notify_status' => self::NOTIFY_STATUS_PENDING,
                 'expire_time' => time() + ($expireHours * 3600),
                 'remark' => $remark,

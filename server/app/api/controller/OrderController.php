@@ -35,7 +35,8 @@ class OrderController extends BaseApiController
     public function detail()
     {
         $params = (new OrderValidate())->goCheck('detail');
-        $result = OrderLogic::getOrderDetail($params['id'], $this->userId);
+        $orderId = (int)$params['id'];
+        $result = OrderLogic::getOrderDetail($orderId, $this->userId);
         if ($result === null) {
             return $this->fail('订单不存在');
         }
@@ -81,7 +82,8 @@ class OrderController extends BaseApiController
     public function cancel()
     {
         $params = (new OrderValidate())->post()->goCheck('cancel');
-        $result = OrderLogic::cancelOrder($params['id'], $this->userId, $params['reason'] ?? '');
+        $orderId = (int)$params['id'];
+        $result = OrderLogic::cancelOrder($orderId, $this->userId, $params['reason'] ?? '');
         if ($result['success']) {
             return $this->success($result['message']);
         }
@@ -95,7 +97,8 @@ class OrderController extends BaseApiController
     public function confirm()
     {
         $params = (new OrderValidate())->post()->goCheck('detail');
-        $result = OrderLogic::confirmComplete($params['id'], $this->userId);
+        $orderId = (int)$params['id'];
+        $result = OrderLogic::confirmComplete($orderId, $this->userId);
         if ($result['success']) {
             return $this->success($result['message']);
         }
@@ -109,7 +112,8 @@ class OrderController extends BaseApiController
     public function delete()
     {
         $params = (new OrderValidate())->post()->goCheck('detail');
-        $result = OrderLogic::deleteOrder($params['id'], $this->userId);
+        $orderId = (int)$params['id'];
+        $result = OrderLogic::deleteOrder($orderId, $this->userId);
         if ($result['success']) {
             return $this->success($result['message']);
         }
@@ -123,7 +127,8 @@ class OrderController extends BaseApiController
     public function getPayInfo()
     {
         $params = (new OrderValidate())->goCheck('detail');
-        $result = OrderLogic::getPayInfo($params['id'], $this->userId);
+        $orderId = (int)$params['id'];
+        $result = OrderLogic::getPayInfo($orderId, $this->userId);
         if ($result) {
             return $this->data($result);
         }
@@ -137,6 +142,7 @@ class OrderController extends BaseApiController
     public function pay()
     {
         $params = (new OrderValidate())->post()->goCheck('pay');
+        $params['id'] = (int)$params['id'];
         $params['user_id'] = $this->userId;
         $result = OrderLogic::createPayment($params);
         if ($result['success']) {
@@ -152,6 +158,7 @@ class OrderController extends BaseApiController
     public function payBalance()
     {
         $params = (new OrderValidate())->post()->goCheck('pay');
+        $params['id'] = (int)$params['id'];
         $params['user_id'] = $this->userId;
         $params['pay_type'] = 2; // 尾款
         $result = OrderLogic::createPayment($params);
@@ -168,7 +175,8 @@ class OrderController extends BaseApiController
     public function applyRefund()
     {
         $params = (new OrderValidate())->post()->goCheck('refund');
-        $result = OrderLogic::applyRefund($params['id'], $this->userId, $params['amount'], $params['reason']);
+        $orderId = (int)$params['id'];
+        $result = OrderLogic::applyRefund($orderId, $this->userId, $params['amount'], $params['reason']);
         if ($result['success']) {
             return $this->success($result['message']);
         }
@@ -182,7 +190,8 @@ class OrderController extends BaseApiController
     public function refundDetail()
     {
         $params = (new OrderValidate())->goCheck('detail');
-        $result = OrderLogic::getRefundDetail($params['id'], $this->userId);
+        $orderId = (int)$params['id'];
+        $result = OrderLogic::getRefundDetail($orderId, $this->userId);
         if ($result) {
             return $this->data($result);
         }

@@ -35,9 +35,6 @@
                 <!-- 卡片头部 -->
                 <view class="card-header" :style="{ backgroundColor: getColor('primary-light-9') }">
                     <view class="header-left">
-                        <view class="plan-icon">
-                            <tn-icon name="folder-open" size="48" :color="$theme.primaryColor" />
-                        </view>
                         <view class="plan-title">
                             <text class="plan-name">{{ plan.plan_name }}</text>
                             <view class="plan-meta">
@@ -45,48 +42,84 @@
                                 <text class="meta-text">{{ plan.cart_items?.length || 0 }} 项服务</text>
                             </view>
                         </view>
-                    </view>
-                    <view class="default-badge" v-if="plan.is_default">
-                        <tn-icon name="star-fill" size="28" color="#FFD700" />
+                        <view class="plan-price">
+                            <text class="price-label">总价</text>
+                            <text class="price-symbol" :style="{ color: $theme.ctaColor }">¥</text>
+                            <text class="price-value" :style="{ color: $theme.ctaColor }">
+                                {{ formatPrice(plan.actual_total_price || plan.total_price) }}
+                            </text>
+                        </view>
                     </view>
                 </view>
 
-                <!-- 价格区域 -->
-                <view class="price-section">
-                    <view class="price-label">方案总价</view>
-                    <view class="price-amount">
-                        <text class="price-symbol" :style="{ color: $theme.ctaColor }">¥</text>
-                        <text class="price-value" :style="{ color: $theme.ctaColor }">{{ plan.actual_total_price || plan.total_price }}</text>
+                <!-- 方案明细 -->
+                <view class="plan-detail">
+                    <view class="detail-header">
+                        <text class="detail-title">包含服务</text>
+                        <text class="detail-count">{{ plan.cart_items?.length || 0 }}项</text>
                     </view>
-                </view>
-
-                <!-- 方案项目预览 -->
-                <view class="plan-preview">
-                    <view class="preview-header">
-                        <text class="preview-title">包含服务</text>
-                        <text class="preview-count">{{ plan.cart_items?.length || 0 }}项</text>
-                    </view>
-                    <view class="preview-items">
-                        <view class="preview-item" v-for="item in plan.cart_items?.slice(0, 3)" :key="item.id">
-                            <image :src="item.staff?.avatar" class="preview-avatar" mode="aspectFill" />
-                            <view class="preview-info">
-                                <text class="preview-name">{{ item.staff?.name }}</text>
-                                <text class="preview-date">{{ item.schedule_date }}</text>
+                    <view class="detail-groups" v-if="plan.groups?.length">
+                        <view class="detail-group" v-for="group in plan.groups" :key="group.key">
+                            <view class="group-header">
+                                <view class="staff-section">
+                                    <image
+                                        :src="group.staff_avatar || '/static/images/default-avatar.png'"
+                                        class="staff-avatar"
+                                        mode="aspectFill"
+                                    />
+                                    <view class="staff-info">
+                                        <text class="staff-name">{{ group.staff_name || '未知人员' }}</text>
+                                        <text class="staff-subtitle">{{ group.schedule_date }}</text>
+                                    </view>
+                                </view>
+                                <view class="group-total">
+                                    <text class="group-total-label">小计</text>
+                                    <text class="group-total-value" :style="{ color: $theme.ctaColor }">
+                                        ¥{{ formatPrice(group.total_price) }}
+                                    </text>
+                                </view>
                             </view>
-                            <view class="preview-price" :style="{ color: $theme.ctaColor }">
-                                <text>¥{{ item.price }}</text>
+                            <view class="group-packages">
+                                <view class="package-group" v-for="pkg in group.packages" :key="pkg.key">
+                                    <view class="package-header">
+                                        <view class="package-title">
+                                            <tn-icon name="gift" size="24" />
+                                            <text>{{ pkg.package_name || '未命名套餐' }}</text>
+                                        </view>
+                                        <text class="package-total">¥{{ formatPrice(pkg.total_price) }}</text>
+                                    </view>
+                                    <view class="package-items">
+                                        <view class="package-item" v-for="item in pkg.items" :key="item._key">
+                                            <view class="slot-info">
+                                                <view class="slot-row">
+                                                    <text class="slot-label">{{ item.time_slot_desc || '未知场次' }}</text>
+                                                    <text class="slot-price" :style="{ color: $theme.ctaColor }">
+                                                        ¥{{ formatPrice(item.price) }}
+                                                    </text>
+                                                </view>
+                                                <view class="slot-remark" v-if="item.remark">
+                                                    <tn-icon name="edit" size="20" color="#999999" />
+                                                    <text>{{ item.remark }}</text>
+                                                </view>
+                                            </view>
+                                        </view>
+                                    </view>
+                                </view>
                             </view>
                         </view>
-                        <view class="preview-more" v-if="plan.cart_items?.length > 3">
-                            <tn-icon name="more" size="32" color="#999999" />
-                            <text>还有 {{ plan.cart_items.length - 3 }} 项服务</text>
-                        </view>
+                    </view>
+                    <view class="detail-empty" v-else>
+                        <text>暂无服务项</text>
                     </view>
                 </view>
 
                 <!-- 操作按钮组 -->
                 <view class="action-group">
                     <view class="action-row">
+                        <view class="action-btn secondary" @click="handleCancelDefault(plan)" v-if="plan.is_default">
+                            <tn-icon name="close" size="36" color="#999999" />
+                            <text>取消默认</text>
+                        </view>
                         <view class="action-btn secondary" @click="handleSetDefault(plan)" v-if="!plan.is_default">
                             <tn-icon name="star" size="36" color="#999999" />
                             <text>设为默认</text>
@@ -108,7 +141,32 @@
                 </view>
             </view>
         </view>
-    </view>
+            <tn-popup v-model="showSharePopup" mode="center" :border-radius="24" :mask-close-able="true">
+                <view class="share-modal">
+                    <text class="modal-title">分享方案</text>
+                    <text class="modal-desc">分享码</text>
+                    <view class="share-code">{{ shareCode }}</view>
+                    <view class="modal-actions">
+                        <view
+                            class="modal-btn btn-primary"
+                            :style="{ backgroundColor: $theme.primaryColor }"
+                            @click="handleShareCopy"
+                        >
+                            复制分享码
+                        </view>
+                        <view class="modal-btn btn-secondary" @click="handleShareRegenerate">
+                            生成新码
+                        </view>
+                        <view class="modal-btn btn-ghost" @click="closeSharePopup">
+                            关闭
+                        </view>
+                    </view>
+                </view>
+            </tn-popup>
+
+
+
+</view>
 </template>
 
 <script setup lang="ts">
@@ -118,6 +176,7 @@ import {
     getMyCartPlans,
     deleteCartPlan,
     setDefaultCartPlan,
+    cancelDefaultCartPlan,
     generatePlanShareCode
 } from '@/api/cart'
 import { useThemeStore } from '@/stores/theme'
@@ -126,6 +185,89 @@ const $theme = useThemeStore()
 
 const loading = ref(false)
 const planList = ref<any[]>([])
+const showSharePopup = ref(false)
+const shareCode = ref('')
+const sharePlanId = ref<number | null>(null)
+const shareLoading = ref(false)
+
+
+const formatPrice = (value: any) => {
+    const num = Number(value || 0)
+    return Number.isFinite(num) ? num.toFixed(2) : '0.00'
+}
+
+const buildPlanGroups = (items: any[]) => {
+    const groups: any[] = []
+    const groupMap = new Map<string, any>()
+    const slotMap: Record<number, string> = {
+        0: '全天',
+        1: '早礼',
+        2: '午宴',
+        3: '晚宴'
+    }
+
+    items.forEach((item: any, index: number) => {
+        const staffId = Number(item.staff_id || item.staff?.id || 0)
+        const staffName = item.staff_name || item.staff?.name || ''
+        const staffAvatar = item.staff_avatar || item.staff?.avatar || ''
+        const scheduleDate = item.schedule_date || ''
+        const groupKey = `${staffId}-${scheduleDate}`
+        let group = groupMap.get(groupKey)
+        if (!group) {
+            group = {
+                key: groupKey,
+                staff_id: staffId,
+                staff_name: staffName,
+                staff_avatar: staffAvatar,
+                schedule_date: scheduleDate,
+                total_price: 0,
+                packages: [],
+                packageMap: new Map<string, any>()
+            }
+            groupMap.set(groupKey, group)
+            groups.push(group)
+        }
+
+        const itemPrice = Number(item.price || 0) * Number(item.quantity || 1)
+        group.total_price += itemPrice
+
+        const packageId = Number(item.package_id || item.package?.id || 0)
+        const packageName = item.package_name || item.package?.name || ''
+        const packageKey = `${groupKey}-${packageId}`
+        let pkg = group.packageMap.get(packageKey)
+        if (!pkg) {
+            pkg = {
+                key: packageKey,
+                package_id: packageId,
+                package_name: packageName,
+                total_price: 0,
+                items: []
+            }
+            group.packageMap.set(packageKey, pkg)
+            group.packages.push(pkg)
+        }
+
+        pkg.total_price += itemPrice
+        const timeSlot = Number(item.time_slot || 0)
+        const itemKey = item.cart_id || item.id || `${packageKey}-${index}`
+        pkg.items.push({
+            ...item,
+            _key: itemKey,
+            time_slot_desc: item.time_slot_desc || slotMap[timeSlot] || '未知场次'
+        })
+    })
+
+    groups.forEach((group: any) => {
+        group.total_price = Number(group.total_price.toFixed(2))
+        group.packages.forEach((pkg: any) => {
+            pkg.total_price = Number(pkg.total_price.toFixed(2))
+            pkg.items.sort((a: any, b: any) => Number(a.time_slot || 0) - Number(b.time_slot || 0))
+        })
+        delete group.packageMap
+    })
+
+    return groups
+}
 
 // 获取主题色浅色变体
 const getColor = (type: string) => {
@@ -141,7 +283,18 @@ const fetchPlans = async () => {
     loading.value = true
     try {
         const res = await getMyCartPlans()
-        planList.value = res || []
+        planList.value = (res || []).map((plan: any) => {
+            const items = Array.isArray(plan.cart_items)
+                ? plan.cart_items
+                : Array.isArray(plan.items)
+                  ? plan.items
+                  : []
+            return {
+                ...plan,
+                cart_items: items,
+                groups: buildPlanGroups(items)
+            }
+        })
     } finally {
         loading.value = false
     }
@@ -158,35 +311,129 @@ const handleSetDefault = async (plan: any) => {
     }
 }
 
-// 分享
-const handleShare = async (plan: any) => {
-    try {
-        const res = await generatePlanShareCode({ plan_id: plan.id })
-        const shareCode = res.share_code
-
-        uni.showModal({
-            title: '分享方案',
-            content: `分享码：${shareCode}\n\n将此分享码发送给好友，好友可以通过分享码查看并复制您的方案。`,
-            confirmText: '复制分享码',
-            confirmColor: $theme.primaryColor,
-            success: (modalRes) => {
-                if (modalRes.confirm) {
-                    uni.setClipboardData({
-                        data: shareCode,
-                        success: () => {
-                            uni.showToast({ title: '分享码已复制', icon: 'success' })
-                        }
-                    })
+// 取消默认
+const handleCancelDefault = (plan: any) => {
+    uni.showModal({
+        title: '取消默认方案',
+        content: '确定要取消默认方案吗？',
+        confirmColor: $theme.primaryColor,
+        success: async (res) => {
+            if (res.confirm) {
+                try {
+                    await cancelDefaultCartPlan()
+                    uni.showToast({ title: '已取消默认', icon: 'success' })
+                    fetchPlans()
+                } catch (e: any) {
+                    uni.showToast({ title: e.message || '操作失败', icon: 'none' })
                 }
             }
-        })
-    } catch (e: any) {
-        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '生成分享码失败'
-        uni.showToast({ title: errorMsg, icon: 'none' })
-    }
+        }
+    })
 }
 
-// 应用方案
+// 分享
+
+const openSharePopup = (planId: number, code: string) => {
+
+    sharePlanId.value = planId
+
+    shareCode.value = code || ''
+
+    showSharePopup.value = true
+
+}
+
+
+
+const closeSharePopup = () => {
+
+    showSharePopup.value = false
+
+}
+
+
+
+const handleShareCopy = () => {
+
+    if (!shareCode.value) {
+
+        uni.showToast({ title: '分享码为空', icon: 'none' })
+
+        return
+
+    }
+
+    uni.setClipboardData({
+
+        data: shareCode.value,
+
+        success: () => {
+            uni.showToast({ title: '分享码已复制', icon: 'success' })
+            closeSharePopup()
+        }
+
+    })
+
+}
+
+
+
+const handleShareRegenerate = async () => {
+
+    if (!sharePlanId.value || shareLoading.value) {
+
+        return
+
+    }
+
+    shareLoading.value = true
+
+    try {
+
+        const res = await generatePlanShareCode({ plan_id: sharePlanId.value, force: 1 })
+
+        shareCode.value = res.share_code || ''
+
+        uni.showToast({ title: '已生成新码', icon: 'success' })
+
+    } catch (e: any) {
+
+        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '生成分享码失败'
+
+        uni.showToast({ title: errorMsg, icon: 'none' })
+
+    } finally {
+
+        shareLoading.value = false
+
+    }
+
+}
+
+
+
+const handleShare = async (plan: any) => {
+
+    try {
+
+        const res = await generatePlanShareCode({ plan_id: plan.id })
+
+        const code = res.share_code || ''
+
+        openSharePopup(plan.id, code)
+
+    } catch (e: any) {
+
+        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '生成分享码失败'
+
+        uni.showToast({ title: errorMsg, icon: 'none' })
+
+    }
+
+}
+
+
+
 const handleApply = (plan: any) => {
     uni.showModal({
         title: '应用方案',
@@ -204,6 +451,10 @@ const handleApply = (plan: any) => {
 
 // 删除
 const handleDelete = (plan: any) => {
+    if (plan.is_default) {
+        uni.showToast({ title: '默认方案不能删除', icon: 'none' })
+        return
+    }
     uni.showModal({
         title: '删除方案',
         content: '确定要删除该方案吗？',
@@ -330,109 +581,94 @@ onShow(() => {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 32rpx;
+        padding: 20rpx 24rpx;
 
         .header-left {
             display: flex;
             align-items: center;
-            gap: 20rpx;
+            justify-content: space-between;
+            gap: 16rpx;
             flex: 1;
-
-            .plan-icon {
-                width: 96rpx;
-                height: 96rpx;
-                background: #FFFFFF;
-                border-radius: 24rpx;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 4rpx 16rpx rgba(124, 58, 237, 0.15);
-            }
+            min-width: 0;
 
             .plan-title {
                 flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                gap: 12rpx;
 
                 .plan-name {
                     display: block;
-                    font-size: 34rpx;
+                    font-size: 30rpx;
                     font-weight: 700;
                     color: #333333;
-                    margin-bottom: 8rpx;
+                    margin-bottom: 0;
+                    flex: 1;
+                    min-width: 0;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                 }
 
                 .plan-meta {
                     display: flex;
                     align-items: center;
-                    gap: 8rpx;
+                    gap: 6rpx;
+                    flex-shrink: 0;
 
                     .meta-text {
-                        font-size: 24rpx;
+                        font-size: 22rpx;
                         color: #999999;
                     }
                 }
             }
-        }
 
-        .default-badge {
-            width: 64rpx;
-            height: 64rpx;
-            background: #FFF7E6;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4rpx 12rpx rgba(255, 215, 0, 0.3);
-        }
-    }
+            .plan-price {
+                display: flex;
+                align-items: baseline;
+                gap: 4rpx;
+                flex-shrink: 0;
 
-    /* 价格区域 */
-    .price-section {
-        padding: 32rpx;
-        background: #FFF7E6;
-        border-top: 1rpx solid #F0F0F0;
-        border-bottom: 1rpx solid #F0F0F0;
+                .price-label {
+                    font-size: 22rpx;
+                    color: #999999;
+                }
 
-        .price-label {
-            font-size: 24rpx;
-            color: #999999;
-            margin-bottom: 8rpx;
-        }
+                .price-symbol {
+                    font-size: 28rpx;
+                    font-weight: 700;
+                }
 
-        .price-amount {
-            display: flex;
-            align-items: baseline;
-
-            .price-symbol {
-                font-size: 32rpx;
-                font-weight: 700;
-                margin-right: 4rpx;
-            }
-
-            .price-value {
-                font-size: 56rpx;
-                font-weight: 800;
-                line-height: 1;
+                .price-value {
+                    font-size: 36rpx;
+                    font-weight: 800;
+                    line-height: 1;
+                }
             }
         }
+
     }
 
-    /* 方案项目预览 */
-    .plan-preview {
+    /* 价格区域已合并到头部 */
+
+    /* 方案明细 */
+    .plan-detail {
         padding: 32rpx;
 
-        .preview-header {
+        .detail-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20rpx;
 
-            .preview-title {
+            .detail-title {
                 font-size: 28rpx;
                 font-weight: 600;
                 color: #333333;
             }
 
-            .preview-count {
+            .detail-count {
                 font-size: 24rpx;
                 color: #999999;
                 background: #F5F5F5;
@@ -441,64 +677,160 @@ onShow(() => {
             }
         }
 
-        .preview-items {
-            .preview-item {
-                display: flex;
-                align-items: center;
-                gap: 20rpx;
-                padding: 20rpx;
-                background: #F9FAFB;
-                border-radius: 16rpx;
-                margin-bottom: 12rpx;
+        .detail-group {
+            background: #F9FAFB;
+            border-radius: 16rpx;
+            padding: 20rpx;
+            border: 1rpx solid #F0F0F0;
+            margin-bottom: 16rpx;
+        }
 
-                &:last-child {
-                    margin-bottom: 0;
-                }
+        .detail-group:last-child {
+            margin-bottom: 0;
+        }
 
-                .preview-avatar {
-                    width: 72rpx;
-                    height: 72rpx;
-                    border-radius: 50%;
-                    border: 3rpx solid #FFFFFF;
-                    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
-                }
+        .group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12rpx;
+        }
 
-                .preview-info {
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 6rpx;
+        .staff-section {
+            display: flex;
+            align-items: center;
+            gap: 16rpx;
+        }
 
-                    .preview-name {
-                        font-size: 28rpx;
-                        font-weight: 500;
-                        color: #333333;
-                    }
+        .staff-avatar {
+            width: 72rpx;
+            height: 72rpx;
+            border-radius: 16rpx;
+        }
 
-                    .preview-date {
-                        font-size: 24rpx;
-                        color: #999999;
-                    }
-                }
+        .staff-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6rpx;
+        }
 
-                .preview-price {
-                    font-size: 28rpx;
-                    font-weight: 600;
-                }
-            }
+        .staff-name {
+            font-size: 28rpx;
+            font-weight: 600;
+            color: #333333;
+        }
 
-            .preview-more {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 12rpx;
-                padding: 20rpx;
-                margin-top: 12rpx;
-                background: #F5F5F5;
-                border-radius: 16rpx;
-                font-size: 24rpx;
-                color: #999999;
-            }
+        .staff-subtitle {
+            font-size: 24rpx;
+            color: #999999;
+        }
+
+        .group-total {
+            text-align: right;
+        }
+
+        .group-total-label {
+            display: block;
+            font-size: 22rpx;
+            color: #999999;
+        }
+
+        .group-total-value {
+            font-size: 28rpx;
+            font-weight: 700;
+        }
+
+        .group-packages {
+            display: flex;
+            flex-direction: column;
+            gap: 12rpx;
+        }
+
+        .package-group {
+            background: #FFFFFF;
+            border-radius: 12rpx;
+            padding: 16rpx;
+            border: 1rpx solid #EEEEEE;
+        }
+
+        .package-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12rpx;
+        }
+
+        .package-title {
+            display: flex;
+            align-items: center;
+            gap: 8rpx;
+            font-size: 26rpx;
+            font-weight: 600;
+            color: #333333;
+        }
+
+        .package-total {
+            font-size: 26rpx;
+            font-weight: 600;
+            color: #333333;
+        }
+
+        .package-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12rpx;
+        }
+
+        .package-item {
+            display: flex;
+            align-items: center;
+            padding: 16rpx;
+            background: #F9FAFB;
+            border-radius: 12rpx;
+            border: 1rpx solid #EEEEEE;
+        }
+
+        .slot-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6rpx;
+        }
+
+        .slot-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .slot-label {
+            font-size: 26rpx;
+            font-weight: 500;
+            color: #333333;
+        }
+
+        .slot-price {
+            font-size: 26rpx;
+            font-weight: 600;
+        }
+
+        .slot-remark {
+            display: flex;
+            align-items: center;
+            gap: 6rpx;
+            font-size: 22rpx;
+            color: #999999;
+        }
+
+        .detail-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24rpx;
+            background: #F9FAFB;
+            border-radius: 16rpx;
+            color: #999999;
+            font-size: 24rpx;
         }
     }
 
@@ -561,4 +893,68 @@ onShow(() => {
         }
     }
 }
+
+.share-modal {
+    width: 560rpx;
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    padding: 32rpx;
+    text-align: center;
+}
+
+.share-modal .modal-title {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #333333;
+}
+
+.share-modal .modal-desc {
+    margin-top: 12rpx;
+    font-size: 24rpx;
+    color: #999999;
+}
+
+.share-modal .share-code {
+    margin-top: 20rpx;
+    padding: 20rpx;
+    background: #F5F5F5;
+    border-radius: 16rpx;
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #333333;
+    letter-spacing: 2rpx;
+    word-break: break-all;
+}
+
+.share-modal .modal-actions {
+    margin-top: 24rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+}
+
+.share-modal .modal-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 22rpx;
+    border-radius: 48rpx;
+    font-size: 26rpx;
+    font-weight: 600;
+}
+
+.share-modal .modal-btn.btn-primary {
+    color: #FFFFFF;
+}
+
+.share-modal .modal-btn.btn-secondary {
+    background: #F5F5F5;
+    color: #666666;
+}
+
+.share-modal .modal-btn.btn-ghost {
+    background: transparent;
+    color: #999999;
+}
+
 </style>

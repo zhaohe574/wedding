@@ -64,7 +64,15 @@
                         </view>
                     </view>
                     <view class="info-item">
-                        <tn-icon name="clock" size="36" color="#52C41A" />
+                                            <view class="info-item" v-if="item.package">
+                        <tn-icon name="gift" size="36" color="#52C41A" />
+                        <view class="info-content">
+                            <text class="info-label">??</text>
+                            <text class="info-value">{{ item.package.name }}</text>
+                        </view>
+                    </view>
+
+<tn-icon name="clock" size="36" color="#52C41A" />
                         <view class="info-content">
                             <text class="info-label">时间段</text>
                             <text class="info-value">{{ item.time_slot_desc || '全天' }}</text>
@@ -200,8 +208,18 @@ const handleItemClick = (item: any) => {
 
 // 立即预约
 const handleBook = (item: any) => {
+    const params = [
+        `staff_id=${item.staff_id}`,
+        `date=${item.schedule_date}`
+    ]
+    if (item.package_id) {
+        params.push(`package_id=${item.package_id}`)
+    }
+    if (item.time_slot !== null && item.time_slot !== undefined) {
+        params.push(`time_slot=${item.time_slot}`)
+    }
     uni.navigateTo({
-        url: `/packages/pages/schedule_calendar/schedule_calendar?staff_id=${item.staff_id}&date=${item.schedule_date}`
+        url: `/packages/pages/schedule_calendar/schedule_calendar?${params.join('&')}`
     })
 }
 

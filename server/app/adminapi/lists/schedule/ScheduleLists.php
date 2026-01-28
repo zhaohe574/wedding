@@ -99,9 +99,9 @@ class ScheduleLists extends BaseAdminDataLists implements ListsExcelInterface
     {
         $map = [
             0 => '全天',
-            1 => '上午',
-            2 => '下午',
-            3 => '晚上',
+            1 => '早礼',
+            2 => '午宴',
+            3 => '晚宴',
         ];
         return $map[$timeSlot] ?? '未知';
     }

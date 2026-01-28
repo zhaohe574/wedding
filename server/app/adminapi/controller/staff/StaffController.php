@@ -215,6 +215,12 @@ class StaffController extends BaseAdminController
         if (isset($params['custom_slot_prices'])) {
             $data['custom_slot_prices'] = $params['custom_slot_prices'];
         }
+        if (array_key_exists('booking_type', $params)) {
+            $data['booking_type'] = $params['booking_type'];
+        }
+        if (isset($params['allowed_time_slots'])) {
+            $data['allowed_time_slots'] = $params['allowed_time_slots'];
+        }
         if (isset($params['status'])) {
             $data['status'] = $params['status'];
         }

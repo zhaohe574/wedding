@@ -82,81 +82,91 @@
             </view>
 
             <!-- 购物车列表 -->
-            <view class="cart-list">
-                <view 
-                    class="cart-card" 
-                    v-for="item in cartData.items" 
-                    :key="item.id"
-                    :class="{ unavailable: !item.is_available }"
+                        <view class="cart-list">
+                <view
+                    class="cart-group"
+                    v-for="group in groupedItems"
+                    :key="group.key"
                 >
-                    <!-- 选择框 -->
-                    <view 
-                        class="checkbox" 
-                        :class="{ checked: item.is_selected }"
-                        :style="item.is_selected ? { 
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                            borderColor: $theme.primaryColor
-                        } : {}"
-                        @click="handleToggleSelect(item)"
-                    >
-                        <tn-icon v-if="item.is_selected" name="check" size="28" color="#FFFFFF" />
+                    <view class="group-header">
+                        <view class="staff-section">
+                            <image
+                                :src="group.staff?.avatar || '/static/images/default-avatar.png'"
+                                class="staff-avatar"
+                                mode="aspectFill"
+                            />
+                            <view class="staff-info">
+                                <text class="staff-name">{{ group.staff?.name || '未知人员' }}</text>
+                                <text class="staff-subtitle">{{ group.schedule_date }}</text>
+                            </view>
+                        </view>
+                        <view class="group-total">
+                            <text class="group-total-label">小计</text>
+                            <text class="group-total-value" :style="{ color: $theme.ctaColor }">¥{{ group.total_price }}</text>
+                        </view>
                     </view>
 
-                    <!-- 卡片内容 -->
-                    <view class="card-content">
-                        <!-- 服务人员信息 -->
-                        <view class="staff-section">
-                            <image :src="item.staff?.avatar" class="staff-avatar" mode="aspectFill" />
-                            <view class="staff-info">
-                                <text class="staff-name">{{ item.staff?.name || '未知人员' }}</text>
-                                <view class="package-tag" v-if="item.package">
+                    <view class="group-packages">
+                        <view
+                            class="package-group"
+                            v-for="pkg in group.packages"
+                            :key="pkg.key"
+                        >
+                            <view class="package-header">
+                                <view class="package-title">
                                     <tn-icon name="gift" size="24" />
-                                    <text>{{ item.package.name }}</text>
+                                    <text>{{ pkg.package?.name || '未命名套餐' }}</text>
+                                </view>
+                                <view class="package-actions">
+                                    <text class="package-total">¥{{ pkg.total_price }}</text>
+                                    <view class="package-delete" @click.stop="handleDeletePackage(pkg)">
+                                        <tn-icon name="delete" size="24" color="#999999" />
+                                        <text>删除</text>
+                                    </view>
                                 </view>
                             </view>
-                        </view>
 
-                        <!-- 预约信息 -->
-                        <view class="booking-info">
-                            <view class="info-item">
-                                <tn-icon name="calendar" size="32" color="#52C41A" />
-                                <view class="info-text">
-                                    <text class="info-label">预约日期</text>
-                                    <text class="info-value">{{ item.schedule_date }}</text>
+                            <view class="package-items">
+                                <view
+                                    class="package-item"
+                                    v-for="item in pkg.items"
+                                    :key="item.id"
+                                    :class="{ unavailable: !item.is_available }"
+                                >
+                                    <view class="slot-main" @click="handleToggleSelect(item)">
+                                        <view
+                                            class="checkbox"
+                                            :class="{ checked: item.is_selected }"
+                                            :style="item.is_selected ? {
+                                                background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+                                                borderColor: $theme.primaryColor
+                                            } : {}"
+                                        >
+                                            <tn-icon v-if="item.is_selected" name="check" size="28" color="#FFFFFF" />
+                                        </view>
+                                        <view class="slot-info">
+                                            <view class="slot-row">
+                                                <text class="slot-label">{{ getTimeSlotLabel(item) }}</text>
+                                                <text class="slot-price" :style="{ color: $theme.ctaColor }">¥{{ item.price }}</text>
+                                            </view>
+                                            <view class="slot-status" v-if="!item.is_available">
+                                                <tn-icon name="close-circle" size="24" color="#FF2C3C" />
+                                                <text>{{ item.unavailable_reason || '档期不可用' }}</text>
+                                            </view>
+                                        </view>
+                                    </view>
+                                    <view class="slot-actions" @click.stop="handleDelete(item)">
+                                        <tn-icon name="delete" size="28" color="#999999" />
+                                        <text class="delete-text">删除</text>
+                                    </view>
                                 </view>
-                            </view>
-                            <view class="info-item">
-                                <tn-icon name="clock" size="32" color="#52C41A" />
-                                <view class="info-text">
-                                    <text class="info-label">时间段</text>
-                                    <text class="info-value">{{ item.time_slot_desc }}</text>
-                                </view>
-                            </view>
-                        </view>
-
-                        <!-- 不可用提示 -->
-                        <view class="unavailable-badge" v-if="!item.is_available">
-                            <tn-icon name="close-circle" size="28" color="#FF2C3C" />
-                            <text>档期已不可用</text>
-                        </view>
-
-                        <!-- 底部操作栏 -->
-                        <view class="card-footer">
-                            <view class="price-section">
-                                <text class="price-symbol" :style="{ color: $theme.ctaColor }">¥</text>
-                                <text class="price-value" :style="{ color: $theme.ctaColor }">{{ item.price }}</text>
-                            </view>
-                            <view class="delete-btn" @click="handleDelete(item)">
-                                <tn-icon name="delete" size="28" color="#999999" />
-                                <text class="delete-text">删除</text>
                             </view>
                         </view>
                     </view>
                 </view>
             </view>
 
-            <!-- 方案操作栏 -->
-            <view class="action-bar">
+<view class="action-bar">
                 <view class="action-btn" @click="handleSavePlan">
                     <tn-icon name="folder-add" size="48" :color="$theme.primaryColor" />
                     <text class="action-text">保存方案</text>
@@ -193,7 +203,7 @@
                 }"
                 @click="handleCheckout"
             >
-                <text>去结算</text>
+                <text>下单</text>
             </view>
         </view>
 
@@ -228,13 +238,15 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     getCartList,
     deleteCartItem,
+    batchDeleteCart,
     toggleCartSelect,
     selectAllCart,
     clearCart,
+    applyCartPlan,
     saveCartPlan
 } from '@/api/cart'
 import { useThemeStore } from '@/stores/theme'
@@ -264,6 +276,9 @@ const cartData = ref<any>({
 const showPlanPopup = ref(false)
 const planName = ref('')
 const showConflictDetail = ref(false)
+const pendingApplyPlanId = ref<number | null>(null)
+const applyingPlan = ref(false)
+
 
 // 套餐预订冲突列表
 const packageConflicts = computed(() => {
@@ -277,6 +292,70 @@ const isAllSelected = computed(() => {
         cartData.value.selected_count === cartData.value.items.length
     )
 })
+const groupedItems = computed(() => {
+    const groups: any[] = []
+    const groupMap = new Map<string, any>()
+    const items = cartData.value.items || []
+
+    items.forEach((item: any) => {
+        const key = `${item.staff_id}-${item.schedule_date}`
+        let group = groupMap.get(key)
+        if (!group) {
+            group = {
+                key,
+                staff: item.staff,
+                schedule_date: item.schedule_date,
+                packages: [],
+                total_price: 0,
+                packageMap: new Map<number, any>()
+            }
+            groupMap.set(key, group)
+            groups.push(group)
+        }
+
+        group.total_price += Number(item.price || 0)
+
+        const pkgKey = Number(item.package_id || 0)
+        let pkgGroup = group.packageMap.get(pkgKey)
+        if (!pkgGroup) {
+            pkgGroup = {
+                key: `${key}-${pkgKey}`,
+                package: item.package,
+                items: [],
+                total_price: 0
+            }
+            group.packageMap.set(pkgKey, pkgGroup)
+            group.packages.push(pkgGroup)
+        }
+
+        pkgGroup.items.push(item)
+        pkgGroup.total_price += Number(item.price || 0)
+    })
+
+    groups.forEach((group) => {
+        group.packages.forEach((pkg: any) => {
+            pkg.items.sort((a: any, b: any) => Number(a.time_slot || 0) - Number(b.time_slot || 0))
+        })
+        delete group.packageMap
+    })
+
+    return groups
+})
+
+const getTimeSlotLabel = (item: any) => {
+    if (item?.time_slot_desc) {
+        return item.time_slot_desc
+    }
+    const map: Record<number, string> = {
+        0: '全天',
+        1: '早礼',
+        2: '午宴',
+        3: '晚宴'
+    }
+    const slot = Number(item?.time_slot)
+    return Number.isFinite(slot) ? (map[slot] || '未知场次') : '未知场次'
+}
+
 
 // 获取购物车数据
 const fetchCart = async () => {
@@ -286,6 +365,26 @@ const fetchCart = async () => {
         cartData.value = res
     } finally {
         loading.value = false
+    }
+}
+
+const applyPlanToCart = async (planId: number) => {
+    if (!planId || applyingPlan.value) {
+        return
+    }
+    applyingPlan.value = true
+    try {
+        const res = await applyCartPlan({ plan_id: planId })
+        const copiedCount = Number(res?.copied_count || 0)
+        const message = copiedCount > 0 ? `已应用${copiedCount}个场次` : '应用成功'
+        uni.showToast({ title: message, icon: 'success' })
+    } catch (e: any) {
+        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '应用失败'
+        uni.showToast({ title: errorMsg, icon: 'none' })
+    } finally {
+        applyingPlan.value = false
+        pendingApplyPlanId.value = null
+        fetchCart()
     }
 }
 
@@ -310,6 +409,25 @@ const handleDelete = (item: any) => {
         success: async (res) => {
             if (res.confirm) {
                 await deleteCartItem({ id: item.id })
+                uni.showToast({ title: '删除成功', icon: 'success' })
+                fetchCart()
+            }
+        }
+    })
+}
+
+const handleDeletePackage = (pkg: any) => {
+    const itemIds = (pkg?.items || []).map((item: any) => item.id).filter((id: any) => id)
+    if (itemIds.length === 0) {
+        return
+    }
+    uni.showModal({
+        title: '删除确认',
+        content: '确定要删除该套餐下所有场次吗？',
+        confirmColor: '#FF2C3C',
+        success: async (res) => {
+            if (res.confirm) {
+                await batchDeleteCart({ ids: itemIds })
                 uni.showToast({ title: '删除成功', icon: 'success' })
                 fetchCart()
             }
@@ -400,7 +518,18 @@ const goMyPlans = () => {
     uni.navigateTo({ url: '/packages/pages/cart_plan/cart_plan' })
 }
 
+onLoad((options: any) => {
+    const planId = Number(options?.apply_plan)
+    if (Number.isFinite(planId) && planId > 0) {
+        pendingApplyPlanId.value = planId
+    }
+})
+
 onShow(() => {
+    if (pendingApplyPlanId.value) {
+        applyPlanToCart(pendingApplyPlanId.value)
+        return
+    }
     fetchCart()
 })
 </script>
@@ -628,6 +757,185 @@ onShow(() => {
 }
 
 /* 购物车卡片 */
+.cart-group {
+    background: #fff;
+    border-radius: 20rpx;
+    padding: 24rpx;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+}
+
+.group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20rpx;
+}
+
+.group-header .staff-section {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+}
+
+.group-header .staff-avatar {
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: 16rpx;
+}
+
+.group-header .staff-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.group-header .staff-name {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #333333;
+}
+
+.group-header .staff-subtitle {
+    font-size: 24rpx;
+    color: #999999;
+}
+
+.group-total {
+    text-align: right;
+}
+
+.group-total-label {
+    display: block;
+    font-size: 22rpx;
+    color: #999999;
+}
+
+.group-total-value {
+    font-size: 30rpx;
+    font-weight: 700;
+}
+
+.group-packages {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+}
+
+.package-group {
+    background: #F9FAFB;
+    border-radius: 16rpx;
+    padding: 20rpx;
+    border: 1rpx solid #F0F0F0;
+}
+
+.package-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12rpx;
+}
+
+.package-actions {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+}
+
+.package-delete {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+    font-size: 22rpx;
+    color: #999999;
+}
+
+.package-title {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #333333;
+}
+
+.package-total {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #333333;
+}
+
+.package-items {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+}
+
+.package-item {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    padding: 16rpx;
+    background: #FFFFFF;
+    border-radius: 12rpx;
+    border: 1rpx solid #EEEEEE;
+}
+
+.package-item.unavailable {
+    opacity: 0.6;
+}
+
+.slot-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+}
+
+.slot-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.slot-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.slot-label {
+    font-size: 26rpx;
+    font-weight: 500;
+    color: #333333;
+}
+
+.slot-price {
+    font-size: 26rpx;
+    font-weight: 600;
+}
+
+.slot-status {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+    font-size: 22rpx;
+    color: #FF2C3C;
+}
+
+.slot-actions {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+    font-size: 22rpx;
+    color: #999999;
+}
+
+.slot-actions .delete-text {
+    font-size: 22rpx;
+    color: #999999;
+}
+
 .cart-card {
     display: flex;
     background: #fff;

@@ -1,0 +1,68 @@
+# UI设计规则（婚庆服务预约管理系统）
+
+## 设计理念
+- 核心定位：浪漫优雅、专业可信、温馨亲和、高端品质。
+- 设计原则：情感化设计、清晰易用、视觉一致性、响应式适配（小程序、H5、PC）。
+
+## 色彩系统
+- 主题色由装修管理后台动态配置，自动生成主色、辅助色、CTA 色、点缀色及其变体。
+- 核心变量：--color-primary、--color-primary-dark-2、--color-primary-light-3/5/7/9；--color-secondary*；--color-cta*；--color-accent*；--color-minor；--color-btn-text。
+- 使用场景：主色用于主要按钮、导航栏、重要标题、链接；浅色用于背景与 hover；次要色用于标签和装饰；CTA 用于关键操作；点缀色用于 VIP、优惠、特殊标记。
+- 功能色固定：--color-success/#19BE6B、--color-warning/#FF9900、--color-error/#FF2C3C、--color-info/#909399。
+- 中性色固定：--color-white、--color-black、--color-main、--color-content、--color-muted、--color-page、--color-light、--color-disabled。
+- 背景规范：主/次背景使用主题浅色，卡片白底，遮罩使用半透明黑。
+
+## 字体系统
+- 方案A：标题 Playfair Display + Source Han Serif CN；正文 Inter + Source Han Sans CN + PingFang SC。
+- 方案B：Source Han Sans CN + Helvetica Neue + Arial。
+- 字号体系（rpx）：大标题 44、一级标题 40、二级标题 34、三级标题 32、正文 28、辅助 26、说明 24。
+- Tailwind fontSize：xs24、sm26、base28、lg30、xl32、2xl34、3xl38、4xl40、5xl44。
+
+## 组件与交互
+- 主按钮：圆角、主题渐变背景、白字，规格 88/72/56rpx，active 轻微下移，过渡 0.2s。
+- 次按钮：透明背景、主题色描边与文字，active 使用主色浅背景。
+- CTA 按钮：CTA 渐变 + 阴影，用于支付、提交订单等关键操作。
+- 卡片：标准卡片、玻璃态卡片（确保对比度 >= 4.5:1）、主题强调卡片。
+- 导航栏：小程序使用原生 navigation-bar；颜色来自 $theme.navBgColor/$theme.navColor；Tabbar 高度 120rpx + 安全区。
+- 表单：输入框高 88rpx，focus 阴影；标签/徽章使用主色浅背景和边框。
+- 交互反馈：hover 和 active 清晰可见，移动端提供点击反馈。
+
+## 布局与响应式
+- 间距系统：8rpx 基准，xs/sm/md/lg/xl/2xl。
+- 标准页面结构：导航栏 + 内容区（padding 24rpx）+ 底部标签栏。
+- 卡片间距：卡片之间 24rpx，卡片内边距 24rpx，卡片与屏幕边缘 24rpx。
+- 断点：< 768 单列，768-1024 双列，> 1024 三列或更多。
+
+## 图标系统
+- 主图标库：图鸟UI Icons（TuniaoUI），备选 Heroicons、Lucide。
+- 禁止使用 emoji 作为图标，统一使用 tn-icon。
+- 常用映射：star/star-fill、like/like-fill、chat、share、map-pin、clock、user、setting。
+
+## 动效
+- 过渡时间：0.15s（快速）、0.2s（标准）、0.3s（慢速）。
+- 支持 prefers-reduced-motion，降低动画强度。
+- 禁止：无限循环装饰动画、过度弹跳、超过 500ms 的过渡、依赖 hover 的关键功能。
+
+## 业务场景要点
+- 首页：搜索栏、轮播、导航、人员推荐、服务套餐、案例作品、客户评价；背景为主题浅色渐变。
+- 人员详情页：头图玻璃态、评分星级 + 数字、作品九宫格、底部操作栏固定含安全区。
+- 动态广场页：顶部标签、排序筛选、动态卡片（头像、内容、话题、互动、位置）。
+- 订单页：状态色按 warning/cta/success/muted/error 匹配不同状态。
+- 购物车页：多选、档期冲突提示、费用明细固定底部玻璃态、支持保存方案。
+
+## 装修系统集成
+- 装修配置结构包含：themeColor1、themeColor2、buttonColor、navigationBarColor、topTextColor；meta（bg_type、bg_color、bg_image）；data（name、content、styles）。
+- 可装修页面：首页、个人中心、系统风格。
+- 组件清单：search、banner、nav、middle-banner、quick-entry、notice-bar、staff-showcase、service-packages、portfolio-gallery、customer-reviews、activity-zone、coupon-receive、hot-topics、wedding-countdown、user-info、my-service、order-quick-entry、data-stats。
+
+## 开发实施规范
+- 页面结构使用 page-meta 绑定主题；容器最小高度 100vh。
+- 推荐使用 Tailwind 原子类。
+- 小程序不支持 CSS 变量，必须通过 :style 内联绑定主题色；为一致性建议全平台统一内联方式。
+- 主题色来自 useThemeStore()；必要时提供浅色变体映射。
+- 性能：图片懒加载；长列表使用虚拟滚动（z-paging）。
+
+## 无障碍与交付检查
+- 对比度符合 WCAG 2.1（正文 >= 4.5:1）。
+- 触摸目标 >= 88rpx；焦点状态可见；语义化标签与图片 alt 文本齐全。
+- 交付检查：图标统一、无 emoji、hover 不引发布局偏移、断点测试 375/768/1024/1440、无横向滚动、动画 150-300ms、避免过度动画、CSS 变量应用正确。

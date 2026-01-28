@@ -66,6 +66,12 @@
                         </el-tag>
                     </template>
                 </el-table-column>
+                <el-table-column label="预约类型" width="120">
+                    <template #default="{ row }">
+                        <el-tag v-if="row.booking_type === 0" type="info">全天套餐</el-tag>
+                        <el-tag v-else type="warning">分场次套餐</el-tag>
+                    </template>
+                </el-table-column>
                 <el-table-column label="价格" width="150">
                     <template #default="{ row }">
                         <div class="flex items-center gap-2">
@@ -75,7 +81,7 @@
                                     ¥{{ row.original_price }}
                                 </span>
                             </div>
-                            <el-tooltip content="配置时段价格" placement="top">
+                            <el-tooltip v-if="row.booking_type === 1" content="配置场次价格" placement="top">
                                 <el-button
                                     type="primary"
                                     link
@@ -88,7 +94,6 @@
                         </div>
                     </template>
                 </el-table-column>
-                <el-table-column label="服务时长" prop="duration_desc" width="100" />
                 <el-table-column label="推荐" width="80">
                     <template #default="{ row }">
                         <el-tag v-if="row.is_recommend" type="warning">推荐</el-tag>
@@ -119,12 +124,12 @@
                             编辑
                         </el-button>
                         <el-button
-                            v-if="row.package_type === 1"
+                            v-if="row.package_type === 1 && row.booking_type === 1"
                             type="warning"
                             link
                             @click="openSlotPriceDialog(row)"
                         >
-                            时段价格
+                            场次价格
                         </el-button>
                         <el-button
                             v-perms="['service.package/delete']"
@@ -187,6 +192,22 @@
                         </el-select>
                     </div>
                 </el-form-item>
+                <el-form-item label="预约类型" prop="booking_type">
+                    <el-radio-group v-model="editForm.booking_type">
+                        <el-radio :value="0">全天套餐</el-radio>
+                        <el-radio :value="1">分场次套餐</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item v-if="editForm.booking_type === 1" label="允许场次" prop="allowed_time_slots">
+                    <el-checkbox-group v-model="editForm.allowed_time_slots">
+                        <el-checkbox
+                            v-for="slot in timeSlotOptions"
+                            :key="slot.value"
+                            :value="slot.value"
+                            :label="slot.label"
+                        />
+                    </el-checkbox-group>
+                </el-form-item>
                 <div class="grid grid-cols-2 gap-4">
                     <el-form-item label="套餐价格" prop="price">
                         <el-input-number v-model="editForm.price" :min="0" :precision="2" class="w-full" />
@@ -195,11 +216,6 @@
                         <el-input-number v-model="editForm.original_price" :min="0" :precision="2" class="w-full" />
                     </el-form-item>
                 </div>
-                <el-form-item label="服务时长" prop="duration">
-                    <el-input-number v-model="editForm.duration" :min="1" class="w-full">
-                        <template #append>小时</template>
-                    </el-input-number>
-                </el-form-item>
                 <el-form-item label="套餐内容" prop="content">
                     <div class="w-full">
                         <el-tag
@@ -257,10 +273,10 @@
             </template>
         </el-dialog>
 
-        <!-- 时段价格配置弹窗 -->
+        <!-- 场次价格配置弹窗 -->
         <el-dialog
             v-model="showSlotPriceDialog"
-            title="时段价格配置"
+            title="场次价格配置"
             width="650px"
         >
             <div class="mb-4">
@@ -271,36 +287,14 @@
                     </template>
                 </el-alert>
             </div>
-            <div class="mb-4">
-                <el-button type="primary" size="small" @click="addSlotPrice">
-                    <icon name="el-icon-Plus" class="mr-1" />
-                    添加时段
-                </el-button>
-            </div>
+            <div class="text-xs text-gray-500 mb-2">未填写的场次将使用默认价格</div>
             <el-table :data="currentSlotPrices" border>
-                <el-table-column label="开始时间" width="150">
-                    <template #default="{ row, $index }">
-                        <el-time-picker
-                            v-model="row.start_time"
-                            format="HH:mm"
-                            value-format="HH:mm"
-                            placeholder="开始时间"
-                            class="w-full"
-                        />
+                <el-table-column label="场次" width="140">
+                    <template #default="{ row }">
+                        {{ timeSlotLabelMap[row.time_slot] || row.time_slot }}
                     </template>
                 </el-table-column>
-                <el-table-column label="结束时间" width="150">
-                    <template #default="{ row, $index }">
-                        <el-time-picker
-                            v-model="row.end_time"
-                            format="HH:mm"
-                            value-format="HH:mm"
-                            placeholder="结束时间"
-                            class="w-full"
-                        />
-                    </template>
-                </el-table-column>
-                <el-table-column label="时段价格" width="150">
+                <el-table-column label="场次价格">
                     <template #default="{ row }">
                         <el-input-number
                             v-model="row.price"
@@ -309,11 +303,6 @@
                             size="small"
                             class="w-full"
                         />
-                    </template>
-                </el-table-column>
-                <el-table-column label="操作" width="80">
-                    <template #default="{ $index }">
-                        <el-button type="danger" link @click="removeSlotPrice($index)">删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -358,10 +347,11 @@ const editForm = reactive({
     name: '',
     category_id: '',
     package_type: 1,
+    booking_type: 0,
+    allowed_time_slots: [] as number[],
     staff_id: 0,
     price: 0,
     original_price: 0,
-    duration: 1,
     content: [] as string[],
     description: '',
     sort: 0,
@@ -372,10 +362,73 @@ const editForm = reactive({
 const editRules = reactive({
     name: [{ required: true, message: '请输入套餐名称', trigger: 'blur' }],
     category_id: [{ required: true, message: '请选择服务分类', trigger: 'change' }],
-    price: [{ required: true, message: '请输入套餐价格', trigger: 'blur' }],
-    duration: [{ required: true, message: '请输入服务时长', trigger: 'blur' }]
+    booking_type: [{ required: true, message: '请选择预约类型', trigger: 'change' }],
+    price: [{ required: true, message: '请输入套餐价格', trigger: 'blur' }]
 })
 
+const timeSlotOptions = [
+    { value: 1, label: '早礼' },
+    { value: 2, label: '午宴' },
+    { value: 3, label: '晚宴' }
+]
+
+const timeSlotLabelMap: Record<number, string> = {
+    1: '早礼',
+    2: '午宴',
+    3: '晚宴'
+}
+
+const normalizeAllowedSlots = (value: any) => {
+    if (Array.isArray(value)) {
+        return value.map((item) => Number(item)).filter((item) => !Number.isNaN(item))
+    }
+    if (typeof value === 'string' && value) {
+        try {
+            const parsed = JSON.parse(value)
+            if (Array.isArray(parsed)) {
+                return parsed.map((item) => Number(item)).filter((item) => !Number.isNaN(item))
+            }
+        } catch (e) {
+            return []
+        }
+    }
+    return []
+}
+
+const normalizeSlotPrices = (value: any) => {
+    if (Array.isArray(value)) {
+        return value
+    }
+    if (typeof value === 'string' && value) {
+        try {
+            const parsed = JSON.parse(value)
+            if (Array.isArray(parsed)) {
+                return parsed
+            }
+        } catch (e) {
+            return []
+        }
+    }
+    return []
+}
+
+const resolveAllowedSlots = (row: any) => {
+    if (row.booking_type !== 1) {
+        return []
+    }
+    const allowed = normalizeAllowedSlots(row.allowed_time_slots)
+    return allowed.length ? allowed : timeSlotOptions.map((item) => item.value)
+}
+
+const buildSlotPriceRows = (allowedSlots: number[], slotPrices: any[]) => {
+    return allowedSlots.map((slot) => {
+        const matched = slotPrices.find((item: any) => Number(item.time_slot) === slot)
+        return {
+            time_slot: slot,
+            price: matched?.price ?? null
+        }
+    })
+}
 const { pager, getLists, resetPage, resetParams } = usePaging({
     fetchFun: packageLists,
     params: queryParams
@@ -393,50 +446,41 @@ const { optionsData } = useDictOptions<{
     }
 })
 
-// 时段价格配置相关
+// 场次价格配置相关
 const showSlotPriceDialog = ref(false)
 const currentSlotPackage = ref<any>(null)
-const currentSlotPrices = ref<{ start_time: string; end_time: string; price: number }[]>([])
+const currentSlotPrices = ref<{ time_slot: number; price: number | null }[]>([])
 
 const openSlotPriceDialog = (row: any) => {
+    if (row.booking_type !== 1) {
+        feedback.msgWarning('全天套餐无需配置场次价格')
+        return
+    }
     currentSlotPackage.value = row
-    // 解析已有的时段价格
-    currentSlotPrices.value = row.slot_prices ? [...row.slot_prices] : []
+    const allowedSlots = resolveAllowedSlots(row)
+    const slotPrices = normalizeSlotPrices(row.slot_prices)
+    currentSlotPrices.value = buildSlotPriceRows(allowedSlots, slotPrices)
     showSlotPriceDialog.value = true
 }
 
-const addSlotPrice = () => {
-    currentSlotPrices.value.push({
-        start_time: '08:00',
-        end_time: '12:00',
-        price: currentSlotPackage.value?.price || 0
-    })
-}
-
-const removeSlotPrice = (index: number) => {
-    currentSlotPrices.value.splice(index, 1)
-}
-
 const saveSlotPrice = async () => {
-    // 验证时段
-    for (const slot of currentSlotPrices.value) {
-        if (!slot.start_time || !slot.end_time) {
-            feedback.msgError('请填写完整的时段信息')
-            return
-        }
-        if (slot.start_time >= slot.end_time) {
-            feedback.msgError('结束时间必须大于开始时间')
-            return
-        }
-        if (slot.price < 0) {
+    const payload = currentSlotPrices.value
+        .filter((slot) => slot.price !== null && slot.price !== undefined && slot.price !== '')
+        .map((slot) => ({
+            time_slot: slot.time_slot,
+            price: Number(slot.price)
+        }))
+
+    for (const slot of payload) {
+        if (Number.isNaN(slot.price) || slot.price < 0) {
             feedback.msgError('价格不能为负数')
             return
         }
     }
-    
+
     await packageUpdateSlotPrices({
         id: currentSlotPackage.value.id,
-        slot_prices: currentSlotPrices.value
+        slot_prices: payload
     })
     feedback.msgSuccess('保存成功')
     showSlotPriceDialog.value = false
@@ -457,10 +501,11 @@ const handleAdd = () => {
         name: '',
         category_id: '',
         package_type: 1,
+        booking_type: 0,
+        allowed_time_slots: [],
         staff_id: 0,
         price: 0,
         original_price: 0,
-        duration: 1,
         content: [],
         description: '',
         sort: 0,
@@ -476,10 +521,11 @@ const handleEdit = (row: any) => {
         name: row.name,
         category_id: row.category_id,
         package_type: row.package_type || 1,
+        booking_type: row.booking_type ?? 0,
+        allowed_time_slots: normalizeAllowedSlots(row.allowed_time_slots),
         staff_id: row.staff_id || 0,
         price: row.price,
         original_price: row.original_price,
-        duration: row.duration,
         content: row.content || [],
         description: row.description,
         sort: row.sort,
@@ -490,6 +536,13 @@ const handleEdit = (row: any) => {
 }
 
 const handleSave = async () => {
+    if (editForm.booking_type === 1 && (!editForm.allowed_time_slots || editForm.allowed_time_slots.length === 0)) {
+        feedback.msgError('请选择允许场次')
+        return
+    }
+    if (editForm.booking_type === 0) {
+        editForm.allowed_time_slots = []
+    }
     await editFormRef.value?.validate()
     if (editForm.id) {
         await packageEdit(editForm)
@@ -520,4 +573,17 @@ onActivated(() => {
 })
 
 getLists()
+
+watch(
+    () => editForm.booking_type,
+    (value) => {
+        if (value === 0) {
+            editForm.allowed_time_slots = []
+            return
+        }
+        if (!editForm.allowed_time_slots || editForm.allowed_time_slots.length === 0) {
+            editForm.allowed_time_slots = timeSlotOptions.map((item) => item.value)
+        }
+    }
+)
 </script>

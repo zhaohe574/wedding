@@ -85,7 +85,7 @@ class ScheduleRule extends BaseModel
         if (!$rule) {
             // 返回默认规则
             return [
-                'advance_days' => 3,
+                'advance_days' => 1,
                 'max_orders_per_day' => 1,
                 'interval_hours' => 0,
                 'work_start_time' => '09:00',
@@ -107,10 +107,14 @@ class ScheduleRule extends BaseModel
     {
         $rule = self::getStaffRule($staffId);
 
-        // 检查提前预约天数
-        $daysDiff = (strtotime($date) - strtotime(date('Y-m-d'))) / 86400;
-        if ($daysDiff < $rule['advance_days']) {
-            return [false, "需提前{$rule['advance_days']}天预约"];
+        $today = date('Y-m-d');
+        $targetDate = strtotime($date);
+        $todayDate = strtotime($today);
+        if ($targetDate < $todayDate) {
+            return [false, '不可预约过去日期'];
+        }
+        if ($targetDate === $todayDate) {
+            return [false, '当天不支持预约'];
         }
 
         // 检查休息日

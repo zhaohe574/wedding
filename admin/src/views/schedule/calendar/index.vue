@@ -179,9 +179,9 @@
                     <el-form-item label="时间段">
                         <el-select v-model="dayForm.time_slot" style="width: 100%">
                             <el-option label="全天" :value="0" />
-                            <el-option label="上午" :value="1" />
-                            <el-option label="下午" :value="2" />
-                            <el-option label="晚上" :value="3" />
+                            <el-option label="早礼" :value="1" />
+                            <el-option label="午宴" :value="2" />
+                            <el-option label="晚宴" :value="3" />
                         </el-select>
                     </el-form-item>
                     <el-form-item label="状态">
@@ -253,9 +253,9 @@
                 <el-form-item label="时间段">
                     <el-checkbox-group v-model="batchForm.time_slots">
                         <el-checkbox :label="0">全天</el-checkbox>
-                        <el-checkbox :label="1">上午</el-checkbox>
-                        <el-checkbox :label="2">下午</el-checkbox>
-                        <el-checkbox :label="3">晚上</el-checkbox>
+                        <el-checkbox :label="1">早礼</el-checkbox>
+                        <el-checkbox :label="2">午宴</el-checkbox>
+                        <el-checkbox :label="3">晚宴</el-checkbox>
                     </el-checkbox-group>
                 </el-form-item>
                 <el-form-item label="设置状态" required>
@@ -480,7 +480,7 @@ const handleBatchSubmit = async () => {
 
 // 工具函数
 const getTimeSlotText = (slot: number) => {
-    const map: Record<number, string> = { 0: '全天', 1: '上午', 2: '下午', 3: '晚上' }
+    const map: Record<number, string> = { 0: '全天', 1: '早礼', 2: '午宴', 3: '晚宴' }
     return map[slot] || '未知'
 }
 

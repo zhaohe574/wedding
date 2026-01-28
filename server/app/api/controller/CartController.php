@@ -37,7 +37,10 @@ class CartController extends BaseApiController
         $params['user_id'] = $this->userId;
         $result = CartLogic::addToCart($params);
         if ($result['success']) {
-            return $this->success($result['message'], ['cart_id' => $result['cart_id']]);
+            return $this->success($result['message'], [
+                'cart_id' => $result['cart_id'],
+                'cart_ids' => $result['cart_ids'] ?? [],
+            ]);
         }
         return $this->fail($result['message']);
     }
@@ -241,6 +244,19 @@ class CartController extends BaseApiController
     }
 
     /**
+     * @notes 取消默认方案
+     * @return \think\response\Json
+     */
+    public function cancelDefaultPlan()
+    {
+        $result = CartLogic::cancelDefaultPlan($this->userId);
+        if ($result['success']) {
+            return $this->success($result['message']);
+        }
+        return $this->fail($result['message']);
+    }
+
+    /**
      * @notes 通过分享码复制方案
      * @return \think\response\Json
      */
@@ -248,6 +264,21 @@ class CartController extends BaseApiController
     {
         $params = (new CartValidate())->post()->goCheck('shareCode');
         $result = CartLogic::copyPlanToCart($params['share_code'], $this->userId);
+        if ($result['success']) {
+            return $this->success($result['message'], ['copied_count' => $result['copied_count']]);
+        }
+        return $this->fail($result['message']);
+    }
+
+
+    /**
+     * @notes 应用方案到购物车
+     * @return \think\response\Json
+     */
+    public function applyPlanToCart()
+    {
+        $params = (new CartValidate())->post()->goCheck('planDetail');
+        $result = CartLogic::applyPlanToCart((int)$params['plan_id'], $this->userId);
         if ($result['success']) {
             return $this->success($result['message'], ['copied_count' => $result['copied_count']]);
         }
@@ -275,7 +306,8 @@ class CartController extends BaseApiController
     public function generatePlanShareCode()
     {
         $params = (new CartValidate())->post()->goCheck('planDetail');
-        $shareCode = CartLogic::generatePlanShareCode((int)$params['plan_id'], $this->userId);
+        $force = !empty($params['force']);
+        $shareCode = CartLogic::generatePlanShareCode((int)$params['plan_id'], $this->userId, $force);
         if ($shareCode) {
             return $this->data(['share_code' => $shareCode]);
         }

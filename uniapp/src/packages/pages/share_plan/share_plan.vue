@@ -179,7 +179,17 @@ const handleSubmit = async () => {
     loading.value = true
     try {
         const result = await getPlanByShareCode({ share_code: shareCode.value.trim() })
-        planDetail.value = result
+        const items = Array.isArray(result?.cart_items)
+            ? result.cart_items
+            : Array.isArray(result?.items)
+              ? result.items
+              : []
+        const normalizedItems = items.map((item: any) => ({
+            ...item,
+            staff_name: item.staff_name || item.staff?.name || '',
+            date: item.date || item.schedule_date || ''
+        }))
+        planDetail.value = { ...result, items: normalizedItems }
         showPlanDetail.value = true
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '分享码无效或已过期'

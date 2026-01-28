@@ -24,7 +24,11 @@
                         {{ row.staff_id === 0 ? '全局默认' : (row.staff?.name || '-') }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="advance_days" label="提前预约天数" width="120" />
+                <el-table-column label="预约限制" width="140">
+                    <template #default>
+                        当日不可预约
+                    </template>
+                </el-table-column>
                 <el-table-column prop="max_orders_per_day" label="单日最大接单" width="120" />
                 <el-table-column label="工作时间" width="140">
                     <template #default="{ row }">
@@ -73,9 +77,9 @@
                         />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="提前预约天数" prop="advance_days">
-                    <el-input-number v-model="formData.advance_days" :min="0" :max="365" style="width: 100%" />
-                    <div class="text-gray-400 text-xs mt-1">用户需提前多少天预约</div>
+                <el-form-item label="预约限制">
+                    <el-input-number v-model="formData.advance_days" :min="1" :max="1" disabled style="width: 100%" />
+                    <div class="text-gray-400 text-xs mt-1">仅限制当天不可预约</div>
                 </el-form-item>
                 <el-form-item label="单日最大接单" prop="max_orders_per_day">
                     <el-input-number v-model="formData.max_orders_per_day" :min="1" :max="10" style="width: 100%" />
@@ -154,7 +158,7 @@ const formRef = ref<FormInstance>()
 const formData = ref({
     id: 0,
     staff_id: 0,
-    advance_days: 3,
+    advance_days: 1,
     max_orders_per_day: 1,
     interval_hours: 0,
     work_start_time: '09:00',
@@ -164,7 +168,6 @@ const formData = ref({
 })
 
 const formRules: FormRules = {
-    advance_days: [{ required: true, message: '请输入提前预约天数', trigger: 'blur' }],
     max_orders_per_day: [{ required: true, message: '请输入单日最大接单数', trigger: 'blur' }]
 }
 
@@ -191,7 +194,7 @@ const handleAdd = () => {
     formData.value = {
         id: 0,
         staff_id: 0,
-        advance_days: 3,
+        advance_days: 1,
         max_orders_per_day: 1,
         interval_hours: 0,
         work_start_time: '09:00',
@@ -208,7 +211,7 @@ const handleEdit = (row: any) => {
     formData.value = {
         id: row.id,
         staff_id: row.staff_id,
-        advance_days: row.advance_days,
+        advance_days: 1,
         max_orders_per_day: row.max_orders_per_day,
         interval_hours: row.interval_hours,
         work_start_time: row.work_start_time,

@@ -51,7 +51,39 @@ class StaffPackage extends BaseModel
      */
     public function setCustomSlotPricesAttr($value)
     {
-        return $value ? json_encode($value, JSON_UNESCAPED_UNICODE) : '';
+        if (is_array($value)) {
+            return json_encode($value, JSON_UNESCAPED_UNICODE);
+        }
+        if ($value === '' || $value === null) {
+            return null;
+        }
+        return $value;
+    }
+
+    /**
+     * @notes 允许场次获取器(JSON转数组)
+     * @param $value
+     * @return array
+     */
+    public function getAllowedTimeSlotsAttr($value): array
+    {
+        return $value ? (json_decode($value, true) ?: []) : [];
+    }
+
+    /**
+     * @notes 允许场次设置器(数组转JSON)
+     * @param $value
+     * @return string
+     */
+    public function setAllowedTimeSlotsAttr($value): ?string
+    {
+        if (is_array($value)) {
+            return json_encode(array_values($value), JSON_UNESCAPED_UNICODE);
+        }
+        if ($value === '' || $value === null) {
+            return null;
+        }
+        return $value;
     }
 
     /**
@@ -70,6 +102,52 @@ class StaffPackage extends BaseModel
             }
         }
         return null;
+    }
+
+    /**
+     * @notes 获取指定场次的个人定制价格
+     * @param int $timeSlot
+     * @return float|null
+     */
+    public function getCustomSlotPriceByTimeSlot(int $timeSlot): ?float
+    {
+        $slotPrices = $this->custom_slot_prices ?? [];
+        foreach ($slotPrices as $slot) {
+            if (isset($slot['time_slot']) && (int)$slot['time_slot'] === $timeSlot) {
+                return isset($slot['price']) ? (float)$slot['price'] : null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @notes 获取指定场次的最终价格
+     * 优先级：个人时段价格 > 个人统一价格 > 套餐时段价格 > 套餐默认价格
+     * @param int $timeSlot
+     * @return float
+     */
+    public function calculatePriceByTimeSlot(int $timeSlot = 0): float
+    {
+        $customSlotPrice = $this->getCustomSlotPriceByTimeSlot($timeSlot);
+        if ($customSlotPrice !== null) {
+            return $customSlotPrice;
+        }
+
+        if ($this->custom_price !== null && $this->custom_price !== '') {
+            return (float)$this->custom_price;
+        }
+
+        $package = $this->package;
+        if (!$package) {
+            return 0;
+        }
+
+        $slotPrice = $package->getSlotPriceByTimeSlot($timeSlot);
+        if ($slotPrice !== null) {
+            return $slotPrice;
+        }
+
+        return (float)$package->price;
     }
 
     /**
@@ -137,6 +215,10 @@ class StaffPackage extends BaseModel
                     'custom_slot_prices' => isset($pkg['custom_slot_prices']) && is_array($pkg['custom_slot_prices'])
                         ? json_encode($pkg['custom_slot_prices'], JSON_UNESCAPED_UNICODE)
                         : null,
+                    'booking_type' => $pkg['booking_type'] ?? null,
+                    'allowed_time_slots' => isset($pkg['allowed_time_slots']) && is_array($pkg['allowed_time_slots'])
+                        ? json_encode($pkg['allowed_time_slots'], JSON_UNESCAPED_UNICODE)
+                        : ($pkg['allowed_time_slots'] ?? null),
                     'status' => $pkg['status'] ?? 1,
                     'create_time' => $time,
                 ];
@@ -201,9 +283,21 @@ class StaffPackage extends BaseModel
             $updateData['custom_price'] = $data['custom_price'];
         }
         if (isset($data['custom_slot_prices'])) {
-            $updateData['custom_slot_prices'] = is_array($data['custom_slot_prices'])
-                ? json_encode($data['custom_slot_prices'], JSON_UNESCAPED_UNICODE)
-                : $data['custom_slot_prices'];
+            if (is_array($data['custom_slot_prices'])) {
+                $updateData['custom_slot_prices'] = json_encode($data['custom_slot_prices'], JSON_UNESCAPED_UNICODE);
+            } else {
+                $updateData['custom_slot_prices'] = $data['custom_slot_prices'] === '' ? null : $data['custom_slot_prices'];
+            }
+        }
+        if (array_key_exists('booking_type', $data)) {
+            $updateData['booking_type'] = $data['booking_type'];
+        }
+        if (isset($data['allowed_time_slots'])) {
+            if (is_array($data['allowed_time_slots'])) {
+                $updateData['allowed_time_slots'] = json_encode($data['allowed_time_slots'], JSON_UNESCAPED_UNICODE);
+            } else {
+                $updateData['allowed_time_slots'] = $data['allowed_time_slots'] === '' ? null : $data['allowed_time_slots'];
+            }
         }
         if (isset($data['status'])) {
             $updateData['status'] = $data['status'];

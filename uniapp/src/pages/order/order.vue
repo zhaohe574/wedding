@@ -1,18 +1,23 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar 
+            title="我的订单"
+            :front-color="$theme.navColor" 
+            :background-color="$theme.navBgColor" 
+        />
         <!-- #endif -->
     </page-meta>
     <view class="order-page">
-        <!-- 顶部导航栏 -->
-        <!-- #ifndef H5 -->
-        <base-navbar title="我的订单" :back-icon="false" />
-        <!-- #endif -->
-        
         <!-- 状态筛选标签 -->
         <view class="status-tabs-wrapper">
-            <tn-tabs v-model="currentTabIndex" :scroll="true" height="88rpx" class="tabs-main">
+            <tn-tabs 
+                v-model="currentTabIndex" 
+                :scroll="true" 
+                height="96rpx" 
+                class="tabs-main"
+                :active-color="$theme.primaryColor"
+            >
                 <tn-tabs-item
                     v-for="(tab, index) in statusTabs"
                     :key="index"
@@ -26,17 +31,29 @@
         <view class="order-list-wrapper">
             <!-- 加载中 -->
             <view v-if="loading && orders.length === 0" class="loading-state">
-                <tn-loading size="60" mode="flower" />
-                <text class="loading-text">加载中...</text>
+                <view class="loading-content">
+                    <tn-loading size="80" mode="flower" :color="$theme.primaryColor" />
+                    <text class="loading-text">加载中...</text>
+                </view>
             </view>
             
             <!-- 空状态 -->
             <view v-else-if="orders.length === 0" class="empty-state">
                 <view class="empty-icon-wrapper">
-                    <tn-icon name="file-text" size="120" color="#d1d5db" />
+                    <tn-icon name="file-text" size="200" color="#E5E5E5" />
                 </view>
                 <text class="empty-title">暂无订单</text>
-                <text class="empty-subtitle">快去预约服务吧~</text>
+                <text class="empty-subtitle">快去预约心仪的服务吧~</text>
+                <view 
+                    class="empty-action-btn"
+                    :style="{ 
+                        background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+                        color: $theme.btnColor
+                    }"
+                    @click="goHome"
+                >
+                    <text class="empty-action-text" :style="{ color: $theme.btnColor }">去预约</text>
+                </view>
             </view>
             
             <!-- 订单列表 - 使用OrderCard组件 -->
@@ -45,18 +62,24 @@
                     v-for="order in orders"
                     :key="order.id"
                     :order="order"
-                    @click="goDetail"
-                    @pay="handlePay"
-                    @cancel="handleCancel"
-                    @confirm="handleConfirm"
-                    @refund="handleRefund"
-                    @delete="handleDelete"
+                    @click="goDetail(order.id)"
+                    @action="handleCardAction"
                 />
 
                 <!-- 加载更多提示 -->
                 <view v-if="hasMore" class="load-more">
-                    <text v-if="loading" class="load-more-text">加载中...</text>
-                    <text v-else class="load-more-text load-more-clickable" @click="loadMore">加载更多</text>
+                    <view v-if="loading" class="load-more-loading">
+                        <tn-loading size="40" mode="flower" :color="$theme.primaryColor" />
+                        <text class="load-more-text">加载中...</text>
+                    </view>
+                    <text 
+                        v-else 
+                        class="load-more-text load-more-clickable" 
+                        :style="{ color: $theme.primaryColor }"
+                        @click="loadMore"
+                    >
+                        加载更多
+                    </text>
                 </view>
                 <view v-else-if="orders.length > 0" class="load-more">
                     <text class="load-more-text">没有更多了</text>
@@ -81,7 +104,7 @@ import {
 } from '@/api/order'
 import OrderCard from '@/components/business/OrderCard.vue'
 
-const themeStore = useThemeStore()
+const $theme = useThemeStore()
 
 const statusTabs = [
     { label: '全部', value: '', key: 'all' },
@@ -107,6 +130,45 @@ const statistics = reactive<any>({
     refund: 0
 })
 
+const getStatusKey = (status: number) => {
+    const statusMap: Record<number, string> = {
+        0: 'unpaid',
+        1: 'paid',
+        2: 'in_service',
+        3: 'completed',
+        4: 'cancelled',
+        5: 'refund'
+    }
+    return statusMap[status] || 'unpaid'
+}
+
+const getTimeSlotLabel = (timeSlot: any) => {
+    const map: Record<number, string> = {
+        0: '全天',
+        1: '早礼',
+        2: '午宴',
+        3: '晚宴'
+    }
+    const slot = Number(timeSlot ?? -1)
+    return Number.isFinite(slot) && slot >= 0 ? (map[slot] || '未知场次') : '未选择场次'
+}
+
+const buildActions = (status: number) => {
+    if (status === 0) {
+        return [
+            { text: '取消', type: 'secondary', action: 'cancel' },
+            { text: '支付', type: 'primary', action: 'pay' }
+        ]
+    }
+    if (status === 2) {
+        return [{ text: '确认完成', type: 'primary', action: 'confirm' }]
+    }
+    if ([3, 4, 5].includes(status)) {
+        return [{ text: '删除', type: 'secondary', action: 'delete' }]
+    }
+    return []
+}
+
 const fetchOrders = async (refresh = false) => {
     if (loading.value) return
     loading.value = true
@@ -123,25 +185,31 @@ const fetchOrders = async (refresh = false) => {
         }
 
         const res = await getOrderList(params)
-        const list = (res.data || []).map((order: any) => ({
-            id: order.id,
-            orderSn: order.order_sn,
-            status: order.order_status,
-            statusText: order.order_status_desc,
-            createTime: order.create_time,
-            items: (order.items || []).map((item: any) => ({
-                id: item.id,
-                staffId: item.staff_id,
-                staffName: item.staff_name,
-                staffAvatar: item.staff?.avatar || '/static/images/default-avatar.png',
-                packageName: item.package_name,
-                serviceDate: item.service_date,
-                price: item.price
-            })),
-            totalAmount: order.total_amount,
-            discountAmount: order.discount_amount || 0,
-            payAmount: order.pay_amount
-        }))
+        const dataList = Array.isArray(res?.data) ? res.data : []
+        const list = dataList.map((order: any) => {
+            const discount = Number(order.discount_amount || 0) + Number(order.coupon_amount || 0)
+            return {
+                id: order.id,
+                orderNo: order.order_sn,
+                status: getStatusKey(order.order_status),
+                createTime: order.create_time,
+                location: order.service_address || '服务地址未填写',
+                originalPrice: Number(order.total_amount || 0),
+                discount,
+                actualPrice: Number(order.pay_amount || 0),
+                items: (order.items || []).map((item: any) => ({
+                    id: item.id,
+                    staffId: item.staff_id,
+                    staffName: item.staff_name,
+                    staffAvatar: item.staff?.avatar || '/static/images/default-avatar.png',
+                    packageName: item.package_name,
+                    serviceDate: item.service_date,
+                    timeSlot: item.time_slot,
+                    timeSlotDesc: getTimeSlotLabel(item.time_slot)
+                })),
+                actions: buildActions(order.order_status)
+            }
+        })
 
         if (refresh) {
             orders.value = list
@@ -149,7 +217,8 @@ const fetchOrders = async (refresh = false) => {
             orders.value.push(...list)
         }
 
-        hasMore.value = list.length === 10
+        const totalPage = Number(res?.last_page || 1)
+        hasMore.value = page.value < totalPage
     } catch (e) {
         console.error(e)
     } finally {
@@ -175,6 +244,30 @@ const loadMore = () => {
 
 const goDetail = (orderId: number) => {
     uni.navigateTo({ url: `/pages/order_detail/order_detail?id=${orderId}` })
+}
+
+const goHome = () => {
+    uni.switchTab({ url: '/pages/index/index' })
+}
+
+const handleCardAction = (action: { action: string }, order: any) => {
+    switch (action.action) {
+        case 'pay':
+            handlePay(order.id)
+            break
+        case 'cancel':
+            handleCancel(order.id)
+            break
+        case 'confirm':
+            handleConfirm(order.id)
+            break
+        case 'delete':
+            handleDelete(order.id)
+            break
+        default:
+            goDetail(order.id)
+            break
+    }
 }
 
 const handlePay = (orderId: number) => {
@@ -264,18 +357,18 @@ onReachBottom(() => {
 <style lang="scss" scoped>
 .order-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, var(--color-primary-light-9, #FAF5FF) 0%, #F5F5F5 100%);
+    background: #F6F6F6;
     padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 /* 状态筛选标签 */
 .status-tabs-wrapper {
-    background: #ffffff;
+    background: #FFFFFF;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
     position: sticky;
     top: 0;
     z-index: 10;
-    margin-bottom: 16rpx; // 使用sm间距
+    margin-bottom: 24rpx;
 }
 
 .tabs-main {
@@ -284,70 +377,117 @@ onReachBottom(() => {
 
 /* 订单列表容器 */
 .order-list-wrapper {
-    padding: 0 24rpx; // 使用md间距
+    padding: 0 24rpx;
 }
 
 /* 加载状态 */
 .loading-state {
-    padding: 160rpx 0;
-    text-align: center;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24rpx;
 }
 
 .loading-text {
-    display: block;
-    margin-top: 32rpx; // 使用lg间距
     font-size: 28rpx;
-    color: var(--color-muted);
+    color: #999999;
 }
 
 /* 空状态 */
 .empty-state {
-    padding: 160rpx 0;
-    text-align: center;
+    min-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48rpx;
 }
 
 .empty-icon-wrapper {
-    width: 256rpx;
-    height: 256rpx;
-    margin: 0 auto 32rpx; // 使用lg间距
+    width: 280rpx;
+    height: 280rpx;
+    margin-bottom: 32rpx;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .empty-title {
-    display: block;
-    font-size: 32rpx;
-    color: var(--color-muted);
+    font-size: 34rpx;
+    font-weight: 600;
+    color: #333333;
+    margin-bottom: 16rpx;
 }
 
 .empty-subtitle {
-    display: block;
-    margin-top: 16rpx; // 使用sm间距
-    font-size: 24rpx;
-    color: var(--color-disabled);
+    font-size: 28rpx;
+    color: #999999;
+    margin-bottom: 48rpx;
+}
+
+.empty-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28rpx 72rpx;
+    border-radius: 56rpx;
+    box-shadow: 0 12rpx 32rpx rgba(124, 58, 237, 0.4);
+    transition: all 0.3s ease;
+    
+    &:active {
+        transform: translateY(2rpx);
+        box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.4);
+    }
+}
+
+.empty-action-text {
+    font-size: 32rpx;
+    font-weight: 700;
 }
 
 /* 订单列表 */
 .order-list {
     display: flex;
     flex-direction: column;
-    gap: 16rpx; // 使用sm间距
+    gap: 24rpx;
+    padding-bottom: 24rpx;
 }
 
 /* 加载更多 */
 .load-more {
-    padding: 32rpx 0; // 使用lg间距
-    text-align: center;
+    padding: 40rpx 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.load-more-loading {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
 }
 
 .load-more-text {
     font-size: 28rpx;
-    color: var(--color-muted);
+    color: #999999;
 }
 
 .load-more-clickable {
-    color: var(--color-primary);
-    font-weight: 500;
+    font-weight: 600;
+    padding: 16rpx 32rpx;
+    border-radius: 48rpx;
+    transition: all 0.2s ease;
+    
+    &:active {
+        opacity: 0.7;
+        transform: scale(0.98);
+    }
 }
 </style>

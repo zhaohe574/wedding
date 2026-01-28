@@ -173,7 +173,6 @@
                         >
                             <view class="package-info">
                                 <text class="package-name">{{ pkg.package?.name }}</text>
-                                <text class="package-duration">{{ pkg.package?.duration }}小时</text>
                             </view>
                             <text class="package-price">¥{{ pkg.price || pkg.package?.price }}</text>
                         </view>
@@ -765,10 +764,6 @@ onLoad((options) => {
             margin-bottom: 8rpx;
         }
         
-        .package-duration {
-            font-size: 24rpx;
-            color: var(--color-muted);
-        }
     }
     
     .package-price {

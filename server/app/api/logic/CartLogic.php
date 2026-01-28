@@ -44,6 +44,24 @@ class CartLogic extends BaseLogic
      */
     public static function addToCart(array $params): array
     {
+        $timeSlots = $params['time_slots'] ?? [];
+        if (is_array($timeSlots) && !empty($timeSlots)) {
+            [$success, $message, $cartIds] = Cart::addToCartMultiple(
+                (int)$params['user_id'],
+                (int)$params['staff_id'],
+                $params['date'],
+                $timeSlots,
+                (int)($params['package_id'] ?? 0),
+                $params['remark'] ?? ''
+            );
+            return [
+                'success' => $success,
+                'message' => $message,
+                'cart_id' => $cartIds[0] ?? null,
+                'cart_ids' => $cartIds,
+            ];
+        }
+
         // Explicitly cast to int to handle string parameters from POST requests
         [$success, $message, $cartId] = Cart::addToCart(
             (int)$params['user_id'],
@@ -54,7 +72,12 @@ class CartLogic extends BaseLogic
             $params['remark'] ?? ''
         );
 
-        return ['success' => $success, 'message' => $message, 'cart_id' => $cartId];
+        return [
+            'success' => $success,
+            'message' => $message,
+            'cart_id' => $cartId,
+            'cart_ids' => $cartId ? [$cartId] : [],
+        ];
     }
 
     /**
@@ -77,7 +100,11 @@ class CartLogic extends BaseLogic
      */
     public static function removeFromCart(int $cartId, int $userId): array
     {
-        return Cart::removeFromCart($cartId, $userId);
+        [$success, $message] = Cart::removeFromCart($cartId, $userId);
+        return [
+            'success' => $success,
+            'message' => $message,
+        ];
     }
 
     /**
@@ -236,7 +263,25 @@ class CartLogic extends BaseLogic
      */
     public static function setDefaultPlan(int $planId, int $userId): array
     {
-        return CartPlan::setDefault($planId, $userId);
+        [$success, $message] = CartPlan::setDefault($planId, $userId);
+        return [
+            'success' => $success,
+            'message' => $message,
+        ];
+    }
+
+    /**
+     * @notes 取消默认方案
+     * @param int $userId
+     * @return array
+     */
+    public static function cancelDefaultPlan(int $userId): array
+    {
+        [$success, $message] = CartPlan::clearDefault($userId);
+        return [
+            'success' => $success,
+            'message' => $message,
+        ];
     }
 
     /**
@@ -248,6 +293,18 @@ class CartLogic extends BaseLogic
     public static function copyPlanToCart(string $shareCode, int $userId): array
     {
         [$success, $message, $copiedCount] = CartPlan::copyPlanToCart($shareCode, $userId);
+        return ['success' => $success, 'message' => $message, 'copied_count' => $copiedCount];
+    }
+
+    /**
+     * @notes 应用方案到购物车
+     * @param int $planId
+     * @param int $userId
+     * @return array
+     */
+    public static function applyPlanToCart(int $planId, int $userId): array
+    {
+        [$success, $message, $copiedCount] = CartPlan::applyPlanToCart($planId, $userId);
         return ['success' => $success, 'message' => $message, 'copied_count' => $copiedCount];
     }
 
@@ -267,11 +324,12 @@ class CartLogic extends BaseLogic
      * @notes 生成方案分享码
      * @param int $planId
      * @param int $userId
+     * @param bool $force
      * @return string|null
      */
-    public static function generatePlanShareCode(int $planId, int $userId): ?string
+    public static function generatePlanShareCode(int $planId, int $userId, bool $force = false): ?string
     {
-        return CartPlan::generateShareCode($planId, $userId);
+        return CartPlan::generateShareCode($planId, $userId, $force);
     }
 
     /**

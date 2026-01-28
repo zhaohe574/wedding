@@ -180,9 +180,9 @@ const formData = reactive({
 
 const timeSlotOptions = [
     { value: 0, label: '全天' },
-    { value: 1, label: '上午' },
-    { value: 2, label: '下午' },
-    { value: 3, label: '晚上' }
+    { value: 1, label: '早礼' },
+    { value: 2, label: '午宴' },
+    { value: 3, label: '晚宴' }
 ]
 
 // 日期选择器相关

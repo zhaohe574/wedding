@@ -42,9 +42,9 @@ class OrderChange extends BaseModel
 
     // 时间段
     const TIME_SLOT_ALL = 0;        // 全天
-    const TIME_SLOT_MORNING = 1;    // 上午
-    const TIME_SLOT_AFTERNOON = 2;  // 下午
-    const TIME_SLOT_EVENING = 3;    // 晚上
+    const TIME_SLOT_MORNING = 1;    // 早礼
+    const TIME_SLOT_AFTERNOON = 2;  // 午宴
+    const TIME_SLOT_EVENING = 3;    // 晚宴
 
     /**
      * @notes 关联订单
@@ -144,9 +144,9 @@ class OrderChange extends BaseModel
     {
         $map = [
             self::TIME_SLOT_ALL => '全天',
-            self::TIME_SLOT_MORNING => '上午',
-            self::TIME_SLOT_AFTERNOON => '下午',
-            self::TIME_SLOT_EVENING => '晚上',
+            self::TIME_SLOT_MORNING => '早礼',
+            self::TIME_SLOT_AFTERNOON => '午宴',
+            self::TIME_SLOT_EVENING => '晚宴',
         ];
         return $map[$value] ?? '未知';
     }

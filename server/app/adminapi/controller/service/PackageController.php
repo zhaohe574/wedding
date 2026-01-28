@@ -157,12 +157,13 @@ class PackageController extends BaseAdminController
         $packageId = $this->request->get('package_id', 0, 'intval');
         $date = $this->request->get('date', '');
         $staffId = $this->request->get('staff_id', 0, 'intval');
+        $timeSlot = $this->request->get('time_slot', 0, 'intval');
         
         if (empty($packageId) || empty($date)) {
             return $this->fail('参数错误');
         }
         
-        $result = PackageLogic::checkAvailability($packageId, $date, $staffId);
+        $result = PackageLogic::checkAvailability($packageId, $date, $staffId, $timeSlot);
         return $this->data($result);
     }
 

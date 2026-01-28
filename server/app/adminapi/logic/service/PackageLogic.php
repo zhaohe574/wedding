@@ -95,6 +95,7 @@ class PackageLogic extends BaseLogic
             // 确定套餐类型
             $staffId = $params['staff_id'] ?? 0;
             $packageType = $staffId > 0 ? ServicePackage::TYPE_STAFF_ONLY : ServicePackage::TYPE_GLOBAL;
+            $bookingConfig = self::normalizeBookingConfig($params);
 
             ServicePackage::create([
                 'category_id' => $params['category_id'] ?? 0,
@@ -104,6 +105,8 @@ class PackageLogic extends BaseLogic
                 'price' => $params['price'] ?? 0,
                 'original_price' => $params['original_price'] ?? 0,
                 'slot_prices' => $params['slot_prices'] ?? [],
+                'booking_type' => $bookingConfig['booking_type'],
+                'allowed_time_slots' => $bookingConfig['allowed_time_slots'],
                 'duration' => $params['duration'] ?? 0,
                 'content' => $params['content'] ?? [],
                 'description' => $params['description'] ?? '',
@@ -152,6 +155,10 @@ class PackageLogic extends BaseLogic
             if (isset($params['slot_prices'])) {
                 $updateData['slot_prices'] = $params['slot_prices'];
             }
+
+            $bookingConfig = self::normalizeBookingConfig($params, $package);
+            $updateData['booking_type'] = $bookingConfig['booking_type'];
+            $updateData['allowed_time_slots'] = $bookingConfig['allowed_time_slots'];
 
             // 支持套餐类型和所属人员编辑（仅限未被预订的套餐）
             if (isset($params['staff_id'])) {
@@ -259,7 +266,7 @@ class PackageLogic extends BaseLogic
         }
 
         return $query->order('sort desc, id desc')
-            ->field('id, name, category_id, staff_id, package_type, price, slot_prices, duration')
+            ->field('id, name, category_id, staff_id, package_type, booking_type, allowed_time_slots, price, slot_prices')
             ->select()
             ->toArray();
     }
@@ -271,9 +278,9 @@ class PackageLogic extends BaseLogic
      * @param int $staffId 服务人员ID（可选）
      * @return array ['available' => bool, 'message' => string]
      */
-    public static function checkAvailability(int $packageId, string $date, int $staffId = 0): array
+    public static function checkAvailability(int $packageId, string $date, int $staffId = 0, int $timeSlot = 0): array
     {
-        return PackageBooking::checkAvailability($packageId, $date);
+        return PackageBooking::checkAvailability($packageId, $date, $staffId, $timeSlot);
     }
 
     /**
@@ -322,6 +329,7 @@ class PackageLogic extends BaseLogic
     public static function addStaffPackage(int $staffId, array $packageData)
     {
         try {
+            $bookingConfig = self::normalizeBookingConfig($packageData);
             $package = ServicePackage::create([
                 'category_id' => $packageData['category_id'] ?? 0,
                 'staff_id' => $staffId,
@@ -330,6 +338,8 @@ class PackageLogic extends BaseLogic
                 'price' => $packageData['price'] ?? 0,
                 'original_price' => $packageData['original_price'] ?? 0,
                 'slot_prices' => $packageData['slot_prices'] ?? [],
+                'booking_type' => $bookingConfig['booking_type'],
+                'allowed_time_slots' => $bookingConfig['allowed_time_slots'],
                 'duration' => $packageData['duration'] ?? 0,
                 'content' => $packageData['content'] ?? [],
                 'description' => $packageData['description'] ?? '',
@@ -388,9 +398,9 @@ class PackageLogic extends BaseLogic
      * @param string $date 预订日期
      * @return array package_id => available 的映射
      */
-    public static function batchCheckAvailability(array $packageIds, string $date): array
+    public static function batchCheckAvailability(array $packageIds, string $date, int $staffId = 0, int $timeSlot = 0): array
     {
-        return PackageBooking::batchCheckAvailability($packageIds, $date);
+        return PackageBooking::batchCheckAvailability($packageIds, $date, $staffId, $timeSlot);
     }
 
     /**
@@ -470,5 +480,46 @@ class PackageLogic extends BaseLogic
             trace('批量查询套餐数据失败: ' . $e->getMessage(), 'error');
             return [];
         }
+    }
+
+    /**
+     * @notes 规范化预约配置
+     * @param array $params
+     * @param ServicePackage|null $package
+     * @return array
+     */
+    protected static function normalizeBookingConfig(array $params, ?ServicePackage $package = null): array
+    {
+        $bookingType = $params['booking_type'] ?? ($package ? (int)$package->booking_type : ServicePackage::BOOKING_TYPE_FULL_DAY);
+        $bookingType = (int)$bookingType;
+        if (!in_array($bookingType, [ServicePackage::BOOKING_TYPE_FULL_DAY, ServicePackage::BOOKING_TYPE_MULTI_SLOT], true)) {
+            $bookingType = ServicePackage::BOOKING_TYPE_FULL_DAY;
+        }
+
+        $allowed = $params['allowed_time_slots'] ?? ($package ? ($package->allowed_time_slots ?? []) : []);
+        if (is_string($allowed)) {
+            $decoded = json_decode($allowed, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $allowed = $decoded;
+            }
+        }
+        if (!is_array($allowed)) {
+            $allowed = [];
+        }
+
+        $allowed = array_values(array_unique(array_map('intval', $allowed)));
+        $allowed = array_values(array_intersect($allowed, [1, 2, 3]));
+
+        if ($bookingType === ServicePackage::BOOKING_TYPE_MULTI_SLOT && empty($allowed)) {
+            $allowed = [1, 2, 3];
+        }
+        if ($bookingType === ServicePackage::BOOKING_TYPE_FULL_DAY) {
+            $allowed = [];
+        }
+
+        return [
+            'booking_type' => $bookingType,
+            'allowed_time_slots' => $allowed,
+        ];
     }
 }

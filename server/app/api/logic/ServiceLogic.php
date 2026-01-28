@@ -61,8 +61,8 @@ class ServiceLogic extends BaseLogic
         }
 
         return $query->order('is_recommend desc, sort desc, id desc')
-            ->field('id, category_id, name, price, original_price, duration, description, is_recommend')
-            ->append(['category_name', 'duration_desc'])
+            ->field('id, category_id, name, price, original_price, description, is_recommend, booking_type, allowed_time_slots, slot_prices')
+            ->append(['category_name'])
             ->select()
             ->toArray();
     }
@@ -132,9 +132,9 @@ class ServiceLogic extends BaseLogic
      * @param string $date
      * @return array
      */
-    public static function checkPackageAvailability(int $packageId, string $date): array
+    public static function checkPackageAvailability(int $packageId, string $date, int $staffId = 0, int $timeSlot = 0): array
     {
-        return PackageBooking::checkAvailability($packageId, $date);
+        return PackageBooking::checkAvailability($packageId, $date, $staffId, $timeSlot);
     }
 
     /**
@@ -143,9 +143,9 @@ class ServiceLogic extends BaseLogic
      * @param string $date
      * @return array
      */
-    public static function batchCheckAvailability(array $packageIds, string $date): array
+    public static function batchCheckAvailability(array $packageIds, string $date, int $staffId = 0, int $timeSlot = 0): array
     {
-        return PackageBooking::batchCheckAvailability($packageIds, $date);
+        return PackageBooking::batchCheckAvailability($packageIds, $date, $staffId, $timeSlot);
     }
 
     /**
@@ -197,11 +197,44 @@ class ServiceLogic extends BaseLogic
         int $packageId,
         int $staffId = 0,
         string $startTime = '',
-        string $endTime = ''
+        string $endTime = '',
+        int $timeSlot = -1
     ): array {
         $package = ServicePackage::find($packageId);
         if (!$package) {
             return ['price' => 0, 'source' => 'not_found'];
+        }
+
+        if ($timeSlot >= 0) {
+            if ($staffId > 0) {
+                $staffPackage = StaffPackage::where('staff_id', $staffId)
+                    ->where('package_id', $packageId)
+                    ->where('status', 1)
+                    ->find();
+
+                if ($staffPackage) {
+                    $price = $staffPackage->calculatePriceByTimeSlot($timeSlot);
+                    $source = 'staff_config';
+
+                    $customSlotPrice = $staffPackage->getCustomSlotPriceByTimeSlot($timeSlot);
+                    if ($customSlotPrice !== null) {
+                        $source = 'staff_slot_price';
+                    } elseif ($staffPackage->custom_price !== null && $staffPackage->custom_price !== '') {
+                        $source = 'staff_custom_price';
+                    } else {
+                        $packageSlotPrice = $package->getSlotPriceByTimeSlot($timeSlot);
+                        $source = $packageSlotPrice !== null ? 'package_slot_price' : 'package_default';
+                    }
+
+                    return ['price' => $price, 'source' => $source];
+                }
+            }
+
+            $price = $package->calculatePriceByTimeSlot($timeSlot);
+            $source = $package->getSlotPriceByTimeSlot($timeSlot) !== null
+                ? 'package_slot_price'
+                : 'package_default';
+            return ['price' => $price, 'source' => $source];
         }
 
         // 如果指定了员工，尝试获取员工的个人配置

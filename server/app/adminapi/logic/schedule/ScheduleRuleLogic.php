@@ -59,7 +59,7 @@ class ScheduleRuleLogic extends BaseLogic
 
             ScheduleRule::create([
                 'staff_id' => $params['staff_id'] ?? 0,
-                'advance_days' => $params['advance_days'] ?? 3,
+                'advance_days' => $params['advance_days'] ?? 1,
                 'max_orders_per_day' => $params['max_orders_per_day'] ?? 1,
                 'interval_hours' => $params['interval_hours'] ?? 0,
                 'work_start_time' => $params['work_start_time'] ?? '09:00',
