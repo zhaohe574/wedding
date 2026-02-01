@@ -167,6 +167,9 @@ class Payment extends BaseModel
                 $order->balance_paid = 1;
             }
 
+            // 累计已支付金额
+            $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payment->pay_amount, 2);
+
             // 检查是否全额支付
             if ($order->deposit_amount > 0) {
                 if ($order->deposit_paid && $order->balance_paid) {
@@ -174,11 +177,15 @@ class Payment extends BaseModel
                     $order->pay_status = Order::PAY_STATUS_PAID;
                 }
             } else {
-                $order->order_status = Order::STATUS_PAID;
-                $order->pay_status = Order::PAY_STATUS_PAID;
+                if ($order->paid_amount >= $order->pay_amount) {
+                    $order->order_status = Order::STATUS_PAID;
+                    $order->pay_status = Order::PAY_STATUS_PAID;
+                }
             }
 
-            $order->pay_type = $payment->pay_way;
+            if ($order->pay_type != Order::PAY_WAY_COMBINATION) {
+                $order->pay_type = $payment->pay_way;
+            }
             $order->update_time = time();
             $order->save();
 
@@ -188,7 +195,7 @@ class Payment extends BaseModel
                 OrderLog::OPERATOR_SYSTEM,
                 0,
                 $payment->pay_type == self::TYPE_DEPOSIT ? 'pay_deposit' : ($payment->pay_type == self::TYPE_BALANCE ? 'pay_balance' : 'pay'),
-                Order::STATUS_PENDING,
+                Order::STATUS_PENDING_PAY,
                 $order->order_status,
                 '支付成功，金额：' . $payment->pay_amount
             );

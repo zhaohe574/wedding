@@ -195,6 +195,31 @@ class StaffController extends BaseAdminController
     }
 
     /**
+     * @notes 编辑员工专属套餐
+     * @return \think\response\Json
+     */
+    public function updateStaffPackage()
+    {
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+        $packageId = intval($params['package_id'] ?? 0);
+
+        if ($staffId <= 0 || $packageId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        if (empty($params['name'])) {
+            return $this->fail('请输入套餐名称');
+        }
+
+        $result = StaffLogic::updateStaffPackage($staffId, $packageId, $params);
+        if (true === $result) {
+            return $this->success('更新成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
      * @notes 更新单个套餐配置
      * @return \think\response\Json
      */
@@ -209,6 +234,12 @@ class StaffController extends BaseAdminController
         }
 
         $data = [];
+        if (isset($params['price'])) {
+            $data['price'] = $params['price'];
+        }
+        if (array_key_exists('original_price', $params)) {
+            $data['original_price'] = $params['original_price'];
+        }
         if (isset($params['custom_price'])) {
             $data['custom_price'] = $params['custom_price'];
         }
@@ -249,6 +280,131 @@ class StaffController extends BaseAdminController
         $result = StaffLogic::deleteStaffPackage($staffId, $packageId);
         if (true === $result) {
             return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 获取人员轮播图列表
+     * @return \think\response\Json
+     */
+    public function getBannerList()
+    {
+        $staffId = intval($this->request->get('staff_id', 0));
+        if ($staffId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $result = StaffLogic::getBannerList($staffId);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 添加轮播图
+     * @return \think\response\Json
+     */
+    public function addBanner()
+    {
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+
+        if ($staffId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        if (empty($params['file_url'])) {
+            return $this->fail('请上传文件');
+        }
+
+        $type = intval($params['type'] ?? 1);
+        if ($type === 2 && empty($params['cover_url'])) {
+            return $this->fail('视频需要上传封面图');
+        }
+
+        $result = StaffLogic::addBanner($staffId, $params);
+        if ($result) {
+            return $this->success('添加成功', ['id' => $result], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 编辑轮播图
+     * @return \think\response\Json
+     */
+    public function editBanner()
+    {
+        $params = $this->request->post();
+        $id = intval($params['id'] ?? 0);
+
+        if ($id <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $result = StaffLogic::editBanner($id, $params);
+        if (true === $result) {
+            return $this->success('编辑成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 删除轮播图
+     * @return \think\response\Json
+     */
+    public function deleteBanner()
+    {
+        $params = $this->request->post();
+        $id = intval($params['id'] ?? 0);
+
+        if ($id <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $result = StaffLogic::deleteBanner($id);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 更新轮播图排序
+     * @return \think\response\Json
+     */
+    public function sortBanner()
+    {
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+        $sortData = $params['sort_data'] ?? [];
+
+        if ($staffId <= 0 || empty($sortData)) {
+            return $this->fail('参数错误');
+        }
+
+        $result = StaffLogic::sortBanner($staffId, $sortData);
+        if (true === $result) {
+            return $this->success('排序成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 更新轮播图配置
+     * @return \think\response\Json
+     */
+    public function updateBannerConfig()
+    {
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+
+        if ($staffId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $result = StaffLogic::updateBannerConfig($staffId, $params);
+        if (true === $result) {
+            return $this->success('配置成功', [], 1, 1);
         }
         return $this->fail(StaffLogic::getError());
     }

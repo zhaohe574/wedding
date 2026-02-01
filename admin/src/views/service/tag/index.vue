@@ -18,6 +18,18 @@
                         <el-option label="其他" :value="3" />
                     </el-select>
                 </el-form-item>
+                <el-form-item class="w-[200px]" label="服务分类">
+                    <el-select v-model="queryParams.category_id" placeholder="选择分类" clearable>
+                        <el-option label="全部" value="" />
+                        <el-option label="未分类" :value="0" />
+                        <el-option
+                            v-for="item in categoryOptions"
+                            :key="item.id"
+                            :label="item.name"
+                            :value="item.id"
+                        />
+                    </el-select>
+                </el-form-item>
                 <el-form-item class="w-[200px]" label="状态">
                     <el-select v-model="queryParams.is_show" placeholder="选择状态" clearable>
                         <el-option label="全部" value="" />
@@ -51,6 +63,11 @@
                 <el-table-column label="标签类型" width="100">
                     <template #default="{ row }">
                         <el-tag :type="getTypeTagType(row.type)">{{ row.type_desc }}</el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column label="服务分类" min-width="140">
+                    <template #default="{ row }">
+                        <span>{{ row.category_name || '-' }}</span>
                     </template>
                 </el-table-column>
                 <el-table-column label="使用人数" prop="staff_count" width="100" />
@@ -115,6 +132,16 @@
                         <el-radio :value="3">其他</el-radio>
                     </el-radio-group>
                 </el-form-item>
+                <el-form-item label="服务分类" prop="category_id">
+                    <el-select v-model="editForm.category_id" placeholder="选择服务分类" class="w-full">
+                        <el-option
+                            v-for="item in categoryOptions"
+                            :key="item.id"
+                            :label="item.name"
+                            :value="item.id"
+                        />
+                    </el-select>
+                </el-form-item>
                 <el-form-item label="排序" prop="sort">
                     <el-input-number v-model="editForm.sort" :min="0" :max="9999" />
                 </el-form-item>
@@ -140,7 +167,8 @@ import {
     styleTagAdd,
     styleTagEdit,
     styleTagDelete,
-    styleTagChangeStatus
+    styleTagChangeStatus,
+    categoryAll
 } from '@/api/service'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
@@ -148,23 +176,27 @@ import feedback from '@/utils/feedback'
 const queryParams = reactive({
     name: '',
     type: '',
+    category_id: '',
     is_show: ''
 })
 
 const showEditDialog = ref(false)
 const editFormRef = shallowRef<FormInstance>()
+const categoryOptions = ref<any[]>([])
 
 const editForm = reactive({
     id: '',
     name: '',
     type: 1,
+    category_id: '',
     sort: 0,
     is_show: 1
 })
 
 const editRules = reactive({
     name: [{ required: true, message: '请输入标签名称', trigger: 'blur' }],
-    type: [{ required: true, message: '请选择标签类型', trigger: 'change' }]
+    type: [{ required: true, message: '请选择标签类型', trigger: 'change' }],
+    category_id: [{ required: true, message: '请选择服务分类', trigger: 'change' }]
 })
 
 const { pager, getLists, resetPage, resetParams } = usePaging({
@@ -186,6 +218,7 @@ const handleAdd = () => {
         id: '',
         name: '',
         type: 1,
+        category_id: '',
         sort: 0,
         is_show: 1
     })
@@ -197,6 +230,7 @@ const handleEdit = (row: any) => {
         id: row.id,
         name: row.name,
         type: row.type,
+        category_id: row.category_id,
         sort: row.sort,
         is_show: row.is_show
     })
@@ -229,9 +263,15 @@ const handleDelete = async (id: number) => {
     getLists()
 }
 
+const getCategories = async () => {
+    const res = await categoryAll()
+    categoryOptions.value = Array.isArray(res) ? res : []
+}
+
 onActivated(() => {
     getLists()
 })
 
+getCategories()
 getLists()
 </script>

@@ -147,11 +147,14 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
     protected function getStatusDesc(int $status): string
     {
         $map = [
-            Order::STATUS_PENDING => '待支付',
+            Order::STATUS_PENDING_CONFIRM => '待确认',
+            Order::STATUS_PENDING_PAY => '待支付',
             Order::STATUS_PAID => '已支付',
             Order::STATUS_IN_SERVICE => '服务中',
             Order::STATUS_COMPLETED => '已完成',
+            Order::STATUS_REVIEWED => '已评价',
             Order::STATUS_CANCELLED => '已取消',
+            Order::STATUS_PAUSED => '已暂停',
             Order::STATUS_REFUNDED => '已退款',
         ];
         return $map[$status] ?? '未知';
@@ -186,6 +189,7 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
             Order::PAY_WAY_ALIPAY => '支付宝',
             Order::PAY_WAY_BALANCE => '余额支付',
             Order::PAY_WAY_OFFLINE => '线下支付',
+            Order::PAY_WAY_COMBINATION => '组合支付',
         ];
         return $map[$type] ?? '未知';
     }

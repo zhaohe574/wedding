@@ -32,12 +32,15 @@ class Order extends BaseModel
     const TYPE_COMBO = 3;       // 组合订单
 
     // 订单状态
-    const STATUS_PENDING = 0;       // 待支付
-    const STATUS_PAID = 1;          // 已支付
-    const STATUS_IN_SERVICE = 2;    // 服务中
-    const STATUS_COMPLETED = 3;     // 已完成
-    const STATUS_CANCELLED = 4;     // 已取消
-    const STATUS_REFUNDED = 5;      // 已退款
+    const STATUS_PENDING_CONFIRM = 0; // 待确认
+    const STATUS_PENDING_PAY = 1;     // 待支付
+    const STATUS_PAID = 2;            // 已支付
+    const STATUS_IN_SERVICE = 3;      // 服务中
+    const STATUS_COMPLETED = 4;       // 已完成
+    const STATUS_REVIEWED = 5;        // 已评价
+    const STATUS_CANCELLED = 6;       // 已取消
+    const STATUS_PAUSED = 7;          // 已暂停
+    const STATUS_REFUNDED = 8;        // 已退款
 
     // 支付状态
     const PAY_STATUS_UNPAID = 0;        // 未支付
@@ -46,11 +49,17 @@ class Order extends BaseModel
     const PAY_STATUS_FULL_REFUND = 3;   // 全额退款
 
     // 支付方式
-    const PAY_WAY_NONE = 0;     // 未支付
-    const PAY_WAY_WECHAT = 1;   // 微信
-    const PAY_WAY_ALIPAY = 2;   // 支付宝
-    const PAY_WAY_BALANCE = 3;  // 余额
-    const PAY_WAY_OFFLINE = 4;  // 线下
+    const PAY_WAY_NONE = 0;        // 未支付
+    const PAY_WAY_WECHAT = 1;      // 微信
+    const PAY_WAY_ALIPAY = 2;      // 支付宝
+    const PAY_WAY_BALANCE = 3;     // 余额
+    const PAY_WAY_OFFLINE = 4;     // 线下
+    const PAY_WAY_COMBINATION = 5; // 组合支付
+
+    // 线下支付凭证状态
+    const VOUCHER_STATUS_PENDING = 0;  // 待审核
+    const VOUCHER_STATUS_APPROVED = 1; // 已通过
+    const VOUCHER_STATUS_REJECTED = 2; // 已拒绝
 
     // 订单来源
     const SOURCE_MINIAPP = 1;   // 小程序
@@ -102,11 +111,14 @@ class Order extends BaseModel
     public function getOrderStatusDescAttr($value, $data): string
     {
         $map = [
-            self::STATUS_PENDING => '待支付',
+            self::STATUS_PENDING_CONFIRM => '待确认',
+            self::STATUS_PENDING_PAY => '待支付',
             self::STATUS_PAID => '已支付',
             self::STATUS_IN_SERVICE => '服务中',
             self::STATUS_COMPLETED => '已完成',
+            self::STATUS_REVIEWED => '已评价',
             self::STATUS_CANCELLED => '已取消',
+            self::STATUS_PAUSED => '已暂停',
             self::STATUS_REFUNDED => '已退款',
         ];
         return $map[$data['order_status']] ?? '未知';
@@ -143,8 +155,28 @@ class Order extends BaseModel
             self::PAY_WAY_ALIPAY => '支付宝',
             self::PAY_WAY_BALANCE => '余额支付',
             self::PAY_WAY_OFFLINE => '线下支付',
+            self::PAY_WAY_COMBINATION => '组合支付',
         ];
         return $map[$data['pay_type']] ?? '未知';
+    }
+
+    /**
+     * @notes 线下凭证状态描述获取器
+     * @param $value
+     * @param $data
+     * @return string
+     */
+    public function getPayVoucherStatusDescAttr($value, $data): string
+    {
+        if (empty($data['pay_voucher'] ?? '')) {
+            return '未上传';
+        }
+        $map = [
+            self::VOUCHER_STATUS_PENDING => '待审核',
+            self::VOUCHER_STATUS_APPROVED => '已通过',
+            self::VOUCHER_STATUS_REJECTED => '已拒绝',
+        ];
+        return $map[$data['pay_voucher_status']] ?? '未知';
     }
 
     /**
@@ -186,13 +218,16 @@ class Order extends BaseModel
                 $balanceAmount = $payAmount - $depositAmount;
             }
 
+            $confirmLockDuration = 3600;
+
             // 创建订单
             $order = self::create([
                 'order_sn' => self::generateOrderSn(),
                 'user_id' => $userId,
                 'order_type' => $orderInfo['order_type'] ?? self::TYPE_NORMAL,
-                'order_status' => self::STATUS_PENDING,
+                'order_status' => self::STATUS_PENDING_CONFIRM,
                 'pay_status' => self::PAY_STATUS_UNPAID,
+                'paid_amount' => 0,
                 'total_amount' => $totalAmount,
                 'discount_amount' => $discountAmount,
                 'coupon_amount' => $couponAmount,
@@ -209,6 +244,7 @@ class Order extends BaseModel
                 'user_remark' => $orderInfo['remark'] ?? '',
                 'coupon_id' => $orderInfo['coupon_id'] ?? 0,
                 'source' => $orderInfo['source'] ?? self::SOURCE_MINIAPP,
+                'pay_type' => self::PAY_WAY_NONE,
                 'create_time' => time(),
                 'update_time' => time(),
             ]);
@@ -234,13 +270,25 @@ class Order extends BaseModel
 
                 // 确认档期预约
                 if (!empty($item['schedule_id'])) {
-                    Schedule::confirmBooking(
-                        $item['staff_id'],
-                        $item['schedule_date'],
-                        $item['time_slot'] ?? 0,
-                        $order->id,
-                        $userId
-                    );
+                    $schedule = Schedule::find($item['schedule_id']);
+                    if ($schedule && $schedule->status == Schedule::STATUS_LOCKED && (int)$schedule->lock_user_id === (int)$userId) {
+                        Schedule::where('id', $schedule->id)->update([
+                            'lock_expire_time' => time() + $confirmLockDuration,
+                            'update_time' => time(),
+                        ]);
+                    } else {
+                        [$locked, $message] = Schedule::lockSchedule(
+                            $item['staff_id'],
+                            $item['schedule_date'],
+                            $item['time_slot'] ?? 0,
+                            $userId,
+                            Schedule::LOCK_TYPE_NORMAL,
+                            $confirmLockDuration
+                        );
+                        if (!$locked) {
+                            throw new \Exception($message);
+                        }
+                    }
                 }
 
                 if (!empty($item['package_id'])) {
@@ -254,13 +302,22 @@ class Order extends BaseModel
                         (int)$orderItem->id
                     );
                     if (!$confirmed) {
-                        throw new \Exception('套餐预订锁定失败');
+                        $availability = PackageBooking::checkAvailability(
+                            (int)$item['package_id'],
+                            (string)$item['schedule_date'],
+                            (int)$item['staff_id'],
+                            (int)($item['time_slot'] ?? 0)
+                        );
+                        $message = $availability['available'] ?? false
+                            ? '套餐预订锁定失败，请刷新后重试'
+                            : ($availability['message'] ?? '套餐预订锁定失败');
+                        throw new \Exception($message);
                     }
                 }
             }
 
             // 记录订单日志
-            OrderLog::addLog($order->id, 1, $userId, 'create', 0, self::STATUS_PENDING, '创建订单');
+            OrderLog::addLog($order->id, 1, $userId, 'create', 0, self::STATUS_PENDING_CONFIRM, '创建订单');
 
             Db::commit();
             return [true, '订单创建成功', $order];
@@ -287,7 +344,7 @@ class Order extends BaseModel
                 return [false, '订单不存在'];
             }
 
-            if (!in_array($order->order_status, [self::STATUS_PENDING, self::STATUS_PAID])) {
+            if (!in_array($order->order_status, [self::STATUS_PENDING_CONFIRM, self::STATUS_PENDING_PAY, self::STATUS_PAID])) {
                 return [false, '当前订单状态不可取消'];
             }
 
@@ -381,11 +438,14 @@ class Order extends BaseModel
     public static function getStatusOptions(): array
     {
         return [
-            ['value' => self::STATUS_PENDING, 'label' => '待支付'],
+            ['value' => self::STATUS_PENDING_CONFIRM, 'label' => '待确认'],
+            ['value' => self::STATUS_PENDING_PAY, 'label' => '待支付'],
             ['value' => self::STATUS_PAID, 'label' => '已支付'],
             ['value' => self::STATUS_IN_SERVICE, 'label' => '服务中'],
             ['value' => self::STATUS_COMPLETED, 'label' => '已完成'],
+            ['value' => self::STATUS_REVIEWED, 'label' => '已评价'],
             ['value' => self::STATUS_CANCELLED, 'label' => '已取消'],
+            ['value' => self::STATUS_PAUSED, 'label' => '已暂停'],
             ['value' => self::STATUS_REFUNDED, 'label' => '已退款'],
         ];
     }
@@ -401,6 +461,7 @@ class Order extends BaseModel
             ['value' => self::PAY_WAY_ALIPAY, 'label' => '支付宝'],
             ['value' => self::PAY_WAY_BALANCE, 'label' => '余额支付'],
             ['value' => self::PAY_WAY_OFFLINE, 'label' => '线下支付'],
+            ['value' => self::PAY_WAY_COMBINATION, 'label' => '组合支付'],
         ];
     }
 

@@ -20,6 +20,9 @@ class OrderItem extends BaseModel
 {
     protected $name = 'order_item';
 
+    // 追加属性到数组
+    protected $append = ['time_slot_desc', 'item_status_desc'];
+
     // 项状态
     const STATUS_PENDING = 0;       // 待服务
     const STATUS_IN_SERVICE = 1;    // 服务中

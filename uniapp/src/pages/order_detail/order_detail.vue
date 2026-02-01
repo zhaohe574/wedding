@@ -15,6 +15,9 @@
             <view class="status-text">
                 <text class="status-title">{{ order.order_status_desc }}</text>
                 <text class="status-desc" v-if="order.order_status === 0">
+                    等待工作人员确认
+                </text>
+                <text class="status-desc" v-else-if="order.order_status === 1">
                     请在30分钟内完成支付
                 </text>
             </view>
@@ -204,6 +207,30 @@
             </view>
         </view>
 
+        <!-- 线下支付凭证 -->
+        <view class="voucher-card" v-if="order.pay_type === 4 || order.pay_voucher">
+            <view class="card-header">
+                <tn-icon name="image" size="32" :color="$theme.primaryColor" />
+                <text class="card-title">线下支付凭证</text>
+            </view>
+            <view class="voucher-body">
+                <view class="voucher-row">
+                    <text class="voucher-label">凭证状态</text>
+                    <text class="voucher-status">{{ order.pay_voucher_status_desc || '未上传' }}</text>
+                </view>
+                <view class="voucher-row" v-if="order.pay_voucher_audit_remark">
+                    <text class="voucher-label">审核备注</text>
+                    <text class="voucher-remark">{{ order.pay_voucher_audit_remark }}</text>
+                </view>
+                <view class="voucher-image" v-if="order.pay_voucher">
+                    <image :src="order.pay_voucher" mode="aspectFill" />
+                </view>
+                <view class="voucher-empty" v-else>
+                    <text>暂无凭证</text>
+                </view>
+            </view>
+        </view>
+
         <!-- 退款信息 -->
         <view class="refund-card" v-if="order.refund">
             <view class="card-header">
@@ -238,7 +265,7 @@
         <view class="action-bar">
             <view class="action-buttons">
                 <view 
-                    v-if="order.order_status === 0" 
+                    v-if="[0, 1].includes(order.order_status)" 
                     class="btn-secondary" 
                     :style="{ 
                         borderColor: $theme.primaryColor,
@@ -249,7 +276,7 @@
                     <text>取消订单</text>
                 </view>
                 <view 
-                    v-if="order.order_status === 0" 
+                    v-if="canPayOnline" 
                     class="btn-primary"
                     :style="{ 
                         background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)`,
@@ -261,7 +288,18 @@
                     <text>立即支付 ¥{{ needPayAmount }}</text>
                 </view>
                 <view 
-                    v-if="order.order_status === 2" 
+                    v-if="canUploadVoucher" 
+                    class="btn-secondary"
+                    :style="{ 
+                        borderColor: $theme.primaryColor,
+                        color: $theme.primaryColor
+                    }"
+                    @click="showVoucherPopup = true"
+                >
+                    <text>上传凭证</text>
+                </view>
+                <view 
+                    v-if="order.order_status === 3" 
                     class="btn-primary"
                     :style="{ 
                         background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
@@ -273,7 +311,7 @@
                     <text>确认完成</text>
                 </view>
                 <view
-                    v-if="order.order_status === 1 && !order.refund"
+                    v-if="[2, 3].includes(order.order_status) && !order.refund"
                     class="btn-secondary"
                     :style="{ 
                         borderColor: '#FF2C3C',
@@ -284,7 +322,7 @@
                     <text>申请退款</text>
                 </view>
                 <view
-                    v-if="[3, 4, 5].includes(order.order_status)"
+                    v-if="[4, 5, 6, 8].includes(order.order_status)"
                     class="btn-secondary"
                     :style="{ 
                         borderColor: '#999999',
@@ -356,6 +394,60 @@
             </view>
         </tn-popup>
 
+        <!-- 线下凭证上传弹窗 -->
+        <tn-popup v-model="showVoucherPopup" mode="bottom" border-radius="32">
+            <view class="voucher-popup">
+                <view class="popup-header">
+                    <text class="popup-title">上传支付凭证</text>
+                    <tn-icon
+                        name="close"
+                        size="40"
+                        color="#999999"
+                        @click="showVoucherPopup = false"
+                    />
+                </view>
+                <view class="popup-content">
+                    <view class="form-item">
+                        <text class="form-label">凭证图片</text>
+                        <view class="voucher-upload">
+                            <view class="voucher-preview" v-if="voucherForm.image">
+                                <image :src="voucherForm.image" mode="aspectFill" />
+                                <view class="voucher-remove" @click="voucherForm.image = ''">
+                                    <tn-icon name="close" size="24" color="#FFFFFF" />
+                                </view>
+                            </view>
+                            <view class="voucher-add" v-else @click="chooseVoucherImage">
+                                <tn-icon name="add" size="48" color="#CCCCCC" />
+                                <text class="voucher-add-text">选择图片</text>
+                            </view>
+                        </view>
+                    </view>
+                </view>
+                <view class="popup-actions">
+                    <view
+                        class="popup-btn cancel"
+                        :style="{
+                            borderColor: $theme.primaryColor,
+                            color: $theme.primaryColor
+                        }"
+                        @click="showVoucherPopup = false"
+                    >
+                        <text>取消</text>
+                    </view>
+                    <view
+                        class="popup-btn confirm"
+                        :style="{
+                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+                            color: $theme.btnColor
+                        }"
+                        @click="submitVoucher"
+                    >
+                        <text>{{ voucherForm.uploading ? '上传中...' : '提交审核' }}</text>
+                    </view>
+                </view>
+            </view>
+        </tn-popup>
+
         <view class="safe-bottom"></view>
     </view>
     <view v-else class="loading-container">
@@ -374,16 +466,23 @@ import {
     confirmOrder,
     deleteOrder,
     applyRefund,
-    orderPay
+    orderPay,
+    uploadPayVoucher
 } from '@/api/order'
+import { uploadImage } from '@/api/app'
 
 const $theme = useThemeStore()
 const orderId = ref(0)
 const order = ref<any>(null)
 const showRefundPopup = ref(false)
+const showVoucherPopup = ref(false)
 const refundForm = reactive({
     amount: '',
     reason: ''
+})
+const voucherForm = reactive({
+    image: '',
+    uploading: false
 })
 
 const needPayAmount = computed(() => {
@@ -393,6 +492,18 @@ const needPayAmount = computed(() => {
         if (!order.value.balance_paid) return order.value.balance_amount
     }
     return order.value.pay_amount
+})
+
+const canPayOnline = computed(() => {
+    if (!order.value) return false
+    if (order.value.order_status !== 1) return false
+    return !(order.value.pay_type === 4 && order.value.pay_voucher_status === 0)
+})
+
+const canUploadVoucher = computed(() => {
+    if (!order.value) return false
+    if (order.value.order_status !== 1) return false
+    return order.value.pay_voucher_status !== 0
 })
 
 const groupedItems = computed(() => {
@@ -451,47 +562,61 @@ const groupedItems = computed(() => {
 })
 
 const getOrderTimeSlotLabel = (item: any) => {
+    // 优先使用 time_slot_desc（如果后端返回了描述）
     if (item?.time_slot_desc) {
         return item.time_slot_desc
     }
-    if (item?.service_time) {
-        return item.service_time
-    }
-    if (item?.service_date) {
-        return item.service_date
-    }
+    
+    // 使用 time_slot 数字映射
     const map: Record<number, string> = {
         0: '全天',
         1: '早档',
         2: '午档',
         3: '晚档'
     }
+    
     const slot = Number(item?.time_slot)
-    return Number.isFinite(slot) ? (map[slot] || '未知场次') : '未知场次'
+    if (Number.isFinite(slot) && slot >= 0) {
+        return map[slot] || `场次${slot}`
+    }
+    
+    // 如果没有 time_slot，尝试使用 service_time
+    if (item?.service_time) {
+        return item.service_time
+    }
+    
+    // 最后返回默认值
+    return '未知场次'
 }
 
 // 获取订单状态样式
 const getStatusStyle = (status: number) => {
     const styles: Record<number, { background: string }> = {
-        0: { background: 'linear-gradient(135deg, #FF9900 0%, #FF7700 100%)' }, // 待支付 - 警告色
-        1: { background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)` }, // 待确认 - 主色
-        2: { background: `linear-gradient(135deg, ${$theme.secondaryColor} 0%, ${$theme.secondaryColor} 100%)` }, // 服务中 - 辅助色
-        3: { background: 'linear-gradient(135deg, #19BE6B 0%, #0FA958 100%)' }, // 已完成 - 成功色
-        4: { background: 'linear-gradient(135deg, #999999 0%, #666666 100%)' }, // 已取消 - 灰色
-        5: { background: 'linear-gradient(135deg, #FF2C3C 0%, #E6192A 100%)' }  // 已退款 - 错误色
+        0: { background: 'linear-gradient(135deg, #F59E0B 0%, #F97316 100%)' }, // 待确认
+        1: { background: 'linear-gradient(135deg, #F97316 0%, #FB923C 100%)' }, // 待支付
+        2: { background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }, // 已支付
+        3: { background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)' }, // 服务中
+        4: { background: 'linear-gradient(135deg, #19BE6B 0%, #0FA958 100%)' }, // 已完成
+        5: { background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }, // 已评价
+        6: { background: 'linear-gradient(135deg, #9CA3AF 0%, #6B7280 100%)' }, // 已取消
+        7: { background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' }, // 已暂停
+        8: { background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' }  // 已退款
     }
-    return styles[status] || styles[4]
+    return styles[status] || styles[6]
 }
 
 // 获取订单状态图标
 const getStatusIcon = (status: number) => {
     const icons: Record<number, string> = {
-        0: 'wallet-fill',      // 待支付
-        1: 'time-fill',        // 待确认
-        2: 'loading',          // 服务中
-        3: 'check-circle-fill', // 已完成
-        4: 'close-circle-fill', // 已取消
-        5: 'refund'            // 已退款
+        0: 'time-fill', // 待确认
+        1: 'wallet-fill', // 待支付
+        2: 'check-circle-fill', // 已支付
+        3: 'loading', // 服务中
+        4: 'check-circle-fill', // 已完成
+        5: 'check-circle-fill', // 已评价
+        6: 'close-circle-fill', // 已取消
+        7: 'time-fill', // 已暂停
+        8: 'refund' // 已退款
     }
     return icons[status] || 'document'
 }
@@ -529,7 +654,23 @@ const copyOrderSn = () => {
 const handlePay = async () => {
     try {
         const payType = !order.value.deposit_paid ? 1 : !order.value.balance_paid ? 2 : 3
-        const res = await orderPay({ id: orderId.value, pay_way: 1, pay_type: payType })
+        const payWay = await new Promise<number>((resolve, reject) => {
+            uni.showActionSheet({
+                itemList: ['微信支付', '余额支付', '组合支付', '线下支付（上传凭证）'],
+                success: (res) => {
+                    const ways = [1, 3, 5, 4]
+                    resolve(ways[res.tapIndex])
+                },
+                fail: () => reject(new Error('取消选择'))
+            })
+        })
+
+        if (payWay === 4) {
+            showVoucherPopup.value = true
+            return
+        }
+
+        const res = await orderPay({ id: orderId.value, pay_way: payWay, pay_type: payType })
         // 调用微信支付
         // @ts-ignore
         if (res.data?.pay_params) {
@@ -544,9 +685,14 @@ const handlePay = async () => {
                     uni.showToast({ title: '支付取消', icon: 'none' })
                 }
             })
+        } else {
+            uni.showToast({ title: '支付成功', icon: 'success' })
+            fetchDetail()
         }
     } catch (e: any) {
-        uni.showToast({ title: e.message || '支付失败', icon: 'none' })
+        if (e?.message !== '取消选择') {
+            uni.showToast({ title: e.message || '支付失败', icon: 'none' })
+        }
     }
 }
 
@@ -626,6 +772,51 @@ const submitRefund = async () => {
         fetchDetail()
     } catch (e: any) {
         uni.showToast({ title: e.message || '申请失败', icon: 'none' })
+    }
+}
+
+const chooseVoucherImage = () => {
+    if (voucherForm.uploading) {
+        return
+    }
+    uni.chooseImage({
+        count: 1,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera'],
+        success: async (res) => {
+            const path = res.tempFilePaths?.[0]
+            if (!path) return
+            try {
+                voucherForm.uploading = true
+                const uploadRes: any = await uploadImage(path)
+                if (uploadRes?.url) {
+                    voucherForm.image = uploadRes.url
+                } else {
+                    uni.showToast({ title: '上传失败，请重试', icon: 'none' })
+                }
+            } catch (e: any) {
+                uni.showToast({ title: e.message || '上传失败', icon: 'none' })
+            } finally {
+                voucherForm.uploading = false
+            }
+        }
+    })
+}
+
+const submitVoucher = async () => {
+    if (voucherForm.uploading) return
+    if (!voucherForm.image) {
+        uni.showToast({ title: '请先选择凭证图片', icon: 'none' })
+        return
+    }
+    try {
+        await uploadPayVoucher({ id: orderId.value, voucher: voucherForm.image })
+        uni.showToast({ title: '凭证已提交', icon: 'success' })
+        showVoucherPopup.value = false
+        voucherForm.image = ''
+        fetchDetail()
+    } catch (e: any) {
+        uni.showToast({ title: e.message || '提交失败', icon: 'none' })
     }
 }
 
@@ -730,7 +921,8 @@ onLoad((options: any) => {
 .service-card,
 .info-card,
 .amount-card,
-.refund-card {
+.refund-card,
+.voucher-card {
     background: #FFFFFF;
     margin: 0 24rpx 24rpx;
     border-radius: 16rpx;
@@ -1040,6 +1232,62 @@ onLoad((options: any) => {
     line-height: 1.6;
 }
 
+// 线下凭证
+.voucher-body {
+    padding: 0 24rpx 24rpx;
+}
+
+.voucher-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 16rpx 0;
+    gap: 24rpx;
+}
+
+.voucher-label {
+    font-size: 28rpx;
+    color: #999999;
+    flex-shrink: 0;
+}
+
+.voucher-status {
+    font-size: 28rpx;
+    color: #333333;
+    text-align: right;
+    flex: 1;
+}
+
+.voucher-remark {
+    font-size: 28rpx;
+    color: #666666;
+    text-align: right;
+    flex: 1;
+    line-height: 1.6;
+}
+
+.voucher-image {
+    margin-top: 12rpx;
+    border-radius: 12rpx;
+    overflow: hidden;
+
+    image {
+        width: 100%;
+        height: 320rpx;
+        border-radius: 12rpx;
+    }
+}
+
+.voucher-empty {
+    margin-top: 12rpx;
+    padding: 40rpx 0;
+    text-align: center;
+    font-size: 26rpx;
+    color: #999999;
+    background: #F9FAFB;
+    border-radius: 12rpx;
+}
+
 // 底部操作栏
 .action-bar {
     position: fixed;
@@ -1154,6 +1402,60 @@ onLoad((options: any) => {
     &.confirm {
         box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
     }
+}
+
+// 凭证上传弹窗
+.voucher-popup {
+    padding: 32rpx;
+}
+
+.voucher-upload {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+}
+
+.voucher-preview {
+    position: relative;
+    width: 200rpx;
+    height: 200rpx;
+    border-radius: 16rpx;
+    overflow: hidden;
+
+    image {
+        width: 100%;
+        height: 100%;
+    }
+}
+
+.voucher-remove {
+    position: absolute;
+    top: 8rpx;
+    right: 8rpx;
+    width: 44rpx;
+    height: 44rpx;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.voucher-add {
+    width: 200rpx;
+    height: 200rpx;
+    border-radius: 16rpx;
+    border: 2rpx dashed #DDDDDD;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+}
+
+.voucher-add-text {
+    font-size: 24rpx;
+    color: #999999;
 }
 
 // 加载状态

@@ -57,6 +57,11 @@ export function staffCreatePackage(params: any) {
     return request.post({ url: '/staff.staff/createStaffPackage', params })
 }
 
+// 编辑员工专属套餐
+export function staffUpdateStaffPackage(params: any) {
+    return request.post({ url: '/staff.staff/updateStaffPackage', params })
+}
+
 // 更新单个套餐配置
 export function staffUpdatePackageConfig(params: any) {
     return request.post({ url: '/staff.staff/updatePackageConfig', params })
@@ -134,4 +139,36 @@ export function staffCertificateDelete(params: any) {
 // 审核证书
 export function staffCertificateAudit(params: any) {
     return request.post({ url: '/staff.staffCertificate/audit', params })
+}
+
+// ==================== 轮播图管理 ====================
+
+// 获取轮播图列表
+export function staffBannerList(params: any) {
+    return request.get({ url: '/staff.staff/getBannerList', params })
+}
+
+// 添加轮播图
+export function staffBannerAdd(params: any) {
+    return request.post({ url: '/staff.staff/addBanner', params })
+}
+
+// 编辑轮播图
+export function staffBannerEdit(params: any) {
+    return request.post({ url: '/staff.staff/editBanner', params })
+}
+
+// 删除轮播图
+export function staffBannerDelete(params: any) {
+    return request.post({ url: '/staff.staff/deleteBanner', params })
+}
+
+// 更新轮播图排序
+export function staffBannerSort(params: any) {
+    return request.post({ url: '/staff.staff/sortBanner', params })
+}
+
+// 更新轮播图配置
+export function staffBannerUpdateConfig(params: any) {
+    return request.post({ url: '/staff.staff/updateBannerConfig', params })
 }

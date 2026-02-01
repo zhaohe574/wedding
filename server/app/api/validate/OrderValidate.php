@@ -29,9 +29,10 @@ class OrderValidate extends BaseValidate
         'reason' => 'max:255',
         'coupon_id' => 'integer|egt:0',
         'deposit_ratio' => 'integer|between:0,100',
-        'pay_way' => 'require|integer|in:1,2,3,4',
+        'pay_way' => 'require|integer|in:1,2,3,4,5',
         'pay_type' => 'integer|in:1,2,3',
         'amount' => 'require|float|gt:0',
+        'voucher' => 'require|max:500',
     ];
 
     protected $message = [
@@ -53,6 +54,8 @@ class OrderValidate extends BaseValidate
         'pay_type.in' => '支付类型参数错误',
         'amount.require' => '请填写退款金额',
         'amount.gt' => '退款金额必须大于0',
+        'voucher.require' => '请上传支付凭证',
+        'voucher.max' => '支付凭证地址过长',
     ];
 
     /**
@@ -99,5 +102,14 @@ class OrderValidate extends BaseValidate
     {
         return $this->only(['id', 'amount', 'reason'])
             ->append('reason', 'require');
+    }
+
+    /**
+     * @notes 上传凭证场景
+     * @return OrderValidate
+     */
+    public function sceneUploadVoucher()
+    {
+        return $this->only(['id', 'voucher']);
     }
 }

@@ -517,6 +517,12 @@
             {
                 "iconPath": "static/images/tabbar/news.png",
                 "selectedIconPath": "static/images/tabbar/news_s.png",
+                "pagePath": "packages/pages/staff_list/staff_list",
+                "text": "档期"
+            },
+            {
+                "iconPath": "static/images/tabbar/news.png",
+                "selectedIconPath": "static/images/tabbar/news_s.png",
                 "pagePath": "pages/dynamic/dynamic",
                 "text": "动态"
             },

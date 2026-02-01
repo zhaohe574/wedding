@@ -50,13 +50,15 @@ CREATE TABLE `la_style_tag` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '标签ID',
   `name` varchar(50) NOT NULL DEFAULT '' COMMENT '标签名称',
   `type` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '标签类型:1-风格,2-特长,3-其他',
+  `category_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务分类ID',
   `sort` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
   `is_show` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '是否显示:0-否,1-是',
   `create_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
   `update_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
   `delete_time` int(10) UNSIGNED NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE,
-  KEY `idx_type` (`type`) USING BTREE
+  KEY `idx_type` (`type`) USING BTREE,
+  KEY `idx_category_id` (`category_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='风格标签表';
 
 -- ----------------------------
@@ -64,16 +66,16 @@ CREATE TABLE `la_style_tag` (
 -- ----------------------------
 BEGIN;
 INSERT INTO `la_style_tag` VALUES 
-(1, '韩式清新', 1, 100, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-(2, '中式古典', 1, 90, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-(3, '欧式浪漫', 1, 80, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-(4, '日系森系', 1, 70, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-(5, '简约现代', 1, 60, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-(6, '复古怀旧', 1, 50, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-(7, '户外自然', 2, 100, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-(8, '室内棚拍', 2, 90, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-(9, '旅拍跟拍', 2, 80, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-(10, '纪实风格', 2, 70, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL);
+(1, '韩式清新', 1, 0, 100, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+(2, '中式古典', 1, 0, 90, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+(3, '欧式浪漫', 1, 0, 80, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+(4, '日系森系', 1, 0, 70, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+(5, '简约现代', 1, 0, 60, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+(6, '复古怀旧', 1, 0, 50, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+(7, '户外自然', 2, 0, 100, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+(8, '室内棚拍', 2, 0, 90, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+(9, '旅拍跟拍', 2, 0, 80, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+(10, '纪实风格', 2, 0, 70, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL);
 COMMIT;
 
 -- ----------------------------

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\model\financial;
 
 use app\common\model\BaseModel;
+use app\common\model\order\Order;
 use think\facade\Db;
 
 /**
@@ -86,7 +87,7 @@ class FinancialMonthly extends BaseModel
         $endTime = strtotime($endDate . ' 23:59:59');
         $report->complete_order_count = Db::name('order')
             ->whereBetweenTime('complete_time', $startTime, $endTime)
-            ->where('order_status', 3)
+            ->where('order_status', Order::STATUS_COMPLETED)
             ->count();
         
         // 计算平均订单金额

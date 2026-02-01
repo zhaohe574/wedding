@@ -193,7 +193,7 @@ class StaffPackage extends BaseModel
     /**
      * @notes 批量设置套餐（增强版，支持个人价格和时段价格）
      * @param int $staffId
-     * @param array $packages 格式: [['package_id' => 1, 'custom_price' => 100.00, 'custom_slot_prices' => [...], 'status' => 1], ...]
+     * @param array $packages 格式: [['package_id' => 1, 'price' => 100.00, 'original_price' => 200.00, 'custom_price' => 100.00, 'custom_slot_prices' => [...], 'status' => 1], ...]
      * @return void
      */
     public static function setPackages(int $staffId, array $packages): void
@@ -210,6 +210,7 @@ class StaffPackage extends BaseModel
                     'staff_id' => $staffId,
                     'package_id' => $pkg['package_id'],
                     'price' => $pkg['price'] ?? 0,
+                    'original_price' => $pkg['original_price'] ?? null,
                     'is_default' => $pkg['is_default'] ?? 0,
                     'custom_price' => $pkg['custom_price'] ?? null,
                     'custom_slot_prices' => isset($pkg['custom_slot_prices']) && is_array($pkg['custom_slot_prices'])
@@ -221,6 +222,7 @@ class StaffPackage extends BaseModel
                         : ($pkg['allowed_time_slots'] ?? null),
                     'status' => $pkg['status'] ?? 1,
                     'create_time' => $time,
+                    'update_time' => $time,
                 ];
                 $data[] = $item;
             }
@@ -279,6 +281,12 @@ class StaffPackage extends BaseModel
         }
 
         $updateData = [];
+        if (isset($data['price'])) {
+            $updateData['price'] = $data['price'];
+        }
+        if (array_key_exists('original_price', $data)) {
+            $updateData['original_price'] = $data['original_price'];
+        }
         if (isset($data['custom_price'])) {
             $updateData['custom_price'] = $data['custom_price'];
         }

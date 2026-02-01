@@ -96,6 +96,19 @@ class Cart extends BaseModel
             return [false, '该档期不可预约', null];
         }
 
+        $tempLockCreated = false;
+        if ($packageId > 0) {
+            $tempLock = PackageBooking::createTempLock($packageId, $staffId, $date, $timeSlot, $userId);
+            if (!$tempLock) {
+                $availability = PackageBooking::checkAvailability($packageId, $date, $staffId, $timeSlot);
+                $message = $availability['available'] ?? false
+                    ? '套餐锁定失败，请稍后重试'
+                    : ($availability['message'] ?? '套餐锁定失败');
+                return [false, $message, null];
+            }
+            $tempLockCreated = true;
+        }
+
         // 获取价格
         $price = self::calculateItemPrice($staffId, $packageId, $date, $timeSlot);
 
@@ -115,6 +128,9 @@ class Cart extends BaseModel
             ]);
             return [true, '添加成功', $cart->id];
         } catch (\Exception $e) {
+            if ($tempLockCreated) {
+                PackageBooking::releaseBySelection($userId, $packageId, $staffId, $date, $timeSlot);
+            }
             return [false, '添加失败：' . $e->getMessage(), null];
         }
     }
@@ -163,6 +179,24 @@ class Cart extends BaseModel
             }
         }
 
+        $lockedSelections = [];
+        if ($packageId > 0) {
+            foreach ($timeSlots as $timeSlot) {
+                $tempLock = PackageBooking::createTempLock($packageId, $staffId, $date, (int)$timeSlot, $userId);
+                if (!$tempLock) {
+                    foreach ($lockedSelections as $locked) {
+                        PackageBooking::releaseBySelection($userId, $locked[0], $locked[1], $locked[2], $locked[3]);
+                    }
+                    $availability = PackageBooking::checkAvailability($packageId, $date, $staffId, (int)$timeSlot);
+                    $message = $availability['available'] ?? false
+                        ? '套餐锁定失败，请稍后重试'
+                        : ($availability['message'] ?? '套餐锁定失败');
+                    return [false, $message, []];
+                }
+                $lockedSelections[] = [$packageId, $staffId, $date, (int)$timeSlot];
+            }
+        }
+
         Db::startTrans();
         $cartIds = [];
         try {
@@ -188,6 +222,9 @@ class Cart extends BaseModel
             return [true, '添加成功', $cartIds];
         } catch (\Exception $e) {
             Db::rollback();
+            foreach ($lockedSelections as $locked) {
+                PackageBooking::releaseBySelection($userId, $locked[0], $locked[1], $locked[2], $locked[3]);
+            }
             return [false, '添加失败：' . $e->getMessage(), []];
         }
     }
@@ -249,6 +286,11 @@ class Cart extends BaseModel
             return [false, '购物车项不存在'];
         }
 
+        $changed = false;
+        $newDate = (string)$cart->schedule_date;
+        $newTimeSlot = (int)$cart->time_slot;
+        $newLockCreated = false;
+
         // 如果修改了日期或时间段，需要重新检查档期
         if (isset($data['schedule_date']) || isset($data['time_slot'])) {
             $newDate = $data['schedule_date'] ?? $cart->schedule_date;
@@ -285,18 +327,54 @@ class Cart extends BaseModel
             // 重新计算价格
             $data['price'] = self::calculateItemPrice($cart->staff_id, $cart->package_id, $newDate, $newTimeSlot);
             if ($changed && $cart->package_id > 0) {
-                PackageBooking::releaseBySelection(
-                    $userId,
+                $tempLock = PackageBooking::createTempLock(
                     (int)$cart->package_id,
                     (int)$cart->staff_id,
-                    (string)$cart->schedule_date,
-                    (int)$cart->time_slot
+                    (string)$newDate,
+                    (int)$newTimeSlot,
+                    $userId
                 );
+                if (!$tempLock) {
+                    $availability = PackageBooking::checkAvailability(
+                        (int)$cart->package_id,
+                        (string)$newDate,
+                        (int)$cart->staff_id,
+                        (int)$newTimeSlot
+                    );
+                    $message = $availability['available'] ?? false
+                        ? '套餐锁定失败，请稍后重试'
+                        : ($availability['message'] ?? '套餐锁定失败');
+                    return [false, $message];
+                }
+                $newLockCreated = true;
             }
         }
 
         $data['update_time'] = time();
-        $cart->save($data);
+        try {
+            $cart->save($data);
+        } catch (\Exception $e) {
+            if ($newLockCreated) {
+                PackageBooking::releaseBySelection(
+                    $userId,
+                    (int)$cart->package_id,
+                    (int)$cart->staff_id,
+                    (string)$newDate,
+                    (int)$newTimeSlot
+                );
+            }
+            return [false, '更新失败：' . $e->getMessage()];
+        }
+
+        if ($changed && $cart->package_id > 0) {
+            PackageBooking::releaseBySelection(
+                $userId,
+                (int)$cart->package_id,
+                (int)$cart->staff_id,
+                (string)$cart->schedule_date,
+                (int)$cart->time_slot
+            );
+        }
 
         return [true, '更新成功'];
     }

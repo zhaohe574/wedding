@@ -36,7 +36,7 @@ class OrderController extends BaseAdminController
     public function detail()
     {
         $params = (new OrderValidate())->goCheck('detail');
-        $result = OrderLogic::detail($params['id']);
+        $result = OrderLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('订单不存在');
         }
@@ -80,7 +80,7 @@ class OrderController extends BaseAdminController
     public function cancel()
     {
         $params = (new OrderValidate())->post()->goCheck('cancel');
-        $result = OrderLogic::cancel($params['id'], $this->adminId, $params['reason'] ?? '');
+        $result = OrderLogic::cancel((int)$params['id'], $this->adminId, $params['reason'] ?? '');
         if (true === $result) {
             return $this->success('取消成功');
         }
@@ -94,7 +94,7 @@ class OrderController extends BaseAdminController
     public function startService()
     {
         $params = (new OrderValidate())->post()->goCheck('detail');
-        $result = OrderLogic::startService($params['id'], $this->adminId);
+        $result = OrderLogic::startService((int)$params['id'], $this->adminId);
         if (true === $result) {
             return $this->success('操作成功');
         }
@@ -108,7 +108,7 @@ class OrderController extends BaseAdminController
     public function complete()
     {
         $params = (new OrderValidate())->post()->goCheck('detail');
-        $result = OrderLogic::complete($params['id'], $this->adminId);
+        $result = OrderLogic::complete((int)$params['id'], $this->adminId);
         if (true === $result) {
             return $this->success('操作成功');
         }
@@ -131,13 +131,28 @@ class OrderController extends BaseAdminController
     }
 
     /**
+     * @notes 审核线下支付凭证
+     * @return \think\response\Json
+     */
+    public function auditVoucher()
+    {
+        $params = (new OrderValidate())->post()->goCheck('auditVoucher');
+        $params['admin_id'] = $this->adminId;
+        $result = OrderLogic::auditPayVoucher($params);
+        if (true === $result) {
+            return $this->success('审核成功');
+        }
+        return $this->fail(OrderLogic::getError());
+    }
+
+    /**
      * @notes 添加备注
      * @return \think\response\Json
      */
     public function addRemark()
     {
         $params = (new OrderValidate())->post()->goCheck('remark');
-        $result = OrderLogic::addRemark($params['id'], $this->adminId, $params['remark']);
+        $result = OrderLogic::addRemark((int)$params['id'], $this->adminId, $params['remark']);
         if (true === $result) {
             return $this->success('添加成功');
         }

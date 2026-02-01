@@ -45,6 +45,11 @@ export function orderPay(params: any) {
     return request.post({ url: '/order/pay', params })
 }
 
+// 上传线下支付凭证
+export function uploadPayVoucher(params: any) {
+    return request.post({ url: '/order/uploadVoucher', params })
+}
+
 // 支付尾款
 export function orderPayBalance(params: any) {
     return request.post({ url: '/order/payBalance', params })

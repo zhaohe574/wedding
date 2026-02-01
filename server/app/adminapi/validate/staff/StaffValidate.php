@@ -9,6 +9,7 @@ namespace app\adminapi\validate\staff;
 
 use app\common\validate\BaseValidate;
 use app\common\model\staff\Staff;
+use app\common\model\user\User;
 
 /**
  * 工作人员验证器
@@ -23,6 +24,7 @@ class StaffValidate extends BaseValidate
      */
     protected $rule = [
         'id' => 'require|checkStaff',
+        'user_id' => 'integer|egt:0|checkUser',
         'name' => 'require|length:1,50',
         'category_id' => 'require|integer|gt:0',
         'mobile' => 'mobile',
@@ -39,6 +41,10 @@ class StaffValidate extends BaseValidate
      */
     protected $message = [
         'id.require' => '请选择工作人员',
+        'user_id.require' => '请选择系统用户',
+        'user_id.integer' => '系统用户ID格式错误',
+        'user_id.egt' => '系统用户ID不能小于0',
+        'user_id.gt' => '请选择系统用户',
         'name.require' => '请输入姓名',
         'name.length' => '姓名长度为1-50个字符',
         'category_id.require' => '请选择服务分类',
@@ -62,7 +68,8 @@ class StaffValidate extends BaseValidate
      */
     public function sceneAdd(): StaffValidate
     {
-        return $this->only(['name', 'category_id', 'mobile', 'price', 'experience_years', 'sort', 'status', 'is_recommend']);
+        return $this->only(['user_id', 'name', 'category_id', 'mobile', 'price', 'experience_years', 'sort', 'status', 'is_recommend'])
+            ->append('user_id', 'require|gt:0');
     }
 
     /**
@@ -71,7 +78,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneEdit(): StaffValidate
     {
-        return $this->only(['id', 'name', 'category_id', 'mobile', 'price', 'experience_years', 'sort', 'status', 'is_recommend']);
+        return $this->only(['id', 'user_id', 'name', 'category_id', 'mobile', 'price', 'experience_years', 'sort', 'status', 'is_recommend']);
     }
 
     /**
@@ -113,6 +120,25 @@ class StaffValidate extends BaseValidate
         $staff = Staff::find($value);
         if (!$staff) {
             return '工作人员不存在';
+        }
+        return true;
+    }
+
+    /**
+     * @notes 检查系统用户是否存在（允许为空或0）
+     * @param $value
+     * @param $rule
+     * @param $data
+     * @return bool|string
+     */
+    public function checkUser($value, $rule, $data)
+    {
+        if (empty($value) || (int) $value === 0) {
+            return true;
+        }
+        $user = User::find($value);
+        if (!$user) {
+            return '系统用户不存在';
         }
         return true;
     }

@@ -15,6 +15,9 @@ use app\common\model\order\Payment;
 use app\common\model\order\Refund;
 use app\common\model\cart\Cart;
 use app\common\model\schedule\Schedule;
+use app\common\model\user\User;
+use app\common\logic\AccountLogLogic;
+use app\common\enum\user\AccountLogEnum;
 use think\facade\Db;
 
 /**
@@ -45,7 +48,10 @@ class OrderLogic extends BaseLogic
         }
 
         $list = $query->with(['items' => function ($q) {
-                $q->field('id, order_id, staff_id, staff_name, package_name, service_date, time_slot, price, quantity, subtotal');
+                $q->field('id, order_id, staff_id, staff_name, package_name, service_date, time_slot, price, quantity, subtotal')
+                    ->with(['staff' => function ($staffQuery) {
+                        $staffQuery->field('id, name, avatar');
+                    }]);
             }])
             ->order('id', 'desc')
             ->paginate((int)($params['page_size'] ?? 10))
@@ -90,6 +96,7 @@ class OrderLogic extends BaseLogic
         $data['order_status_desc'] = self::getStatusDesc($order->order_status);
         $data['pay_status_desc'] = self::getPayStatusDesc($order->pay_status);
         $data['pay_type_desc'] = self::getPayTypeDesc($order->pay_type);
+        $data['pay_voucher_status_desc'] = $order->pay_voucher_status_desc ?? '';
 
         // 获取退款信息
         $refund = Refund::where('order_id', $orderId)->order('id', 'desc')->find();
@@ -196,11 +203,22 @@ class OrderLogic extends BaseLogic
 
             // 检查档期是否仍然可用
             foreach ($cartItems as $item) {
-                if (!empty($item['schedule_id'])) {
-                    $schedule = Schedule::find($item['schedule_id']);
-                    if (!$schedule || !in_array($schedule->status, [Schedule::STATUS_AVAILABLE, Schedule::STATUS_LOCKED])) {
-                        return ['success' => false, 'message' => '部分档期已不可用，请刷新购物车'];
-                    }
+                if (empty($item['schedule_id'])) {
+                    continue;
+                }
+                $schedule = Schedule::find($item['schedule_id']);
+                if (!$schedule) {
+                    return ['success' => false, 'message' => '部分档期已不可用，请刷新购物车'];
+                }
+                if ($schedule->status == Schedule::STATUS_LOCKED && $schedule->lock_expire_time > 0 && $schedule->lock_expire_time < time()) {
+                    Schedule::releaseLock($schedule->id);
+                    $schedule->status = Schedule::STATUS_AVAILABLE;
+                }
+                if ($schedule->status == Schedule::STATUS_LOCKED && (int)$schedule->lock_user_id !== (int)$userId) {
+                    return ['success' => false, 'message' => '部分档期已被他人锁定，请刷新购物车'];
+                }
+                if (in_array($schedule->status, [Schedule::STATUS_BOOKED, Schedule::STATUS_RESERVED, Schedule::STATUS_UNAVAILABLE])) {
+                    return ['success' => false, 'message' => '部分档期已不可用，请刷新购物车'];
                 }
             }
 
@@ -276,8 +294,8 @@ class OrderLogic extends BaseLogic
             return ['success' => false, 'message' => '订单不存在'];
         }
 
-        if (!in_array($order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED, Order::STATUS_REFUNDED])) {
-            return ['success' => false, 'message' => '只能删除已完成、已取消或已退款的订单'];
+        if (!in_array($order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED, Order::STATUS_CANCELLED, Order::STATUS_REFUNDED])) {
+            return ['success' => false, 'message' => '只能删除已完成、已评价、已取消或已退款的订单'];
         }
 
         $order->delete();
@@ -307,6 +325,9 @@ class OrderLogic extends BaseLogic
             'balance_paid' => $order->balance_paid,
             'pay_status' => $order->pay_status,
             'order_status' => $order->order_status,
+            'pay_voucher' => $order->pay_voucher ?? '',
+            'pay_voucher_status' => $order->pay_voucher_status ?? null,
+            'pay_voucher_status_desc' => $order->pay_voucher_status_desc ?? '',
         ];
 
         // 需要支付的金额
@@ -330,6 +351,50 @@ class OrderLogic extends BaseLogic
     }
 
     /**
+     * @notes 上传线下支付凭证
+     * @param int $orderId
+     * @param int $userId
+     * @param string $voucher
+     * @return array
+     */
+    public static function uploadPayVoucher(int $orderId, int $userId, string $voucher): array
+    {
+        if (empty($voucher)) {
+            return ['success' => false, 'message' => '请上传支付凭证'];
+        }
+
+        $order = Order::where('user_id', $userId)->find($orderId);
+        if (!$order) {
+            return ['success' => false, 'message' => '订单不存在'];
+        }
+
+        if ($order->order_status != Order::STATUS_PENDING_PAY) {
+            return ['success' => false, 'message' => '当前订单状态不允许上传凭证'];
+        }
+
+        $order->pay_type = Order::PAY_WAY_OFFLINE;
+        $order->pay_voucher = $voucher;
+        $order->pay_voucher_status = Order::VOUCHER_STATUS_PENDING;
+        $order->pay_voucher_audit_admin_id = 0;
+        $order->pay_voucher_audit_time = 0;
+        $order->pay_voucher_audit_remark = '';
+        $order->update_time = time();
+        $order->save();
+
+        OrderLog::addLog(
+            $order->id,
+            OrderLog::OPERATOR_USER,
+            $userId,
+            'upload_voucher',
+            $order->order_status,
+            $order->order_status,
+            '上传线下支付凭证'
+        );
+
+        return ['success' => true, 'message' => '凭证已提交，请等待审核'];
+    }
+
+    /**
      * @notes 创建支付
      * @param array $params
      * @return array
@@ -341,12 +406,20 @@ class OrderLogic extends BaseLogic
             return ['success' => false, 'message' => '订单不存在'];
         }
 
-        if ($order->order_status != Order::STATUS_PENDING) {
+        if ($order->order_status != Order::STATUS_PENDING_PAY) {
             return ['success' => false, 'message' => '订单状态不允许支付'];
+        }
+
+        if ($order->pay_type == Order::PAY_WAY_OFFLINE && !empty($order->pay_voucher) && (int)($order->pay_voucher_status ?? -1) === Order::VOUCHER_STATUS_PENDING) {
+            return ['success' => false, 'message' => '线下支付凭证审核中，请等待审核结果'];
         }
 
         $payType = $params['pay_type'] ?? Payment::TYPE_FULL;
         $payWay = $params['pay_way'] ?? Payment::WAY_WECHAT;
+
+        if ($payWay == Order::PAY_WAY_OFFLINE) {
+            return ['success' => false, 'message' => '线下支付请上传支付凭证'];
+        }
 
         // 计算支付金额
         if ($payType == Payment::TYPE_DEPOSIT) {
@@ -366,35 +439,174 @@ class OrderLogic extends BaseLogic
             $payAmount = $order->pay_amount;
         }
 
-        // 创建支付记录
-        $payment = Payment::createPayment(
-            $order->id,
-            $order->order_sn,
-            $order->user_id,
-            $payType,
-            $payWay,
-            $payAmount
-        );
+        Db::startTrans();
+        try {
+            // 余额支付
+            if ($payWay == Order::PAY_WAY_BALANCE) {
+                $user = User::find($order->user_id);
+                if (!$user) {
+                    throw new \Exception('用户不存在');
+                }
+                if ((float)$user->user_money < (float)$payAmount) {
+                    throw new \Exception('余额不足');
+                }
 
-        // TODO: 根据支付方式调用第三方支付接口
-        // 这里返回模拟的支付参数
-        return [
-            'success' => true,
-            'data' => [
-                'payment_sn' => $payment->payment_sn,
-                'pay_amount' => $payAmount,
-                'expire_time' => $payment->expire_time,
-                // 微信支付参数（模拟）
-                'pay_params' => [
-                    'appId' => '',
-                    'timeStamp' => (string)time(),
-                    'nonceStr' => md5(uniqid()),
-                    'package' => '',
-                    'signType' => 'MD5',
-                    'paySign' => '',
+                $user->user_money = round((float)$user->user_money - (float)$payAmount, 2);
+                $user->save();
+
+                AccountLogLogic::add(
+                    $order->user_id,
+                    AccountLogEnum::UM_DEC_ADMIN,
+                    AccountLogEnum::DEC,
+                    $payAmount,
+                    $order->order_sn,
+                    '订单余额支付'
+                );
+
+                $payment = Payment::createPayment(
+                    $order->id,
+                    $order->order_sn,
+                    $order->user_id,
+                    $payType,
+                    Payment::WAY_BALANCE,
+                    $payAmount
+                );
+
+                [$paid, $message] = Payment::paySuccess($payment->payment_sn, 'BALANCE');
+                if (!$paid) {
+                    throw new \Exception($message ?: '余额支付失败');
+                }
+
+                Db::commit();
+                return [
+                    'success' => true,
+                    'data' => [
+                        'payment_sn' => $payment->payment_sn,
+                        'pay_amount' => $payAmount,
+                        'pay_status' => Payment::STATUS_PAID,
+                    ],
+                ];
+            }
+
+            // 组合支付（余额 + 微信）
+            if ($payWay == Order::PAY_WAY_COMBINATION) {
+                $user = User::find($order->user_id);
+                if (!$user) {
+                    throw new \Exception('用户不存在');
+                }
+
+                $balancePay = min((float)$user->user_money, (float)$payAmount);
+                $remainingAmount = round((float)$payAmount - (float)$balancePay, 2);
+
+                if ($balancePay > 0) {
+                    $user->user_money = round((float)$user->user_money - (float)$balancePay, 2);
+                    $user->save();
+
+                    AccountLogLogic::add(
+                        $order->user_id,
+                        AccountLogEnum::UM_DEC_ADMIN,
+                        AccountLogEnum::DEC,
+                        $balancePay,
+                        $order->order_sn,
+                        '组合支付-余额抵扣'
+                    );
+
+                    $balancePayment = Payment::createPayment(
+                        $order->id,
+                        $order->order_sn,
+                        $order->user_id,
+                        $payType,
+                        Payment::WAY_BALANCE,
+                        $balancePay
+                    );
+
+                    [$paid, $message] = Payment::paySuccess($balancePayment->payment_sn, 'BALANCE');
+                    if (!$paid) {
+                        throw new \Exception($message ?: '组合支付余额扣减失败');
+                    }
+                }
+
+                $order->pay_type = Order::PAY_WAY_COMBINATION;
+                $order->update_time = time();
+                $order->save();
+
+                if ($remainingAmount <= 0) {
+                    Db::commit();
+                    return [
+                        'success' => true,
+                        'data' => [
+                            'payment_sn' => '',
+                            'pay_amount' => $payAmount,
+                            'pay_status' => Payment::STATUS_PAID,
+                        ],
+                    ];
+                }
+
+                $payment = Payment::createPayment(
+                    $order->id,
+                    $order->order_sn,
+                    $order->user_id,
+                    $payType,
+                    Payment::WAY_WECHAT,
+                    $remainingAmount
+                );
+
+                Db::commit();
+                return [
+                    'success' => true,
+                    'data' => [
+                        'payment_sn' => $payment->payment_sn,
+                        'pay_amount' => $remainingAmount,
+                        'expire_time' => $payment->expire_time,
+                        // 微信支付参数（模拟）
+                        'pay_params' => [
+                            'appId' => '',
+                            'timeStamp' => (string)time(),
+                            'nonceStr' => md5(uniqid()),
+                            'package' => '',
+                            'signType' => 'MD5',
+                            'paySign' => '',
+                        ],
+                    ],
+                ];
+            }
+
+            // 创建在线支付记录
+            $payment = Payment::createPayment(
+                $order->id,
+                $order->order_sn,
+                $order->user_id,
+                $payType,
+                $payWay,
+                $payAmount
+            );
+
+            $order->pay_type = $payWay;
+            $order->update_time = time();
+            $order->save();
+
+            Db::commit();
+            return [
+                'success' => true,
+                'data' => [
+                    'payment_sn' => $payment->payment_sn,
+                    'pay_amount' => $payAmount,
+                    'expire_time' => $payment->expire_time,
+                    // 微信支付参数（模拟）
+                    'pay_params' => [
+                        'appId' => '',
+                        'timeStamp' => (string)time(),
+                        'nonceStr' => md5(uniqid()),
+                        'package' => '',
+                        'signType' => 'MD5',
+                        'paySign' => '',
+                    ],
                 ],
-            ],
-        ];
+            ];
+        } catch (\Exception $e) {
+            Db::rollback();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
 
     /**
@@ -442,10 +654,14 @@ class OrderLogic extends BaseLogic
     {
         $counts = [];
         foreach ([
-            'pending' => Order::STATUS_PENDING,
+            'pending_confirm' => Order::STATUS_PENDING_CONFIRM,
+            'pending_pay' => Order::STATUS_PENDING_PAY,
             'paid' => Order::STATUS_PAID,
             'in_service' => Order::STATUS_IN_SERVICE,
             'completed' => Order::STATUS_COMPLETED,
+            'reviewed' => Order::STATUS_REVIEWED,
+            'cancelled' => Order::STATUS_CANCELLED,
+            'paused' => Order::STATUS_PAUSED,
             'refund' => Order::STATUS_REFUNDED,
         ] as $key => $status) {
             $counts[$key] = Order::where('user_id', $userId)->where('order_status', $status)->count();
@@ -473,11 +689,14 @@ class OrderLogic extends BaseLogic
     protected static function getStatusDesc(int $status): string
     {
         $map = [
-            Order::STATUS_PENDING => '待支付',
+            Order::STATUS_PENDING_CONFIRM => '待确认',
+            Order::STATUS_PENDING_PAY => '待支付',
             Order::STATUS_PAID => '已支付',
             Order::STATUS_IN_SERVICE => '服务中',
             Order::STATUS_COMPLETED => '已完成',
+            Order::STATUS_REVIEWED => '已评价',
             Order::STATUS_CANCELLED => '已取消',
+            Order::STATUS_PAUSED => '已暂停',
             Order::STATUS_REFUNDED => '已退款',
         ];
         return $map[$status] ?? '未知';
@@ -502,6 +721,7 @@ class OrderLogic extends BaseLogic
             Order::PAY_WAY_ALIPAY => '支付宝',
             Order::PAY_WAY_BALANCE => '余额支付',
             Order::PAY_WAY_OFFLINE => '线下支付',
+            Order::PAY_WAY_COMBINATION => '组合支付',
         ];
         return $map[$type] ?? '未知';
     }

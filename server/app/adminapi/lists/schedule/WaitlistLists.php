@@ -118,9 +118,9 @@ class WaitlistLists extends BaseAdminDataLists implements ListsExtendInterface
     private function formatWaitlist(array $item): array
     {
         // 基本格式化 - 转换为整数
-        $item['create_time'] = (int)$item['create_time'] > 0 ? date('Y-m-d H:i:s', (int)$item['create_time']) : '';
-        $item['notify_time'] = (int)$item['notify_time'] > 0 ? date('Y-m-d H:i:s', (int)$item['notify_time']) : '';
-        $item['expire_time'] = (int)$item['expire_time'] > 0 ? date('Y-m-d H:i:s', (int)$item['expire_time']) : '';
+        $item['create_time'] = $this->formatTimeValue($item['create_time'] ?? null);
+        $item['notify_time'] = $this->formatTimeValue($item['notify_time'] ?? null);
+        $item['expire_time'] = $this->formatTimeValue($item['expire_time'] ?? null);
 
         // 状态描述
         $statusMap = [
@@ -141,6 +141,25 @@ class WaitlistLists extends BaseAdminDataLists implements ListsExtendInterface
         $item['time_slot_desc'] = $timeSlotMap[$item['time_slot']] ?? '未知';
 
         return $item;
+    }
+
+    /**
+     * @notes 格式化时间值（兼容时间戳与字符串时间）
+     * @param mixed $value
+     * @return string
+     */
+    private function formatTimeValue($value): string
+    {
+        if ($value === null || $value === '' || $value === '0000-00-00 00:00:00') {
+            return '';
+        }
+
+        if (is_numeric($value)) {
+            $timestamp = (int) $value;
+            return $timestamp > 0 ? date('Y-m-d H:i:s', $timestamp) : '';
+        }
+
+        return (string) $value;
     }
 
     /**

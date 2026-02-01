@@ -12,6 +12,8 @@ use app\common\model\staff\Staff;
 use app\common\model\staff\StaffWork;
 use app\common\model\staff\Favorite;
 use app\common\model\staff\StaffTag;
+use app\common\model\staff\StaffPackage;
+use app\common\model\service\ServicePackage;
 
 /**
  * 工作人员逻辑（小程序端）
@@ -73,9 +75,45 @@ class StaffLogic extends BaseLogic
             ->column('tag.name');
         $data['tags'] = array_values(array_filter($tagData));
 
-        // 获取套餐
-        $data['packages'] = \app\common\model\staff\StaffPackage::with(['package'])
+        // 获取套餐（包含人员专属套餐）
+        $staffPackages = StaffPackage::with(['package'])
             ->where('staff_id', $id)
+            ->select()
+            ->toArray();
+
+        $packageIds = array_column($staffPackages, 'package_id');
+        $staffOnlyQuery = ServicePackage::where('staff_id', $id)
+            ->where('package_type', ServicePackage::TYPE_STAFF_ONLY)
+            ->where('delete_time', null)
+            ->where('is_show', 1);
+
+        if (!empty($packageIds)) {
+            $staffOnlyQuery->whereNotIn('id', $packageIds);
+        }
+
+        $staffOnlyPackages = $staffOnlyQuery->select()->toArray();
+        foreach ($staffOnlyPackages as $package) {
+            $staffPackages[] = [
+                'id' => 0,
+                'staff_id' => $id,
+                'package_id' => $package['id'],
+                'price' => $package['price'] ?? 0,
+                'original_price' => $package['original_price'] ?? null,
+                'is_default' => 0,
+                'custom_price' => null,
+                'custom_slot_prices' => [],
+                'booking_type' => $package['booking_type'] ?? null,
+                'allowed_time_slots' => $package['allowed_time_slots'] ?? [],
+                'status' => 1,
+                'package' => $package,
+            ];
+        }
+        $data['packages'] = $staffPackages;
+
+        // 获取轮播图
+        $data['banners'] = \app\common\model\staff\StaffBanner::where('staff_id', $id)
+            ->order('sort', 'asc')
+            ->order('id', 'asc')
             ->select()
             ->toArray();
 
@@ -106,6 +144,61 @@ class StaffLogic extends BaseLogic
             ->order('sort desc, id desc')
             ->select()
             ->toArray();
+    }
+
+    /**
+     * @notes 获取工作人员套餐列表（用于选择）
+     * @param int $staffId
+     * @return array
+     */
+    public static function packages(int $staffId): array
+    {
+        if ($staffId <= 0) {
+            return [];
+        }
+
+        $result = [];
+        $packageIds = [];
+        $staffPackages = StaffPackage::with(['package'])
+            ->where('staff_id', $staffId)
+            ->where('status', 1)
+            ->select()
+            ->toArray();
+
+        foreach ($staffPackages as $item) {
+            if (empty($item['package'])) {
+                continue;
+            }
+            $packageIds[] = $item['package_id'];
+            $package = $item['package'];
+
+            if ($item['custom_price'] !== null && $item['custom_price'] !== '') {
+                $package['price'] = (float) $item['custom_price'];
+            } elseif ($item['price'] !== null && $item['price'] !== '') {
+                $package['price'] = (float) $item['price'];
+            }
+
+            if (array_key_exists('original_price', $item) && $item['original_price'] !== null && $item['original_price'] !== '') {
+                $package['original_price'] = (float) $item['original_price'];
+            }
+
+            $package['staff_package_id'] = $item['id'];
+            $package['staff_custom_price'] = $item['custom_price'] ?? null;
+            $package['staff_price'] = $item['price'] ?? null;
+            $result[] = $package;
+        }
+
+        $staffOnlyQuery = ServicePackage::where('staff_id', $staffId)
+            ->where('package_type', ServicePackage::TYPE_STAFF_ONLY)
+            ->where('delete_time', null)
+            ->where('is_show', 1);
+
+        if (!empty($packageIds)) {
+            $staffOnlyQuery->whereNotIn('id', $packageIds);
+        }
+
+        $staffOnlyPackages = $staffOnlyQuery->select()->toArray();
+        return array_merge($result, $staffOnlyPackages);
     }
 
     /**

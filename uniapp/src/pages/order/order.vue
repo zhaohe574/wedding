@@ -108,11 +108,15 @@ const $theme = useThemeStore()
 
 const statusTabs = [
     { label: '全部', value: '', key: 'all' },
-    { label: '待支付', value: 0, key: 'pending' },
-    { label: '已支付', value: 1, key: 'paid' },
-    { label: '服务中', value: 2, key: 'in_service' },
-    { label: '已完成', value: 3, key: 'completed' },
-    { label: '退款', value: 5, key: 'refund' }
+    { label: '待确认', value: 0, key: 'pending_confirm' },
+    { label: '待支付', value: 1, key: 'pending_pay' },
+    { label: '已支付', value: 2, key: 'paid' },
+    { label: '服务中', value: 3, key: 'in_service' },
+    { label: '已完成', value: 4, key: 'completed' },
+    { label: '已评价', value: 5, key: 'reviewed' },
+    { label: '已取消', value: 6, key: 'cancelled' },
+    { label: '已暂停', value: 7, key: 'paused' },
+    { label: '已退款', value: 8, key: 'refund' }
 ]
 
 const currentTabIndex = ref(0)
@@ -123,23 +127,30 @@ const page = ref(1)
 const hasMore = ref(true)
 const statistics = reactive<any>({
     all: 0,
-    pending: 0,
+    pending_confirm: 0,
+    pending_pay: 0,
     paid: 0,
     in_service: 0,
     completed: 0,
+    reviewed: 0,
+    cancelled: 0,
+    paused: 0,
     refund: 0
 })
 
 const getStatusKey = (status: number) => {
     const statusMap: Record<number, string> = {
-        0: 'unpaid',
-        1: 'paid',
-        2: 'in_service',
-        3: 'completed',
-        4: 'cancelled',
-        5: 'refund'
+        0: 'pending_confirm',
+        1: 'pending_pay',
+        2: 'paid',
+        3: 'in_service',
+        4: 'completed',
+        5: 'reviewed',
+        6: 'cancelled',
+        7: 'paused',
+        8: 'refunded'
     }
-    return statusMap[status] || 'unpaid'
+    return statusMap[status] || 'pending_pay'
 }
 
 const getTimeSlotLabel = (timeSlot: any) => {
@@ -155,18 +166,29 @@ const getTimeSlotLabel = (timeSlot: any) => {
 
 const buildActions = (status: number) => {
     if (status === 0) {
+        return [{ text: '取消', type: 'secondary', action: 'cancel' }]
+    }
+    if (status === 1) {
         return [
             { text: '取消', type: 'secondary', action: 'cancel' },
             { text: '支付', type: 'primary', action: 'pay' }
         ]
     }
-    if (status === 2) {
+    if (status === 3) {
         return [{ text: '确认完成', type: 'primary', action: 'confirm' }]
     }
-    if ([3, 4, 5].includes(status)) {
+    if ([4, 5, 6, 8].includes(status)) {
         return [{ text: '删除', type: 'secondary', action: 'delete' }]
     }
     return []
+}
+
+// 获取服务人员头像（优先使用关联的staff对象）
+const getStaffAvatar = (item: any) => {
+    if (item.staff && item.staff.avatar) {
+        return item.staff.avatar
+    }
+    return '/static/images/default-avatar.png'
 }
 
 const fetchOrders = async (refresh = false) => {
@@ -201,7 +223,7 @@ const fetchOrders = async (refresh = false) => {
                     id: item.id,
                     staffId: item.staff_id,
                     staffName: item.staff_name,
-                    staffAvatar: item.staff?.avatar || '/static/images/default-avatar.png',
+                    staffAvatar: getStaffAvatar(item),
                     packageName: item.package_name,
                     serviceDate: item.service_date,
                     timeSlot: item.time_slot,

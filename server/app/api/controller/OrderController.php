@@ -152,6 +152,21 @@ class OrderController extends BaseApiController
     }
 
     /**
+     * @notes 上传线下支付凭证
+     * @return \think\response\Json
+     */
+    public function uploadVoucher()
+    {
+        $params = (new OrderValidate())->post()->goCheck('uploadVoucher');
+        $orderId = (int)$params['id'];
+        $result = OrderLogic::uploadPayVoucher($orderId, $this->userId, $params['voucher']);
+        if ($result['success']) {
+            return $this->success($result['message']);
+        }
+        return $this->fail($result['message']);
+    }
+
+    /**
      * @notes 支付尾款
      * @return \think\response\Json
      */

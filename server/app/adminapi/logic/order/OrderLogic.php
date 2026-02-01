@@ -53,6 +53,7 @@ class OrderLogic extends BaseLogic
         $data['order_status_desc'] = $order->order_status_desc;
         $data['pay_status_desc'] = $order->pay_status_desc;
         $data['pay_type_desc'] = $order->pay_type_desc;
+        $data['pay_voucher_status_desc'] = $order->pay_voucher_status_desc ?? '';
 
         return $data;
     }
@@ -100,8 +101,9 @@ class OrderLogic extends BaseLogic
                 'order_sn' => Order::generateOrderSn(),
                 'user_id' => $params['user_id'],
                 'order_type' => $params['order_type'] ?? Order::TYPE_NORMAL,
-                'order_status' => Order::STATUS_PENDING,
+                'order_status' => Order::STATUS_PENDING_PAY,
                 'pay_status' => Order::PAY_STATUS_UNPAID,
+                'paid_amount' => 0,
                 'total_amount' => $totalAmount,
                 'discount_amount' => $discountAmount,
                 'coupon_amount' => 0,
@@ -117,6 +119,7 @@ class OrderLogic extends BaseLogic
                 'wedding_venue' => $params['wedding_venue'] ?? '',
                 'admin_remark' => $params['admin_remark'] ?? '',
                 'source' => Order::SOURCE_ADMIN,
+                'pay_type' => Order::PAY_WAY_NONE,
                 'create_time' => time(),
                 'update_time' => time(),
             ]);
@@ -153,7 +156,7 @@ class OrderLogic extends BaseLogic
             }
 
             // 记录日志
-            OrderLog::addLog($order->id, OrderLog::OPERATOR_ADMIN, $params['admin_id'], 'create', 0, Order::STATUS_PENDING, '后台创建订单');
+            OrderLog::addLog($order->id, OrderLog::OPERATOR_ADMIN, $params['admin_id'], 'create', 0, Order::STATUS_PENDING_PAY, '后台创建订单');
 
             Db::commit();
             return true;
@@ -179,7 +182,7 @@ class OrderLogic extends BaseLogic
             }
 
             // 只能编辑未完成的订单
-            if (in_array($order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_CANCELLED, Order::STATUS_REFUNDED])) {
+            if (in_array($order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED, Order::STATUS_CANCELLED, Order::STATUS_PAUSED, Order::STATUS_REFUNDED])) {
                 self::setError('当前订单状态不允许编辑');
                 return false;
             }
@@ -298,13 +301,23 @@ class OrderLogic extends BaseLogic
                 return false;
             }
 
-            if ($order->order_status != Order::STATUS_PENDING) {
+            if ($order->order_status != Order::STATUS_PENDING_PAY) {
                 self::setError('当前订单状态不允许此操作');
                 return false;
             }
 
             $payType = $params['pay_type'] ?? Payment::TYPE_FULL;
             $payAmount = $params['pay_amount'] ?? $order->pay_amount;
+
+            if ($payType == Payment::TYPE_DEPOSIT && $order->deposit_paid) {
+                self::setError('定金已支付');
+                return false;
+            }
+
+            if ($payType == Payment::TYPE_BALANCE && !$order->deposit_paid) {
+                self::setError('请先支付定金');
+                return false;
+            }
 
             // 创建支付记录
             $payment = Payment::create([
@@ -337,12 +350,13 @@ class OrderLogic extends BaseLogic
             }
 
             $order->pay_type = Order::PAY_WAY_OFFLINE;
+            $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payAmount, 2);
             $order->update_time = time();
             $order->save();
 
             // 记录日志
             $action = $payType == Payment::TYPE_DEPOSIT ? 'pay_deposit' : ($payType == Payment::TYPE_BALANCE ? 'pay_balance' : 'pay');
-            OrderLog::addLog($order->id, OrderLog::OPERATOR_ADMIN, $params['admin_id'], $action, Order::STATUS_PENDING, $order->order_status, '确认线下支付，金额：' . $payAmount);
+            OrderLog::addLog($order->id, OrderLog::OPERATOR_ADMIN, $params['admin_id'], $action, Order::STATUS_PENDING_PAY, $order->order_status, '确认线下支付，金额：' . $payAmount);
 
             Db::commit();
             return true;
@@ -405,11 +419,14 @@ class OrderLogic extends BaseLogic
         // 各状态订单数
         $statusCounts = [];
         foreach ([
-            Order::STATUS_PENDING => '待支付',
+            Order::STATUS_PENDING_CONFIRM => '待确认',
+            Order::STATUS_PENDING_PAY => '待支付',
             Order::STATUS_PAID => '已支付',
             Order::STATUS_IN_SERVICE => '服务中',
             Order::STATUS_COMPLETED => '已完成',
+            Order::STATUS_REVIEWED => '已评价',
             Order::STATUS_CANCELLED => '已取消',
+            Order::STATUS_PAUSED => '已暂停',
             Order::STATUS_REFUNDED => '已退款',
         ] as $status => $label) {
             $statusCounts[] = [
@@ -463,5 +480,122 @@ class OrderLogic extends BaseLogic
     public static function getPayWayOptions(): array
     {
         return Order::getPayWayOptions();
+    }
+
+    /**
+     * @notes 审核线下支付凭证
+     * @param array $params
+     * @return bool
+     */
+    public static function auditPayVoucher(array $params): bool
+    {
+        Db::startTrans();
+        try {
+            $order = Order::find($params['id']);
+            if (!$order) {
+                self::setError('订单不存在');
+                return false;
+            }
+
+            if ($order->order_status != Order::STATUS_PENDING_PAY) {
+                self::setError('当前订单状态不允许此操作');
+                return false;
+            }
+
+            if ($order->pay_type != Order::PAY_WAY_OFFLINE || empty($order->pay_voucher)) {
+                self::setError('订单未提交线下支付凭证');
+                return false;
+            }
+
+            if ((int)($order->pay_voucher_status ?? -1) !== Order::VOUCHER_STATUS_PENDING) {
+                self::setError('凭证已审核，请勿重复操作');
+                return false;
+            }
+
+            $approved = (int)($params['approved'] ?? 0) === 1;
+            $remark = $params['remark'] ?? '';
+
+            $order->pay_voucher_status = $approved ? Order::VOUCHER_STATUS_APPROVED : Order::VOUCHER_STATUS_REJECTED;
+            $order->pay_voucher_audit_admin_id = $params['admin_id'];
+            $order->pay_voucher_audit_time = time();
+            $order->pay_voucher_audit_remark = $remark;
+
+            if ($approved) {
+                $payType = Payment::TYPE_FULL;
+                $payAmount = $order->pay_amount;
+
+                if ($order->deposit_amount > 0) {
+                    if (!$order->deposit_paid) {
+                        $payType = Payment::TYPE_DEPOSIT;
+                        $payAmount = $order->deposit_amount;
+                        $order->deposit_paid = 1;
+                        $order->pay_time = time();
+                    } elseif (!$order->balance_paid) {
+                        $payType = Payment::TYPE_BALANCE;
+                        $payAmount = $order->balance_amount;
+                        $order->balance_paid = 1;
+                        $order->order_status = Order::STATUS_PAID;
+                        $order->pay_status = Order::PAY_STATUS_PAID;
+                        $order->pay_time = time();
+                    } else {
+                        self::setError('订单已完成支付');
+                        return false;
+                    }
+                } else {
+                    $order->order_status = Order::STATUS_PAID;
+                    $order->pay_status = Order::PAY_STATUS_PAID;
+                    $order->pay_time = time();
+                }
+
+                $payment = Payment::create([
+                    'payment_sn' => Payment::generatePaymentSn(),
+                    'order_id' => $order->id,
+                    'order_sn' => $order->order_sn,
+                    'user_id' => $order->user_id,
+                    'pay_type' => $payType,
+                    'pay_way' => Payment::WAY_OFFLINE,
+                    'pay_amount' => $payAmount,
+                    'pay_status' => Payment::STATUS_PAID,
+                    'pay_time' => time(),
+                    'create_time' => time(),
+                    'update_time' => time(),
+                ]);
+
+                $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payAmount, 2);
+                $order->update_time = time();
+                $order->save();
+
+                $action = $payType == Payment::TYPE_DEPOSIT ? 'pay_deposit' : ($payType == Payment::TYPE_BALANCE ? 'pay_balance' : 'pay');
+                OrderLog::addLog(
+                    $order->id,
+                    OrderLog::OPERATOR_ADMIN,
+                    $params['admin_id'],
+                    $action,
+                    Order::STATUS_PENDING_PAY,
+                    $order->order_status,
+                    '线下凭证审核通过，金额：' . $payment->pay_amount
+                );
+            } else {
+                $order->update_time = time();
+                $order->save();
+
+                OrderLog::addLog(
+                    $order->id,
+                    OrderLog::OPERATOR_ADMIN,
+                    $params['admin_id'],
+                    'voucher_reject',
+                    $order->order_status,
+                    $order->order_status,
+                    '线下凭证审核拒绝' . ($remark ? '：' . $remark : '')
+                );
+            }
+
+            Db::commit();
+            return true;
+        } catch (\Exception $e) {
+            Db::rollback();
+            self::setError($e->getMessage());
+            return false;
+        }
     }
 }

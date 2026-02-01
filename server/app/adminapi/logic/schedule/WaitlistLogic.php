@@ -8,7 +8,9 @@ declare(strict_types=1);
 namespace app\adminapi\logic\schedule;
 
 use app\common\logic\BaseLogic;
+use app\common\model\notification\Notification;
 use app\common\model\schedule\Waitlist;
+use think\facade\Db;
 
 /**
  * 候补业务逻辑
@@ -49,15 +51,50 @@ class WaitlistLogic extends BaseLogic
             return false;
         }
 
-        $count = Waitlist::whereIn('id', $ids)
-            ->where('notify_status', Waitlist::NOTIFY_STATUS_PENDING)
-            ->update([
-                'notify_status' => Waitlist::NOTIFY_STATUS_NOTIFIED,
-                'notify_time' => time(),
-                'update_time' => time(),
-            ]);
+        Db::startTrans();
+        try {
+            $waitlists = Waitlist::whereIn('id', $ids)
+                ->where('notify_status', Waitlist::NOTIFY_STATUS_PENDING)
+                ->with([
+                    'staff' => function ($q) {
+                        $q->field('id, name');
+                    },
+                    'package' => function ($q) {
+                        $q->field('id, name');
+                    },
+                ])
+                ->select();
 
-        return $count;
+            if ($waitlists->isEmpty()) {
+                self::setError('没有可通知的候补记录');
+                Db::rollback();
+                return false;
+            }
+
+            $now = time();
+            $waitlistIds = [];
+            foreach ($waitlists as $waitlist) {
+                $waitlistIds[] = $waitlist->id;
+            }
+
+            $count = Waitlist::whereIn('id', $waitlistIds)
+                ->update([
+                    'notify_status' => Waitlist::NOTIFY_STATUS_NOTIFIED,
+                    'notify_time' => $now,
+                    'update_time' => $now,
+                ]);
+
+            foreach ($waitlists as $waitlist) {
+                self::sendWaitlistNotification($waitlist);
+            }
+
+            Db::commit();
+            return $count;
+        } catch (\Exception $e) {
+            Db::rollback();
+            self::setError('通知失败：' . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -67,7 +104,16 @@ class WaitlistLogic extends BaseLogic
      */
     public static function notify(array $params): bool
     {
-        $waitlist = Waitlist::where('id', $params['id'])->find();
+        $waitlist = Waitlist::where('id', $params['id'])
+            ->with([
+                'staff' => function ($q) {
+                    $q->field('id, name');
+                },
+                'package' => function ($q) {
+                    $q->field('id, name');
+                },
+            ])
+            ->find();
 
         if (!$waitlist) {
             self::setError('候补记录不存在');
@@ -79,12 +125,49 @@ class WaitlistLogic extends BaseLogic
             return false;
         }
 
-        $waitlist->notify_status = Waitlist::NOTIFY_STATUS_NOTIFIED;
-        $waitlist->notify_time = time();
-        $waitlist->update_time = time();
-        $waitlist->save();
+        Db::startTrans();
+        try {
+            $now = time();
+            $waitlist->notify_status = Waitlist::NOTIFY_STATUS_NOTIFIED;
+            $waitlist->notify_time = $now;
+            $waitlist->update_time = $now;
+            $waitlist->save();
 
-        return true;
+            self::sendWaitlistNotification($waitlist);
+
+            Db::commit();
+            return true;
+        } catch (\Exception $e) {
+            Db::rollback();
+            self::setError('通知失败：' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 发送候补站内通知
+     * @param Waitlist $waitlist
+     * @return void
+     */
+    private static function sendWaitlistNotification(Waitlist $waitlist): void
+    {
+        $staffName = $waitlist->staff->name ?? '服务人员';
+        $timeSlotDesc = $waitlist->time_slot_desc ?? '全天';
+        $scheduleDate = $waitlist->schedule_date ?? '';
+        $packageName = $waitlist->package->name ?? '';
+        $packageText = $packageName ? "，套餐：{$packageName}" : '';
+
+        $title = '候补档期已释放';
+        $content = "您候补的{$staffName}档期（{$scheduleDate} {$timeSlotDesc}{$packageText}）已释放，请尽快预约。";
+
+        Notification::send(
+            (int) $waitlist->user_id,
+            Notification::TYPE_ORDER,
+            $title,
+            $content,
+            'waitlist',
+            (int) $waitlist->id
+        );
     }
 
     /**

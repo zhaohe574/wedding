@@ -14,6 +14,7 @@ use app\common\model\staff\StaffPackage;
 use app\common\model\staff\StaffWork;
 use app\common\model\staff\StaffCertificate;
 use app\common\model\service\ServicePackage;
+use app\common\model\user\User;
 use app\adminapi\logic\service\PackageLogic;
 use think\facade\Db;
 
@@ -58,6 +59,19 @@ class StaffLogic extends BaseLogic
     {
         Db::startTrans();
         try {
+            $userId = (int) ($params['user_id'] ?? 0);
+            if ($userId <= 0) {
+                throw new \Exception('请选择系统用户');
+            }
+            $user = User::find($userId);
+            if (!$user) {
+                throw new \Exception('系统用户不存在');
+            }
+            $boundStaff = Staff::where('user_id', $userId)->find();
+            if ($boundStaff) {
+                throw new \Exception('该用户已绑定服务人员');
+            }
+
             // 生成工号
             $params['sn'] = Staff::generateSn();
             $params['create_time'] = time();
@@ -70,6 +84,7 @@ class StaffLogic extends BaseLogic
 
             // 创建工作人员
             $staff = Staff::create([
+                'user_id' => $userId,
                 'sn' => $params['sn'],
                 'name' => $params['name'],
                 'avatar' => $params['avatar'] ?? '',
@@ -121,6 +136,20 @@ class StaffLogic extends BaseLogic
                 throw new \Exception('工作人员不存在');
             }
 
+            $userId = array_key_exists('user_id', $params) ? (int) $params['user_id'] : (int) $staff->user_id;
+            if ($userId > 0) {
+                $user = User::find($userId);
+                if (!$user) {
+                    throw new \Exception('系统用户不存在');
+                }
+                $boundStaff = Staff::where('user_id', $userId)
+                    ->where('id', '<>', $staff->id)
+                    ->find();
+                if ($boundStaff) {
+                    throw new \Exception('该用户已绑定服务人员');
+                }
+            }
+
             // 处理手机号
             if (!empty($params['mobile'])) {
                 $params['mobile_full'] = $params['mobile'];
@@ -130,6 +159,7 @@ class StaffLogic extends BaseLogic
 
             // 更新工作人员信息
             $staff->save([
+                'user_id' => $userId,
                 'name' => $params['name'],
                 'avatar' => $params['avatar'] ?? $staff->avatar,
                 'mobile' => $params['mobile'] ?? $rawMobile,
@@ -343,6 +373,44 @@ class StaffLogic extends BaseLogic
     }
 
     /**
+     * @notes 编辑员工专属套餐
+     * @param int $staffId 员工ID
+     * @param int $packageId 套餐ID
+     * @param array $packageData 套餐数据
+     * @return bool
+     */
+    public static function updateStaffPackage(int $staffId, int $packageId, array $packageData): bool
+    {
+        try {
+            $package = ServicePackage::find($packageId);
+            if (!$package) {
+                self::setError('套餐不存在');
+                return false;
+            }
+
+            if ($package->package_type != ServicePackage::TYPE_STAFF_ONLY || (int) $package->staff_id !== $staffId) {
+                self::setError('只能编辑自己的专属套餐');
+                return false;
+            }
+
+            $payload = $packageData;
+            $payload['id'] = $packageId;
+            $payload['staff_id'] = $staffId;
+
+            $result = PackageLogic::edit($payload);
+            if (!$result) {
+                self::setError(PackageLogic::getError());
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * @notes 更新单个套餐配置
      * @param int $staffId 员工ID
      * @param int $packageId 套餐ID
@@ -381,6 +449,187 @@ class StaffLogic extends BaseLogic
             }
 
             return PackageLogic::delete(['id' => $packageId]);
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 获取人员轮播图列表
+     * @param int $staffId
+     * @return array
+     */
+    public static function getBannerList(int $staffId): array
+    {
+        $banners = \app\common\model\staff\StaffBanner::where('staff_id', $staffId)
+            ->order('sort', 'asc')
+            ->order('id', 'asc')
+            ->select()
+            ->toArray();
+
+        return $banners;
+    }
+
+    /**
+     * @notes 添加轮播图
+     * @param int $staffId
+     * @param array $params
+     * @return int|false
+     */
+    public static function addBanner(int $staffId, array $params)
+    {
+        try {
+            $data = [
+                'staff_id' => $staffId,
+                'type' => intval($params['type'] ?? 1),
+                'file_url' => $params['file_url'] ?? '',
+                'cover_url' => $params['cover_url'] ?? '',
+                'is_autoplay' => intval($params['is_autoplay'] ?? 0),
+                'sort' => intval($params['sort'] ?? 0),
+                'create_time' => time(),
+                'update_time' => time(),
+            ];
+
+            $banner = \app\common\model\staff\StaffBanner::create($data);
+            return $banner->id;
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 编辑轮播图
+     * @param int $id
+     * @param array $params
+     * @return bool
+     */
+    public static function editBanner(int $id, array $params): bool
+    {
+        try {
+            $banner = \app\common\model\staff\StaffBanner::find($id);
+            if (!$banner) {
+                self::setError('轮播图不存在');
+                return false;
+            }
+
+            $data = [];
+            if (isset($params['type'])) {
+                $data['type'] = intval($params['type']);
+            }
+            if (isset($params['file_url'])) {
+                $data['file_url'] = $params['file_url'];
+            }
+            if (isset($params['cover_url'])) {
+                $data['cover_url'] = $params['cover_url'];
+            }
+            if (isset($params['is_autoplay'])) {
+                $data['is_autoplay'] = intval($params['is_autoplay']);
+            }
+            if (isset($params['sort'])) {
+                $data['sort'] = intval($params['sort']);
+            }
+            $data['update_time'] = time();
+
+            $banner->save($data);
+            return true;
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 删除轮播图
+     * @param int $id
+     * @return bool
+     */
+    public static function deleteBanner(int $id): bool
+    {
+        try {
+            $banner = \app\common\model\staff\StaffBanner::find($id);
+            if (!$banner) {
+                self::setError('轮播图不存在');
+                return false;
+            }
+
+            $banner->delete();
+            return true;
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 更新轮播图排序
+     * @param int $staffId
+     * @param array $sortData 格式：[['id' => 1, 'sort' => 0], ['id' => 2, 'sort' => 1]]
+     * @return bool
+     */
+    public static function sortBanner(int $staffId, array $sortData): bool
+    {
+        try {
+            foreach ($sortData as $item) {
+                $id = intval($item['id'] ?? 0);
+                $sort = intval($item['sort'] ?? 0);
+
+                if ($id > 0) {
+                    \app\common\model\staff\StaffBanner::where('id', $id)
+                        ->where('staff_id', $staffId)
+                        ->update([
+                            'sort' => $sort,
+                            'update_time' => time()
+                        ]);
+                }
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 更新轮播图配置
+     * @param int $staffId
+     * @param array $params
+     * @return bool
+     */
+    public static function updateBannerConfig(int $staffId, array $params): bool
+    {
+        try {
+            $staff = Staff::find($staffId);
+            if (!$staff) {
+                self::setError('人员不存在');
+                return false;
+            }
+
+            $data = [];
+            if (isset($params['banner_mode'])) {
+                $data['banner_mode'] = intval($params['banner_mode']);
+            }
+            if (isset($params['banner_small_height'])) {
+                $data['banner_small_height'] = intval($params['banner_small_height']);
+            }
+            if (isset($params['banner_large_height'])) {
+                $data['banner_large_height'] = intval($params['banner_large_height']);
+            }
+            if (isset($params['banner_indicator_style'])) {
+                $data['banner_indicator_style'] = intval($params['banner_indicator_style']);
+            }
+            if (isset($params['banner_autoplay'])) {
+                $data['banner_autoplay'] = intval($params['banner_autoplay']);
+            }
+            if (isset($params['banner_interval'])) {
+                $data['banner_interval'] = intval($params['banner_interval']);
+            }
+            $data['update_time'] = time();
+
+            $staff->save($data);
+            return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());
             return false;

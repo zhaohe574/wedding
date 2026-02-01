@@ -40,6 +40,15 @@ class StyleTag extends BaseModel
     }
 
     /**
+     * @notes 关联服务分类
+     * @return \think\model\relation\BelongsTo
+     */
+    public function category()
+    {
+        return $this->belongsTo(ServiceCategory::class, 'category_id', 'id');
+    }
+
+    /**
      * @notes 标签类型描述获取器
      * @param $value
      * @param $data

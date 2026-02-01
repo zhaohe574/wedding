@@ -389,7 +389,7 @@ class SettlementLogic extends BaseLogic
         $orderItems = OrderItem::alias('oi')
             ->leftJoin('la_order o', 'oi.order_id = o.id')
             ->leftJoin('la_staff_settlement ss', 'ss.order_item_id = oi.id')
-            ->where('o.order_status', 3) // 已完成
+            ->where('o.order_status', Order::STATUS_COMPLETED)
             ->whereBetween('oi.service_date', [$startDate, $endDate])
             ->whereNull('ss.id')
             ->field('oi.*')

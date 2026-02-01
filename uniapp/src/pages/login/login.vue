@@ -209,28 +209,7 @@
         </view>
 
         <!-- 协议弹框 -->
-        <tn-modal
-            v-model="showModel"
-            show-cancel-button
-            :show-title="false"
-            :confirm-color="primaryColor"
-            @confirm=";(isCheckAgreement = true), (showModel = false)"
-            @cancel="showModel = false"
-        >
-            <view class="modal-content">
-                <view class="modal-title">温馨提示</view>
-                <view class="modal-text">
-                    请先阅读并同意
-                    <navigator data-theme="" url="/pages/agreement/agreement?type=service">
-                        <text class="modal-link">《服务协议》</text>
-                    </navigator>
-                    和
-                    <navigator url="/pages/agreement/agreement?type=privacy">
-                        <text class="modal-link">《隐私协议》</text>
-                    </navigator>
-                </view>
-            </view>
-        </tn-modal>
+        <tn-modal ref="modalRef" />
 
         <!-- #ifdef MP-WEIXIN -->
         <mplogin-popup
@@ -255,6 +234,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useRouter, useRoute } from 'uniapp-router-next'
 import cache from '@/utils/cache'
 import { isWeixinClient } from '@/utils/client'
+import type { TnModalInstance } from '@tuniao/tnui-vue3-uniapp'
 // #ifdef H5
 import wechatOa, { UrlScene } from '@/utils/wechat'
 // #endif
@@ -276,7 +256,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const appStore = useAppStore()
 const themeStore = useThemeStore()
-const showModel = ref(false)
+const modalRef = ref<TnModalInstance>()
 const codeTips = ref('获取验证码')
 const canGetCode = ref(true)
 const showLoginPopup = ref(false)
@@ -343,8 +323,30 @@ const isOpenAgreement = computed(() => appStore.getLoginConfig.login_agreement =
 const isOpenOtherAuth = computed(() => appStore.getLoginConfig.third_auth == 1)
 const isForceBindMobile = computed(() => appStore.getLoginConfig.coerce_mobile == 1)
 
+// 显示协议弹窗
+const showAgreementModal = () => {
+    modalRef.value?.showModal({
+        title: '温馨提示',
+        content: '请先阅读并同意《服务协议》和《隐私协议》',
+        showCancel: true,
+        confirmText: '同意',
+        cancelText: '取消',
+        confirmStyle: {
+            color: primaryColor.value
+        },
+        confirm: () => {
+            isCheckAgreement.value = true
+            // 同意后继续执行登录
+            loginFun()
+        }
+    })
+}
+
 const loginFun = async () => {
-    if (!isCheckAgreement.value && isOpenAgreement.value) return (showModel.value = true)
+    if (!isCheckAgreement.value && isOpenAgreement.value) {
+        showAgreementModal()
+        return
+    }
     if (formData.scene == LoginWayEnum.ACCOUNT) {
         if (!formData.account) return uni.$u.toast('请输入账号/手机号码')
         if (!formData.password) return uni.$u.toast('请输入密码')

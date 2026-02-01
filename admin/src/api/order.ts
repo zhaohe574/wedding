@@ -42,6 +42,11 @@ export function orderConfirmOfflinePay(params: any) {
     return request.post({ url: '/order.order/confirmOfflinePay', params })
 }
 
+// 审核线下支付凭证
+export function orderAuditVoucher(params: any) {
+    return request.post({ url: '/order.order/auditVoucher', params })
+}
+
 // 添加备注
 export function orderAddRemark(params: any) {
     return request.post({ url: '/order.order/addRemark', params })

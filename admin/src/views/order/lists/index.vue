@@ -29,12 +29,15 @@
                 <el-form-item class="w-[150px]" label="订单状态">
                     <el-select v-model="queryParams.order_status" placeholder="选择状态" clearable>
                         <el-option label="全部" value="" />
-                        <el-option label="待支付" :value="0" />
-                        <el-option label="已支付" :value="1" />
-                        <el-option label="服务中" :value="2" />
-                        <el-option label="已完成" :value="3" />
-                        <el-option label="已取消" :value="4" />
-                        <el-option label="已退款" :value="5" />
+                        <el-option label="待确认" :value="0" />
+                        <el-option label="待支付" :value="1" />
+                        <el-option label="已支付" :value="2" />
+                        <el-option label="服务中" :value="3" />
+                        <el-option label="已完成" :value="4" />
+                        <el-option label="已评价" :value="5" />
+                        <el-option label="已取消" :value="6" />
+                        <el-option label="已暂停" :value="7" />
+                        <el-option label="已退款" :value="8" />
                     </el-select>
                 </el-form-item>
                 <el-form-item class="w-[320px]" label="创建时间">
@@ -58,38 +61,56 @@
         <div class="mt-4 grid grid-cols-6 gap-4">
             <el-card class="!border-none" shadow="never">
                 <div class="text-center">
+                    <div class="text-gray-500 text-sm">待确认</div>
+                    <div class="text-2xl font-bold mt-2 text-yellow-500">{{ getStatusCount(0) }}</div>
+                </div>
+            </el-card>
+            <el-card class="!border-none" shadow="never">
+                <div class="text-center">
                     <div class="text-gray-500 text-sm">待支付</div>
-                    <div class="text-2xl font-bold mt-2 text-orange-500">{{ getStatusCount(0) }}</div>
+                    <div class="text-2xl font-bold mt-2 text-orange-500">{{ getStatusCount(1) }}</div>
                 </div>
             </el-card>
             <el-card class="!border-none" shadow="never">
                 <div class="text-center">
                     <div class="text-gray-500 text-sm">已支付</div>
-                    <div class="text-2xl font-bold mt-2 text-blue-500">{{ getStatusCount(1) }}</div>
+                    <div class="text-2xl font-bold mt-2 text-blue-500">{{ getStatusCount(2) }}</div>
                 </div>
             </el-card>
             <el-card class="!border-none" shadow="never">
                 <div class="text-center">
                     <div class="text-gray-500 text-sm">服务中</div>
-                    <div class="text-2xl font-bold mt-2 text-purple-500">{{ getStatusCount(2) }}</div>
+                    <div class="text-2xl font-bold mt-2 text-purple-500">{{ getStatusCount(3) }}</div>
                 </div>
             </el-card>
             <el-card class="!border-none" shadow="never">
                 <div class="text-center">
                     <div class="text-gray-500 text-sm">已完成</div>
-                    <div class="text-2xl font-bold mt-2 text-green-500">{{ getStatusCount(3) }}</div>
+                    <div class="text-2xl font-bold mt-2 text-green-500">{{ getStatusCount(4) }}</div>
+                </div>
+            </el-card>
+            <el-card class="!border-none" shadow="never">
+                <div class="text-center">
+                    <div class="text-gray-500 text-sm">已评价</div>
+                    <div class="text-2xl font-bold mt-2 text-emerald-500">{{ getStatusCount(5) }}</div>
                 </div>
             </el-card>
             <el-card class="!border-none" shadow="never">
                 <div class="text-center">
                     <div class="text-gray-500 text-sm">已取消</div>
-                    <div class="text-2xl font-bold mt-2 text-gray-500">{{ getStatusCount(4) }}</div>
+                    <div class="text-2xl font-bold mt-2 text-gray-500">{{ getStatusCount(6) }}</div>
+                </div>
+            </el-card>
+            <el-card class="!border-none" shadow="never">
+                <div class="text-center">
+                    <div class="text-gray-500 text-sm">已暂停</div>
+                    <div class="text-2xl font-bold mt-2 text-amber-500">{{ getStatusCount(7) }}</div>
                 </div>
             </el-card>
             <el-card class="!border-none" shadow="never">
                 <div class="text-center">
                     <div class="text-gray-500 text-sm">已退款</div>
-                    <div class="text-2xl font-bold mt-2 text-red-500">{{ getStatusCount(5) }}</div>
+                    <div class="text-2xl font-bold mt-2 text-red-500">{{ getStatusCount(8) }}</div>
                 </div>
             </el-card>
         </div>
@@ -145,19 +166,19 @@
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
                         <el-button 
-                            v-if="row.order_status === 0" 
-                            type="success" 
+                            v-if="row.order_status === 1 && row.pay_type === 4 && row.pay_voucher && row.pay_voucher_status === 0" 
+                            type="warning" 
                             link 
-                            @click="handleConfirmPay(row)"
-                        >确认支付</el-button>
+                            @click="handleAuditVoucher(row)"
+                        >审核凭证</el-button>
                         <el-button 
-                            v-if="row.order_status === 1" 
+                            v-if="row.order_status === 2" 
                             type="warning" 
                             link 
                             @click="handleStartService(row)"
                         >开始服务</el-button>
                         <el-button 
-                            v-if="row.order_status === 2" 
+                            v-if="row.order_status === 3" 
                             type="success" 
                             link 
                             @click="handleComplete(row)"
@@ -186,17 +207,40 @@
                             {{ currentOrder.order_status_desc }}
                         </el-tag>
                     </el-descriptions-item>
-                    <el-descriptions-item label="联系人">{{ currentOrder.contact_name }}</el-descriptions-item>
-                    <el-descriptions-item label="联系电话">{{ currentOrder.contact_mobile }}</el-descriptions-item>
-                    <el-descriptions-item label="服务日期">{{ currentOrder.service_date || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="联系人">{{ getDisplayContactName(currentOrder) }}</el-descriptions-item>
+                    <el-descriptions-item label="联系电话">{{ getDisplayContactMobile(currentOrder) }}</el-descriptions-item>
+                    <el-descriptions-item label="服务日期">{{ getDisplayServiceDate(currentOrder) }}</el-descriptions-item>
                     <el-descriptions-item label="婚礼日期">{{ currentOrder.wedding_date || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="服务地址" :span="2">{{ currentOrder.service_address || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="订单总额">¥{{ currentOrder.total_amount }}</el-descriptions-item>
                     <el-descriptions-item label="优惠金额">¥{{ currentOrder.discount_amount }}</el-descriptions-item>
-                    <el-descriptions-item label="实付金额">
-                        <span class="text-red-500 font-bold">¥{{ currentOrder.pay_amount }}</span>
+                    <el-descriptions-item
+                        v-if="Number(currentOrder.coupon_amount || 0) > 0"
+                        label="优惠券金额"
+                    >
+                        ¥{{ currentOrder.coupon_amount }}
                     </el-descriptions-item>
-                    <el-descriptions-item label="支付方式">{{ currentOrder.pay_type_desc }}</el-descriptions-item>
+                    <el-descriptions-item label="应付金额">¥{{ currentOrder.pay_amount }}</el-descriptions-item>
+                    <el-descriptions-item label="已付金额">
+                        <span class="text-red-500 font-bold">¥{{ getDisplayPaidAmount(currentOrder) }}</span>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="支付方式">{{ currentOrder.pay_type_desc || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="支付状态">{{ currentOrder.pay_status_desc || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="线下凭证" :span="2">
+                        <el-image
+                            v-if="currentOrder.pay_voucher"
+                            :src="currentOrder.pay_voucher"
+                            fit="contain"
+                            style="width: 100%; max-height: 260px"
+                        />
+                        <span v-else>-</span>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="凭证状态">
+                        {{ currentOrder.pay_voucher_status_desc || '-' }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="审核备注">
+                        {{ currentOrder.pay_voucher_audit_remark || '-' }}
+                    </el-descriptions-item>
                     <el-descriptions-item label="用户备注" :span="2">{{ currentOrder.user_remark || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="管理备注" :span="2">{{ currentOrder.admin_remark || '-' }}</el-descriptions-item>
                 </el-descriptions>
@@ -234,23 +278,37 @@
             </div>
         </el-dialog>
 
-        <!-- 确认支付弹窗 -->
-        <el-dialog v-model="payVisible" title="确认线下支付" width="500px">
-            <el-form :model="payForm" label-width="100px">
-                <el-form-item label="支付类型">
-                    <el-radio-group v-model="payForm.pay_type">
-                        <el-radio :label="3">全款</el-radio>
-                        <el-radio :label="1">定金</el-radio>
-                        <el-radio :label="2">尾款</el-radio>
-                    </el-radio-group>
+        <!-- 线下凭证审核弹窗 -->
+        <el-dialog v-model="auditVisible" title="线下凭证审核" width="520px">
+            <el-form :model="auditForm" label-width="100px">
+                <el-form-item label="订单编号">
+                    <span>{{ auditForm.order_sn || '-' }}</span>
                 </el-form-item>
                 <el-form-item label="支付金额">
-                    <el-input-number v-model="payForm.pay_amount" :min="0" :precision="2" />
+                    <span>¥{{ auditForm.pay_amount }}</span>
+                </el-form-item>
+                <el-form-item label="支付凭证">
+                    <el-image
+                        v-if="auditForm.voucher"
+                        :src="auditForm.voucher"
+                        fit="contain"
+                        style="width: 100%; max-height: 260px"
+                    />
+                    <span v-else>未上传</span>
+                </el-form-item>
+                <el-form-item label="审核备注">
+                    <el-input
+                        v-model="auditForm.remark"
+                        type="textarea"
+                        :rows="3"
+                        placeholder="可填写拒绝原因或备注"
+                    />
                 </el-form-item>
             </el-form>
             <template #footer>
-                <el-button @click="payVisible = false">取消</el-button>
-                <el-button type="primary" @click="submitConfirmPay">确认</el-button>
+                <el-button @click="auditVisible = false">取消</el-button>
+                <el-button type="danger" @click="submitAudit(0)">拒绝</el-button>
+                <el-button type="primary" @click="submitAudit(1)">通过</el-button>
             </template>
         </el-dialog>
 
@@ -282,7 +340,7 @@ import {
     orderCancel, 
     orderStartService, 
     orderComplete,
-    orderConfirmOfflinePay 
+    orderAuditVoucher
 } from '@/api/order'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
@@ -298,11 +356,13 @@ const queryParams = reactive({
 const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentOrder = ref<any>(null)
-const payVisible = ref(false)
-const payForm = reactive({
+const auditVisible = ref(false)
+const auditForm = reactive({
     id: 0,
-    pay_type: 3,
-    pay_amount: 0
+    order_sn: '',
+    pay_amount: 0,
+    voucher: '',
+    remark: ''
 })
 const cancelVisible = ref(false)
 const cancelForm = reactive({
@@ -326,16 +386,42 @@ const getStatusCount = (status: number) => {
     return item ? item.count : 0
 }
 
-const getStatusType = (status: number) => {
-    const types: Record<number, string> = {
+const getStatusType = (
+    status: number
+): 'warning' | 'primary' | 'info' | 'success' | 'danger' => {
+    const types: Record<number, 'warning' | 'primary' | 'info' | 'success' | 'danger'> = {
         0: 'warning',
-        1: 'primary',
-        2: 'info',
-        3: 'success',
-        4: 'info',
-        5: 'danger'
+        1: 'warning',
+        2: 'primary',
+        3: 'info',
+        4: 'success',
+        5: 'success',
+        6: 'info',
+        7: 'warning',
+        8: 'danger'
     }
     return types[status] || 'info'
+}
+
+const getDisplayContactName = (order: any) => {
+    return order?.contact_name || order?.user?.nickname || '-'
+}
+
+const getDisplayContactMobile = (order: any) => {
+    return order?.contact_mobile || order?.user?.mobile || '-'
+}
+
+const getDisplayServiceDate = (order: any) => {
+    if (order?.service_date) return order.service_date
+    const dates = (order?.items || [])
+        .map((item: any) => item.service_date || item.schedule_date)
+        .filter(Boolean)
+    if (!dates.length) return '-'
+    return Array.from(new Set(dates)).join('、')
+}
+
+const getDisplayPaidAmount = (order: any) => {
+    return Number(order?.paid_amount ?? 0).toFixed(2)
 }
 
 const handleDetail = async (row: any) => {
@@ -344,16 +430,23 @@ const handleDetail = async (row: any) => {
     detailVisible.value = true
 }
 
-const handleConfirmPay = (row: any) => {
-    payForm.id = row.id
-    payForm.pay_amount = row.pay_amount
-    payVisible.value = true
+const handleAuditVoucher = (row: any) => {
+    auditForm.id = row.id
+    auditForm.order_sn = row.order_sn || ''
+    auditForm.pay_amount = row.pay_amount || 0
+    auditForm.voucher = row.pay_voucher || ''
+    auditForm.remark = ''
+    auditVisible.value = true
 }
 
-const submitConfirmPay = async () => {
-    await orderConfirmOfflinePay(payForm)
+const submitAudit = async (approved: number) => {
+    await orderAuditVoucher({
+        id: auditForm.id,
+        approved,
+        remark: auditForm.remark
+    })
     feedback.msgSuccess('操作成功')
-    payVisible.value = false
+    auditVisible.value = false
     getLists()
     getStatistics()
 }

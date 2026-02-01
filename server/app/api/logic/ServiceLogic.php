@@ -93,15 +93,18 @@ class ServiceLogic extends BaseLogic
      * @param bool $grouped 是否按类型分组
      * @return array
      */
-    public static function tags(int $type = 0, bool $grouped = false): array
+    public static function tags(int $type = 0, bool $grouped = false, int $categoryId = 0): array
     {
         $query = StyleTag::where('delete_time', null)
             ->where('is_show', 1)
             ->order('sort desc, id asc')
-            ->field('id, name, type');
+            ->field('id, name, type, category_id');
 
         if ($type > 0) {
             $query->where('type', $type);
+        }
+        if ($categoryId > 0) {
+            $query->where('category_id', $categoryId);
         }
 
         $list = $query->select()->toArray();

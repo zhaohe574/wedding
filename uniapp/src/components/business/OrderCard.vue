@@ -26,13 +26,52 @@
       
       <!-- 服务信息 -->
       <view class="order-card__service-info">
+        <!-- 预约时间场次 -->
         <view class="order-card__info-row">
-          <tn-icon name="calendar" size="28" color="#999999" />
-          <text class="order-card__info-text">{{ dateSummary }}</text>
+          <view class="order-card__info-icon-wrapper">
+            <tn-icon name="calendar" size="28" :color="$theme.primaryColor" />
+          </view>
+          <view class="order-card__info-content">
+            <text class="order-card__info-label">预约档期</text>
+            <!-- 按日期分组显示场次 -->
+            <view class="order-card__schedule-list">
+              <view 
+                v-for="(group, index) in groupedSchedules" 
+                :key="index"
+                class="order-card__schedule-item"
+              >
+                <view class="order-card__schedule-date">
+                  <text class="order-card__schedule-date-text">{{ group.date }}</text>
+                </view>
+                <view class="order-card__schedule-slots">
+                  <view 
+                    v-for="(slot, slotIndex) in group.slots"
+                    :key="slotIndex"
+                    class="order-card__schedule-slot"
+                    :style="{ 
+                      backgroundColor: getSlotBgColor($theme.primaryColor),
+                      color: $theme.primaryColor,
+                      borderColor: $theme.primaryColor
+                    }"
+                  >
+                    {{ slot.timeSlotDesc }}
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
         </view>
+        
+        <!-- 服务地址 -->
         <view class="order-card__info-row">
-          <tn-icon name="location" size="28" color="#999999" />
-          <text class="order-card__info-text">{{ order.location }}</text>
+          <view class="order-card__info-icon-wrapper">
+            <tn-icon name="location" size="28" color="#999999" />
+          </view>
+          <view class="order-card__info-content">
+            <view class="order-card__location-wrapper">
+              <text class="order-card__location-text">{{ order.location }}</text>
+            </view>
+          </view>
         </view>
       </view>
     </view>
@@ -83,7 +122,16 @@ import { useThemeStore } from '@/stores/theme'
 interface OrderData {
   id: number
   orderNo: string
-  status: 'pending' | 'unpaid' | 'paid' | 'in_service' | 'completed' | 'cancelled' | 'refund'
+  status:
+    | 'pending_confirm'
+    | 'pending_pay'
+    | 'paid'
+    | 'in_service'
+    | 'completed'
+    | 'reviewed'
+    | 'cancelled'
+    | 'paused'
+    | 'refunded'
   location: string
   originalPrice: number
   discount: number
@@ -131,13 +179,15 @@ const getTimeSlotLabel = (timeSlot: any) => {
 
 // 状态配置（使用设计规范中的状态色）
 const statusConfig = {
-  pending: { text: '待确认', color: '#FF9900', bgColor: 'rgba(255, 153, 0, 0.1)' },
-  unpaid: { text: '待支付', color: '#F97316', bgColor: 'rgba(249, 115, 22, 0.1)' },
-  paid: { text: '已支付', color: '#19BE6B', bgColor: 'rgba(25, 190, 107, 0.1)' },
-  in_service: { text: '服务中', color: '#3B82F6', bgColor: 'rgba(59, 130, 246, 0.1)' },
-  completed: { text: '已完成', color: '#909399', bgColor: '#F5F5F5' },
-  cancelled: { text: '已取消', color: '#FF2C3C', bgColor: 'rgba(255, 44, 60, 0.1)' },
-  refund: { text: '已退款', color: '#FF2C3C', bgColor: 'rgba(255, 44, 60, 0.1)' }
+  pending_confirm: { text: '待确认', color: '#F59E0B', bgColor: 'rgba(245, 158, 11, 0.12)' },
+  pending_pay: { text: '待支付', color: '#F97316', bgColor: 'rgba(249, 115, 22, 0.12)' },
+  paid: { text: '已支付', color: '#19BE6B', bgColor: 'rgba(25, 190, 107, 0.12)' },
+  in_service: { text: '服务中', color: '#3B82F6', bgColor: 'rgba(59, 130, 246, 0.12)' },
+  completed: { text: '已完成', color: '#16A34A', bgColor: 'rgba(22, 163, 74, 0.12)' },
+  reviewed: { text: '已评价', color: '#10B981', bgColor: 'rgba(16, 185, 129, 0.12)' },
+  cancelled: { text: '已取消', color: '#9CA3AF', bgColor: 'rgba(156, 163, 175, 0.12)' },
+  paused: { text: '已暂停', color: '#F59E0B', bgColor: 'rgba(245, 158, 11, 0.12)' },
+  refunded: { text: '已退款', color: '#EF4444', bgColor: 'rgba(239, 68, 68, 0.12)' }
 }
 
 const staffList = computed(() => {
@@ -167,6 +217,37 @@ const dateList = computed(() => {
     set.add(`${date} ${slotText}`)
   })
   return Array.from(set.values())
+})
+
+// 按日期分组的场次列表
+const groupedSchedules = computed(() => {
+  const groups = new Map<string, Array<{ timeSlot: number; timeSlotDesc: string }>>()
+  
+  props.order.items.forEach((item) => {
+    const date = item.serviceDate || '未选择日期'
+    const slotText = item.timeSlotDesc || getTimeSlotLabel(item.timeSlot)
+    
+    if (!groups.has(date)) {
+      groups.set(date, [])
+    }
+    
+    // 检查是否已存在相同场次
+    const slots = groups.get(date)!
+    const exists = slots.some(s => s.timeSlot === item.timeSlot)
+    
+    if (!exists) {
+      slots.push({
+        timeSlot: item.timeSlot,
+        timeSlotDesc: slotText
+      })
+    }
+  })
+  
+  // 转换为数组格式，并按场次排序
+  return Array.from(groups.entries()).map(([date, slots]) => ({
+    date,
+    slots: slots.sort((a, b) => a.timeSlot - b.timeSlot)
+  }))
 })
 
 const primaryStaff = computed(() => {
@@ -230,6 +311,12 @@ const getActionTextStyle = (type: string) => {
   return {
     color: '#666666'
   }
+}
+
+// 获取场次标签浅色背景
+const getSlotBgColor = (primaryColor: string) => {
+  // 将主题色转换为浅色背景（透明度10%）
+  return `${primaryColor}1A`
 }
 
 // 处理卡片点击
@@ -357,21 +444,109 @@ export default {
   &__service-info {
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
-    padding: 0 4rpx;
+    gap: 16rpx;
   }
 
   &__info-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12rpx;
   }
 
-  &__info-text {
+  &__info-icon-wrapper {
+    width: 28rpx;
+    height: 28rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2rpx;
+  }
+
+  &__info-content {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__info-text {
     font-size: 26rpx;
     color: #666666;
     line-height: 1.5;
+  }
+
+  &__info-label {
+    font-size: 24rpx;
+    color: #999999;
+    margin-bottom: 8rpx;
+  }
+
+  &__schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+  }
+
+  &__schedule-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16rpx 20rpx;
+    background: #FFFFFF;
+    border-radius: 12rpx;
+    border: 2rpx solid #F0F0F0;
+    transition: all 0.2s ease;
+    gap: 16rpx;
+  }
+
+  &__schedule-date {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    flex-shrink: 0;
+  }
+
+  &__schedule-date-text {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #333333;
+  }
+
+  &__schedule-slots {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    flex-wrap: wrap;
+  }
+
+  &__schedule-slot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8rpx 20rpx;
+    border-radius: 24rpx;
+    font-size: 24rpx;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1rpx solid;
+  }
+
+  &__location-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 12rpx;
+    padding: 16rpx 20rpx;
+    background: #FAFAFA;
+    border-radius: 12rpx;
+    border: 1rpx solid #F0F0F0;
+  }
+
+  &__location-text {
+    flex: 1;
+    font-size: 26rpx;
+    color: #666666;
+    line-height: 1.6;
   }
   
   &__price {

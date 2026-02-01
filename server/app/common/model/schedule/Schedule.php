@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\model\schedule;
 
 use app\common\model\BaseModel;
+use app\common\model\schedule\Waitlist;
 use app\common\model\staff\Staff;
 use app\common\service\RedisLockService;
 use think\facade\Cache;
@@ -402,26 +403,7 @@ class Schedule extends BaseModel
     }
 
     /**
-     * @notes 释放锁定
-     * @param int $scheduleId
-     * @return bool
-     */
-    public static function releaseLock(int $scheduleId): bool
-    {
-        return self::where('id', $scheduleId)->update([
-            'status' => self::STATUS_AVAILABLE,
-            'lock_type' => self::LOCK_TYPE_NORMAL,
-            'lock_user_id' => 0,
-            'lock_expire_time' => 0,
-            'update_time' => time(),
-        ]) > 0;
-    }
-
-    /**
-     * @notes 确认预约（锁定转预约）
-     * @param int $staffId
-     * @param string $date
-     * @param int $timeSlot
+     * @notes 确认预约
      * @param int $orderId
      * @param int $userId
      * @return array [bool $success, string $message]

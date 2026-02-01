@@ -14,61 +14,57 @@
         <z-paging ref="pagingRef" v-model="staffList" @query="queryList" :auto="false">
             <!-- 顶部固定区域 -->
             <template #top>
-                <!-- 搜索栏 -->
-                <view class="search-section">
-                    <tn-search-box
-                        v-model="keyword"
-                        placeholder="搜索人员姓名"
-                        shape="round"
-                        :show-action="true"
-                        :search-button-bg-color="$theme.primaryColor"
-                        :bg-color="'#F9FAFB'"
-                        border
-                        height="72"
-                        @search="handleSearch"
-                        @clear="handleSearch"
-                    />
-                </view>
+                <!-- 筛选头部 -->
+                <view class="filter-header">
+                    <!-- 搜索栏 -->
+                    <view class="search-section">
+                        <tn-search-box
+                            v-model="keyword"
+                            placeholder="搜索人员姓名"
+                            shape="round"
+                            :show-action="true"
+                            :search-button-bg-color="$theme.primaryColor"
+                            :bg-color="'#F9FAFB'"
+                            border
+                            height="56"
+                            @search="handleSearch"
+                            @clear="handleSearch"
+                        />
+                    </view>
 
-                <!-- 分类筛选 -->
-                <view class="category-section">
-                    <scroll-view scroll-x class="category-scroll" show-scrollbar="false">
-                        <view class="category-list">
-                            <view
-                                v-for="item in categories"
-                                :key="item.id"
-                                class="category-item"
-                                :class="{ active: currentCategoryId === item.id }"
-                                :style="currentCategoryId === item.id ? {
-                                    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                                    color: $theme.btnColor
-                                } : {}"
-                                @click="handleCategoryChange(item.id)"
-                            >
-                                {{ item.name }}
+                    <!-- 筛选条件栏 -->
+                    <view class="filter-bar">
+                        <!-- 分类筛选 -->
+                        <view class="filter-item" @click="showCategoryPicker = true">
+                            <tn-icon name="list" size="28" :color="currentCategoryId ? $theme.primaryColor : '#666666'" />
+                            <text :class="{ active: currentCategoryId }" :style="currentCategoryId ? { color: $theme.primaryColor } : {}">
+                                {{ currentCategoryName }}
+                            </text>
+                            <tn-icon name="arrow-down" size="24" :color="currentCategoryId ? $theme.primaryColor : '#999999'" />
+                        </view>
+
+                        <!-- 日期筛选 -->
+                        <view class="filter-item-wrapper">
+                            <view class="filter-item" @click="showDatePicker = true">
+                                <tn-icon name="calendar" size="28" :color="selectedDate ? $theme.primaryColor : '#666666'" />
+                                <text :class="{ active: selectedDate }" :style="selectedDate ? { color: $theme.primaryColor } : {}">
+                                    {{ dateRangeText }}
+                                </text>
+                                <tn-icon name="arrow-down" size="24" :color="selectedDate ? $theme.primaryColor : '#999999'" />
+                            </view>
+                            <view v-if="selectedDate" class="clear-date-btn" @click.stop="clearDate">
+                                <tn-icon name="close-circle-fill" size="32" color="#999999" />
                             </view>
                         </view>
-                    </scroll-view>
-                </view>
 
-                <!-- 排序栏 -->
-                <view class="sort-section">
-                    <view
-                        v-for="item in sortOptions"
-                        :key="item.value"
-                        class="sort-item"
-                        :class="{ active: currentSort === item.value }"
-                        @click="handleSortChange(item.value)"
-                    >
-                        <text :style="currentSort === item.value ? { color: $theme.primaryColor } : {}">
-                            {{ item.label }}
-                        </text>
-                        <tn-icon 
-                            v-if="item.value !== 'default'" 
-                            :name="getSortIcon(item.value)" 
-                            size="24" 
-                            :color="currentSort === item.value ? $theme.primaryColor : '#999999'" 
-                        />
+                        <!-- 排序筛选 -->
+                        <view class="filter-item" @click="showSortPicker = true">
+                            <tn-icon name="sort" size="28" :color="currentSort !== 'default' ? $theme.primaryColor : '#666666'" />
+                            <text :class="{ active: currentSort !== 'default' }" :style="currentSort !== 'default' ? { color: $theme.primaryColor } : {}">
+                                {{ currentSortName }}
+                            </text>
+                            <tn-icon name="arrow-down" size="24" :color="currentSort !== 'default' ? $theme.primaryColor : '#999999'" />
+                        </view>
                     </view>
                 </view>
             </template>
@@ -162,6 +158,92 @@
                 </view>
             </view>
         </z-paging>
+
+        <!-- 分类选择器 -->
+        <TnPopup 
+            v-model="showCategoryPicker" 
+            open-direction="bottom" 
+            :radius="24" 
+            :safe-area-inset-bottom="true"
+        >
+            <view class="picker-container">
+                <view class="picker-header">
+                    <text class="picker-title">选择分类</text>
+                    <view class="picker-close" @click="showCategoryPicker = false">
+                        <tn-icon name="close" size="32" color="#666666" />
+                    </view>
+                </view>
+                <view class="button-picker-content">
+                    <view class="button-grid">
+                        <view
+                            v-for="item in categories"
+                            :key="item.id"
+                            class="button-item"
+                            :class="{ active: currentCategoryId === item.id }"
+                            :style="currentCategoryId === item.id ? {
+                                background: $theme.primaryColor,
+                                color: '#FFFFFF'
+                            } : {}"
+                            @click="handleCategoryChange(item.id)"
+                        >
+                            {{ item.name }}
+                        </view>
+                    </view>
+                </view>
+            </view>
+        </TnPopup>
+
+        <!-- 排序选择器 -->
+        <TnPopup 
+            v-model="showSortPicker" 
+            open-direction="bottom" 
+            :radius="24" 
+            :safe-area-inset-bottom="true"
+        >
+            <view class="picker-container">
+                <view class="picker-header">
+                    <text class="picker-title">选择排序</text>
+                    <view class="picker-close" @click="showSortPicker = false">
+                        <tn-icon name="close" size="32" color="#666666" />
+                    </view>
+                </view>
+                <view class="button-picker-content">
+                    <view class="button-grid">
+                        <view
+                            v-for="item in sortOptions"
+                            :key="item.value"
+                            class="button-item"
+                            :class="{ active: currentSort === item.value }"
+                            :style="currentSort === item.value ? {
+                                background: $theme.primaryColor,
+                                color: '#FFFFFF'
+                            } : {}"
+                            @click="handleSortChange(item.value)"
+                        >
+                            {{ item.label }}
+                        </view>
+                    </view>
+                </view>
+            </view>
+        </TnPopup>
+
+        <!-- 日期时间选择器 -->
+        <TnDateTimePicker
+            v-model="selectedDate"
+            v-model:open="showDatePicker"
+            mode="date"
+            :min-time="getTomorrowDate()"
+            :init-current-date-time="false"
+            format="YYYY-MM-DD"
+            :confirm-color="$theme.primaryColor"
+            cancel-text="重置"
+            cancel-color="#666666"
+            @confirm="handleDateConfirm"
+            @cancel="handleDateCancel"
+            @close="handleDateClose"
+        />
+
+        <tabbar />
     </view>
 </template>
 
@@ -171,6 +253,8 @@ import { onLoad, onReady } from '@dcloudio/uni-app'
 import { getStaffList, toggleStaffFavorite } from '@/api/staff'
 import { getServiceCategories } from '@/api/service'
 import { useThemeStore } from '@/stores/theme'
+import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
+import TnDateTimePicker from '@tuniao/tnui-vue3-uniapp/components/date-time-picker/src/date-time-picker.vue'
 
 const $theme = useThemeStore()
 
@@ -181,28 +265,72 @@ const categories = ref<any[]>([{ id: '', name: '全部' }])
 const currentCategoryId = ref<string | number>('')
 const currentSort = ref('default')
 
-const sortOptions = [
-    { label: '综合', value: 'default' },
-    { label: '价格', value: 'price_asc' },
-    { label: '评分', value: 'rating' },
-    { label: '销量', value: 'order_count' }
-]
+// 弹窗控制
+const showCategoryPicker = ref(false)
+const showDatePicker = ref(false)
+const showSortPicker = ref(false)
 
-// 获取排序图标
-const getSortIcon = (sortValue: string) => {
-    if (sortValue === 'price_asc') return 'arrow-up'
-    if (sortValue === 'rating' || sortValue === 'order_count') return 'arrow-down'
-    return ''
+
+// 获取明天的日期（最小可选日期）
+const getTomorrowDate = () => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const year = tomorrow.getFullYear()
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0')
+    const day = String(tomorrow.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
 }
 
-// 获取分类
-const getCategories = async () => {
-    try {
-        const data = await getServiceCategories()
-        categories.value = [{ id: '', name: '全部' }, ...flattenCategories(data)]
-    } catch (e) {
-        console.error(e)
+// 日期筛选
+const selectedDate = ref('')
+
+const sortOptions = [
+    { label: '综合排序', value: 'default' },
+    { label: '价格从低到高', value: 'price_asc' },
+    { label: '价格从高到低', value: 'price_desc' },
+    { label: '评分最高', value: 'rating' },
+    { label: '销量最高', value: 'order_count' }
+]
+
+// 计算属性
+const currentCategoryName = computed(() => {
+    const category = categories.value.find(c => c.id === currentCategoryId.value)
+    return category ? category.name : '分类'
+})
+
+const currentSortName = computed(() => {
+    const sort = sortOptions.find(s => s.value === currentSort.value)
+    return sort ? sort.label : '排序'
+})
+
+const dateRangeText = computed(() => {
+    if (selectedDate.value) {
+        return selectedDate.value
     }
+    return '日期'
+})
+
+// 日期选择处理
+const handleDateConfirm = (value: string) => {
+    selectedDate.value = value
+    showDatePicker.value = false
+    pagingRef.value.reload()
+}
+
+const handleDateCancel = () => {
+    selectedDate.value = ''
+    showDatePicker.value = false
+    pagingRef.value.reload()
+}
+
+const handleDateClose = () => {
+    showDatePicker.value = false
+}
+
+// 清除日期
+const clearDate = () => {
+    selectedDate.value = ''
+    pagingRef.value.reload()
 }
 
 // 扁平化分类树
@@ -214,6 +342,16 @@ const flattenCategories = (tree: any[], result: any[] = []): any[] => {
         }
     })
     return result
+}
+
+// 获取分类
+const getCategories = async () => {
+    try {
+        const data = await getServiceCategories()
+        categories.value = [{ id: '', name: '全部' }, ...flattenCategories(data)]
+    } catch (e) {
+        console.error(e)
+    }
 }
 
 // 查询列表
@@ -230,6 +368,9 @@ const queryList = async (pageNo: number, pageSize: number) => {
         if (currentCategoryId.value) {
             params.category_id = currentCategoryId.value
         }
+        if (selectedDate.value) {
+            params.date = selectedDate.value
+        }
         const res = await getStaffList(params)
         pagingRef.value.complete(res.lists)
     } catch (e) {
@@ -245,12 +386,14 @@ const handleSearch = () => {
 // 切换分类
 const handleCategoryChange = (id: string | number) => {
     currentCategoryId.value = id
+    showCategoryPicker.value = false
     pagingRef.value.reload()
 }
 
 // 切换排序
 const handleSortChange = (sort: string) => {
     currentSort.value = sort
+    showSortPicker.value = false
     pagingRef.value.reload()
 }
 
@@ -270,9 +413,11 @@ const handleToggleFavorite = async (item: any) => {
 
 // 跳转详情
 const goToDetail = (id: number) => {
-    uni.navigateTo({
-        url: `/packages/pages/staff_detail/staff_detail?id=${id}`
-    })
+    let url = `/packages/pages/staff_detail/staff_detail?id=${id}`
+    if (selectedDate.value) {
+        url += `&date=${selectedDate.value}`
+    }
+    uni.navigateTo({ url })
 }
 
 onLoad((options) => {
@@ -293,71 +438,185 @@ onReady(() => {
     background: #F5F5F5;
 }
 
-/* 搜索区域 */
-.search-section {
+/* 筛选头部 */
+.filter-header {
     background: #FFFFFF;
-    padding: 24rpx;
     box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 
-/* 分类筛选 */
-.category-section {
-    background: #FFFFFF;
-    padding: 20rpx 24rpx;
-    border-bottom: 1rpx solid #F0F0F0;
+/* 搜索区域 */
+.search-section {
+    padding: 12rpx 20rpx;
+}
 
-    .category-scroll {
-        white-space: nowrap;
-    }
+/* 筛选条件栏 */
+.filter-bar {
+    display: flex;
+    align-items: center;
+    padding: 12rpx 20rpx;
+    gap: 12rpx;
+    border-top: 1rpx solid #F0F0F0;
 
-    .category-list {
+    .filter-item-wrapper {
+        flex: 1;
+        position: relative;
         display: flex;
-        gap: 16rpx;
+        align-items: center;
 
-        .category-item {
-            display: inline-block;
-            padding: 12rpx 32rpx;
-            background: #F5F5F5;
-            border-radius: 48rpx;
-            font-size: 26rpx;
-            color: #666666;
-            white-space: nowrap;
-            transition: all 0.2s ease;
+        picker {
+            flex: 1;
+        }
 
+        .clear-date-btn {
+            position: absolute;
+            right: 8rpx;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 48rpx;
+            height: 48rpx;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            
             &:active {
-                transform: scale(0.95);
+                opacity: 0.6;
             }
         }
     }
-}
 
-/* 排序栏 */
-.sort-section {
-    display: flex;
-    align-items: center;
-    background: #FFFFFF;
-    padding: 20rpx 24rpx;
-    border-bottom: 1rpx solid #F0F0F0;
-
-    .sort-item {
+    .filter-item {
         flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8rpx;
-        font-size: 26rpx;
+        gap: 6rpx;
+        padding: 12rpx 16rpx;
+        background: #F9FAFB;
+        border-radius: 12rpx;
+        font-size: 24rpx;
         color: #666666;
         transition: all 0.2s ease;
 
         &:active {
             transform: scale(0.95);
+            background: #F0F0F0;
         }
 
-        &.active {
-            font-weight: 600;
+        text {
+            max-width: 120rpx;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            &.active {
+                font-weight: 600;
+            }
         }
     }
 }
+
+/* 选择器容器 */
+.picker-container {
+    background: #FFFFFF;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    width: 90vw;
+    margin: 0 auto;
+
+    .picker-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20rpx 24rpx;
+        border-bottom: 1rpx solid #F0F0F0;
+
+        .picker-title {
+            font-size: 30rpx;
+            font-weight: 700;
+            color: #333333;
+        }
+
+        .picker-close {
+            width: 48rpx;
+            height: 48rpx;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+
+            &:active {
+                background: #F5F5F5;
+            }
+        }
+    }
+
+    .picker-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8rpx 0;
+
+        .picker-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20rpx 24rpx;
+            font-size: 28rpx;
+            color: #333333;
+            transition: all 0.2s ease;
+
+            &:active {
+                background: #F9FAFB;
+            }
+
+            &.active {
+                color: var(--color-primary);
+                font-weight: 600;
+                background: var(--color-primary-light-9);
+            }
+        }
+    }
+
+    .button-picker-content {
+        padding: 24rpx;
+        max-height: 60vh;
+        overflow-y: auto;
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16rpx;
+
+            .button-item {
+                padding: 20rpx 16rpx;
+                background: #F9FAFB;
+                border: 1rpx solid #E5E5E5;
+                border-radius: 12rpx;
+                text-align: center;
+                font-size: 26rpx;
+                color: #333333;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+
+                &:active {
+                    transform: scale(0.95);
+                }
+
+                &.active {
+                    font-weight: 600;
+                    border-color: transparent;
+                    box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.25);
+                }
+            }
+        }
+    }
+}
+
 
 /* 人员卡片列表 */
 .staff-cards {

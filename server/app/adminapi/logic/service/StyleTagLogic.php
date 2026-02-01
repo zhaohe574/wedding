@@ -40,18 +40,21 @@ class StyleTagLogic extends BaseLogic
     public static function add(array $params): bool
     {
         try {
+            $categoryId = (int) ($params['category_id'] ?? 0);
             // 检查是否存在同名标签
             $exists = StyleTag::where('name', $params['name'])
                 ->where('type', $params['type'])
+                ->where('category_id', $categoryId)
                 ->where('delete_time', null)
                 ->find();
             if ($exists) {
-                throw new \Exception('相同类型下已存在该标签');
+                throw new \Exception('相同分类与类型下已存在该标签');
             }
 
             StyleTag::create([
                 'name' => $params['name'],
                 'type' => $params['type'] ?? StyleTag::TYPE_STYLE,
+                'category_id' => $categoryId,
                 'sort' => $params['sort'] ?? 0,
                 'is_show' => $params['is_show'] ?? 1,
                 'create_time' => time(),
@@ -78,19 +81,22 @@ class StyleTagLogic extends BaseLogic
                 throw new \Exception('标签不存在');
             }
 
+            $categoryId = (int) ($params['category_id'] ?? $tag->category_id);
             // 检查是否存在同名标签
             $exists = StyleTag::where('name', $params['name'])
                 ->where('type', $params['type'] ?? $tag->type)
+                ->where('category_id', $categoryId)
                 ->where('id', '<>', $params['id'])
                 ->where('delete_time', null)
                 ->find();
             if ($exists) {
-                throw new \Exception('相同类型下已存在该标签');
+                throw new \Exception('相同分类与类型下已存在该标签');
             }
 
             $tag->save([
                 'name' => $params['name'],
                 'type' => $params['type'] ?? $tag->type,
+                'category_id' => $categoryId,
                 'sort' => $params['sort'] ?? $tag->sort,
                 'is_show' => $params['is_show'] ?? $tag->is_show,
                 'update_time' => time(),
@@ -163,9 +169,12 @@ class StyleTagLogic extends BaseLogic
         if (!empty($params['type'])) {
             $query->where('type', $params['type']);
         }
+        if (array_key_exists('category_id', $params) && $params['category_id'] !== '') {
+            $query->where('category_id', $params['category_id']);
+        }
 
         $list = $query->order('sort desc, id asc')
-            ->field('id, name, type')
+            ->field('id, name, type, category_id')
             ->select()
             ->toArray();
 

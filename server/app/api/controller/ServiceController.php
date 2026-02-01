@@ -78,7 +78,8 @@ class ServiceController extends BaseApiController
     {
         $type = $this->request->get('type/d', 0);
         $grouped = $this->request->get('grouped/d', 0);
-        $result = ServiceLogic::tags($type, (bool)$grouped);
+        $categoryId = $this->request->get('category_id/d', 0);
+        $result = ServiceLogic::tags($type, (bool)$grouped, $categoryId);
         return $this->data($result);
     }
 

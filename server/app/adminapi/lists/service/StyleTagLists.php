@@ -10,6 +10,7 @@ namespace app\adminapi\lists\service;
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsSearchInterface;
 use app\common\model\service\StyleTag;
+use app\common\model\service\ServiceCategory;
 use app\common\model\staff\StaffTag;
 
 /**
@@ -26,7 +27,7 @@ class StyleTagLists extends BaseAdminDataLists implements ListsSearchInterface
     public function setSearch(): array
     {
         return [
-            '=' => ['type', 'is_show'],
+            '=' => ['type', 'category_id', 'is_show'],
             '%like%' => ['name'],
         ];
     }
@@ -47,8 +48,16 @@ class StyleTagLists extends BaseAdminDataLists implements ListsSearchInterface
             ->select()
             ->toArray();
 
+        $categoryIds = array_filter(array_unique(array_column($list, 'category_id')));
+        $categories = [];
+        if (!empty($categoryIds)) {
+            $categories = ServiceCategory::whereIn('id', $categoryIds)
+                ->column('name', 'id');
+        }
+
         // 获取使用该标签的工作人员数量
         foreach ($list as &$item) {
+            $item['category_name'] = $categories[$item['category_id']] ?? '-';
             $item['staff_count'] = StaffTag::where('tag_id', $item['id'])->count();
         }
 

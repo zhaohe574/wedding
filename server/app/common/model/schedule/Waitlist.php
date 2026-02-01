@@ -10,7 +10,9 @@ namespace app\common\model\schedule;
 use app\common\model\BaseModel;
 use app\common\model\staff\Staff;
 use app\common\model\service\ServicePackage;
+use app\common\model\subscribe\SubscribeMessageTemplate;
 use app\common\model\user\User;
+use app\common\service\SubscribeMessageService;
 
 /**
  * 候补订单模型
@@ -20,6 +22,11 @@ use app\common\model\user\User;
 class Waitlist extends BaseModel
 {
     protected $name = 'waitlist';
+
+    protected $append = [
+        'notify_status_desc',
+        'time_slot_desc',
+    ];
 
     // 通知状态
     const NOTIFY_STATUS_PENDING = 0;    // 未通知
@@ -142,14 +149,25 @@ class Waitlist extends BaseModel
             ->where('time_slot', $timeSlot)
             ->where('notify_status', self::NOTIFY_STATUS_PENDING)
             ->where('expire_time', '>', time())
+            ->with([
+                'staff' => function ($q) {
+                    $q->field('id, name');
+                },
+                'package' => function ($q) {
+                    $q->field('id, name');
+                },
+            ])
             ->order('create_time', 'asc')
             ->select();
 
         $notifyUsers = [];
+        $notifyTime = time();
         foreach ($waitlists as $waitlist) {
             $waitlist->notify_status = self::NOTIFY_STATUS_NOTIFIED;
-            $waitlist->notify_time = time();
+            $waitlist->notify_time = $notifyTime;
             $waitlist->save();
+
+            self::sendWaitlistSubscribeMessage($waitlist);
 
             $notifyUsers[] = [
                 'waitlist_id' => $waitlist->id,
@@ -161,6 +179,31 @@ class Waitlist extends BaseModel
         }
 
         return $notifyUsers;
+    }
+
+    /**
+     * @notes 发送候补释放订阅消息
+     * @param Waitlist $waitlist
+     * @return void
+     */
+    private static function sendWaitlistSubscribeMessage(Waitlist $waitlist): void
+    {
+        $data = [
+            'staff_name' => $waitlist->staff->name ?? '服务人员',
+            'schedule_date' => $waitlist->schedule_date ?? '',
+            'time_slot_desc' => $waitlist->time_slot_desc ?? '全天',
+            'package_name' => $waitlist->package->name ?? '',
+            'remark' => $waitlist->remark ?? '',
+            'waitlist_id' => (string) $waitlist->id,
+        ];
+
+        SubscribeMessageService::send(
+            (int) $waitlist->user_id,
+            SubscribeMessageTemplate::SCENE_WAITLIST_RELEASE,
+            $data,
+            'waitlist',
+            (int) $waitlist->id
+        );
     }
 
     /**
@@ -199,14 +242,19 @@ class Waitlist extends BaseModel
     public static function getUserWaitlist(int $userId, int $status = -1): array
     {
         $query = self::where('user_id', $userId);
-        
+
         if ($status >= 0) {
             $query->where('notify_status', $status);
         }
 
-        return $query->with(['staff' => function ($q) {
-                $q->field('id, name, avatar, category_id');
-            }])
+        return $query->with([
+                'staff' => function ($q) {
+                    $q->field('id, name, avatar, category_id');
+                },
+                'package' => function ($q) {
+                    $q->field('id, name');
+                },
+            ])
             ->order('create_time', 'desc')
             ->select()
             ->toArray();

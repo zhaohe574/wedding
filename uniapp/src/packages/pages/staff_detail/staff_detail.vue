@@ -9,35 +9,18 @@
     
     <view class="staff-detail" v-if="staffInfo">
         <!-- 头图轮播 -->
-        <view class="banner-section">
-            <swiper
-                v-if="staffInfo.works && staffInfo.works.length"
-                class="banner-swiper"
-                indicator-dots
-                :indicator-color="'rgba(255, 255, 255, 0.5)'"
-                :indicator-active-color="$theme.primaryColor"
-                autoplay
-                circular
-            >
-                <swiper-item v-for="work in staffInfo.works" :key="work.id">
-                    <image
-                        :src="work.cover || work.images?.[0]"
-                        mode="aspectFill"
-                        class="banner-image"
-                        lazy-load
-                    />
-                </swiper-item>
-            </swiper>
-            <image 
-                v-else 
-                :src="staffInfo.avatar || '/static/images/default-avatar.png'" 
-                mode="aspectFill" 
-                class="banner-image" 
-            />
-        </view>
+        <staff-banner
+            :banner-list="bannerList"
+            :config="bannerConfig"
+            :default-image="staffInfo.avatar || '/static/images/default-avatar.png'"
+            @update:expanded="isExpanded = $event"
+        />
 
         <!-- 人员信息卡片 -->
-        <view class="info-card">
+        <view 
+            class="info-card"
+            :class="{ 'card-overlap': bannerConfig.banner_mode === 1 && !isExpanded }"
+        >
             <view class="card-header">
                 <image
                     class="staff-avatar"
@@ -174,7 +157,12 @@
                             <view class="package-info">
                                 <text class="package-name">{{ pkg.package?.name }}</text>
                             </view>
-                            <text class="package-price">¥{{ pkg.price || pkg.package?.price }}</text>
+                            <view class="package-price-group">
+                                <text v-if="pkg.original_price || pkg.package?.original_price" class="package-original-price">
+                                    ¥{{ pkg.original_price || pkg.package?.original_price }}
+                                </text>
+                                <text class="package-price">¥{{ pkg.custom_price || pkg.price || pkg.package?.price }}</text>
+                            </view>
                         </view>
                     </view>
                 </view>
@@ -293,10 +281,24 @@ import { ref, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getStaffDetail, toggleStaffFavorite, getStaffWorks } from '@/api/staff'
 import { useUserStore } from '@/stores/user'
+import StaffBanner from '@/packages/components/staff-banner/staff-banner.vue'
 
 const staffId = ref<number>(0)
 const staffInfo = ref<any>(null)
 const currentTab = ref('intro')
+const isExpanded = ref(false)  // 轮播图展开状态
+const presetDate = ref('')  // 预设日期
+
+// 轮播图数据
+const bannerList = ref<any[]>([])
+const bannerConfig = ref({
+    banner_mode: 1,
+    banner_small_height: 400,
+    banner_large_height: 600,
+    banner_indicator_style: 1,
+    banner_autoplay: 1,
+    banner_interval: 3000
+})
 
 // 作品列表
 const worksList = ref<any[]>([])
@@ -327,6 +329,23 @@ const getDetail = async () => {
     try {
         const data = await getStaffDetail({ id: staffId.value })
         staffInfo.value = data
+        
+        // 加载轮播图配置
+        if (data.banner_mode !== undefined) {
+            bannerConfig.value = {
+                banner_mode: data.banner_mode || 1,
+                banner_small_height: data.banner_small_height || 400,
+                banner_large_height: data.banner_large_height || 600,
+                banner_indicator_style: data.banner_indicator_style !== undefined ? data.banner_indicator_style : 1,
+                banner_autoplay: data.banner_autoplay !== undefined ? data.banner_autoplay : 1,
+                banner_interval: data.banner_interval || 3000
+            }
+        }
+        
+        // 加载轮播图列表
+        if (data.banners && Array.isArray(data.banners)) {
+            bannerList.value = data.banners
+        }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '获取详情失败'
         uni.showToast({ title: errorMsg, icon: 'none' })
@@ -407,9 +426,11 @@ const handleBook = () => {
         uni.showToast({ title: '服务人员信息错误', icon: 'none' })
         return
     }
-    uni.navigateTo({
-        url: `/packages/pages/schedule_calendar/schedule_calendar?staff_id=${staffId.value}`
-    })
+    let url = `/packages/pages/schedule_calendar/schedule_calendar?staff_id=${staffId.value}`
+    if (presetDate.value) {
+        url += `&date=${presetDate.value}`
+    }
+    uni.navigateTo({ url })
 }
 
 // 预览作品图片
@@ -433,6 +454,9 @@ onLoad((options) => {
         staffId.value = Number(options.id)
         getDetail()
     }
+    if (options?.date) {
+        presetDate.value = options.date
+    }
 })
 </script>
 
@@ -451,32 +475,20 @@ onLoad((options) => {
     min-height: 100vh;
 }
 
-/* 头图轮播 */
-.banner-section {
-    width: 100%;
-    height: 500rpx;
-    position: relative;
-    
-    .banner-swiper {
-        width: 100%;
-        height: 100%;
-    }
-    
-    .banner-image {
-        width: 100%;
-        height: 100%;
-    }
-}
-
 /* 人员信息卡片 */
 .info-card {
-    margin: -80rpx 24rpx 0;
+    margin: 0 24rpx 24rpx;
     background: #FFFFFF;
     border-radius: 24rpx;
     padding: 32rpx;
     box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
     position: relative;
     z-index: 10;
+    
+    /* 小图模式：卡片压在轮播图上 */
+    &.card-overlap {
+        margin-top: -80rpx;
+    }
 }
 
 .card-header {
@@ -766,10 +778,23 @@ onLoad((options) => {
         
     }
     
-    .package-price {
-        font-size: 32rpx;
-        font-weight: 700;
-        color: var(--color-primary);
+    .package-price-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4rpx;
+        
+        .package-original-price {
+            font-size: 24rpx;
+            color: var(--color-muted);
+            text-decoration: line-through;
+        }
+        
+        .package-price {
+            font-size: 32rpx;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
     }
 }
 

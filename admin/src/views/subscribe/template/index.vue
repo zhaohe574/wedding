@@ -284,6 +284,17 @@
                 <el-form-item label="触发事件" prop="trigger_event">
                     <el-input v-model="sceneForm.trigger_event" placeholder="触发事件名称" />
                 </el-form-item>
+                <el-form-item label="数据映射">
+                    <el-input
+                        v-model="sceneForm.data_mapping_text"
+                        type="textarea"
+                        :rows="6"
+                        placeholder="请输入JSON对象，例如 {\"thing1\":\"staff_name\"}"
+                    />
+                    <div class="form-tip">
+                        示例：{"thing1":"staff_name","time2":"schedule_date","thing3":"time_slot_desc"}
+                    </div>
+                </el-form-item>
                 <el-form-item label="跳转页面" prop="page_path">
                     <el-input v-model="sceneForm.page_path" placeholder="小程序跳转页面路径" />
                 </el-form-item>
@@ -370,6 +381,7 @@ import {
     toggleTemplateStatus,
     getSceneOptions,
     getSceneList,
+    getSceneDetail,
     editScene,
     toggleSceneStatus,
     bindTemplate,
@@ -435,10 +447,12 @@ const sceneForm = reactive<any>({
     name: '',
     description: '',
     trigger_event: '',
+    data_mapping_text: '',
     page_path: '',
     is_auto: 1,
     delay_seconds: 0,
-    status: 1
+    status: 1,
+    sort: 0
 })
 
 // 绑定模板
@@ -586,8 +600,45 @@ const handleSubmitTemplate = async () => {
 }
 
 // 编辑场景
-const handleEditScene = (row: any) => {
-    Object.assign(sceneForm, row)
+const formatDataMapping = (mapping: any) => {
+    if (!mapping || typeof mapping !== 'object' || Object.keys(mapping).length === 0) {
+        return ''
+    }
+    try {
+        return JSON.stringify(mapping, null, 2)
+    } catch (e) {
+        return ''
+    }
+}
+
+const parseDataMapping = (mappingText: string) => {
+    if (!mappingText || !mappingText.trim()) {
+        return {}
+    }
+    try {
+        const parsed = JSON.parse(mappingText)
+        if (!parsed || typeof parsed !== 'object') {
+            return null
+        }
+        return parsed
+    } catch (e) {
+        return null
+    }
+}
+
+const handleEditScene = async (row: any) => {
+    let sceneData = row
+    try {
+        const detail = await getSceneDetail(row.id)
+        if (detail && detail.id) {
+            sceneData = detail
+        }
+    } catch (e) {
+        // 获取详情失败时使用列表数据
+    }
+    Object.assign(sceneForm, sceneData, {
+        data_mapping_text: formatDataMapping(sceneData.data_mapping)
+    })
     sceneDialogVisible.value = true
 }
 
@@ -600,9 +651,16 @@ const handleToggleSceneStatus = async (row: any) => {
 
 // 提交场景配置
 const handleSubmitScene = async () => {
+    const dataMapping = parseDataMapping(sceneForm.data_mapping_text)
+    if (dataMapping === null) {
+        ElMessage.warning('数据映射JSON格式不正确')
+        return
+    }
     sceneSubmitting.value = true
     try {
-        await editScene(sceneForm)
+        const payload = { ...sceneForm, data_mapping: dataMapping }
+        delete payload.data_mapping_text
+        await editScene(payload)
         ElMessage.success('配置成功')
         sceneDialogVisible.value = false
         fetchSceneList()
@@ -715,6 +773,13 @@ const getSendStatusType = (status: number) => {
     font-size: 12px;
     max-height: 200px;
     overflow: auto;
+}
+
+.form-tip {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #909399;
+    line-height: 1.4;
 }
 
 .mb-4 {

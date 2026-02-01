@@ -20,6 +20,7 @@ export type SubscribeScene =
     | 'ticket_update' // 工单更新
     | 'change_result' // 变更审核
     | 'schedule_change' // 档期变更
+    | 'waitlist_release' // 候补释放
 
 interface SubscribeResult {
     success: boolean
