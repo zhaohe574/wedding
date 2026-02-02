@@ -126,8 +126,8 @@ class UserCouponLists extends BaseAdminDataLists implements ListsSearchInterface
             $item['use_time_text'] = $item['use_time'] ? date('Y-m-d H:i:s', $item['use_time']) : '-';
 
             // 有效期显示
-            $start = $item['valid_start_time'] ? date('Y-m-d', $item['valid_start_time']) : '';
-            $end = $item['valid_end_time'] ? date('Y-m-d', $item['valid_end_time']) : '';
+            $start = $item['valid_start_time'] ? date('Y-m-d H:i:s', $item['valid_start_time']) : '';
+            $end = $item['valid_end_time'] ? date('Y-m-d H:i:s', $item['valid_end_time']) : '';
             $item['valid_period'] = $start . ' 至 ' . $end;
 
             // 优惠券信息

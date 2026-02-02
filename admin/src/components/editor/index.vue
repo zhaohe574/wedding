@@ -85,10 +85,10 @@ const styles = computed<CSSProperties>(() => ({
 }))
 const valueHtml = computed({
     get() {
-        return props.modelValue
+        return props.modelValue ?? ''
     },
     set(value) {
-        emit('update:modelValue', value)
+        emit('update:modelValue', value ?? '')
     }
 })
 

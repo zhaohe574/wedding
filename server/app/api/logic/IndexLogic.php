@@ -159,6 +159,12 @@ class IndexLogic extends BaseLogic
 
         // 备案信息
         $copyright = ConfigService::get('copyright', 'config', []);
+        // 功能开关
+        $featureSwitch = [
+            'staff_center' => (int) ConfigService::get('feature_switch', 'staff_center', 1),
+            'staff_admin' => (int) ConfigService::get('feature_switch', 'staff_admin', 1),
+            'admin_dashboard' => (int) ConfigService::get('feature_switch', 'admin_dashboard', 1),
+        ];
 
         return [
             'domain' => FileService::getFileUrl(),
@@ -169,6 +175,7 @@ class IndexLogic extends BaseLogic
             'webPage' => $webPage,
             'version'=> config('project.version'),
             'copyright' => $copyright,
+            'feature_switch' => $featureSwitch,
         ];
     }
 

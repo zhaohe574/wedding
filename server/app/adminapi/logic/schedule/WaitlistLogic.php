@@ -226,17 +226,19 @@ class WaitlistLogic extends BaseLogic
      * @notes 候补统计
      * @return array
      */
-    public static function statistics(): array
+    public static function statistics(array $params = []): array
     {
-        $total = \app\common\model\schedule\Waitlist::count();
+        $staffId = (int)($params['staff_id'] ?? 0);
+        $baseQuery = \app\common\model\schedule\Waitlist::where([]);
+        if ($staffId > 0) {
+            $baseQuery->where('staff_id', $staffId);
+        }
 
-        $waiting = \app\common\model\schedule\Waitlist::where('notify_status', \app\common\model\schedule\Waitlist::NOTIFY_STATUS_PENDING)->count();
-
-        $notified = \app\common\model\schedule\Waitlist::where('notify_status', \app\common\model\schedule\Waitlist::NOTIFY_STATUS_NOTIFIED)->count();
-
-        $ordered = \app\common\model\schedule\Waitlist::where('notify_status', \app\common\model\schedule\Waitlist::NOTIFY_STATUS_ORDERED)->count();
-
-        $expired = \app\common\model\schedule\Waitlist::where('notify_status', \app\common\model\schedule\Waitlist::NOTIFY_STATUS_EXPIRED)->count();
+        $total = (clone $baseQuery)->count();
+        $waiting = (clone $baseQuery)->where('notify_status', \app\common\model\schedule\Waitlist::NOTIFY_STATUS_PENDING)->count();
+        $notified = (clone $baseQuery)->where('notify_status', \app\common\model\schedule\Waitlist::NOTIFY_STATUS_NOTIFIED)->count();
+        $ordered = (clone $baseQuery)->where('notify_status', \app\common\model\schedule\Waitlist::NOTIFY_STATUS_ORDERED)->count();
+        $expired = (clone $baseQuery)->where('notify_status', \app\common\model\schedule\Waitlist::NOTIFY_STATUS_EXPIRED)->count();
 
         return [
             'total' => $total,

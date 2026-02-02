@@ -162,6 +162,12 @@ class PcLogic extends BaseLogic
 
         // 备案信息
         $copyright = ConfigService::get('copyright', 'config', []);
+        // 功能开关
+        $featureSwitch = [
+            'staff_center' => (int) ConfigService::get('feature_switch', 'staff_center', 1),
+            'staff_admin' => (int) ConfigService::get('feature_switch', 'staff_admin', 1),
+            'admin_dashboard' => (int) ConfigService::get('feature_switch', 'admin_dashboard', 1),
+        ];
 
         // 公众号二维码
         $oaQrCode = ConfigService::get('oa_setting', 'qr_code', '');
@@ -178,6 +184,7 @@ class PcLogic extends BaseLogic
             'version' => config('project.version'),
             'copyright' => $copyright,
             'admin_url' => request()->domain() . '/admin',
+            'feature_switch' => $featureSwitch,
             'qrcode' => [
                 'oa' => $oaQrCode,
                 'mnp' => $mnpQrCode,

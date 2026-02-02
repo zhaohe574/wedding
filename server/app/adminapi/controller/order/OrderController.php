@@ -12,6 +12,8 @@ use app\adminapi\lists\order\OrderLists;
 use app\adminapi\lists\order\OrderLogLists;
 use app\adminapi\logic\order\OrderLogic;
 use app\adminapi\validate\order\OrderValidate;
+use app\common\model\order\OrderItem;
+use app\common\service\StaffService;
 
 /**
  * 订单管理控制器
@@ -36,6 +38,9 @@ class OrderController extends BaseAdminController
     public function detail()
     {
         $params = (new OrderValidate())->goCheck('detail');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
         $result = OrderLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('订单不存在');
@@ -50,6 +55,18 @@ class OrderController extends BaseAdminController
     public function add()
     {
         $params = (new OrderValidate())->post()->goCheck('add');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $items = $params['items'] ?? [];
+            if (empty($items)) {
+                return $this->fail('请选择服务人员');
+            }
+            foreach ($items as $item) {
+                if ((int)($item['staff_id'] ?? 0) !== $staffScopeId) {
+                    return $this->fail('无权限操作');
+                }
+            }
+        }
         $params['admin_id'] = $this->adminId;
         $result = OrderLogic::add($params);
         if (true === $result) {
@@ -65,6 +82,9 @@ class OrderController extends BaseAdminController
     public function edit()
     {
         $params = (new OrderValidate())->post()->goCheck('edit');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
         $params['admin_id'] = $this->adminId;
         $result = OrderLogic::edit($params);
         if (true === $result) {
@@ -80,6 +100,9 @@ class OrderController extends BaseAdminController
     public function cancel()
     {
         $params = (new OrderValidate())->post()->goCheck('cancel');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
         $result = OrderLogic::cancel((int)$params['id'], $this->adminId, $params['reason'] ?? '');
         if (true === $result) {
             return $this->success('取消成功');
@@ -94,6 +117,9 @@ class OrderController extends BaseAdminController
     public function startService()
     {
         $params = (new OrderValidate())->post()->goCheck('detail');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
         $result = OrderLogic::startService((int)$params['id'], $this->adminId);
         if (true === $result) {
             return $this->success('操作成功');
@@ -108,6 +134,9 @@ class OrderController extends BaseAdminController
     public function complete()
     {
         $params = (new OrderValidate())->post()->goCheck('detail');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
         $result = OrderLogic::complete((int)$params['id'], $this->adminId);
         if (true === $result) {
             return $this->success('操作成功');
@@ -122,6 +151,9 @@ class OrderController extends BaseAdminController
     public function confirmOfflinePay()
     {
         $params = (new OrderValidate())->post()->goCheck('confirmPay');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
         $params['admin_id'] = $this->adminId;
         $result = OrderLogic::confirmOfflinePay($params);
         if (true === $result) {
@@ -137,6 +169,9 @@ class OrderController extends BaseAdminController
     public function auditVoucher()
     {
         $params = (new OrderValidate())->post()->goCheck('auditVoucher');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
         $params['admin_id'] = $this->adminId;
         $result = OrderLogic::auditPayVoucher($params);
         if (true === $result) {
@@ -152,6 +187,9 @@ class OrderController extends BaseAdminController
     public function addRemark()
     {
         $params = (new OrderValidate())->post()->goCheck('remark');
+        if ($this->checkOrderScope((int)$params['id']) !== null) {
+            return $this->checkOrderScope((int)$params['id']);
+        }
         $result = OrderLogic::addRemark((int)$params['id'], $this->adminId, $params['remark']);
         if (true === $result) {
             return $this->success('添加成功');
@@ -165,6 +203,19 @@ class OrderController extends BaseAdminController
      */
     public function logs()
     {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $orderId = (int) $this->request->get('order_id', 0);
+            if ($orderId <= 0) {
+                return $this->fail('无权限操作');
+            }
+            $exists = OrderItem::where('order_id', $orderId)
+                ->where('staff_id', $staffScopeId)
+                ->find();
+            if (!$exists) {
+                return $this->fail('无权限操作');
+            }
+        }
         return $this->dataLists(new OrderLogLists());
     }
 
@@ -175,6 +226,10 @@ class OrderController extends BaseAdminController
     public function statistics()
     {
         $params = $this->request->get();
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['staff_id'] = $staffScopeId;
+        }
         $result = OrderLogic::statistics($params);
         return $this->data($result);
     }
@@ -206,5 +261,25 @@ class OrderController extends BaseAdminController
     public function export()
     {
         return $this->dataLists(new OrderLists());
+    }
+
+    /**
+     * @notes 校验订单数据范围
+     * @param int $orderId
+     * @return \think\response\Json|null
+     */
+    protected function checkOrderScope(int $orderId)
+    {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId <= 0) {
+            return null;
+        }
+        $exists = OrderItem::where('order_id', $orderId)
+            ->where('staff_id', $staffScopeId)
+            ->find();
+        if (!$exists) {
+            return $this->fail('无权限操作');
+        }
+        return null;
     }
 }

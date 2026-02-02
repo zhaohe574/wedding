@@ -216,6 +216,16 @@
                     <el-input-number v-model="editForm.per_limit" :min="0" />
                     <span class="ml-2 text-gray">张（0表示不限）</span>
                 </el-form-item>
+                <el-form-item label="领取时间" prop="receive_time">
+                    <el-date-picker
+                        v-model="editForm.receive_time"
+                        type="datetimerange"
+                        value-format="YYYY-MM-DD HH:mm:ss"
+                        start-placeholder="开始日期"
+                        end-placeholder="结束日期"
+                    />
+                    <div class="text-gray text-xs mt-1">不填写表示不限制领取时间</div>
+                </el-form-item>
                 <el-form-item label="有效期类型" prop="valid_type">
                     <el-radio-group v-model="editForm.valid_type" :disabled="!!editForm.id && editForm.receive_count > 0">
                         <el-radio :label="1">固定日期</el-radio>
@@ -225,8 +235,8 @@
                 <el-form-item v-if="editForm.valid_type === 1" label="有效期" prop="valid_time">
                     <el-date-picker
                         v-model="editForm.valid_time"
-                        type="daterange"
-                        value-format="YYYY-MM-DD"
+                        type="datetimerange"
+                        value-format="YYYY-MM-DD HH:mm:ss"
                         start-placeholder="开始日期"
                         end-placeholder="结束日期"
                         :disabled="!!editForm.id && editForm.receive_count > 0"
@@ -461,6 +471,7 @@ const editForm = reactive<any>({
     max_discount: 0,
     total_count: 0,
     per_limit: 1,
+    receive_time: [],
     valid_type: 1,
     valid_time: [],
     valid_days: 7,
@@ -556,6 +567,7 @@ const handleAdd = () => {
         max_discount: 0,
         total_count: 0,
         per_limit: 1,
+        receive_time: [],
         valid_type: 1,
         valid_time: [],
         valid_days: 7,
@@ -573,10 +585,18 @@ const handleEdit = async (row: any) => {
     try {
         const res = await getCouponDetail({ id: row.id })
         Object.assign(editForm, res)
+        if (res.receive_start_time && res.receive_end_time) {
+            editForm.receive_time = [
+                formatDateTime(res.receive_start_time),
+                formatDateTime(res.receive_end_time)
+            ]
+        } else {
+            editForm.receive_time = []
+        }
         if (res.valid_type === 1 && res.valid_start_time && res.valid_end_time) {
             editForm.valid_time = [
-                new Date(res.valid_start_time * 1000).toISOString().split('T')[0],
-                new Date(res.valid_end_time * 1000).toISOString().split('T')[0]
+                formatDateTime(res.valid_start_time),
+                formatDateTime(res.valid_end_time)
             ]
         }
         showEditDialog.value = true
@@ -591,6 +611,14 @@ const handleSubmit = async () => {
     await editFormRef.value.validate()
 
     const params: any = { ...editForm }
+    if (params.receive_time?.length === 2) {
+        params.receive_start_time = params.receive_time[0]
+        params.receive_end_time = params.receive_time[1]
+    } else {
+        params.receive_start_time = ''
+        params.receive_end_time = ''
+    }
+    delete params.receive_time
     if (params.valid_type === 1 && params.valid_time?.length === 2) {
         params.valid_start_time = params.valid_time[0]
         params.valid_end_time = params.valid_time[1]
@@ -748,6 +776,12 @@ const getStaffOptions = async () => {
     } catch (error) {
         console.error(error)
     }
+}
+
+const formatDateTime = (timestamp: number) => {
+    const date = new Date(timestamp * 1000)
+    const pad = (num: number) => String(num).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
 onMounted(() => {

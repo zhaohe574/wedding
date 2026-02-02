@@ -31,8 +31,8 @@ class AfterSaleLogic extends BaseLogic
      */
     public static function getTicketLists(array $params): array
     {
-        $page = $params['page'] ?? 1;
-        $limit = $params['limit'] ?? 10;
+        $page = (int)($params['page'] ?? 1);
+        $limit = (int)($params['limit'] ?? 10);
         $status = $params['status'] ?? null;
 
         $query = AfterSaleTicket::where('user_id', $params['user_id']);
@@ -156,8 +156,8 @@ class AfterSaleLogic extends BaseLogic
      */
     public static function getComplaintLists(array $params): array
     {
-        $page = $params['page'] ?? 1;
-        $limit = $params['limit'] ?? 10;
+        $page = (int)($params['page'] ?? 1);
+        $limit = (int)($params['limit'] ?? 10);
         $status = $params['status'] ?? null;
 
         $query = Complaint::where('user_id', $params['user_id']);
@@ -250,8 +250,8 @@ class AfterSaleLogic extends BaseLogic
      */
     public static function getReshootLists(array $params): array
     {
-        $page = $params['page'] ?? 1;
-        $limit = $params['limit'] ?? 10;
+        $page = (int)($params['page'] ?? 1);
+        $limit = (int)($params['limit'] ?? 10);
         $status = $params['status'] ?? null;
 
         $query = Reshoot::where('user_id', $params['user_id']);
@@ -343,8 +343,8 @@ class AfterSaleLogic extends BaseLogic
      */
     public static function getCallbackLists(array $params): array
     {
-        $page = $params['page'] ?? 1;
-        $limit = $params['limit'] ?? 10;
+        $page = (int)($params['page'] ?? 1);
+        $limit = (int)($params['limit'] ?? 10);
         $status = $params['status'] ?? null;
 
         $query = ServiceCallback::where('user_id', $params['user_id'])

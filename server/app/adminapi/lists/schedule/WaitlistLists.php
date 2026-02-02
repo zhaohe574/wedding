@@ -35,6 +35,11 @@ class WaitlistLists extends BaseAdminDataLists implements ListsExtendInterface
     private function createSearchWhere(): array
     {
         $where = [];
+
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $where[] = ['w.staff_id', '=', $staffScopeId];
+        }
         
         // ID搜索
         if (!empty($this->params['id'])) {
@@ -42,7 +47,7 @@ class WaitlistLists extends BaseAdminDataLists implements ListsExtendInterface
         }
         
         // 工作人员搜索
-        if (!empty($this->params['staff_id'])) {
+        if ($staffScopeId === 0 && !empty($this->params['staff_id'])) {
             $where[] = ['w.staff_id', '=', $this->params['staff_id']];
         }
         
@@ -168,11 +173,17 @@ class WaitlistLists extends BaseAdminDataLists implements ListsExtendInterface
      */
     public function countExtend(): array
     {
-        $total = Waitlist::count();
-        $waiting = Waitlist::where('notify_status', 0)->count();
-        $notified = Waitlist::where('notify_status', 1)->count();
-        $ordered = Waitlist::where('notify_status', 2)->count();
-        $expired = Waitlist::where('notify_status', 3)->count();
+        $staffScopeId = $this->getStaffScopeId();
+        $baseQuery = Waitlist::where([]);
+        if ($staffScopeId > 0) {
+            $baseQuery->where('staff_id', $staffScopeId);
+        }
+
+        $total = (clone $baseQuery)->count();
+        $waiting = (clone $baseQuery)->where('notify_status', 0)->count();
+        $notified = (clone $baseQuery)->where('notify_status', 1)->count();
+        $ordered = (clone $baseQuery)->where('notify_status', 2)->count();
+        $expired = (clone $baseQuery)->where('notify_status', 3)->count();
 
         return [
             'total' => $total,

@@ -34,11 +34,17 @@ class ScheduleRuleLists extends BaseAdminDataLists
      */
     public function lists(): array
     {
-        $lists = ScheduleRule::with(['staff' => function ($query) {
+        $query = ScheduleRule::with(['staff' => function ($query) {
                 $query->field('id, name, avatar');
             }])
-            ->where($this->searchWhere)
-            ->order('staff_id', 'asc')
+            ->where($this->searchWhere);
+
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $query->whereIn('staff_id', [$staffScopeId, 0]);
+        }
+
+        $lists = $query->order('staff_id', 'asc')
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();
@@ -58,7 +64,12 @@ class ScheduleRuleLists extends BaseAdminDataLists
      */
     public function count(): int
     {
-        return ScheduleRule::where($this->searchWhere)->count();
+        $query = ScheduleRule::where($this->searchWhere);
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $query->whereIn('staff_id', [$staffScopeId, 0]);
+        }
+        return $query->count();
     }
 
     /**

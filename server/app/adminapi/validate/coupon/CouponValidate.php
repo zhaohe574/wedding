@@ -26,6 +26,8 @@ class CouponValidate extends BaseValidate
         'max_discount' => 'float|egt:0',
         'total_count' => 'integer|egt:0',
         'per_limit' => 'integer|egt:0',
+        'receive_start_time' => 'max:20',
+        'receive_end_time' => 'max:20',
         'valid_type' => 'require|in:1,2',
         'valid_start_time' => 'requireIf:valid_type,1',
         'valid_end_time' => 'requireIf:valid_type,1',
@@ -59,6 +61,8 @@ class CouponValidate extends BaseValidate
         'total_count.egt' => '发放总量不能小于0',
         'per_limit.integer' => '每人限领数量必须是整数',
         'per_limit.egt' => '每人限领数量不能小于0',
+        'receive_start_time.max' => '领取开始时间格式错误',
+        'receive_end_time.max' => '领取结束时间格式错误',
         'valid_type.require' => '有效期类型不能为空',
         'valid_type.in' => '有效期类型值错误',
         'valid_start_time.requireIf' => '有效期开始时间不能为空',
@@ -87,8 +91,8 @@ class CouponValidate extends BaseValidate
 
     protected $scene = [
         'detail' => ['id'],
-        'add' => ['name', 'coupon_type', 'threshold_amount', 'discount_amount', 'max_discount', 'total_count', 'per_limit', 'valid_type', 'valid_start_time', 'valid_end_time', 'valid_days', 'use_scope', 'scope_ids', 'status', 'remark'],
-        'edit' => ['id', 'name', 'coupon_type', 'threshold_amount', 'discount_amount', 'max_discount', 'total_count', 'per_limit', 'valid_type', 'valid_start_time', 'valid_end_time', 'valid_days', 'use_scope', 'scope_ids', 'status', 'remark'],
+        'add' => ['name', 'coupon_type', 'threshold_amount', 'discount_amount', 'max_discount', 'total_count', 'per_limit', 'receive_start_time', 'receive_end_time', 'valid_type', 'valid_start_time', 'valid_end_time', 'valid_days', 'use_scope', 'scope_ids', 'status', 'remark'],
+        'edit' => ['id', 'name', 'coupon_type', 'threshold_amount', 'discount_amount', 'max_discount', 'total_count', 'per_limit', 'receive_start_time', 'receive_end_time', 'valid_type', 'valid_start_time', 'valid_end_time', 'valid_days', 'use_scope', 'scope_ids', 'status', 'remark'],
         'send' => ['coupon_id', 'user_id'],
         'batchSend' => ['coupon_id', 'user_ids'],
         'revoke' => ['user_coupon_id'],
@@ -100,10 +104,11 @@ class CouponValidate extends BaseValidate
      */
     public function sceneAdd(): CouponValidate
     {
-        return $this->only(['name', 'coupon_type', 'threshold_amount', 'discount_amount', 'max_discount', 'total_count', 'per_limit', 'valid_type', 'valid_start_time', 'valid_end_time', 'valid_days', 'use_scope', 'scope_ids', 'status', 'remark'])
+        return $this->only(['name', 'coupon_type', 'threshold_amount', 'discount_amount', 'max_discount', 'total_count', 'per_limit', 'receive_start_time', 'receive_end_time', 'valid_type', 'valid_start_time', 'valid_end_time', 'valid_days', 'use_scope', 'scope_ids', 'status', 'remark'])
             ->append('discount_amount', 'checkDiscountAmount')
             ->append('valid_days', 'checkValidDays')
-            ->append('valid_start_time', 'checkValidTime');
+            ->append('valid_start_time', 'checkValidTime')
+            ->append('receive_start_time', 'checkReceiveTime');
     }
 
     /**
@@ -112,10 +117,11 @@ class CouponValidate extends BaseValidate
      */
     public function sceneEdit(): CouponValidate
     {
-        return $this->only(['id', 'name', 'coupon_type', 'threshold_amount', 'discount_amount', 'max_discount', 'total_count', 'per_limit', 'valid_type', 'valid_start_time', 'valid_end_time', 'valid_days', 'use_scope', 'scope_ids', 'status', 'remark'])
+        return $this->only(['id', 'name', 'coupon_type', 'threshold_amount', 'discount_amount', 'max_discount', 'total_count', 'per_limit', 'receive_start_time', 'receive_end_time', 'valid_type', 'valid_start_time', 'valid_end_time', 'valid_days', 'use_scope', 'scope_ids', 'status', 'remark'])
             ->append('discount_amount', 'checkDiscountAmount')
             ->append('valid_days', 'checkValidDays')
-            ->append('valid_start_time', 'checkValidTime');
+            ->append('valid_start_time', 'checkValidTime')
+            ->append('receive_start_time', 'checkReceiveTime');
     }
 
     /**
@@ -187,6 +193,40 @@ class CouponValidate extends BaseValidate
             if ($endTime <= $startTime) {
                 return '结束时间必须大于开始时间';
             }
+        }
+
+        return true;
+    }
+
+    /**
+     * @notes 验证领取时间段
+     * @param $value
+     * @param $rule
+     * @param $data
+     * @return bool|string
+     */
+    protected function checkReceiveTime($value, $rule, $data)
+    {
+        $startRaw = $data['receive_start_time'] ?? '';
+        $endRaw = $data['receive_end_time'] ?? '';
+
+        if ($startRaw === '' && $endRaw === '') {
+            return true;
+        }
+
+        if (empty($startRaw) || empty($endRaw)) {
+            return '领取时间段必须同时填写开始和结束时间';
+        }
+
+        $startTime = is_numeric($startRaw) ? (int)$startRaw : strtotime($startRaw);
+        $endTime = is_numeric($endRaw) ? (int)$endRaw : strtotime($endRaw);
+
+        if ($startTime <= 0 || $endTime <= 0) {
+            return '领取时间格式错误';
+        }
+
+        if ($endTime <= $startTime) {
+            return '领取结束时间必须大于开始时间';
         }
 
         return true;

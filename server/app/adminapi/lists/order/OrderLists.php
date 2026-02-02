@@ -73,14 +73,24 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
      */
     public function lists(): array
     {
-        $lists = Order::with([
+        $query = Order::with([
             'user' => function ($query) {
                 $query->field('id, nickname, avatar, mobile');
             }
         ])
             ->where($this->searchWhere)
-            ->where($this->queryWhere())
-            ->order($this->sortOrder ?: ['id' => 'desc'])
+            ->where($this->queryWhere());
+
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $query->whereExists(function ($subQuery) use ($staffScopeId) {
+                $subQuery->name('order_item')
+                    ->whereColumn('order_id', 'order.id')
+                    ->where('staff_id', $staffScopeId);
+            });
+        }
+
+        $lists = $query->order($this->sortOrder ?: ['id' => 'desc'])
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();
@@ -101,9 +111,19 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
      */
     public function count(): int
     {
-        return Order::where($this->searchWhere)
-            ->where($this->queryWhere())
-            ->count();
+        $query = Order::where($this->searchWhere)
+            ->where($this->queryWhere());
+
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $query->whereExists(function ($subQuery) use ($staffScopeId) {
+                $subQuery->name('order_item')
+                    ->whereColumn('order_id', 'order.id')
+                    ->where('staff_id', $staffScopeId);
+            });
+        }
+
+        return $query->count();
     }
 
     /**

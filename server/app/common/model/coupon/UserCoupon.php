@@ -97,8 +97,8 @@ class UserCoupon extends BaseModel
      */
     public function getValidPeriodAttr($value, $data)
     {
-        $start = $data['valid_start_time'] ? date('Y-m-d', $data['valid_start_time']) : '';
-        $end = $data['valid_end_time'] ? date('Y-m-d', $data['valid_end_time']) : '';
+        $start = $data['valid_start_time'] ? date('Y-m-d H:i:s', $data['valid_start_time']) : '';
+        $end = $data['valid_end_time'] ? date('Y-m-d H:i:s', $data['valid_end_time']) : '';
         return $start . ' 至 ' . $end;
     }
 

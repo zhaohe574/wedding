@@ -38,8 +38,18 @@ class DynamicLists extends BaseAdminDataLists implements ListsExcelInterface, Li
      */
     public function lists(): array
     {
-        $lists = Dynamic::where($this->searchWhere)
-            ->order($this->sortOrder ?: ['is_top' => 'desc', 'id' => 'desc'])
+        $query = Dynamic::where($this->searchWhere);
+
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $query->where('user_type', Dynamic::USER_TYPE_STAFF)
+                ->where(function ($q) use ($staffScopeId) {
+                    $q->where('staff_id', $staffScopeId)
+                        ->whereOr('user_id', $staffScopeId);
+                });
+        }
+
+        $lists = $query->order($this->sortOrder ?: ['is_top' => 'desc', 'id' => 'desc'])
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();
@@ -70,7 +80,16 @@ class DynamicLists extends BaseAdminDataLists implements ListsExcelInterface, Li
      */
     public function count(): int
     {
-        return Dynamic::where($this->searchWhere)->count();
+        $query = Dynamic::where($this->searchWhere);
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $query->where('user_type', Dynamic::USER_TYPE_STAFF)
+                ->where(function ($q) use ($staffScopeId) {
+                    $q->where('staff_id', $staffScopeId)
+                        ->whereOr('user_id', $staffScopeId);
+                });
+        }
+        return $query->count();
     }
 
     /**

@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace app\adminapi\logic\staff;
 
 use app\common\logic\BaseLogic;
+use app\common\model\auth\Admin;
+use app\common\model\auth\AdminRole;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffTag;
 use app\common\model\staff\StaffPackage;
@@ -15,8 +17,12 @@ use app\common\model\staff\StaffWork;
 use app\common\model\staff\StaffCertificate;
 use app\common\model\service\ServicePackage;
 use app\common\model\user\User;
+use app\common\service\ConfigService;
+use app\common\service\FileService;
+use app\common\service\StaffService;
 use app\adminapi\logic\service\PackageLogic;
 use think\facade\Db;
+use think\facade\Config;
 
 /**
  * 工作人员管理逻辑
@@ -46,6 +52,16 @@ class StaffLogic extends BaseLogic
         $fullMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
         $data['mobile'] = $fullMobile;
         $data['mobile_full'] = $fullMobile;
+        $data['admin_id'] = (int)($staff->admin_id ?? 0);
+        $data['admin_account'] = '';
+        $data['admin_disable'] = 0;
+        if (!empty($staff->admin_id)) {
+            $admin = Admin::field('id, account, disable')->find($staff->admin_id);
+            if ($admin) {
+                $data['admin_account'] = $admin->account;
+                $data['admin_disable'] = (int)$admin->disable;
+            }
+        }
 
         return $data;
     }
@@ -55,7 +71,7 @@ class StaffLogic extends BaseLogic
      * @param array $params
      * @return bool
      */
-    public static function add(array $params): bool
+    public static function add(array $params)
     {
         Db::startTrans();
         try {
@@ -103,6 +119,18 @@ class StaffLogic extends BaseLogic
                 'update_time' => time(),
             ]);
 
+            $adminAccount = '';
+            $adminPassword = '';
+            if (self::shouldCreateAdmin()) {
+                [$adminId, $adminAccount, $adminPassword] = self::createStaffAdmin($staff);
+                if ($adminId > 0) {
+                    $staff->save([
+                        'admin_id' => $adminId,
+                        'update_time' => time(),
+                    ]);
+                }
+            }
+
             // 设置标签
             if (!empty($params['tag_ids'])) {
                 StaffTag::setTags($staff->id, $params['tag_ids']);
@@ -114,7 +142,11 @@ class StaffLogic extends BaseLogic
             }
 
             Db::commit();
-            return true;
+            return [
+                'staff_id' => $staff->id,
+                'admin_account' => $adminAccount,
+                'admin_password' => $adminPassword,
+            ];
         } catch (\Exception $e) {
             Db::rollback();
             self::setError($e->getMessage());
@@ -175,6 +207,28 @@ class StaffLogic extends BaseLogic
                 'update_time' => time(),
             ]);
 
+            if (!empty($staff->admin_id)) {
+                $adminUpdate = [];
+                if (array_key_exists('name', $params)) {
+                    $adminUpdate['name'] = $params['name'];
+                }
+                if (array_key_exists('status', $params)) {
+                    $adminUpdate['disable'] = (int)($params['status'] ? 0 : 1);
+                }
+                if (!empty($adminUpdate)) {
+                    $adminUpdate['id'] = $staff->admin_id;
+                    Admin::update($adminUpdate);
+                }
+            } elseif (self::shouldCreateAdmin()) {
+                [$adminId] = self::createStaffAdmin($staff);
+                if ($adminId > 0) {
+                    $staff->save([
+                        'admin_id' => $adminId,
+                        'update_time' => time(),
+                    ]);
+                }
+            }
+
             // 更新标签（setTags/setPackages 要求 int，POST 的 id 为字符串）
             $staffId = (int) $params['id'];
             if (isset($params['tag_ids'])) {
@@ -218,6 +272,14 @@ class StaffLogic extends BaseLogic
                 'status' => $params['status'],
                 'update_time' => time(),
             ]);
+
+            $staff = Staff::find($params['id']);
+            if ($staff && !empty($staff->admin_id)) {
+                Admin::update([
+                    'id' => $staff->admin_id,
+                    'disable' => (int)($params['status'] ? 0 : 1),
+                ]);
+            }
             return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -235,6 +297,10 @@ class StaffLogic extends BaseLogic
         $query = Staff::where('delete_time', null)
             ->where('status', Staff::STATUS_ENABLE);
 
+        if (!empty($params['ids']) && is_array($params['ids'])) {
+            $query->whereIn('id', $params['ids']);
+        }
+
         if (!empty($params['category_id'])) {
             $query->where('category_id', $params['category_id']);
         }
@@ -249,12 +315,16 @@ class StaffLogic extends BaseLogic
      * @notes 统计数据
      * @return array
      */
-    public static function statistics(): array
+    public static function statistics(int $staffId = 0): array
     {
-        $total = Staff::where('delete_time', null)->count();
-        $enable = Staff::where('delete_time', null)->where('status', Staff::STATUS_ENABLE)->count();
-        $disable = Staff::where('delete_time', null)->where('status', Staff::STATUS_DISABLE)->count();
-        $recommend = Staff::where('delete_time', null)->where('is_recommend', 1)->count();
+        $query = Staff::where('delete_time', null);
+        if ($staffId > 0) {
+            $query->where('id', $staffId);
+        }
+        $total = (clone $query)->count();
+        $enable = (clone $query)->where('status', Staff::STATUS_ENABLE)->count();
+        $disable = (clone $query)->where('status', Staff::STATUS_DISABLE)->count();
+        $recommend = (clone $query)->where('is_recommend', 1)->count();
 
         return [
             'total' => $total,
@@ -453,6 +523,117 @@ class StaffLogic extends BaseLogic
             self::setError($e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * @notes 重置工作人员后台密码
+     * @param int $staffId
+     * @return array|false
+     */
+    public static function resetAdminPassword(int $staffId)
+    {
+        try {
+            $staff = Staff::find($staffId);
+            if (!$staff) {
+                self::setError('工作人员不存在');
+                return false;
+            }
+            if (empty($staff->admin_id)) {
+                self::setError('未关联后台账号');
+                return false;
+            }
+
+            $admin = Admin::find($staff->admin_id);
+            if (!$admin) {
+                self::setError('后台账号不存在');
+                return false;
+            }
+
+            $password = self::generateRandomPassword();
+            $passwordSalt = Config::get('project.unique_identification');
+            $admin->password = create_password($password, $passwordSalt);
+            $admin->save();
+
+            return [
+                'admin_account' => $admin->account,
+                'admin_password' => $password,
+            ];
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 是否启用后台账号自动创建
+     */
+    protected static function shouldCreateAdmin(): bool
+    {
+        return (int)ConfigService::get('feature_switch', 'staff_admin', 1) === 1;
+    }
+
+    /**
+     * @notes 创建工作人员后台账号
+     * @param Staff $staff
+     * @return array [adminId, account, password]
+     * @throws \Exception
+     */
+    protected static function createStaffAdmin(Staff $staff): array
+    {
+        $roleId = StaffService::getStaffRoleId();
+        if ($roleId <= 0) {
+            throw new \Exception('服务人员角色不存在');
+        }
+
+        $baseAccount = 'staff_' . strtolower($staff->sn ?: (string)$staff->id);
+        $account = self::generateUniqueAccount($baseAccount);
+        $password = self::generateRandomPassword();
+
+        $passwordSalt = Config::get('project.unique_identification');
+        $passwordHash = create_password($password, $passwordSalt);
+
+        $avatarRaw = $staff->getData('avatar') ?: '';
+        $avatar = $avatarRaw ? FileService::setFileUrl($avatarRaw) : config('project.default_image.admin_avatar');
+
+        $admin = Admin::create([
+            'name' => $staff->name,
+            'account' => $account,
+            'avatar' => $avatar,
+            'password' => $passwordHash,
+            'create_time' => time(),
+            'disable' => 0,
+            'multipoint_login' => 1,
+        ]);
+
+        AdminRole::create([
+            'admin_id' => $admin->id,
+            'role_id' => $roleId,
+        ]);
+
+        return [$admin->id, $account, $password];
+    }
+
+    /**
+     * @notes 生成唯一后台账号
+     */
+    protected static function generateUniqueAccount(string $baseAccount): string
+    {
+        $account = $baseAccount;
+        $suffix = 1;
+        while (Admin::where('account', $account)->find()) {
+            $account = $baseAccount . '_' . $suffix;
+            $suffix++;
+        }
+        return $account;
+    }
+
+    /**
+     * @notes 生成随机密码
+     */
+    protected static function generateRandomPassword(int $length = 12): string
+    {
+        $raw = bin2hex(random_bytes((int)ceil($length / 2)));
+        return substr($raw, 0, $length);
     }
 
     /**

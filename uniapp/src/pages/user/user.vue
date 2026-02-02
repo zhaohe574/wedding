@@ -139,7 +139,11 @@ const getData = async () => {
 }
 
 onShow(() => {
-    userStore.getUser()
+    // 只在未登录或用户信息为空时才重新获取
+    // App.vue 已经在启动时获取过用户信息
+    if (isLogin.value && !userInfo.value?.id) {
+        userStore.getUser()
+    }
     getData()
 })
 </script>

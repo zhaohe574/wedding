@@ -29,6 +29,7 @@ class StaffWorkValidate extends BaseValidate
         'type' => 'in:1,2',
         'cover' => 'max:255',
         'images' => 'array',
+        'video' => 'max:255',
         'video_url' => 'max:255',
         'description' => 'max:500',
         'sort' => 'integer|egt:0',
@@ -48,6 +49,7 @@ class StaffWorkValidate extends BaseValidate
         'type.in' => '作品类型值错误',
         'cover.max' => '封面地址最多255个字符',
         'images.array' => '图片列表格式错误',
+        'video.max' => '视频地址最多255个字符',
         'video_url.max' => '视频地址最多255个字符',
         'description.max' => '描述最多500个字符',
         'sort.integer' => '排序必须为整数',
@@ -61,8 +63,8 @@ class StaffWorkValidate extends BaseValidate
      * @var array
      */
     protected $scene = [
-        'add' => ['staff_id', 'title', 'type', 'cover', 'images', 'video_url', 'description', 'sort', 'is_show', 'is_cover'],
-        'edit' => ['id', 'title', 'type', 'cover', 'images', 'video_url', 'description', 'sort', 'is_show', 'is_cover'],
+        'add' => ['staff_id', 'title', 'type', 'cover', 'images', 'video', 'video_url', 'description', 'sort', 'is_show', 'is_cover'],
+        'edit' => ['id', 'title', 'type', 'cover', 'images', 'video', 'video_url', 'description', 'sort', 'is_show', 'is_cover'],
         'detail' => ['id'],
         'delete' => ['id'],
         'status' => ['id', 'is_show'],

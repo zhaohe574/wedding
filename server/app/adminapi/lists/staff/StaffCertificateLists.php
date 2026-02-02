@@ -39,7 +39,14 @@ class StaffCertificateLists extends BaseAdminDataLists implements ListsSearchInt
      */
     public function lists(): array
     {
-        $list = StaffCertificate::where($this->searchWhere)
+        $query = StaffCertificate::where($this->searchWhere);
+
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $query->where('staff_id', $staffScopeId);
+        }
+
+        $list = $query
             ->with(['staff' => function($query) {
                 $query->field('id, name, sn');
             }])
@@ -58,6 +65,11 @@ class StaffCertificateLists extends BaseAdminDataLists implements ListsSearchInt
      */
     public function count(): int
     {
-        return StaffCertificate::where($this->searchWhere)->count();
+        $query = StaffCertificate::where($this->searchWhere);
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $query->where('staff_id', $staffScopeId);
+        }
+        return $query->count();
     }
 }

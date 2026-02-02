@@ -7,21 +7,36 @@
         />
     </page-meta>
     <view class="coupon-center-page">
-        <!-- 顶部入口 -->
-        <view class="top-entry">
-            <view class="entry-item" @click="goMyCoupons">
-                <uni-icons type="wallet" size="24" color="#ff6b35"></uni-icons>
-                <text>我的优惠券</text>
-                <text class="count" v-if="stats.unused > 0">{{ stats.unused }}张可用</text>
+        <!-- 顶部入口卡片 -->
+        <view class="top-entry" @click="goMyCoupons">
+            <view class="entry-card">
+                <view class="entry-left">
+                    <view class="icon-wrapper" :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)` }">
+                        <tn-icon name="coupon-fill" size="40" color="#FFFFFF" />
+                    </view>
+                    <view class="entry-info">
+                        <text class="entry-title">我的优惠券</text>
+                        <text class="entry-desc" v-if="stats.unused > 0">{{ stats.unused }}张可用</text>
+                        <text class="entry-desc" v-else>暂无可用优惠券</text>
+                    </view>
+                </view>
+                <tn-icon name="right" size="32" color="#999999" />
             </view>
         </view>
 
         <!-- 优惠券列表 -->
-        <view class="section-title">可领取优惠券</view>
+        <view class="section-header">
+            <view class="section-title">
+                <view class="title-icon" :style="{ background: $theme.primaryColor }"></view>
+                <text>可领取优惠券</text>
+            </view>
+            <text class="section-count" v-if="couponList.length">共{{ couponList.length }}张</text>
+        </view>
 
         <view v-if="couponList.length" class="list-wrap">
-            <view v-for="item in couponList" :key="item.id" class="coupon-card">
-                <view class="coupon-left">
+            <view v-for="item in couponList" :key="item.id" class="coupon-card" @click="goDetail(item)">
+                <!-- 优惠券左侧金额区 -->
+                <view class="coupon-left" :style="{ background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)` }">
                     <view class="coupon-value">
                         <template v-if="item.coupon_type === 2">
                             <text class="num">{{ (item.discount_amount / 10).toFixed(1) }}</text>
@@ -33,54 +48,63 @@
                         </template>
                     </view>
                     <view class="coupon-threshold">
-                        {{
-                            item.threshold_amount > 0
-                                ? `满${item.threshold_amount}元可用`
-                                : '无门槛'
-                        }}
+                        {{ item.threshold_amount > 0 ? `满${item.threshold_amount}元` : '无门槛' }}
                     </view>
                 </view>
-                <view class="coupon-right">
-                    <view class="coupon-name">{{ item.name }}</view>
-                    <view class="coupon-desc">{{ item.discount_desc }}</view>
-                    <view class="coupon-time">{{ item.valid_period }}</view>
-                    <view class="coupon-remain" v-if="item.remain_count !== -1">
-                        剩余 {{ item.remain_count }} 张
+
+                <view class="coupon-content">
+                    <!-- 优惠券右侧信息区 -->
+                    <view class="coupon-right">
+                        <view class="coupon-header">
+                            <text class="coupon-name">{{ item.name }}</text>
+                            <view class="coupon-tag" :style="{ 
+                                background: item.coupon_type === 2 ? 'rgba(249, 115, 22, 0.1)' : 'rgba(124, 58, 237, 0.1)',
+                                color: item.coupon_type === 2 ? '#F97316' : $theme.primaryColor
+                            }">
+                                {{ item.coupon_type_text }}
+                            </view>
+                            <tn-icon name="right" size="26" color="#C0C4CC" class="detail-arrow" />
+                        </view>
+                        
+                        <view class="coupon-desc" :style="{ color: $theme.ctaColor }">
+                            {{ item.discount_desc }}
+                        </view>
+                        
+                        <view class="coupon-info">
+                            <view class="info-item">
+                                <tn-icon name="time" size="24" color="#999999" />
+                                <text>{{ formatValidPeriod(item) }}</text>
+                            </view>
+                        </view>
                     </view>
-                </view>
-                <view class="coupon-action">
-                    <button
-                        v-if="item.is_received && !item.can_receive"
-                        class="btn-received"
-                        disabled
-                    >
-                        已领取
-                    </button>
-                    <button v-else-if="item.remain_count === 0" class="btn-empty" disabled>
-                        已领完
-                    </button>
-                    <button
-                        v-else
-                        class="btn-receive"
-                        :loading="receivingId === item.id"
-                        @click="handleReceive(item)"
-                    >
-                        立即领取
-                    </button>
                 </view>
             </view>
         </view>
 
         <!-- 空状态 -->
-        <view v-else-if="!loading" class="empty-tip">
-            <image src="/static/images/empty.png" class="empty-icon" mode="aspectFit" />
-            <text>暂无可领取的优惠券</text>
+        <view v-else-if="!loading" class="empty-state">
+            <view class="empty-icon-wrapper">
+                <tn-icon name="coupon" size="120" color="#E5E5E5" />
+            </view>
+            <text class="empty-text">暂无可领取的优惠券</text>
+            <text class="empty-desc">敬请期待更多优惠活动</text>
         </view>
 
         <!-- 加载状态 -->
-        <view v-if="loading" class="loading-tip">
-            <uni-icons type="spinner-cycle" size="20" color="#999"></uni-icons>
-            <text>加载中...</text>
+        <view v-if="loading && page === 1" class="loading-state">
+            <tn-loading mode="flower" :color="$theme.primaryColor" />
+            <text class="loading-text">加载中...</text>
+        </view>
+
+        <!-- 加载更多 -->
+        <view v-if="loading && page > 1" class="loading-more">
+            <tn-loading mode="circle" size="small" :color="$theme.primaryColor" />
+            <text>加载更多...</text>
+        </view>
+
+        <!-- 没有更多 -->
+        <view v-if="!loading && !hasMore && couponList.length > 0" class="no-more">
+            <text>没有更多了</text>
         </view>
 
         <!-- 底部安全区 -->
@@ -89,16 +113,51 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
-import { getAvailableCoupons, receiveCoupon, getMyCouponStats } from '@/api/coupon'
+import { getAvailableCoupons, getMyCouponStats } from '@/api/coupon'
+import { useThemeStore } from '@/stores/theme'
+
+const $theme = useThemeStore()
 
 const loading = ref(false)
 const couponList = ref<any[]>([])
 const stats = ref<any>({})
 const page = ref(1)
 const hasMore = ref(true)
-const receivingId = ref<number | null>(null)
+
+// 格式化时间显示
+const formatValidPeriod = (item: any) => {
+    const validType = Number(item.valid_type || 0)
+    const validDays = Number(item.valid_days || 0)
+    
+    // 领取后N天有效
+    if (validType === 2 && validDays) {
+        return `领取后${validDays}天有效`
+    }
+    
+    // 固定时间段
+    const start = Number(item.valid_start_time || 0)
+    const end = Number(item.valid_end_time || 0)
+    
+    if (!start && !end) return '长期有效'
+    
+    const formatDate = (timestamp: number) => {
+        if (!timestamp) return ''
+        const date = new Date(timestamp * 1000)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}.${month}.${day}`
+    }
+    
+    if (start && end) {
+        return `${formatDate(start)}-${formatDate(end)}`
+    }
+    
+    if (start) return `${formatDate(start)}起`
+    return `${formatDate(end)}止`
+}
 
 const loadStats = async () => {
     try {
@@ -143,34 +202,11 @@ const loadList = async (refresh = false) => {
     }
 }
 
-const handleReceive = async (item: any) => {
-    if (receivingId.value) return
-
-    receivingId.value = item.id
-    try {
-        await receiveCoupon({ coupon_id: item.id })
-        uni.showToast({
-            title: '领取成功',
-            icon: 'success'
-        })
-
-        // 更新状态
-        item.is_received = true
-        item.can_receive = item.per_limit === 0 || false
-        if (item.remain_count > 0) {
-            item.remain_count--
-        }
-
-        // 刷新统计
-        loadStats()
-    } catch (error: any) {
-        uni.showToast({
-            title: error.msg || '领取失败',
-            icon: 'none'
-        })
-    } finally {
-        receivingId.value = null
-    }
+const goDetail = (item: any) => {
+    if (!item?.id) return
+    uni.navigateTo({
+        url: `/pages/coupon/detail?id=${item.id}`
+    })
 }
 
 const goMyCoupons = () => {
@@ -192,188 +228,336 @@ onMounted(() => {
     loadStats()
     loadList(true)
 })
+
 </script>
 
 <style scoped lang="scss">
 .coupon-center-page {
     min-height: 100vh;
-    background: #f5f5f5;
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.03) 0%, #F6F6F6 100%);
+    padding-bottom: 24rpx;
 }
 
+/* 顶部入口卡片 */
 .top-entry {
-    background: #fff;
-    padding: 24rpx 32rpx;
-    margin-bottom: 20rpx;
+    padding: 24rpx;
+    margin-bottom: 8rpx;
 
-    .entry-item {
+    .entry-card {
         display: flex;
         align-items: center;
-        padding: 20rpx;
-        background: #fff8f5;
-        border-radius: 12rpx;
+        justify-content: space-between;
+        background: #FFFFFF;
+        border-radius: 16rpx;
+        padding: 24rpx;
+        box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+        transition: all 0.2s ease;
 
-        text {
-            margin-left: 16rpx;
-            font-size: 28rpx;
-            color: #333;
+        &:active {
+            transform: scale(0.98);
+            box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.12);
         }
 
-        .count {
-            margin-left: auto;
-            font-size: 24rpx;
-            color: #ff6b35;
+        .entry-left {
+            display: flex;
+            align-items: center;
+            gap: 16rpx;
+
+            .icon-wrapper {
+                width: 80rpx;
+                height: 80rpx;
+                border-radius: 16rpx;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
+            }
+
+            .entry-info {
+                display: flex;
+                flex-direction: column;
+                gap: 4rpx;
+
+                .entry-title {
+                    font-size: 32rpx;
+                    font-weight: 600;
+                    color: #333333;
+                }
+
+                .entry-desc {
+                    font-size: 24rpx;
+                    color: #999999;
+                }
+            }
         }
     }
 }
 
-.section-title {
-    padding: 24rpx 32rpx;
-    font-size: 32rpx;
-    font-weight: bold;
-    color: #333;
+/* 区块标题 */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24rpx 24rpx 16rpx;
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 12rpx;
+
+        .title-icon {
+            width: 6rpx;
+            height: 32rpx;
+            border-radius: 3rpx;
+        }
+
+        text {
+            font-size: 34rpx;
+            font-weight: 600;
+            color: #333333;
+        }
+    }
+
+    .section-count {
+        font-size: 26rpx;
+        color: #999999;
+    }
 }
 
+/* 优惠券列表 */
 .list-wrap {
     padding: 0 24rpx;
 }
 
 .coupon-card {
     display: flex;
-    background: #fff;
+    background: #FFFFFF;
     border-radius: 16rpx;
-    margin-bottom: 20rpx;
+    margin-bottom: 24rpx;
     overflow: hidden;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
     position: relative;
 
+    &:active {
+        transform: translateY(-2rpx);
+        box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
+    }
+
+    /* 左侧金额区 */
     .coupon-left {
-        width: 200rpx;
-        background: linear-gradient(135deg, #ff6b35 0%, #ff9a5a 100%);
-        padding: 30rpx 20rpx;
+        width: 240rpx;
+        min-width: 240rpx;
+        padding: 32rpx 20rpx;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        color: #fff;
+        color: #FFFFFF;
+        position: relative;
+
+        /* 锯齿边缘效果 */
+        &::after {
+            content: '';
+            position: absolute;
+            right: -8rpx;
+            top: 0;
+            bottom: 0;
+            width: 16rpx;
+            background: radial-gradient(circle at 0 0, transparent 8rpx, currentColor 8rpx);
+            background-size: 16rpx 32rpx;
+            background-repeat: repeat-y;
+            color: #FFFFFF;
+        }
 
         .coupon-value {
             display: flex;
             align-items: baseline;
+            justify-content: center;
+            margin-bottom: 8rpx;
+            width: 100%;
 
             .symbol {
                 font-size: 28rpx;
+                font-weight: 600;
+                margin-right: 4rpx;
+                flex-shrink: 0;
             }
 
             .num {
                 font-size: 56rpx;
-                font-weight: bold;
+                font-weight: 700;
+                line-height: 1;
+                flex-shrink: 1;
+                min-width: 0;
             }
 
             .unit {
                 font-size: 28rpx;
+                font-weight: 600;
                 margin-left: 4rpx;
+                flex-shrink: 0;
             }
         }
 
         .coupon-threshold {
-            font-size: 22rpx;
-            margin-top: 8rpx;
-            opacity: 0.9;
+            font-size: 24rpx;
+            opacity: 0.95;
+            text-align: center;
+            width: 100%;
+            line-height: 1.4;
+            padding: 0 8rpx;
         }
     }
 
+    .coupon-content {
+        flex: 1;
+        display: flex;
+        align-items: stretch;
+        justify-content: space-between;
+        gap: 16rpx;
+        padding: 24rpx 24rpx 24rpx 20rpx;
+        min-width: 0;
+    }
+
+    /* 右侧信息区 */
     .coupon-right {
         flex: 1;
-        padding: 24rpx;
         display: flex;
         flex-direction: column;
         justify-content: center;
+        gap: 10rpx;
+        min-width: 0;
 
-        .coupon-name {
-            font-size: 30rpx;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 8rpx;
+        .coupon-header {
+            display: flex;
+            align-items: center;
+            gap: 8rpx;
+            flex-wrap: wrap;
+
+            .coupon-name {
+                font-size: 30rpx;
+                font-weight: 600;
+                color: #333333;
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .coupon-tag {
+                padding: 4rpx 10rpx;
+                border-radius: 8rpx;
+                font-size: 20rpx;
+                font-weight: 500;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+
+            .detail-arrow {
+                margin-left: auto;
+            }
         }
 
         .coupon-desc {
             font-size: 24rpx;
-            color: #ff6b35;
-            margin-bottom: 8rpx;
+            font-weight: 500;
+            line-height: 1.4;
         }
 
-        .coupon-time {
-            font-size: 22rpx;
-            color: #999;
-            margin-bottom: 4rpx;
-        }
+        .coupon-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8rpx;
 
-        .coupon-remain {
-            font-size: 22rpx;
-            color: #ff4d4f;
-        }
-    }
-
-    .coupon-action {
-        position: absolute;
-        right: 24rpx;
-        top: 50%;
-        transform: translateY(-50%);
-
-        button {
-            width: 140rpx;
-            height: 56rpx;
-            line-height: 56rpx;
-            font-size: 24rpx;
-            border-radius: 28rpx;
-            padding: 0;
-        }
-
-        .btn-receive {
-            color: #fff;
-            background: linear-gradient(135deg, #ff6b35 0%, #ff9a5a 100%);
-            border: none;
-        }
-
-        .btn-received,
-        .btn-empty {
-            color: #999;
-            background: #f5f5f5;
-            border: none;
+            .info-item {
+                display: flex;
+                align-items: center;
+                gap: 8rpx;
+                font-size: 22rpx;
+                color: #999999;
+                line-height: 1.4;
+            }
         }
     }
 }
 
-.empty-tip {
+/* 空状态 */
+.empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 120rpx 0;
 
-    .empty-icon {
+    .empty-icon-wrapper {
         width: 240rpx;
         height: 240rpx;
-        margin-bottom: 24rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #F9FAFB;
+        border-radius: 50%;
+        margin-bottom: 32rpx;
     }
 
-    text {
-        font-size: 28rpx;
-        color: #999;
+    .empty-text {
+        font-size: 32rpx;
+        font-weight: 500;
+        color: #666666;
+        margin-bottom: 12rpx;
+    }
+
+    .empty-desc {
+        font-size: 26rpx;
+        color: #999999;
     }
 }
 
-.loading-tip {
+/* 加载状态 */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 120rpx 0;
+    gap: 24rpx;
+
+    .loading-text {
+        font-size: 28rpx;
+        color: #999999;
+    }
+}
+
+.loading-more {
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 32rpx;
-    color: #999;
+    gap: 12rpx;
     font-size: 26rpx;
+    color: #999999;
+}
 
-    text {
-        margin-left: 12rpx;
+.no-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32rpx;
+    font-size: 26rpx;
+    color: #CCCCCC;
+
+    &::before,
+    &::after {
+        content: '';
+        width: 80rpx;
+        height: 1rpx;
+        background: #E5E5E5;
+        margin: 0 24rpx;
     }
 }
 
+/* 底部安全区 */
 .safe-bottom {
     height: constant(safe-area-inset-bottom);
     height: env(safe-area-inset-bottom);

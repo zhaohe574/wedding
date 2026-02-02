@@ -1,10 +1,10 @@
 <template>
-    <view v-if="content.enabled && showList.length" class="quick-entry-widget">
+    <view v-if="content.enabled && showList.length" class="quick-entry-widget mx-[24rpx] mt-[24rpx]">
         <!-- 网格布局 -->
         <view v-if="content.style == 1" class="grid-layout">
             <view
                 class="entries-grid"
-                :style="{ 'grid-template-columns': `repeat(${content.per_line}, 1fr)` }"
+                :style="{ 'grid-template-columns': `repeat(${content.per_line || 4}, 1fr)` }"
             >
                 <view
                     v-for="(item, index) in showList"
@@ -14,7 +14,7 @@
                 >
                     <!-- 图标容器 -->
                     <view class="icon-wrapper">
-                        <view class="icon-bg"></view>
+                        <view class="icon-bg" :style="{ backgroundColor: getIconBg(index) }"></view>
                         <image
                             lazy-load
                             class="entry-icon"
@@ -22,8 +22,6 @@
                             :alt="item.title"
                             mode="aspectFit"
                         />
-                        <!-- 悬浮光晕效果 -->
-                        <view class="icon-glow"></view>
                     </view>
                     <!-- 标题 -->
                     <text class="entry-title">{{ item.title }}</text>
@@ -43,7 +41,7 @@
                     >
                         <!-- 图标容器 -->
                         <view class="icon-wrapper">
-                            <view class="icon-bg"></view>
+                            <view class="icon-bg" :style="{ backgroundColor: getIconBg(index) }"></view>
                             <image
                                 lazy-load
                                 class="entry-icon"
@@ -51,8 +49,6 @@
                                 :alt="item.title"
                                 mode="aspectFit"
                             />
-                            <!-- 悬浮光晕效果 -->
-                            <view class="icon-glow"></view>
                         </view>
                         <!-- 标题 -->
                         <text class="entry-title">{{ item.title }}</text>
@@ -66,6 +62,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { useThemeStore } from '@/stores/theme'
 import { navigateTo } from '@/utils/util'
 
 const props = defineProps({
@@ -80,11 +77,23 @@ const props = defineProps({
 })
 
 const { getImageUrl } = useAppStore()
+const $theme = useThemeStore()
 
 // 过滤显示的入口
 const showList = computed(() => {
     return props.content.data?.filter((item: any) => item.is_show == '1') || []
 })
+
+// 获取图标背景色（循环使用主题色浅色变体）
+const getIconBg = (index: number) => {
+    const colors = [
+        $theme.primaryColor + '15',
+        $theme.secondaryColor + '15',
+        $theme.ctaColor + '15',
+        $theme.accentColor + '15'
+    ]
+    return colors[index % colors.length]
+}
 
 // 处理点击事件
 const handleClick = (link: any) => {
@@ -94,7 +103,6 @@ const handleClick = (link: any) => {
 
 <style scoped lang="scss">
 .quick-entry-widget {
-    margin: 20rpx;
     
     /* 网格布局样式 */
     .grid-layout {
@@ -143,26 +151,8 @@ const handleClick = (link: any) => {
         
         /* 点击反馈 */
         &:active {
-            transform: scale(0.92);
-            
-            .icon-wrapper {
-                .icon-bg {
-                    transform: scale(1.1);
-                    opacity: 0.8;
-                }
-                
-                .entry-icon {
-                    transform: scale(0.9);
-                }
-                
-                .icon-glow {
-                    opacity: 1;
-                }
-            }
-            
-            .entry-title {
-                color: #0369A1;
-            }
+            transform: scale(0.95);
+            opacity: 0.8;
         }
     }
     
@@ -183,9 +173,8 @@ const handleClick = (link: any) => {
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, #F8FAFC 0%, #E0F2FE 100%);
             border-radius: 24rpx;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
             z-index: 0;
         }
         
@@ -195,23 +184,7 @@ const handleClick = (link: any) => {
             height: 56rpx;
             position: relative;
             z-index: 2;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        /* 光晕效果 */
-        .icon-glow {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 120rpx;
-            height: 120rpx;
-            background: radial-gradient(circle, rgba(3, 105, 161, 0.2) 0%, transparent 70%);
-            border-radius: 50%;
-            opacity: 0;
-            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1;
-            pointer-events: none;
+            transition: transform 0.2s ease;
         }
     }
     

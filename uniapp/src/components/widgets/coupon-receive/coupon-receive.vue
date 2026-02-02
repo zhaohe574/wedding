@@ -1,19 +1,21 @@
 <template>
-    <view v-if="content.enabled && showList.length" class="coupon-receive mx-[20rpx] mt-[20rpx]">
+    <view v-if="content.enabled && showList.length" class="coupon-receive mx-[24rpx] mt-[24rpx]">
         <!-- 标题 -->
-        <view v-if="content.title" class="flex items-center justify-between mb-[24rpx]">
+        <view v-if="content.title" class="flex items-center justify-between mb-[20rpx] px-[8rpx]">
             <view class="flex items-center">
-                <view class="w-[8rpx] h-[36rpx] rounded-full mr-[16rpx]" style="background: linear-gradient(180deg, #2563EB 0%, #3B82F6 100%);"></view>
-                <text class="text-[32rpx] font-semibold" style="color: #1E293B;">{{ content.title }}</text>
+                <view 
+                    class="w-[8rpx] h-[36rpx] rounded-full mr-[16rpx]" 
+                    :style="{ background: `linear-gradient(180deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)` }"
+                ></view>
+                <text class="text-[32rpx] font-semibold text-[#1E293B]">{{ content.title }}</text>
             </view>
             <view
                 v-if="content.show_more"
-                class="flex items-center text-[26rpx] cursor-pointer"
-                style="color: #64748B;"
+                class="flex items-center cursor-pointer"
                 @click="handleMore"
             >
-                <text>查看更多</text>
-                <tn-icon name="right" size="24"></tn-icon>
+                <text class="text-[26rpx] text-[#64748B]">查看更多</text>
+                <tn-icon name="right" size="28" color="#94A3B8" class="ml-[4rpx]" />
             </view>
         </view>
 
@@ -23,18 +25,23 @@
                 <view
                     v-for="(item, index) in showList"
                     :key="index"
-                    class="coupon-card-horizontal flex-shrink-0 cursor-pointer"
-                    @click="handleReceive(item)"
+                    class="coupon-card-horizontal flex-shrink-0"
+                    @click="goDetail(item)"
                 >
                     <!-- 玻璃态背景 -->
-                    <view class="coupon-glass-bg"></view>
+                    <view 
+                        class="coupon-glass-bg"
+                        :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor}F2 0%, ${$theme.secondaryColor}E6 100%)` }"
+                    ></view>
                     
                     <!-- 内容区 -->
                     <view class="coupon-content-wrapper">
                         <!-- 左侧金额区 -->
                         <view class="coupon-amount-section">
-                            <view class="coupon-symbol">¥</view>
-                            <view class="coupon-value">{{ parseFloat(item.discount_amount || 0).toFixed(0) }}</view>
+                            <view class="coupon-value-wrapper">
+                                <text class="coupon-symbol">¥</text>
+                                <text class="coupon-value">{{ parseFloat(item.discount_amount || 0).toFixed(0) }}</text>
+                            </view>
                             <view class="coupon-condition">满{{ parseFloat(item.threshold_amount || 0).toFixed(0) }}元</view>
                         </view>
                         
@@ -46,10 +53,10 @@
                             <view class="coupon-name">{{ item.name || '优惠券' }}</view>
                             <view class="coupon-time">{{ formatValidPeriod(item) }}</view>
                             <view 
-                                class="coupon-btn"
-                                :class="item.is_received ? 'coupon-btn-received' : 'coupon-btn-active'"
+                                class="coupon-btn coupon-btn-active"
+                                :style="{ color: $theme.primaryColor }"
                             >
-                                {{ item.is_received ? '已领取' : '立即领取' }}
+                                <text>查看详情</text>
                             </view>
                         </view>
                     </view>
@@ -66,11 +73,14 @@
             <view
                 v-for="(item, index) in showList"
                 :key="index"
-                class="coupon-card-vertical mb-[24rpx] cursor-pointer"
-                @click="handleReceive(item)"
+                class="coupon-card-vertical mb-[24rpx]"
+                @click="goDetail(item)"
             >
                 <!-- 玻璃态背景 -->
-                <view class="coupon-glass-bg"></view>
+                <view 
+                    class="coupon-glass-bg"
+                    :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor}F2 0%, ${$theme.secondaryColor}E6 100%)` }"
+                ></view>
                 
                 <!-- 内容区 -->
                 <view class="coupon-content-wrapper">
@@ -89,10 +99,10 @@
                         <view class="coupon-name">{{ item.name || '优惠券' }}</view>
                         <view class="coupon-time">{{ formatValidPeriod(item) }}</view>
                         <view 
-                            class="coupon-btn"
-                            :class="item.is_received ? 'coupon-btn-received' : 'coupon-btn-active'"
+                            class="coupon-btn coupon-btn-active"
+                            :style="{ color: $theme.primaryColor }"
                         >
-                            {{ item.is_received ? '已领取' : '立即领取' }}
+                            <text>查看详情</text>
                         </view>
                     </view>
                 </view>
@@ -107,9 +117,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { receiveCoupon } from '@/api/coupon'
+import { useThemeStore } from '@/stores/theme'
 import { navigateTo } from '@/utils/util'
-import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
     content: {
@@ -122,7 +131,7 @@ const props = defineProps({
     }
 })
 
-const userStore = useUserStore()
+const $theme = useThemeStore()
 
 // 过滤显示的列表
 const showList = computed(() => {
@@ -131,63 +140,45 @@ const showList = computed(() => {
     return data.slice(0, limit)
 })
 
-// 格式化日期
-const formatDate = (timestamp: number) => {
-    if (!timestamp) return '长期有效'
-    const date = new Date(timestamp * 1000)
-    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
-}
-
 // 格式化有效期显示
 const formatValidPeriod = (item: any) => {
-    // valid_type: 1=固定日期, 2=领取后N天
-    if (item.valid_type == 2 && item.valid_days) {
-        return `领取后${item.valid_days}天内有效`
+    const validType = Number(item.valid_type || 0)
+    const validDays = Number(item.valid_days || 0)
+    
+    // 领取后N天有效
+    if (validType === 2 && validDays) {
+        return `领取后${validDays}天有效`
     }
-    if (item.valid_end_time) {
-        return `${formatDate(item.valid_end_time)} 到期`
+    
+    // 固定时间段
+    const start = Number(item.valid_start_time || 0)
+    const end = Number(item.valid_end_time || 0)
+    
+    if (!start && !end) return '长期有效'
+    
+    const formatDate = (timestamp: number) => {
+        if (!timestamp) return ''
+        const date = new Date(timestamp * 1000)
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}.${month}.${day}`
     }
-    return '长期有效'
+    
+    if (start && end) {
+        return `${formatDate(start)} - ${formatDate(end)}`
+    }
+    
+    if (start) return `${formatDate(start)}起`
+    return `${formatDate(end)}止`
 }
 
-// 领取优惠券
-const handleReceive = async (item: any) => {
-    if (item.is_received) {
-        uni.showToast({
-            title: '已领取过该优惠券',
-            icon: 'none'
-        })
-        return
-    }
-
-    // 检查登录状态
-    if (!userStore.isLogin) {
-        uni.showToast({
-            title: '请先登录',
-            icon: 'none'
-        })
-        setTimeout(() => {
-            uni.navigateTo({
-                url: '/pages/login/login'
-            })
-        }, 1500)
-        return
-    }
-
-    try {
-        await receiveCoupon({ coupon_id: item.coupon_id })
-        uni.showToast({
-            title: '领取成功',
-            icon: 'success'
-        })
-        // 更新领取状态
-        item.is_received = true
-    } catch (error: any) {
-        uni.showToast({
-            title: error.msg || '领取失败',
-            icon: 'none'
-        })
-    }
+const goDetail = (item: any) => {
+    const id = item.coupon_id || item.id
+    if (!id) return
+    uni.navigateTo({
+        url: `/pages/coupon/detail?id=${id}`
+    })
 }
 
 // 查看更多
@@ -196,6 +187,7 @@ const handleMore = () => {
         navigateTo(props.content.more_link)
     }
 }
+
 </script>
 
 <style scoped lang="scss">
@@ -243,12 +235,11 @@ const handleMore = () => {
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(135deg, rgba(37, 99, 235, 0.95) 0%, rgba(59, 130, 246, 0.9) 100%);
         backdrop-filter: blur(20rpx);
         border-radius: 20rpx;
         border: 2rpx solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 16rpx 48rpx rgba(37, 99, 235, 0.25),
-                    0 4rpx 12rpx rgba(37, 99, 235, 0.15),
+        box-shadow: 0 16rpx 48rpx rgba(124, 58, 237, 0.25),
+                    0 4rpx 12rpx rgba(124, 58, 237, 0.15),
                     inset 0 2rpx 4rpx rgba(255, 255, 255, 0.2);
     }
     
@@ -270,20 +261,24 @@ const handleMore = () => {
         justify-content: center;
         width: 200rpx;
         
+        .coupon-value-wrapper {
+            display: flex;
+            align-items: baseline;
+            line-height: 1;
+            margin-bottom: 12rpx;
+        }
+        
         .coupon-symbol {
             font-size: 32rpx;
             font-weight: 600;
             color: rgba(255, 255, 255, 0.95);
-            line-height: 1;
-            margin-bottom: 8rpx;
+            margin-right: 4rpx;
         }
         
         .coupon-value {
             font-size: 64rpx;
             font-weight: 700;
             color: #FFFFFF;
-            line-height: 1;
-            margin-bottom: 12rpx;
             text-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
         }
         
@@ -343,7 +338,6 @@ const handleMore = () => {
         
         .coupon-btn-active {
             background: #FFFFFF;
-            color: #2563EB;
             box-shadow: 0 4rpx 12rpx rgba(255, 255, 255, 0.3);
             
             &:active {
@@ -351,11 +345,6 @@ const handleMore = () => {
             }
         }
         
-        .coupon-btn-received {
-            background: rgba(255, 255, 255, 0.25);
-            color: rgba(255, 255, 255, 0.9);
-            border: 2rpx solid rgba(255, 255, 255, 0.4);
-        }
     }
     
     // 装饰圆点（模拟撕边效果）

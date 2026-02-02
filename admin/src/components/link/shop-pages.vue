@@ -103,6 +103,16 @@ const linkList = ref([
         name: '我的钱包',
         type: LinkTypeEnum.SHOP_PAGES
     },
+    {
+        path: '/packages/pages/staff_center/staff_center',
+        name: '服务人员中心',
+        type: LinkTypeEnum.SHOP_PAGES
+    },
+    {
+        path: '/packages/pages/admin_dashboard/admin_dashboard',
+        name: '管理员看板',
+        type: LinkTypeEnum.SHOP_PAGES
+    },
     // ===== 婚庆服务页面 =====
     {
         path: '/packages/pages/staff_list/staff_list',

@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace app\common\service;
 
+use app\common\cache\ConfigCache;
 use app\common\model\Config;
 
 class ConfigService
@@ -49,6 +50,8 @@ class ConfigService
             $data->save();
         }
 
+        (new ConfigCache())->deleteTag();
+
         // 返回原始值
         return $original;
     }
@@ -65,36 +68,81 @@ class ConfigService
     public static function get(string $type, string $name = '', $default_value = null)
     {
         if (!empty($name)) {
+            $cache = new ConfigCache();
+            $cachedValue = $cache->getValue($type, $name);
+            if ($cachedValue !== ConfigCache::CACHE_MISS) {
+                return self::resolveValue($cachedValue, $type, $name, $default_value);
+            }
+
             $value = Config::where(['type' => $type, 'name' => $name])->value('value');
             if (!is_null($value)) {
-                $json = json_decode($value, true);
-                $value = json_last_error() === JSON_ERROR_NONE ? $json : $value;
+                $value = self::decodeValue($value);
+            } else {
+                $value = ConfigCache::NULL_VALUE;
             }
-            if ($value) {
-                return $value;
-            }
-            // 返回特殊值 0 '0'
-            if ($value === 0 || $value === '0') {
-                return $value;
-            }
-            // 返回默认值
-            if ($default_value !== null) {
-                return $default_value;
-            }
-            // 返回本地配置文件中的值
-            return config('project.' . $type . '.' . $name);
+            $cache->setValue($type, $name, $value);
+            return self::resolveValue($value, $type, $name, $default_value);
         }
 
         // 取某个类型下的所有name的值
+        $cache = new ConfigCache();
+        $cachedList = $cache->getValue($type);
+        if ($cachedList !== ConfigCache::CACHE_MISS) {
+            return $cachedList === ConfigCache::NULL_VALUE ? null : $cachedList;
+        }
+
         $data = Config::where(['type' => $type])->column('value', 'name');
         foreach ($data as $k => $v) {
-            $json = json_decode($v, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                $data[$k] = $json;
-            }
+            $data[$k] = self::decodeValue($v);
         }
         if ($data) {
+            $cache->setValue($type, '', $data);
             return $data;
         }
+
+        $cache->setValue($type, '', ConfigCache::NULL_VALUE);
+    }
+
+    /**
+     * @notes 解析配置值
+     * @param mixed $value
+     * @return mixed
+     */
+    protected static function decodeValue($value)
+    {
+        if (!is_string($value)) {
+            return $value;
+        }
+        $json = json_decode($value, true);
+        return json_last_error() === JSON_ERROR_NONE ? $json : $value;
+    }
+
+    /**
+     * @notes 处理默认值与特殊值
+     * @param mixed $value
+     * @param string $type
+     * @param string $name
+     * @param mixed $defaultValue
+     * @return mixed
+     */
+    protected static function resolveValue($value, string $type, string $name, $defaultValue)
+    {
+        if ($value === ConfigCache::NULL_VALUE) {
+            $value = null;
+        }
+
+        if ($value) {
+            return $value;
+        }
+        // 返回特殊值 0 '0'
+        if ($value === 0 || $value === '0') {
+            return $value;
+        }
+        // 返回默认值
+        if ($defaultValue !== null) {
+            return $defaultValue;
+        }
+        // 返回本地配置文件中的值
+        return config('project.' . $type . '.' . $name);
     }
 }

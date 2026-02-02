@@ -269,7 +269,7 @@ const goDetail = (orderId: number) => {
 }
 
 const goHome = () => {
-    uni.switchTab({ url: '/pages/index/index' })
+    uni.switchTab({ url: '/packages/pages/staff_list/staff_list' })
 }
 
 const handleCardAction = (action: { action: string }, order: any) => {
@@ -358,7 +358,27 @@ watch(currentTabIndex, () => {
 
 onLoad((options: any) => {
     if (options.status !== undefined) {
-        const statusValue = Number(options.status)
+        // 状态映射：支持字符串和数字两种格式
+        const statusMap: Record<string, number> = {
+            'pending_confirm': 0,
+            'pending_pay': 1,
+            'paid': 2,
+            'in_service': 3,
+            'completed': 4,
+            'reviewed': 5,
+            'cancelled': 6,
+            'paused': 7,
+            'refund': 8
+        }
+        
+        // 如果是字符串，先尝试映射，否则转换为数字
+        let statusValue: number | string = options.status
+        if (typeof statusValue === 'string' && statusMap[statusValue] !== undefined) {
+            statusValue = statusMap[statusValue]
+        } else {
+            statusValue = Number(statusValue)
+        }
+        
         const index = statusTabs.findIndex(tab => tab.value === statusValue)
         if (index !== -1) {
             currentTabIndex.value = index

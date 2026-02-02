@@ -26,32 +26,19 @@ class CouponLogic extends BaseLogic
      */
     public static function availableList(array $params): array
     {
-        $page = $params['page'] ?? 1;
-        $limit = $params['limit'] ?? 10;
-        $userId = $params['user_id'] ?? 0;
+        $page = (int)($params['page'] ?? 1);
+        $limit = (int)($params['limit'] ?? 10);
+        $userId = (int)($params['user_id'] ?? 0);
 
         $now = time();
 
-        $query = Coupon::where('status', Coupon::STATUS_ENABLED)
-            ->where(function ($q) use ($now) {
-                // 固定日期类型：在有效期内
-                $q->where(function ($q2) use ($now) {
-                    $q2->where('valid_type', Coupon::VALID_TYPE_FIXED)
-                        ->where('valid_start_time', '<=', $now)
-                        ->where(function ($q3) use ($now) {
-                            $q3->where('valid_end_time', '>=', $now)
-                                ->whereOr('valid_end_time', 0);
-                        });
-                })->whereOr(function ($q2) {
-                    // 领取后N天有效类型
-                    $q2->where('valid_type', Coupon::VALID_TYPE_DAYS);
-                });
-            })
-            ->where(function ($q) {
-                // 库存检查
-                $q->where('total_count', 0)
-                    ->whereOr('receive_count', '<', Db::raw('total_count'));
-            });
+        $query = Coupon::where('status', Coupon::STATUS_ENABLED);
+        Coupon::applyReceiveTimeCondition($query, $now, Coupon::RECEIVE_PREVIEW_SECONDS);
+        $query->where(function ($q) {
+            // 库存检查
+            $q->where('total_count', 0)
+                ->whereOr('receive_count', '<', Db::raw('total_count'));
+        });
 
         $total = $query->count();
 
@@ -67,7 +54,7 @@ class CouponLogic extends BaseLogic
 
             // 有效期显示
             if ($item['valid_type'] == Coupon::VALID_TYPE_FIXED) {
-                $item['valid_period'] = date('Y.m.d', $item['valid_start_time']) . '-' . date('Y.m.d', $item['valid_end_time']);
+                $item['valid_period'] = date('Y.m.d H:i:s', $item['valid_start_time']) . '-' . date('Y.m.d H:i:s', $item['valid_end_time']);
             } else {
                 $item['valid_period'] = '领取后' . $item['valid_days'] . '天有效';
             }
@@ -79,16 +66,24 @@ class CouponLogic extends BaseLogic
                 $item['remain_count'] = max(0, $item['total_count'] - $item['receive_count']);
             }
 
+            // 领取时间状态
+            [$timeOk, $statusText, $countdown] = Coupon::getReceiveTimeStatus($item, $now);
+            $item['receive_countdown'] = $countdown;
+            $item['receive_status_text'] = $statusText;
+            if (!$timeOk && $statusText === '未开始' && $countdown > 0) {
+                $item['receive_status_text'] = Coupon::formatCountdownText($countdown);
+            }
+
             // 用户是否已领取
             $item['is_received'] = false;
-            $item['can_receive'] = true;
+            $item['can_receive'] = $timeOk;
             if ($userId > 0) {
                 $userReceivedCount = UserCoupon::where([
                     'user_id' => $userId,
                     'coupon_id' => $item['id'],
                 ])->count();
                 $item['is_received'] = $userReceivedCount > 0;
-                $item['can_receive'] = $item['per_limit'] == 0 || $userReceivedCount < $item['per_limit'];
+                $item['can_receive'] = $timeOk && ($item['per_limit'] == 0 || $userReceivedCount < $item['per_limit']);
             }
         }
 
@@ -121,10 +116,27 @@ class CouponLogic extends BaseLogic
 
         // 有效期显示
         if ($data['valid_type'] == Coupon::VALID_TYPE_FIXED) {
-            $data['valid_period'] = date('Y.m.d', $data['valid_start_time']) . '-' . date('Y.m.d', $data['valid_end_time']);
+            $data['valid_period'] = date('Y.m.d H:i:s', $data['valid_start_time']) . '-' . date('Y.m.d H:i:s', $data['valid_end_time']);
         } else {
             $data['valid_period'] = '领取后' . $data['valid_days'] . '天有效';
         }
+
+        // 剩余数量
+        if ($data['total_count'] == 0) {
+            $data['remain_count'] = -1;
+        } else {
+            $data['remain_count'] = max(0, $data['total_count'] - $data['receive_count']);
+        }
+
+        $now = time();
+        [$timeOk, $statusText, $countdown] = Coupon::getReceiveTimeStatus($data, $now);
+        $data['receive_countdown'] = $countdown;
+        $data['receive_status_text'] = $statusText;
+        if (!$timeOk && $statusText === '未开始' && $countdown > 0) {
+            $data['receive_status_text'] = Coupon::formatCountdownText($countdown);
+        }
+
+        $stockOk = $data['total_count'] == 0 || $data['receive_count'] < $data['total_count'];
 
         // 用户领取状态
         $userId = $params['user_id'] ?? 0;
@@ -134,10 +146,17 @@ class CouponLogic extends BaseLogic
                 'coupon_id' => $params['id'],
             ])->count();
             $data['user_received_count'] = $userReceivedCount;
-            $data['can_receive'] = $data['per_limit'] == 0 || $userReceivedCount < $data['per_limit'];
+            $data['is_received'] = $userReceivedCount > 0;
+            $data['can_receive'] = $timeOk && ($data['per_limit'] == 0 || $userReceivedCount < $data['per_limit']);
         } else {
             $data['user_received_count'] = 0;
-            $data['can_receive'] = true;
+            $data['is_received'] = false;
+            $data['can_receive'] = $timeOk;
+        }
+
+        if (!$stockOk) {
+            $data['can_receive'] = false;
+            $data['receive_status_text'] = '已领完';
         }
 
         return $data;
@@ -151,7 +170,8 @@ class CouponLogic extends BaseLogic
     public static function receive(array $params)
     {
         try {
-            $coupon = Coupon::find($params['coupon_id']);
+            $couponId = (int)$params['coupon_id'];
+            $coupon = Coupon::find($couponId);
             if (!$coupon) {
                 self::setError('优惠券不存在');
                 return false;
@@ -165,7 +185,7 @@ class CouponLogic extends BaseLogic
             }
 
             // 发放优惠券
-            $userCoupon = UserCoupon::grantToUser($params['user_id'], $params['coupon_id'], 'user_receive');
+            $userCoupon = UserCoupon::grantToUser($params['user_id'], $couponId, 'user_receive');
             if (!$userCoupon) {
                 self::setError('领取失败，请稍后重试');
                 return false;
@@ -188,8 +208,8 @@ class CouponLogic extends BaseLogic
      */
     public static function myCoupons(array $params): array
     {
-        $page = $params['page'] ?? 1;
-        $limit = $params['limit'] ?? 10;
+        $page = (int)($params['page'] ?? 1);
+        $limit = (int)($params['limit'] ?? 10);
         $status = $params['status'] ?? ''; // 空=全部, 0=未使用, 1=已使用, 2=已过期
 
         $now = time();
@@ -220,8 +240,8 @@ class CouponLogic extends BaseLogic
 
         foreach ($lists as &$item) {
             $item['status_text'] = UserCoupon::getStatusDesc($item['status']);
-            $item['valid_period'] = date('Y.m.d', $item['valid_start_time']) . '-' . date('Y.m.d', $item['valid_end_time']);
-            $item['receive_time_text'] = date('Y-m-d H:i', $item['receive_time']);
+            $item['valid_period'] = date('Y.m.d H:i:s', $item['valid_start_time']) . '-' . date('Y.m.d H:i:s', $item['valid_end_time']);
+            $item['receive_time_text'] = date('Y-m-d H:i:s', $item['receive_time']);
 
             // 是否即将过期（3天内）
             $item['is_expiring'] = $item['status'] == UserCoupon::STATUS_UNUSED 
@@ -299,7 +319,7 @@ class CouponLogic extends BaseLogic
                 'threshold_amount' => $coupon->threshold_amount ?? 0,
                 'discount_amount' => $item->discount_amount ?? 0,
                 'discount_desc' => self::getDiscountDesc($coupon->toArray()),
-                'valid_period' => date('Y.m.d', $item->valid_start_time) . '-' . date('Y.m.d', $item->valid_end_time),
+                'valid_period' => date('Y.m.d H:i:s', $item->valid_start_time) . '-' . date('Y.m.d H:i:s', $item->valid_end_time),
             ];
         }
 
@@ -339,6 +359,10 @@ class CouponLogic extends BaseLogic
 
         // 检查有效期
         $now = time();
+        if ($userCoupon->valid_start_time > 0 && $userCoupon->valid_start_time > $now) {
+            self::setError('优惠券未到使用时间');
+            return false;
+        }
         if ($userCoupon->valid_end_time > 0 && $userCoupon->valid_end_time < $now) {
             self::setError('优惠券已过期');
             return false;
@@ -394,6 +418,10 @@ class CouponLogic extends BaseLogic
 
             // 检查有效期
             $now = time();
+            if ($userCoupon->valid_start_time > 0 && $userCoupon->valid_start_time > $now) {
+                self::setError('优惠券未到使用时间');
+                return false;
+            }
             if ($userCoupon->valid_end_time > 0 && $userCoupon->valid_end_time < $now) {
                 $userCoupon->save(['status' => UserCoupon::STATUS_EXPIRED]);
                 self::setError('优惠券已过期');

@@ -36,8 +36,8 @@ class ReviewLogic extends BaseLogic
      */
     public static function myReviews(array $params): array
     {
-        $page = $params['page'] ?? 1;
-        $limit = $params['limit'] ?? 10;
+        $page = (int)($params['page'] ?? 1);
+        $limit = (int)($params['limit'] ?? 10);
 
         $where = [
             ['user_id', '=', $params['user_id']],
@@ -74,8 +74,8 @@ class ReviewLogic extends BaseLogic
      */
     public static function pendingOrders(array $params): array
     {
-        $page = $params['page'] ?? 1;
-        $limit = $params['limit'] ?? 10;
+        $page = (int)($params['page'] ?? 1);
+        $limit = (int)($params['limit'] ?? 10);
 
         // 获取已评价的订单项ID
         $reviewedItemIds = Review::where('user_id', $params['user_id'])
@@ -120,9 +120,9 @@ class ReviewLogic extends BaseLogic
      */
     public static function staffReviews(array $params): array
     {
-        $page = $params['page'] ?? 1;
-        $limit = $params['limit'] ?? 10;
-        $staffId = $params['staff_id'] ?? 0;
+        $page = (int)($params['page'] ?? 1);
+        $limit = (int)($params['limit'] ?? 10);
+        $staffId = (int)($params['staff_id'] ?? 0);
         $scoreType = $params['score_type'] ?? ''; // good/medium/bad/image/video
 
         $where = [

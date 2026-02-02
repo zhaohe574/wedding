@@ -312,6 +312,12 @@
             }
         },
         {
+            "path": "pages/coupon/detail",
+            "style": {
+                "navigationStyle": "custom"
+            }
+        },
+        {
             "path": "pages/notification/index",
             "style": {
                 "navigationStyle": "custom"
@@ -491,6 +497,99 @@
                 "path": "pages/share_plan/share_plan",
                 "style": {
                     "navigationBarTitleText": "输入分享码"
+                }
+            },
+            {
+                "path": "pages/staff_center/staff_center",
+                "style": {
+                    "navigationBarTitleText": "服务人员中心"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_profile/staff_profile",
+                "style": {
+                    "navigationBarTitleText": "个人资料"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_work_list/staff_work_list",
+                "style": {
+                    "navigationBarTitleText": "作品管理"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_work_edit/staff_work_edit",
+                "style": {
+                    "navigationBarTitleText": "作品编辑"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_package_list/staff_package_list",
+                "style": {
+                    "navigationBarTitleText": "套餐管理"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_package_edit/staff_package_edit",
+                "style": {
+                    "navigationBarTitleText": "套餐编辑"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_schedule/staff_schedule",
+                "style": {
+                    "navigationBarTitleText": "档期管理"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_dynamic_list/staff_dynamic_list",
+                "style": {
+                    "navigationBarTitleText": "动态管理"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_dynamic_edit/staff_dynamic_edit",
+                "style": {
+                    "navigationBarTitleText": "动态编辑"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/admin_login/admin_login",
+                "style": {
+                    "navigationBarTitleText": "管理员登录"
+                }
+            },
+            {
+                "path": "pages/admin_dashboard/admin_dashboard",
+                "style": {
+                    "navigationBarTitleText": "管理员看板"
                 }
             }
 		]

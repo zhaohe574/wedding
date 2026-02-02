@@ -10,6 +10,15 @@
                 <el-switch v-model="contentData.show_shadow" />
             </el-form-item>
 
+            <el-form-item label="每行个数">
+                <el-select v-model="contentData.columns" placeholder="请选择">
+                    <el-option label="3个" :value="3" />
+                    <el-option label="4个" :value="4" />
+                    <el-option label="5个" :value="5" />
+                </el-select>
+                <div class="text-xs text-gray-400 mt-1">每行最多显示的入口个数</div>
+            </el-form-item>
+
             <el-form-item label="最近订单">
                 <el-switch v-model="contentData.show_recent" />
                 <div class="text-xs text-gray-400 mt-1">开启后显示最近订单列表</div>
@@ -68,12 +77,15 @@
 
                             <el-form-item label="状态标识">
                                 <el-select v-model="element.status" placeholder="请选择状态">
-                                    <el-option label="待付款" value="pending_pay" />
-                                    <el-option label="待确认" value="pending_confirm" />
-                                    <el-option label="进行中" value="processing" />
-                                    <el-option label="已完成" value="completed" />
-                                    <el-option label="已取消" value="cancelled" />
-                                    <el-option label="退款" value="refund" />
+                                    <el-option label="待确认" :value="0" />
+                                    <el-option label="待付款" :value="1" />
+                                    <el-option label="已支付" :value="2" />
+                                    <el-option label="服务中" :value="3" />
+                                    <el-option label="已完成" :value="4" />
+                                    <el-option label="已评价" :value="5" />
+                                    <el-option label="已取消" :value="6" />
+                                    <el-option label="已暂停" :value="7" />
+                                    <el-option label="已退款" :value="8" />
                                 </el-select>
                             </el-form-item>
 
@@ -128,13 +140,13 @@ const handleAdd = () => {
         is_show: '1',
         icon: '',
         name: '新入口',
-        status: 'pending_pay',
+        status: 1, // 默认：待付款
         count: 0,
         link: {
-            path: '/pages/order/list',
-            name: '订单列表',
-            type: 'page',
-            query: {}
+            path: '/pages/order/order',
+            name: '我的订单',
+            type: 'shop',
+            query: { status: 1 }
         }
     })
 }

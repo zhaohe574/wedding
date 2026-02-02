@@ -41,6 +41,8 @@ class CouponLogic extends BaseLogic
         $data['status'] = (int)$data['status'];
         $data['valid_start_time'] = (int)$data['valid_start_time'];
         $data['valid_end_time'] = (int)$data['valid_end_time'];
+        $data['receive_start_time'] = (int)($data['receive_start_time'] ?? 0);
+        $data['receive_end_time'] = (int)($data['receive_end_time'] ?? 0);
         $data['valid_days'] = (int)$data['valid_days'];
         $data['total_count'] = (int)$data['total_count'];
         $data['receive_count'] = (int)$data['receive_count'];
@@ -62,6 +64,8 @@ class CouponLogic extends BaseLogic
         // 有效期时间格式化（已经转换为int，直接使用）
         $data['valid_start_time_text'] = $data['valid_start_time'] > 0 ? date('Y-m-d H:i:s', $data['valid_start_time']) : '';
         $data['valid_end_time_text'] = $data['valid_end_time'] > 0 ? date('Y-m-d H:i:s', $data['valid_end_time']) : '';
+        $data['receive_start_time_text'] = $data['receive_start_time'] > 0 ? date('Y-m-d H:i:s', $data['receive_start_time']) : '';
+        $data['receive_end_time_text'] = $data['receive_end_time'] > 0 ? date('Y-m-d H:i:s', $data['receive_end_time']) : '';
 
         return $data;
     }
@@ -92,13 +96,18 @@ class CouponLogic extends BaseLogic
             // 处理有效期
             if ($params['valid_type'] == Coupon::VALID_TYPE_FIXED) {
                 $data['valid_start_time'] = strtotime($params['valid_start_time']);
-                $data['valid_end_time'] = strtotime($params['valid_end_time'] . ' 23:59:59');
+                $data['valid_end_time'] = strtotime($params['valid_end_time']);
                 $data['valid_days'] = 0;
             } else {
                 $data['valid_start_time'] = 0;
                 $data['valid_end_time'] = 0;
                 $data['valid_days'] = $params['valid_days'] ?? 7;
             }
+
+            // 处理领取时间段
+            [$receiveStartTime, $receiveEndTime] = self::parseReceiveTime($params);
+            $data['receive_start_time'] = $receiveStartTime;
+            $data['receive_end_time'] = $receiveEndTime;
 
             Coupon::create($data);
             return true;
@@ -133,10 +142,16 @@ class CouponLogic extends BaseLogic
 
                 // 固定日期类型可以延长结束时间
                 if ($coupon->valid_type == Coupon::VALID_TYPE_FIXED && !empty($params['valid_end_time'])) {
-                    $newEndTime = strtotime($params['valid_end_time'] . ' 23:59:59');
+                    $newEndTime = strtotime($params['valid_end_time']);
                     if ($newEndTime > $coupon->valid_end_time) {
                         $data['valid_end_time'] = $newEndTime;
                     }
+                }
+
+                if (array_key_exists('receive_start_time', $params) || array_key_exists('receive_end_time', $params)) {
+                    [$receiveStartTime, $receiveEndTime] = self::parseReceiveTime($params);
+                    $data['receive_start_time'] = $receiveStartTime;
+                    $data['receive_end_time'] = $receiveEndTime;
                 }
             } else {
                 $data = [
@@ -157,13 +172,18 @@ class CouponLogic extends BaseLogic
                 // 处理有效期
                 if ($params['valid_type'] == Coupon::VALID_TYPE_FIXED) {
                     $data['valid_start_time'] = strtotime($params['valid_start_time']);
-                    $data['valid_end_time'] = strtotime($params['valid_end_time'] . ' 23:59:59');
+                    $data['valid_end_time'] = strtotime($params['valid_end_time']);
                     $data['valid_days'] = 0;
                 } else {
                     $data['valid_start_time'] = 0;
                     $data['valid_end_time'] = 0;
                     $data['valid_days'] = $params['valid_days'] ?? 7;
                 }
+
+                // 处理领取时间段
+                [$receiveStartTime, $receiveEndTime] = self::parseReceiveTime($params);
+                $data['receive_start_time'] = $receiveStartTime;
+                $data['receive_end_time'] = $receiveEndTime;
             }
 
             $coupon->save($data);
@@ -238,21 +258,23 @@ class CouponLogic extends BaseLogic
     public static function send(array $params): bool
     {
         try {
-            $coupon = Coupon::find($params['coupon_id']);
+            $couponId = (int)$params['coupon_id'];
+            $userId = (int)$params['user_id'];
+            $coupon = Coupon::find($couponId);
             if (!$coupon) {
                 self::setError('优惠券不存在');
                 return false;
             }
 
-            $user = User::find($params['user_id']);
+            $user = User::find($userId);
             if (!$user) {
                 self::setError('用户不存在');
                 return false;
             }
 
-            $userCoupon = UserCoupon::grantToUser($params['user_id'], $params['coupon_id'], 'admin_send');
+            $userCoupon = UserCoupon::grantToUser($userId, $couponId, 'admin_send');
             if (!$userCoupon) {
-                list($canReceive, $error) = $coupon->canReceive($params['user_id']);
+                list($canReceive, $error) = $coupon->canReceive($userId);
                 self::setError($error ?: '发放失败');
                 return false;
             }
@@ -272,7 +294,8 @@ class CouponLogic extends BaseLogic
     public static function batchSend(array $params): bool
     {
         try {
-            $coupon = Coupon::find($params['coupon_id']);
+            $couponId = (int)$params['coupon_id'];
+            $coupon = Coupon::find($couponId);
             if (!$coupon) {
                 self::setError('优惠券不存在');
                 return false;
@@ -290,7 +313,7 @@ class CouponLogic extends BaseLogic
                 $failCount = 0;
 
                 foreach ($userIds as $userId) {
-                    $userCoupon = UserCoupon::grantToUser($userId, $params['coupon_id'], 'admin_batch_send');
+                    $userCoupon = UserCoupon::grantToUser((int)$userId, $couponId, 'admin_batch_send');
                     if ($userCoupon) {
                         $successCount++;
                     } else {
@@ -487,7 +510,7 @@ class CouponLogic extends BaseLogic
     public static function enabledList(): array
     {
         return Coupon::where('status', Coupon::STATUS_ENABLED)
-            ->field('id,name,coupon_type,threshold_amount,discount_amount,valid_type,valid_days,valid_start_time,valid_end_time,total_count,receive_count')
+            ->field('id,name,coupon_type,threshold_amount,discount_amount,valid_type,valid_days,valid_start_time,valid_end_time,receive_start_time,receive_end_time,total_count,receive_count')
             ->order('create_time', 'desc')
             ->select()
             ->each(function ($item) {
@@ -497,10 +520,36 @@ class CouponLogic extends BaseLogic
                 $item->valid_days = (int)$item->valid_days;
                 $item->valid_start_time = (int)$item->valid_start_time;
                 $item->valid_end_time = (int)$item->valid_end_time;
+                $item->receive_start_time = (int)($item->receive_start_time ?? 0);
+                $item->receive_end_time = (int)($item->receive_end_time ?? 0);
                 $item->total_count = (int)$item->total_count;
                 $item->receive_count = (int)$item->receive_count;
                 return $item;
             })
             ->toArray();
+    }
+
+    /**
+     * @notes 解析领取时间段
+     * @param array $params
+     * @return array [start, end]
+     */
+    private static function parseReceiveTime(array $params): array
+    {
+        $startRaw = $params['receive_start_time'] ?? '';
+        $endRaw = $params['receive_end_time'] ?? '';
+
+        if (empty($startRaw) || empty($endRaw)) {
+            return [0, 0];
+        }
+
+        $startTime = is_numeric($startRaw) ? (int)$startRaw : strtotime($startRaw);
+        $endTime = is_numeric($endRaw) ? (int)$endRaw : strtotime($endRaw);
+
+        if ($startTime <= 0 || $endTime <= 0) {
+            return [0, 0];
+        }
+
+        return [$startTime, $endTime];
     }
 }

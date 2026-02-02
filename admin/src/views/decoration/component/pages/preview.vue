@@ -161,6 +161,11 @@ const availableWidgets = [
     { name: 'hot-topics', title: '热门话题', icon: Document },
     { name: 'store-map', title: '门店地图', icon: Document },
     { name: 'wedding-countdown', title: '婚礼倒计时', icon: Calendar },
+
+    // 个人中心组件
+    { name: 'user-info', title: '用户信息', icon: User },
+    { name: 'my-service', title: '我的服务', icon: Document },
+    { name: 'user-banner', title: '用户横幅', icon: Picture }
 ]
 
 const showWidgetSelector = ref(false)

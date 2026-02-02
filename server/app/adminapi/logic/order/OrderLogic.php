@@ -407,11 +407,19 @@ class OrderLogic extends BaseLogic
         // 时间范围
         $startDate = $params['start_date'] ?? date('Y-m-01');
         $endDate = $params['end_date'] ?? date('Y-m-d');
+        $staffId = (int)($params['staff_id'] ?? 0);
         
         $startTime = strtotime($startDate);
         $endTime = strtotime($endDate . ' 23:59:59');
 
         $query = Order::whereBetween('create_time', [$startTime, $endTime]);
+        if ($staffId > 0) {
+            $query->whereIn('id', function ($subQuery) use ($staffId) {
+                $subQuery->name('order_item')
+                    ->where('staff_id', $staffId)
+                    ->field('order_id');
+            });
+        }
 
         // 总订单数
         $totalOrders = (clone $query)->count();
@@ -443,13 +451,17 @@ class OrderLogic extends BaseLogic
         // 今日数据
         $todayStart = strtotime(date('Y-m-d'));
         $todayEnd = time();
-        $todayOrders = Order::whereBetween('create_time', [$todayStart, $todayEnd])->count();
-        $todayPaidOrders = Order::whereBetween('create_time', [$todayStart, $todayEnd])
-            ->where('pay_status', Order::PAY_STATUS_PAID)
-            ->count();
-        $todayAmount = Order::whereBetween('create_time', [$todayStart, $todayEnd])
-            ->where('pay_status', Order::PAY_STATUS_PAID)
-            ->sum('pay_amount');
+        $todayQuery = Order::whereBetween('create_time', [$todayStart, $todayEnd]);
+        if ($staffId > 0) {
+            $todayQuery->whereIn('id', function ($subQuery) use ($staffId) {
+                $subQuery->name('order_item')
+                    ->where('staff_id', $staffId)
+                    ->field('order_id');
+            });
+        }
+        $todayOrders = (clone $todayQuery)->count();
+        $todayPaidOrders = (clone $todayQuery)->where('pay_status', Order::PAY_STATUS_PAID)->count();
+        $todayAmount = (clone $todayQuery)->where('pay_status', Order::PAY_STATUS_PAID)->sum('pay_amount');
 
         return [
             'total_orders' => $totalOrders,

@@ -11,6 +11,8 @@ use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\schedule\ScheduleLists;
 use app\adminapi\logic\schedule\ScheduleLogic;
 use app\adminapi\validate\schedule\ScheduleValidate;
+use app\common\model\schedule\Schedule;
+use app\common\service\StaffService;
 
 /**
  * 档期管理控制器
@@ -35,6 +37,10 @@ class ScheduleController extends BaseAdminController
     public function monthCalendar()
     {
         $params = (new ScheduleValidate())->goCheck('calendar');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['staff_id'] = $staffScopeId;
+        }
         $result = ScheduleLogic::getMonthCalendar($params);
         return $this->data($result);
     }
@@ -46,6 +52,13 @@ class ScheduleController extends BaseAdminController
     public function detail()
     {
         $params = (new ScheduleValidate())->goCheck('detail');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = (int) Schedule::where('id', $params['id'])->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限查看');
+            }
+        }
         $result = ScheduleLogic::detail($params['id']);
         return $this->data($result);
     }
@@ -57,6 +70,10 @@ class ScheduleController extends BaseAdminController
     public function setStatus()
     {
         $params = (new ScheduleValidate())->post()->goCheck('setStatus');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['staff_id'] = $staffScopeId;
+        }
         $result = ScheduleLogic::setStatus($params);
         if (true === $result) {
             return $this->success('设置成功');
@@ -71,6 +88,10 @@ class ScheduleController extends BaseAdminController
     public function batchSet()
     {
         $params = (new ScheduleValidate())->post()->goCheck('batchSet');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['staff_ids'] = [$staffScopeId];
+        }
         $result = ScheduleLogic::batchSet($params);
         if ($result !== false) {
             return $this->success('成功设置 ' . $result . ' 条档期');
@@ -86,6 +107,10 @@ class ScheduleController extends BaseAdminController
     {
         $params = (new ScheduleValidate())->post()->goCheck('lock');
         $params['admin_id'] = $this->adminId;
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['staff_id'] = $staffScopeId;
+        }
         $result = ScheduleLogic::lockSchedule($params);
         if (true === $result) {
             return $this->success('锁定成功');
@@ -101,6 +126,13 @@ class ScheduleController extends BaseAdminController
     {
         $params = (new ScheduleValidate())->post()->goCheck('unlock');
         $params['admin_id'] = $this->adminId;
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = (int) Schedule::where('id', $params['id'])->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
         $result = ScheduleLogic::unlockSchedule($params);
         if (true === $result) {
             return $this->success('释放成功');
@@ -116,6 +148,10 @@ class ScheduleController extends BaseAdminController
     {
         $params = (new ScheduleValidate())->post()->goCheck('reserve');
         $params['admin_id'] = $this->adminId;
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['staff_id'] = $staffScopeId;
+        }
         $result = ScheduleLogic::reserveSchedule($params);
         if (true === $result) {
             return $this->success('预留成功');
@@ -130,6 +166,10 @@ class ScheduleController extends BaseAdminController
     public function lockRecords()
     {
         $params = $this->request->get();
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['staff_id'] = $staffScopeId;
+        }
         $result = ScheduleLogic::getLockRecords($params);
         return $this->data($result);
     }
@@ -161,6 +201,10 @@ class ScheduleController extends BaseAdminController
     public function statistics()
     {
         $params = $this->request->get();
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['staff_id'] = $staffScopeId;
+        }
         $result = ScheduleLogic::statistics($params);
         return $this->data($result);
     }

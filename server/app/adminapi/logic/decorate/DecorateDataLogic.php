@@ -129,7 +129,7 @@ class DecorateDataLogic extends BaseLogic
             // 格式化有效期 - 类型转换 - PHP 8.0+ 严格类型检查
             $validStartTime = is_numeric($item['valid_start_time']) ? (int)$item['valid_start_time'] : strtotime($item['valid_start_time']);
             $validEndTime = is_numeric($item['valid_end_time']) ? (int)$item['valid_end_time'] : strtotime($item['valid_end_time']);
-            $item['valid_period'] = date('Y-m-d', $validStartTime) . ' 至 ' . date('Y-m-d', $validEndTime);
+            $item['valid_period'] = date('Y-m-d H:i:s', $validStartTime) . ' 至 ' . date('Y-m-d H:i:s', $validEndTime);
         }
 
         return $result;

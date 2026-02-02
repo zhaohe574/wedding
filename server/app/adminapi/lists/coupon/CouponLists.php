@@ -131,8 +131,8 @@ class CouponLists extends BaseAdminDataLists implements ListsSearchInterface, Li
             if ($item['valid_type'] == Coupon::VALID_TYPE_FIXED) {
                 $validStartTime = (int)$item['valid_start_time'];
                 $validEndTime = (int)$item['valid_end_time'];
-                $start = $validStartTime > 0 ? date('Y-m-d', $validStartTime) : '';
-                $end = $validEndTime > 0 ? date('Y-m-d', $validEndTime) : '';
+                $start = $validStartTime > 0 ? date('Y-m-d H:i:s', $validStartTime) : '';
+                $end = $validEndTime > 0 ? date('Y-m-d H:i:s', $validEndTime) : '';
                 $item['valid_period'] = $start . ' 至 ' . $end;
             } else {
                 $item['valid_period'] = '领取后' . $item['valid_days'] . '天内有效';

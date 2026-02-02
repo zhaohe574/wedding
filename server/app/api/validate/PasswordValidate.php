@@ -26,7 +26,7 @@ class PasswordValidate extends BaseValidate
     protected $rule = [
         'mobile' => 'require|mobile',
         'code' => 'require',
-        'password' => 'require|length:6,20|alphaNum',
+        'password' => 'require|length:6,20|checkPassword',
         'password_confirm' => 'require|confirm',
     ];
 
@@ -36,11 +36,41 @@ class PasswordValidate extends BaseValidate
         'mobile.mobile' => '请输入正确手机号',
         'code.require' => '请填写验证码',
         'password.require' => '请输入密码',
-        'password.length' => '密码须在6-25位之间',
-        'password.alphaNum' => '密码须为字母数字组合',
+        'password.length' => '密码须在6-20位之间',
+        'password.checkPassword' => '密码必须包含字母和数字，可包含特殊符号',
         'password_confirm.require' => '请确认密码',
         'password_confirm.confirm' => '两次输入的密码不一致'
     ];
+
+
+    /**
+     * @notes 自定义密码验证规则
+     * @param $value
+     * @param $rule
+     * @param $data
+     * @return bool|string
+     * @author 段誉
+     * @date 2022/9/20 19:14
+     */
+    protected function checkPassword($value, $rule, $data)
+    {
+        // 检查是否包含字母
+        if (!preg_match('/[A-Za-z]/', $value)) {
+            return '密码必须包含字母';
+        }
+        
+        // 检查是否包含数字
+        if (!preg_match('/\d/', $value)) {
+            return '密码必须包含数字';
+        }
+        
+        // 检查是否只包含允许的字符（字母、数字、特殊符号）
+        if (!preg_match('/^[A-Za-z\d!@#$%^&*()\-_=+\[\]{};:,.<>?\/\\|`~]+$/', $value)) {
+            return '密码包含不允许的字符';
+        }
+        
+        return true;
+    }
 
 
     /**

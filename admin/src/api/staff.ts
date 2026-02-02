@@ -40,6 +40,11 @@ export function staffStatistics() {
     return request.get({ url: '/staff.staff/statistics' })
 }
 
+// 重置工作人员后台账号密码
+export function staffResetAdminPassword(params: { id: number }) {
+    return request.post({ url: '/staff.staff/resetAdminPassword', params })
+}
+
 // ==================== 套餐配置管理 ====================
 
 // 配置员工套餐关联

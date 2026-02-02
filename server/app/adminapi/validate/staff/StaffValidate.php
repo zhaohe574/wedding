@@ -109,6 +109,14 @@ class StaffValidate extends BaseValidate
     }
 
     /**
+     * @notes 重置后台账号密码场景
+     */
+    public function sceneResetAdmin(): StaffValidate
+    {
+        return $this->only(['id']);
+    }
+
+    /**
      * @notes 检查工作人员是否存在
      * @param $value
      * @param $rule

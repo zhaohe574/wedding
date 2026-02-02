@@ -101,6 +101,11 @@ class DecorateDataService
     private static function parseWidget(array $widget): array
     {
         $widgetType = $widget['name'] ?? '';
+
+        // 兼容旧数据：未配置enabled时默认启用
+        if (isset($widget['content']) && is_array($widget['content']) && !array_key_exists('enabled', $widget['content'])) {
+            $widget['content']['enabled'] = 1;
+        }
         
         // 检查是否是需要动态填充的组件类型
         if (!isset(self::WIDGET_DATA_SOURCE_MAP[$widgetType])) {
@@ -340,6 +345,7 @@ class DecorateDataService
                     'id', 'name', 'coupon_type', 'discount_amount', 
                     'threshold_amount', 'valid_type', 'valid_days',
                     'valid_start_time', 'valid_end_time',
+                    'receive_start_time', 'receive_end_time',
                     'total_count', 'receive_count'
                 ])
                 ->select()
@@ -348,25 +354,49 @@ class DecorateDataService
             // 转换为以 ID 为键的映射
             $result = [];
             $currentTime = time();
+            $startLimit = $currentTime + Coupon::RECEIVE_PREVIEW_SECONDS;
             foreach ($couponList as $coupon) {
+                $receiveStartTime = (int)($coupon['receive_start_time'] ?? 0);
+                $receiveEndTime = (int)($coupon['receive_end_time'] ?? 0);
+                $hasReceiveTime = $receiveStartTime > 0 || $receiveEndTime > 0;
+
+                // 不在展示窗口的优惠券不返回
+                if ($hasReceiveTime) {
+                    if (($receiveStartTime > 0 && $receiveStartTime > $startLimit) ||
+                        ($receiveEndTime > 0 && $receiveEndTime < $currentTime)) {
+                        continue;
+                    }
+                } elseif ((int)$coupon['valid_type'] == Coupon::VALID_TYPE_FIXED) {
+                    $validStartTime = (int)($coupon['valid_start_time'] ?? 0);
+                    $validEndTime = (int)($coupon['valid_end_time'] ?? 0);
+                    if (($validStartTime > 0 && $validStartTime > $startLimit) ||
+                        ($validEndTime > 0 && $validEndTime < $currentTime)) {
+                        continue;
+                    }
+                }
+
                 // 计算剩余数量
-                $remainCount = $coupon['total_count'] - $coupon['receive_count'];
-                
+                if ((int)$coupon['total_count'] === 0) {
+                    $remainCount = -1;
+                } else {
+                    $remainCount = max(0, (int)$coupon['total_count'] - (int)$coupon['receive_count']);
+                }
+
                 // 判断是否可领取
                 $canReceive = true;
                 $statusText = '立即领取';
-                
-                if ($remainCount <= 0) {
+
+                if ($remainCount === 0) {
                     $canReceive = false;
                     $statusText = '已抢光';
-                } elseif ($coupon['valid_type'] == 1) {
-                    // 固定日期类型才检查时间
-                    if ($currentTime < $coupon['valid_start_time']) {
+                } else {
+                    [$timeOk, $timeStatusText, $countdown] = Coupon::getReceiveTimeStatus($coupon, $currentTime);
+                    if (!$timeOk) {
                         $canReceive = false;
-                        $statusText = '未开始';
-                    } elseif ($coupon['valid_end_time'] > 0 && $currentTime > $coupon['valid_end_time']) {
-                        $canReceive = false;
-                        $statusText = '已过期';
+                        $statusText = $timeStatusText;
+                        if ($timeStatusText === '未开始' && $countdown > 0) {
+                            $statusText = Coupon::formatCountdownText($countdown);
+                        }
                     }
                 }
 
@@ -391,6 +421,9 @@ class DecorateDataService
                     'valid_days' => (int)$coupon['valid_days'],
                     'valid_start_time' => (int)$coupon['valid_start_time'],
                     'valid_end_time' => (int)$coupon['valid_end_time'],
+                    'receive_start_time' => (int)($coupon['receive_start_time'] ?? 0),
+                    'receive_end_time' => (int)($coupon['receive_end_time'] ?? 0),
+                    'receive_countdown' => $countdown,
                     'remain_count' => $remainCount,
                     'can_receive' => $canReceive,
                     'status_text' => $statusText,

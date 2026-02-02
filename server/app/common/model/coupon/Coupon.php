@@ -46,6 +46,9 @@ class Coupon extends BaseModel
     const STATUS_DISABLED = 0;      // 禁用
     const STATUS_ENABLED = 1;       // 启用
 
+    // 领取预告时间（秒）
+    const RECEIVE_PREVIEW_SECONDS = 86400;
+
     /**
      * @notes 类型描述
      * @param bool|int $value
@@ -204,8 +207,8 @@ class Coupon extends BaseModel
         $validDays = (int)($data['valid_days'] ?? 0);
         
         if ($validType == self::VALID_TYPE_FIXED) {
-            $start = $validStartTime ? date('Y-m-d', $validStartTime) : '';
-            $end = $validEndTime ? date('Y-m-d', $validEndTime) : '';
+            $start = $validStartTime ? date('Y-m-d H:i:s', $validStartTime) : '';
+            $end = $validEndTime ? date('Y-m-d H:i:s', $validEndTime) : '';
             return $start . ' 至 ' . $end;
         } else {
             return '领取后' . $validDays . '天内有效';
@@ -280,12 +283,142 @@ class Coupon extends BaseModel
     }
 
     /**
+     * @notes 领取时间状态判断（兼容旧逻辑）
+     * @param array $coupon
+     * @param int $now
+     * @return array [bool, string]
+     */
+    public static function getReceiveTimeStatus(array $coupon, int $now): array
+    {
+        $validType = (int)($coupon['valid_type'] ?? self::VALID_TYPE_FIXED);
+        $validStartTime = (int)($coupon['valid_start_time'] ?? 0);
+        $validEndTime = (int)($coupon['valid_end_time'] ?? 0);
+        $receiveStartTime = (int)($coupon['receive_start_time'] ?? 0);
+        $receiveEndTime = (int)($coupon['receive_end_time'] ?? 0);
+
+        $canReceive = true;
+        $statusText = '立即领取';
+        $countdown = 0;
+
+        // 如果配置了领取时间段，则优先按照领取时间段判断
+        if ($receiveStartTime > 0 || $receiveEndTime > 0) {
+            if ($receiveStartTime > 0 && $now < $receiveStartTime) {
+                $canReceive = false;
+                $statusText = '未开始';
+                $countdown = $receiveStartTime - $now;
+            }
+            if ($receiveEndTime > 0 && $now > $receiveEndTime) {
+                $canReceive = false;
+                $statusText = '已结束';
+            }
+        } elseif ($validType == self::VALID_TYPE_FIXED) {
+            // 兼容旧逻辑：未配置领取时间段时，固定日期按有效期判断可领取
+            if ($validStartTime > 0 && $now < $validStartTime) {
+                $canReceive = false;
+                $statusText = '未开始';
+                $countdown = $validStartTime - $now;
+            }
+            if ($validEndTime > 0 && $now > $validEndTime) {
+                $canReceive = false;
+                $statusText = '已过期';
+            }
+        }
+
+        // 固定日期类型：超过有效期不允许领取
+        if ($validType == self::VALID_TYPE_FIXED && $validEndTime > 0 && $now > $validEndTime) {
+            $canReceive = false;
+            $statusText = '已过期';
+        }
+
+        return [$canReceive, $statusText, $countdown];
+    }
+
+    /**
+     * @notes 领取时间条件（用于列表查询）
+     * @param $query
+     * @param int $now
+     * @param int $previewSeconds
+     * @return void
+     */
+    public static function applyReceiveTimeCondition($query, int $now, int $previewSeconds = 0): void
+    {
+        $startLimit = $now + max(0, $previewSeconds);
+        // 领取时间段有配置时使用领取时间段；未配置时兼容旧逻辑
+        $query->where(function ($query) use ($now, $startLimit) {
+            $query->where(function ($q) use ($now, $startLimit) {
+                $q->where(function ($q2) {
+                    $q2->where('receive_start_time', '>', 0)
+                        ->whereOr('receive_end_time', '>', 0);
+                })
+                ->where(function ($q2) use ($now, $startLimit) {
+                    $q2->where(function ($q3) use ($startLimit) {
+                        $q3->where('receive_start_time', 0)
+                            ->whereOr('receive_start_time', '<=', $startLimit);
+                    })
+                    ->where(function ($q3) use ($now) {
+                        $q3->where('receive_end_time', 0)
+                            ->whereOr('receive_end_time', '>=', $now);
+                    });
+                });
+            })->whereOr(function ($q) use ($now, $startLimit) {
+                $q->where('receive_start_time', 0)
+                    ->where('receive_end_time', 0)
+                    ->where(function ($q2) use ($now, $startLimit) {
+                        $q2->where('valid_type', self::VALID_TYPE_DAYS)
+                            ->whereOr(function ($q3) use ($now, $startLimit) {
+                                $q3->where('valid_type', self::VALID_TYPE_FIXED)
+                                    ->where('valid_start_time', '<=', $startLimit)
+                                    ->where(function ($q4) use ($now) {
+                                        $q4->where('valid_end_time', 0)
+                                            ->whereOr('valid_end_time', '>=', $now);
+                                    });
+                            });
+                    });
+            });
+        });
+
+        // 固定日期已过期的不允许领取
+        $query->where(function ($q) use ($now) {
+            $q->where('valid_type', self::VALID_TYPE_DAYS)
+                ->whereOr(function ($q2) use ($now) {
+                    $q2->where('valid_type', self::VALID_TYPE_FIXED)
+                        ->where(function ($q3) use ($now) {
+                            $q3->where('valid_end_time', 0)
+                                ->whereOr('valid_end_time', '>=', $now);
+                        });
+                });
+        });
+    }
+
+    /**
+     * @notes 格式化剩余时间文本
+     * @param int $seconds
+     * @return string
+     */
+    public static function formatCountdownText(int $seconds): string
+    {
+        $seconds = max(0, $seconds);
+        $days = intdiv($seconds, 86400);
+        $hours = intdiv($seconds % 86400, 3600);
+        $minutes = intdiv($seconds % 3600, 60);
+        $secs = $seconds % 60;
+
+        if ($days > 0) {
+            return sprintf('距开始 %d天 %02d:%02d:%02d', $days, $hours, $minutes, $secs);
+        }
+
+        return sprintf('距开始 %02d:%02d:%02d', $hours, $minutes, $secs);
+    }
+
+    /**
      * @notes 检查优惠券是否可领取
      * @param int $userId
      * @return array [bool, string]
      */
     public function canReceive(int $userId): array
     {
+        $now = time();
+
         // 检查状态
         if ($this->status != self::STATUS_ENABLED) {
             return [false, '优惠券已下架'];
@@ -296,15 +429,25 @@ class Coupon extends BaseModel
             return [false, '优惠券已领完'];
         }
 
-        // 检查有效期
-        if ($this->valid_type == self::VALID_TYPE_FIXED) {
-            $now = time();
-            if ($this->valid_start_time > $now) {
+        // 检查领取时间
+        [$inReceiveTime, $statusText] = self::getReceiveTimeStatus([
+            'valid_type' => $this->valid_type,
+            'valid_start_time' => $this->valid_start_time,
+            'valid_end_time' => $this->valid_end_time,
+            'receive_start_time' => $this->receive_start_time ?? 0,
+            'receive_end_time' => $this->receive_end_time ?? 0,
+        ], $now);
+        if (!$inReceiveTime) {
+            if ($statusText === '未开始') {
                 return [false, '优惠券未到领取时间'];
             }
-            if ($this->valid_end_time > 0 && $this->valid_end_time < $now) {
+            if ($statusText === '已结束') {
+                return [false, '优惠券领取已结束'];
+            }
+            if ($statusText === '已过期') {
                 return [false, '优惠券已过期'];
             }
+            return [false, '优惠券暂不可领取'];
         }
 
         // 检查每人限领
@@ -375,18 +518,7 @@ class Coupon extends BaseModel
         $now = time();
         return self::where('status', self::STATUS_ENABLED)
             ->where(function ($query) use ($now) {
-                $query->where(function ($q) use ($now) {
-                    // 固定日期类型：在有效期内
-                    $q->where('valid_type', self::VALID_TYPE_FIXED)
-                        ->where('valid_start_time', '<=', $now)
-                        ->where(function ($q2) use ($now) {
-                            $q2->where('valid_end_time', '>=', $now)
-                                ->whereOr('valid_end_time', 0);
-                        });
-                })->whereOr(function ($q) {
-                    // 领取后N天有效类型：只要启用就可领取
-                    $q->where('valid_type', self::VALID_TYPE_DAYS);
-                });
+                self::applyReceiveTimeCondition($query, $now, self::RECEIVE_PREVIEW_SECONDS);
             })
             ->where(function ($query) {
                 // 库存检查

@@ -64,6 +64,11 @@ class OrderItem extends BaseModel
      */
     public function getItemStatusDescAttr($value, $data): string
     {
+        // 防御性检查：确保 item_status 键存在
+        if (!isset($data['item_status'])) {
+            return '未知';
+        }
+        
         $map = [
             self::STATUS_PENDING => '待服务',
             self::STATUS_IN_SERVICE => '服务中',
@@ -81,6 +86,11 @@ class OrderItem extends BaseModel
      */
     public function getTimeSlotDescAttr($value, $data): string
     {
+        // 防御性检查：确保 time_slot 键存在
+        if (!isset($data['time_slot'])) {
+            return '未知';
+        }
+        
         $map = [
             0 => '全天',
             1 => '早礼',

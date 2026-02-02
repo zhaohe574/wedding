@@ -12,6 +12,8 @@ use app\adminapi\lists\dynamic\DynamicLists;
 use app\adminapi\lists\dynamic\DynamicCommentLists;
 use app\adminapi\logic\dynamic\DynamicLogic;
 use app\adminapi\validate\dynamic\DynamicValidate;
+use app\common\model\dynamic\Dynamic;
+use app\common\service\StaffService;
 
 /**
  * 动态管理控制器
@@ -35,6 +37,10 @@ class DynamicController extends BaseAdminController
      */
     public function add()
     {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
         $params = (new DynamicValidate())->post()->goCheck('add');
         $result = DynamicLogic::add($this->adminId, $params);
         if (true === $result) {
@@ -50,6 +56,9 @@ class DynamicController extends BaseAdminController
     public function edit()
     {
         $params = (new DynamicValidate())->post()->goCheck('edit');
+        if ($response = $this->checkDynamicScope((int)$params['id'])) {
+            return $response;
+        }
         $result = DynamicLogic::edit((int)$params['id'], $params);
         if (true === $result) {
             return $this->success('编辑成功');
@@ -64,6 +73,9 @@ class DynamicController extends BaseAdminController
     public function detail()
     {
         $params = (new DynamicValidate())->goCheck('detail');
+        if ($response = $this->checkDynamicScope((int)$params['id'])) {
+            return $response;
+        }
         $result = DynamicLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('动态不存在');
@@ -77,6 +89,10 @@ class DynamicController extends BaseAdminController
      */
     public function audit()
     {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
         $params = (new DynamicValidate())->post()->goCheck('audit');
         $result = DynamicLogic::audit((int)$params['id'], $this->adminId, $params['approved'], $params['remark'] ?? '');
         if (true === $result) {
@@ -91,6 +107,10 @@ class DynamicController extends BaseAdminController
      */
     public function offline()
     {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
         $params = (new DynamicValidate())->post()->goCheck('offline');
         $result = DynamicLogic::offline((int)$params['id'], $this->adminId, $params['reason'] ?? '');
         if (true === $result) {
@@ -105,6 +125,10 @@ class DynamicController extends BaseAdminController
      */
     public function setTop()
     {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
         $params = (new DynamicValidate())->post()->goCheck('setTop');
         $result = DynamicLogic::setTop((int)$params['id'], (int)$params['is_top']);
         if (true === $result) {
@@ -119,6 +143,10 @@ class DynamicController extends BaseAdminController
      */
     public function setHot()
     {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
         $params = (new DynamicValidate())->post()->goCheck('setHot');
         $result = DynamicLogic::setHot((int)$params['id'], (int)$params['is_hot']);
         if (true === $result) {
@@ -134,6 +162,9 @@ class DynamicController extends BaseAdminController
     public function delete()
     {
         $params = (new DynamicValidate())->post()->goCheck('detail');
+        if ($response = $this->checkDynamicScope((int)$params['id'])) {
+            return $response;
+        }
         $result = DynamicLogic::delete((int)$params['id'], $this->adminId);
         if (true === $result) {
             return $this->success('删除成功');
@@ -147,6 +178,10 @@ class DynamicController extends BaseAdminController
      */
     public function commentLists()
     {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
         return $this->dataLists(new DynamicCommentLists());
     }
 
@@ -156,6 +191,10 @@ class DynamicController extends BaseAdminController
      */
     public function deleteComment()
     {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
         $params = (new DynamicValidate())->post()->goCheck('commentId');
         $result = DynamicLogic::deleteComment((int)$params['comment_id'], $this->adminId);
         if (true === $result) {
@@ -170,6 +209,10 @@ class DynamicController extends BaseAdminController
      */
     public function setCommentTop()
     {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
         $params = (new DynamicValidate())->post()->goCheck('setCommentTop');
         $result = DynamicLogic::setCommentTop((int)$params['comment_id'], (int)$params['is_top']);
         if (true === $result) {
@@ -184,6 +227,10 @@ class DynamicController extends BaseAdminController
      */
     public function statistics()
     {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
         $params = $this->request->get();
         $result = DynamicLogic::statistics($params);
         return $this->data($result);
@@ -207,5 +254,26 @@ class DynamicController extends BaseAdminController
     {
         $result = DynamicLogic::getStatusOptions();
         return $this->data($result);
+    }
+
+    /**
+     * @notes 校验动态数据范围
+     * @param int $dynamicId
+     * @return \think\response\Json|null
+     */
+    protected function checkDynamicScope(int $dynamicId)
+    {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId <= 0) {
+            return null;
+        }
+        $dynamic = Dynamic::where('id', $dynamicId)
+            ->where('staff_id', $staffScopeId)
+            ->where('user_type', Dynamic::USER_TYPE_STAFF)
+            ->find();
+        if (!$dynamic) {
+            return $this->fail('无权限操作');
+        }
+        return null;
     }
 }

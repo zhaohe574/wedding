@@ -11,6 +11,8 @@ use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\staff\StaffLists;
 use app\adminapi\logic\staff\StaffLogic;
 use app\adminapi\validate\staff\StaffValidate;
+use app\common\model\staff\StaffBanner;
+use app\common\service\StaffService;
 
 /**
  * 工作人员管理控制器
@@ -36,6 +38,10 @@ class StaffController extends BaseAdminController
     {
         try {
             $params = (new StaffValidate())->goCheck('detail');
+            $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+            if ($staffScopeId > 0 && (int) $params['id'] !== $staffScopeId) {
+                return $this->fail('无权限查看');
+            }
             $result = StaffLogic::detail((int) $params['id']);
             return $this->data($result);
         } catch (\Throwable $e) {
@@ -56,8 +62,8 @@ class StaffController extends BaseAdminController
     {
         $params = (new StaffValidate())->post()->goCheck('add');
         $result = StaffLogic::add($params);
-        if (true === $result) {
-            return $this->success('添加成功', [], 1, 1);
+        if (false !== $result) {
+            return $this->success('添加成功', $result ?: [], 1, 1);
         }
         return $this->fail(StaffLogic::getError());
     }
@@ -70,6 +76,10 @@ class StaffController extends BaseAdminController
     {
         try {
             $params = (new StaffValidate())->post()->goCheck('edit');
+            $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+            if ($staffScopeId > 0 && (int) $params['id'] !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
             $result = StaffLogic::edit($params);
             if (true === $result) {
                 return $this->success('编辑成功', [], 1, 1);
@@ -117,8 +127,30 @@ class StaffController extends BaseAdminController
     public function all()
     {
         $params = $this->request->get();
+        $staffScopeId = \app\common\service\StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['ids'] = [$staffScopeId];
+        }
         $result = StaffLogic::getAll($params);
         return $this->data($result);
+    }
+
+    /**
+     * @notes 重置后台账号密码
+     * @return \think\response\Json
+     */
+    public function resetAdminPassword()
+    {
+        $params = (new StaffValidate())->post()->goCheck('resetAdmin');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && (int) $params['id'] !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
+        $result = StaffLogic::resetAdminPassword((int)$params['id']);
+        if ($result !== false) {
+            return $this->success('重置成功', $result, 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
     }
 
     /**
@@ -127,7 +159,8 @@ class StaffController extends BaseAdminController
      */
     public function statistics()
     {
-        $result = StaffLogic::statistics();
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        $result = StaffLogic::statistics($staffScopeId);
         return $this->data($result);
     }
 
@@ -140,6 +173,10 @@ class StaffController extends BaseAdminController
         $params = $this->request->post();
         $staffId = intval($params['staff_id'] ?? 0);
         $packages = $params['packages'] ?? [];
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
 
         if ($staffId <= 0) {
             return $this->fail('请选择员工');
@@ -160,6 +197,10 @@ class StaffController extends BaseAdminController
     {
         $staffId = intval($this->request->get('staff_id', 0));
         $includeGlobal = boolval($this->request->get('include_global', false));
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+        }
 
         if ($staffId <= 0) {
             return $this->fail('请选择员工');
@@ -177,6 +218,10 @@ class StaffController extends BaseAdminController
     {
         $params = $this->request->post();
         $staffId = intval($params['staff_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
 
         if ($staffId <= 0) {
             return $this->fail('请选择员工');
@@ -203,6 +248,10 @@ class StaffController extends BaseAdminController
         $params = $this->request->post();
         $staffId = intval($params['staff_id'] ?? 0);
         $packageId = intval($params['package_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
 
         if ($staffId <= 0 || $packageId <= 0) {
             return $this->fail('参数错误');
@@ -228,6 +277,10 @@ class StaffController extends BaseAdminController
         $params = $this->request->post();
         $staffId = intval($params['staff_id'] ?? 0);
         $packageId = intval($params['package_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
 
         if ($staffId <= 0 || $packageId <= 0) {
             return $this->fail('参数错误');
@@ -272,6 +325,10 @@ class StaffController extends BaseAdminController
         $params = $this->request->post();
         $staffId = intval($params['staff_id'] ?? 0);
         $packageId = intval($params['package_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
 
         if ($staffId <= 0 || $packageId <= 0) {
             return $this->fail('参数错误');
@@ -291,6 +348,10 @@ class StaffController extends BaseAdminController
     public function getBannerList()
     {
         $staffId = intval($this->request->get('staff_id', 0));
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+        }
         if ($staffId <= 0) {
             return $this->fail('参数错误');
         }
@@ -307,6 +368,11 @@ class StaffController extends BaseAdminController
     {
         $params = $this->request->post();
         $staffId = intval($params['staff_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+            $params['staff_id'] = $staffScopeId;
+        }
 
         if ($staffId <= 0) {
             return $this->fail('参数错误');
@@ -340,6 +406,13 @@ class StaffController extends BaseAdminController
         if ($id <= 0) {
             return $this->fail('参数错误');
         }
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = (int) StaffBanner::where('id', $id)->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
 
         $result = StaffLogic::editBanner($id, $params);
         if (true === $result) {
@@ -360,6 +433,13 @@ class StaffController extends BaseAdminController
         if ($id <= 0) {
             return $this->fail('参数错误');
         }
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = (int) StaffBanner::where('id', $id)->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
 
         $result = StaffLogic::deleteBanner($id);
         if (true === $result) {
@@ -377,6 +457,11 @@ class StaffController extends BaseAdminController
         $params = $this->request->post();
         $staffId = intval($params['staff_id'] ?? 0);
         $sortData = $params['sort_data'] ?? [];
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+            $params['staff_id'] = $staffScopeId;
+        }
 
         if ($staffId <= 0 || empty($sortData)) {
             return $this->fail('参数错误');
@@ -397,6 +482,11 @@ class StaffController extends BaseAdminController
     {
         $params = $this->request->post();
         $staffId = intval($params['staff_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+            $params['staff_id'] = $staffScopeId;
+        }
 
         if ($staffId <= 0) {
             return $this->fail('参数错误');

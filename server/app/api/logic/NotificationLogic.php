@@ -24,9 +24,9 @@ class NotificationLogic extends BaseLogic
      */
     public static function lists(array $params): array
     {
-        $page = $params['page'] ?? 1;
-        $limit = $params['limit'] ?? 10;
-        $notifyType = $params['notify_type'] ?? 0;
+        $page = (int)($params['page'] ?? 1);
+        $limit = (int)($params['limit'] ?? 10);
+        $notifyType = (int)($params['notify_type'] ?? 0);
 
         $where = [
             ['user_id', '=', $params['user_id']],

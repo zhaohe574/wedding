@@ -36,5 +36,13 @@ abstract class BaseAdminDataLists extends BaseDataLists
         $this->adminId = $this->request->adminId ?? 0;
     }
 
+    /**
+     * @notes 获取服务人员数据范围ID（0=不限制）
+     */
+    protected function getStaffScopeId(): int
+    {
+        return \app\common\service\StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+    }
+
 
 }

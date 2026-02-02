@@ -57,6 +57,9 @@ class UserLogic extends BaseLogic
         }
 
         $user['has_password'] = !empty($user['password']);
+        $staffId = \app\common\service\StaffService::getStaffIdByUserId((int) $userInfo['user_id']);
+        $user['staff_id'] = $staffId;
+        $user['is_staff'] = $staffId > 0 ? 1 : 0;
         $user->hidden(['password']);
         return $user->toArray();
     }

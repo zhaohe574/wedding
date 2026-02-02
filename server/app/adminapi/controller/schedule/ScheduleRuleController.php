@@ -11,6 +11,8 @@ use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\schedule\ScheduleRuleLists;
 use app\adminapi\logic\schedule\ScheduleRuleLogic;
 use app\adminapi\validate\schedule\ScheduleRuleValidate;
+use app\common\model\schedule\ScheduleRule;
+use app\common\service\StaffService;
 
 /**
  * 档期规则管理控制器
@@ -35,6 +37,13 @@ class ScheduleRuleController extends BaseAdminController
     public function detail()
     {
         $params = (new ScheduleRuleValidate())->goCheck('detail');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = (int) ScheduleRule::where('id', $params['id'])->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限查看');
+            }
+        }
         $result = ScheduleRuleLogic::detail($params['id']);
         return $this->data($result);
     }
@@ -46,6 +55,10 @@ class ScheduleRuleController extends BaseAdminController
     public function add()
     {
         $params = (new ScheduleRuleValidate())->post()->goCheck('add');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['staff_id'] = $staffScopeId;
+        }
         $result = ScheduleRuleLogic::add($params);
         if (true === $result) {
             return $this->success('添加成功');
@@ -60,6 +73,14 @@ class ScheduleRuleController extends BaseAdminController
     public function edit()
     {
         $params = (new ScheduleRuleValidate())->post()->goCheck('edit');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = (int) ScheduleRule::where('id', $params['id'])->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+            $params['staff_id'] = $staffScopeId;
+        }
         $result = ScheduleRuleLogic::edit($params);
         if (true === $result) {
             return $this->success('编辑成功');
@@ -74,6 +95,13 @@ class ScheduleRuleController extends BaseAdminController
     public function delete()
     {
         $params = (new ScheduleRuleValidate())->post()->goCheck('delete');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = (int) ScheduleRule::where('id', $params['id'])->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
         $result = ScheduleRuleLogic::delete($params);
         if (true === $result) {
             return $this->success('删除成功');
@@ -88,6 +116,13 @@ class ScheduleRuleController extends BaseAdminController
     public function changeStatus()
     {
         $params = (new ScheduleRuleValidate())->post()->goCheck('status');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = (int) ScheduleRule::where('id', $params['id'])->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
         $result = ScheduleRuleLogic::changeStatus($params);
         if (true === $result) {
             return $this->success('操作成功');
@@ -101,6 +136,10 @@ class ScheduleRuleController extends BaseAdminController
      */
     public function globalRule()
     {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限查看');
+        }
         $result = ScheduleRuleLogic::getGlobalRule();
         return $this->data($result);
     }
@@ -112,7 +151,9 @@ class ScheduleRuleController extends BaseAdminController
     public function staffRule()
     {
         $params = (new ScheduleRuleValidate())->goCheck('staffRule');
-        $result = ScheduleRuleLogic::getStaffRule($params['staff_id']);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        $staffId = $staffScopeId > 0 ? $staffScopeId : (int) $params['staff_id'];
+        $result = ScheduleRuleLogic::getStaffRule($staffId);
         return $this->data($result);
     }
 }

@@ -39,6 +39,23 @@
                             <el-form-item label="手机号" prop="mobile">
                                 <el-input v-model="formData.mobile" placeholder="请输入手机号" maxlength="11" />
                             </el-form-item>
+                            <el-form-item label="后台账号">
+                                <div class="flex items-center gap-2">
+                                    <span v-if="adminInfo.account">{{ adminInfo.account }}</span>
+                                    <span v-else class="text-gray-400">保存后自动生成</span>
+                                    <el-tag v-if="adminInfo.account" :type="adminInfo.disable ? 'danger' : 'success'">
+                                        {{ adminInfo.disable ? '禁用' : '启用' }}
+                                    </el-tag>
+                                    <el-button
+                                        v-if="adminInfo.account"
+                                        type="primary"
+                                        link
+                                        @click="handleResetAdminPassword"
+                                    >
+                                        重置密码
+                                    </el-button>
+                                </div>
+                            </el-form-item>
                             <el-form-item label="头像" prop="avatar">
                                 <material-picker v-model="formData.avatar" :limit="1" />
                             </el-form-item>
@@ -535,6 +552,23 @@
                 <el-button type="primary" @click="submitBanner">确定</el-button>
             </template>
         </el-dialog>
+
+        <!-- 后台账号凭证弹窗 -->
+        <el-dialog v-model="credentialDialogVisible" title="后台账号信息" width="420px" @close="handleCredentialClose">
+            <div class="space-y-3">
+                <el-alert type="warning" show-icon :closable="false">
+                    <template #title>请及时保存账号与密码</template>
+                    <template #default>关闭后密码不会再次展示，可通过“重置密码”重新生成。</template>
+                </el-alert>
+                <el-descriptions :column="1" border>
+                    <el-descriptions-item label="账号">{{ credentialData.account }}</el-descriptions-item>
+                    <el-descriptions-item label="密码">{{ credentialData.password }}</el-descriptions-item>
+                </el-descriptions>
+            </div>
+            <template #footer>
+                <el-button type="primary" @click="handleCredentialClose">我已记录</el-button>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -544,6 +578,7 @@ import {
     staffAdd,
     staffEdit,
     staffDetail,
+    staffResetAdminPassword,
     staffCreatePackage,
     staffUpdateStaffPackage,
     staffUpdatePackageConfig,
@@ -575,6 +610,8 @@ const showPackageDialog = ref(false)
 const showSlotPriceDialog = ref(false)
 const showStaffPackageDialog = ref(false)
 const showBannerDialog = ref(false)
+const credentialDialogVisible = ref(false)
+const pendingBack = ref(false)
 const isEditingStaffPackage = ref(false)
 const isEditingBanner = ref(false)
 const selectedPackages = ref<any[]>([])
@@ -586,6 +623,14 @@ const currentSlotPrices = ref<{ time_slot: number; price: number | null }[]>([])
 const userOptions = ref<{ id: number; label: string; raw: any }[]>([])
 const userLoading = ref(false)
 let userSearchTimer: number | undefined
+const adminInfo = reactive({
+    account: '',
+    disable: 0
+})
+const credentialData = reactive({
+    account: '',
+    password: ''
+})
 
 const formData = reactive({
     id: '',
@@ -604,6 +649,25 @@ const formData = reactive({
     tag_ids: [] as number[],
     packages: [] as any[]
 })
+
+const showCredentials = (payload: any, backAfter = false) => {
+    if (!payload?.admin_account || !payload?.admin_password) {
+        return
+    }
+    credentialData.account = payload.admin_account
+    credentialData.password = payload.admin_password
+    credentialDialogVisible.value = true
+    pendingBack.value = backAfter
+}
+
+const handleCredentialClose = () => {
+    credentialDialogVisible.value = false
+    if (pendingBack.value) {
+        pendingBack.value = false
+        removeTab()
+        router.back()
+    }
+}
 
 const validateUserId = (_rule: any, value: any, callback: (error?: Error) => void) => {
     if (route.query.id) {
@@ -947,6 +1011,8 @@ const getDetails = async () => {
             (formData as any)[key] = data[key]
         }
     })
+    adminInfo.account = data.admin_account || ''
+    adminInfo.disable = Number(data.admin_disable || 0)
     await loadCurrentUserOption()
     await getTags()
     // 处理套餐数据格式
@@ -1213,11 +1279,34 @@ const handleSave = async () => {
     }
     if (route.query.id) {
         await staffEdit(params)
-    } else {
-        await staffAdd(params)
+        removeTab()
+        router.back()
+        return
+    }
+
+    const res = await staffAdd(params)
+    if (res?.admin_account && res?.admin_password) {
+        adminInfo.account = res.admin_account
+        adminInfo.disable = 0
+        showCredentials(res, true)
+        return
     }
     removeTab()
     router.back()
+}
+
+const handleResetAdminPassword = async () => {
+    if (!route.query.id) {
+        ElMessage.error('请先保存人员基本信息')
+        return
+    }
+    await feedback.confirm('确定要重置后台账号密码？')
+    const res = await staffResetAdminPassword({ id: route.query.id })
+    if (res?.admin_account && res?.admin_password) {
+        adminInfo.account = res.admin_account
+        adminInfo.disable = 0
+        showCredentials(res)
+    }
 }
 
 if (route.query.id) {

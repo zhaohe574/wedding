@@ -36,11 +36,17 @@ class ScheduleLists extends BaseAdminDataLists implements ListsExcelInterface
      */
     public function lists(): array
     {
-        $lists = Schedule::with(['staff' => function ($query) {
+        $query = Schedule::with(['staff' => function ($query) {
                 $query->field('id, name, avatar, category_id');
             }])
-            ->where($this->searchWhere)
-            ->order($this->sortOrder ?: ['schedule_date' => 'asc', 'time_slot' => 'asc'])
+            ->where($this->searchWhere);
+
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $query->where('staff_id', $staffScopeId);
+        }
+
+        $lists = $query->order($this->sortOrder ?: ['schedule_date' => 'asc', 'time_slot' => 'asc'])
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();
@@ -60,7 +66,12 @@ class ScheduleLists extends BaseAdminDataLists implements ListsExcelInterface
      */
     public function count(): int
     {
-        return Schedule::where($this->searchWhere)->count();
+        $query = Schedule::where($this->searchWhere);
+        $staffScopeId = $this->getStaffScopeId();
+        if ($staffScopeId > 0) {
+            $query->where('staff_id', $staffScopeId);
+        }
+        return $query->count();
     }
 
     /**

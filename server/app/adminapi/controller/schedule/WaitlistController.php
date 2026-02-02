@@ -11,6 +11,8 @@ use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\schedule\WaitlistLists;
 use app\adminapi\logic\schedule\WaitlistLogic;
 use app\adminapi\validate\schedule\WaitlistValidate;
+use app\common\model\schedule\Waitlist;
+use app\common\service\StaffService;
 
 /**
  * 候补管理控制器
@@ -35,6 +37,13 @@ class WaitlistController extends BaseAdminController
     public function detail()
     {
         $params = (new WaitlistValidate())->goCheck('detail');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = (int) Waitlist::where('id', $params['id'])->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限查看');
+            }
+        }
         $result = WaitlistLogic::detail($params['id']);
         return $this->data($result);
     }
@@ -46,6 +55,14 @@ class WaitlistController extends BaseAdminController
     public function batchNotify()
     {
         $params = (new WaitlistValidate())->post()->goCheck('batchNotify');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $ids = $params['ids'] ?? [];
+            $count = $ids ? Waitlist::whereIn('id', $ids)->where('staff_id', $staffScopeId)->count() : 0;
+            if ($count !== count($ids)) {
+                return $this->fail('无权限操作');
+            }
+        }
         $result = WaitlistLogic::batchNotify($params);
         if ($result !== false) {
             return $this->success("成功通知 {$result} 条记录");
@@ -60,6 +77,13 @@ class WaitlistController extends BaseAdminController
     public function notify()
     {
         $params = (new WaitlistValidate())->post()->goCheck('notify');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = (int) Waitlist::where('id', $params['id'])->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
         $result = WaitlistLogic::notify($params);
         if (true === $result) {
             return $this->success('通知成功');
@@ -74,6 +98,13 @@ class WaitlistController extends BaseAdminController
     public function convert()
     {
         $params = (new WaitlistValidate())->post()->goCheck('convert');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = (int) Waitlist::where('id', $params['id'])->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
         $result = WaitlistLogic::convert($params);
         if (true === $result) {
             return $this->success('转正成功');
@@ -88,6 +119,13 @@ class WaitlistController extends BaseAdminController
     public function invalidate()
     {
         $params = (new WaitlistValidate())->post()->goCheck('invalidate');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = (int) Waitlist::where('id', $params['id'])->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
         $result = WaitlistLogic::invalidate($params);
         if (true === $result) {
             return $this->success('操作成功');
@@ -101,7 +139,12 @@ class WaitlistController extends BaseAdminController
      */
     public function statistics()
     {
-        $result = WaitlistLogic::statistics();
+        $params = $this->request->get();
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $params['staff_id'] = $staffScopeId;
+        }
+        $result = WaitlistLogic::statistics($params);
         return $this->data($result);
     }
 }

@@ -11,6 +11,8 @@ use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\staff\StaffWorkLists;
 use app\adminapi\logic\staff\StaffWorkLogic;
 use app\adminapi\validate\staff\StaffWorkValidate;
+use app\common\model\staff\StaffWork;
+use app\common\service\StaffService;
 
 /**
  * 工作人员作品管理控制器
@@ -35,6 +37,13 @@ class StaffWorkController extends BaseAdminController
     public function detail()
     {
         $params = (new StaffWorkValidate())->goCheck('detail');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $work = StaffWork::find($params['id']);
+            if (!$work || (int)$work->staff_id !== $staffScopeId) {
+                return $this->fail('无权限查看');
+            }
+        }
         $result = StaffWorkLogic::detail($params['id']);
         return $this->data($result);
     }
@@ -46,6 +55,10 @@ class StaffWorkController extends BaseAdminController
     public function add()
     {
         $params = (new StaffWorkValidate())->post()->goCheck('add');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && (int)$params['staff_id'] !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
         $result = StaffWorkLogic::add($params);
         if (true === $result) {
             return $this->success('添加成功', [], 1, 1);
@@ -60,6 +73,13 @@ class StaffWorkController extends BaseAdminController
     public function edit()
     {
         $params = (new StaffWorkValidate())->post()->goCheck('edit');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $work = StaffWork::find($params['id']);
+            if (!$work || (int)$work->staff_id !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
         $result = StaffWorkLogic::edit($params);
         if (true === $result) {
             return $this->success('编辑成功', [], 1, 1);
@@ -74,6 +94,13 @@ class StaffWorkController extends BaseAdminController
     public function delete()
     {
         $params = (new StaffWorkValidate())->post()->goCheck('delete');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $work = StaffWork::find($params['id']);
+            if (!$work || (int)$work->staff_id !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
         StaffWorkLogic::delete($params);
         return $this->success('删除成功', [], 1, 1);
     }
@@ -85,6 +112,13 @@ class StaffWorkController extends BaseAdminController
     public function changeStatus()
     {
         $params = (new StaffWorkValidate())->post()->goCheck('status');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $work = StaffWork::find($params['id']);
+            if (!$work || (int)$work->staff_id !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
         $result = StaffWorkLogic::changeStatus($params);
         if (true === $result) {
             return $this->success('操作成功', [], 1, 1);
@@ -99,6 +133,13 @@ class StaffWorkController extends BaseAdminController
     public function setCover()
     {
         $params = (new StaffWorkValidate())->post()->goCheck('detail');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $work = StaffWork::find($params['id']);
+            if (!$work || (int)$work->staff_id !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
         $result = StaffWorkLogic::setCover($params['id']);
         if (true === $result) {
             return $this->success('操作成功', [], 1, 1);

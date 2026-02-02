@@ -1,21 +1,26 @@
 <template>
     <button
-        class="avatar-upload p-0 m-0 rounded"
-        :style="styles"
+        class="avatar-upload"
+        :style="containerStyles"
         hover-class="none"
         open-type="chooseAvatar"
         @click="chooseAvatar"
         @chooseavatar="chooseAvatar"
     >
-        <image class="w-full h-full" mode="heightFix" :src="modelValue" v-if="modelValue" />
+        <image 
+            class="avatar-image" 
+            mode="aspectFill" 
+            :src="modelValue" 
+            v-if="modelValue" 
+        />
         <slot v-else>
-            <div
-                :style="styles"
-                class="border border-dotted border-light flex w-full h-full flex-col items-center justify-center text-muted text-xs box-border rounded"
+            <view
+                class="avatar-placeholder"
+                :style="containerStyles"
             >
-                <tn-icon name="plus" :size="36" />
-                添加图片
-            </div>
+                <tn-icon name="plus" :size="48" color="#94A3B8" />
+                <text class="placeholder-text">添加图片</text>
+            </view>
         </slot>
     </button>
 </template>
@@ -51,26 +56,38 @@ const emit = defineEmits<{
     (event: 'update:modelValue', value: string): void
 }>()
 const userStore = useUserStore()
-const styles = computed<CSSProperties>(() => {
+const containerStyles = computed<CSSProperties>(() => {
     const size = addUnit(props.size)
     return {
         width: size,
         height: size,
-        borderRadius: isBoolean(props.round) ? (props.round ? '50%' : '') : addUnit(props.round)
+        borderRadius: isBoolean(props.round) ? (props.round ? '50%' : '16rpx') : addUnit(props.round)
     }
 })
 
 const chooseAvatar = (e: any) => {
-    // #ifndef MP-WEIXIN
-    uni.navigateTo({
-        url: '/uni_modules/vk-uview-ui/components/u-avatar-cropper/u-avatar-cropper?destWidth=300&rectWidth=200&fileType=jpg'
-    })
-    // #endif
     // #ifdef MP-WEIXIN
+    // 微信小程序使用官方头像选择
     const path = e.detail?.avatarUrl
     if (path) {
         uploadImageIng(path)
     }
+    // #endif
+    
+    // #ifndef MP-WEIXIN
+    // 非微信小程序使用系统相册
+    uni.chooseImage({
+        count: 1,
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera'],
+        success: (res) => {
+            const tempFilePath = res.tempFilePaths[0]
+            uploadImageIng(tempFilePath)
+        },
+        fail: (err) => {
+            console.error('选择图片失败:', err)
+        }
+    })
     // #endif
 }
 
@@ -81,28 +98,63 @@ const uploadImageIng = async (file: string) => {
     try {
         const res: any = await uploadImage(file, userStore.temToken!)
         uni.hideLoading()
-        console.log(res)
         emit('update:modelValue', res[props.fileKey])
+        uni.showToast({
+            title: '上传成功',
+            icon: 'success'
+        })
     } catch (error) {
         uni.hideLoading()
         uni.$u.toast(error)
     }
 }
-// 监听从裁剪页发布的事件，获得裁剪结果
-uni.$on('uAvatarCropper', (path) => {
-    uploadImageIng(path)
-})
+
 onUnmounted(() => {
-    uni.$off('uAvatarCropper')
+    // 清理事件监听
 })
 </script>
 
 <style lang="scss" scoped>
 .avatar-upload {
-    background: #fff;
+    background: #FFFFFF;
     overflow: hidden;
+    padding: 0;
+    margin: 0;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
+    transition: all 0.2s ease;
+    
     &::after {
         border: none;
+    }
+    
+    &:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+    
+    .avatar-image {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+    
+    .avatar-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12rpx;
+        border: 2rpx dashed #E2E8F0;
+        box-sizing: border-box;
+        
+        .placeholder-text {
+            font-size: 24rpx;
+            color: #94A3B8;
+        }
     }
 }
 </style>

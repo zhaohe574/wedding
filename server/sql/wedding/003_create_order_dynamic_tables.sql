@@ -318,6 +318,8 @@ CREATE TABLE `la_coupon` (
     `receive_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '已领取数量',
     `used_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '已使用数量',
     `per_limit` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '每人限领数量',
+    `receive_start_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '领取开始时间',
+    `receive_end_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '领取结束时间',
     `valid_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '有效期类型：1=固定日期,2=领取后N天',
     `valid_start_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '有效期开始',
     `valid_end_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '有效期结束',
@@ -331,6 +333,7 @@ CREATE TABLE `la_coupon` (
     `delete_time` INT UNSIGNED DEFAULT NULL COMMENT '删除时间',
     PRIMARY KEY (`id`),
     KEY `idx_status` (`status`),
+    KEY `idx_receive_time` (`receive_start_time`, `receive_end_time`),
     KEY `idx_valid_time` (`valid_start_time`, `valid_end_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='优惠券表';
 
