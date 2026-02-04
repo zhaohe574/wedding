@@ -35,7 +35,7 @@
                     </view>
                     <view class="card-body">
                         <image
-                            :src="item.staff?.avatar || '/static/images/default-avatar.png'"
+                            :src="item.staff?.avatar || '/static/images/user/default_avatar.png'"
                             class="staff-avatar"
                             mode="aspectFill"
                         />
@@ -65,7 +65,7 @@
                     <view class="card-header">
                         <view class="staff-info">
                             <image
-                                :src="item.staff?.avatar || '/static/images/default-avatar.png'"
+                                :src="item.staff?.avatar || '/static/images/user/default_avatar.png'"
                                 class="staff-avatar-small"
                                 mode="aspectFill"
                             />

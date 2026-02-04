@@ -45,7 +45,7 @@
                     <view class="avatar-wrapper">
                         <image
                             class="avatar"
-                            :src="item.avatar || '/static/images/default-avatar.png'"
+                            :src="item.avatar || '/static/images/user/default_avatar.png'"
                             mode="aspectFill"
                             lazy-load
                         />

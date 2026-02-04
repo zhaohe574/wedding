@@ -258,6 +258,16 @@ class Dynamic extends BaseModel
             $query->where('tags', 'like', '%' . $params['tag'] . '%');
         }
 
+        // 关键词搜索
+        if (!empty($params['keyword'])) {
+            $keyword = trim($params['keyword']);
+            $query->where(function ($q) use ($keyword) {
+                $q->whereLike('title', '%' . $keyword . '%')
+                    ->whereOr('content', 'like', '%' . $keyword . '%')
+                    ->whereOr('tags', 'like', '%' . $keyword . '%');
+            });
+        }
+
         // 排序
         $orderBy = $params['order_by'] ?? 'create_time';
         $orderDir = $params['order_dir'] ?? 'desc';

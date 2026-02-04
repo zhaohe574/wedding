@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\api\controller;
 
 use app\api\lists\staff\StaffLists as ApiStaffLists;
+use app\api\lists\staff\WorkLists;
 use app\api\logic\StaffLogic;
 
 /**
@@ -17,7 +18,7 @@ use app\api\logic\StaffLogic;
  */
 class StaffController extends BaseApiController
 {
-    public array $notNeedLogin = ['lists', 'detail', 'works', 'recommend', 'packages'];
+    public array $notNeedLogin = ['lists', 'detail', 'works', 'workLists', 'recommend', 'packages'];
 
     /**
      * @notes 工作人员列表
@@ -68,6 +69,15 @@ class StaffController extends BaseApiController
         }
         $result = StaffLogic::works($staffId);
         return $this->data($result);
+    }
+
+    /**
+     * @notes 作品列表（支持关键词搜索）
+     * @return \think\response\Json
+     */
+    public function workLists()
+    {
+        return $this->dataLists(new WorkLists());
     }
 
     /**

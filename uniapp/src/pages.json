@@ -635,7 +635,7 @@
     },
     "easycom": {
         "custom": {
-            "router-navigate": "uniapp-router-next/components/router-navigate/router-navigate.vue",
+            "router-navigate": "@/components/router-navigate/router-navigate.vue",
             "^(?!z-paging-refresh|z-paging-load-more)z-paging(.*)": "z-paging/components/z-paging$1/z-paging$1.vue",
             "^w-(.*)": "@/components/widgets/$1/$1.vue",
             "^tn-(.*)-(item|group)$": "@tuniao/tnui-vue3-uniapp/components/$1/src/$1-$2.vue",

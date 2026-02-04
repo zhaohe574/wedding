@@ -195,7 +195,7 @@ const staffList = computed(() => {
   props.order.items.forEach((item) => {
     const name = item.staffName || '服务人员'
     if (!map.has(name)) {
-      map.set(name, { name, avatar: item.staffAvatar || '/static/images/default-avatar.png' })
+      map.set(name, { name, avatar: item.staffAvatar || '/static/images/user/default_avatar.png' })
     }
   })
   return Array.from(map.values())
@@ -251,7 +251,7 @@ const groupedSchedules = computed(() => {
 })
 
 const primaryStaff = computed(() => {
-  return staffList.value[0] || { name: '服务人员', avatar: '/static/images/default-avatar.png' }
+  return staffList.value[0] || { name: '服务人员', avatar: '/static/images/user/default_avatar.png' }
 })
 
 const staffSummary = computed(() => {

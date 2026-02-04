@@ -12,7 +12,7 @@
         <staff-banner
             :banner-list="bannerList"
             :config="bannerConfig"
-            :default-image="staffInfo.avatar || '/static/images/default-avatar.png'"
+            :default-image="staffInfo.avatar || '/static/images/user/default_avatar.png'"
             @update:expanded="isExpanded = $event"
         />
 
@@ -24,7 +24,7 @@
             <view class="card-header">
                 <image
                     class="staff-avatar"
-                    :src="staffInfo.avatar || '/static/images/default-avatar.png'"
+                    :src="staffInfo.avatar || '/static/images/user/default_avatar.png'"
                     mode="aspectFill"
                 />
                 <view class="header-info">
@@ -456,6 +456,9 @@ onLoad((options) => {
     }
     if (options?.date) {
         presetDate.value = options.date
+    }
+    if (options?.tab && ['intro', 'works', 'reviews'].includes(options.tab)) {
+        currentTab.value = options.tab
     }
 })
 </script>

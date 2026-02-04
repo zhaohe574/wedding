@@ -213,7 +213,7 @@ const props = defineProps({
 })
 
 const { getImageUrl } = useAppStore()
-const defaultAvatar = '/static/images/default-avatar.png'
+const defaultAvatar = '/static/images/user/default_avatar.png'
 
 // 过滤显示的列表
 const showList = computed(() => {

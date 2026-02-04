@@ -289,7 +289,7 @@
                         v-model="sceneForm.data_mapping_text"
                         type="textarea"
                         :rows="6"
-                        placeholder="请输入JSON对象，例如 {\"thing1\":\"staff_name\"}"
+                        placeholder='请输入JSON对象，例如 {"thing1":"staff_name"}'
                     />
                     <div class="form-tip">
                         示例：{"thing1":"staff_name","time2":"schedule_date","thing3":"time_slot_desc"}

@@ -51,7 +51,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { staffCenterProfile } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
 const profile = ref<any>({})
-const defaultAvatar = '/static/images/default-avatar.png'
+const defaultAvatar = '/static/images/user/default_avatar.png'
 
 const menus = [
     {

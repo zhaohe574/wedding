@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace app\api\controller;
 
+use app\api\lists\service\PackageLists;
 use app\api\logic\ServiceLogic;
 
 /**
@@ -17,7 +18,7 @@ use app\api\logic\ServiceLogic;
 class ServiceController extends BaseApiController
 {
     public array $notNeedLogin = [
-        'categories', 'categoryTree', 'packages', 'packageDetail', 'tags',
+        'categories', 'categoryTree', 'packages', 'packageLists', 'packageDetail', 'tags',
         'checkPackageAvailability', 'batchCheckAvailability', 'packageSlotPrices', 'calculatePrice'
     ];
 
@@ -51,6 +52,15 @@ class ServiceController extends BaseApiController
         $categoryId = $this->request->get('category_id/d', 0);
         $result = ServiceLogic::packages($categoryId);
         return $this->data($result);
+    }
+
+    /**
+     * @notes 服务套餐列表（支持搜索与分页）
+     * @return \think\response\Json
+     */
+    public function packageLists()
+    {
+        return $this->dataLists(new PackageLists());
     }
 
     /**

@@ -18,6 +18,15 @@ export function getServicePackages(data?: { category_id?: number }) {
 }
 
 /**
+ * @description 获取服务套餐列表（支持搜索与分页）
+ * @param data
+ * @return { Promise }
+ */
+export function getPackageLists(data?: Record<string, any>) {
+    return request.get({ url: '/service/packageLists', data })
+}
+
+/**
  * @description 获取服务套餐详情
  * @param { number } id
  * @return { Promise }

@@ -1,0 +1,1 @@
+import{i as t}from"./is-empty.c0d66e4a.js";const o=(o,s)=>{if(o.install=e=>{for(const n of[o,...Object.values(t(s,{}))])e.component(n.name,n)},s)for(const[t,e]of Object.entries(s))o[t]=e;return o},s=t=>(t.install=()=>{},t);export{s as a,o as w};

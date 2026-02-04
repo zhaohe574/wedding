@@ -23,7 +23,7 @@
             <view class="section-title">当前服务人员</view>
             <view class="staff-card current">
                 <image
-                    :src="currentItem.staff?.avatar || '/static/images/default-avatar.png'"
+                    :src="currentItem.staff?.avatar || '/static/images/user/default_avatar.png'"
                     class="staff-avatar"
                     mode="aspectFill"
                 />
@@ -51,7 +51,7 @@
             <!-- 新人员信息展示 -->
             <view v-if="selectedStaff" class="staff-card new mt-3">
                 <image
-                    :src="selectedStaff.avatar || '/static/images/default-avatar.png'"
+                    :src="selectedStaff.avatar || '/static/images/user/default_avatar.png'"
                     class="staff-avatar"
                     mode="aspectFill"
                 />
@@ -177,7 +177,7 @@
                         @click="selectStaff(item)"
                     >
                         <image
-                            :src="item.avatar || '/static/images/default-avatar.png'"
+                            :src="item.avatar || '/static/images/user/default_avatar.png'"
                             class="item-avatar"
                             mode="aspectFill"
                         />

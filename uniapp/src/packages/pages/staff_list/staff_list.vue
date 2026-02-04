@@ -81,7 +81,7 @@
                     <view class="card-header">
                         <image
                             class="staff-avatar"
-                            :src="item.avatar || '/static/images/default-avatar.png'"
+                            :src="item.avatar || '/static/images/user/default_avatar.png'"
                             mode="aspectFill"
                         />
                         <view class="staff-info">

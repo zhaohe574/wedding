@@ -18,7 +18,7 @@
                 >
                     <image
                         :src="
-                            orderInfo.items[0].staff?.avatar || '/static/images/default-avatar.png'
+                            orderInfo.items[0].staff?.avatar || '/static/images/user/default_avatar.png'
                         "
                         class="w-12 h-12 rounded-lg mr-3"
                         mode="aspectFill"
@@ -115,7 +115,7 @@
             <view v-if="selectedStaff" class="selected-item mt-3">
                 <view class="flex items-center">
                     <image
-                        :src="selectedStaff.avatar || '/static/images/default-avatar.png'"
+                        :src="selectedStaff.avatar || '/static/images/user/default_avatar.png'"
                         class="w-16 h-16 rounded-full mr-3"
                         mode="aspectFill"
                     />
@@ -311,7 +311,7 @@
                         @click="selectStaff(item)"
                     >
                         <image
-                            :src="item.avatar || '/static/images/default-avatar.png'"
+                            :src="item.avatar || '/static/images/user/default_avatar.png'"
                             class="item-avatar"
                             mode="aspectFill"
                         />

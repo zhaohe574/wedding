@@ -117,6 +117,7 @@ import {
     toggleFollow
 } from '@/api/dynamic'
 import DynamicCard from '@/components/business/DynamicCard.vue'
+import { mapDynamicItem } from '@/utils/dynamic'
 
 const userStore = useUserStore()
 const themeStore = useThemeStore()
@@ -175,56 +176,7 @@ const fetchDynamics = async (refresh = false) => {
         }
 
         const res = await getDynamicList(params)
-        const list = (res.data || []).map((item: any) => {
-            // 处理标签数据
-            let tags: string[] = []
-            if (item.tags) {
-                if (typeof item.tags === 'string') {
-                    // 如果是字符串，按逗号分割
-                    tags = item.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
-                } else if (Array.isArray(item.tags)) {
-                    tags = item.tags
-                }
-            }
-            
-            // 处理图片数据：如果是视频动态，将视频封面作为图片展示
-            let displayImages: string[] = []
-            if (item.video_url || item.video) {
-                // 视频动态：使用视频封面作为图片
-                if (item.video_cover) {
-                    displayImages = [item.video_cover]
-                }
-            } else if (item.images && item.images.length > 0) {
-                // 图文动态：使用原有图片
-                displayImages = item.images
-            }
-            
-            return {
-                id: item.id,
-                user: {
-                    id: item.user_id || item.user?.id,
-                    nickname: item.user?.nickname || '匿名用户',
-                    avatar: item.user?.avatar || '',
-                    isFollowed: item.is_followed || false
-                },
-                content: item.content || '',
-                images: displayImages,
-                topics: tags.map((tag: string, index: number) => ({
-                    id: index,
-                    name: tag
-                })),
-                location: item.location ? {
-                    name: item.location,
-                    lat: 0,
-                    lng: 0
-                } : undefined,
-                viewCount: item.view_count || 0,
-                likeCount: item.like_count || 0,
-                commentCount: item.comment_count || 0,
-                isLiked: item.is_liked || false,
-                createTime: item.create_time || item.created_at || ''
-            }
-        })
+        const list = (res.data || []).map(mapDynamicItem)
 
         if (refresh) {
             dynamics.value = list

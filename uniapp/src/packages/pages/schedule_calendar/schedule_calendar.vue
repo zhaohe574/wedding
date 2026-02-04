@@ -12,7 +12,7 @@
         <view class="staff-card" v-if="staffInfo">
             <view class="staff-header">
                 <image 
-                    :src="staffInfo.avatar || '/static/images/default-avatar.png'" 
+                    :src="staffInfo.avatar || '/static/images/user/default_avatar.png'" 
                     class="staff-avatar" 
                     mode="aspectFill" 
                 />
@@ -168,7 +168,7 @@
                 >
                     <image
                         class="recommend-avatar"
-                        :src="item.avatar || '/static/images/default-avatar.png'"
+                        :src="item.avatar || '/static/images/user/default_avatar.png'"
                         mode="aspectFill"
                     />
                     <view class="recommend-info">

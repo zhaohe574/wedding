@@ -1,23 +1,24 @@
 <template>
-    <navigator :url="`/pages/news_detail/news_detail?id=${newsId}`">
-        <view class="news-card flex bg-white px-[20rpx] py-[32rpx]">
-            <view class="mr-[20rpx]" v-if="item.image">
-                <image :src="item.image" width="240" height="180"></image>
-            </view>
-            <view class="news-card-content flex flex-col justify-between flex-1">
-                <view class="news-card-content-title text-base">{{ item.title }}</view>
-                <view class="news-card-content-intro text-gray-400 text-sm mt-[16rpx]">
-                    {{ item.desc }}
-                </view>
-
-                <view class="text-muted text-xs w-full flex justify-between mt-[12rpx]">
-                    <view>{{ item.create_time }}</view>
-                    <view class="flex items-center">
-                        <image
-                            src="/static/images/icon/icon_visit.png"
-                            class="w-[30rpx] h-[30rpx]"
-                        ></image>
-                        <view class="ml-[10rpx]">{{ item.click }}</view>
+    <navigator :url="`/pages/news_detail/news_detail?id=${newsId}`" class="news-card-wrapper">
+        <view class="news-card">
+            <image 
+                v-if="item.image" 
+                class="news-cover" 
+                :src="item.image" 
+                mode="aspectFill"
+                lazy-load
+            />
+            <view class="news-content">
+                <text class="news-title">{{ item.title }}</text>
+                <text class="news-desc">{{ item.desc }}</text>
+                <view class="news-meta">
+                    <view class="meta-item">
+                        <tn-icon name="clock" size="24" color="#999999" />
+                        <text class="meta-text">{{ item.create_time }}</text>
+                    </view>
+                    <view class="meta-item">
+                        <tn-icon name="eye" size="24" color="#999999" />
+                        <text class="meta-text">{{ item.click }}</text>
                     </view>
                 </view>
             </view>
@@ -41,25 +42,81 @@ const props = withDefaults(
 </script>
 
 <style lang="scss" scoped>
+.news-card-wrapper {
+    display: block;
+    margin: 0 24rpx 24rpx;
+}
+
 .news-card {
-    border-bottom: 1px solid #f8f8f8;
-    &-content {
-        &-title {
-            -webkit-line-clamp: 2;
-            overflow: hidden;
-            word-break: break-all;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-box-orient: vertical;
-        }
-        &-intro {
-            -webkit-line-clamp: 1;
-            overflow: hidden;
-            word-break: break-all;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-box-orient: vertical;
-        }
+    background: #ffffff;
+    border-radius: 16rpx;
+    padding: 24rpx;
+    display: flex;
+    gap: 24rpx;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
+
+    &:active {
+        transform: translateY(-2rpx);
+        box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
     }
+}
+
+.news-cover {
+    width: 240rpx;
+    height: 180rpx;
+    border-radius: 12rpx;
+    flex-shrink: 0;
+    background: #f5f5f5;
+}
+
+.news-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+}
+
+.news-title {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #333333;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-all;
+}
+
+.news-desc {
+    margin-top: 12rpx;
+    font-size: 26rpx;
+    color: #999999;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-all;
+}
+
+.news-meta {
+    margin-top: 16rpx;
+    display: flex;
+    align-items: center;
+    gap: 32rpx;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+}
+
+.meta-text {
+    font-size: 24rpx;
+    color: #999999;
 }
 </style>

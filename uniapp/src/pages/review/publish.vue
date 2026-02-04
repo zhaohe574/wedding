@@ -11,7 +11,7 @@
         <view class="bg-white p-4" v-if="orderItem">
             <view class="flex items-center">
                 <image
-                    :src="orderItem.staff?.avatar || '/static/images/default-avatar.png'"
+                    :src="orderItem.staff?.avatar || '/static/images/user/default_avatar.png'"
                     class="w-16 h-16 rounded-full mr-3"
                     mode="aspectFill"
                 />

@@ -56,7 +56,7 @@ import { ensureStaffCenterAccess } from '@/utils/staff-center'
 
 const pagingRef = ref<any>(null)
 const workList = ref<any[]>([])
-const defaultCover = '/static/images/default-avatar.png'
+const defaultCover = '/static/images/user/default_avatar.png'
 
 const auditStatusText = (status: number) => {
     const map: Record<number, string> = {

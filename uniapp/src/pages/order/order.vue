@@ -188,7 +188,7 @@ const getStaffAvatar = (item: any) => {
     if (item.staff && item.staff.avatar) {
         return item.staff.avatar
     }
-    return '/static/images/default-avatar.png'
+    return '/static/images/user/default_avatar.png'
 }
 
 const fetchOrders = async (refresh = false) => {

@@ -63,7 +63,7 @@
                             <view class="group-header">
                                 <view class="staff-section">
                                     <image
-                                        :src="group.staff_avatar || '/static/images/default-avatar.png'"
+                                        :src="group.staff_avatar || '/static/images/user/default_avatar.png'"
                                         class="staff-avatar"
                                         mode="aspectFill"
                                     />

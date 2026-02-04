@@ -1,7 +1,6 @@
 <template>
     <view
         class="banner translate-y-0"
-        :class="{ 'px-md': !isLargeScreen }"
         v-if="content.data.length && content.enabled"
     >
         <LSwiper
@@ -63,10 +62,9 @@ const bannerHeight = computed(() => {
     return props.isLargeScreen ? '1100' : '320'
 })
 
-// 圆角配置
+// 圆角配置（常规模式下无圆角，大屏模式也无圆角）
 const borderRadius = computed(() => {
-    if (props.isLargeScreen) return '0'
-    return String(props.styles.borderRadius || 16)
+    return '0'
 })
 
 // 切换间隔
