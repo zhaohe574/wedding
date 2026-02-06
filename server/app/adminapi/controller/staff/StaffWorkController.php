@@ -37,14 +37,15 @@ class StaffWorkController extends BaseAdminController
     public function detail()
     {
         $params = (new StaffWorkValidate())->goCheck('detail');
+        $workId = (int)$params['id'];
         $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
         if ($staffScopeId > 0) {
-            $work = StaffWork::find($params['id']);
+            $work = StaffWork::find($workId);
             if (!$work || (int)$work->staff_id !== $staffScopeId) {
                 return $this->fail('无权限查看');
             }
         }
-        $result = StaffWorkLogic::detail($params['id']);
+        $result = StaffWorkLogic::detail($workId);
         return $this->data($result);
     }
 
@@ -127,12 +128,12 @@ class StaffWorkController extends BaseAdminController
     }
 
     /**
-     * @notes 设为封面
+     * @notes 审核作品
      * @return \think\response\Json
      */
-    public function setCover()
+    public function audit()
     {
-        $params = (new StaffWorkValidate())->post()->goCheck('detail');
+        $params = (new StaffWorkValidate())->post()->goCheck('audit');
         $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
         if ($staffScopeId > 0) {
             $work = StaffWork::find($params['id']);
@@ -140,7 +141,29 @@ class StaffWorkController extends BaseAdminController
                 return $this->fail('无权限操作');
             }
         }
-        $result = StaffWorkLogic::setCover($params['id']);
+        $result = StaffWorkLogic::audit($params);
+        if (true === $result) {
+            return $this->success('审核成功', [], 1, 1);
+        }
+        return $this->fail(StaffWorkLogic::getError());
+    }
+
+    /**
+     * @notes 设为封面
+     * @return \think\response\Json
+     */
+    public function setCover()
+    {
+        $params = (new StaffWorkValidate())->post()->goCheck('detail');
+        $workId = (int)$params['id'];
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $work = StaffWork::find($workId);
+            if (!$work || (int)$work->staff_id !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
+        }
+        $result = StaffWorkLogic::setCover($workId);
         if (true === $result) {
             return $this->success('操作成功', [], 1, 1);
         }

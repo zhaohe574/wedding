@@ -11,7 +11,7 @@
     --el-color-primary-light-8: rgb(209, 242, 246);
     --el-color-primary-light-9: rgb(232, 249, 250);
     --el-font-weight-primary: 400;
-    --el-menu-item-height: 46px;
+    --el-menu-item-height: 42px;
     --el-menu-sub-item-height: var(--el-menu-item-height);
     --el-menu-icon-width: 18px;
     --sidebar-width: 140px;
@@ -20,9 +20,9 @@
     --color-white: #ffffff;
     --table-header-bg-color: #f8f8f8;
     --el-font-size-extra-large: 18px;
-    --el-menu-horizontal-height: 44px;
-    --el-menu-base-level-padding: 16px;
-    --el-menu-level-padding: 26px;
+    --el-menu-horizontal-height: 40px;
+    --el-menu-base-level-padding: 12px;
+    --el-menu-level-padding: 20px;
     --el-font-size-large: 16px;
     --el-font-size-medium: 15px;
     --el-font-size-base: 14px;

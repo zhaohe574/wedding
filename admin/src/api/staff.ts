@@ -109,6 +109,11 @@ export function staffWorkChangeStatus(params: any) {
     return request.post({ url: '/staff.staffWork/changeStatus', params })
 }
 
+// 作品审核
+export function staffWorkAudit(params: any) {
+    return request.post({ url: '/staff.staffWork/audit', params })
+}
+
 // 设为封面
 export function staffWorkSetCover(params: any) {
     return request.post({ url: '/staff.staffWork/setCover', params })

@@ -145,4 +145,14 @@ class StaffCenterValidate extends BaseValidate
     {
         return $this->only(['id']);
     }
+
+    public function sceneOrderDetail(): StaffCenterValidate
+    {
+        return $this->only(['id']);
+    }
+
+    public function sceneOrderConfirm(): StaffCenterValidate
+    {
+        return $this->only(['id']);
+    }
 }

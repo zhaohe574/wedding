@@ -169,7 +169,7 @@ const getIconAnimation = (index: number): string => {
     .process-header {
         display: flex;
         align-items: center;
-        margin-bottom: 24rpx;
+        margin-bottom: 20rpx;
         gap: 12rpx;
         
         .header-decoration {
@@ -190,17 +190,17 @@ const getIconAnimation = (index: number): string => {
     /* 时间轴样式 */
     .timeline-style {
         background: #FFFFFF;
-        border-radius: 20rpx;
-        padding: 24rpx 20rpx;
+        border-radius: 14rpx;
+        padding: 20rpx 16rpx;
         box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
         
         .timeline-item {
             display: flex;
-            gap: 20rpx;
+            gap: 16rpx;
             position: relative;
             
             &:not(.is-last) {
-                padding-bottom: 40rpx;
+                padding-bottom: 32rpx;
             }
         }
         
@@ -213,8 +213,8 @@ const getIconAnimation = (index: number): string => {
         }
         
         .icon-container {
-            width: 72rpx;
-            height: 72rpx;
+            width: 64rpx;
+            height: 64rpx;
             background: linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%);
             display: flex;
             align-items: center;
@@ -230,7 +230,7 @@ const getIconAnimation = (index: number): string => {
             }
             
             &.square {
-                border-radius: 16rpx;
+                border-radius: 12rpx;
             }
             
             &.anim-1 {
@@ -246,14 +246,14 @@ const getIconAnimation = (index: number): string => {
             }
             
             .step-icon {
-                width: 40rpx;
-                height: 40rpx;
+                width: 36rpx;
+                height: 36rpx;
             }
         }
         
         .timeline-connector {
             position: absolute;
-            top: 72rpx;
+            top: 64rpx;
             left: 50%;
             transform: translateX(-50%);
             width: 3rpx;
@@ -269,12 +269,12 @@ const getIconAnimation = (index: number): string => {
         
         .step-badge {
             display: inline-block;
-            padding: 4rpx 12rpx;
+            padding: 4rpx 10rpx;
             background: linear-gradient(135deg, #0369A1 0%, #0284C7 100%);
             color: #FFFFFF;
             font-size: 20rpx;
             font-weight: 700;
-            border-radius: 16rpx;
+            border-radius: 12rpx;
             margin-bottom: 8rpx;
             letter-spacing: 0.5rpx;
         }
@@ -283,7 +283,7 @@ const getIconAnimation = (index: number): string => {
             font-size: 28rpx;
             font-weight: 700;
             color: #0F172A;
-            margin-bottom: 8rpx;
+            margin-bottom: 6rpx;
             line-height: 1.4;
         }
         
@@ -336,11 +336,11 @@ const getIconAnimation = (index: number): string => {
     .card-style {
         display: flex;
         flex-direction: column;
-        gap: 20rpx;
+        gap: 16rpx;
         
         .step-card {
             background: #FFFFFF;
-            border-radius: 20rpx;
+            border-radius: 14rpx;
             overflow: hidden;
             box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -366,21 +366,21 @@ const getIconAnimation = (index: number): string => {
         
         .card-content {
             display: flex;
-            gap: 20rpx;
-            padding: 24rpx 20rpx;
+            gap: 16rpx;
+            padding: 20rpx 16rpx;
         }
         
         .card-left {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12rpx;
+            gap: 10rpx;
             flex-shrink: 0;
         }
         
         .step-number-circle {
-            width: 52rpx;
-            height: 52rpx;
+            width: 48rpx;
+            height: 48rpx;
             background: linear-gradient(135deg, #0369A1 0%, #0284C7 100%);
             border-radius: 50%;
             display: flex;
@@ -389,18 +389,18 @@ const getIconAnimation = (index: number): string => {
             box-shadow: 0 4rpx 16rpx rgba(3, 105, 161, 0.3);
             
             .number-text {
-                font-size: 28rpx;
+                font-size: 26rpx;
                 font-weight: 800;
                 color: #FFFFFF;
             }
         }
         
         .card-icon {
-            width: 60rpx;
-            height: 60rpx;
-            border-radius: 12rpx;
+            width: 52rpx;
+            height: 52rpx;
+            border-radius: 10rpx;
             background: #F8FAFC;
-            padding: 10rpx;
+            padding: 8rpx;
         }
         
         .card-right {
@@ -438,7 +438,7 @@ const getIconAnimation = (index: number): string => {
             display: inline-flex;
             align-items: center;
             gap: 0;
-            padding: 16rpx;
+            padding: 12rpx;
         }
         
         .horizontal-step {
@@ -448,15 +448,15 @@ const getIconAnimation = (index: number): string => {
         
         .step-box {
             position: relative;
-            width: 240rpx;
+            width: 220rpx;
             background: #FFFFFF;
-            border-radius: 20rpx;
-            padding: 24rpx 20rpx;
+            border-radius: 14rpx;
+            padding: 20rpx 16rpx;
             box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12rpx;
+            gap: 10rpx;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             
             &:active {
@@ -467,17 +467,17 @@ const getIconAnimation = (index: number): string => {
         
         .step-number-badge {
             position: absolute;
-            top: -10rpx;
+            top: -8rpx;
             left: 50%;
             transform: translateX(-50%);
-            width: 40rpx;
-            height: 40rpx;
+            width: 36rpx;
+            height: 36rpx;
             background: linear-gradient(135deg, #0369A1 0%, #0284C7 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20rpx;
+            font-size: 18rpx;
             font-weight: 800;
             color: #FFFFFF;
             box-shadow: 0 4rpx 16rpx rgba(3, 105, 161, 0.3);
@@ -485,13 +485,13 @@ const getIconAnimation = (index: number): string => {
         }
         
         .step-icon-wrapper {
-            width: 72rpx;
-            height: 72rpx;
+            width: 64rpx;
+            height: 64rpx;
             background: linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-top: 12rpx;
+            margin-top: 10rpx;
             
             /* 根据icon_style设置形状 */
             &.circle {
@@ -499,12 +499,12 @@ const getIconAnimation = (index: number): string => {
             }
             
             &.square {
-                border-radius: 16rpx;
+                border-radius: 12rpx;
             }
             
             .horizontal-icon {
-                width: 40rpx;
-                height: 40rpx;
+                width: 36rpx;
+                height: 36rpx;
             }
         }
         
@@ -538,17 +538,17 @@ const getIconAnimation = (index: number): string => {
         .step-arrow {
             display: flex;
             align-items: center;
-            padding: 0 20rpx;
+            padding: 0 16rpx;
             position: relative;
             
             .arrow-line {
-                width: 40rpx;
+                width: 32rpx;
                 height: 3rpx;
                 /* 使用配置的line_color，默认为渐变色 */
             }
             
             .arrow-head {
-                font-size: 40rpx;
+                font-size: 32rpx;
                 color: #0369A1;
                 font-weight: 300;
                 line-height: 1;

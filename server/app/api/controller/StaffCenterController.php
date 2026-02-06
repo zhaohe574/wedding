@@ -251,6 +251,57 @@ class StaffCenterController extends BaseApiController
     }
 
     /**
+     * @notes 订单列表
+     */
+    public function orderLists()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = $this->request->get();
+        $result = StaffCenterLogic::orderLists($this->userId, $params);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 订单详情
+     */
+    public function orderDetail()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->goCheck('orderDetail');
+        $result = StaffCenterLogic::orderDetail($this->userId, (int) $params['id']);
+        if (empty($result)) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 确认订单
+     */
+    public function orderConfirm()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('orderConfirm');
+        $result = StaffCenterLogic::orderConfirm($this->userId, (int) $params['id']);
+        if (true === $result) {
+            return $this->success('确认成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
      * @notes 动态列表
      */
     public function dynamicLists()

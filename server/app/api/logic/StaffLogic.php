@@ -147,6 +147,30 @@ class StaffLogic extends BaseLogic
     }
 
     /**
+     * @notes 作品详情（客户端）
+     * @param int $workId
+     * @return array
+     */
+    public static function workDetail(int $workId): array
+    {
+        $work = StaffWork::with(['staff' => function ($query) {
+                $query->field('id, name, avatar, category_id, price, rating, order_count, review_count, favorite_count, sn');
+            }])
+            ->where('id', $workId)
+            ->where('delete_time', null)
+            ->where('is_show', 1)
+            ->where('audit_status', StaffWork::AUDIT_PASS)
+            ->find();
+
+        if (!$work) {
+            return [];
+        }
+
+        StaffWork::incrementViewCount($workId);
+        return $work->toArray();
+    }
+
+    /**
      * @notes 获取工作人员套餐列表（用于选择）
      * @param int $staffId
      * @return array

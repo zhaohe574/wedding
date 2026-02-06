@@ -754,7 +754,7 @@ onMounted(() => {
     .empty-desc {
         font-size: 26rpx;
         color: #999999;
-        margin-bottom: 48rpx;
+        margin-bottom: 32rpx;
     }
 
     .btn-get {
@@ -763,12 +763,12 @@ onMounted(() => {
         justify-content: center;
         gap: 8rpx;
         width: 280rpx;
-        height: 88rpx;
+        height: 72rpx;
         font-size: 30rpx;
         font-weight: 600;
-        border-radius: 44rpx;
+        border-radius: 32rpx;
         border: none;
-        box-shadow: 0 12rpx 32rpx rgba(124, 58, 237, 0.3);
+        box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
 
         &::after {
             border: none;

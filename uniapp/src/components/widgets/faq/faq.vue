@@ -154,7 +154,7 @@ const clearSearch = () => {
     .faq-header {
         display: flex;
         align-items: center;
-        margin-bottom: 24rpx;
+        margin-bottom: 20rpx;
         gap: 12rpx;
         
         .header-decoration {
@@ -183,9 +183,9 @@ const clearSearch = () => {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(20rpx);
             border: 2rpx solid rgba(37, 99, 235, 0.1);
-            border-radius: 24rpx;
-            padding: 24rpx 32rpx;
-            box-shadow: 0 8rpx 32rpx rgba(37, 99, 235, 0.08);
+            border-radius: 16rpx;
+            padding: 16rpx 24rpx;
+            box-shadow: 0 6rpx 18rpx rgba(37, 99, 235, 0.08);
             transition: all 0.3s;
             
             &:focus-within {
@@ -258,7 +258,7 @@ const clearSearch = () => {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 28rpx 24rpx;
+            padding: 20rpx;
             cursor: pointer;
             transition: background 0.2s;
             
@@ -333,7 +333,7 @@ const clearSearch = () => {
         .answer-wrapper {
             display: flex;
             gap: 16rpx;
-            padding: 0 24rpx 24rpx 24rpx;
+            padding: 0 20rpx 20rpx 20rpx;
         }
         
         .answer-icon {
@@ -360,11 +360,11 @@ const clearSearch = () => {
         }
         
         .category-tag {
-            margin: 16rpx 24rpx 24rpx 88rpx;
+            margin: 12rpx 20rpx 20rpx 72rpx;
             display: inline-block;
-            padding: 8rpx 20rpx;
+            padding: 6rpx 16rpx;
             background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
-            border-radius: 16rpx;
+            border-radius: 12rpx;
             
             .tag-text {
                 font-size: 22rpx;
@@ -378,14 +378,14 @@ const clearSearch = () => {
     .list-style {
         display: flex;
         flex-direction: column;
-        gap: 20rpx;
+        gap: 16rpx;
         
         .faq-card {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(20rpx);
             border: 2rpx solid rgba(37, 99, 235, 0.1);
-            border-radius: 20rpx;
-            padding: 28rpx 24rpx;
+            border-radius: 14rpx;
+            padding: 20rpx;
             box-shadow: 0 4rpx 20rpx rgba(37, 99, 235, 0.06);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             
@@ -398,7 +398,7 @@ const clearSearch = () => {
         .question-section {
             display: flex;
             gap: 16rpx;
-            margin-bottom: 24rpx;
+            margin-bottom: 16rpx;
         }
         
         .q-badge {
@@ -420,7 +420,7 @@ const clearSearch = () => {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 12rpx;
+            gap: 8rpx;
         }
         
         .q-text {
@@ -479,11 +479,11 @@ const clearSearch = () => {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 120rpx 40rpx;
+        padding: 80rpx 32rpx;
         background: rgba(255, 255, 255, 0.6);
         backdrop-filter: blur(20rpx);
         border: 2rpx dashed rgba(148, 163, 184, 0.3);
-        border-radius: 20rpx;
+        border-radius: 14rpx;
         
         .no-result-icon {
             font-size: 120rpx;

@@ -1210,6 +1210,7 @@ CREATE TABLE `la_order_item` (
     `quantity` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '数量',
     `subtotal` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '小计',
     `item_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '项状态：0=待服务,1=服务中,2=已完成,3=已取消',
+    `confirm_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '确认状态：0=待确认,1=已确认',
     `remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '备注',
     `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
     `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
@@ -3174,6 +3175,78 @@ SELECT @staff_center_menu_id, 'C', '动态管理', '', 40, 'dynamic.dynamic/list
 WHERE NOT EXISTS (
     SELECT 1 FROM `la_system_menu` WHERE `pid` = @staff_center_menu_id AND `paths` = 'dynamic'
 );
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`,
+`params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT 0, 'M', '作品管理', 'el-icon-Picture', 730, '', 'staff_work', '', '', '', 0, 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+WHERE NOT EXISTS (
+    SELECT 1 FROM `la_system_menu` WHERE `paths` = 'staff_work' AND `type` = 'M'
+);
+
+SET @staff_work_menu_id = (
+    SELECT `id` FROM `la_system_menu`
+    WHERE `paths` = 'staff_work' AND `type` = 'M'
+    ORDER BY `id` DESC
+    LIMIT 1
+);
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`,
+`params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT @staff_work_menu_id, 'C', '作品列表', '', 100, 'staff.staffWork/lists', 'lists', 'staff/work/index', '', '', 0, 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+WHERE @staff_work_menu_id IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM `la_system_menu` WHERE `pid` = @staff_work_menu_id AND `paths` = 'lists'
+  );
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`,
+`params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT m.id, 'A', '详情', '', 0, 'staff.staffWork/detail', '', '', '', '', 0, 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu` m
+WHERE m.perms = 'staff.staffWork/lists'
+  AND NOT EXISTS (
+      SELECT 1 FROM `la_system_menu` WHERE `perms` = 'staff.staffWork/detail'
+  )
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`,
+`params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT m.id, 'A', '审核', '', 0, 'staff.staffWork/audit', '', '', '', '', 0, 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu` m
+WHERE m.perms = 'staff.staffWork/lists'
+  AND NOT EXISTS (
+      SELECT 1 FROM `la_system_menu` WHERE `perms` = 'staff.staffWork/audit'
+  )
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`,
+`params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT m.id, 'A', '修改状态', '', 0, 'staff.staffWork/changeStatus', '', '', '', '', 0, 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu` m
+WHERE m.perms = 'staff.staffWork/lists'
+  AND NOT EXISTS (
+      SELECT 1 FROM `la_system_menu` WHERE `perms` = 'staff.staffWork/changeStatus'
+  )
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`,
+`params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT m.id, 'A', '设为封面', '', 0, 'staff.staffWork/setCover', '', '', '', '', 0, 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu` m
+WHERE m.perms = 'staff.staffWork/lists'
+  AND NOT EXISTS (
+      SELECT 1 FROM `la_system_menu` WHERE `perms` = 'staff.staffWork/setCover'
+  )
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`,
+`params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT m.id, 'A', '删除', '', 0, 'staff.staffWork/delete', '', '', '', '', 0, 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu` m
+WHERE m.perms = 'staff.staffWork/lists'
+  AND NOT EXISTS (
+      SELECT 1 FROM `la_system_menu` WHERE `perms` = 'staff.staffWork/delete'
+  )
+LIMIT 1;
 
 INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`)
 SELECT @staff_role_id, m.id

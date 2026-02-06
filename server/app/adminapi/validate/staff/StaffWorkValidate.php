@@ -35,6 +35,7 @@ class StaffWorkValidate extends BaseValidate
         'sort' => 'integer|egt:0',
         'is_show' => 'in:0,1',
         'is_cover' => 'in:0,1',
+        'audit_status' => 'in:0,1,2',
     ];
 
     /**
@@ -56,6 +57,7 @@ class StaffWorkValidate extends BaseValidate
         'sort.egt' => '排序必须大于等于0',
         'is_show.in' => '显示状态值错误',
         'is_cover.in' => '封面状态值错误',
+        'audit_status.in' => '审核状态值错误',
     ];
 
     /**
@@ -68,6 +70,7 @@ class StaffWorkValidate extends BaseValidate
         'detail' => ['id'],
         'delete' => ['id'],
         'status' => ['id', 'is_show'],
+        'audit' => ['id', 'audit_status'],
     ];
 
     /**

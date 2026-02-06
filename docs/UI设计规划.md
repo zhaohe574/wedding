@@ -174,21 +174,22 @@ fontSize: {
 ```scss
 .btn-primary {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark-2) 100%);
-  border-radius: 48rpx;
-  padding: 28rpx;
+  border-radius: 32rpx;
+  padding: 18rpx 32rpx;
+  height: 72rpx;
   transition: all 0.2s ease;
-  box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
+  box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
   
   &:active {
     transform: translateY(2rpx);
-    box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
+    box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.22);
   }
 }
 ```
 
-- **样式**：圆角（border-radius: 48rpx）
+- **样式**：中圆角（border-radius: 32rpx）
 - **颜色**：主题色渐变背景 + 白色文字
-- **尺寸**：高度 88rpx（大）、72rpx（中）、56rpx（小）
+- **尺寸**：高度 72rpx（大）、64rpx（中）、52rpx（小）
 - **状态**：active时轻微下移
 - **过渡**：transition: all 0.2s ease
 
@@ -198,7 +199,7 @@ fontSize: {
   background: transparent;
   border: 2rpx solid var(--color-primary);
   color: var(--color-primary);
-  border-radius: 48rpx;
+  border-radius: 32rpx;
   
   &:active {
     background: var(--color-primary-light-9);
@@ -213,8 +214,8 @@ fontSize: {
 ```scss
 .btn-cta {
   background: linear-gradient(135deg, var(--color-cta) 0%, var(--color-cta-dark-2) 100%);
-  border-radius: 48rpx;
-  box-shadow: 0 8rpx 24rpx rgba(249, 115, 22, 0.3);
+  border-radius: 32rpx;
+  box-shadow: 0 6rpx 16rpx rgba(249, 115, 22, 0.22);
 }
 ```
 - **颜色**：CTA色背景
@@ -227,14 +228,14 @@ fontSize: {
 ```scss
 .card {
   background: #FFFFFF;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+  border-radius: 14rpx;
+  padding: 20rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
   transition: all 0.2s ease;
   
   &:active {
-    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
-    transform: translateY(-4rpx);
+    box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.12);
+    transform: translateY(-3rpx);
   }
 }
 ```
@@ -245,9 +246,9 @@ fontSize: {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20rpx);
   border: 2rpx solid rgba(255, 255, 255, 0.3);
-  border-radius: 32rpx;
-  box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12),
-              0 8rpx 16rpx rgba(0, 0, 0, 0.04);
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 48rpx rgba(124, 58, 237, 0.12),
+              0 6rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 ```
 - **使用场景**：用户信息卡、动态卡片、特色展示区
@@ -258,7 +259,7 @@ fontSize: {
 .highlight-card {
   background: var(--color-primary-light-9);
   border: 2rpx solid var(--color-primary-light-7);
-  border-radius: 16rpx;
+  border-radius: 14rpx;
   
   .card-title {
     color: var(--color-primary);
@@ -354,12 +355,12 @@ fontSize: {
 
 ```javascript
 spacing: {
-  xs: '8rpx',    // 极小间距
-  sm: '16rpx',   // 小间距
-  md: '24rpx',   // 中等间距
-  lg: '32rpx',   // 大间距
-  xl: '48rpx',   // 超大间距
-  '2xl': '64rpx' // 特大间距
+  xs: '6rpx',    // 极小间距
+  sm: '12rpx',   // 小间距
+  md: '20rpx',   // 中等间距
+  lg: '28rpx',   // 大间距
+  xl: '40rpx',   // 超大间距
+  '2xl': '56rpx' // 特大间距
 }
 ```
 
@@ -372,7 +373,7 @@ spacing: {
 ├─────────────────────────┤
 │                         │
 │   内容区域               │
-│   padding: 24rpx        │
+│   padding: 20rpx        │
 │                         │
 ├─────────────────────────┤
 │   底部标签栏 (120rpx)    │
@@ -381,9 +382,9 @@ spacing: {
 ```
 
 #### 卡片间距
-- 卡片之间：24rpx
-- 卡片内边距：24rpx
-- 卡片与屏幕边缘：24rpx
+- 卡片之间：16rpx
+- 卡片内边距：20rpx
+- 卡片与屏幕边缘：20rpx
 
 ### 5.3 响应式断点
 
@@ -802,7 +803,7 @@ const themeStore = useThemeStore()
 #### 使用Tailwind类名
 ```vue
 <!-- 推荐：使用Tailwind原子类 -->
-<view class="flex items-center justify-between p-[24rpx] bg-white rounded-[16rpx]">
+<view class="flex items-center justify-between p-[20rpx] bg-white rounded-[14rpx]">
   <text class="text-base text-main font-medium">标题</text>
   <tn-icon name="arrow-right" size="32" color="#999" />
 </view>
@@ -957,16 +958,17 @@ const toggleCheck = () => {
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  padding: 28rpx 56rpx;
-  border-radius: 56rpx;
+  height: 72rpx;
+  padding: 0 40rpx;
+  border-radius: 36rpx;
   font-size: 32rpx;
   font-weight: 700;
-  box-shadow: 0 12rpx 32rpx rgba(124, 58, 237, 0.4);
+  box-shadow: 0 8rpx 20rpx rgba(124, 58, 237, 0.32);
   transition: all 0.3s ease;
   
   &:active {
     transform: translateY(2rpx);
-    box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.4);
+    box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.32);
   }
 }
 
@@ -1132,10 +1134,11 @@ const containerStyle = computed(() => {
 
 ```css
 /* 最小触摸区域：44px × 44px (约88rpx × 88rpx) */
+/* 视觉按钮可更紧凑，但需通过外层padding或热区补足触摸面积 */
 .touch-target {
   min-width: 88rpx;
   min-height: 88rpx;
-  padding: 16rpx;
+  padding: 12rpx;
 }
 ```
 

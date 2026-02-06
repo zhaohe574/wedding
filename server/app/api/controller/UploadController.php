@@ -43,6 +43,22 @@ class UploadController extends BaseApiController
         }
     }
 
+    /**
+     * @notes 上传视频
+     * @return Json
+     * @author 段誉
+     * @date 2021/12/29 16:27
+     */
+    public function video()
+    {
+        try {
+            $result = UploadService::video(0, $this->userId, FileEnum::SOURCE_USER);
+            return $this->success('上传成功', $result);
+        } catch (Exception $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
 
 
 }

@@ -18,7 +18,7 @@ use app\api\logic\StaffLogic;
  */
 class StaffController extends BaseApiController
 {
-    public array $notNeedLogin = ['lists', 'detail', 'works', 'workLists', 'recommend', 'packages'];
+    public array $notNeedLogin = ['lists', 'detail', 'works', 'workLists', 'workDetail', 'recommend', 'packages'];
 
     /**
      * @notes 工作人员列表
@@ -78,6 +78,23 @@ class StaffController extends BaseApiController
     public function workLists()
     {
         return $this->dataLists(new WorkLists());
+    }
+
+    /**
+     * @notes 作品详情
+     * @return \think\response\Json
+     */
+    public function workDetail()
+    {
+        $workId = $this->request->get('id/d');
+        if (!$workId) {
+            return $this->fail('参数错误');
+        }
+        $result = StaffLogic::workDetail($workId);
+        if (empty($result)) {
+            return $this->fail('作品不存在');
+        }
+        return $this->data($result);
     }
 
     /**

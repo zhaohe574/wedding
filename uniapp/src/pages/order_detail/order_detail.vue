@@ -284,7 +284,7 @@
                     }"
                     @click="handlePay"
                 >
-                    <tn-icon name="wallet-fill" size="32" :color="$theme.btnColor" />
+                    <tn-icon name="wallet-fill" size="28" :color="$theme.btnColor" />
                     <text>立即支付 ¥{{ needPayAmount }}</text>
                 </view>
                 <view 
@@ -307,7 +307,7 @@
                     }"
                     @click="handleConfirm"
                 >
-                    <tn-icon name="check-circle-fill" size="32" :color="$theme.btnColor" />
+                    <tn-icon name="check-circle-fill" size="28" :color="$theme.btnColor" />
                     <text>确认完成</text>
                 </view>
                 <view
@@ -406,23 +406,28 @@
                         @click="showVoucherPopup = false"
                     />
                 </view>
+                
                 <view class="popup-content">
                     <view class="form-item">
                         <text class="form-label">凭证图片</text>
-                        <view class="voucher-upload">
-                            <view class="voucher-preview" v-if="voucherForm.image">
-                                <image :src="voucherForm.image" mode="aspectFill" />
-                                <view class="voucher-remove" @click="voucherForm.image = ''">
-                                    <tn-icon name="close" size="24" color="#FFFFFF" />
-                                </view>
+                        <text class="form-tip">请上传转账截图或付款凭证</text>
+                    </view>
+                    
+                    <view class="voucher-upload-area">
+                        <view class="voucher-preview" v-if="voucherForm.image">
+                            <image :src="voucherForm.image" mode="aspectFill" />
+                            <view class="voucher-remove" @click="voucherForm.image = ''">
+                                <tn-icon name="close" size="32" color="#FFFFFF" />
                             </view>
-                            <view class="voucher-add" v-else @click="chooseVoucherImage">
-                                <tn-icon name="add" size="48" color="#CCCCCC" />
-                                <text class="voucher-add-text">选择图片</text>
-                            </view>
+                        </view>
+                        <view class="voucher-add" v-else @click="chooseVoucherImage">
+                            <tn-icon name="add" size="64" color="#CCCCCC" />
+                            <text class="voucher-add-text">选择图片</text>
+                            <text class="voucher-add-tip">支持jpg、png格式</text>
                         </view>
                     </view>
                 </view>
+                
                 <view class="popup-actions">
                     <view
                         class="popup-btn cancel"
@@ -830,7 +835,7 @@ onLoad((options: any) => {
 .order-detail {
     min-height: 100vh;
     background-color: #F6F6F6;
-    padding-bottom: calc(env(safe-area-inset-bottom) + 160rpx);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 120rpx);
 }
 
 // 订单状态横幅
@@ -868,10 +873,10 @@ onLoad((options: any) => {
 // 联系信息卡片
 .contact-card {
     background: #FFFFFF;
-    margin: -48rpx 24rpx 24rpx;
-    padding: 24rpx;
-    border-radius: 16rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+    margin: -40rpx 20rpx 20rpx;
+    padding: 20rpx;
+    border-radius: 14rpx;
+    box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
     position: relative;
     z-index: 10;
     
@@ -924,9 +929,9 @@ onLoad((options: any) => {
 .refund-card,
 .voucher-card {
     background: #FFFFFF;
-    margin: 0 24rpx 24rpx;
-    border-radius: 16rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+    margin: 0 20rpx 20rpx;
+    border-radius: 14rpx;
+    box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
     overflow: hidden;
 }
 
@@ -935,7 +940,7 @@ onLoad((options: any) => {
     display: flex;
     align-items: center;
     gap: 12rpx;
-    padding: 24rpx;
+    padding: 20rpx;
     border-bottom: 1rpx solid #F5F5F5;
 }
 
@@ -949,14 +954,14 @@ onLoad((options: any) => {
 .service-groups {
     display: flex;
     flex-direction: column;
-    gap: 16rpx;
-    padding: 0 24rpx 24rpx;
+    gap: 12rpx;
+    padding: 0 20rpx 20rpx;
 }
 
 .service-group {
     background: #F9FAFB;
-    border-radius: 16rpx;
-    padding: 20rpx;
+    border-radius: 14rpx;
+    padding: 16rpx;
     border: 1rpx solid #F0F0F0;
 }
 
@@ -974,8 +979,8 @@ onLoad((options: any) => {
 }
 
 .staff-avatar {
-    width: 88rpx;
-    height: 88rpx;
+    width: 80rpx;
+    height: 80rpx;
     border-radius: 16rpx;
 }
 
@@ -1103,7 +1108,7 @@ onLoad((options: any) => {
 
 // 信息列表
 .info-list {
-    padding: 0 24rpx 12rpx;
+    padding: 0 20rpx 12rpx;
 }
 
 .info-row {
@@ -1139,7 +1144,7 @@ onLoad((options: any) => {
 
 // 金额明细
 .amount-list {
-    padding: 0 24rpx 12rpx;
+    padding: 0 20rpx 12rpx;
 }
 
 .amount-row {
@@ -1194,7 +1199,7 @@ onLoad((options: any) => {
 
 // 退款信息
 .refund-list {
-    padding: 0 24rpx 12rpx;
+    padding: 0 20rpx 12rpx;
 }
 
 .refund-row {
@@ -1234,7 +1239,7 @@ onLoad((options: any) => {
 
 // 线下凭证
 .voucher-body {
-    padding: 0 24rpx 24rpx;
+    padding: 0 20rpx 20rpx;
 }
 
 .voucher-row {
@@ -1296,8 +1301,8 @@ onLoad((options: any) => {
     right: 0;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20rpx);
-    padding: 24rpx;
-    padding-bottom: calc(env(safe-area-inset-bottom) + 24rpx);
+    padding: 12rpx 20rpx;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 12rpx);
     box-shadow: 0 -2rpx 16rpx rgba(0, 0, 0, 0.08);
     z-index: 100;
 }
@@ -1306,7 +1311,7 @@ onLoad((options: any) => {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 24rpx;
+    gap: 12rpx;
 }
 
 .btn-primary,
@@ -1314,10 +1319,11 @@ onLoad((options: any) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12rpx;
-    padding: 24rpx 48rpx;
-    border-radius: 48rpx;
-    font-size: 28rpx;
+    gap: 8rpx;
+    height: 72rpx;
+    padding: 0 28rpx;
+    border-radius: 32rpx;
+    font-size: 26rpx;
     font-weight: 600;
     transition: all 0.2s ease;
     
@@ -1328,7 +1334,7 @@ onLoad((options: any) => {
 }
 
 .btn-primary {
-    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.12);
 }
 
 .btn-secondary {
@@ -1375,7 +1381,7 @@ onLoad((options: any) => {
 
 .popup-actions {
     display: flex;
-    gap: 24rpx;
+    gap: 16rpx;
 }
 
 .popup-btn {
@@ -1383,9 +1389,9 @@ onLoad((options: any) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 28rpx;
-    border-radius: 48rpx;
-    font-size: 32rpx;
+    padding: 20rpx;
+    border-radius: 40rpx;
+    font-size: 28rpx;
     font-weight: 600;
     transition: all 0.2s ease;
     
@@ -1400,7 +1406,7 @@ onLoad((options: any) => {
     }
     
     &.confirm {
-        box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+        box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.12);
     }
 }
 
@@ -1409,18 +1415,19 @@ onLoad((options: any) => {
     padding: 32rpx;
 }
 
-.voucher-upload {
+.voucher-upload-area {
     display: flex;
-    align-items: center;
-    gap: 16rpx;
+    justify-content: center;
+    padding: 24rpx 0;
 }
 
 .voucher-preview {
     position: relative;
-    width: 200rpx;
-    height: 200rpx;
-    border-radius: 16rpx;
+    width: 480rpx;
+    height: 480rpx;
+    border-radius: 24rpx;
     overflow: hidden;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
 
     image {
         width: 100%;
@@ -1430,32 +1437,57 @@ onLoad((options: any) => {
 
 .voucher-remove {
     position: absolute;
-    top: 8rpx;
-    right: 8rpx;
-    width: 44rpx;
-    height: 44rpx;
+    top: 16rpx;
+    right: 16rpx;
+    width: 56rpx;
+    height: 56rpx;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s ease;
+    
+    &:active {
+        transform: scale(0.9);
+    }
 }
 
 .voucher-add {
-    width: 200rpx;
-    height: 200rpx;
-    border-radius: 16rpx;
-    border: 2rpx dashed #DDDDDD;
+    width: 480rpx;
+    height: 480rpx;
+    border-radius: 24rpx;
+    border: 3rpx dashed #DDDDDD;
+    background: #F9FAFB;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8rpx;
+    gap: 16rpx;
+    transition: all 0.2s ease;
+    
+    &:active {
+        background: #F3F4F6;
+        border-color: #CCCCCC;
+    }
 }
 
 .voucher-add-text {
+    font-size: 28rpx;
+    color: #666666;
+    font-weight: 500;
+}
+
+.voucher-add-tip {
     font-size: 24rpx;
     color: #999999;
+}
+
+.form-tip {
+    display: block;
+    font-size: 24rpx;
+    color: #999999;
+    margin-top: 8rpx;
 }
 
 // 加载状态
@@ -1475,6 +1507,6 @@ onLoad((options: any) => {
 
 // 安全区域
 .safe-bottom {
-    height: calc(env(safe-area-inset-bottom) + 160rpx);
+    height: calc(env(safe-area-inset-bottom) + 120rpx);
 }
 </style>

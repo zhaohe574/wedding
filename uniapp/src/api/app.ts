@@ -25,6 +25,18 @@ export function uploadImage(file: any, token?: string) {
     })
 }
 
+export function uploadVideo(file: any, token?: string) {
+    return request.uploadFile({
+        url: '/upload/video',
+        filePath: file,
+        name: 'file',
+        header: {
+            token
+        },
+        fileType: 'video'
+    })
+}
+
 export function wxJsConfig(data: any) {
     return request.get({ url: '/wechat/jsConfig', data })
 }

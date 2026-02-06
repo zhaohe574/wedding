@@ -3,11 +3,11 @@
         <!-- 卡片式样式 -->
         <view
             v-if="content.style == 1"
-            class="card-style rounded-lg p-[40rpx] overflow-hidden relative"
+            class="card-style rounded-lg p-[28rpx] overflow-hidden relative"
             :style="{ backgroundColor: content.bg_color || '#FFF5F5' }"
         >
             <!-- 标题 -->
-            <view class="text-center mb-[40rpx]">
+            <view class="text-center mb-[28rpx]">
                 <text class="text-xl font-medium" :style="{ color: content.text_color || '#333333' }">
                     {{ content.title || '距离我们的婚礼还有' }}
                 </text>
@@ -68,11 +68,11 @@
         <!-- 简约式样式 -->
         <view
             v-if="content.style == 2"
-            class="simple-style rounded-lg p-[32rpx]"
+            class="simple-style rounded-lg p-[24rpx]"
             :style="{ backgroundColor: content.bg_color || '#FFFFFF' }"
         >
             <!-- 标题 -->
-            <view class="text-center mb-[24rpx]">
+            <view class="text-center mb-[20rpx]">
                 <text class="text-base" :style="{ color: content.text_color || '#666666' }">
                     {{ content.title || '距离我们的婚礼还有' }}
                 </text>
@@ -113,7 +113,7 @@
         <!-- 浪漫式样式 -->
         <view
             v-if="content.style == 3"
-            class="romantic-style rounded-lg p-[40rpx] overflow-hidden relative"
+            class="romantic-style rounded-lg p-[28rpx] overflow-hidden relative"
             :style="{ backgroundColor: content.bg_color || '#FFE8F0' }"
         >
             <!-- 装饰图案 -->
@@ -124,7 +124,7 @@
             </view>
 
             <!-- 标题 -->
-            <view class="text-center mb-[32rpx] relative z-10">
+            <view class="text-center mb-[24rpx] relative z-10">
                 <text class="text-lg font-medium" :style="{ color: content.text_color || '#333333' }">
                     {{ content.title || '距离我们的婚礼还有' }}
                 </text>
@@ -134,7 +134,7 @@
             <view class="grid grid-cols-2 gap-4 relative z-10">
                 <view
                     v-if="content.show_days"
-                    class="time-box bg-white/80 rounded-lg p-[24rpx] text-center"
+                    class="time-box bg-white/80 rounded-lg p-[20rpx] text-center"
                 >
                     <view
                         class="time-number text-3xl font-bold mb-[8rpx]"
@@ -147,7 +147,7 @@
 
                 <view
                     v-if="content.show_hours"
-                    class="time-box bg-white/80 rounded-lg p-[24rpx] text-center"
+                    class="time-box bg-white/80 rounded-lg p-[20rpx] text-center"
                 >
                     <view
                         class="time-number text-3xl font-bold mb-[8rpx]"
@@ -160,7 +160,7 @@
 
                 <view
                     v-if="content.show_minutes"
-                    class="time-box bg-white/80 rounded-lg p-[24rpx] text-center"
+                    class="time-box bg-white/80 rounded-lg p-[20rpx] text-center"
                 >
                     <view
                         class="time-number text-3xl font-bold mb-[8rpx]"
@@ -173,7 +173,7 @@
 
                 <view
                     v-if="content.show_seconds"
-                    class="time-box bg-white/80 rounded-lg p-[24rpx] text-center"
+                    class="time-box bg-white/80 rounded-lg p-[20rpx] text-center"
                 >
                     <view
                         class="time-number text-3xl font-bold mb-[8rpx]"
@@ -309,11 +309,11 @@ onUnmounted(() => {
     }
 
     .gap-3 {
-        gap: 24rpx;
+        gap: 20rpx;
     }
 
     .gap-4 {
-        gap: 32rpx;
+        gap: 28rpx;
     }
 }
 </style>

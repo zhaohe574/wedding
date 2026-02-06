@@ -469,18 +469,18 @@ onLoad((options: any) => {
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 20rpx 30rpx;
+    padding: 12rpx 20rpx;
     background: #fff;
     box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
 }
 
 .btn-submit {
     width: 100%;
-    height: 88rpx;
-    line-height: 88rpx;
+    height: 72rpx;
+    line-height: 72rpx;
     background: var(--primary-color, #ff6b35);
     color: #fff;
-    border-radius: 44rpx;
+    border-radius: 32rpx;
     font-size: 30rpx;
     border: none;
 

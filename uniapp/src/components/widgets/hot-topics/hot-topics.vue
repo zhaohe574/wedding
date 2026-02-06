@@ -215,7 +215,7 @@ onMounted(() => {
     .topic-header {
         display: flex;
         align-items: center;
-        margin-bottom: 24rpx;
+        margin-bottom: 20rpx;
         gap: 16rpx;
         
         .header-decoration {
@@ -237,8 +237,8 @@ onMounted(() => {
     .tag-cloud-style {
         position: relative;
         background: linear-gradient(135deg, #FFFFFF 0%, #FAF5FF 100%);
-        border-radius: 32rpx;
-        padding: 40rpx 32rpx;
+        border-radius: 24rpx;
+        padding: 28rpx 24rpx;
         overflow: hidden;
         box-shadow: 0 8rpx 32rpx rgba(124, 58, 237, 0.08);
         
@@ -291,15 +291,15 @@ onMounted(() => {
             z-index: 1;
             display: flex;
             flex-wrap: wrap;
-            gap: 16rpx;
+            gap: 12rpx;
             justify-content: center;
         }
         
         .topic-tag {
             position: relative;
             cursor: pointer;
-            border-radius: 50rpx;
-            padding: 20rpx 32rpx;
+            border-radius: 32rpx;
+            padding: 16rpx 24rpx;
             background: #FFFFFF;
             border: 3rpx solid transparent;
             transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -312,7 +312,7 @@ onMounted(() => {
                 left: 0;
                 right: 0;
                 bottom: 0;
-                border-radius: 50rpx;
+                border-radius: 32rpx;
                 opacity: 0;
                 transition: opacity 0.4s;
                 pointer-events: none;
@@ -591,15 +591,15 @@ onMounted(() => {
         
         .cards-wrapper {
             display: inline-flex;
-            gap: 24rpx;
-            padding: 0 20rpx 20rpx 20rpx;
+            gap: 20rpx;
+            padding: 0 20rpx 16rpx 20rpx;
         }
         
         .topic-card {
             position: relative;
             width: 300rpx;
             height: 180rpx;
-            border-radius: 28rpx;
+            border-radius: 20rpx;
             overflow: hidden;
             cursor: pointer;
             background: #FFFFFF;
@@ -676,7 +676,7 @@ onMounted(() => {
                 position: relative;
                 z-index: 1;
                 height: 100%;
-                padding: 32rpx;
+                padding: 24rpx;
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
@@ -730,14 +730,14 @@ onMounted(() => {
             }
             
             .arrow-icon {
-                width: 56rpx;
-                height: 56rpx;
+                width: 48rpx;
+                height: 48rpx;
                 background: linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%);
-                border-radius: 16rpx;
+                border-radius: 12rpx;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 36rpx;
+                font-size: 32rpx;
                 font-weight: 700;
                 color: #FFFFFF;
                 box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
@@ -749,16 +749,16 @@ onMounted(() => {
     .list-style {
         display: flex;
         flex-direction: column;
-        gap: 20rpx;
+        gap: 16rpx;
         
         .topic-list-item {
             position: relative;
             display: flex;
             align-items: center;
-            gap: 24rpx;
-            padding: 28rpx 24rpx;
+            gap: 16rpx;
+            padding: 20rpx;
             background: #FFFFFF;
-            border-radius: 24rpx;
+            border-radius: 14rpx;
             cursor: pointer;
             box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
             transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);

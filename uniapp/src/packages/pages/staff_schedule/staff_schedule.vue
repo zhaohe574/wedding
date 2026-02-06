@@ -3,56 +3,98 @@
         <navigation-bar title="档期管理" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
     </page-meta>
 
-    <view class="min-h-screen bg-[#f6f6f6] pb-[40rpx]">
-        <view class="bg-white mx-[24rpx] mt-[24rpx] rounded-lg p-[24rpx]">
-            <view class="flex items-center justify-between">
-                <view class="text-sm font-medium">选择日期</view>
-                <picker mode="date" :value="selectedDate" @change="handleDateChange">
-                    <view class="text-sm text-gray-500">{{ selectedDate }}</view>
-                </picker>
+    <view class="page-container">
+        <!-- 日期选择卡片 -->
+        <view class="date-card">
+            <view class="card-header">
+                <tn-icon name="calendar" size="32" :color="$theme.primaryColor" />
+                <text class="card-title">选择日期</text>
             </view>
-            <view class="text-xs text-gray-400 mt-[12rpx]">当前月份：{{ year }}-{{ monthText }}</view>
+            
+            <picker mode="date" :value="selectedDate" @change="handleDateChange">
+                <view class="date-picker">
+                    <view class="date-display">
+                        <text class="date-text">{{ selectedDate }}</text>
+                        <view class="date-week">{{ getWeekDay(selectedDate) }}</view>
+                    </view>
+                    <tn-icon name="right" size="28" color="#C8C9CC" />
+                </view>
+            </picker>
+            
+            <view class="month-info">
+                <tn-icon name="info" size="24" color="#999999" />
+                <text>当前月份：{{ year }}-{{ monthText }}</text>
+            </view>
         </view>
 
-        <view class="mx-[24rpx] mt-[20rpx]">
+        <!-- 时段列表 -->
+        <view class="slot-list">
             <view
                 v-for="slot in timeSlots"
                 :key="slot.value"
-                class="bg-white rounded-lg p-[20rpx] mb-[16rpx]"
+                class="slot-card"
             >
-                <view class="flex items-center justify-between">
-                    <view class="text-sm font-medium">{{ slot.label }}</view>
-                    <view class="text-xs" :class="statusClass(getSlotStatus(slot.value))">
-                        {{ getSlotStatusLabel(slot.value) }}
+                <!-- 时段头部 -->
+                <view class="slot-header">
+                    <view class="slot-info">
+                        <tn-icon :name="slot.icon" size="36" :color="$theme.primaryColor" />
+                        <view class="slot-text">
+                            <text class="slot-label">{{ slot.label }}</text>
+                            <text class="slot-time">{{ slot.time }}</text>
+                        </view>
+                    </view>
+                    <view 
+                        class="slot-status"
+                        :style="getStatusStyle(getSlotStatus(slot.value))"
+                    >
+                        <tn-icon 
+                            :name="getStatusIcon(getSlotStatus(slot.value))" 
+                            size="24" 
+                            color="inherit" 
+                        />
+                        <text>{{ getSlotStatusLabel(slot.value) }}</text>
                     </view>
                 </view>
-                <view class="flex gap-[16rpx] mt-[16rpx]">
-                    <tn-button
-                        size="sm"
-                        type="primary"
-                        shape="round"
-                        :plain="true"
-                        :disabled="!canEdit(slot.value)"
+
+                <!-- 操作按钮 -->
+                <view class="slot-actions">
+                    <view
+                        class="action-btn available-btn"
+                        :class="{ disabled: !canEdit(slot.value) }"
+                        :style="canEdit(slot.value) ? { 
+                            background: `linear-gradient(135deg, ${$theme.primaryColor}15 0%, ${$theme.primaryColor}30 100%)`,
+                            color: $theme.primaryColor,
+                            borderColor: $theme.primaryColor
+                        } : {}"
                         @click="setStatus(slot.value, 1)"
                     >
-                        设为可预约
-                    </tn-button>
-                    <tn-button
-                        size="sm"
-                        type="danger"
-                        shape="round"
-                        :plain="true"
-                        :disabled="!canEdit(slot.value)"
+                        <tn-icon 
+                            name="check-circle" 
+                            size="28" 
+                            :color="canEdit(slot.value) ? $theme.primaryColor : '#C8C9CC'" 
+                        />
+                        <text>设为可预约</text>
+                    </view>
+                    <view
+                        class="action-btn unavailable-btn"
+                        :class="{ disabled: !canEdit(slot.value) }"
                         @click="setStatus(slot.value, 0)"
                     >
-                        设为不可用
-                    </tn-button>
+                        <tn-icon 
+                            name="close-circle" 
+                            size="28" 
+                            :color="canEdit(slot.value) ? '#FF2C3C' : '#C8C9CC'" 
+                        />
+                        <text>设为不可用</text>
+                    </view>
                 </view>
             </view>
         </view>
 
-        <view class="mx-[24rpx] mt-[10rpx] text-xs text-gray-400">
-            已预约/锁定/预留的档期不可调整。
+        <!-- 提示信息 -->
+        <view class="tip-card">
+            <tn-icon name="info" size="28" color="#FF9900" />
+            <text class="tip-text">已预约/锁定/预留的档期不可调整</text>
         </view>
     </view>
 </template>
@@ -62,6 +104,9 @@ import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { staffCenterScheduleMonth, staffCenterScheduleSetStatus } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
+import { useThemeStore } from '@/stores/theme'
+
+const $theme = useThemeStore()
 
 const formatDate = (date: Date) => {
     const year = date.getFullYear()
@@ -77,13 +122,15 @@ const schedules = ref<Record<string, any>>({})
 
 const monthText = computed(() => String(month.value).padStart(2, '0'))
 
+// 时段配置
 const timeSlots = [
-    { value: 0, label: '全天' },
-    { value: 1, label: '早礼' },
-    { value: 2, label: '午宴' },
-    { value: 3, label: '晚宴' }
+    { value: 0, label: '全天', time: '全天服务', icon: 'sun' },
+    { value: 1, label: '早礼', time: '08:00-12:00', icon: 'sunrise' },
+    { value: 2, label: '午宴', time: '12:00-18:00', icon: 'sun' },
+    { value: 3, label: '晚宴', time: '18:00-22:00', icon: 'moon' }
 ]
 
+// 状态映射
 const statusMap: Record<number, string> = {
     0: '不可用',
     1: '可预约',
@@ -92,37 +139,71 @@ const statusMap: Record<number, string> = {
     4: '内部预留'
 }
 
+// 获取星期
+const getWeekDay = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+    return weekDays[date.getDay()]
+}
+
+// 获取时段状态
 const getSlotStatus = (slotValue: number) => {
     const day = schedules.value[selectedDate.value] || {}
     return day[slotValue]?.status ?? null
 }
 
+// 获取状态文本
 const getSlotStatusLabel = (slotValue: number) => {
     const status = getSlotStatus(slotValue)
     if (status === null || status === undefined) return '按规则'
     return statusMap[status] || '未知'
 }
 
-const statusClass = (status: number | null) => {
-    if (status === 1) return 'text-green-600'
-    if (status === 0) return 'text-red-500'
-    if (status === 2) return 'text-orange-500'
-    if (status === 3) return 'text-purple-500'
-    if (status === 4) return 'text-blue-500'
-    return 'text-gray-400'
+// 获取状态样式
+const getStatusStyle = (status: number | null) => {
+    const styles: Record<string, any> = {
+        1: { background: 'rgba(25, 190, 107, 0.1)', color: '#19BE6B' },
+        0: { background: 'rgba(255, 44, 60, 0.1)', color: '#FF2C3C' },
+        2: { background: 'rgba(255, 153, 0, 0.1)', color: '#FF9900' },
+        3: { background: `${$theme.primaryColor}15`, color: $theme.primaryColor },
+        4: { background: 'rgba(64, 158, 255, 0.1)', color: '#409EFF' },
+        default: { background: 'rgba(153, 153, 153, 0.1)', color: '#999999' }
+    }
+    return styles[status as any] || styles.default
 }
 
+// 获取状态图标
+const getStatusIcon = (status: number | null) => {
+    const icons: Record<string, string> = {
+        1: 'check-circle',
+        0: 'close-circle',
+        2: 'clock',
+        3: 'lock',
+        4: 'star',
+        default: 'info'
+    }
+    return icons[status as any] || icons.default
+}
+
+// 是否可编辑
 const canEdit = (slotValue: number) => {
     const status = getSlotStatus(slotValue)
     return status === null || status === 0 || status === 1
 }
 
+// 获取月份数据
 const fetchMonth = async () => {
     const res = await staffCenterScheduleMonth({ year: year.value, month: month.value })
     schedules.value = res?.schedules || {}
 }
 
+// 设置状态
 const setStatus = async (slotValue: number, status: number) => {
+    if (!canEdit(slotValue)) {
+        uni.showToast({ title: '该时段不可调整', icon: 'none' })
+        return
+    }
+    
     try {
         await staffCenterScheduleSetStatus({
             date: selectedDate.value,
@@ -142,6 +223,7 @@ const setStatus = async (slotValue: number, status: number) => {
     }
 }
 
+// 日期变更
 const handleDateChange = (e: any) => {
     selectedDate.value = e.detail.value
     const [y, m] = selectedDate.value.split('-')
@@ -160,4 +242,191 @@ onShow(async () => {
 })
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.page-container {
+    min-height: 100vh;
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #F6F6F6 100%);
+    padding-bottom: 40rpx;
+}
+
+/* 日期选择卡片 */
+.date-card {
+    margin: 24rpx;
+    padding: 32rpx 24rpx;
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    margin-bottom: 24rpx;
+}
+
+.card-title {
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #333333;
+}
+
+.date-picker {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24rpx;
+    background: rgba(124, 58, 237, 0.05);
+    border-radius: 16rpx;
+    border: 2rpx solid rgba(124, 58, 237, 0.1);
+}
+
+.date-display {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+}
+
+.date-text {
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #333333;
+}
+
+.date-week {
+    padding: 4rpx 12rpx;
+    background: rgba(124, 58, 237, 0.1);
+    border-radius: 12rpx;
+    font-size: 24rpx;
+    color: #7C3AED;
+}
+
+.month-info {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    margin-top: 16rpx;
+    font-size: 24rpx;
+    color: #999999;
+}
+
+/* 时段列表 */
+.slot-list {
+    padding: 0 24rpx;
+}
+
+.slot-card {
+    margin-bottom: 24rpx;
+    padding: 24rpx;
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
+/* 时段头部 */
+.slot-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 20rpx;
+    border-bottom: 1rpx solid #F5F5F5;
+    margin-bottom: 20rpx;
+}
+
+.slot-info {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+}
+
+.slot-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.slot-label {
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #333333;
+}
+
+.slot-time {
+    font-size: 24rpx;
+    color: #999999;
+}
+
+.slot-status {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+    padding: 8rpx 16rpx;
+    border-radius: 24rpx;
+    font-size: 24rpx;
+    font-weight: 500;
+}
+
+/* 操作按钮 */
+.slot-actions {
+    display: flex;
+    gap: 16rpx;
+}
+
+.action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    height: 72rpx;
+    border-radius: 48rpx;
+    font-size: 28rpx;
+    font-weight: 500;
+    border: 2rpx solid;
+    transition: all 0.2s ease;
+    
+    &:active:not(.disabled) {
+        opacity: 0.8;
+    }
+    
+    &.disabled {
+        opacity: 0.4;
+        pointer-events: none;
+    }
+}
+
+.available-btn {
+    background: transparent;
+}
+
+.unavailable-btn {
+    background: rgba(255, 44, 60, 0.05);
+    color: #FF2C3C;
+    border-color: #FF2C3C;
+    
+    &.disabled {
+        background: #F5F5F5;
+        color: #C8C9CC;
+        border-color: #E5E5E5;
+    }
+}
+
+/* 提示卡片 */
+.tip-card {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    margin: 0 24rpx;
+    padding: 20rpx 24rpx;
+    background: rgba(255, 153, 0, 0.1);
+    border-radius: 16rpx;
+    border: 1rpx solid rgba(255, 153, 0, 0.2);
+}
+
+.tip-text {
+    flex: 1;
+    font-size: 24rpx;
+    color: #FF9900;
+    line-height: 1.5;
+}
+</style>

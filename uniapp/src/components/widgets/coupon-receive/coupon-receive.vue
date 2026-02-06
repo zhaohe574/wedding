@@ -1,5 +1,5 @@
 <template>
-    <view v-if="content.enabled && showList.length" class="coupon-receive mx-[24rpx] mt-[24rpx]">
+    <view v-if="content.enabled && showList.length" class="coupon-receive mx-[20rpx] mt-[20rpx]">
         <!-- 标题 -->
         <view v-if="content.title" class="flex items-center justify-between mb-[20rpx] px-[8rpx]">
             <view class="flex items-center">
@@ -21,7 +21,7 @@
 
         <!-- 横向滑动 -->
         <scroll-view v-if="content.style == 1" scroll-x class="coupon-scroll">
-            <view class="flex gap-[24rpx]">
+            <view class="flex gap-[16rpx]">
                 <view
                     v-for="(item, index) in showList"
                     :key="index"
@@ -73,7 +73,7 @@
             <view
                 v-for="(item, index) in showList"
                 :key="index"
-                class="coupon-card-vertical mb-[24rpx]"
+                class="coupon-card-vertical mb-[16rpx]"
                 @click="goDetail(item)"
             >
                 <!-- 玻璃态背景 -->
@@ -249,7 +249,7 @@ const handleMore = () => {
         display: flex;
         align-items: center;
         height: 100%;
-        padding: 32rpx;
+        padding: 24rpx;
         z-index: 1;
     }
     
@@ -298,7 +298,7 @@ const handleMore = () => {
             rgba(255, 255, 255, 0.4) 50%, 
             rgba(255, 255, 255, 0) 100%
         );
-        margin: 0 28rpx;
+        margin: 0 20rpx;
     }
     
     // 右侧信息区域
@@ -309,10 +309,10 @@ const handleMore = () => {
         justify-content: center;
         
         .coupon-name {
-            font-size: 30rpx;
+            font-size: 28rpx;
             font-weight: 600;
             color: #FFFFFF;
-            margin-bottom: 12rpx;
+            margin-bottom: 8rpx;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -321,16 +321,16 @@ const handleMore = () => {
         .coupon-time {
             font-size: 22rpx;
             color: rgba(255, 255, 255, 0.75);
-            margin-bottom: 20rpx;
+            margin-bottom: 12rpx;
         }
         
         .coupon-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 160rpx;
-            height: 56rpx;
-            border-radius: 28rpx;
+            width: 140rpx;
+            height: 52rpx;
+            border-radius: 26rpx;
             font-size: 26rpx;
             font-weight: 600;
             transition: all 0.2s ease;

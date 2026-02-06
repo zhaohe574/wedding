@@ -44,21 +44,21 @@ const props = withDefaults(
 <style lang="scss" scoped>
 .news-card-wrapper {
     display: block;
-    margin: 0 24rpx 24rpx;
+    margin: 0 20rpx 20rpx;
 }
 
 .news-card {
     background: #ffffff;
-    border-radius: 16rpx;
-    padding: 24rpx;
+    border-radius: 14rpx;
+    padding: 20rpx;
     display: flex;
-    gap: 24rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+    gap: 16rpx;
+    box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
     transition: all 0.2s ease;
 
     &:active {
         transform: translateY(-2rpx);
-        box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
+        box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.12);
     }
 }
 
@@ -79,7 +79,7 @@ const props = withDefaults(
 }
 
 .news-title {
-    font-size: 30rpx;
+    font-size: 28rpx;
     font-weight: 600;
     color: #333333;
     line-height: 1.4;
@@ -91,7 +91,7 @@ const props = withDefaults(
 }
 
 .news-desc {
-    margin-top: 12rpx;
+    margin-top: 10rpx;
     font-size: 26rpx;
     color: #999999;
     line-height: 1.5;
@@ -103,10 +103,10 @@ const props = withDefaults(
 }
 
 .news-meta {
-    margin-top: 16rpx;
+    margin-top: 12rpx;
     display: flex;
     align-items: center;
-    gap: 32rpx;
+    gap: 20rpx;
 }
 
 .meta-item {

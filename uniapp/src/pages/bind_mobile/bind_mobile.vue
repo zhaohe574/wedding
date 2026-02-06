@@ -204,22 +204,22 @@ page {
 .content {
     position: relative;
     z-index: 1;
-    padding: 80rpx 40rpx 60rpx;
+    padding: 60rpx 32rpx 40rpx;
     min-height: 100vh;
 }
 
 /* 头部区域 */
 .header-section {
     text-align: center;
-    margin-bottom: 80rpx;
+    margin-bottom: 56rpx;
 
     .icon-wrapper {
         display: inline-block;
-        padding: 32rpx;
+        padding: 24rpx;
         background: rgba(255, 255, 255, 0.95);
         border-radius: 50%;
         box-shadow: 0 8rpx 32rpx rgba(124, 58, 237, 0.2);
-        margin-bottom: 40rpx;
+        margin-bottom: 28rpx;
     }
 
     .title-text {
@@ -240,8 +240,8 @@ page {
 /* 表单卡片 */
 .form-card {
     background: rgba(255, 255, 255, 0.85);
-    border-radius: 32rpx;
-    padding: 60rpx 40rpx;
+    border-radius: 24rpx;
+    padding: 40rpx 32rpx;
     box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12),
                 0 8rpx 16rpx rgba(0, 0, 0, 0.04);
     backdrop-filter: blur(20rpx);
@@ -250,7 +250,7 @@ page {
 
 /* 输入框组 */
 .input-group {
-    margin-bottom: 24rpx;
+    margin-bottom: 20rpx;
 
     .input-wrapper {
         display: flex;
@@ -302,19 +302,20 @@ page {
 
 /* 按钮 */
 .btn-wrapper {
-    margin-top: 48rpx;
+    margin-top: 24rpx;
 }
 
 .btn-primary {
     background: linear-gradient(135deg, var(--color-primary, #7C3AED) 0%, var(--color-primary-dark-2, #6D28D9) 100%);
-    border-radius: 48rpx;
-    padding: 28rpx;
+    border-radius: 32rpx;
+    height: 72rpx;
+    padding: 0 32rpx;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
+    box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
 
     .btn-text {
-        font-size: 32rpx;
+        font-size: 30rpx;
         color: #FFFFFF;
         font-weight: 600;
         letter-spacing: 1rpx;
@@ -324,7 +325,7 @@ page {
 
     &:active {
         transform: translateY(2rpx);
-        box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
+        box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.22);
     }
 }
 
@@ -341,11 +342,11 @@ page {
 /* 响应式优化 */
 @media (max-width: 375px) {
     .content {
-        padding: 60rpx 32rpx 40rpx;
+        padding: 48rpx 28rpx 32rpx;
     }
 
     .form-card {
-        padding: 48rpx 32rpx;
+        padding: 36rpx 28rpx;
     }
 }
 </style>

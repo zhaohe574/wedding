@@ -400,7 +400,7 @@ onShow(() => {
 }
 
 .service-group + .service-group {
-    margin-top: 24rpx;
+    margin-top: 20rpx;
 }
 
 .group-header {
@@ -417,8 +417,8 @@ onShow(() => {
 }
 
 .staff-avatar {
-    width: 88rpx;
-    height: 88rpx;
+    width: 80rpx;
+    height: 80rpx;
     border-radius: 16rpx;
 }
 

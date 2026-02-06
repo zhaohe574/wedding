@@ -17,7 +17,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   type: 'standard',
   hoverable: true,
-  padding: '24rpx',
+  padding: '20rpx',
   borderRadius: ''
 })
 
@@ -69,20 +69,21 @@ export default {
   // 标准卡片样式
   &--standard {
     background: #FFFFFF;
-    border-radius: 16rpx;
-    padding: 24rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+    border-radius: 14rpx;
+    padding: 20rpx;
+    box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
   }
   
   // 玻璃态卡片样式
   &--glass {
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 20rpx;
-    padding: 24rpx;
-    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20rpx);
+    -webkit-backdrop-filter: blur(20rpx);
+    border: 2rpx solid rgba(255, 255, 255, 0.3);
+    border-radius: 24rpx;
+    padding: 20rpx;
+    box-shadow: 0 16rpx 48rpx rgba(124, 58, 237, 0.12),
+      0 6rpx 12rpx rgba(0, 0, 0, 0.04);
     
     // 确保文字对比度
     color: var(--color-main, #333333);
@@ -93,15 +94,16 @@ export default {
     cursor: pointer;
     
     &:active {
-      transform: translateY(-4rpx);
+      transform: translateY(-3rpx);
     }
     
     &.base-card--standard:active {
-      box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
+      box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.12);
     }
     
     &.base-card--glass:active {
-      box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.15);
+      box-shadow: 0 12rpx 36rpx rgba(124, 58, 237, 0.16),
+        0 8rpx 16rpx rgba(0, 0, 0, 0.06);
     }
   }
 }

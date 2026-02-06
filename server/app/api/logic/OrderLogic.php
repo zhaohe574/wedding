@@ -414,8 +414,8 @@ class OrderLogic extends BaseLogic
             return ['success' => false, 'message' => '线下支付凭证审核中，请等待审核结果'];
         }
 
-        $payType = $params['pay_type'] ?? Payment::TYPE_FULL;
-        $payWay = $params['pay_way'] ?? Payment::WAY_WECHAT;
+        $payType = (int) ($params['pay_type'] ?? Payment::TYPE_FULL);
+        $payWay = (int) ($params['pay_way'] ?? Payment::WAY_WECHAT);
 
         if ($payWay == Order::PAY_WAY_OFFLINE) {
             return ['success' => false, 'message' => '线下支付请上传支付凭证'];

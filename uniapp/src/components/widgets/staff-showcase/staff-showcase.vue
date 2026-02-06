@@ -24,12 +24,12 @@
                 :enable-flex="true"
             >
                 <view class="scroll-content">
-                    <view
-                        v-for="(item, index) in showList"
-                        :key="index"
-                        class="staff-card bg-white rounded-[24rpx] overflow-hidden shadow-sm"
-                        @click="handleClick(item.link)"
-                    >
+                <view
+                    v-for="(item, index) in showList"
+                    :key="index"
+                    class="staff-card bg-white rounded-[14rpx] overflow-hidden shadow-sm"
+                    @click="handleClick(item.link)"
+                >
                         <!-- 头像容器 -->
                         <view class="image-container">
                             <image
@@ -77,7 +77,7 @@
         </view>
 
         <!-- 列表样式 -->
-        <view v-if="content.style == 2" class="staff-list bg-white rounded-[24rpx] overflow-hidden">
+        <view v-if="content.style == 2" class="staff-list bg-white rounded-[14rpx] overflow-hidden">
             <view
                 v-for="(item, index) in showList"
                 :key="index"
@@ -185,16 +185,16 @@ const handleMore = () => {
 <style lang="scss" scoped>
 .staff-showcase {
     // 横向滚动容器
-    .scroll-container {
-        width: 100%;
-        white-space: nowrap;
+        .scroll-container {
+            width: 100%;
+            white-space: nowrap;
         
-        .scroll-content {
-            display: inline-flex;
-            gap: 24rpx; // 卡片间距
-            padding: 0 24rpx 0 0;
+            .scroll-content {
+                display: inline-flex;
+                gap: 16rpx; // 卡片间距
+                padding: 0 16rpx 0 0;
+            }
         }
-    }
     
     // 卡片样式
     .staff-card {
@@ -237,12 +237,12 @@ const handleMore = () => {
         // 角色标签 - 底部左侧
         .role-tag {
             position: absolute;
-            bottom: 16rpx;
-            left: 16rpx;
-            padding: 8rpx 16rpx;
+            bottom: 12rpx;
+            left: 12rpx;
+            padding: 6rpx 12rpx;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(8rpx);
-            border-radius: 20rpx;
+            border-radius: 12rpx;
             box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
             
             .role-text {
@@ -255,14 +255,14 @@ const handleMore = () => {
 
     // 信息区域
     .info-section {
-        padding: 20rpx 16rpx;
+        padding: 16rpx 14rpx;
         
         // 姓名
         .staff-name {
-            font-size: 30rpx;
+            font-size: 28rpx;
             font-weight: 600;
             color: #0f172a;
-            margin-bottom: 12rpx;
+            margin-bottom: 8rpx;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -272,7 +272,7 @@ const handleMore = () => {
         .rating-row {
             display: flex;
             align-items: center;
-            margin-bottom: 12rpx;
+            margin-bottom: 8rpx;
             
             .rating-container {
                 display: flex;
@@ -306,7 +306,7 @@ const handleMore = () => {
             gap: 8rpx;
             
             .tag-item {
-                padding: 4rpx 12rpx;
+                padding: 4rpx 10rpx;
                 background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
                 border-radius: 12rpx;
                 border: 1rpx solid #bae6fd;
@@ -321,15 +321,15 @@ const handleMore = () => {
     // 列表样式
     .staff-list {
         background: #ffffff;
-        border-radius: 16rpx;
+        border-radius: 14rpx;
         overflow: hidden;
-        box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
     }
     
     .staff-item {
         display: flex;
         align-items: center;
-        padding: 24rpx;
+        padding: 20rpx;
         transition: background-color 0.2s ease;
         
         &:active {
@@ -339,9 +339,9 @@ const handleMore = () => {
         // 头像容器
         .avatar-container {
             flex-shrink: 0;
-            width: 120rpx;
-            height: 120rpx;
-            border-radius: 60rpx;
+            width: 104rpx;
+            height: 104rpx;
+            border-radius: 52rpx;
             overflow: hidden;
             box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
             
@@ -355,14 +355,14 @@ const handleMore = () => {
         // 信息区域
         .list-info-section {
             flex: 1;
-            margin-left: 24rpx;
+            margin-left: 16rpx;
             overflow: hidden;
             
             // 姓名和角色行
             .name-role-row {
                 display: flex;
                 align-items: center;
-                margin-bottom: 12rpx;
+                margin-bottom: 8rpx;
                 
                 .list-staff-name {
                     font-size: 32rpx;
@@ -375,8 +375,8 @@ const handleMore = () => {
                 }
                 
                 .list-role-tag {
-                    margin-left: 12rpx;
-                    padding: 6rpx 12rpx;
+                    margin-left: 8rpx;
+                    padding: 4rpx 10rpx;
                     background: var(--color-primary-light-9);
                     border-radius: 12rpx;
                     border: 1rpx solid var(--color-primary-light-7);
@@ -393,7 +393,7 @@ const handleMore = () => {
             .list-rating-row {
                 display: flex;
                 align-items: center;
-                margin-bottom: 12rpx;
+                margin-bottom: 8rpx;
                 
                 .list-rating-container {
                     display: flex;
@@ -408,7 +408,7 @@ const handleMore = () => {
                 }
                 
                 .list-order-count {
-                    margin-left: 20rpx;
+                    margin-left: 12rpx;
                     font-size: 24rpx;
                     color: var(--color-muted);
                 }

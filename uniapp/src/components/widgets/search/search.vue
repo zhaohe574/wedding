@@ -42,25 +42,20 @@
     
     <!-- 主搜索框区域 -->
     <!-- #ifndef H5 -->
-    <navigator
+    <view
         v-if="!isLargeScreen"
-        url="/pages/search/search"
-        class="search-container"
+        class="search-container-full"
         :style="{ opacity: 1 - percent }"
-        hover-class="none"
     >
-        <tn-search-box
-            :placeholder="searchPlaceholder"
-            :height="88"
-            :disabled="true"
-            :show-action="false"
-            :bg-color="searchBgColor"
-            :border-radius="0"
+        <view
+            class="search-box-wrapper-full"
+            @tap="handleSearchClick"
         >
-            <template #prefix>
-                <tn-icon name="search" :size="36" color="#999999"></tn-icon>
-            </template>
-        </tn-search-box>
+            <view class="search-input-box">
+                <tn-icon name="search" :size="36" color="#CCCCCC"></tn-icon>
+                <text class="search-placeholder">{{ searchPlaceholder }}</text>
+            </view>
+        </view>
 
         <!-- 热词标签 -->
         <view v-if="hotWords.length > 0" class="hot-words">
@@ -77,34 +72,30 @@
                         backgroundColor: getLightColor($theme.primaryColor, 0.08),
                         color: $theme.primaryColor
                     }"
-                    @click.stop="handleHotWordClick(word)"
+                    @tap="handleHotWordClick(word)"
                 >
                     {{ word }}
                 </view>
             </view>
         </view>
-    </navigator>
+    </view>
     <!-- #endif -->
     
     <!-- #ifdef H5 -->
-    <router-navigate
+    <view
         v-if="!isLargeScreen"
-        to="/pages/search/search"
-        class="search-container"
+        class="search-container-full"
         :style="{ opacity: 1 - percent }"
     >
-        <tn-search-box
-            :placeholder="searchPlaceholder"
-            :height="88"
-            :disabled="true"
-            :show-action="false"
-            :bg-color="searchBgColor"
-            :border-radius="0"
+        <view
+            class="search-box-wrapper-full"
+            @click="handleSearchClick"
         >
-            <template #prefix>
-                <tn-icon name="search" :size="36" color="#999999"></tn-icon>
-            </template>
-        </tn-search-box>
+            <view class="search-input-box">
+                <tn-icon name="search" :size="36" color="#CCCCCC"></tn-icon>
+                <text class="search-placeholder">{{ searchPlaceholder }}</text>
+            </view>
+        </view>
 
         <!-- 热词标签 -->
         <view v-if="hotWords.length > 0" class="hot-words">
@@ -121,13 +112,13 @@
                         backgroundColor: getLightColor($theme.primaryColor, 0.08),
                         color: $theme.primaryColor
                     }"
-                    @click.stop="handleHotWordClick(word)"
+                    @click="handleHotWordClick(word)"
                 >
                     {{ word }}
                 </view>
             </view>
         </view>
-    </router-navigate>
+    </view>
     <!-- #endif -->
 </template>
 
@@ -172,7 +163,8 @@ const metaData: any = computed(() => {
 
 // 搜索框配置
 const searchPlaceholder = computed(() => props.content.placeholder || '搜索人员/服务/作品')
-const searchBgColor = computed(() => props.styles.bgColor || '#F5F5F5')
+const searchBgColor = computed(() => props.styles.bgColor || '#ffffff')
+const searchBorderRadius = computed(() => props.styles.borderRadius || 48)
 
 // 热词列表
 const hotWords = computed(() => props.content.hotWords || [])
@@ -189,6 +181,13 @@ const getLightColor = (color: string, opacity: number) => {
     const g = parseInt(hex.substring(2, 4), 16)
     const b = parseInt(hex.substring(4, 6), 16)
     return `rgba(${r}, ${g}, ${b}, ${opacity})`
+}
+
+// 搜索框点击事件
+const handleSearchClick = () => {
+    uni.navigateTo({
+        url: '/pages/search/search'
+    })
 }
 
 // 热词点击事件
@@ -219,16 +218,42 @@ const handleHotWordClick = (word: string) => {
     }
 }
 
-// 搜索容器（无左右边距，全屏宽度）
-.search-container {
+// 全屏搜索容器（无左右边距）
+.search-container-full {
     display: block;
-    padding: 24rpx 0;
+    padding: 0;
 }
 
-// 热词区域（有左右内边距）
-.hot-words {
-    margin-top: 24rpx;
+// 全屏搜索框包装
+.search-box-wrapper-full {
+    background: #FFFFFF;
+    padding: 16rpx 24rpx;
+    border-bottom: 1rpx solid #F0F0F0;
+}
+
+// 自定义搜索输入框
+.search-input-box {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    height: 72rpx;
     padding: 0 24rpx;
+    background: #F5F5F5;
+    border-radius: 36rpx;
+    transition: all 0.2s ease;
+}
+
+.search-placeholder {
+    flex: 1;
+    font-size: 28rpx;
+    color: #CCCCCC;
+}
+
+// 热词区域（保留左右内边距）
+.hot-words {
+    margin-top: 0;
+    padding: 16rpx 24rpx 24rpx;
+    background: #ffffff;
 }
 
 .hot-words-label {

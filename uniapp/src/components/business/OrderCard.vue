@@ -343,14 +343,14 @@ export default {
 .order-card {
   position: relative;
   background: #FFFFFF;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+  border-radius: 14rpx;
+  padding: 20rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
   transition: all 0.2s ease;
   overflow: hidden;
   
   &:active {
-    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
+    box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.12);
     transform: translateY(-2rpx);
   }
   
@@ -358,8 +358,8 @@ export default {
     position: absolute;
     top: 0;
     right: 0;
-    padding: 10rpx 20rpx;
-    border-radius: 0 16rpx 0 20rpx;
+    padding: 8rpx 16rpx;
+    border-radius: 0 14rpx 0 16rpx;
     font-size: 24rpx;
     font-weight: 600;
   }
@@ -370,14 +370,14 @@ export default {
   }
   
   &__header {
-    margin-bottom: 24rpx;
-    padding-right: 120rpx;
+    margin-bottom: 20rpx;
+    padding-right: 100rpx;
   }
 
   &__order-info {
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    gap: 6rpx;
   }
 
   &__order-sn {
@@ -394,38 +394,38 @@ export default {
   &__main {
     display: flex;
     flex-direction: column;
-    gap: 20rpx;
-    margin-bottom: 24rpx;
+    gap: 16rpx;
+    margin-bottom: 20rpx;
   }
 
   &__staff-section {
     display: flex;
     align-items: center;
-    gap: 20rpx;
-    padding: 20rpx;
+    gap: 16rpx;
+    padding: 16rpx;
     background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
     border-radius: 12rpx;
   }
 
   &__avatar {
-    width: 96rpx;
-    height: 96rpx;
+    width: 80rpx;
+    height: 80rpx;
     border-radius: 50%;
     flex-shrink: 0;
-    border: 3rpx solid #FFFFFF;
-    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+    border: 2rpx solid #FFFFFF;
+    box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   }
   
   &__staff-info {
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    gap: 6rpx;
     flex: 1;
     min-width: 0;
   }
 
   &__staff-name {
-    font-size: 30rpx;
+    font-size: 28rpx;
     font-weight: 600;
     color: #333333;
     overflow: hidden;
@@ -434,7 +434,7 @@ export default {
   }
 
   &__package-name {
-    font-size: 26rpx;
+    font-size: 24rpx;
     color: #666666;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -444,18 +444,18 @@ export default {
   &__service-info {
     display: flex;
     flex-direction: column;
-    gap: 16rpx;
+    gap: 12rpx;
   }
 
   &__info-row {
     display: flex;
     align-items: flex-start;
-    gap: 12rpx;
+    gap: 10rpx;
   }
 
   &__info-icon-wrapper {
-    width: 28rpx;
-    height: 28rpx;
+    width: 26rpx;
+    height: 26rpx;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -467,7 +467,7 @@ export default {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    gap: 6rpx;
   }
 
   &__info-text {
@@ -479,36 +479,36 @@ export default {
   &__info-label {
     font-size: 24rpx;
     color: #999999;
-    margin-bottom: 8rpx;
+    margin-bottom: 6rpx;
   }
 
   &__schedule-list {
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
+    gap: 10rpx;
   }
 
   &__schedule-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16rpx 20rpx;
+    padding: 12rpx 16rpx;
     background: #FFFFFF;
-    border-radius: 12rpx;
-    border: 2rpx solid #F0F0F0;
+    border-radius: 10rpx;
+    border: 1rpx solid #F0F0F0;
     transition: all 0.2s ease;
-    gap: 16rpx;
+    gap: 12rpx;
   }
 
   &__schedule-date {
     display: flex;
     align-items: center;
-    gap: 12rpx;
+    gap: 10rpx;
     flex-shrink: 0;
   }
 
   &__schedule-date-text {
-    font-size: 28rpx;
+    font-size: 26rpx;
     font-weight: 600;
     color: #333333;
   }
@@ -516,7 +516,7 @@ export default {
   &__schedule-slots {
     display: flex;
     align-items: center;
-    gap: 12rpx;
+    gap: 10rpx;
     flex-wrap: wrap;
   }
 
@@ -524,8 +524,8 @@ export default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 8rpx 20rpx;
-    border-radius: 24rpx;
+    padding: 6rpx 16rpx;
+    border-radius: 20rpx;
     font-size: 24rpx;
     font-weight: 600;
     white-space: nowrap;
@@ -535,8 +535,8 @@ export default {
   &__location-wrapper {
     display: flex;
     align-items: flex-start;
-    gap: 12rpx;
-    padding: 16rpx 20rpx;
+    gap: 10rpx;
+    padding: 12rpx 16rpx;
     background: #FAFAFA;
     border-radius: 12rpx;
     border: 1rpx solid #F0F0F0;
@@ -553,21 +553,21 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    padding: 20rpx 0;
+    padding: 16rpx 0;
     border-top: 1rpx solid #E5E5E5;
-    margin-bottom: 20rpx;
+    margin-bottom: 16rpx;
   }
   
   &__price-left {
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    gap: 6rpx;
   }
   
   &__price-detail {
     display: flex;
     align-items: center;
-    gap: 8rpx;
+    gap: 6rpx;
   }
   
   &__price-label {
@@ -576,13 +576,13 @@ export default {
   }
   
   &__price-original {
-    font-size: 26rpx;
+    font-size: 24rpx;
     color: #999999;
     text-decoration: line-through;
   }
   
   &__price-discount {
-    font-size: 26rpx;
+    font-size: 24rpx;
     color: #FF9900;
     font-weight: 600;
   }
@@ -606,30 +606,31 @@ export default {
   }
   
   &__price-symbol {
-    font-size: 28rpx;
+    font-size: 26rpx;
     font-weight: 600;
   }
   
   &__price-total {
-    font-size: 48rpx;
+    font-size: 44rpx;
     font-weight: 700;
     line-height: 1;
   }
   
   &__actions {
     display: flex;
-    gap: 16rpx;
+    gap: 12rpx;
     justify-content: flex-end;
   }
   
   &__action-btn {
-    padding: 18rpx 36rpx;
-    border-radius: 56rpx;
+    height: 64rpx;
+    padding: 0 28rpx;
+    border-radius: 32rpx;
     border: 2rpx solid #E5E5E5;
     transition: all 0.2s ease;
     
     &--primary {
-      box-shadow: 0 8rpx 20rpx rgba(124, 58, 237, 0.3);
+      box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
       border: none;
     }
     
@@ -640,7 +641,7 @@ export default {
   }
   
   &__action-text {
-    font-size: 28rpx;
+    font-size: 26rpx;
     font-weight: 600;
   }
 }

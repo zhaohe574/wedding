@@ -243,15 +243,15 @@ const handleMore = () => {
 
     // 横向滑动样式
     .package-scroll {
-        margin: 0 -20rpx;
-        padding: 0 20rpx;
+        margin: 0 -16rpx;
+        padding: 0 16rpx;
     }
 
     .package-card {
         flex-shrink: 0;
         background: #ffffff;
-        border-radius: 24rpx;
-        padding: 28rpx;
+        border-radius: 14rpx;
+        padding: 20rpx;
         border: 2rpx solid #f3f4f6;
         box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
         
@@ -272,7 +272,7 @@ const handleMore = () => {
                 
                 .tag-badge {
                     margin-left: 12rpx;
-                    padding: 6rpx 16rpx;
+                    padding: 6rpx 12rpx;
                     background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
                     border-radius: 999rpx;
                     box-shadow: 0 2rpx 8rpx rgba(249, 115, 22, 0.3);
@@ -302,7 +302,7 @@ const handleMore = () => {
                     }
                     
                     .price-value {
-                        font-size: 48rpx;
+                        font-size: 44rpx;
                         color: var(--tn-color-primary);
                         font-weight: 700;
                         line-height: 1;
@@ -319,19 +319,19 @@ const handleMore = () => {
         }
         
         .services-list {
-            padding: 20rpx 0;
+            padding: 16rpx 0;
             border-top: 1rpx solid #f3f4f6;
             display: flex;
             flex-direction: column;
-            gap: 12rpx;
+            gap: 10rpx;
             
             .service-item {
                 display: flex;
                 align-items: center;
                 
                 .service-dot {
-                    width: 10rpx;
-                    height: 10rpx;
+                    width: 8rpx;
+                    height: 8rpx;
                     background: var(--tn-color-primary);
                     border-radius: 50%;
                     margin-right: 12rpx;
@@ -351,8 +351,8 @@ const handleMore = () => {
             font-size: 24rpx;
             color: #6b7280;
             line-height: 1.6;
-            margin-top: 16rpx;
-            padding-top: 16rpx;
+            margin-top: 12rpx;
+            padding-top: 12rpx;
             border-top: 1rpx solid #f3f4f6;
         }
     }
@@ -361,13 +361,13 @@ const handleMore = () => {
     .package-list {
         display: flex;
         flex-direction: column;
-        gap: 24rpx;
+        gap: 16rpx;
     }
     
     .package-card-vertical {
         background: #ffffff;
-        border-radius: 24rpx;
-        padding: 28rpx;
+        border-radius: 14rpx;
+        padding: 20rpx;
         border: 2rpx solid #f3f4f6;
         box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
         
@@ -375,7 +375,7 @@ const handleMore = () => {
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            margin-bottom: 20rpx;
+            margin-bottom: 16rpx;
             
             .card-header-left {
                 flex: 1;
@@ -386,7 +386,7 @@ const handleMore = () => {
                     font-weight: 600;
                     color: #111827;
                     line-height: 1.4;
-                    margin-bottom: 8rpx;
+                    margin-bottom: 6rpx;
                 }
                 
                 .card-desc-vertical {
@@ -398,8 +398,8 @@ const handleMore = () => {
             }
             
             .tag-badge-vertical {
-                margin-left: 16rpx;
-                padding: 6rpx 16rpx;
+                margin-left: 12rpx;
+                padding: 6rpx 12rpx;
                 background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
                 border-radius: 999rpx;
                 box-shadow: 0 2rpx 8rpx rgba(249, 115, 22, 0.3);
@@ -414,20 +414,20 @@ const handleMore = () => {
         }
         
         .services-list-vertical {
-            padding: 20rpx 0;
+            padding: 16rpx 0;
             border-top: 1rpx solid #f3f4f6;
             border-bottom: 1rpx solid #f3f4f6;
             display: flex;
             flex-direction: column;
-            gap: 12rpx;
+            gap: 10rpx;
             
             .service-item-vertical {
                 display: flex;
                 align-items: center;
                 
                 .service-dot-vertical {
-                    width: 10rpx;
-                    height: 10rpx;
+                    width: 8rpx;
+                    height: 8rpx;
                     background: var(--tn-color-primary);
                     border-radius: 50%;
                     margin-right: 12rpx;
@@ -443,7 +443,7 @@ const handleMore = () => {
         }
         
         .price-wrapper-vertical {
-            margin-top: 20rpx;
+            margin-top: 16rpx;
             
             .price-main-vertical {
                 display: flex;
@@ -457,7 +457,7 @@ const handleMore = () => {
                 }
                 
                 .price-value-vertical {
-                    font-size: 48rpx;
+                    font-size: 44rpx;
                     color: var(--tn-color-primary);
                     font-weight: 700;
                     line-height: 1;
@@ -477,24 +477,24 @@ const handleMore = () => {
     .package-grid {
         display: flex;
         flex-direction: column;
-        gap: 24rpx;
+        gap: 16rpx;
     }
     
     .package-card-large {
         background: #ffffff;
-        border-radius: 24rpx;
-        padding: 32rpx;
+        border-radius: 14rpx;
+        padding: 24rpx;
         border: 2rpx solid #f3f4f6;
         box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
         
         .card-header-large {
-            margin-bottom: 24rpx;
+            margin-bottom: 16rpx;
             
             .card-header-large-top {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                margin-bottom: 12rpx;
+                margin-bottom: 8rpx;
                 
                 .card-title-large {
                     flex: 1;
@@ -505,8 +505,8 @@ const handleMore = () => {
                 }
                 
                 .tag-badge-large {
-                    margin-left: 16rpx;
-                    padding: 8rpx 20rpx;
+                    margin-left: 12rpx;
+                    padding: 6rpx 16rpx;
                     background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
                     border-radius: 999rpx;
                     box-shadow: 0 2rpx 8rpx rgba(249, 115, 22, 0.3);
@@ -530,13 +530,13 @@ const handleMore = () => {
         .services-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 12rpx;
-            padding: 24rpx 0;
+            gap: 10rpx;
+            padding: 16rpx 0;
             border-top: 1rpx solid #f3f4f6;
             border-bottom: 1rpx solid #f3f4f6;
             
             .service-badge {
-                padding: 12rpx 20rpx;
+                padding: 8rpx 16rpx;
                 background: var(--tn-color-primary-light-9, rgba(124, 58, 237, 0.08));
                 border-radius: 999rpx;
                 border: 1rpx solid var(--tn-color-primary-light-7, rgba(124, 58, 237, 0.15));
@@ -550,7 +550,7 @@ const handleMore = () => {
         }
         
         .price-wrapper-large {
-            margin-top: 24rpx;
+            margin-top: 16rpx;
             
             .price-main-large {
                 display: flex;
@@ -564,7 +564,7 @@ const handleMore = () => {
                 }
                 
                 .price-value-large {
-                    font-size: 56rpx;
+                    font-size: 48rpx;
                     color: var(--tn-color-primary);
                     font-weight: 700;
                     line-height: 1;
@@ -574,7 +574,7 @@ const handleMore = () => {
                     font-size: 28rpx;
                     color: #9ca3af;
                     text-decoration: line-through;
-                    margin-left: 16rpx;
+                    margin-left: 12rpx;
                 }
             }
         }

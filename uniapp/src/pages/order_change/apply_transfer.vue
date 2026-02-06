@@ -349,8 +349,8 @@ onLoad((options: any) => {
 
 .btn-submit {
     width: 100%;
-    height: 88rpx;
-    line-height: 88rpx;
+    height: 72rpx;
+    line-height: 72rpx;
     background: var(--primary-color, #ff6b35);
     color: #fff;
     border-radius: 44rpx;

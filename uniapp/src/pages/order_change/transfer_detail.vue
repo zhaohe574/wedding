@@ -361,8 +361,8 @@ onLoad((options: any) => {
 
 .btn-cancel {
     width: 100%;
-    height: 88rpx;
-    line-height: 88rpx;
+    height: 72rpx;
+    line-height: 72rpx;
     background: #fff;
     border: 1rpx solid #ff3b30;
     color: #ff3b30;
@@ -384,7 +384,7 @@ onLoad((options: any) => {
 
 .code-input {
     flex: 1;
-    height: 88rpx;
+    height: 72rpx;
     border: 2rpx solid #eee;
     border-radius: 12rpx;
     padding: 0 24rpx;
@@ -395,8 +395,8 @@ onLoad((options: any) => {
 
 .btn-accept {
     width: 240rpx;
-    height: 88rpx;
-    line-height: 88rpx;
+    height: 72rpx;
+    line-height: 72rpx;
     background: var(--primary-color, #ff6b35);
     color: #fff;
     border-radius: 12rpx;

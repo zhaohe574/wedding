@@ -91,6 +91,7 @@ class OrderLog extends BaseModel
             'pay' => '支付订单',
             'pay_deposit' => '支付定金',
             'pay_balance' => '支付尾款',
+            'confirm' => '确认订单',
             'cancel' => '取消订单',
             'start_service' => '开始服务',
             'complete' => '完成订单',

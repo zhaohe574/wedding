@@ -7,7 +7,7 @@
       :type="type"
       :maxlength="maxlength"
       :height="88"
-      :border-radius="12"
+      :border-radius="16"
       @focus="handleFocus"
       @blur="handleBlur"
       @input="handleInput"

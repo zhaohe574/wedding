@@ -561,8 +561,8 @@ onLoad(async (options) => {
 
 .action-btn {
     flex: 1;
-    height: 88rpx;
-    border-radius: 44rpx;
+    height: 72rpx;
+    border-radius: 32rpx;
     display: flex;
     align-items: center;
     justify-content: center;

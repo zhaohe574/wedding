@@ -603,9 +603,9 @@ onUnload(() => {
         
         .popup-btn {
             width: 100%;
-            height: 88rpx;
-            border-radius: 48rpx;
-            font-size: 32rpx;
+            height: 72rpx;
+            border-radius: 32rpx;
+            font-size: 30rpx;
             font-weight: 600;
             border: none;
             transition: all 0.2s ease;

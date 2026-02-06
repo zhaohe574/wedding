@@ -187,7 +187,7 @@ onLoad((options) => {
 .change-password-page {
     min-height: 100vh;
     background: linear-gradient(180deg, #F9FAFB 0%, #FFFFFF 100%);
-    padding: 32rpx;
+    padding: 24rpx;
 }
 
 /* 顶部区域 */
@@ -195,18 +195,18 @@ onLoad((options) => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 40rpx;
+    margin-bottom: 28rpx;
 }
 
 .icon-wrapper {
-    width: 120rpx;
-    height: 120rpx;
-    border-radius: 60rpx;
+    width: 96rpx;
+    height: 96rpx;
+    border-radius: 48rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 24rpx;
-    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
+    margin-bottom: 20rpx;
+    box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
 }
 
 .header-title {
@@ -227,14 +227,14 @@ onLoad((options) => {
 /* 表单卡片 */
 .form-card {
     background: #FFFFFF;
-    border-radius: 24rpx;
-    padding: 32rpx;
-    margin-bottom: 24rpx;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+    border-radius: 14rpx;
+    padding: 20rpx;
+    margin-bottom: 20rpx;
+    box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.06);
 }
 
 .form-item {
-    margin-bottom: 32rpx;
+    margin-bottom: 20rpx;
     
     &:last-child {
         margin-bottom: 0;
@@ -245,7 +245,7 @@ onLoad((options) => {
     display: flex;
     align-items: center;
     gap: 10rpx;
-    margin-bottom: 16rpx;
+    margin-bottom: 10rpx;
 }
 
 .label-text {
@@ -256,8 +256,8 @@ onLoad((options) => {
 
 .input-wrapper {
     background: #F9FAFB;
-    border-radius: 16rpx;
-    padding: 20rpx;
+    border-radius: 14rpx;
+    padding: 16rpx;
     border: 2rpx solid #E5E7EB;
     transition: all 0.2s ease;
     
@@ -270,7 +270,7 @@ onLoad((options) => {
 
 /* 提交按钮 */
 .submit-section {
-    margin-top: 32rpx;
+    margin-top: 24rpx;
 }
 
 .submit-btn {
@@ -278,17 +278,17 @@ onLoad((options) => {
     align-items: center;
     justify-content: center;
     gap: 12rpx;
-    height: 88rpx;
-    border-radius: 44rpx;
+    height: 72rpx;
+    border-radius: 32rpx;
     font-size: 30rpx;
     font-weight: 600;
-    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
+    box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
     transition: all 0.3s ease;
 }
 
 .submit-btn-hover {
     transform: translateY(2rpx);
-    box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
+    box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.22);
     opacity: 0.9;
 }
 

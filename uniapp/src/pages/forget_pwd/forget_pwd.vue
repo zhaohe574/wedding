@@ -244,21 +244,21 @@ page {
 .content {
     position: relative;
     z-index: 1;
-    padding: 60rpx 40rpx;
+    padding: 48rpx 32rpx;
     min-height: 100vh;
 }
 
 /* 头部区域 */
 .header-section {
-    margin-bottom: 60rpx;
+    margin-bottom: 40rpx;
     position: relative;
 
     .back-btn {
         position: absolute;
         left: 0;
         top: 0;
-        width: 80rpx;
-        height: 80rpx;
+        width: 72rpx;
+        height: 72rpx;
         background: rgba(255, 255, 255, 0.95);
         border-radius: 50%;
         display: flex;
@@ -278,7 +278,7 @@ page {
         font-size: 44rpx;
         font-weight: 600;
         color: var(--color-primary, #7C3AED);
-        margin-bottom: 16rpx;
+        margin-bottom: 12rpx;
         text-align: center;
         letter-spacing: 1rpx;
         margin-top: 20rpx;
@@ -295,8 +295,8 @@ page {
 /* 表单卡片 */
 .form-card {
     background: rgba(255, 255, 255, 0.85);
-    border-radius: 32rpx;
-    padding: 60rpx 40rpx;
+    border-radius: 24rpx;
+    padding: 40rpx 32rpx;
     box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12),
                 0 8rpx 16rpx rgba(0, 0, 0, 0.04);
     backdrop-filter: blur(20rpx);
@@ -305,12 +305,12 @@ page {
 
 /* 输入框组 */
 .input-group {
-    margin-bottom: 32rpx;
+    margin-bottom: 20rpx;
 
     .input-label {
         font-size: 26rpx;
         color: #6B7280;
-        margin-bottom: 16rpx;
+        margin-bottom: 10rpx;
         font-weight: 500;
     }
 
@@ -364,19 +364,20 @@ page {
 
 /* 按钮 */
 .btn-wrapper {
-    margin-top: 48rpx;
+    margin-top: 24rpx;
 }
 
 .btn-primary {
     background: linear-gradient(135deg, var(--color-primary, #7C3AED) 0%, var(--color-primary-dark-2, #6D28D9) 100%);
-    border-radius: 48rpx;
-    padding: 28rpx;
+    border-radius: 32rpx;
+    height: 72rpx;
+    padding: 0 32rpx;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
+    box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
 
     .btn-text {
-        font-size: 32rpx;
+        font-size: 30rpx;
         color: #FFFFFF;
         font-weight: 600;
         letter-spacing: 1rpx;
@@ -386,7 +387,7 @@ page {
 
     &:active {
         transform: translateY(2rpx);
-        box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
+        box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.22);
     }
 }
 
@@ -403,11 +404,11 @@ page {
 /* 响应式优化 */
 @media (max-width: 375px) {
     .content {
-        padding: 48rpx 32rpx;
+        padding: 40rpx 28rpx;
     }
 
     .form-card {
-        padding: 48rpx 32rpx;
+        padding: 36rpx 28rpx;
     }
 }
 </style>

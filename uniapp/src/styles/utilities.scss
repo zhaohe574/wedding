@@ -8,9 +8,9 @@
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20rpx);
   border: 2rpx solid rgba(255, 255, 255, 0.3);
-  border-radius: 32rpx;
-  box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12),
-              0 8rpx 16rpx rgba(0, 0, 0, 0.04);
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 48rpx rgba(124, 58, 237, 0.12),
+              0 6rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
 .glass-navbar {
@@ -22,22 +22,22 @@
 /* ==================== 卡片样式 ==================== */
 .card-standard {
   background: #FFFFFF;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+  border-radius: 14rpx;
+  padding: 20rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
   transition: all 0.2s ease;
   
   &:active {
-    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
-    transform: translateY(-4rpx);
+    box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.12);
+    transform: translateY(-3rpx);
   }
 }
 
 .card-highlight {
   background: var(--color-primary-light-9, #FAF5FF);
   border: 2rpx solid var(--color-primary-light-7, #DDD6FE);
-  border-radius: 16rpx;
-  padding: 24rpx;
+  border-radius: 14rpx;
+  padding: 20rpx;
 }
 
 /* ==================== 徽章/标签 ==================== */
@@ -95,13 +95,13 @@
 .divider {
   height: 1rpx;
   background: var(--color-light, #E5E5E5);
-  margin: 24rpx 0;
+  margin: 20rpx 0;
 }
 
 .divider-with-text {
   display: flex;
   align-items: center;
-  margin: 32rpx 0;
+  margin: 24rpx 0;
   
   &::before,
   &::after {
@@ -112,7 +112,7 @@
   }
   
   .divider-text {
-    padding: 0 24rpx;
+    padding: 0 20rpx;
     font-size: 24rpx;
     color: #9CA3AF;
     font-weight: 500;
@@ -212,7 +212,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80rpx 40rpx;
+  padding: 64rpx 32rpx;
   
   .empty-icon {
     width: 200rpx;

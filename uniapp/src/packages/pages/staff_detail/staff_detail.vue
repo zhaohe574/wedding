@@ -181,7 +181,7 @@
                         v-for="work in worksList"
                         :key="work.id"
                         class="work-item"
-                        @click="previewImage(work)"
+                        @click="goWorkDetail(work)"
                     >
                         <image 
                             :src="work.cover || work.images?.[0]" 
@@ -434,11 +434,13 @@ const handleBook = () => {
 }
 
 // 预览作品图片
-const previewImage = (work: any) => {
-    const urls = work.images || [work.cover]
-    uni.previewImage({
-        urls,
-        current: urls[0]
+const goWorkDetail = (work: any) => {
+    if (!work?.id) {
+        uni.showToast({ title: '作品信息错误', icon: 'none' })
+        return
+    }
+    uni.navigateTo({
+        url: `/packages/pages/staff_work_detail/staff_work_detail?id=${work.id}`
     })
 }
 
@@ -935,9 +937,9 @@ onLoad((options) => {
     align-items: center;
     justify-content: center;
     gap: 12rpx;
-    height: 88rpx;
-    border-radius: 48rpx;
-    box-shadow: 0 4rpx 16rpx rgba(124, 58, 237, 0.3);
+    height: 72rpx;
+    border-radius: 32rpx;
+    box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
     transition: all 0.2s ease;
     
     &:active {

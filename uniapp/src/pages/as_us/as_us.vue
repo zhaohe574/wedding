@@ -265,13 +265,13 @@ const getFeatureIconStyle = (index: number) => {
         }
         
         .card-icon-wrapper {
-            width: 88rpx;
-            height: 88rpx;
-            border-radius: 20rpx;
+            width: 72rpx;
+            height: 72rpx;
+            border-radius: 16rpx;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 24rpx;
+            margin-right: 16rpx;
             flex-shrink: 0;
         }
         

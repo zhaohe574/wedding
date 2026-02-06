@@ -25,7 +25,7 @@ class StaffWorkLists extends BaseAdminDataLists implements ListsSearchInterface
     public function setSearch(): array
     {
         return [
-            '=' => ['staff_id', 'type', 'is_show', 'is_cover'],
+            '=' => ['staff_id', 'type', 'is_show', 'is_cover', 'audit_status'],
             '%like%' => ['title'],
         ];
     }
@@ -50,7 +50,7 @@ class StaffWorkLists extends BaseAdminDataLists implements ListsSearchInterface
             ->with(['staff' => function($query) {
                 $query->field('id, name, sn');
             }])
-            ->append(['type_desc', 'is_show_desc'])
+            ->append(['type_desc', 'is_show_desc', 'audit_status_desc'])
             ->order(['sort' => 'desc', 'id' => 'desc'])
             ->limit($this->limitOffset, $this->limitLength)
             ->select()

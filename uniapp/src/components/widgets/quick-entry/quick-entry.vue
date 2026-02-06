@@ -1,5 +1,5 @@
 <template>
-    <view v-if="content.enabled && showList.length" class="quick-entry-widget mx-[24rpx] mt-[24rpx]">
+    <view v-if="content.enabled && showList.length" class="quick-entry-widget mx-[20rpx] mt-[20rpx]">
         <!-- 网格布局 -->
         <view v-if="content.style == 1" class="grid-layout">
             <view
@@ -107,13 +107,13 @@ const handleClick = (link: any) => {
     /* 网格布局样式 */
     .grid-layout {
         background: #FFFFFF;
-        border-radius: 24rpx;
-        padding: 32rpx 20rpx;
+        border-radius: 14rpx;
+        padding: 24rpx 16rpx;
         box-shadow: 0 4rpx 20rpx rgba(15, 23, 42, 0.06);
         
         .entries-grid {
             display: grid;
-            gap: 32rpx 16rpx;
+            gap: 20rpx 12rpx;
             width: 100%;
         }
     }
@@ -121,8 +121,8 @@ const handleClick = (link: any) => {
     /* 横向滑动样式 */
     .scroll-layout {
         background: #FFFFFF;
-        border-radius: 24rpx;
-        padding: 32rpx 0;
+        border-radius: 14rpx;
+        padding: 24rpx 0;
         box-shadow: 0 4rpx 20rpx rgba(15, 23, 42, 0.06);
         
         .scroll-container {
@@ -135,8 +135,8 @@ const handleClick = (link: any) => {
         
         .entries-scroll {
             display: inline-flex;
-            gap: 32rpx;
-            padding: 0 32rpx;
+            gap: 20rpx;
+            padding: 0 20rpx;
         }
     }
     
@@ -145,7 +145,7 @@ const handleClick = (link: any) => {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 16rpx;
+        gap: 12rpx;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         
@@ -159,8 +159,8 @@ const handleClick = (link: any) => {
     /* 图标容器 */
     .icon-wrapper {
         position: relative;
-        width: 96rpx;
-        height: 96rpx;
+        width: 80rpx;
+        height: 80rpx;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -173,15 +173,15 @@ const handleClick = (link: any) => {
             left: 0;
             right: 0;
             bottom: 0;
-            border-radius: 24rpx;
+            border-radius: 16rpx;
             transition: all 0.2s ease;
             z-index: 0;
         }
         
         /* 图标 */
         .entry-icon {
-            width: 56rpx;
-            height: 56rpx;
+            width: 44rpx;
+            height: 44rpx;
             position: relative;
             z-index: 2;
             transition: transform 0.2s ease;

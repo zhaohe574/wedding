@@ -1,7 +1,7 @@
 <template>
     <main class="main-wrap h-full bg-page">
         <el-scrollbar>
-            <div class="p-4">
+            <div class="p-3">
                 <router-view v-if="isRouteShow" v-slot="{ Component, route }">
                     <keep-alive :include="includeList" :max="20">
                         <component :is="Component" :key="route.fullPath" />

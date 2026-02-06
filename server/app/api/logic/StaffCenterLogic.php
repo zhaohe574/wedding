@@ -9,6 +9,9 @@ namespace app\api\logic;
 
 use app\common\logic\BaseLogic;
 use app\common\model\dynamic\Dynamic;
+use app\common\model\order\Order;
+use app\common\model\order\OrderLog;
+use app\common\model\order\OrderItem;
 use app\common\model\schedule\Schedule;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
@@ -47,6 +50,26 @@ class StaffCenterLogic extends BaseLogic
         $fullMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
         $data['mobile'] = $fullMobile;
         $data['mobile_full'] = $fullMobile;
+
+        // 统计数据
+        $data['orderCount'] = OrderItem::where('staff_id', $staff->id)
+            ->whereExists(function ($query) {
+                $orderTable = (new Order())->getTable();
+                $itemTable = (new OrderItem())->getTable();
+                $query->table($orderTable . ' o')
+                    ->whereRaw("o.id = {$itemTable}.order_id")
+                    ->whereNull('o.delete_time');
+            })
+            ->distinct(true)
+            ->count('order_id');
+
+        $data['workCount'] = StaffWork::where('staff_id', $staff->id)
+            ->where('delete_time', null)
+            ->count();
+
+        $data['packageCount'] = StaffPackage::where('staff_id', $staff->id)->count();
+
+        $data['scheduleCount'] = Schedule::where('staff_id', $staff->id)->count();
 
         return $data;
     }
@@ -98,7 +121,11 @@ class StaffCenterLogic extends BaseLogic
             ->order('sort', 'desc')
             ->order('id', 'desc');
 
-        return $query->paginate($params['page_size'] ?? 10)->toArray();
+        $pageSize = (int) ($params['page_size'] ?? 10);
+        if ($pageSize <= 0) {
+            $pageSize = 10;
+        }
+        return $query->paginate($pageSize)->toArray();
     }
 
     /**
@@ -373,6 +400,185 @@ class StaffCenterLogic extends BaseLogic
     }
 
     /**
+     * @notes 订单列表
+     */
+    public static function orderLists(int $userId, array $params): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $query = Order::hasWhere('items', ['staff_id' => $staffId]);
+
+        if (isset($params['status']) && $params['status'] !== '') {
+            $query->where('order_status', $params['status']);
+        }
+
+        if (!empty($params['keyword'])) {
+            $query->where('order_sn|contact_name|contact_mobile', 'like', '%' . $params['keyword'] . '%');
+        }
+
+        $list = $query->with([
+                'items' => function ($q) use ($staffId) {
+                    $q->field('id, order_id, staff_id, staff_name, package_name, service_date, time_slot, item_status, confirm_status, schedule_id, price, quantity, subtotal')
+                        ->where('staff_id', $staffId)
+                        ->with(['staff' => function ($staffQuery) {
+                            $staffQuery->field('id, name, avatar');
+                        }]);
+                },
+            ])
+            ->order('id', 'desc')
+            ->paginate((int) ($params['page_size'] ?? 10))
+            ->toArray();
+
+        foreach ($list['data'] as &$item) {
+            $item = self::applyStaffOrderAmounts($item);
+            $item['order_status_desc'] = self::getStatusDesc((int) $item['order_status']);
+            $item['pay_status_desc'] = self::getPayStatusDesc((int) $item['pay_status']);
+        }
+        unset($item);
+
+        return $list;
+    }
+
+    /**
+     * @notes 订单详情
+     */
+    public static function orderDetail(int $userId, int $orderId): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $order = Order::with([
+                'items' => function ($q) use ($staffId) {
+                    $q->field('id, order_id, staff_id, staff_name, package_name, service_date, time_slot, item_status, confirm_status, schedule_id, price, quantity, subtotal')
+                        ->where('staff_id', $staffId)
+                        ->with(['staff' => function ($staffQuery) {
+                            $staffQuery->field('id, name, avatar');
+                        }]);
+                },
+            ])
+            ->hasWhere('items', ['staff_id' => $staffId])
+            ->find($orderId);
+
+        if (!$order) {
+            self::setError('订单不存在');
+            return [];
+        }
+
+        $data = $order->toArray();
+        $data = self::applyStaffOrderAmounts($data);
+        $data['order_status_desc'] = self::getStatusDesc((int) $order->order_status);
+        $data['pay_status_desc'] = self::getPayStatusDesc((int) $order->pay_status);
+        $data['pay_type_desc'] = self::getPayTypeDesc((int) $order->pay_type);
+
+        return $data;
+    }
+
+    /**
+     * @notes 确认订单
+     */
+    public static function orderConfirm(int $userId, int $orderId): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        return Db::transaction(function () use ($userId, $staffId, $orderId) {
+            // 加锁查询，防止并发确认
+            $order = Order::with(['items'])
+                ->where('id', $orderId)
+                ->lock(true)
+                ->find();
+
+            if (!$order) {
+                self::setError('订单不存在');
+                return false;
+            }
+
+            if (is_array($order->items ?? null)) {
+                $allItems = $order->items;
+            } elseif (is_object($order->items ?? null) && method_exists($order->items, 'toArray')) {
+                $allItems = $order->items->toArray();
+            } else {
+                $allItems = [];
+            }
+            $staffItems = array_values(array_filter($allItems, function ($item) use ($staffId) {
+                return (int) ($item['staff_id'] ?? 0) === $staffId;
+            }));
+            if (empty($staffItems)) {
+                self::setError('无权确认该订单');
+                return false;
+            }
+
+            if ((int) $order->order_status !== Order::STATUS_PENDING_CONFIRM) {
+                self::setError('当前订单状态不可确认');
+                return false;
+            }
+
+            $pendingItems = array_values(array_filter($staffItems, function ($item) {
+                return (int) ($item['confirm_status'] ?? 0) === 0;
+            }));
+            if (empty($pendingItems)) {
+                self::setError('已确认，无需重复操作');
+                return false;
+            }
+
+            // 确认档期并标记订单项
+            foreach ($pendingItems as $item) {
+                if (!empty($item['schedule_id'])) {
+                    [$ok, $msg] = Schedule::confirmBooking(
+                        (int) $item['staff_id'],
+                        (string) $item['service_date'],
+                        (int) ($item['time_slot'] ?? 0),
+                        (int) $order->id,
+                        (int) $order->user_id
+                    );
+                    if (!$ok) {
+                        throw new \Exception($msg);
+                    }
+                }
+
+                OrderItem::where('id', $item['id'])->update([
+                    'confirm_status' => 1,
+                    'update_time' => time(),
+                ]);
+            }
+
+            // 全部订单项均已确认则推进订单状态
+            $remain = OrderItem::where('order_id', $order->id)
+                ->where('confirm_status', 0)
+                ->count();
+
+            if ($remain === 0) {
+                $beforeStatus = (int) $order->order_status;
+                $order->order_status = Order::STATUS_PENDING_PAY;
+                $order->update_time = time();
+                $order->save();
+
+                OrderLog::addLog(
+                    $order->id,
+                    OrderLog::OPERATOR_USER,
+                    $userId,
+                    'confirm',
+                    $beforeStatus,
+                    Order::STATUS_PENDING_PAY,
+                    '全部服务人员已确认，进入待支付'
+                );
+            }
+
+            return true;
+        });
+    }
+
+    /**
      * @notes 动态列表
      */
     public static function dynamicLists(int $userId, array $params): array
@@ -387,7 +593,11 @@ class StaffCenterLogic extends BaseLogic
             ->where('staff_id', $staffId)
             ->order('create_time', 'desc');
 
-        return $query->paginate($params['page_size'] ?? 10)->toArray();
+        $pageSize = (int) ($params['page_size'] ?? 10);
+        if ($pageSize <= 0) {
+            $pageSize = 10;
+        }
+        return $query->paginate($pageSize)->toArray();
     }
 
     /**
@@ -484,5 +694,98 @@ class StaffCenterLogic extends BaseLogic
 
         $dynamic->delete();
         return true;
+    }
+
+    /**
+     * @notes 仅保留当前服务人员相关金额
+     */
+    protected static function applyStaffOrderAmounts(array $order): array
+    {
+        $items = $order['items'] ?? [];
+        $staffTotal = 0.0;
+        foreach ($items as $item) {
+            $subtotal = isset($item['subtotal']) ? (float) $item['subtotal'] : 0.0;
+            if ($subtotal <= 0) {
+                $price = (float) ($item['price'] ?? 0);
+                $quantity = (int) ($item['quantity'] ?? 1);
+                $subtotal = $price * max($quantity, 1);
+            }
+            $staffTotal += $subtotal;
+        }
+        $staffTotal = round($staffTotal, 2);
+
+        $orderTotal = (float) ($order['total_amount'] ?? 0);
+        $discountTotal = (float) ($order['discount_amount'] ?? 0);
+        $couponTotal = (float) ($order['coupon_amount'] ?? 0);
+
+        if ($orderTotal > 0 && $staffTotal > 0) {
+            $ratio = $staffTotal / $orderTotal;
+            $staffDiscount = round($discountTotal * $ratio, 2);
+            $staffCoupon = round($couponTotal * $ratio, 2);
+        } else {
+            $staffDiscount = 0.0;
+            $staffCoupon = 0.0;
+        }
+
+        $staffPay = round($staffTotal - $staffDiscount - $staffCoupon, 2);
+        if ($staffPay < 0) {
+            $staffPay = 0.0;
+        }
+
+        $order['total_amount'] = $staffTotal;
+        $order['discount_amount'] = $staffDiscount;
+        $order['coupon_amount'] = $staffCoupon;
+        $order['pay_amount'] = $staffPay;
+
+        return $order;
+    }
+
+    /**
+     * @notes 获取订单状态描述
+     */
+    protected static function getStatusDesc(int $status): string
+    {
+        $map = [
+            Order::STATUS_PENDING_CONFIRM => '待确认',
+            Order::STATUS_PENDING_PAY => '待支付',
+            Order::STATUS_PAID => '已支付',
+            Order::STATUS_IN_SERVICE => '服务中',
+            Order::STATUS_COMPLETED => '已完成',
+            Order::STATUS_REVIEWED => '已评价',
+            Order::STATUS_CANCELLED => '已取消',
+            Order::STATUS_PAUSED => '已暂停',
+            Order::STATUS_REFUNDED => '已退款',
+        ];
+        return $map[$status] ?? '未知';
+    }
+
+    /**
+     * @notes 获取支付状态描述
+     */
+    protected static function getPayStatusDesc(int $status): string
+    {
+        $map = [
+            Order::PAY_STATUS_UNPAID => '未支付',
+            Order::PAY_STATUS_PAID => '已支付',
+            Order::PAY_STATUS_PARTIAL_REFUND => '部分退款',
+            Order::PAY_STATUS_FULL_REFUND => '全额退款',
+        ];
+        return $map[$status] ?? '未知';
+    }
+
+    /**
+     * @notes 获取支付方式描述
+     */
+    protected static function getPayTypeDesc(int $type): string
+    {
+        $map = [
+            Order::PAY_WAY_NONE => '未支付',
+            Order::PAY_WAY_WECHAT => '微信支付',
+            Order::PAY_WAY_ALIPAY => '支付宝',
+            Order::PAY_WAY_BALANCE => '余额支付',
+            Order::PAY_WAY_OFFLINE => '线下支付',
+            Order::PAY_WAY_COMBINATION => '组合支付',
+        ];
+        return $map[$type] ?? '未知';
     }
 }

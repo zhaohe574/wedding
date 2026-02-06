@@ -102,7 +102,7 @@ export default {
 <style lang="scss" scoped>
 .base-button {
   transition: all 0.2s ease;
-  border-radius: 48rpx;
+  border-radius: 32rpx;
   
   &:active {
     transform: translateY(2rpx);
@@ -111,12 +111,12 @@ export default {
   // 主要按钮样式增强
   &--primary {
     :deep(.tn-button) {
-      box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
+      box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
       font-weight: 600;
-      letter-spacing: 1rpx;
+      letter-spacing: 0.5rpx;
       
       &:active {
-        box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
+        box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.22);
       }
     }
   }
@@ -136,12 +136,12 @@ export default {
   // CTA按钮样式增强
   &--cta {
     :deep(.tn-button) {
-      box-shadow: 0 8rpx 24rpx rgba(249, 115, 22, 0.3);
+      box-shadow: 0 6rpx 16rpx rgba(249, 115, 22, 0.22);
       font-weight: 600;
-      letter-spacing: 1rpx;
+      letter-spacing: 0.5rpx;
       
       &:active {
-        box-shadow: 0 4rpx 12rpx rgba(249, 115, 22, 0.3);
+        box-shadow: 0 3rpx 10rpx rgba(249, 115, 22, 0.22);
       }
     }
   }
@@ -149,24 +149,27 @@ export default {
   // 尺寸样式
   &--lg {
     :deep(.tn-button) {
-      height: 88rpx;
-      font-size: 32rpx;
+      height: 72rpx;
+      padding: 0 32rpx;
+      font-size: 30rpx;
     }
   }
   
   &--md {
     :deep(.tn-button) {
-      height: 72rpx;
+      height: 64rpx;
+      padding: 0 28rpx;
       font-size: 28rpx;
     }
   }
   
   &--sm {
     :deep(.tn-button) {
-      height: 56rpx;
-      font-size: 26rpx;
+      height: 52rpx;
+      padding: 0 24rpx;
+      font-size: 24rpx;
       font-weight: 500;
-      letter-spacing: 0.5rpx;
+      letter-spacing: 0.3rpx;
     }
   }
 }

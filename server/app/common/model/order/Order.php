@@ -263,6 +263,7 @@ class Order extends BaseModel
                     'price' => $item['price'],
                     'quantity' => $item['quantity'] ?? 1,
                     'subtotal' => $item['price'] * ($item['quantity'] ?? 1),
+                    'confirm_status' => 0,
                     'remark' => $item['remark'] ?? '',
                     'create_time' => time(),
                     'update_time' => time(),

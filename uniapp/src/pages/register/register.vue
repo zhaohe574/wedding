@@ -127,28 +127,7 @@
         </view>
 
         <!-- 协议弹框 -->
-        <tn-modal
-            v-model="showModel"
-            show-cancel-button
-            :show-title="false"
-            :confirm-color="primaryColor"
-            @confirm=";(isCheckAgreement = true), (showModel = false)"
-            @cancel="showModel = false"
-        >
-            <view class="modal-content">
-                <view class="modal-title">温馨提示</view>
-                <view class="modal-text">
-                    请先阅读并同意
-                    <router-navigate data-theme="" to="/pages/agreement/agreement?type=service">
-                        <text class="modal-link">《服务协议》</text>
-                    </router-navigate>
-                    和
-                    <router-navigate to="/pages/agreement/agreement?type=privacy">
-                        <text class="modal-link">《隐私协议》</text>
-                    </router-navigate>
-                </view>
-            </view>
-        </tn-modal>
+        <tn-modal ref="modalRef" />
     </view>
 </template>
 
@@ -157,6 +136,7 @@ import { register } from '@/api/account'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { computed, reactive, ref } from 'vue'
+import type { TnModalInstance } from '@tuniao/tnui-vue3-uniapp'
 
 const isCheckAgreement = ref(false)
 const appStore = useAppStore()
@@ -167,7 +147,7 @@ const formData = reactive({
     password: '',
     password_confirm: ''
 })
-const showModel = ref(false)
+const modalRef = ref<TnModalInstance>()
 
 // 主题色
 const primaryColor = computed(() => themeStore.primaryColor)
@@ -195,13 +175,34 @@ const goToLogin = () => {
     uni.navigateBack()
 }
 
+// 显示协议弹窗
+const showAgreementModal = () => {
+    modalRef.value?.showModal({
+        title: '温馨提示',
+        content: '请先阅读并同意《服务协议》和《隐私协议》',
+        showCancel: true,
+        confirmText: '同意',
+        cancelText: '取消',
+        confirmStyle: {
+            color: primaryColor.value
+        },
+        confirm: () => {
+            isCheckAgreement.value = true
+            accountRegister()
+        }
+    })
+}
+
 // 注册
 const accountRegister = async () => {
     if (!formData.account) return uni.$u.toast('请输入账号')
     if (!formData.password) return uni.$u.toast('请输入密码')
     if (formData.password.length < 6) return uni.$u.toast('密码至少6位字符')
     if (!formData.password_confirm) return uni.$u.toast('请输入确认密码')
-    if (!isCheckAgreement.value && isOpenAgreement.value) return (showModel.value = true)
+    if (!isCheckAgreement.value && isOpenAgreement.value) {
+        showAgreementModal()
+        return
+    }
     if (formData.password != formData.password_confirm) return uni.$u.toast('两次输入的密码不一致')
     
     try {
@@ -284,21 +285,21 @@ page {
 .register-content {
     position: relative;
     z-index: 1;
-    padding: 60rpx 40rpx;
+    padding: 48rpx 32rpx;
     min-height: 100vh;
 }
 
 /* 头部区域 */
 .header-section {
-    margin-bottom: 60rpx;
+    margin-bottom: 40rpx;
     position: relative;
 
     .back-btn {
         position: absolute;
         left: 0;
         top: 0;
-        width: 80rpx;
-        height: 80rpx;
+        width: 72rpx;
+        height: 72rpx;
         background: rgba(255, 255, 255, 0.95);
         border-radius: 50%;
         display: flex;
@@ -318,7 +319,7 @@ page {
         font-size: 44rpx;
         font-weight: 600;
         color: var(--color-primary, #7C3AED);
-        margin-bottom: 16rpx;
+        margin-bottom: 12rpx;
         text-align: center;
         letter-spacing: 1rpx;
         margin-top: 20rpx;
@@ -335,8 +336,8 @@ page {
 /* 表单卡片 - 玻璃态效果 */
 .form-card {
     background: rgba(255, 255, 255, 0.85);
-    border-radius: 32rpx;
-    padding: 60rpx 40rpx;
+    border-radius: 24rpx;
+    padding: 40rpx 32rpx;
     box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12),
                 0 8rpx 16rpx rgba(0, 0, 0, 0.04);
     backdrop-filter: blur(20rpx);
@@ -348,12 +349,12 @@ page {
     font-size: 32rpx;
     font-weight: 600;
     color: var(--color-primary, #7C3AED);
-    margin-bottom: 40rpx;
+    margin-bottom: 24rpx;
 }
 
 /* 输入框组 */
 .input-group {
-    margin-bottom: 24rpx;
+    margin-bottom: 20rpx;
 
     .input-wrapper {
         display: flex;
@@ -385,8 +386,8 @@ page {
 /* 密码强度提示 */
 .password-tips {
     margin-top: -8rpx;
-    margin-bottom: 24rpx;
-    padding: 24rpx;
+    margin-bottom: 20rpx;
+    padding: 20rpx;
     background: var(--color-primary-light-9, #FAF5FF);
     border-radius: 16rpx;
     border: 2rpx solid var(--color-primary-light-7, #DDD6FE);
@@ -430,7 +431,7 @@ page {
 
 /* 协议区域 */
 .agreement-section {
-    margin: 24rpx 0;
+    margin: 20rpx 0;
 
     .agreement-text {
         font-size: 24rpx;
@@ -450,14 +451,15 @@ page {
 /* 按钮样式 */
 .btn-primary {
     background: linear-gradient(135deg, var(--color-primary, #7C3AED) 0%, var(--color-primary-dark-2, #6D28D9) 100%);
-    border-radius: 48rpx;
-    padding: 28rpx;
+    border-radius: 32rpx;
+    height: 72rpx;
+    padding: 0 32rpx;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
+    box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
 
     .btn-text {
-        font-size: 32rpx;
+        font-size: 30rpx;
         color: #FFFFFF;
         font-weight: 600;
         letter-spacing: 1rpx;
@@ -467,7 +469,7 @@ page {
 
     &:active {
         transform: translateY(2rpx);
-        box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
+        box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.22);
     }
 }
 
@@ -486,13 +488,13 @@ page {
 }
 
 .register-btn-wrapper {
-    margin-top: 32rpx;
+    margin-top: 24rpx;
 }
 
 /* 底部提示 */
 .bottom-tip {
     text-align: center;
-    margin-top: 32rpx;
+    margin-top: 24rpx;
     font-size: 26rpx;
 
     .tip-text {
@@ -544,11 +546,11 @@ page {
 /* 响应式优化 */
 @media (max-width: 375px) {
     .register-content {
-        padding: 48rpx 32rpx;
+        padding: 40rpx 28rpx;
     }
 
     .form-card {
-        padding: 48rpx 32rpx;
+        padding: 36rpx 28rpx;
     }
 
     .header-section .title-text {

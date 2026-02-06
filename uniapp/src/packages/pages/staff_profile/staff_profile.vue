@@ -3,70 +3,144 @@
         <navigation-bar title="个人资料" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
     </page-meta>
 
-    <view class="min-h-screen bg-[#f6f6f6] pb-[40rpx]">
-        <view class="bg-white mx-[24rpx] mt-[24rpx] rounded-lg p-[24rpx]">
-            <view class="text-sm font-medium mb-[20rpx]">头像</view>
-            <avatar-upload v-model="form.avatar" :round="true" :size="120" />
+    <view class="page-container">
+        <!-- 头像上传卡片 -->
+        <view class="avatar-card">
+            <view class="card-header">
+                <tn-icon name="user" size="32" :color="$theme.primaryColor" />
+                <text class="card-title">头像设置</text>
+            </view>
+            <view class="avatar-wrapper">
+                <avatar-upload v-model="form.avatar" :round="true" :size="140" />
+                <view class="avatar-tip">点击上传头像，建议尺寸400x400</view>
+            </view>
         </view>
 
-        <view class="bg-white mx-[24rpx] mt-[20rpx] rounded-lg">
-            <view class="flex items-center justify-between px-[24rpx] py-[26rpx] border-b border-solid border-0 border-light">
-                <view class="text-sm text-[#333]">姓名</view>
-                <tn-input v-model="form.name" placeholder="请输入姓名" class="text-right" />
+        <!-- 基本信息卡片 -->
+        <view class="info-card">
+            <view class="card-header">
+                <tn-icon name="edit" size="32" :color="$theme.primaryColor" />
+                <text class="card-title">基本信息</text>
+            </view>
+            
+            <view class="form-item">
+                <view class="form-label">
+                    <text class="label-text">姓名</text>
+                    <text class="label-required">*</text>
+                </view>
+                <tn-input 
+                    v-model="form.name" 
+                    placeholder="请输入姓名" 
+                    class="form-input-left"
+                    :border="false"
+                />
             </view>
 
-            <view class="flex items-center justify-between px-[24rpx] py-[26rpx] border-b border-solid border-0 border-light" @click="showCategoryPicker = true">
-                <view class="text-sm text-[#333]">服务分类</view>
-                <view class="flex items-center text-sm text-gray-500">
-                    <text>{{ currentCategoryName }}</text>
-                    <tn-icon name="right" size="24" color="#999999" class="ml-[6rpx]" />
+            <view class="form-item">
+                <view class="form-label">
+                    <text class="label-text">服务分类</text>
+                </view>
+                <view class="form-value-readonly">
+                    <text :style="{ color: form.category_id ? '#333333' : '#C8C9CC' }">
+                        {{ currentCategoryName }}
+                    </text>
                 </view>
             </view>
 
-            <view class="flex items-center justify-between px-[24rpx] py-[26rpx] border-b border-solid border-0 border-light">
-                <view class="text-sm text-[#333]">手机号</view>
-                <tn-input v-model="form.mobile" placeholder="请输入手机号" class="text-right" />
+            <view class="form-item">
+                <view class="form-label">
+                    <text class="label-text">手机号</text>
+                </view>
+                <tn-input 
+                    v-model="form.mobile" 
+                    placeholder="请输入手机号" 
+                    type="number"
+                    class="form-input-left"
+                    :border="false"
+                />
             </view>
 
-            <view class="flex items-center justify-between px-[24rpx] py-[26rpx] border-b border-solid border-0 border-light">
-                <view class="text-sm text-[#333]">服务价格</view>
-                <tn-input v-model="form.price" type="number" placeholder="请输入价格" class="text-right" />
+            <view class="form-item">
+                <view class="form-label">
+                    <text class="label-text">服务价格</text>
+                </view>
+                <view class="price-input-wrapper-left">
+                    <text class="price-symbol" :style="{ color: $theme.ctaColor }">¥</text>
+                    <tn-input 
+                        v-model="form.price" 
+                        type="number" 
+                        placeholder="请输入价格" 
+                        class="form-input-left"
+                        :border="false"
+                    />
+                </view>
             </view>
 
-            <view class="flex items-center justify-between px-[24rpx] py-[26rpx]">
-                <view class="text-sm text-[#333]">从业年限</view>
-                <tn-input v-model="form.experience_years" type="number" placeholder="请输入年限" class="text-right" />
+            <view class="form-item no-border">
+                <view class="form-label">
+                    <text class="label-text">从业年限</text>
+                </view>
+                <view class="year-input-wrapper-left">
+                    <tn-input 
+                        v-model="form.experience_years" 
+                        type="number" 
+                        placeholder="请输入年限" 
+                        class="form-input-left"
+                        :border="false"
+                    />
+                    <text class="year-unit">年</text>
+                </view>
             </view>
         </view>
 
-        <view class="bg-white mx-[24rpx] mt-[20rpx] rounded-lg p-[24rpx]">
-            <view class="text-sm font-medium mb-[16rpx]">个人简介</view>
+        <!-- 个人简介卡片 -->
+        <view class="desc-card">
+            <view class="card-header">
+                <tn-icon name="file-text" size="32" :color="$theme.primaryColor" />
+                <text class="card-title">个人简介</text>
+                <text class="char-count">{{ form.profile.length }}/500</text>
+            </view>
             <textarea
                 v-model="form.profile"
-                class="w-full text-sm leading-6 text-[#333] bg-[#fafafa] rounded-lg p-[20rpx]"
-                placeholder="请简要介绍自己的风格与经验"
+                class="desc-textarea"
+                placeholder="请简要介绍自己的风格与经验，让客户更了解您"
                 :maxlength="500"
+                :auto-height="true"
             />
         </view>
 
-        <view class="bg-white mx-[24rpx] mt-[20rpx] rounded-lg p-[24rpx]">
-            <view class="text-sm font-medium mb-[16rpx]">服务说明</view>
+        <!-- 服务说明卡片 -->
+        <view class="desc-card">
+            <view class="card-header">
+                <tn-icon name="list" size="32" :color="$theme.primaryColor" />
+                <text class="card-title">服务说明</text>
+                <text class="char-count">{{ form.service_desc.length }}/1000</text>
+            </view>
             <textarea
                 v-model="form.service_desc"
-                class="w-full text-sm leading-6 text-[#333] bg-[#fafafa] rounded-lg p-[20rpx]"
-                placeholder="填写服务内容、流程或注意事项"
+                class="desc-textarea"
+                placeholder="填写服务内容、流程或注意事项，帮助客户了解服务详情"
                 :maxlength="1000"
+                :auto-height="true"
             />
         </view>
 
-        <view class="mx-[24rpx] mt-[30rpx]">
-            <tn-button type="primary" shape="round" size="lg" :loading="saving" @click="handleSave">
-                保存
-            </tn-button>
+        <!-- 保存按钮 -->
+        <view class="save-btn-wrapper">
+            <view 
+                class="save-btn"
+                :style="{ 
+                    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+                    color: $theme.btnColor,
+                    opacity: saving ? 0.6 : 1
+                }"
+                @click="handleSave"
+            >
+                <tn-icon v-if="saving" name="loading" size="32" :color="$theme.btnColor" />
+                <text>{{ saving ? '保存中...' : '保存资料' }}</text>
+            </view>
         </view>
     </view>
-
-    <tn-action-sheet v-model="showCategoryPicker" :data="categoryOptions" @click="handleCategorySelect" />
 </template>
 
 <script setup lang="ts">
@@ -75,8 +149,10 @@ import { onShow } from '@dcloudio/uni-app'
 import { staffCenterProfile, staffCenterUpdateProfile } from '@/api/staffCenter'
 import { getServiceCategories } from '@/api/service'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
+import { useThemeStore } from '@/stores/theme'
+
+const $theme = useThemeStore()
 const saving = ref(false)
-const showCategoryPicker = ref(false)
 const categories = ref<Array<{ id: number; name: string }>>([])
 
 const form = reactive({
@@ -89,8 +165,6 @@ const form = reactive({
     profile: '',
     service_desc: ''
 })
-
-const categoryOptions = computed(() => categories.value.map((item) => ({ text: item.name, value: item.id })))
 
 const currentCategoryName = computed(() => {
     const match = categories.value.find((item) => item.id === Number(form.category_id))
@@ -130,27 +204,15 @@ const loadProfile = async () => {
     form.service_desc = data?.service_desc || ''
 }
 
-const handleCategorySelect = (index: number) => {
-    const selected = categoryOptions.value[index]
-    if (selected) {
-        form.category_id = Number(selected.value)
-    }
-}
-
 const handleSave = async () => {
     if (!form.name.trim()) {
         uni.showToast({ title: '请输入姓名', icon: 'none' })
-        return
-    }
-    if (!form.category_id) {
-        uni.showToast({ title: '请选择服务分类', icon: 'none' })
         return
     }
 
     const payload: any = {
         name: form.name.trim(),
         avatar: form.avatar,
-        category_id: form.category_id,
         profile: form.profile,
         service_desc: form.service_desc
     }
@@ -183,4 +245,167 @@ onShow(async () => {
 })
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.page-container {
+    min-height: 100vh;
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #F6F6F6 100%);
+    padding-bottom: 120rpx;
+}
+
+/* 卡片通用样式 */
+.avatar-card,
+.info-card,
+.desc-card {
+    margin: 24rpx;
+    padding: 32rpx 24rpx;
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    margin-bottom: 24rpx;
+}
+
+.card-title {
+    flex: 1;
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #333333;
+}
+
+.char-count {
+    font-size: 24rpx;
+    color: #999999;
+}
+
+/* 头像卡片 */
+.avatar-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+}
+
+.avatar-tip {
+    font-size: 24rpx;
+    color: #999999;
+}
+
+/* 表单项 */
+.form-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24rpx 0;
+    border-bottom: 1rpx solid #F5F5F5;
+    
+    &.no-border {
+        border-bottom: none;
+    }
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 4rpx;
+    min-width: 160rpx;
+}
+
+.label-text {
+    font-size: 30rpx;
+    color: #333333;
+}
+
+.label-required {
+    font-size: 30rpx;
+    color: #FF2C3C;
+}
+
+.form-input-left {
+    flex: 1;
+    text-align: left;
+    font-size: 28rpx;
+}
+
+.form-value-readonly {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    font-size: 28rpx;
+    color: #666666;
+}
+
+/* 价格输入 */
+.price-input-wrapper-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+}
+
+.price-symbol {
+    font-size: 28rpx;
+    font-weight: 600;
+}
+
+/* 年限输入 */
+.year-input-wrapper-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+}
+
+.year-unit {
+    font-size: 28rpx;
+    color: #666666;
+}
+
+/* 文本域 */
+.desc-textarea {
+    width: 100%;
+    min-height: 200rpx;
+    padding: 20rpx;
+    background: rgba(124, 58, 237, 0.03);
+    border-radius: 16rpx;
+    font-size: 28rpx;
+    line-height: 1.6;
+    color: #333333;
+    border: 1rpx solid rgba(124, 58, 237, 0.1);
+}
+
+/* 保存按钮 */
+.save-btn-wrapper {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 24rpx;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20rpx);
+    border-top: 1rpx solid #F5F5F5;
+    z-index: 100;
+}
+
+.save-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12rpx;
+    height: 72rpx;
+    border-radius: 32rpx;
+    font-size: 30rpx;
+    font-weight: 600;
+    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
+    transition: all 0.2s ease;
+    
+    &:active {
+        transform: translateY(2rpx);
+        box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
+    }
+}
+</style>

@@ -25,7 +25,7 @@ import { computed } from 'vue'
 interface Props {
   /** 是否已关注 */
   isFollowed?: boolean
-  /** 按钮尺寸：sm(56rpx) | md(72rpx) | lg(88rpx) */
+  /** 按钮尺寸：sm(52rpx) | md(64rpx) | lg(72rpx) */
   size?: 'sm' | 'md' | 'lg'
   /** 是否显示图标 */
   showIcon?: boolean
@@ -61,9 +61,9 @@ const sizeClass = computed(() => `size-${props.size}`)
 // 图标尺寸
 const iconSize = computed(() => {
   const sizeMap = {
-    sm: '24',
-    md: '28',
-    lg: '32'
+    sm: '22',
+    md: '26',
+    lg: '28'
   }
   return sizeMap[props.size]
 })
@@ -86,7 +86,7 @@ const handleClick = () => {
   align-items: center;
   justify-content: center;
   gap: 8rpx;
-  border-radius: 48rpx;
+  border-radius: 32rpx;
   font-weight: 500;
   transition: all 0.2s ease;
   user-select: none;
@@ -120,28 +120,28 @@ const handleClick = () => {
     pointer-events: none;
   }
   
-  // 小尺寸 (56rpx)
+  // 小尺寸 (52rpx)
   &.size-sm {
-    height: 56rpx;
+    height: 52rpx;
     padding: 0 24rpx;
     font-size: 24rpx;
-    min-width: 120rpx;
+    min-width: 112rpx;
   }
   
-  // 中尺寸 (72rpx)
+  // 中尺寸 (64rpx)
   &.size-md {
+    height: 64rpx;
+    padding: 0 28rpx;
+    font-size: 26rpx;
+    min-width: 128rpx;
+  }
+  
+  // 大尺寸 (72rpx)
+  &.size-lg {
     height: 72rpx;
     padding: 0 32rpx;
-    font-size: 26rpx;
-    min-width: 140rpx;
-  }
-  
-  // 大尺寸 (88rpx)
-  &.size-lg {
-    height: 88rpx;
-    padding: 0 40rpx;
     font-size: 28rpx;
-    min-width: 160rpx;
+    min-width: 144rpx;
   }
 }
 

@@ -443,6 +443,12 @@
                 }
             },
             {
+                "path": "pages/staff_work_detail/staff_work_detail",
+                "style": {
+                    "navigationBarTitleText": "作品详情"
+                }
+            },
+            {
                 "path": "pages/staff_favorite/staff_favorite",
                 "style": {
                     "navigationBarTitleText": "我的收藏"
@@ -503,6 +509,24 @@
                 "path": "pages/staff_center/staff_center",
                 "style": {
                     "navigationBarTitleText": "服务人员中心"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_order_list/staff_order_list",
+                "style": {
+                    "navigationBarTitleText": "订单管理"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_order_detail/staff_order_detail",
+                "style": {
+                    "navigationBarTitleText": "订单详情"
                 },
                 "meta": {
                     "auth": true

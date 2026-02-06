@@ -115,9 +115,9 @@ export default {
     justify-content: space-between;
     height: 88rpx;
     padding: 0 24rpx;
-    background: #F8F8F8;
-    border-radius: 12rpx;
-    border: 2rpx solid transparent;
+    background: #F9FAFB;
+    border-radius: 16rpx;
+    border: 2rpx solid #E5E7EB;
     transition: all 0.2s ease;
     cursor: pointer;
     

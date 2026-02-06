@@ -778,8 +778,8 @@ onShow(() => {
 }
 
 .group-header .staff-avatar {
-    width: 88rpx;
-    height: 88rpx;
+    width: 80rpx;
+    height: 80rpx;
     border-radius: 16rpx;
 }
 

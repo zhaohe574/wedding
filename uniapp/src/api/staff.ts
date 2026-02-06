@@ -36,6 +36,15 @@ export function getStaffWorks(data: { staff_id: number }) {
 }
 
 /**
+ * @description 获取作品详情
+ * @param { number } id
+ * @return { Promise }
+ */
+export function getWorkDetail(data: { id: number }) {
+    return request.get({ url: '/staff/workDetail', data })
+}
+
+/**
  * @description 工作人员作品列表（支持搜索）
  * @param data
  * @return { Promise }

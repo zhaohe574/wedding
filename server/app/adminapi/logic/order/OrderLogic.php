@@ -138,6 +138,7 @@ class OrderLogic extends BaseLogic
                     'price' => $item['price'],
                     'quantity' => $item['quantity'] ?? 1,
                     'subtotal' => $item['subtotal'],
+                    'confirm_status' => 1,
                     'remark' => $item['remark'] ?? '',
                     'create_time' => time(),
                     'update_time' => time(),

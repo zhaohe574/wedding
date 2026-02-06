@@ -132,6 +132,30 @@ class StaffWorkLogic extends BaseLogic
     }
 
     /**
+     * @notes 审核作品
+     * @param array $params
+     * @return bool
+     */
+    public static function audit(array $params): bool
+    {
+        try {
+            $work = StaffWork::find($params['id']);
+            if (!$work) {
+                throw new \Exception('作品不存在');
+            }
+
+            $work->audit_status = (int) $params['audit_status'];
+            $work->update_time = time();
+            $work->save();
+
+            return true;
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * @notes 设为封面
      * @param int $id
      * @return bool

@@ -1,9 +1,9 @@
 <template>
     <view class="activity-zone mx-[20rpx] mt-[20rpx]" v-if="content.enabled && showList.length">
         <!-- 标题栏 -->
-        <view v-if="content.title" class="flex items-center justify-between mb-[32rpx]">
+        <view v-if="content.title" class="flex items-center justify-between mb-[20rpx]">
             <view class="flex items-center">
-                <view class="title-bar w-[8rpx] h-[40rpx] rounded-full mr-[20rpx]" 
+                <view class="title-bar w-[8rpx] h-[40rpx] rounded-full mr-[12rpx]" 
                       style="background: linear-gradient(180deg, #7C3AED 0%, #A78BFA 100%);"></view>
                 <text class="text-xl font-semibold" style="color: #4C1D95;">
                     {{ content.title }}
@@ -21,7 +21,7 @@
         </view>
 
         <!-- 大图样式 -->
-        <view v-if="content.style == 1" class="activity-banner space-y-[24rpx]">
+        <view v-if="content.style == 1" class="activity-banner space-y-[16rpx]">
             <view
                 v-for="(item, index) in showList"
                 :key="index"
@@ -45,23 +45,23 @@
                         <text class="text-white text-xs font-medium">{{ item.tag }}</text>
                     </view>
 
-                    <text class="text-white text-lg font-bold line-clamp-1 mb-[12rpx]">{{ item.title }}</text>
-                    <view class="flex items-center">
-                        <view class="cta-button px-[32rpx] py-[16rpx] rounded-full"
+                        <text class="text-white text-lg font-bold line-clamp-1 mb-[10rpx]">{{ item.title }}</text>
+                        <view class="flex items-center">
+                            <view class="cta-button px-[24rpx] py-[12rpx] rounded-full"
                               style="background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(10rpx);">
-                            <text class="text-white text-sm font-semibold">立即参与</text>
+                                <text class="text-white text-sm font-semibold">立即参与</text>
+                            </view>
+                            <view v-if="item.price" class="flex items-baseline ml-[16rpx]">
+                                <text class="text-sm text-white/80">¥</text>
+                                <text class="text-2xl font-bold text-white">{{ item.price }}</text>
+                            </view>
                         </view>
-                        <view v-if="item.price" class="flex items-baseline ml-[24rpx]">
-                            <text class="text-sm text-white/80">¥</text>
-                            <text class="text-2xl font-bold text-white">{{ item.price }}</text>
-                        </view>
-                    </view>
                 </view>
             </view>
         </view>
 
         <!-- 卡片网格样式 -->
-        <view v-if="content.style == 2" class="activity-grid grid grid-cols-2 gap-[24rpx]">
+        <view v-if="content.style == 2" class="activity-grid grid grid-cols-2 gap-[16rpx]">
             <view
                 v-for="(item, index) in showList"
                 :key="index"
@@ -78,7 +78,7 @@
                     />
                     <view
                         v-if="item.tag && item.tag !== ''"
-                        class="absolute top-[16rpx] left-[16rpx] px-[16rpx] py-[6rpx] rounded-full"
+                        class="absolute top-[12rpx] left-[12rpx] px-[12rpx] py-[4rpx] rounded-full"
                         style="background: #F97316; box-shadow: 0 2rpx 8rpx rgba(249, 115, 22, 0.3);"
                     >
                         <text class="text-white text-xs font-medium">{{ item.tag }}</text>
@@ -106,7 +106,7 @@
             class="activity-scroll"
             :show-scrollbar="false"
         >
-            <view class="flex gap-[24rpx] px-[4rpx]">
+            <view class="flex gap-[16rpx] px-[4rpx]">
                 <view
                     v-for="(item, index) in showList"
                     :key="index"
@@ -128,15 +128,15 @@
                         >
                             <text class="text-white text-xs font-medium">{{ item.tag }}</text>
                         </view>
-                        <text class="text-white text-lg font-bold line-clamp-1 mb-[12rpx]">
+                        <text class="text-white text-lg font-bold line-clamp-1 mb-[10rpx]">
                             {{ item.title }}
                         </text>
                         <view class="flex items-center">
-                            <view class="px-[24rpx] py-[10rpx] rounded-full"
+                            <view class="px-[20rpx] py-[8rpx] rounded-full"
                                   style="background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(10rpx);">
                                 <text class="text-white text-xs font-medium">查看详情</text>
                             </view>
-                            <view v-if="item.price" class="flex items-baseline ml-[20rpx]">
+                            <view v-if="item.price" class="flex items-baseline ml-[16rpx]">
                                 <text class="text-xs text-white/80">¥</text>
                                 <text class="text-xl font-bold text-white">{{ item.price }}</text>
                             </view>
@@ -147,7 +147,7 @@
         </scroll-view>
 
         <!-- 列表样式 -->
-        <view v-if="content.style == 4" class="activity-list space-y-[24rpx]">
+        <view v-if="content.style == 4" class="activity-list space-y-[16rpx]">
             <view
                 v-for="(item, index) in showList"
                 :key="index"
@@ -165,13 +165,13 @@
                         />
                         <view
                             v-if="item.tag && item.tag !== ''"
-                            class="absolute top-[16rpx] left-[16rpx] px-[16rpx] py-[6rpx] rounded-full"
-                            style="background: #F97316; box-shadow: 0 2rpx 8rpx rgba(249, 115, 22, 0.3);"
-                        >
+                        class="absolute top-[12rpx] left-[12rpx] px-[12rpx] py-[4rpx] rounded-full"
+                        style="background: #F97316; box-shadow: 0 2rpx 8rpx rgba(249, 115, 22, 0.3);"
+                    >
                             <text class="text-white text-xs font-medium">{{ item.tag }}</text>
                         </view>
                     </view>
-                    <view class="flex-1 p-[24rpx] flex flex-col justify-between">
+                    <view class="flex-1 p-[20rpx] flex flex-col justify-between">
                         <view>
                             <text class="text-base font-semibold line-clamp-1 mb-[8rpx]" style="color: #4C1D95;">
                                 {{ item.title }}
@@ -180,12 +180,12 @@
                                 {{ item.desc }}
                             </text>
                         </view>
-                        <view class="flex items-center justify-between mt-[16rpx]">
+                        <view class="flex items-center justify-between mt-[12rpx]">
                             <view v-if="item.price" class="flex items-baseline">
                                 <text class="text-xs" style="color: #7C3AED;">¥</text>
                                 <text class="text-xl font-bold" style="color: #7C3AED;">{{ item.price }}</text>
                             </view>
-                            <view class="cta-button px-[24rpx] py-[10rpx] rounded-full"
+                            <view class="cta-button px-[20rpx] py-[8rpx] rounded-full"
                                   style="background: #7C3AED;">
                                 <text class="text-white text-xs font-medium">立即参与</text>
                             </view>
@@ -361,7 +361,7 @@ const handleMore = () => {
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
-        padding: 32rpx;
+        padding: 24rpx;
         background: linear-gradient(180deg, transparent 0%, transparent 50%, rgba(0,0,0,0.4) 75%, rgba(0,0,0,0.8) 100%);
     }
     
@@ -375,19 +375,19 @@ const handleMore = () => {
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
-        padding: 28rpx;
+        padding: 20rpx;
         background: linear-gradient(180deg, transparent 0%, transparent 50%, rgba(0,0,0,0.4) 75%, rgba(0,0,0,0.8) 100%);
     }
     
     // 活动标签
     .activity-tag {
         position: absolute;
-        top: 24rpx;
-        left: 24rpx;
-        padding: 8rpx 20rpx;
+        top: 16rpx;
+        left: 16rpx;
+        padding: 6rpx 16rpx;
         border-radius: 999rpx;
         background: #F97316;
-        box-shadow: 0 4rpx 12rpx rgba(249, 115, 22, 0.4);
+        box-shadow: 0 3rpx 10rpx rgba(249, 115, 22, 0.3);
     }
     
     .cta-button {

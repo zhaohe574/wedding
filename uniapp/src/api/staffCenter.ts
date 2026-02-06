@@ -56,6 +56,19 @@ export function staffCenterScheduleSetStatus(data: any) {
     return request.post({ url: '/staff_center/scheduleSetStatus', data }, { isAuth: true })
 }
 
+// 订单
+export function staffCenterOrderLists(data?: any) {
+    return request.get({ url: '/staff_center/orderLists', data }, { isAuth: true })
+}
+
+export function staffCenterOrderDetail(data: any) {
+    return request.get({ url: '/staff_center/orderDetail', data }, { isAuth: true })
+}
+
+export function staffCenterOrderConfirm(data: any) {
+    return request.post({ url: '/staff_center/orderConfirm', data }, { isAuth: true })
+}
+
 // 动态
 export function staffCenterDynamicLists(data?: any) {
     return request.get({ url: '/staff_center/dynamicLists', data }, { isAuth: true })

@@ -401,8 +401,8 @@ onLoad((options: any) => {
 
 .btn-cancel {
     width: 100%;
-    height: 88rpx;
-    line-height: 88rpx;
+    height: 72rpx;
+    line-height: 72rpx;
     background: #fff;
     border: 1rpx solid #ff3b30;
     color: #ff3b30;

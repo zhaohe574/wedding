@@ -243,10 +243,10 @@
             </view>
         </view>
 
-        <!-- 时间段选择 -->
+        <!-- 场次选择 -->
         <view v-if="selectedDate && selectedPackage" class="time-slot-section">
             <view class="section-header">
-                <text class="section-title">选择时间段</text>
+                <text class="section-title">选择场次</text>
                 <text class="section-hint">{{ selectedDate }}{{ bookingType === 1 ? ' · 可多选' : '' }}</text>
             </view>
             <view class="time-slots">
@@ -311,13 +311,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick, getCurrentInstance } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getStaffSchedule, joinWaitlist } from '@/api/schedule'
 import { addToCart } from '@/api/cart'
 import { getStaffDetail, getStaffList } from '@/api/staff'
 import { useUserStore } from '@/stores/user'
 import { requestSubscribeByScene } from '@/utils/subscribe'
+import { getRect } from '@/utils/util'
 
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
@@ -360,6 +361,7 @@ const selectedTimeSlots = ref<number[]>([])
 const recommendStaffList = ref<any[]>([])
 const recommendLoading = ref(false)
 const skipSlotScheduleFetch = ref(false)
+const pageCtx = getCurrentInstance()
 
 const bookingTypeLabels: Record<number, string> = {
     0: '全天套餐',
@@ -820,7 +822,7 @@ const ensureReady = () => {
     }
 
     if (bookingType.value === 1 && selectedTimeSlots.value.length === 0) {
-        uni.showToast({ title: '请选择时间段', icon: 'none' })
+        uni.showToast({ title: '请选择场次', icon: 'none' })
         return false
     }
 
@@ -897,8 +899,40 @@ const handleAddToCart = async () => {
     }
 }
 
+const scrollToTimeSlotSection = async () => {
+    if (!selectedDate.value) {
+        return
+    }
+    await nextTick()
+    if (!selectedPackage.value) {
+        return
+    }
+    const rect = await getRect('.time-slot-section', false, pageCtx).catch(() => null)
+    if (!rect) {
+        return
+    }
+    const query = uni.createSelectorQuery().in(pageCtx)
+    query
+        .selectViewport()
+        .scrollOffset()
+        .exec((res) => {
+            const viewport = res?.[0]
+            if (!viewport || typeof viewport.scrollTop !== 'number') {
+                return
+            }
+            const targetTop = viewport.scrollTop + rect.top - 12
+            uni.pageScrollTo({
+                scrollTop: targetTop > 0 ? targetTop : 0,
+                duration: 150
+            })
+        })
+}
+
 const selectPackage = (pkg: any) => {
     selectedPackageId.value = pkg.package_id
+    if (selectedDate.value) {
+        scrollToTimeSlotSection()
+    }
 }
 
 watch(selectedPackage, (pkg) => {
@@ -1352,7 +1386,7 @@ onLoad(async (options: any) => {
     color: var(--color-content);
 }
 
-/* 时间段选择 */
+/* 场次选择 */
 /* 套餐选择 */
 .package-section {
     margin: 0 24rpx 24rpx;
