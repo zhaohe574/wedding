@@ -1,8 +1,5 @@
 <template>
-    <view
-        class="banner translate-y-0"
-        v-if="content.data.length && content.enabled"
-    >
+    <view class="banner translate-y-0" v-if="content.data.length && content.enabled">
         <LSwiper
             :content="content"
             :height="bannerHeight"
@@ -23,6 +20,7 @@ import { computed } from 'vue'
 import LSwiper from '@/components/l-swiper/l-swiper.vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
+import { alphaColor } from '@/utils/color'
 
 const emit = defineEmits(['change'])
 const props = defineProps({
@@ -71,7 +69,7 @@ const borderRadius = computed(() => {
 const interval = computed(() => props.styles.interval || 7000)
 
 // 指示器颜色（使用紫色圆点）
-const indicatorColor = computed(() => 'rgba(124, 58, 237, 0.3)')
+const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#7C3AED', 0.16))
 const indicatorActiveColor = computed(() => themeStore.primaryColor || '#7C3AED')
 
 const handleChange = (index: number) => {

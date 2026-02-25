@@ -1,7 +1,7 @@
 <template>
     <view class="staff-banner-wrapper">
         <!-- 轮播图容器 -->
-        <view 
+        <view
             class="banner-container"
             :class="{ 'is-expanded': isExpanded }"
             :style="containerStyle"
@@ -29,9 +29,13 @@
                             lazy-load
                         />
                     </view>
-                    
+
                     <!-- 视频 -->
-                    <view v-else class="media-container video-wrapper" @click="handleMediaClick(index)">
+                    <view
+                        v-else
+                        class="media-container video-wrapper"
+                        @click="handleMediaClick(index)"
+                    >
                         <video
                             v-if="currentIndex === index"
                             :id="`video-${index}`"
@@ -54,9 +58,16 @@
                             class="banner-media"
                         />
                         <!-- 播放按钮遮罩 -->
-                        <view v-if="currentIndex !== index || item.is_autoplay !== 1" class="play-overlay">
+                        <view
+                            v-if="currentIndex !== index || item.is_autoplay !== 1"
+                            class="play-overlay"
+                        >
                             <view class="play-icon">
-                                <tn-icon name="play-circle-fill" size="80" color="rgba(255, 255, 255, 0.9)" />
+                                <tn-icon
+                                    name="play-circle-fill"
+                                    size="80"
+                                    color="rgba(255, 255, 255, 0.9)"
+                                />
                             </view>
                         </view>
                     </view>
@@ -72,20 +83,23 @@
             />
 
             <!-- 自定义指示器 -->
-            <view v-if="bannerList.length > 1 && config.banner_indicator_style === 2" class="custom-indicator">
+            <view
+                v-if="bannerList.length > 1 && config.banner_indicator_style === 2"
+                class="custom-indicator"
+            >
                 <text class="indicator-text">{{ currentIndex + 1 }}/{{ bannerList.length }}</text>
             </view>
 
             <!-- 进度条指示器 -->
-            <view v-if="bannerList.length > 1 && config.banner_indicator_style === 3" class="progress-indicator">
-                <view 
-                    class="progress-bar"
-                    :style="{ width: progressWidth }"
-                ></view>
+            <view
+                v-if="bannerList.length > 1 && config.banner_indicator_style === 3"
+                class="progress-indicator"
+            >
+                <view class="progress-bar" :style="{ width: progressWidth }"></view>
             </view>
 
             <!-- 小图模式：底部渐变遮罩 + 展开提示 -->
-            <view 
+            <view
                 v-if="config.banner_mode === 1 && !isExpanded && bannerList.length"
                 class="bottom-gradient"
                 @click="toggleExpand"
@@ -97,7 +111,7 @@
             </view>
 
             <!-- 展开/收起按钮（小图模式已展开时） -->
-            <view 
+            <view
                 v-if="config.banner_mode === 1 && isExpanded && bannerList.length"
                 class="collapse-btn"
                 @click="toggleExpand"
@@ -114,7 +128,7 @@ import { useThemeStore } from '@/stores/theme'
 
 interface BannerItem {
     id: number
-    type: number  // 1=图片 2=视频
+    type: number // 1=图片 2=视频
     file_url: string
     cover_url: string
     is_autoplay: number
@@ -122,10 +136,10 @@ interface BannerItem {
 }
 
 interface BannerConfig {
-    banner_mode: number  // 1=小图 2=大图
+    banner_mode: number // 1=小图 2=大图
     banner_small_height: number
     banner_large_height: number
-    banner_indicator_style: number  // 0=无 1=圆点 2=数字 3=进度条
+    banner_indicator_style: number // 0=无 1=圆点 2=数字 3=进度条
     banner_autoplay: number
     banner_interval: number
 }
@@ -154,19 +168,19 @@ const emit = defineEmits(['update:expanded'])
 const $theme = useThemeStore()
 const isExpanded = ref(false)
 const currentIndex = ref(0)
-const isVideoPlaying = ref(false)  // 视频播放状态
+const isVideoPlaying = ref(false) // 视频播放状态
 
 // 容器样式
 const containerStyle = computed(() => {
     const mode = props.config.banner_mode
     const smallHeight = props.config.banner_small_height || 400
     const largeHeight = props.config.banner_large_height || 600
-    
+
     let height = largeHeight
     if (mode === 1 && !isExpanded.value) {
         height = smallHeight
     }
-    
+
     return {
         height: `${height}rpx`
     }
@@ -208,10 +222,10 @@ const handleMediaClick = (index: number) => {
         // 已展开或大图模式，预览图片
         if (props.bannerList[index].type === 1) {
             const images = props.bannerList
-                .filter(item => item.type === 1)
-                .map(item => item.file_url)
+                .filter((item) => item.type === 1)
+                .map((item) => item.file_url)
             const current = images.indexOf(props.bannerList[index].file_url)
-            
+
             uni.previewImage({
                 urls: images,
                 current: current >= 0 ? current : 0
@@ -221,10 +235,14 @@ const handleMediaClick = (index: number) => {
 }
 
 // 监听轮播图列表变化，重置状态
-watch(() => props.bannerList, () => {
-    currentIndex.value = 0
-    isExpanded.value = false
-}, { deep: true })
+watch(
+    () => props.bannerList,
+    () => {
+        currentIndex.value = 0
+        isExpanded.value = false
+    },
+    { deep: true }
+)
 
 // 视频播放事件处理
 const handleVideoPlay = () => {
@@ -252,7 +270,7 @@ const handleVideoPause = () => {
     width: 100%;
     position: relative;
     overflow: hidden;
-    background-color: #F5F5F5;
+    background-color: #f5f5f5;
     transition: height 0.3s ease;
 }
 
@@ -337,7 +355,7 @@ const handleVideoPause = () => {
 
 .indicator-text {
     font-size: 24rpx;
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 .progress-indicator {
@@ -352,7 +370,7 @@ const handleVideoPause = () => {
 
 .progress-bar {
     height: 100%;
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     transition: width 0.3s ease;
 }
 
@@ -363,7 +381,12 @@ const handleVideoPause = () => {
     left: 0;
     right: 0;
     height: 120rpx;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.7) 0%,
+        rgba(0, 0, 0, 0.4) 50%,
+        transparent 100%
+    );
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -381,10 +404,10 @@ const handleVideoPause = () => {
     backdrop-filter: blur(10rpx);
     border-radius: 40rpx;
     border: 1rpx solid rgba(255, 255, 255, 0.3);
-    
+
     .hint-text {
         font-size: 24rpx;
-        color: #FFFFFF;
+        color: #ffffff;
         font-weight: 500;
     }
 }
@@ -405,7 +428,7 @@ const handleVideoPause = () => {
     justify-content: center;
     z-index: 10;
     border: 1rpx solid rgba(255, 255, 255, 0.2);
-    
+
     &:active {
         transform: translateX(-50%) scale(0.95);
         background-color: rgba(0, 0, 0, 0.7);

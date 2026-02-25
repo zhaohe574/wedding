@@ -1,10 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar 
+        <navigation-bar
             title="购物车"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
         <!-- #endif -->
     </page-meta>
@@ -15,9 +15,9 @@
             <tn-icon name="shopping-cart" size="160" color="#CCCCCC" />
             <text class="empty-title">购物车是空的</text>
             <text class="empty-desc">快去挑选心仪的服务吧</text>
-            <view 
-                class="btn-browse" 
-                :style="{ 
+            <view
+                class="btn-browse"
+                :style="{
                     background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                     color: $theme.btnColor
                 }"
@@ -35,7 +35,9 @@
                 <tn-icon name="warning" size="40" color="#FA8C16" />
                 <view class="alert-content">
                     <text class="alert-title">档期冲突提醒</text>
-                    <text class="alert-desc">{{ cartData.conflicts.length }}个项目存在时间冲突，请调整</text>
+                    <text class="alert-desc"
+                        >{{ cartData.conflicts.length }}个项目存在时间冲突，请调整</text
+                    >
                 </view>
             </view>
 
@@ -54,7 +56,11 @@
 
             <!-- 冲突详情列表 -->
             <view class="conflict-details" v-if="showConflictDetail && packageConflicts.length > 0">
-                <view class="conflict-item" v-for="conflict in packageConflicts" :key="conflict.package_id">
+                <view
+                    class="conflict-item"
+                    v-for="conflict in packageConflicts"
+                    :key="conflict.package_id"
+                >
                     <view class="conflict-info">
                         <tn-icon name="alert-circle" size="32" color="#FF2C3C" />
                         <text class="conflict-name">{{ conflict.package_name }}</text>
@@ -66,13 +72,17 @@
             <!-- 全选栏 -->
             <view class="select-bar">
                 <view class="select-all" @click="handleSelectAll">
-                    <view 
-                        class="checkbox" 
+                    <view
+                        class="checkbox"
                         :class="{ checked: isAllSelected }"
-                        :style="isAllSelected ? { 
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                            borderColor: $theme.primaryColor
-                        } : {}"
+                        :style="
+                            isAllSelected
+                                ? {
+                                      background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+                                      borderColor: $theme.primaryColor
+                                  }
+                                : {}
+                        "
                     >
                         <tn-icon v-if="isAllSelected" name="check" size="28" color="#FFFFFF" />
                     </view>
@@ -82,36 +92,34 @@
             </view>
 
             <!-- 购物车列表 -->
-                        <view class="cart-list">
-                <view
-                    class="cart-group"
-                    v-for="group in groupedItems"
-                    :key="group.key"
-                >
+            <view class="cart-list">
+                <view class="cart-group" v-for="group in groupedItems" :key="group.key">
                     <view class="group-header">
                         <view class="staff-section">
                             <image
-                                :src="group.staff?.avatar || '/static/images/user/default_avatar.png'"
+                                :src="
+                                    group.staff?.avatar || '/static/images/user/default_avatar.png'
+                                "
                                 class="staff-avatar"
                                 mode="aspectFill"
                             />
                             <view class="staff-info">
-                                <text class="staff-name">{{ group.staff?.name || '未知人员' }}</text>
+                                <text class="staff-name">{{
+                                    group.staff?.name || '未知人员'
+                                }}</text>
                                 <text class="staff-subtitle">{{ group.schedule_date }}</text>
                             </view>
                         </view>
                         <view class="group-total">
                             <text class="group-total-label">小计</text>
-                            <text class="group-total-value" :style="{ color: $theme.ctaColor }">¥{{ group.total_price }}</text>
+                            <text class="group-total-value" :style="{ color: $theme.ctaColor }"
+                                >¥{{ group.total_price }}</text
+                            >
                         </view>
                     </view>
 
                     <view class="group-packages">
-                        <view
-                            class="package-group"
-                            v-for="pkg in group.packages"
-                            :key="pkg.key"
-                        >
+                        <view class="package-group" v-for="pkg in group.packages" :key="pkg.key">
                             <view class="package-header">
                                 <view class="package-title">
                                     <tn-icon name="gift" size="24" />
@@ -119,7 +127,10 @@
                                 </view>
                                 <view class="package-actions">
                                     <text class="package-total">¥{{ pkg.total_price }}</text>
-                                    <view class="package-delete" @click.stop="handleDeletePackage(pkg)">
+                                    <view
+                                        class="package-delete"
+                                        @click.stop="handleDeletePackage(pkg)"
+                                    >
                                         <tn-icon name="delete" size="24" color="#999999" />
                                         <text>删除</text>
                                     </view>
@@ -137,21 +148,42 @@
                                         <view
                                             class="checkbox"
                                             :class="{ checked: item.is_selected }"
-                                            :style="item.is_selected ? {
-                                                background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                                                borderColor: $theme.primaryColor
-                                            } : {}"
+                                            :style="
+                                                item.is_selected
+                                                    ? {
+                                                          background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+                                                          borderColor: $theme.primaryColor
+                                                      }
+                                                    : {}
+                                            "
                                         >
-                                            <tn-icon v-if="item.is_selected" name="check" size="28" color="#FFFFFF" />
+                                            <tn-icon
+                                                v-if="item.is_selected"
+                                                name="check"
+                                                size="28"
+                                                color="#FFFFFF"
+                                            />
                                         </view>
                                         <view class="slot-info">
                                             <view class="slot-row">
-                                                <text class="slot-label">{{ getTimeSlotLabel(item) }}</text>
-                                                <text class="slot-price" :style="{ color: $theme.ctaColor }">¥{{ item.price }}</text>
+                                                <text class="slot-label">{{
+                                                    getTimeSlotLabel(item)
+                                                }}</text>
+                                                <text
+                                                    class="slot-price"
+                                                    :style="{ color: $theme.ctaColor }"
+                                                    >¥{{ item.price }}</text
+                                                >
                                             </view>
                                             <view class="slot-status" v-if="!item.is_available">
-                                                <tn-icon name="close-circle" size="24" color="#FF2C3C" />
-                                                <text>{{ item.unavailable_reason || '档期不可用' }}</text>
+                                                <tn-icon
+                                                    name="close-circle"
+                                                    size="24"
+                                                    color="#FF2C3C"
+                                                />
+                                                <text>{{
+                                                    item.unavailable_reason || '档期不可用'
+                                                }}</text>
                                             </view>
                                         </view>
                                     </view>
@@ -166,7 +198,7 @@
                 </view>
             </view>
 
-<view class="action-bar">
+            <view class="action-bar">
                 <view class="action-btn" @click="handleSavePlan">
                     <tn-icon name="folder-add" size="48" :color="$theme.primaryColor" />
                     <text class="action-text">保存方案</text>
@@ -192,15 +224,28 @@
                 <view class="total-section">
                     <text class="total-label">合计</text>
                     <text class="total-symbol" :style="{ color: $theme.ctaColor }">¥</text>
-                    <text class="total-value" :style="{ color: $theme.ctaColor }">{{ cartData.total_price }}</text>
+                    <text class="total-value" :style="{ color: $theme.ctaColor }">{{
+                        cartData.total_price
+                    }}</text>
                 </view>
             </view>
-            <view 
+            <view
                 class="checkout-btn"
-                :class="{ disabled: cartData.selected_count === 0 || cartData.conflicts.length > 0 || packageConflicts.length > 0 }"
-                :style="(cartData.selected_count === 0 || cartData.conflicts.length > 0 || packageConflicts.length > 0) ? {} : {
-                    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
+                :class="{
+                    disabled:
+                        cartData.selected_count === 0 ||
+                        cartData.conflicts.length > 0 ||
+                        packageConflicts.length > 0
                 }"
+                :style="
+                    cartData.selected_count === 0 ||
+                    cartData.conflicts.length > 0 ||
+                    packageConflicts.length > 0
+                        ? {}
+                        : {
+                              background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
+                          }
+                "
                 @click="handleCheckout"
             >
                 <text>下单</text>
@@ -208,7 +253,12 @@
         </view>
 
         <!-- 保存方案弹窗 -->
-        <tn-popup v-model="showPlanPopup" mode="center" :border-radius="24" :mask-close-able="false">
+        <tn-popup
+            v-model="showPlanPopup"
+            mode="center"
+            :border-radius="24"
+            :mask-close-able="false"
+        >
             <view class="plan-modal">
                 <text class="modal-title">保存为方案</text>
                 <text class="modal-desc">为您的预约方案起个名字</text>
@@ -223,13 +273,14 @@
                 />
                 <view class="modal-actions">
                     <view class="modal-btn btn-cancel" @click="closePlanPopup">取消</view>
-                    <view 
-                        class="modal-btn btn-confirm" 
-                        :style="{ 
+                    <view
+                        class="modal-btn btn-confirm"
+                        :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
                         }"
                         @click="confirmSavePlan"
-                    >确定</view>
+                        >确定</view
+                    >
                 </view>
             </view>
         </tn-popup>
@@ -278,7 +329,6 @@ const planName = ref('')
 const showConflictDetail = ref(false)
 const pendingApplyPlanId = ref<number | null>(null)
 const applyingPlan = ref(false)
-
 
 // 套餐预订冲突列表
 const packageConflicts = computed(() => {
@@ -353,9 +403,8 @@ const getTimeSlotLabel = (item: any) => {
         3: '晚宴'
     }
     const slot = Number(item?.time_slot)
-    return Number.isFinite(slot) ? (map[slot] || '未知场次') : '未知场次'
+    return Number.isFinite(slot) ? map[slot] || '未知场次' : '未知场次'
 }
-
 
 // 获取购物车数据
 const fetchCart = async () => {
@@ -537,7 +586,7 @@ onShow(() => {
 <style lang="scss" scoped>
 .cart-page {
     min-height: 100vh;
-    background: #F5F5F5;
+    background: #f5f5f5;
     padding-bottom: 180rpx;
 }
 
@@ -573,8 +622,7 @@ onShow(() => {
         font-weight: 700;
         padding: 32rpx 80rpx;
         border-radius: 64rpx;
-        box-shadow: 0 16rpx 48rpx rgba(124, 58, 237, 0.4),
-                    0 8rpx 24rpx rgba(124, 58, 237, 0.2);
+        box-shadow: 0 16rpx 48rpx rgba(124, 58, 237, 0.4), 0 8rpx 24rpx rgba(124, 58, 237, 0.2);
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         overflow: hidden;
 
@@ -586,17 +634,18 @@ onShow(() => {
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, 
-                transparent 0%, 
-                rgba(255, 255, 255, 0.3) 50%, 
-                transparent 100%);
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.3) 50%,
+                transparent 100%
+            );
             transition: left 0.6s ease;
         }
 
         &:active {
             transform: translateY(4rpx) scale(0.98);
-            box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3),
-                        0 4rpx 12rpx rgba(124, 58, 237, 0.15);
+            box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3), 0 4rpx 12rpx rgba(124, 58, 237, 0.15);
         }
 
         /* 悬停时的光泽动画 */
@@ -649,19 +698,19 @@ onShow(() => {
     }
 
     &.alert-warning {
-        background: #FFF7E6;
-        color: #FA8C16;
+        background: #fff7e6;
+        color: #fa8c16;
     }
 
     &.alert-info {
-        background: #E6F7FF;
-        color: #1890FF;
+        background: #e6f7ff;
+        color: #1890ff;
     }
 }
 
 /* 冲突详情 */
 .conflict-details {
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 16rpx;
     padding: 24rpx;
     margin-bottom: 24rpx;
@@ -672,7 +721,7 @@ onShow(() => {
         justify-content: space-between;
         align-items: center;
         padding: 20rpx 0;
-        border-bottom: 1rpx solid #F0F0F0;
+        border-bottom: 1rpx solid #f0f0f0;
 
         &:last-child {
             border-bottom: none;
@@ -693,7 +742,7 @@ onShow(() => {
 
         .conflict-date {
             font-size: 26rpx;
-            color: #FF2C3C;
+            color: #ff2c3c;
             font-weight: 500;
         }
     }
@@ -822,10 +871,10 @@ onShow(() => {
 }
 
 .package-group {
-    background: #F9FAFB;
+    background: #f9fafb;
     border-radius: 16rpx;
     padding: 20rpx;
-    border: 1rpx solid #F0F0F0;
+    border: 1rpx solid #f0f0f0;
 }
 
 .package-header {
@@ -875,9 +924,9 @@ onShow(() => {
     align-items: center;
     gap: 12rpx;
     padding: 16rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 12rpx;
-    border: 1rpx solid #EEEEEE;
+    border: 1rpx solid #eeeeee;
 }
 
 .package-item.unavailable {
@@ -920,7 +969,7 @@ onShow(() => {
     align-items: center;
     gap: 6rpx;
     font-size: 22rpx;
-    color: #FF2C3C;
+    color: #ff2c3c;
 }
 
 .slot-actions {
@@ -1162,7 +1211,7 @@ onShow(() => {
     }
 
     .checkout-btn {
-        color: #FFFFFF;
+        color: #ffffff;
         font-size: 32rpx;
         font-weight: 700;
         padding: 28rpx 56rpx;
@@ -1179,7 +1228,7 @@ onShow(() => {
         }
 
         &.disabled {
-            background: linear-gradient(135deg, #CCCCCC 0%, #AAAAAA 100%) !important;
+            background: linear-gradient(135deg, #cccccc 0%, #aaaaaa 100%) !important;
             box-shadow: none;
             opacity: 0.6;
         }

@@ -12,16 +12,20 @@
             <view
                 class="tab-item"
                 :class="{ active: currentTab === 'pending' }"
+                :style="currentTab === 'pending' ? $theme.activeTab.value : {}"
                 @click="switchTab('pending')"
             >
                 待评价
+                <view v-if="currentTab === 'pending'" class="tab-indicator" :style="$theme.tabIndicator.value"></view>
             </view>
             <view
                 class="tab-item"
                 :class="{ active: currentTab === 'reviewed' }"
+                :style="currentTab === 'reviewed' ? $theme.activeTab.value : {}"
                 @click="switchTab('reviewed')"
             >
                 已评价
+                <view v-if="currentTab === 'reviewed'" class="tab-indicator" :style="$theme.tabIndicator.value"></view>
             </view>
         </view>
 
@@ -43,7 +47,7 @@
                             <view class="staff-name">{{ item.staff_name }}</view>
                             <view class="package-name">{{ item.package_name }}</view>
                         </view>
-                        <button class="btn-review" @click="goReview(item)">去评价</button>
+                        <button class="btn-review" :style="$theme.btnReview.value" @click="goReview(item)">去评价</button>
                     </view>
                 </view>
             </view>
@@ -65,14 +69,16 @@
                     <view class="card-header">
                         <view class="staff-info">
                             <image
-                                :src="item.staff?.avatar || '/static/images/user/default_avatar.png'"
+                                :src="
+                                    item.staff?.avatar || '/static/images/user/default_avatar.png'
+                                "
                                 class="staff-avatar-small"
                                 mode="aspectFill"
                             />
                             <text class="staff-name">{{ item.staff?.name }}</text>
                         </view>
                         <view class="score">
-                            <uni-icons type="star-filled" size="14" color="#ff9800"></uni-icons>
+                            <tn-icon name="star-fill" size="28rpx" color="#ff9800"></tn-icon>
                             <text>{{ item.score }}</text>
                         </view>
                     </view>
@@ -107,16 +113,35 @@
 
         <!-- 加载更多 -->
         <view v-if="loading" class="loading-tip">
-            <uni-icons type="spinner-cycle" size="20" color="#999"></uni-icons>
+            <tn-icon name="loading" size="36rpx" color="#999"></tn-icon>
             <text>加载中...</text>
         </view>
     </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onReachBottom } from '@dcloudio/uni-app'
 import { getMyReviews, getPendingOrders } from '@/api/review'
+import { useThemeStore } from '@/stores/theme'
+
+const themeStore = useThemeStore()
+const $theme = {
+    pageStyle: computed(() => themeStore.pageStyle),
+    navColor: computed(() => themeStore.navColor),
+    navBgColor: computed(() => themeStore.navBgColor),
+    primaryColor: computed(() => themeStore.primaryColor || '#7C3AED'),
+    activeTab: computed(() => ({
+        color: themeStore.primaryColor || '#7C3AED',
+        fontWeight: 'bold'
+    })),
+    tabIndicator: computed(() => ({
+        background: themeStore.primaryColor || '#7C3AED'
+    })),
+    btnReview: computed(() => ({
+        background: themeStore.primaryColor || '#7C3AED'
+    }))
+}
 
 const currentTab = ref('pending')
 const loading = ref(false)
@@ -246,20 +271,17 @@ onMounted(() => {
         position: relative;
 
         &.active {
-            color: var(--primary-color, #ff6b35);
             font-weight: bold;
+        }
 
-            &::after {
-                content: '';
-                position: absolute;
-                bottom: 0;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 60rpx;
-                height: 4rpx;
-                background: var(--primary-color, #ff6b35);
-                border-radius: 2rpx;
-            }
+        .tab-indicator {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60rpx;
+            height: 4rpx;
+            border-radius: 2rpx;
         }
     }
 }
@@ -314,7 +336,6 @@ onMounted(() => {
 
     .btn-review {
         padding: 16rpx 32rpx;
-        background: var(--primary-color, #ff6b35);
         color: #fff;
         font-size: 26rpx;
         border-radius: 30rpx;

@@ -7,16 +7,25 @@
         />
     </page-meta>
     <view class="publish-page">
-        <!-- 订单信息 -->
-        <view class="bg-white p-4" v-if="orderItem">
+        <!-- 顶部渐变背景 -->
+        <view class="top-bg" :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor}, ${$theme.primaryColor}88)` }"></view>
+
+        <!-- 顶部标题区域 -->
+        <view class="top-header">
+            <text class="top-header-title">分享您的体验</text>
+            <text class="top-header-desc">您的评价将帮助我们提供更好的服务</text>
+        </view>
+
+        <!-- 订单信息卡片 -->
+        <view class="order-card" v-if="orderItem">
             <view class="flex items-center">
                 <image
                     :src="orderItem.staff?.avatar || '/static/images/user/default_avatar.png'"
-                    class="w-16 h-16 rounded-full mr-3"
+                    class="staff-avatar"
                     mode="aspectFill"
                 />
-                <view class="flex-1">
-                    <view class="text-base font-medium">{{ orderItem.staff_name }}</view>
+                <view class="flex-1 ml-3">
+                    <view class="text-base font-bold text-gray-800">{{ orderItem.staff_name }}</view>
                     <view class="text-sm text-gray-400 mt-1">{{ orderItem.package_name }}</view>
                     <view class="text-xs text-gray-400 mt-1">
                         服务日期: {{ orderItem.order?.service_date }}
@@ -25,53 +34,75 @@
             </view>
         </view>
 
-        <!-- 评分 -->
-        <view class="bg-white mt-3 p-4">
-            <view class="section-title">服务评分</view>
-
-            <view class="score-item">
-                <text class="score-label">综合评分</text>
-                <view class="score-stars">
-                    <uni-icons
-                        v-for="i in 5"
-                        :key="i"
-                        :type="i <= formData.score ? 'star-filled' : 'star'"
-                        size="28"
-                        :color="i <= formData.score ? '#ff9800' : '#ddd'"
-                        @click="formData.score = i"
-                    />
-                </view>
-                <text class="score-text">{{ scoreTexts[formData.score - 1] }}</text>
+        <!-- 综合评分 -->
+        <view class="section-card">
+            <view class="section-header">
+                <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
+                <text class="section-title">服务评分</text>
             </view>
 
-            <view class="divider"></view>
+            <view class="main-score">
+                <text class="main-score-label">综合评分</text>
+                <view class="main-score-stars">
+                    <view
+                        v-for="i in 5"
+                        :key="i"
+                        class="star-touch"
+                        @click="formData.score = i"
+                    >
+                        <tn-icon
+                            :name="i <= formData.score ? 'star-fill' : 'star'"
+                            size="64rpx"
+                            :color="i <= formData.score ? '#ff9800' : '#e0e0e0'"
+                        />
+                    </view>
+                </view>
+                <view class="score-badge" :style="{ background: $theme.primaryColor }">
+                    <text class="score-badge-text">{{ scoreTexts[formData.score - 1] }}</text>
+                </view>
+            </view>
+
+            <view class="detail-divider"></view>
 
             <view class="detail-scores">
-                <view class="detail-score-item" v-for="item in detailScores" :key="item.key">
-                    <text class="label">{{ item.label }}</text>
-                    <view class="stars">
-                        <uni-icons
+                <view class="detail-score-row" v-for="item in detailScores" :key="item.key">
+                    <text class="detail-label">{{ item.label }}</text>
+                    <view class="detail-stars">
+                        <view
                             v-for="i in 5"
                             :key="i"
-                            :type="i <= formData[item.key] ? 'star-filled' : 'star'"
-                            size="20"
-                            :color="i <= formData[item.key] ? '#ff9800' : '#ddd'"
+                            class="star-touch-sm"
                             @click="formData[item.key] = i"
-                        />
+                        >
+                            <tn-icon
+                                :name="i <= formData[item.key] ? 'star-fill' : 'star'"
+                                size="44rpx"
+                                :color="i <= formData[item.key] ? '#ff9800' : '#e0e0e0'"
+                            />
+                        </view>
                     </view>
                 </view>
             </view>
         </view>
 
         <!-- 评价标签 -->
-        <view class="bg-white mt-3 p-4" v-if="tags.length">
-            <view class="section-title">选择标签</view>
+        <view class="section-card" v-if="tags.length">
+            <view class="section-header">
+                <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
+                <text class="section-title">选择标签</text>
+                <text class="tag-count">{{ selectedTags.length }}/5</text>
+            </view>
             <view class="tag-list">
                 <view
                     v-for="tag in tags"
                     :key="tag.id"
                     class="tag-item"
                     :class="{ active: selectedTags.includes(tag.id) }"
+                    :style="selectedTags.includes(tag.id) ? {
+                        color: $theme.primaryColor,
+                        borderColor: $theme.primaryColor,
+                        background: $theme.primaryColor + '12'
+                    } : {}"
                     @click="toggleTag(tag.id)"
                 >
                     {{ tag.name }}
@@ -80,58 +111,76 @@
         </view>
 
         <!-- 评价内容 -->
-        <view class="bg-white mt-3 p-4">
-            <view class="section-title">评价内容</view>
+        <view class="section-card">
+            <view class="section-header">
+                <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
+                <text class="section-title">评价内容</text>
+            </view>
             <textarea
                 v-model="formData.content"
                 class="content-input"
                 placeholder="分享您的服务体验，帮助更多人选择..."
                 maxlength="500"
+                :cursor-spacing="120"
             />
-            <view class="text-right text-xs text-gray-400">{{ formData.content.length }}/500</view>
+            <view class="text-right text-xs text-gray-400 mt-1">{{ formData.content.length }}/500</view>
         </view>
 
         <!-- 上传图片/视频 -->
-        <view class="bg-white mt-3 p-4">
-            <view class="section-title">上传图片/视频（选填）</view>
+        <view class="section-card">
+            <view class="section-header">
+                <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
+                <text class="section-title">上传图片/视频（选填）</text>
+            </view>
             <view class="media-uploader">
                 <view v-for="(img, index) in formData.images" :key="index" class="media-item">
                     <image :src="img" class="media-image" mode="aspectFill" />
                     <view class="delete-btn" @click="removeImage(index)">
-                        <uni-icons type="close" size="14" color="#fff"></uni-icons>
+                        <tn-icon name="close" size="24rpx" color="#fff"></tn-icon>
                     </view>
                 </view>
                 <view class="add-media" @click="chooseImage" v-if="formData.images.length < 9">
-                    <uni-icons type="camera" size="40" color="#ccc"></uni-icons>
-                    <text class="text-xs text-gray-400 mt-1">添加图片</text>
+                    <tn-icon name="camera" size="56rpx" color="#ccc"></tn-icon>
+                    <text class="add-media-text">添加图片</text>
                 </view>
             </view>
             <view class="text-xs text-gray-400 mt-2">最多上传9张图片</view>
         </view>
 
         <!-- 匿名评价 -->
-        <view class="bg-white mt-3 p-4">
+        <view class="section-card">
             <view class="flex justify-between items-center">
-                <text class="text-sm">匿名评价</text>
+                <view class="flex items-center">
+                    <tn-icon name="my" size="36rpx" color="#999"></tn-icon>
+                    <text class="text-sm text-gray-600 ml-2">匿名评价</text>
+                </view>
                 <switch
                     :checked="formData.is_anonymous === 1"
                     @change="formData.is_anonymous = $event.detail.value ? 1 : 0"
-                    color="#ff6b35"
+                    :color="$theme.primaryColor"
                 />
             </view>
         </view>
 
         <!-- 奖励提示 -->
-        <view class="reward-tip" v-if="rewardPoints > 0">
-            <uni-icons type="gift" size="18" color="#ff6b35"></uni-icons>
-            <text
-                >发布评价可获得 <text class="highlight">{{ rewardPoints }}</text> 积分奖励</text
-            >
+        <view class="reward-card" v-if="rewardPoints > 0" :style="{ background: $theme.primaryColor + '10', borderColor: $theme.primaryColor + '30' }">
+            <view class="reward-icon-wrap" :style="{ background: $theme.primaryColor + '20' }">
+                <tn-icon name="gift" size="40rpx" :color="$theme.primaryColor"></tn-icon>
+            </view>
+            <view class="reward-info">
+                <text class="reward-text">发布评价可获得积分奖励</text>
+                <text class="reward-points" :style="{ color: $theme.primaryColor }">+{{ rewardPoints }} 积分</text>
+            </view>
         </view>
 
         <!-- 提交按钮 -->
         <view class="bottom-actions">
-            <button class="btn-submit" :disabled="submitting" @click="handleSubmit">
+            <button
+                class="btn-submit"
+                :style="{ background: submitting ? '#ccc' : $theme.primaryColor }"
+                :disabled="submitting"
+                @click="handleSubmit"
+            >
                 {{ submitting ? '提交中...' : '发布评价' }}
             </button>
         </view>
@@ -175,9 +224,9 @@ const detailScores = [
 const rewardPoints = computed(() => {
     if (!rewardConfig.value.length) return 0
 
-    let type = 1 // 文字评价
-    if (formData.images.length > 0) type = 2 // 图文评价
-    if (formData.video) type = 3 // 视频评价
+    let type = 1
+    if (formData.images.length > 0) type = 2
+    if (formData.video) type = 3
 
     const config = rewardConfig.value.find((c) => c.reward_type === type)
     if (!config) return 0
@@ -317,63 +366,162 @@ onLoad((options: any) => {
     min-height: 100vh;
     background-color: #f5f5f5;
     padding-bottom: 180rpx;
+    position: relative;
+}
+
+.top-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 380rpx;
+    border-radius: 0 0 60rpx 60rpx;
+}
+
+/* 顶部标题 */
+.top-header {
+    position: relative;
+    padding: 32rpx 32rpx 20rpx;
+    z-index: 1;
+}
+
+.top-header-title {
+    display: block;
+    font-size: 36rpx;
+    font-weight: bold;
+    color: #fff;
+}
+
+.top-header-desc {
+    display: block;
+    font-size: 24rpx;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 8rpx;
+}
+
+/* 订单信息卡片 */
+.order-card {
+    position: relative;
+    margin: 20rpx 24rpx 0;
+    padding: 28rpx;
+    background: #fff;
+    border-radius: 20rpx;
+    box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+}
+
+.staff-avatar {
+    width: 100rpx;
+    height: 100rpx;
+    border-radius: 50%;
+    border: 4rpx solid #f0f0f0;
+}
+
+/* 通用卡片 */
+.section-card {
+    position: relative;
+    margin: 20rpx 24rpx 0;
+    padding: 28rpx;
+    background: #fff;
+    border-radius: 20rpx;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24rpx;
+}
+
+.section-dot {
+    width: 8rpx;
+    height: 28rpx;
+    border-radius: 4rpx;
+    margin-right: 12rpx;
 }
 
 .section-title {
     font-size: 28rpx;
     font-weight: bold;
     color: #333;
-    margin-bottom: 20rpx;
+    flex: 1;
 }
 
-.score-item {
+.tag-count {
+    font-size: 24rpx;
+    color: #999;
+}
+
+/* 综合评分 */
+.main-score {
     display: flex;
     align-items: center;
-    padding: 20rpx 0;
-
-    .score-label {
-        font-size: 28rpx;
-        color: #333;
-        width: 140rpx;
-    }
-
-    .score-stars {
-        display: flex;
-        gap: 8rpx;
-    }
-
-    .score-text {
-        font-size: 26rpx;
-        color: #ff9800;
-        margin-left: 16rpx;
-    }
+    padding: 16rpx 0 24rpx;
 }
 
-.divider {
+.main-score-label {
+    font-size: 28rpx;
+    color: #333;
+    font-weight: 500;
+    width: 140rpx;
+    flex-shrink: 0;
+}
+
+.main-score-stars {
+    display: flex;
+    gap: 4rpx;
+    flex: 1;
+}
+
+.star-touch {
+    padding: 4rpx;
+    cursor: pointer;
+}
+
+.star-touch-sm {
+    padding: 2rpx;
+    cursor: pointer;
+}
+
+.score-badge {
+    padding: 6rpx 16rpx;
+    border-radius: 20rpx;
+    margin-left: 12rpx;
+    flex-shrink: 0;
+}
+
+.score-badge-text {
+    font-size: 22rpx;
+    color: #fff;
+    white-space: nowrap;
+}
+
+.detail-divider {
     height: 1rpx;
-    background: #f0f0f0;
-    margin: 20rpx 0;
+    background: linear-gradient(to right, transparent, #e8e8e8, transparent);
+    margin: 8rpx 0 16rpx;
 }
 
 .detail-scores {
-    .detail-score-item {
+    .detail-score-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 16rpx 0;
+        padding: 14rpx 0;
 
-        .label {
+        .detail-label {
             font-size: 26rpx;
             color: #666;
+            width: 140rpx;
         }
 
-        .stars {
+        .detail-stars {
             display: flex;
-            gap: 4rpx;
+            gap: 2rpx;
         }
     }
 }
 
+/* 标签 */
 .tag-list {
     display: flex;
     flex-wrap: wrap;
@@ -381,29 +529,27 @@ onLoad((options: any) => {
 }
 
 .tag-item {
-    padding: 12rpx 24rpx;
+    padding: 14rpx 28rpx;
     background: #f5f5f5;
-    border-radius: 30rpx;
+    border-radius: 32rpx;
     font-size: 26rpx;
     color: #666;
     border: 2rpx solid transparent;
-
-    &.active {
-        background: rgba(255, 107, 53, 0.1);
-        color: var(--primary-color, #ff6b35);
-        border-color: var(--primary-color, #ff6b35);
-    }
+    transition: all 0.2s;
 }
 
+/* 评价内容 */
 .content-input {
     width: 100%;
-    height: 200rpx;
+    height: 220rpx;
     padding: 20rpx;
-    background: #f9f9f9;
-    border-radius: 12rpx;
+    background: #f8f8f8;
+    border-radius: 16rpx;
     font-size: 28rpx;
+    line-height: 1.6;
 }
 
+/* 图片上传 */
 .media-uploader {
     display: flex;
     flex-wrap: wrap;
@@ -414,75 +560,108 @@ onLoad((options: any) => {
     position: relative;
     width: 160rpx;
     height: 160rpx;
+    border-radius: 12rpx;
+    overflow: visible;
 }
 
 .media-image {
     width: 100%;
     height: 100%;
-    border-radius: 8rpx;
+    border-radius: 12rpx;
 }
 
 .delete-btn {
     position: absolute;
-    top: -10rpx;
-    right: -10rpx;
-    width: 36rpx;
-    height: 36rpx;
-    background: rgba(0, 0, 0, 0.5);
+    top: -12rpx;
+    right: -12rpx;
+    width: 40rpx;
+    height: 40rpx;
+    background: rgba(0, 0, 0, 0.55);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 1;
 }
 
 .add-media {
     width: 160rpx;
     height: 160rpx;
-    border: 2rpx dashed #ddd;
-    border-radius: 8rpx;
+    border: 2rpx dashed #d9d9d9;
+    border-radius: 12rpx;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 8rpx;
+    background: #fafafa;
 }
 
-.reward-tip {
+.add-media-text {
+    font-size: 22rpx;
+    color: #bbb;
+}
+
+/* 奖励卡片 */
+.reward-card {
+    display: flex;
+    align-items: center;
+    margin: 24rpx 24rpx 0;
+    padding: 24rpx 28rpx;
+    border-radius: 16rpx;
+    border: 2rpx solid transparent;
+    gap: 16rpx;
+}
+
+.reward-icon-wrap {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8rpx;
-    padding: 20rpx;
-    margin: 24rpx;
-    background: rgba(255, 107, 53, 0.1);
-    border-radius: 12rpx;
-    font-size: 26rpx;
-    color: #666;
-
-    .highlight {
-        color: var(--primary-color, #ff6b35);
-        font-weight: bold;
-    }
+    flex-shrink: 0;
 }
 
+.reward-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.reward-text {
+    font-size: 26rpx;
+    color: #666;
+}
+
+.reward-points {
+    font-size: 30rpx;
+    font-weight: bold;
+}
+
+/* 底部按钮 */
 .bottom-actions {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 12rpx 20rpx;
+    padding: 16rpx 24rpx;
+    padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
     background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
+    box-shadow: 0 -2rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
 .btn-submit {
     width: 100%;
-    height: 72rpx;
-    line-height: 72rpx;
-    background: var(--primary-color, #ff6b35);
+    height: 88rpx;
+    line-height: 88rpx;
     color: #fff;
-    border-radius: 32rpx;
-    font-size: 30rpx;
+    border-radius: 44rpx;
+    font-size: 32rpx;
+    font-weight: 500;
     border: none;
+    letter-spacing: 2rpx;
 
     &[disabled] {
         opacity: 0.6;

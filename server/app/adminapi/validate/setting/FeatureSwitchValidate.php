@@ -20,6 +20,7 @@ class FeatureSwitchValidate extends BaseValidate
         'staff_center' => 'require|in:0,1',
         'staff_admin' => 'require|in:0,1',
         'admin_dashboard' => 'require|in:0,1',
+        'staff_detail_style' => 'in:classic,immersive,conversion',
     ];
 
     protected $message = [
@@ -29,10 +30,11 @@ class FeatureSwitchValidate extends BaseValidate
         'staff_admin.in' => '服务人员后台开关值错误',
         'admin_dashboard.require' => '请选择管理员看板开关',
         'admin_dashboard.in' => '管理员看板开关值错误',
+        'staff_detail_style.in' => '服务人员详情页风格值错误',
     ];
 
     public function sceneSetConfig(): FeatureSwitchValidate
     {
-        return $this->only(['staff_center', 'staff_admin', 'admin_dashboard']);
+        return $this->only(['staff_center', 'staff_admin', 'admin_dashboard', 'staff_detail_style']);
     }
 }

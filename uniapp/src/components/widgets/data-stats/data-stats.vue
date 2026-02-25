@@ -1,7 +1,10 @@
 <template>
     <view v-if="content.enabled && showList.length" class="data-stats mx-[24rpx] mt-[24rpx]">
         <!-- 横向排列 -->
-        <view v-if="content.style == 1" class="horizontal-layout bg-white rounded-[16rpx] p-[32rpx]">
+        <view
+            v-if="content.style == 1"
+            class="horizontal-layout bg-white rounded-[16rpx] p-[32rpx]"
+        >
             <view class="flex justify-around">
                 <view
                     v-for="(item, index) in showList"
@@ -10,18 +13,24 @@
                     @click="handleClick(item)"
                 >
                     <!-- 图标 -->
-                    <view 
+                    <view
                         class="icon-wrapper mb-[16rpx] w-[80rpx] h-[80rpx] rounded-full flex items-center justify-center"
                         :style="{ backgroundColor: getIconBg(index) }"
                     >
-                        <tn-icon :name="item.icon" :size="40" :color="getIconColor(index)"></tn-icon>
+                        <tn-icon
+                            :name="item.icon"
+                            :size="40"
+                            :color="getIconColor(index)"
+                        ></tn-icon>
                     </view>
                     <!-- 数值 -->
                     <view class="flex items-baseline mb-[8rpx]">
                         <text class="text-[40rpx] font-bold text-[#1E293B]">
                             {{ getStatValue(item.value) }}
                         </text>
-                        <text v-if="item.unit" class="text-[24rpx] text-[#64748B] ml-[4rpx]">{{ item.unit }}</text>
+                        <text v-if="item.unit" class="text-[24rpx] text-[#64748B] ml-[4rpx]">{{
+                            item.unit
+                        }}</text>
                     </view>
                     <!-- 标题 -->
                     <text class="text-[24rpx] text-[#64748B]">{{ item.title }}</text>
@@ -38,7 +47,7 @@
                 @click="handleClick(item)"
             >
                 <!-- 图标 -->
-                <view 
+                <view
                     class="icon-wrapper w-[80rpx] h-[80rpx] rounded-[16rpx] flex items-center justify-center mr-[24rpx]"
                     :style="{ backgroundColor: getIconBg(index) }"
                 >
@@ -46,12 +55,16 @@
                 </view>
                 <!-- 内容 -->
                 <view class="flex-1">
-                    <text class="text-[24rpx] text-[#64748B] block mb-[8rpx]">{{ item.title }}</text>
+                    <text class="text-[24rpx] text-[#64748B] block mb-[8rpx]">{{
+                        item.title
+                    }}</text>
                     <view class="flex items-baseline">
                         <text class="text-[40rpx] font-bold text-[#1E293B]">
                             {{ getStatValue(item.value) }}
                         </text>
-                        <text v-if="item.unit" class="text-[24rpx] text-[#64748B] ml-[4rpx]">{{ item.unit }}</text>
+                        <text v-if="item.unit" class="text-[24rpx] text-[#64748B] ml-[4rpx]">{{
+                            item.unit
+                        }}</text>
                     </view>
                 </view>
                 <!-- 箭头 -->
@@ -71,14 +84,20 @@
                 >
                     <!-- 图标 -->
                     <view class="mb-[16rpx]">
-                        <tn-icon :name="item.icon" :size="36" :color="getIconColor(index)"></tn-icon>
+                        <tn-icon
+                            :name="item.icon"
+                            :size="36"
+                            :color="getIconColor(index)"
+                        ></tn-icon>
                     </view>
                     <!-- 数值 -->
                     <view class="flex items-baseline mb-[8rpx]">
                         <text class="text-[36rpx] font-bold text-[#1E293B]">
                             {{ getStatValue(item.value) }}
                         </text>
-                        <text v-if="item.unit" class="text-[22rpx] text-[#64748B] ml-[4rpx]">{{ item.unit }}</text>
+                        <text v-if="item.unit" class="text-[22rpx] text-[#64748B] ml-[4rpx]">{{
+                            item.unit
+                        }}</text>
                     </view>
                     <!-- 标题 -->
                     <text class="text-[24rpx] text-[#64748B]">{{ item.title }}</text>
@@ -137,12 +156,7 @@ const getIconBg = (index: number) => {
 
 // 获取图标颜色
 const getIconColor = (index: number) => {
-    const colors = [
-        $theme.primaryColor,
-        $theme.secondaryColor,
-        $theme.ctaColor,
-        $theme.accentColor
-    ]
+    const colors = [$theme.primaryColor, $theme.secondaryColor, $theme.ctaColor, $theme.accentColor]
     return colors[index % colors.length]
 }
 
@@ -206,7 +220,7 @@ onMounted(() => {
             opacity: 0.9;
         }
     }
-    
+
     .icon-wrapper {
         transition: all 0.2s ease;
     }

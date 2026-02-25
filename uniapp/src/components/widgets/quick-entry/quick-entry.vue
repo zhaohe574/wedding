@@ -1,5 +1,8 @@
 <template>
-    <view v-if="content.enabled && showList.length" class="quick-entry-widget mx-[20rpx] mt-[20rpx]">
+    <view
+        v-if="content.enabled && showList.length"
+        class="quick-entry-widget mx-[20rpx] mt-[20rpx]"
+    >
         <!-- 网格布局 -->
         <view v-if="content.style == 1" class="grid-layout">
             <view
@@ -41,7 +44,10 @@
                     >
                         <!-- 图标容器 -->
                         <view class="icon-wrapper">
-                            <view class="icon-bg" :style="{ backgroundColor: getIconBg(index) }"></view>
+                            <view
+                                class="icon-bg"
+                                :style="{ backgroundColor: getIconBg(index) }"
+                            ></view>
                             <image
                                 lazy-load
                                 class="entry-icon"
@@ -103,43 +109,42 @@ const handleClick = (link: any) => {
 
 <style scoped lang="scss">
 .quick-entry-widget {
-    
     /* 网格布局样式 */
     .grid-layout {
-        background: #FFFFFF;
+        background: #ffffff;
         border-radius: 14rpx;
         padding: 24rpx 16rpx;
         box-shadow: 0 4rpx 20rpx rgba(15, 23, 42, 0.06);
-        
+
         .entries-grid {
             display: grid;
             gap: 20rpx 12rpx;
             width: 100%;
         }
     }
-    
+
     /* 横向滑动样式 */
     .scroll-layout {
-        background: #FFFFFF;
+        background: #ffffff;
         border-radius: 14rpx;
         padding: 24rpx 0;
         box-shadow: 0 4rpx 20rpx rgba(15, 23, 42, 0.06);
-        
+
         .scroll-container {
             white-space: nowrap;
-            
+
             &::-webkit-scrollbar {
                 display: none;
             }
         }
-        
+
         .entries-scroll {
             display: inline-flex;
             gap: 20rpx;
             padding: 0 20rpx;
         }
     }
-    
+
     /* 入口项通用样式 */
     .entry-item {
         display: flex;
@@ -148,14 +153,14 @@ const handleClick = (link: any) => {
         gap: 12rpx;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        
+
         /* 点击反馈 */
         &:active {
             transform: scale(0.95);
             opacity: 0.8;
         }
     }
-    
+
     /* 图标容器 */
     .icon-wrapper {
         position: relative;
@@ -165,7 +170,7 @@ const handleClick = (link: any) => {
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        
+
         /* 背景装饰 */
         .icon-bg {
             position: absolute;
@@ -177,7 +182,7 @@ const handleClick = (link: any) => {
             transition: all 0.2s ease;
             z-index: 0;
         }
-        
+
         /* 图标 */
         .entry-icon {
             width: 44rpx;
@@ -187,7 +192,7 @@ const handleClick = (link: any) => {
             transition: transform 0.2s ease;
         }
     }
-    
+
     /* 标题 */
     .entry-title {
         font-size: 26rpx;
@@ -201,7 +206,7 @@ const handleClick = (link: any) => {
         white-space: nowrap;
         transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
+
     /* 响应式适配 - 尊重用户的动画偏好 */
     @media (prefers-reduced-motion: reduce) {
         .quick-entry-widget * {

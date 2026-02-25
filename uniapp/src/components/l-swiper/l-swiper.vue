@@ -75,12 +75,12 @@ const currentIndex = ref(props.current)
 // 将 indicatorPos 转换为 TuniaoUI 的格式
 const getIndicatorPosition = computed(() => {
     const posMap: Record<string, string> = {
-        'topLeft': 'left-top',
-        'topCenter': 'center-top',
-        'topRight': 'right-top',
-        'bottomLeft': 'left-bottom',
-        'bottomCenter': 'center-bottom',
-        'bottomRight': 'right-bottom'
+        topLeft: 'left-top',
+        topCenter: 'center-top',
+        topRight: 'right-top',
+        bottomLeft: 'left-bottom',
+        bottomCenter: 'center-bottom',
+        bottomRight: 'right-bottom'
     }
     return posMap[props.indicatorPos] || 'center-bottom'
 })
@@ -89,9 +89,9 @@ watchEffect(() => {
     try {
         const content = props?.content
         const len = content?.data?.length
-        
+
         if (!len) return
-        
+
         for (let i = 0; i < len; i++) {
             const item = content.data[i]
             // 兼容不同的图片字段名：bg（首页轮播图）或 image（其他轮播图）
@@ -100,7 +100,7 @@ watchEffect(() => {
                 item.image = getImageUrl(imageField)
             }
         }
-        
+
         emit('change', 0)
     } catch (error) {
         console.error('轮播图数据错误:', error)

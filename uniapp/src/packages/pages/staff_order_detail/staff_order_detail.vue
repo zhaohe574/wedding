@@ -1,13 +1,17 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar title="订单详情" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            title="订单详情"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
     </page-meta>
 
     <view class="page-container" v-if="order">
         <!-- 订单状态卡片 -->
-        <view 
+        <view
             class="status-card"
-            :style="{ 
+            :style="{
                 background: `linear-gradient(135deg, ${statusInfo.color}15 0%, ${statusInfo.color}30 100%)`,
                 borderColor: `${statusInfo.color}40`
             }"
@@ -61,11 +65,7 @@
                 <text class="card-title">服务项目</text>
             </view>
             <view v-if="order.items && order.items.length" class="service-list">
-                <view
-                    v-for="item in order.items"
-                    :key="item.id"
-                    class="service-item"
-                >
+                <view v-for="item in order.items" :key="item.id" class="service-item">
                     <view class="service-header">
                         <text class="service-name">{{ item.package_name || '服务套餐' }}</text>
                         <text class="service-price" :style="{ color: $theme.ctaColor }">
@@ -82,10 +82,13 @@
                         <text>{{ item.time_slot_desc || '未知场次' }}</text>
                     </view>
                     <view class="service-meta">
-                        <view class="meta-tag" :style="{ 
-                            background: `${$theme.primaryColor}15`,
-                            color: $theme.primaryColor
-                        }">
+                        <view
+                            class="meta-tag"
+                            :style="{
+                                background: `${$theme.primaryColor}15`,
+                                color: $theme.primaryColor
+                            }"
+                        >
                             {{ item.item_status_desc || '未知状态' }}
                         </view>
                         <text class="meta-quantity">数量 x{{ item.quantity || 1 }}</text>
@@ -156,9 +159,9 @@
 
         <!-- 底部操作按钮 -->
         <view v-if="canConfirm" class="action-wrapper">
-            <view 
+            <view
                 class="confirm-btn"
-                :style="{ 
+                :style="{
                     background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                     color: $theme.btnColor
                 }"
@@ -278,7 +281,7 @@ onLoad(async (options: any) => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #F6F6F6 100%);
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
     padding-bottom: 120rpx;
 }
 
@@ -324,7 +327,7 @@ onLoad(async (options: any) => {
 .info-card {
     margin: 0 24rpx 24rpx;
     padding: 32rpx 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
@@ -334,7 +337,7 @@ onLoad(async (options: any) => {
     align-items: center;
     gap: 12rpx;
     padding-bottom: 20rpx;
-    border-bottom: 1rpx solid #F5F5F5;
+    border-bottom: 1rpx solid #f5f5f5;
     margin-bottom: 20rpx;
 }
 
@@ -372,7 +375,7 @@ onLoad(async (options: any) => {
     font-size: 28rpx;
     color: #333333;
     text-align: right;
-    
+
     &.address {
         text-align: right;
         line-height: 1.6;
@@ -491,10 +494,10 @@ onLoad(async (options: any) => {
     align-items: center;
     justify-content: space-between;
     padding: 12rpx 0;
-    
+
     &.total {
         padding-top: 20rpx;
-        border-top: 2rpx solid #F5F5F5;
+        border-top: 2rpx solid #f5f5f5;
         margin-top: 8rpx;
     }
 }
@@ -507,9 +510,9 @@ onLoad(async (options: any) => {
 .amount-value {
     font-size: 28rpx;
     color: #333333;
-    
+
     &.discount {
-        color: #FF2C3C;
+        color: #ff2c3c;
     }
 }
 
@@ -541,7 +544,7 @@ onLoad(async (options: any) => {
     padding: 24rpx;
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(20rpx);
-    border-top: 1rpx solid #F5F5F5;
+    border-top: 1rpx solid #f5f5f5;
     z-index: 100;
 }
 
@@ -556,7 +559,7 @@ onLoad(async (options: any) => {
     font-weight: 600;
     box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: translateY(2rpx);
         box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
@@ -570,7 +573,7 @@ onLoad(async (options: any) => {
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #F6F6F6 100%);
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
     gap: 24rpx;
 }
 

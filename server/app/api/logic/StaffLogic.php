@@ -14,6 +14,7 @@ use app\common\model\staff\Favorite;
 use app\common\model\staff\StaffTag;
 use app\common\model\staff\StaffPackage;
 use app\common\model\service\ServicePackage;
+use app\common\service\ConfigService;
 
 /**
  * 工作人员逻辑（小程序端）
@@ -65,6 +66,9 @@ class StaffLogic extends BaseLogic
         Staff::incrementViewCount($id);
 
         $data = $staff->toArray();
+
+        // 详情页风格（后台配置）
+        $data['staff_detail_style'] = (string) ConfigService::get('feature_switch', 'staff_detail_style', 'classic');
 
         // 获取标签
         $tagData = \app\common\model\staff\StaffTag::alias('st')

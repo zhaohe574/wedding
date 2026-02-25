@@ -98,8 +98,14 @@
 
         <!-- 最新资讯（根据装修配置显示） -->
         <view class="article" v-if="showNewsSection && state.article.length">
-            <view class="flex items-center article-title mx-md my-md text-[32rpx] font-semibold">
-                {{ newsConfig?.content?.title || '最新资讯' }}
+            <view
+                class="article-title mx-md my-md text-[32rpx] font-semibold"
+                :style="articleTitleStyle"
+            >
+                <view class="article-title__bar" :style="articleBarStyle"></view>
+                <text class="article-title__text">{{
+                    newsConfig?.content?.title || '最新资讯'
+                }}</text>
             </view>
             <news-card
                 v-for="item in state.article"
@@ -126,11 +132,7 @@
         <!--  #endif  -->
 
         <!-- 返回顶部按钮 -->
-        <u-back-top
-            :scroll-top="scrollTop"
-            :top="100"
-            :custom-style="backTopStyle"
-        ></u-back-top>
+        <u-back-top :scroll-top="scrollTop" :top="100" :custom-style="backTopStyle"></u-back-top>
 
         <!--  #ifdef MP  -->
         <MpPrivacyPopup></MpPrivacyPopup>
@@ -146,6 +148,7 @@ import { onLoad, onPageScroll, onShow } from '@dcloudio/uni-app'
 import { computed, reactive, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
+import { alphaColor, tintColor } from '@/utils/color'
 
 // #ifdef MP
 import MpPrivacyPopup from './component/mp-privacy-popup.vue'
@@ -153,6 +156,10 @@ import MpPrivacyPopup from './component/mp-privacy-popup.vue'
 
 const appStore = useAppStore()
 const themeStore = useThemeStore()
+const primaryColor = computed(() => themeStore.primaryColor || '#7C3AED')
+const primaryLight9 = computed(() => tintColor(primaryColor.value, 0.9))
+const primaryLight3 = computed(() => tintColor(primaryColor.value, 0.3))
+const primaryShadow = computed(() => alphaColor(primaryColor.value, 0.12))
 
 const state = reactive<{
     pages: any[]
@@ -195,40 +202,69 @@ const showNewsSection = computed(() => {
     return config && config.content?.enabled !== 0
 })
 
+// 资讯标题样式
+const articleTitleStyle = computed(() => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16rpx',
+    color: '#333333'
+}))
+
+const articleBarStyle = computed(() => ({
+    width: '8rpx',
+    height: '34rpx',
+    borderRadius: '999rpx',
+    background: `linear-gradient(180deg, ${primaryColor.value} 0%, ${primaryLight3.value} 100%)`,
+    boxShadow: `0 2rpx 8rpx ${primaryShadow.value}`
+}))
+
 // 返回顶部按钮样式
 const backTopStyle = computed(() => ({
     backgroundColor: '#FFFFFF',
-    color: themeStore.primaryColor || '#7C3AED',
-    boxShadow: '0 2rpx 12rpx rgba(0, 0, 0, 0.08)',
+    color: primaryColor.value,
+    boxShadow: `0 2rpx 12rpx ${alphaColor(primaryColor.value, 0.12)}`,
+    border: `1rpx solid ${tintColor(primaryColor.value, 0.75)}`,
     borderRadius: '50%',
     transition: 'all 0.2s ease'
 }))
 
 // 根页面样式
+const defaultBackground = computed(() => {
+    return `linear-gradient(180deg, ${primaryLight9.value} 0%, #FFFFFF 100%)`
+})
+
 const pageStyle = computed(() => {
     const { bg_type, bg_color, bg_image } = state.meta[0]?.content ?? {}
-    
+
     // 如果没有配置背景，使用默认的浅紫色渐变
     if (!bg_type && !bg_color && !bg_image && !isLinkage.value) {
         return {
-            'background': 'linear-gradient(180deg, #FAF5FF 0%, #FFFFFF 100%)'
+            background: defaultBackground.value
         }
     }
-    
+
     if (!isLinkage.value) {
         if (bg_type == 1) {
-            return { 'background-color': bg_color || '#FAF5FF' }
+            return { background: bg_color || defaultBackground.value }
         } else {
             // 添加图片存在性检查，避免 404 错误
-            return bg_image 
-                ? { 'background-image': `url(${bg_image})` }
-                : { 'background': 'linear-gradient(180deg, #FAF5FF 0%, #FFFFFF 100%)' }
+            return bg_image
+                ? {
+                      backgroundImage: `url(${bg_image})`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: 'cover'
+                  }
+                : { background: defaultBackground.value }
         }
     }
     // 联动模式下也添加检查
-    return state.bannerImage 
-        ? { 'background-image': `url(${state.bannerImage})` }
-        : { 'background': 'linear-gradient(180deg, #FAF5FF 0%, #FFFFFF 100%)' }
+    return state.bannerImage
+        ? {
+              backgroundImage: `url(${state.bannerImage})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: 'cover'
+          }
+        : { background: defaultBackground.value }
 })
 
 const handleBanner = (url: string) => {
@@ -291,9 +327,9 @@ onShow(() => {
     width: 100%;
     transition: all 0.3s ease;
     min-height: calc(100vh - env(safe-area-inset-bottom));
-    
-    // 默认使用浅紫色渐变背景（#FAF5FF → #FFFFFF）
-    background: linear-gradient(180deg, var(--color-primary-light-9, #FAF5FF) 0%, #FFFFFF 100%);
+
+    // 默认使用浅色渐变背景（随主题调整）
+    background: linear-gradient(180deg, #f5edff 0%, #ffffff 100%);
 }
 
 // 资讯区域
@@ -303,17 +339,11 @@ onShow(() => {
 
 // 资讯标题
 .article-title {
-    color: var(--color-main);
-    
-    &::before {
-        content: '';
-        width: 8rpx; // 使用xs间距
-        height: 34rpx;
-        display: block;
-        margin-right: 16rpx; // 使用sm间距
-        background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-light-3) 100%);
-        border-radius: 999rpx;
-        box-shadow: 0 2rpx 8rpx rgba(124, 58, 237, 0.3);
-    }
+    display: flex;
+    align-items: center;
+}
+
+.article-title__text {
+    color: #333333;
 }
 </style>

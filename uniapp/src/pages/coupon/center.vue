@@ -11,12 +11,19 @@
         <view class="top-entry" @click="goMyCoupons">
             <view class="entry-card">
                 <view class="entry-left">
-                    <view class="icon-wrapper" :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)` }">
+                    <view
+                        class="icon-wrapper"
+                        :style="{
+                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
+                        }"
+                    >
                         <tn-icon name="coupon-fill" size="40" color="#FFFFFF" />
                     </view>
                     <view class="entry-info">
                         <text class="entry-title">我的优惠券</text>
-                        <text class="entry-desc" v-if="stats.unused > 0">{{ stats.unused }}张可用</text>
+                        <text class="entry-desc" v-if="stats.unused > 0"
+                            >{{ stats.unused }}张可用</text
+                        >
                         <text class="entry-desc" v-else>暂无可用优惠券</text>
                     </view>
                 </view>
@@ -34,9 +41,19 @@
         </view>
 
         <view v-if="couponList.length" class="list-wrap">
-            <view v-for="item in couponList" :key="item.id" class="coupon-card" @click="goDetail(item)">
+            <view
+                v-for="item in couponList"
+                :key="item.id"
+                class="coupon-card"
+                @click="goDetail(item)"
+            >
                 <!-- 优惠券左侧金额区 -->
-                <view class="coupon-left" :style="{ background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)` }">
+                <view
+                    class="coupon-left"
+                    :style="{
+                        background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)`
+                    }"
+                >
                     <view class="coupon-value">
                         <template v-if="item.coupon_type === 2">
                             <text class="num">{{ (item.discount_amount / 10).toFixed(1) }}</text>
@@ -57,19 +74,25 @@
                     <view class="coupon-right">
                         <view class="coupon-header">
                             <text class="coupon-name">{{ item.name }}</text>
-                            <view class="coupon-tag" :style="{ 
-                                background: item.coupon_type === 2 ? 'rgba(249, 115, 22, 0.1)' : 'rgba(124, 58, 237, 0.1)',
-                                color: item.coupon_type === 2 ? '#F97316' : $theme.primaryColor
-                            }">
+                            <view
+                                class="coupon-tag"
+                                :style="{
+                                    background:
+                                        item.coupon_type === 2
+                                            ? 'rgba(249, 115, 22, 0.1)'
+                                            : 'rgba(124, 58, 237, 0.1)',
+                                    color: item.coupon_type === 2 ? '#F97316' : $theme.primaryColor
+                                }"
+                            >
                                 {{ item.coupon_type_text }}
                             </view>
                             <tn-icon name="right" size="26" color="#C0C4CC" class="detail-arrow" />
                         </view>
-                        
+
                         <view class="coupon-desc" :style="{ color: $theme.ctaColor }">
                             {{ item.discount_desc }}
                         </view>
-                        
+
                         <view class="coupon-info">
                             <view class="info-item">
                                 <tn-icon name="time" size="24" color="#999999" />
@@ -130,18 +153,18 @@ const hasMore = ref(true)
 const formatValidPeriod = (item: any) => {
     const validType = Number(item.valid_type || 0)
     const validDays = Number(item.valid_days || 0)
-    
+
     // 领取后N天有效
     if (validType === 2 && validDays) {
         return `领取后${validDays}天有效`
     }
-    
+
     // 固定时间段
     const start = Number(item.valid_start_time || 0)
     const end = Number(item.valid_end_time || 0)
-    
+
     if (!start && !end) return '长期有效'
-    
+
     const formatDate = (timestamp: number) => {
         if (!timestamp) return ''
         const date = new Date(timestamp * 1000)
@@ -150,11 +173,11 @@ const formatValidPeriod = (item: any) => {
         const day = String(date.getDate()).padStart(2, '0')
         return `${year}.${month}.${day}`
     }
-    
+
     if (start && end) {
         return `${formatDate(start)}-${formatDate(end)}`
     }
-    
+
     if (start) return `${formatDate(start)}起`
     return `${formatDate(end)}止`
 }
@@ -228,13 +251,12 @@ onMounted(() => {
     loadStats()
     loadList(true)
 })
-
 </script>
 
 <style scoped lang="scss">
 .coupon-center-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.03) 0%, #F6F6F6 100%);
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.03) 0%, #f6f6f6 100%);
     padding-bottom: 24rpx;
 }
 
@@ -247,7 +269,7 @@ onMounted(() => {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: #FFFFFF;
+        background: #ffffff;
         border-radius: 16rpx;
         padding: 24rpx;
         box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
@@ -331,7 +353,7 @@ onMounted(() => {
 
 .coupon-card {
     display: flex;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 16rpx;
     margin-bottom: 24rpx;
     overflow: hidden;
@@ -353,7 +375,7 @@ onMounted(() => {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        color: #FFFFFF;
+        color: #ffffff;
         position: relative;
 
         /* 锯齿边缘效果 */
@@ -367,7 +389,7 @@ onMounted(() => {
             background: radial-gradient(circle at 0 0, transparent 8rpx, currentColor 8rpx);
             background-size: 16rpx 32rpx;
             background-repeat: repeat-y;
-            color: #FFFFFF;
+            color: #ffffff;
         }
 
         .coupon-value {
@@ -496,7 +518,7 @@ onMounted(() => {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #F9FAFB;
+        background: #f9fafb;
         border-radius: 50%;
         margin-bottom: 32rpx;
     }
@@ -545,14 +567,14 @@ onMounted(() => {
     justify-content: center;
     padding: 32rpx;
     font-size: 26rpx;
-    color: #CCCCCC;
+    color: #cccccc;
 
     &::before,
     &::after {
         content: '';
         width: 80rpx;
         height: 1rpx;
-        background: #E5E5E5;
+        background: #e5e5e5;
         margin: 0 24rpx;
     }
 }

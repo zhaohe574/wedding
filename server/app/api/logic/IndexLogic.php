@@ -164,6 +164,7 @@ class IndexLogic extends BaseLogic
             'staff_center' => (int) ConfigService::get('feature_switch', 'staff_center', 1),
             'staff_admin' => (int) ConfigService::get('feature_switch', 'staff_admin', 1),
             'admin_dashboard' => (int) ConfigService::get('feature_switch', 'admin_dashboard', 1),
+            'staff_detail_style' => ConfigService::get('feature_switch', 'staff_detail_style', 'classic'),
         ];
 
         return [

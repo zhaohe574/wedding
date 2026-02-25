@@ -9,7 +9,7 @@
     <view class="apply-page">
         <!-- 提示信息 -->
         <view class="tip-card">
-            <uni-icons type="info-filled" size="18" color="#ff9500"></uni-icons>
+            <tn-icon name="tip-fill" size="36rpx" color="#ff9500"></tn-icon>
             <text class="tip-text">转让后，订单将完全归属于接收方，原订单服务及权益一并转移。</text>
         </view>
 
@@ -24,7 +24,8 @@
                 >
                     <image
                         :src="
-                            orderInfo.items[0].staff?.avatar || '/static/images/user/default_avatar.png'
+                            orderInfo.items[0].staff?.avatar ||
+                            '/static/images/user/default_avatar.png'
                         "
                         class="w-12 h-12 rounded-lg mr-3"
                         mode="aspectFill"
@@ -116,7 +117,7 @@
 
         <!-- 提交按钮 -->
         <view class="bottom-actions">
-            <button class="btn-submit" :disabled="submitting" @click="handleSubmit">
+            <button class="btn-submit" :disabled="submitting" :style="{ background: $theme.primaryColor }" @click="handleSubmit">
                 {{ submitting ? '提交中...' : '提交转让申请' }}
             </button>
         </view>
@@ -246,7 +247,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--primary-color, #ff6b35);
+    border-left: 6rpx solid var(--color-primary, #7C3AED);
 }
 
 .order-card {
@@ -305,7 +306,7 @@ onLoad((options: any) => {
 .step-num {
     width: 44rpx;
     height: 44rpx;
-    background: var(--primary-color, #ff6b35);
+    background: var(--color-primary, #7C3AED);
     color: #fff;
     border-radius: 50%;
     display: flex;
@@ -351,7 +352,7 @@ onLoad((options: any) => {
     width: 100%;
     height: 72rpx;
     line-height: 72rpx;
-    background: var(--primary-color, #ff6b35);
+    background: var(--color-primary, #7C3AED);
     color: #fff;
     border-radius: 44rpx;
     font-size: 30rpx;

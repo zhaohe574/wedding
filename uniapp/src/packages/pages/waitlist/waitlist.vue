@@ -1,14 +1,14 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar 
+        <navigation-bar
             title="我的候补"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
         <!-- #endif -->
     </page-meta>
-    
+
     <view class="waitlist-page">
         <!-- 筛选标签 -->
         <view class="filter-tabs">
@@ -17,15 +17,20 @@
                 v-for="tab in statusTabs"
                 :key="tab.value"
                 :class="{ active: currentStatus === tab.value }"
-                @click="() => { currentStatus = tab.value; fetchList() }"
+                @click="
+                    () => {
+                        currentStatus = tab.value
+                        fetchList()
+                    }
+                "
             >
-                <text 
+                <text
                     class="tab-label"
                     :style="currentStatus === tab.value ? { color: $theme.primaryColor } : {}"
                 >
                     {{ tab.label }}
                 </text>
-                <view 
+                <view
                     v-if="currentStatus === tab.value"
                     class="tab-indicator"
                     :style="{ background: $theme.primaryColor }"
@@ -42,19 +47,12 @@
 
         <!-- 候补列表 -->
         <view class="waitlist-list">
-            <view 
-                class="waitlist-card" 
-                v-for="item in waitlist" 
-                :key="item.id"
-            >
+            <view class="waitlist-card" v-for="item in waitlist" :key="item.id">
                 <!-- 状态标签（顶部） -->
-                <view 
-                    class="status-ribbon"
-                    :class="getStatusClass(item.notify_status)"
-                >
-                    <tn-icon 
-                        :name="getStatusIcon(item.notify_status)" 
-                        size="28" 
+                <view class="status-ribbon" :class="getStatusClass(item.notify_status)">
+                    <tn-icon
+                        :name="getStatusIcon(item.notify_status)"
+                        size="28"
                         :color="getStatusColor(item.notify_status)"
                     />
                     <text>{{ item.notify_status_desc }}</text>
@@ -64,31 +62,31 @@
                 <view class="card-header">
                     <view class="staff-section">
                         <view class="avatar-wrapper">
-                            <image 
-                                :src="item.staff?.avatar" 
-                                class="staff-avatar" 
-                                mode="aspectFill" 
+                            <image
+                                :src="item.staff?.avatar"
+                                class="staff-avatar"
+                                mode="aspectFill"
                             />
-                            <view 
+                            <view
                                 class="avatar-border"
                                 :style="{ borderColor: $theme.primaryColor }"
                             />
                         </view>
                         <view class="staff-info">
                             <text class="staff-name">{{ item.staff?.name || '未知人员' }}</text>
-                            <view 
+                            <view
                                 class="staff-tag"
-                                :style="{ 
+                                :style="{
                                     background: getColorWithOpacity($theme.primaryColor, 0.1),
                                     borderColor: getColorWithOpacity($theme.primaryColor, 0.2)
                                 }"
                             >
-                                <tn-icon 
-                                    name="shield-check" 
-                                    size="24" 
-                                    :color="$theme.primaryColor" 
+                                <tn-icon
+                                    name="shield-check"
+                                    size="24"
+                                    :color="$theme.primaryColor"
                                 />
-                                <text 
+                                <text
                                     class="staff-category"
                                     :style="{ color: $theme.primaryColor }"
                                 >
@@ -102,49 +100,37 @@
                 <!-- 预约信息区域 -->
                 <view class="info-section">
                     <view class="info-item">
-                        <view 
+                        <view
                             class="icon-wrapper"
                             :style="{ background: getColorWithOpacity($theme.primaryColor, 0.1) }"
                         >
-                            <tn-icon 
-                                name="calendar" 
-                                size="36" 
-                                :color="$theme.primaryColor" 
-                            />
+                            <tn-icon name="calendar" size="36" :color="$theme.primaryColor" />
                         </view>
                         <view class="info-content">
                             <text class="info-label">预约日期</text>
                             <text class="info-value">{{ item.schedule_date }}</text>
                         </view>
                     </view>
-                    
+
                     <view class="info-item" v-if="item.package || item.package_id">
-                        <view 
+                        <view
                             class="icon-wrapper"
                             :style="{ background: getColorWithOpacity($theme.secondaryColor, 0.1) }"
                         >
-                            <tn-icon 
-                                name="gift" 
-                                size="36" 
-                                :color="$theme.secondaryColor" 
-                            />
+                            <tn-icon name="gift" size="36" :color="$theme.secondaryColor" />
                         </view>
                         <view class="info-content">
                             <text class="info-label">套餐</text>
                             <text class="info-value">{{ item.package?.name || '套餐已删除' }}</text>
                         </view>
                     </view>
-                    
+
                     <view class="info-item">
-                        <view 
+                        <view
                             class="icon-wrapper"
                             :style="{ background: getColorWithOpacity($theme.accentColor, 0.1) }"
                         >
-                            <tn-icon 
-                                name="time" 
-                                size="36" 
-                                :color="$theme.accentColor" 
-                            />
+                            <tn-icon name="time" size="36" :color="$theme.accentColor" />
                         </view>
                         <view class="info-content">
                             <text class="info-label">时间段</text>
@@ -163,7 +149,7 @@
                         <view
                             v-if="item.notify_status === 1"
                             class="btn btn-book"
-                            :style="{ 
+                            :style="{
                                 background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)`,
                                 color: $theme.btnColor
                             }"
@@ -188,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref ,computed } from 'vue'
+import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getMyWaitlist, cancelWaitlist } from '@/api/schedule'
 import { useThemeStore } from '@/stores/theme'
@@ -272,9 +258,9 @@ const getColorWithOpacity = (color: string, opacity: number) => {
 // 格式化时间
 const formatTime = (timestamp: any) => {
     if (!timestamp) return '未知时间'
-    
+
     let date: Date
-    
+
     // 处理不同的时间格式
     if (typeof timestamp === 'string') {
         // 如果是字符串，直接解析
@@ -290,18 +276,18 @@ const formatTime = (timestamp: any) => {
     } else {
         return '未知时间'
     }
-    
+
     // 检查日期是否有效
     if (isNaN(date.getTime())) {
         return '未知时间'
     }
-    
+
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
     const hour = String(date.getHours()).padStart(2, '0')
     const minute = String(date.getMinutes()).padStart(2, '0')
-    
+
     return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
@@ -317,7 +303,7 @@ const getTimeSlotLabel = (item: any) => {
         3: '晚宴'
     }
     const slot = Number(item?.time_slot)
-    return Number.isFinite(slot) ? (map[slot] || '未知场次') : '未知场次'
+    return Number.isFinite(slot) ? map[slot] || '未知场次' : '未知场次'
 }
 
 // 点击卡片
@@ -327,10 +313,7 @@ const handleItemClick = (item: any) => {
 
 // 立即预约
 const handleBook = (item: any) => {
-    const params = [
-        `staff_id=${item.staff_id}`,
-        `date=${item.schedule_date}`
-    ]
+    const params = [`staff_id=${item.staff_id}`, `date=${item.schedule_date}`]
     if (item.package_id) {
         params.push(`package_id=${item.package_id}`)
     }
@@ -371,14 +354,14 @@ onShow(() => {
 <style lang="scss" scoped>
 .waitlist-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, #F9FAFB 0%, #F5F5F5 100%);
+    background: linear-gradient(180deg, #f9fafb 0%, #f5f5f5 100%);
     padding-bottom: 24rpx;
 }
 
 /* 筛选标签 */
 .filter-tabs {
     display: flex;
-    background: #FFFFFF;
+    background: #ffffff;
     padding: 0;
     position: sticky;
     top: 0;
@@ -451,7 +434,7 @@ onShow(() => {
 /* 候补卡片 */
 .waitlist-card {
     position: relative;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     padding: 0;
     margin-bottom: 24rpx;
@@ -472,24 +455,24 @@ onShow(() => {
         padding: 16rpx 32rpx;
         font-size: 24rpx;
         font-weight: 600;
-        
+
         &.status-waiting {
-            background: linear-gradient(135deg, #E6F7FF 0%, #BAE7FF 100%);
-            color: #1890FF;
+            background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+            color: #1890ff;
         }
 
         &.status-notified {
-            background: linear-gradient(135deg, #FFF7E6 0%, #FFE7BA 100%);
-            color: #FA8C16;
+            background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%);
+            color: #fa8c16;
         }
 
         &.status-ordered {
-            background: linear-gradient(135deg, #F6FFED 0%, #D9F7BE 100%);
-            color: #52C41A;
+            background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
+            color: #52c41a;
         }
 
         &.status-expired {
-            background: linear-gradient(135deg, #F5F5F5 0%, #E5E5E5 100%);
+            background: linear-gradient(135deg, #f5f5f5 0%, #e5e5e5 100%);
             color: #999999;
         }
     }
@@ -563,7 +546,7 @@ onShow(() => {
             align-items: center;
             gap: 20rpx;
             padding: 20rpx 0;
-            border-bottom: 1rpx solid #F0F0F0;
+            border-bottom: 1rpx solid #f0f0f0;
 
             &:last-child {
                 border-bottom: none;
@@ -607,7 +590,7 @@ onShow(() => {
         justify-content: space-between;
         align-items: center;
         padding: 24rpx 32rpx 32rpx;
-        border-top: 1rpx solid #F0F0F0;
+        border-top: 1rpx solid #f0f0f0;
 
         .time-info {
             display: flex;
@@ -645,13 +628,13 @@ onShow(() => {
                 }
 
                 &.btn-cancel {
-                    background: #FFFFFF;
-                    border: 2rpx solid #E5E5E5;
+                    background: #ffffff;
+                    border: 2rpx solid #e5e5e5;
                     color: #666666;
 
                     &:active {
-                        background: #F5F5F5;
-                        border-color: #D9D9D9;
+                        background: #f5f5f5;
+                        border-color: #d9d9d9;
                     }
                 }
             }

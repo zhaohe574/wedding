@@ -6,7 +6,8 @@
         <swiper
             class="swiper h-full"
             :indicator-dots="showList.length > 1"
-            indicator-active-color="#4173ff"
+            :indicator-color="indicatorColor"
+            :indicator-active-color="indicatorActiveColor"
             :autoplay="true"
         >
             <swiper-item
@@ -27,9 +28,11 @@
 </template>
 
 <script setup lang="ts">
-import { useAppStore } from '@/stores/app'
-import { navigateTo } from '@/utils/util'
 import { computed } from 'vue'
+import { useAppStore } from '@/stores/app'
+import { useThemeStore } from '@/stores/theme'
+import { navigateTo } from '@/utils/util'
+import { alphaColor } from '@/utils/color'
 
 const props = defineProps({
     content: {
@@ -45,10 +48,14 @@ const handleClick = (link: any) => {
     navigateTo(link)
 }
 const { getImageUrl } = useAppStore()
+const themeStore = useThemeStore()
 
 const showList = computed(() => {
     return props.content.data?.filter((item: any) => item.is_show == '1') || []
 })
+
+const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#7C3AED', 0.16))
+const indicatorActiveColor = computed(() => themeStore.primaryColor || '#7C3AED')
 </script>
 
 <style></style>

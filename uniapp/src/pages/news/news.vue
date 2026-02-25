@@ -6,12 +6,7 @@
     </page-meta>
     <!-- #ifndef H5 -->
     <tn-sticky>
-        <tn-navbar
-            :back="false"
-            :fixed="false"
-            title="资讯"
-        >
-        </tn-navbar>
+        <tn-navbar :back="false" :fixed="false" title="资讯"> </tn-navbar>
     </tn-sticky>
     <!-- #endif -->
     <view class="news">

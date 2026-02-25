@@ -54,7 +54,7 @@ export const useThemeStore = defineStore({
             this.btnColor = buttonColor || 'white'
             this.navColor = topTextColor === 'white' ? '#ffffff' : '#000000'
             this.navBgColor = navigationBarColor || themeColor1 || '#7C3AED'
-            
+
             // 生成完整的CSS变量，包含所有颜色
             this.vars = generateVars(
                 {
@@ -68,7 +68,7 @@ export const useThemeStore = defineStore({
                     '--color-btn-text': this.btnColor
                 }
             )
-            
+
             // 生成页面样式字符串
             this.pageStyle = this.vars
         },

@@ -15,11 +15,11 @@ let totalReplacements = 0
 // 递归遍历目录
 function walkDir(dir) {
     const files = fs.readdirSync(dir)
-    
-    files.forEach(file => {
+
+    files.forEach((file) => {
         const filePath = path.join(dir, file)
         const stat = fs.statSync(filePath)
-        
+
         if (stat.isDirectory()) {
             walkDir(filePath)
         } else if (file.endsWith('.vue')) {
@@ -34,10 +34,10 @@ function processFile(filePath) {
     let content = fs.readFileSync(filePath, 'utf-8')
     let modified = false
     let fileReplacements = 0
-    
+
     // 注意：不要替换 tn-image-upload，只替换 tn-image
     // 使用负向前瞻确保 tn-image 后面不是 -upload
-    
+
     // 替换 <tn-image 为 <image（但不包括 tn-image-upload）
     const tnImageOpenRegex = /<tn-image(?!-upload)\b/g
     if (tnImageOpenRegex.test(content)) {
@@ -46,25 +46,27 @@ function processFile(filePath) {
         content = content.replace(tnImageOpenRegex, '<image')
         modified = true
     }
-    
+
     // 替换 </tn-image> 为 </image>（但不包括 tn-image-upload）
     const tnImageCloseRegex = /<\/tn-image(?!-upload)>/g
     if (tnImageCloseRegex.test(content)) {
         content = content.replace(tnImageCloseRegex, '</image>')
         modified = true
     }
-    
+
     if (modified) {
         fs.writeFileSync(filePath, content, 'utf-8')
         modifiedFiles++
         totalReplacements += fileReplacements
-        console.log(`✓ ${path.relative(path.join(__dirname, '..'), filePath)} - 替换 ${fileReplacements} 处`)
+        console.log(
+            `✓ ${path.relative(path.join(__dirname, '..'), filePath)} - 替换 ${fileReplacements} 处`
+        )
     }
 }
 
 console.log('开始修复 tn-image 组件...\n')
 
-directories.forEach(dir => {
+directories.forEach((dir) => {
     if (fs.existsSync(dir)) {
         walkDir(dir)
     }

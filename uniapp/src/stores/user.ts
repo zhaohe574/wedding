@@ -24,7 +24,7 @@ export const useUserStore = defineStore({
             if (!this.token && !this.temToken) {
                 return
             }
-            
+
             try {
                 const data = await getUserCenter({
                     token: this.token || this.temToken

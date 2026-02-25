@@ -39,18 +39,11 @@
         </tn-navbar>
     </tn-sticky>
     <!-- #endif -->
-    
+
     <!-- 主搜索框区域 -->
     <!-- #ifndef H5 -->
-    <view
-        v-if="!isLargeScreen"
-        class="search-container-full"
-        :style="{ opacity: 1 - percent }"
-    >
-        <view
-            class="search-box-wrapper-full"
-            @tap="handleSearchClick"
-        >
+    <view v-if="!isLargeScreen" class="search-container-full" :style="{ opacity: 1 - percent }">
+        <view class="search-box-wrapper-full" @tap="handleSearchClick">
             <view class="search-input-box">
                 <tn-icon name="search" :size="36" color="#CCCCCC"></tn-icon>
                 <text class="search-placeholder">{{ searchPlaceholder }}</text>
@@ -68,7 +61,7 @@
                     v-for="(word, index) in hotWords"
                     :key="index"
                     class="hot-word-tag"
-                    :style="{ 
+                    :style="{
                         backgroundColor: getLightColor($theme.primaryColor, 0.08),
                         color: $theme.primaryColor
                     }"
@@ -80,17 +73,10 @@
         </view>
     </view>
     <!-- #endif -->
-    
+
     <!-- #ifdef H5 -->
-    <view
-        v-if="!isLargeScreen"
-        class="search-container-full"
-        :style="{ opacity: 1 - percent }"
-    >
-        <view
-            class="search-box-wrapper-full"
-            @click="handleSearchClick"
-        >
+    <view v-if="!isLargeScreen" class="search-container-full" :style="{ opacity: 1 - percent }">
+        <view class="search-box-wrapper-full" @click="handleSearchClick">
             <view class="search-input-box">
                 <tn-icon name="search" :size="36" color="#CCCCCC"></tn-icon>
                 <text class="search-placeholder">{{ searchPlaceholder }}</text>
@@ -108,7 +94,7 @@
                     v-for="(word, index) in hotWords"
                     :key="index"
                     class="hot-word-tag"
-                    :style="{ 
+                    :style="{
                         backgroundColor: getLightColor($theme.primaryColor, 0.08),
                         color: $theme.primaryColor
                     }"
@@ -211,7 +197,7 @@ const handleHotWordClick = (word: string) => {
     border-radius: 50%;
     box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: scale(0.95);
         box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
@@ -226,9 +212,9 @@ const handleHotWordClick = (word: string) => {
 
 // 全屏搜索框包装
 .search-box-wrapper-full {
-    background: #FFFFFF;
+    background: #ffffff;
     padding: 16rpx 24rpx;
-    border-bottom: 1rpx solid #F0F0F0;
+    border-bottom: 1rpx solid #f0f0f0;
 }
 
 // 自定义搜索输入框
@@ -238,7 +224,7 @@ const handleHotWordClick = (word: string) => {
     gap: 16rpx;
     height: 72rpx;
     padding: 0 24rpx;
-    background: #F5F5F5;
+    background: #f5f5f5;
     border-radius: 36rpx;
     transition: all 0.2s ease;
 }
@@ -246,7 +232,7 @@ const handleHotWordClick = (word: string) => {
 .search-placeholder {
     flex: 1;
     font-size: 28rpx;
-    color: #CCCCCC;
+    color: #cccccc;
 }
 
 // 热词区域（保留左右内边距）
@@ -281,7 +267,7 @@ const handleHotWordClick = (word: string) => {
     font-size: 26rpx;
     font-weight: 500;
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: scale(0.96);
         opacity: 0.8;

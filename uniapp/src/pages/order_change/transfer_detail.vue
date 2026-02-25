@@ -52,7 +52,7 @@
                         <view class="party-mobile">{{ detail.from_user_mobile }}</view>
                     </view>
                     <view class="transfer-arrow">
-                        <uni-icons type="arrowright" size="24" color="#999"></uni-icons>
+                        <tn-icon name="right" size="48rpx" color="#999"></tn-icon>
                     </view>
                     <view class="party-item">
                         <view class="party-label">接收方</view>
@@ -278,7 +278,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--primary-color, #ff6b35);
+    border-left: 6rpx solid var(--color-primary, #7C3AED);
 }
 
 .info-row {
@@ -397,7 +397,7 @@ onLoad((options: any) => {
     width: 240rpx;
     height: 72rpx;
     line-height: 72rpx;
-    background: var(--primary-color, #ff6b35);
+    background: var(--color-primary, #7C3AED);
     color: #fff;
     border-radius: 12rpx;
     font-size: 28rpx;

@@ -18,7 +18,8 @@
                 >
                     <image
                         :src="
-                            orderInfo.items[0].staff?.avatar || '/static/images/user/default_avatar.png'
+                            orderInfo.items[0].staff?.avatar ||
+                            '/static/images/user/default_avatar.png'
                         "
                         class="w-12 h-12 rounded-lg mr-3"
                         mode="aspectFill"
@@ -49,7 +50,7 @@
                         formData.new_date
                     }}</text>
                     <text v-else class="placeholder">请选择日期</text>
-                    <uni-icons type="right" size="16" color="#999"></uni-icons>
+                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
                 </view>
             </view>
             <view class="form-item" @click="showTimePicker = true">
@@ -59,7 +60,7 @@
                         {{ timeSlotOptions[formData.new_time_slot]?.label }}
                     </text>
                     <text v-else class="placeholder">请选择时间段</text>
-                    <uni-icons type="right" size="16" color="#999"></uni-icons>
+                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
                 </view>
             </view>
         </view>
@@ -87,7 +88,7 @@
                 >
                     <image :src="img" class="upload-image" mode="aspectFill" />
                     <view class="delete-btn" @click="removeImage(index)">
-                        <uni-icons type="close" size="14" color="#fff"></uni-icons>
+                        <tn-icon name="close" size="28rpx" color="#fff"></tn-icon>
                     </view>
                 </view>
                 <view
@@ -95,7 +96,7 @@
                     @click="chooseImage"
                     v-if="formData.attach_images.length < 5"
                 >
-                    <uni-icons type="plusempty" size="40" color="#ccc"></uni-icons>
+                    <tn-icon name="add" size="80rpx" color="#ccc"></tn-icon>
                     <text class="text-xs text-gray-400 mt-1">上传图片</text>
                 </view>
             </view>
@@ -104,7 +105,7 @@
 
         <!-- 提交按钮 -->
         <view class="bottom-actions">
-            <button class="btn-submit" :disabled="submitting" @click="handleSubmit">
+            <button class="btn-submit" :disabled="submitting" :style="{ background: $theme.primaryColor }" @click="handleSubmit">
                 {{ submitting ? '提交中...' : '提交申请' }}
             </button>
         </view>
@@ -353,7 +354,7 @@ watch(
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--primary-color, #ff6b35);
+    border-left: 6rpx solid var(--color-primary, #7C3AED);
 }
 
 .order-card {
@@ -451,7 +452,7 @@ watch(
     width: 100%;
     height: 72rpx;
     line-height: 72rpx;
-    background: var(--primary-color, #ff6b35);
+    background: var(--color-primary, #7C3AED);
     color: #fff;
     border-radius: 44rpx;
     font-size: 30rpx;
@@ -483,7 +484,7 @@ watch(
         font-weight: bold;
     }
     .confirm {
-        color: var(--primary-color, #ff6b35);
+        color: var(--color-primary, #7C3AED);
         font-size: 28rpx;
     }
 }
@@ -514,9 +515,9 @@ watch(
     font-size: 28rpx;
 
     &.active {
-        border-color: var(--primary-color, #ff6b35);
-        color: var(--primary-color, #ff6b35);
-        background: rgba(255, 107, 53, 0.05);
+        border-color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #7C3AED);
+        background: rgba(124, 58, 237, 0.05);
     }
 }
 </style>

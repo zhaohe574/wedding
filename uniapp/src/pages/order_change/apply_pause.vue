@@ -9,7 +9,7 @@
     <view class="apply-page">
         <!-- 提示信息 -->
         <view class="tip-card">
-            <uni-icons type="info-filled" size="18" color="#ff9500"></uni-icons>
+            <tn-icon name="tip-fill" size="36rpx" color="#ff9500"></tn-icon>
             <text class="tip-text"
                 >暂停期间订单将处于冻结状态，暂停到期后需主动申请恢复或重新选择服务日期。</text
             >
@@ -26,7 +26,8 @@
                 >
                     <image
                         :src="
-                            orderInfo.items[0].staff?.avatar || '/static/images/user/default_avatar.png'
+                            orderInfo.items[0].staff?.avatar ||
+                            '/static/images/user/default_avatar.png'
                         "
                         class="w-12 h-12 rounded-lg mr-3"
                         mode="aspectFill"
@@ -56,11 +57,11 @@
                     :class="{ active: formData.pause_type === type.value }"
                     @click="formData.pause_type = type.value"
                 >
-                    <uni-icons
-                        :type="type.icon"
-                        size="24"
-                        :color="formData.pause_type === type.value ? '#ff6b35' : '#999'"
-                    ></uni-icons>
+                    <tn-icon
+                        :name="type.icon"
+                        size="48rpx"
+                        :color="formData.pause_type === type.value ? $theme.primaryColor : '#999'"
+                    ></tn-icon>
                     <text class="type-label">{{ type.label }}</text>
                 </view>
             </view>
@@ -76,7 +77,7 @@
                         formData.start_date
                     }}</text>
                     <text v-else class="placeholder">请选择开始日期</text>
-                    <uni-icons type="right" size="16" color="#999"></uni-icons>
+                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
                 </view>
             </view>
             <view class="form-item" @click="showEndPicker = true">
@@ -86,7 +87,7 @@
                         formData.end_date
                     }}</text>
                     <text v-else class="placeholder">请选择结束日期</text>
-                    <uni-icons type="right" size="16" color="#999"></uni-icons>
+                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
                 </view>
             </view>
             <view class="pause-days" v-if="pauseDays > 0">
@@ -115,7 +116,7 @@
                 <view v-for="(img, index) in formData.proof_images" :key="index" class="image-item">
                     <image :src="img" class="upload-image" mode="aspectFill" />
                     <view class="delete-btn" @click="removeImage(index)">
-                        <uni-icons type="close" size="14" color="#fff"></uni-icons>
+                        <tn-icon name="close" size="28rpx" color="#fff"></tn-icon>
                     </view>
                 </view>
                 <view
@@ -123,7 +124,7 @@
                     @click="chooseImage"
                     v-if="formData.proof_images.length < 10"
                 >
-                    <uni-icons type="plusempty" size="40" color="#ccc"></uni-icons>
+                    <tn-icon name="add" size="80rpx" color="#ccc"></tn-icon>
                     <text class="text-xs text-gray-400 mt-1">上传图片</text>
                 </view>
             </view>
@@ -132,7 +133,7 @@
 
         <!-- 提交按钮 -->
         <view class="bottom-actions">
-            <button class="btn-submit" :disabled="submitting" @click="handleSubmit">
+            <button class="btn-submit" :style="{ background: $theme.primaryColor }" :disabled="submitting" @click="handleSubmit">
                 {{ submitting ? '提交中...' : '提交暂停申请' }}
             </button>
         </view>
@@ -320,7 +321,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--primary-color, #ff6b35);
+    border-left: 6rpx solid var(--color-primary, #7C3AED);
 }
 
 .order-card {
@@ -345,8 +346,8 @@ onLoad((options: any) => {
     border-radius: 12rpx;
 
     &.active {
-        border-color: var(--primary-color, #ff6b35);
-        background: rgba(255, 107, 53, 0.05);
+        border-color: var(--color-primary, #7C3AED);
+        background: rgba(124, 58, 237, 0.05);
     }
 
     .type-label {
@@ -356,7 +357,7 @@ onLoad((options: any) => {
     }
 
     &.active .type-label {
-        color: var(--primary-color, #ff6b35);
+        color: var(--color-primary, #7C3AED);
     }
 }
 
@@ -463,7 +464,7 @@ onLoad((options: any) => {
     width: 100%;
     height: 72rpx;
     line-height: 72rpx;
-    background: var(--primary-color, #ff6b35);
+    background: var(--color-primary, #7C3AED);
     color: #fff;
     border-radius: 44rpx;
     font-size: 30rpx;

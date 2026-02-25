@@ -1,10 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar 
+        <navigation-bar
             title="动态详情"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
         <!-- #endif -->
     </page-meta>
@@ -24,10 +24,16 @@
                             <view>
                                 <view class="flex items-center">
                                     <text class="user-name">{{ detail.user_nickname }}</text>
-                                    <view v-if="detail.user_type === 2" class="user-badge badge-staff">
+                                    <view
+                                        v-if="detail.user_type === 2"
+                                        class="user-badge badge-staff"
+                                    >
                                         服务人员
                                     </view>
-                                    <view v-if="detail.user_type === 3" class="user-badge badge-official">
+                                    <view
+                                        v-if="detail.user_type === 3"
+                                        class="user-badge badge-official"
+                                    >
                                         官方
                                     </view>
                                     <view v-if="detail.is_top === 1" class="user-badge badge-top">
@@ -42,7 +48,9 @@
                             <view
                                 v-if="detail.user_id !== userId"
                                 class="follow-btn"
-                                :class="detail.is_followed ? 'follow-btn-active' : 'follow-btn-inactive'"
+                                :class="
+                                    detail.is_followed ? 'follow-btn-active' : 'follow-btn-inactive'
+                                "
                                 @click="handleFollow"
                             >
                                 {{ detail.is_followed ? '已关注' : '+ 关注' }}
@@ -55,18 +63,18 @@
                 <view class="content-wrapper">
                     <!-- 类型标签和动态标签 -->
                     <view class="badges-row">
-                        <text v-if="detail.dynamic_type" class="type-badge" :class="getTypeClass(detail.dynamic_type)">
+                        <text
+                            v-if="detail.dynamic_type"
+                            class="type-badge"
+                            :class="getTypeClass(detail.dynamic_type)"
+                        >
                             {{ getTypeText(detail.dynamic_type) }}
                         </text>
-                        <view
-                            v-for="(tag, tagIdx) in detail.tags"
-                            :key="tagIdx"
-                            class="tag-item"
-                        >
+                        <view v-for="(tag, tagIdx) in detail.tags" :key="tagIdx" class="tag-item">
                             <text class="tag-text">#{{ tag }}</text>
                         </view>
                     </view>
-                    
+
                     <!-- 文字内容 -->
                     <view class="content-text">{{ detail.content }}</view>
 
@@ -178,7 +186,11 @@
         <!-- 底部操作栏 -->
         <view class="action-bar" style="padding-bottom: calc(16rpx + env(safe-area-inset-bottom))">
             <!-- 评论输入框 - 根据 allow_comment 控制显示 -->
-            <view v-if="detail.allow_comment === 1" class="comment-input-trigger" @click="showCommentInput">
+            <view
+                v-if="detail.allow_comment === 1"
+                class="comment-input-trigger"
+                @click="showCommentInput"
+            >
                 说点什么...
             </view>
             <!-- 评论已关闭提示 -->
@@ -186,7 +198,7 @@
                 <tn-icon name="info-circle" size="28" color="#999" />
                 <text class="tip-text">该动态已关闭评论</text>
             </view>
-            
+
             <view class="action-buttons">
                 <view
                     class="action-btn"
@@ -198,7 +210,9 @@
                 </view>
                 <view
                     class="action-btn"
-                    :class="detail.is_collected ? 'action-btn-collect-active' : 'action-btn-collect'"
+                    :class="
+                        detail.is_collected ? 'action-btn-collect-active' : 'action-btn-collect'
+                    "
                     @click="handleCollect"
                 >
                     <tn-icon :name="detail.is_collected ? 'star-fill' : 'star'" size="44" />
@@ -216,9 +230,9 @@
         </view>
 
         <!-- 评论输入弹窗 -->
-        <tn-popup 
-            v-model="showComment" 
-            open-direction="bottom" 
+        <tn-popup
+            v-model="showComment"
+            open-direction="bottom"
             :safe-area-inset-bottom="true"
             :radius="24"
             height="60%"
@@ -346,18 +360,21 @@ const formatCount = (count: number) => {
 const fetchDetail = async () => {
     try {
         const res = await getDynamicDetail({ id: dynamicId.value })
-        
+
         // 处理标签数据
         let tags: string[] = []
         if (res.tags) {
             if (typeof res.tags === 'string') {
                 // 如果是字符串，按逗号分割
-                tags = res.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+                tags = res.tags
+                    .split(',')
+                    .map((t: string) => t.trim())
+                    .filter(Boolean)
             } else if (Array.isArray(res.tags)) {
                 tags = res.tags
             }
         }
-        
+
         detail.value = {
             ...res,
             tags: tags,
@@ -408,7 +425,7 @@ const fetchComments = async (refresh = false) => {
                 comment: [] // 默认为空,点击"查看更多"时再加载
             }
         })
-        
+
         if (refresh) {
             comments.value = list
         } else {
@@ -451,7 +468,7 @@ const loadMoreReplies = async ({ id, currentCommentCount }: TnShowMoreCommentPar
             nickname: reply.user_nickname || '匿名用户',
             date: reply.create_time || '',
             position: reply.location || '',
-            content: reply.reply_user_nickname 
+            content: reply.reply_user_nickname
                 ? `回复 @${reply.reply_user_nickname}：${reply.content}`
                 : reply.content,
             likeActive: reply.is_liked || false, // 正确映射点赞状态
@@ -535,7 +552,7 @@ const showCommentInput = () => {
         })
         return
     }
-    
+
     if (!userStore.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
         return
@@ -554,12 +571,12 @@ const replyComment = ({ id, nickname }: TnReplyCommentParams) => {
         })
         return
     }
-    
+
     if (!userStore.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
         return
     }
-    
+
     // 从评论列表中找到对应的评论
     const findComment = (list: any[], commentId: string | number): any => {
         for (const item of list) {
@@ -571,7 +588,7 @@ const replyComment = ({ id, nickname }: TnReplyCommentParams) => {
         }
         return null
     }
-    
+
     const comment = findComment(comments.value, id)
     if (comment) {
         replyTo.value = { id, user_nickname: nickname }
@@ -597,7 +614,7 @@ const submitComment = async () => {
         const res = await addComment(params)
 
         uni.showToast({ title: '评论成功' })
-        
+
         // 构造新评论数据
         const newCommentData = {
             id: res.comment_id || Date.now(),

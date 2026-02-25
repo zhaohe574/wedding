@@ -1,6 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar title="档期管理" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            title="档期管理"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
     </page-meta>
 
     <view class="page-container">
@@ -10,7 +14,7 @@
                 <tn-icon name="calendar" size="32" :color="$theme.primaryColor" />
                 <text class="card-title">选择日期</text>
             </view>
-            
+
             <picker mode="date" :value="selectedDate" @change="handleDateChange">
                 <view class="date-picker">
                     <view class="date-display">
@@ -20,7 +24,7 @@
                     <tn-icon name="right" size="28" color="#C8C9CC" />
                 </view>
             </picker>
-            
+
             <view class="month-info">
                 <tn-icon name="info" size="24" color="#999999" />
                 <text>当前月份：{{ year }}-{{ monthText }}</text>
@@ -29,11 +33,7 @@
 
         <!-- 时段列表 -->
         <view class="slot-list">
-            <view
-                v-for="slot in timeSlots"
-                :key="slot.value"
-                class="slot-card"
-            >
+            <view v-for="slot in timeSlots" :key="slot.value" class="slot-card">
                 <!-- 时段头部 -->
                 <view class="slot-header">
                     <view class="slot-info">
@@ -43,14 +43,11 @@
                             <text class="slot-time">{{ slot.time }}</text>
                         </view>
                     </view>
-                    <view 
-                        class="slot-status"
-                        :style="getStatusStyle(getSlotStatus(slot.value))"
-                    >
-                        <tn-icon 
-                            :name="getStatusIcon(getSlotStatus(slot.value))" 
-                            size="24" 
-                            color="inherit" 
+                    <view class="slot-status" :style="getStatusStyle(getSlotStatus(slot.value))">
+                        <tn-icon
+                            :name="getStatusIcon(getSlotStatus(slot.value))"
+                            size="24"
+                            color="inherit"
                         />
                         <text>{{ getSlotStatusLabel(slot.value) }}</text>
                     </view>
@@ -61,17 +58,21 @@
                     <view
                         class="action-btn available-btn"
                         :class="{ disabled: !canEdit(slot.value) }"
-                        :style="canEdit(slot.value) ? { 
-                            background: `linear-gradient(135deg, ${$theme.primaryColor}15 0%, ${$theme.primaryColor}30 100%)`,
-                            color: $theme.primaryColor,
-                            borderColor: $theme.primaryColor
-                        } : {}"
+                        :style="
+                            canEdit(slot.value)
+                                ? {
+                                      background: `linear-gradient(135deg, ${$theme.primaryColor}15 0%, ${$theme.primaryColor}30 100%)`,
+                                      color: $theme.primaryColor,
+                                      borderColor: $theme.primaryColor
+                                  }
+                                : {}
+                        "
                         @click="setStatus(slot.value, 1)"
                     >
-                        <tn-icon 
-                            name="check-circle" 
-                            size="28" 
-                            :color="canEdit(slot.value) ? $theme.primaryColor : '#C8C9CC'" 
+                        <tn-icon
+                            name="check-circle"
+                            size="28"
+                            :color="canEdit(slot.value) ? $theme.primaryColor : '#C8C9CC'"
                         />
                         <text>设为可预约</text>
                     </view>
@@ -80,10 +81,10 @@
                         :class="{ disabled: !canEdit(slot.value) }"
                         @click="setStatus(slot.value, 0)"
                     >
-                        <tn-icon 
-                            name="close-circle" 
-                            size="28" 
-                            :color="canEdit(slot.value) ? '#FF2C3C' : '#C8C9CC'" 
+                        <tn-icon
+                            name="close-circle"
+                            size="28"
+                            :color="canEdit(slot.value) ? '#FF2C3C' : '#C8C9CC'"
                         />
                         <text>设为不可用</text>
                     </view>
@@ -203,7 +204,7 @@ const setStatus = async (slotValue: number, status: number) => {
         uni.showToast({ title: '该时段不可调整', icon: 'none' })
         return
     }
-    
+
     try {
         await staffCenterScheduleSetStatus({
             date: selectedDate.value,
@@ -245,7 +246,7 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #F6F6F6 100%);
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
     padding-bottom: 40rpx;
 }
 
@@ -253,7 +254,7 @@ onShow(async () => {
 .date-card {
     margin: 24rpx;
     padding: 32rpx 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
@@ -298,7 +299,7 @@ onShow(async () => {
     background: rgba(124, 58, 237, 0.1);
     border-radius: 12rpx;
     font-size: 24rpx;
-    color: #7C3AED;
+    color: #7c3aed;
 }
 
 .month-info {
@@ -318,7 +319,7 @@ onShow(async () => {
 .slot-card {
     margin-bottom: 24rpx;
     padding: 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
@@ -329,7 +330,7 @@ onShow(async () => {
     align-items: center;
     justify-content: space-between;
     padding-bottom: 20rpx;
-    border-bottom: 1rpx solid #F5F5F5;
+    border-bottom: 1rpx solid #f5f5f5;
     margin-bottom: 20rpx;
 }
 
@@ -384,11 +385,11 @@ onShow(async () => {
     font-weight: 500;
     border: 2rpx solid;
     transition: all 0.2s ease;
-    
+
     &:active:not(.disabled) {
         opacity: 0.8;
     }
-    
+
     &.disabled {
         opacity: 0.4;
         pointer-events: none;
@@ -401,13 +402,13 @@ onShow(async () => {
 
 .unavailable-btn {
     background: rgba(255, 44, 60, 0.05);
-    color: #FF2C3C;
-    border-color: #FF2C3C;
-    
+    color: #ff2c3c;
+    border-color: #ff2c3c;
+
     &.disabled {
-        background: #F5F5F5;
-        color: #C8C9CC;
-        border-color: #E5E5E5;
+        background: #f5f5f5;
+        color: #c8c9cc;
+        border-color: #e5e5e5;
     }
 }
 
@@ -426,7 +427,7 @@ onShow(async () => {
 .tip-text {
     flex: 1;
     font-size: 24rpx;
-    color: #FF9900;
+    color: #ff9900;
     line-height: 1.5;
 }
 </style>

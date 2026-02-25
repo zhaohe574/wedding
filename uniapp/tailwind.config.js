@@ -12,11 +12,11 @@ module.exports = {
             page: 'var(--color-bg, #f6f6f6)',
             light: 'var(--color-light, #e5e5e5)',
             disabled: 'var(--color-disabled, #c8c9cc)',
-            
+
             // 主题色系统
             minor: 'var(--color-minor, #FFB814)',
             'btn-text': 'var(--color-btn-text, white)',
-            
+
             // 主色（优雅紫）
             primary: {
                 DEFAULT: 'var(--color-primary, #7C3AED)',
@@ -26,7 +26,7 @@ module.exports = {
                 'light-9': 'var(--color-primary-light-9, #FAF5FF)',
                 'dark-2': 'var(--color-primary-dark-2, #6D28D9)'
             },
-            
+
             // 辅助色（玫瑰粉）
             secondary: {
                 DEFAULT: 'var(--color-secondary, #EC4899)',
@@ -36,7 +36,7 @@ module.exports = {
                 'light-9': 'var(--color-secondary-light-9, #FCE7F3)',
                 'dark-2': 'var(--color-secondary-dark-2, #DB2777)'
             },
-            
+
             // CTA色（活力橙）
             cta: {
                 DEFAULT: 'var(--color-cta, #F97316)',
@@ -46,7 +46,7 @@ module.exports = {
                 'light-9': 'var(--color-cta-light-9, #FFEDD5)',
                 'dark-2': 'var(--color-cta-dark-2, #EA580C)'
             },
-            
+
             // 点缀色（金色）
             accent: {
                 DEFAULT: 'var(--color-accent, #FFD700)',
@@ -56,7 +56,7 @@ module.exports = {
                 'light-9': 'var(--color-accent-light-9, #FFF9CC)',
                 'dark-2': 'var(--color-accent-dark-2, #CCAC00)'
             },
-            
+
             // 功能色彩
             success: {
                 DEFAULT: 'var(--color-success, #19be6b)',
@@ -90,13 +90,13 @@ module.exports = {
                 'light-9': 'var(--color-info-light-9, #F4F4F5)',
                 'dark-2': 'var(--color-info-dark-2, #73767A)'
             },
-            
+
             // 背景色系统
             'bg-primary': 'var(--color-bg-primary, #FAF5FF)',
             'bg-secondary': 'var(--color-bg-secondary, #ECFDF5)',
             'bg-card': 'var(--color-bg-card, #FFFFFF)',
             'bg-overlay': 'var(--color-bg-overlay, rgba(0, 0, 0, 0.5))',
-            
+
             // 订单状态色彩
             'order-pending': '#FF9900',
             'order-unpaid': '#F97316',
@@ -105,15 +105,15 @@ module.exports = {
             'order-cancelled': '#EF4444'
         },
         fontSize: {
-            xs: '24rpx',    // 说明文本
-            sm: '26rpx',    // 辅助文本
-            base: '28rpx',  // 正文
+            xs: '24rpx', // 说明文本
+            sm: '26rpx', // 辅助文本
+            base: '28rpx', // 正文
             lg: '30rpx',
-            xl: '32rpx',    // 三级标题
+            xl: '32rpx', // 三级标题
             '2xl': '34rpx', // 二级标题
             '3xl': '38rpx',
             '4xl': '40rpx', // 一级标题
-            '5xl': '44rpx'  // 大标题
+            '5xl': '44rpx' // 大标题
         },
         fontFamily: {
             sans: ['Source Han Sans CN', 'Helvetica Neue', 'Arial', 'sans-serif'],
@@ -131,36 +131,37 @@ module.exports = {
             relaxed: '1.6'
         },
         spacing: {
-            xs: '8rpx',    // 极小间距
-            sm: '16rpx',   // 小间距
-            md: '24rpx',   // 中等间距
-            lg: '32rpx',   // 大间距
-            xl: '48rpx',   // 超大间距
+            xs: '8rpx', // 极小间距
+            sm: '16rpx', // 小间距
+            md: '24rpx', // 中等间距
+            lg: '32rpx', // 大间距
+            xl: '48rpx', // 超大间距
             '2xl': '64rpx' // 特大间距
         },
         extend: {
             borderRadius: {
-                'card': '16rpx',
+                card: '16rpx',
                 'card-large': '32rpx',
-                'button': '48rpx',
-                'input': '16rpx',
-                'badge': '12rpx'
+                button: '48rpx',
+                input: '16rpx',
+                badge: '12rpx'
             },
             boxShadow: {
-                'card': '0 2rpx 12rpx rgba(0, 0, 0, 0.08)',
+                card: '0 2rpx 12rpx rgba(0, 0, 0, 0.08)',
                 'card-hover': '0 8rpx 24rpx rgba(0, 0, 0, 0.12)',
-                'card-glass': '0 20rpx 60rpx rgba(124, 58, 237, 0.12), 0 8rpx 16rpx rgba(0, 0, 0, 0.04)',
+                'card-glass':
+                    '0 20rpx 60rpx rgba(124, 58, 237, 0.12), 0 8rpx 16rpx rgba(0, 0, 0, 0.04)',
                 'button-primary': '0 8rpx 24rpx rgba(124, 58, 237, 0.3)',
                 'button-cta': '0 8rpx 24rpx rgba(249, 115, 22, 0.3)',
                 'input-focus': '0 0 0 6rpx rgba(124, 58, 237, 0.1)'
             },
             transitionDuration: {
-                'fast': '150ms',
-                'normal': '200ms',
-                'slow': '300ms'
+                fast: '150ms',
+                normal: '200ms',
+                slow: '300ms'
             },
             backdropBlur: {
-                'glass': '20rpx'
+                glass: '20rpx'
             }
         }
     },

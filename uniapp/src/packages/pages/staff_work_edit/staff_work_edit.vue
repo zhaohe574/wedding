@@ -1,6 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar :title="pageTitle" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            :title="pageTitle"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
     </page-meta>
 
     <view class="page-container">
@@ -22,9 +26,9 @@
                 <text class="section-desc">给作品起个吸引人的名字</text>
             </view>
             <view class="input-wrapper">
-                <tn-input 
-                    v-model="form.title" 
-                    placeholder="例如：浪漫海边婚纱照" 
+                <tn-input
+                    v-model="form.title"
+                    placeholder="例如：浪漫海边婚纱照"
                     :maxlength="50"
                     class="custom-input"
                 />
@@ -79,13 +83,18 @@
                 <text class="section-desc">最多上传9张，展示作品细节</text>
             </view>
             <view class="images-grid">
-                <view 
-                    v-for="(img, idx) in form.images" 
-                    :key="idx" 
+                <view
+                    v-for="(img, idx) in form.images"
+                    :key="idx"
                     class="image-item"
                     @longpress="handleImageLongPress(idx)"
                 >
-                    <image :src="img" class="image-content" mode="aspectFill" @click="previewImages(idx)" />
+                    <image
+                        :src="img"
+                        class="image-content"
+                        mode="aspectFill"
+                        @click="previewImages(idx)"
+                    />
                     <view class="image-delete" @click.stop="removeImage(idx)">
                         <tn-icon name="close" size="24" color="#fff" />
                     </view>
@@ -93,11 +102,7 @@
                         {{ idx + 1 }}
                     </view>
                 </view>
-                <view
-                    v-if="form.images.length < 9"
-                    class="image-upload-btn"
-                    @click="chooseImages"
-                >
+                <view v-if="form.images.length < 9" class="image-upload-btn" @click="chooseImages">
                     <tn-icon name="plus" size="48" :color="$theme.primaryColor" />
                     <text class="upload-btn-text">添加图片</text>
                 </view>
@@ -109,16 +114,20 @@
             <view class="section-header">
                 <view class="section-title">
                     <text>作品视频</text>
-                    <view v-if="form.video" class="video-badge" :style="{ backgroundColor: $theme.accentColor }">
+                    <view
+                        v-if="form.video"
+                        class="video-badge"
+                        :style="{ backgroundColor: $theme.accentColor }"
+                    >
                         <tn-icon name="video" size="24" color="#fff" />
                     </view>
                 </view>
                 <text class="section-desc">时长不超过60秒，大小不超过50MB</text>
             </view>
             <view v-if="form.video" class="video-preview">
-                <video 
-                    :src="form.video" 
-                    class="video-player" 
+                <video
+                    :src="form.video"
+                    class="video-player"
                     object-fit="cover"
                     :show-center-play-btn="true"
                     :controls="true"
@@ -180,46 +189,46 @@
                         </view>
                     </view>
                 </picker>
-                
+
                 <view class="info-item">
                     <view class="info-label">
                         <tn-icon name="map-pin" size="32" :color="$theme.primaryColor" />
                         <text class="label-text">拍摄地点</text>
                     </view>
                     <view class="info-value flex-1">
-                        <tn-input 
-                            v-model="form.location" 
-                            placeholder="例如：三亚海棠湾" 
+                        <tn-input
+                            v-model="form.location"
+                            placeholder="例如：三亚海棠湾"
                             class="location-input"
                         />
                     </view>
                 </view>
-                
+
                 <view class="info-item">
                     <view class="info-label">
                         <tn-icon name="sort" size="32" :color="$theme.primaryColor" />
                         <text class="label-text">排序值</text>
                     </view>
                     <view class="info-value flex-1">
-                        <tn-input 
-                            v-model="form.sort" 
-                            type="number" 
-                            placeholder="数值越大越靠前" 
+                        <tn-input
+                            v-model="form.sort"
+                            type="number"
+                            placeholder="数值越大越靠前"
                             class="sort-input"
                         />
                     </view>
                 </view>
-                
+
                 <view class="info-item">
                     <view class="info-label">
                         <tn-icon name="eye" size="32" :color="$theme.primaryColor" />
                         <text class="label-text">是否展示</text>
                     </view>
                     <view class="info-value">
-                        <u-switch 
-                            v-model="isShowSwitch" 
-                            :active-color="$theme.primaryColor" 
-                            inactive-color="#e5e7eb" 
+                        <u-switch
+                            v-model="isShowSwitch"
+                            :active-color="$theme.primaryColor"
+                            inactive-color="#e5e7eb"
                             size="24"
                         />
                     </view>
@@ -234,16 +243,24 @@
                     <view class="cancel-btn" @click="handleCancel">
                         <text class="cancel-text">取消</text>
                     </view>
-                    <view 
-                        class="submit-btn" 
-                        :style="{ 
+                    <view
+                        class="submit-btn"
+                        :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                             opacity: submitting ? 0.6 : 1
                         }"
                         @click="handleSubmit"
                     >
-                        <tn-icon v-if="submitting" name="loading" size="32" color="#fff" class="loading-icon" />
-                        <text class="submit-text">{{ submitting ? '提交中...' : (isEdit ? '保存修改' : '提交审核') }}</text>
+                        <tn-icon
+                            v-if="submitting"
+                            name="loading"
+                            size="32"
+                            color="#fff"
+                            class="loading-icon"
+                        />
+                        <text class="submit-text">{{
+                            submitting ? '提交中...' : isEdit ? '保存修改' : '提交审核'
+                        }}</text>
                     </view>
                 </view>
             </view>
@@ -501,7 +518,7 @@ onLoad(async (options: any) => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, #F9FAFB 0%, #FFFFFF 100%);
+    background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
     padding-bottom: 180rpx;
 }
 
@@ -513,7 +530,7 @@ onLoad(async (options: any) => {
     border-radius: 16rpx;
     border-left: 6rpx solid;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
-    
+
     .tip-text {
         margin-left: 16rpx;
         font-size: 28rpx;
@@ -526,7 +543,7 @@ onLoad(async (options: any) => {
 .form-section {
     margin: 0 24rpx 24rpx;
     padding: 32rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 20rpx;
     box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
 }
@@ -534,7 +551,7 @@ onLoad(async (options: any) => {
 /* 区块标题 */
 .section-header {
     margin-bottom: 24rpx;
-    
+
     .section-title {
         display: flex;
         align-items: center;
@@ -542,22 +559,22 @@ onLoad(async (options: any) => {
         font-weight: 600;
         color: #333;
         margin-bottom: 8rpx;
-        
+
         .required-mark {
             font-size: 32rpx;
             font-weight: 700;
             margin-right: 6rpx;
         }
-        
+
         .count-badge {
             margin-left: 12rpx;
             padding: 4rpx 12rpx;
             border-radius: 20rpx;
             font-size: 24rpx;
             font-weight: 500;
-            color: #FFFFFF;
+            color: #ffffff;
         }
-        
+
         .video-badge {
             margin-left: 12rpx;
             padding: 6rpx 12rpx;
@@ -566,7 +583,7 @@ onLoad(async (options: any) => {
             align-items: center;
         }
     }
-    
+
     .section-desc {
         font-size: 26rpx;
         color: #999;
@@ -577,22 +594,22 @@ onLoad(async (options: any) => {
 /* 输入框包装 */
 .input-wrapper {
     position: relative;
-    
+
     .custom-input {
         width: 100%;
         padding: 24rpx;
-        background: #F9FAFB;
+        background: #f9fafb;
         border-radius: 16rpx;
-        border: 2rpx solid #E5E7EB;
+        border: 2rpx solid #e5e7eb;
         font-size: 28rpx;
         transition: all 0.2s ease;
-        
+
         &:focus {
-            background: #FFFFFF;
+            background: #ffffff;
             border-color: var(--color-primary);
         }
     }
-    
+
     .char-count {
         position: absolute;
         right: 24rpx;
@@ -613,12 +630,12 @@ onLoad(async (options: any) => {
     height: 400rpx;
     border-radius: 16rpx;
     overflow: hidden;
-    
+
     .cover-image {
         width: 100%;
         height: 100%;
     }
-    
+
     .cover-mask {
         position: absolute;
         top: 0;
@@ -630,12 +647,12 @@ onLoad(async (options: any) => {
         align-items: center;
         justify-content: center;
         transition: all 0.3s ease;
-        
+
         &:active {
             background: rgba(0, 0, 0, 0.5);
         }
     }
-    
+
     .cover-actions {
         display: flex;
         gap: 32rpx;
@@ -643,21 +660,21 @@ onLoad(async (options: any) => {
         transform: translateY(20rpx);
         transition: all 0.3s ease;
     }
-    
+
     &:active .cover-actions {
         opacity: 1;
         transform: translateY(0);
     }
-    
+
     .action-btn {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 8rpx;
-        
+
         .action-text {
             font-size: 24rpx;
-            color: #FFFFFF;
+            color: #ffffff;
         }
     }
 }
@@ -669,16 +686,16 @@ onLoad(async (options: any) => {
     justify-content: center;
     width: 100%;
     height: 400rpx;
-    background: #F9FAFB;
+    background: #f9fafb;
     border-radius: 16rpx;
-    border: 2rpx dashed #E5E7EB;
+    border: 2rpx dashed #e5e7eb;
     transition: all 0.2s ease;
-    
+
     &:active {
-        background: #F3F4F6;
+        background: #f3f4f6;
         border-color: var(--color-primary);
     }
-    
+
     .upload-icon-wrapper {
         width: 120rpx;
         height: 120rpx;
@@ -689,14 +706,14 @@ onLoad(async (options: any) => {
         justify-content: center;
         margin-bottom: 16rpx;
     }
-    
+
     .upload-text {
         font-size: 28rpx;
         color: #333;
         font-weight: 500;
         margin-bottom: 8rpx;
     }
-    
+
     .upload-hint {
         font-size: 24rpx;
         color: #999;
@@ -716,7 +733,7 @@ onLoad(async (options: any) => {
     padding-bottom: 100%;
     border-radius: 16rpx;
     overflow: hidden;
-    
+
     .image-content {
         position: absolute;
         top: 0;
@@ -724,7 +741,7 @@ onLoad(async (options: any) => {
         width: 100%;
         height: 100%;
     }
-    
+
     .image-delete {
         position: absolute;
         top: 8rpx;
@@ -738,7 +755,7 @@ onLoad(async (options: any) => {
         justify-content: center;
         z-index: 2;
     }
-    
+
     .image-index {
         position: absolute;
         bottom: 8rpx;
@@ -751,7 +768,7 @@ onLoad(async (options: any) => {
         justify-content: center;
         font-size: 24rpx;
         font-weight: 600;
-        color: #FFFFFF;
+        color: #ffffff;
         z-index: 1;
     }
 }
@@ -760,20 +777,20 @@ onLoad(async (options: any) => {
     position: relative;
     width: 100%;
     padding-bottom: 100%;
-    background: #F9FAFB;
+    background: #f9fafb;
     border-radius: 16rpx;
-    border: 2rpx dashed #E5E7EB;
+    border: 2rpx dashed #e5e7eb;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    
+
     &:active {
-        background: #F3F4F6;
+        background: #f3f4f6;
         border-color: var(--color-primary);
     }
-    
+
     .upload-btn-text {
         position: absolute;
         bottom: 20rpx;
@@ -791,12 +808,12 @@ onLoad(async (options: any) => {
     width: 100%;
     border-radius: 16rpx;
     overflow: hidden;
-    
+
     .video-player {
         width: 100%;
         height: 400rpx;
     }
-    
+
     .video-delete {
         position: absolute;
         bottom: 16rpx;
@@ -807,10 +824,10 @@ onLoad(async (options: any) => {
         display: flex;
         align-items: center;
         gap: 8rpx;
-        
+
         .delete-text {
             font-size: 26rpx;
-            color: #FFFFFF;
+            color: #ffffff;
         }
     }
 }
@@ -822,16 +839,16 @@ onLoad(async (options: any) => {
     justify-content: center;
     width: 100%;
     height: 300rpx;
-    background: #F9FAFB;
+    background: #f9fafb;
     border-radius: 16rpx;
-    border: 2rpx dashed #E5E7EB;
+    border: 2rpx dashed #e5e7eb;
     transition: all 0.2s ease;
-    
+
     &:active {
-        background: #F3F4F6;
+        background: #f3f4f6;
         border-color: var(--color-secondary);
     }
-    
+
     .upload-icon-wrapper {
         width: 120rpx;
         height: 120rpx;
@@ -842,14 +859,14 @@ onLoad(async (options: any) => {
         justify-content: center;
         margin-bottom: 16rpx;
     }
-    
+
     .upload-text {
         font-size: 28rpx;
         color: #333;
         font-weight: 500;
         margin-bottom: 8rpx;
     }
-    
+
     .upload-hint {
         font-size: 24rpx;
         color: #999;
@@ -859,25 +876,25 @@ onLoad(async (options: any) => {
 /* 文本域包装 */
 .textarea-wrapper {
     position: relative;
-    
+
     .custom-textarea {
         width: 100%;
         min-height: 200rpx;
         padding: 24rpx;
-        background: #F9FAFB;
+        background: #f9fafb;
         border-radius: 16rpx;
-        border: 2rpx solid #E5E7EB;
+        border: 2rpx solid #e5e7eb;
         font-size: 28rpx;
         line-height: 1.6;
         color: #333;
         transition: all 0.2s ease;
-        
+
         &:focus {
-            background: #FFFFFF;
+            background: #ffffff;
             border-color: var(--color-primary);
         }
     }
-    
+
     .char-count {
         position: absolute;
         right: 24rpx;
@@ -894,40 +911,40 @@ onLoad(async (options: any) => {
         align-items: center;
         justify-content: space-between;
         padding: 28rpx 0;
-        border-bottom: 1rpx solid #F3F4F6;
-        
+        border-bottom: 1rpx solid #f3f4f6;
+
         &:last-child {
             border-bottom: none;
         }
-        
+
         .info-label {
             display: flex;
             align-items: center;
             gap: 12rpx;
-            
+
             .label-text {
                 font-size: 28rpx;
                 color: #333;
                 font-weight: 500;
             }
         }
-        
+
         .info-value {
             display: flex;
             align-items: center;
             gap: 12rpx;
-            
+
             .value-text {
                 font-size: 28rpx;
                 color: #333;
             }
-            
+
             .placeholder-text {
                 font-size: 28rpx;
                 color: #999;
             }
         }
-        
+
         .location-input,
         .sort-input {
             text-align: right;
@@ -944,7 +961,7 @@ onLoad(async (options: any) => {
     right: 0;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20rpx);
-    border-top: 1rpx solid #F3F4F6;
+    border-top: 1rpx solid #f3f4f6;
     padding-bottom: constant(safe-area-inset-bottom);
     padding-bottom: env(safe-area-inset-bottom);
     z-index: 100;
@@ -962,18 +979,18 @@ onLoad(async (options: any) => {
 .cancel-btn {
     flex: 1;
     height: 72rpx;
-    background: #F3F4F6;
+    background: #f3f4f6;
     border-radius: 32rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    
+
     &:active {
-        background: #E5E7EB;
+        background: #e5e7eb;
         transform: scale(0.98);
     }
-    
+
     .cancel-text {
         font-size: 32rpx;
         font-weight: 600;
@@ -991,20 +1008,20 @@ onLoad(async (options: any) => {
     gap: 12rpx;
     box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: translateY(2rpx);
         box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
     }
-    
+
     .loading-icon {
         animation: rotate 1s linear infinite;
     }
-    
+
     .submit-text {
         font-size: 32rpx;
         font-weight: 700;
-        color: #FFFFFF;
+        color: #ffffff;
     }
 }
 

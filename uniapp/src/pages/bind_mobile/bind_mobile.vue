@@ -106,7 +106,7 @@ const startCodeCountdown = () => {
     let seconds = 60
     canGetCode.value = false
     codeTips.value = `${seconds}秒`
-    
+
     const timer = setInterval(() => {
         seconds--
         if (seconds > 0) {
@@ -134,7 +134,7 @@ const sendSms = async () => {
 const handleConfirm = async () => {
     if (!formData.mobile) return uni.$u.toast('请输入手机号码')
     if (!formData.code) return uni.$u.toast('请输入验证码')
-    
+
     try {
         await userBindMobile(formData, { token: userStore.temToken })
         uni.$u.toast('绑定成功')
@@ -153,7 +153,7 @@ page {
 
 .bind-mobile-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, var(--color-primary-light-9, #FAF5FF) 0%, #FFFFFF 100%);
+    background: linear-gradient(180deg, var(--color-primary-light-9, #faf5ff) 0%, #ffffff 100%);
     position: relative;
     overflow: hidden;
 }
@@ -176,7 +176,11 @@ page {
     .circle-1 {
         width: 350rpx;
         height: 350rpx;
-        background: linear-gradient(135deg, var(--color-primary, #7C3AED), var(--color-primary-light-3, #A78BFA));
+        background: linear-gradient(
+            135deg,
+            var(--color-primary, #7c3aed),
+            var(--color-primary-light-3, #a78bfa)
+        );
         top: -80rpx;
         right: -80rpx;
     }
@@ -184,7 +188,11 @@ page {
     .circle-2 {
         width: 250rpx;
         height: 250rpx;
-        background: linear-gradient(135deg, var(--color-secondary, #EC4899), var(--color-secondary-light-3, #F9A8D4));
+        background: linear-gradient(
+            135deg,
+            var(--color-secondary, #ec4899),
+            var(--color-secondary-light-3, #f9a8d4)
+        );
         bottom: 80rpx;
         left: -60rpx;
         animation-delay: 5s;
@@ -192,7 +200,8 @@ page {
 }
 
 @keyframes float {
-    0%, 100% {
+    0%,
+    100% {
         transform: translateY(0) scale(1);
     }
     50% {
@@ -225,7 +234,7 @@ page {
     .title-text {
         font-size: 44rpx;
         font-weight: 600;
-        color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #7c3aed);
         margin-bottom: 16rpx;
         letter-spacing: 1rpx;
     }
@@ -242,8 +251,7 @@ page {
     background: rgba(255, 255, 255, 0.85);
     border-radius: 24rpx;
     padding: 40rpx 32rpx;
-    box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12),
-                0 8rpx 16rpx rgba(0, 0, 0, 0.04);
+    box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12), 0 8rpx 16rpx rgba(0, 0, 0, 0.04);
     backdrop-filter: blur(20rpx);
     border: 2rpx solid rgba(255, 255, 255, 0.3);
 }
@@ -255,16 +263,16 @@ page {
     .input-wrapper {
         display: flex;
         align-items: center;
-        background: #F9FAFB;
-        border: 2rpx solid #E5E7EB;
+        background: #f9fafb;
+        border: 2rpx solid #e5e7eb;
         border-radius: 16rpx;
         padding: 0 24rpx;
         height: 88rpx;
         transition: all 0.2s ease;
 
         &:focus-within {
-            border-color: var(--color-primary, #7C3AED);
-            background: #FFFFFF;
+            border-color: var(--color-primary, #7c3aed);
+            background: #ffffff;
             box-shadow: 0 0 0 6rpx rgba(124, 58, 237, 0.1);
         }
 
@@ -279,21 +287,21 @@ page {
 
         .code-btn {
             font-size: 24rpx;
-            color: #9CA3AF;
+            color: #9ca3af;
             padding-left: 24rpx;
-            border-left: 2rpx solid #E5E7EB;
+            border-left: 2rpx solid #e5e7eb;
             white-space: nowrap;
             min-width: 160rpx;
             text-align: center;
             transition: all 0.2s ease;
 
             &.code-btn-active {
-                color: var(--color-primary, #7C3AED);
+                color: var(--color-primary, #7c3aed);
                 font-weight: 600;
                 cursor: pointer;
 
                 &:active {
-                    color: var(--color-primary-dark-2, #6D28D9);
+                    color: var(--color-primary-dark-2, #6d28d9);
                 }
             }
         }
@@ -306,7 +314,11 @@ page {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--color-primary, #7C3AED) 0%, var(--color-primary-dark-2, #6D28D9) 100%);
+    background: linear-gradient(
+        135deg,
+        var(--color-primary, #7c3aed) 0%,
+        var(--color-primary-dark-2, #6d28d9) 100%
+    );
     border-radius: 32rpx;
     height: 72rpx;
     padding: 0 32rpx;
@@ -316,7 +328,7 @@ page {
 
     .btn-text {
         font-size: 30rpx;
-        color: #FFFFFF;
+        color: #ffffff;
         font-weight: 600;
         letter-spacing: 1rpx;
         text-align: center;

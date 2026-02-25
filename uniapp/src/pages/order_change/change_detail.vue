@@ -56,7 +56,7 @@
                             <view class="change-value old">{{ detail.old_service_date }}</view>
                         </view>
                         <view class="change-arrow">
-                            <uni-icons type="arrowright" size="20" color="#999"></uni-icons>
+                            <tn-icon name="right" size="40rpx" color="#999"></tn-icon>
                         </view>
                         <view class="change-item">
                             <view class="change-label">新服务日期</view>
@@ -81,7 +81,7 @@
                             <view class="change-price">¥{{ detail.old_price }}</view>
                         </view>
                         <view class="change-arrow">
-                            <uni-icons type="arrowright" size="20" color="#999"></uni-icons>
+                            <tn-icon name="right" size="40rpx" color="#999"></tn-icon>
                         </view>
                         <view class="change-item">
                             <view class="change-label">新工作人员</view>
@@ -319,7 +319,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--primary-color, #ff6b35);
+    border-left: 6rpx solid var(--color-primary, #7C3AED);
 }
 
 .info-row {
@@ -377,7 +377,7 @@ onLoad((options: any) => {
         color: #999;
     }
     &.new {
-        color: var(--primary-color, #ff6b35);
+        color: var(--color-primary, #7C3AED);
     }
 }
 

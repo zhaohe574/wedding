@@ -1,6 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar :title="pageTitle" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            :title="pageTitle"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
     </page-meta>
 
     <view class="min-h-screen bg-[#f6f6f6] pb-[120rpx]">
@@ -25,7 +29,11 @@
             </view>
 
             <view v-if="!form.video_url" class="flex flex-wrap gap-[12rpx]">
-                <view v-for="(img, idx) in form.images" :key="idx" class="w-[200rpx] h-[200rpx] relative">
+                <view
+                    v-for="(img, idx) in form.images"
+                    :key="idx"
+                    class="w-[200rpx] h-[200rpx] relative"
+                >
                     <image :src="img" class="w-full h-full rounded" mode="aspectFill" />
                     <view
                         class="absolute -top-[8rpx] -right-[8rpx] w-[40rpx] h-[40rpx] bg-black/50 rounded-full flex items-center justify-center"
@@ -44,7 +52,10 @@
             </view>
 
             <view v-if="form.images.length === 0" class="mt-[12rpx]">
-                <view v-if="form.video_url" class="relative w-full aspect-video rounded overflow-hidden">
+                <view
+                    v-if="form.video_url"
+                    class="relative w-full aspect-video rounded overflow-hidden"
+                >
                     <video :src="form.video_url" class="w-full h-full" object-fit="cover" />
                     <view
                         class="absolute top-[12rpx] right-[12rpx] w-[48rpx] h-[48rpx] bg-black/50 rounded-full flex items-center justify-center"
@@ -70,7 +81,11 @@
                     v-for="type in dynamicTypes"
                     :key="type.value"
                     class="px-[24rpx] py-[12rpx] rounded-full text-sm"
-                    :class="form.dynamic_type === type.value ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'"
+                    :class="
+                        form.dynamic_type === type.value
+                            ? 'bg-primary text-white'
+                            : 'bg-gray-100 text-gray-500'
+                    "
                     @click="form.dynamic_type = type.value"
                 >
                     {{ type.label }}
@@ -80,17 +95,24 @@
 
         <view class="bg-white mt-[16rpx] p-[24rpx] flex items-center justify-between">
             <view class="text-sm">允许评论</view>
-            <u-switch v-model="allowCommentSwitch" active-color="#16a34a" inactive-color="#e5e7eb" />
+            <u-switch
+                v-model="allowCommentSwitch"
+                active-color="#16a34a"
+                inactive-color="#e5e7eb"
+            />
         </view>
 
-        <view class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-[24rpx]" style="padding-bottom: calc(24rpx + env(safe-area-inset-bottom))">
+        <view
+            class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-[24rpx]"
+            style="padding-bottom: calc(24rpx + env(safe-area-inset-bottom))"
+        >
             <button
                 class="w-full py-[18rpx] bg-primary text-white text-base font-medium rounded-full"
                 :disabled="!canSubmit || submitting"
                 :class="{ 'opacity-50': !canSubmit || submitting }"
                 @click="handleSubmit"
             >
-                {{ submitting ? '提交中...' : (isEdit ? '保存修改' : '发布动态') }}
+                {{ submitting ? '提交中...' : isEdit ? '保存修改' : '发布动态' }}
             </button>
         </view>
     </view>

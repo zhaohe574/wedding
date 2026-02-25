@@ -204,7 +204,7 @@ const accountRegister = async () => {
         return
     }
     if (formData.password != formData.password_confirm) return uni.$u.toast('两次输入的密码不一致')
-    
+
     try {
         await register(formData)
         uni.$u.toast('注册成功')
@@ -224,7 +224,7 @@ page {
 
 .register-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, var(--color-primary-light-9, #FAF5FF) 0%, #FFFFFF 100%);
+    background: linear-gradient(180deg, var(--color-primary-light-9, #faf5ff) 0%, #ffffff 100%);
     position: relative;
     overflow: hidden;
 }
@@ -247,7 +247,11 @@ page {
     .circle-1 {
         width: 400rpx;
         height: 400rpx;
-        background: linear-gradient(135deg, var(--color-primary, #7C3AED), var(--color-primary-light-3, #A78BFA));
+        background: linear-gradient(
+            135deg,
+            var(--color-primary, #7c3aed),
+            var(--color-primary-light-3, #a78bfa)
+        );
         top: -100rpx;
         right: -100rpx;
         animation-delay: 0s;
@@ -256,7 +260,11 @@ page {
     .circle-2 {
         width: 300rpx;
         height: 300rpx;
-        background: linear-gradient(135deg, var(--color-secondary, #EC4899), var(--color-secondary-light-3, #F9A8D4));
+        background: linear-gradient(
+            135deg,
+            var(--color-secondary, #ec4899),
+            var(--color-secondary-light-3, #f9a8d4)
+        );
         bottom: 100rpx;
         left: -80rpx;
         animation-delay: 5s;
@@ -265,7 +273,11 @@ page {
     .circle-3 {
         width: 200rpx;
         height: 200rpx;
-        background: linear-gradient(135deg, var(--color-cta, #F97316), var(--color-cta-light-3, #FDBA74));
+        background: linear-gradient(
+            135deg,
+            var(--color-cta, #f97316),
+            var(--color-cta-light-3, #fdba74)
+        );
         top: 50%;
         right: 50rpx;
         animation-delay: 10s;
@@ -273,7 +285,8 @@ page {
 }
 
 @keyframes float {
-    0%, 100% {
+    0%,
+    100% {
         transform: translateY(0) scale(1);
     }
     50% {
@@ -318,7 +331,7 @@ page {
     .title-text {
         font-size: 44rpx;
         font-weight: 600;
-        color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #7c3aed);
         margin-bottom: 12rpx;
         text-align: center;
         letter-spacing: 1rpx;
@@ -338,8 +351,7 @@ page {
     background: rgba(255, 255, 255, 0.85);
     border-radius: 24rpx;
     padding: 40rpx 32rpx;
-    box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12),
-                0 8rpx 16rpx rgba(0, 0, 0, 0.04);
+    box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12), 0 8rpx 16rpx rgba(0, 0, 0, 0.04);
     backdrop-filter: blur(20rpx);
     border: 2rpx solid rgba(255, 255, 255, 0.3);
 }
@@ -348,7 +360,7 @@ page {
 .form-title {
     font-size: 32rpx;
     font-weight: 600;
-    color: var(--color-primary, #7C3AED);
+    color: var(--color-primary, #7c3aed);
     margin-bottom: 24rpx;
 }
 
@@ -359,16 +371,16 @@ page {
     .input-wrapper {
         display: flex;
         align-items: center;
-        background: #F9FAFB;
-        border: 2rpx solid #E5E7EB;
+        background: #f9fafb;
+        border: 2rpx solid #e5e7eb;
         border-radius: 16rpx;
         padding: 0 24rpx;
         height: 88rpx;
         transition: all 0.2s ease;
 
         &:focus-within {
-            border-color: var(--color-primary, #7C3AED);
-            background: #FFFFFF;
+            border-color: var(--color-primary, #7c3aed);
+            background: #ffffff;
             box-shadow: 0 0 0 6rpx rgba(124, 58, 237, 0.1);
         }
 
@@ -388,9 +400,9 @@ page {
     margin-top: -8rpx;
     margin-bottom: 20rpx;
     padding: 20rpx;
-    background: var(--color-primary-light-9, #FAF5FF);
+    background: var(--color-primary-light-9, #faf5ff);
     border-radius: 16rpx;
-    border: 2rpx solid var(--color-primary-light-7, #DDD6FE);
+    border: 2rpx solid var(--color-primary-light-7, #ddd6fe);
 
     .tip-item {
         display: flex;
@@ -405,24 +417,24 @@ page {
             width: 12rpx;
             height: 12rpx;
             border-radius: 50%;
-            background: #D1D5DB;
+            background: #d1d5db;
             margin-right: 16rpx;
             transition: all 0.2s ease;
         }
 
         .tip-text {
             font-size: 24rpx;
-            color: #9CA3AF;
+            color: #9ca3af;
             transition: all 0.2s ease;
         }
 
         &.tip-active {
             .tip-dot {
-                background: var(--color-primary, #7C3AED);
+                background: var(--color-primary, #7c3aed);
             }
 
             .tip-text {
-                color: var(--color-primary, #7C3AED);
+                color: var(--color-primary, #7c3aed);
                 font-weight: 500;
             }
         }
@@ -441,7 +453,7 @@ page {
         align-items: center;
 
         .agreement-link {
-            color: var(--color-primary, #7C3AED);
+            color: var(--color-primary, #7c3aed);
             font-weight: 500;
             margin: 0 4rpx;
         }
@@ -450,7 +462,11 @@ page {
 
 /* 按钮样式 */
 .btn-primary {
-    background: linear-gradient(135deg, var(--color-primary, #7C3AED) 0%, var(--color-primary-dark-2, #6D28D9) 100%);
+    background: linear-gradient(
+        135deg,
+        var(--color-primary, #7c3aed) 0%,
+        var(--color-primary-dark-2, #6d28d9) 100%
+    );
     border-radius: 32rpx;
     height: 72rpx;
     padding: 0 32rpx;
@@ -460,7 +476,7 @@ page {
 
     .btn-text {
         font-size: 30rpx;
-        color: #FFFFFF;
+        color: #ffffff;
         font-weight: 600;
         letter-spacing: 1rpx;
         text-align: center;
@@ -502,14 +518,14 @@ page {
     }
 
     .tip-link {
-        color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #7c3aed);
         font-weight: 500;
         margin-left: 8rpx;
         cursor: pointer;
         transition: color 0.2s ease;
 
         &:active {
-            color: var(--color-primary-dark-2, #6D28D9);
+            color: var(--color-primary-dark-2, #6d28d9);
         }
     }
 }
@@ -522,7 +538,7 @@ page {
     .modal-title {
         font-size: 34rpx;
         font-weight: 600;
-        color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #7c3aed);
         margin-bottom: 32rpx;
     }
 
@@ -536,7 +552,7 @@ page {
         align-items: center;
 
         .modal-link {
-            color: var(--color-primary, #7C3AED);
+            color: var(--color-primary, #7c3aed);
             font-weight: 500;
             margin: 0 4rpx;
         }

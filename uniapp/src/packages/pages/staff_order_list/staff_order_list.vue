@@ -1,6 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar title="订单管理" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            title="订单管理"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
     </page-meta>
 
     <view class="page-container">
@@ -15,15 +19,19 @@
                                 :key="index"
                                 class="tab-item"
                                 :class="{ active: currentTabIndex === index }"
-                                :style="currentTabIndex === index ? {
-                                    color: $theme.primaryColor,
-                                    borderBottomColor: $theme.primaryColor
-                                } : {}"
+                                :style="
+                                    currentTabIndex === index
+                                        ? {
+                                              color: $theme.primaryColor,
+                                              borderBottomColor: $theme.primaryColor
+                                          }
+                                        : {}
+                                "
                                 @click="switchTab(index)"
                             >
                                 <text class="tab-text">{{ tab.label }}</text>
-                                <view 
-                                    v-if="currentTabIndex === index" 
+                                <view
+                                    v-if="currentTabIndex === index"
                                     class="tab-indicator"
                                     :style="{ background: $theme.primaryColor }"
                                 />
@@ -47,25 +55,14 @@
                             <tn-icon name="order" size="28" :color="$theme.primaryColor" />
                             <text>{{ order.orderNo }}</text>
                         </view>
-                        <view 
-                            class="order-status"
-                            :style="getStatusStyle(order.status)"
-                        >
+                        <view class="order-status" :style="getStatusStyle(order.status)">
                             {{ getStatusText(order.status) }}
                         </view>
                     </view>
 
                     <!-- 订单项目 -->
-                    <view 
-                        v-for="item in order.items" 
-                        :key="item.id"
-                        class="order-item"
-                    >
-                        <image 
-                            class="staff-avatar" 
-                            :src="item.staffAvatar" 
-                            mode="aspectFill"
-                        />
+                    <view v-for="item in order.items" :key="item.id" class="order-item">
+                        <image class="staff-avatar" :src="item.staffAvatar" mode="aspectFill" />
                         <view class="item-info">
                             <view class="item-name">{{ item.packageName }}</view>
                             <view class="item-detail">
@@ -94,11 +91,15 @@
                             v-for="(action, idx) in order.actions"
                             :key="idx"
                             class="action-btn"
-                            :style="{ 
-                                background: action.type === 'primary' 
-                                    ? `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
-                                    : 'transparent',
-                                color: action.type === 'primary' ? $theme.btnColor : $theme.primaryColor,
+                            :style="{
+                                background:
+                                    action.type === 'primary'
+                                        ? `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
+                                        : 'transparent',
+                                color:
+                                    action.type === 'primary'
+                                        ? $theme.btnColor
+                                        : $theme.primaryColor,
                                 borderColor: $theme.primaryColor
                             }"
                             @click.stop="handleAction(action, order)"
@@ -290,12 +291,12 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #F6F6F6 100%);
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
 }
 
 /* 标签页 */
 .tabs-wrapper {
-    background: #FFFFFF;
+    background: #ffffff;
     box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 
@@ -317,7 +318,7 @@ onShow(async () => {
     color: #666666;
     font-size: 28rpx;
     transition: all 0.2s ease;
-    
+
     &.active {
         font-weight: 600;
     }
@@ -345,16 +346,16 @@ onShow(async () => {
 .order-card {
     margin-bottom: 24rpx;
     padding: 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: translateY(-2rpx);
         box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
     }
-    
+
     &:last-child {
         margin-bottom: 0;
     }
@@ -366,7 +367,7 @@ onShow(async () => {
     align-items: center;
     justify-content: space-between;
     padding-bottom: 20rpx;
-    border-bottom: 1rpx solid #F5F5F5;
+    border-bottom: 1rpx solid #f5f5f5;
     margin-bottom: 20rpx;
 }
 
@@ -396,7 +397,7 @@ onShow(async () => {
     width: 96rpx;
     height: 96rpx;
     border-radius: 48rpx;
-    background: #F5F5F5;
+    background: #f5f5f5;
 }
 
 .item-info {
@@ -426,7 +427,7 @@ onShow(async () => {
     align-items: center;
     justify-content: space-between;
     padding: 20rpx 0;
-    border-top: 1rpx solid #F5F5F5;
+    border-top: 1rpx solid #f5f5f5;
     margin-top: 16rpx;
 }
 
@@ -466,7 +467,7 @@ onShow(async () => {
     font-weight: 500;
     border: 2rpx solid;
     transition: all 0.2s ease;
-    
+
     &:active {
         opacity: 0.8;
     }

@@ -1,30 +1,55 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar title="编辑套餐" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            title="编辑套餐"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
     </page-meta>
 
     <view class="min-h-screen bg-[#f6f6f6] pb-[40rpx]">
         <view class="bg-white mx-[24rpx] mt-[24rpx] rounded-lg p-[24rpx]">
             <view class="text-base font-semibold text-[#333]">{{ form.name || '套餐信息' }}</view>
-            <view class="text-xs text-gray-400 mt-[8rpx]">
-                基础价格：¥{{ basePrice }}
-            </view>
+            <view class="text-xs text-gray-400 mt-[8rpx]"> 基础价格：¥{{ basePrice }} </view>
         </view>
 
         <view class="bg-white mx-[24rpx] mt-[20rpx] rounded-lg">
-            <view class="flex items-center justify-between px-[24rpx] py-[26rpx] border-b border-solid border-0 border-light">
+            <view
+                class="flex items-center justify-between px-[24rpx] py-[26rpx] border-b border-solid border-0 border-light"
+            >
                 <view class="text-sm text-[#333]">套餐价格</view>
-                <tn-input v-model="form.price" type="number" placeholder="默认价格" class="text-right" />
+                <tn-input
+                    v-model="form.price"
+                    type="number"
+                    placeholder="默认价格"
+                    class="text-right"
+                />
             </view>
-            <view class="flex items-center justify-between px-[24rpx] py-[26rpx] border-b border-solid border-0 border-light">
+            <view
+                class="flex items-center justify-between px-[24rpx] py-[26rpx] border-b border-solid border-0 border-light"
+            >
                 <view class="text-sm text-[#333]">原价</view>
-                <tn-input v-model="form.original_price" type="number" placeholder="可选" class="text-right" />
+                <tn-input
+                    v-model="form.original_price"
+                    type="number"
+                    placeholder="可选"
+                    class="text-right"
+                />
             </view>
-            <view class="flex items-center justify-between px-[24rpx] py-[26rpx] border-b border-solid border-0 border-light">
+            <view
+                class="flex items-center justify-between px-[24rpx] py-[26rpx] border-b border-solid border-0 border-light"
+            >
                 <view class="text-sm text-[#333]">个人统一价</view>
-                <tn-input v-model="form.custom_price" type="number" placeholder="可选" class="text-right" />
+                <tn-input
+                    v-model="form.custom_price"
+                    type="number"
+                    placeholder="可选"
+                    class="text-right"
+                />
             </view>
-            <view class="flex items-center justify-between px-[24rpx] py-[26rpx] border-b border-solid border-0 border-light">
+            <view
+                class="flex items-center justify-between px-[24rpx] py-[26rpx] border-b border-solid border-0 border-light"
+            >
                 <view class="text-sm text-[#333]">启用状态</view>
                 <u-switch v-model="statusSwitch" active-color="#16a34a" inactive-color="#e5e7eb" />
             </view>
@@ -35,14 +60,22 @@
             <view class="flex gap-[16rpx]">
                 <view
                     class="px-[24rpx] py-[12rpx] rounded-full text-sm"
-                    :class="form.booking_type === 0 ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'"
+                    :class="
+                        form.booking_type === 0
+                            ? 'bg-primary text-white'
+                            : 'bg-gray-100 text-gray-500'
+                    "
                     @click="form.booking_type = 0"
                 >
                     全天
                 </view>
                 <view
                     class="px-[24rpx] py-[12rpx] rounded-full text-sm"
-                    :class="form.booking_type === 1 ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'"
+                    :class="
+                        form.booking_type === 1
+                            ? 'bg-primary text-white'
+                            : 'bg-gray-100 text-gray-500'
+                    "
                     @click="form.booking_type = 1"
                 >
                     分场次
@@ -56,7 +89,11 @@
                         v-for="slot in timeSlots"
                         :key="slot.value"
                         class="px-[20rpx] py-[10rpx] rounded-full text-xs"
-                        :class="form.allowed_time_slots.includes(slot.value) ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'"
+                        :class="
+                            form.allowed_time_slots.includes(slot.value)
+                                ? 'bg-primary text-white'
+                                : 'bg-gray-100 text-gray-500'
+                        "
                         @click="toggleSlot(slot.value)"
                     >
                         {{ slot.label }}
@@ -112,9 +149,13 @@ const fillForm = (data: any) => {
     form.name = data.package?.name || data.name || ''
     form.price = data.price !== undefined && data.price !== null ? String(data.price) : ''
     form.original_price =
-        data.original_price !== undefined && data.original_price !== null ? String(data.original_price) : ''
+        data.original_price !== undefined && data.original_price !== null
+            ? String(data.original_price)
+            : ''
     form.custom_price =
-        data.custom_price !== undefined && data.custom_price !== null ? String(data.custom_price) : ''
+        data.custom_price !== undefined && data.custom_price !== null
+            ? String(data.custom_price)
+            : ''
     form.booking_type = Number(data.booking_type ?? data.package?.booking_type ?? 0)
     form.allowed_time_slots = Array.isArray(data.allowed_time_slots) ? data.allowed_time_slots : []
     form.status = data.status ? 1 : 0

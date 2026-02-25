@@ -12,7 +12,7 @@
                     v-for="(hotItem, index) in searchData"
                     :key="index"
                     class="keyword-tag"
-                    :style="{ 
+                    :style="{
                         backgroundColor: getLightColor($theme.primaryColor, 0.08),
                         color: $theme.primaryColor
                     }"
@@ -54,10 +54,7 @@
         </view>
 
         <!-- 空状态 -->
-        <view 
-            class="empty-state" 
-            v-if="!searchData.length && !his_search.length"
-        >
+        <view class="empty-state" v-if="!searchData.length && !his_search.length">
             <tn-icon name="search" size="120" color="#E5E5E5" />
             <text class="empty-text">暂无搜索记录</text>
             <text class="empty-hint">试试搜索人员、服务或作品</text>

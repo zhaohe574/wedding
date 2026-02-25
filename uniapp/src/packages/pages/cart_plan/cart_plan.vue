@@ -1,10 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar 
+        <navigation-bar
             title="我的方案"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
         <!-- #endif -->
     </page-meta>
@@ -23,7 +23,11 @@
             <tn-icon name="folder" size="160" color="#CCCCCC" />
             <text class="empty-title">暂无保存的方案</text>
             <text class="empty-desc">保存您的预约方案，随时查看和分享</text>
-            <view class="btn-action" :style="{ backgroundColor: $theme.primaryColor }" @click="goToShareInput">
+            <view
+                class="btn-action"
+                :style="{ backgroundColor: $theme.primaryColor }"
+                @click="goToShareInput"
+            >
                 <tn-icon name="share" size="32" color="#FFFFFF" />
                 <text>输入分享码</text>
             </view>
@@ -39,7 +43,9 @@
                             <text class="plan-name">{{ plan.plan_name }}</text>
                             <view class="plan-meta">
                                 <tn-icon name="time" size="24" color="#999999" />
-                                <text class="meta-text">{{ plan.cart_items?.length || 0 }} 项服务</text>
+                                <text class="meta-text"
+                                    >{{ plan.cart_items?.length || 0 }} 项服务</text
+                                >
                             </view>
                         </view>
                         <view class="plan-price">
@@ -63,42 +69,71 @@
                             <view class="group-header">
                                 <view class="staff-section">
                                     <image
-                                        :src="group.staff_avatar || '/static/images/user/default_avatar.png'"
+                                        :src="
+                                            group.staff_avatar ||
+                                            '/static/images/user/default_avatar.png'
+                                        "
                                         class="staff-avatar"
                                         mode="aspectFill"
                                     />
                                     <view class="staff-info">
-                                        <text class="staff-name">{{ group.staff_name || '未知人员' }}</text>
-                                        <text class="staff-subtitle">{{ group.schedule_date }}</text>
+                                        <text class="staff-name">{{
+                                            group.staff_name || '未知人员'
+                                        }}</text>
+                                        <text class="staff-subtitle">{{
+                                            group.schedule_date
+                                        }}</text>
                                     </view>
                                 </view>
                                 <view class="group-total">
                                     <text class="group-total-label">小计</text>
-                                    <text class="group-total-value" :style="{ color: $theme.ctaColor }">
+                                    <text
+                                        class="group-total-value"
+                                        :style="{ color: $theme.ctaColor }"
+                                    >
                                         ¥{{ formatPrice(group.total_price) }}
                                     </text>
                                 </view>
                             </view>
                             <view class="group-packages">
-                                <view class="package-group" v-for="pkg in group.packages" :key="pkg.key">
+                                <view
+                                    class="package-group"
+                                    v-for="pkg in group.packages"
+                                    :key="pkg.key"
+                                >
                                     <view class="package-header">
                                         <view class="package-title">
                                             <tn-icon name="gift" size="24" />
                                             <text>{{ pkg.package_name || '未命名套餐' }}</text>
                                         </view>
-                                        <text class="package-total">¥{{ formatPrice(pkg.total_price) }}</text>
+                                        <text class="package-total"
+                                            >¥{{ formatPrice(pkg.total_price) }}</text
+                                        >
                                     </view>
                                     <view class="package-items">
-                                        <view class="package-item" v-for="item in pkg.items" :key="item._key">
+                                        <view
+                                            class="package-item"
+                                            v-for="item in pkg.items"
+                                            :key="item._key"
+                                        >
                                             <view class="slot-info">
                                                 <view class="slot-row">
-                                                    <text class="slot-label">{{ item.time_slot_desc || '未知场次' }}</text>
-                                                    <text class="slot-price" :style="{ color: $theme.ctaColor }">
+                                                    <text class="slot-label">{{
+                                                        item.time_slot_desc || '未知场次'
+                                                    }}</text>
+                                                    <text
+                                                        class="slot-price"
+                                                        :style="{ color: $theme.ctaColor }"
+                                                    >
                                                         ¥{{ formatPrice(item.price) }}
                                                     </text>
                                                 </view>
                                                 <view class="slot-remark" v-if="item.remark">
-                                                    <tn-icon name="edit" size="20" color="#999999" />
+                                                    <tn-icon
+                                                        name="edit"
+                                                        size="20"
+                                                        color="#999999"
+                                                    />
                                                     <text>{{ item.remark }}</text>
                                                 </view>
                                             </view>
@@ -116,11 +151,19 @@
                 <!-- 操作按钮组 -->
                 <view class="action-group">
                     <view class="action-row">
-                        <view class="action-btn secondary" @click="handleCancelDefault(plan)" v-if="plan.is_default">
+                        <view
+                            class="action-btn secondary"
+                            @click="handleCancelDefault(plan)"
+                            v-if="plan.is_default"
+                        >
                             <tn-icon name="close" size="36" color="#999999" />
                             <text>取消默认</text>
                         </view>
-                        <view class="action-btn secondary" @click="handleSetDefault(plan)" v-if="!plan.is_default">
+                        <view
+                            class="action-btn secondary"
+                            @click="handleSetDefault(plan)"
+                            v-if="!plan.is_default"
+                        >
                             <tn-icon name="star" size="36" color="#999999" />
                             <text>设为默认</text>
                         </view>
@@ -130,7 +173,11 @@
                         </view>
                     </view>
                     <view class="action-row">
-                        <view class="action-btn primary" :style="{ backgroundColor: $theme.primaryColor }" @click="handleApply(plan)">
+                        <view
+                            class="action-btn primary"
+                            :style="{ backgroundColor: $theme.primaryColor }"
+                            @click="handleApply(plan)"
+                        >
                             <tn-icon name="shopping-cart" size="36" color="#FFFFFF" />
                             <text>应用到购物车</text>
                         </view>
@@ -141,32 +188,32 @@
                 </view>
             </view>
         </view>
-            <tn-popup v-model="showSharePopup" mode="center" :border-radius="24" :mask-close-able="true">
-                <view class="share-modal">
-                    <text class="modal-title">分享方案</text>
-                    <text class="modal-desc">分享码</text>
-                    <view class="share-code">{{ shareCode }}</view>
-                    <view class="modal-actions">
-                        <view
-                            class="modal-btn btn-primary"
-                            :style="{ backgroundColor: $theme.primaryColor }"
-                            @click="handleShareCopy"
-                        >
-                            复制分享码
-                        </view>
-                        <view class="modal-btn btn-secondary" @click="handleShareRegenerate">
-                            生成新码
-                        </view>
-                        <view class="modal-btn btn-ghost" @click="closeSharePopup">
-                            关闭
-                        </view>
+        <tn-popup
+            v-model="showSharePopup"
+            mode="center"
+            :border-radius="24"
+            :mask-close-able="true"
+        >
+            <view class="share-modal">
+                <text class="modal-title">分享方案</text>
+                <text class="modal-desc">分享码</text>
+                <view class="share-code">{{ shareCode }}</view>
+                <view class="modal-actions">
+                    <view
+                        class="modal-btn btn-primary"
+                        :style="{ backgroundColor: $theme.primaryColor }"
+                        @click="handleShareCopy"
+                    >
+                        复制分享码
                     </view>
+                    <view class="modal-btn btn-secondary" @click="handleShareRegenerate">
+                        生成新码
+                    </view>
+                    <view class="modal-btn btn-ghost" @click="closeSharePopup"> 关闭 </view>
                 </view>
-            </tn-popup>
-
-
-
-</view>
+            </view>
+        </tn-popup>
+    </view>
 </template>
 
 <script setup lang="ts">
@@ -189,7 +236,6 @@ const showSharePopup = ref(false)
 const shareCode = ref('')
 const sharePlanId = ref<number | null>(null)
 const shareLoading = ref(false)
-
 
 const formatPrice = (value: any) => {
     const num = Number(value || 0)
@@ -287,8 +333,8 @@ const fetchPlans = async () => {
             const items = Array.isArray(plan.cart_items)
                 ? plan.cart_items
                 : Array.isArray(plan.items)
-                  ? plan.items
-                  : []
+                ? plan.items
+                : []
             return {
                 ...plan,
                 cart_items: items,
@@ -334,105 +380,69 @@ const handleCancelDefault = (plan: any) => {
 // 分享
 
 const openSharePopup = (planId: number, code: string) => {
-
     sharePlanId.value = planId
 
     shareCode.value = code || ''
 
     showSharePopup.value = true
-
 }
-
-
 
 const closeSharePopup = () => {
-
     showSharePopup.value = false
-
 }
 
-
-
 const handleShareCopy = () => {
-
     if (!shareCode.value) {
-
         uni.showToast({ title: '分享码为空', icon: 'none' })
 
         return
-
     }
 
     uni.setClipboardData({
-
         data: shareCode.value,
 
         success: () => {
             uni.showToast({ title: '分享码已复制', icon: 'success' })
             closeSharePopup()
         }
-
     })
-
 }
 
-
-
 const handleShareRegenerate = async () => {
-
     if (!sharePlanId.value || shareLoading.value) {
-
         return
-
     }
 
     shareLoading.value = true
 
     try {
-
         const res = await generatePlanShareCode({ plan_id: sharePlanId.value, force: 1 })
 
         shareCode.value = res.share_code || ''
 
         uni.showToast({ title: '已生成新码', icon: 'success' })
-
     } catch (e: any) {
-
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '生成分享码失败'
 
         uni.showToast({ title: errorMsg, icon: 'none' })
-
     } finally {
-
         shareLoading.value = false
-
     }
-
 }
 
-
-
 const handleShare = async (plan: any) => {
-
     try {
-
         const res = await generatePlanShareCode({ plan_id: plan.id })
 
         const code = res.share_code || ''
 
         openSharePopup(plan.id, code)
-
     } catch (e: any) {
-
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '生成分享码失败'
 
         uni.showToast({ title: errorMsg, icon: 'none' })
-
     }
-
 }
-
-
 
 const handleApply = (plan: any) => {
     uni.showModal({
@@ -484,7 +494,7 @@ onShow(() => {
 <style lang="scss" scoped>
 .cart-plan-page {
     min-height: 100vh;
-    background: #F5F5F5;
+    background: #f5f5f5;
     padding: 24rpx;
     padding-bottom: 48rpx;
 }
@@ -498,7 +508,7 @@ onShow(() => {
         align-items: center;
         justify-content: center;
         gap: 12rpx;
-        background: #FFFFFF;
+        background: #ffffff;
         padding: 24rpx 32rpx;
         border-radius: 56rpx;
         box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
@@ -545,7 +555,7 @@ onShow(() => {
         align-items: center;
         justify-content: center;
         gap: 12rpx;
-        color: #FFFFFF;
+        color: #ffffff;
         font-size: 30rpx;
         font-weight: 600;
         padding: 28rpx 64rpx;
@@ -569,7 +579,7 @@ onShow(() => {
 
 /* 方案卡片 */
 .plan-card {
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 32rpx;
     padding: 0;
     box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
@@ -647,7 +657,6 @@ onShow(() => {
                 }
             }
         }
-
     }
 
     /* 价格区域已合并到头部 */
@@ -671,17 +680,17 @@ onShow(() => {
             .detail-count {
                 font-size: 24rpx;
                 color: #999999;
-                background: #F5F5F5;
+                background: #f5f5f5;
                 padding: 6rpx 16rpx;
                 border-radius: 24rpx;
             }
         }
 
         .detail-group {
-            background: #F9FAFB;
+            background: #f9fafb;
             border-radius: 16rpx;
             padding: 20rpx;
-            border: 1rpx solid #F0F0F0;
+            border: 1rpx solid #f0f0f0;
             margin-bottom: 16rpx;
         }
 
@@ -747,10 +756,10 @@ onShow(() => {
         }
 
         .package-group {
-            background: #FFFFFF;
+            background: #ffffff;
             border-radius: 12rpx;
             padding: 16rpx;
-            border: 1rpx solid #EEEEEE;
+            border: 1rpx solid #eeeeee;
         }
 
         .package-header {
@@ -785,9 +794,9 @@ onShow(() => {
             display: flex;
             align-items: center;
             padding: 16rpx;
-            background: #F9FAFB;
+            background: #f9fafb;
             border-radius: 12rpx;
-            border: 1rpx solid #EEEEEE;
+            border: 1rpx solid #eeeeee;
         }
 
         .slot-info {
@@ -827,7 +836,7 @@ onShow(() => {
             align-items: center;
             justify-content: center;
             padding: 24rpx;
-            background: #F9FAFB;
+            background: #f9fafb;
             border-radius: 16rpx;
             color: #999999;
             font-size: 24rpx;
@@ -858,18 +867,18 @@ onShow(() => {
                 transition: all 0.2s ease;
 
                 &.secondary {
-                    background: #F5F5F5;
+                    background: #f5f5f5;
                     color: #666666;
 
                     &:active {
-                        background: #E5E5E5;
+                        background: #e5e5e5;
                         transform: scale(0.98);
                     }
                 }
 
                 &.primary {
                     flex: 3;
-                    color: #FFFFFF;
+                    color: #ffffff;
                     box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.35);
 
                     &:active {
@@ -881,11 +890,11 @@ onShow(() => {
                 &.danger {
                     flex: 0 0 auto;
                     width: 96rpx;
-                    background: #FEE;
-                    color: #FF2C3C;
+                    background: #fee;
+                    color: #ff2c3c;
 
                     &:active {
-                        background: #FDD;
+                        background: #fdd;
                         transform: scale(0.95);
                     }
                 }
@@ -896,7 +905,7 @@ onShow(() => {
 
 .share-modal {
     width: 560rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     padding: 32rpx;
     text-align: center;
@@ -917,7 +926,7 @@ onShow(() => {
 .share-modal .share-code {
     margin-top: 20rpx;
     padding: 20rpx;
-    background: #F5F5F5;
+    background: #f5f5f5;
     border-radius: 16rpx;
     font-size: 30rpx;
     font-weight: 600;
@@ -944,11 +953,11 @@ onShow(() => {
 }
 
 .share-modal .modal-btn.btn-primary {
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 .share-modal .modal-btn.btn-secondary {
-    background: #F5F5F5;
+    background: #f5f5f5;
     color: #666666;
 }
 
@@ -956,5 +965,4 @@ onShow(() => {
     background: transparent;
     color: #999999;
 }
-
 </style>

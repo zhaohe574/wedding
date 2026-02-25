@@ -4,7 +4,7 @@
         <view v-if="content.title" class="title-section mb-[20rpx] px-[8rpx]">
             <text class="text-[32rpx] font-semibold text-[#1E293B]">{{ content.title }}</text>
         </view>
-        
+
         <!-- 网格布局 -->
         <view v-if="content.style == 1" class="service-grid bg-white rounded-[16rpx] p-[24rpx]">
             <view class="grid grid-cols-4 gap-[32rpx]">
@@ -15,10 +15,13 @@
                     @click="handleClick(item.link)"
                 >
                     <!-- 图标容器 -->
-                    <view class="icon-wrapper mb-[16rpx] p-[20rpx] rounded-[20rpx]" :style="{ backgroundColor: getIconBg(index) }">
-                        <image 
-                            class="w-[56rpx] h-[56rpx]" 
-                            :src="getImageUrl(item.image)" 
+                    <view
+                        class="icon-wrapper mb-[16rpx] p-[20rpx] rounded-[20rpx]"
+                        :style="{ backgroundColor: getIconBg(index) }"
+                    >
+                        <image
+                            class="w-[56rpx] h-[56rpx]"
+                            :src="getImageUrl(item.image)"
                             mode="aspectFit"
                         />
                     </view>
@@ -27,9 +30,12 @@
                 </view>
             </view>
         </view>
-        
+
         <!-- 列表布局 -->
-        <view v-if="content.style == 2" class="service-list bg-white rounded-[16rpx] overflow-hidden">
+        <view
+            v-if="content.style == 2"
+            class="service-list bg-white rounded-[16rpx] overflow-hidden"
+        >
             <view
                 v-for="(item, index) in showList"
                 :key="index"
@@ -37,10 +43,13 @@
                 @click="handleClick(item.link)"
             >
                 <!-- 图标 -->
-                <view class="icon-wrapper p-[16rpx] rounded-[16rpx]" :style="{ backgroundColor: getIconBg(index) }">
-                    <image 
-                        class="w-[48rpx] h-[48rpx]" 
-                        :src="getImageUrl(item.image)" 
+                <view
+                    class="icon-wrapper p-[16rpx] rounded-[16rpx]"
+                    :style="{ backgroundColor: getIconBg(index) }"
+                >
+                    <image
+                        class="w-[48rpx] h-[48rpx]"
+                        :src="getImageUrl(item.image)"
                         mode="aspectFit"
                     />
                 </view>
@@ -142,27 +151,27 @@ const showList = computed(() => {
         box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
         transition: all 0.2s ease;
     }
-    
+
     .service-item {
         transition: all 0.2s ease;
         cursor: pointer;
-        
+
         &:active {
             transform: scale(0.95);
             opacity: 0.8;
         }
-        
+
         .icon-wrapper {
             transition: all 0.2s ease;
         }
     }
-    
+
     .service-list-item {
         transition: all 0.2s ease;
         cursor: pointer;
-        
+
         &:active {
-            background-color: #F8FAFC;
+            background-color: #f8fafc;
         }
     }
 }

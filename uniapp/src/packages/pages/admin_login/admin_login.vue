@@ -1,6 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar title="管理员登录" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            title="管理员登录"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
     </page-meta>
 
     <view class="min-h-screen bg-[#f6f6f6]">
@@ -15,7 +19,13 @@
                 <tn-input v-model="form.password" type="password" placeholder="请输入密码" />
             </view>
             <view class="mt-[30rpx]">
-                <tn-button type="primary" shape="round" size="lg" :loading="loading" @click="handleLogin">
+                <tn-button
+                    type="primary"
+                    shape="round"
+                    size="lg"
+                    :loading="loading"
+                    @click="handleLogin"
+                >
                     登录
                 </tn-button>
             </view>

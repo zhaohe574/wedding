@@ -2,32 +2,38 @@
     <view v-if="content.enabled && topicList.length" class="hot-topics-widget">
         <!-- 标题区域 -->
         <view v-if="content.title" class="topic-header">
-            <view class="header-decoration"></view>
+            <view class="header-decoration" :style="headerBarStyle"></view>
             <text class="header-title">{{ content.title }}</text>
         </view>
 
         <!-- 标签云样式 -->
-        <view v-if="content.style == 1" class="tag-cloud-style">
+        <view v-if="content.style == 1" class="tag-cloud-style" :style="tagCloudStyle">
             <!-- 装饰性背景元素 -->
             <view class="cloud-decoration">
                 <view class="bubble bubble-1"></view>
                 <view class="bubble bubble-2"></view>
                 <view class="bubble bubble-3"></view>
             </view>
-            
+
             <view class="tags-container">
                 <view
                     v-for="(item, index) in displayList"
                     :key="index"
                     class="topic-tag"
-                    :style="getTagStyle(index)"
+                    :style="getTagVisualStyle(index)"
                     @click="handleClick(item)"
                 >
                     <view class="tag-glow"></view>
                     <view class="tag-content">
-                        <text class="tag-hash">#</text>
-                        <text class="tag-name">{{ item.name }}</text>
-                        <view v-if="item.count" class="tag-count-badge">
+                        <text class="tag-hash" :style="getTagTextStyle(index)">#</text>
+                        <text class="tag-name" :style="getTagTextStyle(index)">{{
+                            item.name
+                        }}</text>
+                        <view
+                            v-if="item.count"
+                            class="tag-count-badge"
+                            :style="getTagBadgeStyle(index)"
+                        >
                             <text class="count-text">{{ formatCount(item.count) }}</text>
                         </view>
                     </view>
@@ -47,26 +53,30 @@
                     >
                         <!-- 背景装饰 -->
                         <view class="card-bg-pattern" :class="getCardPattern(index)"></view>
-                        
+
                         <!-- 卡片内容 -->
                         <view class="card-content">
                             <!-- 顶部：话题名称 -->
                             <view class="card-header">
                                 <text class="topic-name">{{ item.name }}</text>
                             </view>
-                            
+
                             <!-- 底部：统计信息 -->
                             <view class="card-footer">
                                 <view class="stat-group">
                                     <view class="stat-item">
                                         <text class="stat-label">参与</text>
-                                        <text class="stat-value">{{ formatCount(item.count || 0) }}</text>
+                                        <text
+                                            class="stat-value"
+                                            :style="getStatValueStyle(index)"
+                                            >{{ formatCount(item.count || 0) }}</text
+                                        >
                                     </view>
                                 </view>
-                                <view class="arrow-icon">→</view>
+                                <view class="arrow-icon" :style="getArrowStyle(index)">→</view>
                             </view>
                         </view>
-                        
+
                         <!-- 装饰性光晕 -->
                         <view class="card-shine"></view>
                     </view>
@@ -84,11 +94,15 @@
             >
                 <!-- 左侧：排名 -->
                 <view class="item-left">
-                    <view class="rank-badge" :class="getRankClass(index)">
+                    <view
+                        class="rank-badge"
+                        :class="getRankClass(index)"
+                        :style="getRankBadgeStyle(index)"
+                    >
                         <text class="rank-number">{{ index + 1 }}</text>
                     </view>
                 </view>
-                
+
                 <!-- 中间：话题信息 -->
                 <view class="item-center">
                     <view class="topic-name-row">
@@ -103,16 +117,20 @@
                         </view>
                     </view>
                 </view>
-                
+
                 <!-- 右侧：箭头 -->
                 <view class="item-right">
-                    <view class="arrow-circle">
+                    <view class="arrow-circle" :style="getArrowCircleStyle(index)">
                         <text class="arrow-text">›</text>
                     </view>
                 </view>
-                
+
                 <!-- 装饰性渐变条 -->
-                <view class="item-gradient-bar" :class="getGradientBarClass(index)"></view>
+                <view
+                    class="item-gradient-bar"
+                    :class="getGradientBarClass(index)"
+                    :style="getGradientBarStyle(index)"
+                ></view>
             </view>
         </view>
     </view>
@@ -120,6 +138,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useThemeStore } from '@/stores/theme'
+import { alphaColor, tintColor, shadeColor } from '@/utils/color'
 
 const props = defineProps({
     content: {
@@ -133,12 +153,103 @@ const props = defineProps({
 })
 
 const topicList = ref<any[]>([])
+const themeStore = useThemeStore()
+const palette = computed(() => [
+    themeStore.primaryColor || '#7C3AED',
+    themeStore.ctaColor || '#F97316',
+    themeStore.secondaryColor || '#EC4899',
+    themeStore.accentColor || '#FFD700'
+])
+const pickColor = (index: number) => palette.value[index % palette.value.length]
+const headerBarStyle = computed(() => ({
+    background: `linear-gradient(180deg, ${palette.value[0]} 0%, ${tintColor(
+        palette.value[0],
+        0.35
+    )} 100%)`,
+    boxShadow: `0 4rpx 12rpx ${alphaColor(palette.value[0], 0.12)}`
+}))
+const tagCloudStyle = computed(() => ({
+    background: `linear-gradient(135deg, #FFFFFF 0%, ${tintColor(palette.value[0], 0.9)} 100%)`
+}))
 
 // 显示的话题列表（限制数量）
 const displayList = computed(() => {
     const count = props.content.show_count || 10
     return topicList.value.slice(0, count)
 })
+
+const getTagVisualStyle = (index: number) => {
+    const base = pickColor(index)
+    const sizes = ['small', 'medium', 'large']
+    const rotations = [-2, -1, 0, 1, 2]
+    const size = sizes[index % sizes.length]
+    const rotation = rotations[index % rotations.length]
+    let scale = 1
+    if (size === 'small') scale = 0.9
+    if (size === 'large') scale = 1.1
+
+    return {
+        background: `linear-gradient(135deg, ${tintColor(base, 0.85)} 0%, ${tintColor(
+            base,
+            0.65
+        )} 100%)`,
+        borderColor: tintColor(base, 0.55),
+        boxShadow: `0 4rpx 16rpx ${alphaColor(base, 0.14)}`,
+        transform: `scale(${scale}) rotate(${rotation}deg)`
+    }
+}
+
+const getTagTextStyle = (index: number) => ({
+    color: shadeColor(pickColor(index), 0.25)
+})
+
+const getTagBadgeStyle = (index: number) => {
+    const base = pickColor(index)
+    return {
+        background: `linear-gradient(135deg, ${base} 0%, ${shadeColor(base, 0.2)} 100%)`,
+        boxShadow: `0 3rpx 10rpx ${alphaColor(base, 0.18)}`
+    }
+}
+
+const getArrowStyle = (index: number) => {
+    const base = pickColor(index)
+    return {
+        background: `linear-gradient(135deg, ${base} 0%, ${shadeColor(base, 0.2)} 100%)`,
+        boxShadow: `0 4rpx 12rpx ${alphaColor(base, 0.18)}`
+    }
+}
+
+const getStatValueStyle = (index: number) => ({
+    color: pickColor(index)
+})
+
+const getGradientBarStyle = (index: number) => {
+    const base = pickColor(index)
+    return { background: `linear-gradient(180deg, ${base} 0%, ${tintColor(base, 0.35)} 100%)` }
+}
+
+const getRankBadgeStyle = (index: number) => {
+    const base = index === 0 ? palette.value[3] : pickColor(index)
+    return {
+        background: `linear-gradient(135deg, ${tintColor(base, 0.25)} 0%, ${shadeColor(
+            base,
+            0.15
+        )} 100%)`,
+        color: shadeColor(base, 0.6),
+        boxShadow: `0 4rpx 12rpx ${alphaColor(base, 0.1)}`
+    }
+}
+
+const getArrowCircleStyle = (index: number) => {
+    const base = pickColor(index)
+    return {
+        background: `linear-gradient(135deg, ${tintColor(base, 0.9)} 0%, ${tintColor(
+            base,
+            0.7
+        )} 100%)`,
+        boxShadow: `0 4rpx 10rpx ${alphaColor(base, 0.12)}`
+    }
+}
 
 // 格式化数量显示
 const formatCount = (count: number): string => {
@@ -148,20 +259,6 @@ const formatCount = (count: number): string => {
         return (count / 1000).toFixed(1) + 'k'
     }
     return count.toString()
-}
-
-// 获取标签动态样式（随机大小和旋转）
-const getTagStyle = (index: number): string => {
-    const sizes = ['small', 'medium', 'large']
-    const rotations = [-2, -1, 0, 1, 2]
-    const size = sizes[index % sizes.length]
-    const rotation = rotations[index % rotations.length]
-    
-    let scale = 1
-    if (size === 'small') scale = 0.9
-    if (size === 'large') scale = 1.1
-    
-    return `transform: scale(${scale}) rotate(${rotation}deg);`
 }
 
 // 获取卡片背景图案类
@@ -174,12 +271,6 @@ const getCardPattern = (index: number): string => {
 const getGradientBarClass = (index: number): string => {
     const classes = ['bar-purple', 'bar-orange', 'bar-blue', 'bar-pink']
     return classes[index % classes.length]
-}
-
-// 获取话题表情
-const getTopicEmoji = (index: number): string => {
-    const emojis = ['🔥', '⭐', '💬', '🎯', '💡', '🎨', '🚀', '💎']
-    return emojis[index % emojis.length]
 }
 
 // 获取排名样式类
@@ -210,38 +301,38 @@ onMounted(() => {
 <style scoped lang="scss">
 .hot-topics-widget {
     margin: 20rpx;
-    
+
     /* 标题区域 */
     .topic-header {
         display: flex;
         align-items: center;
         margin-bottom: 20rpx;
         gap: 16rpx;
-        
+
         .header-decoration {
             width: 8rpx;
             height: 40rpx;
-            background: linear-gradient(180deg, #7C3AED 0%, #A78BFA 100%);
+            background: linear-gradient(180deg, #7c3aed 0%, #a78bfa 100%);
             border-radius: 4rpx;
         }
-        
+
         .header-title {
             font-size: 36rpx;
             font-weight: 700;
-            color: #1F2937;
+            color: #1f2937;
             letter-spacing: -0.5rpx;
         }
     }
-    
+
     /* 标签云样式 */
     .tag-cloud-style {
         position: relative;
-        background: linear-gradient(135deg, #FFFFFF 0%, #FAF5FF 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
         border-radius: 24rpx;
         padding: 28rpx 24rpx;
         overflow: hidden;
         box-shadow: 0 8rpx 32rpx rgba(124, 58, 237, 0.08);
-        
+
         /* 装饰性背景气泡 */
         .cloud-decoration {
             position: absolute;
@@ -251,41 +342,41 @@ onMounted(() => {
             bottom: 0;
             pointer-events: none;
             z-index: 0;
-            
+
             .bubble {
                 position: absolute;
                 border-radius: 50%;
                 opacity: 0.08;
-                
+
                 &.bubble-1 {
                     width: 200rpx;
                     height: 200rpx;
-                    background: linear-gradient(135deg, #7C3AED, #A78BFA);
+                    background: linear-gradient(135deg, #7c3aed, #a78bfa);
                     top: -60rpx;
                     right: -40rpx;
                     animation: float-1 8s ease-in-out infinite;
                 }
-                
+
                 &.bubble-2 {
                     width: 150rpx;
                     height: 150rpx;
-                    background: linear-gradient(135deg, #F97316, #FB923C);
+                    background: linear-gradient(135deg, #f97316, #fb923c);
                     bottom: -40rpx;
                     left: -30rpx;
                     animation: float-2 10s ease-in-out infinite;
                 }
-                
+
                 &.bubble-3 {
                     width: 120rpx;
                     height: 120rpx;
-                    background: linear-gradient(135deg, #EC4899, #F472B6);
+                    background: linear-gradient(135deg, #ec4899, #f472b6);
                     top: 50%;
                     right: 10%;
                     animation: float-3 12s ease-in-out infinite;
                 }
             }
         }
-        
+
         .tags-container {
             position: relative;
             z-index: 1;
@@ -294,17 +385,17 @@ onMounted(() => {
             gap: 12rpx;
             justify-content: center;
         }
-        
+
         .topic-tag {
             position: relative;
             cursor: pointer;
             border-radius: 32rpx;
             padding: 16rpx 24rpx;
-            background: #FFFFFF;
+            background: #ffffff;
             border: 3rpx solid transparent;
             transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
-            
+
             /* 发光效果层 */
             .tag-glow {
                 position: absolute;
@@ -317,187 +408,203 @@ onMounted(() => {
                 transition: opacity 0.4s;
                 pointer-events: none;
             }
-            
-            &:nth-child(4n+1) {
-                background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%);
-                border-color: #C4B5FD;
-                
+
+            &:nth-child(4n + 1) {
+                background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+                border-color: #c4b5fd;
+
                 .tag-hash {
-                    color: #7C3AED;
+                    color: #7c3aed;
                 }
-                
+
                 .tag-name {
-                    color: #6D28D9;
+                    color: #6d28d9;
                 }
-                
+
                 .tag-count-badge {
-                    background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%);
+                    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
                 }
-                
+
                 .tag-glow {
-                    background: radial-gradient(circle, rgba(124, 58, 237, 0.3) 0%, transparent 70%);
+                    background: radial-gradient(
+                        circle,
+                        rgba(124, 58, 237, 0.3) 0%,
+                        transparent 70%
+                    );
                 }
-                
+
                 &:active {
-                    background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
-                    border-color: #7C3AED;
+                    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+                    border-color: #7c3aed;
                     transform: scale(0.95) translateY(4rpx);
                     box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.4);
-                    
+
                     .tag-hash,
                     .tag-name {
-                        color: #FFFFFF;
+                        color: #ffffff;
                     }
-                    
+
                     .tag-count-badge {
                         background: rgba(255, 255, 255, 0.3);
-                        
+
                         .count-text {
-                            color: #FFFFFF;
+                            color: #ffffff;
                         }
                     }
-                    
+
                     .tag-glow {
                         opacity: 1;
                     }
                 }
             }
-            
-            &:nth-child(4n+2) {
-                background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
-                border-color: #FDBA74;
-                
+
+            &:nth-child(4n + 2) {
+                background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+                border-color: #fdba74;
+
                 .tag-hash {
-                    color: #F97316;
+                    color: #f97316;
                 }
-                
+
                 .tag-name {
-                    color: #C2410C;
+                    color: #c2410c;
                 }
-                
+
                 .tag-count-badge {
-                    background: linear-gradient(135deg, #F97316 0%, #FB923C 100%);
+                    background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
                 }
-                
+
                 .tag-glow {
-                    background: radial-gradient(circle, rgba(249, 115, 22, 0.3) 0%, transparent 70%);
+                    background: radial-gradient(
+                        circle,
+                        rgba(249, 115, 22, 0.3) 0%,
+                        transparent 70%
+                    );
                 }
-                
+
                 &:active {
-                    background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
-                    border-color: #F97316;
+                    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+                    border-color: #f97316;
                     transform: scale(0.95) translateY(4rpx);
                     box-shadow: 0 8rpx 24rpx rgba(249, 115, 22, 0.4);
-                    
+
                     .tag-hash,
                     .tag-name {
-                        color: #FFFFFF;
+                        color: #ffffff;
                     }
-                    
+
                     .tag-count-badge {
                         background: rgba(255, 255, 255, 0.3);
-                        
+
                         .count-text {
-                            color: #FFFFFF;
+                            color: #ffffff;
                         }
                     }
-                    
+
                     .tag-glow {
                         opacity: 1;
                     }
                 }
             }
-            
-            &:nth-child(4n+3) {
-                background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-                border-color: #93C5FD;
-                
+
+            &:nth-child(4n + 3) {
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border-color: #93c5fd;
+
                 .tag-hash {
-                    color: #3B82F6;
+                    color: #3b82f6;
                 }
-                
+
                 .tag-name {
-                    color: #1E40AF;
+                    color: #1e40af;
                 }
-                
+
                 .tag-count-badge {
-                    background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+                    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
                 }
-                
+
                 .tag-glow {
-                    background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
+                    background: radial-gradient(
+                        circle,
+                        rgba(59, 130, 246, 0.3) 0%,
+                        transparent 70%
+                    );
                 }
-                
+
                 &:active {
-                    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-                    border-color: #3B82F6;
+                    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                    border-color: #3b82f6;
                     transform: scale(0.95) translateY(4rpx);
                     box-shadow: 0 8rpx 24rpx rgba(59, 130, 246, 0.4);
-                    
+
                     .tag-hash,
                     .tag-name {
-                        color: #FFFFFF;
+                        color: #ffffff;
                     }
-                    
+
                     .tag-count-badge {
                         background: rgba(255, 255, 255, 0.3);
-                        
+
                         .count-text {
-                            color: #FFFFFF;
+                            color: #ffffff;
                         }
                     }
-                    
+
                     .tag-glow {
                         opacity: 1;
                     }
                 }
             }
-            
-            &:nth-child(4n+4) {
-                background: linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 100%);
-                border-color: #F9A8D4;
-                
+
+            &:nth-child(4n + 4) {
+                background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+                border-color: #f9a8d4;
+
                 .tag-hash {
-                    color: #EC4899;
+                    color: #ec4899;
                 }
-                
+
                 .tag-name {
-                    color: #BE185D;
+                    color: #be185d;
                 }
-                
+
                 .tag-count-badge {
-                    background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
+                    background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
                 }
-                
+
                 .tag-glow {
-                    background: radial-gradient(circle, rgba(236, 72, 153, 0.3) 0%, transparent 70%);
+                    background: radial-gradient(
+                        circle,
+                        rgba(236, 72, 153, 0.3) 0%,
+                        transparent 70%
+                    );
                 }
-                
+
                 &:active {
-                    background: linear-gradient(135deg, #EC4899 0%, #DB2777 100%);
-                    border-color: #EC4899;
+                    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+                    border-color: #ec4899;
                     transform: scale(0.95) translateY(4rpx);
                     box-shadow: 0 8rpx 24rpx rgba(236, 72, 153, 0.4);
-                    
+
                     .tag-hash,
                     .tag-name {
-                        color: #FFFFFF;
+                        color: #ffffff;
                     }
-                    
+
                     .tag-count-badge {
                         background: rgba(255, 255, 255, 0.3);
-                        
+
                         .count-text {
-                            color: #FFFFFF;
+                            color: #ffffff;
                         }
                     }
-                    
+
                     .tag-glow {
                         opacity: 1;
                     }
                 }
             }
-            
+
             .tag-content {
                 display: flex;
                 align-items: center;
@@ -505,40 +612,41 @@ onMounted(() => {
                 position: relative;
                 z-index: 1;
             }
-            
+
             .tag-hash {
                 font-size: 32rpx;
                 font-weight: 800;
                 line-height: 1;
                 transition: color 0.4s;
             }
-            
+
             .tag-name {
                 font-size: 28rpx;
                 font-weight: 600;
                 transition: color 0.4s;
                 white-space: nowrap;
             }
-            
+
             .tag-count-badge {
                 padding: 4rpx 12rpx;
                 border-radius: 20rpx;
                 margin-left: 4rpx;
                 transition: background 0.4s;
-                
+
                 .count-text {
                     font-size: 20rpx;
                     font-weight: 700;
-                    color: #FFFFFF;
+                    color: #ffffff;
                     transition: color 0.4s;
                 }
             }
         }
     }
-    
+
     /* 气泡浮动动画 */
     @keyframes float-1 {
-        0%, 100% {
+        0%,
+        100% {
             transform: translate(0, 0) scale(1);
         }
         25% {
@@ -551,9 +659,10 @@ onMounted(() => {
             transform: translate(15rpx, 15rpx) scale(1.05);
         }
     }
-    
+
     @keyframes float-2 {
-        0%, 100% {
+        0%,
+        100% {
             transform: translate(0, 0) scale(1);
         }
         33% {
@@ -563,9 +672,10 @@ onMounted(() => {
             transform: translate(10rpx, -15rpx) scale(0.92);
         }
     }
-    
+
     @keyframes float-3 {
-        0%, 100% {
+        0%,
+        100% {
             transform: translate(0, 0) scale(1) rotate(0deg);
         }
         25% {
@@ -578,23 +688,23 @@ onMounted(() => {
             transform: translate(20rpx, -5rpx) scale(1.05) rotate(270deg);
         }
     }
-    
+
     /* 横向滑动样式 */
     .horizontal-scroll-style {
         .scroll-container {
             white-space: nowrap;
-            
+
             ::-webkit-scrollbar {
                 display: none;
             }
         }
-        
+
         .cards-wrapper {
             display: inline-flex;
             gap: 20rpx;
             padding: 0 20rpx 16rpx 20rpx;
         }
-        
+
         .topic-card {
             position: relative;
             width: 300rpx;
@@ -602,10 +712,10 @@ onMounted(() => {
             border-radius: 20rpx;
             overflow: hidden;
             cursor: pointer;
-            background: #FFFFFF;
+            background: #ffffff;
             box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
             transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            
+
             /* 背景装饰图案 */
             .card-bg-pattern {
                 position: absolute;
@@ -615,35 +725,40 @@ onMounted(() => {
                 bottom: 0;
                 opacity: 0.05;
                 z-index: 0;
-                
+
                 &.pattern-dots {
-                    background-image: radial-gradient(circle, #7C3AED 2rpx, transparent 2rpx);
+                    background-image: radial-gradient(circle, #7c3aed 2rpx, transparent 2rpx);
                     background-size: 32rpx 32rpx;
                 }
-                
+
                 &.pattern-waves {
                     background-image: repeating-linear-gradient(
                         45deg,
-                        #F97316 0rpx,
-                        #F97316 4rpx,
+                        #f97316 0rpx,
+                        #f97316 4rpx,
                         transparent 4rpx,
                         transparent 16rpx
                     );
                 }
-                
+
                 &.pattern-grid {
-                    background-image: 
-                        linear-gradient(#3B82F6 2rpx, transparent 2rpx),
-                        linear-gradient(90deg, #3B82F6 2rpx, transparent 2rpx);
+                    background-image: linear-gradient(#3b82f6 2rpx, transparent 2rpx),
+                        linear-gradient(90deg, #3b82f6 2rpx, transparent 2rpx);
                     background-size: 40rpx 40rpx;
                 }
-                
+
                 &.pattern-circles {
-                    background-image: radial-gradient(circle, transparent 20%, #EC4899 20%, #EC4899 22%, transparent 22%);
+                    background-image: radial-gradient(
+                        circle,
+                        transparent 20%,
+                        #ec4899 20%,
+                        #ec4899 22%,
+                        transparent 22%
+                    );
                     background-size: 48rpx 48rpx;
                 }
             }
-            
+
             /* 装饰性光晕 */
             .card-shine {
                 position: absolute;
@@ -662,16 +777,16 @@ onMounted(() => {
                 pointer-events: none;
                 z-index: 2;
             }
-            
+
             &:active {
                 transform: scale(0.96) translateY(8rpx);
                 box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.12);
-                
+
                 .card-shine {
                     opacity: 1;
                 }
             }
-            
+
             .card-content {
                 position: relative;
                 z-index: 1;
@@ -681,17 +796,17 @@ onMounted(() => {
                 flex-direction: column;
                 justify-content: space-between;
             }
-            
+
             .card-header {
                 flex: 1;
                 display: flex;
                 align-items: center;
             }
-            
+
             .topic-name {
                 font-size: 36rpx;
                 font-weight: 700;
-                color: #1F2937;
+                color: #1f2937;
                 line-height: 1.3;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -699,71 +814,71 @@ onMounted(() => {
                 -webkit-line-clamp: 2;
                 -webkit-box-orient: vertical;
             }
-            
+
             .card-footer {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
             }
-            
+
             .stat-group {
                 display: flex;
                 gap: 16rpx;
             }
-            
+
             .stat-item {
                 display: flex;
                 flex-direction: column;
                 gap: 4rpx;
-                
+
                 .stat-label {
                     font-size: 20rpx;
-                    color: #9CA3AF;
+                    color: #9ca3af;
                     font-weight: 500;
                 }
-                
+
                 .stat-value {
                     font-size: 28rpx;
                     font-weight: 700;
-                    color: #7C3AED;
+                    color: #7c3aed;
                 }
             }
-            
+
             .arrow-icon {
                 width: 48rpx;
                 height: 48rpx;
-                background: linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%);
+                background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
                 border-radius: 12rpx;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-size: 32rpx;
                 font-weight: 700;
-                color: #FFFFFF;
+                color: #ffffff;
                 box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
             }
         }
     }
-    
+
     /* 列表式样式 */
     .list-style {
         display: flex;
         flex-direction: column;
         gap: 16rpx;
-        
+
         .topic-list-item {
             position: relative;
             display: flex;
             align-items: center;
             gap: 16rpx;
             padding: 20rpx;
-            background: #FFFFFF;
+            background: #ffffff;
             border-radius: 14rpx;
             cursor: pointer;
             box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
             transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             overflow: hidden;
-            
+
             /* 装饰性渐变条 */
             .item-gradient-bar {
                 position: absolute;
@@ -772,40 +887,40 @@ onMounted(() => {
                 bottom: 0;
                 width: 8rpx;
                 transition: width 0.4s;
-                
+
                 &.bar-purple {
-                    background: linear-gradient(180deg, #7C3AED 0%, #A78BFA 100%);
+                    background: linear-gradient(180deg, #7c3aed 0%, #a78bfa 100%);
                 }
-                
+
                 &.bar-orange {
-                    background: linear-gradient(180deg, #F97316 0%, #FB923C 100%);
+                    background: linear-gradient(180deg, #f97316 0%, #fb923c 100%);
                 }
-                
+
                 &.bar-blue {
-                    background: linear-gradient(180deg, #3B82F6 0%, #60A5FA 100%);
+                    background: linear-gradient(180deg, #3b82f6 0%, #60a5fa 100%);
                 }
-                
+
                 &.bar-pink {
-                    background: linear-gradient(180deg, #EC4899 0%, #F472B6 100%);
+                    background: linear-gradient(180deg, #ec4899 0%, #f472b6 100%);
                 }
             }
-            
+
             &:active {
                 transform: translateX(12rpx) scale(0.98);
                 box-shadow: 0 8rpx 32rpx rgba(124, 58, 237, 0.15);
-                
+
                 .item-gradient-bar {
                     width: 16rpx;
                 }
             }
-            
+
             /* 左侧：排名 */
             .item-left {
                 display: flex;
                 align-items: center;
                 flex-shrink: 0;
             }
-            
+
             .rank-badge {
                 width: 56rpx;
                 height: 56rpx;
@@ -817,118 +932,118 @@ onMounted(() => {
                 font-size: 28rpx;
                 flex-shrink: 0;
                 box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-                
+
                 &.rank-gold {
-                    background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%);
-                    color: #78350F;
+                    background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
+                    color: #78350f;
                 }
-                
+
                 &.rank-silver {
-                    background: linear-gradient(135deg, #E5E7EB 0%, #9CA3AF 100%);
+                    background: linear-gradient(135deg, #e5e7eb 0%, #9ca3af 100%);
                     color: #374151;
                 }
-                
+
                 &.rank-bronze {
-                    background: linear-gradient(135deg, #FDBA74 0%, #F97316 100%);
-                    color: #7C2D12;
+                    background: linear-gradient(135deg, #fdba74 0%, #f97316 100%);
+                    color: #7c2d12;
                 }
-                
+
                 &.rank-normal {
-                    background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
-                    color: #6B7280;
+                    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+                    color: #6b7280;
                 }
             }
-            
+
             /* 中间：话题信息 */
             .item-center {
                 flex: 1;
                 min-width: 0;
             }
-            
+
             .topic-name-row {
                 display: flex;
                 align-items: center;
                 gap: 12rpx;
                 margin-bottom: 8rpx;
             }
-            
+
             .topic-name {
                 font-size: 32rpx;
                 font-weight: 700;
-                color: #1F2937;
+                color: #1f2937;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
-            
+
             .hot-badge {
                 padding: 4rpx 12rpx;
-                background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
                 border-radius: 8rpx;
                 flex-shrink: 0;
-                
+
                 .hot-text {
                     font-size: 20rpx;
                     font-weight: 800;
-                    color: #92400E;
+                    color: #92400e;
                     letter-spacing: 1rpx;
                 }
             }
-            
+
             .topic-stats {
                 display: flex;
                 gap: 16rpx;
             }
-            
+
             .stat-chip {
                 display: flex;
                 align-items: center;
                 gap: 8rpx;
                 padding: 6rpx 16rpx;
-                background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+                background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
                 border-radius: 12rpx;
-                
+
                 .stat-text {
                     font-size: 24rpx;
-                    color: #6B7280;
+                    color: #6b7280;
                     font-weight: 500;
                 }
             }
-            
+
             /* 右侧：箭头 */
             .item-right {
                 flex-shrink: 0;
             }
-            
+
             .arrow-circle {
                 width: 56rpx;
                 height: 56rpx;
-                background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+                background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 transition: all 0.4s;
-                
+
                 .arrow-text {
                     font-size: 40rpx;
-                    color: #9CA3AF;
+                    color: #9ca3af;
                     font-weight: 300;
                     transition: transform 0.4s;
                 }
             }
-            
+
             &:active .arrow-circle {
-                background: linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%);
-                
+                background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+
                 .arrow-text {
-                    color: #FFFFFF;
+                    color: #ffffff;
                     transform: translateX(4rpx);
                 }
             }
         }
     }
-    
+
     /* 响应式适配 */
     @media (prefers-reduced-motion: reduce) {
         .hot-topics-widget * {

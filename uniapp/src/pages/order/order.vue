@@ -1,20 +1,20 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar 
+        <navigation-bar
             title="我的订单"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
         <!-- #endif -->
     </page-meta>
     <view class="order-page">
         <!-- 状态筛选标签 -->
         <view class="status-tabs-wrapper">
-            <tn-tabs 
-                v-model="currentTabIndex" 
-                :scroll="true" 
-                height="96rpx" 
+            <tn-tabs
+                v-model="currentTabIndex"
+                :scroll="true"
+                height="96rpx"
                 class="tabs-main"
                 :active-color="$theme.primaryColor"
             >
@@ -36,7 +36,7 @@
                     <text class="loading-text">加载中...</text>
                 </view>
             </view>
-            
+
             <!-- 空状态 -->
             <view v-else-if="orders.length === 0" class="empty-state">
                 <view class="empty-icon-wrapper">
@@ -44,18 +44,20 @@
                 </view>
                 <text class="empty-title">暂无订单</text>
                 <text class="empty-subtitle">快去预约心仪的服务吧~</text>
-                <view 
+                <view
                     class="empty-action-btn"
-                    :style="{ 
+                    :style="{
                         background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                         color: $theme.btnColor
                     }"
                     @click="goHome"
                 >
-                    <text class="empty-action-text" :style="{ color: $theme.btnColor }">去预约</text>
+                    <text class="empty-action-text" :style="{ color: $theme.btnColor }"
+                        >去预约</text
+                    >
                 </view>
             </view>
-            
+
             <!-- 订单列表 - 使用OrderCard组件 -->
             <view v-else class="order-list">
                 <order-card
@@ -72,9 +74,9 @@
                         <tn-loading size="40" mode="flower" :color="$theme.primaryColor" />
                         <text class="load-more-text">加载中...</text>
                     </view>
-                    <text 
-                        v-else 
-                        class="load-more-text load-more-clickable" 
+                    <text
+                        v-else
+                        class="load-more-text load-more-clickable"
                         :style="{ color: $theme.primaryColor }"
                         @click="loadMore"
                     >
@@ -161,7 +163,7 @@ const getTimeSlotLabel = (timeSlot: any) => {
         3: '晚宴'
     }
     const slot = Number(timeSlot ?? -1)
-    return Number.isFinite(slot) && slot >= 0 ? (map[slot] || '未知场次') : '未选择场次'
+    return Number.isFinite(slot) && slot >= 0 ? map[slot] || '未知场次' : '未选择场次'
 }
 
 const buildActions = (status: number) => {
@@ -360,17 +362,17 @@ onLoad((options: any) => {
     if (options.status !== undefined) {
         // 状态映射：支持字符串和数字两种格式
         const statusMap: Record<string, number> = {
-            'pending_confirm': 0,
-            'pending_pay': 1,
-            'paid': 2,
-            'in_service': 3,
-            'completed': 4,
-            'reviewed': 5,
-            'cancelled': 6,
-            'paused': 7,
-            'refund': 8
+            pending_confirm: 0,
+            pending_pay: 1,
+            paid: 2,
+            in_service: 3,
+            completed: 4,
+            reviewed: 5,
+            cancelled: 6,
+            paused: 7,
+            refund: 8
         }
-        
+
         // 如果是字符串，先尝试映射，否则转换为数字
         let statusValue: number | string = options.status
         if (typeof statusValue === 'string' && statusMap[statusValue] !== undefined) {
@@ -378,8 +380,8 @@ onLoad((options: any) => {
         } else {
             statusValue = Number(statusValue)
         }
-        
-        const index = statusTabs.findIndex(tab => tab.value === statusValue)
+
+        const index = statusTabs.findIndex((tab) => tab.value === statusValue)
         if (index !== -1) {
             currentTabIndex.value = index
         }
@@ -399,13 +401,13 @@ onReachBottom(() => {
 <style lang="scss" scoped>
 .order-page {
     min-height: 100vh;
-    background: #F6F6F6;
+    background: #f6f6f6;
     padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 /* 状态筛选标签 */
 .status-tabs-wrapper {
-    background: #FFFFFF;
+    background: #ffffff;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
     position: sticky;
     top: 0;
@@ -482,7 +484,7 @@ onReachBottom(() => {
     border-radius: 56rpx;
     box-shadow: 0 12rpx 32rpx rgba(124, 58, 237, 0.4);
     transition: all 0.3s ease;
-    
+
     &:active {
         transform: translateY(2rpx);
         box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.4);
@@ -526,7 +528,7 @@ onReachBottom(() => {
     padding: 16rpx 32rpx;
     border-radius: 48rpx;
     transition: all 0.2s ease;
-    
+
     &:active {
         opacity: 0.7;
         transform: scale(0.98);

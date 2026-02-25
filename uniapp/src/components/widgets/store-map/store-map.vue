@@ -2,7 +2,7 @@
     <view v-if="content.enabled && showList.length" class="store-map mx-[20rpx] mt-[20rpx]">
         <!-- 标题 -->
         <view v-if="content.title" class="flex items-center mb-[20rpx]">
-            <view class="w-[6rpx] h-[32rpx] bg-primary rounded-full mr-[12rpx]"></view>
+            <view class="w-[6rpx] h-[32rpx] rounded-full mr-[12rpx]" :style="$theme.titleBar.value"></view>
             <text class="text-lg font-medium text-gray-900">{{ content.title }}</text>
         </view>
 
@@ -21,17 +21,20 @@
                 ></map>
             </view>
             <!-- #endif -->
-            
+
             <!-- H5 环境提示 -->
             <!-- #ifdef H5 -->
-            <view class="map-placeholder rounded-lg overflow-hidden mb-[20rpx] bg-gray-100 flex items-center justify-center" style="height: 400rpx">
+            <view
+                class="map-placeholder rounded-lg overflow-hidden mb-[20rpx] bg-gray-100 flex items-center justify-center"
+                style="height: 400rpx"
+            >
                 <view class="text-center text-gray-400">
                     <tn-icon name="map" size="80" color="#ccc"></tn-icon>
                     <text class="block mt-2 text-sm">地图功能仅在小程序中可用</text>
                 </view>
             </view>
             <!-- #endif -->
-            
+
             <!-- 门店列表 -->
             <view class="store-list">
                 <view
@@ -41,9 +44,11 @@
                 >
                     <view class="flex items-start">
                         <view class="flex-1">
-                            <text class="text-base font-medium text-gray-900 mb-[12rpx]">{{ item.name }}</text>
+                            <text class="text-base font-medium text-gray-900 mb-[12rpx]">{{
+                                item.name
+                            }}</text>
                             <view class="text-sm text-gray-600 mb-[8rpx]">
-                                <tn-icon name="map-pin" size="28" class="mr-[8rpx]"></tn-icon>
+                                <tn-icon name="position" size="28" class="mr-[8rpx]"></tn-icon>
                                 <text>{{ item.address }}</text>
                             </view>
                             <view class="text-sm text-gray-600 mb-[8rpx]">
@@ -55,16 +60,16 @@
                                 <text>{{ item.business_hours }}</text>
                             </view>
                         </view>
-                        <view class="flex flex-col ml-[20rpx]" style="gap: 12rpx;">
-                            <view 
-                                class="action-btn primary-btn" 
+                        <view class="flex flex-col ml-[20rpx]" style="gap: 12rpx">
+                            <view
+                                class="action-btn primary-btn"
                                 @click="handleNavigation(item)"
                                 hover-class="btn-hover"
                             >
                                 <text class="btn-text">导航</text>
                             </view>
-                            <view 
-                                class="action-btn plain-btn" 
+                            <view
+                                class="action-btn plain-btn"
                                 @click="handleCall(item)"
                                 hover-class="btn-hover"
                             >
@@ -90,9 +95,12 @@
                 ></map>
             </view>
             <!-- #endif -->
-            
+
             <!-- #ifdef H5 -->
-            <view class="map-placeholder rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center" style="height: 600rpx">
+            <view
+                class="map-placeholder rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center"
+                style="height: 600rpx"
+            >
                 <view class="text-center text-gray-400">
                     <tn-icon name="map" size="80" color="#ccc"></tn-icon>
                     <text class="block mt-2 text-sm">地图功能仅在小程序中可用</text>
@@ -110,14 +118,19 @@
             >
                 <view class="flex items-start">
                     <view class="store-icon mr-[20rpx]">
-                        <view class="w-[80rpx] h-[80rpx] rounded-full bg-primary/10 flex items-center justify-center">
-                            <tn-icon name="location" size="48" color="#4a5dff"></tn-icon>
+                        <view
+                            class="w-[80rpx] h-[80rpx] rounded-full flex items-center justify-center"
+                            :style="$theme.iconBg.value"
+                        >
+                            <tn-icon name="location" size="48" :color="primaryColor"></tn-icon>
                         </view>
                     </view>
                     <view class="flex-1">
-                        <text class="text-base font-medium text-gray-900 mb-[12rpx]">{{ item.name }}</text>
+                        <text class="text-base font-medium text-gray-900 mb-[12rpx]">{{
+                            item.name
+                        }}</text>
                         <view class="text-sm text-gray-600 mb-[8rpx]">
-                            <tn-icon name="map-pin" size="28" class="mr-[8rpx]"></tn-icon>
+                            <tn-icon name="position" size="28" class="mr-[8rpx]"></tn-icon>
                             <text>{{ item.address }}</text>
                         </view>
                         <view class="flex items-center gap-4 text-sm text-gray-600 mb-[12rpx]">
@@ -130,16 +143,16 @@
                                 <text>{{ item.business_hours }}</text>
                             </view>
                         </view>
-                        <view class="flex" style="gap: 12rpx;">
-                            <view 
-                                class="action-btn-inline primary-btn" 
+                        <view class="flex" style="gap: 12rpx">
+                            <view
+                                class="action-btn-inline primary-btn"
                                 @click="handleNavigation(item)"
                                 hover-class="btn-hover"
                             >
                                 <text class="btn-text">导航</text>
                             </view>
-                            <view 
-                                class="action-btn-inline plain-btn" 
+                            <view
+                                class="action-btn-inline plain-btn"
                                 @click="handleCall(item)"
                                 hover-class="btn-hover"
                             >
@@ -155,6 +168,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useThemeStore } from '@/stores/theme'
+import { tintColor } from '@/utils/color'
 
 const props = defineProps({
     content: {
@@ -166,6 +181,19 @@ const props = defineProps({
         default: () => ({})
     }
 })
+
+const themeStore = useThemeStore()
+const primaryColor = computed(() => themeStore.primaryColor || '#7C3AED')
+
+// 内联样式（替代Tailwind主题类和硬编码颜色，兼容小程序）
+const $theme = {
+    titleBar: computed(() => ({
+        background: primaryColor.value
+    })),
+    iconBg: computed(() => ({
+        background: tintColor(primaryColor.value, 0.9)
+    }))
+}
 
 // 过滤显示的门店
 const showList = computed(() => {

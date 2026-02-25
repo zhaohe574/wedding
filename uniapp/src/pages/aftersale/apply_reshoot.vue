@@ -87,7 +87,9 @@
 
         <!-- 提交按钮 -->
         <view class="submit-bar">
-            <tn-button type="primary" :loading="submitting" @click="handleSubmit">提交申请</tn-button>
+            <tn-button type="primary" :loading="submitting" @click="handleSubmit"
+                >提交申请</tn-button
+            >
         </view>
 
         <!-- 订单选择器 -->

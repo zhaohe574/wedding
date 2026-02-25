@@ -2,7 +2,7 @@
     <view class="portfolio-gallery mx-[20rpx] mt-[20rpx]" v-if="content.enabled && showList.length">
         <!-- 标题 -->
         <view v-if="content.title" class="flex items-center mb-[24rpx]">
-            <view class="title-bar w-[8rpx] h-[34rpx] bg-primary rounded-full mr-[16rpx]"></view>
+            <view class="title-bar w-[8rpx] h-[34rpx] rounded-full mr-[16rpx]" :style="$theme.titleBar.value"></view>
             <text class="text-lg font-medium text-gray-900">{{ content.title }}</text>
             <view class="flex-1"></view>
             <view
@@ -27,11 +27,8 @@
                     v-for="(cat, index) in categories"
                     :key="index"
                     class="px-[24rpx] py-[12rpx] rounded-full text-sm flex-shrink-0 transition-all"
-                    :class="
-                        activeCategory === cat
-                            ? 'bg-primary text-white'
-                            : 'bg-gray-100 text-gray-600'
-                    "
+                    :style="activeCategory === cat ? $theme.activeTab.value : {}"
+                    :class="activeCategory === cat ? '' : 'bg-gray-100 text-gray-600'"
                     @click="activeCategory = cat"
                 >
                     {{ cat }}
@@ -61,7 +58,7 @@
                     <view
                         class="w-[80rpx] h-[80rpx] bg-black/50 rounded-full flex items-center justify-center"
                     >
-                        <tn-icon name="play-right-fill" size="32" color="#fff"></tn-icon>
+                        <tn-icon name="play-fill" size="32" color="#fff"></tn-icon>
                     </view>
                 </view>
                 <!-- 标题遮罩 -->
@@ -95,7 +92,7 @@
                         <view
                             class="w-[80rpx] h-[80rpx] bg-black/50 rounded-full flex items-center justify-center"
                         >
-                            <tn-icon name="play-right-fill" size="32" color="#fff"></tn-icon>
+                            <tn-icon name="play-fill" size="32" color="#fff"></tn-icon>
                         </view>
                     </view>
                     <view
@@ -131,7 +128,7 @@
                         <view
                             class="w-[80rpx] h-[80rpx] bg-black/50 rounded-full flex items-center justify-center"
                         >
-                            <tn-icon name="play-right-fill" size="32" color="#fff"></tn-icon>
+                            <tn-icon name="play-fill" size="32" color="#fff"></tn-icon>
                         </view>
                     </view>
                     <view
@@ -177,7 +174,7 @@
                         <view
                             class="w-[100rpx] h-[100rpx] bg-black/50 rounded-full flex items-center justify-center"
                         >
-                            <tn-icon name="play-right-fill" size="40" color="#fff"></tn-icon>
+                            <tn-icon name="play-fill" size="40" color="#fff"></tn-icon>
                         </view>
                     </view>
                     <view
@@ -210,7 +207,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { useThemeStore } from '@/stores/theme'
 import { navigateTo } from '@/utils/util'
+import { tintColor } from '@/utils/color'
 
 const props = defineProps({
     content: {
@@ -224,7 +223,23 @@ const props = defineProps({
 })
 
 const { getImageUrl } = useAppStore()
+const themeStore = useThemeStore()
+const primaryColor = computed(() => themeStore.primaryColor || '#7C3AED')
 const activeCategory = ref('全部')
+
+// 内联样式（替代Tailwind主题类，兼容小程序）
+const $theme = {
+    titleBar: computed(() => ({
+        background: primaryColor.value
+    })),
+    activeTab: computed(() => ({
+        background: primaryColor.value,
+        color: '#ffffff'
+    })),
+    moreText: computed(() => ({
+        color: primaryColor.value
+    }))
+}
 
 // 过滤显示的列表
 const showList = computed(() => {

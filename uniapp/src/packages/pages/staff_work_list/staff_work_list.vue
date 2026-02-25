@@ -1,6 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar title="作品管理" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            title="作品管理"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
     </page-meta>
 
     <view class="page-container">
@@ -8,9 +12,9 @@
             <template #top>
                 <!-- 顶部操作栏 -->
                 <view class="top-bar">
-                    <view 
+                    <view
                         class="add-btn"
-                        :style="{ 
+                        :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                             color: $theme.btnColor
                         }"
@@ -38,11 +42,12 @@
                             mode="aspectFill"
                         />
                         <!-- 审核状态标签 -->
-                        <view 
-                            class="audit-badge"
-                            :style="getAuditStyle(item.audit_status)"
-                        >
-                            <tn-icon :name="getAuditIcon(item.audit_status)" size="24" color="#FFFFFF" />
+                        <view class="audit-badge" :style="getAuditStyle(item.audit_status)">
+                            <tn-icon
+                                :name="getAuditIcon(item.audit_status)"
+                                size="24"
+                                color="#FFFFFF"
+                            />
                             <text>{{ auditStatusText(item.audit_status) }}</text>
                         </view>
                     </view>
@@ -59,14 +64,14 @@
                                 <tn-icon name="like" size="24" color="#999999" />
                                 <text>{{ item.like_count || 0 }}</text>
                             </view>
-                            <view 
+                            <view
                                 class="show-status"
                                 :style="{ color: item.is_show ? $theme.primaryColor : '#999999' }"
                             >
-                                <tn-icon 
-                                    :name="item.is_show ? 'eye' : 'eye-off'" 
-                                    size="24" 
-                                    :color="item.is_show ? $theme.primaryColor : '#999999'" 
+                                <tn-icon
+                                    :name="item.is_show ? 'eye' : 'eye-off'"
+                                    size="24"
+                                    :color="item.is_show ? $theme.primaryColor : '#999999'"
                                 />
                                 <text>{{ item.is_show ? '显示中' : '已隐藏' }}</text>
                             </view>
@@ -77,7 +82,7 @@
                     <view class="work-actions">
                         <view
                             class="action-btn edit-btn"
-                            :style="{ 
+                            :style="{
                                 color: $theme.primaryColor,
                                 borderColor: $theme.primaryColor
                             }"
@@ -86,10 +91,7 @@
                             <tn-icon name="edit" size="28" :color="$theme.primaryColor" />
                             <text>编辑</text>
                         </view>
-                        <view
-                            class="action-btn delete-btn"
-                            @click.stop="handleDelete(item)"
-                        >
+                        <view class="action-btn delete-btn" @click.stop="handleDelete(item)">
                             <tn-icon name="delete" size="28" color="#FF2C3C" />
                             <text>删除</text>
                         </view>
@@ -100,9 +102,9 @@
                 <view v-if="workList.length === 0" class="empty-state">
                     <tn-icon name="image" size="120" color="#E5E5E5" />
                     <text class="empty-text">暂无作品</text>
-                    <view 
+                    <view
                         class="empty-btn"
-                        :style="{ 
+                        :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                             color: $theme.btnColor
                         }"
@@ -207,13 +209,13 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #F6F6F6 100%);
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
 }
 
 /* 顶部操作栏 */
 .top-bar {
     padding: 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 
@@ -228,7 +230,7 @@ onShow(async () => {
     font-weight: 600;
     box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: translateY(2rpx);
         box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
@@ -242,17 +244,17 @@ onShow(async () => {
 
 .work-card {
     margin-bottom: 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     overflow: hidden;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: translateY(-2rpx);
         box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
     }
-    
+
     &:last-child {
         margin-bottom: 0;
     }
@@ -268,7 +270,7 @@ onShow(async () => {
 .work-cover {
     width: 100%;
     height: 100%;
-    background: #F5F5F5;
+    background: #f5f5f5;
 }
 
 .audit-badge {
@@ -340,7 +342,7 @@ onShow(async () => {
     font-weight: 500;
     border: 2rpx solid;
     transition: all 0.2s ease;
-    
+
     &:active {
         opacity: 0.8;
     }
@@ -352,8 +354,8 @@ onShow(async () => {
 
 .delete-btn {
     background: transparent;
-    color: #FF2C3C;
-    border-color: #FF2C3C;
+    color: #ff2c3c;
+    border-color: #ff2c3c;
 }
 
 /* 空状态 */
@@ -378,7 +380,7 @@ onShow(async () => {
     font-size: 28rpx;
     font-weight: 600;
     box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
-    
+
     &:active {
         opacity: 0.9;
     }

@@ -1,6 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar title="个人资料" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            title="个人资料"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
     </page-meta>
 
     <view class="page-container">
@@ -22,15 +26,15 @@
                 <tn-icon name="edit" size="32" :color="$theme.primaryColor" />
                 <text class="card-title">基本信息</text>
             </view>
-            
+
             <view class="form-item">
                 <view class="form-label">
                     <text class="label-text">姓名</text>
                     <text class="label-required">*</text>
                 </view>
-                <tn-input 
-                    v-model="form.name" 
-                    placeholder="请输入姓名" 
+                <tn-input
+                    v-model="form.name"
+                    placeholder="请输入姓名"
                     class="form-input-left"
                     :border="false"
                 />
@@ -51,9 +55,9 @@
                 <view class="form-label">
                     <text class="label-text">手机号</text>
                 </view>
-                <tn-input 
-                    v-model="form.mobile" 
-                    placeholder="请输入手机号" 
+                <tn-input
+                    v-model="form.mobile"
+                    placeholder="请输入手机号"
                     type="number"
                     class="form-input-left"
                     :border="false"
@@ -66,10 +70,10 @@
                 </view>
                 <view class="price-input-wrapper-left">
                     <text class="price-symbol" :style="{ color: $theme.ctaColor }">¥</text>
-                    <tn-input 
-                        v-model="form.price" 
-                        type="number" 
-                        placeholder="请输入价格" 
+                    <tn-input
+                        v-model="form.price"
+                        type="number"
+                        placeholder="请输入价格"
                         class="form-input-left"
                         :border="false"
                     />
@@ -81,10 +85,10 @@
                     <text class="label-text">从业年限</text>
                 </view>
                 <view class="year-input-wrapper-left">
-                    <tn-input 
-                        v-model="form.experience_years" 
-                        type="number" 
-                        placeholder="请输入年限" 
+                    <tn-input
+                        v-model="form.experience_years"
+                        type="number"
+                        placeholder="请输入年限"
                         class="form-input-left"
                         :border="false"
                     />
@@ -127,9 +131,9 @@
 
         <!-- 保存按钮 -->
         <view class="save-btn-wrapper">
-            <view 
+            <view
                 class="save-btn"
-                :style="{ 
+                :style="{
                     background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                     color: $theme.btnColor,
                     opacity: saving ? 0.6 : 1
@@ -248,7 +252,7 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #F6F6F6 100%);
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
     padding-bottom: 120rpx;
 }
 
@@ -258,7 +262,7 @@ onShow(async () => {
 .desc-card {
     margin: 24rpx;
     padding: 32rpx 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
@@ -301,8 +305,8 @@ onShow(async () => {
     align-items: center;
     justify-content: space-between;
     padding: 24rpx 0;
-    border-bottom: 1rpx solid #F5F5F5;
-    
+    border-bottom: 1rpx solid #f5f5f5;
+
     &.no-border {
         border-bottom: none;
     }
@@ -322,7 +326,7 @@ onShow(async () => {
 
 .label-required {
     font-size: 30rpx;
-    color: #FF2C3C;
+    color: #ff2c3c;
 }
 
 .form-input-left {
@@ -387,7 +391,7 @@ onShow(async () => {
     padding: 24rpx;
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(20rpx);
-    border-top: 1rpx solid #F5F5F5;
+    border-top: 1rpx solid #f5f5f5;
     z-index: 100;
 }
 
@@ -402,7 +406,7 @@ onShow(async () => {
     font-weight: 600;
     box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: translateY(2rpx);
         box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);

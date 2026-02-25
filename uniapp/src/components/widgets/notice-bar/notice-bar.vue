@@ -154,13 +154,7 @@ const displayList = computed(() => {
 
 // 将公告内容组合成一行文案（标题 + 内容摘要）
 const formatNoticeText = (item: any) => {
-    const title = (
-        item?.title ??
-        item?.notice_title ??
-        item?.name ??
-        item?.scene_name ??
-        ''
-    )
+    const title = (item?.title ?? item?.notice_title ?? item?.name ?? item?.scene_name ?? '')
         .toString()
         .trim()
     const rawContent = (
@@ -177,7 +171,10 @@ const formatNoticeText = (item: any) => {
         .trim()
 
     // 兼容富文本/HTML内容：轻量去标签，避免首页出现大量标签
-    const content = rawContent.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+    const content = rawContent
+        .replace(/<[^>]+>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
 
     const maxLen = Number(props.content?.content_max_length ?? 40)
     const short = content.length > maxLen ? content.slice(0, maxLen) + '…' : content
@@ -199,7 +196,7 @@ const verticalList = computed(() => {
 // 处理横向和静态样式的点击
 const handleClick = (item: any) => {
     if (!item) return
-    
+
     if (item.link) {
         uni.navigateTo({
             url: item.link

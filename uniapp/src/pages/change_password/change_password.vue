@@ -1,14 +1,14 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar 
+        <navigation-bar
             :title="type == 'set' ? '设置登录密码' : '修改登录密码'"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
         <!-- #endif -->
     </page-meta>
-    
+
     <view class="change-password-page">
         <!-- 顶部图标区域 -->
         <view class="header-section">
@@ -79,9 +79,9 @@
 
         <!-- 确认按钮 -->
         <view class="submit-section">
-            <view 
+            <view
                 class="submit-btn"
-                :style="{ 
+                :style="{
                     background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                     color: $theme.btnColor
                 }"
@@ -125,50 +125,50 @@ const validateForm = () => {
         uni.$u.toast('请输入原密码')
         return false
     }
-    
+
     if (!formData.password) {
         uni.$u.toast('请输入新密码')
         return false
     }
-    
+
     // 只做基本长度校验
     if (formData.password.length < 6 || formData.password.length > 20) {
         uni.$u.toast('密码长度应为6-20位')
         return false
     }
-    
+
     if (!formData.password_confirm) {
         uni.$u.toast('请输入确认密码')
         return false
     }
-    
+
     if (formData.password != formData.password_confirm) {
         uni.$u.toast('两次输入的密码不一致')
         return false
     }
-    
+
     return true
 }
 
 // 确认修改
 const handleConfirm = async () => {
     if (!validateForm()) return
-    
+
     try {
         uni.showLoading({
             title: '处理中...',
             mask: true
         })
-        
+
         await userChangePwd(formData)
-        
+
         uni.hideLoading()
         uni.showToast({
             title: '操作成功',
             icon: 'success',
             duration: 1500
         })
-        
+
         setTimeout(() => {
             uni.navigateBack()
         }, 1500)
@@ -186,7 +186,7 @@ onLoad((options) => {
 <style lang="scss" scoped>
 .change-password-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, #F9FAFB 0%, #FFFFFF 100%);
+    background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
     padding: 24rpx;
 }
 
@@ -226,7 +226,7 @@ onLoad((options) => {
 
 /* 表单卡片 */
 .form-card {
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 14rpx;
     padding: 20rpx;
     margin-bottom: 20rpx;
@@ -235,7 +235,7 @@ onLoad((options) => {
 
 .form-item {
     margin-bottom: 20rpx;
-    
+
     &:last-child {
         margin-bottom: 0;
     }
@@ -255,15 +255,15 @@ onLoad((options) => {
 }
 
 .input-wrapper {
-    background: #F9FAFB;
+    background: #f9fafb;
     border-radius: 14rpx;
     padding: 16rpx;
-    border: 2rpx solid #E5E7EB;
+    border: 2rpx solid #e5e7eb;
     transition: all 0.2s ease;
-    
+
     &:focus-within {
-        background: #FFFFFF;
-        border-color: var(--tn-color-primary, #7C3AED);
+        background: #ffffff;
+        border-color: var(--tn-color-primary, #7c3aed);
         box-shadow: 0 0 0 6rpx rgba(124, 58, 237, 0.1);
     }
 }

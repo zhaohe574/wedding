@@ -211,7 +211,11 @@
         </tn-popup>
 
         <!-- 可见范围选择器 -->
-        <tn-action-sheet v-model="showVisiblePicker" :data="visibleOptions" @click="selectVisible" />
+        <tn-action-sheet
+            v-model="showVisiblePicker"
+            :data="visibleOptions"
+            @click="selectVisible"
+        />
     </view>
 </template>
 

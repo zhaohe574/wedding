@@ -1,17 +1,17 @@
 <template>
-  <tn-button
-    :class="buttonClass"
-    :size="computedSize"
-    :shape="'round'"
-    :disabled="disabled"
-    :loading="loading"
-    :bg-color="bgColor"
-    :text-color="textColor"
-    :border-color="borderColor"
-    @click="handleClick"
-  >
-    <slot />
-  </tn-button>
+    <tn-button
+        :class="buttonClass"
+        :size="computedSize"
+        :shape="'round'"
+        :disabled="disabled"
+        :loading="loading"
+        :bg-color="bgColor"
+        :text-color="textColor"
+        :border-color="borderColor"
+        @click="handleClick"
+    >
+        <slot />
+    </tn-button>
 </template>
 
 <script setup lang="ts">
@@ -19,158 +19,158 @@ import { computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 
 interface Props {
-  type?: 'primary' | 'secondary' | 'cta'
-  size?: 'lg' | 'md' | 'sm'
-  disabled?: boolean
-  loading?: boolean
+    type?: 'primary' | 'secondary' | 'cta'
+    size?: 'lg' | 'md' | 'sm'
+    disabled?: boolean
+    loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  type: 'primary',
-  size: 'md',
-  disabled: false,
-  loading: false
+    type: 'primary',
+    size: 'md',
+    disabled: false,
+    loading: false
 })
 
 const emit = defineEmits<{
-  click: [event: Event]
+    click: [event: Event]
 }>()
 
 const themeStore = useThemeStore()
 
 // 计算按钮类名
 const buttonClass = computed(() => {
-  const classes = ['base-button', `base-button--${props.type}`, `base-button--${props.size}`]
-  return classes.join(' ')
+    const classes = ['base-button', `base-button--${props.type}`, `base-button--${props.size}`]
+    return classes.join(' ')
 })
 
 // 计算图鸟UI的尺寸映射
 const computedSize = computed(() => {
-  const sizeMap = {
-    lg: 'lg',
-    md: 'md',
-    sm: 'sm'
-  }
-  return sizeMap[props.size]
+    const sizeMap = {
+        lg: 'lg',
+        md: 'md',
+        sm: 'sm'
+    }
+    return sizeMap[props.size]
 })
 
 // 计算背景色
 const bgColor = computed(() => {
-  if (props.type === 'primary') {
+    if (props.type === 'primary') {
+        return themeStore.primaryColor
+    } else if (props.type === 'cta') {
+        return themeStore.ctaColor
+    } else if (props.type === 'secondary') {
+        return 'transparent'
+    }
     return themeStore.primaryColor
-  } else if (props.type === 'cta') {
-    return themeStore.ctaColor
-  } else if (props.type === 'secondary') {
-    return 'transparent'
-  }
-  return themeStore.primaryColor
 })
 
 // 计算文字颜色
 const textColor = computed(() => {
-  if (props.type === 'secondary') {
-    return themeStore.primaryColor
-  }
-  return themeStore.btnColor
+    if (props.type === 'secondary') {
+        return themeStore.primaryColor
+    }
+    return themeStore.btnColor
 })
 
 // 计算边框颜色
 const borderColor = computed(() => {
-  if (props.type === 'secondary') {
-    return themeStore.primaryColor
-  }
-  return 'transparent'
+    if (props.type === 'secondary') {
+        return themeStore.primaryColor
+    }
+    return 'transparent'
 })
 
 // 处理点击事件
 const handleClick = (event: Event) => {
-  if (!props.disabled && !props.loading) {
-    emit('click', event)
-  }
+    if (!props.disabled && !props.loading) {
+        emit('click', event)
+    }
 }
 </script>
 
 <script lang="ts">
 export default {
-  name: 'BaseButton',
-  options: {
-    virtualHost: true
-  }
+    name: 'BaseButton',
+    options: {
+        virtualHost: true
+    }
 }
 </script>
 
 <style lang="scss" scoped>
 .base-button {
-  transition: all 0.2s ease;
-  border-radius: 32rpx;
-  
-  &:active {
-    transform: translateY(2rpx);
-  }
-  
-  // 主要按钮样式增强
-  &--primary {
-    :deep(.tn-button) {
-      box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
-      font-weight: 600;
-      letter-spacing: 0.5rpx;
-      
-      &:active {
-        box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.22);
-      }
+    transition: all 0.2s ease;
+    border-radius: 32rpx;
+
+    &:active {
+        transform: translateY(2rpx);
     }
-  }
-  
-  // 次要按钮样式增强
-  &--secondary {
-    :deep(.tn-button) {
-      font-weight: 500;
-      border-width: 2rpx;
-      
-      &:active {
-        opacity: 0.8;
-      }
+
+    // 主要按钮样式增强
+    &--primary {
+        :deep(.tn-button) {
+            box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
+            font-weight: 600;
+            letter-spacing: 0.5rpx;
+
+            &:active {
+                box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.22);
+            }
+        }
     }
-  }
-  
-  // CTA按钮样式增强
-  &--cta {
-    :deep(.tn-button) {
-      box-shadow: 0 6rpx 16rpx rgba(249, 115, 22, 0.22);
-      font-weight: 600;
-      letter-spacing: 0.5rpx;
-      
-      &:active {
-        box-shadow: 0 3rpx 10rpx rgba(249, 115, 22, 0.22);
-      }
+
+    // 次要按钮样式增强
+    &--secondary {
+        :deep(.tn-button) {
+            font-weight: 500;
+            border-width: 2rpx;
+
+            &:active {
+                opacity: 0.8;
+            }
+        }
     }
-  }
-  
-  // 尺寸样式
-  &--lg {
-    :deep(.tn-button) {
-      height: 72rpx;
-      padding: 0 32rpx;
-      font-size: 30rpx;
+
+    // CTA按钮样式增强
+    &--cta {
+        :deep(.tn-button) {
+            box-shadow: 0 6rpx 16rpx rgba(249, 115, 22, 0.22);
+            font-weight: 600;
+            letter-spacing: 0.5rpx;
+
+            &:active {
+                box-shadow: 0 3rpx 10rpx rgba(249, 115, 22, 0.22);
+            }
+        }
     }
-  }
-  
-  &--md {
-    :deep(.tn-button) {
-      height: 64rpx;
-      padding: 0 28rpx;
-      font-size: 28rpx;
+
+    // 尺寸样式
+    &--lg {
+        :deep(.tn-button) {
+            height: 72rpx;
+            padding: 0 32rpx;
+            font-size: 30rpx;
+        }
     }
-  }
-  
-  &--sm {
-    :deep(.tn-button) {
-      height: 52rpx;
-      padding: 0 24rpx;
-      font-size: 24rpx;
-      font-weight: 500;
-      letter-spacing: 0.3rpx;
+
+    &--md {
+        :deep(.tn-button) {
+            height: 64rpx;
+            padding: 0 28rpx;
+            font-size: 28rpx;
+        }
     }
-  }
+
+    &--sm {
+        :deep(.tn-button) {
+            height: 52rpx;
+            padding: 0 24rpx;
+            font-size: 24rpx;
+            font-weight: 500;
+            letter-spacing: 0.3rpx;
+        }
+    }
 }
 </style>

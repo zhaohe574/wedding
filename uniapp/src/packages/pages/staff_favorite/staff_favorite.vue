@@ -1,12 +1,12 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar 
+        <navigation-bar
             title="我的收藏"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
     </page-meta>
-    
+
     <view class="staff-favorite">
         <!-- 加载状态 -->
         <view v-if="loading" class="loading-container">
@@ -63,12 +63,20 @@
                                 <text class="staff-name">{{ item.name }}</text>
                                 <!-- 认证标识 -->
                                 <view v-if="item.is_verified" class="verified-badge">
-                                    <tn-icon name="check-circle-fill" size="28" :color="$theme.primaryColor" />
+                                    <tn-icon
+                                        name="check-circle-fill"
+                                        size="28"
+                                        :color="$theme.primaryColor"
+                                    />
                                 </view>
                             </view>
                             <!-- 收藏按钮 -->
                             <view class="favorite-btn" @click.stop="handleCancelFavorite(item)">
-                                <tn-icon name="star-fill" size="44" :color="$theme.secondaryColor" />
+                                <tn-icon
+                                    name="star-fill"
+                                    size="44"
+                                    :color="$theme.secondaryColor"
+                                />
                             </view>
                         </view>
 
@@ -80,12 +88,16 @@
                         <!-- 评分和服务次数 -->
                         <view class="rating-row">
                             <view class="rating-stars">
-                                <tn-icon 
-                                    v-for="star in 5" 
+                                <tn-icon
+                                    v-for="star in 5"
                                     :key="star"
                                     :name="star <= Math.floor(item.rating) ? 'star-fill' : 'star'"
                                     size="24"
-                                    :color="star <= Math.floor(item.rating) ? $theme.accentColor : '#E5E7EB'"
+                                    :color="
+                                        star <= Math.floor(item.rating)
+                                            ? $theme.accentColor
+                                            : '#E5E7EB'
+                                    "
                                 />
                             </view>
                             <text class="rating-score">{{ item.rating }}</text>
@@ -100,9 +112,11 @@
                                 <text class="price-value">{{ item.price }}</text>
                                 <text class="price-unit">/次</text>
                             </view>
-                            <view 
-                                class="action-btn" 
-                                :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)` }"
+                            <view
+                                class="action-btn"
+                                :style="{
+                                    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
+                                }"
                                 @click.stop="handleBooking(item)"
                             >
                                 <text class="action-text">立即预约</text>
@@ -134,9 +148,9 @@ const getFavorites = async () => {
         favoriteList.value = data || []
     } catch (e) {
         console.error(e)
-        uni.showToast({ 
-            title: '加载失败，请重试', 
-            icon: 'none' 
+        uni.showToast({
+            title: '加载失败，请重试',
+            icon: 'none'
         })
     } finally {
         loading.value = false
@@ -153,14 +167,14 @@ const handleCancelFavorite = async (item: any) => {
                 try {
                     await toggleStaffFavorite({ id: item.id })
                     favoriteList.value = favoriteList.value.filter((i) => i.id !== item.id)
-                    uni.showToast({ 
-                        title: '已取消收藏', 
-                        icon: 'success' 
+                    uni.showToast({
+                        title: '已取消收藏',
+                        icon: 'success'
                     })
                 } catch (e: any) {
-                    uni.showToast({ 
-                        title: e.msg || '操作失败', 
-                        icon: 'none' 
+                    uni.showToast({
+                        title: e.msg || '操作失败',
+                        icon: 'none'
                     })
                 }
             }
@@ -201,7 +215,7 @@ onShow(() => {
 <style lang="scss" scoped>
 .staff-favorite {
     min-height: 100vh;
-    background: linear-gradient(180deg, var(--color-primary-light-9) 0%, #F5F5F5 100%);
+    background: linear-gradient(180deg, var(--color-primary-light-9) 0%, #f5f5f5 100%);
 }
 
 /* 加载状态 */
@@ -219,36 +233,40 @@ onShow(() => {
     align-items: center;
     justify-content: center;
     padding: 200rpx 48rpx;
-    
+
     .empty-icon {
         margin-bottom: 32rpx;
     }
-    
+
     .empty-text {
         font-size: 32rpx;
         font-weight: 500;
         color: var(--color-main);
         margin-bottom: 16rpx;
     }
-    
+
     .empty-hint {
         font-size: 26rpx;
         color: var(--color-muted);
         margin-bottom: 48rpx;
     }
-    
+
     .empty-btn {
-        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark-2) 100%);
+        background: linear-gradient(
+            135deg,
+            var(--color-primary) 0%,
+            var(--color-primary-dark-2) 100%
+        );
         padding: 24rpx 80rpx;
         border-radius: 48rpx;
         box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
         transition: all 0.2s ease;
-        
+
         &:active {
             transform: translateY(2rpx);
             box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
         }
-        
+
         .empty-btn-text {
             font-size: 28rpx;
             font-weight: 500;
@@ -266,7 +284,7 @@ onShow(() => {
 .stats-bar {
     padding: 16rpx 24rpx;
     margin-bottom: 16rpx;
-    
+
     .stats-text {
         font-size: 26rpx;
         color: var(--color-content);
@@ -275,13 +293,13 @@ onShow(() => {
 
 /* 人员卡片 */
 .staff-card {
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 16rpx;
     margin-bottom: 24rpx;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
     overflow: hidden;
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: translateY(-2rpx);
         box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
@@ -297,14 +315,14 @@ onShow(() => {
 .avatar-wrapper {
     position: relative;
     margin-right: 20rpx;
-    
+
     .avatar {
         width: 160rpx;
         height: 160rpx;
         border-radius: 16rpx;
         background: var(--color-primary-light-9);
     }
-    
+
     .vip-badge {
         position: absolute;
         top: 8rpx;
@@ -356,7 +374,7 @@ onShow(() => {
 .favorite-btn {
     padding: 8rpx;
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: scale(0.9);
     }
@@ -371,7 +389,7 @@ onShow(() => {
     border-radius: 12rpx;
     margin-bottom: 12rpx;
     align-self: flex-start;
-    
+
     .category-text {
         font-size: 24rpx;
         font-weight: 500;
@@ -446,15 +464,15 @@ onShow(() => {
     padding: 16rpx 32rpx;
     border-radius: 48rpx;
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: scale(0.95);
     }
-    
+
     .action-text {
         font-size: 26rpx;
         font-weight: 500;
-        color: #FFFFFF;
+        color: #ffffff;
     }
 }
 </style>

@@ -1,10 +1,10 @@
 <template>
     <navigator :url="`/pages/news_detail/news_detail?id=${newsId}`" class="news-card-wrapper">
         <view class="news-card">
-            <image 
-                v-if="item.image" 
-                class="news-cover" 
-                :src="item.image" 
+            <image
+                v-if="item.image"
+                class="news-cover"
+                :src="item.image"
                 mode="aspectFill"
                 lazy-load
             />

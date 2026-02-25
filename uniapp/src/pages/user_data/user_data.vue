@@ -1,14 +1,14 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar 
+        <navigation-bar
             title="个人资料"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
         <!-- #endif -->
     </page-meta>
-    
+
     <view class="user-data-page">
         <!-- 头像区域 -->
         <view class="avatar-section">
@@ -60,14 +60,14 @@
                         {{ userInfo?.mobile || '未绑定手机号' }}
                     </text>
                     <!-- #ifdef MP-WEIXIN -->
-                    <view 
+                    <view
                         class="bind-btn"
-                        :style="{ 
+                        :style="{
                             backgroundColor: $theme.primaryColor + '15',
-                            color: $theme.primaryColor 
+                            color: $theme.primaryColor
                         }"
                     >
-                        <button 
+                        <button
                             class="bind-btn-inner"
                             open-type="getPhoneNumber"
                             @getphonenumber="getPhoneNumber"
@@ -77,11 +77,11 @@
                     </view>
                     <!-- #endif -->
                     <!-- #ifndef MP-WEIXIN -->
-                    <view 
+                    <view
                         class="bind-btn"
-                        :style="{ 
+                        :style="{
                             backgroundColor: $theme.primaryColor + '15',
-                            color: $theme.primaryColor 
+                            color: $theme.primaryColor
                         }"
                         @click="showMobilePop = true"
                     >
@@ -124,7 +124,7 @@
                     <view class="popup-actions">
                         <button
                             class="popup-btn popup-btn-primary"
-                            :style="{ 
+                            :style="{
                                 background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                                 color: $theme.btnColor
                             }"
@@ -139,10 +139,10 @@
         </tn-popup>
 
         <!-- 账号修改弹窗 -->
-        <tn-popup 
-            v-model="showUserName" 
-            :close-btn="true" 
-            mode="center" 
+        <tn-popup
+            v-model="showUserName"
+            :close-btn="true"
+            mode="center"
             border-radius="24"
             :mask-close-able="false"
         >
@@ -159,7 +159,7 @@
                 <view class="popup-actions">
                     <button
                         class="popup-btn popup-btn-primary"
-                        :style="{ 
+                        :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                             color: $theme.btnColor
                         }"
@@ -173,10 +173,10 @@
         </tn-popup>
 
         <!-- 手机号修改弹窗 -->
-        <tn-popup 
-            v-model="showMobilePop" 
-            :close-btn="true" 
-            mode="center" 
+        <tn-popup
+            v-model="showMobilePop"
+            :close-btn="true"
+            mode="center"
             border-radius="24"
             :mask-close-able="false"
         >
@@ -201,7 +201,7 @@
                         placeholder="请输入验证码"
                         placeholder-class="input-placeholder"
                     />
-                    <view 
+                    <view
                         class="code-btn"
                         :class="{ 'code-btn-disabled': !canGetCode }"
                         :style="canGetCode ? { color: $theme.primaryColor } : {}"
@@ -213,7 +213,7 @@
                 <view class="popup-actions">
                     <button
                         class="popup-btn popup-btn-primary"
-                        :style="{ 
+                        :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                             color: $theme.btnColor
                         }"
@@ -285,7 +285,7 @@ const startCodeCountdown = () => {
     let seconds = 60
     canGetCode.value = false
     codeTips.value = `${seconds}秒`
-    
+
     codeTimer = setInterval(() => {
         seconds--
         if (seconds > 0) {
@@ -313,7 +313,7 @@ const getUser = async (): Promise<void> => {
 const sendSms = async () => {
     if (!newMobile.value) return uni.$u.toast('请输入新的手机号码')
     if (!canGetCode.value) return
-    
+
     await smsSend({
         scene: userInfo.value.mobile ? SMSEnum.CHANGE_MOBILE : SMSEnum.BIND_MOBILE,
         mobile: newMobile.value
@@ -432,24 +432,24 @@ onUnload(() => {
 <style lang="scss" scoped>
 .user-data-page {
     min-height: 100vh;
-    background-color: #F5F5F5;
+    background-color: #f5f5f5;
     padding-bottom: 48rpx;
 }
 
 // 头像区域
 .avatar-section {
     padding: 48rpx 24rpx 32rpx;
-    background: #FFFFFF;
-    
+    background: #ffffff;
+
     .avatar-card {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 16rpx;
-        
+
         .avatar-tip {
             font-size: 24rpx;
-            color: #94A3B8;
+            color: #94a3b8;
         }
     }
 }
@@ -457,7 +457,7 @@ onUnload(() => {
 // 信息列表
 .info-list {
     margin-top: 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 16rpx;
     margin-left: 24rpx;
     margin-right: 24rpx;
@@ -470,32 +470,32 @@ onUnload(() => {
     align-items: center;
     justify-content: space-between;
     padding: 32rpx;
-    border-bottom: 1rpx solid #F1F5F9;
+    border-bottom: 1rpx solid #f1f5f9;
     transition: all 0.2s ease;
-    
+
     &:last-child {
         border-bottom: none;
     }
-    
+
     &:active {
-        background-color: #F8FAFC;
+        background-color: #f8fafc;
     }
-    
+
     .info-label {
         font-size: 28rpx;
-        color: #1E293B;
+        color: #1e293b;
         font-weight: 500;
         width: 150rpx;
         flex-shrink: 0;
     }
-    
+
     .info-content {
         flex: 1;
         display: flex;
         align-items: center;
         justify-content: flex-end;
         gap: 16rpx;
-        
+
         .info-value {
             font-size: 28rpx;
             color: #334155;
@@ -503,9 +503,9 @@ onUnload(() => {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            
+
             &.text-muted {
-                color: #94A3B8;
+                color: #94a3b8;
             }
         }
     }
@@ -519,12 +519,12 @@ onUnload(() => {
         font-weight: 500;
         transition: all 0.2s ease;
         position: relative;
-        
+
         &:active {
             transform: scale(0.95);
             opacity: 0.8;
         }
-        
+
         .bind-btn-inner {
             background: transparent;
             border: none;
@@ -534,7 +534,7 @@ onUnload(() => {
             font-weight: 500;
             line-height: 1;
             color: inherit;
-            
+
             &::after {
                 border: none;
             }
@@ -546,39 +546,39 @@ onUnload(() => {
 .edit-popup {
     width: 85vw;
     padding: 48rpx 40rpx 40rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
-    
+
     .popup-title {
         font-size: 36rpx;
         font-weight: 600;
-        color: #1E293B;
+        color: #1e293b;
         text-align: center;
         margin-bottom: 48rpx;
     }
-    
+
     .popup-input-wrapper {
         padding-bottom: 16rpx;
-        border-bottom: 2rpx solid #E2E8F0;
+        border-bottom: 2rpx solid #e2e8f0;
         margin-bottom: 24rpx;
-        
+
         &.code-input-wrapper {
             display: flex;
             align-items: center;
             gap: 24rpx;
         }
-        
+
         .popup-input {
             width: 100%;
             height: 72rpx;
             font-size: 28rpx;
-            color: #1E293B;
-            
+            color: #1e293b;
+
             .input-placeholder {
-                color: #CBD5E1;
+                color: #cbd5e1;
             }
         }
-        
+
         .code-btn {
             padding: 12rpx 24rpx;
             font-size: 26rpx;
@@ -586,21 +586,21 @@ onUnload(() => {
             white-space: nowrap;
             border-radius: 8rpx;
             transition: all 0.2s ease;
-            
+
             &:active:not(.code-btn-disabled) {
                 transform: scale(0.95);
                 opacity: 0.8;
             }
-            
+
             &.code-btn-disabled {
-                color: #94A3B8;
+                color: #94a3b8;
             }
         }
     }
-    
+
     .popup-actions {
         margin-top: 48rpx;
-        
+
         .popup-btn {
             width: 100%;
             height: 72rpx;
@@ -609,11 +609,11 @@ onUnload(() => {
             font-weight: 600;
             border: none;
             transition: all 0.2s ease;
-            
+
             &::after {
                 border: none;
             }
-            
+
             &:active {
                 transform: translateY(2rpx);
                 opacity: 0.9;

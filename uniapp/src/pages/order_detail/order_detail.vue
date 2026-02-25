@@ -14,9 +14,7 @@
             </view>
             <view class="status-text">
                 <text class="status-title">{{ order.order_status_desc }}</text>
-                <text class="status-desc" v-if="order.order_status === 0">
-                    等待工作人员确认
-                </text>
+                <text class="status-desc" v-if="order.order_status === 0"> 等待工作人员确认 </text>
                 <text class="status-desc" v-else-if="order.order_status === 1">
                     请在30分钟内完成支付
                 </text>
@@ -41,41 +39,41 @@
         </view>
 
         <!-- 服务信息 -->
-                <view class="service-card">
+        <view class="service-card">
             <view class="card-header">
                 <tn-icon name="list" size="32" :color="$theme.primaryColor" />
                 <text class="card-title">服务项目</text>
             </view>
             <view class="service-groups">
-                <view
-                    v-for="group in groupedItems"
-                    :key="group.key"
-                    class="service-group"
-                >
+                <view v-for="group in groupedItems" :key="group.key" class="service-group">
                     <view class="group-header">
                         <view class="staff-section">
                             <image
-                                :src="group.staff?.avatar || group.staff_avatar || '/static/images/user/default_avatar.png'"
+                                :src="
+                                    group.staff?.avatar ||
+                                    group.staff_avatar ||
+                                    '/static/images/user/default_avatar.png'
+                                "
                                 class="staff-avatar"
                                 mode="aspectFill"
                             />
                             <view class="staff-info">
-                                <text class="staff-name">{{ group.staff?.name || group.staff_name || '未知人员' }}</text>
+                                <text class="staff-name">{{
+                                    group.staff?.name || group.staff_name || '未知人员'
+                                }}</text>
                                 <text class="staff-subtitle">{{ group.service_date }}</text>
                             </view>
                         </view>
                         <view class="group-total">
                             <text class="group-total-label">小计</text>
-                            <text class="group-total-value" :style="{ color: $theme.ctaColor }">￥{{ group.total_price }}</text>
+                            <text class="group-total-value" :style="{ color: $theme.ctaColor }"
+                                >￥{{ group.total_price }}</text
+                            >
                         </view>
                     </view>
 
                     <view class="group-packages">
-                        <view
-                            v-for="pkg in group.packages"
-                            :key="pkg.key"
-                            class="package-group"
-                        >
+                        <view v-for="pkg in group.packages" :key="pkg.key" class="package-group">
                             <view class="package-header">
                                 <view class="package-title">
                                     <tn-icon name="gift" size="24" />
@@ -84,19 +82,23 @@
                                 <text class="package-total">￥{{ pkg.total_price }}</text>
                             </view>
                             <view class="package-items">
-                                <view
-                                    v-for="item in pkg.items"
-                                    :key="item.id"
-                                    class="package-item"
-                                >
+                                <view v-for="item in pkg.items" :key="item.id" class="package-item">
                                     <view class="slot-main">
                                         <view class="slot-info">
                                             <view class="slot-row">
-                                                <text class="slot-label">{{ getOrderTimeSlotLabel(item) }}</text>
-                                                <text class="slot-price" :style="{ color: $theme.ctaColor }">￥{{ item.price }}</text>
+                                                <text class="slot-label">{{
+                                                    getOrderTimeSlotLabel(item)
+                                                }}</text>
+                                                <text
+                                                    class="slot-price"
+                                                    :style="{ color: $theme.ctaColor }"
+                                                    >￥{{ item.price }}</text
+                                                >
                                             </view>
                                             <view class="slot-meta">
-                                                <text class="slot-quantity">x{{ item.quantity }}</text>
+                                                <text class="slot-quantity"
+                                                    >x{{ item.quantity }}</text
+                                                >
                                             </view>
                                         </view>
                                     </view>
@@ -108,7 +110,7 @@
             </view>
         </view>
 
-<view class="info-card">
+        <view class="info-card">
             <view class="card-header">
                 <tn-icon name="document" size="32" :color="$theme.primaryColor" />
                 <text class="card-title">订单信息</text>
@@ -178,11 +180,13 @@
                     <text class="amount-label">定金</text>
                     <view class="amount-value-row">
                         <text class="amount-value">¥{{ order.deposit_amount }}</text>
-                        <text 
-                            class="amount-status" 
-                            :style="{ 
+                        <text
+                            class="amount-status"
+                            :style="{
                                 color: order.deposit_paid ? '#19BE6B' : '#FF9900',
-                                backgroundColor: order.deposit_paid ? 'rgba(25, 190, 107, 0.1)' : 'rgba(255, 153, 0, 0.1)'
+                                backgroundColor: order.deposit_paid
+                                    ? 'rgba(25, 190, 107, 0.1)'
+                                    : 'rgba(255, 153, 0, 0.1)'
                             }"
                         >
                             {{ order.deposit_paid ? '已付' : '待付' }}
@@ -193,11 +197,13 @@
                     <text class="amount-label">尾款</text>
                     <view class="amount-value-row">
                         <text class="amount-value">¥{{ order.balance_amount }}</text>
-                        <text 
+                        <text
                             class="amount-status"
-                            :style="{ 
+                            :style="{
                                 color: order.balance_paid ? '#19BE6B' : '#FF9900',
-                                backgroundColor: order.balance_paid ? 'rgba(25, 190, 107, 0.1)' : 'rgba(255, 153, 0, 0.1)'
+                                backgroundColor: order.balance_paid
+                                    ? 'rgba(25, 190, 107, 0.1)'
+                                    : 'rgba(255, 153, 0, 0.1)'
                             }"
                         >
                             {{ order.balance_paid ? '已付' : '待付' }}
@@ -216,7 +222,9 @@
             <view class="voucher-body">
                 <view class="voucher-row">
                     <text class="voucher-label">凭证状态</text>
-                    <text class="voucher-status">{{ order.pay_voucher_status_desc || '未上传' }}</text>
+                    <text class="voucher-status">{{
+                        order.pay_voucher_status_desc || '未上传'
+                    }}</text>
                 </view>
                 <view class="voucher-row" v-if="order.pay_voucher_audit_remark">
                     <text class="voucher-label">审核备注</text>
@@ -240,9 +248,9 @@
             <view class="refund-list">
                 <view class="refund-row">
                     <text class="refund-label">退款状态</text>
-                    <text 
-                        class="refund-status" 
-                        :style="{ 
+                    <text
+                        class="refund-status"
+                        :style="{
                             color: getRefundStatusStyle(order.refund.refund_status).color,
                             backgroundColor: getRefundStatusStyle(order.refund.refund_status).bg
                         }"
@@ -264,10 +272,10 @@
         <!-- 底部按钮 -->
         <view class="action-bar">
             <view class="action-buttons">
-                <view 
-                    v-if="[0, 1].includes(order.order_status)" 
-                    class="btn-secondary" 
-                    :style="{ 
+                <view
+                    v-if="[0, 1].includes(order.order_status)"
+                    class="btn-secondary"
+                    :style="{
                         borderColor: $theme.primaryColor,
                         color: $theme.primaryColor
                     }"
@@ -275,10 +283,10 @@
                 >
                     <text>取消订单</text>
                 </view>
-                <view 
-                    v-if="canPayOnline" 
+                <view
+                    v-if="canPayOnline"
                     class="btn-primary"
-                    :style="{ 
+                    :style="{
                         background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)`,
                         color: $theme.btnColor
                     }"
@@ -287,10 +295,10 @@
                     <tn-icon name="wallet-fill" size="28" :color="$theme.btnColor" />
                     <text>立即支付 ¥{{ needPayAmount }}</text>
                 </view>
-                <view 
-                    v-if="canUploadVoucher" 
+                <view
+                    v-if="canUploadVoucher"
                     class="btn-secondary"
-                    :style="{ 
+                    :style="{
                         borderColor: $theme.primaryColor,
                         color: $theme.primaryColor
                     }"
@@ -298,10 +306,10 @@
                 >
                     <text>上传凭证</text>
                 </view>
-                <view 
-                    v-if="order.order_status === 3" 
+                <view
+                    v-if="order.order_status === 3"
                     class="btn-primary"
-                    :style="{ 
+                    :style="{
                         background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                         color: $theme.btnColor
                     }"
@@ -313,7 +321,7 @@
                 <view
                     v-if="[2, 3].includes(order.order_status) && !order.refund"
                     class="btn-secondary"
-                    :style="{ 
+                    :style="{
                         borderColor: '#FF2C3C',
                         color: '#FF2C3C'
                     }"
@@ -324,7 +332,7 @@
                 <view
                     v-if="[4, 5, 6, 8].includes(order.order_status)"
                     class="btn-secondary"
-                    :style="{ 
+                    :style="{
                         borderColor: '#999999',
                         color: '#999999'
                     }"
@@ -340,10 +348,10 @@
             <view class="refund-popup">
                 <view class="popup-header">
                     <text class="popup-title">申请退款</text>
-                    <tn-icon 
-                        name="close" 
-                        size="40" 
-                        color="#999999" 
+                    <tn-icon
+                        name="close"
+                        size="40"
+                        color="#999999"
                         @click="showRefundPopup = false"
                     />
                 </view>
@@ -370,9 +378,9 @@
                     </view>
                 </view>
                 <view class="popup-actions">
-                    <view 
+                    <view
                         class="popup-btn cancel"
-                        :style="{ 
+                        :style="{
                             borderColor: $theme.primaryColor,
                             color: $theme.primaryColor
                         }"
@@ -380,9 +388,9 @@
                     >
                         <text>取消</text>
                     </view>
-                    <view 
+                    <view
                         class="popup-btn confirm"
-                        :style="{ 
+                        :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                             color: $theme.btnColor
                         }"
@@ -406,13 +414,13 @@
                         @click="showVoucherPopup = false"
                     />
                 </view>
-                
+
                 <view class="popup-content">
                     <view class="form-item">
                         <text class="form-label">凭证图片</text>
                         <text class="form-tip">请上传转账截图或付款凭证</text>
                     </view>
-                    
+
                     <view class="voucher-upload-area">
                         <view class="voucher-preview" v-if="voucherForm.image">
                             <image :src="voucherForm.image" mode="aspectFill" />
@@ -427,7 +435,7 @@
                         </view>
                     </view>
                 </view>
-                
+
                 <view class="popup-actions">
                     <view
                         class="popup-btn cancel"
@@ -571,7 +579,7 @@ const getOrderTimeSlotLabel = (item: any) => {
     if (item?.time_slot_desc) {
         return item.time_slot_desc
     }
-    
+
     // 使用 time_slot 数字映射
     const map: Record<number, string> = {
         0: '全天',
@@ -579,17 +587,17 @@ const getOrderTimeSlotLabel = (item: any) => {
         2: '午档',
         3: '晚档'
     }
-    
+
     const slot = Number(item?.time_slot)
     if (Number.isFinite(slot) && slot >= 0) {
         return map[slot] || `场次${slot}`
     }
-    
+
     // 如果没有 time_slot，尝试使用 service_time
     if (item?.service_time) {
         return item.service_time
     }
-    
+
     // 最后返回默认值
     return '未知场次'
 }
@@ -605,7 +613,7 @@ const getStatusStyle = (status: number) => {
         5: { background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }, // 已评价
         6: { background: 'linear-gradient(135deg, #9CA3AF 0%, #6B7280 100%)' }, // 已取消
         7: { background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' }, // 已暂停
-        8: { background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' }  // 已退款
+        8: { background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' } // 已退款
     }
     return styles[status] || styles[6]
 }
@@ -629,11 +637,11 @@ const getStatusIcon = (status: number) => {
 // 获取退款状态样式
 const getRefundStatusStyle = (status: number) => {
     const styles: Record<number, { color: string; bg: string }> = {
-        0: { color: '#FF9900', bg: 'rgba(255, 153, 0, 0.1)' },   // 待审核
-        1: { color: '#3574FF', bg: 'rgba(53, 116, 255, 0.1)' },  // 审核中
-        2: { color: '#7C4DFF', bg: 'rgba(124, 77, 255, 0.1)' },  // 退款中
-        3: { color: '#19BE6B', bg: 'rgba(25, 190, 107, 0.1)' },  // 已退款
-        4: { color: '#FF2C3C', bg: 'rgba(255, 44, 60, 0.1)' }    // 已拒绝
+        0: { color: '#FF9900', bg: 'rgba(255, 153, 0, 0.1)' }, // 待审核
+        1: { color: '#3574FF', bg: 'rgba(53, 116, 255, 0.1)' }, // 审核中
+        2: { color: '#7C4DFF', bg: 'rgba(124, 77, 255, 0.1)' }, // 退款中
+        3: { color: '#19BE6B', bg: 'rgba(25, 190, 107, 0.1)' }, // 已退款
+        4: { color: '#FF2C3C', bg: 'rgba(255, 44, 60, 0.1)' } // 已拒绝
     }
     return styles[status] || { color: '#999999', bg: 'rgba(153, 153, 153, 0.1)' }
 }
@@ -834,7 +842,7 @@ onLoad((options: any) => {
 <style lang="scss" scoped>
 .order-detail {
     min-height: 100vh;
-    background-color: #F6F6F6;
+    background-color: #f6f6f6;
     padding-bottom: calc(env(safe-area-inset-bottom) + 120rpx);
 }
 
@@ -844,25 +852,25 @@ onLoad((options: any) => {
     display: flex;
     align-items: center;
     gap: 24rpx;
-    
+
     .status-icon {
         flex-shrink: 0;
     }
-    
+
     .status-text {
         flex: 1;
         display: flex;
         flex-direction: column;
         gap: 8rpx;
     }
-    
+
     .status-title {
         font-size: 40rpx;
         font-weight: 700;
-        color: #FFFFFF;
+        color: #ffffff;
         line-height: 1.4;
     }
-    
+
     .status-desc {
         font-size: 26rpx;
         color: rgba(255, 255, 255, 0.85);
@@ -872,49 +880,49 @@ onLoad((options: any) => {
 
 // 联系信息卡片
 .contact-card {
-    background: #FFFFFF;
+    background: #ffffff;
     margin: -40rpx 20rpx 20rpx;
     padding: 20rpx;
     border-radius: 14rpx;
     box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
     position: relative;
     z-index: 10;
-    
+
     .contact-header {
         display: flex;
         align-items: center;
         gap: 12rpx;
         margin-bottom: 16rpx;
     }
-    
+
     .contact-label {
         font-size: 28rpx;
         font-weight: 600;
         color: #333333;
     }
-    
+
     .contact-info {
         padding-left: 44rpx;
     }
-    
+
     .contact-row {
         display: flex;
         align-items: center;
         gap: 24rpx;
         margin-bottom: 8rpx;
     }
-    
+
     .contact-name {
         font-size: 32rpx;
         font-weight: 600;
         color: #333333;
     }
-    
+
     .contact-phone {
         font-size: 28rpx;
         color: #666666;
     }
-    
+
     .contact-address {
         font-size: 26rpx;
         color: #999999;
@@ -928,7 +936,7 @@ onLoad((options: any) => {
 .amount-card,
 .refund-card,
 .voucher-card {
-    background: #FFFFFF;
+    background: #ffffff;
     margin: 0 20rpx 20rpx;
     border-radius: 14rpx;
     box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
@@ -941,7 +949,7 @@ onLoad((options: any) => {
     align-items: center;
     gap: 12rpx;
     padding: 20rpx;
-    border-bottom: 1rpx solid #F5F5F5;
+    border-bottom: 1rpx solid #f5f5f5;
 }
 
 .card-title {
@@ -959,10 +967,10 @@ onLoad((options: any) => {
 }
 
 .service-group {
-    background: #F9FAFB;
+    background: #f9fafb;
     border-radius: 14rpx;
     padding: 16rpx;
-    border: 1rpx solid #F0F0F0;
+    border: 1rpx solid #f0f0f0;
 }
 
 .group-header {
@@ -1023,10 +1031,10 @@ onLoad((options: any) => {
 }
 
 .package-group {
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 12rpx;
     padding: 16rpx;
-    border: 1rpx solid #EEEEEE;
+    border: 1rpx solid #eeeeee;
 }
 
 .package-header {
@@ -1059,7 +1067,7 @@ onLoad((options: any) => {
 
 .package-item {
     padding: 12rpx 0;
-    border-top: 1rpx solid #F5F5F5;
+    border-top: 1rpx solid #f5f5f5;
 
     &:first-child {
         border-top: none;
@@ -1130,7 +1138,7 @@ onLoad((options: any) => {
     color: #333333;
     text-align: right;
     flex: 1;
-    
+
     &.remark {
         line-height: 1.6;
     }
@@ -1152,7 +1160,7 @@ onLoad((options: any) => {
     justify-content: space-between;
     align-items: center;
     padding: 16rpx 0;
-    
+
     &.total {
         padding-top: 24rpx;
     }
@@ -1167,11 +1175,11 @@ onLoad((options: any) => {
     font-size: 28rpx;
     color: #333333;
     font-weight: 500;
-    
+
     &.discount {
-        color: #FF2C3C;
+        color: #ff2c3c;
     }
-    
+
     &.primary {
         font-size: 44rpx;
         font-weight: 700;
@@ -1193,7 +1201,7 @@ onLoad((options: any) => {
 
 .amount-divider {
     height: 1rpx;
-    background: #F5F5F5;
+    background: #f5f5f5;
     margin: 12rpx 0;
 }
 
@@ -1289,7 +1297,7 @@ onLoad((options: any) => {
     text-align: center;
     font-size: 26rpx;
     color: #999999;
-    background: #F9FAFB;
+    background: #f9fafb;
     border-radius: 12rpx;
 }
 
@@ -1326,7 +1334,7 @@ onLoad((options: any) => {
     font-size: 26rpx;
     font-weight: 600;
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: translateY(2rpx);
         opacity: 0.9;
@@ -1366,7 +1374,7 @@ onLoad((options: any) => {
 
 .form-item {
     margin-bottom: 32rpx;
-    
+
     &:last-child {
         margin-bottom: 0;
     }
@@ -1394,17 +1402,17 @@ onLoad((options: any) => {
     font-size: 28rpx;
     font-weight: 600;
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: translateY(2rpx);
         opacity: 0.9;
     }
-    
+
     &.cancel {
         background: transparent;
         border: 2rpx solid;
     }
-    
+
     &.confirm {
         box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.12);
     }
@@ -1447,7 +1455,7 @@ onLoad((options: any) => {
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: scale(0.9);
     }
@@ -1457,18 +1465,18 @@ onLoad((options: any) => {
     width: 480rpx;
     height: 480rpx;
     border-radius: 24rpx;
-    border: 3rpx dashed #DDDDDD;
-    background: #F9FAFB;
+    border: 3rpx dashed #dddddd;
+    background: #f9fafb;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 16rpx;
     transition: all 0.2s ease;
-    
+
     &:active {
-        background: #F3F4F6;
-        border-color: #CCCCCC;
+        background: #f3f4f6;
+        border-color: #cccccc;
     }
 }
 

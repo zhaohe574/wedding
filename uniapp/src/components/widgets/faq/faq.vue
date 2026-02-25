@@ -2,21 +2,25 @@
     <view v-if="content.enabled && showList.length" class="faq-widget">
         <!-- 标题区域 -->
         <view v-if="content.title" class="faq-header">
-            <view class="header-decoration"></view>
+            <view class="header-decoration" :style="$theme.titleBar.value"></view>
             <text class="header-title">{{ content.title }}</text>
         </view>
 
         <!-- 搜索框 -->
         <view v-if="content.show_search" class="search-container">
-            <view class="search-box">
-                <view class="search-icon">🔍</view>
+            <view class="search-box" :style="$theme.searchBorder.value">
+                <view class="search-icon">
+                    <tn-icon name="search" size="28" :color="$theme.iconColor.value"></tn-icon>
+                </view>
                 <input
                     v-model="searchKeyword"
                     class="search-input"
                     placeholder="搜索您的问题..."
                     @input="handleSearch"
                 />
-                <view v-if="searchKeyword" class="clear-icon" @click="clearSearch">✕</view>
+                <view v-if="searchKeyword" class="clear-icon" @click="clearSearch">
+                    <tn-icon name="close" size="22" color="#64748b"></tn-icon>
+                </view>
             </view>
         </view>
 
@@ -27,14 +31,15 @@
                 :key="index"
                 class="accordion-item"
                 :class="{ 'is-active': activeIndex === index }"
+                :style="activeIndex === index ? $theme.activeBorder.value : $theme.normalBorder.value"
             >
                 <view class="accordion-header" @click="toggleAccordion(index)">
                     <view class="question-wrapper">
-                        <view class="question-icon">Q</view>
+                        <view class="question-icon" :style="$theme.qBadge.value">Q</view>
                         <text class="question-text">{{ item.question }}</text>
                     </view>
-                    <view class="expand-icon" :class="{ 'is-expanded': activeIndex === index }">
-                        <text class="icon-text">›</text>
+                    <view class="expand-icon" :style="$theme.expandBg.value" :class="{ 'is-expanded': activeIndex === index }">
+                        <text class="icon-text" :style="$theme.expandIcon.value">›</text>
                     </view>
                 </view>
                 <view class="accordion-content" :class="{ 'is-expanded': activeIndex === index }">
@@ -44,8 +49,8 @@
                             <rich-text :nodes="item.answer"></rich-text>
                         </view>
                     </view>
-                    <view v-if="item.category" class="category-tag">
-                        <text class="tag-text">{{ item.category }}</text>
+                    <view v-if="item.category" class="category-tag" :style="$theme.tagBg.value">
+                        <text class="tag-text" :style="$theme.tagText.value">{{ item.category }}</text>
                     </view>
                 </view>
             </view>
@@ -57,18 +62,19 @@
                 v-for="(item, index) in filteredList"
                 :key="index"
                 class="faq-card"
+                :style="$theme.normalBorder.value"
             >
                 <!-- 问题部分 -->
                 <view class="question-section">
-                    <view class="q-badge">Q</view>
+                    <view class="q-badge" :style="$theme.qBadge.value">Q</view>
                     <view class="q-content">
                         <text class="q-text">{{ item.question }}</text>
-                        <view v-if="item.category" class="q-category">
-                            <text class="category-text">{{ item.category }}</text>
+                        <view v-if="item.category" class="q-category" :style="$theme.tagBg.value">
+                            <text class="category-text" :style="$theme.tagText.value">{{ item.category }}</text>
                         </view>
                     </view>
                 </view>
-                
+
                 <!-- 答案部分 -->
                 <view class="answer-section">
                     <view class="a-badge">A</view>
@@ -81,7 +87,7 @@
 
         <!-- 无搜索结果 -->
         <view v-if="content.show_search && filteredList.length === 0" class="no-result">
-            <view class="no-result-icon">🔍</view>
+            <tn-icon name="search" size="80" color="#cbd5e1"></tn-icon>
             <text class="no-result-text">未找到相关问题</text>
             <text class="no-result-hint">试试其他关键词</text>
         </view>
@@ -90,6 +96,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useThemeStore } from '@/stores/theme'
+import { tintColor, alphaColor } from '@/utils/color'
 
 const props = defineProps({
     content: {
@@ -101,6 +109,45 @@ const props = defineProps({
         default: () => ({})
     }
 })
+
+const themeStore = useThemeStore()
+const primaryColor = computed(() => themeStore.primaryColor || '#7C3AED')
+
+// 主题内联样式（兼容小程序，不使用CSS变量）
+const $theme = {
+    titleBar: computed(() => ({
+        background: `linear-gradient(180deg, ${primaryColor.value} 0%, ${tintColor(primaryColor.value, 0.3)} 100%)`
+    })),
+    searchBorder: computed(() => ({
+        border: `2rpx solid ${alphaColor(primaryColor.value, 0.1)}`,
+        boxShadow: `0 6rpx 18rpx ${alphaColor(primaryColor.value, 0.08)}`
+    })),
+    iconColor: computed(() => alphaColor(primaryColor.value, 0.6)),
+    normalBorder: computed(() => ({
+        border: `2rpx solid ${alphaColor(primaryColor.value, 0.1)}`,
+        boxShadow: `0 4rpx 20rpx ${alphaColor(primaryColor.value, 0.06)}`
+    })),
+    activeBorder: computed(() => ({
+        border: `2rpx solid ${alphaColor(primaryColor.value, 0.3)}`,
+        boxShadow: `0 8rpx 32rpx ${alphaColor(primaryColor.value, 0.12)}`
+    })),
+    qBadge: computed(() => ({
+        background: `linear-gradient(135deg, ${primaryColor.value} 0%, ${tintColor(primaryColor.value, 0.3)} 100%)`,
+        boxShadow: `0 4rpx 16rpx ${alphaColor(primaryColor.value, 0.3)}`
+    })),
+    expandBg: computed(() => ({
+        background: alphaColor(primaryColor.value, 0.08)
+    })),
+    expandIcon: computed(() => ({
+        color: primaryColor.value
+    })),
+    tagBg: computed(() => ({
+        background: `linear-gradient(135deg, ${alphaColor(primaryColor.value, 0.1)} 0%, ${alphaColor(primaryColor.value, 0.1)} 100%)`
+    })),
+    tagText: computed(() => ({
+        color: primaryColor.value
+    }))
+}
 
 const activeIndex = ref<number>(-1)
 const searchKeyword = ref('')
@@ -115,7 +162,7 @@ const filteredList = computed(() => {
     if (!searchKeyword.value) {
         return showList.value
     }
-    
+
     const keyword = searchKeyword.value.toLowerCase()
     return showList.value.filter((item: any) => {
         return (
@@ -149,70 +196,62 @@ const clearSearch = () => {
 <style scoped lang="scss">
 .faq-widget {
     margin: 20rpx;
-    
+
     /* 标题区域 */
     .faq-header {
         display: flex;
         align-items: center;
         margin-bottom: 20rpx;
         gap: 12rpx;
-        
+
         .header-decoration {
             width: 6rpx;
             height: 32rpx;
-            background: linear-gradient(180deg, #2563EB 0%, #3B82F6 100%);
             border-radius: 3rpx;
         }
-        
+
         .header-title {
             font-size: 32rpx;
             font-weight: 700;
-            color: #1E293B;
+            color: #1e293b;
             letter-spacing: -0.5rpx;
         }
     }
-    
+
     /* 搜索容器 */
     .search-container {
         margin-bottom: 24rpx;
-        
+
         .search-box {
             position: relative;
             display: flex;
             align-items: center;
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(20rpx);
-            border: 2rpx solid rgba(37, 99, 235, 0.1);
             border-radius: 16rpx;
             padding: 16rpx 24rpx;
-            box-shadow: 0 6rpx 18rpx rgba(37, 99, 235, 0.08);
             transition: all 0.3s;
-            
-            &:focus-within {
-                border-color: rgba(37, 99, 235, 0.3);
-                box-shadow: 0 12rpx 40rpx rgba(37, 99, 235, 0.15);
-            }
         }
-        
+
         .search-icon {
-            font-size: 32rpx;
             margin-right: 16rpx;
-            opacity: 0.6;
+            display: flex;
+            align-items: center;
         }
-        
+
         .search-input {
             flex: 1;
             font-size: 28rpx;
-            color: #1E293B;
+            color: #1e293b;
             background: transparent;
             border: none;
             outline: none;
-            
+
             &::placeholder {
-                color: #94A3B8;
+                color: #94a3b8;
             }
         }
-        
+
         .clear-icon {
             width: 40rpx;
             height: 40rpx;
@@ -221,136 +260,118 @@ const clearSearch = () => {
             justify-content: center;
             background: rgba(148, 163, 184, 0.1);
             border-radius: 50%;
-            font-size: 24rpx;
-            color: #64748B;
             cursor: pointer;
             transition: all 0.2s;
-            
+
             &:active {
                 background: rgba(148, 163, 184, 0.2);
                 transform: scale(0.9);
             }
         }
     }
-    
+
     /* 折叠面板样式 */
     .accordion-style {
         display: flex;
         flex-direction: column;
         gap: 16rpx;
-        
+
         .accordion-item {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(20rpx);
-            border: 2rpx solid rgba(37, 99, 235, 0.1);
             border-radius: 20rpx;
             overflow: hidden;
-            box-shadow: 0 4rpx 20rpx rgba(37, 99, 235, 0.06);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            
-            &.is-active {
-                border-color: rgba(37, 99, 235, 0.3);
-                box-shadow: 0 8rpx 32rpx rgba(37, 99, 235, 0.12);
-            }
         }
-        
+
         .accordion-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 20rpx;
             cursor: pointer;
-            transition: background 0.2s;
-            
-            &:active {
-                background: rgba(37, 99, 235, 0.03);
-            }
         }
-        
+
         .question-wrapper {
             flex: 1;
             display: flex;
             align-items: center;
             gap: 16rpx;
         }
-        
+
         .question-icon {
             width: 48rpx;
             height: 48rpx;
-            background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 24rpx;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #ffffff;
             flex-shrink: 0;
-            box-shadow: 0 4rpx 16rpx rgba(37, 99, 235, 0.3);
         }
-        
+
         .question-text {
             font-size: 28rpx;
             font-weight: 600;
-            color: #1E293B;
+            color: #1e293b;
             line-height: 1.5;
         }
-        
+
         .expand-icon {
             width: 48rpx;
             height: 48rpx;
-            background: rgba(37, 99, 235, 0.08);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
             transition: all 0.3s;
-            
+
             .icon-text {
                 font-size: 40rpx;
-                color: #2563EB;
                 font-weight: 300;
                 transform: rotate(90deg);
                 transition: transform 0.3s;
             }
-            
+
             &.is-expanded .icon-text {
                 transform: rotate(270deg);
             }
         }
-        
+
         .accordion-content {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            
+
             &.is-expanded {
                 max-height: 2000rpx;
             }
         }
-        
+
         .answer-wrapper {
             display: flex;
             gap: 16rpx;
             padding: 0 20rpx 20rpx 20rpx;
         }
-        
+
         .answer-icon {
             width: 48rpx;
             height: 48rpx;
-            background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 24rpx;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #ffffff;
             flex-shrink: 0;
             box-shadow: 0 4rpx 16rpx rgba(16, 185, 129, 0.3);
         }
-        
+
         .answer-text {
             flex: 1;
             font-size: 26rpx;
@@ -358,112 +379,103 @@ const clearSearch = () => {
             line-height: 1.7;
             padding-top: 4rpx;
         }
-        
+
         .category-tag {
             margin: 12rpx 20rpx 20rpx 72rpx;
             display: inline-block;
             padding: 6rpx 16rpx;
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
             border-radius: 12rpx;
-            
+
             .tag-text {
                 font-size: 22rpx;
-                color: #2563EB;
                 font-weight: 600;
             }
         }
     }
-    
+
     /* 列表式样式 */
     .list-style {
         display: flex;
         flex-direction: column;
         gap: 16rpx;
-        
+
         .faq-card {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(20rpx);
-            border: 2rpx solid rgba(37, 99, 235, 0.1);
             border-radius: 14rpx;
             padding: 20rpx;
-            box-shadow: 0 4rpx 20rpx rgba(37, 99, 235, 0.06);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            
+
             &:active {
                 transform: translateY(4rpx);
-                box-shadow: 0 2rpx 12rpx rgba(37, 99, 235, 0.08);
             }
         }
-        
+
         .question-section {
             display: flex;
             gap: 16rpx;
             margin-bottom: 16rpx;
         }
-        
+
         .q-badge {
             width: 48rpx;
             height: 48rpx;
-            background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 24rpx;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #ffffff;
             flex-shrink: 0;
-            box-shadow: 0 4rpx 16rpx rgba(37, 99, 235, 0.3);
         }
-        
+
         .q-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             gap: 8rpx;
         }
-        
+
         .q-text {
             font-size: 28rpx;
             font-weight: 600;
-            color: #1E293B;
+            color: #1e293b;
             line-height: 1.5;
         }
-        
+
         .q-category {
             display: inline-block;
             align-self: flex-start;
             padding: 6rpx 16rpx;
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
             border-radius: 12rpx;
-            
+
             .category-text {
                 font-size: 22rpx;
-                color: #2563EB;
                 font-weight: 600;
             }
         }
-        
+
         .answer-section {
             display: flex;
             gap: 16rpx;
         }
-        
+
         .a-badge {
             width: 48rpx;
             height: 48rpx;
-            background: linear-gradient(135deg, #10B981 0%, #34D399 100%);
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 24rpx;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #ffffff;
             flex-shrink: 0;
             box-shadow: 0 4rpx 16rpx rgba(16, 185, 129, 0.3);
         }
-        
+
         .a-content {
             flex: 1;
             font-size: 26rpx;
@@ -472,7 +484,7 @@ const clearSearch = () => {
             padding-top: 4rpx;
         }
     }
-    
+
     /* 无结果状态 */
     .no-result {
         display: flex;
@@ -484,26 +496,21 @@ const clearSearch = () => {
         backdrop-filter: blur(20rpx);
         border: 2rpx dashed rgba(148, 163, 184, 0.3);
         border-radius: 14rpx;
-        
-        .no-result-icon {
-            font-size: 120rpx;
-            opacity: 0.3;
-            margin-bottom: 24rpx;
-        }
-        
+
         .no-result-text {
             font-size: 28rpx;
-            color: #64748B;
+            color: #64748b;
             font-weight: 600;
+            margin-top: 24rpx;
             margin-bottom: 8rpx;
         }
-        
+
         .no-result-hint {
             font-size: 24rpx;
-            color: #94A3B8;
+            color: #94a3b8;
         }
     }
-    
+
     /* 响应式适配 */
     @media (prefers-reduced-motion: reduce) {
         .faq-widget * {

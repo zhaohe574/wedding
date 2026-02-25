@@ -32,7 +32,10 @@
                 <block v-if="!phoneLogin">
                     <!-- 快捷登录按钮 -->
                     <!-- #ifdef MP-WEIXIN || H5 -->
-                    <view v-if="isOpenOtherAuth && isWeixin && inWxAuth" class="quick-login-section">
+                    <view
+                        v-if="isOpenOtherAuth && isWeixin && inWxAuth"
+                        class="quick-login-section"
+                    >
                         <view class="btn-primary" @click="wxLogin" hover-class="btn-hover">
                             <view class="btn-content">
                                 <tn-icon name="wechat-fill" size="40" color="#ffffff" />
@@ -48,7 +51,11 @@
                         <view class="divider-line"></view>
                     </view>
 
-                    <view class="phone-login-btn" @click="phoneLogin = !phoneLogin" hover-class="btn-hover">
+                    <view
+                        class="phone-login-btn"
+                        @click="phoneLogin = !phoneLogin"
+                        hover-class="btn-hover"
+                    >
                         <view class="btn-content">
                             <tn-icon name="phone" size="40" :color="primaryColor" />
                             <text class="btn-text">手机号登录</text>
@@ -107,7 +114,12 @@
                     >
                         <view class="input-group">
                             <view class="input-wrapper">
-                                <tn-icon name="phone" size="36" color="#9ca3af" class="input-icon" />
+                                <tn-icon
+                                    name="phone"
+                                    size="36"
+                                    color="#9ca3af"
+                                    class="input-icon"
+                                />
                                 <tn-input
                                     class="custom-input"
                                     v-model="formData.account"
@@ -119,7 +131,12 @@
 
                         <view class="input-group">
                             <view class="input-wrapper">
-                                <tn-icon name="shield-check" size="36" color="#9ca3af" class="input-icon" />
+                                <tn-icon
+                                    name="shield-check"
+                                    size="36"
+                                    color="#9ca3af"
+                                    class="input-icon"
+                                />
                                 <tn-input
                                     class="custom-input"
                                     v-model="formData.code"
@@ -279,7 +296,7 @@ const startCodeCountdown = () => {
     let seconds = 60
     canGetCode.value = false
     codeTips.value = `${seconds}秒`
-    
+
     const timer = setInterval(() => {
         seconds--
         if (seconds > 0) {
@@ -521,7 +538,7 @@ page {
 
 .login-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, var(--color-primary-light-9, #FAF5FF) 0%, #FFFFFF 100%);
+    background: linear-gradient(180deg, var(--color-primary-light-9, #faf5ff) 0%, #ffffff 100%);
     position: relative;
     overflow: hidden;
 }
@@ -544,7 +561,11 @@ page {
     .circle-1 {
         width: 400rpx;
         height: 400rpx;
-        background: linear-gradient(135deg, var(--color-primary, #7C3AED), var(--color-primary-light-3, #A78BFA));
+        background: linear-gradient(
+            135deg,
+            var(--color-primary, #7c3aed),
+            var(--color-primary-light-3, #a78bfa)
+        );
         top: -100rpx;
         right: -100rpx;
         animation-delay: 0s;
@@ -553,7 +574,11 @@ page {
     .circle-2 {
         width: 300rpx;
         height: 300rpx;
-        background: linear-gradient(135deg, var(--color-secondary, #EC4899), var(--color-secondary-light-3, #F9A8D4));
+        background: linear-gradient(
+            135deg,
+            var(--color-secondary, #ec4899),
+            var(--color-secondary-light-3, #f9a8d4)
+        );
         bottom: 100rpx;
         left: -80rpx;
         animation-delay: 5s;
@@ -562,7 +587,11 @@ page {
     .circle-3 {
         width: 200rpx;
         height: 200rpx;
-        background: linear-gradient(135deg, var(--color-cta, #F97316), var(--color-cta-light-3, #FDBA74));
+        background: linear-gradient(
+            135deg,
+            var(--color-cta, #f97316),
+            var(--color-cta-light-3, #fdba74)
+        );
         top: 50%;
         right: 50rpx;
         animation-delay: 10s;
@@ -570,7 +599,8 @@ page {
 }
 
 @keyframes float {
-    0%, 100% {
+    0%,
+    100% {
         transform: translateY(0) scale(1);
     }
     50% {
@@ -612,7 +642,7 @@ page {
     .welcome-text {
         font-size: 44rpx;
         font-weight: 600;
-        color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #7c3aed);
         margin-bottom: 16rpx;
         letter-spacing: 1rpx;
     }
@@ -629,8 +659,7 @@ page {
     background: rgba(255, 255, 255, 0.85);
     border-radius: 24rpx;
     padding: 40rpx 32rpx;
-    box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12),
-                0 8rpx 16rpx rgba(0, 0, 0, 0.04);
+    box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12), 0 8rpx 16rpx rgba(0, 0, 0, 0.04);
     backdrop-filter: blur(20rpx);
     border: 2rpx solid rgba(255, 255, 255, 0.3);
 }
@@ -649,13 +678,13 @@ page {
     .divider-line {
         flex: 1;
         height: 2rpx;
-        background: linear-gradient(to right, transparent, #E5E7EB, transparent);
+        background: linear-gradient(to right, transparent, #e5e7eb, transparent);
     }
 
     .divider-text {
         padding: 0 20rpx;
         font-size: 24rpx;
-        color: #9CA3AF;
+        color: #9ca3af;
         font-weight: 500;
     }
 }
@@ -668,24 +697,24 @@ page {
     padding: 0 28rpx;
     cursor: pointer;
     transition: all 0.2s ease;
-    border: 2rpx solid var(--color-primary-light-7, #DDD6FE);
+    border: 2rpx solid var(--color-primary-light-7, #ddd6fe);
 
     &:active {
         transform: scale(0.98);
         background: rgba(255, 255, 255, 1);
-        border-color: var(--color-primary, #7C3AED);
+        border-color: var(--color-primary, #7c3aed);
     }
-    
+
     .btn-content {
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 12rpx;
     }
-    
+
     .btn-text {
         font-size: 32rpx;
-        color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #7c3aed);
         font-weight: 600;
         letter-spacing: 1rpx;
     }
@@ -695,7 +724,7 @@ page {
 .form-title {
     font-size: 34rpx;
     font-weight: 600;
-    color: var(--color-primary, #7C3AED);
+    color: var(--color-primary, #7c3aed);
     margin-bottom: 24rpx;
     text-align: center;
 }
@@ -707,16 +736,16 @@ page {
     .input-wrapper {
         display: flex;
         align-items: center;
-        background: #F9FAFB;
-        border: 2rpx solid #E5E7EB;
+        background: #f9fafb;
+        border: 2rpx solid #e5e7eb;
         border-radius: 16rpx;
         padding: 0 24rpx;
         height: 88rpx;
         transition: all 0.2s ease;
 
         &:focus-within {
-            border-color: var(--color-primary, #7C3AED);
-            background: #FFFFFF;
+            border-color: var(--color-primary, #7c3aed);
+            background: #ffffff;
             box-shadow: 0 0 0 6rpx rgba(124, 58, 237, 0.1);
         }
 
@@ -731,30 +760,30 @@ page {
 
         .forgot-link {
             font-size: 24rpx;
-            color: var(--color-primary, #7C3AED);
+            color: var(--color-primary, #7c3aed);
             padding-left: 24rpx;
-            border-left: 2rpx solid #E5E7EB;
+            border-left: 2rpx solid #e5e7eb;
             white-space: nowrap;
             font-weight: 500;
         }
 
         .code-btn {
             font-size: 24rpx;
-            color: #9CA3AF;
+            color: #9ca3af;
             padding-left: 24rpx;
-            border-left: 2rpx solid #E5E7EB;
+            border-left: 2rpx solid #e5e7eb;
             white-space: nowrap;
             min-width: 160rpx;
             text-align: center;
             transition: all 0.2s ease;
 
             &.code-btn-active {
-                color: var(--color-primary, #7C3AED);
+                color: var(--color-primary, #7c3aed);
                 font-weight: 600;
                 cursor: pointer;
 
                 &:active {
-                    color: var(--color-primary-dark-2, #6D28D9);
+                    color: var(--color-primary-dark-2, #6d28d9);
                 }
             }
         }
@@ -773,7 +802,7 @@ page {
         align-items: center;
 
         .agreement-link {
-            color: var(--color-primary, #7C3AED);
+            color: var(--color-primary, #7c3aed);
             font-weight: 500;
             margin: 0 4rpx;
         }
@@ -782,7 +811,11 @@ page {
 
 /* 按钮样式 */
 .btn-primary {
-    background: linear-gradient(135deg, var(--color-primary, #7C3AED) 0%, var(--color-primary-dark-2, #6D28D9) 100%);
+    background: linear-gradient(
+        135deg,
+        var(--color-primary, #7c3aed) 0%,
+        var(--color-primary-dark-2, #6d28d9) 100%
+    );
     border-radius: 32rpx;
     height: 72rpx;
     padding: 0 32rpx;
@@ -799,7 +832,7 @@ page {
 
     .btn-text {
         font-size: 30rpx;
-        color: #FFFFFF;
+        color: #ffffff;
         font-weight: 600;
         letter-spacing: 1rpx;
         text-align: center;
@@ -818,6 +851,9 @@ page {
 
 .btn-login {
     margin-top: 16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-disabled {
@@ -843,13 +879,13 @@ page {
     }
 
     .action-link {
-        color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #7c3aed);
         font-weight: 500;
         cursor: pointer;
         transition: color 0.2s ease;
 
         &:active {
-            color: var(--color-primary-dark-2, #6D28D9);
+            color: var(--color-primary-dark-2, #6d28d9);
         }
     }
 }
@@ -862,7 +898,7 @@ page {
     .modal-title {
         font-size: 34rpx;
         font-weight: 600;
-        color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #7c3aed);
         margin-bottom: 32rpx;
     }
 
@@ -876,7 +912,7 @@ page {
         align-items: center;
 
         .modal-link {
-            color: var(--color-primary, #7C3AED);
+            color: var(--color-primary, #7c3aed);
             font-weight: 500;
             margin: 0 4rpx;
         }

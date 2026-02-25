@@ -1,31 +1,33 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar 
+        <navigation-bar
             title="关于我们"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
         <!-- #endif -->
     </page-meta>
-    
+
     <view class="as-us-page">
         <!-- 顶部装饰背景 -->
         <view class="header-decoration" :style="headerStyle"></view>
-        
+
         <!-- Logo 区域 -->
         <view class="logo-section">
             <view class="logo-wrapper" :style="logoWrapperStyle">
-                <image 
-                    :src="appStore.getWebsiteConfig.shop_logo" 
-                    mode="aspectFill" 
+                <image
+                    :src="appStore.getWebsiteConfig.shop_logo"
+                    mode="aspectFill"
                     class="logo-image"
                 />
             </view>
-            <text class="brand-name">{{ appStore.getWebsiteConfig.shop_name || '婚庆服务平台' }}</text>
+            <text class="brand-name">{{
+                appStore.getWebsiteConfig.shop_name || '婚庆服务平台'
+            }}</text>
             <text class="brand-slogan">让每一场婚礼都成为永恒的回忆</text>
         </view>
-        
+
         <!-- 信息卡片区域 -->
         <view class="info-cards">
             <!-- 版本信息卡片 -->
@@ -40,7 +42,7 @@
                     </text>
                 </view>
             </view>
-            
+
             <!-- 联系方式卡片 -->
             <view class="info-card glass-card" v-if="appStore.getWebsiteConfig.contact_phone">
                 <view class="card-icon-wrapper" :style="iconWrapperStyle">
@@ -53,7 +55,7 @@
                     </text>
                 </view>
             </view>
-            
+
             <!-- 邮箱卡片 -->
             <view class="info-card glass-card" v-if="appStore.getWebsiteConfig.contact_email">
                 <view class="card-icon-wrapper" :style="iconWrapperStyle">
@@ -66,7 +68,7 @@
                     </text>
                 </view>
             </view>
-            
+
             <!-- 地址卡片 -->
             <view class="info-card glass-card" v-if="appStore.getWebsiteConfig.company_address">
                 <view class="card-icon-wrapper" :style="iconWrapperStyle">
@@ -80,7 +82,7 @@
                 </view>
             </view>
         </view>
-        
+
         <!-- 关于我们描述 -->
         <view class="about-section glass-card">
             <view class="section-header">
@@ -89,10 +91,13 @@
                 <view class="header-line" :style="{ backgroundColor: $theme.primaryColor }"></view>
             </view>
             <text class="about-text">
-                {{ appStore.getWebsiteConfig.shop_intro || '专注于为新人提供专业、贴心的婚庆服务，让每一场婚礼都成为独一无二的美好回忆。我们拥有经验丰富的团队，致力于打造完美的婚礼体验。' }}
+                {{
+                    appStore.getWebsiteConfig.shop_intro ||
+                    '专注于为新人提供专业、贴心的婚庆服务，让每一场婚礼都成为独一无二的美好回忆。我们拥有经验丰富的团队，致力于打造完美的婚礼体验。'
+                }}
             </text>
         </view>
-        
+
         <!-- 服务特色 -->
         <view class="features-section">
             <view class="section-header">
@@ -100,13 +105,9 @@
                 <text class="section-title">服务特色</text>
                 <view class="header-line" :style="{ backgroundColor: $theme.primaryColor }"></view>
             </view>
-            
+
             <view class="features-grid">
-                <view 
-                    class="feature-item"
-                    v-for="(feature, index) in features"
-                    :key="index"
-                >
+                <view class="feature-item" v-for="(feature, index) in features" :key="index">
                     <view class="feature-icon-wrapper" :style="getFeatureIconStyle(index)">
                         <tn-icon :name="feature.icon" size="48" color="#FFFFFF" />
                     </view>
@@ -115,10 +116,12 @@
                 </view>
             </view>
         </view>
-        
+
         <!-- 底部版权信息 -->
         <view class="footer">
-            <text class="copyright">© 2024 {{ appStore.getWebsiteConfig.shop_name || '婚庆服务平台' }}</text>
+            <text class="copyright"
+                >© 2024 {{ appStore.getWebsiteConfig.shop_name || '婚庆服务平台' }}</text
+            >
             <text class="copyright-sub">All Rights Reserved</text>
         </view>
     </view>
@@ -174,12 +177,7 @@ const iconWrapperStyle = computed(() => ({
 
 // 特色图标样式（使用不同的主题色）
 const getFeatureIconStyle = (index: number) => {
-    const colors = [
-        $theme.primaryColor,
-        $theme.secondaryColor,
-        $theme.ctaColor,
-        $theme.accentColor
-    ]
+    const colors = [$theme.primaryColor, $theme.secondaryColor, $theme.ctaColor, $theme.accentColor]
     return {
         background: `linear-gradient(135deg, ${colors[index]} 0%, ${colors[index]} 100%)`
     }
@@ -189,7 +187,7 @@ const getFeatureIconStyle = (index: number) => {
 <style lang="scss" scoped>
 .as-us-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, #F9FAFB 0%, #FFFFFF 100%);
+    background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
     padding-bottom: 48rpx;
     position: relative;
 }
@@ -213,35 +211,35 @@ const getFeatureIconStyle = (index: number) => {
     padding: 80rpx 24rpx 48rpx;
     position: relative;
     z-index: 1;
-    
+
     .logo-wrapper {
         width: 180rpx;
         height: 180rpx;
         border-radius: 40rpx;
         border: 4rpx solid;
         padding: 8rpx;
-        background: #FFFFFF;
+        background: #ffffff;
         margin-bottom: 32rpx;
         transition: all 0.3s ease;
-        
+
         .logo-image {
             width: 100%;
             height: 100%;
             border-radius: 32rpx;
         }
     }
-    
+
     .brand-name {
         font-size: 40rpx;
         font-weight: 700;
-        color: #1F2937;
+        color: #1f2937;
         margin-bottom: 16rpx;
         text-align: center;
     }
-    
+
     .brand-slogan {
         font-size: 26rpx;
-        color: #6B7280;
+        color: #6b7280;
         text-align: center;
         line-height: 1.6;
     }
@@ -251,19 +249,19 @@ const getFeatureIconStyle = (index: number) => {
 .info-cards {
     padding: 0 24rpx;
     margin-bottom: 32rpx;
-    
+
     .info-card {
         display: flex;
         align-items: center;
         padding: 32rpx 24rpx;
         margin-bottom: 16rpx;
         transition: all 0.2s ease;
-        
+
         &:active {
             transform: translateY(-2rpx);
             box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
         }
-        
+
         .card-icon-wrapper {
             width: 72rpx;
             height: 72rpx;
@@ -274,18 +272,18 @@ const getFeatureIconStyle = (index: number) => {
             margin-right: 16rpx;
             flex-shrink: 0;
         }
-        
+
         .card-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            
+
             .card-label {
                 font-size: 24rpx;
-                color: #9CA3AF;
+                color: #9ca3af;
                 margin-bottom: 8rpx;
             }
-            
+
             .card-value {
                 font-size: 28rpx;
                 font-weight: 600;
@@ -308,10 +306,10 @@ const getFeatureIconStyle = (index: number) => {
 .about-section {
     margin: 0 24rpx 32rpx;
     padding: 32rpx 24rpx;
-    
+
     .about-text {
         font-size: 28rpx;
-        color: #4B5563;
+        color: #4b5563;
         line-height: 1.8;
         text-align: justify;
     }
@@ -321,14 +319,14 @@ const getFeatureIconStyle = (index: number) => {
 .features-section {
     padding: 0 24rpx;
     margin-bottom: 32rpx;
-    
+
     .features-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 16rpx;
-        
+
         .feature-item {
-            background: #FFFFFF;
+            background: #ffffff;
             border-radius: 24rpx;
             padding: 32rpx 24rpx;
             display: flex;
@@ -336,12 +334,12 @@ const getFeatureIconStyle = (index: number) => {
             align-items: center;
             box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
             transition: all 0.2s ease;
-            
+
             &:active {
                 transform: translateY(-4rpx);
                 box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
             }
-            
+
             .feature-icon-wrapper {
                 width: 96rpx;
                 height: 96rpx;
@@ -352,18 +350,18 @@ const getFeatureIconStyle = (index: number) => {
                 margin-bottom: 20rpx;
                 box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
             }
-            
+
             .feature-title {
                 font-size: 28rpx;
                 font-weight: 600;
-                color: #1F2937;
+                color: #1f2937;
                 margin-bottom: 12rpx;
                 text-align: center;
             }
-            
+
             .feature-desc {
                 font-size: 24rpx;
-                color: #6B7280;
+                color: #6b7280;
                 text-align: center;
                 line-height: 1.5;
             }
@@ -377,17 +375,17 @@ const getFeatureIconStyle = (index: number) => {
     align-items: center;
     justify-content: center;
     margin-bottom: 32rpx;
-    
+
     .header-line {
         width: 48rpx;
         height: 4rpx;
         border-radius: 2rpx;
     }
-    
+
     .section-title {
         font-size: 32rpx;
         font-weight: 700;
-        color: #1F2937;
+        color: #1f2937;
         margin: 0 24rpx;
     }
 }
@@ -398,16 +396,16 @@ const getFeatureIconStyle = (index: number) => {
     flex-direction: column;
     align-items: center;
     padding: 48rpx 24rpx 24rpx;
-    
+
     .copyright {
         font-size: 24rpx;
-        color: #9CA3AF;
+        color: #9ca3af;
         margin-bottom: 8rpx;
     }
-    
+
     .copyright-sub {
         font-size: 22rpx;
-        color: #D1D5DB;
+        color: #d1d5db;
     }
 }
 </style>

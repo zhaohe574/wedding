@@ -7,17 +7,9 @@
         @click="chooseAvatar"
         @chooseavatar="chooseAvatar"
     >
-        <image 
-            class="avatar-image" 
-            mode="aspectFill" 
-            :src="modelValue" 
-            v-if="modelValue" 
-        />
+        <image class="avatar-image" mode="aspectFill" :src="modelValue" v-if="modelValue" />
         <slot v-else>
-            <view
-                class="avatar-placeholder"
-                :style="containerStyles"
-            >
+            <view class="avatar-placeholder" :style="containerStyles">
                 <tn-icon name="plus" :size="48" color="#94A3B8" />
                 <text class="placeholder-text">添加图片</text>
             </view>
@@ -61,7 +53,11 @@ const containerStyles = computed<CSSProperties>(() => {
     return {
         width: size,
         height: size,
-        borderRadius: isBoolean(props.round) ? (props.round ? '50%' : '16rpx') : addUnit(props.round)
+        borderRadius: isBoolean(props.round)
+            ? props.round
+                ? '50%'
+                : '16rpx'
+            : addUnit(props.round)
     }
 })
 
@@ -73,7 +69,7 @@ const chooseAvatar = (e: any) => {
         uploadImageIng(path)
     }
     // #endif
-    
+
     // #ifndef MP-WEIXIN
     // 非微信小程序使用系统相册
     uni.chooseImage({
@@ -116,7 +112,7 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .avatar-upload {
-    background: #FFFFFF;
+    background: #ffffff;
     overflow: hidden;
     padding: 0;
     margin: 0;
@@ -126,34 +122,34 @@ onUnmounted(() => {
     justify-content: center;
     box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
     transition: all 0.2s ease;
-    
+
     &::after {
         border: none;
     }
-    
+
     &:active {
         transform: scale(0.98);
         opacity: 0.9;
     }
-    
+
     .avatar-image {
         width: 100%;
         height: 100%;
         display: block;
     }
-    
+
     .avatar-placeholder {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         gap: 12rpx;
-        border: 2rpx dashed #E2E8F0;
+        border: 2rpx dashed #e2e8f0;
         box-sizing: border-box;
-        
+
         .placeholder-text {
             font-size: 24rpx;
-            color: #94A3B8;
+            color: #94a3b8;
         }
     }
 }

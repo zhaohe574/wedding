@@ -1,8 +1,5 @@
 <template>
-    <view
-        class="user-banner mx-[24rpx] mt-[24rpx]"
-        v-if="showList.length && content.enabled"
-    >
+    <view class="user-banner mx-[24rpx] mt-[24rpx]" v-if="showList.length && content.enabled">
         <swiper
             class="banner-swiper"
             :indicator-dots="showList.length > 1"
@@ -19,11 +16,7 @@
                 @click="handleClick(item.link)"
             >
                 <view class="banner-item">
-                    <image
-                        class="banner-image"
-                        mode="aspectFill"
-                        :src="getImageUrl(item.image)"
-                    />
+                    <image class="banner-image" mode="aspectFill" :src="getImageUrl(item.image)" />
                 </view>
             </swiper-item>
         </swiper>
@@ -66,19 +59,19 @@ const showList = computed(() => {
         border-radius: 16rpx;
         overflow: hidden;
     }
-    
+
     .banner-item {
         width: 100%;
         height: 100%;
         border-radius: 16rpx;
         overflow: hidden;
         transition: all 0.2s ease;
-        
+
         &:active {
             transform: scale(0.98);
         }
     }
-    
+
     .banner-image {
         width: 100%;
         height: 100%;

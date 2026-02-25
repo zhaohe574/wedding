@@ -1,17 +1,23 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar 
+        <navigation-bar
             title="服务人员"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
         <!-- #endif -->
     </page-meta>
-    
+
     <view class="staff-list-page">
         <!-- 人员列表 -->
-        <z-paging ref="pagingRef" v-model="staffList" @query="queryList" :auto="false">
+        <z-paging
+            ref="pagingRef"
+            v-model="staffList"
+            @query="queryList"
+            :auto="false"
+            :refresher-enabled="pagingRefresherEnabled"
+        >
             <!-- 顶部固定区域 -->
             <template #top>
                 <!-- 筛选头部 -->
@@ -32,38 +38,147 @@
                         />
                     </view>
 
+                    <!-- 顶部横滑分类 -->
+                    <!-- #ifdef H5 -->
+                    <view
+                        class="category-scroll-wrapper category-scroll-wrapper-h5"
+                        @touchstart.stop="handleCategoryTouchStart"
+                        @touchmove.stop.prevent="handleCategoryTouchMove"
+                        @touchend.stop="handleCategoryDragEnd"
+                        @touchcancel.stop="handleCategoryDragEnd"
+                        @mousedown.prevent="handleCategoryMouseDown"
+                        @wheel.prevent="handleCategoryWheel"
+                    >
+                        <view
+                            ref="categoryScrollNativeRef"
+                            class="category-scroll category-scroll-h5-native"
+                        >
+                            <view class="category-scroll-content">
+                                <view
+                                    v-for="item in categories"
+                                    :key="item.id"
+                                    class="category-chip"
+                                    :class="{ active: currentCategoryId === item.id }"
+                                    :style="
+                                        currentCategoryId === item.id
+                                            ? {
+                                                  background: $theme.primaryColor,
+                                                  borderColor: $theme.primaryColor,
+                                                  color: '#FFFFFF'
+                                              }
+                                            : {}
+                                    "
+                                    @click="handleCategoryChange(item.id)"
+                                >
+                                    {{ item.name }}
+                                </view>
+                            </view>
+                        </view>
+                    </view>
+                    <!-- #endif -->
+
+                    <!-- #ifndef H5 -->
+                    <view class="category-scroll-wrapper">
+                        <scroll-view
+                            :scroll-x="true"
+                            class="category-scroll"
+                            :show-scrollbar="false"
+                        >
+                            <view class="category-scroll-content">
+                                <view
+                                    v-for="item in categories"
+                                    :key="item.id"
+                                    class="category-chip"
+                                    :class="{ active: currentCategoryId === item.id }"
+                                    :style="
+                                        currentCategoryId === item.id
+                                            ? {
+                                                  background: $theme.primaryColor,
+                                                  borderColor: $theme.primaryColor,
+                                                  color: '#FFFFFF'
+                                              }
+                                            : {}
+                                    "
+                                    @click="handleCategoryChange(item.id)"
+                                >
+                                    {{ item.name }}
+                                </view>
+                            </view>
+                        </scroll-view>
+                    </view>
+                    <!-- #endif -->
+
                     <!-- 筛选条件栏 -->
                     <view class="filter-bar">
-                        <!-- 分类筛选 -->
-                        <view class="filter-item" @click="showCategoryPicker = true">
-                            <tn-icon name="list" size="28" :color="currentCategoryId ? $theme.primaryColor : '#666666'" />
-                            <text :class="{ active: currentCategoryId }" :style="currentCategoryId ? { color: $theme.primaryColor } : {}">
-                                {{ currentCategoryName }}
+                        <!-- 标签筛选 -->
+                        <view class="filter-item" @click="openTagPicker">
+                            <tn-icon
+                                name="list"
+                                size="28"
+                                :color="selectedTagIds.length ? $theme.primaryColor : '#666666'"
+                            />
+                            <text
+                                :class="{ active: selectedTagIds.length }"
+                                :style="selectedTagIds.length ? { color: $theme.primaryColor } : {}"
+                            >
+                                {{ tagFilterText }}
                             </text>
-                            <tn-icon name="arrow-down" size="24" :color="currentCategoryId ? $theme.primaryColor : '#999999'" />
+                            <tn-icon
+                                name="arrow-down"
+                                size="24"
+                                :color="selectedTagIds.length ? $theme.primaryColor : '#999999'"
+                            />
                         </view>
 
                         <!-- 日期筛选 -->
                         <view class="filter-item-wrapper">
                             <view class="filter-item" @click="showDatePicker = true">
-                                <tn-icon name="calendar" size="28" :color="selectedDate ? $theme.primaryColor : '#666666'" />
-                                <text :class="{ active: selectedDate }" :style="selectedDate ? { color: $theme.primaryColor } : {}">
+                                <tn-icon
+                                    name="calendar"
+                                    size="28"
+                                    :color="selectedDate ? $theme.primaryColor : '#666666'"
+                                />
+                                <text
+                                    :class="{ active: selectedDate }"
+                                    :style="selectedDate ? { color: $theme.primaryColor } : {}"
+                                >
                                     {{ dateRangeText }}
                                 </text>
-                                <tn-icon name="arrow-down" size="24" :color="selectedDate ? $theme.primaryColor : '#999999'" />
+                                <tn-icon
+                                    name="arrow-down"
+                                    size="24"
+                                    :color="selectedDate ? $theme.primaryColor : '#999999'"
+                                />
                             </view>
-                            <view v-if="selectedDate" class="clear-date-btn" @click.stop="clearDate">
+                            <view
+                                v-if="selectedDate"
+                                class="clear-date-btn"
+                                @click.stop="clearDate"
+                            >
                                 <tn-icon name="close-circle-fill" size="32" color="#999999" />
                             </view>
                         </view>
 
                         <!-- 排序筛选 -->
                         <view class="filter-item" @click="showSortPicker = true">
-                            <tn-icon name="sort" size="28" :color="currentSort !== 'default' ? $theme.primaryColor : '#666666'" />
-                            <text :class="{ active: currentSort !== 'default' }" :style="currentSort !== 'default' ? { color: $theme.primaryColor } : {}">
+                            <tn-icon
+                                name="sort"
+                                size="28"
+                                :color="currentSort !== 'default' ? $theme.primaryColor : '#666666'"
+                            />
+                            <text
+                                :class="{ active: currentSort !== 'default' }"
+                                :style="
+                                    currentSort !== 'default' ? { color: $theme.primaryColor } : {}
+                                "
+                            >
                                 {{ currentSortName }}
                             </text>
-                            <tn-icon name="arrow-down" size="24" :color="currentSort !== 'default' ? $theme.primaryColor : '#999999'" />
+                            <tn-icon
+                                name="arrow-down"
+                                size="24"
+                                :color="currentSort !== 'default' ? $theme.primaryColor : '#999999'"
+                            />
                         </view>
                     </view>
                 </view>
@@ -87,10 +202,7 @@
                         <view class="staff-info">
                             <view class="info-top">
                                 <text class="staff-name">{{ item.name }}</text>
-                                <view 
-                                    class="favorite-btn" 
-                                    @click.stop="handleToggleFavorite(item)"
-                                >
+                                <view class="favorite-btn" @click.stop="handleToggleFavorite(item)">
                                     <tn-icon
                                         :name="item.is_favorite ? 'like-fill' : 'like'"
                                         size="40"
@@ -108,7 +220,9 @@
                             <view class="staff-rating">
                                 <view class="rating-stars">
                                     <tn-icon name="star-fill" size="28" color="#FFD700" />
-                                    <text :style="{ color: $theme.ctaColor }">{{ item.rating }}</text>
+                                    <text :style="{ color: $theme.ctaColor }">{{
+                                        item.rating
+                                    }}</text>
                                 </view>
                                 <view class="order-count">
                                     <tn-icon name="shopping-bag" size="24" color="#999999" />
@@ -121,15 +235,21 @@
                     <!-- 卡片内容 -->
                     <view class="card-content">
                         <text class="staff-profile">{{ item.profile || '暂无简介' }}</text>
-                        
+
                         <!-- 人员标签 -->
                         <view v-if="item.tags && item.tags.length" class="staff-tags">
-                            <view 
-                                v-for="(tag, index) in item.tags" 
-                                :key="index" 
+                            <view
+                                v-for="(tag, index) in item.tags"
+                                :key="index"
                                 class="tag-item"
+                                :style="{
+                                    background: getTagBgColor(),
+                                    border: `1rpx solid ${getTagBorderColor()}`
+                                }"
                             >
-                                <text class="tag-text">{{ tag }}</text>
+                                <text class="tag-text" :style="{ color: $theme.primaryColor }">{{
+                                    tag
+                                }}</text>
                             </view>
                         </view>
                     </view>
@@ -139,14 +259,18 @@
                         <view class="price-section">
                             <text class="price-label">服务价格</text>
                             <view class="price-amount">
-                                <text class="price-symbol" :style="{ color: $theme.primaryColor }">¥</text>
-                                <text class="price-value" :style="{ color: $theme.primaryColor }">{{ item.price }}</text>
+                                <text class="price-symbol" :style="{ color: $theme.primaryColor }"
+                                    >¥</text
+                                >
+                                <text class="price-value" :style="{ color: $theme.primaryColor }">{{
+                                    item.price
+                                }}</text>
                                 <text class="price-unit">/次</text>
                             </view>
                         </view>
-                        <view 
+                        <view
                             class="book-btn"
-                            :style="{ 
+                            :style="{
                                 background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
                             }"
                             @click.stop="goToDetail(item.id)"
@@ -159,45 +283,63 @@
             </view>
         </z-paging>
 
-        <!-- 分类选择器 -->
-        <TnPopup 
-            v-model="showCategoryPicker" 
-            open-direction="bottom" 
-            :radius="24" 
+        <!-- 标签选择器 -->
+        <TnPopup
+            v-model="showTagPicker"
+            open-direction="bottom"
+            :radius="24"
             :safe-area-inset-bottom="true"
         >
             <view class="picker-container">
                 <view class="picker-header">
-                    <text class="picker-title">选择分类</text>
-                    <view class="picker-close" @click="showCategoryPicker = false">
+                    <view class="picker-header-left">
+                        <view class="picker-clear" @click="resetTagSelection">重置</view>
+                        <text class="picker-title">选择标签</text>
+                    </view>
+                    <view class="picker-close" @click="closeTagPicker">
                         <tn-icon name="close" size="32" color="#666666" />
                     </view>
                 </view>
                 <view class="button-picker-content">
-                    <view class="button-grid">
+                    <view v-if="styleTags.length" class="button-grid">
                         <view
-                            v-for="item in categories"
+                            v-for="item in styleTags"
                             :key="item.id"
                             class="button-item"
-                            :class="{ active: currentCategoryId === item.id }"
-                            :style="currentCategoryId === item.id ? {
-                                background: $theme.primaryColor,
-                                color: '#FFFFFF'
-                            } : {}"
-                            @click="handleCategoryChange(item.id)"
+                            :class="{ active: tempSelectedTagIds.includes(item.id) }"
+                            :style="
+                                tempSelectedTagIds.includes(item.id)
+                                    ? {
+                                          background: $theme.primaryColor,
+                                          color: '#FFFFFF'
+                                      }
+                                    : {}
+                            "
+                            @click="toggleTagSelection(item.id)"
                         >
                             {{ item.name }}
                         </view>
+                    </view>
+                    <view v-else class="empty-picker">当前分类暂无可选标签</view>
+                </view>
+                <view class="picker-footer">
+                    <view class="picker-btn" @click="resetTagSelection">清空</view>
+                    <view
+                        class="picker-btn picker-btn-primary"
+                        :style="{ background: $theme.primaryColor }"
+                        @click="handleTagFilterConfirm"
+                    >
+                        确定
                     </view>
                 </view>
             </view>
         </TnPopup>
 
         <!-- 排序选择器 -->
-        <TnPopup 
-            v-model="showSortPicker" 
-            open-direction="bottom" 
-            :radius="24" 
+        <TnPopup
+            v-model="showSortPicker"
+            open-direction="bottom"
+            :radius="24"
             :safe-area-inset-bottom="true"
         >
             <view class="picker-container">
@@ -214,10 +356,14 @@
                             :key="item.value"
                             class="button-item"
                             :class="{ active: currentSort === item.value }"
-                            :style="currentSort === item.value ? {
-                                background: $theme.primaryColor,
-                                color: '#FFFFFF'
-                            } : {}"
+                            :style="
+                                currentSort === item.value
+                                    ? {
+                                          background: $theme.primaryColor,
+                                          color: '#FFFFFF'
+                                      }
+                                    : {}
+                            "
                             @click="handleSortChange(item.value)"
                         >
                             {{ item.label }}
@@ -248,28 +394,60 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { onLoad, onReady } from '@dcloudio/uni-app'
 import { getStaffList, toggleStaffFavorite } from '@/api/staff'
-import { getServiceCategories } from '@/api/service'
+import { getServiceCategories, getStyleTags } from '@/api/service'
 import { useThemeStore } from '@/stores/theme'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import TnDateTimePicker from '@tuniao/tnui-vue3-uniapp/components/date-time-picker/src/date-time-picker.vue'
 
 const $theme = useThemeStore()
 
+// 获取标签背景色（主题色浅色变体）
+const getTagBgColor = () => {
+    const color = $theme.primaryColor
+    // 将hex转为rgba，透明度10%
+    const hex = color.replace('#', '')
+    const r = parseInt(hex.substring(0, 2), 16)
+    const g = parseInt(hex.substring(2, 4), 16)
+    const b = parseInt(hex.substring(4, 6), 16)
+    return `rgba(${r}, ${g}, ${b}, 0.1)`
+}
+
+// 获取标签边框色（主题色浅色变体）
+const getTagBorderColor = () => {
+    const color = $theme.primaryColor
+    // 将hex转为rgba，透明度30%
+    const hex = color.replace('#', '')
+    const r = parseInt(hex.substring(0, 2), 16)
+    const g = parseInt(hex.substring(2, 4), 16)
+    const b = parseInt(hex.substring(4, 6), 16)
+    return `rgba(${r}, ${g}, ${b}, 0.3)`
+}
+
 const pagingRef = ref()
+const categoryScrollNativeRef = ref<any>(null)
 const keyword = ref('')
 const staffList = ref<any[]>([])
-const categories = ref<any[]>([{ id: '', name: '全部' }])
+const categories = ref<any[]>([])
 const currentCategoryId = ref<string | number>('')
+const styleTags = ref<any[]>([])
+const selectedTagIds = ref<number[]>([])
+const tempSelectedTagIds = ref<number[]>([])
 const currentSort = ref('default')
 
+const categoryStartX = ref(0)
+const categoryStartScrollLeft = ref(0)
+const categoryMouseDragging = ref(false)
+const categoryTouchDragging = ref(false)
+const categoryMovedDistance = ref(0)
+const categoryMoveThreshold = 6
+
 // 弹窗控制
-const showCategoryPicker = ref(false)
+const showTagPicker = ref(false)
 const showDatePicker = ref(false)
 const showSortPicker = ref(false)
-
 
 // 获取明天的日期（最小可选日期）
 const getTomorrowDate = () => {
@@ -293,13 +471,20 @@ const sortOptions = [
 ]
 
 // 计算属性
-const currentCategoryName = computed(() => {
-    const category = categories.value.find(c => c.id === currentCategoryId.value)
-    return category ? category.name : '分类'
+const tagFilterText = computed(() => {
+    const count = selectedTagIds.value.length
+    if (!count) {
+        return '标签筛选'
+    }
+    if (count === 1) {
+        const tag = styleTags.value.find((item) => Number(item.id) === selectedTagIds.value[0])
+        return tag?.name || '已选1项'
+    }
+    return `已选${count}项`
 })
 
 const currentSortName = computed(() => {
-    const sort = sortOptions.find(s => s.value === currentSort.value)
+    const sort = sortOptions.find((s) => s.value === currentSort.value)
     return sort ? sort.label : '排序'
 })
 
@@ -311,6 +496,10 @@ const dateRangeText = computed(() => {
 })
 
 // 日期选择处理
+const pagingRefresherEnabled = computed(() => {
+    return import.meta.env.UNI_PLATFORM !== 'h5'
+})
+
 const handleDateConfirm = (value: string) => {
     selectedDate.value = value
     showDatePicker.value = false
@@ -336,7 +525,7 @@ const clearDate = () => {
 // 扁平化分类树
 const flattenCategories = (tree: any[], result: any[] = []): any[] => {
     tree.forEach((item) => {
-        result.push({ id: item.id, name: item.name })
+        result.push({ id: Number(item.id), name: item.name })
         if (item.children && item.children.length) {
             flattenCategories(item.children, result)
         }
@@ -348,10 +537,79 @@ const flattenCategories = (tree: any[], result: any[] = []): any[] => {
 const getCategories = async () => {
     try {
         const data = await getServiceCategories()
-        categories.value = [{ id: '', name: '全部' }, ...flattenCategories(data)]
+        categories.value = flattenCategories(data)
+        if (!categories.value.length) {
+            currentCategoryId.value = ''
+            return
+        }
+        const hasCurrentCategory = categories.value.some(
+            (item) => Number(item.id) === Number(currentCategoryId.value)
+        )
+        if (!hasCurrentCategory) {
+            currentCategoryId.value = categories.value[0].id
+        }
     } catch (e) {
         console.error(e)
     }
+}
+
+// 获取当前分类关联标签
+const getCategoryTags = async () => {
+    try {
+        const params: { category_id?: number } = {}
+        if (currentCategoryId.value !== '') {
+            params.category_id = Number(currentCategoryId.value)
+        }
+        const data = await getStyleTags(params)
+        styleTags.value = Array.isArray(data) ? data : []
+
+        const validTagIds = new Set(styleTags.value.map((item) => Number(item.id)))
+        selectedTagIds.value = selectedTagIds.value.filter((id) => validTagIds.has(id))
+        tempSelectedTagIds.value = [...selectedTagIds.value]
+    } catch (e) {
+        styleTags.value = []
+        selectedTagIds.value = []
+        tempSelectedTagIds.value = []
+        console.error(e)
+    }
+}
+
+// 打开标签选择
+const openTagPicker = async () => {
+    if (!styleTags.value.length) {
+        await getCategoryTags()
+    }
+    tempSelectedTagIds.value = [...selectedTagIds.value]
+    showTagPicker.value = true
+}
+
+// 关闭标签选择
+const closeTagPicker = () => {
+    tempSelectedTagIds.value = [...selectedTagIds.value]
+    showTagPicker.value = false
+}
+
+// 切换标签（多选）
+const toggleTagSelection = (tagId: number | string) => {
+    const id = Number(tagId)
+    const index = tempSelectedTagIds.value.indexOf(id)
+    if (index > -1) {
+        tempSelectedTagIds.value.splice(index, 1)
+    } else {
+        tempSelectedTagIds.value.push(id)
+    }
+}
+
+// 重置标签选择（弹窗内）
+const resetTagSelection = () => {
+    tempSelectedTagIds.value = []
+}
+
+// 确认标签筛选
+const handleTagFilterConfirm = () => {
+    selectedTagIds.value = [...tempSelectedTagIds.value]
+    showTagPicker.value = false
+    pagingRef.value.reload()
 }
 
 // 查询列表
@@ -365,8 +623,11 @@ const queryList = async (pageNo: number, pageSize: number) => {
         if (keyword.value) {
             params.keyword = keyword.value
         }
-        if (currentCategoryId.value) {
-            params.category_id = currentCategoryId.value
+        if (currentCategoryId.value !== '') {
+            params.category_id = Number(currentCategoryId.value)
+        }
+        if (selectedTagIds.value.length) {
+            params.tag_ids = selectedTagIds.value.join(',')
         }
         if (selectedDate.value) {
             params.date = selectedDate.value
@@ -384,11 +645,119 @@ const handleSearch = () => {
 }
 
 // 切换分类
-const handleCategoryChange = (id: string | number) => {
+const handleCategoryChange = async (id: string | number) => {
+    if (categoryMovedDistance.value > categoryMoveThreshold) {
+        return
+    }
+    if (currentCategoryId.value === id) {
+        return
+    }
     currentCategoryId.value = id
-    showCategoryPicker.value = false
+    selectedTagIds.value = []
+    tempSelectedTagIds.value = []
+    await getCategoryTags()
     pagingRef.value.reload()
 }
+
+const getCategoryScrollElement = () => {
+    const fromRef = categoryScrollNativeRef.value?.$el || categoryScrollNativeRef.value
+    if (fromRef) {
+        return fromRef as HTMLElement
+    }
+    if (typeof window === 'undefined') {
+        return null
+    }
+    return document.querySelector('.category-scroll-h5-native') as HTMLElement | null
+}
+
+const clampCategoryScrollLeft = (value: number, scrollEl: HTMLElement) => {
+    const maxScrollLeft = Math.max(0, scrollEl.scrollWidth - scrollEl.clientWidth)
+    return Math.min(maxScrollLeft, Math.max(0, value))
+}
+
+const updateCategoryScrollByClientX = (clientX: number) => {
+    const scrollEl = getCategoryScrollElement()
+    if (!scrollEl) {
+        return
+    }
+    const deltaX = clientX - categoryStartX.value
+    const absDistance = Math.abs(deltaX)
+    if (absDistance > categoryMovedDistance.value) {
+        categoryMovedDistance.value = absDistance
+    }
+    const nextScrollLeft = categoryStartScrollLeft.value - deltaX
+    scrollEl.scrollLeft = clampCategoryScrollLeft(nextScrollLeft, scrollEl)
+}
+
+const handleCategoryTouchStart = (event: TouchEvent) => {
+    const scrollEl = getCategoryScrollElement()
+    const touch = event.touches?.[0]
+    if (!scrollEl || !touch) {
+        return
+    }
+    categoryTouchDragging.value = true
+    categoryStartX.value = touch.clientX
+    categoryStartScrollLeft.value = scrollEl.scrollLeft
+    categoryMovedDistance.value = 0
+}
+
+const handleCategoryTouchMove = (event: TouchEvent) => {
+    if (!categoryTouchDragging.value) {
+        return
+    }
+    const touch = event.touches?.[0]
+    if (!touch) {
+        return
+    }
+    updateCategoryScrollByClientX(touch.clientX)
+}
+
+const handleCategoryMouseMove = (event: MouseEvent) => {
+    if (!categoryMouseDragging.value) {
+        return
+    }
+    updateCategoryScrollByClientX(event.clientX)
+}
+
+const handleCategoryDragEnd = () => {
+    categoryMouseDragging.value = false
+    categoryTouchDragging.value = false
+    if (typeof window !== 'undefined') {
+        window.removeEventListener('mousemove', handleCategoryMouseMove)
+        window.removeEventListener('mouseup', handleCategoryDragEnd)
+    }
+    setTimeout(() => {
+        categoryMovedDistance.value = 0
+    }, 0)
+}
+
+const handleCategoryMouseDown = (event: MouseEvent) => {
+    const scrollEl = getCategoryScrollElement()
+    if (!scrollEl) {
+        return
+    }
+    categoryMouseDragging.value = true
+    categoryStartX.value = event.clientX
+    categoryStartScrollLeft.value = scrollEl.scrollLeft
+    categoryMovedDistance.value = 0
+    if (typeof window !== 'undefined') {
+        window.addEventListener('mousemove', handleCategoryMouseMove)
+        window.addEventListener('mouseup', handleCategoryDragEnd)
+    }
+}
+
+const handleCategoryWheel = (event: WheelEvent) => {
+    const scrollEl = getCategoryScrollElement()
+    if (!scrollEl) {
+        return
+    }
+    const moveX = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY
+    scrollEl.scrollLeft = clampCategoryScrollLeft(scrollEl.scrollLeft + moveX, scrollEl)
+}
+
+onUnmounted(() => {
+    handleCategoryDragEnd()
+})
 
 // 切换排序
 const handleSortChange = (sort: string) => {
@@ -420,11 +789,15 @@ const goToDetail = (id: number) => {
     uni.navigateTo({ url })
 }
 
-onLoad((options) => {
+onLoad(async (options) => {
     if (options?.category_id) {
-        currentCategoryId.value = options.category_id
+        const categoryId = Number(options.category_id)
+        if (!Number.isNaN(categoryId) && categoryId > 0) {
+            currentCategoryId.value = categoryId
+        }
     }
-    getCategories()
+    await getCategories()
+    await getCategoryTags()
 })
 
 onReady(() => {
@@ -435,27 +808,100 @@ onReady(() => {
 <style lang="scss" scoped>
 .staff-list-page {
     min-height: 100vh;
-    background: #F5F5F5;
+    background: linear-gradient(180deg, #faf5ff 0%, #f5f5f5 100%);
 }
 
 /* 筛选头部 */
 .filter-header {
-    background: #FFFFFF;
-    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+    background: #ffffff;
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.06);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 /* 搜索区域 */
 .search-section {
-    padding: 12rpx 20rpx;
+    padding: 16rpx 20rpx;
+    background: #ffffff;
+}
+
+/* 分类横滑区域 */
+.category-scroll-wrapper {
+    padding: 12rpx 0;
+    border-top: 1rpx solid #f0f0f0;
+
+    .category-scroll,
+    .category-scroll-h5 {
+        width: 100%;
+        white-space: nowrap;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    .category-scroll-h5-native {
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    .category-scroll-content {
+        display: inline-flex;
+        align-items: center;
+        padding: 0 20rpx;
+        white-space: nowrap;
+        width: max-content;
+    }
+
+    .category-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-right: 12rpx;
+        min-width: 120rpx;
+        height: 56rpx;
+        padding: 0 24rpx;
+        border-radius: 28rpx;
+        border: 2rpx solid #e5e7eb;
+        background: #f9fafb;
+        font-size: 26rpx;
+        color: #4b5563;
+        text-align: center;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+
+        &:active {
+            transform: scale(0.96);
+            opacity: 0.85;
+        }
+
+        &.active {
+            font-weight: 600;
+            box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.2);
+        }
+
+        &:last-child {
+            margin-right: 20rpx;
+        }
+    }
 }
 
 /* 筛选条件栏 */
 .filter-bar {
     display: flex;
     align-items: center;
-    padding: 12rpx 20rpx;
+    padding: 16rpx 20rpx;
     gap: 12rpx;
-    border-top: 1rpx solid #F0F0F0;
+    border-top: 1rpx solid #f0f0f0;
+    background: #ffffff;
 
     .filter-item-wrapper {
         flex: 1;
@@ -478,7 +924,7 @@ onReady(() => {
             align-items: center;
             justify-content: center;
             z-index: 10;
-            
+
             &:active {
                 opacity: 0.6;
             }
@@ -491,16 +937,18 @@ onReady(() => {
         align-items: center;
         justify-content: center;
         gap: 6rpx;
-        padding: 12rpx 16rpx;
-        background: #F9FAFB;
-        border-radius: 12rpx;
-        font-size: 24rpx;
+        padding: 16rpx 20rpx;
+        background: #f9fafb;
+        border-radius: 16rpx;
+        border: 2rpx solid transparent;
+        font-size: 26rpx;
         color: #666666;
         transition: all 0.2s ease;
+        min-height: 64rpx;
 
         &:active {
             transform: scale(0.95);
-            background: #F0F0F0;
+            background: #f0f0f0;
         }
 
         text {
@@ -518,7 +966,7 @@ onReady(() => {
 
 /* 选择器容器 */
 .picker-container {
-    background: #FFFFFF;
+    background: #ffffff;
     max-height: 80vh;
     display: flex;
     flex-direction: column;
@@ -530,7 +978,22 @@ onReady(() => {
         align-items: center;
         justify-content: space-between;
         padding: 20rpx 24rpx;
-        border-bottom: 1rpx solid #F0F0F0;
+        border-bottom: 1rpx solid #f0f0f0;
+
+        .picker-header-left {
+            display: flex;
+            align-items: center;
+            gap: 20rpx;
+        }
+
+        .picker-clear {
+            font-size: 24rpx;
+            color: #6b7280;
+
+            &:active {
+                opacity: 0.7;
+            }
+        }
 
         .picker-title {
             font-size: 30rpx;
@@ -548,7 +1011,7 @@ onReady(() => {
             transition: all 0.2s ease;
 
             &:active {
-                background: #F5F5F5;
+                background: #f5f5f5;
             }
         }
     }
@@ -568,7 +1031,7 @@ onReady(() => {
             transition: all 0.2s ease;
 
             &:active {
-                background: #F9FAFB;
+                background: #f9fafb;
             }
 
             &.active {
@@ -590,10 +1053,10 @@ onReady(() => {
             gap: 16rpx;
 
             .button-item {
-                padding: 20rpx 16rpx;
-                background: #F9FAFB;
-                border: 1rpx solid #E5E5E5;
-                border-radius: 12rpx;
+                padding: 24rpx 16rpx;
+                background: #f9fafb;
+                border: 2rpx solid #e5e5e5;
+                border-radius: 16rpx;
                 text-align: center;
                 font-size: 26rpx;
                 color: #333333;
@@ -610,33 +1073,75 @@ onReady(() => {
                 &.active {
                     font-weight: 600;
                     border-color: transparent;
-                    box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.25);
+                    box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.3);
                 }
+            }
+        }
+    }
+
+    .empty-picker {
+        padding: 48rpx 0;
+        text-align: center;
+        font-size: 26rpx;
+        color: #9ca3af;
+    }
+
+    .picker-footer {
+        display: flex;
+        gap: 16rpx;
+        padding: 16rpx 24rpx 24rpx;
+        border-top: 1rpx solid #f0f0f0;
+
+        .picker-btn {
+            flex: 1;
+            height: 80rpx;
+            border-radius: 16rpx;
+            background: #f3f4f6;
+            color: #374151;
+            font-size: 28rpx;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+
+            &:active {
+                opacity: 0.85;
+                transform: scale(0.98);
+            }
+        }
+
+        .picker-btn-primary {
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.3);
+
+            &:active {
+                box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.3);
             }
         }
     }
 }
 
-
 /* 人员卡片列表 */
 .staff-cards {
-    padding: 24rpx;
+    padding: 20rpx;
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
+    gap: 20rpx;
 }
 
 /* 人员卡片 */
 .staff-card {
-    background: #FFFFFF;
-    border-radius: 24rpx;
+    background: #ffffff;
+    border-radius: 20rpx;
     overflow: hidden;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
-    transition: all 0.2s ease;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
 
     &:active {
-        transform: translateY(-4rpx);
-        box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
+        transform: translateY(-2rpx);
+        box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
     }
 
     /* 卡片头部 */
@@ -658,16 +1163,22 @@ onReady(() => {
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            min-width: 0;
 
             .info-top {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
+                gap: 12rpx;
 
                 .staff-name {
+                    flex: 1;
                     font-size: 32rpx;
                     font-weight: 700;
                     color: #333333;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
                 }
 
                 .favorite-btn {
@@ -711,7 +1222,7 @@ onReady(() => {
 
                     text {
                         font-size: 28rpx;
-                        font-weight: 600;
+                        font-weight: 700;
                     }
                 }
 
@@ -740,23 +1251,20 @@ onReady(() => {
             line-height: 1.6;
             margin-bottom: 16rpx;
         }
-        
+
         /* 人员标签 */
         .staff-tags {
             display: flex;
             flex-wrap: wrap;
             gap: 12rpx;
-            
+
             .tag-item {
-                padding: 6rpx 16rpx;
-                background: var(--color-primary-light-9);
-                border: 1rpx solid var(--color-primary-light-7);
-                border-radius: 12rpx;
-                
+                padding: 8rpx 16rpx;
+                border-radius: 16rpx;
+
                 .tag-text {
                     font-size: 24rpx;
                     font-weight: 500;
-                    color: var(--color-primary);
                 }
             }
         }
@@ -768,8 +1276,8 @@ onReady(() => {
         align-items: center;
         justify-content: space-between;
         padding: 24rpx;
-        background: #F9FAFB;
-        border-top: 1rpx solid #F0F0F0;
+        background: #f9fafb;
+        border-top: 1rpx solid #f0f0f0;
 
         .price-section {
             flex: 1;
@@ -812,7 +1320,7 @@ onReady(() => {
             gap: 8rpx;
             padding: 20rpx 40rpx;
             border-radius: 48rpx;
-            color: #FFFFFF;
+            color: #ffffff;
             font-size: 28rpx;
             font-weight: 600;
             box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.35);

@@ -3,17 +3,18 @@
         <!-- 标题 -->
         <view v-if="content.title" class="flex items-center mb-md">
             <view class="title-decoration">
-                <view class="title-line"></view>
+                <view class="title-line" :style="$theme.titleLine.value"></view>
             </view>
             <text class="title-text">{{ content.title }}</text>
             <view class="flex-1"></view>
-            <view
-                v-if="content.show_more"
-                class="more-btn"
-                @click="handleMore"
-            >
-                <text class="more-text">查看更多</text>
-                <tn-icon name="right" size="24" :color="themeStore.themeColor1 || '#7c3aed'" class="ml-1"></tn-icon>
+            <view v-if="content.show_more" class="more-btn" :style="$theme.moreBtn.value" @click="handleMore">
+                <text class="more-text" :style="$theme.moreText.value">查看更多</text>
+                <tn-icon
+                    name="right"
+                    size="24"
+                    :color="primaryColor"
+                    class="ml-1"
+                ></tn-icon>
             </view>
         </view>
 
@@ -41,15 +42,15 @@
                         </view>
                         <view class="price-wrapper">
                             <view class="price-main">
-                                <text class="price-symbol">¥</text>
-                                <text class="price-value">{{ item.price }}</text>
+                                <text class="price-symbol" :style="$theme.priceColor.value">¥</text>
+                                <text class="price-value" :style="$theme.priceColor.value">{{ item.price }}</text>
                             </view>
                             <text v-if="item.original_price" class="price-original">
                                 ¥{{ item.original_price }}
                             </text>
                         </view>
                     </view>
-                    
+
                     <!-- 服务项列表 -->
                     <view v-if="item.services && item.services.length" class="services-list">
                         <view
@@ -57,11 +58,11 @@
                             :key="sIndex"
                             class="service-item"
                         >
-                            <view class="service-dot"></view>
+                            <view class="service-dot" :style="$theme.serviceDot.value"></view>
                             <text class="service-text">{{ service }}</text>
                         </view>
                     </view>
-                    
+
                     <!-- 描述 -->
                     <text v-if="item.desc" class="card-desc">{{ item.desc }}</text>
                 </view>
@@ -70,11 +71,7 @@
 
         <!-- 纵向列表样式 -->
         <view v-if="content.style == 2" class="package-list">
-            <view
-                v-for="(item, index) in showList"
-                :key="index"
-                class="package-card-vertical"
-            >
+            <view v-for="(item, index) in showList" :key="index" class="package-card-vertical">
                 <!-- 卡片头部 -->
                 <view class="card-header-vertical">
                     <view class="card-header-left">
@@ -85,7 +82,7 @@
                         <text class="tag-text-vertical">{{ item.tag }}</text>
                     </view>
                 </view>
-                
+
                 <!-- 服务项列表 -->
                 <view v-if="item.services && item.services.length" class="services-list-vertical">
                     <view
@@ -93,16 +90,16 @@
                         :key="sIndex"
                         class="service-item-vertical"
                     >
-                        <view class="service-dot-vertical"></view>
+                        <view class="service-dot-vertical" :style="$theme.serviceDot.value"></view>
                         <text class="service-text-vertical">{{ service }}</text>
                     </view>
                 </view>
-                
+
                 <!-- 价格 -->
                 <view class="price-wrapper-vertical">
                     <view class="price-main-vertical">
-                        <text class="price-symbol-vertical">¥</text>
-                        <text class="price-value-vertical">{{ item.price }}</text>
+                        <text class="price-symbol-vertical" :style="$theme.priceColor.value">¥</text>
+                        <text class="price-value-vertical" :style="$theme.priceColor.value">{{ item.price }}</text>
                         <text v-if="item.original_price" class="price-original-vertical">
                             ¥{{ item.original_price }}
                         </text>
@@ -113,11 +110,7 @@
 
         <!-- 大卡片样式 -->
         <view v-if="content.style == 3" class="package-grid">
-            <view
-                v-for="(item, index) in showList"
-                :key="index"
-                class="package-card-large"
-            >
+            <view v-for="(item, index) in showList" :key="index" class="package-card-large">
                 <!-- 卡片头部 -->
                 <view class="card-header-large">
                     <view class="card-header-large-top">
@@ -128,23 +121,24 @@
                     </view>
                     <text v-if="item.desc" class="card-desc-large">{{ item.desc }}</text>
                 </view>
-                
+
                 <!-- 服务项网格 -->
                 <view v-if="item.services && item.services.length" class="services-grid">
                     <view
                         v-for="(service, sIndex) in item.services"
                         :key="sIndex"
                         class="service-badge"
+                        :style="$theme.serviceBadge.value"
                     >
-                        <text class="service-badge-text">{{ service }}</text>
+                        <text class="service-badge-text" :style="$theme.serviceBadgeText.value">{{ service }}</text>
                     </view>
                 </view>
-                
+
                 <!-- 价格 -->
                 <view class="price-wrapper-large">
                     <view class="price-main-large">
-                        <text class="price-symbol-large">¥</text>
-                        <text class="price-value-large">{{ item.price }}</text>
+                        <text class="price-symbol-large" :style="$theme.priceColor.value">¥</text>
+                        <text class="price-value-large" :style="$theme.priceColor.value">{{ item.price }}</text>
                         <text v-if="item.original_price" class="price-original-large">
                             ¥{{ item.original_price }}
                         </text>
@@ -159,8 +153,41 @@
 import { computed } from 'vue'
 import { navigateTo } from '@/utils/util'
 import { useThemeStore } from '@/stores/theme'
+import { tintColor, alphaColor } from '@/utils/color'
 
 const themeStore = useThemeStore()
+const primaryColor = computed(() => themeStore.primaryColor || '#7C3AED')
+
+// 内联样式计算属性（替代CSS变量，兼容小程序）
+const $theme = {
+    titleLine: computed(() => ({
+        background: primaryColor.value,
+        borderRadius: '999rpx',
+        boxShadow: `0 2rpx 8rpx ${alphaColor(primaryColor.value, 0.3)}`
+    })),
+    moreBtn: computed(() => ({
+        background: tintColor(primaryColor.value, 0.92)
+    })),
+    moreBtnActive: computed(() => ({
+        background: tintColor(primaryColor.value, 0.85)
+    })),
+    moreText: computed(() => ({
+        color: primaryColor.value
+    })),
+    priceColor: computed(() => ({
+        color: primaryColor.value
+    })),
+    serviceDot: computed(() => ({
+        background: primaryColor.value
+    })),
+    serviceBadge: computed(() => ({
+        background: tintColor(primaryColor.value, 0.92),
+        border: `1rpx solid ${tintColor(primaryColor.value, 0.85)}`
+    })),
+    serviceBadgeText: computed(() => ({
+        color: primaryColor.value
+    }))
+}
 
 const props = defineProps({
     content: {
@@ -202,41 +229,33 @@ const handleMore = () => {
     // 标题样式
     .title-decoration {
         position: relative;
-        width: 8rpx; // 使用xs间距
+        width: 8rpx;
         height: 34rpx;
-        margin-right: 16rpx; // 使用sm间距
-        
+        margin-right: 16rpx;
+
         .title-line {
             width: 100%;
             height: 100%;
-            background: var(--tn-color-primary);
             border-radius: 999rpx;
-            box-shadow: 0 2rpx 8rpx var(--tn-color-primary-light-7, rgba(124, 58, 237, 0.3));
         }
     }
-    
+
     .title-text {
         font-size: 36rpx;
         font-weight: 600;
         color: #1f2937;
         letter-spacing: 0.5rpx;
     }
-    
+
     .more-btn {
         display: flex;
         align-items: center;
         padding: 8rpx 16rpx;
         border-radius: 999rpx;
-        background: var(--tn-color-primary-light-9, rgba(124, 58, 237, 0.08));
         transition: all 0.2s ease;
-        
-        &:active {
-            background: var(--tn-color-primary-light-7, rgba(124, 58, 237, 0.15));
-        }
-        
+
         .more-text {
             font-size: 24rpx;
-            color: var(--tn-color-primary);
             font-weight: 500;
         }
     }
@@ -254,14 +273,14 @@ const handleMore = () => {
         padding: 20rpx;
         border: 2rpx solid #f3f4f6;
         box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
-        
+
         .card-header {
             .card-header-content {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 margin-bottom: 12rpx;
-                
+
                 .card-title {
                     flex: 1;
                     font-size: 32rpx;
@@ -269,14 +288,14 @@ const handleMore = () => {
                     color: #111827;
                     line-height: 1.4;
                 }
-                
+
                 .tag-badge {
                     margin-left: 12rpx;
                     padding: 6rpx 12rpx;
                     background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
                     border-radius: 999rpx;
                     box-shadow: 0 2rpx 8rpx rgba(249, 115, 22, 0.3);
-                    
+
                     .tag-text {
                         font-size: 20rpx;
                         color: #ffffff;
@@ -284,31 +303,29 @@ const handleMore = () => {
                     }
                 }
             }
-            
+
             .price-wrapper {
                 display: flex;
                 align-items: baseline;
                 margin-bottom: 20rpx;
-                
+
                 .price-main {
                     display: flex;
                     align-items: baseline;
-                    
+
                     .price-symbol {
                         font-size: 28rpx;
-                        color: var(--tn-color-primary);
                         font-weight: 600;
                         margin-right: 4rpx;
                     }
-                    
+
                     .price-value {
                         font-size: 44rpx;
-                        color: var(--tn-color-primary);
                         font-weight: 700;
                         line-height: 1;
                     }
                 }
-                
+
                 .price-original {
                     font-size: 24rpx;
                     color: #9ca3af;
@@ -317,27 +334,26 @@ const handleMore = () => {
                 }
             }
         }
-        
+
         .services-list {
             padding: 16rpx 0;
             border-top: 1rpx solid #f3f4f6;
             display: flex;
             flex-direction: column;
             gap: 10rpx;
-            
+
             .service-item {
                 display: flex;
                 align-items: center;
-                
+
                 .service-dot {
                     width: 8rpx;
                     height: 8rpx;
-                    background: var(--tn-color-primary);
                     border-radius: 50%;
                     margin-right: 12rpx;
                     flex-shrink: 0;
                 }
-                
+
                 .service-text {
                     font-size: 26rpx;
                     color: #4b5563;
@@ -345,7 +361,7 @@ const handleMore = () => {
                 }
             }
         }
-        
+
         .card-desc {
             display: block;
             font-size: 24rpx;
@@ -363,23 +379,23 @@ const handleMore = () => {
         flex-direction: column;
         gap: 16rpx;
     }
-    
+
     .package-card-vertical {
         background: #ffffff;
         border-radius: 14rpx;
         padding: 20rpx;
         border: 2rpx solid #f3f4f6;
         box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
-        
+
         .card-header-vertical {
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
             margin-bottom: 16rpx;
-            
+
             .card-header-left {
                 flex: 1;
-                
+
                 .card-title-vertical {
                     display: block;
                     font-size: 32rpx;
@@ -388,7 +404,7 @@ const handleMore = () => {
                     line-height: 1.4;
                     margin-bottom: 6rpx;
                 }
-                
+
                 .card-desc-vertical {
                     display: block;
                     font-size: 24rpx;
@@ -396,7 +412,7 @@ const handleMore = () => {
                     line-height: 1.6;
                 }
             }
-            
+
             .tag-badge-vertical {
                 margin-left: 12rpx;
                 padding: 6rpx 12rpx;
@@ -404,7 +420,7 @@ const handleMore = () => {
                 border-radius: 999rpx;
                 box-shadow: 0 2rpx 8rpx rgba(249, 115, 22, 0.3);
                 flex-shrink: 0;
-                
+
                 .tag-text-vertical {
                     font-size: 20rpx;
                     color: #ffffff;
@@ -412,7 +428,7 @@ const handleMore = () => {
                 }
             }
         }
-        
+
         .services-list-vertical {
             padding: 16rpx 0;
             border-top: 1rpx solid #f3f4f6;
@@ -420,20 +436,19 @@ const handleMore = () => {
             display: flex;
             flex-direction: column;
             gap: 10rpx;
-            
+
             .service-item-vertical {
                 display: flex;
                 align-items: center;
-                
+
                 .service-dot-vertical {
                     width: 8rpx;
                     height: 8rpx;
-                    background: var(--tn-color-primary);
                     border-radius: 50%;
                     margin-right: 12rpx;
                     flex-shrink: 0;
                 }
-                
+
                 .service-text-vertical {
                     font-size: 26rpx;
                     color: #4b5563;
@@ -441,28 +456,26 @@ const handleMore = () => {
                 }
             }
         }
-        
+
         .price-wrapper-vertical {
             margin-top: 16rpx;
-            
+
             .price-main-vertical {
                 display: flex;
                 align-items: baseline;
-                
+
                 .price-symbol-vertical {
                     font-size: 28rpx;
-                    color: var(--tn-color-primary);
                     font-weight: 600;
                     margin-right: 4rpx;
                 }
-                
+
                 .price-value-vertical {
                     font-size: 44rpx;
-                    color: var(--tn-color-primary);
                     font-weight: 700;
                     line-height: 1;
                 }
-                
+
                 .price-original-vertical {
                     font-size: 24rpx;
                     color: #9ca3af;
@@ -479,23 +492,23 @@ const handleMore = () => {
         flex-direction: column;
         gap: 16rpx;
     }
-    
+
     .package-card-large {
         background: #ffffff;
         border-radius: 14rpx;
         padding: 24rpx;
         border: 2rpx solid #f3f4f6;
         box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
-        
+
         .card-header-large {
             margin-bottom: 16rpx;
-            
+
             .card-header-large-top {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 margin-bottom: 8rpx;
-                
+
                 .card-title-large {
                     flex: 1;
                     font-size: 36rpx;
@@ -503,14 +516,14 @@ const handleMore = () => {
                     color: #111827;
                     line-height: 1.4;
                 }
-                
+
                 .tag-badge-large {
                     margin-left: 12rpx;
                     padding: 6rpx 16rpx;
                     background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
                     border-radius: 999rpx;
                     box-shadow: 0 2rpx 8rpx rgba(249, 115, 22, 0.3);
-                    
+
                     .tag-text-large {
                         font-size: 22rpx;
                         color: #ffffff;
@@ -518,7 +531,7 @@ const handleMore = () => {
                     }
                 }
             }
-            
+
             .card-desc-large {
                 display: block;
                 font-size: 26rpx;
@@ -526,7 +539,7 @@ const handleMore = () => {
                 line-height: 1.6;
             }
         }
-        
+
         .services-grid {
             display: flex;
             flex-wrap: wrap;
@@ -534,42 +547,37 @@ const handleMore = () => {
             padding: 16rpx 0;
             border-top: 1rpx solid #f3f4f6;
             border-bottom: 1rpx solid #f3f4f6;
-            
+
             .service-badge {
                 padding: 8rpx 16rpx;
-                background: var(--tn-color-primary-light-9, rgba(124, 58, 237, 0.08));
                 border-radius: 999rpx;
-                border: 1rpx solid var(--tn-color-primary-light-7, rgba(124, 58, 237, 0.15));
-                
+
                 .service-badge-text {
                     font-size: 24rpx;
-                    color: var(--tn-color-primary);
                     font-weight: 500;
                 }
             }
         }
-        
+
         .price-wrapper-large {
             margin-top: 16rpx;
-            
+
             .price-main-large {
                 display: flex;
                 align-items: baseline;
-                
+
                 .price-symbol-large {
                     font-size: 32rpx;
-                    color: var(--tn-color-primary);
                     font-weight: 600;
                     margin-right: 4rpx;
                 }
-                
+
                 .price-value-large {
                     font-size: 48rpx;
-                    color: var(--tn-color-primary);
                     font-weight: 700;
                     line-height: 1;
                 }
-                
+
                 .price-original-large {
                     font-size: 28rpx;
                     color: #9ca3af;

@@ -1,10 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar 
+        <navigation-bar
             title="搜索"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
         <!-- #endif -->
     </page-meta>
@@ -28,11 +28,7 @@
                 :active-color="$theme.primaryColor"
                 :bar-color="$theme.primaryColor"
             >
-                <tn-tabs-item
-                    v-for="tab in searchTypes"
-                    :key="tab.value"
-                    :title="tab.label"
-                />
+                <tn-tabs-item v-for="tab in searchTypes" :key="tab.value" :title="tab.label" />
             </tn-tabs>
         </view>
 
@@ -92,7 +88,11 @@
                         >
                             <image
                                 class="result-cover"
-                                :src="item.cover || item.images?.[0] || '/static/images/user/default_avatar.png'"
+                                :src="
+                                    item.cover ||
+                                    item.images?.[0] ||
+                                    '/static/images/user/default_avatar.png'
+                                "
                                 mode="aspectFill"
                                 lazy-load
                             />
@@ -100,7 +100,9 @@
                                 <text class="result-title">{{ item.title || '未命名作品' }}</text>
                                 <view class="result-meta">
                                     <tn-icon name="user" size="24" color="#999999" />
-                                    <text class="result-staff">{{ item.staff_name || '未知人员' }}</text>
+                                    <text class="result-staff">{{
+                                        item.staff_name || '未知人员'
+                                    }}</text>
                                 </view>
                             </view>
                         </view>
@@ -120,11 +122,14 @@
                             <view class="result-info">
                                 <view class="result-header">
                                     <text class="result-title">{{ item.name }}</text>
-                                    <view 
-                                        v-if="item.staff_name" 
+                                    <view
+                                        v-if="item.staff_name"
                                         class="result-badge"
-                                        :style="{ 
-                                            backgroundColor: getLightColor($theme.primaryColor, 0.1),
+                                        :style="{
+                                            backgroundColor: getLightColor(
+                                                $theme.primaryColor,
+                                                0.1
+                                            ),
                                             color: $theme.primaryColor,
                                             borderColor: getLightColor($theme.primaryColor, 0.3)
                                         }"
@@ -132,18 +137,20 @@
                                         {{ item.staff_name }}
                                     </view>
                                 </view>
-                                <text class="result-desc">{{ item.description || '暂无描述' }}</text>
+                                <text class="result-desc">{{
+                                    item.description || '暂无描述'
+                                }}</text>
                                 <view class="result-price">
-                                    <text 
-                                        class="price-symbol"
-                                        :style="{ color: $theme.ctaColor }"
-                                    >¥</text>
-                                    <text 
-                                        class="price-value"
-                                        :style="{ color: $theme.ctaColor }"
-                                    >{{ item.price }}</text>
+                                    <text class="price-symbol" :style="{ color: $theme.ctaColor }"
+                                        >¥</text
+                                    >
+                                    <text class="price-value" :style="{ color: $theme.ctaColor }">{{
+                                        item.price
+                                    }}</text>
                                     <text
-                                        v-if="item.original_price && item.original_price > item.price"
+                                        v-if="
+                                            item.original_price && item.original_price > item.price
+                                        "
                                         class="price-original"
                                     >
                                         ¥{{ item.original_price }}

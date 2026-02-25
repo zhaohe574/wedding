@@ -1,6 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar title="套餐管理" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            title="套餐管理"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
     </page-meta>
 
     <view class="page-container">
@@ -12,15 +16,19 @@
                     :key="tab.key"
                     class="tab-item"
                     :class="{ active: tabIndex === index }"
-                    :style="tabIndex === index ? {
-                        color: $theme.primaryColor,
-                        borderBottomColor: $theme.primaryColor
-                    } : {}"
+                    :style="
+                        tabIndex === index
+                            ? {
+                                  color: $theme.primaryColor,
+                                  borderBottomColor: $theme.primaryColor
+                              }
+                            : {}
+                    "
                     @click="tabIndex = index"
                 >
                     <text class="tab-text">{{ tab.label }}</text>
-                    <view 
-                        v-if="tabIndex === index" 
+                    <view
+                        v-if="tabIndex === index"
                         class="tab-indicator"
                         :style="{ background: $theme.primaryColor }"
                     />
@@ -30,21 +38,19 @@
 
         <!-- 已关联套餐 -->
         <view v-if="tabIndex === 0" class="package-list">
-            <view
-                v-for="item in configured"
-                :key="item.package_id"
-                class="package-card"
-            >
+            <view v-for="item in configured" :key="item.package_id" class="package-card">
                 <!-- 套餐头部 -->
                 <view class="package-header">
                     <view class="package-title">
                         <tn-icon name="gift" size="32" :color="$theme.primaryColor" />
                         <text>{{ getPackageName(item) }}</text>
                     </view>
-                    <view 
+                    <view
                         class="package-status"
-                        :style="{ 
-                            background: item.status ? `${$theme.primaryColor}15` : 'rgba(153, 153, 153, 0.1)',
+                        :style="{
+                            background: item.status
+                                ? `${$theme.primaryColor}15`
+                                : 'rgba(153, 153, 153, 0.1)',
                             color: item.status ? $theme.primaryColor : '#999999'
                         }"
                     >
@@ -72,7 +78,7 @@
                 <view class="package-actions">
                     <view
                         class="action-btn edit-btn"
-                        :style="{ 
+                        :style="{
                             color: $theme.primaryColor,
                             borderColor: $theme.primaryColor
                         }"
@@ -81,10 +87,7 @@
                         <tn-icon name="edit" size="28" :color="$theme.primaryColor" />
                         <text>编辑</text>
                     </view>
-                    <view
-                        class="action-btn remove-btn"
-                        @click="handleRemove(item)"
-                    >
+                    <view class="action-btn remove-btn" @click="handleRemove(item)">
                         <tn-icon name="delete" size="28" color="#FF2C3C" />
                         <text>移除</text>
                     </view>
@@ -101,11 +104,7 @@
 
         <!-- 可选套餐 -->
         <view v-else class="package-list">
-            <view
-                v-for="item in available"
-                :key="item.id"
-                class="package-card"
-            >
+            <view v-for="item in available" :key="item.id" class="package-card">
                 <!-- 套餐头部 -->
                 <view class="package-header">
                     <view class="package-title">
@@ -129,7 +128,7 @@
                 <view class="package-actions">
                     <view
                         class="action-btn add-btn"
-                        :style="{ 
+                        :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                             color: $theme.btnColor
                         }"
@@ -153,7 +152,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { staffCenterPackageLists, staffCenterPackageAdd, staffCenterPackageRemove } from '@/api/staffCenter'
+import {
+    staffCenterPackageLists,
+    staffCenterPackageAdd,
+    staffCenterPackageRemove
+} from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 
@@ -171,8 +174,7 @@ const available = ref<any[]>([])
 const getPackageName = (item: any) => item.package?.name || item.name || '套餐'
 
 // 获取套餐价格
-const getPackagePrice = (item: any) =>
-    item.custom_price ?? item.price ?? item.package?.price ?? 0
+const getPackagePrice = (item: any) => item.custom_price ?? item.price ?? item.package?.price ?? 0
 
 // 获取预约方式文本
 const getBookingTypeText = (item: any) => {
@@ -242,12 +244,12 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #F6F6F6 100%);
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
 }
 
 /* 标签页 */
 .tabs-wrapper {
-    background: #FFFFFF;
+    background: #ffffff;
     box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 
@@ -266,7 +268,7 @@ onShow(async () => {
     color: #666666;
     font-size: 30rpx;
     transition: all 0.2s ease;
-    
+
     &.active {
         font-weight: 600;
     }
@@ -294,10 +296,10 @@ onShow(async () => {
 .package-card {
     margin-bottom: 24rpx;
     padding: 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
-    
+
     &:last-child {
         margin-bottom: 0;
     }
@@ -309,7 +311,7 @@ onShow(async () => {
     align-items: center;
     justify-content: space-between;
     padding-bottom: 20rpx;
-    border-bottom: 1rpx solid #F5F5F5;
+    border-bottom: 1rpx solid #f5f5f5;
     margin-bottom: 20rpx;
 }
 
@@ -372,7 +374,7 @@ onShow(async () => {
     font-size: 28rpx;
     font-weight: 500;
     transition: all 0.2s ease;
-    
+
     &:active {
         opacity: 0.8;
     }
@@ -385,8 +387,8 @@ onShow(async () => {
 
 .remove-btn {
     background: transparent;
-    color: #FF2C3C;
-    border: 2rpx solid #FF2C3C;
+    color: #ff2c3c;
+    border: 2rpx solid #ff2c3c;
 }
 
 .add-btn {
@@ -411,6 +413,6 @@ onShow(async () => {
 
 .empty-tip {
     font-size: 24rpx;
-    color: #C8C9CC;
+    color: #c8c9cc;
 }
 </style>

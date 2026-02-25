@@ -12,11 +12,13 @@
         <view class="cover-section">
             <image
                 class="cover-image"
-                :src="workDetail.cover || workDetail.images?.[0] || '/static/images/default_cover.png'"
+                :src="
+                    workDetail.cover || workDetail.images?.[0] || '/static/images/default_cover.png'
+                "
                 mode="aspectFill"
                 @click="previewCover"
             />
-            
+
             <!-- 玻璃态信息卡 -->
             <view class="glass-info-card">
                 <view class="title-row">
@@ -31,7 +33,7 @@
                         </view>
                     </view>
                 </view>
-                
+
                 <view class="info-tags">
                     <view v-if="workDetail.shoot_date" class="info-tag">
                         <tn-icon name="calendar" size="24" color="#666" />
@@ -66,8 +68,13 @@
                     <view class="staff-info">
                         <view class="staff-name-row">
                             <text class="staff-name">{{ workDetail.staff.name || '-' }}</text>
-                            <view class="staff-badge" :style="{ backgroundColor: $theme.secondaryColor }">
-                                <text class="badge-text">{{ workDetail.staff.category_name || '未分类' }}</text>
+                            <view
+                                class="staff-badge"
+                                :style="{ backgroundColor: $theme.secondaryColor }"
+                            >
+                                <text class="badge-text">{{
+                                    workDetail.staff.category_name || '未分类'
+                                }}</text>
                             </view>
                         </view>
                         <view class="staff-meta">
@@ -77,7 +84,7 @@
                 </view>
                 <tn-icon name="arrow-right" size="32" color="#999" />
             </view>
-            
+
             <view class="staff-stats">
                 <view class="staff-stat-item">
                     <text class="staff-stat-value" :style="{ color: $theme.primaryColor }">
@@ -104,7 +111,7 @@
                     <text class="staff-stat-label">收藏数</text>
                 </view>
             </view>
-            
+
             <view class="staff-price-row">
                 <text class="price-label">服务价格</text>
                 <view class="staff-price">
@@ -180,9 +187,7 @@ const workDetail = ref<any>(null)
 
 // 页面样式（渐变背景）
 const pageStyle = computed(() => {
-    const lightColor = $theme.primaryColor
-        ? `${$theme.primaryColor}10`
-        : '#F3E8FF'
+    const lightColor = $theme.primaryColor ? `${$theme.primaryColor}10` : '#F3E8FF'
     return `background: linear-gradient(180deg, ${lightColor} 0%, #FFFFFF 30%);`
 })
 
@@ -303,7 +308,7 @@ onLoad((options: any) => {
 .work-title {
     font-size: 36rpx;
     font-weight: 700;
-    color: #1F2937;
+    color: #1f2937;
     flex: 1;
     line-height: 1.4;
 }
@@ -326,7 +331,7 @@ onLoad((options: any) => {
 
 .view-count {
     font-size: 22rpx;
-    color: #3B82F6;
+    color: #3b82f6;
     font-weight: 500;
 }
 
@@ -336,7 +341,7 @@ onLoad((options: any) => {
 }
 
 .type-text {
-    color: #FFFFFF;
+    color: #ffffff;
     font-size: 24rpx;
     font-weight: 500;
 }
@@ -355,7 +360,7 @@ onLoad((options: any) => {
 
 .tag-text {
     font-size: 24rpx;
-    color: #6B7280;
+    color: #6b7280;
 }
 
 /* 通用卡片样式 */
@@ -365,7 +370,7 @@ onLoad((options: any) => {
 .video-card {
     margin: 0 24rpx 24rpx;
     padding: 28rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
 }
@@ -380,14 +385,14 @@ onLoad((options: any) => {
 .section-title {
     font-size: 30rpx;
     font-weight: 700;
-    color: #1F2937;
+    color: #1f2937;
 }
 
 /* 作品描述 */
 .desc-text {
     font-size: 28rpx;
     line-height: 1.8;
-    color: #4B5563;
+    color: #4b5563;
     white-space: pre-wrap;
 }
 
@@ -406,7 +411,7 @@ onLoad((options: any) => {
     justify-content: space-between;
     margin-bottom: 24rpx;
     padding-bottom: 24rpx;
-    border-bottom: 2rpx solid #F3F4F6;
+    border-bottom: 2rpx solid #f3f4f6;
 }
 
 .staff-left {
@@ -439,7 +444,7 @@ onLoad((options: any) => {
 .staff-name {
     font-size: 32rpx;
     font-weight: 700;
-    color: #1F2937;
+    color: #1f2937;
 }
 
 .staff-badge {
@@ -449,7 +454,7 @@ onLoad((options: any) => {
 
 .badge-text {
     font-size: 22rpx;
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 .staff-meta {
@@ -460,7 +465,7 @@ onLoad((options: any) => {
 
 .staff-sn {
     font-size: 24rpx;
-    color: #9CA3AF;
+    color: #9ca3af;
 }
 
 .staff-stats {
@@ -469,7 +474,7 @@ onLoad((options: any) => {
     gap: 16rpx;
     margin-bottom: 24rpx;
     padding-bottom: 24rpx;
-    border-bottom: 2rpx solid #F3F4F6;
+    border-bottom: 2rpx solid #f3f4f6;
 }
 
 .staff-stat-item {
@@ -486,7 +491,7 @@ onLoad((options: any) => {
 
 .staff-stat-label {
     font-size: 22rpx;
-    color: #9CA3AF;
+    color: #9ca3af;
 }
 
 .staff-price-row {
@@ -497,7 +502,7 @@ onLoad((options: any) => {
 
 .price-label {
     font-size: 26rpx;
-    color: #6B7280;
+    color: #6b7280;
 }
 
 .staff-price {
@@ -518,7 +523,7 @@ onLoad((options: any) => {
 
 .price-unit {
     font-size: 24rpx;
-    color: #9CA3AF;
+    color: #9ca3af;
 }
 
 /* 作品图片 */
@@ -575,7 +580,7 @@ onLoad((options: any) => {
 .more-text {
     font-size: 40rpx;
     font-weight: 700;
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 /* 作品视频 */
@@ -595,6 +600,6 @@ onLoad((options: any) => {
 
 .time-text {
     font-size: 22rpx;
-    color: #9CA3AF;
+    color: #9ca3af;
 }
 </style>

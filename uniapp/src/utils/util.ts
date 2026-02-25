@@ -54,21 +54,88 @@ export enum LinkTypeEnum {
     'MINI_PROGRAM' = 'mini_program'
 }
 
+const LEGACY_LINK_MAP: Record<string, string> = {
+    '/pages/service/index': '/packages/pages/staff_list/staff_list',
+    '/pages/staff/list': '/packages/pages/staff_list/staff_list',
+    '/pages/order/list': '/pages/order/order',
+    '/pages/customer-service/index': '/pages/customer_service/customer_service',
+    '/pages/user_wallet/user_wallet': '/packages/pages/user_wallet/user_wallet',
+    '/pages/recharge_record/recharge_record': '/packages/pages/recharge_record/recharge_record'
+}
+
+const normalizePath = (path = '') => {
+    let nextPath = path.trim()
+    if (!nextPath) return ''
+
+    if (nextPath.startsWith('/mobile/')) {
+        nextPath = nextPath.replace(/^\/mobile/, '')
+    }
+
+    if (!nextPath.startsWith('/')) {
+        nextPath = `/${nextPath}`
+    }
+
+    return LEGACY_LINK_MAP[nextPath] || nextPath
+}
+
+const buildUrl = (path: string, query?: Record<string, any>) => {
+    if (!query || !Object.keys(query).length) {
+        return path
+    }
+    return `${path}?${objectToQuery(query)}`
+}
+
+const handleNavigateFail = (error: any) => {
+    console.error('页面跳转失败:', error)
+    uni.showToast({
+        title: '页面跳转失败，请稍后重试',
+        icon: 'none'
+    })
+}
+
 export function navigateTo(
-    link: Link,
+    link: Partial<Link> = {},
     navigateType: 'navigateTo' | 'switchTab' | 'reLaunch' = 'navigateTo'
 ) {
+    if (!link || typeof link !== 'object') {
+        uni.showToast({ title: '页面暂未配置', icon: 'none' })
+        return
+    }
+
     // 如果是小程序跳转
     if (link.type === LinkTypeEnum.MINI_PROGRAM) {
         navigateToMiniProgram(link)
         return
     }
 
-    const url = link?.query ? `${link.path}?${objectToQuery(link?.query)}` : link.path
+    const path = normalizePath(link.path || '')
+    if (!path) {
+        uni.showToast({ title: '页面暂未配置', icon: 'none' })
+        return
+    }
 
-    ;(navigateType == 'switchTab' || link.canTab) && uni.switchTab({ url })
-    navigateType == 'navigateTo' && uni.navigateTo({ url })
-    navigateType == 'reLaunch' && uni.reLaunch({ url })
+    const shouldSwitchTab = navigateType === 'switchTab' || !!link.canTab
+    if (shouldSwitchTab) {
+        uni.switchTab({
+            url: path,
+            fail: handleNavigateFail
+        })
+        return
+    }
+
+    const url = buildUrl(path, link.query)
+    if (navigateType === 'reLaunch') {
+        uni.reLaunch({
+            url,
+            fail: handleNavigateFail
+        })
+        return
+    }
+
+    uni.navigateTo({
+        url,
+        fail: handleNavigateFail
+    })
 }
 
 /**

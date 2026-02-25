@@ -1,6 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar title="服务人员中心" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            title="服务人员中心"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
     </page-meta>
 
     <view class="page-container">
@@ -19,8 +23,8 @@
                     <view class="profile-mobile">
                         {{ profile.mobile || '未绑定手机号' }}
                     </view>
-                    <view 
-                        v-if="profile.price" 
+                    <view
+                        v-if="profile.price"
                         class="profile-price"
                         :style="{ color: $theme.ctaColor }"
                     >
@@ -33,10 +37,10 @@
                     <tn-icon name="right" size="32" :color="$theme.primaryColor" />
                 </view>
             </view>
-            
+
             <!-- 认证状态标签 -->
-            <view 
-                v-if="profile.status" 
+            <view
+                v-if="profile.status"
                 class="status-badge"
                 :style="getStatusStyle(profile.status)"
             >
@@ -47,15 +51,17 @@
 
         <!-- 数据统计卡片 -->
         <view class="stats-container">
-            <view 
-                v-for="(stat, index) in stats" 
+            <view
+                v-for="(stat, index) in stats"
                 :key="index"
                 class="stat-item"
                 @click="goPage(stat.path)"
             >
-                <view 
+                <view
                     class="stat-icon-wrapper"
-                    :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor}15 0%, ${$theme.primaryColor}30 100%)` }"
+                    :style="{
+                        background: `linear-gradient(135deg, ${$theme.primaryColor}15 0%, ${$theme.primaryColor}30 100%)`
+                    }"
                 >
                     <tn-icon :name="stat.icon" size="40" :color="$theme.primaryColor" />
                 </view>
@@ -75,9 +81,11 @@
                 @click="goPage(item.path)"
             >
                 <view class="menu-left">
-                    <view 
+                    <view
                         class="menu-icon-wrapper"
-                        :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor}10 0%, ${$theme.primaryColor}20 100%)` }"
+                        :style="{
+                            background: `linear-gradient(135deg, ${$theme.primaryColor}10 0%, ${$theme.primaryColor}20 100%)`
+                        }"
                     >
                         <tn-icon :name="item.icon" size="36" :color="$theme.primaryColor" />
                     </view>
@@ -232,7 +240,7 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #F6F6F6 100%);
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
     padding-bottom: 40rpx;
 }
 
@@ -244,11 +252,10 @@ onShow(async () => {
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(20rpx);
     border-radius: 24rpx;
-    box-shadow: 0 8rpx 32rpx rgba(124, 58, 237, 0.08),
-                0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+    box-shadow: 0 8rpx 32rpx rgba(124, 58, 237, 0.08), 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
     transition: all 0.3s ease;
     overflow: hidden;
-    
+
     &::before {
         content: '';
         position: absolute;
@@ -256,7 +263,7 @@ onShow(async () => {
         left: 0;
         right: 0;
         height: 4rpx;
-        background: linear-gradient(90deg, #7C3AED 0%, #EC4899 100%);
+        background: linear-gradient(90deg, #7c3aed 0%, #ec4899 100%);
     }
 }
 
@@ -269,8 +276,8 @@ onShow(async () => {
     width: 128rpx;
     height: 128rpx;
     border-radius: 64rpx;
-    background: #F2F2F2;
-    border: 4rpx solid #FFFFFF;
+    background: #f2f2f2;
+    border: 4rpx solid #ffffff;
     box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
 }
 
@@ -296,18 +303,18 @@ onShow(async () => {
     display: flex;
     align-items: baseline;
     margin-top: 12rpx;
-    
+
     .price-symbol {
         font-size: 24rpx;
         font-weight: 600;
     }
-    
+
     .price-value {
         font-size: 40rpx;
         font-weight: 700;
         margin: 0 4rpx;
     }
-    
+
     .price-unit {
         font-size: 24rpx;
         font-weight: 500;
@@ -328,7 +335,7 @@ onShow(async () => {
     border-radius: 24rpx;
     font-size: 24rpx;
     font-weight: 500;
-    
+
     .status-text {
         color: inherit;
     }
@@ -347,11 +354,11 @@ onShow(async () => {
     flex-direction: column;
     align-items: center;
     padding: 24rpx 16rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 16rpx;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: translateY(-2rpx);
         box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
@@ -383,7 +390,7 @@ onShow(async () => {
 /* 功能菜单 */
 .menu-container {
     margin: 0 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 16rpx;
     overflow: hidden;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
@@ -394,13 +401,13 @@ onShow(async () => {
     align-items: center;
     justify-content: space-between;
     padding: 24rpx;
-    border-bottom: 1rpx solid #F5F5F5;
+    border-bottom: 1rpx solid #f5f5f5;
     transition: all 0.2s ease;
-    
+
     &:last-child {
         border-bottom: none;
     }
-    
+
     &:active {
         background: rgba(124, 58, 237, 0.03);
     }

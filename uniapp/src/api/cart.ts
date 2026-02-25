@@ -95,7 +95,6 @@ export function cancelDefaultCartPlan() {
     return request.post({ url: '/cart/cancelDefaultPlan', params: {} })
 }
 
-
 // 应用方案到购物车
 export function applyCartPlan(params: any) {
     return request.post({ url: '/cart/applyPlanToCart', params })

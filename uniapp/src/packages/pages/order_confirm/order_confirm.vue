@@ -64,13 +64,19 @@
                     <view class="group-header">
                         <view class="staff-section">
                             <image
-                                :src="group.staff?.avatar || '/static/images/user/default_avatar.png'"
+                                :src="
+                                    group.staff?.avatar || '/static/images/user/default_avatar.png'
+                                "
                                 class="staff-avatar"
                                 mode="aspectFill"
                             />
                             <view class="staff-info">
-                                <text class="staff-name">人员：{{ group.staff?.name || '服务人员' }}</text>
-                                <text class="staff-subtitle">日期：{{ group.schedule_date || '未指定日期' }}</text>
+                                <text class="staff-name"
+                                    >人员：{{ group.staff?.name || '服务人员' }}</text
+                                >
+                                <text class="staff-subtitle"
+                                    >日期：{{ group.schedule_date || '未指定日期' }}</text
+                                >
                             </view>
                         </view>
                         <view class="group-total">
@@ -82,11 +88,7 @@
                     </view>
 
                     <view class="group-packages">
-                        <view
-                            class="package-group"
-                            v-for="pkg in group.packages"
-                            :key="pkg.key"
-                        >
+                        <view class="package-group" v-for="pkg in group.packages" :key="pkg.key">
                             <view class="package-header">
                                 <view class="package-title">
                                     <tn-icon name="gift" size="24" />
@@ -101,8 +103,13 @@
                                 <view class="package-item" v-for="item in pkg.items" :key="item.id">
                                     <view class="slot-info">
                                         <view class="slot-row">
-                                            <text class="slot-label">场次：{{ getTimeSlotLabel(item) }}</text>
-                                            <text class="slot-price" :style="{ color: $theme.ctaColor }">
+                                            <text class="slot-label"
+                                                >场次：{{ getTimeSlotLabel(item) }}</text
+                                            >
+                                            <text
+                                                class="slot-price"
+                                                :style="{ color: $theme.ctaColor }"
+                                            >
                                                 ¥{{ formatPrice(item.price) }}
                                             </text>
                                         </view>
@@ -142,9 +149,13 @@
             <view
                 class="submit-btn"
                 :class="{ disabled: !canSubmit }"
-                :style="canSubmit ? {
-                    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
-                } : {}"
+                :style="
+                    canSubmit
+                        ? {
+                              background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
+                          }
+                        : {}
+                "
                 @click="handleSubmit"
             >
                 <text>{{ submitting ? '提交中...' : '提交订单' }}</text>
@@ -183,7 +194,9 @@ const form = reactive({
     remark: ''
 })
 
-const hasItems = computed(() => Array.isArray(preview.value.items) && preview.value.items.length > 0)
+const hasItems = computed(
+    () => Array.isArray(preview.value.items) && preview.value.items.length > 0
+)
 const canSubmit = computed(() => hasItems.value && !loading.value && !submitting.value)
 
 const formatPrice = (value: any) => Number(value || 0).toFixed(2)
@@ -251,7 +264,7 @@ const getTimeSlotLabel = (item: any) => {
         3: '晚宴'
     }
     const slot = Number(item?.time_slot)
-    return Number.isFinite(slot) ? (map[slot] || '未知场次') : '未知场次'
+    return Number.isFinite(slot) ? map[slot] || '未知场次' : '未知场次'
 }
 
 const initContact = async () => {

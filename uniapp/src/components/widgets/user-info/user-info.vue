@@ -13,8 +13,8 @@
                     >
                         <!-- 头像 -->
                         <view class="avatar-wrapper">
-                            <tn-avatar 
-                                :url="user.avatar || '/static/images/user/default_avatar.png'" 
+                            <tn-avatar
+                                :url="user.avatar || '/static/images/user/default_avatar.png'"
                                 :size="140"
                                 shape="circle"
                             />
@@ -28,7 +28,7 @@
                                 <text class="vip-text">VIP</text>
                             </view>
                         </view>
-                        
+
                         <!-- 用户信息 -->
                         <view class="user-info-section ml-[24rpx] flex-1">
                             <view class="flex items-center mb-[12rpx]">
@@ -39,21 +39,33 @@
                                     class="verified-badge"
                                     :style="{ backgroundColor: $theme.primaryColor + '15' }"
                                 >
-                                    <text class="verified-text" :style="{ color: $theme.primaryColor }">已认证</text>
+                                    <text
+                                        class="verified-text"
+                                        :style="{ color: $theme.primaryColor }"
+                                        >已认证</text
+                                    >
                                 </view>
                             </view>
-                            <view class="flex items-center account-row" @click.stop="copy(user.account)">
+                            <view
+                                class="flex items-center account-row"
+                                @click.stop="copy(user.account)"
+                            >
                                 <text class="account-text">账号：{{ user.account }}</text>
                                 <tn-icon name="copy" size="28" color="#94A3B8" class="ml-[8rpx]" />
                             </view>
                         </view>
                     </view>
-                    
+
                     <!-- 未登录状态 -->
-                    <navigator v-else class="flex items-center flex-1" hover-class="none" url="/pages/login/login">
+                    <navigator
+                        v-else
+                        class="flex items-center flex-1"
+                        hover-class="none"
+                        url="/pages/login/login"
+                    >
                         <view class="avatar-wrapper">
-                            <tn-avatar 
-                                url="/static/images/user/default_avatar.png" 
+                            <tn-avatar
+                                url="/static/images/user/default_avatar.png"
                                 :size="140"
                                 shape="circle"
                             />
@@ -65,10 +77,18 @@
                             </view>
                         </view>
                     </navigator>
-                    
+
                     <!-- 右侧：设置按钮 -->
-                    <navigator v-if="isLogin" hover-class="none" url="/pages/user_set/user_set" class="ml-[24rpx]">
-                        <view class="setting-btn" :style="{ backgroundColor: $theme.primaryColor + '15' }">
+                    <navigator
+                        v-if="isLogin"
+                        hover-class="none"
+                        url="/pages/user_set/user_set"
+                        class="ml-[24rpx]"
+                    >
+                        <view
+                            class="setting-btn"
+                            :style="{ backgroundColor: $theme.primaryColor + '15' }"
+                        >
                             <tn-icon name="set" :color="$theme.primaryColor" :size="44"></tn-icon>
                         </view>
                     </navigator>
@@ -119,17 +139,17 @@ const navigateTo = (url: string) => {
 }
 
 .user-card {
-    background: #FFFFFF;
+    background: #ffffff;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
     transition: all 0.2s ease;
 }
 
-    .user-content {
-        .avatar-wrapper {
-            position: relative;
-            flex-shrink: 0;
-        
-            .vip-badge {
+.user-content {
+    .avatar-wrapper {
+        position: relative;
+        flex-shrink: 0;
+
+        .vip-badge {
             position: absolute;
             bottom: -8rpx;
             left: 50%;
@@ -140,45 +160,45 @@ const navigateTo = (url: string) => {
             align-items: center;
             box-shadow: 0 4rpx 12rpx rgba(255, 215, 0, 0.4);
             z-index: 10;
-            
+
             .vip-text {
-                color: #FFFFFF;
+                color: #ffffff;
                 font-size: 20rpx;
                 font-weight: 500;
                 margin-left: 4rpx;
             }
         }
     }
-    
+
     .user-info-section {
         .user-nickname {
             font-size: 36rpx;
             font-weight: 600;
-            color: #1E293B;
+            color: #1e293b;
         }
-        
+
         .verified-badge {
             margin-left: 12rpx;
             padding: 4rpx 12rpx;
             border-radius: 8rpx;
-            
+
             .verified-text {
                 font-size: 22rpx;
                 font-weight: 500;
             }
         }
-        
+
         .account-row {
             .account-text {
                 font-size: 26rpx;
-                color: #64748B;
+                color: #64748b;
             }
         }
     }
-    
+
     .login-tip {
         font-size: 26rpx;
-        color: #64748B;
+        color: #64748b;
     }
 }
 
@@ -191,7 +211,7 @@ const navigateTo = (url: string) => {
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: scale(0.95);
         opacity: 0.8;

@@ -40,9 +40,7 @@ export default {
             const resolved = this.$uniRouter?.resolve?.(this.to, type)
             const fullPath =
                 resolved?.fullPath ||
-                (typeof this.to === 'string'
-                    ? this.to
-                    : this.to.path || this.to.url)
+                (typeof this.to === 'string' ? this.to : this.to.path || this.to.url)
             if (!fullPath) {
                 return
             }

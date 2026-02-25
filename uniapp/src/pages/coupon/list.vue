@@ -9,42 +9,40 @@
     <view class="coupon-page">
         <!-- 统计数字卡片 -->
         <view class="stats-card">
-            <view 
-                class="stat-item" 
-                :class="{ active: currentTab === '' }"
-                @click="switchTab('')"
-            >
-                <view class="stat-num" :style="currentTab === '' ? { color: $theme.primaryColor } : {}">
+            <view class="stat-item" :class="{ active: currentTab === '' }" @click="switchTab('')">
+                <view
+                    class="stat-num"
+                    :style="currentTab === '' ? { color: $theme.primaryColor } : {}"
+                >
                     {{ stats.total || 0 }}
                 </view>
                 <view class="stat-label">全部</view>
             </view>
-            <view 
-                class="stat-item" 
-                :class="{ active: currentTab === '0' }"
-                @click="switchTab('0')"
-            >
-                <view class="stat-num highlight" :style="currentTab === '0' ? { color: $theme.ctaColor } : { color: $theme.ctaColor }">
+            <view class="stat-item" :class="{ active: currentTab === '0' }" @click="switchTab('0')">
+                <view
+                    class="stat-num highlight"
+                    :style="
+                        currentTab === '0' ? { color: $theme.ctaColor } : { color: $theme.ctaColor }
+                    "
+                >
                     {{ stats.unused || 0 }}
                 </view>
                 <view class="stat-label">可使用</view>
             </view>
-            <view 
-                class="stat-item" 
-                :class="{ active: currentTab === '1' }"
-                @click="switchTab('1')"
-            >
-                <view class="stat-num" :style="currentTab === '1' ? { color: $theme.primaryColor } : {}">
+            <view class="stat-item" :class="{ active: currentTab === '1' }" @click="switchTab('1')">
+                <view
+                    class="stat-num"
+                    :style="currentTab === '1' ? { color: $theme.primaryColor } : {}"
+                >
                     {{ stats.used || 0 }}
                 </view>
                 <view class="stat-label">已使用</view>
             </view>
-            <view 
-                class="stat-item" 
-                :class="{ active: currentTab === '2' }"
-                @click="switchTab('2')"
-            >
-                <view class="stat-num" :style="currentTab === '2' ? { color: $theme.primaryColor } : {}">
+            <view class="stat-item" :class="{ active: currentTab === '2' }" @click="switchTab('2')">
+                <view
+                    class="stat-num"
+                    :style="currentTab === '2' ? { color: $theme.primaryColor } : {}"
+                >
                     {{ stats.expired || 0 }}
                 </view>
                 <view class="stat-label">已过期</view>
@@ -54,51 +52,51 @@
         <!-- 标签页 -->
         <view class="tabs-wrapper">
             <view class="tabs">
-                <view 
-                    class="tab-item" 
-                    :class="{ active: currentTab === '' }" 
+                <view
+                    class="tab-item"
+                    :class="{ active: currentTab === '' }"
                     @click="switchTab('')"
                 >
                     <text>全部</text>
-                    <view 
-                        v-if="currentTab === ''" 
-                        class="tab-indicator" 
+                    <view
+                        v-if="currentTab === ''"
+                        class="tab-indicator"
                         :style="{ background: $theme.primaryColor }"
                     ></view>
                 </view>
-                <view 
-                    class="tab-item" 
-                    :class="{ active: currentTab === '0' }" 
+                <view
+                    class="tab-item"
+                    :class="{ active: currentTab === '0' }"
                     @click="switchTab('0')"
                 >
                     <text>可使用</text>
-                    <view 
-                        v-if="currentTab === '0'" 
-                        class="tab-indicator" 
+                    <view
+                        v-if="currentTab === '0'"
+                        class="tab-indicator"
                         :style="{ background: $theme.primaryColor }"
                     ></view>
                 </view>
-                <view 
-                    class="tab-item" 
-                    :class="{ active: currentTab === '1' }" 
+                <view
+                    class="tab-item"
+                    :class="{ active: currentTab === '1' }"
                     @click="switchTab('1')"
                 >
                     <text>已使用</text>
-                    <view 
-                        v-if="currentTab === '1'" 
-                        class="tab-indicator" 
+                    <view
+                        v-if="currentTab === '1'"
+                        class="tab-indicator"
                         :style="{ background: $theme.primaryColor }"
                     ></view>
                 </view>
-                <view 
-                    class="tab-item" 
-                    :class="{ active: currentTab === '2' }" 
+                <view
+                    class="tab-item"
+                    :class="{ active: currentTab === '2' }"
                     @click="switchTab('2')"
                 >
                     <text>已过期</text>
-                    <view 
-                        v-if="currentTab === '2'" 
-                        class="tab-indicator" 
+                    <view
+                        v-if="currentTab === '2'"
+                        class="tab-indicator"
                         :style="{ background: $theme.primaryColor }"
                     ></view>
                 </view>
@@ -114,11 +112,15 @@
                 :class="{ disabled: item.status !== 0 }"
             >
                 <!-- 左侧金额区 -->
-                <view 
+                <view
                     class="coupon-left"
-                    :style="item.status === 0 ? { 
-                        background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)` 
-                    } : {}"
+                    :style="
+                        item.status === 0
+                            ? {
+                                  background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)`
+                              }
+                            : {}
+                    "
                 >
                     <view class="coupon-value">
                         <template v-if="item.coupon_type === 2">
@@ -140,22 +142,28 @@
                     <view class="coupon-info">
                         <view class="info-header">
                             <text class="coupon-name">{{ item.coupon_name }}</text>
-                            <view 
+                            <view
                                 class="coupon-tag"
-                                :style="{ 
-                                    background: item.coupon_type === 2 ? 'rgba(249, 115, 22, 0.1)' : 'rgba(124, 58, 237, 0.1)',
-                                    color: item.coupon_type === 2 ? $theme.ctaColor : $theme.primaryColor
+                                :style="{
+                                    background:
+                                        item.coupon_type === 2
+                                            ? 'rgba(249, 115, 22, 0.1)'
+                                            : 'rgba(124, 58, 237, 0.1)',
+                                    color:
+                                        item.coupon_type === 2
+                                            ? $theme.ctaColor
+                                            : $theme.primaryColor
                                 }"
                             >
                                 {{ item.coupon_type_text }}
                             </view>
                         </view>
-                        
+
                         <view class="coupon-desc" :style="{ color: $theme.ctaColor }">
                             <tn-icon name="discount" size="24" :color="$theme.ctaColor" />
                             <text>{{ item.discount_desc }}</text>
                         </view>
-                        
+
                         <view class="coupon-detail">
                             <view class="detail-item">
                                 <tn-icon name="time" size="24" color="#999999" />
@@ -175,10 +183,10 @@
                     <!-- 状态/操作区 -->
                     <view class="coupon-action">
                         <view v-if="item.status === 0" class="action-unused">
-                            <view 
-                                v-if="item.is_expiring && !isNotStarted(item)" 
+                            <view
+                                v-if="item.is_expiring && !isNotStarted(item)"
                                 class="expiring-badge"
-                                :style="{ 
+                                :style="{
                                     background: 'rgba(255, 77, 79, 0.1)',
                                     color: '#FF4D4F'
                                 }"
@@ -186,13 +194,17 @@
                                 <tn-icon name="warning" size="24" color="#FF4D4F" />
                                 <text>即将过期</text>
                             </view>
-                            <button 
-                                class="btn-use" 
+                            <button
+                                class="btn-use"
                                 :class="{ disabled: isNotStarted(item) }"
-                                :style="isNotStarted(item) ? { background: '#F5F5F5', color: '#999999' } : { 
-                                    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                                    color: $theme.btnColor
-                                }"
+                                :style="
+                                    isNotStarted(item)
+                                        ? { background: '#F5F5F5', color: '#999999' }
+                                        : {
+                                              background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+                                              color: $theme.btnColor
+                                          }
+                                "
                                 :disabled="isNotStarted(item)"
                                 @click="goUse(item)"
                             >
@@ -219,9 +231,9 @@
             </view>
             <text class="empty-text">{{ emptyText }}</text>
             <text class="empty-desc">{{ emptyDesc }}</text>
-            <button 
-                class="btn-get" 
-                :style="{ 
+            <button
+                class="btn-get"
+                :style="{
                     background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                     color: $theme.btnColor
                 }"
@@ -273,18 +285,18 @@ const hasMore = ref(true)
 const formatValidPeriod = (item: any) => {
     const validType = Number(item.valid_type || 0)
     const validDays = Number(item.valid_days || 0)
-    
+
     // 领取后N天有效
     if (validType === 2 && validDays) {
         return `领取后${validDays}天有效`
     }
-    
+
     // 固定时间段
     const start = Number(item.valid_start_time || 0)
     const end = Number(item.valid_end_time || 0)
-    
+
     if (!start && !end) return '长期有效'
-    
+
     const formatDate = (timestamp: number) => {
         if (!timestamp) return ''
         const date = new Date(timestamp * 1000)
@@ -293,11 +305,11 @@ const formatValidPeriod = (item: any) => {
         const day = String(date.getDate()).padStart(2, '0')
         return `${year}.${month}.${day}`
     }
-    
+
     if (start && end) {
         return `${formatDate(start)}-${formatDate(end)}`
     }
-    
+
     if (start) return `${formatDate(start)}起`
     return `${formatDate(end)}止`
 }
@@ -414,14 +426,14 @@ onMounted(() => {
 <style scoped lang="scss">
 .coupon-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.03) 0%, #F6F6F6 100%);
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.03) 0%, #f6f6f6 100%);
     padding-bottom: 24rpx;
 }
 
 /* 统计卡片 */
 .stats-card {
     display: flex;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     padding: 32rpx 0;
     margin: 24rpx 24rpx 16rpx;
@@ -441,7 +453,7 @@ onMounted(() => {
             transform: translateY(-50%);
             width: 1rpx;
             height: 60rpx;
-            background: #F0F0F0;
+            background: #f0f0f0;
         }
 
         &.active {
@@ -458,7 +470,7 @@ onMounted(() => {
             transition: all 0.2s ease;
 
             &.highlight {
-                color: #F97316;
+                color: #f97316;
             }
         }
 
@@ -471,7 +483,7 @@ onMounted(() => {
 
 /* 标签页 */
 .tabs-wrapper {
-    background: #FFFFFF;
+    background: #ffffff;
     margin: 0 24rpx 24rpx;
     border-radius: 24rpx;
     box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
@@ -514,7 +526,7 @@ onMounted(() => {
 
 .coupon-card {
     display: flex;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     margin-bottom: 24rpx;
     overflow: hidden;
@@ -530,7 +542,7 @@ onMounted(() => {
         opacity: 0.6;
 
         .coupon-left {
-            background: linear-gradient(135deg, #CCCCCC 0%, #DDDDDD 100%) !important;
+            background: linear-gradient(135deg, #cccccc 0%, #dddddd 100%) !important;
         }
     }
 
@@ -543,7 +555,7 @@ onMounted(() => {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        color: #FFFFFF;
+        color: #ffffff;
         position: relative;
 
         /* 锯齿边缘 */
@@ -557,7 +569,7 @@ onMounted(() => {
             background: radial-gradient(circle at 0 0, transparent 8rpx, currentColor 8rpx);
             background-size: 16rpx 32rpx;
             background-repeat: repeat-y;
-            color: #FFFFFF;
+            color: #ffffff;
         }
 
         .coupon-value {
@@ -654,10 +666,10 @@ onMounted(() => {
             }
 
             .not-started-item {
-                color: #7C3AED;
+                color: #7c3aed;
 
                 .not-started-text {
-                    color: #7C3AED;
+                    color: #7c3aed;
                     font-weight: 600;
                 }
             }
@@ -739,7 +751,7 @@ onMounted(() => {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #F9FAFB;
+        background: #f9fafb;
         border-radius: 50%;
         margin-bottom: 32rpx;
     }
@@ -807,14 +819,14 @@ onMounted(() => {
     justify-content: center;
     padding: 32rpx;
     font-size: 26rpx;
-    color: #CCCCCC;
+    color: #cccccc;
 
     &::before,
     &::after {
         content: '';
         width: 80rpx;
         height: 1rpx;
-        background: #E5E5E5;
+        background: #e5e5e5;
         margin: 0 24rpx;
     }
 }

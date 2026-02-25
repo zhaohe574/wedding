@@ -25,7 +25,7 @@ export const calculateContrast = (color1: string, color2: string): number => {
         const b = (rgb >> 0) & 0xff
         return (0.299 * r + 0.587 * g + 0.114 * b) / 255
     }
-    
+
     const lum1 = getLuminance(color1)
     const lum2 = getLuminance(color2)
     const lighter = Math.max(lum1, lum2)
@@ -59,7 +59,7 @@ export const generateVarsMap = (color: string, type = 'primary', isDark = false)
         console.warn(`无效的颜色值: ${color}，使用默认值`)
         color = '#7C3AED'
     }
-    
+
     const colors = {
         [`--color-${type}`]: color
     }

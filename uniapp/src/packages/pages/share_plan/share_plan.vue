@@ -1,10 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar 
+        <navigation-bar
             title="输入分享码"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
         <!-- #endif -->
     </page-meta>
@@ -13,7 +13,10 @@
         <view class="container">
             <!-- 顶部图标 -->
             <view class="header-icon">
-                <view class="icon-wrapper" :style="{ backgroundColor: getColor('primary-light-9') }">
+                <view
+                    class="icon-wrapper"
+                    :style="{ backgroundColor: getColor('primary-light-9') }"
+                >
                     <tn-icon name="share" size="96" :color="$theme.primaryColor" />
                 </view>
             </view>
@@ -48,12 +51,16 @@
 
             <!-- 提交按钮 -->
             <view class="submit-section">
-                <view 
+                <view
                     class="submit-btn"
                     :class="{ disabled: !shareCode.trim() || loading }"
-                    :style="(!shareCode.trim() || loading) ? {} : {
-                        background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
-                    }"
+                    :style="
+                        !shareCode.trim() || loading
+                            ? {}
+                            : {
+                                  background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
+                              }
+                    "
                     @click="handleSubmit"
                 >
                     <tn-icon v-if="loading" name="loading" size="32" color="#FFFFFF" />
@@ -64,10 +71,18 @@
         </view>
 
         <!-- 方案详情弹窗 -->
-        <tn-popup v-model="showPlanDetail" mode="center" :border-radius="32" :mask-close-able="false">
+        <tn-popup
+            v-model="showPlanDetail"
+            mode="center"
+            :border-radius="32"
+            :mask-close-able="false"
+        >
             <view class="plan-detail-popup">
                 <!-- 弹窗头部 -->
-                <view class="popup-header" :style="{ backgroundColor: getColor('primary-light-9') }">
+                <view
+                    class="popup-header"
+                    :style="{ backgroundColor: getColor('primary-light-9') }"
+                >
                     <view class="header-content">
                         <view class="header-icon">
                             <tn-icon name="folder-open" size="56" :color="$theme.primaryColor" />
@@ -92,7 +107,9 @@
                         <text class="price-label">方案总价</text>
                         <view class="price-amount">
                             <text class="price-symbol" :style="{ color: $theme.ctaColor }">¥</text>
-                            <text class="price-value" :style="{ color: $theme.ctaColor }">{{ planDetail?.total_price || 0 }}</text>
+                            <text class="price-value" :style="{ color: $theme.ctaColor }">{{
+                                planDetail?.total_price || 0
+                            }}</text>
                         </view>
                     </view>
 
@@ -102,10 +119,19 @@
                             <text class="list-title">包含服务</text>
                             <text class="list-count">{{ planDetail.items.length }}项</text>
                         </view>
-                        <view class="item-card" v-for="(item, index) in planDetail.items" :key="index">
+                        <view
+                            class="item-card"
+                            v-for="(item, index) in planDetail.items"
+                            :key="index"
+                        >
                             <view class="item-left">
-                                <view class="item-index" :style="{ backgroundColor: getColor('primary-light-9') }">
-                                    <text :style="{ color: $theme.primaryColor }">{{ index + 1 }}</text>
+                                <view
+                                    class="item-index"
+                                    :style="{ backgroundColor: getColor('primary-light-9') }"
+                                >
+                                    <text :style="{ color: $theme.primaryColor }">{{
+                                        index + 1
+                                    }}</text>
                                 </view>
                                 <view class="item-info">
                                     <text class="item-name">{{ item.staff_name }}</text>
@@ -128,9 +154,9 @@
                         <tn-icon name="close" size="32" color="#666666" />
                         <text>取消</text>
                     </view>
-                    <view 
+                    <view
                         class="action-btn primary"
-                        :style="{ 
+                        :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
                         }"
                         @click="handleCopyPlan"
@@ -182,8 +208,8 @@ const handleSubmit = async () => {
         const items = Array.isArray(result?.cart_items)
             ? result.cart_items
             : Array.isArray(result?.items)
-              ? result.items
-              : []
+            ? result.items
+            : []
         const normalizedItems = items.map((item: any) => ({
             ...item,
             staff_name: item.staff_name || item.staff?.name || '',
@@ -229,12 +255,12 @@ const handleCopyPlan = async () => {
 <style lang="scss" scoped>
 .share-plan-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, #F3E8FF 0%, #F5F5F5 100%);
+    background: linear-gradient(180deg, #f3e8ff 0%, #f5f5f5 100%);
     padding: 48rpx 24rpx;
 }
 
 .container {
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 32rpx;
     padding: 48rpx 32rpx;
     box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
@@ -286,15 +312,15 @@ const handleCopyPlan = async () => {
     .input-wrapper {
         display: flex;
         align-items: center;
-        background: #F9FAFB;
+        background: #f9fafb;
         border-radius: 16rpx;
         padding: 0 24rpx;
-        border: 2rpx solid #E5E7EB;
+        border: 2rpx solid #e5e7eb;
         transition: all 0.2s ease;
 
         &:focus-within {
-            background: #FFFFFF;
-            border-color: #7C3AED;
+            background: #ffffff;
+            border-color: #7c3aed;
             box-shadow: 0 0 0 6rpx rgba(124, 58, 237, 0.1);
         }
 
@@ -326,7 +352,7 @@ const handleCopyPlan = async () => {
         align-items: center;
         justify-content: center;
         gap: 12rpx;
-        color: #FFFFFF;
+        color: #ffffff;
         font-size: 32rpx;
         font-weight: 700;
         padding: 32rpx;
@@ -340,7 +366,7 @@ const handleCopyPlan = async () => {
         }
 
         &.disabled {
-            background: linear-gradient(135deg, #CCCCCC 0%, #AAAAAA 100%) !important;
+            background: linear-gradient(135deg, #cccccc 0%, #aaaaaa 100%) !important;
             box-shadow: none;
             opacity: 0.6;
         }
@@ -350,7 +376,7 @@ const handleCopyPlan = async () => {
 /* 方案详情弹窗 */
 .plan-detail-popup {
     width: 640rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 32rpx;
     overflow: hidden;
     max-height: 80vh;
@@ -363,7 +389,7 @@ const handleCopyPlan = async () => {
         align-items: center;
         justify-content: space-between;
         padding: 32rpx;
-        border-bottom: 1rpx solid #F0F0F0;
+        border-bottom: 1rpx solid #f0f0f0;
 
         .header-content {
             display: flex;
@@ -374,7 +400,7 @@ const handleCopyPlan = async () => {
             .header-icon {
                 width: 96rpx;
                 height: 96rpx;
-                background: #FFFFFF;
+                background: #ffffff;
                 border-radius: 24rpx;
                 display: flex;
                 align-items: center;
@@ -412,12 +438,12 @@ const handleCopyPlan = async () => {
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #F5F5F5;
+            background: #f5f5f5;
             border-radius: 50%;
             transition: all 0.2s ease;
 
             &:active {
-                background: #E5E5E5;
+                background: #e5e5e5;
                 transform: scale(0.95);
             }
         }
@@ -431,7 +457,7 @@ const handleCopyPlan = async () => {
 
         /* 价格区域 */
         .price-section {
-            background: #FFF7E6;
+            background: #fff7e6;
             border-radius: 16rpx;
             padding: 32rpx;
             margin-bottom: 32rpx;
@@ -478,7 +504,7 @@ const handleCopyPlan = async () => {
                 .list-count {
                     font-size: 24rpx;
                     color: #999999;
-                    background: #F5F5F5;
+                    background: #f5f5f5;
                     padding: 6rpx 16rpx;
                     border-radius: 24rpx;
                 }
@@ -488,7 +514,7 @@ const handleCopyPlan = async () => {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                background: #F9FAFB;
+                background: #f9fafb;
                 border-radius: 16rpx;
                 padding: 24rpx;
                 margin-bottom: 16rpx;
@@ -557,7 +583,7 @@ const handleCopyPlan = async () => {
         gap: 16rpx;
         padding: 24rpx 32rpx;
         padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-        border-top: 1rpx solid #F0F0F0;
+        border-top: 1rpx solid #f0f0f0;
 
         .action-btn {
             flex: 1;
@@ -572,17 +598,17 @@ const handleCopyPlan = async () => {
             transition: all 0.2s ease;
 
             &.secondary {
-                background: #F5F5F5;
+                background: #f5f5f5;
                 color: #666666;
 
                 &:active {
-                    background: #E5E5E5;
+                    background: #e5e5e5;
                     transform: scale(0.98);
                 }
             }
 
             &.primary {
-                color: #FFFFFF;
+                color: #ffffff;
                 box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.35);
 
                 &:active {

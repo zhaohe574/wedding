@@ -15,14 +15,14 @@
                 </view>
             </view>
         </view>
-        
+
         <!-- 类型筛选标签 -->
         <view class="type-tabs-wrapper">
             <view class="tabs-container">
-                <tn-tabs 
-                    v-model="currentTypeIndex" 
-                    :scroll="false" 
-                    height="70rpx" 
+                <tn-tabs
+                    v-model="currentTypeIndex"
+                    :scroll="false"
+                    height="70rpx"
                     class="tabs-main"
                     :active-color="$theme.primaryColor"
                     :bar-color="$theme.primaryColor"
@@ -36,10 +36,14 @@
                 <view class="sort-btn" @click="toggleSortMenu">
                     <tn-icon name="sort" size="32" :color="$theme.primaryColor" />
                     <text class="sort-text">{{ currentSortLabel }}</text>
-                    <tn-icon :name="showSortMenu ? 'up' : 'down'" size="24" :color="$theme.primaryColor" />
+                    <tn-icon
+                        :name="showSortMenu ? 'up' : 'down'"
+                        size="24"
+                        :color="$theme.primaryColor"
+                    />
                 </view>
             </view>
-            
+
             <!-- 排序菜单 -->
             <view v-if="showSortMenu" class="sort-menu">
                 <view
@@ -67,7 +71,7 @@
                 <tn-loading size="60" mode="flower" />
                 <text class="loading-text">加载中...</text>
             </view>
-            
+
             <!-- 空状态 -->
             <view v-else-if="dynamics.length === 0" class="empty-state">
                 <view class="empty-icon-wrapper">
@@ -76,7 +80,7 @@
                 <text class="empty-title">暂无动态</text>
                 <text class="empty-subtitle">快来发布第一条动态吧~</text>
             </view>
-            
+
             <!-- 动态列表 - 使用DynamicCard组件 -->
             <view v-else class="dynamic-list">
                 <dynamic-card
@@ -93,7 +97,9 @@
                 <!-- 加载更多提示 -->
                 <view v-if="hasMore" class="load-more">
                     <text v-if="loading" class="load-more-text">加载中...</text>
-                    <text v-else class="load-more-text load-more-clickable" @click="loadMore">加载更多</text>
+                    <text v-else class="load-more-text load-more-clickable" @click="loadMore"
+                        >加载更多</text
+                    >
                 </view>
                 <view v-else-if="dynamics.length > 0" class="load-more">
                     <text class="load-more-text">没有更多了</text>
@@ -110,12 +116,7 @@ import { ref, computed, watch } from 'vue'
 import { onLoad, onShow, onReachBottom, onShareAppMessage } from '@dcloudio/uni-app'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
-import {
-    getDynamicList,
-    likeDynamic,
-    collectDynamic,
-    toggleFollow
-} from '@/api/dynamic'
+import { getDynamicList, likeDynamic, collectDynamic, toggleFollow } from '@/api/dynamic'
 import DynamicCard from '@/components/business/DynamicCard.vue'
 import { mapDynamicItem } from '@/utils/dynamic'
 
@@ -144,7 +145,7 @@ const currentTag = ref('') // 当前筛选的标签
 const currentSort = ref('latest') // 当前排序方式
 const showSortMenu = ref(false) // 是否显示排序菜单
 const currentSortLabel = computed(() => {
-    const option = sortOptions.find(item => item.value === currentSort.value)
+    const option = sortOptions.find((item) => item.value === currentSort.value)
     return option?.label || '最新发布'
 })
 const dynamics = ref<any[]>([])
@@ -202,30 +203,30 @@ const loadMore = () => {
 const goDetail = (dynamic: any) => {
     // 处理不同的参数类型
     let id: number | undefined
-    
+
     if (typeof dynamic === 'number') {
         id = dynamic
     } else if (dynamic && typeof dynamic === 'object') {
         id = dynamic.id
     }
-    
+
     if (!id) {
         // 静默处理，不输出错误日志
         return
     }
-    
+
     uni.navigateTo({ url: `/pages/dynamic_detail/dynamic_detail?id=${id}` })
 }
 
 const goPublish = () => {
     // 禁用用户发布动态功能
-    uni.showToast({ 
-        title: '动态发布功能已关闭，请联系管理员', 
+    uni.showToast({
+        title: '动态发布功能已关闭，请联系管理员',
         icon: 'none',
         duration: 2000
     })
     return
-    
+
     // 以下代码已禁用
     // if (!userStore.isLogin) {
     //     uni.navigateTo({ url: '/pages/login/login' })
@@ -270,9 +271,9 @@ const handleFollow = async (userId: number) => {
     }
     try {
         // 找到对应的动态并更新
-        const dynamic = dynamics.value.find(d => d.user.id === userId)
+        const dynamic = dynamics.value.find((d) => d.user.id === userId)
         if (!dynamic) return
-        
+
         await toggleFollow({
             follow_type: 1, // 假设类型为1
             follow_id: userId
@@ -345,7 +346,7 @@ onShareAppMessage((res) => {
 <style lang="scss" scoped>
 .dynamic-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, var(--color-primary-light-9, #FAF5FF) 0%, #F5F5F5 100%);
+    background: linear-gradient(180deg, var(--color-primary-light-9, #faf5ff) 0%, #f5f5f5 100%);
     padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
@@ -367,7 +368,7 @@ onShareAppMessage((res) => {
     flex: 1;
     font-size: 28rpx;
     font-weight: 600;
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 .clear-filter {
@@ -379,7 +380,7 @@ onShareAppMessage((res) => {
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    
+
     &:active {
         background: rgba(255, 255, 255, 0.3);
         transform: scale(0.98);
@@ -415,7 +416,7 @@ onShareAppMessage((res) => {
     background: var(--color-primary-light-9);
     border-radius: 32rpx;
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: scale(0.98);
         background: var(--color-primary-light-7);
@@ -453,7 +454,7 @@ onShareAppMessage((res) => {
     justify-content: space-between;
     padding: 24rpx 32rpx; // 使用md和lg间距
     transition: all 0.2s ease;
-    
+
     &:active {
         background: var(--color-primary-light-9);
     }
@@ -466,7 +467,7 @@ onShareAppMessage((res) => {
 .sort-menu-text {
     font-size: 28rpx;
     color: var(--color-content);
-    
+
     .sort-menu-item-active & {
         color: var(--color-primary);
         font-weight: 600;

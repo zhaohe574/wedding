@@ -1,20 +1,20 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar 
+        <navigation-bar
             title="选择档期"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
     </page-meta>
-    
+
     <view class="schedule-calendar">
         <!-- 工作人员信息卡片 -->
         <view class="staff-card" v-if="staffInfo">
             <view class="staff-header">
-                <image 
-                    :src="staffInfo.avatar || '/static/images/user/default_avatar.png'" 
-                    class="staff-avatar" 
-                    mode="aspectFill" 
+                <image
+                    :src="staffInfo.avatar || '/static/images/user/default_avatar.png'"
+                    class="staff-avatar"
+                    mode="aspectFill"
                 />
                 <view class="staff-info">
                     <view class="info-row">
@@ -26,7 +26,9 @@
                     </view>
                     <view class="info-row">
                         <text class="staff-category">{{ staffInfo.category?.name }}</text>
-                        <text class="staff-experience" v-if="staffInfo.experience_years">{{ staffInfo.experience_years }}年经验</text>
+                        <text class="staff-experience" v-if="staffInfo.experience_years"
+                            >{{ staffInfo.experience_years }}年经验</text
+                        >
                     </view>
                     <view class="info-row" v-if="staffInfo.order_count">
                         <text class="staff-orders">已服务{{ staffInfo.order_count }}单</text>
@@ -42,7 +44,12 @@
                     <view class="nav-btn" @click="prevMonth">
                         <tn-icon name="left" size="32" :color="$theme.primaryColor" />
                     </view>
-                    <picker mode="date" :value="pickerValue" fields="month" @change="handleDateChange">
+                    <picker
+                        mode="date"
+                        :value="pickerValue"
+                        fields="month"
+                        @change="handleDateChange"
+                    >
                         <view class="month-display">
                             <text class="month-text">{{ currentYear }}年{{ currentMonth }}月</text>
                             <tn-icon name="down" size="24" color="#999999" />
@@ -51,9 +58,9 @@
                     <view class="nav-btn" @click="nextMonth">
                         <tn-icon name="right" size="32" :color="$theme.primaryColor" />
                     </view>
-                    <view 
-                        class="today-btn" 
-                        :style="{ 
+                    <view
+                        class="today-btn"
+                        :style="{
                             background: $theme.primaryColor,
                             color: '#FFFFFF'
                         }"
@@ -68,9 +75,9 @@
             <view class="calendar-container">
                 <!-- 星期标题 -->
                 <view class="week-header">
-                    <view 
-                        v-for="(week, index) in weekDays" 
-                        :key="week" 
+                    <view
+                        v-for="(week, index) in weekDays"
+                        :key="week"
                         class="week-item"
                         :class="{ 'is-weekend': index === 0 || index === 6 }"
                     >
@@ -81,9 +88,9 @@
                 <!-- 日历网格 -->
                 <view class="calendar-grid">
                     <!-- 填充空白 -->
-                    <view 
-                        v-for="n in firstDayOfMonth" 
-                        :key="'empty-' + n" 
+                    <view
+                        v-for="n in firstDayOfMonth"
+                        :key="'empty-' + n"
                         class="day-cell empty"
                     ></view>
 
@@ -108,15 +115,12 @@
                                 {{ day.lunar_date.slice(-2) }}
                             </text>
                         </view>
-                        
+
                         <!-- 状态标识 -->
                         <view v-if="day.schedules && day.schedules.length > 0" class="status-badge">
-                            <view 
-                                class="badge-dot"
-                                :class="getStatusClass(day)"
-                            ></view>
+                            <view class="badge-dot" :class="getStatusClass(day)"></view>
                         </view>
-                        
+
                         <!-- 特殊标记 -->
                         <view class="day-tags">
                             <view v-if="day.is_lucky_day" class="tag-lucky">吉</view>
@@ -180,8 +184,12 @@
                             </view>
                         </view>
                         <view class="recommend-meta">
-                            <text class="recommend-category">{{ item.category_name || recommendCategoryName }}</text>
-                            <text v-if="item.experience_years" class="recommend-exp">{{ item.experience_years }}年经验</text>
+                            <text class="recommend-category">{{
+                                item.category_name || recommendCategoryName
+                            }}</text>
+                            <text v-if="item.experience_years" class="recommend-exp"
+                                >{{ item.experience_years }}年经验</text
+                            >
                         </view>
                         <view v-if="item.tags && item.tags.length" class="recommend-tags">
                             <text
@@ -208,7 +216,9 @@
         <view class="package-section" v-if="selectedDate && staffPackages.length > 0">
             <view class="section-header">
                 <text class="section-title">选择套餐</text>
-                <text class="section-hint" v-if="selectedPackageName">当前：{{ selectedPackageName }}</text>
+                <text class="section-hint" v-if="selectedPackageName"
+                    >当前：{{ selectedPackageName }}</text
+                >
             </view>
             <view class="package-list">
                 <view
@@ -220,12 +230,16 @@
                 >
                     <view class="package-main">
                         <view class="package-info">
-                            <text class="package-name">{{ pkg.package?.name || '未命名套餐' }}</text>
+                            <text class="package-name">{{
+                                pkg.package?.name || '未命名套餐'
+                            }}</text>
                             <text class="package-type">{{ getBookingTypeLabel(pkg) }}</text>
                         </view>
                         <view class="package-price-wrapper">
                             <view v-if="getPackageOriginalPrice(pkg)" class="original-price">
-                                <text class="original-price-text">¥{{ getPackageOriginalPrice(pkg) }}</text>
+                                <text class="original-price-text"
+                                    >¥{{ getPackageOriginalPrice(pkg) }}</text
+                                >
                             </view>
                             <text class="package-price">¥{{ getPackageBasePrice(pkg) }}</text>
                         </view>
@@ -247,24 +261,33 @@
         <view v-if="selectedDate && selectedPackage" class="time-slot-section">
             <view class="section-header">
                 <text class="section-title">选择场次</text>
-                <text class="section-hint">{{ selectedDate }}{{ bookingType === 1 ? ' · 可多选' : '' }}</text>
+                <text class="section-hint"
+                    >{{ selectedDate }}{{ bookingType === 1 ? ' · 可多选' : '' }}</text
+                >
             </view>
             <view class="time-slots">
                 <view
                     v-for="slot in timeSlotOptions"
                     :key="slot.value"
                     class="slot-item"
-                    :class="{ 'is-selected': isSlotSelected(slot.value), 'is-unavailable': !isSlotAvailable(slot.value) }"
-                    :style="isSlotSelected(slot.value) ? {
-                        background: $theme.primaryColor,
-                        borderColor: $theme.primaryColor
-                    } : {}"
+                    :class="{
+                        'is-selected': isSlotSelected(slot.value),
+                        'is-unavailable': !isSlotAvailable(slot.value)
+                    }"
+                    :style="
+                        isSlotSelected(slot.value)
+                            ? {
+                                  background: $theme.primaryColor,
+                                  borderColor: $theme.primaryColor
+                              }
+                            : {}
+                    "
                     @click="handleSlotClick(slot)"
                 >
-                    <tn-icon 
-                        :name="slot.icon" 
-                        size="40" 
-                        :color="isSlotSelected(slot.value) ? '#FFFFFF' : $theme.primaryColor" 
+                    <tn-icon
+                        :name="slot.icon"
+                        size="40"
+                        :color="isSlotSelected(slot.value) ? '#FFFFFF' : $theme.primaryColor"
                     />
                     <text class="slot-label">{{ slot.label }}</text>
                     <text class="slot-price" v-if="slot.price !== null">¥{{ slot.price }}</text>
@@ -284,21 +307,18 @@
                 </view>
             </view>
             <view class="action-buttons">
-                <view 
-                    v-if="showWaitlistButton" 
-                    class="btn-waitlist"
-                    @click="handleJoinWaitlist"
-                >
+                <view v-if="showWaitlistButton" class="btn-waitlist" @click="handleJoinWaitlist">
                     <tn-icon name="clock" size="32" color="#FFFFFF" />
                     <text>候补</text>
                 </view>
-                <view 
+                <view
                     class="btn-cart"
                     :class="{ disabled: !canSubmit || !isAvailable }"
-                    :style="{ 
-                        background: canSubmit && isAvailable ? 
-                            `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)` : 
-                            '#CCCCCC'
+                    :style="{
+                        background:
+                            canSubmit && isAvailable
+                                ? `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
+                                : '#CCCCCC'
                     }"
                     @click="handleAddToCart"
                 >
@@ -414,7 +434,11 @@ const getPackageBookingType = (pkg: any): number => {
         return Number(staffBookingType)
     }
     const packageBookingType = pkg.package?.booking_type
-    if (packageBookingType !== null && packageBookingType !== undefined && packageBookingType !== '') {
+    if (
+        packageBookingType !== null &&
+        packageBookingType !== undefined &&
+        packageBookingType !== ''
+    ) {
         return Number(packageBookingType)
     }
     return 0
@@ -459,11 +483,7 @@ const timeSlotOptions = computed(() => {
     }
     const type = bookingType.value
     const slots =
-        type === 0
-            ? [0]
-            : allowedTimeSlots.value.length
-              ? allowedTimeSlots.value
-              : [1, 2, 3]
+        type === 0 ? [0] : allowedTimeSlots.value.length ? allowedTimeSlots.value : [1, 2, 3]
     return slots.map((slot) => ({
         value: slot,
         label: timeSlotLabels[slot],
@@ -546,7 +566,8 @@ const applySelectionDefaults = () => {
     }
     const allowed = allowedTimeSlots.value
     const filtered = selectedTimeSlots.value.filter((slot) => slot !== 0)
-    selectedTimeSlots.value = allowed.length > 0 ? filtered.filter((slot) => allowed.includes(slot)) : filtered
+    selectedTimeSlots.value =
+        allowed.length > 0 ? filtered.filter((slot) => allowed.includes(slot)) : filtered
 }
 
 const getBookingTypeLabel = (pkg: any) => {
@@ -579,11 +600,19 @@ const getPackageBasePrice = (pkg: any) => {
 
 const getPackageOriginalPrice = (pkg: any) => {
     // 获取原价（用于显示划线价）
-    if (pkg?.original_price !== null && pkg?.original_price !== undefined && pkg?.original_price !== '') {
+    if (
+        pkg?.original_price !== null &&
+        pkg?.original_price !== undefined &&
+        pkg?.original_price !== ''
+    ) {
         return Number(pkg.original_price)
     }
     // 如果配置了原价，也可以从全局套餐获取
-    if (pkg?.package?.original_price !== null && pkg?.package?.original_price !== undefined && pkg?.package?.original_price !== '') {
+    if (
+        pkg?.package?.original_price !== null &&
+        pkg?.package?.original_price !== undefined &&
+        pkg?.package?.original_price !== ''
+    ) {
         return Number(pkg.package.original_price)
     }
     return null
@@ -687,7 +716,9 @@ const fetchRecommendStaff = async () => {
             date: selectedDate.value
         })
         const lists = Array.isArray(res?.lists) ? res.lists : []
-        recommendStaffList.value = lists.filter((item: any) => Number(item.id) !== Number(staffId.value))
+        recommendStaffList.value = lists.filter(
+            (item: any) => Number(item.id) !== Number(staffId.value)
+        )
     } catch (e: any) {
         recommendStaffList.value = []
         console.error('获取推荐人员失败', e)
@@ -702,7 +733,9 @@ const fetchStaffDetail = async () => {
         staffInfo.value = res
         staffPackages.value = Array.isArray(res.packages) ? res.packages : []
         if (!selectedPackageId.value && staffPackages.value.length > 0) {
-            const defaultPackage = staffPackages.value.find((pkg: any) => Number(pkg.is_default) === 1)
+            const defaultPackage = staffPackages.value.find(
+                (pkg: any) => Number(pkg.is_default) === 1
+            )
             selectedPackageId.value = (defaultPackage || staffPackages.value[0]).package_id
         }
     } catch (e: any) {
@@ -751,7 +784,10 @@ const handleDateChange = (e: any) => {
 
 const handleDayClick = (day: any) => {
     if (day.is_past) {
-        uni.showToast({ title: isPastDate(day.date) ? '不能选择过去日期' : '当天不支持预约', icon: 'none' })
+        uni.showToast({
+            title: isPastDate(day.date) ? '不能选择过去日期' : '当天不支持预约',
+            icon: 'none'
+        })
         return
     }
 
@@ -1016,14 +1052,14 @@ onLoad(async (options: any) => {
 <style lang="scss" scoped>
 .schedule-calendar {
     min-height: 100vh;
-    background: linear-gradient(180deg, var(--color-primary-light-9) 0%, #F5F5F5 100%);
+    background: linear-gradient(180deg, var(--color-primary-light-9) 0%, #f5f5f5 100%);
     padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* 工作人员信息卡片 */
 .staff-card {
     margin: 20rpx 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 16rpx;
     padding: 20rpx;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
@@ -1047,36 +1083,36 @@ onLoad(async (options: any) => {
     display: flex;
     flex-direction: column;
     gap: 6rpx;
-    
+
     .info-row {
         display: flex;
         align-items: center;
         gap: 12rpx;
     }
-    
+
     .staff-name {
         font-size: 28rpx;
         font-weight: 700;
         color: var(--color-main);
     }
-    
+
     .staff-rating {
         display: flex;
         align-items: center;
         gap: 4rpx;
-        
+
         .rating-text {
             font-size: 24rpx;
             font-weight: 600;
-            color: #FFD700;
+            color: #ffd700;
         }
     }
-    
+
     .staff-category {
         font-size: 24rpx;
         color: var(--color-muted);
     }
-    
+
     .staff-experience {
         font-size: 22rpx;
         color: var(--color-primary);
@@ -1084,7 +1120,7 @@ onLoad(async (options: any) => {
         background: var(--color-primary-light-9);
         border-radius: 4rpx;
     }
-    
+
     .staff-orders {
         font-size: 22rpx;
         color: var(--color-content);
@@ -1098,7 +1134,7 @@ onLoad(async (options: any) => {
 
 /* 月份选择器 */
 .month-selector {
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 16rpx 16rpx 0 0;
     padding: 24rpx;
 }
@@ -1116,14 +1152,14 @@ onLoad(async (options: any) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #F9FAFB;
+    background: #f9fafb;
     border-radius: 32rpx;
     transition: all 0.2s ease;
     flex-shrink: 0;
-    
+
     &:active {
         transform: scale(0.9);
-        background: #F0F0F0;
+        background: #f0f0f0;
     }
 }
 
@@ -1132,11 +1168,11 @@ onLoad(async (options: any) => {
     align-items: center;
     gap: 12rpx;
     padding: 12rpx 32rpx;
-    background: #F9FAFB;
+    background: #f9fafb;
     border-radius: 32rpx;
     flex: 1;
     justify-content: center;
-    
+
     .month-text {
         font-size: 32rpx;
         font-weight: 700;
@@ -1151,11 +1187,11 @@ onLoad(async (options: any) => {
     font-weight: 500;
     transition: all 0.2s ease;
     flex-shrink: 0;
-    
+
     &:active {
         transform: scale(0.95);
     }
-    
+
     text {
         color: inherit;
     }
@@ -1163,7 +1199,7 @@ onLoad(async (options: any) => {
 
 /* 日历容器 */
 .calendar-container {
-    background: #FFFFFF;
+    background: #ffffff;
     padding: 0 24rpx 24rpx;
 }
 
@@ -1180,7 +1216,7 @@ onLoad(async (options: any) => {
     font-weight: 600;
     color: var(--color-content);
     padding: 12rpx 0;
-    
+
     &.is-weekend {
         color: var(--color-secondary);
     }
@@ -1203,15 +1239,15 @@ onLoad(async (options: any) => {
     border-radius: 12rpx;
     margin-bottom: 8rpx;
     transition: all 0.2s ease;
-    
+
     &.empty {
         background: transparent;
     }
-    
+
     &.is-today {
         .day-number {
             background: var(--color-primary);
-            color: #FFFFFF;
+            color: #ffffff;
             width: 56rpx;
             height: 56rpx;
             line-height: 56rpx;
@@ -1219,31 +1255,31 @@ onLoad(async (options: any) => {
             text-align: center;
         }
     }
-    
+
     &.is-past {
         opacity: 0.3;
         pointer-events: none;
     }
-    
+
     &.is-selected {
         background: var(--color-primary-light-9);
         border: 2rpx solid var(--color-primary);
     }
-    
+
     &.is-disabled {
         .day-number {
             color: var(--color-disabled);
         }
     }
-    
+
     &.is-lucky {
-        background: #FFF1F0;
+        background: #fff1f0;
     }
-    
+
     &.is-holiday {
-        background: #FFFBE6;
+        background: #fffbe6;
     }
-    
+
     &:active:not(.is-past):not(.is-disabled) {
         transform: scale(0.95);
     }
@@ -1279,25 +1315,25 @@ onLoad(async (options: any) => {
     width: 12rpx;
     height: 12rpx;
     border-radius: 6rpx;
-    
+
     &.available {
-        background: #52C41A;
+        background: #52c41a;
     }
-    
+
     &.booked {
-        background: #FAAD14;
+        background: #faad14;
     }
-    
+
     &.locked {
-        background: #FF4D4F;
+        background: #ff4d4f;
     }
-    
+
     &.reserved {
-        background: #722ED1;
+        background: #722ed1;
     }
-    
+
     &.unavailable {
-        background: #BFBFBF;
+        background: #bfbfbf;
     }
 }
 
@@ -1320,23 +1356,23 @@ onLoad(async (options: any) => {
     justify-content: center;
     font-size: 16rpx;
     font-weight: 700;
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 .tag-lucky {
-    background: #FF4D4F;
+    background: #ff4d4f;
 }
 
 .tag-holiday {
-    background: #FAAD14;
+    background: #faad14;
 }
 
 /* 图例说明 */
 .legend-section {
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 0 0 16rpx 16rpx;
     padding: 16rpx 24rpx;
-    border-top: 1rpx solid #F0F0F0;
+    border-top: 1rpx solid #f0f0f0;
 }
 
 .legend-title {
@@ -1363,21 +1399,21 @@ onLoad(async (options: any) => {
     height: 16rpx;
     border-radius: 8rpx;
     flex-shrink: 0;
-    
+
     &.available {
-        background: #52C41A;
+        background: #52c41a;
     }
-    
+
     &.booked {
-        background: #FAAD14;
+        background: #faad14;
     }
-    
+
     &.locked {
-        background: #FF4D4F;
+        background: #ff4d4f;
     }
-    
+
     &.reserved {
-        background: #722ED1;
+        background: #722ed1;
     }
 }
 
@@ -1390,7 +1426,7 @@ onLoad(async (options: any) => {
 /* 套餐选择 */
 .package-section {
     margin: 0 24rpx 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 16rpx;
     padding: 32rpx;
 }
@@ -1402,8 +1438,8 @@ onLoad(async (options: any) => {
 }
 
 .package-card {
-    background: #F9FAFB;
-    border: 2rpx solid #F0F0F0;
+    background: #f9fafb;
+    border: 2rpx solid #f0f0f0;
     border-radius: 16rpx;
     padding: 24rpx;
     transition: all 0.2s ease;
@@ -1470,15 +1506,15 @@ onLoad(async (options: any) => {
 .slot-tag {
     padding: 4rpx 12rpx;
     border-radius: 8rpx;
-    background: #FFFFFF;
-    border: 1rpx solid #EAEAEA;
+    background: #ffffff;
+    border: 1rpx solid #eaeaea;
     font-size: 20rpx;
     color: var(--color-content);
 }
 
 .time-slot-section {
     margin: 0 24rpx 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 16rpx;
     padding: 32rpx;
 }
@@ -1486,7 +1522,7 @@ onLoad(async (options: any) => {
 /* 推荐人员 */
 .recommend-section {
     margin: 0 24rpx 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 16rpx;
     padding: 32rpx;
 }
@@ -1502,8 +1538,8 @@ onLoad(async (options: any) => {
     align-items: center;
     gap: 16rpx;
     padding: 20rpx;
-    background: #F9FAFB;
-    border: 2rpx solid #F0F0F0;
+    background: #f9fafb;
+    border: 2rpx solid #f0f0f0;
     border-radius: 16rpx;
     transition: all 0.2s ease;
 }
@@ -1547,7 +1583,7 @@ onLoad(async (options: any) => {
 .recommend-rating .rating-text {
     font-size: 22rpx;
     font-weight: 600;
-    color: #FFD700;
+    color: #ffd700;
 }
 
 .recommend-meta {
@@ -1577,8 +1613,8 @@ onLoad(async (options: any) => {
     color: var(--color-content);
     padding: 2rpx 8rpx;
     border-radius: 8rpx;
-    background: #FFFFFF;
-    border: 1rpx solid #EAEAEA;
+    background: #ffffff;
+    border: 1rpx solid #eaeaea;
 }
 
 .recommend-action {
@@ -1632,7 +1668,7 @@ onLoad(async (options: any) => {
 }
 
 .slot-item.is-selected .slot-price {
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 .slot-item {
@@ -1641,19 +1677,19 @@ onLoad(async (options: any) => {
     align-items: center;
     gap: 16rpx;
     padding: 20rpx 24rpx;
-    background: #F9FAFB;
-    border: 2rpx solid #F0F0F0;
+    background: #f9fafb;
+    border: 2rpx solid #f0f0f0;
     border-radius: 16rpx;
     transition: all 0.2s ease;
-    
+
     &.is-selected {
-        color: #FFFFFF;
+        color: #ffffff;
     }
-    
+
     &:active {
         transform: scale(0.95);
     }
-    
+
     .slot-label {
         font-size: 26rpx;
         font-weight: 500;
@@ -1661,7 +1697,7 @@ onLoad(async (options: any) => {
 }
 
 .slot-item.is-selected .slot-label {
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 /* 底部占位 */
@@ -1680,14 +1716,14 @@ onLoad(async (options: any) => {
     justify-content: space-between;
     padding: 24rpx;
     padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-    background: #FFFFFF;
+    background: #ffffff;
     box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.08);
     z-index: 100;
 }
 
 .price-summary {
     flex: 1;
-    
+
     .summary-label {
         display: block;
         font-size: 24rpx;
@@ -1699,14 +1735,14 @@ onLoad(async (options: any) => {
 .summary-price {
     display: flex;
     align-items: baseline;
-    
+
     .price-symbol {
         font-size: 28rpx;
         font-weight: 600;
         color: var(--color-primary);
         margin-right: 4rpx;
     }
-    
+
     .price-value {
         font-size: 48rpx;
         font-weight: 700;
@@ -1729,24 +1765,24 @@ onLoad(async (options: any) => {
     font-size: 28rpx;
     font-weight: 600;
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: scale(0.95);
     }
-    
+
     text {
-        color: #FFFFFF;
+        color: #ffffff;
     }
 }
 
 .btn-waitlist {
-    background: linear-gradient(135deg, #FF9500 0%, #FF9500 100%);
+    background: linear-gradient(135deg, #ff9500 0%, #ff9500 100%);
     box-shadow: 0 4rpx 12rpx rgba(255, 149, 0, 0.3);
 }
 
 .btn-cart {
     box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
-    
+
     &.disabled {
         opacity: 0.5;
         box-shadow: none;

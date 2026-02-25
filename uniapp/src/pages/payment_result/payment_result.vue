@@ -61,12 +61,7 @@
                         </tn-button>
                     </view>
                     <view class="mb-[20rpx]">
-                        <tn-button
-                            type="primary"
-                            :plain="true"
-                            shape="round"
-                            @click="goHome"
-                        >
+                        <tn-button type="primary" :plain="true" shape="round" @click="goHome">
                             返回首页
                         </tn-button>
                     </view>

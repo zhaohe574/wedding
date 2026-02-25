@@ -8,7 +8,10 @@
         >
             <!-- 标题 -->
             <view class="text-center mb-[28rpx]">
-                <text class="text-xl font-medium" :style="{ color: content.text_color || '#333333' }">
+                <text
+                    class="text-xl font-medium"
+                    :style="{ color: content.text_color || '#333333' }"
+                >
                     {{ content.title || '距离我们的婚礼还有' }}
                 </text>
             </view>
@@ -22,7 +25,9 @@
                     >
                         {{ countdown.days }}
                     </view>
-                    <text class="text-sm" :style="{ color: content.text_color || '#333333' }">天</text>
+                    <text class="text-sm" :style="{ color: content.text_color || '#333333' }"
+                        >天</text
+                    >
                 </view>
 
                 <view v-if="content.show_hours" class="time-unit text-center">
@@ -32,7 +37,9 @@
                     >
                         {{ countdown.hours }}
                     </view>
-                    <text class="text-sm" :style="{ color: content.text_color || '#333333' }">时</text>
+                    <text class="text-sm" :style="{ color: content.text_color || '#333333' }"
+                        >时</text
+                    >
                 </view>
 
                 <view v-if="content.show_minutes" class="time-unit text-center">
@@ -42,7 +49,9 @@
                     >
                         {{ countdown.minutes }}
                     </view>
-                    <text class="text-sm" :style="{ color: content.text_color || '#333333' }">分</text>
+                    <text class="text-sm" :style="{ color: content.text_color || '#333333' }"
+                        >分</text
+                    >
                 </view>
 
                 <view v-if="content.show_seconds" class="time-unit text-center">
@@ -52,16 +61,26 @@
                     >
                         {{ countdown.seconds }}
                     </view>
-                    <text class="text-sm" :style="{ color: content.text_color || '#333333' }">秒</text>
+                    <text class="text-sm" :style="{ color: content.text_color || '#333333' }"
+                        >秒</text
+                    >
                 </view>
             </view>
 
             <!-- 装饰元素 -->
             <view class="absolute top-[20rpx] left-[20rpx] opacity-20">
-                <tn-icon name="heart" size="60" :color="content.number_color || '#FF6B9D'"></tn-icon>
+                <tn-icon
+                    name="like-fill"
+                    size="60"
+                    :color="content.number_color || '#FF6B9D'"
+                ></tn-icon>
             </view>
             <view class="absolute bottom-[20rpx] right-[20rpx] opacity-20">
-                <tn-icon name="heart" size="60" :color="content.number_color || '#FF6B9D'"></tn-icon>
+                <tn-icon
+                    name="like-fill"
+                    size="60"
+                    :color="content.number_color || '#FF6B9D'"
+                ></tn-icon>
             </view>
         </view>
 
@@ -81,31 +100,59 @@
             <!-- 倒计时数字（横向排列） -->
             <view class="flex justify-center items-center">
                 <view v-if="content.show_days" class="flex items-baseline mr-[16rpx]">
-                    <text class="text-3xl font-bold" :style="{ color: content.number_color || '#FF6B9D' }">
+                    <text
+                        class="text-3xl font-bold"
+                        :style="{ color: content.number_color || '#FF6B9D' }"
+                    >
                         {{ countdown.days }}
                     </text>
-                    <text class="text-xs ml-[4rpx]" :style="{ color: content.text_color || '#666666' }">天</text>
+                    <text
+                        class="text-xs ml-[4rpx]"
+                        :style="{ color: content.text_color || '#666666' }"
+                        >天</text
+                    >
                 </view>
 
                 <view v-if="content.show_hours" class="flex items-baseline mr-[16rpx]">
-                    <text class="text-3xl font-bold" :style="{ color: content.number_color || '#FF6B9D' }">
+                    <text
+                        class="text-3xl font-bold"
+                        :style="{ color: content.number_color || '#FF6B9D' }"
+                    >
                         {{ countdown.hours }}
                     </text>
-                    <text class="text-xs ml-[4rpx]" :style="{ color: content.text_color || '#666666' }">时</text>
+                    <text
+                        class="text-xs ml-[4rpx]"
+                        :style="{ color: content.text_color || '#666666' }"
+                        >时</text
+                    >
                 </view>
 
                 <view v-if="content.show_minutes" class="flex items-baseline mr-[16rpx]">
-                    <text class="text-3xl font-bold" :style="{ color: content.number_color || '#FF6B9D' }">
+                    <text
+                        class="text-3xl font-bold"
+                        :style="{ color: content.number_color || '#FF6B9D' }"
+                    >
                         {{ countdown.minutes }}
                     </text>
-                    <text class="text-xs ml-[4rpx]" :style="{ color: content.text_color || '#666666' }">分</text>
+                    <text
+                        class="text-xs ml-[4rpx]"
+                        :style="{ color: content.text_color || '#666666' }"
+                        >分</text
+                    >
                 </view>
 
                 <view v-if="content.show_seconds" class="flex items-baseline">
-                    <text class="text-3xl font-bold" :style="{ color: content.number_color || '#FF6B9D' }">
+                    <text
+                        class="text-3xl font-bold"
+                        :style="{ color: content.number_color || '#FF6B9D' }"
+                    >
                         {{ countdown.seconds }}
                     </text>
-                    <text class="text-xs ml-[4rpx]" :style="{ color: content.text_color || '#666666' }">秒</text>
+                    <text
+                        class="text-xs ml-[4rpx]"
+                        :style="{ color: content.text_color || '#666666' }"
+                        >秒</text
+                    >
                 </view>
             </view>
         </view>
@@ -117,15 +164,32 @@
             :style="{ backgroundColor: content.bg_color || '#FFE8F0' }"
         >
             <!-- 装饰图案 -->
-            <view class="absolute top-0 left-0 right-0 h-[100rpx] flex justify-around items-center opacity-30">
-                <tn-icon name="heart-fill" size="40" :color="content.number_color || '#FF6B9D'"></tn-icon>
-                <tn-icon name="heart-fill" size="32" :color="content.number_color || '#FF6B9D'"></tn-icon>
-                <tn-icon name="heart-fill" size="40" :color="content.number_color || '#FF6B9D'"></tn-icon>
+            <view
+                class="absolute top-0 left-0 right-0 h-[100rpx] flex justify-around items-center opacity-30"
+            >
+                <tn-icon
+                    name="like-fill"
+                    size="40"
+                    :color="content.number_color || '#FF6B9D'"
+                ></tn-icon>
+                <tn-icon
+                    name="like-fill"
+                    size="32"
+                    :color="content.number_color || '#FF6B9D'"
+                ></tn-icon>
+                <tn-icon
+                    name="like-fill"
+                    size="40"
+                    :color="content.number_color || '#FF6B9D'"
+                ></tn-icon>
             </view>
 
             <!-- 标题 -->
             <view class="text-center mb-[24rpx] relative z-10">
-                <text class="text-lg font-medium" :style="{ color: content.text_color || '#333333' }">
+                <text
+                    class="text-lg font-medium"
+                    :style="{ color: content.text_color || '#333333' }"
+                >
                     {{ content.title || '距离我们的婚礼还有' }}
                 </text>
             </view>
@@ -142,7 +206,9 @@
                     >
                         {{ countdown.days }}
                     </view>
-                    <text class="text-xs" :style="{ color: content.text_color || '#666666' }">天</text>
+                    <text class="text-xs" :style="{ color: content.text_color || '#666666' }"
+                        >天</text
+                    >
                 </view>
 
                 <view
@@ -155,7 +221,9 @@
                     >
                         {{ countdown.hours }}
                     </view>
-                    <text class="text-xs" :style="{ color: content.text_color || '#666666' }">时</text>
+                    <text class="text-xs" :style="{ color: content.text_color || '#666666' }"
+                        >时</text
+                    >
                 </view>
 
                 <view
@@ -168,7 +236,9 @@
                     >
                         {{ countdown.minutes }}
                     </view>
-                    <text class="text-xs" :style="{ color: content.text_color || '#666666' }">分</text>
+                    <text class="text-xs" :style="{ color: content.text_color || '#666666' }"
+                        >分</text
+                    >
                 </view>
 
                 <view
@@ -181,15 +251,31 @@
                     >
                         {{ countdown.seconds }}
                     </view>
-                    <text class="text-xs" :style="{ color: content.text_color || '#666666' }">秒</text>
+                    <text class="text-xs" :style="{ color: content.text_color || '#666666' }"
+                        >秒</text
+                    >
                 </view>
             </view>
 
             <!-- 底部装饰 -->
-            <view class="absolute bottom-0 left-0 right-0 h-[100rpx] flex justify-around items-center opacity-30">
-                <tn-icon name="heart-fill" size="32" :color="content.number_color || '#FF6B9D'"></tn-icon>
-                <tn-icon name="heart-fill" size="40" :color="content.number_color || '#FF6B9D'"></tn-icon>
-                <tn-icon name="heart-fill" size="32" :color="content.number_color || '#FF6B9D'"></tn-icon>
+            <view
+                class="absolute bottom-0 left-0 right-0 h-[100rpx] flex justify-around items-center opacity-30"
+            >
+                <tn-icon
+                    name="like-fill"
+                    size="32"
+                    :color="content.number_color || '#FF6B9D'"
+                ></tn-icon>
+                <tn-icon
+                    name="like-fill"
+                    size="40"
+                    :color="content.number_color || '#FF6B9D'"
+                ></tn-icon>
+                <tn-icon
+                    name="like-fill"
+                    size="32"
+                    :color="content.number_color || '#FF6B9D'"
+                ></tn-icon>
             </view>
         </view>
     </view>
@@ -256,10 +342,10 @@ const loadWeddingDate = async () => {
         if (res.has_order && res.wedding_date) {
             hasWedding.value = true
             weddingDate.value = new Date(res.wedding_date)
-            
+
             // 立即计算一次
             calculateCountdown()
-            
+
             // 启动定时器，每秒更新
             timer = setInterval(() => {
                 calculateCountdown()

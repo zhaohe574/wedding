@@ -18,7 +18,8 @@
                 >
                     <image
                         :src="
-                            orderInfo.items[0].staff?.avatar || '/static/images/user/default_avatar.png'
+                            orderInfo.items[0].staff?.avatar ||
+                            '/static/images/user/default_avatar.png'
                         "
                         class="w-12 h-12 rounded-lg mr-3"
                         mode="aspectFill"
@@ -45,11 +46,11 @@
                     :class="{ active: addType === 'package' }"
                     @click="addType = 'package'"
                 >
-                    <uni-icons
-                        type="shop"
-                        size="28"
-                        :color="addType === 'package' ? '#ff6b35' : '#999'"
-                    ></uni-icons>
+                    <tn-icon
+                        name="gift"
+                        size="56rpx"
+                        :color="addType === 'package' ? $theme.primaryColor : '#999'"
+                    ></tn-icon>
                     <text>添加套餐</text>
                 </view>
                 <view
@@ -57,11 +58,11 @@
                     :class="{ active: addType === 'staff' }"
                     @click="addType = 'staff'"
                 >
-                    <uni-icons
-                        type="person"
-                        size="28"
-                        :color="addType === 'staff' ? '#ff6b35' : '#999'"
-                    ></uni-icons>
+                    <tn-icon
+                        name="my"
+                        size="56rpx"
+                        :color="addType === 'staff' ? $theme.primaryColor : '#999'"
+                    ></tn-icon>
                     <text>添加人员</text>
                 </view>
             </view>
@@ -77,7 +78,7 @@
                         selectedPackage.name
                     }}</text>
                     <text v-else class="placeholder">请选择要添加的套餐</text>
-                    <uni-icons type="right" size="16" color="#999"></uni-icons>
+                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
                 </view>
             </view>
             <view v-if="selectedPackage" class="selected-item mt-3">
@@ -109,7 +110,7 @@
                 <view class="value-area">
                     <text v-if="selectedStaff" class="text-primary">{{ selectedStaff.name }}</text>
                     <text v-else class="placeholder">请选择要添加的服务人员</text>
-                    <uni-icons type="right" size="16" color="#999"></uni-icons>
+                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
                 </view>
             </view>
             <view v-if="selectedStaff" class="selected-item mt-3">
@@ -125,7 +126,7 @@
                             selectedStaff.level_name || '普通级别'
                         }}</view>
                         <view class="flex items-center mt-1">
-                            <uni-icons type="star-filled" size="14" color="#ffc107"></uni-icons>
+                            <tn-icon name="star-fill" size="28rpx" color="#ffc107"></tn-icon>
                             <text class="text-xs text-yellow-500 ml-1">{{
                                 selectedStaff.score || '5.0'
                             }}</text>
@@ -150,7 +151,7 @@
                         selectedStaffPackage.name
                     }}</text>
                     <text v-else class="placeholder">请选择服务套餐</text>
-                    <uni-icons type="right" size="16" color="#999"></uni-icons>
+                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
                 </view>
             </view>
         </view>
@@ -165,7 +166,7 @@
                         formData.service_date
                     }}</text>
                     <text v-else class="placeholder">请选择服务日期</text>
-                    <uni-icons type="right" size="16" color="#999"></uni-icons>
+                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
                 </view>
             </view>
             <view class="form-item" @click="openTimePicker">
@@ -175,11 +176,11 @@
                         {{ timeSlotOptions[formData.time_slot]?.label }}
                     </text>
                     <text v-else class="placeholder">请选择时间段</text>
-                    <uni-icons type="right" size="16" color="#999"></uni-icons>
+                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
                 </view>
             </view>
             <view class="tip-box mt-3">
-                <uni-icons type="info" size="14" color="#ff9800"></uni-icons>
+                <tn-icon name="tip" size="28rpx" color="#ff9800"></tn-icon>
                 <text class="text-xs text-orange-500 ml-1">加项服务日期可与原订单日期不同</text>
             </view>
         </view>
@@ -207,7 +208,7 @@
                 >
                     <image :src="img" class="upload-image" mode="aspectFill" />
                     <view class="delete-btn" @click="removeImage(index)">
-                        <uni-icons type="close" size="14" color="#fff"></uni-icons>
+                        <tn-icon name="close" size="28rpx" color="#fff"></tn-icon>
                     </view>
                 </view>
                 <view
@@ -215,7 +216,7 @@
                     @click="chooseImage"
                     v-if="formData.attach_images.length < 5"
                 >
-                    <uni-icons type="plusempty" size="40" color="#ccc"></uni-icons>
+                    <tn-icon name="add" size="80rpx" color="#ccc"></tn-icon>
                     <text class="text-xs text-gray-400 mt-1">上传图片</text>
                 </view>
             </view>
@@ -242,14 +243,14 @@
                 </view>
             </view>
             <view class="tip-box mt-3">
-                <uni-icons type="info" size="14" color="#999"></uni-icons>
+                <tn-icon name="tip" size="28rpx" color="#999"></tn-icon>
                 <text class="text-xs text-gray-400 ml-1">最终费用以审核结果为准</text>
             </view>
         </view>
 
         <!-- 提交按钮 -->
         <view class="bottom-actions">
-            <button class="btn-submit" :disabled="submitting || !canSubmit" @click="handleSubmit">
+            <button class="btn-submit" :disabled="submitting || !canSubmit" :style="{ background: $theme.primaryColor }" @click="handleSubmit">
                 {{ submitting ? '提交中...' : '提交申请' }}
             </button>
         </view>
@@ -280,12 +281,12 @@
                             <view class="item-desc">{{ item.description }}</view>
                             <view class="item-price">¥{{ item.price }}</view>
                         </view>
-                        <uni-icons
+                        <tn-icon
                             v-if="selectedPackage?.id === item.id"
-                            type="checkmarkempty"
-                            size="20"
-                            color="#ff6b35"
-                        ></uni-icons>
+                            name="success"
+                            size="40rpx"
+                            :color="$theme.primaryColor"
+                        ></tn-icon>
                     </view>
                     <view v-if="packageList.length === 0" class="empty-tip">
                         <text>暂无可选套餐</text>
@@ -320,12 +321,12 @@
                             <view class="item-desc">{{ item.level_name || '普通级别' }}</view>
                             <view class="item-price">¥{{ item.price }}</view>
                         </view>
-                        <uni-icons
+                        <tn-icon
                             v-if="selectedStaff?.id === item.id"
-                            type="checkmarkempty"
-                            size="20"
-                            color="#ff6b35"
-                        ></uni-icons>
+                            name="success"
+                            size="40rpx"
+                            :color="$theme.primaryColor"
+                        ></tn-icon>
                     </view>
                     <view v-if="staffList.length === 0" class="empty-tip">
                         <text>暂无可选人员</text>
@@ -355,12 +356,12 @@
                             <view class="item-desc">{{ item.description }}</view>
                             <view class="item-price">¥{{ item.price }}</view>
                         </view>
-                        <uni-icons
+                        <tn-icon
                             v-if="selectedStaffPackage?.id === item.id"
-                            type="checkmarkempty"
-                            size="20"
-                            color="#ff6b35"
-                        ></uni-icons>
+                            name="success"
+                            size="40rpx"
+                            :color="$theme.primaryColor"
+                        ></tn-icon>
                     </view>
                     <view v-if="staffPackageList.length === 0" class="empty-tip">
                         <text>暂无可选套餐</text>
@@ -732,7 +733,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--primary-color, #ff6b35);
+    border-left: 6rpx solid var(--color-primary, #7C3AED);
 }
 
 .order-card {
@@ -764,11 +765,11 @@ onLoad((options: any) => {
     }
 
     &.active {
-        border-color: var(--primary-color, #ff6b35);
-        background: rgba(255, 107, 53, 0.05);
+        border-color: var(--color-primary, #7C3AED);
+        background: rgba(124, 58, 237, 0.05);
 
         text {
-            color: var(--primary-color, #ff6b35);
+            color: var(--color-primary, #7C3AED);
         }
     }
 }
@@ -895,7 +896,7 @@ onLoad((options: any) => {
     width: 100%;
     height: 72rpx;
     line-height: 72rpx;
-    background: var(--primary-color, #ff6b35);
+    background: var(--color-primary, #7C3AED);
     color: #fff;
     border-radius: 44rpx;
     font-size: 30rpx;
@@ -927,7 +928,7 @@ onLoad((options: any) => {
         font-weight: bold;
     }
     .confirm {
-        color: var(--primary-color, #ff6b35);
+        color: var(--color-primary, #7C3AED);
         font-size: 28rpx;
     }
     .placeholder-btn {
@@ -950,8 +951,8 @@ onLoad((options: any) => {
     border: 2rpx solid transparent;
 
     &.active {
-        border-color: var(--primary-color, #ff6b35);
-        background: rgba(255, 107, 53, 0.05);
+        border-color: var(--color-primary, #7C3AED);
+        background: rgba(124, 58, 237, 0.05);
     }
 }
 
@@ -987,7 +988,7 @@ onLoad((options: any) => {
 
 .item-price {
     font-size: 28rpx;
-    color: var(--primary-color, #ff6b35);
+    color: var(--color-primary, #7C3AED);
     font-weight: bold;
     margin-top: 8rpx;
 }
@@ -1025,9 +1026,9 @@ onLoad((options: any) => {
     font-size: 28rpx;
 
     &.active {
-        border-color: var(--primary-color, #ff6b35);
-        color: var(--primary-color, #ff6b35);
-        background: rgba(255, 107, 53, 0.05);
+        border-color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #7C3AED);
+        background: rgba(124, 58, 237, 0.05);
     }
 }
 </style>

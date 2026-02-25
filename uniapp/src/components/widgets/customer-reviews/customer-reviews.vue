@@ -2,7 +2,7 @@
     <view class="customer-reviews mx-[20rpx] mt-[20rpx]" v-if="content.enabled && showList.length">
         <!-- 标题 -->
         <view v-if="content.title" class="flex items-center mb-[24rpx]">
-            <view class="title-bar w-[8rpx] h-[34rpx] bg-primary rounded-full mr-[16rpx]"></view>
+            <view class="title-bar w-[8rpx] h-[34rpx] rounded-full mr-[16rpx]" :style="$theme.titleBar.value"></view>
             <text class="text-lg font-medium text-gray-900">{{ content.title }}</text>
             <!-- 统计信息 -->
             <view v-if="content.show_stats" class="ml-auto flex items-center">
@@ -48,8 +48,8 @@
                         </view>
                     </view>
                     <!-- 标签 -->
-                    <view v-if="item.tag" class="px-[16rpx] py-[6rpx] bg-primary/10 rounded-full">
-                        <text class="text-xs text-primary">{{ item.tag }}</text>
+                    <view v-if="item.tag" class="px-[16rpx] py-[6rpx] rounded-full" :style="$theme.tagBg.value">
+                        <text class="text-xs" :style="$theme.tagText.value">{{ item.tag }}</text>
                     </view>
                 </view>
 
@@ -190,8 +190,8 @@
             class="flex items-center justify-center mt-[24rpx] py-[20rpx] bg-white rounded-xl"
             @click="handleMore"
         >
-            <text class="text-sm text-primary">查看全部评价</text>
-            <tn-icon name="right" size="14" color="#7c3aed" class="ml-[8rpx]"></tn-icon>
+            <text class="text-sm" :style="$theme.moreText.value">查看全部评价</text>
+            <tn-icon name="right" size="14" :color="primaryColor" class="ml-[8rpx]"></tn-icon>
         </view>
     </view>
 </template>
@@ -199,7 +199,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { useThemeStore } from '@/stores/theme'
 import { navigateTo } from '@/utils/util'
+import { tintColor, alphaColor } from '@/utils/color'
 
 const props = defineProps({
     content: {
@@ -213,7 +215,25 @@ const props = defineProps({
 })
 
 const { getImageUrl } = useAppStore()
+const themeStore = useThemeStore()
+const primaryColor = computed(() => themeStore.primaryColor || '#7C3AED')
 const defaultAvatar = '/static/images/user/default_avatar.png'
+
+// 内联样式（替代CSS变量和Tailwind主题类，兼容小程序）
+const $theme = {
+    titleBar: computed(() => ({
+        background: primaryColor.value
+    })),
+    tagBg: computed(() => ({
+        background: tintColor(primaryColor.value, 0.9)
+    })),
+    tagText: computed(() => ({
+        color: primaryColor.value
+    })),
+    moreText: computed(() => ({
+        color: primaryColor.value
+    }))
+}
 
 // 过滤显示的列表
 const showList = computed(() => {

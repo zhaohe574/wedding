@@ -1,6 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar title="动态管理" :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            title="动态管理"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
     </page-meta>
 
     <view class="page-container">
@@ -8,9 +12,9 @@
             <template #top>
                 <!-- 顶部操作栏 -->
                 <view class="top-bar">
-                    <view 
+                    <view
                         class="publish-btn"
-                        :style="{ 
+                        :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                             color: $theme.btnColor
                         }"
@@ -33,13 +37,14 @@
                     <!-- 动态头部 -->
                     <view class="dynamic-header">
                         <view class="dynamic-type">
-                            <tn-icon :name="getTypeIcon(item.dynamic_type)" size="28" :color="$theme.primaryColor" />
+                            <tn-icon
+                                :name="getTypeIcon(item.dynamic_type)"
+                                size="28"
+                                :color="$theme.primaryColor"
+                            />
                             <text>{{ typeText(item.dynamic_type) }}</text>
                         </view>
-                        <view 
-                            class="dynamic-status"
-                            :style="getStatusStyle(item.status)"
-                        >
+                        <view class="dynamic-status" :style="getStatusStyle(item.status)">
                             <tn-icon :name="getStatusIcon(item.status)" size="24" color="inherit" />
                             <text>{{ statusText(item.status) }}</text>
                         </view>
@@ -74,7 +79,7 @@
                     <view class="dynamic-actions">
                         <view
                             class="action-btn edit-btn"
-                            :style="{ 
+                            :style="{
                                 color: $theme.primaryColor,
                                 borderColor: $theme.primaryColor
                             }"
@@ -83,10 +88,7 @@
                             <tn-icon name="edit" size="28" :color="$theme.primaryColor" />
                             <text>编辑</text>
                         </view>
-                        <view
-                            class="action-btn delete-btn"
-                            @click.stop="handleDelete(item)"
-                        >
+                        <view class="action-btn delete-btn" @click.stop="handleDelete(item)">
                             <tn-icon name="delete" size="28" color="#FF2C3C" />
                             <text>删除</text>
                         </view>
@@ -97,9 +99,9 @@
                 <view v-if="dynamicList.length === 0" class="empty-state">
                     <tn-icon name="edit" size="120" color="#E5E5E5" />
                     <text class="empty-text">暂无动态</text>
-                    <view 
+                    <view
                         class="empty-btn"
-                        :style="{ 
+                        :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                             color: $theme.btnColor
                         }"
@@ -218,13 +220,13 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #F6F6F6 100%);
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
 }
 
 /* 顶部操作栏 */
 .top-bar {
     padding: 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 
@@ -239,7 +241,7 @@ onShow(async () => {
     font-weight: 600;
     box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: translateY(2rpx);
         box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
@@ -254,16 +256,16 @@ onShow(async () => {
 .dynamic-card {
     margin-bottom: 24rpx;
     padding: 24rpx;
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
     transition: all 0.2s ease;
-    
+
     &:active {
         transform: translateY(-2rpx);
         box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
     }
-    
+
     &:last-child {
         margin-bottom: 0;
     }
@@ -275,7 +277,7 @@ onShow(async () => {
     align-items: center;
     justify-content: space-between;
     padding-bottom: 16rpx;
-    border-bottom: 1rpx solid #F5F5F5;
+    border-bottom: 1rpx solid #f5f5f5;
     margin-bottom: 16rpx;
 }
 
@@ -320,8 +322,8 @@ onShow(async () => {
     align-items: center;
     gap: 24rpx;
     padding: 16rpx 0;
-    border-top: 1rpx solid #F5F5F5;
-    border-bottom: 1rpx solid #F5F5F5;
+    border-top: 1rpx solid #f5f5f5;
+    border-bottom: 1rpx solid #f5f5f5;
     margin-bottom: 16rpx;
 }
 
@@ -351,7 +353,7 @@ onShow(async () => {
     font-weight: 500;
     border: 2rpx solid;
     transition: all 0.2s ease;
-    
+
     &:active {
         opacity: 0.8;
     }
@@ -363,8 +365,8 @@ onShow(async () => {
 
 .delete-btn {
     background: transparent;
-    color: #FF2C3C;
-    border-color: #FF2C3C;
+    color: #ff2c3c;
+    border-color: #ff2c3c;
 }
 
 /* 空状态 */
@@ -389,7 +391,7 @@ onShow(async () => {
     font-size: 28rpx;
     font-weight: 600;
     box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
-    
+
     &:active {
         opacity: 0.9;
     }

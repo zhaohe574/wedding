@@ -1,14 +1,14 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar 
+        <navigation-bar
             title="设置"
-            :front-color="$theme.navColor" 
-            :background-color="$theme.navBgColor" 
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
         />
         <!-- #endif -->
     </page-meta>
-    
+
     <view class="user-set-page">
         <!-- 用户信息卡片 -->
         <navigator :url="`/pages/user_data/user_data`" hover-class="none">
@@ -34,7 +34,7 @@
         <!-- 账号安全区域 -->
         <view class="section-card">
             <view class="section-title">账号安全</view>
-            
+
             <view class="menu-item" hover-class="menu-item-hover" @click="handlePwd">
                 <view class="menu-left">
                     <view class="menu-icon" :style="{ background: getIconBg('primary') }">
@@ -43,16 +43,18 @@
                     <text class="menu-text">登录密码</text>
                 </view>
                 <view class="menu-right">
-                    <text class="menu-value">{{ userInfo.has_password ? '已设置' : '未设置' }}</text>
+                    <text class="menu-value">{{
+                        userInfo.has_password ? '已设置' : '未设置'
+                    }}</text>
                     <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
                 </view>
             </view>
 
             <!--  #ifdef H5 || MP-WEIXIN -->
-            <view 
+            <view
                 v-if="isWeixin"
-                class="menu-item" 
-                hover-class="menu-item-hover" 
+                class="menu-item"
+                hover-class="menu-item-hover"
                 @click="bindWechatLock"
             >
                 <view class="menu-left">
@@ -62,16 +64,23 @@
                     <text class="menu-text">绑定微信</text>
                 </view>
                 <view class="menu-right">
-                    <view 
+                    <view
                         class="status-badge"
-                        :style="{ 
-                            background: userInfo.is_auth ? getStatusBg('success') : getStatusBg('warning'),
+                        :style="{
+                            background: userInfo.is_auth
+                                ? getStatusBg('success')
+                                : getStatusBg('warning'),
                             color: userInfo.is_auth ? '#19BE6B' : '#FF9900'
                         }"
                     >
                         {{ userInfo.is_auth ? '已绑定' : '未绑定' }}
                     </view>
-                    <tn-icon v-if="!userInfo.is_auth" name="right" :size="32" color="#C8C9CC"></tn-icon>
+                    <tn-icon
+                        v-if="!userInfo.is_auth"
+                        name="right"
+                        :size="32"
+                        color="#C8C9CC"
+                    ></tn-icon>
                 </view>
             </view>
             <!-- #endif -->
@@ -80,8 +89,11 @@
         <!-- 协议与关于 -->
         <view class="section-card">
             <view class="section-title">协议与关于</view>
-            
-            <navigator :url="`/pages/agreement/agreement?type=${AgreementEnum.PRIVACY}`" hover-class="none">
+
+            <navigator
+                :url="`/pages/agreement/agreement?type=${AgreementEnum.PRIVACY}`"
+                hover-class="none"
+            >
                 <view class="menu-item" hover-class="menu-item-hover">
                     <view class="menu-left">
                         <view class="menu-icon" :style="{ background: getIconBg('accent') }">
@@ -95,7 +107,10 @@
                 </view>
             </navigator>
 
-            <navigator :url="`/pages/agreement/agreement?type=${AgreementEnum.SERVICE}`" hover-class="none">
+            <navigator
+                :url="`/pages/agreement/agreement?type=${AgreementEnum.SERVICE}`"
+                hover-class="none"
+            >
                 <view class="menu-item" hover-class="menu-item-hover">
                     <view class="menu-left">
                         <view class="menu-icon" :style="{ background: getIconBg('cta') }">
@@ -127,9 +142,9 @@
 
         <!-- 退出登录按钮 -->
         <view class="logout-container">
-            <view 
+            <view
                 class="logout-btn"
-                :style="{ 
+                :style="{
                     background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                     color: $theme.btnColor
                 }"
@@ -156,7 +171,7 @@
                     </view>
                 </view>
                 <view class="action-list">
-                    <view 
+                    <view
                         class="action-item"
                         hover-class="action-item-hover"
                         @click="handlePasswordAction(0)"
@@ -167,7 +182,7 @@
                         <text class="action-text">修改密码</text>
                         <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
                     </view>
-                    <view 
+                    <view
                         class="action-item"
                         hover-class="action-item-hover"
                         @click="handlePasswordAction(1)"
@@ -194,20 +209,18 @@
                     <tn-icon name="warning" :size="64" color="#FFFFFF"></tn-icon>
                 </view>
                 <view class="popup-title">温馨提示</view>
-                <view class="popup-content">
-                    是否清除当前登录信息，退出登录？
-                </view>
+                <view class="popup-content"> 是否清除当前登录信息，退出登录？ </view>
                 <view class="popup-actions">
-                    <view 
+                    <view
                         class="action-btn action-btn-cancel"
                         hover-class="action-btn-hover"
                         @click="showLogout = false"
                     >
                         取消
                     </view>
-                    <view 
+                    <view
                         class="action-btn action-btn-confirm"
-                        :style="{ 
+                        :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
                             color: $theme.btnColor
                         }"
@@ -355,20 +368,20 @@ onLoad(async (options) => {
 <style lang="scss" scoped>
 .user-set-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, #F9FAFB 0%, #FFFFFF 100%);
+    background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
     padding: 24rpx;
     padding-bottom: 48rpx;
 }
 
 /* 用户信息卡片 */
 .user-info-card {
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     padding: 32rpx;
     margin-bottom: 24rpx;
     box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
     transition: all 0.3s ease;
-    
+
     &:active {
         transform: translateY(-2rpx);
         box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
@@ -408,7 +421,7 @@ onLoad(async (options) => {
 
 /* 区域卡片 */
 .section-card {
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     padding: 24rpx 0;
     margin-bottom: 24rpx;
@@ -430,9 +443,9 @@ onLoad(async (options) => {
     align-items: center;
     justify-content: space-between;
     padding: 28rpx 32rpx;
-    border-bottom: 1rpx solid #F5F5F5;
+    border-bottom: 1rpx solid #f5f5f5;
     transition: all 0.2s ease;
-    
+
     &:last-child,
     &.menu-item-last {
         border-bottom: none;
@@ -440,7 +453,7 @@ onLoad(async (options) => {
 }
 
 .menu-item-hover {
-    background: #F9FAFB;
+    background: #f9fafb;
 }
 
 .menu-left {
@@ -516,7 +529,7 @@ onLoad(async (options) => {
 
 /* 退出登录弹窗 */
 .logout-popup {
-    background: #FFFFFF;
+    background: #ffffff;
     width: 600rpx;
     border-radius: 32rpx;
     padding: 48rpx 40rpx 40rpx;
@@ -572,7 +585,7 @@ onLoad(async (options) => {
 }
 
 .action-btn-cancel {
-    background: #F5F5F5;
+    background: #f5f5f5;
     color: #666666;
 }
 
@@ -587,7 +600,7 @@ onLoad(async (options) => {
 
 /* 密码操作弹窗 */
 .password-action-popup {
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 32rpx 32rpx 0 0;
     padding-bottom: constant(safe-area-inset-bottom);
     padding-bottom: env(safe-area-inset-bottom);
@@ -598,7 +611,7 @@ onLoad(async (options) => {
     align-items: center;
     justify-content: space-between;
     padding: 32rpx 32rpx 24rpx;
-    border-bottom: 1rpx solid #F5F5F5;
+    border-bottom: 1rpx solid #f5f5f5;
 }
 
 .action-title {
@@ -614,11 +627,11 @@ onLoad(async (options) => {
     align-items: center;
     justify-content: center;
     border-radius: 28rpx;
-    background: #F5F5F5;
+    background: #f5f5f5;
     transition: all 0.2s ease;
-    
+
     &:active {
-        background: #E5E5E5;
+        background: #e5e5e5;
         transform: scale(0.95);
     }
 }
@@ -636,7 +649,7 @@ onLoad(async (options) => {
 }
 
 .action-item-hover {
-    background: #F9FAFB;
+    background: #f9fafb;
 }
 
 .action-icon {

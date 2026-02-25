@@ -27,14 +27,14 @@
                             <view v-if="item.icon" class="nav-icon-wrapper">
                                 <tn-icon :name="item.icon" :size="64" :color="iconColor" />
                             </view>
-                            <image 
+                            <image
                                 v-else
                                 class="nav-image"
-                                width="64" 
-                                height="64" 
-                                :src="getImageUrl(item.image)" 
+                                width="64"
+                                height="64"
+                                :src="getImageUrl(item.image)"
                                 mode="aspectFit"
-                                alt="" 
+                                alt=""
                             />
                             <view class="mt-sm text-[26rpx] text-center text-content">
                                 {{ item.name }}
@@ -52,6 +52,7 @@ import { ref, watch, computed } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { navigateTo, sliceArray } from '@/utils/util'
+import { alphaColor } from '@/utils/color'
 
 const props = defineProps({
     content: {
@@ -87,10 +88,10 @@ const pagesNum = computed<number>(() => {
 })
 
 // 图标颜色
-const iconColor = computed(() => props.styles.iconColor || '#666666')
+const iconColor = computed(() => props.styles.iconColor || themeStore.primaryColor || '#666666')
 
 // 指示器颜色
-const indicatorColor = computed(() => 'rgba(124, 58, 237, 0.3)')
+const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#7C3AED', 0.16))
 const indicatorActiveColor = computed(() => themeStore.primaryColor || '#7C3AED')
 
 watch(

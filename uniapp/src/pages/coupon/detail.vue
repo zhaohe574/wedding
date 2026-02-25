@@ -19,14 +19,16 @@
                 <!-- 金额区域 - 上方 -->
                 <view
                     class="amount-section"
-                    :style="{ 
-                        background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)` 
+                    :style="{
+                        background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)`
                     }"
                 >
                     <!-- 折扣券 -->
                     <view v-if="detail.coupon_type === 2" class="amount-content">
                         <view class="discount-wrapper">
-                            <text class="discount-num">{{ (detail.discount_amount / 10).toFixed(1) }}</text>
+                            <text class="discount-num">{{
+                                (detail.discount_amount / 10).toFixed(1)
+                            }}</text>
                             <text class="discount-unit">折</text>
                         </view>
                         <text class="threshold-text">{{ thresholdText }}</text>
@@ -39,7 +41,7 @@
                         </view>
                         <text class="threshold-text">{{ thresholdText }}</text>
                     </view>
-                    
+
                     <!-- 装饰圆点 -->
                     <view class="deco-circle deco-circle-top"></view>
                     <view class="deco-circle deco-circle-bottom"></view>
@@ -51,25 +53,30 @@
                         <text class="coupon-title">{{ detail.name }}</text>
                         <view
                             class="type-badge"
-                            :style="{ 
-                                background: detail.coupon_type === 2 
-                                    ? 'rgba(249, 115, 22, 0.1)' 
-                                    : 'rgba(124, 58, 237, 0.1)',
-                                color: detail.coupon_type === 2 ? $theme.ctaColor : $theme.primaryColor,
-                                borderColor: detail.coupon_type === 2 ? $theme.ctaColor : $theme.primaryColor
+                            :style="{
+                                background:
+                                    detail.coupon_type === 2
+                                        ? 'rgba(249, 115, 22, 0.1)'
+                                        : 'rgba(124, 58, 237, 0.1)',
+                                color:
+                                    detail.coupon_type === 2
+                                        ? $theme.ctaColor
+                                        : $theme.primaryColor,
+                                borderColor:
+                                    detail.coupon_type === 2 ? $theme.ctaColor : $theme.primaryColor
                             }"
                         >
                             {{ detail.coupon_type_text }}
                         </view>
                     </view>
-                    
+
                     <view class="desc-row">
                         <tn-icon name="discount" size="28" :color="$theme.ctaColor" />
                         <text class="desc-text" :style="{ color: $theme.ctaColor }">
                             {{ detail.discount_desc }}
                         </text>
                     </view>
-                    
+
                     <view class="scope-row">
                         <tn-icon name="shop" size="28" color="#999999" />
                         <text class="scope-text">{{ detail.use_scope_text || '全部可用' }}</text>
@@ -83,7 +90,7 @@
                     <tn-icon name="document" size="32" :color="$theme.primaryColor" />
                     <text class="card-title">使用与领取规则</text>
                 </view>
-                
+
                 <view class="rules-list">
                     <!-- 可领取时间 -->
                     <view class="rule-item">
@@ -92,8 +99,8 @@
                             <text>可领取时间</text>
                         </view>
                         <view class="rule-value">
-                            <text 
-                                v-for="(line, index) in receiveTimeLines" 
+                            <text
+                                v-for="(line, index) in receiveTimeLines"
                                 :key="index"
                                 class="rule-value-line"
                             >
@@ -109,8 +116,8 @@
                             <text>可使用时间</text>
                         </view>
                         <view class="rule-value">
-                            <text 
-                                v-for="(line, index) in useTimeLines" 
+                            <text
+                                v-for="(line, index) in useTimeLines"
                                 :key="index"
                                 class="rule-value-line"
                             >
@@ -150,11 +157,15 @@
                 <button
                     class="receive-button"
                     :class="{ 'receive-button-disabled': actionDisabled }"
-                    :style="actionDisabled ? {} : { 
-                        background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                        color: $theme.btnColor,
-                        boxShadow: `0 12rpx 32rpx ${$theme.primaryColor}40`
-                    }"
+                    :style="
+                        actionDisabled
+                            ? {}
+                            : {
+                                  background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+                                  color: $theme.btnColor,
+                                  boxShadow: `0 12rpx 32rpx ${$theme.primaryColor}40`
+                              }
+                    "
                     :disabled="actionDisabled"
                     :loading="receiving"
                     @click="handleReceive"
@@ -172,16 +183,16 @@
                         />
                     </template>
                     <template v-else>
-                        <tn-icon 
-                            v-if="!actionDisabled" 
-                            name="gift" 
-                            size="36" 
-                            :color="$theme.btnColor" 
+                        <tn-icon
+                            v-if="!actionDisabled"
+                            name="gift"
+                            size="36"
+                            :color="$theme.btnColor"
                         />
                         <text>{{ actionText }}</text>
                     </template>
                 </button>
-                
+
                 <text v-if="statusText" class="status-hint">{{ statusText }}</text>
             </view>
             <view class="safe-bottom"></view>
@@ -217,7 +228,7 @@ const formatDateTime = (timestamp: number) => {
     const day = pad(date.getDate())
     const hours = pad(date.getHours())
     const minutes = pad(date.getMinutes())
-    
+
     // 返回格式：2026年02月03日 08:00
     return `${year}年${month}月${day}日 ${hours}:${minutes}`
 }
@@ -229,7 +240,7 @@ const formatDate = (timestamp: number) => {
     const year = date.getFullYear()
     const month = pad(date.getMonth() + 1)
     const day = pad(date.getDate())
-    
+
     return `${year}年${month}月${day}日`
 }
 
@@ -285,17 +296,13 @@ const thresholdText = computed(() => {
 const receiveTimeLines = computed(() => {
     const start = Number(detail.value.receive_start_time || 0)
     const end = Number(detail.value.receive_end_time || 0)
-    
+
     if (!start && !end) return ['不限时间']
-    
+
     if (start && end) {
-        return [
-            formatDateTime(start),
-            '至',
-            formatDateTime(end)
-        ]
+        return [formatDateTime(start), '至', formatDateTime(end)]
     }
-    
+
     if (start) return [`${formatDateTime(start)} 起`]
     return [`${formatDateTime(end)} 止`]
 })
@@ -303,25 +310,21 @@ const receiveTimeLines = computed(() => {
 const useTimeLines = computed(() => {
     const validType = Number(detail.value.valid_type || 0)
     const validDays = Number(detail.value.valid_days || 0)
-    
+
     // 领取后N天有效
     if (validType === 2 && validDays) {
         return [`领取后 ${validDays} 天内有效`]
     }
-    
+
     const start = Number(detail.value.valid_start_time || 0)
     const end = Number(detail.value.valid_end_time || 0)
-    
+
     if (!start && !end) return ['长期有效']
-    
+
     if (start && end) {
-        return [
-            formatDateTime(start),
-            '至',
-            formatDateTime(end)
-        ]
+        return [formatDateTime(start), '至', formatDateTime(end)]
     }
-    
+
     if (start) return [`${formatDateTime(start)} 起`]
     return [`${formatDateTime(end)} 止`]
 })
@@ -352,7 +355,11 @@ const actionText = computed(() => {
 })
 
 const actionDisabled = computed(() => {
-    return detail.value.is_received || detail.value.remain_count === 0 || detail.value.can_receive === false
+    return (
+        detail.value.is_received ||
+        detail.value.remain_count === 0 ||
+        detail.value.can_receive === false
+    )
 })
 
 const statusText = computed(() => {
@@ -418,7 +425,7 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .coupon-detail-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #F6F6F6 100%);
+    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
     padding-bottom: 200rpx;
 }
 
@@ -447,8 +454,7 @@ onUnmounted(() => {
     backdrop-filter: blur(20rpx);
     border-radius: 32rpx;
     padding: 0;
-    box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12),
-                0 8rpx 16rpx rgba(0, 0, 0, 0.04);
+    box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12), 0 8rpx 16rpx rgba(0, 0, 0, 0.04);
     margin-bottom: 24rpx;
     border: 2rpx solid rgba(255, 255, 255, 0.3);
     transition: all 0.3s ease;
@@ -483,7 +489,7 @@ onUnmounted(() => {
     display: flex;
     align-items: baseline;
     gap: 12rpx;
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 .discount-num,
@@ -506,7 +512,7 @@ onUnmounted(() => {
 
 .threshold-text {
     font-size: 28rpx;
-    color: #FFFFFF;
+    color: #ffffff;
     opacity: 0.95;
     font-weight: 500;
 }
@@ -589,7 +595,7 @@ onUnmounted(() => {
 
 /* 规则卡片 */
 .rules-card {
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 24rpx;
     padding: 32rpx;
     box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
@@ -601,7 +607,7 @@ onUnmounted(() => {
     gap: 12rpx;
     margin-bottom: 24rpx;
     padding-bottom: 20rpx;
-    border-bottom: 2rpx solid #F5F5F5;
+    border-bottom: 2rpx solid #f5f5f5;
 }
 
 .card-title {
@@ -646,7 +652,7 @@ onUnmounted(() => {
     font-weight: 500;
     text-align: right;
     line-height: 1.6;
-    
+
     &:nth-child(2) {
         font-size: 24rpx;
         color: #999999;
@@ -699,7 +705,7 @@ onUnmounted(() => {
 }
 
 .receive-button-disabled {
-    background: #F5F5F5 !important;
+    background: #f5f5f5 !important;
     color: #999999 !important;
     box-shadow: none !important;
 }

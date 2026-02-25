@@ -21,6 +21,16 @@
                         <span class="text-gray-500 text-xs">移动端管理员看板入口</span>
                     </div>
                 </el-form-item>
+                <el-form-item label="人员详情页风格">
+                    <div class="flex flex-col gap-2">
+                        <el-radio-group v-model="formData.staff_detail_style">
+                            <el-radio label="classic">经典信息型</el-radio>
+                            <el-radio label="immersive">沉浸视觉型</el-radio>
+                            <el-radio label="conversion">高转化营销型</el-radio>
+                        </el-radio-group>
+                        <span class="text-gray-500 text-xs">控制移动端服务人员详情页展示风格</span>
+                    </div>
+                </el-form-item>
             </el-form>
         </el-card>
 
@@ -36,7 +46,8 @@ import { getFeatureSwitchConfig, setFeatureSwitchConfig } from '@/api/setting/fe
 const formData = reactive({
     staff_center: 1,
     staff_admin: 1,
-    admin_dashboard: 1
+    admin_dashboard: 1,
+    staff_detail_style: 'classic'
 })
 
 const getData = async () => {

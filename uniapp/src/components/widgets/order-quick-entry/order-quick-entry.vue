@@ -3,10 +3,7 @@
         <!-- 标题栏 -->
         <view class="flex items-center justify-between mb-[20rpx] px-[8rpx]" v-if="content.title">
             <text class="text-[32rpx] font-semibold text-[#1E293B]">{{ content.title }}</text>
-            <view
-                class="flex items-center cursor-pointer"
-                @click="navigateToOrderList"
-            >
+            <view class="flex items-center cursor-pointer" @click="navigateToOrderList">
                 <text class="text-[26rpx] text-[#64748B]">全部订单</text>
                 <tn-icon name="right" size="28" color="#94A3B8" class="ml-[4rpx]" />
             </view>
@@ -16,13 +13,14 @@
         <view
             class="order-card bg-white rounded-[16rpx] p-[32rpx]"
             :style="{
-                boxShadow: content.show_shadow !== false ? '0 2rpx 12rpx rgba(0, 0, 0, 0.08)' : 'none'
+                boxShadow:
+                    content.show_shadow !== false ? '0 2rpx 12rpx rgba(0, 0, 0, 0.08)' : 'none'
             }"
         >
-            <view 
+            <view
                 class="grid gap-[24rpx]"
-                :style="{ 
-                    gridTemplateColumns: `repeat(${columns}, 1fr)` 
+                :style="{
+                    gridTemplateColumns: `repeat(${columns}, 1fr)`
                 }"
             >
                 <view
@@ -51,13 +49,13 @@
                             class="icon-bg w-[72rpx] h-[72rpx] rounded-full flex items-center justify-center"
                             :style="{ backgroundColor: getStatusColor(item.status) + '15' }"
                         >
-                            <tn-icon 
-                                :name="getStatusIconName(item.status)" 
-                                :size="36" 
-                                :color="getStatusColor(item.status)" 
+                            <tn-icon
+                                :name="getStatusIconName(item.status)"
+                                :size="36"
+                                :color="getStatusColor(item.status)"
                             />
                         </view>
-                        
+
                         <!-- 数量角标 -->
                         <view
                             v-if="item.count && item.count > 0"
@@ -69,7 +67,7 @@
                             </text>
                         </view>
                     </view>
-                    
+
                     <!-- 文字 -->
                     <text class="text-[24rpx] text-[#334155]">{{ item.name }}</text>
                 </view>
@@ -81,14 +79,15 @@
             v-if="content.show_recent && recentOrders.length > 0"
             class="recent-orders mt-[24rpx] bg-white rounded-[16rpx] overflow-hidden"
             :style="{
-                boxShadow: content.show_shadow !== false ? '0 2rpx 12rpx rgba(0, 0, 0, 0.08)' : 'none'
+                boxShadow:
+                    content.show_shadow !== false ? '0 2rpx 12rpx rgba(0, 0, 0, 0.08)' : 'none'
             }"
         >
             <!-- 标题 -->
             <view class="p-[32rpx] pb-[24rpx]">
                 <text class="text-[28rpx] font-semibold text-[#1E293B]">最近订单</text>
             </view>
-            
+
             <!-- 订单列表 -->
             <view
                 v-for="(order, index) in recentOrders"
@@ -110,20 +109,28 @@
                                     color: getStatusColor(order.status)
                                 }"
                             >
-                                <text class="text-[22rpx] font-medium">{{ getStatusText(order.status) }}</text>
+                                <text class="text-[22rpx] font-medium">{{
+                                    getStatusText(order.status)
+                                }}</text>
                             </view>
                         </view>
-                        
+
                         <!-- 订单号 -->
                         <text class="text-[24rpx] text-[#94A3B8]">{{ order.order_no || '' }}</text>
                     </view>
-                    
+
                     <!-- 价格 -->
                     <view class="price-section flex items-baseline">
-                        <text class="text-[24rpx] font-semibold" :style="{ color: $theme.ctaColor }">
+                        <text
+                            class="text-[24rpx] font-semibold"
+                            :style="{ color: $theme.ctaColor }"
+                        >
                             {{ content.currency || '¥' }}
                         </text>
-                        <text class="text-[36rpx] font-bold ml-[4rpx]" :style="{ color: $theme.ctaColor }">
+                        <text
+                            class="text-[36rpx] font-bold ml-[4rpx]"
+                            :style="{ color: $theme.ctaColor }"
+                        >
                             {{ order.amount || '0.00' }}
                         </text>
                     </view>
@@ -228,17 +235,17 @@ const getStatusColor = (status: string | number | undefined) => {
     if (status === undefined) return $theme.primaryColor
     // 兼容字符串和数字类型的状态
     const statusNum = typeof status === 'string' ? parseInt(status) : status
-    
+
     const colors: Record<number, string> = {
-        0: $theme.primaryColor,          // 待确认 - 主色
-        1: $theme.ctaColor,              // 待付款 - CTA色
-        2: $theme.primaryColor,          // 已支付 - 主色
-        3: $theme.secondaryColor,        // 服务中 - 辅助色
-        4: '#22C55E',                    // 已完成 - 绿色
-        5: '#22C55E',                    // 已评价 - 绿色
-        6: '#94A3B8',                    // 已取消 - 灰色
-        7: '#EF4444',                    // 已暂停 - 红色
-        8: '#EF4444'                     // 已退款 - 红色
+        0: $theme.primaryColor, // 待确认 - 主色
+        1: $theme.ctaColor, // 待付款 - CTA色
+        2: $theme.primaryColor, // 已支付 - 主色
+        3: $theme.secondaryColor, // 服务中 - 辅助色
+        4: '#22C55E', // 已完成 - 绿色
+        5: '#22C55E', // 已评价 - 绿色
+        6: '#94A3B8', // 已取消 - 灰色
+        7: '#EF4444', // 已暂停 - 红色
+        8: '#EF4444' // 已退款 - 红色
     }
     return colors[statusNum] || $theme.primaryColor
 }
@@ -248,17 +255,17 @@ const getStatusIconName = (status: string | number | undefined) => {
     if (status === undefined) return 'order'
     // 兼容字符串和数字类型的状态
     const statusNum = typeof status === 'string' ? parseInt(status) : status
-    
+
     const icons: Record<number, string> = {
-        0: 'time',                       // 待确认
-        1: 'ticket',                     // 待付款
-        2: 'money',               // 已支付
-        3: 'loading',                    // 服务中
-        4: 'success-circle',               // 已完成
-        5: 'keyboard-circle',                       // 已评价
-        6: 'close-circle',               // 已取消
-        7: 'reduce-circle',               // 已暂停
-        8: 'brand'                     // 已退款
+        0: 'time', // 待确认
+        1: 'ticket', // 待付款
+        2: 'money', // 已支付
+        3: 'loading', // 服务中
+        4: 'success-circle', // 已完成
+        5: 'keyboard-circle', // 已评价
+        6: 'close-circle', // 已取消
+        7: 'reduce-circle', // 已暂停
+        8: 'brand' // 已退款
     }
     return icons[statusNum] || 'order'
 }
@@ -268,7 +275,7 @@ const getStatusText = (status: string | number | undefined) => {
     if (status === undefined) return '未知'
     // 兼容字符串和数字类型的状态
     const statusNum = typeof status === 'string' ? parseInt(status) : status
-    
+
     const texts: Record<number, string> = {
         0: '待确认',
         1: '待付款',
@@ -289,16 +296,19 @@ const loadRecentOrders = async () => {
     if (!isLogin.value || !props.content.show_recent) {
         return
     }
-    
+
     try {
-        const res = await request.get({ 
-            url: '/order/lists',
-            data: {
-                page: 1,
-                page_size: 3
-            }
-        }, { isAuth: true })
-        
+        const res = await request.get(
+            {
+                url: '/order/lists',
+                data: {
+                    page: 1,
+                    page_size: 3
+                }
+            },
+            { isAuth: true }
+        )
+
         if (res && res.data && Array.isArray(res.data)) {
             // 处理订单数据，提取第一个服务项的名称作为服务名称
             recentOrdersData.value = res.data.map((order: any) => ({
@@ -360,35 +370,35 @@ onMounted(() => {
     .recent-orders {
         transition: all 0.2s ease;
     }
-    
+
     .order-entry {
         transition: all 0.2s ease;
         cursor: pointer;
-        
+
         &:active {
             transform: scale(0.95);
             opacity: 0.8;
         }
-        
+
         .icon-container {
             .icon-bg {
                 transition: all 0.2s ease;
             }
-            
+
             .count-badge {
                 box-shadow: 0 4rpx 12rpx rgba(249, 115, 22, 0.4);
             }
         }
     }
-    
+
     .order-item {
         transition: all 0.2s ease;
         cursor: pointer;
-        
+
         &:active {
-            background-color: #F8FAFC;
+            background-color: #f8fafc;
         }
-        
+
         .status-badge {
             transition: all 0.2s ease;
         }
