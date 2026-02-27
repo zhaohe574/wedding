@@ -291,13 +291,13 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
+    background: #F4F5F7;
 }
 
 /* 标签页 */
 .tabs-wrapper {
-    background: #ffffff;
-    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+    background: #FFFFFF;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
 .tabs-scroll {
@@ -344,16 +344,15 @@ onShow(async () => {
 }
 
 .order-card {
-    margin-bottom: 24rpx;
+    margin-bottom: 20rpx;
     padding: 24rpx;
-    background: #ffffff;
+    background: #FFFFFF;
     border-radius: 24rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
-    transition: all 0.2s ease;
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
+    transition: all 0.15s ease;
 
     &:active {
-        transform: translateY(-2rpx);
-        box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+        background: #FAFAFA;
     }
 
     &:last-child {

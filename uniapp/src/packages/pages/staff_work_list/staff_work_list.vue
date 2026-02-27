@@ -8,7 +8,7 @@
     </page-meta>
 
     <view class="page-container">
-        <z-paging ref="pagingRef" v-model="workList" @query="queryList" :auto="false">
+        <z-paging ref="pagingRef" v-model="workList" @query="queryList" :auto="false" :hide-empty-view="true">
             <template #top>
                 <!-- 顶部操作栏 -->
                 <view class="top-bar">
@@ -209,14 +209,14 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
+    background: #F4F5F7;
 }
 
 /* 顶部操作栏 */
 .top-bar {
     padding: 24rpx;
-    background: #ffffff;
-    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+    background: #FFFFFF;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
 .add-btn {
@@ -243,16 +243,15 @@ onShow(async () => {
 }
 
 .work-card {
-    margin-bottom: 24rpx;
-    background: #ffffff;
+    margin-bottom: 20rpx;
+    background: #FFFFFF;
     border-radius: 24rpx;
     overflow: hidden;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
-    transition: all 0.2s ease;
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
+    transition: all 0.15s ease;
 
     &:active {
-        transform: translateY(-2rpx);
-        box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+        background: #FAFAFA;
     }
 
     &:last-child {

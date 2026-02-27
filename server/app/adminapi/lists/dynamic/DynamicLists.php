@@ -62,11 +62,6 @@ class DynamicLists extends BaseAdminDataLists implements ListsExcelInterface, Li
             // 获取发布者信息
             $item['publisher'] = $this->getPublisher($item['user_type'], $item['user_id']);
             
-            // 图片处理 - 模型已经通过getImagesAttr自动转换为数组
-            if (!is_array($item['images'])) {
-                $item['images'] = $item['images'] ? json_decode($item['images'], true) : [];
-            }
-            
             // 确保 allow_comment 字段存在且有默认值
             $item['allow_comment'] = $item['allow_comment'] ?? 1;
         }

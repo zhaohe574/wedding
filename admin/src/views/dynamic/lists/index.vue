@@ -7,7 +7,6 @@
                         <el-option label="全部" value="" />
                         <el-option label="图文" :value="1" />
                         <el-option label="视频" :value="2" />
-                        <el-option label="案例" :value="3" />
                         <el-option label="活动" :value="4" />
                     </el-select>
                 </el-form-item>
@@ -167,8 +166,9 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="发布时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="220" fixed="right">
+                <el-table-column label="操作" width="220" fixed="right" align="left">
                     <template #default="{ row }">
+                        <div class="flex flex-wrap items-center">
                         <el-button 
                             v-if="row.user_type === 3" 
                             type="primary" 
@@ -208,6 +208,7 @@
                             </template>
                         </el-dropdown>
                         <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+                        </div>
                     </template>
                 </el-table-column>
             </el-table>
@@ -233,7 +234,6 @@
                             {{ currentDynamic.status_desc }}
                         </el-tag>
                     </el-descriptions-item>
-                    <el-descriptions-item label="标题" :span="2">{{ currentDynamic.title || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="内容" :span="2">{{ currentDynamic.content }}</el-descriptions-item>
                     <el-descriptions-item label="位置" :span="2">{{ currentDynamic.location || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="标签" :span="2">{{ currentDynamic.tags || '-' }}</el-descriptions-item>
@@ -344,7 +344,7 @@ const currentDynamic = ref<any>(null)
 const auditVisible = ref(false)
 const auditForm = reactive({
     id: 0,
-    approved: true,
+    approved: 1,
     remark: ''
 })
 const offlineVisible = ref(false)
@@ -387,7 +387,7 @@ const handleDetail = async (row: any) => {
 
 const handleAudit = (row: any, approved: boolean) => {
     auditForm.id = row.id
-    auditForm.approved = approved
+    auditForm.approved = approved ? 1 : 0
     auditForm.remark = ''
     auditVisible.value = true
 }

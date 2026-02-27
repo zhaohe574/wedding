@@ -48,7 +48,7 @@ class DynamicLogic extends BaseLogic
             $user = \app\common\model\user\User::field('id, nickname, avatar')->find($dynamic->user_id);
             $data['publisher'] = $user ? $user->toArray() : null;
         } elseif ($dynamic->user_type == Dynamic::USER_TYPE_STAFF) {
-            $staff = \app\common\model\staff\Staff::field('id, name, avatar')->find($dynamic->user_id);
+            $staff = \app\common\model\staff\Staff::field('id, name as nickname, avatar')->find($dynamic->user_id);
             $data['publisher'] = $staff ? $staff->toArray() : null;
         } else {
             $data['publisher'] = ['id' => 0, 'nickname' => '官方', 'avatar' => ''];
@@ -85,23 +85,26 @@ class DynamicLogic extends BaseLogic
     public static function offline(int $dynamicId, int $adminId, string $reason = ''): bool
     {
         try {
-            $dynamic = Dynamic::find($dynamicId);
+            // 仅查询必要字段，避免触发 getter
+            $dynamic = Dynamic::field('id, status')->find($dynamicId);
             if (!$dynamic) {
                 self::setError('动态不存在');
                 return false;
             }
 
-            if ($dynamic->status != Dynamic::STATUS_PUBLISHED) {
+            if ($dynamic->getData('status') != Dynamic::STATUS_PUBLISHED) {
                 self::setError('只有已发布的动态才能下架');
                 return false;
             }
 
-            $dynamic->status = Dynamic::STATUS_OFFLINE;
-            $dynamic->audit_admin_id = $adminId;
-            $dynamic->audit_time = time();
-            $dynamic->audit_remark = $reason ?: '管理员下架';
-            $dynamic->update_time = time();
-            $dynamic->save();
+            // 使用 where->update 直接更新，绕过模型 getter/setter
+            Dynamic::where('id', $dynamicId)->update([
+                'status' => Dynamic::STATUS_OFFLINE,
+                'audit_admin_id' => $adminId,
+                'audit_time' => time(),
+                'audit_remark' => $reason ?: '管理员下架',
+                'update_time' => time(),
+            ]);
 
             return true;
         } catch (\Exception $e) {
@@ -119,15 +122,17 @@ class DynamicLogic extends BaseLogic
     public static function setTop(int $dynamicId, int $isTop): bool
     {
         try {
-            $dynamic = Dynamic::find($dynamicId);
+            $dynamic = Dynamic::field('id')->find($dynamicId);
             if (!$dynamic) {
                 self::setError('动态不存在');
                 return false;
             }
 
-            $dynamic->is_top = $isTop;
-            $dynamic->update_time = time();
-            $dynamic->save();
+            // 使用 where->update 直接更新，绕过模型 getter/setter
+            Dynamic::where('id', $dynamicId)->update([
+                'is_top' => $isTop,
+                'update_time' => time(),
+            ]);
 
             return true;
         } catch (\Exception $e) {
@@ -145,15 +150,17 @@ class DynamicLogic extends BaseLogic
     public static function setHot(int $dynamicId, int $isHot): bool
     {
         try {
-            $dynamic = Dynamic::find($dynamicId);
+            $dynamic = Dynamic::field('id')->find($dynamicId);
             if (!$dynamic) {
                 self::setError('动态不存在');
                 return false;
             }
 
-            $dynamic->is_hot = $isHot;
-            $dynamic->update_time = time();
-            $dynamic->save();
+            // 使用 where->update 直接更新，绕过模型 getter/setter
+            Dynamic::where('id', $dynamicId)->update([
+                'is_hot' => $isHot,
+                'update_time' => time(),
+            ]);
 
             return true;
         } catch (\Exception $e) {
@@ -365,25 +372,49 @@ class DynamicLogic extends BaseLogic
     public static function edit(int $dynamicId, array $params): bool
     {
         try {
-            $dynamic = Dynamic::find($dynamicId);
+            $dynamic = Dynamic::field('id')->find($dynamicId);
             if (!$dynamic) {
                 self::setError('动态不存在');
                 return false;
             }
 
-            $dynamic->dynamic_type = $params['dynamic_type'] ?? $dynamic->dynamic_type;
-            $dynamic->title = $params['title'] ?? $dynamic->title;
-            $dynamic->content = $params['content'] ?? $dynamic->content;
-            $dynamic->images = $params['images'] ?? $dynamic->images;
-            $dynamic->video_url = $params['video'] ?? $dynamic->video_url;
-            $dynamic->video_cover = $params['video_cover'] ?? $dynamic->video_cover;
-            $dynamic->location = $params['location'] ?? $dynamic->location;
-            $dynamic->latitude = $params['latitude'] ?? $dynamic->latitude;
-            $dynamic->longitude = $params['longitude'] ?? $dynamic->longitude;
-            $dynamic->tags = is_array($params['tags'] ?? '') ? implode(',', $params['tags']) : ($params['tags'] ?? $dynamic->tags);
-            $dynamic->allow_comment = $params['allow_comment'] ?? $dynamic->allow_comment; // 更新评论开关
-            $dynamic->update_time = time();
-            $dynamic->save();
+            $updateData = [
+                'update_time' => time(),
+            ];
+
+            // 仅更新传入的字段
+            $fields = ['dynamic_type', 'title', 'content', 'location', 'latitude', 'longitude', 'allow_comment'];
+            foreach ($fields as $field) {
+                if (isset($params[$field])) {
+                    $updateData[$field] = $params[$field];
+                }
+            }
+
+            // 图片字段 — 需要手动调用 FileService 去掉域名
+            if (isset($params['images']) && is_array($params['images'])) {
+                $images = array_map(function ($img) {
+                    $url = is_string($img) ? $img : (is_array($img) ? ($img['url'] ?? $img['path'] ?? '') : '');
+                    return is_string($url) && $url !== '' ? \app\common\service\FileService::setFileUrl($url) : '';
+                }, $params['images']);
+                $updateData['images'] = json_encode($images, JSON_UNESCAPED_UNICODE);
+            }
+
+            // 视频字段
+            if (isset($params['video'])) {
+                $v = (string)($params['video'] ?? '');
+                $updateData['video_url'] = trim($v) ? \app\common\service\FileService::setFileUrl($v) : '';
+            }
+            if (isset($params['video_cover'])) {
+                $v = (string)($params['video_cover'] ?? '');
+                $updateData['video_cover'] = trim($v) ? \app\common\service\FileService::setFileUrl($v) : '';
+            }
+
+            // 标签字段
+            if (isset($params['tags'])) {
+                $updateData['tags'] = is_array($params['tags']) ? implode(',', $params['tags']) : ($params['tags'] ?? '');
+            }
+
+            Dynamic::where('id', $dynamicId)->update($updateData);
 
             return true;
         } catch (\Exception $e) {

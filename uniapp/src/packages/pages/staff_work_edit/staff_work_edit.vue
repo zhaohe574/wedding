@@ -46,18 +46,17 @@
                 <text class="section-desc">建议尺寸：750x750px</text>
             </view>
             <view class="cover-upload-area">
-                <view v-if="form.cover" class="cover-preview" @click="previewCover">
-                    <image :src="form.cover" class="cover-image" mode="aspectFill" />
-                    <view class="cover-mask">
-                        <view class="cover-actions">
-                            <view class="action-btn" @click.stop="chooseCover">
-                                <tn-icon name="refresh" size="32" color="#fff" />
-                                <text class="action-text">更换</text>
-                            </view>
-                            <view class="action-btn" @click.stop="removeCover">
-                                <tn-icon name="delete" size="32" color="#fff" />
-                                <text class="action-text">删除</text>
-                            </view>
+                <view v-if="form.cover" class="cover-preview">
+                    <image :src="form.cover" class="cover-image" mode="aspectFill" @click="previewCover" />
+                    <view class="cover-actions-bar">
+                        <view class="cover-action-btn" @click="chooseCover">
+                            <tn-icon name="refresh" size="28" color="#fff" />
+                            <text class="cover-action-text">更换</text>
+                        </view>
+                        <view class="cover-action-divider" />
+                        <view class="cover-action-btn" @click="removeCover">
+                            <tn-icon name="delete" size="28" color="#fff" />
+                            <text class="cover-action-text">删除</text>
                         </view>
                     </view>
                 </view>
@@ -518,7 +517,7 @@ onLoad(async (options: any) => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
+    background: #F4F5F7;
     padding-bottom: 180rpx;
 }
 
@@ -541,11 +540,11 @@ onLoad(async (options: any) => {
 
 /* 表单区块 */
 .form-section {
-    margin: 0 24rpx 24rpx;
-    padding: 32rpx;
-    background: #ffffff;
-    border-radius: 20rpx;
-    box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+    margin: 0 24rpx 20rpx;
+    padding: 28rpx;
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
 }
 
 /* 区块标题 */
@@ -636,46 +635,42 @@ onLoad(async (options: any) => {
         height: 100%;
     }
 
-    .cover-mask {
+    .cover-actions-bar {
         position: absolute;
-        top: 0;
+        bottom: 0;
         left: 0;
         right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0);
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.3s ease;
+        height: 80rpx;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(10rpx);
+    }
+
+    .cover-action-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8rpx;
+        height: 100%;
 
         &:active {
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(255, 255, 255, 0.1);
         }
     }
 
-    .cover-actions {
-        display: flex;
-        gap: 32rpx;
-        opacity: 0;
-        transform: translateY(20rpx);
-        transition: all 0.3s ease;
+    .cover-action-text {
+        font-size: 26rpx;
+        color: #ffffff;
+        font-weight: 500;
     }
 
-    &:active .cover-actions {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    .action-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8rpx;
-
-        .action-text {
-            font-size: 24rpx;
-            color: #ffffff;
-        }
+    .cover-action-divider {
+        width: 1rpx;
+        height: 36rpx;
+        background: rgba(255, 255, 255, 0.3);
     }
 }
 

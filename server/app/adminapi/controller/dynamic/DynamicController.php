@@ -94,7 +94,7 @@ class DynamicController extends BaseAdminController
             return $this->fail('无权限操作');
         }
         $params = (new DynamicValidate())->post()->goCheck('audit');
-        $result = DynamicLogic::audit((int)$params['id'], $this->adminId, $params['approved'], $params['remark'] ?? '');
+        $result = DynamicLogic::audit((int)$params['id'], $this->adminId, (bool)$params['approved'], $params['remark'] ?? '');
         if (true === $result) {
             return $this->success('审核成功');
         }

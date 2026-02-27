@@ -90,22 +90,55 @@
             <view class="section-header">
                 <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
                 <text class="section-title">选择标签</text>
-                <text class="tag-count">{{ selectedTags.length }}/5</text>
+                <view class="tag-header-right">
+                    <text class="tag-count-num" :style="{ color: selectedTags.length > 0 ? $theme.primaryColor : '#999' }">{{ selectedTags.length }}</text>
+                    <text class="tag-count-sep">/5</text>
+                </view>
             </view>
-            <view class="tag-list">
+            <!-- 评分感知提示 -->
+            <view class="tag-hint">
+                <view class="tag-hint-icon" :style="{ background: scoreHintColor + '18' }">
+                    <tn-icon :name="scoreHintIcon" size="28rpx" :color="scoreHintColor" />
+                </view>
+                <text class="tag-hint-text">{{ scoreHintText }}</text>
+            </view>
+            <!-- 标签网格 -->
+            <view class="tag-grid">
                 <view
                     v-for="tag in tags"
                     :key="tag.id"
-                    class="tag-item"
-                    :class="{ active: selectedTags.includes(tag.id) }"
+                    class="tag-chip"
+                    :class="{ 'tag-chip--active': selectedTags.includes(tag.id) }"
                     :style="selectedTags.includes(tag.id) ? {
-                        color: $theme.primaryColor,
+                        color: '#fff',
                         borderColor: $theme.primaryColor,
-                        background: $theme.primaryColor + '12'
+                        background: $theme.primaryColor
                     } : {}"
                     @click="toggleTag(tag.id)"
                 >
-                    {{ tag.name }}
+                    <tn-icon
+                        v-if="selectedTags.includes(tag.id)"
+                        name="success"
+                        size="24rpx"
+                        color="#fff"
+                        class="tag-chip-icon"
+                    />
+                    <text>{{ tag.name }}</text>
+                </view>
+            </view>
+            <!-- 已选标签预览 -->
+            <view class="tag-selected-bar" v-if="selectedTags.length > 0">
+                <view class="tag-selected-list">
+                    <view
+                        v-for="tagId in selectedTags"
+                        :key="tagId"
+                        class="tag-mini"
+                        :style="{ background: $theme.primaryColor + '15', color: $theme.primaryColor }"
+                        @click="toggleTag(tagId)"
+                    >
+                        <text>{{ getTagName(tagId) }}</text>
+                        <tn-icon name="close" size="20rpx" :color="$theme.primaryColor" />
+                    </view>
                 </view>
             </view>
         </view>
@@ -212,6 +245,30 @@ const formData = reactive({
 })
 
 const scoreTexts = ['非常差', '较差', '一般', '满意', '非常满意']
+
+// 评分感知提示
+const scoreHintText = computed(() => {
+    if (formData.score >= 4) return '选择最能描述您满意体验的标签'
+    if (formData.score === 3) return '选择最能描述您体验的标签'
+    return '选择最能描述问题的标签，帮助我们改进'
+})
+
+const scoreHintIcon = computed(() => {
+    if (formData.score >= 4) return 'like-fill'
+    if (formData.score === 3) return 'tip'
+    return 'clock'
+})
+
+const scoreHintColor = computed(() => {
+    if (formData.score >= 4) return '#10b981'
+    if (formData.score === 3) return '#f59e0b'
+    return '#ef4444'
+})
+
+// 根据标签ID获取标签名
+const getTagName = (tagId: number) => {
+    return tags.value.find((t: any) => t.id === tagId)?.name || ''
+}
 
 const detailScores = [
     { key: 'score_service', label: '服务态度' },
@@ -446,12 +503,99 @@ onLoad((options: any) => {
     flex: 1;
 }
 
-.tag-count {
-    font-size: 24rpx;
-    color: #999;
+/* 标签头部右侧计数 */
+.tag-header-right {
+    display: flex;
+    align-items: baseline;
 }
 
-/* 综合评分 */
+.tag-count-num {
+    font-size: 30rpx;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
+.tag-count-sep {
+    font-size: 24rpx;
+    color: #ccc;
+}
+
+/* 评分感知提示 */
+.tag-hint {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    margin-bottom: 24rpx;
+    padding: 16rpx 20rpx;
+    background: #f9fafb;
+    border-radius: 12rpx;
+}
+
+.tag-hint-icon {
+    width: 44rpx;
+    height: 44rpx;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.tag-hint-text {
+    font-size: 24rpx;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* 标签网格 */
+.tag-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+}
+
+.tag-chip {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+    padding: 16rpx 28rpx;
+    background: #f5f5f5;
+    border-radius: 40rpx;
+    font-size: 26rpx;
+    color: #555;
+    border: 2rpx solid #eee;
+    transition: all 0.25s ease;
+}
+
+.tag-chip--active {
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.tag-chip-icon {
+    margin-right: 2rpx;
+}
+
+/* 已选标签预览 */
+.tag-selected-bar {
+    margin-top: 20rpx;
+    padding-top: 20rpx;
+    border-top: 1rpx solid #f0f0f0;
+}
+
+.tag-selected-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+}
+
+.tag-mini {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+    padding: 8rpx 18rpx;
+    border-radius: 20rpx;
+    font-size: 22rpx;
+}
 .main-score {
     display: flex;
     align-items: center;
@@ -519,23 +663,6 @@ onLoad((options: any) => {
             gap: 2rpx;
         }
     }
-}
-
-/* 标签 */
-.tag-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16rpx;
-}
-
-.tag-item {
-    padding: 14rpx 28rpx;
-    background: #f5f5f5;
-    border-radius: 32rpx;
-    font-size: 26rpx;
-    color: #666;
-    border: 2rpx solid transparent;
-    transition: all 0.2s;
 }
 
 /* 评价内容 */

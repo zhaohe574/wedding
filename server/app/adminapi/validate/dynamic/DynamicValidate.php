@@ -19,7 +19,7 @@ class DynamicValidate extends BaseValidate
     protected $rule = [
         'id' => 'require|integer|gt:0',
         'comment_id' => 'require|integer|gt:0',
-        'approved' => 'require|boolean',
+        'approved' => 'require|in:0,1',
         'remark' => 'max:255',
         'reason' => 'max:255',
         'is_top' => 'require|in:0,1',
@@ -41,7 +41,7 @@ class DynamicValidate extends BaseValidate
         'comment_id.require' => '请选择评论',
         'comment_id.integer' => '评论ID格式错误',
         'approved.require' => '请选择审核结果',
-        'approved.boolean' => '审核结果格式错误',
+        'approved.in' => '审核结果格式错误',
         'remark.max' => '备注最多255个字符',
         'reason.max' => '原因最多255个字符',
         'is_top.require' => '请选择是否置顶',

@@ -45,16 +45,28 @@
                         <tn-icon name="gift" size="32" :color="$theme.primaryColor" />
                         <text>{{ getPackageName(item) }}</text>
                     </view>
-                    <view
-                        class="package-status"
-                        :style="{
-                            background: item.status
-                                ? `${$theme.primaryColor}15`
-                                : 'rgba(153, 153, 153, 0.1)',
-                            color: item.status ? $theme.primaryColor : '#999999'
-                        }"
-                    >
-                        {{ item.status ? '启用中' : '已禁用' }}
+                    <view class="package-header-right">
+                        <view
+                            v-if="item.is_staff_only"
+                            class="package-status"
+                            :style="{
+                                background: `${$theme.accentColor}15`,
+                                color: $theme.accentColor
+                            }"
+                        >
+                            专属
+                        </view>
+                        <view
+                            class="package-status"
+                            :style="{
+                                background: item.status
+                                    ? `${$theme.primaryColor}15`
+                                    : 'rgba(153, 153, 153, 0.1)',
+                                color: item.status ? $theme.primaryColor : '#999999'
+                            }"
+                        >
+                            {{ item.status ? '启用中' : '已禁用' }}
+                        </view>
                     </view>
                 </view>
 
@@ -87,7 +99,11 @@
                         <tn-icon name="edit" size="28" :color="$theme.primaryColor" />
                         <text>编辑</text>
                     </view>
-                    <view class="action-btn remove-btn" @click="handleRemove(item)">
+                    <view
+                        v-if="!item.is_staff_only"
+                        class="action-btn remove-btn"
+                        @click="handleRemove(item)"
+                    >
                         <tn-icon name="delete" size="28" color="#FF2C3C" />
                         <text>移除</text>
                     </view>
@@ -110,6 +126,16 @@
                     <view class="package-title">
                         <tn-icon name="gift" size="32" :color="$theme.primaryColor" />
                         <text>{{ item.name }}</text>
+                    </view>
+                    <view
+                        v-if="item.package_type === 2"
+                        class="package-status"
+                        :style="{
+                            background: `${$theme.accentColor}15`,
+                            color: $theme.accentColor
+                        }"
+                    >
+                        专属
                     </view>
                 </view>
 
@@ -244,13 +270,13 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
+    background: #F4F5F7;
 }
 
 /* 标签页 */
 .tabs-wrapper {
-    background: #ffffff;
-    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+    background: #FFFFFF;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
 .tabs-container {
@@ -294,11 +320,11 @@ onShow(async () => {
 }
 
 .package-card {
-    margin-bottom: 24rpx;
+    margin-bottom: 20rpx;
     padding: 24rpx;
-    background: #ffffff;
+    background: #FFFFFF;
     border-radius: 24rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
 
     &:last-child {
         margin-bottom: 0;
@@ -329,6 +355,12 @@ onShow(async () => {
     border-radius: 24rpx;
     font-size: 24rpx;
     font-weight: 500;
+}
+
+.package-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
 }
 
 /* 套餐信息 */

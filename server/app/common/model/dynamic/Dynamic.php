@@ -10,6 +10,7 @@ namespace app\common\model\dynamic;
 use app\common\model\BaseModel;
 use app\common\model\user\User;
 use app\common\model\staff\Staff;
+use app\common\service\FileService;
 use think\model\concern\SoftDelete;
 
 /**
@@ -69,7 +70,7 @@ class Dynamic extends BaseModel
     }
 
     /**
-     * @notes 图片数组获取器
+     * @notes 图片数组获取器 - 补全域名路径
      * @param $value
      * @return array
      */
@@ -79,20 +80,74 @@ class Dynamic extends BaseModel
             return [];
         }
         $decoded = json_decode($value, true);
-        return is_array($decoded) ? $decoded : [];
+        if (!is_array($decoded)) {
+            return [];
+        }
+        return array_map(function ($img) {
+            $url = is_string($img) ? $img : (is_array($img) ? ($img['url'] ?? $img['path'] ?? '') : '');
+            return (is_string($url) && $url !== '') ? FileService::getFileUrl($url) : '';
+        }, $decoded);
     }
 
     /**
-     * @notes 图片数组设置器
+     * @notes 图片数组设置器 - 存储时去掉域名
      * @param $value
      * @return string
      */
     public function setImagesAttr($value): string
     {
         if (is_array($value)) {
-            return json_encode($value, JSON_UNESCAPED_UNICODE);
+            $images = array_map(function ($img) {
+                $url = is_string($img) ? $img : (is_array($img) ? ($img['url'] ?? $img['path'] ?? '') : '');
+                return is_string($url) && $url !== '' ? FileService::setFileUrl($url) : '';
+            }, $value);
+            return json_encode($images, JSON_UNESCAPED_UNICODE);
         }
         return $value ?: '';
+    }
+
+    /**
+     * @notes 视频地址获取器 - 补全域名路径
+     * @param $value
+     * @return string
+     */
+    public function getVideoUrlAttr($value): string
+    {
+        $value = (string)($value ?? '');
+        return trim($value) ? FileService::getFileUrl($value) : '';
+    }
+
+    /**
+     * @notes 视频地址设置器 - 存储时去掉域名
+     * @param $value
+     * @return string
+     */
+    public function setVideoUrlAttr($value): string
+    {
+        $value = (string)($value ?? '');
+        return trim($value) ? FileService::setFileUrl($value) : '';
+    }
+
+    /**
+     * @notes 视频封面获取器 - 补全域名路径
+     * @param $value
+     * @return string
+     */
+    public function getVideoCoverAttr($value): string
+    {
+        $value = (string)($value ?? '');
+        return trim($value) ? FileService::getFileUrl($value) : '';
+    }
+
+    /**
+     * @notes 视频封面设置器 - 存储时去掉域名
+     * @param $value
+     * @return string
+     */
+    public function setVideoCoverAttr($value): string
+    {
+        $value = (string)($value ?? '');
+        return trim($value) ? FileService::setFileUrl($value) : '';
     }
 
     /**
@@ -199,23 +254,30 @@ class Dynamic extends BaseModel
      */
     public static function audit(int $dynamicId, int $adminId, bool $approved, string $remark = ''): array
     {
-        $dynamic = self::find($dynamicId);
-        if (!$dynamic) {
-            return [false, '动态不存在'];
+        try {
+            // 仅查询必要字段，避免触发 getter
+            $dynamic = self::field('id, status')->find($dynamicId);
+            if (!$dynamic) {
+                return [false, '动态不存在'];
+            }
+
+            if ($dynamic->getData('status') != self::STATUS_PENDING) {
+                return [false, '当前状态不可审核'];
+            }
+
+            // 使用 where->update 直接更新，绕过模型 getter/setter 避免副作用
+            self::where('id', $dynamicId)->update([
+                'status' => $approved ? self::STATUS_PUBLISHED : self::STATUS_REJECTED,
+                'audit_admin_id' => $adminId,
+                'audit_time' => time(),
+                'audit_remark' => $remark,
+                'update_time' => time(),
+            ]);
+
+            return [true, $approved ? '审核通过' : '已拒绝'];
+        } catch (\Exception $e) {
+            return [false, '审核失败：' . $e->getMessage()];
         }
-
-        if ($dynamic->status != self::STATUS_PENDING) {
-            return [false, '当前状态不可审核'];
-        }
-
-        $dynamic->status = $approved ? self::STATUS_PUBLISHED : self::STATUS_REJECTED;
-        $dynamic->audit_admin_id = $adminId;
-        $dynamic->audit_time = time();
-        $dynamic->audit_remark = $remark;
-        $dynamic->update_time = time();
-        $dynamic->save();
-
-        return [true, $approved ? '审核通过' : '已拒绝'];
     }
 
     /**

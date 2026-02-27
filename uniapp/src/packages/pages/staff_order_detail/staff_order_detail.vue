@@ -281,7 +281,7 @@ onLoad(async (options: any) => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
+    background: #F4F5F7;
     padding-bottom: 120rpx;
 }
 
@@ -290,11 +290,11 @@ onLoad(async (options: any) => {
     display: flex;
     align-items: center;
     gap: 20rpx;
-    margin: 24rpx;
-    padding: 32rpx 24rpx;
+    margin: 20rpx 24rpx;
+    padding: 28rpx;
     border-radius: 24rpx;
     border: 2rpx solid;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
 }
 
 .status-icon-wrapper {
@@ -325,11 +325,11 @@ onLoad(async (options: any) => {
 
 /* 信息卡片 */
 .info-card {
-    margin: 0 24rpx 24rpx;
-    padding: 32rpx 24rpx;
-    background: #ffffff;
+    margin: 0 24rpx 20rpx;
+    padding: 28rpx;
+    background: #FFFFFF;
     border-radius: 24rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
 }
 
 .card-header {
@@ -573,7 +573,7 @@ onLoad(async (options: any) => {
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
+    background: #F4F5F7;
     gap: 24rpx;
 }
 

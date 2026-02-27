@@ -8,44 +8,40 @@
     </page-meta>
 
     <view class="page-container">
-        <!-- 头像上传卡片 -->
-        <view class="avatar-card">
-            <view class="card-header">
-                <tn-icon name="user" size="32" :color="$theme.primaryColor" />
-                <text class="card-title">头像设置</text>
-            </view>
-            <view class="avatar-wrapper">
-                <avatar-upload v-model="form.avatar" :round="true" :size="140" />
-                <view class="avatar-tip">点击上传头像，建议尺寸400x400</view>
+        <!-- 头像区域 -->
+        <view class="avatar-section">
+            <view class="avatar-card">
+                <avatar-upload v-model="form.avatar" :round="true" :size="160" />
+                <text class="avatar-tip">点击更换头像</text>
             </view>
         </view>
 
-        <!-- 基本信息卡片 -->
-        <view class="info-card">
-            <view class="card-header">
-                <tn-icon name="edit" size="32" :color="$theme.primaryColor" />
+        <!-- 基本信息 -->
+        <view class="form-card">
+            <view class="card-title-row">
+                <tn-icon name="edit" size="30" :color="$theme.primaryColor" />
                 <text class="card-title">基本信息</text>
             </view>
 
             <view class="form-item">
                 <view class="form-label">
-                    <text class="label-text">姓名</text>
-                    <text class="label-required">*</text>
+                    <text>姓名</text>
+                    <text class="required">*</text>
                 </view>
                 <tn-input
                     v-model="form.name"
                     placeholder="请输入姓名"
-                    class="form-input-left"
+                    class="form-input"
                     :border="false"
                 />
             </view>
 
             <view class="form-item">
                 <view class="form-label">
-                    <text class="label-text">服务分类</text>
+                    <text>服务分类</text>
                 </view>
-                <view class="form-value-readonly">
-                    <text :style="{ color: form.category_id ? '#333333' : '#C8C9CC' }">
+                <view class="form-readonly">
+                    <text :style="{ color: form.category_id ? '#1F2937' : '#D1D5DB' }">
                         {{ currentCategoryName }}
                     </text>
                 </view>
@@ -53,28 +49,28 @@
 
             <view class="form-item">
                 <view class="form-label">
-                    <text class="label-text">手机号</text>
+                    <text>手机号</text>
                 </view>
                 <tn-input
                     v-model="form.mobile"
                     placeholder="请输入手机号"
                     type="number"
-                    class="form-input-left"
+                    class="form-input"
                     :border="false"
                 />
             </view>
 
             <view class="form-item">
                 <view class="form-label">
-                    <text class="label-text">服务价格</text>
+                    <text>服务价格</text>
                 </view>
-                <view class="price-input-wrapper-left">
-                    <text class="price-symbol" :style="{ color: $theme.ctaColor }">¥</text>
+                <view class="price-input-row">
+                    <text class="price-prefix" :style="{ color: $theme.ctaColor }">¥</text>
                     <tn-input
                         v-model="form.price"
                         type="number"
                         placeholder="请输入价格"
-                        class="form-input-left"
+                        class="form-input"
                         :border="false"
                     />
                 </view>
@@ -82,55 +78,55 @@
 
             <view class="form-item no-border">
                 <view class="form-label">
-                    <text class="label-text">从业年限</text>
+                    <text>从业年限</text>
                 </view>
-                <view class="year-input-wrapper-left">
+                <view class="year-input-row">
                     <tn-input
                         v-model="form.experience_years"
                         type="number"
                         placeholder="请输入年限"
-                        class="form-input-left"
+                        class="form-input"
                         :border="false"
                     />
-                    <text class="year-unit">年</text>
+                    <text class="year-suffix">年</text>
                 </view>
             </view>
         </view>
 
-        <!-- 个人简介卡片 -->
-        <view class="desc-card">
-            <view class="card-header">
-                <tn-icon name="file-text" size="32" :color="$theme.primaryColor" />
+        <!-- 个人简介 -->
+        <view class="form-card">
+            <view class="card-title-row">
+                <tn-icon name="file-text" size="30" :color="$theme.primaryColor" />
                 <text class="card-title">个人简介</text>
-                <text class="char-count">{{ form.profile.length }}/500</text>
+                <text class="char-counter">{{ form.profile.length }}/500</text>
             </view>
             <textarea
                 v-model="form.profile"
-                class="desc-textarea"
-                placeholder="请简要介绍自己的风格与经验，让客户更了解您"
+                class="form-textarea"
+                placeholder="请简要介绍自己的风格与经验"
                 :maxlength="500"
                 :auto-height="true"
             />
         </view>
 
-        <!-- 服务说明卡片 -->
-        <view class="desc-card">
-            <view class="card-header">
-                <tn-icon name="list" size="32" :color="$theme.primaryColor" />
+        <!-- 服务说明 -->
+        <view class="form-card">
+            <view class="card-title-row">
+                <tn-icon name="list" size="30" :color="$theme.primaryColor" />
                 <text class="card-title">服务说明</text>
-                <text class="char-count">{{ form.service_desc.length }}/1000</text>
+                <text class="char-counter">{{ form.service_desc.length }}/1000</text>
             </view>
             <textarea
                 v-model="form.service_desc"
-                class="desc-textarea"
-                placeholder="填写服务内容、流程或注意事项，帮助客户了解服务详情"
+                class="form-textarea"
+                placeholder="填写服务内容、流程或注意事项"
                 :maxlength="1000"
                 :auto-height="true"
             />
         </view>
 
         <!-- 保存按钮 -->
-        <view class="save-btn-wrapper">
+        <view class="save-bar">
             <view
                 class="save-btn"
                 :style="{
@@ -217,19 +213,14 @@ const handleSave = async () => {
     const payload: any = {
         name: form.name.trim(),
         avatar: form.avatar,
+        category_id: form.category_id,
         profile: form.profile,
         service_desc: form.service_desc
     }
 
-    if (form.mobile) {
-        payload.mobile = form.mobile
-    }
-    if (form.price !== '') {
-        payload.price = Number(form.price)
-    }
-    if (form.experience_years !== '') {
-        payload.experience_years = Number(form.experience_years)
-    }
+    if (form.mobile) payload.mobile = form.mobile
+    if (form.price !== '') payload.price = Number(form.price)
+    if (form.experience_years !== '') payload.experience_years = Number(form.experience_years)
 
     saving.value = true
     try {
@@ -252,51 +243,56 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
-    padding-bottom: 120rpx;
+    background: #F4F5F7;
+    padding-bottom: 140rpx;
 }
 
-/* 卡片通用样式 */
-.avatar-card,
-.info-card,
-.desc-card {
-    margin: 24rpx;
-    padding: 32rpx 24rpx;
-    background: #ffffff;
-    border-radius: 24rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+.avatar-section {
+    padding: 32rpx 24rpx 0;
 }
 
-.card-header {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-    margin-bottom: 24rpx;
-}
-
-.card-title {
-    flex: 1;
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333333;
-}
-
-.char-count {
-    font-size: 24rpx;
-    color: #999999;
-}
-
-/* 头像卡片 */
-.avatar-wrapper {
+.avatar-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16rpx;
+    gap: 12rpx;
+    padding: 40rpx;
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
 }
 
 .avatar-tip {
     font-size: 24rpx;
-    color: #999999;
+    color: #9CA3AF;
+}
+
+/* 表单卡片 */
+.form-card {
+    margin: 20rpx 24rpx 0;
+    padding: 28rpx;
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
+}
+
+.card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+    margin-bottom: 20rpx;
+}
+
+.card-title {
+    flex: 1;
+    font-size: 30rpx;
+    font-weight: 700;
+    color: #1F2937;
+}
+
+.char-counter {
+    font-size: 24rpx;
+    color: #9CA3AF;
 }
 
 /* 表单项 */
@@ -305,7 +301,7 @@ onShow(async () => {
     align-items: center;
     justify-content: space-between;
     padding: 24rpx 0;
-    border-bottom: 1rpx solid #f5f5f5;
+    border-bottom: 1rpx solid #F3F4F6;
 
     &.no-border {
         border-bottom: none;
@@ -316,82 +312,76 @@ onShow(async () => {
     display: flex;
     align-items: center;
     gap: 4rpx;
-    min-width: 160rpx;
+    min-width: 150rpx;
+    font-size: 28rpx;
+    color: #374151;
+    font-weight: 500;
+
+    .required {
+        color: #FF2C3C;
+        font-size: 28rpx;
+    }
 }
 
-.label-text {
-    font-size: 30rpx;
-    color: #333333;
-}
-
-.label-required {
-    font-size: 30rpx;
-    color: #ff2c3c;
-}
-
-.form-input-left {
+.form-input {
     flex: 1;
     text-align: left;
     font-size: 28rpx;
 }
 
-.form-value-readonly {
+.form-readonly {
+    flex: 1;
+    font-size: 28rpx;
+}
+
+.price-input-row {
     flex: 1;
     display: flex;
     align-items: center;
-    font-size: 28rpx;
-    color: #666666;
+    gap: 6rpx;
 }
 
-/* 价格输入 */
-.price-input-wrapper-left {
+.price-prefix {
+    font-size: 28rpx;
+    font-weight: 700;
+}
+
+.year-input-row {
     flex: 1;
     display: flex;
     align-items: center;
-    gap: 8rpx;
+    gap: 6rpx;
 }
 
-.price-symbol {
+.year-suffix {
     font-size: 28rpx;
-    font-weight: 600;
-}
-
-/* 年限输入 */
-.year-input-wrapper-left {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-}
-
-.year-unit {
-    font-size: 28rpx;
-    color: #666666;
+    color: #6B7280;
 }
 
 /* 文本域 */
-.desc-textarea {
+.form-textarea {
     width: 100%;
-    min-height: 200rpx;
+    min-height: 180rpx;
     padding: 20rpx;
-    background: rgba(124, 58, 237, 0.03);
+    background: #F9FAFB;
     border-radius: 16rpx;
+    border: 2rpx solid #F3F4F6;
     font-size: 28rpx;
     line-height: 1.6;
-    color: #333333;
-    border: 1rpx solid rgba(124, 58, 237, 0.1);
+    color: #1F2937;
 }
 
 /* 保存按钮 */
-.save-btn-wrapper {
+.save-bar {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 24rpx;
-    background: rgba(255, 255, 255, 0.9);
+    padding: 20rpx 24rpx;
+    padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20rpx);
-    border-top: 1rpx solid #f5f5f5;
+    border-top: 1rpx solid #F3F4F6;
     z-index: 100;
 }
 
@@ -399,17 +389,17 @@ onShow(async () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12rpx;
-    height: 72rpx;
-    border-radius: 32rpx;
-    font-size: 30rpx;
-    font-weight: 600;
-    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
+    gap: 10rpx;
+    height: 88rpx;
+    border-radius: 44rpx;
+    font-size: 32rpx;
+    font-weight: 700;
+    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.25);
     transition: all 0.2s ease;
 
     &:active {
         transform: translateY(2rpx);
-        box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
+        box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.25);
     }
 }
 </style>

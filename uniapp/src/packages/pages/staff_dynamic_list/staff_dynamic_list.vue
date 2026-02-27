@@ -8,107 +8,120 @@
     </page-meta>
 
     <view class="page-container">
-        <z-paging ref="pagingRef" v-model="dynamicList" @query="queryList" :auto="true">
+        <z-paging ref="pagingRef" v-model="dynamicList" @query="queryList" :auto="false">
             <template #top>
-                <!-- 顶部操作栏 -->
                 <view class="top-bar">
                     <view
                         class="publish-btn"
-                        :style="{
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                            color: $theme.btnColor
-                        }"
+                        :style="{ background: $theme.primaryColor, color: $theme.btnColor }"
                         @click="handleAdd"
                     >
-                        <tn-icon name="edit" size="32" :color="$theme.btnColor" />
+                        <tn-icon name="plus" size="30" :color="$theme.btnColor" />
                         <text>发布动态</text>
                     </view>
                 </view>
             </template>
 
-            <!-- 动态列表 -->
             <view class="dynamic-list">
                 <view
                     v-for="item in dynamicList"
                     :key="item.id"
-                    class="dynamic-card"
+                    class="card"
                     @click="handleEdit(item)"
                 >
-                    <!-- 动态头部 -->
-                    <view class="dynamic-header">
-                        <view class="dynamic-type">
-                            <tn-icon
-                                :name="getTypeIcon(item.dynamic_type)"
-                                size="28"
-                                :color="$theme.primaryColor"
-                            />
+                    <!-- 统一顶部行：类型 + 状态 -->
+                    <view class="card-head">
+                        <view
+                            class="type-badge"
+                            :style="{ background: `${$theme.primaryColor}15`, color: $theme.primaryColor }"
+                        >
+                            <tn-icon :name="getTypeIcon(item.dynamic_type)" size="22" :color="$theme.primaryColor" />
                             <text>{{ typeText(item.dynamic_type) }}</text>
                         </view>
-                        <view class="dynamic-status" :style="getStatusStyle(item.status)">
-                            <tn-icon :name="getStatusIcon(item.status)" size="24" color="inherit" />
-                            <text>{{ statusText(item.status) }}</text>
+                        <view class="status-tag" :style="getStatusStyle(item.status)">{{ statusText(item.status) }}</view>
+                    </view>
+
+                    <!-- 图文类型：左文右图 -->
+                    <view v-if="item.dynamic_type === 1 && getImageList(item).length > 0" class="card-row">
+                        <view class="row-text">
+                            <text class="content-text">{{ item.content }}</text>
+                            <view v-if="getTagsList(item).length > 0" class="tags-row">
+                                <text
+                                    v-for="(tag, idx) in getTagsList(item).slice(0, 3)"
+                                    :key="idx"
+                                    class="tag-text"
+                                    :style="{ color: $theme.primaryColor }"
+                                >#{{ tag }}</text>
+                            </view>
+                        </view>
+                        <view class="row-thumb">
+                            <image :src="appStore.getImageUrl(getImageList(item)[0])" class="thumb-img" mode="aspectFill" />
+                            <view v-if="getImageList(item).length > 1" class="thumb-badge">{{ getImageList(item).length }}图</view>
                         </view>
                     </view>
 
-                    <!-- 动态内容 -->
-                    <view class="dynamic-content">
-                        <text class="content-text">{{ item.content }}</text>
-                    </view>
-
-                    <!-- 媒体信息 -->
-                    <view class="dynamic-media">
-                        <view v-if="item.images && item.images.length > 0" class="media-item">
-                            <tn-icon name="image" size="24" color="#999999" />
-                            <text>图片 {{ item.images.length }}</text>
+                    <!-- 视频类型 -->
+                    <view v-else-if="item.dynamic_type === 2" class="card-video">
+                        <view v-if="getVideoCover(item)" class="video-box">
+                            <image :src="appStore.getImageUrl(getVideoCover(item))" class="video-img" mode="aspectFill" />
+                            <view class="play-btn">
+                                <text class="play-icon">▶</text>
+                            </view>
                         </view>
-                        <view v-if="item.video_url" class="media-item">
-                            <tn-icon name="video" size="24" color="#999999" />
-                            <text>视频 1</text>
-                        </view>
-                        <view class="media-item">
-                            <tn-icon name="eye" size="24" color="#999999" />
-                            <text>{{ item.view_count || 0 }}</text>
-                        </view>
-                        <view class="media-item">
-                            <tn-icon name="like" size="24" color="#999999" />
-                            <text>{{ item.like_count || 0 }}</text>
+                        <text class="content-text content-text--block">{{ item.content }}</text>
+                        <view v-if="getTagsList(item).length > 0" class="tags-row">
+                            <text
+                                v-for="(tag, idx) in getTagsList(item).slice(0, 3)"
+                                :key="idx"
+                                class="tag-text"
+                                :style="{ color: $theme.primaryColor }"
+                            >#{{ tag }}</text>
                         </view>
                     </view>
 
-                    <!-- 操作按钮 -->
-                    <view class="dynamic-actions">
-                        <view
-                            class="action-btn edit-btn"
-                            :style="{
-                                color: $theme.primaryColor,
-                                borderColor: $theme.primaryColor
-                            }"
-                            @click.stop="handleEdit(item)"
-                        >
-                            <tn-icon name="edit" size="28" :color="$theme.primaryColor" />
-                            <text>编辑</text>
+                    <!-- 纯文字 / 活动 -->
+                    <view v-else class="card-plain">
+                        <text class="content-text content-text--block">{{ item.content }}</text>
+                        <view v-if="getTagsList(item).length > 0" class="tags-row">
+                            <text
+                                v-for="(tag, idx) in getTagsList(item).slice(0, 3)"
+                                :key="idx"
+                                class="tag-text"
+                                :style="{ color: $theme.primaryColor }"
+                            >#{{ tag }}</text>
                         </view>
-                        <view class="action-btn delete-btn" @click.stop="handleDelete(item)">
-                            <tn-icon name="delete" size="28" color="#FF2C3C" />
-                            <text>删除</text>
+                    </view>
+
+                    <!-- 底部栏 -->
+                    <view class="card-foot">
+                        <view class="foot-left">
+                            <text class="foot-time">{{ formatTime(item.create_time) }}</text>
+                            <text class="foot-sep">·</text>
+                            <tn-icon name="eye" size="22" color="#C0C0C0" />
+                            <text class="foot-num">{{ item.view_count || 0 }}</text>
+                            <tn-icon name="like" size="22" color="#C0C0C0" />
+                            <text class="foot-num">{{ item.like_count || 0 }}</text>
+                        </view>
+                        <view class="foot-right">
+                            <view class="foot-btn" @click.stop="handleEdit(item)">
+                                <tn-icon name="edit" size="28" :color="$theme.primaryColor" />
+                            </view>
+                            <view class="foot-btn" @click.stop="handleDelete(item)">
+                                <tn-icon name="delete" size="28" color="#FF4D4F" />
+                            </view>
                         </view>
                     </view>
                 </view>
 
                 <!-- 空状态 -->
                 <view v-if="dynamicList.length === 0" class="empty-state">
-                    <tn-icon name="edit" size="120" color="#E5E5E5" />
-                    <text class="empty-text">暂无动态</text>
+                    <tn-icon name="edit" size="100" color="#E0E0E0" />
+                    <text class="empty-text">还没有发布动态</text>
                     <view
                         class="empty-btn"
-                        :style="{
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                            color: $theme.btnColor
-                        }"
+                        :style="{ background: $theme.primaryColor, color: $theme.btnColor }"
                         @click="handleAdd"
-                    >
-                        立即发布
-                    </view>
+                    >立即发布</view>
                 </view>
             </view>
         </z-paging>
@@ -121,78 +134,99 @@ import { onShow } from '@dcloudio/uni-app'
 import { staffCenterDynamicLists, staffCenterDynamicDelete } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
+import { useAppStore } from '@/stores/app'
 
 const $theme = useThemeStore()
+const appStore = useAppStore()
 const pagingRef = ref<any>(null)
 const dynamicList = ref<any[]>([])
 
-// 动态类型文本
 const typeText = (type: number) => {
-    const map: Record<number, string> = { 1: '图文', 2: '视频', 3: '案例', 4: '活动' }
+    const map: Record<number, string> = { 1: '图文', 2: '视频', 4: '活动' }
     return map[type] || '动态'
 }
 
-// 动态类型图标
 const getTypeIcon = (type: number) => {
-    const icons: Record<number, string> = { 1: 'image', 2: 'video', 3: 'star', 4: 'gift' }
+    const icons: Record<number, string> = { 1: 'image', 2: 'video', 4: 'gift' }
     return icons[type] || 'edit'
 }
 
-// 状态文本
 const statusText = (status: number) => {
-    const map: Record<number, string> = { 0: '待审核', 1: '已发布', 2: '已下架', 3: '审核拒绝' }
+    const map: Record<number, string> = { 0: '待审核', 1: '已发布', 2: '已下架', 3: '已拒绝' }
     return map[status] || '未知'
 }
 
-// 状态样式
 const getStatusStyle = (status: number) => {
     const styles: Record<number, any> = {
-        0: { background: 'rgba(255, 153, 0, 0.1)', color: '#FF9900' },
-        1: { background: 'rgba(25, 190, 107, 0.1)', color: '#19BE6B' },
-        2: { background: 'rgba(153, 153, 153, 0.1)', color: '#999999' },
-        3: { background: 'rgba(255, 44, 60, 0.1)', color: '#FF2C3C' }
+        0: { background: 'rgba(255,153,0,0.1)', color: '#FF9900' },
+        1: { background: 'rgba(25,190,107,0.1)', color: '#19BE6B' },
+        2: { background: 'rgba(153,153,153,0.1)', color: '#999' },
+        3: { background: 'rgba(255,44,60,0.1)', color: '#FF2C3C' }
     }
     return styles[status] || styles[0]
 }
 
-// 状态图标
-const getStatusIcon = (status: number) => {
-    const icons: Record<number, string> = {
-        0: 'clock',
-        1: 'check-circle',
-        2: 'eye-off',
-        3: 'close-circle'
-    }
-    return icons[status] || 'info'
+const getImageList = (item: any): string[] => {
+    if (item.images && Array.isArray(item.images) && item.images.length > 0) return item.images
+    return []
 }
 
-// 查询列表
+const getVideoCover = (item: any): string => {
+    if (item.video_cover) return item.video_cover
+    const images = getImageList(item)
+    if (images.length > 0) return images[0]
+    return ''
+}
+
+const getTagsList = (item: any): string[] => {
+    if (item.tags_arr && Array.isArray(item.tags_arr) && item.tags_arr.length > 0) return item.tags_arr
+    if (item.tags && typeof item.tags === 'string') return item.tags.split(',').filter((t: string) => t.trim())
+    return []
+}
+
+const formatTime = (time: any): string => {
+    if (!time) return ''
+    let date: Date
+    if (typeof time === 'number') {
+        date = new Date(time < 1e12 ? time * 1000 : time)
+    } else {
+        date = new Date(String(time).replace(/-/g, '/'))
+    }
+    if (isNaN(date.getTime())) return String(time)
+    const now = Date.now()
+    const diff = now - date.getTime()
+    const min = Math.floor(diff / 60000)
+    if (min < 1) return '刚刚'
+    if (min < 60) return `${min}分钟前`
+    const hr = Math.floor(min / 60)
+    if (hr < 24) return `${hr}小时前`
+    const d = Math.floor(hr / 24)
+    if (d < 7) return `${d}天前`
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 const queryList = async (pageNo: number, pageSize: number) => {
     try {
         const res: any = await staffCenterDynamicLists({ page: pageNo, page_size: pageSize })
-        const list = res?.data || []
-        pagingRef.value.complete(list)
+        pagingRef.value.complete(res?.data || [])
     } catch (e) {
         pagingRef.value.complete(false)
     }
 }
 
-// 发布动态
 const handleAdd = () => {
     uni.navigateTo({ url: '/packages/pages/staff_dynamic_edit/staff_dynamic_edit' })
 }
 
-// 编辑动态
 const handleEdit = (item: any) => {
+    uni.setStorageSync('_temp_dynamic_detail', JSON.stringify(item))
     uni.navigateTo({
         url: `/packages/pages/staff_dynamic_edit/staff_dynamic_edit?id=${item.id}`,
-        success: (res) => {
-            res.eventChannel.emit('detail', item)
-        }
+        success: (res) => { res.eventChannel.emit('detail', item) }
     })
 }
 
-// 删除动态
 const handleDelete = (item: any) => {
     uni.showModal({
         title: '确认删除',
@@ -204,8 +238,7 @@ const handleDelete = (item: any) => {
                 uni.showToast({ title: '删除成功', icon: 'success' })
                 pagingRef.value.reload()
             } catch (e: any) {
-                const msg = typeof e === 'string' ? e : e?.msg || e?.message || '删除失败'
-                uni.showToast({ title: msg, icon: 'none' })
+                uni.showToast({ title: e?.msg || e?.message || '删除失败', icon: 'none' })
             }
         }
     })
@@ -220,153 +253,229 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
+    background: #F4F5F7;
 }
 
-/* 顶部操作栏 */
 .top-bar {
-    padding: 24rpx;
-    background: #ffffff;
-    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+    padding: 16rpx 24rpx;
+    background: #FFF;
 }
 
 .publish-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12rpx;
-    height: 72rpx;
-    border-radius: 48rpx;
-    font-size: 30rpx;
+    gap: 8rpx;
+    height: 68rpx;
+    border-radius: 40rpx;
+    font-size: 28rpx;
     font-weight: 600;
-    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: translateY(2rpx);
-        box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
-    }
+    &:active { opacity: 0.85; }
 }
 
-/* 动态列表 */
 .dynamic-list {
-    padding: 24rpx;
+    padding: 16rpx;
 }
 
-.dynamic-card {
-    margin-bottom: 24rpx;
-    padding: 24rpx;
-    background: #ffffff;
-    border-radius: 24rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: translateY(-2rpx);
-        box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
-    }
-
-    &:last-child {
-        margin-bottom: 0;
-    }
+/* 卡片 */
+.card {
+    margin-bottom: 12rpx;
+    padding: 16rpx 20rpx;
+    background: #FFF;
+    border-radius: 16rpx;
+    box-shadow: 0 1rpx 8rpx rgba(0,0,0,0.03);
+    &:active { background: #FAFAFA; }
 }
 
-/* 动态头部 */
-.dynamic-header {
+/* 卡片头部 */
+.card-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-bottom: 16rpx;
-    border-bottom: 1rpx solid #f5f5f5;
-    margin-bottom: 16rpx;
+    margin-bottom: 12rpx;
 }
 
-.dynamic-type {
-    display: flex;
+.type-badge {
+    display: inline-flex;
     align-items: center;
-    gap: 8rpx;
-    font-size: 28rpx;
+    gap: 4rpx;
+    padding: 2rpx 12rpx;
+    border-radius: 6rpx;
+    font-size: 22rpx;
     font-weight: 500;
-    color: #666666;
+    line-height: 36rpx;
 }
 
-.dynamic-status {
+.status-tag {
+    padding: 2rpx 12rpx;
+    border-radius: 6rpx;
+    font-size: 22rpx;
+    font-weight: 500;
+    line-height: 36rpx;
+    flex-shrink: 0;
+}
+
+/* 图文：左文右图 */
+.card-row {
     display: flex;
-    align-items: center;
+    gap: 16rpx;
+    margin-bottom: 12rpx;
+}
+
+.row-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
     gap: 6rpx;
-    padding: 6rpx 16rpx;
-    border-radius: 24rpx;
-    font-size: 24rpx;
-    font-weight: 500;
 }
 
-/* 动态内容 */
-.dynamic-content {
-    margin-bottom: 16rpx;
+.row-thumb {
+    position: relative;
+    flex-shrink: 0;
+    width: 140rpx;
+    height: 140rpx;
+    border-radius: 10rpx;
+    overflow: hidden;
 }
 
+.thumb-img {
+    width: 140rpx;
+    height: 140rpx;
+}
+
+.thumb-badge {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    padding: 0 10rpx;
+    background: rgba(0,0,0,0.5);
+    border-top-right-radius: 8rpx;
+    font-size: 20rpx;
+    color: #FFF;
+    line-height: 32rpx;
+}
+
+/* 内容文字 */
 .content-text {
-    font-size: 30rpx;
-    line-height: 1.6;
-    color: #333333;
+    font-size: 28rpx;
+    line-height: 1.45;
+    color: #333;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
     overflow: hidden;
     text-overflow: ellipsis;
+    word-break: break-all;
 }
 
-/* 媒体信息 */
-.dynamic-media {
+.content-text--block {
+    margin-bottom: 8rpx;
+}
+
+/* 标签 */
+.tags-row {
     display: flex;
-    align-items: center;
-    gap: 24rpx;
-    padding: 16rpx 0;
-    border-top: 1rpx solid #f5f5f5;
-    border-bottom: 1rpx solid #f5f5f5;
-    margin-bottom: 16rpx;
+    flex-wrap: wrap;
+    gap: 10rpx;
+    margin-top: 6rpx;
 }
 
-.media-item {
-    display: flex;
-    align-items: center;
-    gap: 6rpx;
-    font-size: 24rpx;
-    color: #999999;
+.tag-text {
+    font-size: 22rpx;
+    font-weight: 500;
 }
 
-/* 操作按钮 */
-.dynamic-actions {
-    display: flex;
-    gap: 16rpx;
+/* 视频 */
+.card-video {
+    margin-bottom: 12rpx;
 }
 
-.action-btn {
-    flex: 1;
+.video-box {
+    position: relative;
+    width: 100%;
+    height: 280rpx;
+    border-radius: 10rpx;
+    overflow: hidden;
+    margin-bottom: 10rpx;
+}
+
+.video-img {
+    width: 100%;
+    height: 100%;
+}
+
+.play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.4);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8rpx;
-    height: 64rpx;
-    border-radius: 48rpx;
+}
+
+.play-icon {
     font-size: 28rpx;
-    font-weight: 500;
-    border: 2rpx solid;
-    transition: all 0.2s ease;
-
-    &:active {
-        opacity: 0.8;
-    }
+    color: #FFF;
+    margin-left: 4rpx;
 }
 
-.edit-btn {
-    background: transparent;
+/* 纯文字 */
+.card-plain {
+    margin-bottom: 12rpx;
 }
 
-.delete-btn {
-    background: transparent;
-    color: #ff2c3c;
-    border-color: #ff2c3c;
+/* 底部栏 */
+.card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10rpx;
+    border-top: 1rpx solid #F2F2F2;
+}
+
+.foot-left {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+}
+
+.foot-time {
+    font-size: 22rpx;
+    color: #C0C0C0;
+}
+
+.foot-sep {
+    font-size: 22rpx;
+    color: #D9D9D9;
+    margin: 0 2rpx;
+}
+
+.foot-num {
+    font-size: 22rpx;
+    color: #C0C0C0;
+    margin-right: 4rpx;
+}
+
+.foot-right {
+    display: flex;
+    align-items: center;
+}
+
+.foot-btn {
+    width: 52rpx;
+    height: 52rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    &:active { background: rgba(0,0,0,0.04); }
 }
 
 /* 空状态 */
@@ -374,26 +483,21 @@ onShow(async () => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 120rpx 0;
-    gap: 24rpx;
+    padding: 100rpx 0;
+    gap: 16rpx;
 }
 
 .empty-text {
     font-size: 28rpx;
-    color: #999999;
+    color: #999;
 }
 
 .empty-btn {
-    margin-top: 16rpx;
-    padding: 16rpx 48rpx;
-    border-radius: 48rpx;
+    margin-top: 8rpx;
+    padding: 12rpx 44rpx;
+    border-radius: 40rpx;
     font-size: 28rpx;
     font-weight: 600;
-    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
-
-    &:active {
-        opacity: 0.9;
-    }
+    &:active { opacity: 0.85; }
 }
 </style>

@@ -244,17 +244,52 @@ class StaffCenterLogic extends BaseLogic
             return [];
         }
 
+        // 手动关联的套餐
         $configured = StaffPackage::where('staff_id', $staffId)
             ->with(['package'])
             ->select()
             ->toArray();
         $configuredIds = array_column($configured, 'package_id');
 
-        $available = ServicePackage::where('package_type', ServicePackage::TYPE_GLOBAL)
+        // 人员专属套餐直接视为已关联（排除已在 staff_package 中的）
+        $staffOnlyPackages = ServicePackage::where('package_type', ServicePackage::TYPE_STAFF_ONLY)
+            ->where('staff_id', $staffId)
             ->where('delete_time', null)
             ->where('is_show', 1)
             ->when(!empty($configuredIds), function ($query) use ($configuredIds) {
                 $query->whereNotIn('id', $configuredIds);
+            })
+            ->select()
+            ->toArray();
+
+        // 将专属套餐包装成与 configured 相同的结构
+        foreach ($staffOnlyPackages as $pkg) {
+            $configured[] = [
+                'id' => 0,
+                'staff_id' => $staffId,
+                'package_id' => $pkg['id'],
+                'custom_price' => null,
+                'custom_slot_prices' => [],
+                'booking_type' => $pkg['booking_type'] ?? 0,
+                'allowed_time_slots' => $pkg['allowed_time_slots'] ?? [],
+                'status' => 1,
+                'price' => $pkg['price'] ?? 0,
+                'original_price' => $pkg['original_price'] ?? null,
+                'is_default' => 0,
+                'is_staff_only' => true,
+                'package' => $pkg,
+            ];
+        }
+
+        // 合并所有已关联的套餐ID
+        $allConfiguredIds = array_column($configured, 'package_id');
+
+        // 可选套餐：仅全局套餐（排除已关联的）
+        $available = ServicePackage::where('package_type', ServicePackage::TYPE_GLOBAL)
+            ->where('delete_time', null)
+            ->where('is_show', 1)
+            ->when(!empty($allConfiguredIds), function ($query) use ($allConfiguredIds) {
+                $query->whereNotIn('id', $allConfiguredIds);
             })
             ->select()
             ->toArray();
@@ -277,8 +312,13 @@ class StaffCenterLogic extends BaseLogic
         }
 
         $package = ServicePackage::find($packageId);
-        if (!$package || $package->package_type != ServicePackage::TYPE_GLOBAL) {
-            self::setError('套餐不存在或不可关联');
+        if (!$package) {
+            self::setError('套餐不存在');
+            return false;
+        }
+        // 允许全局套餐和当前人员的专属套餐
+        if ($package->package_type == ServicePackage::TYPE_STAFF_ONLY && $package->staff_id != $staffId) {
+            self::setError('该套餐不可关联');
             return false;
         }
 
@@ -314,6 +354,29 @@ class StaffCenterLogic extends BaseLogic
         if ($staffId <= 0) {
             self::setError('未绑定服务人员');
             return false;
+        }
+
+        // 如果 staff_package 表中没有记录（专属套餐首次编辑），先自动创建
+        $exists = StaffPackage::where('staff_id', $staffId)
+            ->where('package_id', $packageId)
+            ->find();
+        if (!$exists) {
+            $package = ServicePackage::find($packageId);
+            if (!$package) {
+                self::setError('套餐不存在');
+                return false;
+            }
+            StaffPackage::create([
+                'staff_id' => $staffId,
+                'package_id' => $packageId,
+                'price' => $package->price ?? 0,
+                'original_price' => $package->original_price ?? null,
+                'status' => 1,
+                'booking_type' => $package->booking_type ?? null,
+                'allowed_time_slots' => $package->allowed_time_slots ?? null,
+                'create_time' => time(),
+                'update_time' => time(),
+            ]);
         }
 
         return StaffPackage::updatePackageConfig($staffId, $packageId, $params);

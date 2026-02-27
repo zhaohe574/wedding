@@ -8,94 +8,167 @@
     </page-meta>
 
     <view class="page-container">
-        <!-- 日期选择卡片 -->
-        <view class="date-card">
-            <view class="card-header">
-                <tn-icon name="calendar" size="32" :color="$theme.primaryColor" />
-                <text class="card-title">选择日期</text>
-            </view>
-
-            <picker mode="date" :value="selectedDate" @change="handleDateChange">
-                <view class="date-picker">
-                    <view class="date-display">
-                        <text class="date-text">{{ selectedDate }}</text>
-                        <view class="date-week">{{ getWeekDay(selectedDate) }}</view>
-                    </view>
-                    <tn-icon name="right" size="28" color="#C8C9CC" />
+        <!-- 月份导航 -->
+        <view class="month-nav-card">
+            <view class="month-nav">
+                <view class="nav-arrow" :style="{ color: $theme.primaryColor }" @click="changeMonth(-1)">
+                    <text class="nav-arrow-text">‹</text>
                 </view>
-            </picker>
-
-            <view class="month-info">
-                <tn-icon name="info" size="24" color="#999999" />
-                <text>当前月份：{{ year }}-{{ monthText }}</text>
+                <text class="month-title">{{ year }}年{{ monthText }}月</text>
+                <view class="nav-arrow" :style="{ color: $theme.primaryColor }" @click="changeMonth(1)">
+                    <text class="nav-arrow-text">›</text>
+                </view>
+            </view>
+            <view class="month-stats">
+                <view class="stat-item">
+                    <view class="stat-dot dot-available" />
+                    <text class="stat-text">可预约 {{ stats.available }}</text>
+                </view>
+                <view class="stat-item">
+                    <view class="stat-dot dot-booked" />
+                    <text class="stat-text">已预约 {{ stats.booked }}</text>
+                </view>
+                <view class="stat-item">
+                    <view class="stat-dot dot-unavailable" />
+                    <text class="stat-text">不可用 {{ stats.unavailable }}</text>
+                </view>
             </view>
         </view>
 
-        <!-- 时段列表 -->
-        <view class="slot-list">
-            <view v-for="slot in timeSlots" :key="slot.value" class="slot-card">
-                <!-- 时段头部 -->
-                <view class="slot-header">
-                    <view class="slot-info">
-                        <tn-icon :name="slot.icon" size="36" :color="$theme.primaryColor" />
-                        <view class="slot-text">
-                            <text class="slot-label">{{ slot.label }}</text>
-                            <text class="slot-time">{{ slot.time }}</text>
+        <!-- 日历网格 -->
+        <view class="calendar-card">
+            <view class="week-header">
+                <text v-for="w in weekLabels" :key="w" class="week-cell">{{ w }}</text>
+            </view>
+            <view class="calendar-grid">
+                <view
+                    v-for="(cell, idx) in calendarCells"
+                    :key="idx"
+                    class="day-cell"
+                    :class="{
+                        'other-month': !cell.currentMonth,
+                        'is-past': cell.isPast,
+                        'is-today': cell.isToday,
+                        'is-selected': cell.dateStr === selectedDate
+                    }"
+                    :style="
+                        cell.dateStr === selectedDate
+                            ? { background: `${$theme.primaryColor}20`, borderColor: $theme.primaryColor }
+                            : {}
+                    "
+                    @click="selectDate(cell)"
+                >
+                    <text
+                        class="day-num"
+                        :style="
+                            cell.isToday
+                                ? { color: $theme.primaryColor, fontWeight: '700' }
+                                : cell.dateStr === selectedDate
+                                  ? { color: $theme.primaryColor, fontWeight: '600' }
+                                  : {}
+                        "
+                    >
+                        {{ cell.isToday ? '今' : cell.day }}
+                    </text>
+                    <view v-if="cell.currentMonth && !cell.isPast" class="day-dots">
+                        <view
+                            v-if="getDayIndicator(cell.dateStr) === 'booked'"
+                            class="indicator-dot dot-booked"
+                        />
+                        <view
+                            v-else-if="getDayIndicator(cell.dateStr) === 'available'"
+                            class="indicator-dot dot-available"
+                        />
+                        <view
+                            v-else-if="getDayIndicator(cell.dateStr) === 'unavailable'"
+                            class="indicator-dot dot-unavailable"
+                        />
+                    </view>
+                </view>
+            </view>
+        </view>
+
+        <!-- 日期详情 -->
+        <view v-if="selectedDate" class="detail-card">
+            <view class="detail-header">
+                <view class="detail-date-info">
+                    <text class="detail-date">{{ selectedDateLabel }}</text>
+                    <text class="detail-week">{{ getWeekDay(selectedDate) }}</text>
+                </view>
+            </view>
+
+            <!-- 快捷操作 -->
+            <view class="quick-actions">
+                <view
+                    class="quick-btn"
+                    :style="{
+                        background: `${$theme.primaryColor}10`,
+                        color: $theme.primaryColor,
+                        borderColor: `${$theme.primaryColor}40`
+                    }"
+                    @click="batchSetStatus(1)"
+                >
+                    <tn-icon name="check-circle" size="28" :color="$theme.primaryColor" />
+                    <text>全部可预约</text>
+                </view>
+                <view class="quick-btn quick-btn-off" @click="batchSetStatus(0)">
+                    <tn-icon name="close-circle" size="28" color="#EF4444" />
+                    <text>全部不可用</text>
+                </view>
+            </view>
+
+            <!-- 时段列表 -->
+            <view class="slot-list">
+                <view v-for="slot in timeSlots" :key="slot.value" class="slot-row">
+                    <view class="slot-left">
+                        <text class="slot-name">{{ slot.label }}</text>
+                        <text class="slot-time">{{ slot.time }}</text>
+                    </view>
+                    <view class="slot-right">
+                        <!-- 不可编辑状态 -->
+                        <view
+                            v-if="getSlotStatus(slot.value) >= 2"
+                            class="status-tag"
+                            :style="getStatusTagStyle(getSlotStatus(slot.value))"
+                        >
+                            {{ getStatusLabel(getSlotStatus(slot.value)) }}
+                        </view>
+                        <!-- 可编辑：切换按钮 -->
+                        <view v-else class="toggle-group">
+                            <view
+                                class="toggle-btn"
+                                :class="{ active: getSlotStatus(slot.value) === 1 }"
+                                :style="
+                                    getSlotStatus(slot.value) === 1
+                                        ? { background: $theme.primaryColor, color: '#FFF' }
+                                        : {}
+                                "
+                                @click="setStatus(slot.value, 1)"
+                            >
+                                可预约
+                            </view>
+                            <view
+                                class="toggle-btn"
+                                :class="{ active: getSlotStatus(slot.value) === 0 }"
+                                :style="
+                                    getSlotStatus(slot.value) === 0
+                                        ? { background: '#EF4444', color: '#FFF' }
+                                        : {}
+                                "
+                                @click="setStatus(slot.value, 0)"
+                            >
+                                不可用
+                            </view>
                         </view>
                     </view>
-                    <view class="slot-status" :style="getStatusStyle(getSlotStatus(slot.value))">
-                        <tn-icon
-                            :name="getStatusIcon(getSlotStatus(slot.value))"
-                            size="24"
-                            color="inherit"
-                        />
-                        <text>{{ getSlotStatusLabel(slot.value) }}</text>
-                    </view>
-                </view>
-
-                <!-- 操作按钮 -->
-                <view class="slot-actions">
-                    <view
-                        class="action-btn available-btn"
-                        :class="{ disabled: !canEdit(slot.value) }"
-                        :style="
-                            canEdit(slot.value)
-                                ? {
-                                      background: `linear-gradient(135deg, ${$theme.primaryColor}15 0%, ${$theme.primaryColor}30 100%)`,
-                                      color: $theme.primaryColor,
-                                      borderColor: $theme.primaryColor
-                                  }
-                                : {}
-                        "
-                        @click="setStatus(slot.value, 1)"
-                    >
-                        <tn-icon
-                            name="check-circle"
-                            size="28"
-                            :color="canEdit(slot.value) ? $theme.primaryColor : '#C8C9CC'"
-                        />
-                        <text>设为可预约</text>
-                    </view>
-                    <view
-                        class="action-btn unavailable-btn"
-                        :class="{ disabled: !canEdit(slot.value) }"
-                        @click="setStatus(slot.value, 0)"
-                    >
-                        <tn-icon
-                            name="close-circle"
-                            size="28"
-                            :color="canEdit(slot.value) ? '#FF2C3C' : '#C8C9CC'"
-                        />
-                        <text>设为不可用</text>
-                    </view>
                 </view>
             </view>
         </view>
 
-        <!-- 提示信息 -->
-        <view class="tip-card">
-            <tn-icon name="info" size="28" color="#FF9900" />
-            <text class="tip-text">已预约/锁定/预留的档期不可调整</text>
+        <!-- 提示 -->
+        <view class="tip-row">
+            <tn-icon name="info-circle" size="26" color="#9CA3AF" />
+            <text class="tip-text">已预约/已锁定/内部预留的档期不可调整</text>
         </view>
     </view>
 </template>
@@ -109,101 +182,244 @@ import { useThemeStore } from '@/stores/theme'
 
 const $theme = useThemeStore()
 
-const formatDate = (date: Date) => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-}
-
-const selectedDate = ref(formatDate(new Date()))
-const year = ref(Number(selectedDate.value.split('-')[0]))
-const month = ref(Number(selectedDate.value.split('-')[1]))
+const today = new Date()
+const year = ref(today.getFullYear())
+const month = ref(today.getMonth() + 1)
+const selectedDate = ref(formatDateStr(today))
 const schedules = ref<Record<string, any>>({})
 
+const weekLabels = ['日', '一', '二', '三', '四', '五', '六']
 const monthText = computed(() => String(month.value).padStart(2, '0'))
 
-// 时段配置
+// 时段配置（不含全天，全天用快捷操作代替）
 const timeSlots = [
-    { value: 0, label: '全天', time: '全天服务', icon: 'sun' },
-    { value: 1, label: '早礼', time: '08:00-12:00', icon: 'sunrise' },
-    { value: 2, label: '午宴', time: '12:00-18:00', icon: 'sun' },
-    { value: 3, label: '晚宴', time: '18:00-22:00', icon: 'moon' }
+    { value: 0, label: '全天', time: '全天档期总开关' },
+    { value: 1, label: '早礼', time: '08:00 - 12:00' },
+    { value: 2, label: '午宴', time: '12:00 - 18:00' },
+    { value: 3, label: '晚宴', time: '18:00 - 22:00' }
 ]
 
-// 状态映射
-const statusMap: Record<number, string> = {
-    0: '不可用',
-    1: '可预约',
-    2: '已预约',
-    3: '已锁定',
-    4: '内部预留'
+// 格式化日期为 YYYY-MM-DD
+function formatDateStr(d: Date): string {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
 }
 
+// 选中日期的显示文本
+const selectedDateLabel = computed(() => {
+    if (!selectedDate.value) return ''
+    const parts = selectedDate.value.split('-')
+    return `${Number(parts[1])}月${Number(parts[2])}日`
+})
+
 // 获取星期
-const getWeekDay = (dateStr: string) => {
-    const date = new Date(dateStr)
-    const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
-    return weekDays[date.getDay()]
+function getWeekDay(dateStr: string): string {
+    const d = new Date(dateStr.replace(/-/g, '/'))
+    return ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][d.getDay()]
+}
+
+// 生成日历格子
+const calendarCells = computed(() => {
+    const cells: Array<{
+        day: number
+        dateStr: string
+        currentMonth: boolean
+        isPast: boolean
+        isToday: boolean
+    }> = []
+
+    const firstDay = new Date(year.value, month.value - 1, 1)
+    const lastDay = new Date(year.value, month.value, 0)
+    const startWeekDay = firstDay.getDay()
+    const daysInMonth = lastDay.getDate()
+
+    const todayStr = formatDateStr(today)
+
+    // 上月填充
+    const prevMonthLastDay = new Date(year.value, month.value - 1, 0).getDate()
+    for (let i = startWeekDay - 1; i >= 0; i--) {
+        const d = prevMonthLastDay - i
+        const prevMonth = month.value - 1
+        const prevYear = prevMonth <= 0 ? year.value - 1 : year.value
+        const pm = prevMonth <= 0 ? 12 : prevMonth
+        const dateStr = `${prevYear}-${String(pm).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+        cells.push({ day: d, dateStr, currentMonth: false, isPast: true, isToday: false })
+    }
+
+    // 当月
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year.value}-${String(month.value).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+        const isPast = dateStr < todayStr
+        const isToday = dateStr === todayStr
+        cells.push({ day: d, dateStr, currentMonth: true, isPast, isToday })
+    }
+
+    // 下月填充（补满6行）
+    const remaining = 42 - cells.length
+    for (let d = 1; d <= remaining; d++) {
+        const nextMonth = month.value + 1
+        const nextYear = nextMonth > 12 ? year.value + 1 : year.value
+        const nm = nextMonth > 12 ? 1 : nextMonth
+        const dateStr = `${nextYear}-${String(nm).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+        cells.push({ day: d, dateStr, currentMonth: false, isPast: false, isToday: false })
+    }
+
+    return cells
+})
+
+// 分析某日期的综合状态
+// 返回 'booked' | 'available' | 'unavailable' | 'default'
+// 规则：
+//   - 无记录 → 默认可预约（'default'，日历显示绿点）
+//   - 全天(slot=0)不可用 → 整天不可用，无论分场次状态
+//   - 有已预约/已锁定/内部预留 → 'booked'
+//   - 有可预约且全天未设为不可用 → 'available'
+//   - 全部不可用 → 'unavailable'
+function analyzeDayStatus(dateStr: string): string {
+    const dayData = schedules.value[dateStr]
+    if (!dayData || Object.keys(dayData).length === 0) return 'default'
+
+    const slots = dayData as Record<number, any>
+
+    // 先检查全天总开关
+    const allDayRecord = slots[0]
+    const allDayStatus = allDayRecord ? Number(allDayRecord.status) : -1
+
+    // 全天被设为不可用 → 整天不可用（除非有已预约的场次）
+    const allDayBlocked = allDayStatus === 0
+
+    let hasBooked = false
+    let hasAvailable = false
+    let hasUnavailable = false
+
+    for (const [key, info] of Object.entries(slots)) {
+        const slotKey = Number(key)
+        const s = Number((info as any).status)
+
+        if (s === 2 || s === 3 || s === 4) {
+            hasBooked = true
+        } else if (s === 1) {
+            // 分场次可预约，但如果全天总开关关了，实际不可用
+            if (slotKey === 0 || !allDayBlocked) {
+                hasAvailable = true
+            }
+        } else if (s === 0) {
+            hasUnavailable = true
+        }
+    }
+
+    if (hasBooked) return 'booked'
+    if (hasAvailable) return 'available'
+    if (allDayBlocked || hasUnavailable) return 'unavailable'
+    return 'default'
+}
+
+// 月度统计
+const stats = computed(() => {
+    let available = 0
+    let booked = 0
+    let unavailable = 0
+    const todayStr = formatDateStr(today)
+
+    // 统计有记录的日期
+    const counted = new Set<string>()
+    for (const dateStr of Object.keys(schedules.value)) {
+        if (dateStr < todayStr) continue
+        counted.add(dateStr)
+        const status = analyzeDayStatus(dateStr)
+        if (status === 'booked') booked++
+        else if (status === 'available' || status === 'default') available++
+        else if (status === 'unavailable') unavailable++
+    }
+
+    // 无记录的当月未来日期也是默认可预约
+    const lastDay = new Date(year.value, month.value, 0).getDate()
+    for (let d = 1; d <= lastDay; d++) {
+        const dateStr = `${year.value}-${String(month.value).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+        if (dateStr < todayStr || dateStr === todayStr) continue
+        if (counted.has(dateStr)) continue
+        available++
+    }
+
+    return { available, booked, unavailable }
+})
+
+// 获取日期指示器类型
+function getDayIndicator(dateStr: string): string {
+    const status = analyzeDayStatus(dateStr)
+    if (status === 'booked') return 'booked'
+    if (status === 'available' || status === 'default') return 'available'
+    if (status === 'unavailable') return 'unavailable'
+    return ''
 }
 
 // 获取时段状态
-const getSlotStatus = (slotValue: number) => {
-    const day = schedules.value[selectedDate.value] || {}
-    return day[slotValue]?.status ?? null
+function getSlotStatus(slotValue: number): number {
+    const dayData = schedules.value[selectedDate.value]
+    if (!dayData) return -1
+    const info = dayData[slotValue]
+    if (!info) return -1
+    return Number(info.status)
 }
 
-// 获取状态文本
-const getSlotStatusLabel = (slotValue: number) => {
-    const status = getSlotStatus(slotValue)
-    if (status === null || status === undefined) return '按规则'
-    return statusMap[status] || '未知'
-}
-
-// 获取状态样式
-const getStatusStyle = (status: number | null) => {
-    const styles: Record<string, any> = {
-        1: { background: 'rgba(25, 190, 107, 0.1)', color: '#19BE6B' },
-        0: { background: 'rgba(255, 44, 60, 0.1)', color: '#FF2C3C' },
-        2: { background: 'rgba(255, 153, 0, 0.1)', color: '#FF9900' },
-        3: { background: `${$theme.primaryColor}15`, color: $theme.primaryColor },
-        4: { background: 'rgba(64, 158, 255, 0.1)', color: '#409EFF' },
-        default: { background: 'rgba(153, 153, 153, 0.1)', color: '#999999' }
+// 状态文本
+function getStatusLabel(status: number): string {
+    const map: Record<number, string> = {
+        0: '不可用',
+        1: '可预约',
+        2: '已预约',
+        3: '已锁定',
+        4: '内部预留'
     }
-    return styles[status as any] || styles.default
+    return map[status] ?? '按规则'
 }
 
-// 获取状态图标
-const getStatusIcon = (status: number | null) => {
-    const icons: Record<string, string> = {
-        1: 'check-circle',
-        0: 'close-circle',
-        2: 'clock',
-        3: 'lock',
-        4: 'star',
-        default: 'info'
+// 状态标签样式
+function getStatusTagStyle(status: number): Record<string, string> {
+    const styles: Record<number, Record<string, string>> = {
+        2: { background: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B' },
+        3: { background: 'rgba(107, 114, 128, 0.1)', color: '#6B7280' },
+        4: { background: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6' }
     }
-    return icons[status as any] || icons.default
+    return styles[status] || {}
 }
 
-// 是否可编辑
-const canEdit = (slotValue: number) => {
-    const status = getSlotStatus(slotValue)
-    return status === null || status === 0 || status === 1
+// 选择日期
+function selectDate(cell: { dateStr: string; currentMonth: boolean; isPast: boolean }) {
+    if (!cell.currentMonth || cell.isPast) return
+    selectedDate.value = cell.dateStr
 }
 
-// 获取月份数据
-const fetchMonth = async () => {
-    const res = await staffCenterScheduleMonth({ year: year.value, month: month.value })
-    schedules.value = res?.schedules || {}
+// 切换月份
+function changeMonth(delta: number) {
+    let m = month.value + delta
+    let y = year.value
+    if (m > 12) { m = 1; y++ }
+    if (m < 1) { m = 12; y-- }
+    year.value = y
+    month.value = m
+    // 选中新月份的第一天（如果是当月则选今天）
+    const todayStr = formatDateStr(today)
+    const firstOfMonth = `${y}-${String(m).padStart(2, '0')}-01`
+    if (y === today.getFullYear() && m === today.getMonth() + 1) {
+        selectedDate.value = todayStr
+    } else {
+        selectedDate.value = firstOfMonth
+    }
+    fetchMonth()
 }
 
-// 设置状态
-const setStatus = async (slotValue: number, status: number) => {
-    if (!canEdit(slotValue)) {
+// 设置单个时段状态
+async function setStatus(slotValue: number, status: number) {
+    const current = getSlotStatus(slotValue)
+    if (current >= 2) {
         uni.showToast({ title: '该时段不可调整', icon: 'none' })
         return
     }
+    // 如果当前已经是目标状态，不重复请求
+    if (current === status) return
 
     try {
         await staffCenterScheduleSetStatus({
@@ -211,12 +427,11 @@ const setStatus = async (slotValue: number, status: number) => {
             time_slot: slotValue,
             status
         })
+        // 更新本地数据
         if (!schedules.value[selectedDate.value]) {
             schedules.value[selectedDate.value] = {}
         }
-        schedules.value[selectedDate.value][slotValue] = {
-            status
-        }
+        schedules.value[selectedDate.value][slotValue] = { status }
         uni.showToast({ title: '设置成功', icon: 'success' })
     } catch (e: any) {
         const msg = typeof e === 'string' ? e : e?.msg || e?.message || '设置失败'
@@ -224,16 +439,40 @@ const setStatus = async (slotValue: number, status: number) => {
     }
 }
 
-// 日期变更
-const handleDateChange = (e: any) => {
-    selectedDate.value = e.detail.value
-    const [y, m] = selectedDate.value.split('-')
-    const newYear = Number(y)
-    const newMonth = Number(m)
-    if (newYear !== year.value || newMonth !== month.value) {
-        year.value = newYear
-        month.value = newMonth
-        fetchMonth()
+// 批量设置所有时段
+async function batchSetStatus(status: number) {
+    let hasError = false
+    for (const slot of timeSlots) {
+        const current = getSlotStatus(slot.value)
+        if (current >= 2) continue // 跳过不可编辑的
+        if (current === status) continue // 跳过已经是目标状态的
+        try {
+            await staffCenterScheduleSetStatus({
+                date: selectedDate.value,
+                time_slot: slot.value,
+                status
+            })
+            if (!schedules.value[selectedDate.value]) {
+                schedules.value[selectedDate.value] = {}
+            }
+            schedules.value[selectedDate.value][slot.value] = { status }
+        } catch {
+            hasError = true
+        }
+    }
+    uni.showToast({
+        title: hasError ? '部分设置失败' : '设置成功',
+        icon: hasError ? 'none' : 'success'
+    })
+}
+
+// 获取月份数据
+async function fetchMonth() {
+    try {
+        const res = await staffCenterScheduleMonth({ year: year.value, month: month.value })
+        schedules.value = res?.schedules || {}
+    } catch {
+        schedules.value = {}
     }
 }
 
@@ -246,188 +485,317 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
-    padding-bottom: 40rpx;
+    background: #F4F5F7;
+    padding-bottom: 60rpx;
 }
 
-/* 日期选择卡片 */
-.date-card {
-    margin: 24rpx;
-    padding: 32rpx 24rpx;
-    background: #ffffff;
+/* 月份导航卡片 */
+.month-nav-card {
+    margin: 20rpx 24rpx 0;
+    padding: 24rpx 28rpx;
+    background: #FFFFFF;
     border-radius: 24rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
 }
 
-.card-header {
+.month-nav {
     display: flex;
     align-items: center;
-    gap: 12rpx;
-    margin-bottom: 24rpx;
+    justify-content: center;
+    gap: 40rpx;
 }
 
-.card-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333333;
-}
-
-.date-picker {
+.nav-arrow {
+    width: 64rpx;
+    height: 64rpx;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 24rpx;
-    background: rgba(124, 58, 237, 0.05);
-    border-radius: 16rpx;
-    border: 2rpx solid rgba(124, 58, 237, 0.1);
+    justify-content: center;
+    border-radius: 50%;
+    background: #F3F4F6;
+    cursor: pointer;
+
+    &:active {
+        opacity: 0.7;
+    }
 }
 
-.date-display {
+.nav-arrow-text {
+    font-size: 40rpx;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.month-title {
+    font-size: 34rpx;
+    font-weight: 700;
+    color: #1F2937;
+    min-width: 200rpx;
+    text-align: center;
+}
+
+.month-stats {
     display: flex;
-    align-items: center;
-    gap: 16rpx;
+    justify-content: center;
+    gap: 32rpx;
+    margin-top: 20rpx;
 }
 
-.date-text {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333333;
-}
-
-.date-week {
-    padding: 4rpx 12rpx;
-    background: rgba(124, 58, 237, 0.1);
-    border-radius: 12rpx;
-    font-size: 24rpx;
-    color: #7c3aed;
-}
-
-.month-info {
+.stat-item {
     display: flex;
     align-items: center;
     gap: 8rpx;
-    margin-top: 16rpx;
+}
+
+.stat-dot {
+    width: 14rpx;
+    height: 14rpx;
+    border-radius: 50%;
+}
+
+.stat-text {
     font-size: 24rpx;
-    color: #999999;
+    color: #6B7280;
 }
 
-/* 时段列表 */
-.slot-list {
-    padding: 0 24rpx;
+/* 通用色点 */
+.dot-available {
+    background: #10B981;
 }
 
-.slot-card {
-    margin-bottom: 24rpx;
-    padding: 24rpx;
-    background: #ffffff;
+.dot-booked {
+    background: #F59E0B;
+}
+
+.dot-unavailable {
+    background: #EF4444;
+}
+
+/* 日历卡片 */
+.calendar-card {
+    margin: 16rpx 24rpx 0;
+    padding: 20rpx 16rpx;
+    background: #FFFFFF;
     border-radius: 24rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
 }
 
-/* 时段头部 */
-.slot-header {
+.week-header {
+    display: flex;
+    margin-bottom: 8rpx;
+}
+
+.week-cell {
+    flex: 1;
+    text-align: center;
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #6B7280;
+    padding: 16rpx 0;
+}
+
+.calendar-grid {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.day-cell {
+    width: calc(100% / 7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 96rpx;
+    border-radius: 16rpx;
+    border: 2rpx solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &.other-month .day-num {
+        color: #E5E7EB;
+    }
+
+    &.is-past .day-num {
+        color: #9CA3AF;
+        text-decoration: line-through;
+    }
+
+    &.is-selected {
+        border-color: currentColor;
+    }
+
+    &:active:not(.other-month):not(.is-past) {
+        opacity: 0.7;
+    }
+}
+
+.day-num {
+    font-size: 28rpx;
+    font-weight: 500;
+    color: #1F2937;
+}
+
+.day-dots {
+    margin-top: 6rpx;
+    height: 10rpx;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding-bottom: 20rpx;
-    border-bottom: 1rpx solid #f5f5f5;
+    justify-content: center;
+}
+
+.indicator-dot {
+    width: 10rpx;
+    height: 10rpx;
+    border-radius: 50%;
+}
+
+/* 日期详情卡片 */
+.detail-card {
+    margin: 16rpx 24rpx 0;
+    padding: 28rpx;
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
+}
+
+.detail-header {
     margin-bottom: 20rpx;
 }
 
-.slot-info {
+.detail-date-info {
     display: flex;
     align-items: center;
-    gap: 16rpx;
+    gap: 12rpx;
 }
 
-.slot-text {
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
-}
-
-.slot-label {
+.detail-date {
     font-size: 32rpx;
-    font-weight: 600;
-    color: #333333;
+    font-weight: 700;
+    color: #1F2937;
 }
 
-.slot-time {
+.detail-week {
     font-size: 24rpx;
-    color: #999999;
+    color: #9CA3AF;
+    padding: 4rpx 14rpx;
+    background: #F3F4F6;
+    border-radius: 16rpx;
 }
 
-.slot-status {
-    display: flex;
-    align-items: center;
-    gap: 6rpx;
-    padding: 8rpx 16rpx;
-    border-radius: 24rpx;
-    font-size: 24rpx;
-    font-weight: 500;
-}
-
-/* 操作按钮 */
-.slot-actions {
+/* 快捷操作 */
+.quick-actions {
     display: flex;
     gap: 16rpx;
+    margin-bottom: 24rpx;
 }
 
-.action-btn {
+.quick-btn {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8rpx;
-    height: 72rpx;
-    border-radius: 48rpx;
-    font-size: 28rpx;
+    height: 68rpx;
+    border-radius: 34rpx;
+    font-size: 26rpx;
     font-weight: 500;
     border: 2rpx solid;
-    transition: all 0.2s ease;
+    cursor: pointer;
 
-    &:active:not(.disabled) {
-        opacity: 0.8;
-    }
-
-    &.disabled {
-        opacity: 0.4;
-        pointer-events: none;
+    &:active {
+        opacity: 0.7;
     }
 }
 
-.available-btn {
-    background: transparent;
+.quick-btn-off {
+    background: rgba(239, 68, 68, 0.06);
+    color: #EF4444;
+    border-color: rgba(239, 68, 68, 0.3);
 }
 
-.unavailable-btn {
-    background: rgba(255, 44, 60, 0.05);
-    color: #ff2c3c;
-    border-color: #ff2c3c;
-
-    &.disabled {
-        background: #f5f5f5;
-        color: #c8c9cc;
-        border-color: #e5e5e5;
-    }
+/* 时段列表 */
+.slot-list {
+    padding: 0;
 }
 
-/* 提示卡片 */
-.tip-card {
+.slot-row {
     display: flex;
     align-items: center;
-    gap: 12rpx;
-    margin: 0 24rpx;
-    padding: 20rpx 24rpx;
-    background: rgba(255, 153, 0, 0.1);
-    border-radius: 16rpx;
-    border: 1rpx solid rgba(255, 153, 0, 0.2);
+    justify-content: space-between;
+    padding: 20rpx 0;
+    border-bottom: 1rpx solid #F3F4F6;
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+.slot-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+}
+
+.slot-name {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #374151;
+}
+
+.slot-time {
+    font-size: 22rpx;
+    color: #9CA3AF;
+}
+
+.slot-right {
+    display: flex;
+    align-items: center;
+}
+
+/* 不可编辑状态标签 */
+.status-tag {
+    font-size: 24rpx;
+    font-weight: 500;
+    padding: 8rpx 20rpx;
+    border-radius: 20rpx;
+}
+
+/* 切换按钮组 */
+.toggle-group {
+    display: flex;
+    background: #F3F4F6;
+    border-radius: 24rpx;
+    overflow: hidden;
+}
+
+.toggle-btn {
+    font-size: 24rpx;
+    font-weight: 500;
+    padding: 10rpx 24rpx;
+    color: #9CA3AF;
+    transition: all 0.2s ease;
+    cursor: pointer;
+
+    &.active {
+        font-weight: 600;
+    }
+
+    &:active {
+        opacity: 0.7;
+    }
+}
+
+/* 提示 */
+.tip-row {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    margin: 20rpx 24rpx 0;
+    padding: 0 8rpx;
 }
 
 .tip-text {
-    flex: 1;
-    font-size: 24rpx;
-    color: #ff9900;
-    line-height: 1.5;
+    font-size: 22rpx;
+    color: #9CA3AF;
 }
 </style>
