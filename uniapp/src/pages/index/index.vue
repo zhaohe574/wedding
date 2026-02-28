@@ -104,7 +104,7 @@
             >
                 <view class="article-title__bar" :style="articleBarStyle"></view>
                 <text class="article-title__text">{{
-                    newsConfig?.content?.title || '最新资讯'
+                    newsTitle
                 }}</text>
             </view>
             <news-card
@@ -200,6 +200,12 @@ const newsConfig = computed(() => {
 const showNewsSection = computed(() => {
     const config = newsConfig.value
     return config && config.content?.enabled !== 0
+})
+
+// 资讯标题（防御非字符串值）
+const newsTitle = computed(() => {
+    const title = newsConfig.value?.content?.title
+    return typeof title === 'string' && title.trim() ? title : '最新资讯'
 })
 
 // 资讯标题样式

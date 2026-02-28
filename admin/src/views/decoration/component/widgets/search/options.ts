@@ -1,8 +1,10 @@
 export default () => ({
     title: '搜索',
     name: 'search',
-    disabled: 0,
     pageScope: ['home'], // 仅在首页显示
-    content: {},
+    content: {
+        enabled: 1,
+        placeholder: '请输入关键词搜索'
+    },
     styles: {}
 })

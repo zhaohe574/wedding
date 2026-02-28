@@ -1,5 +1,5 @@
 <template>
-    <view class="banner translate-y-0" v-if="content.data.length && content.enabled">
+    <view class="banner translate-y-0" v-if="visibleData.length && content.enabled">
         <LSwiper
             :content="content"
             :height="bannerHeight"
@@ -48,6 +48,11 @@ const props = defineProps({
 const { getImageUrl } = useAppStore()
 const themeStore = useThemeStore()
 
+// 过滤可见的 banner 数据
+const visibleData = computed(() => {
+    return (props.content.data || []).filter((item: any) => item.is_show !== '0')
+})
+
 // 计算轮播图高度：优先使用样式配置，其次使用内容配置，最后使用默认值
 const bannerHeight = computed(() => {
     if (props.styles.height) {
@@ -73,6 +78,9 @@ const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#7C
 const indicatorActiveColor = computed(() => themeStore.primaryColor || '#7C3AED')
 
 const handleChange = (index: number) => {
-    emit('change', getImageUrl(props['content'].data[index].bg))
+    const item = visibleData.value[index]
+    if (item?.bg) {
+        emit('change', getImageUrl(item.bg))
+    }
 }
 </script>

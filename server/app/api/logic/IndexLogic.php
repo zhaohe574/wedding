@@ -144,6 +144,7 @@ class IndexLogic extends BaseLogic
         $website = [
             'h5_favicon' => FileService::getFileUrl(ConfigService::get('website', 'h5_favicon')),
             'shop_name' => ConfigService::get('website', 'shop_name'),
+            'shop_slogan' => ConfigService::get('website', 'shop_slogan') ?: '',
             'shop_logo' => FileService::getFileUrl(ConfigService::get('website', 'shop_logo')),
         ];
         // H5配置

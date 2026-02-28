@@ -6,7 +6,7 @@
             :background-color="$theme.navBgColor"
         />
     </page-meta>
-    <view class="coupon-center-page">
+    <view class="coupon-center-page" :style="{ background: `linear-gradient(180deg, ${$theme.primaryColor}08 0%, #f6f6f6 100%)` }">
         <!-- 顶部入口卡片 -->
         <view class="top-entry" @click="goMyCoupons">
             <view class="entry-card">
@@ -51,7 +51,7 @@
                 <view
                     class="coupon-left"
                     :style="{
-                        background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)`
+                        background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
                     }"
                 >
                     <view class="coupon-value">
@@ -76,20 +76,14 @@
                             <text class="coupon-name">{{ item.name }}</text>
                             <view
                                 class="coupon-tag"
-                                :style="{
-                                    background:
-                                        item.coupon_type === 2
-                                            ? 'rgba(249, 115, 22, 0.1)'
-                                            : 'rgba(124, 58, 237, 0.1)',
-                                    color: item.coupon_type === 2 ? '#F97316' : $theme.primaryColor
-                                }"
+                                :style="getCouponTagStyle()"
                             >
                                 {{ item.coupon_type_text }}
                             </view>
                             <tn-icon name="right" size="26" color="#C0C4CC" class="detail-arrow" />
                         </view>
 
-                        <view class="coupon-desc" :style="{ color: $theme.ctaColor }">
+                        <view class="coupon-desc" :style="{ color: $theme.primaryColor }">
                             {{ item.discount_desc }}
                         </view>
 
@@ -136,10 +130,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { getAvailableCoupons, getMyCouponStats } from '@/api/coupon'
 import { useThemeStore } from '@/stores/theme'
+import { alphaColor } from '@/utils/color'
 
 const $theme = useThemeStore()
 
@@ -180,6 +175,13 @@ const formatValidPeriod = (item: any) => {
 
     if (start) return `${formatDate(start)}起`
     return `${formatDate(end)}止`
+}
+
+const getCouponTagStyle = () => {
+    return {
+        background: alphaColor($theme.primaryColor, 0.1),
+        color: $theme.primaryColor
+    }
 }
 
 const loadStats = async () => {
@@ -256,7 +258,6 @@ onMounted(() => {
 <style scoped lang="scss">
 .coupon-center-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.03) 0%, #f6f6f6 100%);
     padding-bottom: 24rpx;
 }
 
@@ -292,7 +293,7 @@ onMounted(() => {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
+                box-shadow: 0 8rpx 24rpx var(--color-primary-light-5);
             }
 
             .entry-info {

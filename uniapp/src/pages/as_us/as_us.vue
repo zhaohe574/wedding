@@ -25,7 +25,9 @@
             <text class="brand-name">{{
                 appStore.getWebsiteConfig.shop_name || '婚庆服务平台'
             }}</text>
-            <text class="brand-slogan">让每一场婚礼都成为永恒的回忆</text>
+            <text class="brand-slogan">{{
+                appStore.getWebsiteConfig.shop_slogan || '让每一场婚礼都成为永恒的回忆'
+            }}</text>
         </view>
 
         <!-- 信息卡片区域 -->
@@ -129,11 +131,25 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 
 const appStore = useAppStore()
 const $theme = useThemeStore()
+
+// 页面展示时刷新配置，确保后台修改后可立即生效
+const refreshWebsiteConfig = async () => {
+    try {
+        await appStore.getConfig()
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+onShow(() => {
+    refreshWebsiteConfig()
+})
 
 // 服务特色数据
 const features = [

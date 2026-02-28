@@ -148,7 +148,10 @@ const metaData: any = computed(() => {
 })
 
 // 搜索框配置
-const searchPlaceholder = computed(() => props.content.placeholder || '搜索人员/服务/作品')
+const searchPlaceholder = computed(() => {
+    const ph = props.content.placeholder
+    return typeof ph === 'string' && ph.trim() ? ph : '搜索人员/服务/作品'
+})
 const searchBgColor = computed(() => props.styles.bgColor || '#ffffff')
 const searchBorderRadius = computed(() => props.styles.borderRadius || 48)
 

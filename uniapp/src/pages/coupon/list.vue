@@ -6,7 +6,7 @@
             :background-color="$theme.navBgColor"
         />
     </page-meta>
-    <view class="coupon-page">
+    <view class="coupon-page" :style="{ background: `linear-gradient(180deg, ${$theme.primaryColor}08 0%, #f6f6f6 100%)` }">
         <!-- 统计数字卡片 -->
         <view class="stats-card">
             <view class="stat-item" :class="{ active: currentTab === '' }" @click="switchTab('')">
@@ -147,8 +147,8 @@
                                 :style="{
                                     background:
                                         item.coupon_type === 2
-                                            ? 'rgba(249, 115, 22, 0.1)'
-                                            : 'rgba(124, 58, 237, 0.1)',
+                                            ? `${$theme.ctaColor}1A`
+                                            : `${$theme.primaryColor}1A`,
                                     color:
                                         item.coupon_type === 2
                                             ? $theme.ctaColor
@@ -426,7 +426,6 @@ onMounted(() => {
 <style scoped lang="scss">
 .coupon-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.03) 0%, #f6f6f6 100%);
     padding-bottom: 24rpx;
 }
 
@@ -666,10 +665,10 @@ onMounted(() => {
             }
 
             .not-started-item {
-                color: #7c3aed;
+                color: var(--color-primary);
 
                 .not-started-text {
-                    color: #7c3aed;
+                    color: var(--color-primary);
                     font-weight: 600;
                 }
             }
@@ -710,7 +709,7 @@ onMounted(() => {
                 border-radius: 32rpx;
                 border: none;
                 padding: 0;
-                box-shadow: 0 8rpx 16rpx rgba(124, 58, 237, 0.3);
+                box-shadow: 0 8rpx 16rpx var(--color-primary-light-5);
 
                 &::after {
                     border: none;
@@ -780,7 +779,7 @@ onMounted(() => {
         font-weight: 600;
         border-radius: 32rpx;
         border: none;
-        box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
+        box-shadow: 0 6rpx 16rpx var(--color-primary-light-7);
 
         &::after {
             border: none;

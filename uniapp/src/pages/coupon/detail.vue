@@ -6,7 +6,7 @@
             :background-color="$theme.navBgColor"
         />
     </page-meta>
-    <view class="coupon-detail-page">
+    <view class="coupon-detail-page" :style="{ background: `linear-gradient(180deg, ${$theme.primaryColor}0D 0%, #f6f6f6 100%)` }">
         <!-- 加载状态 -->
         <view v-if="loading" class="loading-state">
             <tn-loading mode="flower" :color="$theme.primaryColor" />
@@ -19,9 +19,7 @@
                 <!-- 金额区域 - 上方 -->
                 <view
                     class="amount-section"
-                    :style="{
-                        background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)`
-                    }"
+                    :style="amountSectionStyle"
                 >
                     <!-- 折扣券 -->
                     <view v-if="detail.coupon_type === 2" class="amount-content">
@@ -54,16 +52,9 @@
                         <view
                             class="type-badge"
                             :style="{
-                                background:
-                                    detail.coupon_type === 2
-                                        ? 'rgba(249, 115, 22, 0.1)'
-                                        : 'rgba(124, 58, 237, 0.1)',
-                                color:
-                                    detail.coupon_type === 2
-                                        ? $theme.ctaColor
-                                        : $theme.primaryColor,
-                                borderColor:
-                                    detail.coupon_type === 2 ? $theme.ctaColor : $theme.primaryColor
+                                background: `${$theme.primaryColor}1A`,
+                                color: $theme.primaryColor,
+                                borderColor: $theme.primaryColor
                             }"
                         >
                             {{ detail.coupon_type_text }}
@@ -71,8 +62,8 @@
                     </view>
 
                     <view class="desc-row">
-                        <tn-icon name="discount" size="28" :color="$theme.ctaColor" />
-                        <text class="desc-text" :style="{ color: $theme.ctaColor }">
+                        <tn-icon name="discount" size="28" :color="$theme.primaryColor" />
+                        <text class="desc-text" :style="{ color: $theme.primaryColor }">
                             {{ detail.discount_desc }}
                         </text>
                     </view>
@@ -206,6 +197,7 @@ import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import { getCouponDetail, receiveCoupon } from '@/api/coupon'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
+import { alphaColor } from '@/utils/color'
 import TnCountDown from '@tuniao/tnui-vue3-uniapp/components/count-down/src/count-down.vue'
 
 const $theme = useThemeStore()
@@ -292,6 +284,11 @@ const thresholdText = computed(() => {
     const threshold = Number(detail.value.threshold_amount || 0)
     return threshold > 0 ? `满${threshold}元可用` : '无门槛'
 })
+
+const amountSectionStyle = computed(() => ({
+    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+    boxShadow: `0 8rpx 24rpx ${alphaColor($theme.primaryColor, 0.2)}`
+}))
 
 const receiveTimeLines = computed(() => {
     const start = Number(detail.value.receive_start_time || 0)
@@ -425,7 +422,6 @@ onUnmounted(() => {
 <style scoped lang="scss">
 .coupon-detail-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.05) 0%, #f6f6f6 100%);
     padding-bottom: 200rpx;
 }
 
@@ -454,7 +450,7 @@ onUnmounted(() => {
     backdrop-filter: blur(20rpx);
     border-radius: 32rpx;
     padding: 0;
-    box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12), 0 8rpx 16rpx rgba(0, 0, 0, 0.04);
+    box-shadow: 0 20rpx 60rpx var(--color-primary-light-7), 0 8rpx 16rpx rgba(0, 0, 0, 0.04);
     margin-bottom: 24rpx;
     border: 2rpx solid rgba(255, 255, 255, 0.3);
     transition: all 0.3s ease;
@@ -473,7 +469,6 @@ onUnmounted(() => {
     justify-content: center;
     padding: 40rpx 32rpx;
     overflow: hidden;
-    box-shadow: 0 8rpx 24rpx rgba(249, 115, 22, 0.2);
 }
 
 .amount-content {

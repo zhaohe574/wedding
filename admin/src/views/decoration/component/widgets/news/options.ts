@@ -1,8 +1,10 @@
 export default () => ({
     title: '资讯',
     name: 'news',
-    disabled: 0,
     pageScope: ['home'], // 仅在首页显示
-    content: {},
+    content: {
+        enabled: 1,
+        title: '最新资讯'
+    },
     styles: {}
 })

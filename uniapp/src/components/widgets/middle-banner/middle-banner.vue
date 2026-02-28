@@ -1,10 +1,11 @@
 <template>
     <view
-        class="banner h-[200rpx] mx-[20rpx] mt-[20rpx] translate-y-0"
+        class="banner mx-[20rpx] mt-[20rpx]"
         v-if="showList.length && content.enabled"
     >
         <swiper
-            class="swiper h-full"
+            class="swiper"
+            style="height: 260rpx;"
             :indicator-dots="showList.length > 1"
             :indicator-color="indicatorColor"
             :indicator-active-color="indicatorActiveColor"
@@ -16,11 +17,9 @@
                 @click="handleClick(item.link)"
             >
                 <image
-                    mode="widthFix"
-                    width="100%"
-                    height="100%"
+                    class="banner-image"
+                    mode="aspectFill"
                     :src="getImageUrl(item.image)"
-                    :border-radius="14"
                 />
             </swiper-item>
         </swiper>
@@ -58,4 +57,10 @@ const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#7C
 const indicatorActiveColor = computed(() => themeStore.primaryColor || '#7C3AED')
 </script>
 
-<style></style>
+<style scoped lang="scss">
+.banner-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 14rpx;
+}
+</style>

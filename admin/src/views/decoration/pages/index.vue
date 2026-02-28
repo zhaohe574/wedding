@@ -126,7 +126,22 @@ const getSelectWidget = computed(() => {
 
 const getData = async () => {
     const data = await getDecoratePages({ id: activeMenu.value })
-    menus[String(data.id)].pageData = JSON.parse(data.data)
+    const pageData = JSON.parse(data.data)
+    // 兼容旧数据：移除废弃的disabled字段，确保content.enabled存在，补全默认字段
+    pageData.forEach((item: any) => {
+        if ('disabled' in item && item.name !== 'user-info') {
+            delete item.disabled
+        }
+        if (item.content && !('enabled' in item.content)) {
+            item.content.enabled = 1
+        }
+        // 将 options 默认值与后端数据合并，确保新增字段不丢失
+        const defaultOptions = widgets[item.name]?.options()
+        if (defaultOptions?.content) {
+            item.content = { ...defaultOptions.content, ...item.content }
+        }
+    })
+    menus[String(data.id)].pageData = pageData
     menus[String(data.id)].pageMeta = data?.meta ? JSON.parse(data?.meta) : null
 }
 

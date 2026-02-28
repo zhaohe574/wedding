@@ -94,8 +94,8 @@ watchEffect(() => {
 
         for (let i = 0; i < len; i++) {
             const item = content.data[i]
-            // 兼容不同的图片字段名：bg（首页轮播图）或 image（其他轮播图）
-            const imageField = item.bg || item.image
+            // 优先使用 image 字段（轮播图），bg 字段是背景联动用的
+            const imageField = item.image || item.bg
             if (imageField) {
                 item.image = getImageUrl(imageField)
             }
@@ -107,7 +107,9 @@ watchEffect(() => {
     }
 })
 
-const lists = computed(() => props.content.data || [])
+const lists = computed(() => {
+    return (props.content.data || []).filter((item: any) => item.is_show !== '0')
+})
 
 const handleClick = (index: number) => {
     const link = props.content.data[index]?.link

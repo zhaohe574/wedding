@@ -21,7 +21,13 @@ export const useAppStore = defineStore({
     },
     actions: {
         getImageUrl(url: string) {
-            return url.indexOf('http') ? `${this.config.domain}${url}` : url
+            if (!url) return ''
+            // 已经是完整 URL 则直接返回
+            if (url.startsWith('http')) return url
+            // 拼接 domain，避免双斜杠
+            const domain = this.config.domain?.replace(/\/+$/, '') || ''
+            const path = url.startsWith('/') ? url : `/${url}`
+            return `${domain}${path}`
         },
         async getConfig() {
             const data = await getConfig()
