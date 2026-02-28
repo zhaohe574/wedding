@@ -6,7 +6,7 @@
     </page-meta>
     <view class="customer-service">
         <view v-for="(item, index) in state.pages" :key="index">
-            <template v-if="item.name == 'customer-service'">
+            <template v-if="item.name == 'customer-service' && isComponentEnabled(item)">
                 <w-customer-service :content="item.content" :styles="item.styles" />
             </template>
         </view>
@@ -21,13 +21,23 @@ const state = reactive<{
 }>({
     pages: []
 })
+
+const isComponentEnabled = (item: any) => {
+    return item?.content?.enabled !== 0
+}
+
 const getData = async () => {
-    const data = await getDecorate({ id: 3 })
-    // 处理 data.data，可能是字符串或对象
-    if (typeof data.data === 'string') {
-        state.pages = JSON.parse(data.data)
-    } else {
-        state.pages = data.data
+    try {
+        const data = await getDecorate({ id: 3 })
+        // 处理 data.data，可能是字符串或对象
+        if (typeof data.data === 'string') {
+            state.pages = JSON.parse(data.data)
+        } else {
+            state.pages = data.data || []
+        }
+    } catch (error) {
+        console.error('获取客服装修数据失败:', error)
+        state.pages = []
     }
 }
 getData()

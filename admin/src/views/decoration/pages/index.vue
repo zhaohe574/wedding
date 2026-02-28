@@ -140,6 +140,9 @@ const getData = async () => {
         if (defaultOptions?.content) {
             item.content = { ...defaultOptions.content, ...item.content }
         }
+        if (defaultOptions?.styles) {
+            item.styles = { ...defaultOptions.styles, ...(item.styles || {}) }
+        }
     })
     menus[String(data.id)].pageData = pageData
     menus[String(data.id)].pageMeta = data?.meta ? JSON.parse(data?.meta) : null

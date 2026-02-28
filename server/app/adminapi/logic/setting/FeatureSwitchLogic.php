@@ -31,6 +31,9 @@ class FeatureSwitchLogic extends BaseLogic
             'staff_center' => (int) ConfigService::get('feature_switch', 'staff_center', 1),
             'staff_admin' => (int) ConfigService::get('feature_switch', 'staff_admin', 1),
             'admin_dashboard' => (int) ConfigService::get('feature_switch', 'admin_dashboard', 1),
+            'admin_dashboard_user_ids' => self::normalizeUserIds(
+                (string) ConfigService::get('feature_switch', 'admin_dashboard_user_ids', '')
+            ),
             'staff_detail_style' => self::normalizeStyleMode(
                 (string) ConfigService::get('feature_switch', 'staff_detail_style', 'classic')
             ),
@@ -47,6 +50,11 @@ class FeatureSwitchLogic extends BaseLogic
         ConfigService::set('feature_switch', 'admin_dashboard', (int) $params['admin_dashboard']);
         ConfigService::set(
             'feature_switch',
+            'admin_dashboard_user_ids',
+            self::normalizeUserIds((string) ($params['admin_dashboard_user_ids'] ?? ''))
+        );
+        ConfigService::set(
+            'feature_switch',
             'staff_detail_style',
             self::normalizeStyleMode((string) ($params['staff_detail_style'] ?? 'classic'))
         );
@@ -60,5 +68,32 @@ class FeatureSwitchLogic extends BaseLogic
         return in_array($styleMode, self::STAFF_DETAIL_STYLE_MODES, true)
             ? $styleMode
             : 'classic';
+    }
+
+    /**
+     * @notes 规范化管理员看板可访问用户ID
+     */
+    private static function normalizeUserIds(string $userIds): string
+    {
+        if (trim($userIds) === '') {
+            return '';
+        }
+
+        $items = preg_split('/[\s,，]+/u', trim($userIds)) ?: [];
+        $normalized = [];
+        foreach ($items as $item) {
+            $value = trim((string) $item);
+            if ($value === '' || !preg_match('/^[1-9]\d*$/', $value)) {
+                continue;
+            }
+            $normalized[] = (int) $value;
+        }
+
+        $normalized = array_values(array_unique($normalized));
+        if (empty($normalized)) {
+            return '';
+        }
+
+        return implode(',', $normalized);
     }
 }

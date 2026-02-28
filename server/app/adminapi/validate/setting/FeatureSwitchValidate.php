@@ -20,6 +20,7 @@ class FeatureSwitchValidate extends BaseValidate
         'staff_center' => 'require|in:0,1',
         'staff_admin' => 'require|in:0,1',
         'admin_dashboard' => 'require|in:0,1',
+        'admin_dashboard_user_ids' => 'checkAdminDashboardUserIds',
         'staff_detail_style' => 'in:classic,immersive,conversion',
     ];
 
@@ -30,11 +31,42 @@ class FeatureSwitchValidate extends BaseValidate
         'staff_admin.in' => '服务人员后台开关值错误',
         'admin_dashboard.require' => '请选择管理员看板开关',
         'admin_dashboard.in' => '管理员看板开关值错误',
+        'admin_dashboard_user_ids.checkAdminDashboardUserIds' => '管理员可访问用户ID格式错误',
         'staff_detail_style.in' => '服务人员详情页风格值错误',
     ];
 
     public function sceneSetConfig(): FeatureSwitchValidate
     {
-        return $this->only(['staff_center', 'staff_admin', 'admin_dashboard', 'staff_detail_style']);
+        return $this->only([
+            'staff_center',
+            'staff_admin',
+            'admin_dashboard',
+            'admin_dashboard_user_ids',
+            'staff_detail_style',
+        ]);
+    }
+
+    /**
+     * @notes 校验管理员可访问用户ID
+     */
+    public function checkAdminDashboardUserIds($value): bool
+    {
+        $input = trim((string) $value);
+        if ($input === '') {
+            return true;
+        }
+
+        $items = preg_split('/[\s,，]+/u', $input) ?: [];
+        foreach ($items as $item) {
+            $id = trim((string) $item);
+            if ($id === '') {
+                continue;
+            }
+            if (!preg_match('/^[1-9]\d*$/', $id)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

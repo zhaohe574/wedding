@@ -22,12 +22,8 @@
                     class="logo-image"
                 />
             </view>
-            <text class="brand-name">{{
-                appStore.getWebsiteConfig.shop_name || '婚庆服务平台'
-            }}</text>
-            <text class="brand-slogan">{{
-                appStore.getWebsiteConfig.shop_slogan || '让每一场婚礼都成为永恒的回忆'
-            }}</text>
+            <text class="brand-name">{{ brandName }}</text>
+            <text v-if="brandSlogan" class="brand-slogan">{{ brandSlogan }}</text>
         </view>
 
         <!-- 信息卡片区域 -->
@@ -35,7 +31,7 @@
             <!-- 版本信息卡片 -->
             <view class="info-card glass-card">
                 <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                    <tn-icon name="info" size="40" :color="$theme.primaryColor" />
+                    <tn-icon name="tip" size="40" :color="$theme.primaryColor" />
                 </view>
                 <view class="card-content">
                     <text class="card-label">当前版本</text>
@@ -121,9 +117,7 @@
 
         <!-- 底部版权信息 -->
         <view class="footer">
-            <text class="copyright"
-                >© 2024 {{ appStore.getWebsiteConfig.shop_name || '婚庆服务平台' }}</text
-            >
+            <text class="copyright">© {{ currentYear }} {{ brandName || '婚庆服务平台' }}</text>
             <text class="copyright-sub">All Rights Reserved</text>
         </view>
     </view>
@@ -137,18 +131,19 @@ import { useThemeStore } from '@/stores/theme'
 
 const appStore = useAppStore()
 const $theme = useThemeStore()
+const currentYear = new Date().getFullYear()
 
-// 页面展示时刷新配置，确保后台修改后可立即生效
-const refreshWebsiteConfig = async () => {
+// 顶部品牌信息，来源于后台「网站信息-前台设置」
+const brandName = computed(() => appStore.getWebsiteConfig.shop_name || '')
+const brandSlogan = computed(() => appStore.getWebsiteConfig.shop_slogan || '')
+
+// 页面展示时尝试同步配置（已加载时会命中 store 缓存，不重复请求）
+onShow(async () => {
     try {
         await appStore.getConfig()
     } catch (error) {
         console.error(error)
     }
-}
-
-onShow(() => {
-    refreshWebsiteConfig()
 })
 
 // 服务特色数据

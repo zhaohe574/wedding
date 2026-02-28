@@ -21,6 +21,19 @@
                         <span class="text-gray-500 text-xs">移动端管理员看板入口</span>
                     </div>
                 </el-form-item>
+                <el-form-item label="看板可访问用户ID">
+                    <div class="w-[420px] flex flex-col gap-2">
+                        <el-input
+                            v-model="formData.admin_dashboard_user_ids"
+                            type="textarea"
+                            :rows="3"
+                            placeholder="请输入用户ID，多个用逗号分隔，例如：1,2,3"
+                        />
+                        <span class="text-gray-500 text-xs"
+                            >仅白名单用户可直接访问管理员看板，未配置则默认无人可访问。</span
+                        >
+                    </div>
+                </el-form-item>
                 <el-form-item label="人员详情页风格">
                     <div class="flex flex-col gap-2">
                         <el-radio-group v-model="formData.staff_detail_style">
@@ -47,6 +60,7 @@ const formData = reactive({
     staff_center: 1,
     staff_admin: 1,
     admin_dashboard: 1,
+    admin_dashboard_user_ids: '',
     staff_detail_style: 'classic'
 })
 

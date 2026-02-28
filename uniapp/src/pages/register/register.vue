@@ -469,7 +469,11 @@ page {
     );
     border-radius: 32rpx;
     height: 72rpx;
+    width: 100%;
     padding: 0 32rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
@@ -481,6 +485,7 @@ page {
         letter-spacing: 1rpx;
         text-align: center;
         display: block;
+        width: 100%;
     }
 
     &:active {
@@ -505,6 +510,8 @@ page {
 
 .register-btn-wrapper {
     margin-top: 24rpx;
+    display: flex;
+    justify-content: center;
 }
 
 /* 底部提示 */

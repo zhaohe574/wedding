@@ -64,7 +64,6 @@
 <script lang="ts" setup>
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
-import { useAdminStore } from '@/stores/admin'
 import { useThemeStore } from '@/stores/theme'
 import { navigateTo } from '@/utils/util'
 import { computed } from 'vue'
@@ -84,10 +83,8 @@ const props = defineProps({
 const appStore = useAppStore()
 const { getImageUrl } = appStore
 const userStore = useUserStore()
-const adminStore = useAdminStore()
 const $theme = useThemeStore()
 const { userInfo } = storeToRefs(userStore)
-const { isLogin: isAdminLogin } = storeToRefs(adminStore)
 
 const handleClick = (link: any) => {
     navigateTo(link)
@@ -105,6 +102,30 @@ const getIconBg = (index: number) => {
 }
 
 const featureSwitch = computed(() => appStore.config?.feature_switch || {})
+const userId = computed(() => Number(userInfo.value?.id || userInfo.value?.user_id || 0))
+
+const adminDashboardUserIds = computed(() => {
+    const rawUserIds = String(featureSwitch.value?.admin_dashboard_user_ids || '')
+    if (!rawUserIds.trim()) return []
+
+    const idSet = new Set<number>()
+    rawUserIds
+        .split(/[\s,，]+/)
+        .map((item) => Number(item))
+        .forEach((id) => {
+            if (Number.isInteger(id) && id > 0) {
+                idSet.add(id)
+            }
+        })
+
+    return Array.from(idSet)
+})
+
+const canAccessAdminDashboard = computed(() => {
+    if (featureSwitch.value.admin_dashboard !== 1) return false
+    if (userId.value <= 0) return false
+    return adminDashboardUserIds.value.includes(userId.value)
+})
 
 const extraItems = computed(() => {
     const items: any[] = []
@@ -120,15 +141,12 @@ const extraItems = computed(() => {
             is_show: '1'
         })
     }
-    if (featureSwitch.value.admin_dashboard === 1) {
-        const path = isAdminLogin.value
-            ? '/packages/pages/admin_dashboard/admin_dashboard'
-            : '/packages/pages/admin_login/admin_login'
+    if (canAccessAdminDashboard.value) {
         items.push({
             name: '管理员看板',
             image: 'resource/image/adminapi/default/menu_admin.png',
             link: {
-                path,
+                path: '/packages/pages/admin_dashboard/admin_dashboard',
                 name: '管理员看板',
                 type: 'shop'
             },

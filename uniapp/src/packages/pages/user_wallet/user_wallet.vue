@@ -10,53 +10,65 @@
         @query="queryList"
         :show-loading-more-when-reload="true"
     >
-        <view class="user-wallet">
-            <view class="p-[20rpx]">
-                <view
-                    class="bg-primary rounded-[14rpx] flex items-center justify-between pl-[44rpx] py-[54rpx] text-white"
-                >
-                    <view>
-                        <view class="text-sm">钱包余额</view>
-                        <view class="text-[60rpx]">{{ wallet.user_money }}</view>
-                    </view>
-                    <navigator
-                        v-if="wallet.status"
-                        url="/packages/pages/recharge/recharge"
-                        hover-class="none"
+        <template #top>
+            <view class="user-wallet-top">
+                <view class="p-[20rpx]">
+                    <view
+                        class="bg-primary rounded-[14rpx] flex items-center justify-between pl-[44rpx] py-[54rpx] text-white"
                     >
-                        <view class="text-primary px-[30rpx] py-[15rpx] bg-white rounded-l-full">
-                            去充值
+                        <view>
+                            <view class="text-sm">钱包余额</view>
+                            <view class="text-[60rpx]">{{ wallet.user_money }}</view>
                         </view>
-                    </navigator>
+                        <navigator
+                            v-if="wallet.status"
+                            url="/packages/pages/recharge/recharge"
+                            hover-class="none"
+                        >
+                            <view
+                                class="text-primary px-[30rpx] py-[15rpx] bg-white rounded-l-full"
+                            >
+                                去充值
+                            </view>
+                        </navigator>
+                    </view>
+                </view>
+                <view class="wallet-tabs">
+                    <tn-tabs
+                        v-model="current"
+                        :scroll="false"
+                        :active-color="$theme.primaryColor"
+                        :bar-color="$theme.primaryColor"
+                        @change="changeType"
+                    >
+                        <tn-tabs-item
+                            v-for="(tab, index) in tabList"
+                            :key="index"
+                            :title="tab.name"
+                        />
+                    </tn-tabs>
                 </view>
             </view>
-            <tn-tabs
-                :data="tabList"
-                :is-scroll="false"
-                v-model="current"
-                activeColor="var(--color-primary)"
-                @change="changeType"
-            ></tn-tabs>
+        </template>
 
-            <view class="pt-2.5">
-                <view
-                    v-for="item in dataList"
-                    :key="item.id"
-                    class="bg-white border-solid border-b border-0 border-light px-[26rpx] py-[24rpx]"
-                >
-                    <view class="flex justify-between">
-                        <view class="mr-2">{{ item.type_desc }}</view>
-                        <view
-                            class="text-lg"
-                            :class="{
-                                'text-primary': item.action == 1
-                            }"
-                        >
-                            {{ item.change_amount_desc }}
-                        </view>
+        <view class="pt-2.5">
+            <view
+                v-for="item in dataList"
+                :key="item.id"
+                class="bg-white border-solid border-b border-0 border-light px-[26rpx] py-[24rpx]"
+            >
+                <view class="flex justify-between">
+                    <view class="mr-2">{{ item.type_desc }}</view>
+                    <view
+                        class="text-lg"
+                        :class="{
+                            'text-primary': item.action == 1
+                        }"
+                    >
+                        {{ item.change_amount_desc }}
                     </view>
-                    <view class="text-sm text-muted mr-1">{{ item.create_time }}</view>
                 </view>
+                <view class="text-sm text-muted mr-1">{{ item.create_time }}</view>
             </view>
         </view>
     </z-paging>
@@ -85,14 +97,15 @@ const paging = shallowRef()
 const dataList = ref<any[]>([])
 const current = ref(0)
 
-const changeType = (index: number) => {
-    current.value = index
-    paging.value.reload()
+const changeType = (index: number | string) => {
+    const nextIndex = Number(index)
+    current.value = Number.isNaN(nextIndex) ? 0 : nextIndex
+    paging.value?.reload()
 }
 
 const queryList = async (pageNo: number, pageSize: number) => {
     try {
-        const action = tabList.value[current.value].type
+        const action = tabList.value[current.value]?.type ?? ''
         const data = await accountLog({
             action,
             type: 'um',
@@ -114,4 +127,13 @@ onShow(() => {
 })
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.user-wallet-top {
+    background: #f6f7fb;
+}
+
+.wallet-tabs {
+    background: #ffffff;
+    box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.04);
+}
+</style>

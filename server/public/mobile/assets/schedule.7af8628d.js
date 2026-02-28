@@ -1,1 +1,0 @@
-import{a4 as t}from"./index-a2354b28.js";function a(a){return t.get({url:"/schedule/staffSchedule",params:a})}function s(a){return t.post({url:"/schedule/joinWaitlist",params:a})}function e(a){return t.get({url:"/schedule/myWaitlist",params:a})}function r(a){return t.post({url:"/schedule/cancelWaitlist",params:a})}export{e as a,r as c,a as g,s as j};

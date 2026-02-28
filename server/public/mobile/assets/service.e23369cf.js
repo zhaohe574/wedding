@@ -1,1 +1,0 @@
-import{a4 as e}from"./index-a2354b28.js";function r(){return e.get({url:"/service/categoryTree"})}function t(r){return e.get({url:"/service/packages",data:r})}function a(r){return e.get({url:"/service/packageLists",data:r})}function s(r){return e.get({url:"/service/tags",data:r})}export{t as a,r as b,s as c,a as g};

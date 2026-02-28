@@ -3,13 +3,18 @@ import { getConfig } from '@/api/app'
 
 interface AppSate {
     config: Record<string, any>
+    configLoaded: boolean
 }
+
+let configRequest: Promise<Record<string, any>> | null = null
+
 export const useAppStore = defineStore({
     id: 'appStore',
     state: (): AppSate => ({
         config: {
             domain: ''
-        }
+        },
+        configLoaded: false
     }),
     getters: {
         getWebsiteConfig: (state) => state.config.website || {},
@@ -29,9 +34,23 @@ export const useAppStore = defineStore({
             const path = url.startsWith('/') ? url : `/${url}`
             return `${domain}${path}`
         },
-        async getConfig() {
-            const data = await getConfig()
-            this.config = data
+        async getConfig(force = false) {
+            if (configRequest) {
+                await configRequest
+                return this.config
+            }
+            if (!force && this.configLoaded) {
+                return this.config
+            }
+            configRequest = getConfig()
+            try {
+                const data = await configRequest
+                this.config = data
+                this.configLoaded = true
+                return this.config
+            } finally {
+                configRequest = null
+            }
         }
     }
 })

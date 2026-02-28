@@ -27,22 +27,32 @@ class ConfigCache extends BaseCache
     public const NULL_VALUE = '__config_null__';
 
     private string $prefix = 'config_';
+    private string $storeName = 'config';
 
     public function getValue(string $type, string $name = '')
     {
         $key = $this->buildKey($type, $name);
-        $value = $this->get($key);
+        $value = $this->store($this->storeName)->get($key);
         return $value === null ? self::CACHE_MISS : $value;
     }
 
     public function setValue(string $type, string $name, $value, int $ttl = 3600): bool
     {
         $key = $this->buildKey($type, $name);
-        return $this->set($key, $value, $ttl);
+        return $this->store($this->storeName)->tag($this->tagName)->set($key, $value, $ttl);
     }
 
     public function buildKey(string $type, string $name = ''): string
     {
         return $this->prefix . $type . ($name !== '' ? '_' . $name : '');
+    }
+
+    /**
+     * @notes 清除配置缓存标签（使用共享缓存通道）
+     * @return bool
+     */
+    public function deleteTag(): bool
+    {
+        return $this->store($this->storeName)->tag($this->tagName)->clear();
     }
 }
