@@ -23,6 +23,15 @@ use app\common\service\StaffService;
 class OrderController extends BaseAdminController
 {
     /**
+     * @notes 获取服务人员数据范围（my* 接口必须）
+     * @return int
+     */
+    protected function getRequiredStaffScopeId(): int
+    {
+        return StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+    }
+
+    /**
      * @notes 订单列表
      * @return \think\response\Json
      */
@@ -281,5 +290,114 @@ class OrderController extends BaseAdminController
             return $this->fail('无权限操作');
         }
         return null;
+    }
+
+    /**
+     * @notes 我的订单列表
+     * @return \think\response\Json
+     */
+    public function myOrders()
+    {
+        if ($this->getRequiredStaffScopeId() <= 0) {
+            return $this->fail('无权限操作');
+        }
+        return $this->dataLists(new OrderLists());
+    }
+
+    /**
+     * @notes 我的订单详情（整单 + 他人项脱敏）
+     * @return \think\response\Json
+     */
+    public function myOrderDetail()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+
+        $params = (new OrderValidate())->goCheck('detail');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+
+        $result = OrderLogic::detail((int)$params['id']);
+        if ($result === null) {
+            return $this->fail('订单不存在');
+        }
+
+        if (!empty($result['items']) && is_array($result['items'])) {
+            foreach ($result['items'] as $index => $item) {
+                $itemStaffId = (int)($item['staff_id'] ?? 0);
+                if ($itemStaffId !== $staffScopeId) {
+                    $result['items'][$index]['package_name'] = '--';
+                    $result['items'][$index]['price'] = '--';
+                    $result['items'][$index]['quantity'] = '--';
+                    $result['items'][$index]['subtotal'] = '--';
+                    $result['items'][$index]['remark'] = '--';
+                    $result['items'][$index]['schedule_id'] = 0;
+                    if (isset($result['items'][$index]['staff']) && is_array($result['items'][$index]['staff'])) {
+                        $result['items'][$index]['staff']['avatar'] = '';
+                    }
+                }
+            }
+        }
+
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 我的订单开始服务
+     * @return \think\response\Json
+     */
+    public function myOrderStartService()
+    {
+        if ($this->getRequiredStaffScopeId() <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = (new OrderValidate())->post()->goCheck('detail');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+        $result = OrderLogic::startService((int)$params['id'], $this->adminId);
+        if (true === $result) {
+            return $this->success('操作成功', [], 1, 1);
+        }
+        return $this->fail(OrderLogic::getError());
+    }
+
+    /**
+     * @notes 我的订单完成
+     * @return \think\response\Json
+     */
+    public function myOrderComplete()
+    {
+        if ($this->getRequiredStaffScopeId() <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = (new OrderValidate())->post()->goCheck('detail');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+        $result = OrderLogic::complete((int)$params['id'], $this->adminId);
+        if (true === $result) {
+            return $this->success('操作成功', [], 1, 1);
+        }
+        return $this->fail(OrderLogic::getError());
+    }
+
+    /**
+     * @notes 我的订单统计
+     * @return \think\response\Json
+     */
+    public function myOrderStatistics()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = $this->request->get();
+        $params['staff_id'] = $staffScopeId;
+        $result = OrderLogic::statistics($params);
+        return $this->data($result);
     }
 }

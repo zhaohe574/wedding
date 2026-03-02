@@ -23,6 +23,15 @@ use app\common\service\StaffService;
 class DynamicController extends BaseAdminController
 {
     /**
+     * @notes 获取服务人员数据范围（my* 接口必须）
+     * @return int
+     */
+    protected function getRequiredStaffScopeId(): int
+    {
+        return StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+    }
+
+    /**
      * @notes 动态列表
      * @return \think\response\Json
      */
@@ -275,5 +284,122 @@ class DynamicController extends BaseAdminController
             return $this->fail('无权限操作');
         }
         return null;
+    }
+
+    /**
+     * @notes 我的动态列表
+     * @return \think\response\Json
+     */
+    public function myDynamics()
+    {
+        if ($this->getRequiredStaffScopeId() <= 0) {
+            return $this->fail('无权限操作');
+        }
+        return $this->dataLists(new DynamicLists());
+    }
+
+    /**
+     * @notes 我的动态详情
+     * @return \think\response\Json
+     */
+    public function myDynamicDetail()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+
+        $params = (new DynamicValidate())->goCheck('detail');
+        $dynamic = Dynamic::where('id', (int)$params['id'])
+            ->where('staff_id', $staffScopeId)
+            ->where('user_type', Dynamic::USER_TYPE_STAFF)
+            ->find();
+        if (!$dynamic) {
+            return $this->fail('无权限操作');
+        }
+
+        $result = DynamicLogic::detail((int)$params['id']);
+        if ($result === null) {
+            return $this->fail('动态不存在');
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 发布我的动态
+     * @return \think\response\Json
+     */
+    public function myDynamicAdd()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = (new DynamicValidate())->post()->goCheck('add');
+        $result = DynamicLogic::staffAdd($staffScopeId, $params);
+        if (true === $result) {
+            return $this->success('发布成功', [], 1, 1);
+        }
+        return $this->fail(DynamicLogic::getError());
+    }
+
+    /**
+     * @notes 编辑我的动态
+     * @return \think\response\Json
+     */
+    public function myDynamicEdit()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = (new DynamicValidate())->post()->goCheck('edit');
+        $result = DynamicLogic::staffEdit($staffScopeId, (int)$params['id'], $params);
+        if (true === $result) {
+            return $this->success('编辑成功', [], 1, 1);
+        }
+        return $this->fail(DynamicLogic::getError());
+    }
+
+    /**
+     * @notes 删除我的动态
+     * @return \think\response\Json
+     */
+    public function myDynamicDelete()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = (new DynamicValidate())->post()->goCheck('detail');
+        $result = DynamicLogic::staffDelete($staffScopeId, (int)$params['id']);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(DynamicLogic::getError());
+    }
+
+    /**
+     * @notes 我的动态类型选项
+     * @return \think\response\Json
+     */
+    public function myDynamicTypeOptions()
+    {
+        if ($this->getRequiredStaffScopeId() <= 0) {
+            return $this->fail('无权限操作');
+        }
+        return $this->data(DynamicLogic::getTypeOptions());
+    }
+
+    /**
+     * @notes 我的动态状态选项
+     * @return \think\response\Json
+     */
+    public function myDynamicStatusOptions()
+    {
+        if ($this->getRequiredStaffScopeId() <= 0) {
+            return $this->fail('无权限操作');
+        }
+        return $this->data(DynamicLogic::getStatusOptions());
     }
 }

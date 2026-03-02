@@ -15,7 +15,7 @@
                 <view class="hero-main">
                     <view class="hero-title-wrap">
                         <tn-icon name="star-fill" size="28" :color="$theme.btnColor" />
-                        <text class="hero-title">公司经营总览</text>
+                        <text class="hero-title">经营总览</text>
                     </view>
                     <text class="hero-period">{{ periodLabel }}</text>
                 </view>

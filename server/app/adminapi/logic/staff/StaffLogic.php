@@ -549,7 +549,18 @@ class StaffLogic extends BaseLogic
                 return false;
             }
 
-            $password = self::generateRandomPassword();
+            $user = User::field('id,mobile')->find((int)$staff->user_id);
+            if (!$user) {
+                self::setError('绑定的前端用户不存在');
+                return false;
+            }
+
+            $password = trim((string)$user->mobile);
+            if ($password === '') {
+                self::setError('绑定的前端用户未设置手机号，无法重置密码');
+                return false;
+            }
+
             $passwordSalt = Config::get('project.unique_identification');
             $admin->password = create_password($password, $passwordSalt);
             $admin->save();
@@ -585,9 +596,23 @@ class StaffLogic extends BaseLogic
             throw new \Exception('服务人员角色不存在');
         }
 
-        $baseAccount = 'staff_' . strtolower($staff->sn ?: (string)$staff->id);
-        $account = self::generateUniqueAccount($baseAccount);
-        $password = self::generateRandomPassword();
+        $user = User::field('id,mobile')->find((int)$staff->user_id);
+        if (!$user) {
+            throw new \Exception('绑定的前端用户不存在');
+        }
+
+        $mobile = trim((string)$user->mobile);
+        if ($mobile === '') {
+            throw new \Exception('绑定的前端用户未设置手机号，无法创建后台账号');
+        }
+
+        if (Admin::where('account', $mobile)->find()) {
+            throw new \Exception('手机号已被占用，无法创建后台账号');
+        }
+
+        // 按需求：后台账号=绑定前端用户手机号，初始密码=手机号
+        $account = $mobile;
+        $password = $mobile;
 
         $passwordSalt = Config::get('project.unique_identification');
         $passwordHash = create_password($password, $passwordSalt);

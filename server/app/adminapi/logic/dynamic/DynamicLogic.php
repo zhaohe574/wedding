@@ -424,6 +424,105 @@ class DynamicLogic extends BaseLogic
     }
 
     /**
+     * @notes 服务人员发布动态
+     * @param int $staffId
+     * @param array $params
+     * @return bool
+     */
+    public static function staffAdd(int $staffId, array $params): bool
+    {
+        [$success, $message] = Dynamic::publish($staffId, Dynamic::USER_TYPE_STAFF, [
+            'staff_id' => $staffId,
+            'dynamic_type' => $params['dynamic_type'] ?? Dynamic::TYPE_IMAGE_TEXT,
+            'title' => $params['title'] ?? '',
+            'content' => $params['content'],
+            'images' => $params['images'] ?? [],
+            'video_url' => $params['video'] ?? '',
+            'video_cover' => $params['video_cover'] ?? '',
+            'location' => $params['location'] ?? '',
+            'latitude' => $params['latitude'] ?? 0,
+            'longitude' => $params['longitude'] ?? 0,
+            'tags' => $params['tags'] ?? [],
+            'allow_comment' => $params['allow_comment'] ?? 1,
+            'order_id' => $params['order_id'] ?? 0,
+        ]);
+
+        if (!$success) {
+            self::setError($message);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @notes 服务人员编辑动态
+     * @param int $staffId
+     * @param int $dynamicId
+     * @param array $params
+     * @return bool
+     */
+    public static function staffEdit(int $staffId, int $dynamicId, array $params): bool
+    {
+        try {
+            $dynamic = Dynamic::where('id', $dynamicId)
+                ->where('staff_id', $staffId)
+                ->where('user_type', Dynamic::USER_TYPE_STAFF)
+                ->find();
+            if (!$dynamic) {
+                self::setError('动态不存在');
+                return false;
+            }
+
+            $dynamic->dynamic_type = $params['dynamic_type'] ?? $dynamic->dynamic_type;
+            $dynamic->title = $params['title'] ?? $dynamic->title;
+            $dynamic->content = $params['content'] ?? $dynamic->content;
+            $dynamic->images = $params['images'] ?? $dynamic->images;
+            $dynamic->video_url = $params['video'] ?? $dynamic->video_url;
+            $dynamic->video_cover = $params['video_cover'] ?? $dynamic->video_cover;
+            $dynamic->location = $params['location'] ?? $dynamic->location;
+            $dynamic->latitude = $params['latitude'] ?? $dynamic->latitude;
+            $dynamic->longitude = $params['longitude'] ?? $dynamic->longitude;
+            $dynamic->tags = is_array($params['tags'] ?? '')
+                ? implode(',', $params['tags'])
+                : ($params['tags'] ?? $dynamic->tags);
+            $dynamic->allow_comment = $params['allow_comment'] ?? $dynamic->allow_comment;
+            $dynamic->status = Dynamic::STATUS_PENDING;
+            $dynamic->update_time = time();
+            $dynamic->save();
+
+            return true;
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 服务人员删除动态
+     * @param int $staffId
+     * @param int $dynamicId
+     * @return bool
+     */
+    public static function staffDelete(int $staffId, int $dynamicId): bool
+    {
+        try {
+            $dynamic = Dynamic::where('id', $dynamicId)
+                ->where('staff_id', $staffId)
+                ->where('user_type', Dynamic::USER_TYPE_STAFF)
+                ->find();
+            if (!$dynamic) {
+                self::setError('动态不存在');
+                return false;
+            }
+            $dynamic->delete();
+            return true;
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * @notes 获取动态类型选项
      * @return array
      */

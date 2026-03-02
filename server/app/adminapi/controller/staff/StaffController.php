@@ -22,6 +22,15 @@ use app\common\service\StaffService;
 class StaffController extends BaseAdminController
 {
     /**
+     * @notes 获取服务人员数据范围（my* 接口必须）
+     * @return int
+     */
+    protected function getRequiredStaffScopeId(): int
+    {
+        return StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+    }
+
+    /**
      * @notes 工作人员列表
      * @return \think\response\Json
      */
@@ -493,6 +502,329 @@ class StaffController extends BaseAdminController
         }
 
         $result = StaffLogic::updateBannerConfig($staffId, $params);
+        if (true === $result) {
+            return $this->success('配置成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 我的资料详情
+     * @return \think\response\Json
+     */
+    public function myProfile()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $result = StaffLogic::detail($staffScopeId);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 更新我的资料（锁系统字段）
+     * @return \think\response\Json
+     */
+    public function myProfileUpdate()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+
+        $params = $this->request->post();
+        $origin = StaffLogic::detail($staffScopeId);
+        if (empty($origin)) {
+            return $this->fail('服务人员不存在');
+        }
+
+        // 锁定系统字段，只允许维护业务资料
+        $params['id'] = $staffScopeId;
+        $params['user_id'] = (int)($origin['user_id'] ?? 0);
+        $params['status'] = (int)($origin['status'] ?? 1);
+        $params['is_recommend'] = (int)($origin['is_recommend'] ?? 0);
+        $params['sort'] = (int)($origin['sort'] ?? 0);
+
+        $params = (new StaffValidate())->post()->goCheck('edit', $params);
+        $result = StaffLogic::edit($params);
+        if (true === $result) {
+            return $this->success('保存成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 我的套餐配置
+     * @return \think\response\Json
+     */
+    public function myProfilePackageConfig()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+
+        $includeGlobal = boolval($this->request->get('include_global', false));
+        $result = StaffLogic::getPackageConfig($staffScopeId, $includeGlobal);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 更新我的套餐配置
+     * @return \think\response\Json
+     */
+    public function myProfileUpdatePackageConfig()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+
+        $params = $this->request->post();
+        $packageId = intval($params['package_id'] ?? 0);
+        if ($packageId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $data = [];
+        if (isset($params['price'])) {
+            $data['price'] = $params['price'];
+        }
+        if (array_key_exists('original_price', $params)) {
+            $data['original_price'] = $params['original_price'];
+        }
+        if (isset($params['custom_price'])) {
+            $data['custom_price'] = $params['custom_price'];
+        }
+        if (isset($params['custom_slot_prices'])) {
+            $data['custom_slot_prices'] = $params['custom_slot_prices'];
+        }
+        if (array_key_exists('booking_type', $params)) {
+            $data['booking_type'] = $params['booking_type'];
+        }
+        if (isset($params['allowed_time_slots'])) {
+            $data['allowed_time_slots'] = $params['allowed_time_slots'];
+        }
+        if (isset($params['status'])) {
+            $data['status'] = $params['status'];
+        }
+
+        $result = StaffLogic::updatePackageConfig($staffScopeId, $packageId, $data);
+        if (true === $result) {
+            return $this->success('更新成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 创建我的专属套餐
+     * @return \think\response\Json
+     */
+    public function myProfileCreatePackage()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+
+        $params = $this->request->post();
+        if (empty($params['name'])) {
+            return $this->fail('请输入套餐名称');
+        }
+        $packageId = StaffLogic::createStaffPackage($staffScopeId, $params);
+        if ($packageId) {
+            return $this->success('创建成功', ['package_id' => $packageId], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 编辑我的专属套餐
+     * @return \think\response\Json
+     */
+    public function myProfileUpdateStaffPackage()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+
+        $params = $this->request->post();
+        $packageId = intval($params['package_id'] ?? 0);
+        if ($packageId <= 0) {
+            return $this->fail('参数错误');
+        }
+        if (empty($params['name'])) {
+            return $this->fail('请输入套餐名称');
+        }
+
+        $result = StaffLogic::updateStaffPackage($staffScopeId, $packageId, $params);
+        if (true === $result) {
+            return $this->success('更新成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 删除我的专属套餐
+     * @return \think\response\Json
+     */
+    public function myProfileDeletePackage()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+
+        $params = $this->request->post();
+        $packageId = intval($params['package_id'] ?? 0);
+        if ($packageId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $result = StaffLogic::deleteStaffPackage($staffScopeId, $packageId);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 我的轮播图列表
+     * @return \think\response\Json
+     */
+    public function myProfileBannerList()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $result = StaffLogic::getBannerList($staffScopeId);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 添加我的轮播图
+     * @return \think\response\Json
+     */
+    public function myProfileBannerAdd()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = $this->request->post();
+        $params['staff_id'] = $staffScopeId;
+        if (empty($params['file_url'])) {
+            return $this->fail('请上传文件');
+        }
+        $type = intval($params['type'] ?? 1);
+        if ($type === 2 && empty($params['cover_url'])) {
+            return $this->fail('视频需要上传封面图');
+        }
+
+        $result = StaffLogic::addBanner($staffScopeId, $params);
+        if ($result) {
+            return $this->success('添加成功', ['id' => $result], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 编辑我的轮播图
+     * @return \think\response\Json
+     */
+    public function myProfileBannerEdit()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+
+        $params = $this->request->post();
+        $id = intval($params['id'] ?? 0);
+        if ($id <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $bannerStaffId = (int)StaffBanner::where('id', $id)->value('staff_id');
+        if ($bannerStaffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
+
+        $result = StaffLogic::editBanner($id, $params);
+        if (true === $result) {
+            return $this->success('编辑成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 删除我的轮播图
+     * @return \think\response\Json
+     */
+    public function myProfileBannerDelete()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+
+        $params = $this->request->post();
+        $id = intval($params['id'] ?? 0);
+        if ($id <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $bannerStaffId = (int)StaffBanner::where('id', $id)->value('staff_id');
+        if ($bannerStaffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
+
+        $result = StaffLogic::deleteBanner($id);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 更新我的轮播图排序
+     * @return \think\response\Json
+     */
+    public function myProfileBannerSort()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+
+        $params = $this->request->post();
+        $sortData = $params['sort_data'] ?? [];
+        if (empty($sortData)) {
+            return $this->fail('参数错误');
+        }
+        $result = StaffLogic::sortBanner($staffScopeId, $sortData);
+        if (true === $result) {
+            return $this->success('排序成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 更新我的轮播图配置
+     * @return \think\response\Json
+     */
+    public function myProfileBannerConfig()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = $this->request->post();
+        $params['staff_id'] = $staffScopeId;
+        $result = StaffLogic::updateBannerConfig($staffScopeId, $params);
         if (true === $result) {
             return $this->success('配置成功', [], 1, 1);
         }

@@ -22,6 +22,15 @@ use app\common\service\StaffService;
 class ScheduleController extends BaseAdminController
 {
     /**
+     * @notes 获取服务人员数据范围（my* 接口必须）
+     * @return int
+     */
+    protected function getRequiredStaffScopeId(): int
+    {
+        return StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+    }
+
+    /**
      * @notes 档期列表
      * @return \think\response\Json
      */
@@ -205,6 +214,99 @@ class ScheduleController extends BaseAdminController
         if ($staffScopeId > 0) {
             $params['staff_id'] = $staffScopeId;
         }
+        $result = ScheduleLogic::statistics($params);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 我的档期日历
+     * @return \think\response\Json
+     */
+    public function myCalendar()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = (new ScheduleValidate())->goCheck('calendar');
+        $params['staff_id'] = $staffScopeId;
+        $result = ScheduleLogic::getMonthCalendar($params);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 设置我的档期状态
+     * @return \think\response\Json
+     */
+    public function myCalendarSetStatus()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = (new ScheduleValidate())->post()->goCheck('setStatus');
+        $params['staff_id'] = $staffScopeId;
+        $result = ScheduleLogic::setStatus($params);
+        if (true === $result) {
+            return $this->success('设置成功', [], 1, 1);
+        }
+        return $this->fail(ScheduleLogic::getError());
+    }
+
+    /**
+     * @notes 批量设置我的档期
+     * @return \think\response\Json
+     */
+    public function myCalendarBatchSet()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = (new ScheduleValidate())->post()->goCheck('batchSet');
+        $params['staff_ids'] = [$staffScopeId];
+        $result = ScheduleLogic::batchSet($params);
+        if ($result !== false) {
+            return $this->success('成功设置 ' . $result . ' 条档期', [], 1, 1);
+        }
+        return $this->fail(ScheduleLogic::getError());
+    }
+
+    /**
+     * @notes 释放我的锁定档期
+     * @return \think\response\Json
+     */
+    public function myCalendarUnlock()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = (new ScheduleValidate())->post()->goCheck('unlock');
+        $staffId = (int)Schedule::where('id', $params['id'])->value('staff_id');
+        if ($staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
+        $params['admin_id'] = $this->adminId;
+        $result = ScheduleLogic::unlockSchedule($params);
+        if (true === $result) {
+            return $this->success('释放成功', [], 1, 1);
+        }
+        return $this->fail(ScheduleLogic::getError());
+    }
+
+    /**
+     * @notes 我的档期统计
+     * @return \think\response\Json
+     */
+    public function myCalendarStatistics()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = $this->request->get();
+        $params['staff_id'] = $staffScopeId;
         $result = ScheduleLogic::statistics($params);
         return $this->data($result);
     }

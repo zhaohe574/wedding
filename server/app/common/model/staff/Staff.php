@@ -241,17 +241,27 @@ class Staff extends BaseModel
     {
         $prefix = 'S';
         $date = date('Ymd');
-        $lastStaff = self::whereDay('create_time')
-            ->order('id desc')
+        $baseSn = $prefix . $date;
+
+        // 按当日工号前缀取当前最大号，避免依赖 create_time 的日期函数（该字段为时间戳）
+        $lastStaff = self::withTrashed()
+            ->where('sn', 'like', $baseSn . '%')
+            ->field('sn')
+            ->order('sn', 'desc')
             ->find();
 
-        if ($lastStaff && preg_match('/S' . $date . '(\d{4})/', $lastStaff->sn, $matches)) {
+        $num = 1;
+        if ($lastStaff && preg_match('/^' . preg_quote($baseSn, '/') . '(\d{4})$/', (string) $lastStaff->sn, $matches)) {
             $num = intval($matches[1]) + 1;
-        } else {
-            $num = 1;
         }
 
-        return $prefix . $date . str_pad($num, 4, '0', STR_PAD_LEFT);
+        $sn = $baseSn . str_pad((string) $num, 4, '0', STR_PAD_LEFT);
+        while (self::withTrashed()->where('sn', $sn)->find()) {
+            $num++;
+            $sn = $baseSn . str_pad((string) $num, 4, '0', STR_PAD_LEFT);
+        }
+
+        return $sn;
     }
 
     /**
