@@ -1,7 +1,12 @@
 <template>
-    <div class="order-change-lists">
-        <el-card class="!border-none" shadow="never">
-            <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
+    <admin-page-shell
+        class="order-change-lists"
+        title="订单变更"
+        description="管理改期、换人、加项等订单变更流程。"
+    >
+        <template #search>
+            <search-panel>
+                <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item class="w-[180px]" label="变更单号">
                     <el-input
                         v-model="queryParams.change_sn"
@@ -18,7 +23,7 @@
                         @keyup.enter="resetPage"
                     />
                 </el-form-item>
-                <el-form-item class="w-[120px]" label="变更类型">
+                <el-form-item class="w-[180px]" label="变更类型">
                     <el-select v-model="queryParams.change_type" placeholder="选择类型" clearable>
                         <el-option label="全部" value="" />
                         <el-option label="改期" :value="1" />
@@ -26,7 +31,7 @@
                         <el-option label="加项" :value="3" />
                     </el-select>
                 </el-form-item>
-                <el-form-item class="w-[120px]" label="变更状态">
+                <el-form-item class="w-[180px]" label="变更状态">
                     <el-select v-model="queryParams.change_status" placeholder="选择状态" clearable>
                         <el-option label="全部" value="" />
                         <el-option label="待审核" :value="0" />
@@ -50,45 +55,17 @@
                     <el-button type="primary" @click="resetPage">查询</el-button>
                     <el-button @click="resetParams">重置</el-button>
                 </el-form-item>
-            </el-form>
-        </el-card>
+                </el-form>
+            </search-panel>
+        </template>
 
-        <!-- 统计卡片 -->
-        <div class="mt-4 grid grid-cols-5 gap-4">
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">待审核</div>
-                    <div class="text-2xl font-bold mt-2 text-orange-500">{{ getStatusCount(0) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">待执行</div>
-                    <div class="text-2xl font-bold mt-2 text-blue-500">{{ getStatusCount(1) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">已执行</div>
-                    <div class="text-2xl font-bold mt-2 text-green-500">{{ getStatusCount(3) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">已拒绝</div>
-                    <div class="text-2xl font-bold mt-2 text-red-500">{{ getStatusCount(2) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">已取消</div>
-                    <div class="text-2xl font-bold mt-2 text-gray-500">{{ getStatusCount(4) }}</div>
-                </div>
-            </el-card>
-        </div>
+        <template #stats>
+            <stat-panel :items="changeStatItems" :columns="5" />
+        </template>
 
-        <el-card class="!border-none mt-4" shadow="never">
-            <el-table size="large" v-loading="pager.loading" :data="pager.lists">
+        <div class="admin-page-section">
+            <el-card class="!border-none" shadow="never">
+                <el-table size="large" v-loading="pager.loading" :data="pager.lists">
                 <el-table-column label="变更单号" prop="change_sn" min-width="160" />
                 <el-table-column label="订单编号" prop="order_sn" min-width="160">
                     <template #default="{ row }">
@@ -172,11 +149,12 @@
                         >执行</el-button>
                     </template>
                 </el-table-column>
-            </el-table>
-            <div class="flex justify-end mt-4">
-                <pagination v-model="pager" @change="getLists" />
-            </div>
-        </el-card>
+                </el-table>
+                <div class="flex justify-end mt-4">
+                    <pagination v-model="pager" @change="getLists" />
+                </div>
+            </el-card>
+        </div>
 
         <!-- 详情弹窗 -->
         <el-dialog v-model="detailVisible" title="变更详情" width="700px">
@@ -283,11 +261,12 @@
                 >确认</el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="orderChange">
 import { Right } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
 import { 
     orderChangeLists, 
     orderChangeDetail, 
@@ -298,6 +277,7 @@ import {
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
 
+const router = useRouter()
 const queryParams = reactive({
     change_sn: '',
     order_sn: '',
@@ -333,8 +313,45 @@ const getStatusCount = (status: number) => {
     return item ? item.count : 0
 }
 
+type StatAccent = 'primary' | 'success' | 'warning' | 'danger' | 'muted'
+type StatusTagType = 'success' | 'warning' | 'info' | 'primary' | 'danger'
+
+interface ChangeStatItem {
+    label: string
+    value: number
+    accent: StatAccent
+}
+
+const changeStatItems = computed<ChangeStatItem[]>(() => [
+    {
+        label: '待审核',
+        value: getStatusCount(0),
+        accent: 'warning'
+    },
+    {
+        label: '待执行',
+        value: getStatusCount(1),
+        accent: 'primary'
+    },
+    {
+        label: '已执行',
+        value: getStatusCount(3),
+        accent: 'success'
+    },
+    {
+        label: '已拒绝',
+        value: getStatusCount(2),
+        accent: 'danger'
+    },
+    {
+        label: '已取消',
+        value: getStatusCount(4),
+        accent: 'muted'
+    }
+])
+
 const getTypeTagType = (type: number) => {
-    const types: Record<number, string> = {
+    const types: Record<number, StatusTagType> = {
         1: 'primary',
         2: 'warning',
         3: 'success'
@@ -342,8 +359,8 @@ const getTypeTagType = (type: number) => {
     return types[type] || 'info'
 }
 
-const getStatusTagType = (status: number) => {
-    const types: Record<number, string> = {
+const getStatusTagType = (status: number): StatusTagType => {
+    const types: Record<number, StatusTagType> = {
         0: 'warning',
         1: 'primary',
         2: 'danger',
@@ -354,8 +371,15 @@ const getStatusTagType = (status: number) => {
 }
 
 const viewOrder = (orderId: number) => {
-    // TODO: 跳转到订单详情
-    console.log('View order:', orderId)
+    if (!orderId) {
+        return
+    }
+    router.push({
+        path: '/order/lists',
+        query: {
+            detail_id: String(orderId)
+        }
+    })
 }
 
 const handleDetail = async (row: any) => {

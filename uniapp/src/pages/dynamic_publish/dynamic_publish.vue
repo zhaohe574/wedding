@@ -180,7 +180,11 @@
         </view>
 
         <!-- 添加话题弹窗 -->
-        <tn-popup v-model="showTagInput" mode="bottom" :safe-area-inset-bottom="true">
+        <tn-popup
+            v-model="showTagInput"
+            open-direction="bottom"
+            :safe-area-inset-bottom="true"
+        >
             <view class="p-4">
                 <view class="text-center font-medium mb-4">添加话题</view>
                 <view class="flex items-center bg-gray-100 rounded-lg px-3">
@@ -318,7 +322,7 @@ const chooseVideo = () => {
                 const uploadRes: any = await uploadImage(res.tempFilePath)
                 if (uploadRes.url) {
                     form.video = uploadRes.url
-                    form.video_cover = res.thumbTempFilePath || ''
+                    form.video_cover = res.tempFilePath || ''
                     // 选择了视频，自动切换为视频类型
                     form.dynamic_type = 2
                 }

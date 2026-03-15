@@ -510,6 +510,18 @@ class Coupon extends BaseModel
     }
 
     /**
+     * @notes 减少使用数量
+     * @return void
+     */
+    public function decrementUsed(): void
+    {
+        self::where('id', $this->id)
+            ->where('used_count', '>', 0)
+            ->dec('used_count')
+            ->update();
+    }
+
+    /**
      * @notes 获取可领取的优惠券列表
      * @return \think\Collection
      */

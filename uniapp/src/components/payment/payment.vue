@@ -1,11 +1,11 @@
 <template>
     <tn-popup
         v-model="showPay"
-        mode="bottom"
+        open-direction="bottom"
         safe-area-inset-bottom
-        :mask-close-able="false"
-        border-radius="14"
-        closeable
+        :overlay-closeable="false"
+        :radius="14"
+        close-btn
         @close="handleClose"
     >
         <view class="h-[900rpx]">
@@ -79,10 +79,9 @@
     <tn-popup
         class="pay-popup"
         v-model="showCheckPay"
-        round
-        mode="center"
-        border-radius="10"
-        :mask-close-able="false"
+        open-direction="center"
+        :radius="10"
+        :overlay-closeable="false"
     >
         <view class="content bg-white w-[560rpx] p-[40rpx]">
             <view class="text-2xl font-medium text-center"> 支付确认 </view>

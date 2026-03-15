@@ -45,22 +45,22 @@ export class Axios {
         } = this.config.axiosHooks
         this.axiosInstance.interceptors.request.use(
             (config) => {
-                this.addCancelToken(config)
                 if (isFunction(requestInterceptorsHook)) {
                     config = requestInterceptorsHook(config) as InternalAxiosRequestConfig
                 }
+                this.addCancelToken(config)
                 return config
             },
             (err: Error) => {
                 if (isFunction(requestInterceptorsCatchHook)) {
                     requestInterceptorsCatchHook(err)
                 }
-                return err
+                return Promise.reject(err)
             }
         )
         this.axiosInstance.interceptors.response.use(
             (response: AxiosResponse<RequestData>) => {
-                this.removeCancelToken(response.config.url!)
+                this.removeCancelToken(response.config)
                 if (isFunction(responseInterceptorsHook)) {
                     response = responseInterceptorsHook(response)
                 }
@@ -71,7 +71,7 @@ export class Axios {
                     responseInterceptorsCatchHook(err)
                 }
                 if (err.code != AxiosError.ERR_CANCELED) {
-                    this.removeCancelToken(err.config?.url!)
+                    this.removeCancelToken(err.config)
                 }
 
                 if (err.code == AxiosError.ECONNABORTED || err.code == AxiosError.ERR_NETWORK) {
@@ -95,8 +95,8 @@ export class Axios {
     /**
      * @description 移除CancelToken
      */
-    removeCancelToken(url: string) {
-        axiosCancel.remove(url)
+    removeCancelToken(config?: AxiosRequestConfig) {
+        config && axiosCancel.remove(config)
     }
 
     /**

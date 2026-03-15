@@ -52,10 +52,11 @@
                 <el-table-column label="注册时间" prop="create_time" min-width="120" />
                 <el-table-column label="操作" width="120" fixed="right">
                     <template #default="{ row }">
-                        <el-button v-perms="['user.user/detail']" type="primary" link>
+                        <el-button v-perms="['content.user/detail']" type="primary" link>
                             <router-link
+                                v-if="consumerDetailPath"
                                 :to="{
-                                    path: getRoutePath('user.user/detail'),
+                                    path: consumerDetailPath,
                                     query: {
                                         id: row.id
                                     }
@@ -63,6 +64,7 @@
                             >
                                 详情
                             </router-link>
+                            <span v-else class="cursor-not-allowed text-tx-secondary">详情</span>
                         </el-button>
                     </template>
                 </el-table-column>
@@ -85,6 +87,7 @@ const queryParams = reactive({
     create_time_start: '',
     create_time_end: ''
 })
+const consumerDetailPath = computed(() => getRoutePath('content.user/detail'))
 
 const { pager, getLists, resetPage, resetParams } = usePaging({
     fetchFun: getUserList,

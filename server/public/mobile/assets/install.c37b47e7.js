@@ -1,0 +1,1 @@
+import{i as o}from"./is-boolean.95332db6.js";const s=(s,t)=>{if(s.install=n=>{for(const e of[s,...Object.values(o(t,{}))])n.component(e.name,e)},t)for(const[o,n]of Object.entries(t))s[o]=n;return s},t=o=>(o.install=()=>{},o);export{s as a,t as w};

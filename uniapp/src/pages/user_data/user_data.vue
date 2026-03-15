@@ -104,9 +104,9 @@
         <tn-popup
             v-model="showNickName"
             :close-btn="true"
-            mode="center"
-            :mask-close-able="false"
-            border-radius="24"
+            open-direction="center"
+            :overlay-closeable="false"
+            :radius="24"
         >
             <view class="edit-popup">
                 <form @submit="changeNameConfirm">
@@ -142,9 +142,9 @@
         <tn-popup
             v-model="showUserName"
             :close-btn="true"
-            mode="center"
-            border-radius="24"
-            :mask-close-able="false"
+            open-direction="center"
+            :radius="24"
+            :overlay-closeable="false"
         >
             <view class="edit-popup">
                 <view class="popup-title">修改账号</view>
@@ -176,9 +176,9 @@
         <tn-popup
             v-model="showMobilePop"
             :close-btn="true"
-            mode="center"
-            border-radius="24"
-            :mask-close-able="false"
+            open-direction="center"
+            :radius="24"
+            :overlay-closeable="false"
         >
             <view class="edit-popup">
                 <view class="popup-title">

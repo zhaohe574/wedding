@@ -1,9 +1,32 @@
 <template>
-    <div class="staff-edit">
-        <el-card class="!border-none" shadow="never">
-            <el-page-header :content="$route.query.id ? '编辑人员' : '新增人员'" @back="$router.back()" />
+    <div class="staff-edit admin-edit-page">
+        <el-card class="admin-edit-head !border-none" shadow="never">
+            <div class="admin-edit-head__top">
+                <div>
+                    <h1 class="admin-edit-title">{{ route.query.id ? '编辑人员' : '新增人员' }}</h1>
+                    <p class="admin-edit-subtitle">
+                        {{ route.query.id ? '维护人员资料、标签、套餐和轮播展示内容。' : '创建人员并完成标签、套餐和轮播展示配置。' }}
+                    </p>
+                </div>
+                <div class="admin-edit-head__meta">
+                    <div class="admin-edit-head__meta-label">后台账号状态</div>
+                    <div class="admin-edit-head__meta-main">
+                        <span>{{ adminInfo.account || '保存后自动生成账号' }}</span>
+                        <el-tag v-if="adminInfo.account" :type="adminInfo.disable ? 'danger' : 'success'">
+                            {{ adminInfo.disable ? '禁用' : '启用' }}
+                        </el-tag>
+                        <el-tag v-else type="info">未生成</el-tag>
+                        <el-button v-if="adminInfo.account" type="primary" link @click="handleResetAdminPassword">
+                            重置密码
+                        </el-button>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <el-button type="primary" link @click="router.back()">返回上一页</el-button>
+            </div>
         </el-card>
-        <el-card class="mt-4 !border-none" shadow="never">
+        <el-card class="mt-4 !border-none admin-edit-main" shadow="never">
             <el-form
                 ref="formRef"
                 class="ls-form"
@@ -11,384 +34,460 @@
                 label-width="100px"
                 :rules="rules"
             >
-                <el-tabs v-model="activeTab">
+                <el-tabs v-model="activeTab" class="staff-edit-tabs">
                     <el-tab-pane label="基本信息" name="basic">
-                        <div class="grid grid-cols-2 gap-x-10">
-                            <el-form-item label="姓名" prop="name">
-                                <el-input v-model="formData.name" placeholder="请输入姓名" maxlength="50" />
-                            </el-form-item>
-                            <el-form-item label="绑定用户" prop="user_id">
-                                <el-select
-                                    v-model="formData.user_id"
-                                    filterable
-                                    remote
-                                    reserve-keyword
-                                    :remote-method="remoteUserSearch"
-                                    :loading="userLoading"
-                                    placeholder="输入昵称/账号/手机号搜索"
-                                    class="w-full"
-                                >
-                                    <el-option
-                                        v-for="item in userOptions"
-                                        :key="item.id"
-                                        :label="item.label"
-                                        :value="item.id"
-                                    />
-                                </el-select>
-                            </el-form-item>
-                            <el-form-item label="手机号" prop="mobile">
-                                <el-input v-model="formData.mobile" placeholder="请输入手机号" maxlength="11" />
-                            </el-form-item>
-                            <el-form-item label="后台账号">
-                                <div class="flex items-center gap-2">
-                                    <span v-if="adminInfo.account">{{ adminInfo.account }}</span>
-                                    <span v-else class="text-gray-400">保存后自动生成</span>
-                                    <el-tag v-if="adminInfo.account" :type="adminInfo.disable ? 'danger' : 'success'">
-                                        {{ adminInfo.disable ? '禁用' : '启用' }}
-                                    </el-tag>
-                                    <el-button
-                                        v-if="adminInfo.account"
-                                        type="primary"
-                                        link
-                                        @click="handleResetAdminPassword"
+                        <div class="admin-edit-section">
+                            <div class="admin-edit-section__header">
+                                <div class="admin-edit-section__title">身份信息</div>
+                                <div class="admin-edit-section__desc">用于建立人员基础档案与后台账号关联。</div>
+                            </div>
+                            <div class="grid staff-edit-grid gap-x-8">
+                                <el-form-item label="姓名" prop="name">
+                                    <el-input v-model="formData.name" placeholder="请输入姓名" maxlength="50" />
+                                </el-form-item>
+                                <el-form-item label="绑定用户" prop="user_id">
+                                    <el-select
+                                        v-model="formData.user_id"
+                                        filterable
+                                        remote
+                                        reserve-keyword
+                                        :remote-method="remoteUserSearch"
+                                        :loading="userLoading"
+                                        placeholder="输入昵称/账号/手机号搜索"
+                                        class="w-full"
                                     >
-                                        重置密码
-                                    </el-button>
-                                </div>
-                            </el-form-item>
-                            <el-form-item label="头像" prop="avatar">
-                                <material-picker v-model="formData.avatar" :limit="1" />
-                            </el-form-item>
-                            <el-form-item label="服务分类" prop="category_id">
-                                <el-cascader
-                                    v-model="formData.category_id"
-                                    :options="optionsData.categories"
-                                    :props="{ value: 'id', label: 'name', checkStrictly: true, emitPath: false }"
-                                    placeholder="选择服务分类"
-                                    class="w-full"
+                                        <el-option
+                                            v-for="item in userOptions"
+                                            :key="item.id"
+                                            :label="item.label"
+                                            :value="item.id"
+                                        />
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item label="手机号" prop="mobile">
+                                    <el-input v-model="formData.mobile" placeholder="请输入手机号" maxlength="11" />
+                                </el-form-item>
+                                <el-form-item label="头像" prop="avatar">
+                                    <material-picker v-model="formData.avatar" :limit="1" />
+                                </el-form-item>
+                                <el-form-item label="后台账号">
+                                    <div class="flex items-center gap-2">
+                                        <span v-if="adminInfo.account">{{ adminInfo.account }}</span>
+                                        <span v-else class="admin-edit-muted">保存后自动生成</span>
+                                        <el-tag v-if="adminInfo.account" :type="adminInfo.disable ? 'danger' : 'success'">
+                                            {{ adminInfo.disable ? '禁用' : '启用' }}
+                                        </el-tag>
+                                    </div>
+                                </el-form-item>
+                            </div>
+                        </div>
+
+                        <div class="admin-edit-section mt-4">
+                            <div class="admin-edit-section__header">
+                                <div class="admin-edit-section__title">业务信息</div>
+                                <div class="admin-edit-section__desc">配置分类、价格、展示排序与推荐状态。</div>
+                            </div>
+                            <div class="grid staff-edit-grid gap-x-8">
+                                <el-form-item label="服务分类" prop="category_id">
+                                    <el-cascader
+                                        v-model="formData.category_id"
+                                        :options="optionsData.categories"
+                                        :props="{ value: 'id', label: 'name', checkStrictly: true, emitPath: false }"
+                                        placeholder="选择服务分类"
+                                        class="w-full"
+                                    />
+                                </el-form-item>
+                                <el-form-item label="服务价格" prop="price">
+                                    <el-input-number v-model="formData.price" :min="0" :precision="2" class="w-full" />
+                                </el-form-item>
+                                <el-form-item label="从业年限" prop="experience_years">
+                                    <el-input-number v-model="formData.experience_years" :min="0" :max="50" class="w-full" />
+                                </el-form-item>
+                                <el-form-item label="排序" prop="sort">
+                                    <el-input-number v-model="formData.sort" :min="0" :max="9999" class="w-full" />
+                                </el-form-item>
+                                <el-form-item label="是否推荐" prop="is_recommend">
+                                    <el-radio-group v-model="formData.is_recommend">
+                                        <el-radio :value="1">是</el-radio>
+                                        <el-radio :value="0">否</el-radio>
+                                    </el-radio-group>
+                                </el-form-item>
+                                <el-form-item label="状态" prop="status">
+                                    <el-radio-group v-model="formData.status">
+                                        <el-radio :value="1">启用</el-radio>
+                                        <el-radio :value="0">禁用</el-radio>
+                                    </el-radio-group>
+                                </el-form-item>
+                            </div>
+                        </div>
+
+                        <div class="admin-edit-section mt-4">
+                            <div class="admin-edit-section__header">
+                                <div class="admin-edit-section__title">补充说明</div>
+                                <div class="admin-edit-section__desc">用于展示人员介绍与服务补充说明。</div>
+                            </div>
+                            <el-form-item label="个人简介" prop="profile">
+                                <el-input
+                                    v-model="formData.profile"
+                                    type="textarea"
+                                    :rows="3"
+                                    placeholder="请输入个人简介"
+                                    maxlength="500"
+                                    show-word-limit
                                 />
                             </el-form-item>
-                            <el-form-item label="服务价格" prop="price">
-                                <el-input-number v-model="formData.price" :min="0" :precision="2" class="w-full" />
-                            </el-form-item>
-                            <el-form-item label="从业年限" prop="experience_years">
-                                <el-input-number v-model="formData.experience_years" :min="0" :max="50" class="w-full" />
-                            </el-form-item>
-                            <el-form-item label="排序" prop="sort">
-                                <el-input-number v-model="formData.sort" :min="0" :max="9999" class="w-full" />
-                            </el-form-item>
-                            <el-form-item label="是否推荐" prop="is_recommend">
-                                <el-radio-group v-model="formData.is_recommend">
-                                    <el-radio :value="1">是</el-radio>
-                                    <el-radio :value="0">否</el-radio>
-                                </el-radio-group>
-                            </el-form-item>
-                            <el-form-item label="状态" prop="status">
-                                <el-radio-group v-model="formData.status">
-                                    <el-radio :value="1">启用</el-radio>
-                                    <el-radio :value="0">禁用</el-radio>
-                                </el-radio-group>
+                            <el-form-item class="!mb-0" label="服务说明" prop="service_desc">
+                                <el-input
+                                    v-model="formData.service_desc"
+                                    type="textarea"
+                                    :rows="3"
+                                    placeholder="请输入服务说明"
+                                    maxlength="1000"
+                                    show-word-limit
+                                />
                             </el-form-item>
                         </div>
-                        <el-form-item label="个人简介" prop="profile">
-                            <el-input
-                                v-model="formData.profile"
-                                type="textarea"
-                                :rows="3"
-                                placeholder="请输入个人简介"
-                                maxlength="500"
-                                show-word-limit
-                            />
-                        </el-form-item>
-                        <el-form-item label="服务说明" prop="service_desc">
-                            <el-input
-                                v-model="formData.service_desc"
-                                type="textarea"
-                                :rows="3"
-                                placeholder="请输入服务说明"
-                                maxlength="1000"
-                                show-word-limit
-                            />
-                        </el-form-item>
                     </el-tab-pane>
 
                     <el-tab-pane label="标签设置" name="tags">
-                        <el-form-item label="风格标签">
-                            <el-checkbox-group v-model="formData.tag_ids">
-                                <template v-for="(tags, type) in groupedTags" :key="type">
-                                    <div class="mb-4">
-                                        <div class="text-gray-500 mb-2">{{ tagTypeLabelMap[type] || type }}</div>
-                                        <el-checkbox
-                                            v-for="tag in tags"
-                                            :key="tag.id"
-                                            :value="tag.id"
-                                            :label="tag.name"
-                                        />
-                                    </div>
-                                </template>
-                            </el-checkbox-group>
-                        </el-form-item>
+                        <div class="admin-edit-section">
+                            <div class="admin-edit-section__header">
+                                <div class="admin-edit-section__title">标签分组</div>
+                                <div class="admin-edit-section__desc">按标签类型批量设置人员风格与特长。</div>
+                            </div>
+                            <el-form-item class="staff-tag-form-item !mb-0" label="风格标签">
+                                <el-checkbox-group v-model="formData.tag_ids" class="staff-tag-groups">
+                                    <template v-if="Object.keys(groupedTags).length">
+                                        <div v-for="(tags, type) in groupedTags" :key="type" class="staff-tag-block">
+                                            <div class="staff-tag-block__title">{{ tagTypeLabelMap[Number(type)] || type }}</div>
+                                            <div class="staff-tag-block__items">
+                                                <el-checkbox
+                                                    v-for="tag in tags"
+                                                    :key="tag.id"
+                                                    :value="tag.id"
+                                                    :label="tag.name"
+                                                />
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <div v-else class="admin-edit-muted">请选择服务分类后再配置标签。</div>
+                                </el-checkbox-group>
+                            </el-form-item>
+                        </div>
                     </el-tab-pane>
 
                     <el-tab-pane label="服务套餐" name="packages">
-                        <el-form-item label="关联全局套餐">
-                            <el-table :data="formData.packages" border>
-                                <el-table-column label="套餐名称" prop="package_name" min-width="150" />
-                                <el-table-column label="默认价格" width="150">
-                                    <template #default="{ row }">
-                                        <el-input-number
-                                            v-model="row.price"
-                                            :min="0"
-                                            :precision="2"
-                                            size="small"
-                                            controls-position="right"
-                                            placeholder="默认价格"
-                                        />
-                                    </template>
-                                </el-table-column>
-                                <el-table-column label="原价" width="150">
-                                    <template #default="{ row }">
-                                        <el-input-number
-                                            v-model="row.original_price"
-                                            :min="0"
-                                            :precision="2"
-                                            size="small"
-                                            controls-position="right"
-                                            placeholder="选填"
-                                        />
-                                    </template>
-                                </el-table-column>
-                                <el-table-column label="个人价格" width="150">
-                                    <template #default="{ row }">
-                                        <el-input-number
-                                            v-model="row.custom_price"
-                                            :min="0"
-                                            :precision="2"
-                                            size="small"
-                                            controls-position="right"
-                                            placeholder="不填则使用默认"
-                                        />
-                                    </template>
-                                </el-table-column>
-                                <el-table-column label="场次价格" width="100">
-                                    <template #default="{ row, $index }">
-                                        <el-button v-if="row.booking_type === 1" type="primary" link @click="openSlotPriceDialog($index)">
-                                            配置{{ row.custom_slot_prices?.length ? `(${row.custom_slot_prices.length})` : '' }}
-                                        </el-button>
-                                        <span v-else class="text-gray-500">全天</span>
-                                    </template>
-                                </el-table-column>
-                                <el-table-column label="预约类型" width="140">
-                                    <template #default="{ row }">
-                                        <el-select v-model="row.booking_type" size="small" class="w-full" @change="handlePackageBookingTypeChange(row)">
-                                            <el-option label="全天套餐" :value="0" />
-                                            <el-option label="分场次套餐" :value="1" />
-                                        </el-select>
-                                    </template>
-                                </el-table-column>
-                                <el-table-column label="允许场次" min-width="180">
-                                    <template #default="{ row }">
-                                        <el-checkbox-group
-                                            v-if="row.booking_type === 1"
-                                            v-model="row.allowed_time_slots"
-                                            size="small"
-                                        >
-                                            <el-checkbox
-                                                v-for="slot in timeSlotOptions"
-                                                :key="slot.value"
-                                                :value="slot.value"
-                                                :label="slot.label"
+                        <div class="admin-edit-section">
+                            <div class="admin-edit-toolbar">
+                                <div>
+                                    <div class="admin-edit-section__title">关联全局套餐</div>
+                                    <div class="admin-edit-section__desc">支持设置默认价格、场次和单个套餐状态。</div>
+                                </div>
+                                <el-button @click="showPackageDialog = true">添加套餐</el-button>
+                            </div>
+                            <div class="staff-table-card mt-4">
+                                <el-table :data="formData.packages" border>
+                                    <el-table-column label="套餐名称" prop="package_name" min-width="150" />
+                                    <el-table-column label="默认价格" width="150">
+                                        <template #default="{ row }">
+                                            <el-input-number
+                                                v-model="row.price"
+                                                :min="0"
+                                                :precision="2"
+                                                size="small"
+                                                controls-position="right"
+                                                placeholder="默认价格"
                                             />
-                                        </el-checkbox-group>
-                                        <span v-else class="text-gray-500">全天</span>
-                                    </template>
-                                </el-table-column>
-                                <el-table-column label="状态" width="100">
-                                    <template #default="{ row }">
-                                        <el-switch v-model="row.status" :active-value="1" :inactive-value="0" />
-                                    </template>
-                                </el-table-column>
-                                <el-table-column label="操作" width="140">
-                                    <template #default="{ row, $index }">
-                                        <el-button type="primary" link @click="savePackageConfig(row)">保存</el-button>
-                                        <el-button type="danger" link @click="removePackage($index)">移除</el-button>
-                                    </template>
-                                </el-table-column>
-                            </el-table>
-                            <el-button class="mt-4" @click="showPackageDialog = true">添加套餐</el-button>
-                        </el-form-item>
-
-                        <!-- 专属套餐 -->
-                        <el-divider content-position="left">专属套餐</el-divider>
-                        <el-form-item label="专属套餐">
-                            <el-table :data="staffPackages" border>
-                                <el-table-column label="套餐名称" prop="name" min-width="150" />
-                                <el-table-column label="价格" prop="price" width="100">
-                                    <template #default="{ row }">¥{{ row.price }}</template>
-                                </el-table-column>
-                                <el-table-column label="场次价格" width="100">
-                                    <template #default="{ row }">
-                                        <span v-if="row.slot_prices?.length">{{ row.slot_prices.length }}个场次</span>
-                                        <span v-else class="text-gray-400">未配置</span>
-                                    </template>
-                                </el-table-column>
-                                <el-table-column label="预约类型" width="120">
-                                    <template #default="{ row }">
-                                        <el-tag v-if="row.booking_type === 0" type="info">全天套餐</el-tag>
-                                        <el-tag v-else type="warning">分场次套餐</el-tag>
-                                    </template>
-                                </el-table-column>
-                                <el-table-column label="允许场次" min-width="160">
-                                    <template #default="{ row }">
-                                        <span v-if="row.booking_type !== 1" class="text-gray-500">全天</span>
-                                        <span v-else>
-                                            <el-tag
-                                                v-for="slot in normalizeAllowedSlots(row.allowed_time_slots)"
-                                                :key="slot"
-                                                class="mr-1"
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="原价" width="150">
+                                        <template #default="{ row }">
+                                            <el-input-number
+                                                v-model="row.original_price"
+                                                :min="0"
+                                                :precision="2"
+                                                size="small"
+                                                controls-position="right"
+                                                placeholder="选填"
+                                            />
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="个人价格" width="150">
+                                        <template #default="{ row }">
+                                            <el-input-number
+                                                v-model="row.custom_price"
+                                                :min="0"
+                                                :precision="2"
+                                                size="small"
+                                                controls-position="right"
+                                                placeholder="不填则使用默认"
+                                            />
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="场次价格" width="100">
+                                        <template #default="{ row, $index }">
+                                            <el-button
+                                                v-if="row.booking_type === 1"
+                                                type="primary"
+                                                link
+                                                @click="openSlotPriceDialog($index)"
                                             >
-                                                {{ timeSlotLabelMap[slot] || slot }}
+                                                配置{{ row.custom_slot_prices?.length ? `(${row.custom_slot_prices.length})` : '' }}
+                                            </el-button>
+                                            <span v-else class="admin-edit-muted">全天</span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="预约类型" width="140">
+                                        <template #default="{ row }">
+                                            <el-select
+                                                v-model="row.booking_type"
+                                                size="small"
+                                                class="w-full"
+                                                @change="handlePackageBookingTypeChange(row)"
+                                            >
+                                                <el-option label="全天套餐" :value="0" />
+                                                <el-option label="分场次套餐" :value="1" />
+                                            </el-select>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="允许场次" min-width="180">
+                                        <template #default="{ row }">
+                                            <el-checkbox-group
+                                                v-if="row.booking_type === 1"
+                                                v-model="row.allowed_time_slots"
+                                                size="small"
+                                            >
+                                                <el-checkbox
+                                                    v-for="slot in timeSlotOptions"
+                                                    :key="slot.value"
+                                                    :value="slot.value"
+                                                    :label="slot.label"
+                                                />
+                                            </el-checkbox-group>
+                                            <span v-else class="admin-edit-muted">全天</span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="状态" width="100">
+                                        <template #default="{ row }">
+                                            <el-switch v-model="row.status" :active-value="1" :inactive-value="0" />
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="操作" width="140">
+                                        <template #default="{ row, $index }">
+                                            <el-button type="primary" link @click="savePackageConfig(row)">保存</el-button>
+                                            <el-button class="staff-secondary-action" type="danger" link @click="removePackage($index)">
+                                                移除
+                                            </el-button>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                        </div>
+
+                        <div class="admin-edit-section mt-4">
+                            <div class="admin-edit-toolbar">
+                                <div>
+                                    <div class="admin-edit-section__title">专属套餐</div>
+                                    <div class="admin-edit-section__desc">维护人员独享套餐，支持独立编辑与上下架。</div>
+                                </div>
+                                <el-button type="primary" @click="openCreateStaffPackage">创建专属套餐</el-button>
+                            </div>
+                            <div class="staff-table-card mt-4">
+                                <el-table :data="staffPackages" border>
+                                    <el-table-column label="套餐名称" prop="name" min-width="150" />
+                                    <el-table-column label="价格" prop="price" width="100">
+                                        <template #default="{ row }">¥{{ row.price }}</template>
+                                    </el-table-column>
+                                    <el-table-column label="场次价格" width="100">
+                                        <template #default="{ row }">
+                                            <span v-if="row.slot_prices?.length">{{ row.slot_prices.length }}个场次</span>
+                                            <span v-else class="admin-edit-muted">未配置</span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="预约类型" width="120">
+                                        <template #default="{ row }">
+                                            <el-tag v-if="row.booking_type === 0" type="info">全天套餐</el-tag>
+                                            <el-tag v-else type="warning">分场次套餐</el-tag>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="允许场次" min-width="160">
+                                        <template #default="{ row }">
+                                            <span v-if="row.booking_type !== 1" class="admin-edit-muted">全天</span>
+                                            <span v-else>
+                                                <el-tag
+                                                    v-for="slot in normalizeAllowedSlots(row.allowed_time_slots)"
+                                                    :key="slot"
+                                                    class="mr-1"
+                                                >
+                                                    {{ timeSlotLabelMap[slot] || slot }}
+                                                </el-tag>
+                                            </span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="状态" prop="is_show" width="100">
+                                        <template #default="{ row }">
+                                            <el-tag :type="row.is_show ? 'success' : 'info'">
+                                                {{ row.is_show ? '上架' : '下架' }}
                                             </el-tag>
-                                        </span>
-                                    </template>
-                                </el-table-column>
-                                <el-table-column label="状态" prop="is_show" width="100">
-                                    <template #default="{ row }">
-                                        <el-tag :type="row.is_show ? 'success' : 'info'">
-                                            {{ row.is_show ? '上架' : '下架' }}
-                                        </el-tag>
-                                    </template>
-                                </el-table-column>
-                                <el-table-column label="操作" width="140">
-                                    <template #default="{ row }">
-                                        <el-button type="primary" link @click="openEditStaffPackage(row)">编辑</el-button>
-                                        <el-button type="danger" link @click="deleteStaffPackage(row)">删除</el-button>
-                                    </template>
-                                </el-table-column>
-                            </el-table>
-                            <el-button class="mt-4" type="primary" @click="openCreateStaffPackage">
-                                创建专属套餐
-                            </el-button>
-                        </el-form-item>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="操作" width="140">
+                                        <template #default="{ row }">
+                                            <el-button type="primary" link @click="openEditStaffPackage(row)">编辑</el-button>
+                                            <el-button class="staff-secondary-action" type="danger" link @click="deleteStaffPackage(row)">
+                                                删除
+                                            </el-button>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                        </div>
                     </el-tab-pane>
 
                     <el-tab-pane label="轮播图配置" name="banner">
-                        <!-- 基础配置 -->
-                        <div class="grid grid-cols-2 gap-x-10 mb-6">
-                            <el-form-item label="展示模式">
-                                <el-radio-group v-model="bannerConfig.banner_mode">
-                                    <el-radio :value="1">小图模式</el-radio>
-                                    <el-radio :value="2">大图模式</el-radio>
-                                </el-radio-group>
-                            </el-form-item>
-                            <el-form-item label="指示器样式">
-                                <el-select v-model="bannerConfig.banner_indicator_style" class="w-full">
-                                    <el-option label="圆点" :value="1" />
-                                    <el-option label="数字" :value="2" />
-                                    <el-option label="进度条" :value="3" />
-                                    <el-option label="无" :value="0" />
-                                </el-select>
-                            </el-form-item>
-                            <el-form-item v-if="bannerConfig.banner_mode === 1" label="小图初始高度">
-                                <el-input-number v-model="bannerConfig.banner_small_height" :min="200" :max="800" class="w-full">
-                                    <template #append>rpx</template>
-                                </el-input-number>
-                            </el-form-item>
-                            <el-form-item :label="bannerConfig.banner_mode === 1 ? '展开后高度' : '固定高度'">
-                                <el-input-number v-model="bannerConfig.banner_large_height" :min="300" class="w-full">
-                                    <template #append>rpx</template>
-                                </el-input-number>
-                            </el-form-item>
-                            <el-form-item label="自动轮播">
-                                <el-switch v-model="bannerConfig.banner_autoplay" :active-value="1" :inactive-value="0" />
-                            </el-form-item>
-                            <el-form-item v-if="bannerConfig.banner_autoplay === 1" label="轮播间隔">
-                                <el-input-number v-model="bannerConfig.banner_interval" :min="1000" :max="10000" :step="500" class="w-full">
-                                    <template #append>毫秒</template>
-                                </el-input-number>
-                            </el-form-item>
+                        <div class="admin-edit-section">
+                            <div class="admin-edit-toolbar">
+                                <div>
+                                    <div class="admin-edit-section__title">轮播基础配置</div>
+                                    <div class="admin-edit-section__desc">设置展示模式、高度、指示器与自动播放规则。</div>
+                                </div>
+                                <el-button type="primary" @click="saveBannerConfig">保存配置</el-button>
+                            </div>
+                            <div class="grid staff-edit-grid gap-x-8 mt-4">
+                                <el-form-item label="展示模式">
+                                    <el-radio-group v-model="bannerConfig.banner_mode">
+                                        <el-radio :value="1">小图模式</el-radio>
+                                        <el-radio :value="2">大图模式</el-radio>
+                                    </el-radio-group>
+                                </el-form-item>
+                                <el-form-item label="指示器样式">
+                                    <el-select v-model="bannerConfig.banner_indicator_style" class="w-full">
+                                        <el-option label="圆点" :value="1" />
+                                        <el-option label="数字" :value="2" />
+                                        <el-option label="进度条" :value="3" />
+                                        <el-option label="无" :value="0" />
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item v-if="bannerConfig.banner_mode === 1" label="小图初始高度">
+                                    <el-input-number
+                                        v-model="bannerConfig.banner_small_height"
+                                        :min="200"
+                                        :max="800"
+                                        class="w-full"
+                                    >
+                                        <template #append>rpx</template>
+                                    </el-input-number>
+                                </el-form-item>
+                                <el-form-item :label="bannerConfig.banner_mode === 1 ? '展开后高度' : '固定高度'">
+                                    <el-input-number v-model="bannerConfig.banner_large_height" :min="300" class="w-full">
+                                        <template #append>rpx</template>
+                                    </el-input-number>
+                                </el-form-item>
+                                <el-form-item label="自动轮播">
+                                    <el-switch v-model="bannerConfig.banner_autoplay" :active-value="1" :inactive-value="0" />
+                                </el-form-item>
+                                <el-form-item v-if="bannerConfig.banner_autoplay === 1" label="轮播间隔">
+                                    <el-input-number
+                                        v-model="bannerConfig.banner_interval"
+                                        :min="1000"
+                                        :max="10000"
+                                        :step="500"
+                                        class="w-full"
+                                    >
+                                        <template #append>毫秒</template>
+                                    </el-input-number>
+                                </el-form-item>
+                            </div>
                         </div>
-                        <el-button type="primary" @click="saveBannerConfig">保存配置</el-button>
 
-                        <el-divider content-position="left">轮播图列表</el-divider>
-
-                        <!-- 轮播图列表 -->
-                        <el-table :data="bannerList" border row-key="id">
-                            <el-table-column label="排序" width="60">
-                                <template #default="{ $index }">{{ $index + 1 }}</template>
-                            </el-table-column>
-                            <el-table-column label="预览" width="120">
-                                <template #default="{ row }">
-                                    <el-image
-                                        v-if="row.type === 1"
-                                        :src="row.file_url"
-                                        fit="cover"
-                                        style="width: 80px; height: 60px"
-                                        :preview-src-list="[row.file_url]"
-                                    />
-                                    <div v-else class="relative">
-                                        <el-image
-                                            :src="row.cover_url"
-                                            fit="cover"
-                                            style="width: 80px; height: 60px"
-                                        />
-                                        <el-icon class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-2xl">
-                                            <VideoPlay />
-                                        </el-icon>
-                                    </div>
-                                </template>
-                            </el-table-column>
-                            <el-table-column label="类型" width="100">
-                                <template #default="{ row }">
-                                    <el-tag :type="row.type === 1 ? 'success' : 'warning'">
-                                        {{ row.type === 1 ? '图片' : '视频' }}
-                                    </el-tag>
-                                </template>
-                            </el-table-column>
-                            <el-table-column label="视频自动播放" width="120">
-                                <template #default="{ row }">
-                                    <span v-if="row.type === 2">
-                                        <el-tag :type="row.is_autoplay ? 'success' : 'info'">
-                                            {{ row.is_autoplay ? '是' : '否' }}
-                                        </el-tag>
-                                    </span>
-                                    <span v-else class="text-gray-400">-</span>
-                                </template>
-                            </el-table-column>
-                            <el-table-column label="操作" width="200">
-                                <template #default="{ row, $index }">
-                                    <el-button type="primary" link @click="openEditBanner(row)">编辑</el-button>
-                                    <el-button type="danger" link @click="deleteBanner(row)">删除</el-button>
-                                    <el-button
-                                        v-if="$index > 0"
-                                        type="primary"
-                                        link
-                                        @click="moveBanner($index, 'up')"
-                                    >
-                                        上移
-                                    </el-button>
-                                    <el-button
-                                        v-if="$index < bannerList.length - 1"
-                                        type="primary"
-                                        link
-                                        @click="moveBanner($index, 'down')"
-                                    >
-                                        下移
-                                    </el-button>
-                                </template>
-                            </el-table-column>
-                        </el-table>
-                        <el-button class="mt-4" type="primary" @click="openAddBanner">添加轮播图</el-button>
+                        <div class="admin-edit-section mt-4">
+                            <div class="admin-edit-toolbar">
+                                <div>
+                                    <div class="admin-edit-section__title">轮播图列表</div>
+                                    <div class="admin-edit-section__desc">维护图片或视频轮播素材并支持排序。</div>
+                                </div>
+                                <el-button type="primary" @click="openAddBanner">添加轮播图</el-button>
+                            </div>
+                            <div class="staff-table-card mt-4">
+                                <el-table :data="bannerList" border row-key="id">
+                                    <el-table-column label="排序" width="60">
+                                        <template #default="{ $index }">{{ $index + 1 }}</template>
+                                    </el-table-column>
+                                    <el-table-column label="预览" width="120">
+                                        <template #default="{ row }">
+                                            <el-image
+                                                v-if="row.type === 1"
+                                                :src="row.file_url"
+                                                fit="cover"
+                                                style="width: 80px; height: 60px"
+                                                :preview-src-list="[row.file_url]"
+                                            />
+                                            <div v-else class="relative">
+                                                <el-image
+                                                    :src="row.cover_url"
+                                                    fit="cover"
+                                                    style="width: 80px; height: 60px"
+                                                />
+                                                <el-icon class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-2xl">
+                                                    <VideoPlay />
+                                                </el-icon>
+                                            </div>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="类型" width="100">
+                                        <template #default="{ row }">
+                                            <el-tag :type="row.type === 1 ? 'success' : 'warning'">
+                                                {{ row.type === 1 ? '图片' : '视频' }}
+                                            </el-tag>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="视频自动播放" width="120">
+                                        <template #default="{ row }">
+                                            <span v-if="row.type === 2">
+                                                <el-tag :type="row.is_autoplay ? 'success' : 'info'">
+                                                    {{ row.is_autoplay ? '是' : '否' }}
+                                                </el-tag>
+                                            </span>
+                                            <span v-else class="admin-edit-muted">-</span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="操作" width="200">
+                                        <template #default="{ row, $index }">
+                                            <el-button type="primary" link @click="openEditBanner(row)">编辑</el-button>
+                                            <el-button class="staff-secondary-action" type="danger" link @click="deleteBanner(row)">
+                                                删除
+                                            </el-button>
+                                            <el-button
+                                                v-if="$index > 0"
+                                                type="primary"
+                                                link
+                                                @click="moveBanner($index, 'up')"
+                                            >
+                                                上移
+                                            </el-button>
+                                            <el-button
+                                                v-if="$index < bannerList.length - 1"
+                                                type="primary"
+                                                link
+                                                @click="moveBanner($index, 'down')"
+                                            >
+                                                下移
+                                            </el-button>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                        </div>
                     </el-tab-pane>
                 </el-tabs>
             </el-form>
         </el-card>
-        <footer-btns>
+        <footer-btns class="staff-edit-footer">
             <el-button type="primary" @click="handleSave">保存</el-button>
         </footer-btns>
 
         <!-- 套餐选择弹窗 -->
-        <el-dialog v-model="showPackageDialog" title="选择套餐" width="600px">
+        <el-dialog v-model="showPackageDialog" title="选择套餐" width="600px" class="staff-edit-dialog">
             <el-table
                 :data="availablePackages"
                 @selection-change="handlePackageSelect"
@@ -408,9 +507,12 @@
         </el-dialog>
 
         <!-- 场次价格配置弹窗 -->
-        <el-dialog v-model="showSlotPriceDialog" title="场次价格配置" width="600px">
-            <div class="text-xs text-gray-500 mb-2">未填写的场次将使用默认价格</div>
-            <div class="slot-price-list">
+        <el-dialog v-model="showSlotPriceDialog" title="场次价格配置" width="600px" class="staff-edit-dialog">
+            <div class="admin-edit-tip-block">
+                <div class="admin-edit-tip-block__title">配置说明</div>
+                <div class="admin-edit-muted">未填写的场次将使用默认价格</div>
+            </div>
+            <div class="slot-price-list mt-4">
                 <div
                     v-for="(slot, index) in currentSlotPrices"
                     :key="index"
@@ -437,6 +539,7 @@
             v-model="showStaffPackageDialog"
             :title="isEditingStaffPackage ? '编辑专属套餐' : '创建专属套餐'"
             width="700px"
+            class="staff-edit-dialog"
             @closed="resetStaffPackageForm"
         >
             <el-form
@@ -519,6 +622,7 @@
             v-model="showBannerDialog"
             :title="isEditingBanner ? '编辑轮播图' : '添加轮播图'"
             width="600px"
+            class="staff-edit-dialog"
             @closed="resetBannerForm"
         >
             <el-form
@@ -554,8 +658,18 @@
         </el-dialog>
 
         <!-- 后台账号凭证弹窗 -->
-        <el-dialog v-model="credentialDialogVisible" title="后台账号信息" width="420px" @close="handleCredentialClose">
-            <div class="space-y-3">
+        <el-dialog
+            v-model="credentialDialogVisible"
+            title="后台账号信息"
+            width="420px"
+            class="staff-edit-dialog"
+            @close="handleCredentialClose"
+        >
+            <div class="admin-edit-tip-block">
+                <div class="admin-edit-tip-block__title">安全提示</div>
+                <div class="admin-edit-muted">请及时保存账号与密码。</div>
+            </div>
+            <div class="space-y-3 mt-4">
                 <el-alert type="warning" show-icon :closable="false">
                     <template #title>请及时保存账号与密码</template>
                     <template #default>关闭后密码不会再次展示，可通过“重置密码”重新生成。</template>
@@ -619,7 +733,7 @@ const groupedTags = ref<Record<string, any[]>>({})
 const staffPackages = ref<any[]>([])  // 专属套餐列表
 const bannerList = ref<any[]>([])  // 轮播图列表
 const currentSlotPriceIndex = ref(-1)
-const currentSlotPrices = ref<{ time_slot: number; price: number | null }[]>([])
+const currentSlotPrices = ref<{ time_slot: number; price: number | undefined }[]>([])
 const userOptions = ref<{ id: number; label: string; raw: any }[]>([])
 const userLoading = ref(false)
 let userSearchTimer: number | undefined
@@ -885,14 +999,14 @@ const buildSlotPriceRows = (allowedSlots: number[], slotPrices: any[]) => {
         const matched = slotPrices.find((item: any) => Number(item.time_slot) === slot)
         return {
             time_slot: slot,
-            price: matched?.price ?? null
+            price: matched?.price ?? undefined
         }
     })
 }
 
-const normalizeSlotPricePayload = (slots: { time_slot: number; price: number | null }[]) => {
+const normalizeSlotPricePayload = (slots: { time_slot: number; price: number | undefined }[]) => {
     return slots
-        .filter((slot) => slot.price !== null && slot.price !== undefined && slot.price !== '')
+        .filter((slot) => slot.price !== undefined)
         .map((slot) => ({
             time_slot: Number(slot.time_slot),
             price: Number(slot.price)
@@ -1301,7 +1415,7 @@ const handleResetAdminPassword = async () => {
         return
     }
     await feedback.confirm('确定要重置后台账号密码？')
-    const res = await staffResetAdminPassword({ id: route.query.id })
+    const res = await staffResetAdminPassword({ id: Number(route.query.id) })
     if (res?.admin_account && res?.admin_password) {
         adminInfo.account = res.admin_account
         adminInfo.disable = 0
@@ -1472,3 +1586,106 @@ const saveBannerConfig = async () => {
 }
 
 </script>
+
+<style lang="scss" scoped>
+.staff-edit {
+    .staff-edit-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: 18px;
+    }
+
+    .staff-table-card {
+        @apply rounded-lg border border-[#E8ECF3] overflow-hidden;
+    }
+
+    .staff-tag-groups {
+        @apply w-full;
+    }
+
+    .staff-tag-block {
+        @apply rounded-lg border border-[#E8ECF3] bg-white px-4 py-3 mb-4;
+    }
+
+    .staff-tag-block__title {
+        @apply text-sm font-medium text-tx-primary mb-3;
+    }
+
+    .staff-tag-block__items {
+        @apply flex flex-wrap gap-x-4 gap-y-2;
+    }
+
+    .slot-price-list {
+        max-height: 360px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    :deep(.staff-edit-tabs .el-tabs__header) {
+        margin-bottom: 20px;
+    }
+
+    :deep(.staff-edit-tabs .el-tabs__nav-wrap::after) {
+        background-color: #e8ecf3;
+    }
+
+    :deep(.staff-edit-tabs .el-tabs__item) {
+        padding: 0 18px;
+        font-size: 14px;
+        color: #5f6472;
+    }
+
+    :deep(.staff-edit-tabs .el-tabs__item.is-active) {
+        color: var(--el-color-primary);
+        font-weight: 600;
+    }
+
+    :deep(.staff-edit-tabs .el-form-item) {
+        margin-bottom: 16px;
+    }
+
+    :deep(.staff-table-card .el-table th.el-table__cell) {
+        background: #f4f7fc;
+        color: #3f4654;
+    }
+
+    :deep(.staff-table-card .el-table td.el-table__cell) {
+        vertical-align: top;
+    }
+
+    :deep(.staff-secondary-action) {
+        opacity: 0.8;
+    }
+
+    :deep(.staff-edit-dialog .el-dialog__header) {
+        border-bottom: 1px solid #eceff5;
+        margin-right: 0;
+        padding: 16px 20px 14px;
+    }
+
+    :deep(.staff-edit-dialog .el-dialog__body) {
+        padding: 18px 20px;
+    }
+
+    :deep(.staff-edit-dialog .el-dialog__footer) {
+        border-top: 1px solid #eceff5;
+        padding: 12px 20px 16px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    :deep(.staff-edit-footer .footer-btns__content) {
+        border-top: 1px solid #e8ecf3;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(8px);
+    }
+}
+
+@media (max-width: 1200px) {
+    .staff-edit {
+        .staff-edit-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+}
+</style>

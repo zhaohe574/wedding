@@ -1,93 +1,65 @@
 <template>
-    <div class="staff-lists">
-        <el-card class="!border-none" shadow="never">
-            <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
-                <el-form-item class="w-[200px]" label="人员名称">
-                    <el-input
-                        v-model="queryParams.name"
-                        placeholder="输入人员名称"
-                        clearable
-                        @keyup.enter="resetPage"
-                    />
-                </el-form-item>
-                <el-form-item class="w-[200px]" label="工号">
-                    <el-input
-                        v-model="queryParams.sn"
-                        placeholder="输入工号"
-                        clearable
-                        @keyup.enter="resetPage"
-                    />
-                </el-form-item>
-                <el-form-item class="w-[200px]" label="服务分类">
-                    <el-cascader
-                        v-model="queryParams.category_id"
-                        :options="optionsData.categories"
-                        :props="{ value: 'id', label: 'name', checkStrictly: true, emitPath: false }"
-                        placeholder="选择服务分类"
-                        clearable
-                    />
-                </el-form-item>
-                <el-form-item class="w-[200px]" label="状态">
-                    <el-select v-model="queryParams.status" placeholder="选择状态" clearable>
-                        <el-option label="全部" value="" />
-                        <el-option label="启用" :value="1" />
-                        <el-option label="禁用" :value="0" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="resetPage">查询</el-button>
-                    <el-button @click="resetParams">重置</el-button>
-                </el-form-item>
-            </el-form>
-        </el-card>
+    <admin-page-shell
+        class="staff-lists"
+        title="服务人员"
+        description="统一管理服务人员档案、状态与基础运营指标。"
+    >
+        <template #search>
+            <search-panel>
+                <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
+                    <el-form-item class="w-[200px]" label="人员名称">
+                        <el-input
+                            v-model="queryParams.name"
+                            placeholder="输入人员名称"
+                            clearable
+                            @keyup.enter="resetPage"
+                        />
+                    </el-form-item>
+                    <el-form-item class="w-[200px]" label="工号">
+                        <el-input
+                            v-model="queryParams.sn"
+                            placeholder="输入工号"
+                            clearable
+                            @keyup.enter="resetPage"
+                        />
+                    </el-form-item>
+                    <el-form-item class="w-[200px]" label="服务分类">
+                        <el-cascader
+                            v-model="queryParams.category_id"
+                            :options="optionsData.categories"
+                            :props="{
+                                value: 'id',
+                                label: 'name',
+                                checkStrictly: true,
+                                emitPath: false
+                            }"
+                            placeholder="选择服务分类"
+                            clearable
+                        />
+                    </el-form-item>
+                    <el-form-item class="w-[200px]" label="状态">
+                        <el-select v-model="queryParams.status" placeholder="选择状态" clearable>
+                            <el-option label="全部" value="" />
+                            <el-option label="启用" :value="1" />
+                            <el-option label="禁用" :value="0" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="resetPage">查询</el-button>
+                        <el-button @click="resetParams">重置</el-button>
+                    </el-form-item>
+                </el-form>
+            </search-panel>
+        </template>
 
-        <!-- 统计卡片 -->
-        <div class="mt-4 grid grid-cols-4 gap-4">
-            <el-card class="!border-none" shadow="never">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-gray-500 text-sm">全部人员</div>
-                        <div class="text-2xl font-bold mt-2">{{ statistics.total || 0 }}</div>
-                    </div>
-                    <el-icon class="text-4xl text-blue-500"><User /></el-icon>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-gray-500 text-sm">启用人员</div>
-                        <div class="text-2xl font-bold mt-2 text-green-500">{{ statistics.enable || 0 }}</div>
-                    </div>
-                    <el-icon class="text-4xl text-green-500"><CircleCheck /></el-icon>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-gray-500 text-sm">禁用人员</div>
-                        <div class="text-2xl font-bold mt-2 text-red-500">{{ statistics.disable || 0 }}</div>
-                    </div>
-                    <el-icon class="text-4xl text-red-500"><CircleClose /></el-icon>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-gray-500 text-sm">推荐人员</div>
-                        <div class="text-2xl font-bold mt-2 text-orange-500">{{ statistics.recommend || 0 }}</div>
-                    </div>
-                    <el-icon class="text-4xl text-orange-500"><Star /></el-icon>
-                </div>
-            </el-card>
-        </div>
+        <template #stats>
+            <stat-panel :items="staffStatItems" :columns="4" />
+        </template>
 
-        <el-card class="!border-none mt-4" shadow="never">
-            <div>
-                <router-link
-                    v-perms="['staff.staff/add']"
-                    :to="{ path: staffEditPath }"
-                >
-                    <el-button type="primary" class="mb-4">
+        <div class="admin-page-section">
+            <div class="mb-4">
+                <router-link v-perms="['ops.staff/add']" :to="{ path: staffEditPath }">
+                    <el-button type="primary">
                         <template #icon>
                             <icon name="el-icon-Plus" />
                         </template>
@@ -107,9 +79,10 @@
                 <el-table-column label="工号" prop="sn" width="120" />
                 <el-table-column label="姓名" prop="name" min-width="100" />
                 <el-table-column label="服务分类" prop="category_name" min-width="100" />
-                <el-table-column label="服务价格" prop="price" width="100">
+                <el-table-column label="服务价格" prop="price_text" width="120">
                     <template #default="{ row }">
-                        <span class="text-red-500">¥{{ row.price }}</span>
+                        <span v-if="row.has_price" class="text-red-500">¥{{ row.price_text }}</span>
+                        <span v-else class="text-gray-500">面议</span>
                     </template>
                 </el-table-column>
                 <el-table-column label="评分" prop="rating" width="80">
@@ -127,7 +100,7 @@
                 <el-table-column label="状态" width="80">
                     <template #default="{ row }">
                         <el-switch
-                            v-perms="['staff.staff/changeStatus']"
+                            v-perms="['ops.staff/changeStatus']"
                             v-model="row.status"
                             :active-value="1"
                             :inactive-value="0"
@@ -140,7 +113,7 @@
                 <el-table-column label="操作" width="150" fixed="right">
                     <template #default="{ row }">
                         <el-button
-                            v-perms="['staff.staff/edit']"
+                            v-perms="['ops.staff/edit']"
                             type="primary"
                             link
                         >
@@ -154,7 +127,7 @@
                             </router-link>
                         </el-button>
                         <el-button
-                            v-perms="['staff.staff/delete']"
+                            v-perms="['ops.staff/delete']"
                             type="danger"
                             link
                             @click="handleDelete(row.id)"
@@ -167,12 +140,12 @@
             <div class="flex justify-end mt-4">
                 <pagination v-model="pager" @change="getLists" />
             </div>
-        </el-card>
-    </div>
+        </div>
+    </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="staffLists">
-import { User, CircleCheck, CircleClose, Star } from '@element-plus/icons-vue'
+import { User } from '@element-plus/icons-vue'
 import { staffLists, staffDelete, staffChangeStatus, staffStatistics } from '@/api/staff'
 import { categoryTree } from '@/api/service'
 import { useDictOptions } from '@/hooks/useDictOptions'
@@ -181,7 +154,7 @@ import { getRoutePath } from '@/router'
 import feedback from '@/utils/feedback'
 
 // 新增/编辑页路径：优先从权限路由获取，若无对应菜单则兜底（需执行 015_add_staff_add_edit_menu.sql）
-const staffEditPath = computed(() => getRoutePath('staff.staff/add:edit') || '/service/staff/edit')
+const staffEditPath = computed(() => getRoutePath('ops.staff/add:edit') || '/service/staff/edit')
 
 const queryParams = reactive({
     name: '',
@@ -190,7 +163,37 @@ const queryParams = reactive({
     status: ''
 })
 
+type StatAccent = 'primary' | 'success' | 'warning' | 'danger' | 'muted'
+
+interface StaffStatItem {
+    label: string
+    value: number
+    accent: StatAccent
+}
+
 const statistics = ref<any>({})
+const staffStatItems = computed<StaffStatItem[]>(() => [
+    {
+        label: '全部人员',
+        value: Number(statistics.value.total || 0),
+        accent: 'primary'
+    },
+    {
+        label: '启用人员',
+        value: Number(statistics.value.enable || 0),
+        accent: 'success'
+    },
+    {
+        label: '禁用人员',
+        value: Number(statistics.value.disable || 0),
+        accent: 'danger'
+    },
+    {
+        label: '推荐人员',
+        value: Number(statistics.value.recommend || 0),
+        accent: 'warning'
+    }
+])
 
 const { pager, getLists, resetPage, resetParams } = usePaging({
     fetchFun: staffLists,

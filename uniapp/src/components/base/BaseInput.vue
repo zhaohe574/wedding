@@ -43,11 +43,11 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-    'update:modelValue': [value: string | number]
-    focus: [event: Event]
-    blur: [event: Event]
-    input: [value: string | number]
-    change: [value: string | number]
+    (event: 'update:modelValue', value: string | number): void
+    (event: 'focus', payload: Event): void
+    (event: 'blur', payload: Event): void
+    (event: 'input', value: string | number): void
+    (event: 'change', value: string | number): void
 }>()
 
 const inputValue = ref(props.modelValue)

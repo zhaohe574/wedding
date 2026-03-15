@@ -203,8 +203,8 @@ const processForm = reactive({
 })
 
 const getStatusType = (status: number) => {
-    const map: Record<number, string> = { 0: 'warning', 1: 'success', 2: 'danger' }
-    return map[status] || 'info'
+    const map = { 0: 'warning', 1: 'success', 2: 'danger' } as const
+    return map[status as keyof typeof map] ?? 'info'
 }
 
 const getList = async () => {

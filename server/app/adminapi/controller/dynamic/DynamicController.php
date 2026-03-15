@@ -336,6 +336,9 @@ class DynamicController extends BaseAdminController
             return $this->fail('无权限操作');
         }
         $params = (new DynamicValidate())->post()->goCheck('add');
+        if ((int)($params['dynamic_type'] ?? 0) === Dynamic::TYPE_ACTIVITY) {
+            return $this->fail('活动仅支持管理员发布');
+        }
         $result = DynamicLogic::staffAdd($staffScopeId, $params);
         if (true === $result) {
             return $this->success('发布成功', [], 1, 1);
@@ -354,6 +357,9 @@ class DynamicController extends BaseAdminController
             return $this->fail('无权限操作');
         }
         $params = (new DynamicValidate())->post()->goCheck('edit');
+        if ((int)($params['dynamic_type'] ?? 0) === Dynamic::TYPE_ACTIVITY) {
+            return $this->fail('活动仅支持管理员发布');
+        }
         $result = DynamicLogic::staffEdit($staffScopeId, (int)$params['id'], $params);
         if (true === $result) {
             return $this->success('编辑成功', [], 1, 1);
@@ -388,7 +394,11 @@ class DynamicController extends BaseAdminController
         if ($this->getRequiredStaffScopeId() <= 0) {
             return $this->fail('无权限操作');
         }
-        return $this->data(DynamicLogic::getTypeOptions());
+        $options = array_values(array_filter(
+            DynamicLogic::getTypeOptions(),
+            static fn(array $item): bool => (int)($item['value'] ?? 0) !== Dynamic::TYPE_ACTIVITY
+        ));
+        return $this->data($options);
     }
 
     /**

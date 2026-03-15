@@ -22,7 +22,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-    click: [event: Event]
+    (event: 'click', payload: Event): void
 }>()
 
 // 计算卡片类名

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\adminapi\controller\crm;
 
 use app\adminapi\controller\BaseAdminController;
+use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\lists\crm\SalesAdvisorLists;
 use app\adminapi\logic\crm\SalesAdvisorLogic;
 use app\adminapi\validate\crm\SalesAdvisorValidate;
@@ -19,6 +20,14 @@ use app\adminapi\validate\crm\SalesAdvisorValidate;
  */
 class SalesAdvisorController extends BaseAdminController
 {
+    use OfflineModuleGuard;
+
+    public function initialize()
+    {
+        parent::initialize();
+        $this->abortOfflineModule('CRM 管理');
+    }
+
     /**
      * @notes 顾问列表
      * @return \think\response\Json

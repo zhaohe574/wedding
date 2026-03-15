@@ -168,8 +168,8 @@ const props = defineProps<Props>()
 const $theme = useThemeStore()
 
 const emit = defineEmits<{
-    click: [orderId: number]
-    action: [action: { text: string; type: string; action: string }, order: OrderData]
+    (event: 'click', orderId: number): void
+    (event: 'action', action: { text: string; type: string; action: string }, order: OrderData): void
 }>()
 
 const getTimeSlotLabel = (timeSlot: any) => {

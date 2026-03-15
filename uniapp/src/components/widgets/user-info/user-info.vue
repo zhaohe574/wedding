@@ -1,24 +1,33 @@
 <template>
     <view class="user-info-wrapper">
-        <!-- 用户信息卡片 -->
-        <view class="user-card mx-[24rpx] mt-[24rpx] rounded-[24rpx] overflow-hidden">
-            <!-- 用户信息区域 -->
+        <view class="user-header-shell" :style="{ background: $theme.navBgColor || '#FFFFFF' }">
+            <tn-navbar
+                fixed
+                :bg-color="$theme.navBgColor || '#FFFFFF'"
+                :text-color="$theme.navColor || '#111827'"
+                :back-icon="''"
+                :home-icon="''"
+                :safe-area-inset-right="false"
+                :bottom-shadow="false"
+            >
+                <text class="user-header-title">个人中心</text>
+            </tn-navbar>
+        </view>
+
+        <view class="user-card mx-[24rpx] rounded-[24rpx] overflow-hidden">
             <view class="user-content p-[32rpx]">
                 <view class="flex items-center justify-between">
-                    <!-- 左侧：头像和信息 -->
                     <view
                         v-if="isLogin"
                         class="flex items-center flex-1"
                         @click="navigateTo('/pages/user_data/user_data')"
                     >
-                        <!-- 头像 -->
                         <view class="avatar-wrapper">
                             <tn-avatar
                                 :url="user.avatar || '/static/images/user/default_avatar.png'"
                                 :size="140"
                                 shape="circle"
                             />
-                            <!-- VIP标识 -->
                             <view
                                 v-if="user.is_vip"
                                 class="vip-badge"
@@ -29,34 +38,26 @@
                             </view>
                         </view>
 
-                        <!-- 用户信息 -->
                         <view class="user-info-section ml-[24rpx] flex-1">
                             <view class="flex items-center mb-[12rpx]">
                                 <text class="user-nickname">{{ user.nickname }}</text>
-                                <!-- 认证标识 -->
                                 <view
                                     v-if="user.is_verified"
                                     class="verified-badge"
                                     :style="{ backgroundColor: $theme.primaryColor + '15' }"
                                 >
-                                    <text
-                                        class="verified-text"
-                                        :style="{ color: $theme.primaryColor }"
-                                        >已认证</text
-                                    >
+                                    <text class="verified-text" :style="{ color: $theme.primaryColor }">
+                                        已认证
+                                    </text>
                                 </view>
                             </view>
-                            <view
-                                class="flex items-center account-row"
-                                @click.stop="copy(user.account)"
-                            >
+                            <view class="flex items-center account-row" @click.stop="copy(user.account)">
                                 <text class="account-text">账号：{{ user.account }}</text>
                                 <tn-icon name="copy" size="28" color="#94A3B8" class="ml-[8rpx]" />
                             </view>
                         </view>
                     </view>
 
-                    <!-- 未登录状态 -->
                     <navigator
                         v-else
                         class="flex items-center flex-1"
@@ -78,7 +79,6 @@
                         </view>
                     </navigator>
 
-                    <!-- 右侧：设置按钮 -->
                     <navigator
                         v-if="isLogin"
                         hover-class="none"
@@ -97,15 +97,12 @@
         </view>
     </view>
 </template>
+
 <script lang="ts" setup>
 import { useCopy } from '@/hooks/useCopy'
 import { useThemeStore } from '@/stores/theme'
 
-const props = defineProps({
-    pageMeta: {
-        type: Object,
-        default: () => []
-    },
+defineProps({
     content: {
         type: Object,
         default: () => ({})
@@ -138,7 +135,29 @@ const navigateTo = (url: string) => {
     padding-bottom: 24rpx;
 }
 
+.user-header-shell {
+    position: relative;
+    padding-bottom: 56rpx;
+    border-bottom-left-radius: 32rpx;
+    border-bottom-right-radius: 32rpx;
+    overflow: hidden;
+}
+
+.user-header-title {
+    max-width: 100%;
+    font-size: 32rpx;
+    font-weight: 400;
+    line-height: 1.2;
+    color: currentColor;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .user-card {
+    position: relative;
+    z-index: 1;
+    margin-top: -24rpx;
     background: #ffffff;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
     transition: all 0.2s ease;

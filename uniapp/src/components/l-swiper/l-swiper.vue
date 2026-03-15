@@ -112,8 +112,10 @@ const lists = computed(() => {
 })
 
 const handleClick = (index: number) => {
-    const link = props.content.data[index]?.link
-    if (!link || !link.path) return
+    const currentItem = lists.value[index]
+    const link = currentItem?.link
+    const path = typeof link?.path === 'string' ? link.path.trim() : ''
+    if (!currentItem || !link || !path) return
     navigateTo(link)
 }
 

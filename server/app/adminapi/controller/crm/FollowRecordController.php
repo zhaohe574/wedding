@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\adminapi\controller\crm;
 
 use app\adminapi\controller\BaseAdminController;
+use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\lists\crm\FollowRecordLists;
 use app\adminapi\logic\crm\FollowRecordLogic;
 use app\adminapi\validate\crm\FollowRecordValidate;
@@ -19,6 +20,14 @@ use app\adminapi\validate\crm\FollowRecordValidate;
  */
 class FollowRecordController extends BaseAdminController
 {
+    use OfflineModuleGuard;
+
+    public function initialize()
+    {
+        parent::initialize();
+        $this->abortOfflineModule('CRM 管理');
+    }
+
     /**
      * @notes 跟进记录列表
      * @return \think\response\Json

@@ -1,0 +1,1 @@
+const o=(o,t=void 0)=>null==o?t:o,t=(t,n,c=void 0)=>o(t,o(n,c));function n(o){return null!=o&&"object"==typeof o}const c=Object.prototype.toString;function e(o){return!0===o||!1===o||n(o)&&"[object Boolean]"==c.call(o)}export{e as a,t as b,n as c,o as i,c as o};

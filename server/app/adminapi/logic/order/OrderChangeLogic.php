@@ -43,13 +43,13 @@ class OrderChangeLogic extends BaseLogic
                 }]);
             },
             'oldStaff' => function ($query) {
-                $query->field('id, name, avatar, price');
+                $query->field('id, name, avatar');
             },
             'newStaff' => function ($query) {
-                $query->field('id, name, avatar, price');
+                $query->field('id, name, avatar');
             },
             'addStaff' => function ($query) {
-                $query->field('id, name, avatar, price');
+                $query->field('id, name, avatar');
             },
         ])->find($id);
 

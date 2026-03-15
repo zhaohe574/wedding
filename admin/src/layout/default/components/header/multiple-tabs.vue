@@ -60,7 +60,8 @@ const handleCommand = (command: any) => {
 </script>
 <style lang="scss" scoped>
 .app-tabs {
-    @apply border-t border-br;
+    @apply border-t border-br px-2;
+    border-color: var(--admin-color-border);
     :deep(.el-tabs) {
         height: 40px;
         .el-tabs {
@@ -82,6 +83,7 @@ const handleCommand = (command: any) => {
                 font-weight: normal;
                 padding: 0 12px !important;
                 box-sizing: border-box;
+                border-radius: 8px 8px 0 0;
                 &.is-active {
                     background-color: var(--el-color-primary-light-9);
                     &::before {

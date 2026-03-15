@@ -1,0 +1,1 @@
+import{aa as a}from"./index-cfb98307.js";function t(t){return a.get({url:"/schedule/staffSchedule",params:t})}function s(t){return a.post({url:"/schedule/joinWaitlist",params:t})}function e(t){return a.get({url:"/schedule/myWaitlist",params:t})}function r(t){return a.post({url:"/schedule/cancelWaitlist",params:t})}export{e as a,r as c,t as g,s as j};

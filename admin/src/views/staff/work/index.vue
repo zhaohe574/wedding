@@ -2,7 +2,7 @@
     <div class="staff-work">
         <el-card class="!border-none" shadow="never">
             <el-form :model="queryParams" inline>
-                <el-form-item label="工作人员">
+                <el-form-item class="w-[240px]" label="工作人员">
                     <el-select v-model="queryParams.staff_id" placeholder="选择人员" clearable filterable>
                         <el-option
                             v-for="item in staffOptions"
@@ -12,7 +12,7 @@
                         />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="作品标题">
+                <el-form-item class="w-[220px]" label="作品标题">
                     <el-input
                         v-model="queryParams.title"
                         placeholder="输入作品标题"
@@ -20,26 +20,26 @@
                         @keyup.enter="resetPage"
                     />
                 </el-form-item>
-                <el-form-item label="作品类型">
+                <el-form-item class="w-[160px]" label="作品类型">
                     <el-select v-model="queryParams.type" placeholder="选择类型" clearable>
                         <el-option label="图片" :value="1" />
                         <el-option label="视频" :value="2" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="审核状态">
+                <el-form-item class="w-[160px]" label="审核状态">
                     <el-select v-model="queryParams.audit_status" placeholder="选择状态" clearable>
                         <el-option label="待审核" :value="0" />
                         <el-option label="已通过" :value="1" />
                         <el-option label="已拒绝" :value="2" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="显示状态">
+                <el-form-item class="w-[160px]" label="显示状态">
                     <el-select v-model="queryParams.is_show" placeholder="选择状态" clearable>
                         <el-option label="显示" :value="1" />
                         <el-option label="隐藏" :value="0" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="封面">
+                <el-form-item class="w-[140px]" label="封面">
                     <el-select v-model="queryParams.is_cover" placeholder="选择状态" clearable>
                         <el-option label="是" :value="1" />
                         <el-option label="否" :value="0" />
@@ -85,7 +85,7 @@
                 <el-table-column label="显示" width="90">
                     <template #default="{ row }">
                         <el-switch
-                            v-perms="['staff.staffWork/changeStatus']"
+                            v-perms="['ops.staffWork/changeStatus']"
                             v-model="row.is_show"
                             :active-value="1"
                             :inactive-value="0"
@@ -106,7 +106,7 @@
                         <el-button link type="primary" @click="openDetail(row)">详情</el-button>
                         <el-button
                             v-if="row.audit_status === 0"
-                            v-perms="['staff.staffWork/audit']"
+                            v-perms="['ops.staffWork/audit']"
                             link
                             type="success"
                             @click="handleAudit(row, 1)"
@@ -115,7 +115,7 @@
                         </el-button>
                         <el-button
                             v-if="row.audit_status === 0"
-                            v-perms="['staff.staffWork/audit']"
+                            v-perms="['ops.staffWork/audit']"
                             link
                             type="danger"
                             @click="handleAudit(row, 2)"
@@ -124,7 +124,7 @@
                         </el-button>
                         <el-button
                             v-if="row.audit_status === 1 && !row.is_cover"
-                            v-perms="['staff.staffWork/setCover']"
+                            v-perms="['ops.staffWork/setCover']"
                             link
                             type="warning"
                             @click="handleSetCover(row)"
@@ -132,7 +132,7 @@
                             设为封面
                         </el-button>
                         <el-button
-                            v-perms="['staff.staffWork/delete']"
+                            v-perms="['ops.staffWork/delete']"
                             link
                             type="danger"
                             @click="handleDelete(row)"
@@ -324,12 +324,12 @@ const { pager, getLists, resetPage, resetParams } = usePaging({
 })
 
 const getAuditTagType = (status: number) => {
-    const map: Record<number, string> = {
+    const map = {
         0: 'warning',
         1: 'success',
         2: 'danger'
-    }
-    return map[status] || 'info'
+    } as const
+    return map[status as keyof typeof map] ?? 'info'
 }
 
 const fetchStaffOptions = async () => {
@@ -340,9 +340,9 @@ const fetchStaffOptions = async () => {
     }
 }
 
-const handleChangeStatus = async (status: number, row: any) => {
+const handleChangeStatus = async (status: string | number | boolean, row: any) => {
     try {
-        await staffWorkChangeStatus({ id: row.id, is_show: status })
+        await staffWorkChangeStatus({ id: row.id, is_show: Number(status) })
         getLists()
     } catch (error) {
         getLists()

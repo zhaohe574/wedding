@@ -44,7 +44,8 @@ const handleClick = () => {
     overflow: hidden;
     cursor: pointer;
     user-select: none;
-    @apply flex items-center p-2 relative;
+    @apply flex items-center px-3 py-2 relative;
+    border-bottom: 1px solid var(--admin-color-border);
     .logo-title {
         width: 70%;
         position: absolute;

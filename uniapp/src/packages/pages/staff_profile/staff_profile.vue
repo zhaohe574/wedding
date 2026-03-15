@@ -60,22 +60,6 @@
                 />
             </view>
 
-            <view class="form-item">
-                <view class="form-label">
-                    <text>服务价格</text>
-                </view>
-                <view class="price-input-row">
-                    <text class="price-prefix" :style="{ color: $theme.ctaColor }">¥</text>
-                    <tn-input
-                        v-model="form.price"
-                        type="number"
-                        placeholder="请输入价格"
-                        class="form-input"
-                        :border="false"
-                    />
-                </view>
-            </view>
-
             <view class="form-item no-border">
                 <view class="form-label">
                     <text>从业年限</text>
@@ -160,7 +144,6 @@ const form = reactive({
     avatar: '',
     mobile: '',
     category_id: 0,
-    price: '',
     experience_years: '',
     profile: '',
     service_desc: ''
@@ -195,7 +178,6 @@ const loadProfile = async () => {
     form.avatar = data?.avatar || ''
     form.mobile = data?.mobile_full || data?.mobile || ''
     form.category_id = Number(data?.category_id || 0)
-    form.price = data?.price !== undefined && data?.price !== null ? String(data?.price) : ''
     form.experience_years =
         data?.experience_years !== undefined && data?.experience_years !== null
             ? String(data?.experience_years)
@@ -219,7 +201,6 @@ const handleSave = async () => {
     }
 
     if (form.mobile) payload.mobile = form.mobile
-    if (form.price !== '') payload.price = Number(form.price)
     if (form.experience_years !== '') payload.experience_years = Number(form.experience_years)
 
     saving.value = true
@@ -332,18 +313,6 @@ onShow(async () => {
 .form-readonly {
     flex: 1;
     font-size: 28rpx;
-}
-
-.price-input-row {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 6rpx;
-}
-
-.price-prefix {
-    font-size: 28rpx;
-    font-weight: 700;
 }
 
 .year-input-row {

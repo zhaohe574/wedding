@@ -10,10 +10,10 @@ namespace app\api\logic;
 use app\common\logic\BaseLogic;
 use app\common\model\schedule\Schedule;
 use app\common\model\schedule\ScheduleRule;
-use app\common\model\schedule\CalendarEvent;
 use app\common\model\schedule\Waitlist;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
+use app\common\service\StaffPriceService;
 use think\facade\Db;
 
 /**
@@ -43,9 +43,6 @@ class ScheduleLogic extends BaseLogic
         // 获取规则
         $rule = ScheduleRule::getStaffRule($staffId);
 
-        // 获取黄历数据
-        $calendarEvents = CalendarEvent::getMonthCalendar((int)$year, (int)$month);
-
         // 生成每日状态
         $startDate = sprintf('%04d-%02d-01', $year, $month);
         $endDate = date('Y-m-t', strtotime($startDate));
@@ -54,7 +51,6 @@ class ScheduleLogic extends BaseLogic
         $days = [];
         while ($currentDate <= $endDate) {
             $daySchedules = $schedules[$currentDate] ?? [];
-            $calendarEvent = $calendarEvents[$currentDate] ?? null;
 
             // 判断是否可预约
             $isAvailable = self::checkDateAvailable($staffId, $currentDate, $rule);
@@ -80,20 +76,27 @@ class ScheduleLogic extends BaseLogic
                 'schedules' => $daySchedules,
                 'is_available' => $isAvailable,
                 'slot_availability' => $slotAvailability,
-                'is_lucky_day' => $calendarEvent['is_lucky_day'] ?? 0,
-                'is_holiday' => $calendarEvent['is_holiday'] ?? 0,
-                'holiday_name' => $calendarEvent['holiday_name'] ?? '',
-                'lunar_date' => $calendarEvent['lunar_date'] ?? '',
+                'is_lucky_day' => 0,
+                'is_holiday' => 0,
+                'holiday_name' => '',
+                'lunar_date' => '',
             ];
 
             $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 day'));
         }
 
         // 获取工作人员信息
-        $staff = Staff::field('id, name, avatar, price')->find($staffId);
+        $staff = Staff::field('id, name, avatar')->find($staffId);
+        $staffData = $staff ? $staff->toArray() : null;
+        if ($staffData) {
+            $displayPrice = StaffPriceService::getDisplayPriceByStaffId((int)$staffData['id']);
+            $staffData['price'] = $displayPrice['price'];
+            $staffData['has_price'] = $displayPrice['has_price'];
+            $staffData['price_text'] = $displayPrice['price_text'];
+        }
 
         return [
-            'staff' => $staff ? $staff->toArray() : null,
+            'staff' => $staffData,
             'year' => $year,
             'month' => $month,
             'rule' => $rule,
@@ -218,7 +221,7 @@ class ScheduleLogic extends BaseLogic
     }
 
     /**
-     * @notes 获取月度日历（含吉日）
+     * @notes 获取月度日历
      * @param array $params
      * @return array
      */
@@ -227,26 +230,23 @@ class ScheduleLogic extends BaseLogic
         $year = $params['year'] ?? date('Y');
         $month = $params['month'] ?? date('m');
 
-        $events = CalendarEvent::getMonthCalendar((int)$year, (int)$month);
-
         $startDate = sprintf('%04d-%02d-01', $year, $month);
         $endDate = date('Y-m-t', strtotime($startDate));
         $currentDate = $startDate;
 
         $days = [];
         while ($currentDate <= $endDate) {
-            $event = $events[$currentDate] ?? null;
             $days[] = [
                 'date' => $currentDate,
                 'week' => date('w', strtotime($currentDate)),
                 'is_today' => $currentDate == date('Y-m-d'),
                 'is_past' => strtotime($currentDate) < strtotime(date('Y-m-d')),
-                'is_lucky_day' => $event['is_lucky_day'] ?? 0,
-                'is_holiday' => $event['is_holiday'] ?? 0,
-                'holiday_name' => $event['holiday_name'] ?? '',
-                'lunar_date' => $event['lunar_date'] ?? '',
-                'lucky_events' => $event['lucky_events'] ?? '',
-                'congestion_level' => $event['congestion_level'] ?? 0,
+                'is_lucky_day' => 0,
+                'is_holiday' => 0,
+                'holiday_name' => '',
+                'lunar_date' => '',
+                'lucky_events' => '',
+                'congestion_level' => 0,
             ];
             $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 day'));
         }
@@ -265,11 +265,7 @@ class ScheduleLogic extends BaseLogic
      */
     public static function getLuckyDays(array $params): array
     {
-        $startDate = $params['start_date'] ?? date('Y-m-d');
-        $endDate = $params['end_date'] ?? date('Y-m-d', strtotime('+90 days'));
-        $marriageOnly = !empty($params['marriage_only']);
-
-        return CalendarEvent::getLuckyDaysInRange($startDate, $endDate, $marriageOnly);
+        return [];
     }
 
     /**

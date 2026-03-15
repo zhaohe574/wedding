@@ -15,7 +15,7 @@
                         <div class="mt-2 flex items-center">
                             ¥{{ formData.user_money }}
                             <el-button
-                                v-perms="['user.user/adjustMoney']"
+                                v-perms="['content.user/adjustMoney']"
                                 type="primary"
                                 link
                                 @click="handleAdjust(formData.user_money)"
@@ -34,7 +34,7 @@
                         class="ml-[10px]"
                         @confirm="handleEdit($event, 'account')"
                         :limit="32"
-                        v-perms="['user.user/edit']"
+                        v-perms="['content.user/edit']"
                     >
                         <el-button type="primary" link>
                             <icon name="el-icon-EditPen" />
@@ -47,7 +47,7 @@
                         class="ml-[10px]"
                         @confirm="handleEdit($event, 'real_name')"
                         :limit="32"
-                        v-perms="['user.user/edit']"
+                        v-perms="['content.user/edit']"
                     >
                         <el-button type="primary" link>
                             <icon name="el-icon-EditPen" />
@@ -74,7 +74,7 @@
                             }
                         ]"
                         @confirm="handleEdit($event, 'sex')"
-                        v-perms="['user.user/edit']"
+                        v-perms="['content.user/edit']"
                     >
                         <el-button type="primary" link>
                             <icon name="el-icon-EditPen" />
@@ -87,7 +87,7 @@
                         class="ml-[10px]"
                         type="number"
                         @confirm="handleEdit($event, 'mobile')"
-                        v-perms="['user.user/edit']"
+                        v-perms="['content.user/edit']"
                     >
                         <el-button type="primary" link>
                             <icon name="el-icon-EditPen" />

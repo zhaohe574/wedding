@@ -73,9 +73,10 @@
         <!-- 方案详情弹窗 -->
         <tn-popup
             v-model="showPlanDetail"
-            mode="center"
-            :border-radius="32"
-            :mask-close-able="false"
+            open-direction="center"
+            :radius="32"
+            :overlay-closeable="false"
+            :z-index="999"
         >
             <view class="plan-detail-popup">
                 <!-- 弹窗头部 -->
@@ -159,11 +160,11 @@
                         :style="{
                             background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
                         }"
-                        @click="handleCopyPlan"
+                        @click="handleSavePlan"
                     >
-                        <tn-icon v-if="copying" name="loading" size="32" color="#FFFFFF" />
-                        <tn-icon v-else name="shopping-cart" size="32" color="#FFFFFF" />
-                        <text>{{ copying ? '复制中...' : '复制到购物车' }}</text>
+                        <tn-icon v-if="saving" name="loading" size="32" color="#FFFFFF" />
+                        <tn-icon v-else name="folder-add" size="32" color="#FFFFFF" />
+                        <text>{{ saving ? '保存中...' : '保存为我的方案' }}</text>
                     </view>
                 </view>
             </view>
@@ -173,7 +174,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { getPlanByShareCode, copyPlanByShareCode } from '@/api/cart'
+import { getPlanByShareCode, savePlanByShareCode } from '@/api/cart'
 import { useThemeStore } from '@/stores/theme'
 
 const $theme = useThemeStore()
@@ -189,7 +190,7 @@ const getColor = (type: string) => {
 
 const shareCode = ref('')
 const loading = ref(false)
-const copying = ref(false)
+const saving = ref(false)
 const showPlanDetail = ref(false)
 const planDetail = ref<any>(null)
 
@@ -225,29 +226,34 @@ const handleSubmit = async () => {
     }
 }
 
-// 复制方案到购物车
-const handleCopyPlan = async () => {
-    if (copying.value) return
+// 保存方案
+const handleSavePlan = async () => {
+    if (saving.value) return
 
-    copying.value = true
+    saving.value = true
     try {
-        const result = await copyPlanByShareCode({ share_code: shareCode.value.trim() })
+        const planName = planDetail.value?.plan_name || '分享的方案'
+        const result = await savePlanByShareCode({
+            share_code: shareCode.value.trim(),
+            plan_name: planName
+        })
+
         uni.showToast({
-            title: `已复制${result.copied_count || 0}项到购物车`,
+            title: '已保存到我的方案',
             icon: 'success'
         })
 
         showPlanDetail.value = false
 
-        // 延迟跳转到购物车
+        // 跳转到我的方案页面
         setTimeout(() => {
-            uni.navigateTo({ url: '/packages/pages/cart/cart' })
+            uni.navigateTo({ url: '/packages/pages/cart_plan/cart_plan' })
         }, 1500)
     } catch (e: any) {
-        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '复制失败'
+        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '保存失败'
         uni.showToast({ title: errorMsg, icon: 'none' })
     } finally {
-        copying.value = false
+        saving.value = false
     }
 }
 </script>
@@ -590,16 +596,19 @@ const handleCopyPlan = async () => {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12rpx;
-            padding: 28rpx;
+            gap: 8rpx;
+            padding: 28rpx 20rpx;
             border-radius: 56rpx;
-            font-size: 28rpx;
+            font-size: 26rpx;
             font-weight: 600;
             transition: all 0.2s ease;
+            white-space: nowrap;
 
             &.secondary {
                 background: #f5f5f5;
                 color: #666666;
+                flex: 0 0 auto;
+                min-width: 160rpx;
 
                 &:active {
                     background: #e5e5e5;
@@ -610,6 +619,7 @@ const handleCopyPlan = async () => {
             &.primary {
                 color: #ffffff;
                 box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.35);
+                flex: 1;
 
                 &:active {
                     transform: scale(0.98);

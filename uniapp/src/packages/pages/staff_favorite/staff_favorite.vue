@@ -108,9 +108,20 @@
                         <!-- 底部：价格和操作 -->
                         <view class="info-footer">
                             <view class="price-wrapper">
-                                <text class="price-symbol">¥</text>
-                                <text class="price-value">{{ item.price }}</text>
-                                <text class="price-unit">/次</text>
+                                <template
+                                    v-if="
+                                        item.has_price !== false &&
+                                        item.price !== null &&
+                                        item.price !== undefined
+                                    "
+                                >
+                                    <text class="price-symbol">¥</text>
+                                    <text class="price-value">{{
+                                        item.price_text || item.price
+                                    }}</text>
+                                    <text class="price-unit">/次</text>
+                                </template>
+                                <text v-else class="price-negotiable">面议</text>
                             </view>
                             <view
                                 class="action-btn"
@@ -458,6 +469,12 @@ onShow(() => {
     font-size: 24rpx;
     color: var(--color-muted);
     margin-left: 4rpx;
+}
+
+.price-negotiable {
+    font-size: 30rpx;
+    color: var(--color-muted);
+    font-weight: 600;
 }
 
 .action-btn {

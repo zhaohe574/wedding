@@ -1,128 +1,177 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
         <!-- #ifndef H5 -->
-        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
+        <navigation-bar
+            title="动态广场"
+            :front-color="$theme.navColor"
+            :background-color="$theme.navBgColor"
+        />
         <!-- #endif -->
     </page-meta>
+
     <view class="dynamic-page">
-        <!-- 话题筛选提示 -->
-        <view v-if="currentTag" class="tag-filter-banner">
-            <view class="tag-filter-content">
-                <tn-icon name="fire" size="32" color="#FFFFFF" />
-                <text class="tag-text">话题：{{ currentTag }}</text>
-                <view class="clear-filter" @click="clearTagFilter">
-                    <tn-icon name="close" size="32" color="#FFFFFF" />
+        <view class="filter-header">
+            <view v-if="currentTag" class="tag-filter-banner" :style="tagBannerStyle">
+                <view class="tag-filter-banner__icon">
+                    <tn-icon name="fire" size="28" color="#FFFFFF" />
                 </view>
-            </view>
-        </view>
-
-        <!-- 类型筛选标签 -->
-        <view class="type-tabs-wrapper">
-            <view class="tabs-container">
-                <tn-tabs
-                    v-model="currentTypeIndex"
-                    :scroll="false"
-                    height="70rpx"
-                    class="tabs-main"
-                    :active-color="$theme.primaryColor"
-                    :bar-color="$theme.primaryColor"
-                >
-                    <tn-tabs-item
-                        v-for="(tab, index) in typeTabs"
-                        :key="index"
-                        :title="tab.label"
-                    />
-                </tn-tabs>
-                <view class="sort-btn" @click="toggleSortMenu">
-                    <tn-icon name="sort" size="32" :color="$theme.primaryColor" />
-                    <text class="sort-text">{{ currentSortLabel }}</text>
-                    <tn-icon
-                        :name="showSortMenu ? 'up' : 'down'"
-                        size="24"
-                        :color="$theme.primaryColor"
-                    />
+                <view class="tag-filter-banner__content">
+                    <text class="tag-filter-banner__label">当前话题</text>
+                    <text class="tag-filter-banner__text">#{{ currentTag }}</text>
+                </view>
+                <view class="tag-filter-banner__clear" @click="clearTagFilter">
+                    <tn-icon name="close" size="28" color="#FFFFFF" />
                 </view>
             </view>
 
-            <!-- 排序菜单 -->
-            <view v-if="showSortMenu" class="sort-menu">
+            <view class="type-scroll-wrapper">
+                <scroll-view :scroll-x="true" class="type-scroll" :show-scrollbar="false">
+                    <view class="type-scroll-content">
+                        <view
+                            v-for="(tab, index) in typeTabs"
+                            :key="tab.label"
+                            class="type-chip"
+                            :class="{ active: currentTypeIndex === index }"
+                            :style="currentTypeIndex === index ? getActiveTypeChipStyle() : {}"
+                            @click="currentTypeIndex = index"
+                        >
+                            {{ tab.label }}
+                        </view>
+                    </view>
+                </scroll-view>
                 <view
-                    v-for="(item, index) in sortOptions"
-                    :key="index"
-                    class="sort-menu-item"
-                    :class="{ 'sort-menu-item-active': currentSort === item.value }"
-                    @click="selectSort(item.value)"
+                    class="filter-item filter-item--sort"
+                    :style="sortIsActive ? getFilterItemActiveStyle() : {}"
+                    @click="showSortPicker = true"
                 >
-                    <text class="sort-menu-text">{{ item.label }}</text>
                     <tn-icon
-                        v-if="currentSort === item.value"
-                        name="check"
-                        size="32"
-                        :color="$theme.primaryColor"
+                        name="sort"
+                        size="24"
+                        :color="sortIsActive ? $theme.primaryColor : '#666666'"
+                    />
+                    <text
+                        :class="{ active: sortIsActive }"
+                        :style="sortIsActive ? { color: $theme.primaryColor } : {}"
+                    >
+                        {{ currentSortLabel }}
+                    </text>
+                    <tn-icon
+                        name="arrow-down"
+                        size="20"
+                        :color="sortIsActive ? $theme.primaryColor : '#999999'"
                     />
                 </view>
             </view>
         </view>
 
-        <!-- 动态列表 -->
-        <view class="dynamic-list-wrapper">
-            <!-- 加载中 -->
+        <view class="dynamic-feed">
             <view v-if="loading && dynamics.length === 0" class="loading-state">
                 <tn-loading size="60" mode="flower" />
-                <text class="loading-text">加载中...</text>
+                <text class="loading-text">动态加载中...</text>
             </view>
 
-            <!-- 空状态 -->
             <view v-else-if="dynamics.length === 0" class="empty-state">
-                <view class="empty-icon-wrapper">
-                    <tn-icon name="file-text" size="120" color="#d1d5db" />
+                <view class="empty-icon-wrap">
+                    <tn-icon name="inbox" size="150" color="#D1D5DB" />
                 </view>
-                <text class="empty-title">暂无动态</text>
-                <text class="empty-subtitle">快来发布第一条动态吧~</text>
+                <text class="empty-title">暂无符合条件的动态</text>
+                <text class="empty-subtitle">换个类型或排序试试，广场里还有更多内容等你发现</text>
+                <view
+                    v-if="showResetAction"
+                    class="empty-action-btn"
+                    :style="{
+                        background: getPrimaryGradient(),
+                        boxShadow: getPrimaryShadow(0.26)
+                    }"
+                    @click="handleResetFilters"
+                >
+                    <text class="empty-action-text" :style="{ color: $theme.btnColor }">
+                        重置筛选
+                    </text>
+                </view>
             </view>
 
-            <!-- 动态列表 - 使用DynamicCard组件 -->
             <view v-else class="dynamic-list">
                 <dynamic-card
                     v-for="item in dynamics"
                     :key="item.id"
                     :dynamic="item"
+                    variant="plaza-unified"
+                    :show-share="false"
                     @click="goDetail"
                     @like="handleLike"
                     @comment="goDetail"
-                    @share="handleShare"
                     @follow="handleFollow"
                 />
 
-                <!-- 加载更多提示 -->
                 <view v-if="hasMore" class="load-more">
                     <text v-if="loading" class="load-more-text">加载中...</text>
-                    <text v-else class="load-more-text load-more-clickable" @click="loadMore"
-                        >加载更多</text
-                    >
+                    <text v-else class="load-more-text load-more-clickable" @click="loadMore">
+                        加载更多
+                    </text>
                 </view>
-                <view v-else-if="dynamics.length > 0" class="load-more">
+                <view v-else class="load-more">
                     <text class="load-more-text">没有更多了</text>
                 </view>
             </view>
         </view>
+
+        <TnPopup
+            v-model="showSortPicker"
+            open-direction="bottom"
+            :radius="24"
+            :safe-area-inset-bottom="true"
+        >
+            <view class="picker-container">
+                <view class="picker-header">
+                    <text class="picker-title">选择排序</text>
+                    <view class="picker-close" @click="showSortPicker = false">
+                        <tn-icon name="close" size="32" color="#666666" />
+                    </view>
+                </view>
+                <view class="button-picker-content">
+                    <view class="button-grid">
+                        <view
+                            v-for="item in sortOptions"
+                            :key="item.value"
+                            class="button-item"
+                            :class="{ active: currentSort === item.value }"
+                            :style="
+                                currentSort === item.value
+                                    ? {
+                                          background: getPrimaryGradient(),
+                                          color: '#FFFFFF',
+                                          boxShadow: getPrimaryShadow(0.2)
+                                      }
+                                    : {}
+                            "
+                            @click="selectSort(item.value)"
+                        >
+                            {{ item.label }}
+                        </view>
+                    </view>
+                </view>
+            </view>
+        </TnPopup>
 
         <tabbar />
     </view>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { onLoad, onShow, onReachBottom, onShareAppMessage } from '@dcloudio/uni-app'
-import { useUserStore } from '@/stores/user'
-import { useThemeStore } from '@/stores/theme'
-import { getDynamicList, likeDynamic, collectDynamic, toggleFollow } from '@/api/dynamic'
+import { computed, ref, watch } from 'vue'
+import { onLoad, onReachBottom, onShareAppMessage, onShow } from '@dcloudio/uni-app'
+import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import DynamicCard from '@/components/business/DynamicCard.vue'
+import { getDynamicList, likeDynamic, toggleFollow } from '@/api/dynamic'
+import { useThemeStore } from '@/stores/theme'
+import { useUserStore } from '@/stores/user'
+import { alphaColor } from '@/utils/color'
 import { mapDynamicItem } from '@/utils/dynamic'
+import type { DynamicCardData } from '@/utils/dynamic'
 
+const $theme = useThemeStore()
 const userStore = useUserStore()
-const themeStore = useThemeStore()
-const userId = computed(() => userStore.userInfo?.id)
 
 const typeTabs = [
     { label: '全部', value: '' },
@@ -133,50 +182,87 @@ const typeTabs = [
 ]
 
 const sortOptions = [
-    { label: '最新发布', value: 'latest' },
-    { label: '最多点赞', value: 'like' },
-    { label: '最多评论', value: 'comment' },
-    { label: '最多浏览', value: 'view' }
+    { label: '最新发布', value: 'latest', orderBy: 'create_time', orderDir: 'desc' },
+    { label: '最多点赞', value: 'like', orderBy: 'like_count', orderDir: 'desc' },
+    { label: '最多评论', value: 'comment', orderBy: 'comment_count', orderDir: 'desc' },
+    { label: '最多浏览', value: 'view', orderBy: 'view_count', orderDir: 'desc' }
 ]
 
 const currentTypeIndex = ref(0)
-const currentType = computed(() => typeTabs[currentTypeIndex.value].value)
-const currentTag = ref('') // 当前筛选的标签
-const currentSort = ref('latest') // 当前排序方式
-const showSortMenu = ref(false) // 是否显示排序菜单
-const currentSortLabel = computed(() => {
-    const option = sortOptions.find((item) => item.value === currentSort.value)
-    return option?.label || '最新发布'
-})
-const dynamics = ref<any[]>([])
+const currentTag = ref('')
+const currentSort = ref('latest')
+const showSortPicker = ref(false)
+const dynamics = ref<DynamicCardData[]>([])
 const loading = ref(false)
 const page = ref(1)
 const hasMore = ref(true)
 
-const fetchDynamics = async (refresh = false) => {
-    if (loading.value) return
-    loading.value = true
+const currentType = computed(() => typeTabs[currentTypeIndex.value]?.value ?? '')
+const sortIsActive = computed(() => currentSort.value !== 'latest')
+const showResetAction = computed(
+    () => Boolean(currentTag.value) || Boolean(currentType.value) || sortIsActive.value
+)
+const currentSortOption = computed(
+    () => sortOptions.find((item) => item.value === currentSort.value) || sortOptions[0]
+)
+const currentSortLabel = computed(() => currentSortOption.value.label)
 
+const getPrimaryGradient = () =>
+    `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
+
+const getPrimaryShadow = (alpha = 0.2) => `0 8rpx 24rpx ${alphaColor($theme.primaryColor, alpha)}`
+
+const getTypeChipActiveShadow = () => `0 2rpx 8rpx ${alphaColor($theme.primaryColor, 0.14)}`
+
+const getFilterItemActiveStyle = () => ({
+    background: alphaColor($theme.primaryColor, 0.1),
+    borderColor: alphaColor($theme.primaryColor, 0.32),
+    boxShadow: `0 6rpx 14rpx ${alphaColor($theme.primaryColor, 0.12)}`
+})
+
+const getActiveTypeChipStyle = () => ({
+    background: getPrimaryGradient(),
+    borderColor: $theme.primaryColor,
+    color: '#FFFFFF',
+    boxShadow: getTypeChipActiveShadow()
+})
+
+const tagBannerStyle = computed(() => ({
+    background: getPrimaryGradient(),
+    boxShadow: getPrimaryShadow(0.2)
+}))
+
+const buildQueryParams = () => {
+    const params: Record<string, any> = {
+        page: page.value,
+        page_size: 10,
+        order_by: currentSortOption.value.orderBy,
+        order_dir: currentSortOption.value.orderDir
+    }
+
+    if (currentType.value !== '') {
+        params.dynamic_type = currentType.value
+    }
+    if (currentTag.value) {
+        params.tag = currentTag.value
+    }
+
+    return params
+}
+
+const fetchDynamics = async (refresh = false) => {
+    if (loading.value) {
+        return
+    }
+
+    loading.value = true
     try {
         if (refresh) {
             page.value = 1
             dynamics.value = []
         }
 
-        const params: any = { page: page.value, page_size: 10 }
-        if (currentType.value !== '') {
-            params.dynamic_type = currentType.value
-        }
-        // 添加标签筛选参数
-        if (currentTag.value) {
-            params.tag = currentTag.value
-        }
-        // 添加排序参数
-        if (currentSort.value) {
-            params.sort = currentSort.value
-        }
-
-        const res = await getDynamicList(params)
+        const res = await getDynamicList(buildQueryParams())
         const list = (res.data || []).map(mapDynamicItem)
 
         if (refresh) {
@@ -194,140 +280,106 @@ const fetchDynamics = async (refresh = false) => {
 }
 
 const loadMore = () => {
-    if (hasMore.value && !loading.value) {
-        page.value++
-        fetchDynamics()
-    }
-}
-
-const goDetail = (dynamic: any) => {
-    // 处理不同的参数类型
-    let id: number | undefined
-
-    if (typeof dynamic === 'number') {
-        id = dynamic
-    } else if (dynamic && typeof dynamic === 'object') {
-        id = dynamic.id
-    }
-
-    if (!id) {
-        // 静默处理，不输出错误日志
+    if (!hasMore.value || loading.value) {
         return
     }
+    page.value += 1
+    fetchDynamics()
+}
 
+const goDetail = (dynamic: DynamicCardData | number) => {
+    const id = typeof dynamic === 'number' ? dynamic : dynamic?.id
+    if (!id) {
+        return
+    }
     uni.navigateTo({ url: `/pages/dynamic_detail/dynamic_detail?id=${id}` })
 }
 
-const goPublish = () => {
-    // 禁用用户发布动态功能
-    uni.showToast({
-        title: '动态发布功能已关闭，请联系管理员',
-        icon: 'none',
-        duration: 2000
-    })
-    return
-
-    // 以下代码已禁用
-    // if (!userStore.isLogin) {
-    //     uni.navigateTo({ url: '/pages/login/login' })
-    //     return
-    // }
-    // uni.navigateTo({ url: '/pages/dynamic_publish/dynamic_publish' })
-}
-
-const handleLike = async (dynamic: any) => {
+const handleLike = async (dynamic: DynamicCardData) => {
     if (!userStore.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
         return
     }
+
     try {
         await likeDynamic({ id: dynamic.id })
         dynamic.isLiked = !dynamic.isLiked
         dynamic.likeCount += dynamic.isLiked ? 1 : -1
     } catch (e: any) {
-        uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+        uni.showToast({ title: e?.message || e || '操作失败', icon: 'none' })
     }
 }
 
-const handleCollect = async (item: any) => {
+const handleFollow = async (publisherId: number) => {
     if (!userStore.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
         return
     }
-    try {
-        await collectDynamic({ id: item.id })
-        item.is_collected = !item.is_collected
-        item.collect_count += item.is_collected ? 1 : -1
-        uni.showToast({ title: item.is_collected ? '收藏成功' : '取消收藏', icon: 'none' })
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '操作失败', icon: 'none' })
-    }
-}
 
-const handleFollow = async (userId: number) => {
-    if (!userStore.isLogin) {
-        uni.navigateTo({ url: '/pages/login/login' })
+    const target = dynamics.value.find((item) => item.user.id === publisherId)
+    if (!target?.user.followType) {
         return
     }
-    try {
-        // 找到对应的动态并更新
-        const dynamic = dynamics.value.find((d) => d.user.id === userId)
-        if (!dynamic) return
 
-        await toggleFollow({
-            follow_type: 1, // 假设类型为1
-            follow_id: userId
+    try {
+        const res = await toggleFollow({
+            follow_type: target.user.followType,
+            follow_id: publisherId
         })
-        dynamic.user.isFollowed = true
-        uni.showToast({ title: '关注成功' })
+        const isFollowed = Boolean(res?.is_followed)
+
+        dynamics.value.forEach((item) => {
+            if (item.user.id === publisherId && item.user.followType === target.user.followType) {
+                item.user.isFollowed = isFollowed
+            }
+        })
+
+        uni.showToast({
+            title: isFollowed ? '关注成功' : '已取消关注',
+            icon: 'none'
+        })
     } catch (e: any) {
-        uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+        uni.showToast({ title: e?.message || e || '操作失败', icon: 'none' })
     }
 }
 
-const handleShare = (dynamic: any) => {
-    // 调用小程序分享
-    uni.showToast({ title: '分享功能开发中', icon: 'none' })
-}
-
-const previewImage = (images: string[], current: number) => {
-    uni.previewImage({
-        urls: images,
-        current: current
-    })
-}
-
-// 清除标签筛选
 const clearTagFilter = () => {
     currentTag.value = ''
     fetchDynamics(true)
 }
 
-// 切换排序菜单
-const toggleSortMenu = () => {
-    showSortMenu.value = !showSortMenu.value
-}
+const handleResetFilters = () => {
+    currentTag.value = ''
+    currentSort.value = 'latest'
+    showSortPicker.value = false
 
-// 选择排序方式
-const selectSort = (sort: string) => {
-    currentSort.value = sort
-    showSortMenu.value = false
+    if (currentTypeIndex.value !== 0) {
+        currentTypeIndex.value = 0
+        return
+    }
+
     fetchDynamics(true)
 }
 
-// 监听tabs切换
+const selectSort = (sort: string) => {
+    currentSort.value = sort
+    showSortPicker.value = false
+    fetchDynamics(true)
+}
+
 watch(currentTypeIndex, () => {
+    showSortPicker.value = false
     fetchDynamics(true)
 })
 
 onLoad((options: any) => {
-    // 接收标签参数
-    if (options.tag) {
+    if (options?.tag) {
         currentTag.value = decodeURIComponent(options.tag)
     }
 })
 
 onShow(() => {
+    showSortPicker.value = false
     fetchDynamics(true)
 })
 
@@ -335,211 +387,343 @@ onReachBottom(() => {
     loadMore()
 })
 
-onShareAppMessage((res) => {
-    return {
-        title: '婚庆服务动态广场',
-        path: '/pages/dynamic/dynamic'
-    }
-})
+onShareAppMessage(() => ({
+    title: '婚庆服务动态广场',
+    path: '/pages/dynamic/dynamic'
+}))
 </script>
 
 <style lang="scss" scoped>
 .dynamic-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, var(--color-primary-light-9, #faf5ff) 0%, #f5f5f5 100%);
+    background: linear-gradient(180deg, #fcf8ff 0%, #f8f6fb 42%, #f5f5f5 100%);
     padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
-/* 话题筛选提示横幅 */
+.filter-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 12rpx 0 8rpx;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(14rpx);
+    border-bottom: 1rpx solid rgba(229, 231, 235, 0.8);
+    box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.06);
+}
+
 .tag-filter-banner {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light-3) 100%);
-    padding: 16rpx 24rpx;
-    margin-bottom: 16rpx;
-    box-shadow: 0 2rpx 12rpx rgba(124, 58, 237, 0.2);
-}
-
-.tag-filter-content {
-    display: flex;
-    align-items: center;
-    gap: 16rpx; // 使用sm间距
-}
-
-.tag-text {
-    flex: 1;
-    font-size: 28rpx;
-    font-weight: 600;
-    color: #ffffff;
-}
-
-.clear-filter {
-    width: 48rpx;
-    height: 48rpx;
-    background: rgba(255, 255, 255, 0.2);
+    margin: 0 20rpx 12rpx;
+    padding: 18rpx 20rpx;
     border-radius: 24rpx;
     display: flex;
     align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
+    gap: 16rpx;
 
-    &:active {
-        background: rgba(255, 255, 255, 0.3);
-        transform: scale(0.98);
+    &__icon {
+        width: 56rpx;
+        height: 56rpx;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.18);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    &__content {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4rpx;
+    }
+
+    &__label {
+        font-size: 22rpx;
+        color: rgba(255, 255, 255, 0.78);
+    }
+
+    &__text {
+        font-size: 28rpx;
+        font-weight: 700;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__clear {
+        width: 56rpx;
+        height: 56rpx;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        &:active {
+            opacity: 0.85;
+            transform: scale(0.98);
+        }
     }
 }
 
-/* 类型筛选标签 */
-.type-tabs-wrapper {
-    background: #ffffff;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    margin-bottom: 16rpx;
-}
-
-.tabs-container {
+.type-scroll-wrapper {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding-right: 24rpx; // 使用md间距
+    gap: 12rpx;
+    padding: 8rpx 20rpx 4rpx;
 }
 
-.tabs-main {
+.type-scroll {
     flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
 }
 
-.sort-btn {
-    display: flex;
+.type-scroll-content {
+    display: inline-flex;
     align-items: center;
-    gap: 8rpx; // 使用xs间距
-    padding: 12rpx 16rpx; // 使用sm间距
-    background: var(--color-primary-light-9);
-    border-radius: 32rpx;
+    padding: 6rpx 0 10rpx;
+    white-space: nowrap;
+    width: max-content;
+}
+
+.type-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 126rpx;
+    height: 68rpx;
+    margin-right: 12rpx;
+    padding: 0 26rpx;
+    border-radius: 999rpx;
+    border: 1rpx solid #e7eaf0;
+    background: #f7f8fb;
+    font-size: 26rpx;
+    color: #4b5563;
+    font-weight: 500;
     transition: all 0.2s ease;
 
     &:active {
         transform: scale(0.98);
-        background: var(--color-primary-light-7);
+        opacity: 0.88;
     }
-}
 
-.sort-text {
-    font-size: 24rpx;
-    color: var(--color-primary);
-    font-weight: 500;
-}
-
-/* 排序菜单 */
-.sort-menu {
-    background: #ffffff;
-    border-top: 1rpx solid var(--color-light);
-    padding: 16rpx 0; // 使用sm间距
-    animation: slideDown 0.2s ease;
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10rpx);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.sort-menu-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 24rpx 32rpx; // 使用md和lg间距
-    transition: all 0.2s ease;
-
-    &:active {
-        background: var(--color-primary-light-9);
-    }
-}
-
-.sort-menu-item-active {
-    background: linear-gradient(90deg, var(--color-primary-light-9) 0%, #ffffff 100%);
-}
-
-.sort-menu-text {
-    font-size: 28rpx;
-    color: var(--color-content);
-
-    .sort-menu-item-active & {
-        color: var(--color-primary);
+    &.active {
         font-weight: 600;
     }
+
+    &:last-child {
+        margin-right: 8rpx;
+    }
 }
 
-/* 动态列表容器 */
-.dynamic-list-wrapper {
-    padding: 0 24rpx; // 使用md间距
+.filter-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    height: 68rpx;
+    min-width: 180rpx;
+    max-width: 210rpx;
+    padding: 0 20rpx;
+    background: #ffffff;
+    border-radius: 999rpx;
+    border: 1rpx solid #e8ebf0;
+    font-size: 24rpx;
+    color: #5b6473;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+
+    &:active {
+        transform: scale(0.98);
+        background: #f7f8fb;
+    }
+
+    text {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        &.active {
+            font-weight: 600;
+        }
+    }
+
+    &--sort {
+        box-shadow: 0 4rpx 14rpx rgba(15, 23, 42, 0.04);
+    }
 }
 
-/* 加载状态 */
+.dynamic-feed {
+    padding: 20rpx;
+}
+
 .loading-state {
-    padding: 160rpx 0;
-    text-align: center;
+    min-height: 58vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .loading-text {
-    display: block;
-    margin-top: 32rpx; // 使用lg间距
+    margin-top: 28rpx;
     font-size: 28rpx;
-    color: var(--color-muted);
+    color: #98a2b3;
 }
 
-/* 空状态 */
 .empty-state {
-    padding: 160rpx 0;
-    text-align: center;
-}
-
-.empty-icon-wrapper {
-    width: 256rpx;
-    height: 256rpx;
-    margin: 0 auto 32rpx; // 使用lg间距
+    min-height: 58vh;
+    padding: 180rpx 48rpx 220rpx;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
 }
 
+.empty-icon-wrap {
+    margin-bottom: 26rpx;
+}
+
 .empty-title {
-    display: block;
     font-size: 32rpx;
-    color: var(--color-muted);
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 12rpx;
 }
 
 .empty-subtitle {
-    display: block;
-    margin-top: 16rpx; // 使用sm间距
-    font-size: 24rpx;
-    color: var(--color-disabled);
+    font-size: 26rpx;
+    color: #9aa3af;
+    text-align: center;
+    line-height: 1.5;
 }
 
-/* 动态列表 */
+.empty-action-btn {
+    margin-top: 34rpx;
+    min-width: 240rpx;
+    height: 88rpx;
+    padding: 0 40rpx;
+    border-radius: 999rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &:active {
+        transform: translateY(2rpx) scale(0.98);
+    }
+}
+
+.empty-action-text {
+    font-size: 28rpx;
+    font-weight: 600;
+}
+
 .dynamic-list {
     display: flex;
     flex-direction: column;
-    gap: 16rpx; // 使用sm间距
+    gap: 20rpx;
 }
 
-/* 加载更多 */
 .load-more {
-    padding: 32rpx 0; // 使用lg间距
+    padding: 24rpx 0 12rpx;
     text-align: center;
 }
 
 .load-more-text {
-    font-size: 28rpx;
-    color: var(--color-muted);
+    font-size: 26rpx;
+    color: #98a2b3;
 }
 
 .load-more-clickable {
-    color: var(--color-primary);
+    color: var(--color-primary, #7c3aed);
+    font-weight: 600;
+}
+
+.picker-container {
+    background: #ffffff;
+    width: 100vw;
+    max-width: 100vw;
+    margin: 0;
+    border-radius: 24rpx 24rpx 0 0;
+    box-shadow: 0 -12rpx 36rpx rgba(15, 23, 42, 0.1);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22rpx 24rpx;
+    border-bottom: 1rpx solid #eef1f5;
+}
+
+.picker-title {
+    font-size: 30rpx;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.picker-close {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+        background: #f4f5f7;
+    }
+}
+
+.button-picker-content {
+    padding: 24rpx;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.button-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16rpx;
+}
+
+.button-item {
+    padding: 24rpx 16rpx;
+    background: #f8f9fb;
+    border: 1rpx solid #e7ebf1;
+    border-radius: 16rpx;
+    text-align: center;
+    font-size: 26rpx;
+    color: #3f4a5a;
     font-weight: 500;
+    transition: all 0.2s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+
+    &.active {
+        font-weight: 600;
+        border-color: transparent;
+    }
 }
 </style>

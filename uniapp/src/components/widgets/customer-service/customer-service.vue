@@ -43,6 +43,7 @@
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { computed } from 'vue'
+import type { CSSProperties } from 'vue'
 
 const props = defineProps({
     content: {
@@ -72,7 +73,7 @@ const qrSize = computed(() => Number(props.styles?.qrSize) || 120)
 const cardGap = computed(() => Number(props.styles?.cardGap) || 16)
 const cardRadiusRpx = computed(() => `${cardRadius.value * 2}rpx`)
 
-const widgetStyle = computed(() => ({
+const widgetStyle = computed<CSSProperties>(() => ({
     padding: `${cardGap.value * 2}rpx`,
     background: `linear-gradient(180deg, ${appendAlpha(themeColor.value, '1A')} 0%, ${pageBgColor.value} 320rpx, ${pageBgColor.value} 100%)`,
     minHeight: '100vh',

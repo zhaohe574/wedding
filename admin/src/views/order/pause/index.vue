@@ -18,7 +18,7 @@
                         @keyup.enter="resetPage"
                     />
                 </el-form-item>
-                <el-form-item class="w-[120px]" label="暂停类型">
+                <el-form-item class="w-[180px]" label="暂停类型">
                     <el-select v-model="queryParams.pause_type" placeholder="选择类型" clearable>
                         <el-option label="全部" value="" />
                         <el-option label="疫情" :value="1" />
@@ -27,7 +27,7 @@
                         <el-option label="其他" :value="4" />
                     </el-select>
                 </el-form-item>
-                <el-form-item class="w-[120px]" label="暂停状态">
+                <el-form-item class="w-[180px]" label="暂停状态">
                     <el-select v-model="queryParams.pause_status" placeholder="选择状态" clearable>
                         <el-option label="全部" value="" />
                         <el-option label="待审核" :value="0" />
@@ -380,24 +380,24 @@ const getStatusCount = (status: number) => {
 }
 
 const getTypeTagType = (type: number) => {
-    const types: Record<number, string> = {
+    const types = {
         1: 'danger',
         2: 'warning',
         3: 'info',
-        4: ''
-    }
-    return types[type] || ''
+        4: 'info'
+    } as const
+    return types[type as keyof typeof types] ?? 'info'
 }
 
 const getStatusTagType = (status: number) => {
-    const types: Record<number, string> = {
+    const types = {
         0: 'warning',
         1: 'primary',
         2: 'success',
         3: 'danger',
         4: 'info'
-    }
-    return types[status] || 'info'
+    } as const
+    return types[status as keyof typeof types] ?? 'info'
 }
 
 const viewOrder = (orderId: number) => {

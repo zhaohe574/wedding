@@ -297,6 +297,19 @@ class CartLogic extends BaseLogic
     }
 
     /**
+     * @notes 通过分享码保存为我的方案
+     * @param string $shareCode
+     * @param int $userId
+     * @param string $planName
+     * @return array
+     */
+    public static function savePlanByShareCode(string $shareCode, int $userId, string $planName = ''): array
+    {
+        [$success, $message, $planId] = CartPlan::savePlanByShareCode($shareCode, $userId, $planName);
+        return ['success' => $success, 'message' => $message, 'plan_id' => $planId];
+    }
+
+    /**
      * @notes 应用方案到购物车
      * @param int $planId
      * @param int $userId

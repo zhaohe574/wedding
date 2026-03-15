@@ -28,8 +28,10 @@ class SmsConfigValidate extends BaseValidate
         'sign' => 'require',
         'app_id' => 'requireIf:type,tencent',
         'app_key' => 'requireIf:type,ali',
+        'api_key' => 'requireIf:type,smsbao',
         'secret_id' => 'requireIf:type,tencent',
-        'secret_key' => 'require',
+        'secret_key' => 'requireIf:type,ali|requireIf:type,tencent',
+        'username' => 'requireIf:type,smsbao',
         'status' => 'require',
     ];
 
@@ -38,8 +40,10 @@ class SmsConfigValidate extends BaseValidate
         'sign.require' => '请输入签名',
         'app_id.requireIf' => '请输入app_id',
         'app_key.requireIf' => '请输入app_key',
+        'api_key.requireIf' => '请输入api_key',
         'secret_id.requireIf' => '请输入secret_id',
-        'secret_key.require' => '请输入secret_key',
+        'secret_key.requireIf' => '请输入secret_key',
+        'username.requireIf' => '请输入用户名',
         'status.require' => '请选择状态',
     ];
 

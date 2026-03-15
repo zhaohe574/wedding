@@ -19,6 +19,7 @@ use app\common\model\service\ServicePackage;
 use app\common\model\user\User;
 use app\common\service\ConfigService;
 use app\common\service\FileService;
+use app\common\service\StaffPriceService;
 use app\common\service\StaffService;
 use app\adminapi\logic\service\PackageLogic;
 use think\facade\Db;
@@ -46,6 +47,10 @@ class StaffLogic extends BaseLogic
         }
 
         $data = $staff->toArray();
+        $displayPrice = StaffPriceService::getDisplayPriceByStaffId((int)$staff->id);
+        $data['price'] = $displayPrice['price'];
+        $data['has_price'] = $displayPrice['has_price'];
+        $data['price_text'] = $displayPrice['price_text'];
         $data['tag_ids'] = StaffTag::getTagIds($id);
         $data['packages'] = StaffPackage::getPackages($id);
         // 编辑场景需要完整手机号：优先 mobile_full，否则用原始 mobile（toArray 中 mobile 已被 getMobileAttr 脱敏）
@@ -107,7 +112,6 @@ class StaffLogic extends BaseLogic
                 'mobile' => $params['mobile'] ?? '',
                 'mobile_full' => $params['mobile_full'] ?? '',
                 'category_id' => $params['category_id'] ?? 0,
-                'price' => $params['price'] ?? 0,
                 'experience_years' => $params['experience_years'] ?? 0,
                 'profile' => $params['profile'] ?? '',
                 'service_desc' => $params['service_desc'] ?? '',
@@ -197,7 +201,6 @@ class StaffLogic extends BaseLogic
                 'mobile' => $params['mobile'] ?? $rawMobile,
                 'mobile_full' => $params['mobile_full'] ?? $rawMobile,
                 'category_id' => $params['category_id'] ?? $staff->category_id,
-                'price' => $params['price'] ?? $staff->price,
                 'experience_years' => $params['experience_years'] ?? $staff->experience_years,
                 'profile' => $params['profile'] ?? $staff->profile,
                 'service_desc' => $params['service_desc'] ?? $staff->service_desc,
@@ -305,10 +308,12 @@ class StaffLogic extends BaseLogic
             $query->where('category_id', $params['category_id']);
         }
 
-        return $query->order('sort desc, id desc')
-            ->field('id, sn, name, avatar, category_id, price, rating')
+        $result = $query->order('sort desc, id desc')
+            ->field('id, sn, name, avatar, category_id, rating')
             ->select()
             ->toArray();
+        StaffPriceService::injectDisplayPrice($result);
+        return $result;
     }
 
     /**

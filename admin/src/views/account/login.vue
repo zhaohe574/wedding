@@ -27,7 +27,7 @@
                                 v-model="formData.password"
                                 show-password
                                 placeholder="请输入密码"
-                                @keyup.enter="handleLogin"
+                                @keyup.enter="submitLogin"
                             >
                                 <template #prepend>
                                     <icon name="el-icon-Lock" size="16" />
@@ -38,7 +38,7 @@
                     <div class="mb-5">
                         <el-checkbox v-model="remAccount" label="记住账号"></el-checkbox>
                     </div>
-                    <el-button type="primary" size="large" :loading="isLock" @click="lockLogin">
+                    <el-button type="primary" size="large" :loading="isLock" @click="submitLogin">
                         登录
                     </el-button>
                 </div>
@@ -93,7 +93,7 @@ const handleEnter = () => {
     if (!formData.password) {
         return passwordRef.value?.focus()
     }
-    handleLogin()
+    submitLogin()
 }
 // 登录处理
 const handleLogin = async () => {
@@ -108,9 +108,17 @@ const handleLogin = async () => {
         query: { redirect }
     } = route
     const path = typeof redirect === 'string' ? redirect : PageEnum.INDEX
-    router.push(path)
+    await router.push(path)
 }
 const { isLock, lockFn: lockLogin } = useLockFn(handleLogin)
+
+const submitLogin = async () => {
+    try {
+        await lockLogin()
+    } catch (error) {
+        return
+    }
+}
 
 onMounted(() => {
     const value = cache.get(ACCOUNT_KEY)

@@ -1,61 +1,67 @@
 <template>
-    <div class="order-lists">
-        <el-card class="!border-none" shadow="never">
-            <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
-                <el-form-item class="w-[180px]" label="订单编号">
-                    <el-input
-                        v-model="queryParams.order_sn"
-                        placeholder="输入订单编号"
-                        clearable
-                        @keyup.enter="resetPage"
-                    />
-                </el-form-item>
-                <el-form-item class="w-[150px]" label="联系人">
-                    <el-input
-                        v-model="queryParams.contact_name"
-                        placeholder="输入联系人"
-                        clearable
-                        @keyup.enter="resetPage"
-                    />
-                </el-form-item>
-                <el-form-item class="w-[150px]" label="联系电话">
-                    <el-input
-                        v-model="queryParams.contact_mobile"
-                        placeholder="输入联系电话"
-                        clearable
-                        @keyup.enter="resetPage"
-                    />
-                </el-form-item>
-                <el-form-item class="w-[150px]" label="订单状态">
-                    <el-select v-model="queryParams.order_status" placeholder="选择状态" clearable>
-                        <el-option label="全部" value="" />
-                        <el-option label="待确认" :value="0" />
-                        <el-option label="待支付" :value="1" />
-                        <el-option label="已支付" :value="2" />
-                        <el-option label="服务中" :value="3" />
-                        <el-option label="已完成" :value="4" />
-                        <el-option label="已评价" :value="5" />
-                        <el-option label="已取消" :value="6" />
-                        <el-option label="已暂停" :value="7" />
-                        <el-option label="已退款" :value="8" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item class="w-[320px]" label="创建时间">
-                    <el-date-picker
-                        v-model="queryParams.create_time"
-                        type="daterange"
-                        start-placeholder="开始日期"
-                        end-placeholder="结束日期"
-                        value-format="YYYY-MM-DD"
-                        clearable
-                    />
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="resetPage">查询</el-button>
-                    <el-button @click="resetParams">重置</el-button>
-                </el-form-item>
-            </el-form>
-        </el-card>
+    <admin-page-shell
+        class="order-lists"
+        title="订单管理"
+        description="覆盖查询、审核、履约和售后前置处理的订单运营主链路。"
+    >
+        <template #search>
+            <search-panel>
+                <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
+                    <el-form-item class="w-[180px]" label="订单编号">
+                        <el-input
+                            v-model="queryParams.order_sn"
+                            placeholder="输入订单编号"
+                            clearable
+                            @keyup.enter="resetPage"
+                        />
+                    </el-form-item>
+                    <el-form-item class="w-[150px]" label="联系人">
+                        <el-input
+                            v-model="queryParams.contact_name"
+                            placeholder="输入联系人"
+                            clearable
+                            @keyup.enter="resetPage"
+                        />
+                    </el-form-item>
+                    <el-form-item class="w-[150px]" label="联系电话">
+                        <el-input
+                            v-model="queryParams.contact_mobile"
+                            placeholder="输入联系电话"
+                            clearable
+                            @keyup.enter="resetPage"
+                        />
+                    </el-form-item>
+                    <el-form-item class="w-[150px]" label="订单状态">
+                        <el-select v-model="queryParams.order_status" placeholder="选择状态" clearable>
+                            <el-option label="全部" value="" />
+                            <el-option label="待确认" :value="0" />
+                            <el-option label="待支付" :value="1" />
+                            <el-option label="已支付" :value="2" />
+                            <el-option label="服务中" :value="3" />
+                            <el-option label="已完成" :value="4" />
+                            <el-option label="已评价" :value="5" />
+                            <el-option label="已取消" :value="6" />
+                            <el-option label="已暂停" :value="7" />
+                            <el-option label="已退款" :value="8" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item class="w-[320px]" label="创建时间">
+                        <el-date-picker
+                            v-model="queryParams.create_time"
+                            type="daterange"
+                            start-placeholder="开始日期"
+                            end-placeholder="结束日期"
+                            value-format="YYYY-MM-DD"
+                            clearable
+                        />
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="resetPage">查询</el-button>
+                        <el-button @click="resetParams">重置</el-button>
+                    </el-form-item>
+                </el-form>
+            </search-panel>
+        </template>
 
         <!-- 统计卡片 -->
         <div class="mt-4 grid grid-cols-6 gap-4">
@@ -115,7 +121,7 @@
             </el-card>
         </div>
 
-        <el-card class="!border-none mt-4" shadow="never">
+        <div class="admin-page-section mt-4">
             <el-table size="large" v-loading="pager.loading" :data="pager.lists">
                 <el-table-column label="订单编号" prop="order_sn" min-width="180" />
                 <el-table-column label="用户信息" min-width="150">
@@ -195,7 +201,7 @@
             <div class="flex justify-end mt-4">
                 <pagination v-model="pager" @change="getLists" />
             </div>
-        </el-card>
+        </div>
 
         <!-- 订单详情弹窗 -->
         <el-dialog v-model="detailVisible" title="订单详情" width="800px">
@@ -329,10 +335,11 @@
                 <el-button type="danger" @click="submitCancel">确认取消</el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="orderLists">
+import { useRoute, useRouter } from 'vue-router'
 import { 
     orderLists, 
     orderDetail, 
@@ -345,6 +352,8 @@ import {
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
 
+const route = useRoute()
+const router = useRouter()
 const queryParams = reactive({
     order_sn: '',
     contact_name: '',
@@ -424,10 +433,36 @@ const getDisplayPaidAmount = (order: any) => {
     return Number(order?.paid_amount ?? 0).toFixed(2)
 }
 
-const handleDetail = async (row: any) => {
-    const res = await orderDetail({ id: row.id })
+const clearDetailQuery = () => {
+    if (!route.query.detail_id) {
+        return
+    }
+
+    const nextQuery = { ...route.query }
+    delete nextQuery.detail_id
+
+    router.replace({
+        path: route.path,
+        query: nextQuery
+    })
+}
+
+const openOrderDetail = async (id: number, clearQuery = false) => {
+    if (!id) {
+        return
+    }
+
+    const res = await orderDetail({ id })
     currentOrder.value = res
     detailVisible.value = true
+
+    if (clearQuery) {
+        clearDetailQuery()
+    }
+}
+
+const handleDetail = async (row: any) => {
+    await openOrderDetail(Number(row.id))
 }
 
 const handleAuditVoucher = (row: any) => {
@@ -485,6 +520,18 @@ onActivated(() => {
     getLists()
     getStatistics()
 })
+
+watch(
+    () => route.query.detail_id,
+    async (detailId) => {
+        const id = Number(detailId || 0)
+        if (!id) {
+            return
+        }
+        await openOrderDetail(id, true)
+    },
+    { immediate: true }
+)
 
 getLists()
 getStatistics()

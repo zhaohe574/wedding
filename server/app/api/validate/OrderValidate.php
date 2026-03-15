@@ -28,6 +28,7 @@ class OrderValidate extends BaseValidate
         'remark' => 'max:500',
         'reason' => 'max:255',
         'coupon_id' => 'integer|egt:0',
+        'user_coupon_id' => 'integer|egt:0',
         'deposit_ratio' => 'integer|between:0,100',
         'pay_way' => 'require|integer|in:1,2,3,4,5',
         'pay_type' => 'integer|in:1,2,3',
@@ -73,7 +74,7 @@ class OrderValidate extends BaseValidate
      */
     public function sceneCreate()
     {
-        return $this->only(['cart_ids', 'contact_name', 'contact_mobile', 'service_date', 'service_address', 'wedding_date', 'wedding_venue', 'remark', 'coupon_id', 'deposit_ratio']);
+        return $this->only(['cart_ids', 'contact_name', 'contact_mobile', 'service_date', 'service_address', 'wedding_date', 'wedding_venue', 'remark', 'coupon_id', 'user_coupon_id', 'deposit_ratio']);
     }
 
     /**

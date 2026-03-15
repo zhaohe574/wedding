@@ -1,6 +1,11 @@
 import { isFunction } from '@vue/shared'
 import { App } from 'vue'
-const modules = import.meta.globEager('./modules/**/*.ts')
+
+type PluginModule = {
+    default?: (app: App) => void
+}
+
+const modules = import.meta.globEager('./modules/**/*.ts') as Record<string, PluginModule>
 
 export default {
     install: (app: App) => {

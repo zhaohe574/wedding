@@ -28,7 +28,6 @@ class StaffValidate extends BaseValidate
         'name' => 'require|length:1,50',
         'category_id' => 'require|integer|gt:0',
         'mobile' => 'mobile',
-        'price' => 'float|egt:0',
         'experience_years' => 'integer|egt:0',
         'sort' => 'integer|egt:0',
         'status' => 'require|in:0,1',
@@ -51,8 +50,6 @@ class StaffValidate extends BaseValidate
         'category_id.integer' => '服务分类参数错误',
         'category_id.gt' => '请选择服务分类',
         'mobile.mobile' => '手机号格式不正确',
-        'price.float' => '价格格式不正确',
-        'price.egt' => '价格不能小于0',
         'experience_years.integer' => '从业年限格式不正确',
         'experience_years.egt' => '从业年限不能小于0',
         'sort.integer' => '排序格式不正确',
@@ -68,7 +65,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneAdd(): StaffValidate
     {
-        return $this->only(['user_id', 'name', 'category_id', 'mobile', 'price', 'experience_years', 'sort', 'status', 'is_recommend'])
+        return $this->only(['user_id', 'name', 'category_id', 'mobile', 'experience_years', 'sort', 'status', 'is_recommend'])
             ->append('user_id', 'require|gt:0');
     }
 
@@ -78,7 +75,16 @@ class StaffValidate extends BaseValidate
      */
     public function sceneEdit(): StaffValidate
     {
-        return $this->only(['id', 'user_id', 'name', 'category_id', 'mobile', 'price', 'experience_years', 'sort', 'status', 'is_recommend']);
+        return $this->only(['id', 'user_id', 'name', 'category_id', 'mobile', 'experience_years', 'sort', 'status', 'is_recommend']);
+    }
+
+    /**
+     * @notes 服务人员中心-我的资料场景
+     * @return StaffValidate
+     */
+    public function sceneMyProfile(): StaffValidate
+    {
+        return $this->only(['id', 'name', 'mobile', 'experience_years']);
     }
 
     /**

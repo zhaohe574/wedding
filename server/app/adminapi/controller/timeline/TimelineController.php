@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\adminapi\controller\timeline;
 
 use app\adminapi\controller\BaseAdminController;
+use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\lists\timeline\TimelineLists;
 use app\adminapi\logic\timeline\TimelineLogic;
 use app\adminapi\validate\timeline\TimelineValidate;
@@ -19,6 +20,14 @@ use app\adminapi\validate\timeline\TimelineValidate;
  */
 class TimelineController extends BaseAdminController
 {
+    use OfflineModuleGuard;
+
+    public function initialize()
+    {
+        parent::initialize();
+        $this->abortOfflineModule('时间线管理');
+    }
+
     /**
      * @notes 时间轴任务列表
      * @return \think\response\Json

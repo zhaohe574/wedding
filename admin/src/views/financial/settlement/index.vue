@@ -11,13 +11,13 @@
         <template v-if="activeTab === 'records'">
             <el-card class="!border-none mb-4" shadow="never">
                 <el-form :model="queryParams" inline>
-                    <el-form-item label="服务人员">
+                    <el-form-item class="w-[200px]" label="服务人员">
                         <el-input v-model="queryParams.staff_name" placeholder="人员姓名" clearable />
                     </el-form-item>
-                    <el-form-item label="订单编号">
+                    <el-form-item class="w-[200px]" label="订单编号">
                         <el-input v-model="queryParams.order_sn" placeholder="订单编号" clearable />
                     </el-form-item>
-                    <el-form-item label="状态">
+                    <el-form-item class="w-[180px]" label="状态">
                         <el-select v-model="queryParams.status" placeholder="全部" clearable>
                             <el-option label="待结算" :value="0" />
                             <el-option label="已结算" :value="1" />
@@ -25,7 +25,7 @@
                             <el-option label="结算失败" :value="3" />
                         </el-select>
                     </el-form-item>
-                    <el-form-item label="服务日期">
+                    <el-form-item class="w-[320px]" label="服务日期">
                         <el-date-picker
                             v-model="dateRange"
                             type="daterange"

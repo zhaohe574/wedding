@@ -22,6 +22,7 @@ use app\common\model\decorate\DecorateTabbar;
 use app\common\service\ConfigService;
 use app\common\service\FileService;
 use app\common\service\DecorateDataService;
+use app\common\service\LoginConfigService;
 
 
 /**
@@ -126,20 +127,7 @@ class IndexLogic extends BaseLogic
         // 导航颜色
         $style = ConfigService::get('tabbar', 'style', config('project.decorate.tabbar_style'));
         // 登录配置
-        $loginConfig = [
-            // 登录方式
-            'login_way' => ConfigService::get('login', 'login_way', config('project.login.login_way')),
-            // 注册强制绑定手机
-            'coerce_mobile' => ConfigService::get('login', 'coerce_mobile', config('project.login.coerce_mobile')),
-            // 政策协议
-            'login_agreement' => ConfigService::get('login', 'login_agreement', config('project.login.login_agreement')),
-            // 第三方登录 开关
-            'third_auth' => ConfigService::get('login', 'third_auth', config('project.login.third_auth')),
-            // 微信授权登录
-            'wechat_auth' => ConfigService::get('login', 'wechat_auth', config('project.login.wechat_auth')),
-            // qq授权登录
-            'qq_auth' => ConfigService::get('login', 'qq_auth', config('project.login.qq_auth')),
-        ];
+        $loginConfig = LoginConfigService::getConfig();
         // 网址信息
         $website = [
             'h5_favicon' => FileService::getFileUrl(ConfigService::get('website', 'h5_favicon')),

@@ -26,7 +26,17 @@
                 <el-form-item label="SECRET_ID" prop="secret_id" v-if="formData.type == 'tencent'">
                     <el-input v-model="formData.secret_id" placeholder="请输入SECRET_ID" />
                 </el-form-item>
-                <el-form-item label="SECRET_KEY" prop="secret_key">
+                <el-form-item label="用户名" prop="username" v-if="formData.type == 'smsbao'">
+                    <el-input v-model="formData.username" placeholder="请输入短信宝用户名" />
+                </el-form-item>
+                <el-form-item label="APIKEY" prop="api_key" v-if="formData.type == 'smsbao'">
+                    <el-input v-model="formData.api_key" placeholder="请输入短信宝APIKEY" />
+                </el-form-item>
+                <el-form-item
+                    label="SECRET_KEY"
+                    prop="secret_key"
+                    v-if="formData.type == 'ali' || formData.type == 'tencent'"
+                >
                     <el-input v-model="formData.secret_key" placeholder="请输入SECRET_KEY" />
                 </el-form-item>
                 <el-form-item label="状态" prop="status">
@@ -35,6 +45,9 @@
                         <el-radio :value="1">开启</el-radio>
                     </el-radio-group>
                 </el-form-item>
+                <div v-if="formData.type == 'smsbao'" class="form-tips -mt-2">
+                    短信宝发送前需在短信宝后台申请VIP通道模板并完成报备。
+                </div>
             </el-form>
         </popup>
     </div>
@@ -54,6 +67,8 @@ const formData = reactive({
     sign: '',
     app_key: '',
     app_id: '',
+    username: '',
+    api_key: '',
     secret_key: '',
     secret_id: '',
     status: 0
@@ -81,6 +96,13 @@ const formRules = {
             trigger: 'blur'
         }
     ],
+    api_key: [
+        {
+            required: true,
+            message: '请输入短信宝APIKEY',
+            trigger: 'blur'
+        }
+    ],
     secret_key: [
         {
             required: true,
@@ -92,6 +114,13 @@ const formRules = {
         {
             required: true,
             message: '请输入SECRET_ID',
+            trigger: 'blur'
+        }
+    ],
+    username: [
+        {
+            required: true,
+            message: '请输入短信宝用户名',
             trigger: 'blur'
         }
     ]

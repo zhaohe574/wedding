@@ -15,8 +15,17 @@
                     </view>
                     <text class="staff-card__category">{{ staff.category }}</text>
                     <view class="staff-card__price-row">
-                        <text class="staff-card__price">¥{{ staff.price }}</text>
-                        <text class="staff-card__price-unit">起</text>
+                        <template
+                            v-if="
+                                staff.has_price !== false &&
+                                staff.price !== null &&
+                                staff.price !== undefined
+                            "
+                        >
+                            <text class="staff-card__price">¥{{ staff.price_text ?? staff.price }}</text>
+                            <text class="staff-card__price-unit">起</text>
+                        </template>
+                        <text v-else class="staff-card__price staff-card__price--negotiable">面议</text>
                     </view>
                 </view>
             </view>
@@ -54,7 +63,9 @@ interface StaffData {
     category: string
     rating: number
     reviewCount: number
-    price: number
+    price?: number | null
+    has_price?: boolean
+    price_text?: string
     tags?: string[]
     isFavorite?: boolean
 }
@@ -69,8 +80,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-    click: [staff: StaffData]
-    favorite: [staff: StaffData]
+    (event: 'click', staff: StaffData): void
+    (event: 'favorite', staff: StaffData): void
 }>()
 
 // 处理点击事件
@@ -164,6 +175,10 @@ export default {
         font-size: 32rpx;
         font-weight: 600;
         color: var(--color-cta, #f97316);
+
+        &--negotiable {
+            color: var(--color-muted, #999999);
+        }
     }
 
     &__price-unit {

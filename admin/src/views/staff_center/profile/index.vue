@@ -19,17 +19,8 @@
                     <el-form-item label="手机号" prop="mobile">
                         <el-input v-model="formData.mobile" maxlength="11" placeholder="请输入手机号" />
                     </el-form-item>
-                    <el-form-item label="服务分类" prop="category_id">
-                        <el-cascader
-                            v-model="formData.category_id"
-                            :options="categoryOptions"
-                            :props="{ value: 'id', label: 'name', checkStrictly: true, emitPath: false }"
-                            placeholder="请选择服务分类"
-                            class="w-full"
-                        />
-                    </el-form-item>
-                    <el-form-item label="服务价格" prop="price">
-                        <el-input-number v-model="formData.price" :min="0" :precision="2" class="w-full" />
+                    <el-form-item label="服务分类" prop="category_name">
+                        <el-input :model-value="formData.category_name || '未设置'" disabled class="w-full" />
                     </el-form-item>
                     <el-form-item label="从业年限" prop="experience_years">
                         <el-input-number v-model="formData.experience_years" :min="0" :max="50" class="w-full" />
@@ -61,7 +52,10 @@
             <template #header>
                 <div class="flex items-center justify-between">
                     <span class="text-lg font-bold">套餐配置</span>
-                    <el-button @click="loadPackageConfig">刷新</el-button>
+                    <div class="flex gap-2">
+                        <el-button @click="loadPackageConfig">刷新</el-button>
+                        <el-button type="primary" @click="openAssociatePackageDialog">关联现有套餐</el-button>
+                    </div>
                 </div>
             </template>
 
@@ -268,6 +262,37 @@
             </template>
         </el-dialog>
 
+        <el-dialog v-model="associatePackageDialogVisible" title="关联现有套餐" width="760px">
+            <el-alert
+                v-if="!availablePackages.length"
+                type="info"
+                :closable="false"
+                title="当前没有可关联的现有套餐"
+                class="mb-3"
+            />
+            <el-table
+                v-else
+                :data="availablePackages"
+                row-key="id"
+                size="large"
+                @selection-change="handleAssociatePackageSelection"
+            >
+                <el-table-column type="selection" width="55" />
+                <el-table-column label="套餐名称" prop="name" min-width="180" />
+                <el-table-column label="分类" prop="category_name" min-width="150" />
+                <el-table-column label="价格" width="120">
+                    <template #default="{ row }">¥{{ row.price }}</template>
+                </el-table-column>
+                <el-table-column label="预约类型" width="120">
+                    <template #default="{ row }">{{ Number(row.booking_type) === 1 ? '分场次' : '全天' }}</template>
+                </el-table-column>
+            </el-table>
+            <template #footer>
+                <el-button @click="associatePackageDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="confirmAssociatePackages">确认关联</el-button>
+            </template>
+        </el-dialog>
+
         <el-dialog v-model="bannerDialogVisible" :title="bannerForm.id ? '编辑轮播图' : '新增轮播图'" width="560px">
             <el-form ref="bannerFormRef" :model="bannerForm" :rules="bannerFormRules" label-width="100px">
                 <el-form-item label="类型" prop="type">
@@ -310,6 +335,7 @@ import {
     myProfileBannerSort,
     myProfileCreatePackage,
     myProfileDeletePackage,
+    myProfileConfigurePackages,
     myProfilePackageConfig,
     myProfileUpdate,
     myProfileUpdatePackageConfig,
@@ -343,7 +369,7 @@ const formData = reactive({
     name: '',
     mobile: '',
     category_id: '',
-    price: 0,
+    category_name: '',
     experience_years: 0,
     profile: '',
     service_desc: '',
@@ -351,12 +377,14 @@ const formData = reactive({
 })
 
 const formRules: FormRules = {
-    name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-    category_id: [{ required: true, message: '请选择服务分类', trigger: 'change' }]
+    name: [{ required: true, message: '请输入姓名', trigger: 'blur' }]
 }
 
 const configuredPackages = ref<any[]>([])
 const staffPackages = ref<any[]>([])
+const availablePackages = ref<any[]>([])
+const selectedAssociatePackages = ref<any[]>([])
+const associatePackageDialogVisible = ref(false)
 
 const staffPackageDialogVisible = ref(false)
 const staffPackageForm = reactive({
@@ -427,8 +455,43 @@ const normalizeAllowedSlots = (value: any): number[] => {
     return normalizeJsonArray(value).map((item) => Number(item)).filter((item) => !Number.isNaN(item))
 }
 
+const buildPackageConfigPayload = (rows: any[]): any[] => {
+    return rows
+        .map((row) => {
+            const packageId = Number(row.package_id ?? row.id ?? 0)
+            if (!packageId) {
+                return null
+            }
+            const bookingType = Number(row.booking_type ?? 0)
+            let allowedTimeSlots = bookingType === 1 ? normalizeAllowedSlots(row.allowed_time_slots) : []
+            if (bookingType === 1 && allowedTimeSlots.length === 0) {
+                allowedTimeSlots = timeSlotOptions.map((slot) => slot.value)
+            }
+            return {
+                package_id: packageId,
+                price: Number(row.price ?? 0),
+                original_price: row.original_price ?? null,
+                custom_price: row.custom_price ?? null,
+                custom_slot_prices: normalizeJsonArray(row.custom_slot_prices),
+                booking_type: bookingType,
+                allowed_time_slots: allowedTimeSlots,
+                status: Number(row.status ?? 1)
+            }
+        })
+        .filter(Boolean)
+}
+
 const loadCategoryOptions = async () => {
     categoryOptions.value = (await categoryTree()) || []
+}
+
+const resolveCategoryName = (categoryId: string): string => {
+    const currentId = Number(categoryId)
+    if (!currentId) {
+        return ''
+    }
+    const matched = categoryOptions.value.find((item: any) => Number(item.id) === currentId)
+    return matched?.name || ''
 }
 
 const loadTags = async () => {
@@ -448,6 +511,11 @@ const loadProfile = async () => {
             ;(formData as any)[key] = (data as any)[key]
         }
     })
+    const categoryId = (data as any).category_id
+    formData.category_id = categoryId ? String(categoryId) : ''
+    if (!formData.category_name) {
+        formData.category_name = resolveCategoryName(formData.category_id)
+    }
     formData.tag_ids = Array.isArray(data.tag_ids) ? data.tag_ids.map((item: any) => Number(item)) : []
 
     bannerConfig.banner_mode = data.banner_mode ?? 1
@@ -479,6 +547,8 @@ const loadPackageConfig = async () => {
         }
     })
     staffPackages.value = res.staff_packages || []
+    availablePackages.value = res.available_packages || []
+    selectedAssociatePackages.value = []
 }
 
 const loadBannerList = async () => {
@@ -493,8 +563,6 @@ const handleSaveProfile = async () => {
             avatar: formData.avatar,
             name: formData.name,
             mobile: formData.mobile,
-            category_id: formData.category_id,
-            price: formData.price,
             experience_years: formData.experience_years,
             profile: formData.profile,
             service_desc: formData.service_desc,
@@ -523,6 +591,55 @@ const savePackageConfig = async (row: any) => {
     })
     ElMessage.success('保存成功')
     loadPackageConfig()
+}
+
+const openAssociatePackageDialog = () => {
+    if (!availablePackages.value.length) {
+        ElMessage.warning('暂无可关联的现有套餐')
+        return
+    }
+    selectedAssociatePackages.value = []
+    associatePackageDialogVisible.value = true
+}
+
+const handleAssociatePackageSelection = (selection: any[]) => {
+    selectedAssociatePackages.value = selection || []
+}
+
+const confirmAssociatePackages = async () => {
+    if (!selectedAssociatePackages.value.length) {
+        ElMessage.warning('请选择要关联的套餐')
+        return
+    }
+
+    const existingIds = new Set(configuredPackages.value.map((item: any) => Number(item.package_id)))
+    const appendRows = selectedAssociatePackages.value
+        .filter((item: any) => !existingIds.has(Number(item.id)))
+        .map((item: any) => ({
+            package_id: Number(item.id),
+            price: Number(item.price ?? 0),
+            original_price: item.original_price ?? null,
+            custom_price: null,
+            custom_slot_prices: [],
+            booking_type: Number(item.booking_type ?? 0),
+            allowed_time_slots: normalizeAllowedSlots(item.allowed_time_slots),
+            status: 1
+        }))
+
+    if (!appendRows.length) {
+        ElMessage.warning('所选套餐已关联')
+        return
+    }
+
+    const payload = [
+        ...buildPackageConfigPayload(configuredPackages.value),
+        ...buildPackageConfigPayload(appendRows)
+    ]
+
+    await myProfileConfigurePackages({ packages: payload })
+    ElMessage.success('关联成功')
+    associatePackageDialogVisible.value = false
+    await loadPackageConfig()
 }
 
 const resetStaffPackageForm = () => {

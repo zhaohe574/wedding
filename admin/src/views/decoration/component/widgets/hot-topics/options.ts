@@ -3,6 +3,8 @@ export interface HotTopicItem {
     topic_id: number // 话题ID（引用）
     is_show: string // 是否显示 '1'=显示 '0'=隐藏
     sort?: number // 排序
+    name?: string // 话题名称
+    count?: number // 参与人数
 }
 
 export default () => ({

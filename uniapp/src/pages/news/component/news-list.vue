@@ -31,7 +31,7 @@ const props = withDefaults(
 )
 
 const paging = shallowRef<any>(null)
-const dataList = ref([])
+const dataList = ref<any[]>([])
 const isFirst = ref<boolean>(true)
 
 watch(
@@ -46,7 +46,7 @@ watch(
     { immediate: true }
 )
 
-const queryList = async (page_no, page_size) => {
+const queryList = async (page_no: number, page_size: number) => {
     try {
         const { lists } = await getArticleList({
             cid: props.cid,

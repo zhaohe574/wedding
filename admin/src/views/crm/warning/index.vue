@@ -2,7 +2,7 @@
     <div class="warning-lists">
         <el-card class="!border-none" shadow="never">
             <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
-                <el-form-item class="w-[120px]" label="预警类型">
+                <el-form-item class="w-[180px]" label="预警类型">
                     <el-select v-model="queryParams.warning_type" placeholder="选择" clearable>
                         <el-option label="全部" value="" />
                         <el-option label="长期未跟进" :value="1" />
@@ -12,7 +12,7 @@
                         <el-option label="其他" :value="5" />
                     </el-select>
                 </el-form-item>
-                <el-form-item class="w-[120px]" label="预警等级">
+                <el-form-item class="w-[180px]" label="预警等级">
                     <el-select v-model="queryParams.warning_level" placeholder="选择" clearable>
                         <el-option label="全部" value="" />
                         <el-option label="高" :value="3" />
@@ -20,7 +20,7 @@
                         <el-option label="低" :value="1" />
                     </el-select>
                 </el-form-item>
-                <el-form-item class="w-[120px]" label="处理状态">
+                <el-form-item class="w-[180px]" label="处理状态">
                     <el-select v-model="queryParams.warning_status" placeholder="选择" clearable>
                         <el-option label="全部" value="" />
                         <el-option label="待处理" :value="0" />

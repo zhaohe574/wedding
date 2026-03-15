@@ -62,9 +62,9 @@
                         class="day-num"
                         :style="
                             cell.isToday
-                                ? { color: $theme.primaryColor, fontWeight: '700' }
+                                ? { color: $theme.primaryColor, fontWeight: 700 }
                                 : cell.dateStr === selectedDate
-                                  ? { color: $theme.primaryColor, fontWeight: '600' }
+                                  ? { color: $theme.primaryColor, fontWeight: 600 }
                                   : {}
                         "
                     >

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\adminapi\controller\financial;
 
 use app\adminapi\controller\BaseAdminController;
+use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\logic\financial\CostLogic;
 use app\adminapi\lists\financial\CostRecordLists;
 use app\adminapi\validate\financial\CostValidate;
@@ -19,6 +20,14 @@ use app\adminapi\validate\financial\CostValidate;
  */
 class CostController extends BaseAdminController
 {
+    use OfflineModuleGuard;
+
+    public function initialize()
+    {
+        parent::initialize();
+        $this->abortOfflineModule('成本管理');
+    }
+
     /**
      * @notes 成本列表
      */

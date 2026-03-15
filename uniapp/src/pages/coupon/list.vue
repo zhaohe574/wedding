@@ -398,7 +398,7 @@ const goUse = (item: any) => {
         return
     }
     uni.switchTab({
-        url: '/packages/pages/staff_list/staff_list'
+        url: '/pages/staff_list/staff_list'
     })
 }
 

@@ -11,8 +11,8 @@ const settingStore = useSettingStore()
 const elConfig = {
     zIndex: 3000,
     locale: zhCn,
-    size: 'small'
-}
+    size: 'small' as const
+} as const
 const isDark = useDark()
 onMounted(async () => {
     //设置主题色

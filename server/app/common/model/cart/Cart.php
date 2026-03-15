@@ -184,6 +184,7 @@ class Cart extends BaseModel
             foreach ($timeSlots as $timeSlot) {
                 $tempLock = PackageBooking::createTempLock($packageId, $staffId, $date, (int)$timeSlot, $userId);
                 if (!$tempLock) {
+                    // 释放已锁定的套餐
                     foreach ($lockedSelections as $locked) {
                         PackageBooking::releaseBySelection($userId, $locked[0], $locked[1], $locked[2], $locked[3]);
                     }
@@ -230,43 +231,16 @@ class Cart extends BaseModel
     }
 
     /**
-     * @notes 计算单项价格
+     * @notes 计算单项价格（使用统一价格服务）
      * @param int $staffId
      * @param int $packageId
      * @param string $date
+     * @param int $timeSlot
      * @return float
      */
     public static function calculateItemPrice(int $staffId, int $packageId, string $date, int $timeSlot = 0): float
     {
-        if ($packageId <= 0) {
-            return 0.00;
-        }
-
-        $staffPackage = StaffPackage::where('staff_id', $staffId)
-            ->where('package_id', $packageId)
-            ->where('status', 1)
-            ->find();
-
-        if ($staffPackage) {
-            $customSlotPrice = $staffPackage->getCustomSlotPriceByTimeSlot($timeSlot);
-            if ($customSlotPrice !== null) {
-                return $customSlotPrice;
-            }
-            if ($staffPackage->custom_price !== null && $staffPackage->custom_price !== '') {
-                return (float)$staffPackage->custom_price;
-            }
-        }
-
-        $package = ServicePackage::find($packageId);
-        if ($package) {
-            $slotPrice = $package->getSlotPriceByTimeSlot($timeSlot);
-            if ($slotPrice !== null) {
-                return $slotPrice;
-            }
-            return (float)$package->price;
-        }
-
-        return 0.00;
+        return \app\common\service\StaffPriceService::calculateOrderItemPrice($staffId, $packageId, $timeSlot);
     }
 
     /**
@@ -418,25 +392,34 @@ class Cart extends BaseModel
      */
     public static function batchRemove(array $cartIds, int $userId): int
     {
-        $items = self::whereIn('id', $cartIds)
-            ->where('user_id', $userId)
-            ->select();
+        Db::startTrans();
+        try {
+            $items = self::whereIn('id', $cartIds)
+                ->where('user_id', $userId)
+                ->select();
 
-        foreach ($items as $item) {
-            if ($item->package_id > 0) {
-                PackageBooking::releaseBySelection(
-                    $userId,
-                    (int)$item->package_id,
-                    (int)$item->staff_id,
-                    (string)$item->schedule_date,
-                    (int)$item->time_slot
-                );
+            foreach ($items as $item) {
+                if ($item->package_id > 0) {
+                    PackageBooking::releaseBySelection(
+                        $userId,
+                        (int)$item->package_id,
+                        (int)$item->staff_id,
+                        (string)$item->schedule_date,
+                        (int)$item->time_slot
+                    );
+                }
             }
-        }
 
-        return self::whereIn('id', $cartIds)
-            ->where('user_id', $userId)
-            ->delete();
+            $count = self::whereIn('id', $cartIds)
+                ->where('user_id', $userId)
+                ->delete();
+
+            Db::commit();
+            return $count;
+        } catch (\Exception $e) {
+            Db::rollback();
+            return 0;
+        }
     }
 
     /**
@@ -489,7 +472,7 @@ class Cart extends BaseModel
         }
 
         $items = $query->with(['staff' => function ($q) {
-                $q->field('id, name, avatar, category_id, price');
+                $q->field('id, name, avatar, category_id');
             }, 'package' => function ($q) {
                 $q->field('id, name, price');
             }])

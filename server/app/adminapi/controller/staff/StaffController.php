@@ -539,6 +539,11 @@ class StaffController extends BaseAdminController
             return $this->fail('服务人员不存在');
         }
 
+        $params['name'] = $params['name'] ?? (string)($origin['name'] ?? '');
+        $params['mobile'] = $params['mobile'] ?? (string)($origin['mobile'] ?? '');
+        $params['experience_years'] = $params['experience_years'] ?? ($origin['experience_years'] ?? 0);
+        $params['category_id'] = (int)($origin['category_id'] ?? 0);
+
         // 锁定系统字段，只允许维护业务资料
         $params['id'] = $staffScopeId;
         $params['user_id'] = (int)($origin['user_id'] ?? 0);
@@ -546,7 +551,7 @@ class StaffController extends BaseAdminController
         $params['is_recommend'] = (int)($origin['is_recommend'] ?? 0);
         $params['sort'] = (int)($origin['sort'] ?? 0);
 
-        $params = (new StaffValidate())->post()->goCheck('edit', $params);
+        $params = (new StaffValidate())->post()->goCheck('myProfile', $params);
         $result = StaffLogic::edit($params);
         if (true === $result) {
             return $this->success('保存成功', [], 1, 1);
@@ -568,6 +573,30 @@ class StaffController extends BaseAdminController
         $includeGlobal = boolval($this->request->get('include_global', false));
         $result = StaffLogic::getPackageConfig($staffScopeId, $includeGlobal);
         return $this->data($result);
+    }
+
+    /**
+     * @notes 关联我的现有套餐
+     * @return \think\response\Json
+     */
+    public function myProfileConfigurePackages()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->fail('无权限操作');
+        }
+
+        $params = $this->request->post();
+        $packages = $params['packages'] ?? [];
+        if (!is_array($packages)) {
+            return $this->fail('参数错误');
+        }
+
+        $result = StaffLogic::configurePackages($staffScopeId, $packages);
+        if (true === $result) {
+            return $this->success('配置成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
     }
 
     /**

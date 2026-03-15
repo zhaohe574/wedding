@@ -98,25 +98,30 @@
                 <view class="progress-bar" :style="{ width: progressWidth }"></view>
             </view>
 
-            <!-- 小图模式：底部渐变遮罩 + 展开提示 -->
+            <!-- 小图模式：底部渐变遮罩（仅视觉，不拦截点击） -->
             <view
                 v-if="config.banner_mode === 1 && !isExpanded && bannerList.length"
                 class="bottom-gradient"
-                @click="toggleExpand"
+            ></view>
+
+            <!-- 小图模式：顶部悬浮入口，避免遮挡下方信息卡 -->
+            <view
+                v-if="config.banner_mode === 1 && !isExpanded && bannerList.length"
+                class="expand-chip"
+                @click.stop="toggleExpand"
             >
-                <view class="expand-hint-inline">
-                    <tn-icon name="arrow-down" size="28" color="#FFFFFF" />
-                    <text class="hint-text">点击查看完整图片</text>
-                </view>
+                <tn-icon name="arrow-down" size="24" color="#FFFFFF" />
+                <text class="chip-text">查看完整图</text>
             </view>
 
             <!-- 展开/收起按钮（小图模式已展开时） -->
             <view
                 v-if="config.banner_mode === 1 && isExpanded && bannerList.length"
-                class="collapse-btn"
-                @click="toggleExpand"
+                class="collapse-chip"
+                @click.stop="toggleExpand"
             >
                 <tn-icon name="up-arrow" size="32" color="#FFFFFF" />
+                <text class="chip-text">收起</text>
             </view>
         </view>
     </view>
@@ -350,7 +355,7 @@ const handleVideoPause = () => {
     padding: 8rpx 16rpx;
     background-color: rgba(0, 0, 0, 0.5);
     border-radius: 20rpx;
-    z-index: 10;
+    z-index: 12;
 }
 
 .indicator-text {
@@ -365,7 +370,7 @@ const handleVideoPause = () => {
     right: 0;
     height: 6rpx;
     background-color: rgba(255, 255, 255, 0.3);
-    z-index: 10;
+    z-index: 12;
 }
 
 .progress-bar {
@@ -374,7 +379,7 @@ const handleVideoPause = () => {
     transition: width 0.3s ease;
 }
 
-/* 小图模式：底部渐变遮罩 + 内嵌提示 */
+/* 小图模式：底部渐变遮罩（仅视觉层） */
 .bottom-gradient {
     position: absolute;
     bottom: 0;
@@ -388,50 +393,36 @@ const handleVideoPause = () => {
         transparent 100%
     );
     display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    padding-bottom: 20rpx;
-    z-index: 10;
-    cursor: pointer;
+    z-index: 8;
+    pointer-events: none;
 }
 
-.expand-hint-inline {
+.expand-chip,
+.collapse-chip {
+    position: absolute;
+    top: 24rpx;
+    right: 24rpx;
+    height: 56rpx;
+    padding: 0 20rpx;
+    border-radius: 28rpx;
+    background-color: rgba(15, 23, 42, 0.52);
+    backdrop-filter: blur(8rpx);
     display: flex;
     align-items: center;
     gap: 8rpx;
-    padding: 12rpx 24rpx;
-    background-color: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10rpx);
-    border-radius: 40rpx;
-    border: 1rpx solid rgba(255, 255, 255, 0.3);
+    justify-content: center;
+    z-index: 20;
+    border: 1rpx solid rgba(255, 255, 255, 0.26);
 
-    .hint-text {
-        font-size: 24rpx;
-        color: #ffffff;
-        font-weight: 500;
+    &:active {
+        transform: scale(0.96);
+        background-color: rgba(15, 23, 42, 0.72);
     }
 }
 
-/* 收起按钮（展开状态） */
-.collapse-btn {
-    position: absolute;
-    bottom: 20rpx;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60rpx;
-    height: 60rpx;
-    border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(10rpx);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-    border: 1rpx solid rgba(255, 255, 255, 0.2);
-
-    &:active {
-        transform: translateX(-50%) scale(0.95);
-        background-color: rgba(0, 0, 0, 0.7);
-    }
+.chip-text {
+    font-size: 22rpx;
+    color: #ffffff;
+    font-weight: 500;
 }
 </style>

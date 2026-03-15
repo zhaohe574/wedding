@@ -1,56 +1,83 @@
 <template>
     <!-- #ifndef H5 -->
-    <tn-sticky h5-nav-height="0" bg-color="transparent">
-        <tn-navbar
+    <u-sticky h5-nav-height="0" bg-color="transparent">
+        <u-navbar
             :class="{ 'fixed top-0 z-10': isLargeScreen }"
             :is-back="false"
             :is-fixed="true"
             :title="metaData.title"
-            :custom-title="metaData.title_type == 2"
+            :custom-title="metaData.title_type === 2"
             :border-bottom="false"
             :title-bold="true"
-            :background="{ background: 'rgba(256,256, 256, 0)' }"
-            :title-color="percent > 0.5 ? '#000' : metaData.text_color == 1 ? '#fff' : '#000'"
+            :background="{ background: 'rgba(256,256,256,0)' }"
+            :title-color="navbarTitleColor"
         >
             <template #default>
-                <!-- #ifndef H5 -->
                 <navigator
                     url="/pages/search/search"
                     class="mini-search"
                     hover-class="none"
                     :style="miniSearchStyle"
                 >
-                    <tn-icon name="search" :size="32" :color="$theme.primaryColor"></tn-icon>
+                    <u-icon name="search"></u-icon>
                 </navigator>
-                <!-- #endif -->
-                <!-- #ifdef H5 -->
-                <router-navigate
-                    to="/pages/search/search"
-                    class="mini-search"
-                    :style="miniSearchStyle"
-                >
-                    <tn-icon name="search" :size="32" :color="$theme.primaryColor"></tn-icon>
-                </router-navigate>
-                <!-- #endif -->
             </template>
             <template #title>
-                <image class="!h-[54rpx]" :src="metaData.title_img" mode="widthFix"></image>
+                <image
+                    v-if="metaData.title_type === 2 && metaData.title_img"
+                    class="search-title-image"
+                    :src="metaData.title_img"
+                    mode="widthFix"
+                ></image>
+                <text v-else class="search-navbar__title">{{ metaData.title }}</text>
             </template>
-        </tn-navbar>
-    </tn-sticky>
+        </u-navbar>
+    </u-sticky>
     <!-- #endif -->
 
-    <!-- 主搜索框区域 -->
-    <!-- #ifndef H5 -->
-    <view v-if="!isLargeScreen" class="search-container-full" :style="{ opacity: 1 - percent }">
+    <!-- #ifdef H5 -->
+    <u-sticky h5-nav-height="0" bg-color="transparent">
+        <u-navbar
+            :class="{ 'fixed top-0 z-10': isLargeScreen }"
+            :is-back="false"
+            :is-fixed="true"
+            :title="metaData.title"
+            :custom-title="metaData.title_type === 2"
+            :border-bottom="false"
+            :title-bold="true"
+            :background="{ background: 'rgba(256,256,256,0)' }"
+            :title-color="navbarTitleColor"
+        >
+            <template #default>
+                <router-navigate to="/pages/search/search" class="mini-search" :style="miniSearchStyle">
+                    <u-icon name="search"></u-icon>
+                </router-navigate>
+            </template>
+            <template #title>
+                <image
+                    v-if="metaData.title_type === 2 && metaData.title_img"
+                    class="search-title-image"
+                    :src="metaData.title_img"
+                    mode="widthFix"
+                ></image>
+                <text v-else class="search-navbar__title">{{ metaData.title }}</text>
+            </template>
+        </u-navbar>
+    </u-sticky>
+    <!-- #endif -->
+
+    <view
+        v-if="showSearchPanel && !isLargeScreen"
+        class="search-container-full"
+        :style="{ opacity: 1 - percent }"
+    >
         <view class="search-box-wrapper-full" @tap="handleSearchClick">
-            <view class="search-input-box">
+            <view class="search-input-box" :style="searchInputStyle">
                 <tn-icon name="search" :size="36" color="#CCCCCC"></tn-icon>
                 <text class="search-placeholder">{{ searchPlaceholder }}</text>
             </view>
         </view>
 
-        <!-- 热词标签 -->
         <view v-if="hotWords.length > 0" class="hot-words">
             <view class="hot-words-label">
                 <tn-icon name="fire" :size="28" :color="$theme.primaryColor" />
@@ -72,58 +99,27 @@
             </view>
         </view>
     </view>
-    <!-- #endif -->
-
-    <!-- #ifdef H5 -->
-    <view v-if="!isLargeScreen" class="search-container-full" :style="{ opacity: 1 - percent }">
-        <view class="search-box-wrapper-full" @click="handleSearchClick">
-            <view class="search-input-box">
-                <tn-icon name="search" :size="36" color="#CCCCCC"></tn-icon>
-                <text class="search-placeholder">{{ searchPlaceholder }}</text>
-            </view>
-        </view>
-
-        <!-- 热词标签 -->
-        <view v-if="hotWords.length > 0" class="hot-words">
-            <view class="hot-words-label">
-                <tn-icon name="fire" :size="28" :color="$theme.primaryColor" />
-                <text class="hot-words-text">热门搜索</text>
-            </view>
-            <view class="hot-words-list">
-                <view
-                    v-for="(word, index) in hotWords"
-                    :key="index"
-                    class="hot-word-tag"
-                    :style="{
-                        backgroundColor: getLightColor($theme.primaryColor, 0.08),
-                        color: $theme.primaryColor
-                    }"
-                    @click="handleHotWordClick(word)"
-                >
-                    {{ word }}
-                </view>
-            </view>
-        </view>
-    </view>
-    <!-- #endif -->
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 
 const $theme = useThemeStore()
 
 const props = defineProps({
     pageMeta: {
-        type: Object,
+        type: Array as PropType<any[]>,
         default: () => []
     },
     content: {
         type: Object,
         default: () => ({
-            placeholder: '搜索人员/服务/作品',
-            hotWords: [] // 热词列表
+            enabled: 1,
+            showSearchPanel: 1,
+            placeholder: '请输入关键词搜索',
+            hotWords: []
         })
     },
     styles: {
@@ -131,39 +127,57 @@ const props = defineProps({
         default: () => ({
             bgColor: '#ffffff',
             textColor: '#666666',
-            borderRadius: 48 // 圆角48rpx（更圆润）
+            borderRadius: 48
         })
     },
     isLargeScreen: {
-        type: Boolean
+        type: Boolean,
+        default: false
     },
     percent: {
-        type: Number
+        type: Number,
+        default: 0
     }
 })
 
-// 页面元数据
-const metaData: any = computed(() => {
-    return props.pageMeta[0].content
+const metaData = computed(() => {
+    const defaultTitle = '首页'
+    const meta = props.pageMeta?.[0]?.content || {}
+    const title = typeof meta.title === 'string' && meta.title.trim() ? meta.title : defaultTitle
+
+    return {
+        title_type: Number(meta.title_type) === 2 ? 2 : 1,
+        title,
+        title_img: typeof meta.title_img === 'string' ? meta.title_img : '',
+        text_color: meta.text_color
+    }
 })
 
-// 搜索框配置
-const searchPlaceholder = computed(() => {
-    const ph = props.content.placeholder
-    return typeof ph === 'string' && ph.trim() ? ph : '搜索人员/服务/作品'
+const navbarTitleColor = computed(() => {
+    return props.percent > 0.5 ? '#000' : Number(metaData.value.text_color) === 1 ? '#fff' : '#000'
 })
-const searchBgColor = computed(() => props.styles.bgColor || '#ffffff')
-const searchBorderRadius = computed(() => props.styles.borderRadius || 48)
 
-// 热词列表
-const hotWords = computed(() => props.content.hotWords || [])
-
-// 迷你搜索框样式
 const miniSearchStyle = computed(() => ({
     opacity: props.isLargeScreen ? 1 : props.percent
 }))
 
-// 获取浅色变体
+const showSearchPanel = computed(() => Number(props.content?.showSearchPanel ?? 1) !== 0)
+
+const searchPlaceholder = computed(() => {
+    const ph = props.content.placeholder
+    return typeof ph === 'string' && ph.trim() ? ph : '请输入关键词搜索'
+})
+
+const hotWords = computed(() => {
+    return Array.isArray(props.content.hotWords) ? props.content.hotWords : []
+})
+
+const searchInputStyle = computed(() => ({
+    background: props.styles.bgColor || '#f5f5f5',
+    borderRadius: `${Number(props.styles.borderRadius || 48)}rpx`,
+    color: props.styles.textColor || '#666666'
+}))
+
 const getLightColor = (color: string, opacity: number) => {
     const hex = color.replace('#', '')
     const r = parseInt(hex.substring(0, 2), 16)
@@ -172,23 +186,40 @@ const getLightColor = (color: string, opacity: number) => {
     return `rgba(${r}, ${g}, ${b}, ${opacity})`
 }
 
-// 搜索框点击事件
-const handleSearchClick = () => {
+const navigateToSearch = (keyword = '') => {
+    const normalizedKeyword = String(keyword || '').trim()
     uni.navigateTo({
-        url: '/pages/search/search'
+        url: normalizedKeyword
+            ? `/pages/search/search?keyword=${encodeURIComponent(normalizedKeyword)}`
+            : '/pages/search/search'
     })
 }
 
-// 热词点击事件
+const handleSearchClick = () => {
+    navigateToSearch()
+}
+
 const handleHotWordClick = (word: string) => {
-    uni.navigateTo({
-        url: `/pages/search/search?keyword=${encodeURIComponent(word)}`
-    })
+    navigateToSearch(word)
 }
 </script>
 
 <style scoped lang="scss">
-// 迷你搜索按钮（导航栏）
+.search-navbar__title {
+    max-width: 100%;
+    font-size: 32rpx;
+    font-weight: 400;
+    line-height: 1.2;
+    color: currentColor;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-title-image {
+    height: 54rpx !important;
+}
+
 .mini-search {
     display: flex;
     align-items: center;
@@ -207,28 +238,23 @@ const handleHotWordClick = (word: string) => {
     }
 }
 
-// 全屏搜索容器（无左右边距）
 .search-container-full {
     display: block;
     padding: 0;
 }
 
-// 全屏搜索框包装
 .search-box-wrapper-full {
     background: #ffffff;
     padding: 16rpx 24rpx;
     border-bottom: 1rpx solid #f0f0f0;
 }
 
-// 自定义搜索输入框
 .search-input-box {
     display: flex;
     align-items: center;
     gap: 16rpx;
     height: 72rpx;
     padding: 0 24rpx;
-    background: #f5f5f5;
-    border-radius: 36rpx;
     transition: all 0.2s ease;
 }
 
@@ -238,7 +264,6 @@ const handleHotWordClick = (word: string) => {
     color: #cccccc;
 }
 
-// 热词区域（保留左右内边距）
 .hot-words {
     margin-top: 0;
     padding: 16rpx 24rpx 24rpx;

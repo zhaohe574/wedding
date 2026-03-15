@@ -307,7 +307,7 @@ const sendRules = {
 
 // 模板
 const templates = ref<any[]>([])
-const selectedTemplate = ref<number | null>(null)
+const selectedTemplate = ref<number>()
 
 // 详情弹窗
 const showDetailDialog = ref(false)
@@ -375,7 +375,7 @@ const handleSend = () => {
     sendForm.notify_type = 1
     sendForm.title = ''
     sendForm.content = ''
-    selectedTemplate.value = null
+    selectedTemplate.value = undefined
     showSendDialog.value = true
 }
 
@@ -385,19 +385,18 @@ const handleSendAll = () => {
     sendForm.notify_type = 1
     sendForm.title = ''
     sendForm.content = ''
-    selectedTemplate.value = null
+    selectedTemplate.value = undefined
     showSendDialog.value = true
 }
 
 // 模板变化
-const handleTemplateChange = (templateId: number) => {
-    if (templateId) {
-        const tpl = templates.value.find(t => t.id === templateId)
-        if (tpl) {
-            sendForm.notify_type = tpl.type
-            sendForm.title = tpl.title
-            sendForm.content = tpl.content
-        }
+const handleTemplateChange = (templateId?: number) => {
+    if (templateId == null) return
+    const tpl = templates.value.find((item) => item.id === templateId)
+    if (tpl) {
+        sendForm.notify_type = tpl.type
+        sendForm.title = tpl.title
+        sendForm.content = tpl.content
     }
 }
 
@@ -485,8 +484,8 @@ const handleBatchDelete = () => {
 
 // 获取类型标签
 const getTypeTag = (type: number) => {
-    const tags: Record<number, string> = { 1: '', 2: 'success', 3: 'warning', 4: 'danger' }
-    return tags[type] || 'info'
+    const tags = { 1: 'info', 2: 'success', 3: 'warning', 4: 'danger' } as const
+    return tags[type as keyof typeof tags] ?? 'info'
 }
 
 onMounted(() => {

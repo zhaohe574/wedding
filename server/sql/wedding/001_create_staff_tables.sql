@@ -131,7 +131,6 @@ CREATE TABLE `la_staff` (
   `mobile` varchar(20) NOT NULL DEFAULT '' COMMENT '手机号(脱敏显示)',
   `mobile_full` varchar(20) NOT NULL DEFAULT '' COMMENT '完整手机号',
   `category_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务分类ID',
-  `price` decimal(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '起步价格',
   `experience_years` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '从业年限',
   `profile` text COMMENT '个人简介',
   `service_desc` text COMMENT '服务说明',
@@ -156,8 +155,7 @@ CREATE TABLE `la_staff` (
   KEY `idx_category_id` (`category_id`) USING BTREE,
   KEY `idx_status` (`status`) USING BTREE,
   KEY `idx_is_recommend` (`is_recommend`) USING BTREE,
-  KEY `idx_rating` (`rating`) USING BTREE,
-  KEY `idx_price` (`price`) USING BTREE
+  KEY `idx_rating` (`rating`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='工作人员表';
 
 -- ----------------------------
@@ -168,6 +166,7 @@ CREATE TABLE `la_staff_work` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '作品ID',
   `staff_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '工作人员ID',
   `title` varchar(100) NOT NULL DEFAULT '' COMMENT '作品标题',
+  `type` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '作品类型:1-图片,2-视频',
   `cover` varchar(255) NOT NULL DEFAULT '' COMMENT '封面图片',
   `images` text COMMENT '作品图片(JSON数组)',
   `video` varchar(255) NOT NULL DEFAULT '' COMMENT '作品视频',
@@ -178,6 +177,7 @@ CREATE TABLE `la_staff_work` (
   `like_count` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '点赞数',
   `sort` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
   `is_show` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '是否显示:0-否,1-是',
+  `is_cover` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否封面:0-否,1-是',
   `audit_status` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '审核状态:0-待审核,1-已通过,2-已拒绝',
   `create_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
   `update_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',

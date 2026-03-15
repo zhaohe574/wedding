@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\adminapi\controller\crm;
 
 use app\adminapi\controller\BaseAdminController;
+use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\lists\crm\CustomerLossWarningLists;
 use app\adminapi\logic\crm\CustomerLossWarningLogic;
 
@@ -18,6 +19,14 @@ use app\adminapi\logic\crm\CustomerLossWarningLogic;
  */
 class CustomerLossWarningController extends BaseAdminController
 {
+    use OfflineModuleGuard;
+
+    public function initialize()
+    {
+        parent::initialize();
+        $this->abortOfflineModule('CRM 管理');
+    }
+
     /**
      * @notes 预警列表
      * @return \think\response\Json

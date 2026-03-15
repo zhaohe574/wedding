@@ -62,6 +62,9 @@ const handleSelect = () => {
     position: relative;
     z-index: 999;
     @apply border-r border-br-light h-full flex flex-col;
+    width: var(--aside-width);
+    border-color: var(--admin-color-border);
+    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.06);
     background-color: var(--side-dark-color, var(--el-bg-color));
 }
 </style>

@@ -1,0 +1,29 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "composite": false,
+        "declaration": false,
+        "emitDeclarationOnly": false
+    },
+    "include": [
+        "global.d.ts",
+        "src/**/*",
+        "src/**/*.vue",
+        "components.d.ts",
+        "auto-imports.d.ts",
+        "typings/**/*.d.ts",
+        "vite.config.*"
+    ],
+    "exclude": [
+        "src/views/aftersale/**/*",
+        "src/views/crm/**/*",
+        "src/views/timeline/**/*",
+        "src/views/order/refund/**/*",
+        "src/views/finance/**/*",
+        "src/views/financial/**/*",
+        "src/views/app/recharge/**/*",
+        "src/views/setting/pay/**/*",
+        "src/views/decoration/component/pages/preview-pc.vue",
+        "src/views/decoration/component/tabbar/pc/**/*"
+    ]
+}

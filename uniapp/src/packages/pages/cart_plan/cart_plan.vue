@@ -190,9 +190,9 @@
         </view>
         <tn-popup
             v-model="showSharePopup"
-            mode="center"
-            :border-radius="24"
-            :mask-close-able="true"
+            open-direction="center"
+            :radius="24"
+            :overlay-closeable="true"
         >
             <view class="share-modal">
                 <text class="modal-title">分享方案</text>

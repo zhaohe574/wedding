@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\adminapi\controller\schedule;
 
 use app\adminapi\controller\BaseAdminController;
+use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\lists\schedule\CalendarEventLists;
 use app\adminapi\logic\schedule\CalendarEventLogic;
 use app\adminapi\validate\schedule\CalendarEventValidate;
@@ -19,6 +20,14 @@ use app\adminapi\validate\schedule\CalendarEventValidate;
  */
 class CalendarEventController extends BaseAdminController
 {
+    use OfflineModuleGuard;
+
+    public function initialize()
+    {
+        parent::initialize();
+        $this->abortOfflineModule('吉日管理');
+    }
+
     /**
      * @notes 事件列表
      * @return \think\response\Json

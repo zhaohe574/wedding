@@ -121,6 +121,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import type { CSSProperties } from 'vue'
 import { onReachBottom } from '@dcloudio/uni-app'
 import { getMyReviews, getPendingOrders } from '@/api/review'
 import { useThemeStore } from '@/stores/theme'
@@ -131,9 +132,9 @@ const $theme = {
     navColor: computed(() => themeStore.navColor),
     navBgColor: computed(() => themeStore.navBgColor),
     primaryColor: computed(() => themeStore.primaryColor || '#7C3AED'),
-    activeTab: computed(() => ({
+    activeTab: computed<CSSProperties>(() => ({
         color: themeStore.primaryColor || '#7C3AED',
-        fontWeight: 'bold'
+        fontWeight: 700
     })),
     tabIndicator: computed(() => ({
         background: themeStore.primaryColor || '#7C3AED'

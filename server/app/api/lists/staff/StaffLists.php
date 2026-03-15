@@ -11,6 +11,8 @@ use app\api\lists\BaseApiDataLists;
 use app\common\lists\ListsSearchInterface;
 use app\common\model\staff\Staff;
 use app\common\model\staff\Favorite;
+use app\common\model\staff\StaffTag;
+use app\common\service\StaffPriceService;
 
 /**
  * 工作人员列表（小程序端）
@@ -19,6 +21,11 @@ use app\common\model\staff\Favorite;
  */
 class StaffLists extends BaseApiDataLists implements ListsSearchInterface
 {
+    /**
+     * @var int|null
+     */
+    protected ?int $manualCount = null;
+
     /**
      * @notes 搜索条件
      * @return array
@@ -46,14 +53,6 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
             $where[] = ['name', 'like', '%' . $this->params['keyword'] . '%'];
         }
 
-        // 价格区间筛选
-        if (!empty($this->params['price_min'])) {
-            $where[] = ['price', '>=', floatval($this->params['price_min'])];
-        }
-        if (!empty($this->params['price_max'])) {
-            $where[] = ['price', '<=', floatval($this->params['price_max'])];
-        }
-
         // 从业年限筛选
         if (!empty($this->params['experience_min'])) {
             $where[] = ['experience_years', '>=', intval($this->params['experience_min'])];
@@ -68,53 +67,110 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
      */
     public function lists(): array
     {
-        // 排序方式
-        $orderRaw = 'sort desc, id desc';
-        $sortType = $this->params['sort'] ?? 'default';
-        
-        switch ($sortType) {
-            case 'price_asc':
-                $orderRaw = 'price asc, id desc';
-                break;
-            case 'price_desc':
-                $orderRaw = 'price desc, id desc';
-                break;
-            case 'rating':
-                $orderRaw = 'rating desc, id desc';
-                break;
-            case 'order_count':
-                $orderRaw = 'order_count desc, id desc';
-                break;
-            case 'new':
-                $orderRaw = 'id desc';
-                break;
+        $this->manualCount = null;
+        $sortType = (string)($this->params['sort'] ?? 'default');
+        $field = 'id, sn, name, avatar, category_id, rating, order_count, experience_years, profile, is_recommend';
+
+        $tagStaffIds = $this->getTagStaffIds();
+        if ($tagStaffIds !== null && empty($tagStaffIds)) {
+            $this->manualCount = 0;
+            return [];
         }
 
-        $field = 'id, sn, name, avatar, category_id, price, rating, order_count, experience_years, profile, is_recommend';
-        
-        $result = Staff::field($field)
-            ->where($this->queryWhere())
-            ->where($this->searchWhere)
-            ->orderRaw($orderRaw)
-            ->append(['category_name'])
-            ->limit($this->limitOffset, $this->limitLength)
-            ->select()
-            ->toArray();
+        $baseQuery = Staff::where($this->queryWhere())
+            ->where($this->searchWhere);
 
-        // 标签筛选（如果有tag_ids参数）
-        if (!empty($this->params['tag_ids'])) {
-            $tagIds = is_array($this->params['tag_ids']) 
-                ? $this->params['tag_ids'] 
-                : explode(',', $this->params['tag_ids']);
-            
-            $staffIds = \app\common\model\staff\StaffTag::whereIn('tag_id', $tagIds)
-                ->group('staff_id')
-                ->column('staff_id');
-            
-            $result = array_filter($result, function($item) use ($staffIds) {
-                return in_array($item['id'], $staffIds);
-            });
-            $result = array_values($result);
+        if ($tagStaffIds !== null) {
+            $baseQuery->whereIn('id', $tagStaffIds);
+        }
+
+        $result = [];
+        if ($this->needPriceMemoryMode()) {
+            $baseOrderRaw = in_array($sortType, ['price_asc', 'price_desc'], true)
+                ? 'id desc'
+                : $this->getOrderRaw($sortType);
+
+            $allIds = (clone $baseQuery)
+                ->orderRaw($baseOrderRaw)
+                ->column('id');
+
+            if (empty($allIds)) {
+                $this->manualCount = 0;
+                return [];
+            }
+
+            $allIds = array_map('intval', $allIds);
+            $priceMap = StaffPriceService::getDisplayPriceMap($allIds);
+            $filteredIds = $this->filterIdsByPriceRange($allIds, $priceMap);
+
+            if (in_array($sortType, ['price_asc', 'price_desc'], true)) {
+                usort($filteredIds, function (int $a, int $b) use ($priceMap, $sortType) {
+                    $aPrice = $priceMap[$a] ?? ['price' => null, 'has_price' => false];
+                    $bPrice = $priceMap[$b] ?? ['price' => null, 'has_price' => false];
+
+                    $aHasPrice = (bool)($aPrice['has_price'] ?? false);
+                    $bHasPrice = (bool)($bPrice['has_price'] ?? false);
+
+                    if (!$aHasPrice && !$bHasPrice) {
+                        return $b <=> $a;
+                    }
+                    if (!$aHasPrice) {
+                        return 1;
+                    }
+                    if (!$bHasPrice) {
+                        return -1;
+                    }
+
+                    $aValue = (float)($aPrice['price'] ?? 0);
+                    $bValue = (float)($bPrice['price'] ?? 0);
+                    if ($aValue === $bValue) {
+                        return $b <=> $a;
+                    }
+
+                    return $sortType === 'price_desc'
+                        ? ($bValue <=> $aValue)
+                        : ($aValue <=> $bValue);
+                });
+            }
+
+            $this->manualCount = count($filteredIds);
+            $pageIds = array_slice($filteredIds, $this->limitOffset, $this->limitLength);
+            if (empty($pageIds)) {
+                return [];
+            }
+
+            $rows = Staff::field($field)
+                ->whereIn('id', $pageIds)
+                ->append(['category_name'])
+                ->select()
+                ->toArray();
+
+            $rowMap = [];
+            foreach ($rows as $row) {
+                $rowMap[(int)$row['id']] = $row;
+            }
+
+            foreach ($pageIds as $staffId) {
+                if (!isset($rowMap[$staffId])) {
+                    continue;
+                }
+                $row = $rowMap[$staffId];
+                $display = $priceMap[$staffId] ?? ['price' => null, 'has_price' => false, 'price_text' => '面议'];
+                $row['price'] = $display['price'];
+                $row['has_price'] = $display['has_price'];
+                $row['price_text'] = $display['price_text'];
+                $result[] = $row;
+            }
+        } else {
+            $result = (clone $baseQuery)
+                ->field($field)
+                ->orderRaw($this->getOrderRaw($sortType))
+                ->append(['category_name'])
+                ->limit($this->limitOffset, $this->limitLength)
+                ->select()
+                ->toArray();
+
+            StaffPriceService::injectDisplayPrice($result);
         }
 
         // 获取用户收藏状态
@@ -168,8 +224,120 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
      */
     public function count(): int
     {
-        return Staff::where($this->searchWhere)
-            ->where($this->queryWhere())
-            ->count();
+        if ($this->manualCount !== null) {
+            return $this->manualCount;
+        }
+
+        $tagStaffIds = $this->getTagStaffIds();
+        if ($tagStaffIds !== null && empty($tagStaffIds)) {
+            return 0;
+        }
+
+        $query = Staff::where($this->searchWhere)
+            ->where($this->queryWhere());
+
+        if ($tagStaffIds !== null) {
+            $query->whereIn('id', $tagStaffIds);
+        }
+
+        if ($this->needPriceMemoryMode()) {
+            $allIds = $query->column('id');
+            $priceMap = StaffPriceService::getDisplayPriceMap($allIds);
+            return count($this->filterIdsByPriceRange(array_map('intval', $allIds), $priceMap));
+        }
+
+        return $query->count();
+    }
+
+    /**
+     * @notes 获取排序规则
+     * @param string $sortType
+     * @return string
+     */
+    protected function getOrderRaw(string $sortType): string
+    {
+        switch ($sortType) {
+            case 'rating':
+                return 'rating desc, id desc';
+            case 'order_count':
+                return 'order_count desc, id desc';
+            case 'new':
+                return 'id desc';
+            default:
+                return 'sort desc, id desc';
+        }
+    }
+
+    /**
+     * @notes 是否需要进入价格内存过滤/排序模式
+     * @return bool
+     */
+    protected function needPriceMemoryMode(): bool
+    {
+        $sortType = (string)($this->params['sort'] ?? 'default');
+        if (in_array($sortType, ['price_asc', 'price_desc'], true)) {
+            return true;
+        }
+
+        return ($this->params['price_min'] ?? '') !== ''
+            || ($this->params['price_max'] ?? '') !== '';
+    }
+
+    /**
+     * @notes 标签筛选对应的 staff_id 列表
+     * @return array|null
+     */
+    protected function getTagStaffIds(): ?array
+    {
+        if (empty($this->params['tag_ids'])) {
+            return null;
+        }
+
+        $tagIds = is_array($this->params['tag_ids'])
+            ? $this->params['tag_ids']
+            : explode(',', (string)$this->params['tag_ids']);
+        $tagIds = array_values(array_unique(array_filter(array_map('intval', $tagIds))));
+
+        if (empty($tagIds)) {
+            return [];
+        }
+
+        return StaffTag::whereIn('tag_id', $tagIds)
+            ->group('staff_id')
+            ->column('staff_id');
+    }
+
+    /**
+     * @notes 按自动价口径筛选 staff_id
+     * @param array $staffIds
+     * @param array $priceMap
+     * @return array
+     */
+    protected function filterIdsByPriceRange(array $staffIds, array $priceMap): array
+    {
+        $priceMin = ($this->params['price_min'] ?? '') !== '' ? (float)$this->params['price_min'] : null;
+        $priceMax = ($this->params['price_max'] ?? '') !== '' ? (float)$this->params['price_max'] : null;
+        if ($priceMin === null && $priceMax === null) {
+            return $staffIds;
+        }
+
+        $filtered = [];
+        foreach ($staffIds as $staffId) {
+            $display = $priceMap[$staffId] ?? ['price' => null, 'has_price' => false];
+            if (!($display['has_price'] ?? false)) {
+                continue;
+            }
+
+            $price = (float)($display['price'] ?? 0);
+            if ($priceMin !== null && $price < $priceMin) {
+                continue;
+            }
+            if ($priceMax !== null && $price > $priceMax) {
+                continue;
+            }
+            $filtered[] = (int)$staffId;
+        }
+
+        return $filtered;
     }
 }

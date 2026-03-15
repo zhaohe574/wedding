@@ -18,7 +18,9 @@ namespace app\adminapi\logic\auth;
 use app\common\enum\YesNoEnum;
 use app\common\logic\BaseLogic;
 use app\common\model\auth\Admin;
+use app\common\model\auth\AdminRole;
 use app\common\model\auth\SystemMenu;
+use app\common\model\auth\SystemRole;
 use app\common\model\auth\SystemRoleMenu;
 
 
@@ -56,9 +58,118 @@ class MenuLogic extends BaseLogic
 
         $menu = SystemMenu::where($where)
             ->order(['sort' => 'desc', 'id' => 'asc'])
-            ->select();
+            ->select()
+            ->toArray();
+
+        $menu = self::filterUnavailableMenus($menu);
+
+        // 服务人员中心仅对服务人员角色可见（管理员默认不展示该入口）
+        if (!self::hasStaffRole((int)$adminId)) {
+            $staffCenterIds = array_column(array_filter($menu, function ($item) {
+                return $item['pid'] == 0
+                    && $item['type'] == 'M'
+                    && in_array($item['paths'], ['staff_center', 'staff-center']);
+            }), 'id');
+
+            if (!empty($staffCenterIds)) {
+                $menu = array_values(array_filter($menu, function ($item) use ($staffCenterIds) {
+                    return !in_array($item['id'], $staffCenterIds)
+                        && !in_array($item['pid'], $staffCenterIds);
+                }));
+            }
+        }
 
         return linear_to_tree($menu, 'children');
+    }
+
+
+    /**
+     * @notes 是否包含服务人员角色
+     * @param int $adminId
+     * @return bool
+     */
+    private static function hasStaffRole(int $adminId): bool
+    {
+        $staffRoleIds = SystemRole::where('name', '服务人员')
+            ->whereNull('delete_time')
+            ->column('id');
+
+        if (empty($staffRoleIds)) {
+            return false;
+        }
+
+        return AdminRole::where('admin_id', $adminId)
+            ->whereIn('role_id', $staffRoleIds)
+            ->count() > 0;
+    }
+
+
+    /**
+     * @notes 过滤已下线和空壳菜单
+     */
+    private static function filterUnavailableMenus(array $menu): array
+    {
+        $blockedPaths = ['crm', 'timeline', 'aftersale'];
+        $blockedComponents = [
+            'crm/customer/index',
+            'crm/warning/index',
+            'aftersale/ticket/index',
+            'timeline/lists/index',
+            'financial/cost/index',
+            'financial/invoice/index',
+            'schedule/booking/index',
+            'schedule/event/index',
+        ];
+        $blockedPermPrefixes = [
+            'crm.customer/',
+            'crm.sales_advisor/',
+            'crm.salesAdvisor/',
+            'crm.customer_loss_warning/',
+            'crm.customerLossWarning/',
+            'crm.followRecord/',
+            'growth.customer/',
+            'growth.advisor/',
+            'growth.lossWarning/',
+            'growth.followRecord/',
+            'timeline.timeline/',
+            'growth.timeline/',
+            'aftersale.aftersale/',
+            'ops.aftersaleTicket/',
+            'financial.cost/',
+            'finance.cost/',
+            'financial.invoice/',
+            'finance.invoice/',
+            'schedule.calendarEvent/',
+            'ops.calendarEvent/',
+            'schedule.booking/',
+            'ops.booking/',
+        ];
+
+        return array_values(array_filter($menu, function ($item) use (
+            $blockedPaths,
+            $blockedComponents,
+            $blockedPermPrefixes
+        ) {
+            $path = (string)($item['paths'] ?? '');
+            $component = (string)($item['component'] ?? '');
+            $perms = (string)($item['perms'] ?? '');
+
+            if (in_array($path, $blockedPaths, true)) {
+                return false;
+            }
+
+            if (in_array($component, $blockedComponents, true)) {
+                return false;
+            }
+
+            foreach ($blockedPermPrefixes as $prefix) {
+                if ($perms !== '' && str_starts_with($perms, $prefix)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
     }
 
 

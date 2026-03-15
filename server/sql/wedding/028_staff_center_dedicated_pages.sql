@@ -442,4 +442,18 @@ WHERE rm.`role_id` = @staff_role_id
       'dynamic.dynamic/statistics'
   );
 
+-- 6) 清理遗留的空白“服务管理”子菜单（component=service/index）
+-- 说明：该菜单在前端无对应组件，访问时会出现空白页。
+DELETE rm
+FROM `la_system_role_menu` rm
+JOIN `la_system_menu` m ON m.`id` = rm.`menu_id`
+WHERE m.`type` = 'C'
+  AND m.`paths` = 'service'
+  AND m.`component` = 'service/index';
+
+DELETE FROM `la_system_menu`
+WHERE `type` = 'C'
+  AND `paths` = 'service'
+  AND `component` = 'service/index';
+
 SET FOREIGN_KEY_CHECKS = 1;

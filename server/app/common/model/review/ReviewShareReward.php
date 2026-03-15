@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\model\review;
 
 use app\common\model\BaseModel;
+use app\common\service\UserPointService;
 use app\common\model\user\User;
 
 /**
@@ -125,9 +126,9 @@ class ReviewShareReward extends BaseModel
     /**
      * @notes 审核通过
      * @param int $adminId
-     * @return void
+     * @return bool
      */
-    public function approve(int $adminId): void
+    public function approve(int $adminId): bool
     {
         $this->save([
             'status' => self::STATUS_APPROVED,
@@ -135,20 +136,23 @@ class ReviewShareReward extends BaseModel
             'audit_time' => time(),
         ]);
 
-        // TODO: 发放积分奖励
+        return UserPointService::grantShareReward($this);
     }
 
     /**
      * @notes 审核拒绝
      * @param int $adminId
-     * @return void
+     * @return bool
      */
-    public function reject(int $adminId): void
+    public function reject(int $adminId, string $remark = ''): bool
     {
         $this->save([
             'status' => self::STATUS_REJECTED,
             'admin_id' => $adminId,
             'audit_time' => time(),
+            'audit_remark' => $remark,
         ]);
+
+        return true;
     }
 }

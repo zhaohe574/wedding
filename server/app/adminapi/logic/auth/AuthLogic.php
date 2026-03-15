@@ -27,6 +27,104 @@ use app\common\model\auth\SystemRoleMenu;
  */
 class AuthLogic
 {
+    /**
+     * @notes 权限前缀迁移映射（旧 => 新）
+     * @return array<string, string>
+     */
+    private static function permissionAliasMap(): array
+    {
+        return [
+            'staff.staff/' => 'ops.staff/',
+            'staff.staffWork/' => 'ops.staffWork/',
+            'staff.staffCertificate/' => 'ops.staffCertificate/',
+            'staff.work/' => 'ops.work/',
+            'service.category/' => 'ops.category/',
+            'service.package/' => 'ops.package/',
+            'service.service_category/' => 'ops.category/',
+            'service.service_package/' => 'ops.package/',
+            'service.styleTag/' => 'ops.styleTag/',
+            'service.style_tag/' => 'ops.styleTag/',
+            'schedule.schedule/' => 'ops.schedule/',
+            'schedule.scheduleRule/' => 'ops.scheduleRule/',
+            'schedule.booking/' => 'ops.booking/',
+            'schedule.waitlist/' => 'ops.waitlist/',
+            'schedule.calendarEvent/' => 'ops.calendarEvent/',
+            'order.order/' => 'ops.order/',
+            'order.orderChange/' => 'ops.orderChange/',
+            'order.order_change/' => 'ops.orderChange/',
+            'order.orderTransfer/' => 'ops.orderTransfer/',
+            'order.order_transfer/' => 'ops.orderTransfer/',
+            'order.orderPause/' => 'ops.orderPause/',
+            'order.order_pause/' => 'ops.orderPause/',
+            'order.refund/' => 'ops.refund/',
+            'order.payment/' => 'ops.payment/',
+            'aftersale.aftersale/' => 'ops.aftersaleTicket/',
+            'aftersale.complaint/' => 'ops.complaint/',
+            'aftersale.reshoot/' => 'ops.reshoot/',
+            'aftersale.callback/' => 'ops.callback/',
+            'crm.customer/' => 'growth.customer/',
+            'crm.sales_advisor/' => 'growth.advisor/',
+            'crm.salesAdvisor/' => 'growth.advisor/',
+            'crm.customer_loss_warning/' => 'growth.lossWarning/',
+            'crm.customerLossWarning/' => 'growth.lossWarning/',
+            'crm.followRecord/' => 'growth.followRecord/',
+            'coupon.coupon/' => 'growth.campaign/',
+            'dynamic.dynamic/' => 'growth.dynamic/',
+            'dynamic.dynamicComment/' => 'growth.dynamicComment/',
+            'review.review/' => 'growth.review/',
+            'review.reviewAppeal/' => 'growth.reviewAppeal/',
+            'review.review_appeal/' => 'growth.reviewAppeal/',
+            'review.reviewTag/' => 'growth.reviewTag/',
+            'review.review_tag/' => 'growth.reviewTag/',
+            'review.sensitiveWord/' => 'growth.sensitiveWord/',
+            'review.sensitive_word/' => 'growth.sensitiveWord/',
+            'notification.notification/' => 'growth.notification/',
+            'subscribe.subscribe/' => 'growth.subscribe/',
+            'timeline.timeline/' => 'growth.timeline/',
+            'financial.' => 'finance.',
+            'finance.account_log/' => 'finance.accountLog/',
+            'recharge.recharge/' => 'finance.recharge/',
+            'user.user/' => 'content.user/',
+            'article.article/' => 'content.article/',
+            'article.article_cate/' => 'content.articleCategory/',
+            'article.articleCate/' => 'content.articleCategory/',
+            'file/listCate' => 'content.material/listCate',
+            'channel.' => 'experience.channel.',
+            'decorate.' => 'experience.decorate.',
+        ];
+    }
+
+    /**
+     * @notes 兼容新旧权限前缀，返回双轨权限集合
+     * @param array $permissions
+     * @return array
+     */
+    private static function expandPermissionAliases(array $permissions): array
+    {
+        $results = [];
+        $map = self::permissionAliasMap();
+
+        foreach ($permissions as $permission) {
+            if (empty($permission) || !is_string($permission)) {
+                continue;
+            }
+            $results[$permission] = true;
+
+            foreach ($map as $oldPrefix => $newPrefix) {
+                if (str_starts_with($permission, $oldPrefix)) {
+                    $alias = $newPrefix . substr($permission, strlen($oldPrefix));
+                    $results[$alias] = true;
+                }
+                if (str_starts_with($permission, $newPrefix)) {
+                    $alias = $oldPrefix . substr($permission, strlen($newPrefix));
+                    $results[$alias] = true;
+                }
+            }
+        }
+
+        return array_values(array_keys($results));
+    }
+
 
     /**
      * @notes 获取全部权限
@@ -36,12 +134,14 @@ class AuthLogic
      */
     public static function getAllAuth()
     {
-        return SystemMenu::distinct(true)
+        $permissions = SystemMenu::distinct(true)
             ->where([
                 ['is_disable', '=', 0],
                 ['perms', '<>', '']
             ])
             ->column('perms');
+
+        return self::expandPermissionAliases($permissions);
     }
 
 
@@ -73,6 +173,9 @@ class AuthLogic
             ->where($where)
             ->column('perms');
 
+        $roleAuth = self::expandPermissionAliases($roleAuth);
+        $allAuth = self::expandPermissionAliases($allAuth);
+
         $hasAllAuth = array_diff($allAuth, $roleAuth);
         if (empty($hasAllAuth)) {
             return ['*'];
@@ -94,12 +197,14 @@ class AuthLogic
         $roleIds = AdminRole::where('admin_id', $adminId)->column('role_id');
         $menuId = SystemRoleMenu::whereIn('role_id', $roleIds)->column('menu_id');
 
-        return SystemMenu::distinct(true)
+        $permissions = SystemMenu::distinct(true)
             ->where([
                 ['is_disable', '=', 0],
                 ['perms', '<>', ''],
                 ['id', 'in', array_unique($menuId)],
             ])
             ->column('perms');
+
+        return self::expandPermissionAliases($permissions);
     }
 }

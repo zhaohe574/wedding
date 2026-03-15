@@ -33,7 +33,7 @@
                 </el-form-item>
             </el-form>
         </el-card>
-        <footer-btns v-perms="['channel.web_page_setting/setConfig']">
+        <footer-btns v-perms="['experience.channel.web_page_setting/setConfig']">
             <el-button type="primary" @click="handelSave">保存</el-button>
         </footer-btns>
     </div>

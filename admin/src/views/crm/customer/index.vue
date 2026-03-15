@@ -18,7 +18,7 @@
                         @keyup.enter="resetPage"
                     />
                 </el-form-item>
-                <el-form-item class="w-[120px]" label="意向等级">
+                <el-form-item class="w-[180px]" label="意向等级">
                     <el-select v-model="queryParams.intention_level" placeholder="选择" clearable>
                         <el-option label="全部" value="" />
                         <el-option label="A-高意向" value="A" />
@@ -27,7 +27,7 @@
                         <el-option label="D-待跟进" value="D" />
                     </el-select>
                 </el-form-item>
-                <el-form-item class="w-[120px]" label="客户状态">
+                <el-form-item class="w-[180px]" label="客户状态">
                     <el-select v-model="queryParams.customer_status" placeholder="选择" clearable>
                         <el-option label="全部" value="" />
                         <el-option label="新客户" :value="1" />

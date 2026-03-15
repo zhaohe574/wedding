@@ -16,7 +16,12 @@
             <!-- 头部区域 -->
             <view class="header-section">
                 <view class="icon-wrapper">
-                    <tn-icon name="phone" size="80" :color="primaryColor" />
+                    <tn-icon
+                        name="phone"
+                        size="80"
+                        :color="primaryColor"
+                        customClass="bind-mobile-icon"
+                    />
                 </view>
                 <view class="title-text">绑定手机号</view>
                 <view class="subtitle-text">为了您的账号安全，请绑定手机号</view>
@@ -223,12 +228,26 @@ page {
     margin-bottom: 56rpx;
 
     .icon-wrapper {
-        display: inline-block;
-        padding: 24rpx;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 140rpx;
+        height: 140rpx;
+        padding: 0;
         background: rgba(255, 255, 255, 0.95);
         border-radius: 50%;
         box-shadow: 0 8rpx 32rpx rgba(124, 58, 237, 0.2);
         margin-bottom: 28rpx;
+    }
+
+    :deep(.bind-mobile-icon) {
+        display: block;
+        line-height: 1;
+    }
+
+    :deep(.bind-mobile-icon .icon) {
+        display: block;
+        line-height: 1;
     }
 
     .title-text {
@@ -322,6 +341,9 @@ page {
     border-radius: 32rpx;
     height: 72rpx;
     padding: 0 32rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
@@ -333,6 +355,7 @@ page {
         letter-spacing: 1rpx;
         text-align: center;
         display: block;
+        line-height: 1;
     }
 
     &:active {

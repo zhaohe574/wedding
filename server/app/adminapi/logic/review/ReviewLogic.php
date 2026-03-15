@@ -12,6 +12,7 @@ use app\common\model\review\Review;
 use app\common\model\review\ReviewReply;
 use app\common\model\review\ReviewTag;
 use app\common\model\review\StaffReviewStats;
+use app\common\service\UserPointService;
 use think\facade\Db;
 
 /**
@@ -78,6 +79,9 @@ class ReviewLogic extends BaseLogic
 
                 // 如果审核通过，更新人员统计
                 if ($params['status'] == Review::STATUS_APPROVED) {
+                    if (!UserPointService::grantReviewReward($review)) {
+                        throw new \Exception('评价奖励积分发放失败');
+                    }
                     StaffReviewStats::recalculate($review->staff_id);
                 }
 
@@ -114,6 +118,9 @@ class ReviewLogic extends BaseLogic
                             'reject_reason' => $params['reject_reason'] ?? '',
                         ]);
                         if ($params['status'] == Review::STATUS_APPROVED) {
+                            if (!UserPointService::grantReviewReward($review)) {
+                                throw new \Exception('评价奖励积分发放失败');
+                            }
                             $staffIds[] = $review->staff_id;
                         }
                     }

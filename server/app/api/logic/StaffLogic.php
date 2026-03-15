@@ -15,6 +15,7 @@ use app\common\model\staff\StaffTag;
 use app\common\model\staff\StaffPackage;
 use app\common\model\service\ServicePackage;
 use app\common\service\ConfigService;
+use app\common\service\StaffPriceService;
 
 /**
  * 工作人员逻辑（小程序端）
@@ -30,15 +31,18 @@ class StaffLogic extends BaseLogic
      */
     public static function recommend(int $limit = 10): array
     {
-        return Staff::where('delete_time', null)
+        $result = Staff::where('delete_time', null)
             ->where('status', Staff::STATUS_ENABLE)
             ->where('is_recommend', 1)
             ->where('audit_status', Staff::AUDIT_PASS)
             ->order('sort desc, rating desc, order_count desc')
-            ->field('id, sn, name, avatar, category_id, price, rating, order_count, experience_years, profile')
+            ->field('id, sn, name, avatar, category_id, rating, order_count, experience_years, profile')
             ->limit($limit)
             ->select()
             ->toArray();
+
+        StaffPriceService::injectDisplayPrice($result);
+        return $result;
     }
 
     /**
@@ -66,6 +70,10 @@ class StaffLogic extends BaseLogic
         Staff::incrementViewCount($id);
 
         $data = $staff->toArray();
+        $displayPrice = StaffPriceService::getDisplayPriceByStaffId((int)$staff->id);
+        $data['price'] = $displayPrice['price'];
+        $data['has_price'] = $displayPrice['has_price'];
+        $data['price_text'] = $displayPrice['price_text'];
 
         // 详情页风格（后台配置）
         $data['staff_detail_style'] = (string) ConfigService::get('feature_switch', 'staff_detail_style', 'classic');
@@ -158,7 +166,7 @@ class StaffLogic extends BaseLogic
     public static function workDetail(int $workId): array
     {
         $work = StaffWork::with(['staff' => function ($query) {
-                $query->field('id, name, avatar, category_id, price, rating, order_count, review_count, favorite_count, sn');
+                $query->field('id, name, avatar, category_id, rating, order_count, review_count, favorite_count, sn');
             }])
             ->where('id', $workId)
             ->where('delete_time', null)
@@ -171,7 +179,14 @@ class StaffLogic extends BaseLogic
         }
 
         StaffWork::incrementViewCount($workId);
-        return $work->toArray();
+        $data = $work->toArray();
+        if (!empty($data['staff']['id'])) {
+            $displayPrice = StaffPriceService::getDisplayPriceByStaffId((int)$data['staff']['id']);
+            $data['staff']['price'] = $displayPrice['price'];
+            $data['staff']['has_price'] = $displayPrice['has_price'];
+            $data['staff']['price_text'] = $displayPrice['price_text'];
+        }
+        return $data;
     }
 
     /**
@@ -258,10 +273,12 @@ class StaffLogic extends BaseLogic
         $result = Staff::whereIn('id', $favoriteIds)
             ->where('delete_time', null)
             ->where('status', Staff::STATUS_ENABLE)
-            ->field('id, sn, name, avatar, category_id, price, rating, order_count')
+            ->field('id, sn, name, avatar, category_id, rating, order_count')
             ->append(['category_name'])
             ->select()
             ->toArray();
+
+        StaffPriceService::injectDisplayPrice($result);
 
         // 获取工作人员的标签信息
         if (!empty($result)) {

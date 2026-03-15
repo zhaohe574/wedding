@@ -80,7 +80,12 @@
         </view>
 
         <!-- 确认完成弹窗 -->
-        <tn-popup v-model="showConfirmPopup" mode="bottom" :border-radius="24">
+        <tn-popup
+            v-model="showConfirmPopup"
+            open-direction="bottom"
+            :radius="24"
+            safe-area-inset-bottom
+        >
             <view class="confirm-popup">
                 <view class="popup-header">
                     <text class="popup-title">确认完成</text>

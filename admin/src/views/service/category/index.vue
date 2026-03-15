@@ -27,7 +27,7 @@
         <el-card class="!border-none mt-4" shadow="never">
             <div class="mb-4">
                 <el-button
-                    v-perms="['service.category/add']"
+                    v-perms="['ops.category/add']"
                     type="primary"
                     @click="handleAdd()"
                 >
@@ -59,7 +59,7 @@
                 <el-table-column label="状态" width="100">
                     <template #default="{ row }">
                         <el-switch
-                            v-perms="['service.category/changeStatus']"
+                            v-perms="['ops.category/changeStatus']"
                             v-model="row.is_show"
                             :active-value="1"
                             :inactive-value="0"
@@ -71,7 +71,7 @@
                 <el-table-column label="操作" width="120" fixed="right">
                     <template #default="{ row }">
                         <el-button
-                            v-perms="['service.category/edit']"
+                            v-perms="['ops.category/edit']"
                             type="primary"
                             link
                             @click="handleEdit(row)"
@@ -79,7 +79,7 @@
                             编辑
                         </el-button>
                         <el-button
-                            v-perms="['service.category/delete']"
+                            v-perms="['ops.category/delete']"
                             type="danger"
                             link
                             @click="handleDelete(row.id)"

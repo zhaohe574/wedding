@@ -14,7 +14,6 @@
             <!-- 用户信息组件 -->
             <template v-if="item.name == 'user-info'">
                 <w-user-info
-                    :pageMeta="state.meta"
                     :content="item.content"
                     :styles="item.styles"
                     :user="userInfo"
@@ -85,13 +84,11 @@ import { getDecorate } from '@/api/shop'
 import { useUserStore } from '@/stores/user'
 import { onShow } from '@dcloudio/uni-app'
 import { storeToRefs } from 'pinia'
-import { reactive, computed } from 'vue'
+import { reactive } from 'vue'
 
 const state = reactive<{
-    meta: any[]
     pages: any[]
 }>({
-    meta: [],
     pages: []
 })
 
@@ -103,28 +100,10 @@ const isComponentEnabled = (item: any) => {
     return item.content?.enabled !== 0
 }
 
-// 页面样式
-const pageStyle = computed(() => {
-    const { bg_type, bg_color } = state.meta[0]?.content ?? {}
-    // 个人中心页面默认使用灰色背景，头部组件自带蓝色渐变背景
-    if (bg_type == 1 && bg_color) {
-        return { 'background-color': bg_color }
-    }
-    return { 'background-color': '#f5f5f5' }
-})
-
 // 获取装修数据
 const getData = async () => {
     try {
         const data = await getDecorate({ id: 2 })
-        if (data?.meta) {
-            // 处理 data.meta，可能是字符串或对象
-            if (typeof data.meta === 'string') {
-                state.meta = JSON.parse(data.meta)
-            } else {
-                state.meta = data.meta
-            }
-        }
         if (data?.data) {
             // 处理 data.data，可能是字符串或对象
             if (typeof data.data === 'string') {

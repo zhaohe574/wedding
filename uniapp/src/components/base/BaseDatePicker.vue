@@ -42,9 +42,9 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-    'update:modelValue': [value: string | number]
-    confirm: [value: string | number]
-    cancel: []
+    (event: 'update:modelValue', value: string | number): void
+    (event: 'confirm', value: string | number): void
+    (event: 'cancel'): void
 }>()
 
 const show = ref(false)

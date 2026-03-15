@@ -258,7 +258,7 @@ const showList = computed(() => {
             original_price: '',
             is_show: '1',
             link: {
-                path: '/pages/dynamic/detail',
+                path: '/pages/dynamic_detail/dynamic_detail',
                 query: { id: item.id },
                 name: '活动详情'
             }

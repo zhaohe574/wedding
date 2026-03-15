@@ -27,9 +27,19 @@
                     </div>
                 </div>
                 <div class="setting-item mb-5 flex justify-between items-center">
-                    <span class="text-tx-secondary">主题颜色</span>
-                    <div>
-                        <el-color-picker v-model="theme" :predefine="predefineColors" />
+                    <span class="text-tx-secondary">品牌主题</span>
+                    <div class="theme-palette">
+                        <button
+                            v-for="item in themePalette"
+                            :key="item.value"
+                            type="button"
+                            class="theme-palette__item"
+                            :class="{ 'is-active': theme === item.value }"
+                            :title="item.label"
+                            @click="theme = item.value"
+                        >
+                            <span class="theme-palette__swatch" :style="{ backgroundColor: item.value }" />
+                        </button>
                     </div>
                 </div>
                 <div class="setting-item mb-5 flex justify-between items-center">
@@ -100,7 +110,16 @@ import theme_light from '@/assets/images/theme_white.png'
 import useSettingStore from '@/stores/modules/setting'
 
 const settingStore = useSettingStore()
-const predefineColors = ref(['#409EFF', '#28C76F', '#EA5455', '#FF9F43', '#01CFE8', '#4A5DFF'])
+
+const themePalette = [
+    { label: '深海蓝', value: '#1F4D7A' },
+    { label: '松石青', value: '#156F6A' },
+    { label: '墨绿', value: '#2D6A4F' },
+    { label: '琥珀棕', value: '#A3621A' },
+    { label: '炭灰', value: '#374151' },
+    { label: '暗红', value: '#8F2D2D' }
+]
+
 const sideThemeList = [
     {
         type: 'dark',
@@ -227,5 +246,37 @@ const resetTheme = () => {
 .icon-select {
     @apply absolute left-1/2 top-1/2;
     transform: translate(-50%, -50%);
+}
+
+.theme-palette {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.theme-palette__item {
+    width: 26px;
+    height: 26px;
+    padding: 2px;
+    border: 1px solid var(--admin-color-border);
+    border-radius: 999px;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.theme-palette__item:hover {
+    border-color: var(--el-color-primary);
+}
+
+.theme-palette__item.is-active {
+    border-color: var(--el-color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--el-color-primary) 20%, transparent);
+}
+
+.theme-palette__swatch {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 999px;
 }
 </style>

@@ -271,7 +271,7 @@ const goDetail = (orderId: number) => {
 }
 
 const goHome = () => {
-    uni.switchTab({ url: '/packages/pages/staff_list/staff_list' })
+    uni.switchTab({ url: '/pages/staff_list/staff_list' })
 }
 
 const handleCardAction = (action: { action: string }, order: any) => {

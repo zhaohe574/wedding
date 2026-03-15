@@ -12,7 +12,7 @@
             <div>
                 <el-button
                     class="mb-4"
-                    v-perms="['article.articleCate/add']"
+                    v-perms="['content.articleCategory/add']"
                     type="primary"
                     @click="handleAdd()"
                 >
@@ -28,7 +28,7 @@
                 <el-table-column label="状态" min-width="120">
                     <template #default="{ row }">
                         <el-switch
-                            v-perms="['article.articleCate/updateStatus']"
+                            v-perms="['content.articleCategory/updateStatus']"
                             v-model="row.is_show"
                             :active-value="1"
                             :inactive-value="0"
@@ -40,7 +40,7 @@
                 <el-table-column label="操作" width="120" fixed="right">
                     <template #default="{ row }">
                         <el-button
-                            v-perms="['article.articleCate/edit']"
+                            v-perms="['content.articleCategory/edit']"
                             type="primary"
                             link
                             @click="handleEdit(row)"
@@ -48,7 +48,7 @@
                             编辑
                         </el-button>
                         <el-button
-                            v-perms="['article.articleCate/delete']"
+                            v-perms="['content.articleCategory/delete']"
                             type="danger"
                             link
                             @click="handleDelete(row.id)"

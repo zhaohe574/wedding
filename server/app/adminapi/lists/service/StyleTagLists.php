@@ -48,7 +48,10 @@ class StyleTagLists extends BaseAdminDataLists implements ListsSearchInterface
             ->select()
             ->toArray();
 
-        $categoryIds = array_filter(array_unique(array_column($list, 'category_id')));
+        $categoryIds = array_values(array_unique(array_map('intval', array_column($list, 'category_id'))));
+        $categoryIds = array_values(array_filter($categoryIds, function (int $id): bool {
+            return $id > 0;
+        }));
         $categories = [];
         if (!empty($categoryIds)) {
             $categories = ServiceCategory::whereIn('id', $categoryIds)
@@ -57,7 +60,10 @@ class StyleTagLists extends BaseAdminDataLists implements ListsSearchInterface
 
         // 获取使用该标签的工作人员数量
         foreach ($list as &$item) {
-            $item['category_name'] = $categories[$item['category_id']] ?? '-';
+            $categoryId = (int)($item['category_id'] ?? 0);
+            $item['category_name'] = $categoryId === 0
+                ? '全部人员可用'
+                : ($categories[$categoryId] ?? '-');
             $item['staff_count'] = StaffTag::where('tag_id', $item['id'])->count();
         }
 

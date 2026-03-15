@@ -26,7 +26,7 @@ class StyleTagValidate extends BaseValidate
         'id' => 'require|checkTag',
         'name' => 'require|max:50',
         'type' => 'require|in:1,2,3',
-        'category_id' => 'require|integer|gt:0|checkCategory',
+        'category_id' => 'require|integer|egt:0|checkCategory',
         'sort' => 'integer|egt:0',
         'is_show' => 'in:0,1',
     ];
@@ -43,7 +43,7 @@ class StyleTagValidate extends BaseValidate
         'type.in' => '标签类型值错误',
         'category_id.require' => '请选择服务分类',
         'category_id.integer' => '服务分类参数错误',
-        'category_id.gt' => '请选择服务分类',
+        'category_id.egt' => '服务分类参数错误',
         'sort.integer' => '排序必须为整数',
         'sort.egt' => '排序必须大于等于0',
         'is_show.in' => '显示状态值错误',
@@ -86,6 +86,11 @@ class StyleTagValidate extends BaseValidate
      */
     protected function checkCategory($value, $rule, $data)
     {
+        // category_id=0 代表全局标签（全部人员可用）
+        if ((int)$value === 0) {
+            return true;
+        }
+
         $category = ServiceCategory::where('id', $value)
             ->where('delete_time', null)
             ->find();

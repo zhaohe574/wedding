@@ -133,7 +133,12 @@
         </view>
 
         <!-- 提交工单弹窗 -->
-        <tn-popup v-model="showTicketPopup" mode="bottom" :radius="24">
+        <tn-popup
+            v-model="showTicketPopup"
+            open-direction="bottom"
+            :radius="24"
+            safe-area-inset-bottom
+        >
             <view class="popup-content">
                 <view class="popup-header">
                     <text class="popup-title">提交工单</text>
@@ -188,7 +193,12 @@
         </tn-popup>
 
         <!-- 投诉弹窗 -->
-        <tn-popup v-model="showComplaintPopup" mode="bottom" :radius="24">
+        <tn-popup
+            v-model="showComplaintPopup"
+            open-direction="bottom"
+            :radius="24"
+            safe-area-inset-bottom
+        >
             <view class="popup-content">
                 <view class="popup-header">
                     <text class="popup-title">提交投诉</text>

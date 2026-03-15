@@ -13,7 +13,7 @@
 // +----------------------------------------------------------------------
 namespace app\adminapi\logic\setting\user;
 
-use app\common\service\{ConfigService, FileService};
+use app\common\service\{ConfigService, FileService, LoginConfigService};
 
 /**
  * 设置-用户设置逻辑层
@@ -63,21 +63,7 @@ class UserLogic
      */
     public function getRegisterConfig(): array
     {
-        $config = [
-            // 登录方式
-            'login_way' => ConfigService::get('login', 'login_way', config('project.login.login_way')),
-            // 注册强制绑定手机
-            'coerce_mobile' => ConfigService::get('login', 'coerce_mobile', config('project.login.coerce_mobile')),
-            // 政策协议
-            'login_agreement' => ConfigService::get('login', 'login_agreement', config('project.login.login_agreement')),
-            // 第三方登录 开关
-            'third_auth' => ConfigService::get('login', 'third_auth', config('project.login.third_auth')),
-            // 微信授权登录
-            'wechat_auth' => ConfigService::get('login', 'wechat_auth', config('project.login.wechat_auth')),
-            // qq授权登录
-            'qq_auth' => ConfigService::get('login', 'qq_auth', config('project.login.qq_auth')),
-        ];
-        return $config;
+        return LoginConfigService::getConfig();
     }
 
 
@@ -90,6 +76,8 @@ class UserLogic
      */
     public static function setRegisterConfig(array $params): bool
     {
+        $params = LoginConfigService::normalizeConfig($params);
+
         // 登录方式：1-账号密码登录；2-手机短信验证码登录
         ConfigService::set('login', 'login_way', $params['login_way']);
         // 注册强制绑定手机

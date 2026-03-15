@@ -1,4 +1,10 @@
 import 'uniapp-router-next'
+
+declare module 'uni-router-routes' {
+    const routes: any[]
+    export default routes
+}
+
 declare module 'uniapp-router-next' {
     // 扩展 RouteMeta
     interface RouteMeta {

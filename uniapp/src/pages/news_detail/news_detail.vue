@@ -52,8 +52,8 @@ import { getArticleDetail, addCollect, cancelCollect } from '@/api/news'
 const newsData = ref<any>({})
 let newsId = ''
 
-const getData = async (id) => {
-    newsData.value = await getArticleDetail({ id })
+const getData = async (id: number | string) => {
+    newsData.value = await getArticleDetail({ id: Number(id) })
 }
 
 const handleAddCollect = async (id: number) => {

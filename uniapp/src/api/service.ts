@@ -41,7 +41,7 @@ export function getServicePackageDetail(data: { id: number }) {
  * @param { boolean } grouped 是否分组
  * @return { Promise }
  */
-export function getStyleTags(data?: { type?: number; grouped?: number }) {
+export function getStyleTags(data?: { type?: number; grouped?: number; category_id?: number }) {
     return request.get({ url: '/service/tags', data })
 }
 

@@ -175,7 +175,7 @@
                         </el-select>
                     </el-form-item>
                     <el-form-item label="备注">
-                        <el-input v-model="dayForm.remark" type="textarea" rows="2" />
+                        <el-input v-model="dayForm.remark" type="textarea" :rows="2" />
                     </el-form-item>
                 </el-form>
 

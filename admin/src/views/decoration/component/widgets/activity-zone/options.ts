@@ -10,7 +10,7 @@ export default () => ({
         show_more: 0, // 是否显示查看更多
         more_link: {}, // 查看更多链接
         data_source: 'auto', // 数据来源：auto=自动获取最新, manual=手动选择
-        activity_ids: [] // 手动选择的活动ID列表
+        activity_ids: [] as number[] // 手动选择的活动ID列表
     },
     styles: {}
 })

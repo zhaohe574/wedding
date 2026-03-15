@@ -82,13 +82,13 @@ class OrderChangeLogic extends BaseLogic
             },
             'orderItem',
             'oldStaff' => function ($q) {
-                $q->field('id, name, avatar, price');
+                $q->field('id, name, avatar');
             },
             'newStaff' => function ($q) {
-                $q->field('id, name, avatar, price');
+                $q->field('id, name, avatar');
             },
             'addStaff' => function ($q) {
-                $q->field('id, name, avatar, price');
+                $q->field('id, name, avatar');
             },
         ])->where('id', $changeId)->where('user_id', $userId)->find();
 

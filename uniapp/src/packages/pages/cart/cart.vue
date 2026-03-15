@@ -255,9 +255,9 @@
         <!-- 保存方案弹窗 -->
         <tn-popup
             v-model="showPlanPopup"
-            mode="center"
-            :border-radius="24"
-            :mask-close-able="false"
+            open-direction="center"
+            :radius="24"
+            :overlay-closeable="false"
         >
             <view class="plan-modal">
                 <text class="modal-title">保存为方案</text>
@@ -559,7 +559,7 @@ const handleCheckout = () => {
 
 // 去逛逛
 const goBrowse = () => {
-    uni.navigateTo({ url: '/packages/pages/staff_list/staff_list' })
+    uni.switchTab({ url: '/pages/staff_list/staff_list' })
 }
 
 // 我的方案

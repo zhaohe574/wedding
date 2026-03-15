@@ -21,7 +21,7 @@
                 <el-form-item class="w-[200px]" label="服务分类">
                     <el-select v-model="queryParams.category_id" placeholder="选择分类" clearable>
                         <el-option label="全部" value="" />
-                        <el-option label="未分类" :value="0" />
+                        <el-option label="全部人员可用" :value="0" />
                         <el-option
                             v-for="item in categoryOptions"
                             :key="item.id"
@@ -47,7 +47,7 @@
         <el-card class="!border-none mt-4" shadow="never">
             <div class="mb-4">
                 <el-button
-                    v-perms="['service.styleTag/add']"
+                    v-perms="['ops.styleTag/add']"
                     type="primary"
                     @click="handleAdd()"
                 >
@@ -75,7 +75,7 @@
                 <el-table-column label="状态" width="80">
                     <template #default="{ row }">
                         <el-switch
-                            v-perms="['service.styleTag/changeStatus']"
+                            v-perms="['ops.styleTag/changeStatus']"
                             v-model="row.is_show"
                             :active-value="1"
                             :inactive-value="0"
@@ -87,7 +87,7 @@
                 <el-table-column label="操作" width="130" fixed="right">
                     <template #default="{ row }">
                         <el-button
-                            v-perms="['service.styleTag/edit']"
+                            v-perms="['ops.styleTag/edit']"
                             type="primary"
                             link
                             @click="handleEdit(row)"
@@ -95,7 +95,7 @@
                             编辑
                         </el-button>
                         <el-button
-                            v-perms="['service.styleTag/delete']"
+                            v-perms="['ops.styleTag/delete']"
                             type="danger"
                             link
                             @click="handleDelete(row.id)"
@@ -134,6 +134,7 @@
                 </el-form-item>
                 <el-form-item label="服务分类" prop="category_id">
                     <el-select v-model="editForm.category_id" placeholder="选择服务分类" class="w-full">
+                        <el-option label="全部人员可用" :value="0" />
                         <el-option
                             v-for="item in categoryOptions"
                             :key="item.id"
@@ -205,12 +206,12 @@ const { pager, getLists, resetPage, resetParams } = usePaging({
 })
 
 const getTypeTagType = (type: number) => {
-    const map: Record<number, string> = {
+    const map = {
         1: 'primary',
         2: 'success',
         3: 'info'
-    }
-    return map[type] || 'info'
+    } as const
+    return map[type as keyof typeof map] ?? 'info'
 }
 
 const handleAdd = () => {

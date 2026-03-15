@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\adminapi\controller\aftersale;
 
 use app\adminapi\controller\BaseAdminController;
+use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\logic\aftersale\AfterSaleLogic;
 use app\adminapi\lists\aftersale\TicketLists;
 use app\adminapi\lists\aftersale\ComplaintLists;
@@ -22,6 +23,14 @@ use app\adminapi\validate\aftersale\AfterSaleValidate;
  */
 class AfterSaleController extends BaseAdminController
 {
+    use OfflineModuleGuard;
+
+    public function initialize()
+    {
+        parent::initialize();
+        $this->abortOfflineModule('售后服务');
+    }
+
     // ==================== 工单管理 ====================
 
     /**

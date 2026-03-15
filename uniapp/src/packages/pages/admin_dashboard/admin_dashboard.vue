@@ -388,27 +388,27 @@ const kpiCards = computed(() => [
         color: kpiPalette.value[1]
     },
     {
-        label: '毛利润',
-        value: `¥${formatMoney(overview.value?.gross_profit)}`,
-        hint: '净收入减去成本',
+        label: '总退款',
+        value: `¥${formatMoney(overview.value?.total_refund)}`,
+        hint: '本周期累计退款金额',
         color: kpiPalette.value[2]
-    },
-    {
-        label: '利润率',
-        value: formatPercent(overview.value?.profit_rate),
-        hint: '利润率反映盈利效率',
-        color: kpiPalette.value[3]
     },
     {
         label: '订单总量',
         value: `${Number(overview.value?.order_count || 0)} 单`,
         hint: '本周期支付订单数',
-        color: kpiPalette.value[4]
+        color: kpiPalette.value[3]
     },
     {
         label: '平均客单价',
         value: `¥${formatMoney(overview.value?.avg_order_amount)}`,
         hint: '每单平均收入水平',
+        color: kpiPalette.value[4]
+    },
+    {
+        label: '支付推进率',
+        value: formatPercent(paidProgressRate.value),
+        hint: '已支付、服务中、已完成与已评价占比',
         color: kpiPalette.value[5]
     }
 ])
@@ -451,8 +451,8 @@ const insights = computed<InsightItem[]>(() => {
     const result: InsightItem[] = []
 
     const totalIncome = Number(overview.value?.total_income || 0)
+    const netIncome = Number(overview.value?.net_income || 0)
     const totalRefund = Number(overview.value?.total_refund || 0)
-    const profitRate = Number(overview.value?.profit_rate || 0)
     const refundRate = totalIncome > 0 ? (totalRefund / totalIncome) * 100 : 0
     const pendingPay = statusItems.value.find((item: any) => item.label === '待支付')?.percent || 0
     const cancelled = statusItems.value.find((item: any) => item.label === '已取消')?.percent || 0
@@ -491,8 +491,8 @@ const insights = computed<InsightItem[]>(() => {
         }
     }
 
-    if (profitRate < 18) {
-        result.push(buildInsight('risk', `利润率为 ${formatPercent(profitRate)}，建议复核成本结构并优化高成本项目。`))
+    if (totalIncome > 0 && netIncome <= 0) {
+        result.push(buildInsight('risk', '当前净收入已接近或低于 0，建议优先检查退款与支付回收情况。'))
     }
     if (refundRate > 5) {
         result.push(

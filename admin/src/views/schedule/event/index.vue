@@ -120,7 +120,7 @@
                     </el-select>
                 </el-form-item>
                 <el-form-item label="备注">
-                    <el-input v-model="formData.remark" type="textarea" rows="2" />
+                    <el-input v-model="formData.remark" type="textarea" :rows="2" />
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -277,8 +277,8 @@ const handleSubmit = async () => {
 
 // 获取拥堵等级类型
 const getCongestionType = (level: number) => {
-    const map: Record<number, string> = { 0: 'info', 1: 'success', 2: 'warning', 3: 'danger' }
-    return map[level] || 'info'
+    const map = { 0: 'info', 1: 'success', 2: 'warning', 3: 'danger' } as const
+    return map[level as keyof typeof map] ?? 'info'
 }
 
 onMounted(() => {

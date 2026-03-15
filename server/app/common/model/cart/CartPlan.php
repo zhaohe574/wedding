@@ -391,6 +391,58 @@ class CartPlan extends BaseModel
     }
 
     /**
+     * @notes 通过分享码保存为我的方案
+     * @param string $shareCode 分享码
+     * @param int $userId 用户ID
+     * @param string $planName 方案名称（可选，默认使用原方案名）
+     * @return array [bool $success, string $message, int|null $planId]
+     */
+    public static function savePlanByShareCode(string $shareCode, int $userId, string $planName = ''): array
+    {
+        // 获取分享的方案
+        $sharedPlan = self::getByShareCode($shareCode);
+
+        if (!$sharedPlan) {
+            return [false, '方案不存在或已失效', null];
+        }
+
+        $items = $sharedPlan['items_snapshot'] ?? $sharedPlan['cart_items'] ?? [];
+        if (empty($items)) {
+            return [false, '方案中没有可保存的项目', null];
+        }
+
+        // 使用原方案名或自定义名称
+        if (empty($planName)) {
+            $planName = $sharedPlan['plan_name'] ?? '分享的方案';
+        }
+
+        // 计算总价
+        $totalPrice = 0;
+        foreach ($items as $item) {
+            $totalPrice += $item['price'] ?? 0;
+        }
+
+        try {
+            // 创建新方案
+            $plan = self::create([
+                'user_id' => $userId,
+                'plan_name' => $planName,
+                'cart_ids' => [], // 不关联购物车项
+                'items_snapshot' => $items,
+                'total_price' => $totalPrice,
+                'remark' => "来自分享码: {$shareCode}",
+                'is_default' => 0,
+                'create_time' => time(),
+                'update_time' => time(),
+            ]);
+
+            return [true, '保存成功', $plan->id];
+        } catch (\Exception $e) {
+            return [false, '保存失败: ' . $e->getMessage(), null];
+        }
+    }
+
+    /**
      * @notes 应用方案到购物车（覆盖）
      * @param int $planId
      * @param int $userId

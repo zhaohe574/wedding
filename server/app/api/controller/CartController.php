@@ -270,6 +270,21 @@ class CartController extends BaseApiController
         return $this->fail($result['message']);
     }
 
+    /**
+     * @notes 通过分享码保存为我的方案
+     * @return \think\response\Json
+     */
+    public function savePlanByShareCode()
+    {
+        $params = (new CartValidate())->post()->goCheck('shareCode');
+        $planName = $params['plan_name'] ?? '';
+        $result = CartLogic::savePlanByShareCode($params['share_code'], $this->userId, $planName);
+        if ($result['success']) {
+            return $this->success($result['message'], ['plan_id' => $result['plan_id']]);
+        }
+        return $this->fail($result['message']);
+    }
+
 
     /**
      * @notes 应用方案到购物车

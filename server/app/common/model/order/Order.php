@@ -243,6 +243,7 @@ class Order extends BaseModel
                 'wedding_venue' => $orderInfo['wedding_venue'] ?? '',
                 'user_remark' => $orderInfo['remark'] ?? '',
                 'coupon_id' => $orderInfo['coupon_id'] ?? 0,
+                'user_coupon_id' => $orderInfo['user_coupon_id'] ?? 0,
                 'source' => $orderInfo['source'] ?? self::SOURCE_MINIAPP,
                 'pay_type' => self::PAY_WAY_NONE,
                 'create_time' => time(),
@@ -371,6 +372,13 @@ class Order extends BaseModel
 
             // 记录日志
             OrderLog::addLog($orderId, $operatorType, $operatorId, 'cancel', $beforeStatus, self::STATUS_CANCELLED, '取消订单：' . $reason);
+
+            if ((int)($order->user_coupon_id ?? 0) > 0) {
+                $userCoupon = \app\common\model\coupon\UserCoupon::find((int)$order->user_coupon_id);
+                if ($userCoupon) {
+                    $userCoupon->refund();
+                }
+            }
 
             // 已支付订单自动创建退款申请
             if ($beforeStatus == self::STATUS_PAID && $order->pay_status == self::PAY_STATUS_PAID) {

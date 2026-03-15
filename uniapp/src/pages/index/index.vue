@@ -23,7 +23,6 @@
                     :content="item.content"
                     :styles="item.styles"
                     :isLargeScreen="isLargeScreen"
-                    @change="handleBanner"
                 />
             </template>
             <!-- 导航菜单组件 -->
@@ -144,7 +143,7 @@
 
 <script setup lang="ts">
 import { getIndex } from '@/api/shop'
-import { onLoad, onPageScroll, onShow } from '@dcloudio/uni-app'
+import { onLoad, onPageScroll } from '@dcloudio/uni-app'
 import { computed, reactive, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
@@ -165,12 +164,10 @@ const state = reactive<{
     pages: any[]
     meta: any[]
     article: any[]
-    bannerImage: string
 }>({
     pages: [],
     meta: [],
-    article: [],
-    bannerImage: ''
+    article: []
 })
 
 const scrollTop = ref<number>(0)
@@ -180,11 +177,6 @@ const percent = ref<number>(0)
 const isComponentEnabled = (item: any) => {
     return item.content?.enabled !== 0
 }
-
-// 是否联动背景图（使用computed缓存）
-const isLinkage = computed(() => {
-    return state.pages.find((item: any) => item.name === 'banner')?.content?.bg_style === 1
-})
 
 // 是否大屏banner（使用computed缓存）
 const isLargeScreen = computed(() => {
@@ -239,43 +231,9 @@ const defaultBackground = computed(() => {
     return `linear-gradient(180deg, ${primaryLight9.value} 0%, #FFFFFF 100%)`
 })
 
-const pageStyle = computed(() => {
-    const { bg_type, bg_color, bg_image } = state.meta[0]?.content ?? {}
-
-    // 如果没有配置背景，使用默认的浅紫色渐变
-    if (!bg_type && !bg_color && !bg_image && !isLinkage.value) {
-        return {
-            background: defaultBackground.value
-        }
-    }
-
-    if (!isLinkage.value) {
-        if (bg_type == 1) {
-            return { background: bg_color || defaultBackground.value }
-        } else {
-            // 添加图片存在性检查，避免 404 错误
-            return bg_image
-                ? {
-                      backgroundImage: `url(${bg_image})`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundSize: 'cover'
-                  }
-                : { background: defaultBackground.value }
-        }
-    }
-    // 联动模式下也添加检查
-    return state.bannerImage
-        ? {
-              backgroundImage: `url(${state.bannerImage})`,
-              backgroundRepeat: 'no-repeat',
-              backgroundSize: 'cover'
-          }
-        : { background: defaultBackground.value }
-})
-
-const handleBanner = (url: string) => {
-    state.bannerImage = url
-}
+const pageStyle = computed(() => ({
+    background: defaultBackground.value
+}))
 
 // 获取装修数据（优化性能）
 const getData = async () => {
@@ -290,16 +248,17 @@ const getData = async () => {
             }
         }
         if (data?.page?.meta) {
-            // 处理 data.page.meta，可能是字符串或对象
             if (typeof data.page.meta === 'string') {
                 state.meta = JSON.parse(data.page.meta)
             } else {
                 state.meta = data.page.meta
             }
-            const title = state.meta[0]?.content?.title
-            if (title) {
+            const title = state.meta?.[0]?.content?.title
+            if (typeof title === 'string' && title.trim()) {
                 uni.setNavigationBarTitle({ title })
             }
+        } else {
+            state.meta = []
         }
         state.article = data?.article || []
     } catch (e) {
@@ -315,11 +274,7 @@ onPageScroll((event: any) => {
 })
 
 onLoad(() => {
-    getData()
-})
-
-onShow(() => {
-    // 页面显示时刷新数据
+    // 首页数据仅在首次加载时初始化，避免首屏 onLoad/onShow 重复请求
     getData()
 })
 </script>

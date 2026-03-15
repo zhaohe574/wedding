@@ -122,6 +122,34 @@
             </view>
 
             <view class="section" v-if="hasItems">
+                <view class="section-title">优惠券</view>
+                <view class="coupon-row" @click="handleSelectCoupon">
+                    <view class="coupon-main">
+                        <text class="coupon-label">可用优惠券</text>
+                        <text class="coupon-desc">
+                            {{
+                                selectedCoupon
+                                    ? `${selectedCoupon.coupon_name}，优惠¥${formatPrice(selectedCoupon.discount_amount)}`
+                                    : availableCoupons.length
+                                    ? `共 ${availableCoupons.length} 张可用`
+                                    : '暂无可用优惠券'
+                            }}
+                        </text>
+                    </view>
+                    <view class="coupon-action">
+                        <text
+                            v-if="selectedCoupon"
+                            class="coupon-discount"
+                            :style="{ color: $theme.ctaColor }"
+                        >
+                            -¥{{ formatPrice(selectedCoupon.discount_amount) }}
+                        </text>
+                        <tn-icon name="right" size="24" color="#999999" />
+                    </view>
+                </view>
+            </view>
+
+            <view class="section" v-if="hasItems">
                 <view class="section-title">费用明细</view>
                 <view class="price-row">
                     <text>商品金额</text>
@@ -167,7 +195,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { previewOrder, createOrder } from '@/api/order'
+import { previewOrder, createOrder, getAvailableCoupons } from '@/api/order'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 
@@ -177,6 +205,8 @@ const userStore = useUserStore()
 const loading = ref(false)
 const submitting = ref(false)
 const initialized = ref(false)
+const selectedCouponId = ref(0)
+const availableCoupons = ref<any[]>([])
 
 const preview = ref<any>({
     items: [],
@@ -198,6 +228,9 @@ const hasItems = computed(
     () => Array.isArray(preview.value.items) && preview.value.items.length > 0
 )
 const canSubmit = computed(() => hasItems.value && !loading.value && !submitting.value)
+const selectedCoupon = computed(
+    () => availableCoupons.value.find((item: any) => Number(item.user_coupon_id) === selectedCouponId.value) || null
+)
 
 const formatPrice = (value: any) => Number(value || 0).toFixed(2)
 
@@ -286,7 +319,9 @@ const handlePreviewError = (message: string) => {
 const fetchPreview = async () => {
     loading.value = true
     try {
-        const data = await previewOrder({})
+        const data = await previewOrder({
+            user_coupon_id: selectedCouponId.value || undefined
+        })
         preview.value = {
             items: data?.items || [],
             total_amount: data?.total_amount || 0,
@@ -295,6 +330,7 @@ const fetchPreview = async () => {
             deposit_amount: data?.deposit_amount || 0,
             balance_amount: data?.balance_amount || 0
         }
+        selectedCouponId.value = Number(data?.user_coupon_id || selectedCouponId.value || 0)
         if (!preview.value.items.length) {
             handlePreviewError('暂无可结算的服务')
         }
@@ -304,6 +340,48 @@ const fetchPreview = async () => {
     } finally {
         loading.value = false
     }
+}
+
+const fetchAvailableCoupons = async () => {
+    try {
+        const res = await getAvailableCoupons({})
+        availableCoupons.value = res?.lists || []
+        if (
+            selectedCouponId.value > 0 &&
+            !availableCoupons.value.some((item: any) => Number(item.user_coupon_id) === selectedCouponId.value)
+        ) {
+            selectedCouponId.value = 0
+            await fetchPreview()
+        }
+    } catch (e) {
+        availableCoupons.value = []
+    }
+}
+
+const handleSelectCoupon = () => {
+    if (!hasItems.value || loading.value) return
+
+    const itemList = ['不使用优惠券', ...availableCoupons.value.map((item: any) => {
+        const discount = Number(item.discount_amount || 0).toFixed(2)
+        return `${item.coupon_name} - 优惠¥${discount}`
+    })]
+
+    uni.showActionSheet({
+        itemList,
+        success: async ({ tapIndex }) => {
+            const nextCouponId =
+                tapIndex === 0
+                    ? 0
+                    : Number(availableCoupons.value[tapIndex - 1]?.user_coupon_id || 0)
+
+            if (nextCouponId === selectedCouponId.value) {
+                return
+            }
+
+            selectedCouponId.value = nextCouponId
+            await fetchPreview()
+        }
+    })
 }
 
 const isValidMobile = (mobile: string) => /^1[3-9]\d{9}$/.test(mobile)
@@ -327,7 +405,8 @@ const handleSubmit = async () => {
     try {
         const params: any = {
             contact_name: form.contact_name.trim(),
-            contact_mobile: form.contact_mobile.trim()
+            contact_mobile: form.contact_mobile.trim(),
+            user_coupon_id: selectedCouponId.value || undefined
         }
         if (form.service_address.trim()) params.service_address = form.service_address.trim()
         if (form.remark.trim()) params.remark = form.remark.trim()
@@ -351,6 +430,7 @@ const handleSubmit = async () => {
 const initPage = async () => {
     await initContact()
     await fetchPreview()
+    await fetchAvailableCoupons()
     initialized.value = true
 }
 
@@ -360,7 +440,7 @@ onLoad(() => {
 
 onShow(() => {
     if (initialized.value) {
-        fetchPreview()
+        Promise.all([fetchPreview(), fetchAvailableCoupons()])
     }
 })
 </script>
@@ -414,6 +494,44 @@ onShow(() => {
 
 .service-group + .service-group {
     margin-top: 20rpx;
+}
+
+.coupon-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20rpx;
+    padding: 8rpx 0;
+}
+
+.coupon-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.coupon-label {
+    display: block;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #333333;
+}
+
+.coupon-desc {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 24rpx;
+    color: #999999;
+}
+
+.coupon-action {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+}
+
+.coupon-discount {
+    font-size: 26rpx;
+    font-weight: 600;
 }
 
 .group-header {

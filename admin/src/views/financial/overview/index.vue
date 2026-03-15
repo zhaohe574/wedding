@@ -1,25 +1,30 @@
 <template>
-    <div class="financial-overview">
-        <!-- 日期筛选 -->
-        <el-card class="!border-none mb-4" shadow="never">
-            <el-form :model="queryParams" inline>
-                <el-form-item label="统计周期">
-                    <el-date-picker
-                        v-model="dateRange"
-                        type="daterange"
-                        range-separator="至"
-                        start-placeholder="开始日期"
-                        end-placeholder="结束日期"
-                        value-format="YYYY-MM-DD"
-                        :shortcuts="dateShortcuts"
-                        @change="handleDateChange"
-                    />
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="fetchData">查询</el-button>
-                </el-form-item>
-            </el-form>
-        </el-card>
+    <admin-page-shell
+        class="financial-overview"
+        title="财务概览"
+        description="聚合收入、退款与支付结构，支持按周期比对。"
+    >
+        <template #search>
+            <search-panel>
+                <el-form :model="queryParams" inline>
+                    <el-form-item label="统计周期">
+                        <el-date-picker
+                            v-model="dateRange"
+                            type="daterange"
+                            range-separator="至"
+                            start-placeholder="开始日期"
+                            end-placeholder="结束日期"
+                            value-format="YYYY-MM-DD"
+                            :shortcuts="dateShortcuts"
+                            @change="handleDateChange"
+                        />
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="fetchData">查询</el-button>
+                    </el-form-item>
+                </el-form>
+            </search-panel>
+        </template>
 
         <!-- 核心指标卡片 -->
         <el-row :gutter="16" class="mb-4">
@@ -30,7 +35,7 @@
                     <div class="stat-footer">
                         <span :class="overview.income_growth >= 0 ? 'text-success' : 'text-danger'">
                             <el-icon><component :is="overview.income_growth >= 0 ? 'Top' : 'Bottom'" /></el-icon>
-                            {{ Math.abs(overview.income_growth) }}%
+                            {{ Math.abs(overview.income_growth || 0) }}%
                         </span>
                         <span class="text-muted">环比</span>
                     </div>
@@ -43,7 +48,7 @@
                     <div class="stat-footer">
                         <span :class="overview.refund_growth >= 0 ? 'text-danger' : 'text-success'">
                             <el-icon><component :is="overview.refund_growth >= 0 ? 'Top' : 'Bottom'" /></el-icon>
-                            {{ Math.abs(overview.refund_growth) }}%
+                            {{ Math.abs(overview.refund_growth || 0) }}%
                         </span>
                         <span class="text-muted">环比</span>
                     </div>
@@ -60,12 +65,10 @@
             </el-col>
             <el-col :span="6">
                 <el-card class="stat-card" shadow="never">
-                    <div class="stat-title">毛利润</div>
-                    <div class="stat-value" :class="overview.gross_profit >= 0 ? 'text-success' : 'text-danger'">
-                        ¥{{ formatMoney(overview.gross_profit) }}
-                    </div>
+                    <div class="stat-title">支付订单</div>
+                    <div class="stat-value text-info">{{ overview.order_count || 0 }}</div>
                     <div class="stat-footer">
-                        <span class="text-muted">利润率 {{ overview.profit_rate }}%</span>
+                        <span class="text-muted">本周期完成支付的订单数</span>
                     </div>
                 </el-card>
             </el-col>
@@ -75,46 +78,34 @@
         <el-row :gutter="16" class="mb-4">
             <el-col :span="6">
                 <el-card class="stat-card-mini" shadow="never">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <div class="stat-title-mini">总成本</div>
-                            <div class="stat-value-mini">¥{{ formatMoney(overview.total_cost) }}</div>
-                        </div>
-                        <el-icon class="stat-icon" :size="40"><Money /></el-icon>
-                    </div>
+                    <div class="stat-title-mini">客单价</div>
+                    <div class="stat-value-mini">¥{{ formatMoney(overview.avg_order_amount) }}</div>
+                    <div class="stat-desc-mini">总收入 / 支付订单数</div>
                 </el-card>
             </el-col>
             <el-col :span="6">
                 <el-card class="stat-card-mini" shadow="never">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <div class="stat-title-mini">订单数</div>
-                            <div class="stat-value-mini">{{ overview.order_count }}</div>
-                        </div>
-                        <el-icon class="stat-icon" :size="40"><Document /></el-icon>
+                    <div class="stat-title-mini">收入环比</div>
+                    <div class="stat-value-mini" :class="overview.income_growth >= 0 ? 'text-success' : 'text-danger'">
+                        {{ overview.income_growth >= 0 ? '+' : '-' }}{{ Math.abs(overview.income_growth || 0) }}%
                     </div>
+                    <div class="stat-desc-mini">与上一统计周期比较</div>
                 </el-card>
             </el-col>
             <el-col :span="6">
                 <el-card class="stat-card-mini" shadow="never">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <div class="stat-title-mini">客单价</div>
-                            <div class="stat-value-mini">¥{{ formatMoney(overview.avg_order_amount) }}</div>
-                        </div>
-                        <el-icon class="stat-icon" :size="40"><ShoppingCart /></el-icon>
+                    <div class="stat-title-mini">退款环比</div>
+                    <div class="stat-value-mini" :class="overview.refund_growth >= 0 ? 'text-danger' : 'text-success'">
+                        {{ overview.refund_growth >= 0 ? '+' : '-' }}{{ Math.abs(overview.refund_growth || 0) }}%
                     </div>
+                    <div class="stat-desc-mini">关注退款波动趋势</div>
                 </el-card>
             </el-col>
             <el-col :span="6">
                 <el-card class="stat-card-mini" shadow="never">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <div class="stat-title-mini">统计天数</div>
-                            <div class="stat-value-mini">{{ overview.period?.days || 0 }} 天</div>
-                        </div>
-                        <el-icon class="stat-icon" :size="40"><Calendar /></el-icon>
-                    </div>
+                    <div class="stat-title-mini">统计天数</div>
+                    <div class="stat-value-mini">{{ overview.period?.days || 0 }} 天</div>
+                    <div class="stat-desc-mini">{{ overview.period?.start_date || '--' }} 至 {{ overview.period?.end_date || '--' }}</div>
                 </el-card>
             </el-col>
         </el-row>
@@ -142,7 +133,7 @@
                 </el-card>
             </el-col>
         </el-row>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script setup lang="ts">
@@ -329,6 +320,11 @@ onMounted(() => {
     font-weight: bold;
     margin-top: 4px;
 }
+.stat-desc-mini {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #909399;
+}
 .stat-icon {
     color: #dcdfe6;
 }
@@ -336,5 +332,6 @@ onMounted(() => {
 .text-success { color: #67C23A; }
 .text-warning { color: #E6A23C; }
 .text-danger { color: #F56C6C; }
+.text-info { color: #909399; }
 .text-muted { color: #909399; }
 </style>

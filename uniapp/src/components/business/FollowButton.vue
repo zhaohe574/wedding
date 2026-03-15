@@ -42,7 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-    click: []
+    (event: 'click'): void
 }>()
 
 // 按钮文本
@@ -66,7 +66,7 @@ const iconSize = computed(() => {
 
 // 图标颜色
 const iconColor = computed(() => {
-    return props.isFollowed ? 'var(--tn-color-primary)' : '#FFFFFF'
+    return props.isFollowed ? 'var(--color-primary, #7C3AED)' : 'var(--color-btn-text, #FFFFFF)'
 })
 
 // 点击处理
@@ -82,31 +82,37 @@ const handleClick = () => {
     align-items: center;
     justify-content: center;
     gap: 8rpx;
-    border-radius: 32rpx;
-    font-weight: 500;
+    border-radius: 999rpx;
+    font-weight: 600;
     transition: all 0.2s ease;
     user-select: none;
+    border: 1rpx solid transparent;
 
-    // 未关注状态 - 主色背景
+    // 未关注状态
     &.not-followed {
-        background: var(--tn-color-primary);
-        color: #ffffff;
+        background: linear-gradient(
+            135deg,
+            var(--color-primary, #7c3aed) 0%,
+            var(--color-primary-dark-2, #6d28d9) 100%
+        );
+        color: var(--color-btn-text, #ffffff);
+        box-shadow: 0 8rpx 20rpx rgba(15, 23, 42, 0.12);
 
         &:active {
             transform: scale(0.98);
-            opacity: 0.9;
+            box-shadow: 0 4rpx 12rpx rgba(15, 23, 42, 0.1);
         }
     }
 
-    // 已关注状态 - 边框样式
+    // 已关注状态
     &.followed {
-        background: var(--tn-color-primary-light-9, rgba(124, 58, 237, 0.08));
-        color: var(--tn-color-primary);
-        border: 2rpx solid var(--tn-color-primary-light-7, rgba(124, 58, 237, 0.2));
+        background: var(--color-primary-light-9, rgba(124, 58, 237, 0.08));
+        color: var(--color-primary, #7c3aed);
+        border-color: var(--color-primary-light-7, rgba(124, 58, 237, 0.2));
 
         &:active {
             transform: scale(0.98);
-            background: var(--tn-color-primary-light-7, rgba(124, 58, 237, 0.12));
+            background: var(--color-primary-light-7, rgba(124, 58, 237, 0.12));
         }
     }
 
@@ -118,10 +124,10 @@ const handleClick = () => {
 
     // 小尺寸 (52rpx)
     &.size-sm {
-        height: 52rpx;
+        height: 56rpx;
         padding: 0 24rpx;
         font-size: 24rpx;
-        min-width: 112rpx;
+        min-width: 120rpx;
     }
 
     // 中尺寸 (64rpx)
@@ -147,5 +153,6 @@ const handleClick = () => {
 
 .follow-text {
     white-space: nowrap;
+    line-height: 1;
 }
 </style>

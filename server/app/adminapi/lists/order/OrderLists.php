@@ -83,10 +83,10 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
 
         $staffScopeId = $this->getStaffScopeId();
         if ($staffScopeId > 0) {
-            $query->whereExists(function ($subQuery) use ($staffScopeId) {
+            $query->whereIn('id', function ($subQuery) use ($staffScopeId) {
                 $subQuery->name('order_item')
-                    ->whereColumn('order_id', 'order.id')
-                    ->where('staff_id', $staffScopeId);
+                    ->where('staff_id', $staffScopeId)
+                    ->field('order_id');
             });
         }
 
@@ -116,10 +116,10 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
 
         $staffScopeId = $this->getStaffScopeId();
         if ($staffScopeId > 0) {
-            $query->whereExists(function ($subQuery) use ($staffScopeId) {
+            $query->whereIn('id', function ($subQuery) use ($staffScopeId) {
                 $subQuery->name('order_item')
-                    ->whereColumn('order_id', 'order.id')
-                    ->where('staff_id', $staffScopeId);
+                    ->where('staff_id', $staffScopeId)
+                    ->field('order_id');
             });
         }
 

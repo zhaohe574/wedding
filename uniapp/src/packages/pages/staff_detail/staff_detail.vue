@@ -50,7 +50,7 @@
                                 <tn-icon
                                     name="star-fill"
                                     size="28"
-                                    :color="$theme.accentColor"
+                                    :color="(($theme as any).accentColor || '#F59E0B') as string"
                                 />
                                 <text class="hero-stat-value">{{ staffInfo.rating }}</text>
                             </view>
@@ -113,8 +113,18 @@
             <view class="stats-row">
                 <view class="stat-item">
                     <view class="stat-value">
-                        <tn-icon name="star-fill" size="32" :color="$theme.accentColor" />
-                        <text :style="{ color: $theme.accentColor }">{{ staffInfo.rating }}</text>
+                        <tn-icon
+                            name="star-fill"
+                            size="32"
+                            :color="(($theme as any).accentColor || '#F59E0B') as string"
+                        />
+                        <text
+                            :style="{
+                                color: (($theme as any).accentColor || '#F59E0B') as string
+                            }"
+                        >
+                            {{ staffInfo.rating }}
+                        </text>
                     </view>
                     <text class="stat-label">评分</text>
                 </view>
@@ -135,16 +145,31 @@
                 <view class="price-wrapper">
                     <text class="price-label">服务价格</text>
                     <view class="price-amount">
-                        <text class="price-symbol">¥</text>
-                        <text class="price-value">{{ staffInfo.price }}</text>
-                        <text class="price-unit">/次起</text>
+                        <template
+                            v-if="
+                                staffInfo.has_price !== false &&
+                                staffInfo.price !== null &&
+                                staffInfo.price !== undefined
+                            "
+                        >
+                            <text class="price-symbol">¥</text>
+                            <text class="price-value">{{
+                                staffInfo.price_text || staffInfo.price
+                            }}</text>
+                            <text class="price-unit">/次起</text>
+                        </template>
+                        <text v-else class="price-negotiable">面议</text>
                     </view>
                 </view>
                 <view class="favorite-btn" @click="handleToggleFavorite">
                     <tn-icon
                         :name="staffInfo.is_favorite ? 'star-fill' : 'star'"
                         size="48"
-                        :color="staffInfo.is_favorite ? $theme.secondaryColor : '#CCCCCC'"
+                        :color="
+                            staffInfo.is_favorite
+                                ? ((($theme as any).secondaryColor || $theme.primaryColor) as string)
+                                : '#CCCCCC'
+                        "
                     />
                 </view>
             </view>
@@ -337,14 +362,135 @@
                     </scroll-view>
                 </view>
 
+                <view class="review-summary">
+                    <view class="review-summary-card">
+                        <text class="review-summary-value">{{ reviewStats.avg_score || '5.0' }}</text>
+                        <text class="review-summary-label">综合评分</text>
+                    </view>
+                    <view class="review-summary-card">
+                        <text class="review-summary-value">{{ reviewStats.total_count || 0 }}</text>
+                        <text class="review-summary-label">全部评价</text>
+                    </view>
+                    <view class="review-summary-card">
+                        <text class="review-summary-value">{{ reviewStats.good_rate || 0 }}%</text>
+                        <text class="review-summary-label">好评率</text>
+                    </view>
+                </view>
+
+                <view class="review-filter-row">
+                    <view class="review-filter-item">
+                        好评 {{ reviewStats.good_count || 0 }}
+                    </view>
+                    <view class="review-filter-item">
+                        中评 {{ reviewStats.medium_count || 0 }}
+                    </view>
+                    <view class="review-filter-item">
+                        差评 {{ reviewStats.bad_count || 0 }}
+                    </view>
+                    <view class="review-filter-item">
+                        有图 {{ reviewStats.image_count || 0 }}
+                    </view>
+                </view>
+
                 <!-- 加载状态 -->
-                <view v-if="reviewsLoading" class="loading-state">
+                <view v-if="reviewsLoading && !reviewsList.length" class="loading-state">
                     <tn-loading mode="circle" />
                 </view>
 
-                <!-- 用户评价列表（预留） -->
                 <view v-else-if="reviewsList.length" class="reviews-list">
-                    <!-- TODO: 评价列表组件 -->
+                    <view
+                        v-for="review in reviewsList"
+                        :key="review.id"
+                        class="review-card"
+                        @click="goReviewDetail(review)"
+                    >
+                        <view class="review-card-header">
+                            <view class="review-user">
+                                <image
+                                    class="review-user-avatar"
+                                    :src="
+                                        review.user?.avatar ||
+                                        '/static/images/user/default_avatar.png'
+                                    "
+                                    mode="aspectFill"
+                                />
+                                <view class="review-user-info">
+                                    <text class="review-user-name">
+                                        {{ review.user?.nickname || '匿名用户' }}
+                                    </text>
+                                    <text class="review-time">
+                                        {{ review.create_time_text || formatReviewTime(review.create_time) }}
+                                    </text>
+                                </view>
+                            </view>
+                            <view class="review-score">
+                                <tn-icon
+                                    v-for="star in 5"
+                                    :key="`${review.id}-${star}`"
+                                    :name="star <= Number(review.score || 0) ? 'star-fill' : 'star'"
+                                    size="22"
+                                    :color="star <= Number(review.score || 0) ? '#F59E0B' : '#D1D5DB'"
+                                />
+                            </view>
+                        </view>
+
+                        <text v-if="review.content" class="review-content">
+                            {{ review.content }}
+                        </text>
+
+                        <view v-if="review.tags?.length" class="review-tag-list">
+                            <view
+                                v-for="tag in review.tags"
+                                :key="tag.id || tag.name"
+                                class="review-tag"
+                            >
+                                {{ tag.name }}
+                            </view>
+                        </view>
+
+                        <view v-if="review.images?.length" class="review-image-list">
+                            <image
+                                v-for="(image, index) in review.images"
+                                :key="`${review.id}-${index}`"
+                                class="review-image"
+                                :src="image"
+                                mode="aspectFill"
+                                @click.stop="previewReviewImages(review.images, index)"
+                            />
+                        </view>
+
+                        <view v-if="review.replies?.length" class="review-reply-list">
+                            <view
+                                v-for="reply in review.replies"
+                                :key="reply.id"
+                                class="review-reply-item"
+                            >
+                                <text class="review-reply-type">
+                                    {{ Number(reply.reply_type) === 1 ? '用户追评' : '商家回复' }}
+                                </text>
+                                <text class="review-reply-content">{{ reply.content }}</text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <view v-if="reviewsHasMore" class="review-load-more">
+                        <text
+                            v-if="reviewsLoading"
+                            class="review-load-more-text"
+                        >
+                            加载中...
+                        </text>
+                        <text
+                            v-else
+                            class="review-load-more-text review-load-more-text--action"
+                            @click="loadMoreReviews"
+                        >
+                            加载更多评价
+                        </text>
+                    </view>
+                    <view v-else class="review-load-more">
+                        <text class="review-load-more-text">没有更多评价了</text>
+                    </view>
                 </view>
 
                 <!-- 空状态 -->
@@ -369,7 +515,11 @@
                     <tn-icon
                         :name="staffInfo.is_favorite ? 'star-fill' : 'star'"
                         size="48"
-                        :color="staffInfo.is_favorite ? $theme.secondaryColor : '#666666'"
+                        :color="
+                            staffInfo.is_favorite
+                                ? ((($theme as any).secondaryColor || $theme.primaryColor) as string)
+                                : '#666666'
+                        "
                     />
                     <text class="action-text">{{ staffInfo.is_favorite ? '已收藏' : '收藏' }}</text>
                 </view>
@@ -403,6 +553,7 @@
 import { computed, ref, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getStaffDetail, toggleStaffFavorite, getStaffWorks } from '@/api/staff'
+import { getStaffReviews, getStaffReviewStats } from '@/api/review'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import StaffBanner from '@/packages/components/staff-banner/staff-banner.vue'
@@ -451,6 +602,20 @@ const worksLoading = ref(false)
 // 评价列表
 const reviewsList = ref<any[]>([])
 const reviewsLoading = ref(false)
+const reviewsPage = ref(1)
+const reviewsHasMore = ref(true)
+const reviewsInitialized = ref(false)
+const reviewStatsLoaded = ref(false)
+const reviewStats = ref({
+    total_count: 0,
+    good_count: 0,
+    medium_count: 0,
+    bad_count: 0,
+    image_count: 0,
+    video_count: 0,
+    avg_score: '5.0',
+    good_rate: 100
+})
 
 // 标签页配置
 const tabs = [
@@ -463,8 +628,13 @@ const tabs = [
 watch(currentTab, (newTab) => {
     if (newTab === 'works' && worksList.value.length === 0) {
         loadWorks()
-    } else if (newTab === 'reviews' && reviewsList.value.length === 0) {
-        loadReviews()
+    } else if (newTab === 'reviews') {
+        if (!reviewStatsLoaded.value) {
+            loadReviewStats()
+        }
+        if (!reviewsInitialized.value) {
+            loadReviews(true)
+        }
     }
 })
 
@@ -491,6 +661,15 @@ const getDetail = async () => {
         if (data.banners && Array.isArray(data.banners)) {
             bannerList.value = data.banners
         }
+
+        if (currentTab.value === 'reviews') {
+            if (!reviewStatsLoaded.value) {
+                loadReviewStats()
+            }
+            if (!reviewsInitialized.value) {
+                loadReviews(true)
+            }
+        }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '获取详情失败'
         uni.showToast({ title: errorMsg, icon: 'none' })
@@ -513,18 +692,49 @@ const loadWorks = async () => {
     }
 }
 
-// 加载评价列表（预留）
-const loadReviews = async () => {
-    if (reviewsLoading.value) return
+const loadReviewStats = async () => {
+    if (!staffId.value || reviewStatsLoaded.value) return
+
+    try {
+        const data = await getStaffReviewStats({ staff_id: staffId.value })
+        reviewStats.value = {
+            total_count: Number(data?.total_count || 0),
+            good_count: Number(data?.good_count || 0),
+            medium_count: Number(data?.medium_count || 0),
+            bad_count: Number(data?.bad_count || 0),
+            image_count: Number(data?.image_count || 0),
+            video_count: Number(data?.video_count || 0),
+            avg_score: Number(data?.avg_score || 5).toFixed(1),
+            good_rate: Number(data?.good_rate || 0)
+        }
+        reviewStatsLoaded.value = true
+    } catch (e: any) {
+        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加载评价统计失败'
+        uni.showToast({ title: errorMsg, icon: 'none' })
+    }
+}
+
+const loadReviews = async (refresh = false) => {
+    if (reviewsLoading.value || (!refresh && !reviewsHasMore.value)) return
+
+    if (refresh) {
+        reviewsPage.value = 1
+        reviewsHasMore.value = true
+    }
 
     reviewsLoading.value = true
     try {
-        // TODO: 调用评价接口
-        // const data = await getStaffReviews({ staff_id: staffId.value })
-        // reviewsList.value = data || []
+        const data = await getStaffReviews({
+            staff_id: staffId.value,
+            page: reviewsPage.value,
+            limit: 10
+        })
+        const list = data?.lists || []
 
-        // 暂时模拟空数据
-        reviewsList.value = []
+        reviewsList.value = refresh ? list : [...reviewsList.value, ...list]
+        reviewsHasMore.value = Boolean(data?.has_more)
+        reviewsInitialized.value = true
+        reviewsPage.value += 1
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加载评价失败'
         uni.showToast({ title: errorMsg, icon: 'none' })
@@ -594,6 +804,39 @@ const previewCert = (url: string) => {
     uni.previewImage({
         urls: [url]
     })
+}
+
+const previewReviewImages = (
+    images: Array<string | number>,
+    index: number | string = 0
+) => {
+    const urls = (images || []).map((item) => String(item)).filter(Boolean)
+    if (!urls.length) return
+    const currentIndex = Number(index || 0)
+    uni.previewImage({
+        urls,
+        current: urls[currentIndex] || urls[0]
+    })
+}
+
+const loadMoreReviews = () => {
+    loadReviews()
+}
+
+const goReviewDetail = (review: any) => {
+    if (!review?.id) {
+        return
+    }
+    uni.navigateTo({
+        url: `/pages/review/detail?id=${review.id}`
+    })
+}
+
+const formatReviewTime = (timestamp: number) => {
+    if (!timestamp) {
+        return '-'
+    }
+    return new Date(timestamp * 1000).toLocaleDateString()
 }
 
 onLoad((options) => {
@@ -873,7 +1116,7 @@ onShow(async () => {
 
     /* 小图模式：卡片压在轮播图上 */
     &.card-overlap {
-        margin-top: -80rpx;
+        margin-top: -56rpx;
     }
 }
 
@@ -1025,6 +1268,13 @@ onShow(async () => {
             font-size: 24rpx;
             color: var(--color-muted);
             margin-left: 8rpx;
+        }
+
+        .price-negotiable {
+            font-size: 36rpx;
+            font-weight: 700;
+            color: var(--color-muted);
+            line-height: 1.1;
         }
     }
 }
@@ -1247,6 +1497,194 @@ onShow(async () => {
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+}
+
+.review-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16rpx;
+    margin-bottom: 24rpx;
+}
+
+.review-summary-card {
+    padding: 24rpx 18rpx;
+    border-radius: 18rpx;
+    background: #f8fafc;
+    border: 1rpx solid #edf2f7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10rpx;
+}
+
+.review-summary-value {
+    font-size: 34rpx;
+    font-weight: 700;
+    color: var(--color-main);
+}
+
+.review-summary-label {
+    font-size: 24rpx;
+    color: var(--color-muted);
+}
+
+.review-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+    margin-bottom: 24rpx;
+}
+
+.review-filter-item {
+    padding: 10rpx 16rpx;
+    border-radius: 999rpx;
+    background: var(--color-primary-light-9);
+    border: 1rpx solid var(--color-primary-light-7);
+    font-size: 24rpx;
+    color: var(--color-primary);
+}
+
+.reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18rpx;
+}
+
+.review-card {
+    padding: 24rpx;
+    border-radius: 20rpx;
+    background: #f8fafc;
+    border: 1rpx solid #edf2f7;
+}
+
+.review-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.review-user {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14rpx;
+}
+
+.review-user-avatar {
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 50%;
+    background: #f3f4f6;
+    flex-shrink: 0;
+}
+
+.review-user-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.review-user-name {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: var(--color-main);
+}
+
+.review-time {
+    font-size: 22rpx;
+    color: var(--color-muted);
+}
+
+.review-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 4rpx;
+}
+
+.review-content {
+    display: block;
+    margin-top: 18rpx;
+    font-size: 26rpx;
+    line-height: 1.7;
+    color: var(--color-content);
+}
+
+.review-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10rpx;
+    margin-top: 16rpx;
+}
+
+.review-tag {
+    padding: 8rpx 16rpx;
+    border-radius: 999rpx;
+    background: rgba(124, 58, 237, 0.08);
+    border: 1rpx solid rgba(124, 58, 237, 0.18);
+    font-size: 22rpx;
+    color: #7c3aed;
+}
+
+.review-image-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
+
+.review-image {
+    width: calc((100% - 24rpx) / 3);
+    height: 180rpx;
+    border-radius: 16rpx;
+    background: #f3f4f6;
+}
+
+.review-reply-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
+
+.review-reply-item {
+    padding: 18rpx;
+    border-radius: 16rpx;
+    background: #ffffff;
+    border: 1rpx solid #eef2f6;
+}
+
+.review-reply-type {
+    display: block;
+    font-size: 22rpx;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: 8rpx;
+}
+
+.review-reply-content {
+    display: block;
+    font-size: 24rpx;
+    line-height: 1.6;
+    color: var(--color-content);
+}
+
+.review-load-more {
+    padding-top: 8rpx;
+    text-align: center;
+}
+
+.review-load-more-text {
+    font-size: 24rpx;
+    color: var(--color-muted);
+}
+
+.review-load-more-text--action {
+    color: var(--color-primary);
+    font-weight: 600;
 }
 
 /* 空状态 */

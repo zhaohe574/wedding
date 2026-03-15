@@ -42,6 +42,10 @@ class AccountLogLists extends BaseApiDataLists
             $where[] = ['change_type', 'in', AccountLogEnum::getUserMoneyChangeType()];
         }
 
+        if (isset($this->params['type']) && $this->params['type'] == 'up') {
+            $where[] = ['change_type', 'in', AccountLogEnum::getUserPointChangeType()];
+        }
+
         // 变动类型
         if (!empty($this->params['action'])) {
             $where[] = ['action', '=', $this->params['action']];
@@ -62,7 +66,7 @@ class AccountLogLists extends BaseApiDataLists
      */
     public function lists(): array
     {
-        $field = 'change_type,change_amount,action,create_time,remark';
+        $field = 'change_type,change_amount,action,create_time,remark,left_amount';
         $lists = UserAccountLog::field($field)
             ->where($this->queryWhere())
             ->order('id', 'desc')
@@ -74,6 +78,7 @@ class AccountLogLists extends BaseApiDataLists
             $item['type_desc'] = AccountLogEnum::getChangeTypeDesc($item['change_type']);
             $symbol = $item['action'] == AccountLogEnum::DEC ? '-' : '+';
             $item['change_amount_desc'] = $symbol . $item['change_amount'];
+            $item['create_time'] = date('Y-m-d H:i:s', (int)$item['create_time']);
         }
 
         return $lists;

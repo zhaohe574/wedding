@@ -14,6 +14,8 @@
             <tn-search-box
                 v-model="keyword"
                 placeholder="搜索人员/服务/作品"
+                :search-button-bg-color="$theme.primaryColor"
+                :search-button-text-color="$theme.btnColor"
                 @search="handleSearch"
                 @clear="handleSearchClear"
             ></tn-search-box>
@@ -62,15 +64,17 @@
                         ></news-card>
 
                         <!-- 动态卡片 -->
-                        <dynamic-card
-                            v-else-if="currentType === 'dynamic'"
-                            :dynamic="item"
-                            @click="handleDynamicDetail"
-                            @comment="handleDynamicDetail"
-                            @like="handleDynamicLike"
-                            @follow="handleDynamicFollow"
-                            @share="handleDynamicShare"
-                        />
+                        <view v-else-if="currentType === 'dynamic'" class="dynamic-result-card">
+                            <dynamic-card
+                                :dynamic="item"
+                                variant="default"
+                                :show-share="false"
+                                @click="handleDynamicDetail"
+                                @comment="handleDynamicDetail"
+                                @like="handleDynamicLike"
+                                @follow="handleDynamicFollow"
+                            />
+                        </view>
 
                         <!-- 人员卡片 -->
                         <staff-card
@@ -318,7 +322,12 @@ const queryList = async (page_no: number, page_size: number) => {
                 category: item.category_name || '',
                 rating: Number(item.rating || 0),
                 reviewCount: Number(item.order_count || 0),
-                price: Number(item.price || 0),
+                price: item.price ?? null,
+                has_price:
+                    item.has_price !== undefined && item.has_price !== null
+                        ? Boolean(item.has_price)
+                        : item.price !== null && item.price !== undefined,
+                price_text: item.price_text || '',
                 tags: item.tags || [],
                 isFavorite: item.is_favorite || false
             }))
@@ -367,7 +376,7 @@ const handleDynamicLike = async (dynamic: any) => {
         dynamic.isLiked = !dynamic.isLiked
         dynamic.likeCount += dynamic.isLiked ? 1 : -1
     } catch (e: any) {
-        uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+        uni.showToast({ title: e?.message || e || '操作失败', icon: 'none' })
     }
 }
 
@@ -377,23 +386,25 @@ const handleDynamicFollow = async (userId: number) => {
         return
     }
     try {
-        await toggleFollow({
-            follow_type: 1,
+        const target = search.result.find((item: any) => item.user?.id === userId)
+        if (!target?.user?.followType) {
+            return
+        }
+
+        const res = await toggleFollow({
+            follow_type: target.user.followType,
             follow_id: userId
         })
+        const isFollowed = Boolean(res?.is_followed)
         search.result.forEach((item: any) => {
-            if (item.user?.id === userId) {
-                item.user.isFollowed = true
+            if (item.user?.id === userId && item.user?.followType === target.user.followType) {
+                item.user.isFollowed = isFollowed
             }
         })
-        uni.showToast({ title: '关注成功' })
+        uni.showToast({ title: isFollowed ? '关注成功' : '已取消关注', icon: 'none' })
     } catch (e: any) {
-        uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+        uni.showToast({ title: e?.message || e || '操作失败', icon: 'none' })
     }
-}
-
-const handleDynamicShare = () => {
-    uni.showToast({ title: '分享功能开发中', icon: 'none' })
 }
 
 const handleStaffDetail = (staff: any) => {
@@ -464,6 +475,10 @@ onLoad((options: any) => {
 .search-results {
     height: 100%;
     padding-top: 24rpx;
+}
+
+.dynamic-result-card {
+    margin: 0 24rpx 24rpx;
 }
 
 // 结果卡片（作品、套餐）

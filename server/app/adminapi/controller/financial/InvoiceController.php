@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\adminapi\controller\financial;
 
 use app\adminapi\controller\BaseAdminController;
+use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\logic\financial\InvoiceLogic;
 use app\adminapi\lists\financial\InvoiceLists;
 use app\adminapi\validate\financial\InvoiceValidate;
@@ -19,6 +20,14 @@ use app\adminapi\validate\financial\InvoiceValidate;
  */
 class InvoiceController extends BaseAdminController
 {
+    use OfflineModuleGuard;
+
+    public function initialize()
+    {
+        parent::initialize();
+        $this->abortOfflineModule('发票管理');
+    }
+
     /**
      * @notes 发票列表
      */

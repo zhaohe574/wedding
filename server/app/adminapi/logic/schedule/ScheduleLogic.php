@@ -11,7 +11,6 @@ use app\common\logic\BaseLogic;
 use app\common\model\schedule\Schedule;
 use app\common\model\schedule\ScheduleLock;
 use app\common\model\schedule\ScheduleRule;
-use app\common\model\schedule\CalendarEvent;
 use app\common\model\staff\Staff;
 use think\facade\Db;
 
@@ -60,9 +59,6 @@ class ScheduleLogic extends BaseLogic
         }
         $schedules = $query->select()->toArray();
 
-        // 获取黄历数据
-        $calendarEvents = CalendarEvent::getMonthCalendar((int)$year, (int)$month);
-
         // 按日期组织数据
         $result = [];
         $currentDate = $startDate;
@@ -70,7 +66,7 @@ class ScheduleLogic extends BaseLogic
             $dayData = [
                 'date' => $currentDate,
                 'schedules' => [],
-                'calendar' => $calendarEvents[$currentDate] ?? null,
+                'calendar' => null,
             ];
 
             // 筛选该日期的档期

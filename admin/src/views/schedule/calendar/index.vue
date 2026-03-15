@@ -1,10 +1,20 @@
 <template>
-    <div class="schedule-calendar">
+    <admin-page-shell
+        class="schedule-calendar"
+        title="档期日历"
+        description="集中管理人员档期、锁定与批量排班。"
+    >
         <!-- 顶部筛选 -->
-        <el-card class="!border-none mb-4" shadow="never">
+        <search-panel class="mb-4">
             <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item label="工作人员">
-                    <el-select v-model="queryParams.staff_id" placeholder="请选择" clearable style="width: 200px" @change="fetchCalendar">
+                    <el-select
+                        v-model="queryParams.staff_id"
+                        placeholder="请选择"
+                        clearable
+                        style="width: 200px"
+                        @change="fetchCalendar"
+                    >
                         <el-option v-for="item in staffList" :key="item.id" :label="item.name" :value="item.id" />
                     </el-select>
                 </el-form-item>
@@ -24,7 +34,7 @@
                     <el-button type="success" @click="handleBatchSet">批量设置</el-button>
                 </el-form-item>
             </el-form>
-        </el-card>
+        </search-panel>
 
         <!-- 统计卡片 -->
         <el-row :gutter="16" class="mb-4">
@@ -192,7 +202,7 @@
                         </el-select>
                     </el-form-item>
                     <el-form-item label="备注">
-                        <el-input v-model="dayForm.remark" type="textarea" rows="2" />
+                        <el-input v-model="dayForm.remark" type="textarea" :rows="2" />
                     </el-form-item>
                 </el-form>
 
@@ -285,7 +295,7 @@
                 <el-button type="primary" :loading="batchLoading" @click="handleBatchSubmit">确定</el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script setup lang="ts">
@@ -294,6 +304,31 @@ import { Calendar, CircleCheck, Ticket, Lock, ArrowLeft, ArrowRight } from '@ele
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { scheduleMonthCalendar, scheduleStatistics, scheduleSetStatus, scheduleBatchSet, scheduleUnlock } from '@/api/schedule'
 import { staffAll } from '@/api/staff'
+
+interface ScheduleRow {
+    id: number
+    time_slot: number
+    status: number
+}
+
+interface CalendarMeta {
+    is_lucky_day?: boolean | number
+    is_holiday?: boolean | number
+    lunar_date?: string
+    holiday_name?: string
+    lucky_events?: string
+    unlucky_events?: string
+}
+
+interface CalendarDay {
+    date: string
+    schedules: ScheduleRow[]
+    calendar?: CalendarMeta
+}
+
+interface CalendarData {
+    days?: Record<string, CalendarDay>
+}
 
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 const today = new Date().toISOString().split('T')[0]
@@ -304,11 +339,11 @@ const queryParams = ref({
 
 const currentMonth = ref(new Date().toISOString().slice(0, 7))
 const staffList = ref<any[]>([])
-const calendarData = ref<any>({})
+const calendarData = ref<CalendarData>({})
 const statistics = ref<any>({})
 
 const dayDialogVisible = ref(false)
-const selectedDay = ref<any>(null)
+const selectedDay = ref<CalendarDay | null>(null)
 const dayForm = ref({
     time_slot: 0,
     status: 1,
@@ -334,8 +369,8 @@ const firstDayOfMonth = computed(() => {
 
 // 计算日历天数
 const calendarDays = computed(() => {
-    const days = calendarData.value.days || {}
-    return Object.values(days)
+    const days = calendarData.value.days
+    return days ? Object.values(days) : []
 })
 
 // 获取工作人员列表
@@ -400,7 +435,7 @@ const handleReset = () => {
 }
 
 // 点击日期
-const handleDayClick = (day: any) => {
+const handleDayClick = (day: CalendarDay) => {
     if (!queryParams.value.staff_id) {
         ElMessage.warning('请先选择工作人员')
         return
@@ -489,8 +524,16 @@ const getStatusText = (status: number) => {
     return map[status] || '未知'
 }
 
-const getStatusType = (status: number) => {
-    const map: Record<number, string> = { 0: 'info', 1: 'success', 2: 'warning', 3: 'danger', 4: 'danger' }
+type StatusTagType = 'success' | 'warning' | 'info' | 'primary' | 'danger'
+
+const getStatusType = (status: number): StatusTagType => {
+    const map: Record<number, StatusTagType> = {
+        0: 'info',
+        1: 'success',
+        2: 'warning',
+        3: 'danger',
+        4: 'danger'
+    }
     return map[status] || 'info'
 }
 
@@ -513,6 +556,6 @@ onMounted(() => {
 
 <style scoped>
 .schedule-calendar {
-    padding: 16px;
+    padding: 4px 0;
 }
 </style>

@@ -25,7 +25,7 @@
                 </el-form-item>
             </el-card>
         </el-form>
-        <footer-btns v-perms="['channel.open_setting/setConfig']">
+        <footer-btns v-perms="['experience.channel.open_setting/setConfig']">
             <el-button type="primary" @click="handelSave">保存</el-button>
         </footer-btns>
     </div>

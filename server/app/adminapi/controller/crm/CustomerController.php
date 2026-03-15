@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\adminapi\controller\crm;
 
 use app\adminapi\controller\BaseAdminController;
+use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\lists\crm\CustomerLists;
 use app\adminapi\logic\crm\CustomerLogic;
 use app\adminapi\validate\crm\CustomerValidate;
@@ -19,6 +20,14 @@ use app\adminapi\validate\crm\CustomerValidate;
  */
 class CustomerController extends BaseAdminController
 {
+    use OfflineModuleGuard;
+
+    public function initialize()
+    {
+        parent::initialize();
+        $this->abortOfflineModule('CRM 管理');
+    }
+
     /**
      * @notes 客户列表
      * @return \think\response\Json

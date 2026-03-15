@@ -32,6 +32,7 @@ class SmsEnum
      */
     const ALI = 1;
     const TENCENT = 2;
+    const SMSBAO = 3;
 
 
     /**
@@ -46,6 +47,7 @@ class SmsEnum
         $desc = [
             'ALI' => '阿里云短信',
             'TENCENT' => '腾讯云短信',
+            'SMSBAO' => '短信宝短信',
         ];
         return $desc[$value] ?? '';
     }

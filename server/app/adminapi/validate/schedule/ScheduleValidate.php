@@ -88,12 +88,30 @@ class ScheduleValidate extends BaseValidate
     }
 
     /**
+     * @notes 服务人员中心-设置状态场景
+     * @return ScheduleValidate
+     */
+    public function sceneMySetStatus()
+    {
+        return $this->only(['date', 'time_slot', 'status', 'remark']);
+    }
+
+    /**
      * @notes 批量设置场景
      * @return ScheduleValidate
      */
     public function sceneBatchSet()
     {
         return $this->only(['staff_ids', 'start_date', 'end_date', 'time_slots', 'status', 'price']);
+    }
+
+    /**
+     * @notes 服务人员中心-批量设置场景
+     * @return ScheduleValidate
+     */
+    public function sceneMyBatchSet()
+    {
+        return $this->only(['start_date', 'end_date', 'time_slots', 'status', 'price']);
     }
 
     /**

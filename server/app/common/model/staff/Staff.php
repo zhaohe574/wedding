@@ -111,16 +111,16 @@ class Staff extends BaseModel
     }
 
     /**
-     * @notes 手机号脱敏显示
-     * @param $value
+     * @notes 获取脱敏后的手机号（显式方法）
      * @return string
      */
-    public function getMobileAttr($value)
+    public function getMaskedMobile(): string
     {
-        if (empty($value)) {
+        $mobile = $this->getData('mobile');
+        if (empty($mobile)) {
             return '';
         }
-        return substr_replace($value, '****', 3, 4);
+        return substr_replace($mobile, '****', 3, 4);
     }
 
     /**
@@ -129,8 +129,6 @@ class Staff extends BaseModel
      */
     public function getMobileFullAttr()
     {
-        // 优先返回mobile_full字段，如果没有则返回原始mobile字段
-        // 使用 getData 取原始值，避免 getAttr 再次触发本 getter 导致无限递归
         return $this->getData('mobile_full') ?: $this->getData('mobile');
     }
 

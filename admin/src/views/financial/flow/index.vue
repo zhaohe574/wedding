@@ -3,26 +3,26 @@
         <!-- 搜索栏 -->
         <el-card class="!border-none mb-4" shadow="never">
             <el-form :model="queryParams" inline>
-                <el-form-item label="流水编号">
+                <el-form-item class="w-[200px]" label="流水编号">
                     <el-input v-model="queryParams.flow_sn" placeholder="请输入流水编号" clearable />
                 </el-form-item>
-                <el-form-item label="流水类型">
+                <el-form-item class="w-[180px]" label="流水类型">
                     <el-select v-model="queryParams.flow_type" placeholder="全部" clearable>
                         <el-option v-for="item in flowTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="业务类型">
+                <el-form-item class="w-[180px]" label="业务类型">
                     <el-select v-model="queryParams.biz_type" placeholder="全部" clearable>
                         <el-option v-for="item in bizTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="方向">
+                <el-form-item class="w-[160px]" label="方向">
                     <el-select v-model="queryParams.direction" placeholder="全部" clearable>
                         <el-option label="收入" :value="1" />
                         <el-option label="支出" :value="-1" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="时间范围">
+                <el-form-item class="w-[360px]" label="时间范围">
                     <el-date-picker
                         v-model="dateRange"
                         type="daterange"

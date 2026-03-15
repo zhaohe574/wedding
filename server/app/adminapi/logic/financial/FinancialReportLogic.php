@@ -41,11 +41,7 @@ class FinancialReportLogic extends BaseLogic
         $currentRefund = Refund::whereBetweenTime('refund_time', $startTime, $endTime)
             ->where('refund_status', 3)
             ->sum('refund_amount');
-        
-        $currentCost = CostRecord::whereBetween('service_date', [$startDate, $endDate])
-            ->where('status', CostRecord::STATUS_CONFIRMED)
-            ->sum('cost_amount');
-        
+
         $currentOrders = Order::whereBetweenTime('create_time', $startTime, $endTime)
             ->where('pay_status', '>', 0)
             ->count();
@@ -71,18 +67,13 @@ class FinancialReportLogic extends BaseLogic
         $incomeGrowth = $lastIncome > 0 ? round(($currentIncome - $lastIncome) / $lastIncome * 100, 2) : 0;
         $refundGrowth = $lastRefund > 0 ? round(($currentRefund - $lastRefund) / $lastRefund * 100, 2) : 0;
         
-        // 净收入和毛利润
+        // 净收入
         $netIncome = $currentIncome - $currentRefund;
-        $grossProfit = $netIncome - $currentCost;
-        $profitRate = $netIncome > 0 ? round($grossProfit / $netIncome * 100, 2) : 0;
-        
+
         return [
             'total_income' => round($currentIncome, 2),
             'total_refund' => round($currentRefund, 2),
             'net_income' => round($netIncome, 2),
-            'total_cost' => round($currentCost, 2),
-            'gross_profit' => round($grossProfit, 2),
-            'profit_rate' => $profitRate,
             'order_count' => $currentOrders,
             'avg_order_amount' => $currentOrders > 0 ? round($currentIncome / $currentOrders, 2) : 0,
             'income_growth' => $incomeGrowth,

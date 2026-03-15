@@ -181,8 +181,8 @@ const badCount = computed(() => tableData.value.filter(t => t.type === 3).length
 
 // 类型对应 el-tag 样式
 const getTypeTagType = (type: number) => {
-    const map: Record<number, string> = { 1: 'success', 2: 'warning', 3: 'danger' }
-    return map[type] || 'info'
+    const map = { 1: 'success', 2: 'warning', 3: 'danger' } as const
+    return map[type as keyof typeof map] ?? 'info'
 }
 
 const getList = async () => {

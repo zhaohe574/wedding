@@ -58,12 +58,6 @@ const generatePageData = (widgetNames: string[]) => {
     })
 }
 
-const updateContent = (content: any) => {
-    if (menus[activeMenu.value]?.pageData) {
-        menus[activeMenu.value].pageData[selectWidgetIndex.value].content = content
-    }
-}
-
 const menus: Record<
     string,
     {
@@ -110,6 +104,28 @@ const menus: Record<
 
 const activeMenu = ref<string>('1')
 const selectWidgetIndex = ref<number>(-1)
+const lockPageMetaMenus = new Set<string>([pagesTypeEnum.HOME, pagesTypeEnum.USER])
+const getActiveWidgetIndex = () => {
+    if (selectWidgetIndex.value !== -1) {
+        return selectWidgetIndex.value
+    }
+
+    if (lockPageMetaMenus.has(activeMenu.value)) {
+        return menus[activeMenu.value]?.pageData?.findIndex((item: any) => !item?.disabled) ?? -1
+    }
+
+    return -1
+}
+const updateContent = (content: any) => {
+    const activeWidgetIndex = getActiveWidgetIndex()
+    if (activeWidgetIndex < 0) {
+        return
+    }
+
+    if (menus[activeMenu.value]?.pageData?.[activeWidgetIndex]) {
+        menus[activeMenu.value].pageData[activeWidgetIndex].content = content
+    }
+}
 const getPageData = computed(() => {
     return menus[activeMenu.value]?.pageData ?? []
 })
@@ -117,11 +133,12 @@ const getPageMeta = computed(() => {
     return menus[activeMenu.value]?.pageMeta ?? null
 })
 const getSelectWidget = computed(() => {
-    if (selectWidgetIndex.value === -1) {
+    const activeWidgetIndex = getActiveWidgetIndex()
+    if (activeWidgetIndex === -1) {
         return menus[activeMenu.value]?.pageMeta[0] ?? ''
-    } else {
-        return menus[activeMenu.value]?.pageData[selectWidgetIndex.value] ?? ''
     }
+
+    return menus[activeMenu.value]?.pageData[activeWidgetIndex] ?? ''
 })
 
 const getData = async () => {

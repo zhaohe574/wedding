@@ -115,11 +115,20 @@
             <view class="staff-price-row">
                 <text class="price-label">服务价格</text>
                 <view class="staff-price">
-                    <text class="price-symbol" :style="{ color: $theme.ctaColor }">¥</text>
-                    <text class="price-value" :style="{ color: $theme.ctaColor }">
-                        {{ workDetail.staff.price || 0 }}
-                    </text>
-                    <text class="price-unit">/次起</text>
+                    <template
+                        v-if="
+                            workDetail.staff.has_price !== false &&
+                            workDetail.staff.price !== null &&
+                            workDetail.staff.price !== undefined
+                        "
+                    >
+                        <text class="price-symbol" :style="{ color: $theme.ctaColor }">¥</text>
+                        <text class="price-value" :style="{ color: $theme.ctaColor }">
+                            {{ workDetail.staff.price_text || workDetail.staff.price }}
+                        </text>
+                        <text class="price-unit">/次起</text>
+                    </template>
+                    <text v-else class="price-negotiable">面议</text>
                 </view>
             </view>
         </view>
@@ -523,6 +532,12 @@ onLoad((options: any) => {
 
 .price-unit {
     font-size: 24rpx;
+    color: #9ca3af;
+}
+
+.price-negotiable {
+    font-size: 32rpx;
+    font-weight: 700;
     color: #9ca3af;
 }
 

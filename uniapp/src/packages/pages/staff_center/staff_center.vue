@@ -57,13 +57,20 @@
                         <text>{{ profile.mobile || '未绑定手机号' }}</text>
                     </view>
                     <view
-                        v-if="profile.price"
+                        v-if="
+                            profile.has_price !== false &&
+                            profile.price !== null &&
+                            profile.price !== undefined
+                        "
                         class="profile-price"
                         :style="{ color: $theme.ctaColor }"
                     >
                         <text class="price-symbol">¥</text>
-                        <text class="price-value">{{ profile.price }}</text>
+                        <text class="price-value">{{ profile.price_text || profile.price }}</text>
                         <text class="price-unit">/次</text>
+                    </view>
+                    <view v-else class="profile-price profile-price--negotiable">
+                        <text class="price-negotiable">面议</text>
                     </view>
                 </view>
 
@@ -402,6 +409,16 @@ onShow(async () => {
     .price-unit {
         font-size: 24rpx;
         font-weight: 500;
+        color: #9CA3AF;
+    }
+
+    &--negotiable {
+        margin-top: 12rpx;
+    }
+
+    .price-negotiable {
+        font-size: 30rpx;
+        font-weight: 700;
         color: #9CA3AF;
     }
 }

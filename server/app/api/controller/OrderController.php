@@ -230,7 +230,7 @@ class OrderController extends BaseApiController
     public function availableCoupons()
     {
         $params = $this->request->get();
-        $result = OrderLogic::getAvailableCoupons($this->userId, $params['amount'] ?? 0);
+        $result = OrderLogic::getAvailableCoupons($this->userId, $params);
         return $this->data($result);
     }
 }

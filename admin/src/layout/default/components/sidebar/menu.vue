@@ -64,6 +64,8 @@ const themeClass = computed(() => `theme-${props.theme}`)
 
 <style lang="scss" scoped>
 .menu {
+    padding-bottom: 10px;
+
     &.theme-dark {
         .el-menu {
             :deep(.el-menu-item) {
@@ -94,6 +96,7 @@ const themeClass = computed(() => `theme-${props.theme}`)
     }
     .el-menu {
         border-right: none;
+        background: transparent;
         &:not(.el-menu--collapse) {
             width: var(--aside-width);
         }

@@ -20,6 +20,7 @@ export interface BannerContent {
 export interface BannerOptions {
     title: string
     name: string
+    pageScope: string[]
     content: BannerContent
     styles: Record<string, any>
 }

@@ -231,6 +231,11 @@ class UserCoupon extends BaseModel
             'use_time' => 0,
         ]);
 
+        $coupon = Coupon::find($this->coupon_id);
+        if ($coupon) {
+            $coupon->decrementUsed();
+        }
+
         return true;
     }
 

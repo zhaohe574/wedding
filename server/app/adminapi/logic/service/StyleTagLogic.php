@@ -170,7 +170,14 @@ class StyleTagLogic extends BaseLogic
             $query->where('type', $params['type']);
         }
         if (array_key_exists('category_id', $params) && $params['category_id'] !== '') {
-            $query->where('category_id', $params['category_id']);
+            $categoryId = (int)$params['category_id'];
+            // 传入具体分类时，返回“全局标签 + 当前分类标签”
+            if ($categoryId > 0) {
+                $query->whereIn('category_id', [0, $categoryId]);
+            } else {
+                // category_id=0 时，仅返回全局标签
+                $query->where('category_id', 0);
+            }
         }
 
         $list = $query->order('sort desc, id asc')

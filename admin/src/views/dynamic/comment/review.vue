@@ -324,12 +324,12 @@ const { pager, getLists, resetPage, resetParams } = usePaging({
 
 // 获取审核状态类型
 const getReviewStatusType = (status: number) => {
-    const types: Record<number, string> = {
+    const types = {
         0: 'warning',
         1: 'success',
         2: 'danger'
-    }
-    return types[status] || 'info'
+    } as const
+    return types[status as keyof typeof types] ?? 'info'
 }
 
 // 选择变化

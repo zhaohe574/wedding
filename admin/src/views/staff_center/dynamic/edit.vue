@@ -13,7 +13,6 @@
                     <el-radio-group v-model="formData.dynamic_type">
                         <el-radio :label="1">图文</el-radio>
                         <el-radio :label="2">视频</el-radio>
-                        <el-radio :label="4">活动</el-radio>
                     </el-radio-group>
                 </el-form-item>
 

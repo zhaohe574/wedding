@@ -27,8 +27,6 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
-
 const props = withDefaults(
     defineProps<{
         item: any
@@ -36,7 +34,7 @@ const props = withDefaults(
     }>(),
     {
         item: {},
-        newsId: ''
+        newsId: 0
     }
 )
 </script>

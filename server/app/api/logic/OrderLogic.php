@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\api\logic;
 
 use app\common\logic\BaseLogic;
+use app\common\model\coupon\UserCoupon;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\order\OrderLog;
@@ -27,6 +28,89 @@ use think\facade\Db;
  */
 class OrderLogic extends BaseLogic
 {
+    /**
+     * @notes 获取当前结算购物车项
+     */
+    private static function getCheckoutCartItems(int $userId, array $cartIds = []): array
+    {
+        $query = Cart::where('user_id', $userId)
+            ->with(['staff', 'package']);
+
+        if (empty($cartIds)) {
+            $query->where('is_selected', 1);
+        } else {
+            $query->whereIn('id', array_map('intval', $cartIds));
+        }
+
+        return $query->select()->toArray();
+    }
+
+    /**
+     * @notes 汇总结算上下文
+     */
+    private static function buildCheckoutSummary(array $cartItems): array
+    {
+        $totalAmount = 0;
+        $staffIds = [];
+        $categoryIds = [];
+
+        foreach ($cartItems as $item) {
+            $totalAmount += (float)$item['price'] * (int)($item['quantity'] ?? 1);
+            $staffIds[] = (int)($item['staff_id'] ?? 0);
+
+            $packageCategoryId = (int)($item['package']['category_id'] ?? 0);
+            $staffCategoryId = (int)($item['staff']['category_id'] ?? 0);
+            if ($packageCategoryId > 0) {
+                $categoryIds[] = $packageCategoryId;
+            } elseif ($staffCategoryId > 0) {
+                $categoryIds[] = $staffCategoryId;
+            }
+        }
+
+        return [
+            'total_amount' => round($totalAmount, 2),
+            'staff_ids' => array_values(array_unique(array_filter($staffIds))),
+            'category_ids' => array_values(array_unique(array_filter($categoryIds))),
+        ];
+    }
+
+    /**
+     * @notes 解析选中优惠券
+     */
+    private static function resolveSelectedCoupon(int $userId, array $summary, int $userCouponId = 0): array
+    {
+        $result = [
+            'user_coupon_id' => 0,
+            'coupon_id' => 0,
+            'coupon_amount' => 0,
+        ];
+
+        if ($userCouponId <= 0) {
+            return $result;
+        }
+
+        $availableCoupons = UserCoupon::getAvailableForOrder(
+            $userId,
+            (float)$summary['total_amount'],
+            $summary['staff_ids'] ?? [],
+            $summary['category_ids'] ?? []
+        );
+
+        foreach ($availableCoupons as $couponItem) {
+            if ((int)$couponItem->id !== $userCouponId) {
+                continue;
+            }
+
+            return [
+                'user_coupon_id' => (int)$couponItem->id,
+                'coupon_id' => (int)$couponItem->coupon_id,
+                'coupon_amount' => round((float)($couponItem->discount_amount ?? 0), 2),
+            ];
+        }
+
+        throw new \Exception('所选优惠券不可用，请重新选择');
+    }
+
     /**
      * @notes 获取用户订单列表
      * @param int $userId
@@ -113,40 +197,27 @@ class OrderLogic extends BaseLogic
      */
     public static function previewOrder(int $userId, array $params): array
     {
-        // 获取选中的购物车项
         $cartIds = $params['cart_ids'] ?? [];
-        if (empty($cartIds)) {
-            $cartItems = Cart::where('user_id', $userId)
-                ->where('is_selected', 1)
-                ->with(['staff', 'package'])
-                ->select()
-                ->toArray();
-        } else {
-            $cartItems = Cart::where('user_id', $userId)
-                ->whereIn('id', $cartIds)
-                ->with(['staff', 'package'])
-                ->select()
-                ->toArray();
-        }
+        $cartItems = self::getCheckoutCartItems($userId, $cartIds);
 
         if (empty($cartItems)) {
             return ['success' => false, 'message' => '请选择要结算的服务'];
         }
 
-        // 计算金额
-        $totalAmount = 0;
-        foreach ($cartItems as $item) {
-            $totalAmount += $item['price'] * ($item['quantity'] ?? 1);
+        try {
+            $summary = self::buildCheckoutSummary($cartItems);
+            $couponData = self::resolveSelectedCoupon(
+                $userId,
+                $summary,
+                (int)($params['user_coupon_id'] ?? 0)
+            );
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
         }
 
-        // 优惠券
-        $couponAmount = 0;
-        $couponId = $params['coupon_id'] ?? 0;
-        if ($couponId > 0) {
-            // TODO: 计算优惠券抵扣
-        }
-
-        $payAmount = $totalAmount - $couponAmount;
+        $totalAmount = (float)$summary['total_amount'];
+        $couponAmount = (float)$couponData['coupon_amount'];
+        $payAmount = max(0, $totalAmount - $couponAmount);
 
         // 定金计算
         $depositRatio = $params['deposit_ratio'] ?? 0;
@@ -164,6 +235,8 @@ class OrderLogic extends BaseLogic
                 'total_amount' => round($totalAmount, 2),
                 'coupon_amount' => round($couponAmount, 2),
                 'pay_amount' => round($payAmount, 2),
+                'coupon_id' => (int)$couponData['coupon_id'],
+                'user_coupon_id' => (int)$couponData['user_coupon_id'],
                 'deposit_amount' => round($depositAmount, 2),
                 'balance_amount' => round($balanceAmount, 2),
             ]
@@ -181,21 +254,8 @@ class OrderLogic extends BaseLogic
         try {
             $userId = $params['user_id'];
 
-            // 获取购物车项
             $cartIds = $params['cart_ids'] ?? [];
-            if (empty($cartIds)) {
-                $cartItems = Cart::where('user_id', $userId)
-                    ->where('is_selected', 1)
-                    ->with(['staff', 'package'])
-                    ->select()
-                    ->toArray();
-            } else {
-                $cartItems = Cart::where('user_id', $userId)
-                    ->whereIn('id', $cartIds)
-                    ->with(['staff', 'package'])
-                    ->select()
-                    ->toArray();
-            }
+            $cartItems = self::getCheckoutCartItems($userId, $cartIds);
 
             if (empty($cartItems)) {
                 return ['success' => false, 'message' => '请选择要结算的服务'];
@@ -222,12 +282,34 @@ class OrderLogic extends BaseLogic
                 }
             }
 
+            $summary = self::buildCheckoutSummary($cartItems);
+            $couponData = self::resolveSelectedCoupon(
+                $userId,
+                $summary,
+                (int)($params['user_coupon_id'] ?? 0)
+            );
+
+            $params['coupon_amount'] = $couponData['coupon_amount'];
+            $params['coupon_id'] = $couponData['coupon_id'];
+            $params['user_coupon_id'] = $couponData['user_coupon_id'];
+
             // 创建订单
             [$success, $message, $order] = Order::createOrder($userId, $cartItems, $params);
             
             if (!$success) {
                 Db::rollback();
                 return ['success' => false, 'message' => $message];
+            }
+
+            if ((int)$couponData['user_coupon_id'] > 0) {
+                $userCoupon = UserCoupon::where('id', (int)$couponData['user_coupon_id'])
+                    ->where('user_id', $userId)
+                    ->lock(true)
+                    ->find();
+                if (!$userCoupon || !$userCoupon->use((int)$order->id)) {
+                    Db::rollback();
+                    return ['success' => false, 'message' => '优惠券核销失败，请重试'];
+                }
             }
 
             // 清空已结算的购物车项
@@ -674,13 +756,27 @@ class OrderLogic extends BaseLogic
     /**
      * @notes 获取可用优惠券
      * @param int $userId
-     * @param float $amount
+     * @param array $params
      * @return array
      */
-    public static function getAvailableCoupons(int $userId, float $amount = 0): array
+    public static function getAvailableCoupons(int $userId, array $params = []): array
     {
-        // TODO: 实现优惠券查询逻辑
-        return [];
+        $cartItems = self::getCheckoutCartItems($userId, $params['cart_ids'] ?? []);
+        if (empty($cartItems)) {
+            return [
+                'lists' => [],
+                'total' => 0,
+                'best_coupon' => null,
+            ];
+        }
+
+        $summary = self::buildCheckoutSummary($cartItems);
+        return CouponLogic::orderAvailable([
+            'user_id' => $userId,
+            'order_amount' => $summary['total_amount'],
+            'staff_ids' => $summary['staff_ids'],
+            'category_ids' => $summary['category_ids'],
+        ]);
     }
 
     /**

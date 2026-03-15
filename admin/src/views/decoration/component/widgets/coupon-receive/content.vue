@@ -137,7 +137,7 @@ const showList = computed(() => {
 })
 
 // 格式化日期
-function formatDate(timestamp: number): string {
+function formatDate(timestamp?: number): string {
     if (!timestamp) return '长期有效'
     const date = new Date(timestamp * 1000)
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\model\dynamic;
 
 use app\common\model\BaseModel;
+use app\common\model\review\SensitiveWord;
 use app\common\model\user\User;
 use think\model\concern\SoftDelete;
 
@@ -111,7 +112,11 @@ class DynamicComment extends BaseModel
         }
 
         // 敏感词检测
-        // TODO: 实现敏感词过滤
+        $filterResult = SensitiveWord::filter($content);
+        if ($filterResult['has_sensitive'] && $filterResult['level'] >= SensitiveWord::LEVEL_FORBID) {
+            return [false, '评论内容包含敏感词，请修改后重试', null];
+        }
+        $content = $filterResult['filtered'];
 
         // 获取审核配置
         $reviewEnabled = (int)\app\common\service\ConfigService::get('dynamic', 'comment_review_enabled', 0);

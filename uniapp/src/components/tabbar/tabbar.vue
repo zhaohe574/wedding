@@ -11,7 +11,7 @@
 
 <script lang="ts" setup>
 import { useAppStore } from '@/stores/app'
-import { navigateTo } from '@/utils/util'
+import { navigateTo, normalizeAppPath } from '@/utils/util'
 import { computed, ref } from 'vue'
 const current = ref()
 const appStore = useAppStore()
@@ -24,7 +24,7 @@ const tabbarList = computed(() => {
                 selectedIconPath: item.selected,
                 text: item.name,
                 link: item.link,
-                pagePath: item.link.path
+                pagePath: normalizeAppPath(item.link.path)
             }
         })
 })
@@ -32,8 +32,9 @@ const tabbarList = computed(() => {
 const showTabbar = computed(() => {
     const currentPages = getCurrentPages()
     const currentPage = currentPages[currentPages.length - 1]
+    const currentRoute = normalizeAppPath(currentPage?.route || '')
     const current = tabbarList.value?.findIndex((item: any) => {
-        return item.pagePath === '/' + currentPage.route
+        return item.pagePath === currentRoute
     })
     return current >= 0
 })
@@ -43,10 +44,18 @@ const tabbarStyle = computed(() => ({
     inactiveColor: appStore.getStyleConfig.default_color
 }))
 
-const nativeTabbar = ['/pages/index/index', '/pages/news/news', '/pages/user/user']
+const nativeTabbar = [
+    '/pages/index/index',
+    '/pages/news/news',
+    '/pages/staff_list/staff_list',
+    '/pages/user/user'
+]
 const handleChange = (index: number) => {
     const selectTab = tabbarList.value[index]
-    const navigateType = nativeTabbar.includes(selectTab.link.path) ? 'switchTab' : 'reLaunch'
+    if (!selectTab) return
+
+    const normalizedPath = normalizeAppPath(selectTab.link.path)
+    const navigateType = nativeTabbar.includes(normalizedPath) ? 'switchTab' : 'reLaunch'
     navigateTo(selectTab.link, navigateType)
 }
 </script>

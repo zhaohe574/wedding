@@ -13,6 +13,7 @@ use app\common\lists\ListsSortInterface;
 use app\common\lists\ListsExcelInterface;
 use app\common\model\staff\Staff;
 use app\common\model\service\ServiceCategory;
+use app\common\service\StaffPriceService;
 
 /**
  * 工作人员列表
@@ -42,7 +43,6 @@ class StaffLists extends BaseAdminDataLists implements ListsSearchInterface, Lis
         return [
             'id' => 'id',
             'sort' => 'sort',
-            'price' => 'price',
             'rating' => 'rating',
             'order_count' => 'order_count',
             'create_time' => 'create_time',
@@ -77,7 +77,7 @@ class StaffLists extends BaseAdminDataLists implements ListsSearchInterface, Lis
         $lists = $query
             ->field([
                 'id', 'sn', 'name', 'avatar', 'mobile', 'category_id',
-                'price', 'experience_years', 'rating', 'order_count',
+                'experience_years', 'rating', 'order_count',
                 'review_count', 'favorite_count', 'view_count',
                 'sort', 'is_recommend', 'status', 'audit_status',
                 'create_time', 'update_time'
@@ -98,6 +98,7 @@ class StaffLists extends BaseAdminDataLists implements ListsSearchInterface, Lis
             $item['is_recommend_desc'] = $item['is_recommend'] ? '是' : '否';
             $item['audit_status_desc'] = ['待审核', '已通过', '已拒绝'][$item['audit_status']] ?? '未知';
         }
+        StaffPriceService::injectDisplayPrice($lists);
 
         return $lists;
     }
@@ -127,7 +128,7 @@ class StaffLists extends BaseAdminDataLists implements ListsSearchInterface, Lis
             'name' => '姓名',
             'category_name' => '分类',
             'mobile' => '手机号',
-            'price' => '起步价',
+            'price_text' => '服务价格',
             'experience_years' => '从业年限',
             'rating' => '评分',
             'order_count' => '接单数',

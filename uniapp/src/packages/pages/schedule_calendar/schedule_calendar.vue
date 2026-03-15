@@ -117,7 +117,7 @@
                         </view>
 
                         <!-- 状态标识 -->
-                        <view v-if="day.schedules && day.schedules.length > 0" class="status-badge">
+                        <view v-if="getStatusClass(day)" class="status-badge">
                             <view class="badge-dot" :class="getStatusClass(day)"></view>
                         </view>
 
@@ -821,20 +821,25 @@ const handleSlotClick = (slot: any) => {
 }
 
 const getStatusClass = (day: any) => {
-    if (!day.schedules || day.schedules.length === 0) {
-        return ''
+    const schedules = Array.isArray(day?.schedules) ? day.schedules : []
+    const statuses = schedules
+        .map((item: any) => Number(item?.status))
+        .filter((status: number) => Number.isFinite(status))
+
+    // 存在明确状态时，按优先级显示
+    if (statuses.length > 0) {
+        if (statuses.includes(2)) return 'booked'
+        if (statuses.includes(3)) return 'locked'
+        if (statuses.includes(4)) return 'reserved'
+        if (statuses.includes(1)) return 'available'
+        if (statuses.includes(0)) return 'unavailable'
     }
 
-    const schedule = day.schedules[0]
-    const classMap: Record<number, string> = {
-        0: 'unavailable',
-        1: 'available',
-        2: 'booked',
-        3: 'locked',
-        4: 'reserved'
+    // 无档期记录时，以接口返回的可预约结果作为兜底展示
+    if (!day?.is_past && day?.is_available) {
+        return 'available'
     }
-
-    return classMap[schedule.status] || ''
+    return ''
 }
 
 const ensureReady = () => {
@@ -943,14 +948,16 @@ const scrollToTimeSlotSection = async () => {
     if (!selectedPackage.value) {
         return
     }
-    const rect = await getRect('.time-slot-section', false, pageCtx).catch(() => null)
+    const rect = await getRect<{ top: number }>('.time-slot-section', false, pageCtx).catch(
+        () => null
+    )
     if (!rect) {
         return
     }
     const query = uni.createSelectorQuery().in(pageCtx)
     query
         .selectViewport()
-        .scrollOffset()
+        .scrollOffset(() => undefined)
         .exec((res) => {
             const viewport = res?.[0]
             if (!viewport || typeof viewport.scrollTop !== 'number') {

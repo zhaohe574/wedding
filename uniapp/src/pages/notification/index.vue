@@ -394,8 +394,10 @@ const handleItemClick = async (item: any) => {
     // 跳转到目标页面
     if (item.target_type && item.target_id) {
         const routeMap: Record<string, string> = {
-            order: '/pages/order/detail',
-            dynamic: '/pages/dynamic/detail',
+            order: '/pages/order_detail/order_detail',
+            order_detail: '/pages/order_detail/order_detail',
+            dynamic: '/pages/dynamic_detail/dynamic_detail',
+            dynamic_detail: '/pages/dynamic_detail/dynamic_detail',
             review: '/pages/review/detail'
         }
         const route = routeMap[item.target_type]

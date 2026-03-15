@@ -367,9 +367,14 @@ class OrderChange extends BaseModel
         try {
             // 获取原人员信息
             $oldStaff = Staff::find($orderItem->staff_id);
-            $oldPrice = $orderItem->price;
-            $newPrice = $newStaff->price;
-            $priceDiff = $newPrice - $oldPrice; // 正数需补付，负数需退款
+            $oldPrice = round((float)$orderItem->price, 2);
+            $newPrice = self::resolveOrderItemPrice(
+                (int)$newStaffId,
+                (int)$orderItem->package_id,
+                (int)$orderItem->time_slot,
+                $oldPrice
+            );
+            $priceDiff = round($newPrice - $oldPrice, 2); // 正数需补付，负数需退款
 
             // 临时锁定新人员档期（15分钟）
             $lockResult = Schedule::temporaryLock(
@@ -492,7 +497,10 @@ class OrderChange extends BaseModel
         Db::startTrans();
         try {
             // 获取价格
-            $price = \app\common\model\staff\StaffPackage::getStaffPackagePrice($staffId, $packageId) ?: $staff->price;
+            $price = self::resolveOrderItemPrice($staffId, $packageId, $timeSlot);
+            if ($price <= 0) {
+                return [false, '当前套餐未配置有效价格', null];
+            }
 
             // 临时锁定档期
             $lockResult = Schedule::temporaryLock($staffId, $serviceDate, $timeSlot, $orderId, 15 * 60);
@@ -546,6 +554,24 @@ class OrderChange extends BaseModel
             Db::rollback();
             return [false, '申请失败：' . $e->getMessage(), null];
         }
+    }
+
+    /**
+     * @notes 解析订单项价格（使用统一价格服务）
+     * @param int $staffId
+     * @param int $packageId
+     * @param int $timeSlot
+     * @param float $fallbackPrice
+     * @return float
+     */
+    protected static function resolveOrderItemPrice(
+        int $staffId,
+        int $packageId,
+        int $timeSlot = 0,
+        float $fallbackPrice = 0.0
+    ): float {
+        $price = \app\common\service\StaffPriceService::calculateOrderItemPrice($staffId, $packageId, $timeSlot);
+        return $price > 0 ? $price : round($fallbackPrice, 2);
     }
 
     /**
@@ -707,6 +733,28 @@ class OrderChange extends BaseModel
     {
         $items = OrderItem::where('order_id', $order->id)->select();
 
+        // 二次验证所有订单项的新档期可用性
+        foreach ($items as $item) {
+            $available = Schedule::checkAvailable($item->staff_id, $change->new_service_date, $change->new_time_slot);
+            if (!$available) {
+                $staffName = $item->staff_name ?: "人员ID:{$item->staff_id}";
+                return ['success' => false, 'message' => "{$staffName}在新日期档期已被占用，无法执行改期"];
+            }
+
+            // 如果有套餐，验证套餐可用性
+            if ($item->package_id > 0) {
+                $bookingCheck = \app\common\model\package\PackageBooking::checkAvailability(
+                    $item->package_id,
+                    $change->new_service_date,
+                    $item->staff_id,
+                    $change->new_time_slot
+                );
+                if (!$bookingCheck['available']) {
+                    return ['success' => false, 'message' => $bookingCheck['message']];
+                }
+            }
+        }
+
         foreach ($items as $item) {
             // 释放原档期
             if ($item->schedule_id > 0) {
@@ -747,6 +795,17 @@ class OrderChange extends BaseModel
         $orderItem = OrderItem::find($change->order_item_id);
         if (!$orderItem) {
             return ['success' => false, 'message' => '订单项不存在'];
+        }
+
+        // 二次验证新档期可用性
+        if ($change->new_schedule_id > 0) {
+            $schedule = Schedule::find($change->new_schedule_id);
+            if (!$schedule) {
+                return ['success' => false, 'message' => '新档期不存在'];
+            }
+            if ($schedule->status != Schedule::STATUS_LOCKED && $schedule->status != Schedule::STATUS_AVAILABLE) {
+                return ['success' => false, 'message' => '新档期已被占用，无法执行换人'];
+            }
         }
 
         // 释放原档期

@@ -118,3 +118,8 @@ export function generatePlanShareCode(params: any) {
 export function getPlanByShareCode(params: any) {
     return request.get({ url: '/cart/getPlanByShareCode', params })
 }
+
+// 通过分享码保存为我的方案
+export function savePlanByShareCode(params: any) {
+    return request.post({ url: '/cart/savePlanByShareCode', params })
+}

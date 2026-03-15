@@ -104,7 +104,8 @@ class ServiceLogic extends BaseLogic
             $query->where('type', $type);
         }
         if ($categoryId > 0) {
-            $query->where('category_id', $categoryId);
+            // 选择具体分类时，同时返回全局标签(category_id=0)
+            $query->whereIn('category_id', [0, $categoryId]);
         }
 
         $list = $query->select()->toArray();

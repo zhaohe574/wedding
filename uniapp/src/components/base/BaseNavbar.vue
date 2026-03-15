@@ -39,7 +39,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-    back: []
+    (event: 'back'): void
 }>()
 
 const themeStore = useThemeStore()

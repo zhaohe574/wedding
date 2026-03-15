@@ -387,12 +387,12 @@ const rejectReason = ref('')
 const pendingRejectData = ref<any>(null)
 
 const getStatusType = (status: number) => {
-    const map: Record<number, string> = {
+    const map = {
         0: 'warning',
         1: 'success',
         2: 'danger'
-    }
-    return map[status] || 'info'
+    } as const
+    return map[status as keyof typeof map] ?? 'info'
 }
 
 const getScoreType = (score: number) => {

@@ -344,7 +344,12 @@
         </view>
 
         <!-- 退款弹窗 -->
-        <tn-popup v-model="showRefundPopup" mode="bottom" border-radius="32">
+        <tn-popup
+            v-model="showRefundPopup"
+            open-direction="bottom"
+            :radius="32"
+            safe-area-inset-bottom
+        >
             <view class="refund-popup">
                 <view class="popup-header">
                     <text class="popup-title">申请退款</text>
@@ -403,7 +408,12 @@
         </tn-popup>
 
         <!-- 线下凭证上传弹窗 -->
-        <tn-popup v-model="showVoucherPopup" mode="bottom" border-radius="32">
+        <tn-popup
+            v-model="showVoucherPopup"
+            open-direction="bottom"
+            :radius="32"
+            safe-area-inset-bottom
+        >
             <view class="voucher-popup">
                 <view class="popup-header">
                     <text class="popup-title">上传支付凭证</text>

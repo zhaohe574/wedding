@@ -19,7 +19,7 @@
                         <el-option label="已拒绝" :value="3" />
                     </el-select>
                 </el-form-item>
-                <el-form-item class="w-[150px]" label="发布者类型">
+                <el-form-item class="w-[180px]" label="发布者类型">
                     <el-select v-model="queryParams.user_type" placeholder="选择类型" clearable>
                         <el-option label="全部" value="" />
                         <el-option label="用户" :value="1" />
@@ -370,13 +370,13 @@ const getStatusCount = (status: number) => {
 }
 
 const getStatusType = (status: number) => {
-    const types: Record<number, string> = {
+    const types = {
         0: 'warning',
         1: 'success',
         2: 'info',
         3: 'danger'
-    }
-    return types[status] || 'info'
+    } as const
+    return types[status as keyof typeof types] ?? 'info'
 }
 
 const handleDetail = async (row: any) => {

@@ -25,12 +25,12 @@ const props = withDefaults(
 const active = ref<boolean>(false)
 const shouldShow = ref<boolean>(false)
 const shouldRender = ref<boolean>(false)
-const inited = ref(undefined)
+const inited = ref(false)
 
 const updateTabs: any = inject('updateTabs')
 const handleChange: any = inject('handleChange')
 
-const updateRender = (value) => {
+const updateRender = (value: boolean) => {
     inited.value = inited.value || value
     active.value = value
     shouldRender.value = inited.value!
@@ -43,7 +43,6 @@ const update = () => {
 }
 
 const instance = getCurrentInstance()
-console.log(instance)
 handleChange(instance?.props, updateRender)
 
 onMounted(() => {

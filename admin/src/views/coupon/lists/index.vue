@@ -742,20 +742,20 @@ const handleRevoke = (row: any) => {
 
 // 获取类型标签
 const getCouponTypeTag = (type: number) => {
-    const tags: Record<number, string> = { 1: 'danger', 2: 'warning', 3: 'success' }
-    return tags[type] || 'info'
+    const tags = { 1: 'danger', 2: 'warning', 3: 'success' } as const
+    return tags[type as keyof typeof tags] ?? 'info'
 }
 
 // 获取范围标签
 const getScopeTag = (scope: number) => {
-    const tags: Record<number, string> = { 1: '', 2: 'warning', 3: 'info' }
-    return tags[scope] || ''
+    const tags = { 1: 'info', 2: 'warning', 3: 'info' } as const
+    return tags[scope as keyof typeof tags] ?? 'info'
 }
 
 // 获取用户优惠券状态标签
 const getUserCouponStatusType = (status: number) => {
-    const types: Record<number, string> = { 0: 'success', 1: 'info', 2: 'danger' }
-    return types[status] || ''
+    const types = { 0: 'success', 1: 'info', 2: 'danger' } as const
+    return types[status as keyof typeof types] ?? 'info'
 }
 
 // 获取分类选项

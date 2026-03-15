@@ -1,7 +1,12 @@
 <template>
-    <div class="refund-lists">
-        <el-card class="!border-none" shadow="never">
-            <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
+    <admin-page-shell
+        class="refund-lists"
+        title="退款管理"
+        description="跟踪退款审核、执行与状态流转。"
+    >
+        <template #search>
+            <search-panel>
+                <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item class="w-[180px]" label="退款编号">
                     <el-input
                         v-model="queryParams.refund_sn"
@@ -34,45 +39,17 @@
                     <el-button type="primary" @click="resetPage">查询</el-button>
                     <el-button @click="resetParams">重置</el-button>
                 </el-form-item>
-            </el-form>
-        </el-card>
+                </el-form>
+            </search-panel>
+        </template>
 
-        <!-- 统计卡片 -->
-        <div class="mt-4 grid grid-cols-5 gap-4">
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">待审核</div>
-                    <div class="text-2xl font-bold mt-2 text-orange-500">{{ getStatusCount(0) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">审核通过</div>
-                    <div class="text-2xl font-bold mt-2 text-blue-500">{{ getStatusCount(1) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">退款中</div>
-                    <div class="text-2xl font-bold mt-2 text-purple-500">{{ getStatusCount(2) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">已退款</div>
-                    <div class="text-2xl font-bold mt-2 text-green-500">{{ getStatusCount(3) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">已拒绝</div>
-                    <div class="text-2xl font-bold mt-2 text-red-500">{{ getStatusCount(4) }}</div>
-                </div>
-            </el-card>
-        </div>
+        <template #stats>
+            <stat-panel :items="refundStatItems" :columns="5" />
+        </template>
 
-        <el-card class="!border-none mt-4" shadow="never">
-            <el-table size="large" v-loading="pager.loading" :data="pager.lists">
+        <div class="admin-page-section">
+            <el-card class="!border-none" shadow="never">
+                <el-table size="large" v-loading="pager.loading" :data="pager.lists">
                 <el-table-column label="退款编号" prop="refund_sn" min-width="180" />
                 <el-table-column label="订单编号" min-width="180">
                     <template #default="{ row }">
@@ -128,11 +105,12 @@
                         >确认退款</el-button>
                     </template>
                 </el-table-column>
-            </el-table>
-            <div class="flex justify-end mt-4">
-                <pagination v-model="pager" @change="getLists" />
-            </div>
-        </el-card>
+                </el-table>
+                <div class="flex justify-end mt-4">
+                    <pagination v-model="pager" @change="getLists" />
+                </div>
+            </el-card>
+        </div>
 
         <!-- 退款详情弹窗 -->
         <el-dialog v-model="detailVisible" title="退款详情" width="600px">
@@ -179,7 +157,7 @@
                 </el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="refundLists">
@@ -219,8 +197,45 @@ const getStatusCount = (status: number) => {
     return item ? item.count : 0
 }
 
-const getStatusType = (status: number) => {
-    const types: Record<number, string> = {
+type StatAccent = 'primary' | 'success' | 'warning' | 'danger' | 'muted'
+type StatusTagType = 'success' | 'warning' | 'info' | 'primary' | 'danger'
+
+interface RefundStatItem {
+    label: string
+    value: number
+    accent: StatAccent
+}
+
+const refundStatItems = computed<RefundStatItem[]>(() => [
+    {
+        label: '待审核',
+        value: getStatusCount(0),
+        accent: 'warning'
+    },
+    {
+        label: '审核通过',
+        value: getStatusCount(1),
+        accent: 'primary'
+    },
+    {
+        label: '退款中',
+        value: getStatusCount(2),
+        accent: 'muted'
+    },
+    {
+        label: '已退款',
+        value: getStatusCount(3),
+        accent: 'success'
+    },
+    {
+        label: '已拒绝',
+        value: getStatusCount(4),
+        accent: 'danger'
+    }
+])
+
+const getStatusType = (status: number): StatusTagType => {
+    const types: Record<number, StatusTagType> = {
         0: 'warning',
         1: 'primary',
         2: 'info',

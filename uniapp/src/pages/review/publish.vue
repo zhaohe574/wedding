@@ -189,7 +189,7 @@
                 </view>
                 <switch
                     :checked="formData.is_anonymous === 1"
-                    @change="formData.is_anonymous = $event.detail.value ? 1 : 0"
+                    @change="handleAnonymousChange"
                     :color="$theme.primaryColor"
                 />
             </view>
@@ -201,8 +201,8 @@
                 <tn-icon name="gift" size="40rpx" :color="$theme.primaryColor"></tn-icon>
             </view>
             <view class="reward-info">
-                <text class="reward-text">发布评价可获得积分奖励</text>
-                <text class="reward-points" :style="{ color: $theme.primaryColor }">+{{ rewardPoints }} 积分</text>
+                <text class="reward-text">评价审核通过后发放积分奖励</text>
+                <text class="reward-points" :style="{ color: $theme.primaryColor }">预计 +{{ rewardPoints }} 积分</text>
             </view>
         </view>
 
@@ -245,6 +245,11 @@ const formData = reactive({
 })
 
 const scoreTexts = ['非常差', '较差', '一般', '满意', '非常满意']
+type DetailScoreKey =
+    | 'score_service'
+    | 'score_professional'
+    | 'score_punctual'
+    | 'score_effect'
 
 // 评分感知提示
 const scoreHintText = computed(() => {
@@ -270,7 +275,7 @@ const getTagName = (tagId: number) => {
     return tags.value.find((t: any) => t.id === tagId)?.name || ''
 }
 
-const detailScores = [
+const detailScores: Array<{ key: DetailScoreKey; label: string }> = [
     { key: 'score_service', label: '服务态度' },
     { key: 'score_professional', label: '专业水平' },
     { key: 'score_punctual', label: '时间守约' },
@@ -368,6 +373,11 @@ const removeImage = (index: number) => {
     formData.images.splice(index, 1)
 }
 
+const handleAnonymousChange = (event: Event) => {
+    const changeEvent = event as Event & { detail?: { value?: boolean } }
+    formData.is_anonymous = changeEvent.detail?.value ? 1 : 0
+}
+
 // 提交评价
 const handleSubmit = async () => {
     if (formData.score < 1) {
@@ -395,7 +405,10 @@ const handleSubmit = async () => {
 
         uni.showModal({
             title: '评价成功',
-            content: res.reward_points > 0 ? `获得${res.reward_points}积分奖励` : '感谢您的评价',
+            content:
+                res.reward_points > 0
+                    ? `已提交审核，审核通过后预计发放${res.reward_points}积分`
+                    : '已提交审核，感谢您的评价',
             showCancel: false,
             success: () => {
                 uni.navigateBack()

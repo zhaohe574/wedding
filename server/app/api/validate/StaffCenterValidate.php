@@ -22,7 +22,6 @@ class StaffCenterValidate extends BaseValidate
         'avatar' => 'max:255',
         'mobile' => 'mobile',
         'category_id' => 'integer|gt:0',
-        'price' => 'float|egt:0',
         'experience_years' => 'integer|egt:0',
         'profile' => 'max:500',
         'service_desc' => 'max:1000',
@@ -59,8 +58,6 @@ class StaffCenterValidate extends BaseValidate
         'mobile.mobile' => '手机号格式不正确',
         'category_id.integer' => '服务分类参数错误',
         'category_id.gt' => '请选择服务分类',
-        'price.float' => '价格格式不正确',
-        'price.egt' => '价格不能小于0',
         'experience_years.integer' => '从业年限格式不正确',
         'experience_years.egt' => '从业年限不能小于0',
         'profile.max' => '个人简介长度不能超过500',
@@ -89,7 +86,7 @@ class StaffCenterValidate extends BaseValidate
 
     public function sceneProfile(): StaffCenterValidate
     {
-        return $this->only(['name', 'avatar', 'mobile', 'category_id', 'price', 'experience_years', 'profile', 'service_desc'])
+        return $this->only(['name', 'avatar', 'mobile', 'category_id', 'experience_years', 'profile', 'service_desc'])
             ->append('category_id', 'require');
     }
 

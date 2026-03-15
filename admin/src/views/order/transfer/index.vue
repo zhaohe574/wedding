@@ -18,7 +18,7 @@
                         @keyup.enter="resetPage"
                     />
                 </el-form-item>
-                <el-form-item class="w-[150px]" label="用户关键词">
+                <el-form-item class="w-[180px]" label="用户关键词">
                     <el-input
                         v-model="queryParams.user_keyword"
                         placeholder="姓名/手机号"
@@ -26,7 +26,7 @@
                         @keyup.enter="resetPage"
                     />
                 </el-form-item>
-                <el-form-item class="w-[120px]" label="转让状态">
+                <el-form-item class="w-[180px]" label="转让状态">
                     <el-select v-model="queryParams.transfer_status" placeholder="选择状态" clearable>
                         <el-option label="全部" value="" />
                         <el-option label="待审核" :value="0" />
@@ -338,15 +338,15 @@ const getStatusCount = (status: number) => {
 }
 
 const getStatusTagType = (status: number) => {
-    const types: Record<number, string> = {
+    const types = {
         0: 'warning',
         1: 'primary',
         2: 'info',
         3: 'success',
         4: 'danger',
         5: 'info'
-    }
-    return types[status] || 'info'
+    } as const
+    return types[status as keyof typeof types] ?? 'info'
 }
 
 const viewOrder = (orderId: number) => {

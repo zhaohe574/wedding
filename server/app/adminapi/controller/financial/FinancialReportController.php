@@ -62,9 +62,7 @@ class FinancialReportController extends BaseAdminController
      */
     public function costAnalysis()
     {
-        $params = $this->request->get();
-        $result = FinancialReportLogic::costAnalysis($params);
-        return $this->success('获取成功', $result);
+        return $this->fail('成本分析已在精简版后台下线');
     }
 
     /**
@@ -72,9 +70,7 @@ class FinancialReportController extends BaseAdminController
      */
     public function profitAnalysis()
     {
-        $params = $this->request->get();
-        $result = FinancialReportLogic::profitAnalysis($params);
-        return $this->success('获取成功', $result);
+        return $this->fail('利润分析已在精简版后台下线');
     }
 
     /**
@@ -82,9 +78,7 @@ class FinancialReportController extends BaseAdminController
      */
     public function dailyList()
     {
-        $params = $this->request->get();
-        $result = FinancialReportLogic::dailyList($params);
-        return $this->success('获取成功', $result);
+        return $this->fail('日报能力已在精简版后台下线');
     }
 
     /**
@@ -92,9 +86,7 @@ class FinancialReportController extends BaseAdminController
      */
     public function monthlyList()
     {
-        $params = $this->request->get();
-        $result = FinancialReportLogic::monthlyList($params);
-        return $this->success('获取成功', $result);
+        return $this->fail('月报能力已在精简版后台下线');
     }
 
     /**
@@ -102,12 +94,7 @@ class FinancialReportController extends BaseAdminController
      */
     public function generateDaily()
     {
-        $params = $this->request->post();
-        $result = FinancialReportLogic::generateDaily($params);
-        if ($result === false) {
-            return $this->fail(FinancialReportLogic::getError());
-        }
-        return $this->success('生成成功', ['count' => $result]);
+        return $this->fail('日报能力已在精简版后台下线');
     }
 
     /**
@@ -115,12 +102,7 @@ class FinancialReportController extends BaseAdminController
      */
     public function generateMonthly()
     {
-        $params = $this->request->post();
-        $result = FinancialReportLogic::generateMonthly($params);
-        if ($result === false) {
-            return $this->fail(FinancialReportLogic::getError());
-        }
-        return $this->success('生成成功');
+        return $this->fail('月报能力已在精简版后台下线');
     }
 
     /**
@@ -138,8 +120,6 @@ class FinancialReportController extends BaseAdminController
      */
     public function exportDaily()
     {
-        $params = $this->request->get();
-        $result = FinancialReportLogic::exportDaily($params);
-        return $this->success('导出成功', $result);
+        return $this->fail('日报导出已在精简版后台下线');
     }
 }

@@ -377,18 +377,18 @@ const orderStatusChartOption = computed(() => ({
 
 // 订单状态标签类型
 const statusTagType = (status: number) => {
-    const map: Record<number, string> = {
+    const map = {
         0: 'warning',   // 待确认
         1: 'danger',    // 待支付
-        2: '',          // 已支付
-        3: '',          // 服务中
+        2: 'info',      // 已支付
+        3: 'primary',   // 服务中
         4: 'success',   // 已完成
         5: 'success',   // 已评价
         6: 'info',      // 已取消
         7: 'warning',   // 已暂停
         8: 'info',      // 已退款
-    }
-    return map[status] ?? 'info'
+    } as const
+    return map[status as keyof typeof map] ?? 'info'
 }
 
 // 获取数据

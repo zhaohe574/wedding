@@ -127,7 +127,7 @@
                                 </el-button>
                                 <el-button
                                     v-if="row.refund_status == 2"
-                                    v-perms="['recharge.recharge/refundAgain']"
+                                    v-perms="['finance.recharge/refundAgain']"
                                     type="primary"
                                     link
                                     @click="handleRefund(row.id)"

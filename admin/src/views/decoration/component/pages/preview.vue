@@ -2,7 +2,7 @@
     <div class="pages-preview-wrapper">
         <!-- 顶部操作按钮 -->
         <div class="flex justify-center gap-2">
-            <el-button v-if="pageMeta !== null" @click="handleClickPageMeta">页面设置</el-button>
+            <el-button v-if="showPageMetaButton" @click="handleClickPageMeta">页面设置</el-button>
             <el-button type="primary" @click="showWidgetSelector = true">添加组件</el-button>
         </div>
         <el-scrollbar class="pages-preview-container">
@@ -21,7 +21,7 @@
                 <div
                     class="absolute w-full h-full z-[100] border-dashed"
                     :class="{
-                        select: index == modelValue,
+                        select: index == effectiveModelValue,
                         hide: canShowCom(widget.content),
                         'border-[#dcdfe6] border-2': !widget?.disabled
                     }"
@@ -36,7 +36,7 @@
                     />
                 </slot>
                 <!--  部件操作按钮组  -->
-                <div class="widget-btns py-[5px]" v-if="index == modelValue">
+                <div class="widget-btns py-[5px]" v-if="index == effectiveModelValue">
                     <div>
                         <el-tooltip
                             effect="dark"
@@ -227,7 +227,26 @@ const filteredAvailableWidgets = computed(() => {
     })
 })
 
+const showPageMetaButton = computed(() => {
+    return props.pageMeta !== null && !['home', 'user'].includes(currentPageType.value)
+})
+
+const firstEnabledWidgetIndex = computed(() => {
+    return props.pageData.findIndex((item: any) => !item?.disabled)
+})
+
+const effectiveModelValue = computed(() => {
+    if (props.modelValue !== -1 || showPageMetaButton.value) {
+        return props.modelValue
+    }
+
+    return firstEnabledWidgetIndex.value
+})
+
 const handleClickPageMeta = () => {
+    if (!showPageMetaButton.value) {
+        return
+    }
     if (props.modelValue === -1) {
         emit('update:modelValue', oldModelValue.value)
     } else {

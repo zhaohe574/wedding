@@ -130,7 +130,7 @@
                     v-for="(item, index) in showList"
                     :key="index"
                     class="activity-item relative rounded-3xl overflow-hidden flex-shrink-0"
-                    :style="[{ width: '600rpx' }, cardShadowStyle]"
+                    :style="scrollCardStyle"
                     @click="handleClick(item)"
                 >
                     <image
@@ -273,6 +273,10 @@ const tagBadgeStyle = computed(() => ({
 }))
 const cardShadowStyle = computed(() => ({
     boxShadow: `0 8rpx 24rpx ${alphaColor(primaryColor.value, 0.08)}`
+}))
+const scrollCardStyle = computed(() => ({
+    width: '600rpx',
+    ...cardShadowStyle.value
 }))
 const gridShadowStyle = computed(() => ({
     boxShadow: `0 4rpx 16rpx ${alphaColor(primaryColor.value, 0.06)}`

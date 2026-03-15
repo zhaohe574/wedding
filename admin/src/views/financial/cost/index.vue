@@ -3,19 +3,19 @@
         <!-- 搜索栏 -->
         <el-card class="!border-none mb-4" shadow="never">
             <el-form :model="queryParams" inline>
-                <el-form-item label="成本类型">
+                <el-form-item class="w-[180px]" label="成本类型">
                     <el-select v-model="queryParams.cost_type" placeholder="全部" clearable>
                         <el-option v-for="item in costTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="状态">
+                <el-form-item class="w-[180px]" label="状态">
                     <el-select v-model="queryParams.status" placeholder="全部" clearable>
                         <el-option label="待确认" :value="0" />
                         <el-option label="已确认" :value="1" />
                         <el-option label="已取消" :value="2" />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="服务日期">
+                <el-form-item class="w-[320px]" label="服务日期">
                     <el-date-picker
                         v-model="dateRange"
                         type="daterange"

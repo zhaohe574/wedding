@@ -1,0 +1,1 @@
+import{aa as e}from"./index-cfb98307.js";function r(){return e.get({url:"/service/categoryTree"})}function a(r){return e.get({url:"/service/packages",data:r})}function t(r){return e.get({url:"/service/packageLists",data:r})}function s(r){return e.get({url:"/service/tags",data:r})}export{s as a,t as b,a as c,r as g};

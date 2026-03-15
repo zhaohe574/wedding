@@ -1,5 +1,9 @@
 <template>
-    <div class="aftersale-container">
+    <admin-page-shell
+        class="aftersale-container"
+        title="售后工单"
+        description="投诉、补拍、回访统一在工单中心收口处理。"
+    >
         <!-- 统计卡片 -->
         <el-row :gutter="16" class="mb-4">
             <el-col :span="6">
@@ -75,10 +79,10 @@
                 <el-tab-pane label="工单管理" name="ticket">
                     <div class="search-bar mb-4">
                         <el-form :inline="true" :model="ticketSearch">
-                            <el-form-item label="工单编号">
+                            <el-form-item class="w-[200px]" label="工单编号">
                                 <el-input v-model="ticketSearch.ticket_sn" placeholder="请输入工单编号" clearable />
                             </el-form-item>
-                            <el-form-item label="工单类型">
+                            <el-form-item class="w-[180px]" label="工单类型">
                                 <el-select v-model="ticketSearch.type" placeholder="全部类型" clearable>
                                     <el-option label="投诉" :value="1" />
                                     <el-option label="咨询" :value="2" />
@@ -87,7 +91,7 @@
                                     <el-option label="其他" :value="5" />
                                 </el-select>
                             </el-form-item>
-                            <el-form-item label="优先级">
+                            <el-form-item class="w-[180px]" label="优先级">
                                 <el-select v-model="ticketSearch.priority" placeholder="全部优先级" clearable>
                                     <el-option label="低" :value="1" />
                                     <el-option label="中" :value="2" />
@@ -95,7 +99,7 @@
                                     <el-option label="紧急" :value="4" />
                                 </el-select>
                             </el-form-item>
-                            <el-form-item label="状态">
+                            <el-form-item class="w-[180px]" label="状态">
                                 <el-select v-model="ticketSearch.status" placeholder="全部状态" clearable>
                                     <el-option label="待分配" :value="0" />
                                     <el-option label="处理中" :value="1" />
@@ -159,10 +163,10 @@
                 <el-tab-pane label="投诉管理" name="complaint">
                     <div class="search-bar mb-4">
                         <el-form :inline="true" :model="complaintSearch">
-                            <el-form-item label="投诉编号">
+                            <el-form-item class="w-[200px]" label="投诉编号">
                                 <el-input v-model="complaintSearch.complaint_sn" placeholder="请输入投诉编号" clearable />
                             </el-form-item>
-                            <el-form-item label="投诉类型">
+                            <el-form-item class="w-[180px]" label="投诉类型">
                                 <el-select v-model="complaintSearch.type" placeholder="全部类型" clearable>
                                     <el-option label="服务态度" :value="1" />
                                     <el-option label="专业能力" :value="2" />
@@ -171,14 +175,14 @@
                                     <el-option label="其他" :value="5" />
                                 </el-select>
                             </el-form-item>
-                            <el-form-item label="投诉等级">
+                            <el-form-item class="w-[180px]" label="投诉等级">
                                 <el-select v-model="complaintSearch.level" placeholder="全部等级" clearable>
                                     <el-option label="一般" :value="1" />
                                     <el-option label="严重" :value="2" />
                                     <el-option label="紧急" :value="3" />
                                 </el-select>
                             </el-form-item>
-                            <el-form-item label="状态">
+                            <el-form-item class="w-[180px]" label="状态">
                                 <el-select v-model="complaintSearch.status" placeholder="全部状态" clearable>
                                     <el-option label="待处理" :value="0" />
                                     <el-option label="处理中" :value="1" />
@@ -239,16 +243,16 @@
                 <el-tab-pane label="补拍申请" name="reshoot">
                     <div class="search-bar mb-4">
                         <el-form :inline="true" :model="reshootSearch">
-                            <el-form-item label="申请编号">
+                            <el-form-item class="w-[200px]" label="申请编号">
                                 <el-input v-model="reshootSearch.reshoot_sn" placeholder="请输入申请编号" clearable />
                             </el-form-item>
-                            <el-form-item label="申请类型">
+                            <el-form-item class="w-[180px]" label="申请类型">
                                 <el-select v-model="reshootSearch.type" placeholder="全部类型" clearable>
                                     <el-option label="补拍" :value="1" />
                                     <el-option label="重拍" :value="2" />
                                 </el-select>
                             </el-form-item>
-                            <el-form-item label="状态">
+                            <el-form-item class="w-[180px]" label="状态">
                                 <el-select v-model="reshootSearch.status" placeholder="全部状态" clearable>
                                     <el-option label="待审核" :value="0" />
                                     <el-option label="审核通过" :value="1" />
@@ -309,24 +313,24 @@
                 <el-tab-pane label="回访管理" name="callback">
                     <div class="search-bar mb-4">
                         <el-form :inline="true" :model="callbackSearch">
-                            <el-form-item label="回访编号">
+                            <el-form-item class="w-[200px]" label="回访编号">
                                 <el-input v-model="callbackSearch.callback_sn" placeholder="请输入回访编号" clearable />
                             </el-form-item>
-                            <el-form-item label="回访类型">
+                            <el-form-item class="w-[180px]" label="回访类型">
                                 <el-select v-model="callbackSearch.type" placeholder="全部类型" clearable>
                                     <el-option label="服务前" :value="1" />
                                     <el-option label="服务中" :value="2" />
                                     <el-option label="服务后" :value="3" />
                                 </el-select>
                             </el-form-item>
-                            <el-form-item label="状态">
+                            <el-form-item class="w-[180px]" label="状态">
                                 <el-select v-model="callbackSearch.status" placeholder="全部状态" clearable>
                                     <el-option label="待回访" :value="0" />
                                     <el-option label="已回访" :value="1" />
                                     <el-option label="无法联系" :value="2" />
                                 </el-select>
                             </el-form-item>
-                            <el-form-item label="是否有问题">
+                            <el-form-item class="w-[180px]" label="是否有问题">
                                 <el-select v-model="callbackSearch.has_problem" placeholder="全部" clearable>
                                     <el-option label="有问题" :value="1" />
                                     <el-option label="无问题" :value="0" />
@@ -577,7 +581,7 @@
                 </template>
             </template>
         </el-drawer>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script setup lang="ts">

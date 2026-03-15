@@ -84,7 +84,7 @@ class ReviewLogic extends BaseLogic
         // 查询已完成但未评价的订单项
         $where = [
             ['order.user_id', '=', $params['user_id']],
-            ['order.status', '=', Order::STATUS_COMPLETED],
+            ['order.order_status', '=', Order::STATUS_COMPLETED],
         ];
 
         $query = OrderItem::alias('item')
@@ -209,9 +209,32 @@ class ReviewLogic extends BaseLogic
         // 检查是否已点赞
         $currentUserId = $params['current_user_id'] ?? 0;
         $data['is_liked'] = $currentUserId ? ReviewLike::isLiked($data['id'], $currentUserId) : false;
+        $data['is_owner'] = $currentUserId > 0 && (int)$currentUserId === (int)$review->user_id;
+        $data['can_apply_share_reward'] = $data['is_owner'] && (int)$review->status === Review::STATUS_APPROVED;
+
+        if ($data['is_owner']) {
+            $shareRewards = ReviewShareReward::where('review_id', $review->id)
+                ->where('user_id', $review->user_id)
+                ->order('id', 'desc')
+                ->select();
+
+            $data['share_reward_records'] = [];
+            foreach ($shareRewards as $shareReward) {
+                $data['share_reward_records'][] = [
+                    'id' => (int)$shareReward->id,
+                    'share_platform' => (string)$shareReward->share_platform,
+                    'platform_text' => ReviewShareReward::getPlatformDesc($shareReward->share_platform),
+                    'status' => (int)$shareReward->status,
+                    'status_text' => ReviewShareReward::getStatusDesc($shareReward->status),
+                    'reward_points' => (int)$shareReward->reward_points,
+                    'verify_image' => (string)$shareReward->verify_image,
+                    'audit_time' => (int)$shareReward->audit_time,
+                ];
+            }
+        }
 
         // 匿名处理
-        if ($data['is_anonymous'] && $data['user']) {
+        if ($data['is_anonymous'] && $data['user'] && !$data['is_owner']) {
             $data['user']['nickname'] = self::anonymousName($data['user']['nickname']);
             $data['user']['avatar'] = '';
         }
@@ -235,7 +258,7 @@ class ReviewLogic extends BaseLogic
             }
 
             // 检查订单状态
-            if ($orderItem->order->status != Order::STATUS_COMPLETED) {
+            if ((int)$orderItem->order->order_status !== Order::STATUS_COMPLETED) {
                 self::setError('订单未完成，不能评价');
                 return false;
             }
@@ -401,6 +424,11 @@ class ReviewLogic extends BaseLogic
 
             if ($review->user_id != $params['user_id']) {
                 self::setError('只能为自己的评价申请奖励');
+                return false;
+            }
+
+            if ((int)$review->status !== Review::STATUS_APPROVED) {
+                self::setError('评价审核通过后才能申请晒单奖励');
                 return false;
             }
 

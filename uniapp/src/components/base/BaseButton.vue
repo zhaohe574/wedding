@@ -33,7 +33,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-    click: [event: Event]
+    (event: 'click', payload: Event): void
 }>()
 
 const themeStore = useThemeStore()

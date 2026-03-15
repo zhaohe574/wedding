@@ -244,7 +244,7 @@ class ScheduleController extends BaseAdminController
         if ($staffScopeId <= 0) {
             return $this->fail('无权限操作');
         }
-        $params = (new ScheduleValidate())->post()->goCheck('setStatus');
+        $params = (new ScheduleValidate())->post()->goCheck('mySetStatus');
         $params['staff_id'] = $staffScopeId;
         $result = ScheduleLogic::setStatus($params);
         if (true === $result) {
@@ -263,7 +263,7 @@ class ScheduleController extends BaseAdminController
         if ($staffScopeId <= 0) {
             return $this->fail('无权限操作');
         }
-        $params = (new ScheduleValidate())->post()->goCheck('batchSet');
+        $params = (new ScheduleValidate())->post()->goCheck('myBatchSet');
         $params['staff_ids'] = [$staffScopeId];
         $result = ScheduleLogic::batchSet($params);
         if ($result !== false) {

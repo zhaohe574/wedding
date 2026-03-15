@@ -17,6 +17,7 @@ use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffPackage;
 use app\common\model\staff\StaffWork;
+use app\common\service\StaffPriceService;
 use app\common\service\StaffService;
 use think\facade\Db;
 
@@ -50,6 +51,10 @@ class StaffCenterLogic extends BaseLogic
         $fullMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
         $data['mobile'] = $fullMobile;
         $data['mobile_full'] = $fullMobile;
+        $displayPrice = StaffPriceService::getDisplayPriceByStaffId((int)$staff->id);
+        $data['price'] = $displayPrice['price'];
+        $data['has_price'] = $displayPrice['has_price'];
+        $data['price_text'] = $displayPrice['price_text'];
 
         // 统计数据
         $data['orderCount'] = OrderItem::where('staff_id', $staff->id)
@@ -95,7 +100,6 @@ class StaffCenterLogic extends BaseLogic
             'mobile' => $params['mobile'] ?? $staff->getData('mobile_full') ?: $staff->getData('mobile'),
             'mobile_full' => $params['mobile_full'] ?? ($staff->getData('mobile_full') ?: $staff->getData('mobile')),
             'category_id' => $params['category_id'] ?? $staff->category_id,
-            'price' => $params['price'] ?? $staff->price,
             'experience_years' => $params['experience_years'] ?? $staff->experience_years,
             'profile' => $params['profile'] ?? $staff->profile,
             'service_desc' => $params['service_desc'] ?? $staff->service_desc,

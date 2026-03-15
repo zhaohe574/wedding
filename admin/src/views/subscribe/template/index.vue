@@ -372,6 +372,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { TabPaneName } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import {
     getTemplateList,
@@ -534,12 +535,13 @@ const fetchLogList = async () => {
 }
 
 // 标签页切换
-const handleTabChange = (name: string) => {
-    if (name === 'template') {
+const handleTabChange = (name: TabPaneName) => {
+    const activeName = String(name)
+    if (activeName === 'template') {
         fetchTemplateList()
-    } else if (name === 'scene') {
+    } else if (activeName === 'scene') {
         fetchSceneList()
-    } else if (name === 'log') {
+    } else if (activeName === 'log') {
         fetchLogList()
     }
 }
@@ -713,12 +715,12 @@ const handleRetryLog = async (row: any) => {
 
 // 获取发送状态样式
 const getSendStatusType = (status: number) => {
-    const map: Record<number, string> = {
+    const map = {
         0: 'info',
         1: 'success',
         2: 'danger'
-    }
-    return map[status] || 'info'
+    } as const
+    return map[status as keyof typeof map] ?? 'info'
 }
 </script>
 

@@ -6,7 +6,6 @@
                     <el-select v-model="queryParams.dynamic_type" placeholder="选择类型" clearable>
                         <el-option label="图文" :value="1" />
                         <el-option label="视频" :value="2" />
-                        <el-option label="活动" :value="4" />
                     </el-select>
                 </el-form-item>
                 <el-form-item class="w-[150px]" label="状态">

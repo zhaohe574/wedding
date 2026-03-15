@@ -8,8 +8,8 @@ import { parseQuery } from 'uniapp-router-next'
  * @param  { Boolean } all 是否多选
  * @param  { ctx } context 当前组件实例
  */
-export const getRect = (selector: string, all = false, context?: any) => {
-    return new Promise((resolve, reject) => {
+export const getRect = <T = any>(selector: string, all = false, context?: any) => {
+    return new Promise<T>((resolve, reject) => {
         let qurey = uni.createSelectorQuery()
         if (context) {
             qurey = uni.createSelectorQuery().in(context)
@@ -17,10 +17,10 @@ export const getRect = (selector: string, all = false, context?: any) => {
         qurey[all ? 'selectAll' : 'select'](selector)
             .boundingClientRect(function (rect) {
                 if (all && Array.isArray(rect) && rect.length) {
-                    return resolve(rect)
+                    return resolve(rect as T)
                 }
                 if (!all && rect) {
-                    return resolve(rect)
+                    return resolve(rect as T)
                 }
                 reject('找不到元素')
             })
@@ -55,15 +55,16 @@ export enum LinkTypeEnum {
 }
 
 const LEGACY_LINK_MAP: Record<string, string> = {
-    '/pages/service/index': '/packages/pages/staff_list/staff_list',
-    '/pages/staff/list': '/packages/pages/staff_list/staff_list',
+    '/pages/service/index': '/pages/staff_list/staff_list',
+    '/pages/staff/list': '/pages/staff_list/staff_list',
+    '/packages/pages/staff_list/staff_list': '/pages/staff_list/staff_list',
     '/pages/order/list': '/pages/order/order',
     '/pages/customer-service/index': '/pages/customer_service/customer_service',
     '/pages/user_wallet/user_wallet': '/packages/pages/user_wallet/user_wallet',
     '/pages/recharge_record/recharge_record': '/packages/pages/recharge_record/recharge_record'
 }
 
-const normalizePath = (path = '') => {
+export const normalizeAppPath = (path = '') => {
     let nextPath = path.trim()
     if (!nextPath) return ''
 
@@ -104,11 +105,11 @@ export function navigateTo(
 
     // 如果是小程序跳转
     if (link.type === LinkTypeEnum.MINI_PROGRAM) {
-        navigateToMiniProgram(link)
+        navigateToMiniProgram(link as Link)
         return
     }
 
-    const path = normalizePath(link.path || '')
+    const path = normalizeAppPath(link.path || '')
     if (!path) {
         uni.showToast({ title: '页面暂未配置', icon: 'none' })
         return

@@ -130,7 +130,8 @@ const statsData = ref<any>({
     order_count: 0,
     coupon_count: 0,
     collect_count: 0,
-    view_count: 0
+    view_count: 0,
+    points: 0
 })
 
 // 过滤显示的统计项
@@ -184,6 +185,7 @@ const loadStats = async () => {
             statsData.value.order_count = userInfo.order_count || 0
             statsData.value.collect_count = userInfo.collect_count || 0
             statsData.value.view_count = userInfo.view_count || 0
+            statsData.value.points = userInfo.user_points || 0
         }
 
         const couponRes = await getMyCouponStats()
