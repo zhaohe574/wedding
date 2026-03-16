@@ -70,21 +70,6 @@ export function getHotTags() {
     return request.get({ url: '/dynamic/hotTags' })
 }
 
-// 关注/取消关注
-export function toggleFollow(params: any) {
-    return request.post({ url: '/dynamic/follow', params })
-}
-
-// 获取我的关注
-export function getMyFollowing(params?: any) {
-    return request.get({ url: '/dynamic/myFollowing', params })
-}
-
-// 获取我的粉丝
-export function getMyFans(params?: any) {
-    return request.get({ url: '/dynamic/myFans', params })
-}
-
 // 获取消息列表
 export function getNotifications(params?: any) {
     return request.get({ url: '/dynamic/notifications', params })

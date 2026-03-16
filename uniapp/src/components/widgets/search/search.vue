@@ -1,78 +1,51 @@
 <template>
-    <!-- #ifndef H5 -->
-    <u-sticky h5-nav-height="0" bg-color="transparent">
-        <u-navbar
-            :class="{ 'fixed top-0 z-10': isLargeScreen }"
-            :is-back="false"
-            :is-fixed="true"
-            :title="metaData.title"
-            :custom-title="metaData.title_type === 2"
-            :border-bottom="false"
-            :title-bold="true"
-            :background="{ background: 'rgba(256,256,256,0)' }"
-            :title-color="navbarTitleColor"
+    <tn-sticky
+        v-if="!isLargeScreen"
+        :enable="true"
+        :offset-top="0"
+        h5-nav-height="0"
+        bg-color="transparent"
+    >
+        <view
+            class="search-navbar"
+            :style="navbarWrapperStyle"
         >
-            <template #default>
-                <navigator
-                    url="/pages/search/search"
-                    class="mini-search"
-                    hover-class="none"
-                    :style="miniSearchStyle"
-                >
-                    <u-icon name="search"></u-icon>
-                </navigator>
-            </template>
-            <template #title>
-                <image
-                    v-if="metaData.title_type === 2 && metaData.title_img"
-                    class="search-title-image"
-                    :src="metaData.title_img"
-                    mode="widthFix"
-                ></image>
-                <text v-else class="search-navbar__title">{{ metaData.title }}</text>
-            </template>
-        </u-navbar>
-    </u-sticky>
-    <!-- #endif -->
+            <view class="search-navbar__status" :style="{ height: `${navBarMetrics.statusBarHeight}px` }"></view>
+            <view class="search-navbar__body" :style="{ height: `${navBarMetrics.contentHeight}px` }">
+                <view class="search-navbar__side" :style="sideSlotStyle">
+                    <view class="mini-search" :style="miniSearchStyle" @tap="handleSearchClick">
+                        <tn-icon name="search" size="28" color="#64748B" />
+                    </view>
+                </view>
+                <view class="search-navbar__title">
+                    <image
+                        v-if="metaData.title_type === 2 && metaData.title_img"
+                        class="search-title-image"
+                        :src="metaData.title_img"
+                        mode="widthFix"
+                    ></image>
+                    <text v-else class="search-navbar__title-text" :style="{ color: navbarTitleColor }">
+                        {{ metaData.title }}
+                    </text>
+                </view>
+                <view class="search-navbar__side search-navbar__side--placeholder" :style="sideSlotStyle"></view>
+            </view>
+        </view>
+    </tn-sticky>
 
-    <!-- #ifdef H5 -->
-    <u-sticky h5-nav-height="0" bg-color="transparent">
-        <u-navbar
-            :class="{ 'fixed top-0 z-10': isLargeScreen }"
-            :is-back="false"
-            :is-fixed="true"
-            :title="metaData.title"
-            :custom-title="metaData.title_type === 2"
-            :border-bottom="false"
-            :title-bold="true"
-            :background="{ background: 'rgba(256,256,256,0)' }"
-            :title-color="navbarTitleColor"
-        >
-            <template #default>
-                <router-navigate to="/pages/search/search" class="mini-search" :style="miniSearchStyle">
-                    <u-icon name="search"></u-icon>
-                </router-navigate>
-            </template>
-            <template #title>
-                <image
-                    v-if="metaData.title_type === 2 && metaData.title_img"
-                    class="search-title-image"
-                    :src="metaData.title_img"
-                    mode="widthFix"
-                ></image>
-                <text v-else class="search-navbar__title">{{ metaData.title }}</text>
-            </template>
-        </u-navbar>
-    </u-sticky>
-    <!-- #endif -->
+    <view v-if="isLargeScreen" class="search-floating" :style="floatingSearchWrapperStyle">
+        <view class="mini-search mini-search--floating" @tap="handleSearchClick">
+            <tn-icon name="search" size="28" color="#64748B" />
+        </view>
+    </view>
 
     <view
         v-if="showSearchPanel && !isLargeScreen"
         class="search-container-full"
         :style="{ opacity: 1 - percent }"
     >
-        <view class="search-box-wrapper-full" @tap="handleSearchClick">
-            <view class="search-input-box" :style="searchInputStyle">
+        <view class="search-box-wrapper-full">
+            <view class="search-input-box" :style="searchInputStyle" @tap="handleSearchClick">
                 <tn-icon name="search" :size="36" color="#CCCCCC"></tn-icon>
                 <text class="search-placeholder">{{ searchPlaceholder }}</text>
             </view>
@@ -105,8 +78,10 @@
 import { computed } from 'vue'
 import type { PropType } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
 
 const $theme = useThemeStore()
+const navBarMetrics = useNavBarMetrics()
 
 const props = defineProps({
     pageMeta: {
@@ -154,11 +129,27 @@ const metaData = computed(() => {
 })
 
 const navbarTitleColor = computed(() => {
-    return props.percent > 0.5 ? '#000' : Number(metaData.value.text_color) === 1 ? '#fff' : '#000'
+    if (props.percent > 0.5) return '#111827'
+    return Number(metaData.value.text_color) === 1 ? '#FFFFFF' : '#111827'
 })
 
+const navbarWrapperStyle = computed(() => ({
+    background: `rgba(255, 255, 255, ${Math.min(Math.max(props.percent, 0), 0.96)})`,
+    boxShadow:
+        props.percent > 0.2 ? '0 8rpx 24rpx rgba(15, 23, 42, 0.06)' : '0 0 0 rgba(0, 0, 0, 0)',
+    backdropFilter: props.percent > 0.2 ? 'blur(16rpx)' : 'none'
+}))
+
+const sideSlotStyle = computed(() => ({
+    width: `${Math.max(navBarMetrics.safeInset, 88)}px`
+}))
+
 const miniSearchStyle = computed(() => ({
-    opacity: props.isLargeScreen ? 1 : props.percent
+    opacity: props.percent
+}))
+
+const floatingSearchWrapperStyle = computed(() => ({
+    top: `${Math.max(navBarMetrics.statusBarHeight + 8, 12)}px`
 }))
 
 const showSearchPanel = computed(() => Number(props.content?.showSearchPanel ?? 1) !== 0)
@@ -205,19 +196,56 @@ const handleHotWordClick = (word: string) => {
 </script>
 
 <style scoped lang="scss">
-.search-navbar__title {
-    max-width: 100%;
-    font-size: 32rpx;
-    font-weight: 400;
-    line-height: 1.2;
-    color: currentColor;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.search-navbar {
+    position: relative;
+    z-index: 20;
+    transition: all 0.2s ease;
+
+    &__body {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 0 20rpx;
+        box-sizing: border-box;
+    }
+
+    &__side {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+
+    &__title {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 12rpx;
+        overflow: hidden;
+    }
+
+    &__title-text {
+        max-width: 100%;
+        font-size: 32rpx;
+        font-weight: 400;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.search-floating {
+    position: fixed;
+    left: 20rpx;
+    z-index: 30;
 }
 
 .search-title-image {
-    height: 54rpx !important;
+    width: 240rpx;
+    max-width: 100%;
 }
 
 .mini-search {
@@ -227,7 +255,7 @@ const handleHotWordClick = (word: string) => {
     width: 64rpx;
     height: 64rpx;
     margin-left: 20rpx;
-    background-color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.96);
     border-radius: 50%;
     box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease;
@@ -236,6 +264,10 @@ const handleHotWordClick = (word: string) => {
         transform: scale(0.95);
         box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
     }
+}
+
+.mini-search--floating {
+    margin-left: 0;
 }
 
 .search-container-full {
@@ -259,14 +291,12 @@ const handleHotWordClick = (word: string) => {
 }
 
 .search-placeholder {
-    flex: 1;
     font-size: 28rpx;
-    color: #cccccc;
+    color: #999999;
 }
 
 .hot-words {
-    margin-top: 0;
-    padding: 16rpx 24rpx 24rpx;
+    padding: 20rpx 24rpx 28rpx;
     background: #ffffff;
 }
 
@@ -274,12 +304,11 @@ const handleHotWordClick = (word: string) => {
     display: flex;
     align-items: center;
     gap: 8rpx;
-    margin-bottom: 16rpx;
+    margin-bottom: 18rpx;
 }
 
 .hot-words-text {
-    font-size: 26rpx;
-    font-weight: 500;
+    font-size: 24rpx;
     color: #666666;
 }
 
@@ -290,15 +319,9 @@ const handleHotWordClick = (word: string) => {
 }
 
 .hot-word-tag {
-    padding: 10rpx 24rpx;
+    padding: 12rpx 20rpx;
     border-radius: 999rpx;
-    font-size: 26rpx;
-    font-weight: 500;
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: scale(0.96);
-        opacity: 0.8;
-    }
+    font-size: 24rpx;
+    line-height: 1;
 }
 </style>

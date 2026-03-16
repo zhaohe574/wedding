@@ -133,6 +133,14 @@
                 <el-table-column label="操作" width="160" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
+                        <el-button
+                            v-if="row.order_status === 0 && row.pending_confirm_count > 0"
+                            type="success"
+                            link
+                            @click="handleConfirm(row)"
+                        >
+                            确认
+                        </el-button>
                         <el-button v-if="row.order_status === 2" type="warning" link @click="handleStartService(row)">
                             开始服务
                         </el-button>
@@ -203,6 +211,7 @@ import { onActivated, reactive, ref } from 'vue'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
 import {
+    myOrderConfirm,
     myOrderComplete,
     myOrderDetail,
     myOrders,
@@ -296,6 +305,14 @@ const getItemStatusType = (status: number): 'warning' | 'primary' | 'success' | 
 const handleDetail = async (row: any) => {
     currentOrder.value = await myOrderDetail({ id: row.id })
     detailVisible.value = true
+}
+
+const handleConfirm = async (row: any) => {
+    await feedback.confirm('确认该订单后，将确认当前服务人员名下的全部待确认项目，是否继续？')
+    await myOrderConfirm({ id: row.id })
+    feedback.msgSuccess('确认成功')
+    getLists()
+    getStatistics()
 }
 
 const handleStartService = async (row: any) => {

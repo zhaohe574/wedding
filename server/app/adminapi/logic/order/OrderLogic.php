@@ -24,6 +24,103 @@ use think\facade\Db;
 class OrderLogic extends BaseLogic
 {
     /**
+     * @notes 服务人员确认订单（确认本人名下全部待确认项）
+     * @param int $orderId
+     * @param int $staffId
+     * @param int $adminId
+     * @return bool
+     */
+    public static function confirmByStaff(int $orderId, int $staffId, int $adminId): bool
+    {
+        try {
+            return Db::transaction(function () use ($orderId, $staffId, $adminId) {
+                /** @var Order|null $order */
+                $order = Order::where('id', $orderId)
+                    ->lock(true)
+                    ->find();
+
+                if (!$order) {
+                    self::setError('订单不存在');
+                    return false;
+                }
+
+                if ((int)$order->order_status !== Order::STATUS_PENDING_CONFIRM) {
+                    self::setError('当前订单状态不可确认');
+                    return false;
+                }
+
+                $pendingItems = OrderItem::where('order_id', $orderId)
+                    ->where('staff_id', $staffId)
+                    ->where('confirm_status', 0)
+                    ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                    ->lock(true)
+                    ->select();
+
+                if ($pendingItems->isEmpty()) {
+                    self::setError('已确认或无可确认项');
+                    return false;
+                }
+
+                foreach ($pendingItems as $item) {
+                    if ((int)$item->schedule_id > 0) {
+                        [$ok, $msg] = Schedule::confirmBooking(
+                            (int)$item->staff_id,
+                            (string)$item->service_date,
+                            (int)$item->time_slot,
+                            (int)$order->id,
+                            (int)$order->user_id
+                        );
+                        if (!$ok) {
+                            throw new \RuntimeException($msg);
+                        }
+                    }
+
+                    $item->confirm_status = 1;
+                    $item->update_time = time();
+                    $item->save();
+                }
+
+                $remain = OrderItem::where('order_id', $orderId)
+                    ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                    ->where('confirm_status', 0)
+                    ->count();
+
+                if ($remain === 0) {
+                    $beforeStatus = (int)$order->order_status;
+                    $order->order_status = Order::STATUS_PENDING_PAY;
+                    $order->update_time = time();
+                    $order->save();
+
+                    OrderLog::addLog(
+                        $orderId,
+                        OrderLog::OPERATOR_ADMIN,
+                        $adminId,
+                        'confirm',
+                        $beforeStatus,
+                        Order::STATUS_PENDING_PAY,
+                        '服务人员确认全部本人项目，订单进入待支付'
+                    );
+                } else {
+                    OrderLog::addLog(
+                        $orderId,
+                        OrderLog::OPERATOR_ADMIN,
+                        $adminId,
+                        'confirm_item',
+                        (int)$order->order_status,
+                        (int)$order->order_status,
+                        '服务人员确认订单中的本人待确认项目'
+                    );
+                }
+
+                return true;
+            });
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * @notes 获取订单详情
      * @param int $id
      * @return array|null

@@ -1,5 +1,5 @@
 <template>
-    <navigator :url="`/pages/news_detail/news_detail?id=${newsId}`" class="news-card-wrapper">
+    <navigator :url="`/packages/pages/news_detail/news_detail?id=${newsId}`" class="news-card-wrapper">
         <view class="news-card">
             <image
                 v-if="item.image"

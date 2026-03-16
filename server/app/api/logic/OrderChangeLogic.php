@@ -13,6 +13,7 @@ use app\common\model\order\OrderChange;
 use app\common\model\order\OrderTransfer;
 use app\common\model\order\OrderPause;
 use app\common\model\order\OrderChangeLog;
+use app\common\service\OrderNotificationService;
 
 /**
  * 小程序端订单变更业务逻辑
@@ -152,6 +153,10 @@ class OrderChangeLogic extends BaseLogic
             $userId, $orderId, $newDate, $newTimeSlot, $reason, $attachImages
         );
 
+        if ($success && $change) {
+            OrderNotificationService::notifyStaffOnDateChangeApplied((int) $change->id);
+        }
+
         return [
             'success' => $success,
             'message' => $message,
@@ -230,6 +235,9 @@ class OrderChangeLogic extends BaseLogic
     public static function cancelChange(int $changeId, int $userId): array
     {
         [$success, $message] = OrderChange::cancelChange($changeId, $userId);
+        if ($success) {
+            OrderNotificationService::notifyStaffOnDateChangeCancelled($changeId);
+        }
         return ['success' => $success, 'message' => $message];
     }
 
@@ -253,6 +261,10 @@ class OrderChangeLogic extends BaseLogic
             $userId, $orderId, $toUserName, $toUserMobile, $reason
         );
 
+        if ($success && $transfer) {
+            OrderNotificationService::notifyStaffOnTransferApplied((int) $transfer->id);
+        }
+
         return [
             'success' => $success,
             'message' => $message,
@@ -269,6 +281,9 @@ class OrderChangeLogic extends BaseLogic
     public static function cancelTransfer(int $transferId, int $userId): array
     {
         [$success, $message] = OrderTransfer::cancelTransfer($transferId, $userId);
+        if ($success) {
+            OrderNotificationService::notifyStaffOnTransferCancelled($transferId);
+        }
         return ['success' => $success, 'message' => $message];
     }
 
@@ -282,6 +297,9 @@ class OrderChangeLogic extends BaseLogic
     public static function acceptTransfer(int $transferId, string $mobile, string $code): array
     {
         [$success, $message] = OrderTransfer::acceptTransfer($transferId, $mobile, $code);
+        if ($success) {
+            OrderNotificationService::notifyStaffOnTransferCompleted($transferId);
+        }
         return ['success' => $success, 'message' => $message];
     }
 
@@ -392,6 +410,10 @@ class OrderChangeLogic extends BaseLogic
             $userId, $orderId, $pauseType, $reason, $startDate, $endDate, $proofImages
         );
 
+        if ($success && $pause) {
+            OrderNotificationService::notifyStaffOnPauseApplied((int) $pause->id);
+        }
+
         return [
             'success' => $success,
             'message' => $message,
@@ -408,6 +430,9 @@ class OrderChangeLogic extends BaseLogic
     public static function cancelPause(int $pauseId, int $userId): array
     {
         [$success, $message] = OrderPause::cancelPause($pauseId, $userId);
+        if ($success) {
+            OrderNotificationService::notifyStaffOnPauseCancelled($pauseId);
+        }
         return ['success' => $success, 'message' => $message];
     }
 

@@ -8,7 +8,7 @@
         />
         <!-- #endif -->
     </page-meta>
-    <view class="order-page">
+    <view class="order-page page-with-tabbar-safe-bottom">
         <!-- 状态筛选标签 -->
         <view class="status-tabs-wrapper">
             <tn-tabs
@@ -402,7 +402,6 @@ onReachBottom(() => {
 .order-page {
     min-height: 100vh;
     background: #f6f6f6;
-    padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 /* 状态筛选标签 */

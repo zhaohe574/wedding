@@ -18,6 +18,7 @@ namespace app\adminapi\controller;
 
 use think\App;
 use app\common\controller\BaseLikeAdminController;
+use app\common\service\StaffService;
 
 /**
  * 管理元控制器基类
@@ -35,6 +36,22 @@ class BaseAdminController extends BaseLikeAdminController
             $this->adminInfo = $this->request->adminInfo;
             $this->adminId = $this->request->adminInfo['admin_id'];
         }
+    }
+
+    /**
+     * @notes 获取服务人员中心缺少 staff scope 时的提示
+     */
+    protected function getRequiredStaffScopeDeniedMessage(): string
+    {
+        return StaffService::getStaffScopeAccessDeniedMessage($this->adminInfo);
+    }
+
+    /**
+     * @notes 返回服务人员中心 staff scope 缺失响应
+     */
+    protected function failRequiredStaffScope()
+    {
+        return $this->fail($this->getRequiredStaffScopeDeniedMessage());
     }
 
 }

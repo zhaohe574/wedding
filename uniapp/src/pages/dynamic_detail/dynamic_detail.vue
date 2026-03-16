@@ -46,14 +46,16 @@
                                 <text class="user-time">{{ detail.create_time }}</text>
                             </view>
                             <view
-                                v-if="detail.user_id !== userId"
-                                class="follow-btn"
+                                v-if="detail.can_favorite"
+                                class="favorite-btn"
                                 :class="
-                                    detail.is_followed ? 'follow-btn-active' : 'follow-btn-inactive'
+                                    detail.is_favorite
+                                        ? 'favorite-btn-active'
+                                        : 'favorite-btn-inactive'
                                 "
-                                @click="handleFollow"
+                                @click="handleFavorite"
                             >
-                                {{ detail.is_followed ? '已关注' : '+ 关注' }}
+                                {{ detail.is_favorite ? '已收藏' : '收藏' }}
                             </view>
                         </view>
                     </view>
@@ -295,12 +297,12 @@ import {
     getDynamicDetail,
     likeDynamic,
     collectDynamic,
-    toggleFollow,
     getCommentList,
     addComment,
     deleteComment,
     likeComment
 } from '@/api/dynamic'
+import { toggleStaffFavorite } from '@/api/staff'
 
 const userStore = useUserStore()
 const userId = computed(() => userStore.userInfo?.id)
@@ -378,6 +380,8 @@ const fetchDetail = async () => {
         detail.value = {
             ...res,
             tags: tags,
+            is_favorite: Boolean(res.is_favorite),
+            can_favorite: Number(res.user_type) === 2 && Number(res.staff_id || 0) > 0,
             // 统一视频字段名
             video: res.video_url || res.video || '',
             video_cover: res.video_cover || ''
@@ -513,18 +517,21 @@ const handleCollect = async () => {
     }
 }
 
-const handleFollow = async () => {
+const handleFavorite = async () => {
     if (!userStore.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
         return
     }
+    if (!detail.value?.staff_id) {
+        return
+    }
     try {
-        await toggleFollow({
-            follow_type: detail.value.user_type,
-            follow_id: detail.value.user_id
+        await toggleStaffFavorite({ id: detail.value.staff_id })
+        detail.value.is_favorite = !detail.value.is_favorite
+        uni.showToast({
+            title: detail.value.is_favorite ? '收藏成功' : '已取消收藏',
+            icon: 'none'
         })
-        detail.value.is_followed = !detail.value.is_followed
-        uni.showToast({ title: detail.value.is_followed ? '关注成功' : '取消关注' })
     } catch (e: any) {
         uni.showToast({ title: e.message || '操作失败', icon: 'none' })
     }
@@ -754,7 +761,7 @@ onShareAppMessage(() => {
     margin-top: 8rpx;
 }
 
-.follow-btn {
+.favorite-btn {
     padding: 12rpx 32rpx;
     border-radius: 48rpx;
     font-size: 26rpx;
@@ -762,12 +769,12 @@ onShareAppMessage(() => {
     transition: all 0.2s ease;
 }
 
-.follow-btn-active {
+.favorite-btn-active {
     background: #f1f5f9;
     color: #64748b;
 }
 
-.follow-btn-inactive {
+.favorite-btn-inactive {
     background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
     color: #ffffff;
     box-shadow: 0 4rpx 12rpx rgba(37, 99, 235, 0.25);

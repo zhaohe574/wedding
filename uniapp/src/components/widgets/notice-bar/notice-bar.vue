@@ -203,7 +203,7 @@ const handleClick = (item: any) => {
         })
     } else {
         uni.navigateTo({
-            url: `/pages/notification/index?id=${item.id}`
+            url: `/packages/pages/notification/index?id=${item.id}`
         })
     }
 }

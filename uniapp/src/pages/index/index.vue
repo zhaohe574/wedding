@@ -4,7 +4,7 @@
         <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
         <!-- #endif -->
     </page-meta>
-    <view class="index" :style="pageStyle">
+    <view class="index page-with-tabbar-safe-bottom" :style="pageStyle">
         <!-- 动态装修组件渲染 -->
         <template v-for="(item, index) in state.pages" :key="index">
             <!-- 搜索组件 -->
@@ -131,7 +131,14 @@
         <!--  #endif  -->
 
         <!-- 返回顶部按钮 -->
-        <u-back-top :scroll-top="scrollTop" :top="100" :custom-style="backTopStyle"></u-back-top>
+        <view
+            v-if="showBackTop"
+            class="back-top-button"
+            :style="backTopStyle"
+            @tap="handleBackTop"
+        >
+            <tn-icon name="up-arrow" size="34" :color="primaryColor" />
+        </view>
 
         <!--  #ifdef MP  -->
         <MpPrivacyPopup></MpPrivacyPopup>
@@ -178,9 +185,18 @@ const isComponentEnabled = (item: any) => {
     return item.content?.enabled !== 0
 }
 
-// 是否大屏banner（使用computed缓存）
+const bannerConfig = computed(() => {
+    return state.pages.find((item: any) => item.name === 'banner')
+})
+
+// 是否启用大屏轮播（仅轮播启用且样式为大屏时生效）
 const isLargeScreen = computed(() => {
-    return state.pages.find((item: any) => item.name === 'banner')?.content?.style === 2
+    const banner = bannerConfig.value
+    if (!banner) {
+        return false
+    }
+
+    return Number(banner.content?.enabled ?? 1) !== 0 && Number(banner.content?.style) === 2
 })
 
 // 最新资讯配置（使用computed缓存）
@@ -235,6 +251,8 @@ const pageStyle = computed(() => ({
     background: defaultBackground.value
 }))
 
+const showBackTop = computed(() => scrollTop.value > uni.upx2px(320))
+
 // 获取装修数据（优化性能）
 const getData = async () => {
     try {
@@ -273,6 +291,13 @@ onPageScroll((event: any) => {
     percent.value = event.scrollTop / top > 1 ? 1 : event.scrollTop / top
 })
 
+const handleBackTop = () => {
+    uni.pageScrollTo({
+        scrollTop: 0,
+        duration: 220
+    })
+}
+
 onLoad(() => {
     // 首页数据仅在首次加载时初始化，避免首屏 onLoad/onShow 重复请求
     getData()
@@ -306,5 +331,18 @@ onLoad(() => {
 
 .article-title__text {
     color: #333333;
+}
+
+.back-top-button {
+    position: fixed;
+    right: 28rpx;
+    bottom: calc(140rpx + env(safe-area-inset-bottom));
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
 }
 </style>

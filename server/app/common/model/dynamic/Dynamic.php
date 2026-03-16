@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\model\dynamic;
 
 use app\common\model\BaseModel;
+use app\common\model\staff\Favorite;
 use app\common\model\user\User;
 use app\common\model\staff\Staff;
 use app\common\service\FileService;
@@ -367,11 +368,14 @@ class Dynamic extends BaseModel
             }
             // 移除 staff 字段，避免冗余
             unset($item['staff']);
+            $item['is_favorite'] = false;
         }
+        unset($item);
 
         // 添加是否点赞、收藏信息
         if ($userId > 0 && !empty($list['data'])) {
             $dynamicIds = array_column($list['data'], 'id');
+            $staffIds = array_values(array_unique(array_map('intval', array_filter(array_column($list['data'], 'staff_id')))));
             $likedIds = DynamicLike::where('user_id', $userId)
                 ->where('target_type', 1)
                 ->whereIn('target_id', $dynamicIds)
@@ -379,11 +383,20 @@ class Dynamic extends BaseModel
             $collectedIds = DynamicCollect::where('user_id', $userId)
                 ->whereIn('dynamic_id', $dynamicIds)
                 ->column('dynamic_id');
+            $favoriteStaffIds = empty($staffIds)
+                ? []
+                : Favorite::where('user_id', $userId)
+                    ->whereIn('staff_id', $staffIds)
+                    ->column('staff_id');
+            $favoriteStaffIds = array_map('intval', $favoriteStaffIds);
 
             foreach ($list['data'] as &$item) {
                 $item['is_liked'] = in_array($item['id'], $likedIds);
                 $item['is_collected'] = in_array($item['id'], $collectedIds);
+                $item['is_favorite'] = $item['user_type'] == self::USER_TYPE_STAFF
+                    && in_array((int)($item['staff_id'] ?? 0), $favoriteStaffIds, true);
             }
+            unset($item);
         }
 
         return $list;

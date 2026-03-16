@@ -36,11 +36,11 @@
                 </view>
             </view>
 
-            <follow-button
-                v-if="showFollowButton"
-                :is-followed="dynamic.user.isFollowed"
+            <favorite-button
+                v-if="showFavoriteButton"
+                :is-favorited="dynamic.user.isFavorite"
                 size="sm"
-                @click="handleFollow"
+                @click="handleFavorite"
             />
         </view>
 
@@ -65,7 +65,7 @@
                 v-for="(image, index) in displayedImages"
                 :key="`${dynamic.id}-${index}`"
                 class="dynamic-card__media-item"
-                @click.stop="handleImagePreview(index)"
+                @click.stop="handleMediaClick(index)"
             >
                 <image class="dynamic-card__media-image" :src="image" mode="aspectFill" />
                 <view
@@ -148,7 +148,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { DynamicCardData } from '@/utils/dynamic'
-import FollowButton from './FollowButton.vue'
+import FavoriteButton from './FavoriteButton.vue'
 import { useThemeStore } from '@/stores/theme'
 import { alphaColor } from '@/utils/color'
 
@@ -167,7 +167,7 @@ const themeStore = useThemeStore()
 const emit = defineEmits([
     'click',
     'userClick',
-    'follow',
+    'favorite',
     'topicClick',
     'imageClick',
     'like',
@@ -187,7 +187,7 @@ const displayTopics = computed(() => props.dynamic.topics?.slice(0, 4) || [])
 
 const showTypeBadge = computed(() => props.dynamic.dynamicType !== 1)
 
-const showFollowButton = computed(() => props.dynamic.user.canFollow)
+const showFavoriteButton = computed(() => props.dynamic.user.canFavorite)
 
 const truncatedContent = computed(() => {
     const content = props.dynamic.content || ''
@@ -274,9 +274,9 @@ const handleUserClick = () => {
     }
 }
 
-const handleFollow = () => {
-    if (props.dynamic.user.id > 0) {
-        emit('follow', props.dynamic.user.id)
+const handleFavorite = () => {
+    if (props.dynamic.user.staffId > 0) {
+        emit('favorite', props.dynamic.user.staffId)
     }
 }
 
@@ -284,15 +284,9 @@ const handleTopicClick = (topic: { id: number; name: string }) => {
     emit('topicClick', topic)
 }
 
-const handleImagePreview = (index: number) => {
+const handleMediaClick = (index: number) => {
     emit('imageClick', index)
-    if (!props.dynamic.images?.length) {
-        return
-    }
-    uni.previewImage({
-        urls: props.dynamic.images,
-        current: props.dynamic.images[index] || props.dynamic.images[0]
-    })
+    handleCardClick()
 }
 
 const handleMore = () => {

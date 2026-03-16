@@ -10,10 +10,10 @@ namespace app\api\logic;
 use app\common\logic\BaseLogic;
 use app\common\model\dynamic\Dynamic;
 use app\common\model\dynamic\DynamicComment;
-use app\common\model\dynamic\DynamicLike;
 use app\common\model\dynamic\DynamicCollect;
-use app\common\model\dynamic\Follow;
+use app\common\model\dynamic\DynamicLike;
 use app\common\model\notification\Notification;
+use app\common\model\staff\Favorite;
 
 /**
  * 小程序端动态逻辑
@@ -83,25 +83,13 @@ class DynamicLogic extends BaseLogic
         if ($userId > 0) {
             $data['is_liked'] = DynamicLike::isLiked($userId, DynamicLike::TARGET_DYNAMIC, $dynamicId);
             $data['is_collected'] = DynamicCollect::isCollected($userId, $dynamicId);
-            
-            // 是否关注
-            if ($dynamic->user_type == Dynamic::USER_TYPE_USER) {
-                $data['is_followed'] = Follow::where('user_id', $userId)
-                    ->where('follow_type', Follow::TYPE_USER)
-                    ->where('follow_id', $dynamic->user_id)
-                    ->count() > 0;
-            } elseif ($dynamic->user_type == Dynamic::USER_TYPE_STAFF) {
-                $data['is_followed'] = Follow::where('user_id', $userId)
-                    ->where('follow_type', Follow::TYPE_STAFF)
-                    ->where('follow_id', $dynamic->staff_id)
-                    ->count() > 0;
-            } else {
-                $data['is_followed'] = false;
-            }
+            $data['is_favorite'] = $dynamic->user_type == Dynamic::USER_TYPE_STAFF && $dynamic->staff_id > 0
+                ? Favorite::isFavorited($userId, (int)$dynamic->staff_id)
+                : false;
         } else {
             $data['is_liked'] = false;
             $data['is_collected'] = false;
-            $data['is_followed'] = false;
+            $data['is_favorite'] = false;
         }
 
         return $data;
@@ -306,41 +294,6 @@ class DynamicLogic extends BaseLogic
         $hotTags = array_slice(array_keys($tagCounts), 0, 20);
 
         return $hotTags;
-    }
-
-    /**
-     * @notes 关注/取消关注
-     * @param int $userId
-     * @param int $followType
-     * @param int $followId
-     * @return array
-     */
-    public static function toggleFollow(int $userId, int $followType, int $followId): array
-    {
-        [$success, $message, $isFollowed] = Follow::toggleFollow($userId, $followType, $followId);
-        return ['success' => $success, 'message' => $message, 'is_followed' => $isFollowed];
-    }
-
-    /**
-     * @notes 获取关注列表
-     * @param int $userId
-     * @param array $params
-     * @return array
-     */
-    public static function getFollowingList(int $userId, array $params): array
-    {
-        return Follow::getFollowList($userId, $params['follow_type'] ?? 0, $params);
-    }
-
-    /**
-     * @notes 获取粉丝列表
-     * @param int $userId
-     * @param array $params
-     * @return array
-     */
-    public static function getFansList(int $userId, array $params): array
-    {
-        return Follow::getFansList($userId, Follow::TYPE_USER, $params);
     }
 
     /**

@@ -196,39 +196,6 @@ class DynamicController extends BaseApiController
     }
 
     /**
-     * @notes 关注/取消关注
-     * @return \think\response\Json
-     */
-    public function follow()
-    {
-        $params = (new DynamicValidate())->post()->goCheck('follow');
-        $result = DynamicLogic::toggleFollow($this->userId, $params['follow_type'], $params['follow_id']);
-        return $this->success($result['message'], ['is_followed' => $result['is_followed']]);
-    }
-
-    /**
-     * @notes 我的关注
-     * @return \think\response\Json
-     */
-    public function myFollowing()
-    {
-        $params = $this->request->get();
-        $result = DynamicLogic::getFollowingList($this->userId, $params);
-        return $this->data($result);
-    }
-
-    /**
-     * @notes 我的粉丝
-     * @return \think\response\Json
-     */
-    public function myFans()
-    {
-        $params = $this->request->get();
-        $result = DynamicLogic::getFansList($this->userId, $params);
-        return $this->data($result);
-    }
-
-    /**
      * @notes 消息列表
      * @return \think\response\Json
      */

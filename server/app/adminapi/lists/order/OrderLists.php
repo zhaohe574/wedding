@@ -10,6 +10,7 @@ namespace app\adminapi\lists\order;
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsExcelInterface;
 use app\common\model\order\Order;
+use app\common\model\order\OrderItem;
 
 /**
  * 订单列表
@@ -95,11 +96,27 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
             ->select()
             ->toArray();
 
+        $pendingCounts = [];
+        if ($staffScopeId > 0 && !empty($lists)) {
+            $orderIds = array_column($lists, 'id');
+            $pendingRows = OrderItem::whereIn('order_id', $orderIds)
+                ->where('staff_id', $staffScopeId)
+                ->where('confirm_status', 0)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->field('order_id, COUNT(*) as pending_confirm_count')
+                ->group('order_id')
+                ->select()
+                ->toArray();
+            $pendingCounts = array_column($pendingRows, 'pending_confirm_count', 'order_id');
+        }
+
         foreach ($lists as &$item) {
             $item['order_status_desc'] = $this->getStatusDesc($item['order_status']);
             $item['pay_status_desc'] = $this->getPayStatusDesc($item['pay_status']);
             $item['pay_type_desc'] = $this->getPayTypeDesc($item['pay_type']);
             $item['source_desc'] = $this->getSourceDesc($item['source']);
+            $item['pending_confirm_count'] = (int)($pendingCounts[$item['id']] ?? 0);
+            $item['has_pending_confirm'] = $item['pending_confirm_count'] > 0 ? 1 : 0;
         }
 
         return $lists;

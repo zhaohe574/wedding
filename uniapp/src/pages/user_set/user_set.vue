@@ -91,7 +91,7 @@
             <view class="section-title">协议与关于</view>
 
             <navigator
-                :url="`/pages/agreement/agreement?type=${AgreementEnum.PRIVACY}`"
+                :url="`/packages/pages/agreement/agreement?type=${AgreementEnum.PRIVACY}`"
                 hover-class="none"
             >
                 <view class="menu-item" hover-class="menu-item-hover">
@@ -108,7 +108,7 @@
             </navigator>
 
             <navigator
-                :url="`/pages/agreement/agreement?type=${AgreementEnum.SERVICE}`"
+                :url="`/packages/pages/agreement/agreement?type=${AgreementEnum.SERVICE}`"
                 hover-class="none"
             >
                 <view class="menu-item" hover-class="menu-item-hover">

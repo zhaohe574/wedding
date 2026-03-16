@@ -9,7 +9,7 @@
         <!-- #endif -->
     </page-meta>
 
-    <view class="dynamic-page">
+    <view class="dynamic-page page-with-tabbar-safe-bottom">
         <view class="filter-header">
             <view v-if="currentTag" class="tag-filter-banner" :style="tagBannerStyle">
                 <view class="tag-filter-banner__icon">
@@ -101,7 +101,7 @@
                     @click="goDetail"
                     @like="handleLike"
                     @comment="goDetail"
-                    @follow="handleFollow"
+                    @favorite="handleFavorite"
                 />
 
                 <view v-if="hasMore" class="load-more">
@@ -163,7 +163,8 @@ import { computed, ref, watch } from 'vue'
 import { onLoad, onReachBottom, onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import DynamicCard from '@/components/business/DynamicCard.vue'
-import { getDynamicList, likeDynamic, toggleFollow } from '@/api/dynamic'
+import { getDynamicList, likeDynamic } from '@/api/dynamic'
+import { toggleStaffFavorite } from '@/api/staff'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { alphaColor } from '@/utils/color'
@@ -310,32 +311,29 @@ const handleLike = async (dynamic: DynamicCardData) => {
     }
 }
 
-const handleFollow = async (publisherId: number) => {
+const handleFavorite = async (staffId: number) => {
     if (!userStore.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
         return
     }
 
-    const target = dynamics.value.find((item) => item.user.id === publisherId)
-    if (!target?.user.followType) {
+    const target = dynamics.value.find((item) => item.user.staffId === staffId)
+    if (!target?.user.canFavorite) {
         return
     }
 
     try {
-        const res = await toggleFollow({
-            follow_type: target.user.followType,
-            follow_id: publisherId
-        })
-        const isFollowed = Boolean(res?.is_followed)
+        const isFavorite = !target.user.isFavorite
+        await toggleStaffFavorite({ id: staffId })
 
         dynamics.value.forEach((item) => {
-            if (item.user.id === publisherId && item.user.followType === target.user.followType) {
-                item.user.isFollowed = isFollowed
+            if (item.user.staffId === staffId) {
+                item.user.isFavorite = isFavorite
             }
         })
 
         uni.showToast({
-            title: isFollowed ? '关注成功' : '已取消关注',
+            title: isFavorite ? '收藏成功' : '已取消收藏',
             icon: 'none'
         })
     } catch (e: any) {
@@ -397,7 +395,6 @@ onShareAppMessage(() => ({
 .dynamic-page {
     min-height: 100vh;
     background: linear-gradient(180deg, #fcf8ff 0%, #f8f6fb 42%, #f5f5f5 100%);
-    padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 .filter-header {

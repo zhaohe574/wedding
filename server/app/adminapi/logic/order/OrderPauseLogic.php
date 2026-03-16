@@ -11,6 +11,7 @@ use app\common\logic\BaseLogic;
 use app\common\model\order\Order;
 use app\common\model\order\OrderPause;
 use app\common\model\order\OrderChangeLog;
+use app\common\service\OrderNotificationService;
 use think\facade\Db;
 
 /**
@@ -68,6 +69,8 @@ class OrderPauseLogic extends BaseLogic
             self::setError($message);
             return false;
         }
+
+        OrderNotificationService::notifyStaffOnPauseAudited($pauseId);
         return true;
     }
 
@@ -90,6 +93,8 @@ class OrderPauseLogic extends BaseLogic
             self::setError($message);
             return false;
         }
+
+        OrderNotificationService::notifyStaffOnPauseResumed($pauseId);
         return true;
     }
 
@@ -325,12 +330,14 @@ class OrderPauseLogic extends BaseLogic
             );
 
             Db::commit();
-            return true;
         } catch (\Exception $e) {
             Db::rollback();
             self::setError($e->getMessage());
             return false;
         }
+
+        OrderNotificationService::notifyStaffOnPauseExtended($pauseId);
+        return true;
     }
 
     /**

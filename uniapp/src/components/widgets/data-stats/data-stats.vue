@@ -165,7 +165,7 @@ const getIconColor = (index: number) => {
 const handleClick = (item: any) => {
     const routeMap: any = {
         order_count: '/pages/order/list',
-        coupon_count: '/pages/coupon/list',
+        coupon_count: '/packages/pages/coupon/list',
         collect_count: '/pages/collect/list',
         view_count: '/pages/history/list'
     }

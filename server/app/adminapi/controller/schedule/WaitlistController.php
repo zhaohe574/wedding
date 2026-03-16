@@ -164,7 +164,7 @@ class WaitlistController extends BaseAdminController
     public function myWaitlist()
     {
         if ($this->getRequiredStaffScopeId() <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         return $this->dataLists(new WaitlistLists());
     }
@@ -177,7 +177,7 @@ class WaitlistController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new WaitlistValidate())->goCheck('detail');
         $staffId = (int)Waitlist::where('id', $params['id'])->value('staff_id');
@@ -196,7 +196,7 @@ class WaitlistController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new WaitlistValidate())->post()->goCheck('batchNotify');
         $ids = $params['ids'] ?? [];
@@ -219,7 +219,7 @@ class WaitlistController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new WaitlistValidate())->post()->goCheck('notify');
         $staffId = (int)Waitlist::where('id', $params['id'])->value('staff_id');
@@ -241,7 +241,7 @@ class WaitlistController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new WaitlistValidate())->post()->goCheck('convert');
         $staffId = (int)Waitlist::where('id', $params['id'])->value('staff_id');
@@ -263,7 +263,7 @@ class WaitlistController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new WaitlistValidate())->post()->goCheck('invalidate');
         $staffId = (int)Waitlist::where('id', $params['id'])->value('staff_id');
@@ -285,7 +285,7 @@ class WaitlistController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $result = WaitlistLogic::statistics(['staff_id' => $staffScopeId]);
         return $this->data($result);

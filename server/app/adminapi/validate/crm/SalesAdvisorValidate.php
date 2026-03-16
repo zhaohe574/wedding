@@ -23,6 +23,9 @@ class SalesAdvisorValidate extends BaseValidate
         'avatar' => 'max:255',
         'mobile' => 'mobile',
         'wechat' => 'max:50',
+        'wecom_userid' => 'max:64',
+        'contact_qr_code' => 'max:255',
+        'contact_link' => 'max:255',
         'email' => 'email',
         'areas' => 'array',
         'specialties' => 'array',
@@ -56,7 +59,8 @@ class SalesAdvisorValidate extends BaseValidate
     public function sceneAdd()
     {
         return $this->only([
-            'admin_id', 'advisor_name', 'avatar', 'mobile', 'wechat', 'email',
+            'admin_id', 'advisor_name', 'avatar', 'mobile', 'wechat', 'wecom_userid',
+            'contact_qr_code', 'contact_link', 'email',
             'areas', 'specialties', 'max_customer_count', 'status', 'sort'
         ]);
     }
@@ -67,7 +71,8 @@ class SalesAdvisorValidate extends BaseValidate
     public function sceneEdit()
     {
         return $this->only([
-            'id', 'admin_id', 'advisor_name', 'avatar', 'mobile', 'wechat', 'email',
+            'id', 'admin_id', 'advisor_name', 'avatar', 'mobile', 'wechat', 'wecom_userid',
+            'contact_qr_code', 'contact_link', 'email',
             'areas', 'specialties', 'max_customer_count', 'status', 'sort'
         ])->remove('advisor_name', 'require');
     }

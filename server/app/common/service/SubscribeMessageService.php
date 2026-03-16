@@ -7,11 +7,14 @@ declare(strict_types=1);
 
 namespace app\common\service;
 
+use app\common\enum\user\UserTerminalEnum;
 use app\common\model\subscribe\SubscribeMessageTemplate;
 use app\common\model\subscribe\SubscribeMessageScene;
 use app\common\model\subscribe\SubscribeMessageLog;
 use app\common\model\subscribe\UserSubscribe;
 use app\common\model\user\User;
+use app\common\model\user\UserAuth;
+use app\common\service\wechat\WeChatConfigService;
 use think\facade\Log;
 use think\facade\Cache;
 
@@ -47,24 +50,44 @@ class SubscribeMessageService
         try {
             // 获取用户信息
             $user = User::find($userId);
-            if (!$user || empty($user->openid)) {
-                return ['success' => false, 'msg' => '用户不存在或未绑定微信', 'log_id' => 0];
+            if (!$user) {
+                Log::info('订阅消息跳过：用户不存在，user_id=' . $userId . '，scene=' . $scene);
+                return ['success' => false, 'msg' => '用户不存在', 'log_id' => 0];
+            }
+
+            $userAuth = UserAuth::where('user_id', $userId)
+                ->where('terminal', UserTerminalEnum::WECHAT_MMP)
+                ->where('openid', '<>', '')
+                ->order('id', 'desc')
+                ->find();
+            if (!$userAuth) {
+                Log::info('订阅消息跳过：用户未绑定小程序，user_id=' . $userId . '，scene=' . $scene);
+                return ['success' => false, 'msg' => '用户未绑定小程序', 'log_id' => 0];
             }
 
             // 获取场景配置
             $sceneConfig = SubscribeMessageScene::getByScene($scene);
             if (!$sceneConfig) {
+                Log::info('订阅消息跳过：场景未配置或已禁用，scene=' . $scene);
                 return ['success' => false, 'msg' => '场景配置不存在或已禁用', 'log_id' => 0];
             }
 
             // 获取模板配置
-            $template = SubscribeMessageTemplate::where('template_id', $sceneConfig->template_id)->find();
+            $template = null;
+            if (!empty($sceneConfig->template_id)) {
+                $template = SubscribeMessageTemplate::where('template_id', $sceneConfig->template_id)->find();
+            }
+            if (!$template) {
+                $template = SubscribeMessageTemplate::getByScene($scene);
+            }
             if (!$template || $template->status != SubscribeMessageTemplate::STATUS_ENABLED) {
+                Log::info('订阅消息跳过：模板未绑定或已禁用，scene=' . $scene . '，template_id=' . ($sceneConfig->template_id ?? ''));
                 return ['success' => false, 'msg' => '消息模板不存在或已禁用', 'log_id' => 0];
             }
 
             // 检查用户订阅状态
             if (!UserSubscribe::hasSubscription($userId, $template->template_id)) {
+                Log::info('订阅消息跳过：用户未订阅模板，user_id=' . $userId . '，template_id=' . $template->template_id);
                 return ['success' => false, 'msg' => '用户未订阅该消息', 'log_id' => 0];
             }
 
@@ -80,7 +103,7 @@ class SubscribeMessageService
             // 创建发送日志
             $log = SubscribeMessageLog::createLog(
                 $userId,
-                $user->openid,
+                (string) $userAuth->openid,
                 $template->template_id,
                 $scene,
                 $businessType ?: $sceneConfig->scene,
@@ -98,7 +121,7 @@ class SubscribeMessageService
 
             // 调用微信API发送消息
             $result = self::callWechatApi($accessToken, [
-                'touser' => $user->openid,
+                'touser' => (string) $userAuth->openid,
                 'template_id' => $template->template_id,
                 'page' => $targetPage,
                 'data' => $content,
@@ -208,9 +231,10 @@ class SubscribeMessageService
             return $token;
         }
 
-        // 从配置获取AppID和AppSecret
-        $appId = config('wechat.miniprogram.app_id', '');
-        $appSecret = config('wechat.miniprogram.app_secret', '');
+        // 从项目现有小程序配置中读取 AppID 和 AppSecret
+        $config = WeChatConfigService::getMnpConfig();
+        $appId = $config['app_id'] ?? '';
+        $appSecret = $config['secret'] ?? '';
 
         if (empty($appId) || empty($appSecret)) {
             Log::error('微信小程序配置缺失');
@@ -349,6 +373,33 @@ class SubscribeMessageService
             ],
             SubscribeMessageLog::BIZ_TYPE_ORDER,
             $orderData['order_id'] ?? 0
+        );
+    }
+
+    /**
+     * @notes 发送订单确认通知
+     * @param int $userId
+     * @param array $orderData
+     * @return array
+     */
+    public static function sendOrderConfirmNotice(int $userId, array $orderData): array
+    {
+        return self::send(
+            $userId,
+            SubscribeMessageTemplate::SCENE_ORDER_CONFIRM,
+            [
+                'character_string1' => $orderData['character_string1'] ?? ($orderData['order_sn'] ?? ''),
+                'thing2' => $orderData['thing2'] ?? ($orderData['status_text'] ?? '服务人员已确认'),
+                'amount3' => $orderData['amount3'] ?? ($orderData['pay_amount'] ?? '0.00'),
+                'time4' => $orderData['time4'] ?? ($orderData['service_date'] ?? ''),
+                'order_sn' => $orderData['order_sn'] ?? '',
+                'status_text' => $orderData['status_text'] ?? '服务人员已确认',
+                'pay_amount' => $orderData['pay_amount'] ?? '0.00',
+                'service_date' => $orderData['service_date'] ?? '',
+                'service_name' => $orderData['service_name'] ?? '婚庆服务',
+            ],
+            SubscribeMessageLog::BIZ_TYPE_ORDER,
+            (int) ($orderData['order_id'] ?? 0)
         );
     }
 

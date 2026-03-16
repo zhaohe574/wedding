@@ -273,6 +273,16 @@
         <view class="action-bar">
             <view class="action-buttons">
                 <view
+                    class="btn-secondary"
+                    :style="{
+                        borderColor: '#D85C61',
+                        color: '#D85C61'
+                    }"
+                    @click="handleContactAdvisor"
+                >
+                    <text>联系顾问</text>
+                </view>
+                <view
                     v-if="[0, 1].includes(order.order_status)"
                     class="btn-secondary"
                     :style="{
@@ -671,6 +681,12 @@ const copyOrderSn = () => {
         success: () => {
             uni.showToast({ title: '已复制订单编号', icon: 'success' })
         }
+    })
+}
+
+const handleContactAdvisor = () => {
+    uni.navigateTo({
+        url: `/packages/pages/customer_service/customer_service?scene=order_detail&order_id=${orderId.value}`
     })
 }
 
@@ -1327,6 +1343,7 @@ onLoad((options: any) => {
 
 .action-buttons {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     align-items: center;
     gap: 12rpx;

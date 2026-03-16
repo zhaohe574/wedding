@@ -67,6 +67,13 @@
                                 <el-form-item label="手机号" prop="mobile">
                                     <el-input v-model="formData.mobile" placeholder="请输入手机号" maxlength="11" />
                                 </el-form-item>
+                                <el-form-item label="企微成员ID" prop="wecom_userid">
+                                    <el-input
+                                        v-model="formData.wecom_userid"
+                                        placeholder="请输入企业微信成员ID"
+                                        maxlength="64"
+                                    />
+                                </el-form-item>
                                 <el-form-item label="头像" prop="avatar">
                                     <material-picker v-model="formData.avatar" :limit="1" />
                                 </el-form-item>
@@ -752,6 +759,7 @@ const formData = reactive({
     name: '',
     avatar: '',
     mobile: '',
+    wecom_userid: '',
     category_id: '',
     price: 0,
     experience_years: 0,

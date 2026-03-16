@@ -11,6 +11,7 @@ use app\common\logic\BaseLogic;
 use app\common\model\order\Order;
 use app\common\model\order\OrderTransfer;
 use app\common\model\order\OrderChangeLog;
+use app\common\service\OrderNotificationService;
 use think\facade\Db;
 
 /**
@@ -73,6 +74,8 @@ class OrderTransferLogic extends BaseLogic
             self::setError($message);
             return false;
         }
+
+        OrderNotificationService::notifyStaffOnTransferAudited($transferId);
         return true;
     }
 
@@ -104,6 +107,8 @@ class OrderTransferLogic extends BaseLogic
             self::setError($message);
             return false;
         }
+
+        OrderNotificationService::notifyStaffOnTransferCompleted($transferId);
         return true;
     }
 
@@ -153,12 +158,14 @@ class OrderTransferLogic extends BaseLogic
             );
 
             Db::commit();
-            return true;
         } catch (\Exception $e) {
             Db::rollback();
             self::setError($e->getMessage());
             return false;
         }
+
+        OrderNotificationService::notifyStaffOnTransferCancelled($transferId, true);
+        return true;
     }
 
     /**

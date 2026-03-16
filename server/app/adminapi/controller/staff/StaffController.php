@@ -516,7 +516,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $result = StaffLogic::detail($staffScopeId);
         return $this->data($result);
@@ -530,7 +530,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = $this->request->post();
@@ -567,7 +567,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $includeGlobal = boolval($this->request->get('include_global', false));
@@ -583,7 +583,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = $this->request->post();
@@ -607,7 +607,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = $this->request->post();
@@ -654,7 +654,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = $this->request->post();
@@ -676,7 +676,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = $this->request->post();
@@ -703,7 +703,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = $this->request->post();
@@ -727,7 +727,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $result = StaffLogic::getBannerList($staffScopeId);
         return $this->data($result);
@@ -741,7 +741,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = $this->request->post();
         $params['staff_id'] = $staffScopeId;
@@ -768,7 +768,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = $this->request->post();
@@ -797,7 +797,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = $this->request->post();
@@ -826,7 +826,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = $this->request->post();
@@ -849,7 +849,7 @@ class StaffController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = $this->request->post();
         $params['staff_id'] = $staffScopeId;

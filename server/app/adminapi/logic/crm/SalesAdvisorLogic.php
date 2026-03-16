@@ -40,6 +40,7 @@ class SalesAdvisorLogic extends BaseLogic
         $data = $advisor->toArray();
         $data['status_desc'] = $advisor->status_desc;
         $data['can_assign'] = $advisor->canAssignCustomer();
+        $data['can_consult'] = $advisor->canServeConsultation();
 
         return $data;
     }
@@ -67,6 +68,9 @@ class SalesAdvisorLogic extends BaseLogic
                 'avatar' => $params['avatar'] ?? '',
                 'mobile' => $params['mobile'] ?? '',
                 'wechat' => $params['wechat'] ?? '',
+                'wecom_userid' => $params['wecom_userid'] ?? '',
+                'contact_qr_code' => $params['contact_qr_code'] ?? '',
+                'contact_link' => $params['contact_link'] ?? '',
                 'email' => $params['email'] ?? '',
                 'areas' => $params['areas'] ?? [],
                 'specialties' => $params['specialties'] ?? [],
@@ -111,7 +115,8 @@ class SalesAdvisorLogic extends BaseLogic
 
             $updateData = [];
             $allowFields = [
-                'admin_id', 'advisor_name', 'avatar', 'mobile', 'wechat', 'email',
+                'admin_id', 'advisor_name', 'avatar', 'mobile', 'wechat', 'wecom_userid',
+                'contact_qr_code', 'contact_link', 'email',
                 'areas', 'specialties', 'max_customer_count', 'status', 'sort'
             ];
 

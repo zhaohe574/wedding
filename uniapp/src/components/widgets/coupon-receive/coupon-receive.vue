@@ -191,7 +191,7 @@ const goDetail = (item: any) => {
     const id = item.coupon_id || item.id
     if (!id) return
     uni.navigateTo({
-        url: `/pages/coupon/detail?id=${id}`
+        url: `/packages/pages/coupon/detail?id=${id}`
     })
 }
 

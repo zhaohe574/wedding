@@ -26,7 +26,7 @@ class SalesAdvisorLists extends BaseAdminDataLists implements ListsSearchInterfa
     {
         return [
             '=' => ['status', 'admin_id'],
-            '%like%' => ['advisor_name', 'mobile', 'wechat', 'email'],
+            '%like%' => ['advisor_name', 'mobile', 'wechat', 'wecom_userid', 'email'],
         ];
     }
 
@@ -80,6 +80,8 @@ class SalesAdvisorLists extends BaseAdminDataLists implements ListsSearchInterfa
             $item['customer_usage'] = $item['current_customer_count'] . '/' . $item['max_customer_count'];
             $item['can_assign'] = ($item['status'] == SalesAdvisor::STATUS_NORMAL && 
                 $item['current_customer_count'] < $item['max_customer_count']);
+            $item['can_consult'] = ($item['status'] == SalesAdvisor::STATUS_NORMAL
+                && (!empty($item['contact_qr_code']) || !empty($item['wechat'])));
             
             // 解析JSON字段
             $item['areas'] = !empty($item['areas']) ? 

@@ -4,10 +4,10 @@ export interface DynamicCardData {
         id: number
         nickname: string
         avatar: string
-        isFollowed: boolean
-        followType: 1 | 2 | null
+        staffId: number
+        isFavorite: boolean
         roleLabel: string
-        canFollow: boolean
+        canFavorite: boolean
     }
     content: string
     images: string[]
@@ -59,7 +59,7 @@ const getDynamicTypeLabel = (dynamicType: any): string => {
 
 const resolveUserMeta = (item: any) => {
     const userType = Number(item.user_type || 1)
-    const isFollowed = Boolean(item.is_followed)
+    const isFavorite = Boolean(item.is_favorite)
 
     if (userType === 2) {
         const staffId = Number(item.staff_id || item.user?.id || 0)
@@ -67,10 +67,10 @@ const resolveUserMeta = (item: any) => {
             id: staffId,
             nickname: item.user?.nickname || '服务人员',
             avatar: item.user?.avatar || '',
-            isFollowed,
-            followType: 2 as const,
+            staffId,
+            isFavorite,
             roleLabel: '服务人员',
-            canFollow: staffId > 0
+            canFavorite: staffId > 0
         }
     }
 
@@ -79,10 +79,10 @@ const resolveUserMeta = (item: any) => {
             id: 0,
             nickname: item.user?.nickname || '官方',
             avatar: item.user?.avatar || '',
-            isFollowed: false,
-            followType: null,
+            staffId: 0,
+            isFavorite: false,
             roleLabel: '官方',
-            canFollow: false
+            canFavorite: false
         }
     }
 
@@ -91,10 +91,10 @@ const resolveUserMeta = (item: any) => {
         id: authorId,
         nickname: item.user?.nickname || '匿名用户',
         avatar: item.user?.avatar || '',
-        isFollowed,
-        followType: 1 as const,
+        staffId: 0,
+        isFavorite: false,
         roleLabel: '',
-        canFollow: authorId > 0
+        canFavorite: false
     }
 }
 

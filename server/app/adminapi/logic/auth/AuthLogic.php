@@ -28,6 +28,72 @@ use app\common\model\auth\SystemRoleMenu;
 class AuthLogic
 {
     /**
+     * @notes 服务人员中心“我的资料”权限兼容映射
+     * @return array<string, string[]>
+     */
+    private static function exactPermissionAliasMap(): array
+    {
+        return [
+            'staff.staff/lists' => [
+                'staff.staff/myProfile',
+                'staff.staff/myProfileUpdate',
+                'staff.staff/myProfilePackageConfig',
+                'staff.staff/myProfileUpdatePackageConfig',
+                'staff.staff/myProfileCreatePackage',
+                'staff.staff/myProfileUpdateStaffPackage',
+                'staff.staff/myProfileDeletePackage',
+                'staff.staff/myProfileBannerList',
+                'staff.staff/myProfileBannerAdd',
+                'staff.staff/myProfileBannerEdit',
+                'staff.staff/myProfileBannerDelete',
+                'staff.staff/myProfileBannerSort',
+                'staff.staff/myProfileBannerConfig',
+                'ops.staff/myProfile',
+                'ops.staff/myProfileUpdate',
+                'ops.staff/myProfilePackageConfig',
+                'ops.staff/myProfileUpdatePackageConfig',
+                'ops.staff/myProfileCreatePackage',
+                'ops.staff/myProfileUpdateStaffPackage',
+                'ops.staff/myProfileDeletePackage',
+                'ops.staff/myProfileBannerList',
+                'ops.staff/myProfileBannerAdd',
+                'ops.staff/myProfileBannerEdit',
+                'ops.staff/myProfileBannerDelete',
+                'ops.staff/myProfileBannerSort',
+                'ops.staff/myProfileBannerConfig',
+            ],
+            'ops.staff/lists' => [
+                'staff.staff/myProfile',
+                'staff.staff/myProfileUpdate',
+                'staff.staff/myProfilePackageConfig',
+                'staff.staff/myProfileUpdatePackageConfig',
+                'staff.staff/myProfileCreatePackage',
+                'staff.staff/myProfileUpdateStaffPackage',
+                'staff.staff/myProfileDeletePackage',
+                'staff.staff/myProfileBannerList',
+                'staff.staff/myProfileBannerAdd',
+                'staff.staff/myProfileBannerEdit',
+                'staff.staff/myProfileBannerDelete',
+                'staff.staff/myProfileBannerSort',
+                'staff.staff/myProfileBannerConfig',
+                'ops.staff/myProfile',
+                'ops.staff/myProfileUpdate',
+                'ops.staff/myProfilePackageConfig',
+                'ops.staff/myProfileUpdatePackageConfig',
+                'ops.staff/myProfileCreatePackage',
+                'ops.staff/myProfileUpdateStaffPackage',
+                'ops.staff/myProfileDeletePackage',
+                'ops.staff/myProfileBannerList',
+                'ops.staff/myProfileBannerAdd',
+                'ops.staff/myProfileBannerEdit',
+                'ops.staff/myProfileBannerDelete',
+                'ops.staff/myProfileBannerSort',
+                'ops.staff/myProfileBannerConfig',
+            ],
+        ];
+    }
+
+    /**
      * @notes 权限前缀迁移映射（旧 => 新）
      * @return array<string, string>
      */
@@ -103,12 +169,17 @@ class AuthLogic
     {
         $results = [];
         $map = self::permissionAliasMap();
+        $exactMap = self::exactPermissionAliasMap();
 
         foreach ($permissions as $permission) {
             if (empty($permission) || !is_string($permission)) {
                 continue;
             }
             $results[$permission] = true;
+
+            foreach (($exactMap[$permission] ?? []) as $aliasPermission) {
+                $results[$aliasPermission] = true;
+            }
 
             foreach ($map as $oldPrefix => $newPrefix) {
                 if (str_starts_with($permission, $oldPrefix)) {

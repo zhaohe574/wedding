@@ -17,6 +17,7 @@ use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffPackage;
 use app\common\model\staff\StaffWork;
+use app\common\service\OrderNotificationService;
 use app\common\service\StaffPriceService;
 use app\common\service\StaffService;
 use think\facade\Db;
@@ -558,7 +559,9 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
-        return Db::transaction(function () use ($userId, $staffId, $orderId) {
+        $shouldNotifyUser = false;
+
+        $result = Db::transaction(function () use ($userId, $staffId, $orderId, &$shouldNotifyUser) {
             // 加锁查询，防止并发确认
             $order = Order::with(['items'])
                 ->where('id', $orderId)
@@ -629,6 +632,7 @@ class StaffCenterLogic extends BaseLogic
                 $order->order_status = Order::STATUS_PENDING_PAY;
                 $order->update_time = time();
                 $order->save();
+                $shouldNotifyUser = true;
 
                 OrderLog::addLog(
                     $order->id,
@@ -643,6 +647,12 @@ class StaffCenterLogic extends BaseLogic
 
             return true;
         });
+
+        if ($result && $shouldNotifyUser) {
+            OrderNotificationService::notifyUserOnOrderConfirmed($orderId);
+        }
+
+        return $result;
     }
 
     /**

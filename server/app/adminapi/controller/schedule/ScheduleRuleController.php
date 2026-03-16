@@ -173,7 +173,7 @@ class ScheduleRuleController extends BaseAdminController
     public function myRules()
     {
         if ($this->getRequiredStaffScopeId() <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         return $this->dataLists(new ScheduleRuleLists());
     }
@@ -186,7 +186,7 @@ class ScheduleRuleController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new ScheduleRuleValidate())->goCheck('detail');
         $staffId = (int)ScheduleRule::where('id', $params['id'])->value('staff_id');
@@ -205,7 +205,7 @@ class ScheduleRuleController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $id = (int)$this->request->post('id', 0);
@@ -240,7 +240,7 @@ class ScheduleRuleController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new ScheduleRuleValidate())->post()->goCheck('delete');
         $staffId = (int)ScheduleRule::where('id', $params['id'])->value('staff_id');
@@ -262,7 +262,7 @@ class ScheduleRuleController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new ScheduleRuleValidate())->post()->goCheck('status');
         $staffId = (int)ScheduleRule::where('id', $params['id'])->value('staff_id');
@@ -283,7 +283,7 @@ class ScheduleRuleController extends BaseAdminController
     public function myRuleTemplate()
     {
         if ($this->getRequiredStaffScopeId() <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $result = ScheduleRuleLogic::getGlobalRule();
         return $this->data($result);

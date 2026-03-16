@@ -91,6 +91,26 @@ class SalesAdvisor extends BaseModel
     }
 
     /**
+     * @notes 对外联系二维码获取器
+     * @param $value
+     * @return string
+     */
+    public function getContactQrCodeAttr($value): string
+    {
+        return $this->getImageAttr($value);
+    }
+
+    /**
+     * @notes 对外联系二维码设置器
+     * @param $value
+     * @return string
+     */
+    public function setContactQrCodeAttr($value): string
+    {
+        return $this->setImageAttr($value);
+    }
+
+    /**
      * @notes 负责区域获取器(JSON转数组)
      * @param $value
      * @return array
@@ -149,6 +169,20 @@ class SalesAdvisor extends BaseModel
     }
 
     /**
+     * @notes 是否可用于用户咨询承接
+     * @return bool
+     */
+    public function canServeConsultation(): bool
+    {
+        if ((int) $this->status !== self::STATUS_NORMAL) {
+            return false;
+        }
+
+        return trim((string) $this->getData('contact_qr_code')) !== ''
+            || trim((string) $this->wechat) !== '';
+    }
+
+    /**
      * @notes 获取可用顾问列表
      * @param string $area 区域筛选
      * @param string $specialty 专长筛选
@@ -160,11 +194,11 @@ class SalesAdvisor extends BaseModel
             ->whereRaw('current_customer_count < max_customer_count');
         
         if (!empty($area)) {
-            $query->whereFindInSet('areas', $area);
+            $query->whereLike('areas', '%"' . addslashes($area) . '"%');
         }
         
         if (!empty($specialty)) {
-            $query->whereFindInSet('specialties', $specialty);
+            $query->whereLike('specialties', '%"' . addslashes($specialty) . '"%');
         }
         
         return $query->order('current_customer_count asc, sort desc, conversion_rate desc')

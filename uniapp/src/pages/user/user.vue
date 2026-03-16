@@ -8,7 +8,7 @@
         />
         <!-- #endif -->
     </page-meta>
-    <view class="user-page">
+    <view class="user-page page-with-tabbar-safe-bottom">
         <!-- 动态装修组件渲染 -->
         <template v-for="(item, index) in state.pages" :key="index">
             <!-- 用户信息组件 -->
@@ -73,8 +73,6 @@
                 <w-customer-service :content="item.content" :styles="item.styles" />
             </template>
         </template>
-
-        <view class="safe-bottom"></view>
         <tabbar />
     </view>
 </template>
@@ -132,10 +130,5 @@ onShow(() => {
     min-height: 100vh;
     background-color: #f5f5f5 !important;
     background-image: none !important;
-    padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
-}
-
-.safe-bottom {
-    height: env(safe-area-inset-bottom);
 }
 </style>

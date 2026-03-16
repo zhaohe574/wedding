@@ -11,6 +11,7 @@ use app\common\logic\BaseLogic;
 use app\common\model\order\Order;
 use app\common\model\order\OrderChange;
 use app\common\model\order\OrderChangeLog;
+use app\common\service\OrderNotificationService;
 use think\facade\Db;
 
 /**
@@ -85,6 +86,8 @@ class OrderChangeLogic extends BaseLogic
             self::setError($message);
             return false;
         }
+
+        OrderNotificationService::notifyStaffOnDateChangeAudited($changeId);
         return true;
     }
 
@@ -101,6 +104,8 @@ class OrderChangeLogic extends BaseLogic
             self::setError($message);
             return false;
         }
+
+        OrderNotificationService::notifyStaffOnDateChangeExecuted($changeId);
         return true;
     }
 

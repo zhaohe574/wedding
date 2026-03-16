@@ -19,6 +19,7 @@ use app\common\model\schedule\Schedule;
 use app\common\model\user\User;
 use app\common\logic\AccountLogLogic;
 use app\common\enum\user\AccountLogEnum;
+use app\common\service\OrderNotificationService;
 use think\facade\Db;
 
 /**
@@ -316,6 +317,9 @@ class OrderLogic extends BaseLogic
             Cart::where('user_id', $userId)->whereIn('id', array_column($cartItems, 'id'))->delete();
 
             Db::commit();
+
+            OrderNotificationService::notifyStaffOnOrderCreated((int) $order->id);
+
             return [
                 'success' => true,
                 'message' => '订单创建成功',

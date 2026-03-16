@@ -1,40 +1,26 @@
 <template>
     <div class="customer-service-widget" :style="widgetStyle">
-        <div class="hero-card" :style="heroCardStyle">
-            <div class="hero-badge" :style="badgeStyle">在线客服</div>
-            <div class="hero-title">{{ content.title || '婚礼管家客服' }}</div>
-            <div v-if="content.subtitle" class="hero-subtitle">{{ content.subtitle }}</div>
+        <div class="entry-head">
+            <div class="entry-badge" :style="badgeStyle">顾问咨询</div>
+            <div class="entry-arrow">立即联系</div>
         </div>
-
-        <div class="contact-card" :style="contactCardStyle">
-            <div class="qr-wrapper">
-                <decoration-img
-                    :width="`${qrSize}px`"
-                    :height="`${qrSize}px`"
-                    :src="content.qrcode"
-                    alt=""
-                />
-            </div>
-            <div class="qr-title">{{ content.qrTitle || '微信扫码咨询' }}</div>
-            <div v-if="content.remark" class="qr-remark">{{ content.remark }}</div>
-
-            <div v-if="content.mobile" class="phone-action" :style="phoneActionStyle">
-                <span>{{ content.phoneText || '一键拨打客服' }}</span>
-                <span class="phone-number">{{ content.mobile }}</span>
-            </div>
-            <div v-if="content.time" class="service-time">{{ content.time }}</div>
+        <div class="entry-title">{{ content.title || '联系专属顾问' }}</div>
+        <div class="entry-subtitle">
+            {{ content.subtitle || '所有咨询统一进入企业微信顾问体系，由顾问持续跟进。' }}
         </div>
-
-        <div v-if="content.tips" class="tips-card" :style="tipsCardStyle">
-            <span class="tips-dot" :style="{ backgroundColor: themeColor }"></span>
-            <span>{{ content.tips }}</span>
+        <div class="entry-footer">
+            <div class="entry-tips">
+                {{ content.tips || '订单状态变化仍通过站内消息中心与订阅通知触达' }}
+            </div>
+            <div class="entry-btn" :style="buttonStyle">
+                {{ content.buttonText || '联系专属顾问' }}
+            </div>
         </div>
     </div>
 </template>
 <script lang="ts" setup>
 import type { PropType } from 'vue'
 
-import DecorationImg from '../../decoration-img.vue'
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>
@@ -57,146 +43,81 @@ const appendAlpha = (hexColor: string, alpha: string) => {
 }
 
 const themeColor = computed(() => props.styles?.themeColor || '#E56B6F')
-const pageBgColor = computed(() => props.styles?.pageBgColor || '#F7F8FC')
 const cardRadius = computed(() => Number(props.styles?.cardRadius) || 20)
-const qrSize = computed(() => Number(props.styles?.qrSize) || 120)
 const cardGap = computed(() => Number(props.styles?.cardGap) || 16)
 
 const widgetStyle = computed(() => ({
-    padding: `${cardGap.value}px`,
-    background: `linear-gradient(180deg, ${appendAlpha(themeColor.value, '1A')} 0%, ${pageBgColor.value} 180px, ${pageBgColor.value} 100%)`
-}))
-
-const heroCardStyle = computed(() => ({
+    margin: `${cardGap.value}px`,
+    padding: '18px 16px',
     borderRadius: `${cardRadius.value}px`,
-    background: `linear-gradient(135deg, ${appendAlpha(themeColor.value, '18')} 0%, #ffffff 100%)`
+    background: `linear-gradient(135deg, ${appendAlpha(themeColor.value, '16')} 0%, #ffffff 100%)`,
+    boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)'
 }))
 
 const badgeStyle = computed(() => ({
     color: themeColor.value,
-    backgroundColor: appendAlpha(themeColor.value, '1A')
+    backgroundColor: appendAlpha(themeColor.value, '18')
 }))
 
-const contactCardStyle = computed(() => ({
-    borderRadius: `${cardRadius.value}px`
-}))
-
-const phoneActionStyle = computed(() => ({
-    color: themeColor.value,
-    backgroundColor: appendAlpha(themeColor.value, '14')
-}))
-
-const tipsCardStyle = computed(() => ({
-    borderRadius: `${Math.max(10, cardRadius.value - 6)}px`,
-    backgroundColor: appendAlpha(themeColor.value, '12')
+const buttonStyle = computed(() => ({
+    backgroundColor: themeColor.value,
+    color: '#ffffff'
 }))
 </script>
 
 <style lang="scss" scoped>
 .customer-service-widget {
-    min-height: 560px;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     box-sizing: border-box;
 }
 
-.hero-card {
-    padding: 18px 16px;
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+.entry-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.hero-badge {
-    display: inline-flex;
-    align-items: center;
-    height: 24px;
-    padding: 0 10px;
+.entry-badge {
+    padding: 4px 10px;
     border-radius: 999px;
     font-size: 12px;
     font-weight: 600;
 }
 
-.hero-title {
-    margin-top: 10px;
-    color: #111827;
+.entry-arrow {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.entry-title {
     font-size: 20px;
     font-weight: 700;
-    line-height: 1.4;
+    color: #111827;
 }
 
-.hero-subtitle {
-    margin-top: 6px;
-    color: #6b7280;
+.entry-subtitle,
+.entry-tips {
     font-size: 13px;
-    line-height: 1.6;
+    line-height: 1.7;
+    color: #6b7280;
 }
 
-.contact-card {
-    margin-top: 14px;
-    padding: 18px 16px;
-    background: #ffffff;
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+.entry-footer {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 14px;
 }
 
-.qr-wrapper {
+.entry-btn {
+    height: 42px;
+    border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.qr-title {
-    margin-top: 12px;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
-    color: #111827;
-}
-
-.qr-remark {
-    margin-top: 8px;
-    font-size: 13px;
-    color: #6b7280;
-    text-align: center;
-    line-height: 1.6;
-}
-
-.phone-action {
-    width: 100%;
-    margin-top: 14px;
-    padding: 10px 12px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 13px;
-    font-weight: 600;
-    box-sizing: border-box;
-}
-
-.phone-number {
-    font-size: 15px;
-}
-
-.service-time {
-    margin-top: 10px;
-    color: #6b7280;
-    font-size: 13px;
-}
-
-.tips-card {
-    margin-top: 12px;
-    padding: 10px 12px;
-    color: #374151;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    line-height: 1.5;
-}
-
-.tips-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    margin-right: 8px;
-    flex-shrink: 0;
 }
 </style>

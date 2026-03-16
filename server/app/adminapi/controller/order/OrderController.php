@@ -299,7 +299,7 @@ class OrderController extends BaseAdminController
     public function myOrders()
     {
         if ($this->getRequiredStaffScopeId() <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         return $this->dataLists(new OrderLists());
     }
@@ -312,7 +312,7 @@ class OrderController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = (new OrderValidate())->goCheck('detail');
@@ -346,13 +346,36 @@ class OrderController extends BaseAdminController
     }
 
     /**
+     * @notes 我的订单确认
+     * @return \think\response\Json
+     */
+    public function myOrderConfirm()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $params = (new OrderValidate())->post()->goCheck('detail');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+
+        $result = OrderLogic::confirmByStaff((int)$params['id'], $staffScopeId, $this->adminId);
+        if (true === $result) {
+            return $this->success('确认成功', [], 1, 1);
+        }
+        return $this->fail(OrderLogic::getError());
+    }
+
+    /**
      * @notes 我的订单开始服务
      * @return \think\response\Json
      */
     public function myOrderStartService()
     {
         if ($this->getRequiredStaffScopeId() <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new OrderValidate())->post()->goCheck('detail');
         if ($response = $this->checkOrderScope((int)$params['id'])) {
@@ -372,7 +395,7 @@ class OrderController extends BaseAdminController
     public function myOrderComplete()
     {
         if ($this->getRequiredStaffScopeId() <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new OrderValidate())->post()->goCheck('detail');
         if ($response = $this->checkOrderScope((int)$params['id'])) {
@@ -393,7 +416,7 @@ class OrderController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = $this->request->get();
         $params['staff_id'] = $staffScopeId;

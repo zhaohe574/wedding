@@ -226,7 +226,7 @@ class ScheduleController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new ScheduleValidate())->goCheck('calendar');
         $params['staff_id'] = $staffScopeId;
@@ -242,7 +242,7 @@ class ScheduleController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new ScheduleValidate())->post()->goCheck('mySetStatus');
         $params['staff_id'] = $staffScopeId;
@@ -261,7 +261,7 @@ class ScheduleController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new ScheduleValidate())->post()->goCheck('myBatchSet');
         $params['staff_ids'] = [$staffScopeId];
@@ -280,7 +280,7 @@ class ScheduleController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = (new ScheduleValidate())->post()->goCheck('unlock');
         $staffId = (int)Schedule::where('id', $params['id'])->value('staff_id');
@@ -303,7 +303,7 @@ class ScheduleController extends BaseAdminController
     {
         $staffScopeId = $this->getRequiredStaffScopeId();
         if ($staffScopeId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         $params = $this->request->get();
         $params['staff_id'] = $staffScopeId;

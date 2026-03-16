@@ -122,7 +122,7 @@ class StaffController extends BaseApiController
             return $this->fail('参数错误');
         }
         $result = StaffLogic::toggleFavorite($staffId, $this->userId);
-        return $this->success($result ? '收藏成功' : '取消收藏成功');
+        return $this->success($result['message'], ['is_favorite' => $result['is_favorited']]);
     }
 
     /**

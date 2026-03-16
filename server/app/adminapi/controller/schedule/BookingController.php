@@ -27,7 +27,7 @@ class BookingController extends BaseAdminController
     public function myBookings()
     {
         if ($this->getRequiredStaffScopeId() <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
         return $this->dataLists(new BookingLists());
     }
@@ -40,7 +40,7 @@ class BookingController extends BaseAdminController
     {
         $staffId = $this->getRequiredStaffScopeId();
         if ($staffId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = (new BookingValidate())->goCheck('detail');
@@ -59,7 +59,7 @@ class BookingController extends BaseAdminController
     {
         $staffId = $this->getRequiredStaffScopeId();
         if ($staffId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = (new BookingValidate())->post()->goCheck('confirm');
@@ -78,7 +78,7 @@ class BookingController extends BaseAdminController
     {
         $staffId = $this->getRequiredStaffScopeId();
         if ($staffId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $params = (new BookingValidate())->post()->goCheck('cancel');
@@ -102,7 +102,7 @@ class BookingController extends BaseAdminController
     {
         $staffId = $this->getRequiredStaffScopeId();
         if ($staffId <= 0) {
-            return $this->fail('无权限操作');
+            return $this->failRequiredStaffScope();
         }
 
         $result = BookingLogic::statistics($staffId);

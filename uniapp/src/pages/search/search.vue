@@ -72,7 +72,7 @@
                                 @click="handleDynamicDetail"
                                 @comment="handleDynamicDetail"
                                 @like="handleDynamicLike"
-                                @follow="handleDynamicFollow"
+                                @favorite="handleDynamicFavorite"
                             />
                         </view>
 
@@ -179,8 +179,8 @@ import { HISTORY } from '@/enums/constantEnums'
 import { getHotSearch } from '@/api/shop'
 import cache from '@/utils/cache'
 import { getArticleList } from '@/api/news'
-import { getDynamicList, likeDynamic, toggleFollow } from '@/api/dynamic'
-import { getStaffList, getWorkLists } from '@/api/staff'
+import { getDynamicList, likeDynamic } from '@/api/dynamic'
+import { getStaffList, getWorkLists, toggleStaffFavorite } from '@/api/staff'
 import { getPackageLists } from '@/api/service'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
@@ -380,28 +380,25 @@ const handleDynamicLike = async (dynamic: any) => {
     }
 }
 
-const handleDynamicFollow = async (userId: number) => {
+const handleDynamicFavorite = async (staffId: number) => {
     if (!userStore.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
         return
     }
     try {
-        const target = search.result.find((item: any) => item.user?.id === userId)
-        if (!target?.user?.followType) {
+        const target = search.result.find((item: any) => item.user?.staffId === staffId)
+        if (!target?.user?.canFavorite) {
             return
         }
 
-        const res = await toggleFollow({
-            follow_type: target.user.followType,
-            follow_id: userId
-        })
-        const isFollowed = Boolean(res?.is_followed)
+        const isFavorite = !target.user.isFavorite
+        await toggleStaffFavorite({ id: staffId })
         search.result.forEach((item: any) => {
-            if (item.user?.id === userId && item.user?.followType === target.user.followType) {
-                item.user.isFollowed = isFollowed
+            if (item.user?.staffId === staffId) {
+                item.user.isFavorite = isFavorite
             }
         })
-        uni.showToast({ title: isFollowed ? '关注成功' : '已取消关注', icon: 'none' })
+        uni.showToast({ title: isFavorite ? '收藏成功' : '已取消收藏', icon: 'none' })
     } catch (e: any) {
         uni.showToast({ title: e?.message || e || '操作失败', icon: 'none' })
     }

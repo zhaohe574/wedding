@@ -523,6 +523,13 @@
                     />
                     <text class="action-text">{{ staffInfo.is_favorite ? '已收藏' : '收藏' }}</text>
                 </view>
+                <!-- #ifdef MP-WEIXIN -->
+                <view class="action-item share-action-item">
+                    <tn-icon name="share" size="48" color="#666666" class="share-action-icon" />
+                    <text class="action-text">分享</text>
+                    <button class="share-action-trigger" open-type="share" hover-class="none"></button>
+                </view>
+                <!-- #endif -->
             </view>
             <view
                 class="book-btn"
@@ -551,7 +558,7 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { getStaffDetail, toggleStaffFavorite, getStaffWorks } from '@/api/staff'
 import { getStaffReviews, getStaffReviewStats } from '@/api/review'
 import { useAppStore } from '@/stores/app'
@@ -771,7 +778,7 @@ const handleToggleFavorite = async () => {
 // 联系咨询
 const handleContact = () => {
     uni.navigateTo({
-        url: '/pages/customer_service/customer_service'
+        url: `/packages/pages/customer_service/customer_service?scene=staff_detail&staff_id=${staffId.value}`
     })
 }
 
@@ -828,7 +835,7 @@ const goReviewDetail = (review: any) => {
         return
     }
     uni.navigateTo({
-        url: `/pages/review/detail?id=${review.id}`
+        url: `/packages/pages/review/detail?id=${review.id}`
     })
 }
 
@@ -837,6 +844,39 @@ const formatReviewTime = (timestamp: number) => {
         return '-'
     }
     return new Date(timestamp * 1000).toLocaleDateString()
+}
+
+const getShareTitle = () => {
+    const staffName = String(staffInfo.value?.name || '').trim()
+    const categoryName = String(staffInfo.value?.category?.name || '').trim()
+
+    if (staffName && categoryName) {
+        return `${staffName}｜${categoryName}`
+    }
+
+    if (staffName) {
+        return `${staffName}｜服务人员详情`
+    }
+
+    return '服务人员详情'
+}
+
+const buildSharePayload = () => {
+    const payload: {
+        title: string
+        path: string
+        imageUrl?: string
+    } = {
+        title: getShareTitle(),
+        path: `/packages/pages/staff_detail/staff_detail?id=${staffId.value}`
+    }
+
+    const avatar = String(staffInfo.value?.avatar || '').trim()
+    if (avatar) {
+        payload.imageUrl = avatar
+    }
+
+    return payload
 }
 
 onLoad((options) => {
@@ -852,11 +892,44 @@ onLoad((options) => {
 })
 
 onShow(async () => {
+    // 微信分享直达时隐藏原生“返回首页”按钮
+    // #ifdef MP-WEIXIN
+    try {
+        uni.hideHomeButton()
+    } catch (error) {
+        console.warn('隐藏首页按钮失败：', error)
+    }
+    // #endif
+
     await appStore.getConfig()
     if (staffId.value) {
         getDetail()
     }
 })
+
+onShareAppMessage(() => {
+    return buildSharePayload()
+})
+
+// #ifdef MP-WEIXIN
+onShareTimeline(() => {
+    const sharePayload = buildSharePayload()
+    const timelinePayload: {
+        title: string
+        query: string
+        imageUrl?: string
+    } = {
+        title: sharePayload.title,
+        query: `id=${staffId.value}`
+    }
+
+    if (sharePayload.imageUrl) {
+        timelinePayload.imageUrl = sharePayload.imageUrl
+    }
+
+    return timelinePayload
+})
+// #endif
 </script>
 
 <style lang="scss" scoped>
@@ -1732,25 +1805,67 @@ onShow(async () => {
 }
 
 .action-btns {
+    flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
-    gap: 24rpx;
+    justify-content: space-evenly;
 }
 
 .action-item {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 4rpx;
+    width: 96rpx;
+    min-height: 92rpx;
+    flex-shrink: 0;
 
     .action-text {
         font-size: 22rpx;
         color: var(--color-content);
+        line-height: 1.2;
+        text-align: center;
+        white-space: nowrap;
     }
 }
 
+.share-action-item {
+    position: relative;
+    overflow: hidden;
+}
+
+.share-action-trigger {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+    border-radius: inherit;
+    box-shadow: none;
+    opacity: 0;
+    line-height: normal;
+    font-size: 0;
+    color: transparent;
+    appearance: none;
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+
+    &::after {
+        display: none;
+    }
+}
+
+.share-action-icon {
+    line-height: 38rpx;
+}
+
 .book-btn {
-    flex: 1;
+    flex: 0 0 232rpx;
     display: flex;
     align-items: center;
     justify-content: center;

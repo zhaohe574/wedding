@@ -11,6 +11,7 @@ use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsExcelInterface;
 use app\common\lists\ListsSearchInterface;
 use app\common\model\dynamic\Dynamic;
+use app\common\service\DynamicOwnerService;
 
 /**
  * 动态列表
@@ -40,13 +41,11 @@ class DynamicLists extends BaseAdminDataLists implements ListsExcelInterface, Li
     {
         $query = Dynamic::where($this->searchWhere);
 
-        $staffScopeId = $this->getStaffScopeId();
-        if ($staffScopeId > 0) {
-            $query->where('user_type', Dynamic::USER_TYPE_STAFF)
-                ->where(function ($q) use ($staffScopeId) {
-                    $q->where('staff_id', $staffScopeId)
-                        ->whereOr('user_id', $staffScopeId);
-                });
+        $ownerContext = DynamicOwnerService::resolveStaffOwnerContext($this->adminId, $this->adminInfo);
+        if (DynamicOwnerService::isResolvedContext($ownerContext)) {
+            DynamicOwnerService::applyOwnedStaffDynamicFilter($query, (int)$ownerContext['owner_staff_id']);
+        } elseif (DynamicOwnerService::isStaffContext($ownerContext)) {
+            return [];
         }
 
         $lists = $query->order($this->sortOrder ?: ['is_top' => 'desc', 'id' => 'desc'])
@@ -76,13 +75,11 @@ class DynamicLists extends BaseAdminDataLists implements ListsExcelInterface, Li
     public function count(): int
     {
         $query = Dynamic::where($this->searchWhere);
-        $staffScopeId = $this->getStaffScopeId();
-        if ($staffScopeId > 0) {
-            $query->where('user_type', Dynamic::USER_TYPE_STAFF)
-                ->where(function ($q) use ($staffScopeId) {
-                    $q->where('staff_id', $staffScopeId)
-                        ->whereOr('user_id', $staffScopeId);
-                });
+        $ownerContext = DynamicOwnerService::resolveStaffOwnerContext($this->adminId, $this->adminInfo);
+        if (DynamicOwnerService::isResolvedContext($ownerContext)) {
+            DynamicOwnerService::applyOwnedStaffDynamicFilter($query, (int)$ownerContext['owner_staff_id']);
+        } elseif (DynamicOwnerService::isStaffContext($ownerContext)) {
+            return 0;
         }
         return $query->count();
     }

@@ -55,6 +55,24 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="企业微信" prop="wechat" width="120" />
+                <el-table-column label="企微成员ID" prop="wecom_userid" min-width="140" show-overflow-tooltip />
+                <el-table-column label="承接咨询" width="120">
+                    <template #default="{ row }">
+                        <el-tag :type="row.can_consult ? 'success' : 'info'">
+                            {{ row.can_consult ? '可对外' : '走兜底' }}
+                        </el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column label="负责区域" min-width="160" show-overflow-tooltip>
+                    <template #default="{ row }">
+                        {{ row.areas?.length ? row.areas.join('、') : '-' }}
+                    </template>
+                </el-table-column>
+                <el-table-column label="服务偏好" min-width="160" show-overflow-tooltip>
+                    <template #default="{ row }">
+                        {{ row.specialties?.length ? row.specialties.join('、') : '-' }}
+                    </template>
+                </el-table-column>
                 <el-table-column label="客户数" width="120">
                     <template #default="{ row }">
                         <div>
@@ -128,8 +146,11 @@
         </el-card>
 
         <!-- 添加/编辑弹窗 -->
-        <el-dialog v-model="editVisible" :title="editForm.id ? '编辑顾问' : '添加顾问'" width="600px">
+        <el-dialog v-model="editVisible" :title="editForm.id ? '编辑顾问' : '添加顾问'" width="760px">
             <el-form :model="editForm" label-width="100px" :rules="editRules" ref="editFormRef">
+                <el-form-item label="顾问头像">
+                    <material-picker v-model="editForm.avatar" :limit="1" />
+                </el-form-item>
                 <el-form-item label="顾问姓名" prop="advisor_name">
                     <el-input v-model="editForm.advisor_name" placeholder="输入姓名" />
                 </el-form-item>
@@ -139,8 +160,55 @@
                 <el-form-item label="企业微信">
                     <el-input v-model="editForm.wechat" placeholder="输入企业微信号" />
                 </el-form-item>
+                <el-form-item label="企微成员ID">
+                    <el-input v-model="editForm.wecom_userid" placeholder="输入企业微信成员ID" />
+                </el-form-item>
+                <el-form-item label="联系我二维码">
+                    <material-picker v-model="editForm.contact_qr_code" :limit="1" />
+                </el-form-item>
+                <el-form-item label="联系我链接">
+                    <el-input v-model="editForm.contact_link" placeholder="输入企业微信联系链接" />
+                </el-form-item>
                 <el-form-item label="邮箱">
                     <el-input v-model="editForm.email" placeholder="输入邮箱" />
+                </el-form-item>
+                <el-form-item label="负责区域">
+                    <el-select
+                        v-model="editForm.areas"
+                        multiple
+                        filterable
+                        allow-create
+                        default-first-option
+                        clearable
+                        class="w-full"
+                        placeholder="输入或选择负责城市"
+                    >
+                        <el-option
+                            v-for="item in areaOptions"
+                            :key="item"
+                            :label="item"
+                            :value="item"
+                        />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="服务偏好">
+                    <el-select
+                        v-model="editForm.specialties"
+                        multiple
+                        filterable
+                        allow-create
+                        default-first-option
+                        clearable
+                        class="w-full"
+                        placeholder="输入或选择擅长类目"
+                    >
+                        <el-option
+                            v-for="item in specialtyOptions"
+                            :key="item"
+                            :label="item"
+                            :value="item"
+                        />
+                    </el-select>
                 </el-form-item>
                 <el-form-item label="最大客户数">
                     <el-input-number v-model="editForm.max_customer_count" :min="1" :max="1000" />
@@ -196,7 +264,21 @@
                     <el-descriptions-item label="顾问姓名">{{ currentAdvisor.advisor_name }}</el-descriptions-item>
                     <el-descriptions-item label="手机号">{{ currentAdvisor.mobile }}</el-descriptions-item>
                     <el-descriptions-item label="企业微信">{{ currentAdvisor.wechat || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="企微成员ID">{{ currentAdvisor.wecom_userid || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="邮箱">{{ currentAdvisor.email || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="负责区域">{{ currentAdvisor.areas?.length ? currentAdvisor.areas.join('、') : '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="服务偏好">{{ currentAdvisor.specialties?.length ? currentAdvisor.specialties.join('、') : '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="联系我链接">{{ currentAdvisor.contact_link || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="联系我二维码">
+                        <el-image
+                            v-if="currentAdvisor.contact_qr_code"
+                            :src="currentAdvisor.contact_qr_code"
+                            fit="cover"
+                            style="width: 72px; height: 72px; border-radius: 8px"
+                            :preview-src-list="[currentAdvisor.contact_qr_code]"
+                        />
+                        <span v-else>-</span>
+                    </el-descriptions-item>
                     <el-descriptions-item label="状态">
                         <el-tag :type="getStatusTagType(currentAdvisor.status)">
                             {{ currentAdvisor.status_desc }}
@@ -241,9 +323,15 @@ const editFormRef = ref()
 const editForm = reactive({
     id: 0,
     advisor_name: '',
+    avatar: '',
     mobile: '',
     wechat: '',
+    wecom_userid: '',
+    contact_qr_code: '',
+    contact_link: '',
     email: '',
+    areas: [] as string[],
+    specialties: [] as string[],
     max_customer_count: 100,
     status: 1,
     sort: 0
@@ -263,6 +351,28 @@ const transferForm = reactive({
 const detailVisible = ref(false)
 const currentAdvisor = ref<any>(null)
 const availableAdvisors = ref<any[]>([])
+
+const collectStringOptions = (field: 'areas' | 'specialties') => {
+    const values = new Set<string>()
+    pager.lists.forEach((row: any) => {
+        ;(row[field] || []).forEach((item: string) => {
+            const text = String(item || '').trim()
+            if (text) {
+                values.add(text)
+            }
+        })
+    })
+    ;(editForm[field] || []).forEach((item: string) => {
+        const text = String(item || '').trim()
+        if (text) {
+            values.add(text)
+        }
+    })
+    return Array.from(values)
+}
+
+const areaOptions = computed(() => collectStringOptions('areas'))
+const specialtyOptions = computed(() => collectStringOptions('specialties'))
 
 const { pager, getLists, resetPage, resetParams } = usePaging({
     fetchFun: salesAdvisorLists,
@@ -286,9 +396,15 @@ const handleAdd = () => {
     Object.assign(editForm, {
         id: 0,
         advisor_name: '',
+        avatar: '',
         mobile: '',
         wechat: '',
+        wecom_userid: '',
+        contact_qr_code: '',
+        contact_link: '',
         email: '',
+        areas: [],
+        specialties: [],
         max_customer_count: 100,
         status: 1,
         sort: 0
@@ -300,9 +416,15 @@ const handleEdit = (row: any) => {
     Object.assign(editForm, {
         id: row.id,
         advisor_name: row.advisor_name,
+        avatar: row.avatar || '',
         mobile: row.mobile,
         wechat: row.wechat,
+        wecom_userid: row.wecom_userid || '',
+        contact_qr_code: row.contact_qr_code || '',
+        contact_link: row.contact_link || '',
         email: row.email,
+        areas: row.areas || [],
+        specialties: row.specialties || [],
         max_customer_count: row.max_customer_count,
         status: row.status,
         sort: row.sort || 0

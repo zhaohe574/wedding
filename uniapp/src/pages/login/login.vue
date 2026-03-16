@@ -183,7 +183,7 @@
                                 <navigator
                                     class="agreement-link"
                                     hover-class="none"
-                                    url="/pages/agreement/agreement?type=service"
+                                    url="/packages/pages/agreement/agreement?type=service"
                                     @click.stop
                                 >
                                     《服务协议》
@@ -192,7 +192,7 @@
                                 <navigator
                                     class="agreement-link"
                                     hover-class="none"
-                                    url="/pages/agreement/agreement?type=privacy"
+                                    url="/packages/pages/agreement/agreement?type=privacy"
                                     @click.stop
                                 >
                                     《隐私协议》
@@ -469,7 +469,7 @@ const confirmAgreement = async () => {
 }
 
 const openAgreement = (type: AgreementType) => {
-    router.navigateTo(`/pages/agreement/agreement?type=${type}`)
+    router.navigateTo(`/packages/pages/agreement/agreement?type=${type}`)
 }
 
 const loginFun = async () => {

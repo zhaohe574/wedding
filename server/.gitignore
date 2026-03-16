@@ -8,4 +8,4 @@
 !/runtime/index.html
 /config/install.lock
 
-/public
+/public/*

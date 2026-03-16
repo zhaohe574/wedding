@@ -88,7 +88,7 @@
                             <router-navigate
                                 class="agreement-link"
                                 hover-class="none"
-                                to="/pages/agreement/agreement?type=service"
+                                to="/packages/pages/agreement/agreement?type=service"
                                 @click.stop
                             >
                                 《服务协议》
@@ -97,7 +97,7 @@
                             <router-navigate
                                 class="agreement-link"
                                 hover-class="none"
-                                to="/pages/agreement/agreement?type=privacy"
+                                to="/packages/pages/agreement/agreement?type=privacy"
                                 @click.stop
                             >
                                 《隐私协议》

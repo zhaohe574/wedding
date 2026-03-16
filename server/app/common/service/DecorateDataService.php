@@ -650,6 +650,9 @@ class DecorateDataService
                     case 'order':
                         $result['link'] = '/pages/order_detail/order_detail?id=' . $businessData['target_id'];
                         break;
+                    case 'staff_order':
+                        $result['link'] = '/packages/pages/staff_order_detail/staff_order_detail?id=' . $businessData['target_id'];
+                        break;
                     case 'dynamic':
                         $result['link'] = '/pages/dynamic_detail/dynamic_detail?id=' . $businessData['target_id'];
                         break;

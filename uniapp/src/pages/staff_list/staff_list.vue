@@ -9,7 +9,7 @@
         <!-- #endif -->
     </page-meta>
 
-    <view class="staff-list-page">
+    <view class="staff-list-page page-with-tabbar-safe-bottom">
         <!-- 人员列表 -->
         <z-paging
             ref="pagingRef"
@@ -24,19 +24,71 @@
                 <view class="filter-header">
                     <!-- 搜索栏 -->
                     <view class="search-section">
-                        <view class="search-shell">
-                            <tn-search-box
-                                v-model="keyword"
-                                placeholder="搜索人员姓名"
-                                shape="round"
-                                :show-action="true"
-                                :search-button-bg-color="$theme.primaryColor"
-                                :bg-color="'#FFFFFF'"
-                                border
-                                height="56"
-                                @search="handleSearch"
-                                @clear="handleSearch"
-                            />
+                        <view class="search-row">
+                            <view class="search-shell">
+                                <tn-search-box
+                                    v-model="keyword"
+                                    placeholder="搜索人员姓名"
+                                    shape="round"
+                                    :show-action="true"
+                                    :search-button-bg-color="$theme.primaryColor"
+                                    :bg-color="'#FFFFFF'"
+                                    border
+                                    height="56"
+                                    @search="handleSearch"
+                                    @clear="handleSearch"
+                                />
+                            </view>
+                            <view
+                                class="view-switch-btn"
+                                :style="{
+                                    backgroundColor: alphaColor($theme.primaryColor, 0.08),
+                                    borderColor: alphaColor($theme.primaryColor, 0.24),
+                                    boxShadow: `0 6rpx 16rpx ${alphaColor($theme.primaryColor, 0.12)}`
+                                }"
+                                @tap.stop="handleToggleViewMode"
+                            >
+                                <view v-if="staffViewMode === 'poster'" class="switch-icon-list">
+                                    <view class="switch-icon-list-row">
+                                        <view
+                                            class="switch-icon-list-dot"
+                                            :style="{ background: $theme.primaryColor }"
+                                        />
+                                        <view
+                                            class="switch-icon-list-line"
+                                            :style="{ background: $theme.primaryColor }"
+                                        />
+                                    </view>
+                                    <view class="switch-icon-list-row">
+                                        <view
+                                            class="switch-icon-list-dot"
+                                            :style="{ background: $theme.primaryColor }"
+                                        />
+                                        <view
+                                            class="switch-icon-list-line"
+                                            :style="{ background: $theme.primaryColor }"
+                                        />
+                                    </view>
+                                    <view class="switch-icon-list-row">
+                                        <view
+                                            class="switch-icon-list-dot"
+                                            :style="{ background: $theme.primaryColor }"
+                                        />
+                                        <view
+                                            class="switch-icon-list-line"
+                                            :style="{ background: $theme.primaryColor }"
+                                        />
+                                    </view>
+                                </view>
+                                <view v-else class="switch-icon-grid">
+                                    <view
+                                        v-for="cell in 4"
+                                        :key="cell"
+                                        class="switch-icon-grid-cell"
+                                        :style="{ borderColor: $theme.primaryColor }"
+                                    />
+                                </view>
+                            </view>
                         </view>
                     </view>
 
@@ -64,13 +116,13 @@
                                     :style="
                                         currentCategoryId === item.id
                                             ? {
-                                          background: getPrimaryGradient(),
-                                          borderColor: $theme.primaryColor,
-                                          color: '#FFFFFF',
-                                          boxShadow: getCategoryChipActiveShadow()
-                                      }
-                                    : {}
-                            "
+                                                  background: getPrimaryGradient(),
+                                                  borderColor: $theme.primaryColor,
+                                                  color: '#FFFFFF',
+                                                  boxShadow: getCategoryChipActiveShadow()
+                                              }
+                                            : {}
+                                    "
                                     @click="handleCategoryChange(item.id)"
                                 >
                                     {{ item.name }}
@@ -96,13 +148,13 @@
                                     :style="
                                         currentCategoryId === item.id
                                             ? {
-                                          background: getPrimaryGradient(),
-                                          borderColor: $theme.primaryColor,
-                                          color: '#FFFFFF',
-                                          boxShadow: getCategoryChipActiveShadow()
-                                      }
-                                    : {}
-                            "
+                                                  background: getPrimaryGradient(),
+                                                  borderColor: $theme.primaryColor,
+                                                  color: '#FFFFFF',
+                                                  boxShadow: getCategoryChipActiveShadow()
+                                              }
+                                            : {}
+                                    "
                                     @click="handleCategoryChange(item.id)"
                                 >
                                     {{ item.name }}
@@ -210,10 +262,7 @@
                     <text class="empty-subtitle">试试调整筛选条件，发现更多优质团队</text>
                     <view
                         class="empty-action-btn"
-                        :style="{
-                            background: getPrimaryGradient(),
-                            boxShadow: getPrimaryShadow(0.26)
-                        }"
+                        :style="getPrimaryButtonStyle(0.26)"
                         @click="handleResetFilters"
                     >
                         <text class="empty-action-text" :style="{ color: $theme.btnColor }">
@@ -224,7 +273,108 @@
             </template>
 
             <!-- 人员卡片列表 -->
-            <view class="staff-cards">
+            <view v-if="staffViewMode === 'poster'" class="poster-grid">
+                <view
+                    v-for="item in staffList"
+                    :key="item.id"
+                    class="poster-card"
+                    @click="goToDetail(item.id)"
+                >
+                    <view class="poster-media">
+                        <image
+                            class="poster-image"
+                            :src="item.avatar || '/static/images/user/default_avatar.png'"
+                            mode="aspectFill"
+                        />
+                        <view class="poster-image-mask"></view>
+                        <view
+                            class="poster-category-badge"
+                            :style="{
+                                background: alphaColor('#111827', 0.72)
+                            }"
+                        >
+                            <text>{{ item.category_name }}</text>
+                        </view>
+                        <view class="poster-favorite" @click.stop="handleToggleFavorite(item)">
+                            <tn-icon
+                                :name="item.is_favorite ? 'like-fill' : 'like'"
+                                size="36"
+                                :color="item.is_favorite ? '#FF4D5A' : '#FFFFFF'"
+                            />
+                        </view>
+                        <view class="poster-overlay">
+                            <view class="poster-name-row">
+                                <text class="poster-name">{{ item.name }}</text>
+                                <text v-if="item.experience_years" class="poster-experience">
+                                    {{ item.experience_years }}年
+                                </text>
+                            </view>
+                            <view class="poster-meta">
+                                <view class="poster-rating">
+                                    <tn-icon name="star-fill" size="24" color="#FFD166" />
+                                    <text>{{ item.rating }}</text>
+                                </view>
+                                <text class="poster-orders">{{ item.order_count }}单</text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <view class="poster-body">
+                        <view v-if="item.tags && item.tags.length" class="poster-tags">
+                            <view
+                                v-for="(tag, index) in item.tags.slice(0, 2)"
+                                :key="index"
+                                class="poster-tag"
+                                :style="{
+                                    background: getTagBgColor(),
+                                    borderColor: getTagBorderColor()
+                                }"
+                            >
+                                <text :style="{ color: $theme.primaryColor }">{{ tag }}</text>
+                            </view>
+                        </view>
+                        <view v-else class="poster-tags poster-tags-empty"></view>
+
+                        <view class="poster-footer">
+                            <view class="poster-price-section">
+                                <template
+                                    v-if="
+                                        item.has_price !== false &&
+                                        item.price !== null &&
+                                        item.price !== undefined
+                                    "
+                                >
+                                    <view class="poster-price-row">
+                                        <text
+                                            class="poster-price-symbol"
+                                            :style="{ color: $theme.primaryColor }"
+                                        >
+                                            ¥
+                                        </text>
+                                        <text
+                                            class="poster-price-value"
+                                            :style="{ color: $theme.primaryColor }"
+                                        >
+                                            {{ item.price_text || item.price }}
+                                        </text>
+                                    </view>
+                                    <text class="poster-price-unit">/次</text>
+                                </template>
+                                <text v-else class="poster-price-negotiable">面议</text>
+                            </view>
+                            <view
+                                class="poster-book-btn"
+                                :style="getPrimaryButtonStyle(0.2)"
+                                @click.stop="goToDetail(item.id)"
+                            >
+                                <text :style="{ color: $theme.btnColor }">预约</text>
+                            </view>
+                        </view>
+                    </view>
+                </view>
+            </view>
+
+            <view v-else class="staff-cards">
                 <view
                     v-for="item in staffList"
                     :key="item.id"
@@ -332,13 +482,9 @@
                         </view>
                         <view
                             class="book-btn"
-                            :style="{
-                                background: getPrimaryGradient(),
-                                boxShadow: getPrimaryShadow(0.24)
-                            }"
+                            :style="getPrimaryButtonStyle(0.24)"
                             @click.stop="goToDetail(item.id)"
                         >
-                            <tn-icon name="calendar" size="28" :color="$theme.btnColor" />
                             <text :style="{ color: $theme.btnColor }">立即预约</text>
                         </view>
                     </view>
@@ -471,13 +617,21 @@ import { alphaColor } from '@/utils/color'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import TnDateTimePicker from '@tuniao/tnui-vue3-uniapp/components/date-time-picker/src/date-time-picker.vue'
 
+type StaffViewMode = 'poster' | 'list'
 
 const $theme = useThemeStore()
+const STAFF_VIEW_MODE_STORAGE_KEY = 'staff_list_view_mode'
 
 const getPrimaryGradient = () =>
     `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
 
 const getPrimaryShadow = (alpha = 0.2) => `0 8rpx 24rpx ${alphaColor($theme.primaryColor, alpha)}`
+
+const getPrimaryButtonStyle = (alpha = 0.2) => ({
+    backgroundColor: $theme.primaryColor,
+    backgroundImage: getPrimaryGradient(),
+    boxShadow: getPrimaryShadow(alpha)
+})
 
 const getCategoryChipActiveShadow = () => `0 2rpx 8rpx ${alphaColor($theme.primaryColor, 0.14)}`
 
@@ -497,10 +651,25 @@ const getTagBorderColor = () => {
     return alphaColor($theme.primaryColor, 0.28)
 }
 
+const isValidStaffViewMode = (value: unknown): value is StaffViewMode => {
+    return value === 'poster' || value === 'list'
+}
+
+const getInitialStaffViewMode = (): StaffViewMode => {
+    try {
+        const cachedMode = uni.getStorageSync(STAFF_VIEW_MODE_STORAGE_KEY)
+        return isValidStaffViewMode(cachedMode) ? cachedMode : 'poster'
+    } catch (error) {
+        console.error(error)
+        return 'poster'
+    }
+}
+
 const pagingRef = ref()
 const categoryScrollNativeRef = ref<any>(null)
 const keyword = ref('')
 const staffList = ref<any[]>([])
+const staffViewMode = ref<StaffViewMode>(getInitialStaffViewMode())
 const categories = ref<any[]>([])
 const currentCategoryId = ref<string | number>('')
 const styleTags = ref<any[]>([])
@@ -726,6 +895,15 @@ const handleSearch = () => {
     pagingRef.value.reload()
 }
 
+const handleToggleViewMode = () => {
+    staffViewMode.value = staffViewMode.value === 'poster' ? 'list' : 'poster'
+    try {
+        uni.setStorageSync(STAFF_VIEW_MODE_STORAGE_KEY, staffViewMode.value)
+    } catch (error) {
+        console.error(error)
+    }
+}
+
 // 切换分类
 const handleCategoryChange = async (id: string | number) => {
     if (categoryMovedDistance.value > categoryMoveThreshold) {
@@ -909,12 +1087,77 @@ onReady(() => {
     padding: 6rpx 20rpx 10rpx;
 }
 
+.search-row {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+}
+
 .search-shell {
+    flex: 1;
     padding: 8rpx;
     border-radius: 34rpx;
     background: #ffffff;
     border: 1rpx solid #eceff4;
     box-shadow: 0 4rpx 14rpx rgba(15, 23, 42, 0.05);
+}
+
+.view-switch-btn {
+    flex-shrink: 0;
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: 24rpx;
+    border: 1rpx solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6rpx 16rpx rgba(15, 23, 42, 0.06);
+    transition: all 0.2s ease;
+
+    &:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+}
+
+.switch-icon-list {
+    width: 34rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.switch-icon-list-row {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+}
+
+.switch-icon-list-dot {
+    width: 6rpx;
+    height: 6rpx;
+    border-radius: 2rpx;
+    flex-shrink: 0;
+}
+
+.switch-icon-list-line {
+    flex: 1;
+    height: 4rpx;
+    border-radius: 999rpx;
+}
+
+.switch-icon-grid {
+    width: 32rpx;
+    height: 32rpx;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4rpx;
+}
+
+.switch-icon-grid-cell {
+    border: 2rpx solid transparent;
+    border-radius: 6rpx;
+    background: rgba(255, 255, 255, 0.45);
 }
 
 /* 分类横滑区域 */
@@ -1250,6 +1493,253 @@ onReady(() => {
 }
 
 /* 人员卡片列表 */
+.poster-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18rpx;
+    padding: 20rpx;
+}
+
+.poster-card {
+    background: #ffffff;
+    border-radius: 24rpx;
+    border: 1rpx solid #edf0f4;
+    overflow: hidden;
+    box-shadow: 0 8rpx 22rpx rgba(15, 23, 42, 0.08);
+    transition: all 0.2s ease;
+
+    &:active {
+        transform: translateY(-2rpx);
+        box-shadow: 0 12rpx 28rpx rgba(15, 23, 42, 0.12);
+    }
+
+    .poster-media {
+        position: relative;
+        height: 460rpx;
+        overflow: hidden;
+        background: #f3f4f6;
+    }
+
+    .poster-image {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .poster-image-mask {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            180deg,
+            rgba(15, 23, 42, 0.04) 0%,
+            rgba(15, 23, 42, 0.14) 48%,
+            rgba(15, 23, 42, 0.82) 100%
+        );
+    }
+
+    .poster-category-badge {
+        position: absolute;
+        top: 18rpx;
+        left: 18rpx;
+        max-width: calc(100% - 100rpx);
+        padding: 8rpx 12rpx;
+        border-radius: 12rpx;
+        backdrop-filter: blur(10rpx);
+
+        text {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 22rpx;
+            font-weight: 600;
+            color: #ffffff;
+        }
+    }
+
+    .poster-favorite {
+        position: absolute;
+        top: 12rpx;
+        right: 12rpx;
+        width: 64rpx;
+        height: 64rpx;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 23, 42, 0.22);
+        backdrop-filter: blur(10rpx);
+
+        &:active {
+            transform: scale(1.04);
+        }
+    }
+
+    .poster-overlay {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        padding: 88rpx 18rpx 18rpx;
+        color: #ffffff;
+    }
+
+    .poster-name-row {
+        display: flex;
+        align-items: center;
+        gap: 10rpx;
+    }
+
+    .poster-name {
+        flex: 1;
+        min-width: 0;
+        font-size: 32rpx;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .poster-experience {
+        flex-shrink: 0;
+        padding: 4rpx 10rpx;
+        border-radius: 999rpx;
+        font-size: 20rpx;
+        color: rgba(255, 255, 255, 0.92);
+        background: rgba(255, 255, 255, 0.16);
+    }
+
+    .poster-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12rpx;
+        margin-top: 12rpx;
+    }
+
+    .poster-rating {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+
+        text {
+            font-size: 24rpx;
+            font-weight: 700;
+            color: #ffd166;
+        }
+    }
+
+    .poster-orders {
+        font-size: 22rpx;
+        color: rgba(255, 255, 255, 0.86);
+    }
+
+    .poster-body {
+        padding: 18rpx 18rpx 20rpx;
+    }
+
+    .poster-tags {
+        min-height: 56rpx;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8rpx;
+        align-content: flex-start;
+    }
+
+    .poster-tags-empty {
+        min-height: 0;
+        margin-bottom: 0;
+    }
+
+    .poster-tag {
+        max-width: 100%;
+        padding: 6rpx 12rpx;
+        border-radius: 999rpx;
+        border: 1rpx solid transparent;
+
+        text {
+            display: block;
+            max-width: 100%;
+            font-size: 22rpx;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .poster-footer {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12rpx;
+        margin-top: 16rpx;
+    }
+
+    .poster-price-section {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .poster-price-row {
+        display: flex;
+        align-items: baseline;
+        min-width: 0;
+    }
+
+    .poster-price-symbol {
+        font-size: 24rpx;
+        font-weight: 700;
+    }
+
+    .poster-price-value {
+        max-width: 100%;
+        font-size: 38rpx;
+        font-weight: 800;
+        line-height: 1;
+        margin-left: 4rpx;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .poster-price-unit {
+        display: block;
+        margin-top: 6rpx;
+        font-size: 20rpx;
+        color: #98a2b3;
+    }
+
+    .poster-price-negotiable {
+        display: block;
+        font-size: 32rpx;
+        font-weight: 700;
+        color: #98a2b3;
+        line-height: 1.1;
+    }
+
+    .poster-book-btn {
+        flex-shrink: 0;
+        min-width: 118rpx;
+        height: 64rpx;
+        padding: 0 18rpx;
+        border-radius: 999rpx;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4rpx;
+
+        text {
+            font-size: 22rpx;
+            font-weight: 600;
+        }
+
+        &:active {
+            transform: translateY(2rpx) scale(0.98);
+        }
+    }
+}
+
 .staff-cards {
     padding: 20rpx;
     display: flex;

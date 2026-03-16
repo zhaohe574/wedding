@@ -168,6 +168,10 @@ export function myOrderDetail(params: any) {
     return request.get({ url: '/ops.order/myOrderDetail', params })
 }
 
+export function myOrderConfirm(params: any) {
+    return request.post({ url: '/ops.order/myOrderConfirm', params })
+}
+
 export function myOrderStartService(params: any) {
     return request.post({ url: '/ops.order/myOrderStartService', params })
 }

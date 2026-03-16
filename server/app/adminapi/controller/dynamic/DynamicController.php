@@ -13,6 +13,7 @@ use app\adminapi\lists\dynamic\DynamicCommentLists;
 use app\adminapi\logic\dynamic\DynamicLogic;
 use app\adminapi\validate\dynamic\DynamicValidate;
 use app\common\model\dynamic\Dynamic;
+use app\common\service\DynamicOwnerService;
 use app\common\service\StaffService;
 
 /**
@@ -22,15 +23,6 @@ use app\common\service\StaffService;
  */
 class DynamicController extends BaseAdminController
 {
-    /**
-     * @notes 获取服务人员数据范围（my* 接口必须）
-     * @return int
-     */
-    protected function getRequiredStaffScopeId(): int
-    {
-        return StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-    }
-
     /**
      * @notes 动态列表
      * @return \think\response\Json
@@ -272,14 +264,17 @@ class DynamicController extends BaseAdminController
      */
     protected function checkDynamicScope(int $dynamicId)
     {
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId <= 0) {
+        $ownerContext = $this->getDynamicOwnerContext();
+        if (!DynamicOwnerService::isStaffContext($ownerContext)) {
             return null;
         }
-        $dynamic = Dynamic::where('id', $dynamicId)
-            ->where('staff_id', $staffScopeId)
-            ->where('user_type', Dynamic::USER_TYPE_STAFF)
-            ->find();
+        if (!DynamicOwnerService::isResolvedContext($ownerContext)) {
+            return $this->fail(DynamicOwnerService::getOwnerViewDeniedMessage());
+        }
+        $dynamic = DynamicOwnerService::findOwnedStaffDynamic(
+            $dynamicId,
+            (int)$ownerContext['owner_staff_id']
+        );
         if (!$dynamic) {
             return $this->fail('无权限操作');
         }
@@ -292,7 +287,8 @@ class DynamicController extends BaseAdminController
      */
     public function myDynamics()
     {
-        if ($this->getRequiredStaffScopeId() <= 0) {
+        $ownerContext = $this->getDynamicOwnerContext();
+        if (!DynamicOwnerService::isStaffContext($ownerContext)) {
             return $this->fail('无权限操作');
         }
         return $this->dataLists(new DynamicLists());
@@ -304,16 +300,19 @@ class DynamicController extends BaseAdminController
      */
     public function myDynamicDetail()
     {
-        $staffScopeId = $this->getRequiredStaffScopeId();
-        if ($staffScopeId <= 0) {
+        $ownerContext = $this->getDynamicOwnerContext();
+        if (!DynamicOwnerService::isStaffContext($ownerContext)) {
             return $this->fail('无权限操作');
+        }
+        if (!DynamicOwnerService::isResolvedContext($ownerContext)) {
+            return $this->fail(DynamicOwnerService::getOwnerViewDeniedMessage());
         }
 
         $params = (new DynamicValidate())->goCheck('detail');
-        $dynamic = Dynamic::where('id', (int)$params['id'])
-            ->where('staff_id', $staffScopeId)
-            ->where('user_type', Dynamic::USER_TYPE_STAFF)
-            ->find();
+        $dynamic = DynamicOwnerService::findOwnedStaffDynamic(
+            (int)$params['id'],
+            (int)$ownerContext['owner_staff_id']
+        );
         if (!$dynamic) {
             return $this->fail('无权限操作');
         }
@@ -331,10 +330,14 @@ class DynamicController extends BaseAdminController
      */
     public function myDynamicAdd()
     {
-        $staffScopeId = $this->getRequiredStaffScopeId();
-        if ($staffScopeId <= 0) {
+        $ownerContext = $this->getDynamicOwnerContext();
+        if (!DynamicOwnerService::isStaffContext($ownerContext)) {
             return $this->fail('无权限操作');
         }
+        if (!DynamicOwnerService::isResolvedContext($ownerContext)) {
+            return $this->fail(DynamicOwnerService::getOwnerManageDeniedMessage());
+        }
+        $staffScopeId = (int)$ownerContext['owner_staff_id'];
         $params = (new DynamicValidate())->post()->goCheck('add');
         if ((int)($params['dynamic_type'] ?? 0) === Dynamic::TYPE_ACTIVITY) {
             return $this->fail('活动仅支持管理员发布');
@@ -352,10 +355,14 @@ class DynamicController extends BaseAdminController
      */
     public function myDynamicEdit()
     {
-        $staffScopeId = $this->getRequiredStaffScopeId();
-        if ($staffScopeId <= 0) {
+        $ownerContext = $this->getDynamicOwnerContext();
+        if (!DynamicOwnerService::isStaffContext($ownerContext)) {
             return $this->fail('无权限操作');
         }
+        if (!DynamicOwnerService::isResolvedContext($ownerContext)) {
+            return $this->fail(DynamicOwnerService::getOwnerManageDeniedMessage());
+        }
+        $staffScopeId = (int)$ownerContext['owner_staff_id'];
         $params = (new DynamicValidate())->post()->goCheck('edit');
         if ((int)($params['dynamic_type'] ?? 0) === Dynamic::TYPE_ACTIVITY) {
             return $this->fail('活动仅支持管理员发布');
@@ -373,10 +380,14 @@ class DynamicController extends BaseAdminController
      */
     public function myDynamicDelete()
     {
-        $staffScopeId = $this->getRequiredStaffScopeId();
-        if ($staffScopeId <= 0) {
+        $ownerContext = $this->getDynamicOwnerContext();
+        if (!DynamicOwnerService::isStaffContext($ownerContext)) {
             return $this->fail('无权限操作');
         }
+        if (!DynamicOwnerService::isResolvedContext($ownerContext)) {
+            return $this->fail(DynamicOwnerService::getOwnerManageDeniedMessage());
+        }
+        $staffScopeId = (int)$ownerContext['owner_staff_id'];
         $params = (new DynamicValidate())->post()->goCheck('detail');
         $result = DynamicLogic::staffDelete($staffScopeId, (int)$params['id']);
         if (true === $result) {
@@ -391,7 +402,8 @@ class DynamicController extends BaseAdminController
      */
     public function myDynamicTypeOptions()
     {
-        if ($this->getRequiredStaffScopeId() <= 0) {
+        $ownerContext = $this->getDynamicOwnerContext();
+        if (!DynamicOwnerService::isStaffContext($ownerContext)) {
             return $this->fail('无权限操作');
         }
         $options = array_values(array_filter(
@@ -407,9 +419,18 @@ class DynamicController extends BaseAdminController
      */
     public function myDynamicStatusOptions()
     {
-        if ($this->getRequiredStaffScopeId() <= 0) {
+        $ownerContext = $this->getDynamicOwnerContext();
+        if (!DynamicOwnerService::isStaffContext($ownerContext)) {
             return $this->fail('无权限操作');
         }
         return $this->data(DynamicLogic::getStatusOptions());
+    }
+
+    /**
+     * @notes 获取动态归属上下文
+     */
+    protected function getDynamicOwnerContext(): array
+    {
+        return DynamicOwnerService::resolveStaffOwnerContext($this->adminId, $this->adminInfo);
     }
 }

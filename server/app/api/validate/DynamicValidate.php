@@ -30,8 +30,6 @@ class DynamicValidate extends BaseValidate
         'order_id' => 'integer|egt:0',
         'parent_id' => 'integer|egt:0',
         'reply_user_id' => 'integer|egt:0',
-        'follow_type' => 'require|integer|in:1,2',
-        'follow_id' => 'require|integer|gt:0',
     ];
 
     protected $message = [
@@ -51,9 +49,6 @@ class DynamicValidate extends BaseValidate
         'video_url.max' => '视频地址最多255个字符',
         'location.max' => '位置信息最多100个字符',
         'tags.max' => '标签最多255个字符',
-        'follow_type.require' => '请选择关注类型',
-        'follow_type.in' => '关注类型参数错误',
-        'follow_id.require' => '请选择关注对象',
     ];
 
     /**

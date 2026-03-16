@@ -198,6 +198,7 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import { previewOrder, createOrder, getAvailableCoupons } from '@/api/order'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
+import { requestSubscribeByScene } from '@/utils/subscribe'
 
 const $theme = useThemeStore()
 const userStore = useUserStore()
@@ -403,6 +404,12 @@ const handleSubmit = async () => {
 
     submitting.value = true
     try {
+        try {
+            await requestSubscribeByScene('order_confirm')
+        } catch (error) {
+            // 订阅授权失败不影响下单
+        }
+
         const params: any = {
             contact_name: form.contact_name.trim(),
             contact_mobile: form.contact_mobile.trim(),

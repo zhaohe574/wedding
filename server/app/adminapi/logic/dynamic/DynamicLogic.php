@@ -10,6 +10,7 @@ namespace app\adminapi\logic\dynamic;
 use app\common\logic\BaseLogic;
 use app\common\model\dynamic\Dynamic;
 use app\common\model\dynamic\DynamicComment;
+use app\common\service\DynamicOwnerService;
 
 /**
  * 动态业务逻辑
@@ -464,10 +465,7 @@ class DynamicLogic extends BaseLogic
     public static function staffEdit(int $staffId, int $dynamicId, array $params): bool
     {
         try {
-            $dynamic = Dynamic::where('id', $dynamicId)
-                ->where('staff_id', $staffId)
-                ->where('user_type', Dynamic::USER_TYPE_STAFF)
-                ->find();
+            $dynamic = DynamicOwnerService::findOwnedStaffDynamic($dynamicId, $staffId);
             if (!$dynamic) {
                 self::setError('动态不存在');
                 return false;
@@ -506,10 +504,7 @@ class DynamicLogic extends BaseLogic
     public static function staffDelete(int $staffId, int $dynamicId): bool
     {
         try {
-            $dynamic = Dynamic::where('id', $dynamicId)
-                ->where('staff_id', $staffId)
-                ->where('user_type', Dynamic::USER_TYPE_STAFF)
-                ->find();
+            $dynamic = DynamicOwnerService::findOwnedStaffDynamic($dynamicId, $staffId);
             if (!$dynamic) {
                 self::setError('动态不存在');
                 return false;

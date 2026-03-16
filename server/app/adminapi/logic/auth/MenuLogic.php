@@ -18,10 +18,9 @@ namespace app\adminapi\logic\auth;
 use app\common\enum\YesNoEnum;
 use app\common\logic\BaseLogic;
 use app\common\model\auth\Admin;
-use app\common\model\auth\AdminRole;
 use app\common\model\auth\SystemMenu;
-use app\common\model\auth\SystemRole;
 use app\common\model\auth\SystemRoleMenu;
+use app\common\service\StaffService;
 
 
 /**
@@ -62,6 +61,7 @@ class MenuLogic extends BaseLogic
             ->toArray();
 
         $menu = self::filterUnavailableMenus($menu);
+        $menu = self::normalizeStaffCenterProfileMenu($menu);
 
         // 服务人员中心仅对服务人员角色可见（管理员默认不展示该入口）
         if (!self::hasStaffRole((int)$adminId)) {
@@ -84,23 +84,55 @@ class MenuLogic extends BaseLogic
 
 
     /**
+     * @notes 修正服务人员中心“我的资料”菜单为详情页
+     */
+    private static function normalizeStaffCenterProfileMenu(array $menu): array
+    {
+        $staffCenterIds = array_column(array_filter($menu, function ($item) {
+            return ($item['pid'] ?? 0) == 0
+                && ($item['type'] ?? '') === 'M'
+                && in_array(($item['paths'] ?? ''), ['staff_center', 'staff-center'], true);
+        }), 'id');
+
+        if (empty($staffCenterIds)) {
+            return $menu;
+        }
+
+        foreach ($menu as &$item) {
+            if (!in_array((int)($item['pid'] ?? 0), $staffCenterIds, true)) {
+                continue;
+            }
+
+            $isProfileMenu = ($item['type'] ?? '') === 'C'
+                && (
+                    ($item['paths'] ?? '') === 'profile'
+                    || ($item['perms'] ?? '') === 'staff.staff/lists'
+                    || ($item['perms'] ?? '') === 'staff.staff/myProfile'
+                );
+
+            if (!$isProfileMenu) {
+                continue;
+            }
+
+            $item['name'] = '我的资料';
+            $item['paths'] = 'profile';
+            $item['component'] = 'staff_center/profile/index';
+            $item['perms'] = 'staff.staff/myProfile';
+        }
+        unset($item);
+
+        return $menu;
+    }
+
+
+    /**
      * @notes 是否包含服务人员角色
      * @param int $adminId
      * @return bool
      */
     private static function hasStaffRole(int $adminId): bool
     {
-        $staffRoleIds = SystemRole::where('name', '服务人员')
-            ->whereNull('delete_time')
-            ->column('id');
-
-        if (empty($staffRoleIds)) {
-            return false;
-        }
-
-        return AdminRole::where('admin_id', $adminId)
-            ->whereIn('role_id', $staffRoleIds)
-            ->count() > 0;
+        return StaffService::hasStaffRoleByAdminId($adminId);
     }
 
 
