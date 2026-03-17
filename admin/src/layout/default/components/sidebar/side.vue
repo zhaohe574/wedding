@@ -33,15 +33,15 @@ const isCollapsed = computed(() => {
 const settingStore = useSettingStore()
 const sideTheme = computed(() => settingStore.sideTheme)
 const userStore = useUserStore()
+const collapsedWidth = 64
 
 const routes = computed(() => userStore.routes)
 
 const sideStyle = computed(() => {
-    return sideTheme.value == 'dark'
-        ? {
-              '--side-dark-color': settingStore.sideDarkColor
-          }
-        : ''
+    return {
+        '--aside-width': `${isCollapsed.value ? collapsedWidth : settingStore.sideWidth}px`,
+        '--side-dark-color': sideTheme.value == 'dark' ? settingStore.sideDarkColor : ''
+    }
 })
 const menuProp = computed(() => {
     return {
@@ -63,6 +63,7 @@ const handleSelect = () => {
     z-index: 999;
     @apply border-r border-br-light h-full flex flex-col;
     width: var(--aside-width);
+    transition: width 0.3s ease;
     border-color: var(--admin-color-border);
     box-shadow: 4px 0 24px rgba(15, 23, 42, 0.06);
     background-color: var(--side-dark-color, var(--el-bg-color));

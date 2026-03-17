@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace app\adminapi\controller\crm;
 
 use app\adminapi\controller\BaseAdminController;
-use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\lists\crm\SalesAdvisorLists;
 use app\adminapi\logic\crm\SalesAdvisorLogic;
 use app\adminapi\validate\crm\SalesAdvisorValidate;
@@ -20,14 +19,6 @@ use app\adminapi\validate\crm\SalesAdvisorValidate;
  */
 class SalesAdvisorController extends BaseAdminController
 {
-    use OfflineModuleGuard;
-
-    public function initialize()
-    {
-        parent::initialize();
-        $this->abortOfflineModule('CRM 管理');
-    }
-
     /**
      * @notes 顾问列表
      * @return \think\response\Json
@@ -44,7 +35,7 @@ class SalesAdvisorController extends BaseAdminController
     public function detail()
     {
         $params = (new SalesAdvisorValidate())->goCheck('detail');
-        $result = SalesAdvisorLogic::detail($params['id']);
+        $result = SalesAdvisorLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('顾问不存在');
         }
@@ -86,7 +77,7 @@ class SalesAdvisorController extends BaseAdminController
     public function delete()
     {
         $params = (new SalesAdvisorValidate())->post()->goCheck('delete');
-        $result = SalesAdvisorLogic::delete($params['id']);
+        $result = SalesAdvisorLogic::delete((int)$params['id']);
         if (true === $result) {
             return $this->success('删除成功');
         }
@@ -100,7 +91,7 @@ class SalesAdvisorController extends BaseAdminController
     public function updateStatus()
     {
         $params = (new SalesAdvisorValidate())->post()->goCheck('updateStatus');
-        $result = SalesAdvisorLogic::updateStatus($params['id'], $params['status']);
+        $result = SalesAdvisorLogic::updateStatus((int)$params['id'], (int)$params['status']);
         if (true === $result) {
             return $this->success('更新成功');
         }

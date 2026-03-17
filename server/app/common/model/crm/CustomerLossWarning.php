@@ -258,8 +258,15 @@ class CustomerLossWarning extends BaseModel
         
         foreach ($customers as $customer) {
             // 计算未跟进天数
-            $lastFollowTime = $customer['last_follow_time'] ?: $customer['create_time'];
-            $daysNoFollow = (int)ceil((time() - $lastFollowTime) / 86400);
+            $lastFollowTime = Customer::parseTimestampValue($customer['last_follow_time'] ?? null);
+            $createTime = Customer::parseTimestampValue($customer['create_time'] ?? null);
+            $baseTime = $lastFollowTime > 0 ? $lastFollowTime : $createTime;
+
+            if ($baseTime <= 0) {
+                continue;
+            }
+
+            $daysNoFollow = (int)ceil(max(0, time() - $baseTime) / 86400);
             
             // 确定预警等级
             if ($daysNoFollow >= $threshold30) {

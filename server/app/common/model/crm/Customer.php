@@ -51,6 +51,25 @@ class Customer extends BaseModel
     const GENDER_FEMALE = 2;        // 女
 
     /**
+     * @notes 统一解析时间值，兼容时间戳和日期字符串
+     * @param mixed $value
+     * @return int
+     */
+    public static function parseTimestampValue($value): int
+    {
+        if ($value === null || $value === '' || $value === false) {
+            return 0;
+        }
+
+        if (is_numeric($value)) {
+            return (int)$value;
+        }
+
+        $timestamp = strtotime((string)$value);
+        return $timestamp === false ? 0 : $timestamp;
+    }
+
+    /**
      * @notes 意向等级选项
      * @return array
      */
@@ -271,11 +290,15 @@ class Customer extends BaseModel
      */
     public function getDaysNoFollowAttr($value, $data): int
     {
-        if (empty($data['last_follow_time'])) {
-            // 从创建时间算起
-            return (int)ceil((time() - $data['create_time']) / 86400);
+        $lastFollowTime = self::parseTimestampValue($data['last_follow_time'] ?? null);
+        $createTime = self::parseTimestampValue($data['create_time'] ?? null);
+        $baseTime = $lastFollowTime > 0 ? $lastFollowTime : $createTime;
+
+        if ($baseTime <= 0) {
+            return 0;
         }
-        return (int)ceil((time() - $data['last_follow_time']) / 86400);
+
+        return (int)ceil(max(0, time() - $baseTime) / 86400);
     }
 
     /**

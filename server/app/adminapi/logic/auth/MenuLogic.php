@@ -141,10 +141,8 @@ class MenuLogic extends BaseLogic
      */
     private static function filterUnavailableMenus(array $menu): array
     {
-        $blockedPaths = ['crm', 'timeline', 'aftersale'];
+        $blockedPaths = ['timeline', 'aftersale'];
         $blockedComponents = [
-            'crm/customer/index',
-            'crm/warning/index',
             'aftersale/ticket/index',
             'timeline/lists/index',
             'financial/cost/index',
@@ -153,16 +151,6 @@ class MenuLogic extends BaseLogic
             'schedule/event/index',
         ];
         $blockedPermPrefixes = [
-            'crm.customer/',
-            'crm.sales_advisor/',
-            'crm.salesAdvisor/',
-            'crm.customer_loss_warning/',
-            'crm.customerLossWarning/',
-            'crm.followRecord/',
-            'growth.customer/',
-            'growth.advisor/',
-            'growth.lossWarning/',
-            'growth.followRecord/',
             'timeline.timeline/',
             'growth.timeline/',
             'aftersale.aftersale/',

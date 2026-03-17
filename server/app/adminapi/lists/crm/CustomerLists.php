@@ -192,8 +192,15 @@ class CustomerLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     private function getDaysNoFollow(array $item): int
     {
-        $lastTime = $item['last_follow_time'] ?: $item['create_time'];
-        return (int)ceil((time() - $lastTime) / 86400);
+        $lastTime = Customer::parseTimestampValue($item['last_follow_time'] ?? null);
+        $createTime = Customer::parseTimestampValue($item['create_time'] ?? null);
+        $baseTime = $lastTime > 0 ? $lastTime : $createTime;
+
+        if ($baseTime <= 0) {
+            return 0;
+        }
+
+        return (int)ceil(max(0, time() - $baseTime) / 86400);
     }
 
     /**

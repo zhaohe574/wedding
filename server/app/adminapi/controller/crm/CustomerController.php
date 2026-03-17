@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace app\adminapi\controller\crm;
 
 use app\adminapi\controller\BaseAdminController;
-use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\lists\crm\CustomerLists;
 use app\adminapi\logic\crm\CustomerLogic;
 use app\adminapi\validate\crm\CustomerValidate;
@@ -20,14 +19,6 @@ use app\adminapi\validate\crm\CustomerValidate;
  */
 class CustomerController extends BaseAdminController
 {
-    use OfflineModuleGuard;
-
-    public function initialize()
-    {
-        parent::initialize();
-        $this->abortOfflineModule('CRM 管理');
-    }
-
     /**
      * @notes 客户列表
      * @return \think\response\Json
@@ -44,7 +35,7 @@ class CustomerController extends BaseAdminController
     public function detail()
     {
         $params = (new CustomerValidate())->goCheck('detail');
-        $result = CustomerLogic::detail($params['id']);
+        $result = CustomerLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('客户不存在');
         }
@@ -86,7 +77,7 @@ class CustomerController extends BaseAdminController
     public function delete()
     {
         $params = (new CustomerValidate())->post()->goCheck('delete');
-        $result = CustomerLogic::delete($params['id']);
+        $result = CustomerLogic::delete((int)$params['id']);
         if (true === $result) {
             return $this->success('删除成功');
         }
@@ -101,8 +92,8 @@ class CustomerController extends BaseAdminController
     {
         $params = (new CustomerValidate())->post()->goCheck('assign');
         $result = CustomerLogic::assignAdvisor(
-            $params['id'],
-            $params['advisor_id'],
+            (int)$params['id'],
+            (int)$params['advisor_id'],
             $this->adminId,
             $params['reason'] ?? ''
         );
@@ -140,7 +131,7 @@ class CustomerController extends BaseAdminController
     public function markLoss()
     {
         $params = (new CustomerValidate())->post()->goCheck('loss');
-        $result = CustomerLogic::markAsLost($params['id'], $params['loss_reason'] ?? '');
+        $result = CustomerLogic::markAsLost((int)$params['id'], $params['loss_reason'] ?? '');
         if (true === $result) {
             return $this->success('标记成功');
         }
@@ -155,9 +146,9 @@ class CustomerController extends BaseAdminController
     {
         $params = (new CustomerValidate())->post()->goCheck('updateIntention');
         $result = CustomerLogic::updateIntention(
-            $params['id'],
+            (int)$params['id'],
             $params['intention_level'],
-            $params['intention_score'] ?? 0
+            (int)($params['intention_score'] ?? 0)
         );
         if (true === $result) {
             return $this->success('更新成功');
@@ -197,7 +188,7 @@ class CustomerController extends BaseAdminController
     public function assignHistory()
     {
         $params = (new CustomerValidate())->goCheck('detail');
-        $result = CustomerLogic::getAssignHistory($params['id']);
+        $result = CustomerLogic::getAssignHistory((int)$params['id']);
         return $this->data($result);
     }
 

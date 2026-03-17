@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace app\adminapi\controller\crm;
 
 use app\adminapi\controller\BaseAdminController;
-use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\lists\crm\FollowRecordLists;
 use app\adminapi\logic\crm\FollowRecordLogic;
 use app\adminapi\validate\crm\FollowRecordValidate;
@@ -20,14 +19,6 @@ use app\adminapi\validate\crm\FollowRecordValidate;
  */
 class FollowRecordController extends BaseAdminController
 {
-    use OfflineModuleGuard;
-
-    public function initialize()
-    {
-        parent::initialize();
-        $this->abortOfflineModule('CRM 管理');
-    }
-
     /**
      * @notes 跟进记录列表
      * @return \think\response\Json
@@ -44,7 +35,7 @@ class FollowRecordController extends BaseAdminController
     public function detail()
     {
         $params = (new FollowRecordValidate())->goCheck('detail');
-        $result = FollowRecordLogic::detail($params['id']);
+        $result = FollowRecordLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('跟进记录不存在');
         }
@@ -86,7 +77,7 @@ class FollowRecordController extends BaseAdminController
     public function delete()
     {
         $params = (new FollowRecordValidate())->post()->goCheck('delete');
-        $result = FollowRecordLogic::delete($params['id']);
+        $result = FollowRecordLogic::delete((int)$params['id']);
         if (true === $result) {
             return $this->success('删除成功');
         }
@@ -101,7 +92,7 @@ class FollowRecordController extends BaseAdminController
     {
         $params = (new FollowRecordValidate())->goCheck('customerRecords');
         $limit = $this->request->get('limit', 20);
-        $result = FollowRecordLogic::getCustomerRecords($params['customer_id'], (int)$limit);
+        $result = FollowRecordLogic::getCustomerRecords((int)$params['customer_id'], (int)$limit);
         return $this->data($result);
     }
 
@@ -126,7 +117,7 @@ class FollowRecordController extends BaseAdminController
     public function importantRecords()
     {
         $params = (new FollowRecordValidate())->goCheck('customerRecords');
-        $result = FollowRecordLogic::getImportantRecords($params['customer_id']);
+        $result = FollowRecordLogic::getImportantRecords((int)$params['customer_id']);
         return $this->data($result);
     }
 
