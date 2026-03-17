@@ -109,14 +109,6 @@
                 <el-table-column prop="customer_name" label="客户姓名" width="120" />
                 <el-table-column prop="customer_phone" label="联系电话" width="130" />
                 <el-table-column prop="booking_date" label="预约日期" width="120" />
-                <el-table-column prop="time_slot" label="时间段" width="100">
-                    <template #default="{ row }">
-                        <el-tag v-if="row.time_slot === 0" size="small">全天</el-tag>
-                        <el-tag v-else-if="row.time_slot === 1" type="success" size="small">早礼</el-tag>
-                        <el-tag v-else-if="row.time_slot === 2" type="warning" size="small">午宴</el-tag>
-                        <el-tag v-else-if="row.time_slot === 3" type="info" size="small">晚宴</el-tag>
-                    </template>
-                </el-table-column>
                 <el-table-column prop="service_name" label="预约服务" min-width="150" />
                 <el-table-column prop="status" label="状态" width="100">
                     <template #default="{ row }">
@@ -170,9 +162,6 @@
                     <el-descriptions-item label="客户姓名">{{ currentRow.customer_name }}</el-descriptions-item>
                     <el-descriptions-item label="联系电话">{{ currentRow.customer_phone }}</el-descriptions-item>
                     <el-descriptions-item label="预约日期">{{ currentRow.booking_date }}</el-descriptions-item>
-                    <el-descriptions-item label="时间段">
-                        {{ currentRow.time_slot === 0 ? '全天' : currentRow.time_slot === 1 ? '早礼' : currentRow.time_slot === 2 ? '午宴' : '晚宴' }}
-                    </el-descriptions-item>
                     <el-descriptions-item label="预约服务" :span="2">{{ currentRow.service_name }}</el-descriptions-item>
                     <el-descriptions-item label="备注" :span="2">{{ currentRow.remark || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="预约时间" :span="2">{{ currentRow.create_time }}</el-descriptions-item>

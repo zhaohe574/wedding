@@ -92,7 +92,7 @@
                     <template #default="{ row }">
                         <div>{{ row.package_name || '-' }}</div>
                         <div class="text-gray-400 text-xs">
-                            {{ row.service_date }} {{ row.time_slot_desc }}
+                            {{ row.service_date }}
                         </div>
                     </template>
                 </el-table-column>
@@ -156,7 +156,6 @@
                     <el-descriptions-item label="客户姓名">{{ currentDetail.customer_name || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="联系电话">{{ currentDetail.customer_phone || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="服务日期">{{ currentDetail.service_date }}</el-descriptions-item>
-                    <el-descriptions-item label="时间段">{{ currentDetail.time_slot_desc }}</el-descriptions-item>
                     <el-descriptions-item label="套餐">{{ currentDetail.package_name || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="确认状态">{{ currentDetail.confirm_status_desc }}</el-descriptions-item>
                     <el-descriptions-item label="订单项状态">{{ currentDetail.item_status_desc }}</el-descriptions-item>

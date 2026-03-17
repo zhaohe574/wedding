@@ -21,12 +21,10 @@ class OrderChangeValidate extends BaseValidate
         'order_id' => 'require|integer|gt:0',
         'order_item_id' => 'require|integer|gt:0',
         'new_date' => 'require|date',
-        'new_time_slot' => 'require|integer|between:0,3',
         'new_staff_id' => 'require|integer|gt:0',
         'staff_id' => 'require|integer|gt:0',
         'package_id' => 'require|integer|gt:0',
         'service_date' => 'require|date',
-        'time_slot' => 'require|integer|between:0,3',
         'reason' => 'max:255',
         'attach_images' => 'array|max:5',
         'proof_images' => 'array|max:10',
@@ -48,8 +46,6 @@ class OrderChangeValidate extends BaseValidate
         'order_item_id.integer' => '订单项ID格式错误',
         'new_date.require' => '请选择新服务日期',
         'new_date.date' => '新服务日期格式错误',
-        'new_time_slot.require' => '请选择时间段',
-        'new_time_slot.between' => '时间段参数错误',
         'new_staff_id.require' => '请选择新工作人员',
         'new_staff_id.integer' => '工作人员ID格式错误',
         'staff_id.require' => '请选择工作人员',
@@ -58,8 +54,6 @@ class OrderChangeValidate extends BaseValidate
         'package_id.integer' => '套餐ID格式错误',
         'service_date.require' => '请选择服务日期',
         'service_date.date' => '服务日期格式错误',
-        'time_slot.require' => '请选择时间段',
-        'time_slot.between' => '时间段参数错误',
         'reason.max' => '原因最多255个字符',
         'attach_images.array' => '附件图片格式错误',
         'attach_images.max' => '附件图片最多5张',
@@ -105,7 +99,7 @@ class OrderChangeValidate extends BaseValidate
      */
     public function sceneDateChange()
     {
-        return $this->only(['order_id', 'new_date', 'new_time_slot', 'reason', 'attach_images']);
+        return $this->only(['order_id', 'new_date', 'reason', 'attach_images']);
     }
 
     /**
@@ -123,7 +117,7 @@ class OrderChangeValidate extends BaseValidate
      */
     public function sceneAddItem()
     {
-        return $this->only(['order_id', 'staff_id', 'package_id', 'service_date', 'time_slot', 'reason']);
+        return $this->only(['order_id', 'staff_id', 'package_id', 'service_date', 'reason']);
     }
 
     /**

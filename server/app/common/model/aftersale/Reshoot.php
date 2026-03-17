@@ -204,7 +204,7 @@ class Reshoot extends BaseModel
                 'reason' => $data['reason'] ?? '',
                 'images' => $data['images'] ?? [],
                 'expect_date' => $data['expect_date'] ?? null,
-                'expect_time_slot' => $data['expect_time_slot'] ?? '',
+                'expect_time_slot' => '',
                 'status' => self::STATUS_PENDING,
                 'is_free' => 1,  // 默认免费
                 'create_time' => time(),

@@ -281,24 +281,17 @@
                     <view class="packages-list">
                         <view
                             v-for="pkg in staffInfo.packages"
-                            :key="pkg.package_id"
+                            :key="pkg.id"
                             class="package-item"
                         >
                             <view class="package-info">
-                                <text class="package-name">{{ pkg.package?.name }}</text>
+                                <text class="package-name">{{ pkg.name }}</text>
                             </view>
                             <view class="package-price-group">
-                                <text
-                                    v-if="pkg.original_price || pkg.package?.original_price"
-                                    class="package-original-price"
-                                >
-                                    ¥{{ pkg.original_price || pkg.package?.original_price }}
+                                <text v-if="pkg.original_price" class="package-original-price">
+                                    ¥{{ pkg.original_price }}
                                 </text>
-                                <text class="package-price"
-                                    >¥{{
-                                        pkg.custom_price || pkg.price || pkg.package?.price
-                                    }}</text
-                                >
+                                <text class="package-price">¥{{ pkg.price }}</text>
                             </view>
                         </view>
                     </view>

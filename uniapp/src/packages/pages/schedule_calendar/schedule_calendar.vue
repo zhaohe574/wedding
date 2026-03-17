@@ -223,17 +223,17 @@
             <view class="package-list">
                 <view
                     v-for="pkg in staffPackages"
-                    :key="pkg.package_id"
+                    :key="getPackageId(pkg)"
                     class="package-card"
-                    :class="{ active: selectedPackageId === pkg.package_id }"
+                    :class="{ active: selectedPackageId === getPackageId(pkg) }"
                     @click="selectPackage(pkg)"
                 >
                     <view class="package-main">
                         <view class="package-info">
-                            <text class="package-name">{{
-                                pkg.package?.name || '未命名套餐'
-                            }}</text>
-                            <text class="package-type">{{ getBookingTypeLabel(pkg) }}</text>
+                            <text class="package-name">{{ getPackageName(pkg) }}</text>
+                            <text class="package-type">
+                                {{ pkg.description || pkg.package?.description || '全天预约，价格固定' }}
+                            </text>
                         </view>
                         <view class="package-price-wrapper">
                             <view v-if="getPackageOriginalPrice(pkg)" class="original-price">
@@ -244,53 +244,6 @@
                             <text class="package-price">¥{{ getPackageBasePrice(pkg) }}</text>
                         </view>
                     </view>
-                    <view class="package-slots" v-if="getAllowedSlotLabels(pkg).length">
-                        <view
-                            v-for="slotLabel in getAllowedSlotLabels(pkg)"
-                            :key="slotLabel"
-                            class="slot-tag"
-                        >
-                            {{ slotLabel }}
-                        </view>
-                    </view>
-                </view>
-            </view>
-        </view>
-
-        <!-- 场次选择 -->
-        <view v-if="selectedDate && selectedPackage" class="time-slot-section">
-            <view class="section-header">
-                <text class="section-title">选择场次</text>
-                <text class="section-hint"
-                    >{{ selectedDate }}{{ bookingType === 1 ? ' · 可多选' : '' }}</text
-                >
-            </view>
-            <view class="time-slots">
-                <view
-                    v-for="slot in timeSlotOptions"
-                    :key="slot.value"
-                    class="slot-item"
-                    :class="{
-                        'is-selected': isSlotSelected(slot.value),
-                        'is-unavailable': !isSlotAvailable(slot.value)
-                    }"
-                    :style="
-                        isSlotSelected(slot.value)
-                            ? {
-                                  background: $theme.primaryColor,
-                                  borderColor: $theme.primaryColor
-                              }
-                            : {}
-                    "
-                    @click="handleSlotClick(slot)"
-                >
-                    <tn-icon
-                        :name="slot.icon"
-                        size="40"
-                        :color="isSlotSelected(slot.value) ? '#FFFFFF' : $theme.primaryColor"
-                    />
-                    <text class="slot-label">{{ slot.label }}</text>
-                    <text class="slot-price" v-if="slot.price !== null">¥{{ slot.price }}</text>
                 </view>
             </view>
         </view>
@@ -331,15 +284,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, getCurrentInstance } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getStaffSchedule, joinWaitlist } from '@/api/schedule'
 import { addToCart } from '@/api/cart'
 import { getStaffDetail, getStaffList } from '@/api/staff'
+import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { requestSubscribeByScene } from '@/utils/subscribe'
-import { getRect } from '@/utils/util'
 
+const $theme = useThemeStore()
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
 const formatDate = (date: Date) => {
@@ -377,119 +331,25 @@ const currentYear = ref(new Date().getFullYear())
 const currentMonth = ref(new Date().getMonth() + 1)
 const calendarData = ref<any>({})
 const selectedDate = ref('')
-const selectedTimeSlots = ref<number[]>([])
 const recommendStaffList = ref<any[]>([])
 const recommendLoading = ref(false)
-const skipSlotScheduleFetch = ref(false)
-const pageCtx = getCurrentInstance()
-
-const bookingTypeLabels: Record<number, string> = {
-    0: '全天套餐',
-    1: '分场次套餐'
-}
-
-const timeSlotLabels: Record<number, string> = {
-    0: '全天',
-    1: '早礼',
-    2: '午宴',
-    3: '晚宴'
-}
-
-const timeSlotIcons: Record<number, string> = {
-    0: 'wea-sun',
-    1: 'sunrise',
-    2: 'wea-sun',
-    3: 'moon'
-}
+const getPackageId = (pkg: any) => Number(pkg?.package_id || pkg?.id || 0)
+const getPackageName = (pkg: any) => pkg?.name || pkg?.package?.name || '未命名套餐'
 
 const selectedPackage = computed(() => {
-    return staffPackages.value.find((pkg) => pkg.package_id === selectedPackageId.value) || null
+    return staffPackages.value.find((pkg) => getPackageId(pkg) === selectedPackageId.value) || null
 })
 
 const selectedPackageName = computed(() => {
-    return selectedPackage.value?.package?.name || ''
+    return selectedPackage.value ? getPackageName(selectedPackage.value) : ''
 })
 
 const staffCategoryId = computed(() => {
-    return staffInfo.value?.category?.id || staffInfo.value?.category_id || ''
+    return Number(staffInfo.value?.category?.id || staffInfo.value?.category_id || 0)
 })
 
 const recommendCategoryName = computed(() => {
     return staffInfo.value?.category?.name || '同类型'
-})
-
-const normalizeSlots = (value: any): number[] => {
-    if (!Array.isArray(value)) {
-        return []
-    }
-    return value.map((slot) => Number(slot)).filter((slot) => Number.isFinite(slot))
-}
-
-const getPackageBookingType = (pkg: any): number => {
-    if (!pkg) {
-        return 0
-    }
-    const staffBookingType = pkg.booking_type
-    if (staffBookingType !== null && staffBookingType !== undefined && staffBookingType !== '') {
-        return Number(staffBookingType)
-    }
-    const packageBookingType = pkg.package?.booking_type
-    if (
-        packageBookingType !== null &&
-        packageBookingType !== undefined &&
-        packageBookingType !== ''
-    ) {
-        return Number(packageBookingType)
-    }
-    return 0
-}
-
-const bookingType = computed(() => {
-    if (!selectedPackage.value) {
-        return null
-    }
-    return getPackageBookingType(selectedPackage.value)
-})
-
-const getAllowedSlots = (pkg: any): number[] => {
-    if (!pkg) {
-        return []
-    }
-    if (getPackageBookingType(pkg) === 0) {
-        return [0]
-    }
-    const staffAllowed = normalizeSlots(pkg.allowed_time_slots)
-    if (staffAllowed.length > 0) {
-        return staffAllowed
-    }
-    const packageAllowed = normalizeSlots(pkg.package?.allowed_time_slots)
-    if (packageAllowed.length > 0) {
-        return packageAllowed
-    }
-    return [1, 2, 3]
-}
-
-const allowedTimeSlots = computed(() => {
-    if (!selectedPackage.value) {
-        return []
-    }
-    const slots = getAllowedSlots(selectedPackage.value)
-    return slots.filter((slot) => slot >= 1 && slot <= 3)
-})
-
-const timeSlotOptions = computed(() => {
-    if (!selectedPackage.value) {
-        return []
-    }
-    const type = bookingType.value
-    const slots =
-        type === 0 ? [0] : allowedTimeSlots.value.length ? allowedTimeSlots.value : [1, 2, 3]
-    return slots.map((slot) => ({
-        value: slot,
-        label: timeSlotLabels[slot],
-        icon: timeSlotIcons[slot],
-        price: getSlotPrice(slot)
-    }))
 })
 
 const selectedDay = computed(() => {
@@ -501,9 +361,9 @@ const selectedDay = computed(() => {
 
 const isAvailable = computed(() => {
     if (!selectedDay.value) {
-        return true
+        return false
     }
-    return !!selectedDay.value.is_available
+    return !isTodayOrPast(selectedDate.value) && !!selectedDay.value.is_available
 })
 
 const showRecommendSection = computed(() => {
@@ -511,95 +371,28 @@ const showRecommendSection = computed(() => {
 })
 
 const showWaitlistButton = computed(() => {
-    return !!selectedDate.value && !isAvailable.value && !isTodayOrPast(selectedDate.value)
+    return !!selectedDate.value && !!selectedPackage.value && !isAvailable.value && !isTodayOrPast(selectedDate.value)
 })
 
 const canSubmit = computed(() => {
-    if (!selectedPackage.value || !selectedDate.value) {
-        return false
-    }
-    if (isTodayOrPast(selectedDate.value)) {
-        return false
-    }
-    if (bookingType.value === 1) {
-        return selectedTimeSlots.value.length > 0
-    }
-    return true
+    return !!selectedPackage.value && !!selectedDate.value && !isTodayOrPast(selectedDate.value)
 })
 
 const currentPrice = computed(() => {
     if (!selectedPackage.value) {
-        return 0
+        return '0.00'
     }
-    if (bookingType.value === 0) {
-        return getSlotPrice(0)
-    }
-    if (selectedTimeSlots.value.length === 0) {
-        return 0
-    }
-    return selectedTimeSlots.value.reduce((sum, slot) => sum + getSlotPrice(slot), 0)
+    return Number(getPackageBasePrice(selectedPackage.value) || 0).toFixed(2)
 })
 
-const isSlotSelected = (slot: number) => {
-    return selectedTimeSlots.value.includes(slot)
-}
-
-const isSlotAvailable = (slot: number) => {
-    const day = selectedDay.value
-    if (!day || !day.slot_availability) {
-        return true
-    }
-    if (bookingType.value === 1 && day.slot_availability[0] === false) {
-        return false
-    }
-    return !!day.slot_availability[slot]
-}
-
-const applySelectionDefaults = () => {
-    if (!selectedPackage.value) {
-        selectedTimeSlots.value = []
-        return
-    }
-    if (bookingType.value === 0) {
-        selectedTimeSlots.value = [0]
-        return
-    }
-    const allowed = allowedTimeSlots.value
-    const filtered = selectedTimeSlots.value.filter((slot) => slot !== 0)
-    selectedTimeSlots.value =
-        allowed.length > 0 ? filtered.filter((slot) => allowed.includes(slot)) : filtered
-}
-
-const getBookingTypeLabel = (pkg: any) => {
-    const type = getPackageBookingType(pkg)
-    return bookingTypeLabels[type] || '未知类型'
-}
-
-const getAllowedSlotLabels = (pkg: any) => {
-    const type = getPackageBookingType(pkg)
-    if (type === 0) {
-        return []
-    }
-    return getAllowedSlots(pkg)
-        .filter((slot) => slot >= 1 && slot <= 3)
-        .map((slot) => timeSlotLabels[slot])
-}
-
 const getPackageBasePrice = (pkg: any) => {
-    // 优先使用个人定制价格
-    if (pkg?.custom_price !== null && pkg?.custom_price !== undefined && pkg?.custom_price !== '') {
-        return Number(pkg.custom_price)
-    }
-    // 其次使用配置的默认价格
     if (pkg?.price !== null && pkg?.price !== undefined && pkg?.price !== '') {
         return Number(pkg.price)
     }
-    // 最后使用全局套餐价格
     return Number(pkg?.package?.price || 0)
 }
 
 const getPackageOriginalPrice = (pkg: any) => {
-    // 获取原价（用于显示划线价）
     if (
         pkg?.original_price !== null &&
         pkg?.original_price !== undefined &&
@@ -607,7 +400,6 @@ const getPackageOriginalPrice = (pkg: any) => {
     ) {
         return Number(pkg.original_price)
     }
-    // 如果配置了原价，也可以从全局套餐获取
     if (
         pkg?.package?.original_price !== null &&
         pkg?.package?.original_price !== undefined &&
@@ -616,27 +408,6 @@ const getPackageOriginalPrice = (pkg: any) => {
         return Number(pkg.package.original_price)
     }
     return null
-}
-
-const getSlotPrice = (slot: number) => {
-    const pkg = selectedPackage.value
-    if (!pkg) {
-        return 0
-    }
-    const customSlots = Array.isArray(pkg.custom_slot_prices) ? pkg.custom_slot_prices : []
-    const customSlot = customSlots.find((item: any) => Number(item.time_slot) === slot)
-    if (customSlot && customSlot.price !== undefined) {
-        return Number(customSlot.price) || 0
-    }
-    if (pkg.custom_price !== null && pkg.custom_price !== undefined && pkg.custom_price !== '') {
-        return Number(pkg.custom_price) || 0
-    }
-    const packageSlots = Array.isArray(pkg.package?.slot_prices) ? pkg.package.slot_prices : []
-    const packageSlot = packageSlots.find((item: any) => Number(item.time_slot) === slot)
-    if (packageSlot && packageSlot.price !== undefined) {
-        return Number(packageSlot.price) || 0
-    }
-    return Number(pkg.package?.price || pkg.price || 0)
 }
 
 const pickerValue = computed(() => {
@@ -657,21 +428,11 @@ const calendarDays = computed(() => {
 })
 
 const buildScheduleParams = () => {
-    const params: any = {
+    return {
         staff_id: staffId.value,
         year: currentYear.value,
         month: currentMonth.value
     }
-    if (selectedPackage.value) {
-        params.booking_type = bookingType.value
-        if (bookingType.value === 1 && allowedTimeSlots.value.length > 0) {
-            params.allowed_time_slots = allowedTimeSlots.value
-        }
-    }
-    if (bookingType.value === 1 && selectedTimeSlots.value.length > 0) {
-        params.time_slots = selectedTimeSlots.value
-    }
-    return params
 }
 
 const fetchSchedule = async () => {
@@ -736,7 +497,7 @@ const fetchStaffDetail = async () => {
             const defaultPackage = staffPackages.value.find(
                 (pkg: any) => Number(pkg.is_default) === 1
             )
-            selectedPackageId.value = (defaultPackage || staffPackages.value[0]).package_id
+            selectedPackageId.value = getPackageId(defaultPackage || staffPackages.value[0])
         }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '获取人员信息失败'
@@ -792,32 +553,9 @@ const handleDayClick = (day: any) => {
     }
 
     selectedDate.value = day.date
-    if (bookingType.value === 0) {
-        selectedTimeSlots.value = [0]
-    }
-
     if (!day.is_available) {
         uni.showToast({ title: '该日期不可预约，可加入候补', icon: 'none' })
     }
-}
-
-const handleSlotClick = (slot: any) => {
-    if (selectedDate.value && isTodayOrPast(selectedDate.value)) {
-        uni.showToast({ title: '当天不支持预约', icon: 'none' })
-        return
-    }
-    if (bookingType.value === 0) {
-        selectedTimeSlots.value = [slot.value]
-        return
-    }
-    const current = selectedTimeSlots.value.slice()
-    const index = current.indexOf(slot.value)
-    if (index >= 0) {
-        current.splice(index, 1)
-    } else {
-        current.push(slot.value)
-    }
-    selectedTimeSlots.value = current
 }
 
 const getStatusClass = (day: any) => {
@@ -862,11 +600,6 @@ const ensureReady = () => {
         return false
     }
 
-    if (bookingType.value === 1 && selectedTimeSlots.value.length === 0) {
-        uni.showToast({ title: '请选择场次', icon: 'none' })
-        return false
-    }
-
     return true
 }
 
@@ -889,11 +622,6 @@ const handleJoinWaitlist = async () => {
             staff_id: staffId.value,
             date: selectedDate.value,
             package_id: selectedPackageId.value
-        }
-        if (bookingType.value === 1) {
-            payload.time_slots = selectedTimeSlots.value
-        } else {
-            payload.time_slot = selectedTimeSlots.value[0] ?? 0
         }
         await joinWaitlist(payload)
         uni.showToast({ title: '已加入候补', icon: 'success' })
@@ -923,11 +651,6 @@ const handleAddToCart = async () => {
             date: selectedDate.value,
             package_id: selectedPackageId.value
         }
-        if (bookingType.value === 1) {
-            payload.time_slots = selectedTimeSlots.value
-        } else {
-            payload.time_slot = selectedTimeSlots.value[0] ?? 0
-        }
         await addToCart(payload)
         uni.showToast({ title: '已加入购物车', icon: 'success' })
 
@@ -940,51 +663,9 @@ const handleAddToCart = async () => {
     }
 }
 
-const scrollToTimeSlotSection = async () => {
-    if (!selectedDate.value) {
-        return
-    }
-    await nextTick()
-    if (!selectedPackage.value) {
-        return
-    }
-    const rect = await getRect<{ top: number }>('.time-slot-section', false, pageCtx).catch(
-        () => null
-    )
-    if (!rect) {
-        return
-    }
-    const query = uni.createSelectorQuery().in(pageCtx)
-    query
-        .selectViewport()
-        .scrollOffset(() => undefined)
-        .exec((res) => {
-            const viewport = res?.[0]
-            if (!viewport || typeof viewport.scrollTop !== 'number') {
-                return
-            }
-            const targetTop = viewport.scrollTop + rect.top - 12
-            uni.pageScrollTo({
-                scrollTop: targetTop > 0 ? targetTop : 0,
-                duration: 150
-            })
-        })
-}
-
 const selectPackage = (pkg: any) => {
-    selectedPackageId.value = pkg.package_id
-    if (selectedDate.value) {
-        scrollToTimeSlotSection()
-    }
+    selectedPackageId.value = getPackageId(pkg)
 }
-
-watch(selectedPackage, (pkg) => {
-    skipSlotScheduleFetch.value = true
-    applySelectionDefaults()
-    if (pkg) {
-        fetchSchedule()
-    }
-})
 
 watch([selectedDate, isAvailable, staffCategoryId], () => {
     if (!selectedDate.value || isAvailable.value) {
@@ -993,20 +674,6 @@ watch([selectedDate, isAvailable, staffCategoryId], () => {
     }
     fetchRecommendStaff()
 })
-
-watch(
-    () => selectedTimeSlots.value,
-    () => {
-        if (skipSlotScheduleFetch.value) {
-            skipSlotScheduleFetch.value = false
-            return
-        }
-        if (bookingType.value === 1 && selectedDate.value) {
-            fetchSchedule()
-        }
-    },
-    { deep: true }
-)
 
 onLoad(async (options: any) => {
     staffId.value = parseInt(options.staff_id || '0')
@@ -1034,25 +701,8 @@ onLoad(async (options: any) => {
         }
     }
 
-    if (options.time_slots) {
-        const slots = String(options.time_slots)
-            .split(',')
-            .map((slot) => Number(slot))
-            .filter((slot) => Number.isFinite(slot))
-        if (slots.length > 0) {
-            selectedTimeSlots.value = slots
-        }
-    } else if (options.time_slot) {
-        const slot = Number(options.time_slot)
-        if (Number.isFinite(slot)) {
-            selectedTimeSlots.value = [slot]
-        }
-    }
-
     await fetchStaffDetail()
-    if (staffPackages.value.length === 0) {
-        fetchSchedule()
-    }
+    await fetchSchedule()
 })
 </script>
 

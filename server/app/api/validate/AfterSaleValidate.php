@@ -32,7 +32,6 @@ class AfterSaleValidate extends BaseValidate
         'reason_type' => 'in:1,2,3,4,5',
         'reason' => 'max:2000',
         'expect_date' => 'date',
-        'expect_time_slot' => 'max:50',
         'score' => 'integer|between:1,5',
         'score_service' => 'integer|between:1,5',
         'score_professional' => 'integer|between:1,5',

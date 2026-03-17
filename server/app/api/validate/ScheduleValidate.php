@@ -20,8 +20,6 @@ class ScheduleValidate extends BaseValidate
         'id' => 'require|integer|gt:0',
         'staff_id' => 'require|integer|gt:0',
         'date' => 'require|date',
-        'time_slot' => 'integer|between:0,3',
-        'time_slots' => 'array',
         'year' => 'integer|between:2020,2100',
         'month' => 'integer|between:1,12',
         'package_id' => 'require|integer|gt:0',
@@ -36,12 +34,10 @@ class ScheduleValidate extends BaseValidate
         'staff_id.integer' => '工作人员ID格式错误',
         'date.require' => '请选择日期',
         'date.date' => '日期格式错误',
-        'time_slot.between' => '时间段参数错误',
         'year.between' => '年份参数错误',
         'month.between' => '月份参数错误',
         'package_id.require' => '请选择套餐',
         'package_id.gt' => '套餐ID格式错误',
-        'time_slots.array' => '时间段列表格式错误',
         'lock_duration.between' => '锁定时长应在60-3600秒之间',
         'remark.max' => '备注最多255个字符',
     ];
@@ -70,7 +66,7 @@ class ScheduleValidate extends BaseValidate
      */
     public function sceneCheck()
     {
-        return $this->only(['staff_id', 'date', 'time_slot']);
+        return $this->only(['staff_id', 'date']);
     }
 
     /**
@@ -79,7 +75,7 @@ class ScheduleValidate extends BaseValidate
      */
     public function sceneLock()
     {
-        return $this->only(['staff_id', 'date', 'time_slot', 'lock_duration']);
+        return $this->only(['staff_id', 'date', 'lock_duration']);
     }
 
     /**
@@ -88,7 +84,7 @@ class ScheduleValidate extends BaseValidate
      */
     public function sceneRelease()
     {
-        return $this->only(['staff_id', 'date', 'time_slot']);
+        return $this->only(['staff_id', 'date']);
     }
 
     /**
@@ -97,7 +93,7 @@ class ScheduleValidate extends BaseValidate
      */
     public function sceneWaitlist()
     {
-        return $this->only(['staff_id', 'date', 'time_slot', 'time_slots', 'package_id', 'remark']);
+        return $this->only(['staff_id', 'date', 'package_id', 'remark']);
     }
 
     /**

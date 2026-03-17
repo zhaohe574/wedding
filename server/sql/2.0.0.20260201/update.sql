@@ -2263,7 +2263,7 @@ INSERT INTO `la_subscribe_message_scene` (`id`, `scene`, `name`, `description`, 
 (8, 'ticket_update', '工单进度通知', '售后工单状态更新通知', '', 'TicketUpdated', NULL, 'pages/aftersale/ticket_detail', 1, 1, 1773413107, 1773413107),
 (9, 'change_result', '变更审核通知', '订单变更申请审核结果通知', '', 'ChangeProcessed', NULL, 'pages/order_change/change_detail', 1, 1, 1773413107, 1773413107),
 (10, 'schedule_change', '档期变更通知', '人员档期发生变更时通知', '', 'ScheduleChanged', NULL, 'pages/order_detail/order_detail', 1, 1, 1773413107, 1773413107),
-(11, 'waitlist_release', '候补释放通知', '档期释放后通知候补用户', '', 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"time_slot_desc","thing4":"package_name","thing5":"remark"}', 'packages/pages/waitlist/waitlist', 1, 1, 1773413107, 1773413107);
+(11, 'waitlist_release', '候补释放通知', '档期释放后通知候补用户', '', 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"remark"}', 'packages/pages/waitlist/waitlist', 1, 1, 1773413107, 1773413107);
 
 -- la_subscribe_message_template
 DELETE FROM `la_subscribe_message_template`;
@@ -2273,7 +2273,7 @@ INSERT INTO `la_subscribe_message_template` (`id`, `template_id`, `name`, `title
 (3, 'TEMPLATE_ID_SERVICE_REMIND', '服务提醒通知', '服务提醒', 'schedule_remind', '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}', NULL, '服务内容,服务时间,服务地点,服务人员', '', 1, 98, '服务前1天/3天提醒，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
 (4, 'TEMPLATE_ID_REFUND_RESULT', '退款结果通知', '退款通知', 'refund_result', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}', NULL, '订单编号,退款金额,退款状态,退款原因', '', 1, 97, '退款审核后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
 (5, 'TEMPLATE_ID_TICKET_UPDATE', '工单进度通知', '工单状态更新', 'ticket_update', '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}', NULL, '工单编号,工单状态,处理说明,更新时间', '', 1, 96, '工单状态变更时发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
-(6, 'TEMPLATE_ID_WAITLIST_RELEASE', '候补释放通知', '候补释放', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"时间段","value":""},"thing4":{"key":"套餐名称","value":""},"thing5":{"key":"备注","value":""}}', NULL, '服务人员,档期日期,时间段,套餐名称,备注', '', 1, 95, '候补释放后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL);
+(6, 'TEMPLATE_ID_WAITLIST_RELEASE', '候补释放通知', '候补释放', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"备注","value":""}}', NULL, '服务人员,档期日期,套餐名称,备注', '', 1, 95, '候补释放后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL);
 
 -- la_system_role
 DELETE FROM `la_system_role`;

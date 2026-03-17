@@ -21,7 +21,7 @@ class OrderItem extends BaseModel
     protected $name = 'order_item';
 
     // 追加属性到数组
-    protected $append = ['time_slot_desc', 'item_status_desc'];
+    protected $append = ['item_status_desc'];
 
     // 项状态
     const STATUS_PENDING = 0;       // 待服务
@@ -78,25 +78,4 @@ class OrderItem extends BaseModel
         return $map[$data['item_status']] ?? '未知';
     }
 
-    /**
-     * @notes 时间段描述获取器
-     * @param $value
-     * @param $data
-     * @return string
-     */
-    public function getTimeSlotDescAttr($value, $data): string
-    {
-        // 防御性检查：确保 time_slot 键存在
-        if (!isset($data['time_slot'])) {
-            return '未知';
-        }
-        
-        $map = [
-            0 => '全天',
-            1 => '早礼',
-            2 => '午宴',
-            3 => '晚宴',
-        ];
-        return $map[$data['time_slot']] ?? '未知';
-    }
 }

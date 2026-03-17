@@ -136,15 +136,6 @@ class WaitlistLists extends BaseAdminDataLists implements ListsExtendInterface
         ];
         $item['notify_status_desc'] = $statusMap[$item['notify_status']] ?? '未知';
 
-        // 时间段描述
-        $timeSlotMap = [
-            0 => '全天',
-            1 => '早礼',
-            2 => '午宴',
-            3 => '晚宴'
-        ];
-        $item['time_slot_desc'] = $timeSlotMap[$item['time_slot']] ?? '未知';
-
         return $item;
     }
 

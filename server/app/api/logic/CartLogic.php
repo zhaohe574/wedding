@@ -44,30 +44,11 @@ class CartLogic extends BaseLogic
      */
     public static function addToCart(array $params): array
     {
-        $timeSlots = $params['time_slots'] ?? [];
-        if (is_array($timeSlots) && !empty($timeSlots)) {
-            [$success, $message, $cartIds] = Cart::addToCartMultiple(
-                (int)$params['user_id'],
-                (int)$params['staff_id'],
-                $params['date'],
-                $timeSlots,
-                (int)($params['package_id'] ?? 0),
-                $params['remark'] ?? ''
-            );
-            return [
-                'success' => $success,
-                'message' => $message,
-                'cart_id' => $cartIds[0] ?? null,
-                'cart_ids' => $cartIds,
-            ];
-        }
-
-        // Explicitly cast to int to handle string parameters from POST requests
         [$success, $message, $cartId] = Cart::addToCart(
             (int)$params['user_id'],
-            (int)$params['staff_id'],  // Cast string to int
+            (int)$params['staff_id'],
             $params['date'],
-            (int)($params['time_slot'] ?? 0),
+            0,
             (int)($params['package_id'] ?? 0),
             $params['remark'] ?? ''
         );

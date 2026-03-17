@@ -374,7 +374,7 @@ class CartPlan extends BaseModel
                 $userId,
                 $item['staff_id'],
                 $item['schedule_date'],
-                $item['time_slot'],
+                0,
                 $item['package_id'],
                 $item['remark']
             );
@@ -477,7 +477,7 @@ class CartPlan extends BaseModel
                 $userId,
                 (int)($item['staff_id'] ?? 0),
                 (string)($item['schedule_date'] ?? ''),
-                (int)($item['time_slot'] ?? 0),
+                0,
                 (int)($item['package_id'] ?? 0),
                 (string)($item['remark'] ?? '')
             );
@@ -514,16 +514,8 @@ class CartPlan extends BaseModel
             ->select()
             ->toArray();
 
-        $slotMap = [
-            0 => '全天',
-            1 => '早礼',
-            2 => '午宴',
-            3 => '晚宴',
-        ];
-
         $snapshot = [];
         foreach ($items as $item) {
-            $timeSlot = (int)($item['time_slot'] ?? 0);
             $snapshot[] = [
                 'cart_id' => $item['id'] ?? 0,
                 'staff_id' => $item['staff_id'] ?? 0,
@@ -532,8 +524,6 @@ class CartPlan extends BaseModel
                 'package_id' => $item['package_id'] ?? 0,
                 'package_name' => $item['package']['name'] ?? '',
                 'schedule_date' => $item['schedule_date'] ?? '',
-                'time_slot' => $timeSlot,
-                'time_slot_desc' => $slotMap[$timeSlot] ?? '未知场次',
                 'price' => $item['price'] ?? 0,
                 'quantity' => $item['quantity'] ?? 1,
                 'remark' => $item['remark'] ?? '',

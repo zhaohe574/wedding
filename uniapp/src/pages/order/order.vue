@@ -155,17 +155,6 @@ const getStatusKey = (status: number) => {
     return statusMap[status] || 'pending_pay'
 }
 
-const getTimeSlotLabel = (timeSlot: any) => {
-    const map: Record<number, string> = {
-        0: '全天',
-        1: '早礼',
-        2: '午宴',
-        3: '晚宴'
-    }
-    const slot = Number(timeSlot ?? -1)
-    return Number.isFinite(slot) && slot >= 0 ? map[slot] || '未知场次' : '未选择场次'
-}
-
 const buildActions = (status: number) => {
     if (status === 0) {
         return [{ text: '取消', type: 'secondary', action: 'cancel' }]
@@ -227,9 +216,7 @@ const fetchOrders = async (refresh = false) => {
                     staffName: item.staff_name,
                     staffAvatar: getStaffAvatar(item),
                     packageName: item.package_name,
-                    serviceDate: item.service_date,
-                    timeSlot: item.time_slot,
-                    timeSlotDesc: getTimeSlotLabel(item.time_slot)
+                    serviceDate: item.service_date
                 })),
                 actions: buildActions(order.order_status)
             }

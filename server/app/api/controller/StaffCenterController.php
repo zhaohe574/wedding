@@ -165,7 +165,7 @@ class StaffCenterController extends BaseApiController
     }
 
     /**
-     * @notes 关联套餐
+     * @notes 新增套餐
      */
     public function packageAdd()
     {
@@ -174,7 +174,7 @@ class StaffCenterController extends BaseApiController
         }
 
         $params = (new StaffCenterValidate())->post()->goCheck('packageAdd');
-        $result = StaffCenterLogic::packageAdd($this->userId, (int) $params['package_id']);
+        $result = StaffCenterLogic::packageAdd($this->userId, $params);
         if (true === $result) {
             return $this->success('添加成功', [], 1, 1);
         }

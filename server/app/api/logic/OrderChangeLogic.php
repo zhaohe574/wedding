@@ -136,7 +136,6 @@ class OrderChangeLogic extends BaseLogic
      * @param int $userId
      * @param int $orderId
      * @param string $newDate
-     * @param int $newTimeSlot
      * @param string $reason
      * @param array $attachImages
      * @return array
@@ -145,12 +144,11 @@ class OrderChangeLogic extends BaseLogic
         int $userId,
         int $orderId,
         string $newDate,
-        int $newTimeSlot,
         string $reason = '',
         array $attachImages = []
     ): array {
         [$success, $message, $change] = OrderChange::applyDateChange(
-            $userId, $orderId, $newDate, $newTimeSlot, $reason, $attachImages
+            $userId, $orderId, $newDate, 0, $reason, $attachImages
         );
 
         if ($success && $change) {
@@ -201,7 +199,6 @@ class OrderChangeLogic extends BaseLogic
      * @param int $staffId
      * @param int $packageId
      * @param string $serviceDate
-     * @param int $timeSlot
      * @param string $reason
      * @return array
      */
@@ -211,11 +208,10 @@ class OrderChangeLogic extends BaseLogic
         int $staffId,
         int $packageId,
         string $serviceDate,
-        int $timeSlot,
         string $reason = ''
     ): array {
         [$success, $message, $change] = OrderChange::applyAddItem(
-            $userId, $orderId, $staffId, $packageId, $serviceDate, $timeSlot, $reason
+            $userId, $orderId, $staffId, $packageId, $serviceDate, 0, $reason
         );
 
         return [
@@ -535,9 +531,6 @@ class OrderChangeLogic extends BaseLogic
     {
         return [
             ['value' => 0, 'label' => '全天'],
-            ['value' => 1, 'label' => '早礼'],
-            ['value' => 2, 'label' => '午宴'],
-            ['value' => 3, 'label' => '晚宴'],
         ];
     }
 }

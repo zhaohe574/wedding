@@ -21,7 +21,8 @@ class PackageLists extends BaseApiDataLists
     private function baseQuery()
     {
         $query = ServicePackage::where('delete_time', null)
-            ->where('is_show', 1);
+            ->where('is_show', 1)
+            ->where('staff_id', '>', 0);
 
         if (!empty($this->params['category_id'])) {
             $query->where('category_id', (int)$this->params['category_id']);
@@ -37,8 +38,7 @@ class PackageLists extends BaseApiDataLists
 
     public function lists(): array
     {
-        $field = 'id,category_id,staff_id,package_type,name,image,price,original_price,description,'
-            . 'is_recommend,booking_type,allowed_time_slots';
+        $field = 'id,category_id,staff_id,name,image,price,original_price,description,is_recommend';
 
         $list = $this->baseQuery()
             ->field($field)

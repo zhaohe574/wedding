@@ -169,16 +169,6 @@
                     <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
                 </view>
             </view>
-            <view class="form-item" @click="openTimePicker">
-                <text class="label">时间段</text>
-                <view class="value-area">
-                    <text v-if="formData.time_slot !== null" class="text-primary">
-                        {{ timeSlotOptions[formData.time_slot]?.label }}
-                    </text>
-                    <text v-else class="placeholder">请选择时间段</text>
-                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
-                </view>
-            </view>
             <view class="tip-box mt-3">
                 <tn-icon name="tip" size="28rpx" color="#ff9800"></tn-icon>
                 <text class="text-xs text-orange-500 ml-1">加项服务日期可与原订单日期不同</text>
@@ -395,28 +385,6 @@
                 </picker-view>
             </view>
         </uni-popup>
-
-        <!-- 时间段选择器 -->
-        <uni-popup ref="timePopup" type="bottom" :safe-area="false">
-            <view class="picker-popup">
-                <view class="picker-header">
-                    <text class="cancel" @click="timePopup?.close()">取消</text>
-                    <text class="title">选择时间段</text>
-                    <text class="confirm" @click="confirmTime">确定</text>
-                </view>
-                <view class="time-options">
-                    <view
-                        v-for="option in timeSlotOptions"
-                        :key="option.value"
-                        class="time-option"
-                        :class="{ active: tempTimeSlot === option.value }"
-                        @click="tempTimeSlot = option.value"
-                    >
-                        {{ option.label }}
-                    </view>
-                </view>
-            </view>
-        </uni-popup>
     </view>
 </template>
 
@@ -425,8 +393,10 @@ import { ref, reactive, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { applyAddItem, checkCanChange } from '@/api/orderChange'
 import { getOrderDetail } from '@/api/order'
-import { getServicePackages } from '@/api/service'
 import { getStaffList, getStaffPackages } from '@/api/staff'
+import { useThemeStore } from '@/stores/theme'
+
+const $theme = useThemeStore()
 
 const orderId = ref(0)
 const orderInfo = ref<any>(null)
@@ -450,28 +420,18 @@ const showStaffPackagePicker = ref(false)
 
 const formData = reactive({
     service_date: '',
-    time_slot: null as number | null,
     reason: '',
     attach_images: [] as string[]
 })
-
-const timeSlotOptions = [
-    { value: 0, label: '全天' },
-    { value: 1, label: '早礼' },
-    { value: 2, label: '午宴' },
-    { value: 3, label: '晚宴' }
-]
 
 // 弹窗 refs
 const packagePopup = ref()
 const staffPopup = ref()
 const staffPackagePopup = ref()
 const datePopup = ref()
-const timePopup = ref()
 
 // 日期选择器相关
 const datePickerValue = ref([0, 0, 0])
-const tempTimeSlot = ref(0)
 
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: 3 }, (_, i) => currentYear + i)
@@ -502,16 +462,20 @@ const totalPrice = computed(() => {
     }
 })
 
+const currentOrderStaffId = computed(() => {
+    const firstItem = orderInfo.value?.items?.[0]
+    return Number(firstItem?.staff_id || 0)
+})
+
 // 是否可以提交
 const canSubmit = computed(() => {
     if (addType.value === 'package') {
-        return selectedPackage.value && formData.service_date && formData.time_slot !== null
+        return selectedPackage.value && formData.service_date && currentOrderStaffId.value > 0
     } else {
         return (
             selectedStaff.value &&
             selectedStaffPackage.value &&
-            formData.service_date &&
-            formData.time_slot !== null
+            formData.service_date
         )
     }
 })
@@ -521,6 +485,9 @@ const fetchOrderInfo = async () => {
     try {
         const res = await getOrderDetail({ id: orderId.value })
         orderInfo.value = res
+        if (currentOrderStaffId.value > 0) {
+            await fetchPackageList(currentOrderStaffId.value)
+        }
     } catch (e) {
         console.error(e)
     }
@@ -546,12 +513,17 @@ const checkOrder = async () => {
 }
 
 // 获取套餐列表
-const fetchPackageList = async () => {
+const fetchPackageList = async (staffId: number) => {
+    if (!staffId) {
+        packageList.value = []
+        return
+    }
     try {
-        const res = await getServicePackages({})
+        const res = await getStaffPackages({ staff_id: staffId })
         packageList.value = res.lists || res || []
     } catch (e) {
         console.error(e)
+        packageList.value = []
     }
 }
 
@@ -618,17 +590,6 @@ const confirmDate = () => {
     datePopup.value?.close()
 }
 
-// 时间段选择
-const openTimePicker = () => {
-    tempTimeSlot.value = formData.time_slot ?? 0
-    timePopup.value?.open()
-}
-
-const confirmTime = () => {
-    formData.time_slot = tempTimeSlot.value
-    timePopup.value?.close()
-}
-
 // 图片上传
 const chooseImage = () => {
     uni.chooseImage({
@@ -658,12 +619,12 @@ const handleSubmit = async () => {
             order_id: orderId.value,
             add_type: addType.value,
             service_date: formData.service_date,
-            time_slot: formData.time_slot,
             reason: formData.reason,
             attach_images: formData.attach_images
         }
 
         if (addType.value === 'package') {
+            params.staff_id = currentOrderStaffId.value
             params.package_id = selectedPackage.value.id
         } else {
             params.staff_id = selectedStaff.value.id
@@ -709,6 +670,10 @@ watch(addType, () => {
     selectedPackage.value = null
     selectedStaff.value = null
     selectedStaffPackage.value = null
+    staffPackageList.value = []
+    if (addType.value === 'package') {
+        fetchPackageList(currentOrderStaffId.value)
+    }
 })
 
 onLoad((options: any) => {
@@ -717,7 +682,6 @@ onLoad((options: any) => {
         fetchOrderInfo()
         checkOrder()
     }
-    fetchPackageList()
     fetchStaffList()
 })
 </script>
@@ -1013,24 +977,4 @@ onLoad((options: any) => {
     font-size: 30rpx;
 }
 
-.time-options {
-    padding: 30rpx;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20rpx;
-}
-
-.time-option {
-    padding: 24rpx;
-    text-align: center;
-    border: 2rpx solid #eee;
-    border-radius: 12rpx;
-    font-size: 28rpx;
-
-    &.active {
-        border-color: var(--color-primary, #7C3AED);
-        color: var(--color-primary, #7C3AED);
-        background: rgba(124, 58, 237, 0.05);
-    }
-}
 </style>

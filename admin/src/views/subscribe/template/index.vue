@@ -292,7 +292,7 @@
                         placeholder='请输入JSON对象，例如 {"thing1":"staff_name"}'
                     />
                     <div class="form-tip">
-                        示例：{"thing1":"staff_name","time2":"schedule_date","thing3":"time_slot_desc"}
+                        示例：{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name"}
                     </div>
                 </el-form-item>
                 <el-form-item label="跳转页面" prop="page_path">

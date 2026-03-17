@@ -179,23 +179,7 @@ class StaffController extends BaseAdminController
      */
     public function configurePackages()
     {
-        $params = $this->request->post();
-        $staffId = intval($params['staff_id'] ?? 0);
-        $packages = $params['packages'] ?? [];
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
-            return $this->fail('无权限操作');
-        }
-
-        if ($staffId <= 0) {
-            return $this->fail('请选择员工');
-        }
-
-        $result = StaffLogic::configurePackages($staffId, $packages);
-        if (true === $result) {
-            return $this->success('配置成功', [], 1, 1);
-        }
-        return $this->fail(StaffLogic::getError());
+        return $this->fail('全局套餐关联能力已下线，请直接维护该人员自己的套餐');
     }
 
     /**
@@ -205,7 +189,6 @@ class StaffController extends BaseAdminController
     public function getPackageConfig()
     {
         $staffId = intval($this->request->get('staff_id', 0));
-        $includeGlobal = boolval($this->request->get('include_global', false));
         $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
         if ($staffScopeId > 0) {
             $staffId = $staffScopeId;
@@ -215,7 +198,7 @@ class StaffController extends BaseAdminController
             return $this->fail('请选择员工');
         }
 
-        $result = StaffLogic::getPackageConfig($staffId, $includeGlobal);
+        $result = StaffLogic::getPackageConfig($staffId);
         return $this->data($result);
     }
 
@@ -302,20 +285,8 @@ class StaffController extends BaseAdminController
         if (array_key_exists('original_price', $params)) {
             $data['original_price'] = $params['original_price'];
         }
-        if (isset($params['custom_price'])) {
-            $data['custom_price'] = $params['custom_price'];
-        }
-        if (isset($params['custom_slot_prices'])) {
-            $data['custom_slot_prices'] = $params['custom_slot_prices'];
-        }
-        if (array_key_exists('booking_type', $params)) {
-            $data['booking_type'] = $params['booking_type'];
-        }
-        if (isset($params['allowed_time_slots'])) {
-            $data['allowed_time_slots'] = $params['allowed_time_slots'];
-        }
         if (isset($params['status'])) {
-            $data['status'] = $params['status'];
+            $data['is_show'] = $params['status'];
         }
 
         $result = StaffLogic::updatePackageConfig($staffId, $packageId, $data);
@@ -570,8 +541,7 @@ class StaffController extends BaseAdminController
             return $this->failRequiredStaffScope();
         }
 
-        $includeGlobal = boolval($this->request->get('include_global', false));
-        $result = StaffLogic::getPackageConfig($staffScopeId, $includeGlobal);
+        $result = StaffLogic::getPackageConfig($staffScopeId);
         return $this->data($result);
     }
 
@@ -581,22 +551,7 @@ class StaffController extends BaseAdminController
      */
     public function myProfileConfigurePackages()
     {
-        $staffScopeId = $this->getRequiredStaffScopeId();
-        if ($staffScopeId <= 0) {
-            return $this->failRequiredStaffScope();
-        }
-
-        $params = $this->request->post();
-        $packages = $params['packages'] ?? [];
-        if (!is_array($packages)) {
-            return $this->fail('参数错误');
-        }
-
-        $result = StaffLogic::configurePackages($staffScopeId, $packages);
-        if (true === $result) {
-            return $this->success('配置成功', [], 1, 1);
-        }
-        return $this->fail(StaffLogic::getError());
+        return $this->fail('全局套餐关联能力已下线，请直接维护自己的套餐');
     }
 
     /**
@@ -623,20 +578,8 @@ class StaffController extends BaseAdminController
         if (array_key_exists('original_price', $params)) {
             $data['original_price'] = $params['original_price'];
         }
-        if (isset($params['custom_price'])) {
-            $data['custom_price'] = $params['custom_price'];
-        }
-        if (isset($params['custom_slot_prices'])) {
-            $data['custom_slot_prices'] = $params['custom_slot_prices'];
-        }
-        if (array_key_exists('booking_type', $params)) {
-            $data['booking_type'] = $params['booking_type'];
-        }
-        if (isset($params['allowed_time_slots'])) {
-            $data['allowed_time_slots'] = $params['allowed_time_slots'];
-        }
         if (isset($params['status'])) {
-            $data['status'] = $params['status'];
+            $data['is_show'] = $params['status'];
         }
 
         $result = StaffLogic::updatePackageConfig($staffScopeId, $packageId, $data);

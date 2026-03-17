@@ -106,56 +106,53 @@
                         color: $theme.primaryColor,
                         borderColor: `${$theme.primaryColor}40`
                     }"
-                    @click="batchSetStatus(1)"
+                    @click="setStatus(1)"
                 >
                     <tn-icon name="check-circle" size="28" :color="$theme.primaryColor" />
-                    <text>全部可预约</text>
+                    <text>设为可预约</text>
                 </view>
-                <view class="quick-btn quick-btn-off" @click="batchSetStatus(0)">
+                <view class="quick-btn quick-btn-off" @click="setStatus(0)">
                     <tn-icon name="close-circle" size="28" color="#EF4444" />
-                    <text>全部不可用</text>
+                    <text>设为不可用</text>
                 </view>
             </view>
 
-            <!-- 时段列表 -->
             <view class="slot-list">
-                <view v-for="slot in timeSlots" :key="slot.value" class="slot-row">
+                <view class="slot-row">
                     <view class="slot-left">
-                        <text class="slot-name">{{ slot.label }}</text>
-                        <text class="slot-time">{{ slot.time }}</text>
+                        <text class="slot-name">当日档期</text>
+                        <text class="slot-time">当前系统已统一按全天管理</text>
                     </view>
                     <view class="slot-right">
-                        <!-- 不可编辑状态 -->
                         <view
-                            v-if="getSlotStatus(slot.value) >= 2"
+                            v-if="dayStatus >= 2"
                             class="status-tag"
-                            :style="getStatusTagStyle(getSlotStatus(slot.value))"
+                            :style="getStatusTagStyle(dayStatus)"
                         >
-                            {{ getStatusLabel(getSlotStatus(slot.value)) }}
+                            {{ getStatusLabel(dayStatus) }}
                         </view>
-                        <!-- 可编辑：切换按钮 -->
                         <view v-else class="toggle-group">
                             <view
                                 class="toggle-btn"
-                                :class="{ active: getSlotStatus(slot.value) === 1 }"
+                                :class="{ active: dayStatus === 1 }"
                                 :style="
-                                    getSlotStatus(slot.value) === 1
+                                    dayStatus === 1
                                         ? { background: $theme.primaryColor, color: '#FFF' }
                                         : {}
                                 "
-                                @click="setStatus(slot.value, 1)"
+                                @click="setStatus(1)"
                             >
                                 可预约
                             </view>
                             <view
                                 class="toggle-btn"
-                                :class="{ active: getSlotStatus(slot.value) === 0 }"
+                                :class="{ active: dayStatus === 0 }"
                                 :style="
-                                    getSlotStatus(slot.value) === 0
+                                    dayStatus === 0
                                         ? { background: '#EF4444', color: '#FFF' }
                                         : {}
                                 "
-                                @click="setStatus(slot.value, 0)"
+                                @click="setStatus(0)"
                             >
                                 不可用
                             </view>
@@ -190,14 +187,6 @@ const schedules = ref<Record<string, any>>({})
 
 const weekLabels = ['日', '一', '二', '三', '四', '五', '六']
 const monthText = computed(() => String(month.value).padStart(2, '0'))
-
-// 时段配置（不含全天，全天用快捷操作代替）
-const timeSlots = [
-    { value: 0, label: '全天', time: '全天档期总开关' },
-    { value: 1, label: '早礼', time: '08:00 - 12:00' },
-    { value: 2, label: '午宴', time: '12:00 - 18:00' },
-    { value: 3, label: '晚宴', time: '18:00 - 22:00' }
-]
 
 // 格式化日期为 YYYY-MM-DD
 function formatDateStr(d: Date): string {
@@ -281,38 +270,10 @@ function analyzeDayStatus(dateStr: string): string {
     const dayData = schedules.value[dateStr]
     if (!dayData || Object.keys(dayData).length === 0) return 'default'
 
-    const slots = dayData as Record<number, any>
-
-    // 先检查全天总开关
-    const allDayRecord = slots[0]
-    const allDayStatus = allDayRecord ? Number(allDayRecord.status) : -1
-
-    // 全天被设为不可用 → 整天不可用（除非有已预约的场次）
-    const allDayBlocked = allDayStatus === 0
-
-    let hasBooked = false
-    let hasAvailable = false
-    let hasUnavailable = false
-
-    for (const [key, info] of Object.entries(slots)) {
-        const slotKey = Number(key)
-        const s = Number((info as any).status)
-
-        if (s === 2 || s === 3 || s === 4) {
-            hasBooked = true
-        } else if (s === 1) {
-            // 分场次可预约，但如果全天总开关关了，实际不可用
-            if (slotKey === 0 || !allDayBlocked) {
-                hasAvailable = true
-            }
-        } else if (s === 0) {
-            hasUnavailable = true
-        }
-    }
-
-    if (hasBooked) return 'booked'
-    if (hasAvailable) return 'available'
-    if (allDayBlocked || hasUnavailable) return 'unavailable'
+    const status = Number(dayData[0]?.status ?? -1)
+    if (status === 2 || status === 3 || status === 4) return 'booked'
+    if (status === 0) return 'unavailable'
+    if (status === 1) return 'available'
     return 'default'
 }
 
@@ -355,13 +316,21 @@ function getDayIndicator(dateStr: string): string {
     return ''
 }
 
-// 获取时段状态
-function getSlotStatus(slotValue: number): number {
+function getDayStatus(dateStr: string): number {
+    const dayData = schedules.value[dateStr]
+    if (!dayData) return -1
+    return Number(dayData[0]?.status ?? -1)
+}
+
+const dayStatus = computed(() => {
+    return getDayStatus(selectedDate.value)
+})
+
+// 获取档期状态
+function getSlotStatus(): number {
     const dayData = schedules.value[selectedDate.value]
     if (!dayData) return -1
-    const info = dayData[slotValue]
-    if (!info) return -1
-    return Number(info.status)
+    return Number(dayData[0]?.status ?? -1)
 }
 
 // 状态文本
@@ -412,58 +381,28 @@ function changeMonth(delta: number) {
 }
 
 // 设置单个时段状态
-async function setStatus(slotValue: number, status: number) {
-    const current = getSlotStatus(slotValue)
+async function setStatus(status: number) {
+    const current = getSlotStatus()
     if (current >= 2) {
-        uni.showToast({ title: '该时段不可调整', icon: 'none' })
+        uni.showToast({ title: '该日期不可调整', icon: 'none' })
         return
     }
-    // 如果当前已经是目标状态，不重复请求
     if (current === status) return
 
     try {
         await staffCenterScheduleSetStatus({
             date: selectedDate.value,
-            time_slot: slotValue,
             status
         })
-        // 更新本地数据
         if (!schedules.value[selectedDate.value]) {
             schedules.value[selectedDate.value] = {}
         }
-        schedules.value[selectedDate.value][slotValue] = { status }
+        schedules.value[selectedDate.value][0] = { status }
         uni.showToast({ title: '设置成功', icon: 'success' })
     } catch (e: any) {
         const msg = typeof e === 'string' ? e : e?.msg || e?.message || '设置失败'
         uni.showToast({ title: msg, icon: 'none' })
     }
-}
-
-// 批量设置所有时段
-async function batchSetStatus(status: number) {
-    let hasError = false
-    for (const slot of timeSlots) {
-        const current = getSlotStatus(slot.value)
-        if (current >= 2) continue // 跳过不可编辑的
-        if (current === status) continue // 跳过已经是目标状态的
-        try {
-            await staffCenterScheduleSetStatus({
-                date: selectedDate.value,
-                time_slot: slot.value,
-                status
-            })
-            if (!schedules.value[selectedDate.value]) {
-                schedules.value[selectedDate.value] = {}
-            }
-            schedules.value[selectedDate.value][slot.value] = { status }
-        } catch {
-            hasError = true
-        }
-    }
-    uni.showToast({
-        title: hasError ? '部分设置失败' : '设置成功',
-        icon: hasError ? 'none' : 'success'
-    })
 }
 
 // 获取月份数据

@@ -110,58 +110,6 @@
                                 </view>
                             </view>
                         </view>
-
-                        <!-- 套餐卡片 -->
-                        <view
-                            v-else-if="currentType === 'package'"
-                            class="result-card"
-                            @click="handlePackageDetail(item)"
-                        >
-                            <image
-                                class="result-cover"
-                                :src="item.image || '/static/images/user/default_avatar.png'"
-                                mode="aspectFill"
-                                lazy-load
-                            />
-                            <view class="result-info">
-                                <view class="result-header">
-                                    <text class="result-title">{{ item.name }}</text>
-                                    <view
-                                        v-if="item.staff_name"
-                                        class="result-badge"
-                                        :style="{
-                                            backgroundColor: getLightColor(
-                                                $theme.primaryColor,
-                                                0.1
-                                            ),
-                                            color: $theme.primaryColor,
-                                            borderColor: getLightColor($theme.primaryColor, 0.3)
-                                        }"
-                                    >
-                                        {{ item.staff_name }}
-                                    </view>
-                                </view>
-                                <text class="result-desc">{{
-                                    item.description || '暂无描述'
-                                }}</text>
-                                <view class="result-price">
-                                    <text class="price-symbol" :style="{ color: $theme.ctaColor }"
-                                        >¥</text
-                                    >
-                                    <text class="price-value" :style="{ color: $theme.ctaColor }">{{
-                                        item.price
-                                    }}</text>
-                                    <text
-                                        v-if="
-                                            item.original_price && item.original_price > item.price
-                                        "
-                                        class="price-original"
-                                    >
-                                        ¥{{ item.original_price }}
-                                    </text>
-                                </view>
-                            </view>
-                        </view>
                     </block>
                 </z-paging>
             </view>
@@ -181,22 +129,11 @@ import cache from '@/utils/cache'
 import { getArticleList } from '@/api/news'
 import { getDynamicList, likeDynamic } from '@/api/dynamic'
 import { getStaffList, getWorkLists, toggleStaffFavorite } from '@/api/staff'
-import { getPackageLists } from '@/api/service'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
 import { mapDynamicItem } from '@/utils/dynamic'
 
 const $theme = useThemeStore()
-
-// 获取浅色变体
-const getLightColor = (color: string, opacity: number) => {
-    // 简单的颜色透明度处理
-    const hex = color.replace('#', '')
-    const r = parseInt(hex.substring(0, 2), 16)
-    const g = parseInt(hex.substring(2, 4), 16)
-    const b = parseInt(hex.substring(4, 6), 16)
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`
-}
 
 interface Search {
     hot_search: {
@@ -225,8 +162,7 @@ const searchTypes = [
     { label: '文章', value: 'article' },
     { label: '动态', value: 'dynamic' },
     { label: '人员', value: 'staff' },
-    { label: '作品', value: 'work' },
-    { label: '套餐', value: 'package' }
+    { label: '作品', value: 'work' }
 ]
 const currentTypeIndex = ref(0)
 const currentType = computed(() => searchTypes[currentTypeIndex.value]?.value || 'article')
@@ -343,15 +279,6 @@ const queryList = async (page_no: number, page_size: number) => {
             paging.value.complete(lists)
             return
         }
-        if (currentType.value === 'package') {
-            const { lists } = await getPackageLists({
-                keyword: keyword.value,
-                page_no,
-                page_size
-            })
-            paging.value.complete(lists)
-            return
-        }
     } catch (e) {
         console.log('报错=>', e)
         //TODO handle the exception
@@ -417,14 +344,6 @@ const handleWorkDetail = (work: any) => {
     uni.navigateTo({
         url: `/packages/pages/staff_detail/staff_detail?id=${work.staff_id}&tab=works`
     })
-}
-
-const handlePackageDetail = (pkg: any) => {
-    if (pkg?.staff_id) {
-        uni.navigateTo({ url: `/packages/pages/staff_detail/staff_detail?id=${pkg.staff_id}` })
-        return
-    }
-    uni.showToast({ title: '该套餐暂无专属人员', icon: 'none' })
 }
 
 getHotSearchFunc()

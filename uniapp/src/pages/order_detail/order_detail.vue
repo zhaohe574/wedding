@@ -87,7 +87,7 @@
                                         <view class="slot-info">
                                             <view class="slot-row">
                                                 <text class="slot-label">{{
-                                                    getOrderTimeSlotLabel(item)
+                                                    `预约日期：${item.service_date || group.service_date || '-'}`
                                                 }}</text>
                                                 <text
                                                     class="slot-price"
@@ -585,42 +585,11 @@ const groupedItems = computed(() => {
     })
 
     groups.forEach((group) => {
-        group.packages.forEach((pkg: any) => {
-            pkg.items.sort((a: any, b: any) => Number(a.time_slot || 0) - Number(b.time_slot || 0))
-        })
         delete group.packageMap
     })
 
     return groups
 })
-
-const getOrderTimeSlotLabel = (item: any) => {
-    // 优先使用 time_slot_desc（如果后端返回了描述）
-    if (item?.time_slot_desc) {
-        return item.time_slot_desc
-    }
-
-    // 使用 time_slot 数字映射
-    const map: Record<number, string> = {
-        0: '全天',
-        1: '早档',
-        2: '午档',
-        3: '晚档'
-    }
-
-    const slot = Number(item?.time_slot)
-    if (Number.isFinite(slot) && slot >= 0) {
-        return map[slot] || `场次${slot}`
-    }
-
-    // 如果没有 time_slot，尝试使用 service_time
-    if (item?.service_time) {
-        return item.service_time
-    }
-
-    // 最后返回默认值
-    return '未知场次'
-}
 
 // 获取订单状态样式
 const getStatusStyle = (status: number) => {

@@ -36,16 +36,20 @@ class StaffCenterValidate extends BaseValidate
         'is_show' => 'in:0,1',
 
         'package_id' => 'require|integer|gt:0',
+        'category_id' => 'integer|gt:0',
+        'price' => 'float|egt:0',
+        'original_price' => 'float|egt:0',
+        'image' => 'max:255',
+        'description' => 'max:500',
+        'content' => 'checkContent',
+        'sort' => 'integer|egt:0',
+        'is_show' => 'in:0,1',
+        'is_recommend' => 'in:0,1',
         'status' => 'in:0,1',
-        'custom_price' => 'float|egt:0',
-        'booking_type' => 'in:0,1',
-        'allowed_time_slots' => 'array',
 
         'date' => 'require|dateFormat:Y-m-d',
-        'time_slot' => 'in:0,1,2,3',
 
         'dynamic_type' => 'in:1,2,3,4',
-        'content' => 'require',
         'allow_comment' => 'in:0,1',
     ];
 
@@ -70,14 +74,16 @@ class StaffCenterValidate extends BaseValidate
         'package_id.require' => '请选择套餐',
         'package_id.integer' => '套餐参数错误',
         'package_id.gt' => '请选择套餐',
+        'category_id.gt' => '请选择服务分类',
+        'price.float' => '价格格式不正确',
+        'price.egt' => '价格不能小于0',
+        'original_price.float' => '原价格式不正确',
+        'original_price.egt' => '原价不能小于0',
+        'content' => '内容格式错误',
         'status.in' => '套餐状态参数错误',
-        'custom_price.float' => '价格格式不正确',
-        'custom_price.egt' => '价格不能小于0',
-        'booking_type.in' => '预约类型参数错误',
 
         'date.require' => '请选择日期',
         'date.dateFormat' => '日期格式错误',
-        'time_slot.in' => '时间段参数错误',
 
         'dynamic_type.in' => '动态类型参数错误',
         'content.require' => '请输入动态内容',
@@ -109,12 +115,18 @@ class StaffCenterValidate extends BaseValidate
 
     public function scenePackageAdd(): StaffCenterValidate
     {
-        return $this->only(['package_id']);
+        return $this->only(['name', 'category_id', 'price', 'original_price', 'content', 'description', 'image', 'sort', 'is_show', 'is_recommend'])
+            ->append('name', 'require')
+            ->append('category_id', 'require')
+            ->append('price', 'require');
     }
 
     public function scenePackageUpdate(): StaffCenterValidate
     {
-        return $this->only(['package_id', 'price', 'original_price', 'custom_price', 'custom_slot_prices', 'booking_type', 'allowed_time_slots', 'status']);
+        return $this->only(['package_id', 'name', 'category_id', 'price', 'original_price', 'content', 'description', 'image', 'sort', 'is_show', 'is_recommend'])
+            ->append('name', 'require')
+            ->append('category_id', 'require')
+            ->append('price', 'require');
     }
 
     public function scenePackageRemove(): StaffCenterValidate
@@ -124,7 +136,7 @@ class StaffCenterValidate extends BaseValidate
 
     public function sceneScheduleSet(): StaffCenterValidate
     {
-        return $this->only(['date', 'time_slot', 'status']);
+        return $this->only(['date', 'status']);
     }
 
     public function sceneDynamicAdd(): StaffCenterValidate
@@ -151,5 +163,18 @@ class StaffCenterValidate extends BaseValidate
     public function sceneOrderConfirm(): StaffCenterValidate
     {
         return $this->only(['id']);
+    }
+
+    /**
+     * @notes 兼容动态正文和套餐内容
+     * @param mixed $value
+     * @return bool|string
+     */
+    protected function checkContent($value)
+    {
+        if (is_array($value) || is_string($value) || $value === null) {
+            return true;
+        }
+        return '内容格式错误';
     }
 }

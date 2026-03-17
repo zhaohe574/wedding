@@ -37,10 +37,6 @@
             <template v-if="item.name == 'staff-showcase' && isComponentEnabled(item)">
                 <w-staff-showcase :content="item.content" :styles="item.styles" />
             </template>
-            <!-- 服务套餐组件 -->
-            <template v-if="item.name == 'service-packages' && isComponentEnabled(item)">
-                <w-service-packages :content="item.content" :styles="item.styles" />
-            </template>
             <!-- 案例作品组件 -->
             <template v-if="item.name == 'portfolio-gallery' && isComponentEnabled(item)">
                 <w-portfolio-gallery :content="item.content" :styles="item.styles" />
@@ -264,6 +260,7 @@ const getData = async () => {
             } else {
                 state.pages = data.page.data
             }
+            state.pages = state.pages.filter((item: any) => item?.name !== 'service-packages')
         }
         if (data?.page?.meta) {
             if (typeof data.page.meta === 'string') {

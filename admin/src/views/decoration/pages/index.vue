@@ -78,7 +78,6 @@ const menus: Record<
             'nav',
             'middle-banner',
             'staff-showcase',
-            'service-packages',
             'portfolio-gallery',
             'customer-reviews',
             'activity-zone',
@@ -146,6 +145,9 @@ const getData = async () => {
     const pageData = JSON.parse(data.data)
     // 兼容旧数据：移除废弃的disabled字段，确保content.enabled存在，补全默认字段
     pageData.forEach((item: any) => {
+        if (item?.name === 'service-packages') {
+            return
+        }
         if ('disabled' in item && item.name !== 'user-info') {
             delete item.disabled
         }
@@ -161,7 +163,7 @@ const getData = async () => {
             item.styles = { ...defaultOptions.styles, ...(item.styles || {}) }
         }
     })
-    menus[String(data.id)].pageData = pageData
+    menus[String(data.id)].pageData = pageData.filter((item: any) => item?.name !== 'service-packages')
     menus[String(data.id)].pageMeta = data?.meta ? JSON.parse(data?.meta) : null
 }
 

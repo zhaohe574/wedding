@@ -110,7 +110,6 @@
                 <el-table-column prop="customer_name" label="客户姓名" width="120" />
                 <el-table-column prop="customer_phone" label="联系电话" width="130" />
                 <el-table-column prop="schedule_date" label="期望日期" width="120" />
-                <el-table-column prop="time_slot_desc" label="时间段" width="100" />
                 <el-table-column prop="service_name" label="候补服务" min-width="150" />
                 <el-table-column prop="notify_status" label="状态" width="100">
                     <template #default="{ row }">
@@ -167,7 +166,6 @@
                     <el-descriptions-item label="客户姓名">{{ currentRow.customer_name }}</el-descriptions-item>
                     <el-descriptions-item label="联系电话">{{ currentRow.customer_phone }}</el-descriptions-item>
                     <el-descriptions-item label="期望日期">{{ currentRow.schedule_date }}</el-descriptions-item>
-                    <el-descriptions-item label="时间段">{{ currentRow.time_slot_desc }}</el-descriptions-item>
                     <el-descriptions-item label="候补服务" :span="2">{{ currentRow.service_name }}</el-descriptions-item>
                     <el-descriptions-item label="备注" :span="2">{{ currentRow.remark || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="申请时间" :span="2">{{ currentRow.create_time }}</el-descriptions-item>

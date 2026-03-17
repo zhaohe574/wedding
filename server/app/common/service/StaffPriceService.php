@@ -8,11 +8,10 @@ declare(strict_types=1);
 namespace app\common\service;
 
 use app\common\model\service\ServicePackage;
-use app\common\model\staff\StaffPackage;
 
 /**
  * 服务人员展示价格服务
- * 口径：取可售套餐候选价格中的最小值
+ * 口径：仅取人员专属套餐固定价中的最小值
  */
 class StaffPriceService
 {
@@ -28,72 +27,26 @@ class StaffPriceService
             return [];
         }
 
-        $priceCandidates = [];
-        $linkedPackageMap = [];
-
-        foreach ($staffIds as $staffId) {
-            $priceCandidates[$staffId] = [];
-            $linkedPackageMap[$staffId] = [];
-        }
-
-        // 1) 人员已关联且启用的套餐（以 staff_package 配置为准）
-        $linkedPackages = StaffPackage::alias('sp')
-            ->join('service_package p', 'p.id = sp.package_id')
-            ->whereIn('sp.staff_id', $staffIds)
-            ->where('sp.status', 1)
-            ->where('p.is_show', 1)
-            ->whereNull('p.delete_time')
-            ->field([
-                'sp.staff_id',
-                'sp.package_id',
-                'sp.price as staff_price',
-                'sp.custom_price',
-                'sp.custom_slot_prices',
-                'p.price as package_price',
-                'p.slot_prices',
-            ])
-            ->select()
-            ->toArray();
-
-        foreach ($linkedPackages as $item) {
-            $staffId = (int)($item['staff_id'] ?? 0);
-            $packageId = (int)($item['package_id'] ?? 0);
-            if ($staffId <= 0 || $packageId <= 0 || !isset($priceCandidates[$staffId])) {
-                continue;
-            }
-
-            $linkedPackageMap[$staffId][$packageId] = true;
-            $priceCandidates[$staffId] = array_merge(
-                $priceCandidates[$staffId],
-                self::extractPriceCandidates($item, true)
-            );
-        }
-
-        // 2) 人员专属套餐（仅补充未在 staff_package 中显式关联的部分）
-        $staffOnlyPackages = ServicePackage::whereIn('staff_id', $staffIds)
-            ->where('package_type', ServicePackage::TYPE_STAFF_ONLY)
+        $packages = ServicePackage::whereIn('staff_id', $staffIds)
             ->where('is_show', 1)
             ->whereNull('delete_time')
-            ->field(['id as package_id', 'staff_id', 'price as package_price', 'slot_prices'])
+            ->field(['staff_id', 'price'])
             ->select()
             ->toArray();
 
-        foreach ($staffOnlyPackages as $item) {
+        $priceCandidates = [];
+        foreach ($staffIds as $staffId) {
+            $priceCandidates[$staffId] = [];
+        }
+        foreach ($packages as $item) {
             $staffId = (int)($item['staff_id'] ?? 0);
-            $packageId = (int)($item['package_id'] ?? 0);
-            if ($staffId <= 0 || $packageId <= 0 || !isset($priceCandidates[$staffId])) {
+            if ($staffId <= 0 || !isset($priceCandidates[$staffId])) {
                 continue;
             }
-
-            // 去重：同一 staff_id + package_id 已有关联配置时，优先关联配置路径
-            if (!empty($linkedPackageMap[$staffId][$packageId])) {
-                continue;
+            $price = round((float)($item['price'] ?? 0), 2);
+            if ($price > 0) {
+                $priceCandidates[$staffId][] = $price;
             }
-
-            $priceCandidates[$staffId] = array_merge(
-                $priceCandidates[$staffId],
-                self::extractPriceCandidates($item, false)
-            );
         }
 
         $result = [];
@@ -152,81 +105,6 @@ class StaffPriceService
     }
 
     /**
-     * @notes 提取候选价格
-     * 规则顺序：
-     * 1. staff_package.custom_slot_prices[*].price
-     * 2. staff_package.custom_price
-     * 3. staff_package.price
-     * 4. service_package.slot_prices[*].price
-     * 5. service_package.price
-     */
-    protected static function extractPriceCandidates(array $row, bool $withStaffPackage): array
-    {
-        $prices = [];
-
-        if ($withStaffPackage) {
-            $prices = array_merge(
-                $prices,
-                self::extractSlotPrices($row['custom_slot_prices'] ?? null),
-                self::extractSinglePrice($row['custom_price'] ?? null),
-                self::extractSinglePrice($row['staff_price'] ?? null)
-            );
-        }
-
-        $prices = array_merge(
-            $prices,
-            self::extractSlotPrices($row['slot_prices'] ?? null),
-            self::extractSinglePrice($row['package_price'] ?? null)
-        );
-
-        return $prices;
-    }
-
-    /**
-     * @notes 提取单个价格（仅保留大于0）
-     */
-    protected static function extractSinglePrice($value): array
-    {
-        if ($value === null || $value === '') {
-            return [];
-        }
-        $price = (float)$value;
-        return $price > 0 ? [round($price, 2)] : [];
-    }
-
-    /**
-     * @notes 提取时段价格数组中的价格（仅保留大于0）
-     */
-    protected static function extractSlotPrices($value): array
-    {
-        $items = [];
-        if (is_array($value)) {
-            $items = $value;
-        } elseif (is_string($value) && $value !== '') {
-            $decoded = json_decode($value, true);
-            if (is_array($decoded)) {
-                $items = $decoded;
-            }
-        }
-
-        if (empty($items)) {
-            return [];
-        }
-
-        $prices = [];
-        foreach ($items as $item) {
-            if (!is_array($item) || !array_key_exists('price', $item)) {
-                continue;
-            }
-            $price = (float)$item['price'];
-            if ($price > 0) {
-                $prices[] = round($price, 2);
-            }
-        }
-        return $prices;
-    }
-
-    /**
      * @notes 构造统一展示结构
      * @param float|null $price
      * @return array
@@ -260,8 +138,7 @@ class StaffPriceService
     }
 
     /**
-     * @notes 计算订单项价格（统一价格计算入口）
-     * 优先级：人员场次价 > 人员统一价 > 人员套餐默认价 > 套餐场次价 > 套餐默认价
+     * @notes 计算订单项价格（固定价）
      * @param int $staffId
      * @param int $packageId
      * @param int $timeSlot
@@ -273,34 +150,13 @@ class StaffPriceService
             return 0.00;
         }
 
-        $staffPackage = StaffPackage::where('staff_id', $staffId)
-            ->where('package_id', $packageId)
-            ->where('status', 1)
-            ->find();
-
-        if ($staffPackage) {
-            $customSlotPrice = $staffPackage->getCustomSlotPriceByTimeSlot($timeSlot);
-            if ($customSlotPrice !== null && $customSlotPrice > 0) {
-                return round((float)$customSlotPrice, 2);
-            }
-            if ($staffPackage->custom_price !== null && $staffPackage->custom_price !== '' && (float)$staffPackage->custom_price > 0) {
-                return round((float)$staffPackage->custom_price, 2);
-            }
-            if ($staffPackage->price !== null && $staffPackage->price !== '' && (float)$staffPackage->price > 0) {
-                return round((float)$staffPackage->price, 2);
-            }
-        }
-
         $package = ServicePackage::where('id', $packageId)
+            ->where('staff_id', $staffId)
             ->where('is_show', 1)
             ->whereNull('delete_time')
             ->find();
 
         if ($package) {
-            $slotPrice = $package->getSlotPriceByTimeSlot($timeSlot);
-            if ($slotPrice !== null && $slotPrice > 0) {
-                return round((float)$slotPrice, 2);
-            }
             return round((float)$package->price, 2);
         }
 

@@ -8,10 +8,10 @@ declare(strict_types=1);
 namespace app\common\model\order;
 
 use app\common\model\BaseModel;
+use app\common\model\package\PackageBooking;
 use app\common\model\user\User;
 use app\common\model\staff\Staff;
 use app\common\model\schedule\Schedule;
-use app\common\service\RedisLockService;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
 
@@ -142,13 +142,7 @@ class OrderChange extends BaseModel
      */
     public function getTimeSlotDescAttr($value, $data): string
     {
-        $map = [
-            self::TIME_SLOT_ALL => '全天',
-            self::TIME_SLOT_MORNING => '早礼',
-            self::TIME_SLOT_AFTERNOON => '午宴',
-            self::TIME_SLOT_EVENING => '晚宴',
-        ];
-        return $map[$value] ?? '未知';
+        return '全天';
     }
 
     /**
@@ -251,6 +245,7 @@ class OrderChange extends BaseModel
 
         Db::startTrans();
         try {
+            $newTimeSlot = self::normalizeTimeSlot($newTimeSlot);
             // 获取原服务日期（取第一个订单项的日期）
             $firstItem = $order->items[0] ?? null;
             if (!$firstItem) {
@@ -259,10 +254,10 @@ class OrderChange extends BaseModel
 
             // 检查所有订单项的新档期是否可用
             foreach ($order->items as $item) {
-                $available = Schedule::checkAvailable($item->staff_id, $newDate, $newTimeSlot);
+                $available = Schedule::checkAvailable((int)$item->staff_id, $newDate, 0);
                 if (!$available) {
                     $staffName = $item->staff_name ?: "人员ID:{$item->staff_id}";
-                    return [false, "{$staffName}在{$newDate}该时段档期不可用", null];
+                    return [false, "{$staffName}在{$newDate}档期不可用", null];
                 }
             }
 
@@ -276,8 +271,8 @@ class OrderChange extends BaseModel
                 'change_status' => self::STATUS_PENDING,
                 'old_service_date' => $firstItem->service_date,
                 'new_service_date' => $newDate,
-                'old_time_slot' => $firstItem->time_slot,
-                'new_time_slot' => $newTimeSlot,
+                'old_time_slot' => 0,
+                'new_time_slot' => 0,
                 'apply_reason' => $reason,
                 'attach_images' => $attachImages,
                 'create_time' => time(),
@@ -358,9 +353,9 @@ class OrderChange extends BaseModel
         }
 
         // 检查新人员档期是否可用
-        $available = Schedule::checkAvailable($newStaffId, $orderItem->service_date, $orderItem->time_slot);
+        $available = Schedule::checkAvailable($newStaffId, (string)$orderItem->service_date, 0);
         if (!$available) {
-            return [false, '新工作人员在该日期时段档期不可用', null];
+            return [false, '新工作人员在该日期档期不可用', null];
         }
 
         Db::startTrans();
@@ -371,7 +366,7 @@ class OrderChange extends BaseModel
             $newPrice = self::resolveOrderItemPrice(
                 (int)$newStaffId,
                 (int)$orderItem->package_id,
-                (int)$orderItem->time_slot,
+                0,
                 $oldPrice
             );
             $priceDiff = round($newPrice - $oldPrice, 2); // 正数需补付，负数需退款
@@ -379,8 +374,8 @@ class OrderChange extends BaseModel
             // 临时锁定新人员档期（15分钟）
             $lockResult = Schedule::temporaryLock(
                 $newStaffId,
-                $orderItem->service_date,
-                $orderItem->time_slot,
+                (string)$orderItem->service_date,
+                0,
                 $orderId,
                 15 * 60 // 15分钟
             );
@@ -460,6 +455,7 @@ class OrderChange extends BaseModel
         int $timeSlot,
         string $reason = ''
     ): array {
+        $timeSlot = self::normalizeTimeSlot($timeSlot);
         // 检查是否可变更
         [$canChange, $message] = self::checkCanChange($orderId);
         if (!$canChange) {
@@ -489,21 +485,21 @@ class OrderChange extends BaseModel
         }
 
         // 检查档期
-        $available = Schedule::checkAvailable($staffId, $serviceDate, $timeSlot);
+        $available = Schedule::checkAvailable($staffId, $serviceDate, 0);
         if (!$available) {
-            return [false, '该人员在指定日期时段档期不可用', null];
+            return [false, '该人员在指定日期档期不可用', null];
         }
 
         Db::startTrans();
         try {
             // 获取价格
-            $price = self::resolveOrderItemPrice($staffId, $packageId, $timeSlot);
+            $price = self::resolveOrderItemPrice($staffId, $packageId, 0);
             if ($price <= 0) {
                 return [false, '当前套餐未配置有效价格', null];
             }
 
             // 临时锁定档期
-            $lockResult = Schedule::temporaryLock($staffId, $serviceDate, $timeSlot, $orderId, 15 * 60);
+            $lockResult = Schedule::temporaryLock($staffId, $serviceDate, 0, $orderId, 15 * 60);
             if (!$lockResult['success']) {
                 return [false, '锁定档期失败：' . $lockResult['message'], null];
             }
@@ -521,7 +517,7 @@ class OrderChange extends BaseModel
                 'add_staff_name' => $staff->name,
                 'add_package_name' => $package->name,
                 'add_service_date' => $serviceDate,
-                'add_time_slot' => $timeSlot,
+                'add_time_slot' => 0,
                 'add_price' => $price,
                 'add_schedule_id' => $lockResult['schedule_id'] ?? 0,
                 'apply_reason' => $reason,
@@ -570,7 +566,7 @@ class OrderChange extends BaseModel
         int $timeSlot = 0,
         float $fallbackPrice = 0.0
     ): float {
-        $price = \app\common\service\StaffPriceService::calculateOrderItemPrice($staffId, $packageId, $timeSlot);
+        $price = \app\common\service\StaffPriceService::calculateOrderItemPrice($staffId, $packageId, 0);
         return $price > 0 ? $price : round($fallbackPrice, 2);
     }
 
@@ -735,7 +731,7 @@ class OrderChange extends BaseModel
 
         // 二次验证所有订单项的新档期可用性
         foreach ($items as $item) {
-            $available = Schedule::checkAvailable($item->staff_id, $change->new_service_date, $change->new_time_slot);
+            $available = Schedule::checkAvailable((int)$item->staff_id, (string)$change->new_service_date, 0);
             if (!$available) {
                 $staffName = $item->staff_name ?: "人员ID:{$item->staff_id}";
                 return ['success' => false, 'message' => "{$staffName}在新日期档期已被占用，无法执行改期"];
@@ -743,11 +739,11 @@ class OrderChange extends BaseModel
 
             // 如果有套餐，验证套餐可用性
             if ($item->package_id > 0) {
-                $bookingCheck = \app\common\model\package\PackageBooking::checkAvailability(
-                    $item->package_id,
-                    $change->new_service_date,
-                    $item->staff_id,
-                    $change->new_time_slot
+                $bookingCheck = PackageBooking::checkAvailability(
+                    (int)$item->package_id,
+                    (string)$change->new_service_date,
+                    (int)$item->staff_id,
+                    0
                 );
                 if (!$bookingCheck['available']) {
                     return ['success' => false, 'message' => $bookingCheck['message']];
@@ -763,24 +759,42 @@ class OrderChange extends BaseModel
 
             // 锁定新档期
             $lockResult = Schedule::confirmBooking(
-                $item->staff_id,
-                $change->new_service_date,
-                $change->new_time_slot,
-                $order->id,
-                $order->user_id
+                (int)$item->staff_id,
+                (string)$change->new_service_date,
+                0,
+                (int)$order->id,
+                (int)$order->user_id
             );
+            if (!($lockResult[0] ?? false)) {
+                return ['success' => false, 'message' => (string)($lockResult[1] ?? '锁定新档期失败')];
+            }
 
             // 更新订单项
             $item->service_date = $change->new_service_date;
-            $item->time_slot = $change->new_time_slot;
+            $item->time_slot = 0;
             $item->schedule_id = $lockResult['schedule_id'] ?? 0;
             $item->update_time = time();
             $item->save();
+
+            if ((int)$item->package_id > 0) {
+                $confirmed = PackageBooking::confirmSelection(
+                    (int)$order->user_id,
+                    (int)$item->package_id,
+                    (int)$item->staff_id,
+                    (string)$change->new_service_date,
+                    0,
+                    (int)$order->id,
+                    (int)$item->id
+                );
+                if (!$confirmed) {
+                    return ['success' => false, 'message' => '套餐改期锁定失败'];
+                }
+            }
         }
 
         // 更新订单服务日期
         $order->service_date = $change->new_service_date;
-        $order->service_time_slot = $change->new_time_slot;
+        $order->service_time_slot = 0;
         $order->update_time = time();
         $order->save();
 
@@ -829,13 +843,32 @@ class OrderChange extends BaseModel
         $orderItem->price = $change->new_price;
         $orderItem->subtotal = $change->new_price * ($orderItem->quantity ?: 1);
         $orderItem->schedule_id = $change->new_schedule_id;
+        $orderItem->time_slot = 0;
         $orderItem->is_changed = 1;
         $orderItem->change_id = $change->id;
         $orderItem->update_time = time();
         $orderItem->save();
 
-        // 更新订单总金额
         $order = Order::find($change->order_id);
+        if ($order && (int)$orderItem->package_id > 0) {
+            $confirmed = PackageBooking::confirmSelection(
+                (int)$order->user_id,
+                (int)$orderItem->package_id,
+                (int)$change->new_staff_id,
+                (string)$orderItem->service_date,
+                0,
+                (int)$change->order_id,
+                (int)$orderItem->id
+            );
+            if (!$confirmed) {
+                return ['success' => false, 'message' => '换人后套餐锁定失败'];
+            }
+        }
+
+        // 更新订单总金额
+        if (!$order) {
+            return ['success' => false, 'message' => '订单不存在'];
+        }
         $newTotalAmount = OrderItem::where('order_id', $order->id)->sum('subtotal');
         $order->total_amount = $newTotalAmount;
         $order->pay_amount = $newTotalAmount - $order->discount_amount - $order->coupon_amount;
@@ -865,7 +898,7 @@ class OrderChange extends BaseModel
             'package_id' => $change->add_package_id,
             'schedule_id' => $change->add_schedule_id,
             'service_date' => $change->add_service_date,
-            'time_slot' => $change->add_time_slot,
+            'time_slot' => 0,
             'staff_name' => $change->add_staff_name,
             'package_name' => $change->add_package_name,
             'price' => $change->add_price,
@@ -880,6 +913,21 @@ class OrderChange extends BaseModel
         // 更新变更记录
         $change->add_order_item_id = $newItem->id;
         $change->save();
+
+        if ((int)$change->add_package_id > 0) {
+            $confirmed = PackageBooking::confirmSelection(
+                (int)$order->user_id,
+                (int)$change->add_package_id,
+                (int)$change->add_staff_id,
+                (string)$change->add_service_date,
+                0,
+                (int)$order->id,
+                (int)$newItem->id
+            );
+            if (!$confirmed) {
+                return ['success' => false, 'message' => '加项套餐锁定失败'];
+            }
+        }
 
         // 更新订单总金额
         $newTotalAmount = OrderItem::where('order_id', $order->id)->sum('subtotal');
@@ -974,5 +1022,15 @@ class OrderChange extends BaseModel
             ['value' => self::STATUS_EXECUTED, 'label' => '已执行'],
             ['value' => self::STATUS_CANCELLED, 'label' => '已取消'],
         ];
+    }
+
+    /**
+     * @notes 全量归一到全天
+     * @param int $timeSlot
+     * @return int
+     */
+    protected static function normalizeTimeSlot(int $timeSlot): int
+    {
+        return 0;
     }
 }

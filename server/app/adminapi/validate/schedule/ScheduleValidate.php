@@ -23,8 +23,6 @@ class ScheduleValidate extends BaseValidate
         'date' => 'require|date',
         'start_date' => 'require|date',
         'end_date' => 'require|date|egt:start_date',
-        'time_slot' => 'integer|between:0,3',
-        'time_slots' => 'array',
         'status' => 'require|integer|between:0,4',
         'lock_type' => 'integer|between:0,2',
         'year' => 'integer|between:2020,2100',
@@ -48,7 +46,6 @@ class ScheduleValidate extends BaseValidate
         'end_date.require' => '请选择结束日期',
         'end_date.date' => '结束日期格式错误',
         'end_date.egt' => '结束日期不能早于开始日期',
-        'time_slot.between' => '时间段参数错误',
         'status.require' => '请选择状态',
         'status.between' => '状态参数错误',
         'lock_type.between' => '锁定类型参数错误',
@@ -84,7 +81,7 @@ class ScheduleValidate extends BaseValidate
      */
     public function sceneSetStatus()
     {
-        return $this->only(['staff_id', 'date', 'time_slot', 'status', 'remark']);
+        return $this->only(['staff_id', 'date', 'status', 'remark']);
     }
 
     /**
@@ -93,7 +90,7 @@ class ScheduleValidate extends BaseValidate
      */
     public function sceneMySetStatus()
     {
-        return $this->only(['date', 'time_slot', 'status', 'remark']);
+        return $this->only(['date', 'status', 'remark']);
     }
 
     /**
@@ -102,7 +99,7 @@ class ScheduleValidate extends BaseValidate
      */
     public function sceneBatchSet()
     {
-        return $this->only(['staff_ids', 'start_date', 'end_date', 'time_slots', 'status', 'price']);
+        return $this->only(['staff_ids', 'start_date', 'end_date', 'status', 'price']);
     }
 
     /**
@@ -111,7 +108,7 @@ class ScheduleValidate extends BaseValidate
      */
     public function sceneMyBatchSet()
     {
-        return $this->only(['start_date', 'end_date', 'time_slots', 'status', 'price']);
+        return $this->only(['start_date', 'end_date', 'status', 'price']);
     }
 
     /**
@@ -120,7 +117,7 @@ class ScheduleValidate extends BaseValidate
      */
     public function sceneLock()
     {
-        return $this->only(['staff_id', 'date', 'time_slot', 'lock_type', 'reason']);
+        return $this->only(['staff_id', 'date', 'lock_type', 'reason']);
     }
 
     /**
@@ -139,6 +136,6 @@ class ScheduleValidate extends BaseValidate
      */
     public function sceneReserve()
     {
-        return $this->only(['staff_id', 'date', 'time_slot', 'reason']);
+        return $this->only(['staff_id', 'date', 'reason']);
     }
 }

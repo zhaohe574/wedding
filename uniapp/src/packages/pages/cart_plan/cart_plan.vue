@@ -118,9 +118,9 @@
                                         >
                                             <view class="slot-info">
                                                 <view class="slot-row">
-                                                    <text class="slot-label">{{
-                                                        item.time_slot_desc || '未知场次'
-                                                    }}</text>
+                                                    <text class="slot-label"
+                                                        >数量 x{{ item.quantity || 1 }}</text
+                                                    >
                                                     <text
                                                         class="slot-price"
                                                         :style="{ color: $theme.ctaColor }"
@@ -245,12 +245,6 @@ const formatPrice = (value: any) => {
 const buildPlanGroups = (items: any[]) => {
     const groups: any[] = []
     const groupMap = new Map<string, any>()
-    const slotMap: Record<number, string> = {
-        0: '全天',
-        1: '早礼',
-        2: '午宴',
-        3: '晚宴'
-    }
 
     items.forEach((item: any, index: number) => {
         const staffId = Number(item.staff_id || item.staff?.id || 0)
@@ -294,12 +288,10 @@ const buildPlanGroups = (items: any[]) => {
         }
 
         pkg.total_price += itemPrice
-        const timeSlot = Number(item.time_slot || 0)
         const itemKey = item.cart_id || item.id || `${packageKey}-${index}`
         pkg.items.push({
             ...item,
-            _key: itemKey,
-            time_slot_desc: item.time_slot_desc || slotMap[timeSlot] || '未知场次'
+            _key: itemKey
         })
     })
 
@@ -307,7 +299,6 @@ const buildPlanGroups = (items: any[]) => {
         group.total_price = Number(group.total_price.toFixed(2))
         group.packages.forEach((pkg: any) => {
             pkg.total_price = Number(pkg.total_price.toFixed(2))
-            pkg.items.sort((a: any, b: any) => Number(a.time_slot || 0) - Number(b.time_slot || 0))
         })
         delete group.packageMap
     })

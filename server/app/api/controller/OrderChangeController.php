@@ -65,7 +65,6 @@ class OrderChangeController extends BaseApiController
             $this->userId,
             $params['order_id'],
             $params['new_date'],
-            $params['new_time_slot'],
             $params['reason'] ?? '',
             $params['attach_images'] ?? []
         );
@@ -112,7 +111,6 @@ class OrderChangeController extends BaseApiController
             $params['staff_id'],
             $params['package_id'],
             $params['service_date'],
-            $params['time_slot'],
             $params['reason'] ?? ''
         );
         if ($result['success']) {
@@ -302,7 +300,6 @@ class OrderChangeController extends BaseApiController
      */
     public function timeSlotOptions()
     {
-        $result = OrderChangeLogic::getTimeSlotOptions();
-        return $this->data($result);
+        return $this->fail('场次能力已下线');
     }
 }

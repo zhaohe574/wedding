@@ -149,7 +149,7 @@
                                 class="text-xs px-1 py-0.5 rounded truncate"
                                 :class="getStatusClass(schedule.status)"
                             >
-                                {{ getTimeSlotText(schedule.time_slot) }}: {{ getStatusText(schedule.status) }}
+                                {{ getStatusText(schedule.status) }}
                             </div>
                             <div v-if="day.schedules.length > 2" class="text-xs text-gray-400">
                                 +{{ day.schedules.length - 2 }} 更多
@@ -186,14 +186,6 @@
 
                 <!-- 档期操作 -->
                 <el-form :model="dayForm" label-width="80px">
-                    <el-form-item label="时间段">
-                        <el-select v-model="dayForm.time_slot" style="width: 100%">
-                            <el-option label="全天" :value="0" />
-                            <el-option label="早礼" :value="1" />
-                            <el-option label="午宴" :value="2" />
-                            <el-option label="晚宴" :value="3" />
-                        </el-select>
-                    </el-form-item>
                     <el-form-item label="状态">
                         <el-select v-model="dayForm.status" style="width: 100%">
                             <el-option label="不可用" :value="0" />
@@ -210,9 +202,6 @@
                 <div v-if="selectedDay.schedules && selectedDay.schedules.length > 0" class="mt-4">
                     <div class="font-bold mb-2">当前档期:</div>
                     <el-table :data="selectedDay.schedules" size="small">
-                        <el-table-column prop="time_slot" label="时间段">
-                            <template #default="{ row }">{{ getTimeSlotText(row.time_slot) }}</template>
-                        </el-table-column>
                         <el-table-column prop="status" label="状态">
                             <template #default="{ row }">
                                 <el-tag :type="getStatusType(row.status)" size="small">
@@ -260,14 +249,6 @@
                         style="width: 100%"
                     />
                 </el-form-item>
-                <el-form-item label="时间段">
-                    <el-checkbox-group v-model="batchForm.time_slots">
-                        <el-checkbox :label="0">全天</el-checkbox>
-                        <el-checkbox :label="1">早礼</el-checkbox>
-                        <el-checkbox :label="2">午宴</el-checkbox>
-                        <el-checkbox :label="3">晚宴</el-checkbox>
-                    </el-checkbox-group>
-                </el-form-item>
                 <el-form-item label="设置状态" required>
                     <el-select v-model="batchForm.status" style="width: 100%">
                         <el-option label="不可用" :value="0" />
@@ -307,7 +288,6 @@ import { staffAll } from '@/api/staff'
 
 interface ScheduleRow {
     id: number
-    time_slot: number
     status: number
 }
 
@@ -345,7 +325,6 @@ const statistics = ref<any>({})
 const dayDialogVisible = ref(false)
 const selectedDay = ref<CalendarDay | null>(null)
 const dayForm = ref({
-    time_slot: 0,
     status: 1,
     remark: ''
 })
@@ -355,7 +334,6 @@ const batchLoading = ref(false)
 const batchForm = ref({
     staff_ids: [] as number[],
     dateRange: [] as string[],
-    time_slots: [0],
     status: 1,
     price: 0,
     skip_rest_days: [] as number[]
@@ -442,7 +420,6 @@ const handleDayClick = (day: CalendarDay) => {
     }
     selectedDay.value = day
     dayForm.value = {
-        time_slot: 0,
         status: 1,
         remark: ''
     }
@@ -476,7 +453,6 @@ const handleBatchSet = () => {
     batchForm.value = {
         staff_ids: [],
         dateRange: [],
-        time_slots: [0],
         status: 1,
         price: 0,
         skip_rest_days: []
@@ -500,7 +476,6 @@ const handleBatchSubmit = async () => {
             staff_ids: batchForm.value.staff_ids,
             start_date: batchForm.value.dateRange[0],
             end_date: batchForm.value.dateRange[1],
-            time_slots: batchForm.value.time_slots,
             status: batchForm.value.status,
             price: batchForm.value.price,
             skip_rest_days: batchForm.value.skip_rest_days
@@ -511,12 +486,6 @@ const handleBatchSubmit = async () => {
     } finally {
         batchLoading.value = false
     }
-}
-
-// 工具函数
-const getTimeSlotText = (slot: number) => {
-    const map: Record<number, string> = { 0: '全天', 1: '早礼', 2: '午宴', 3: '晚宴' }
-    return map[slot] || '未知'
 }
 
 const getStatusText = (status: number) => {

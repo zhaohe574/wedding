@@ -108,7 +108,6 @@ class BookingLists extends BaseAdminDataLists implements ListsExtendInterface
                 'oi.staff_name',
                 'oi.package_name',
                 'oi.service_date',
-                'oi.time_slot',
                 'oi.item_status',
                 'oi.confirm_status',
                 'oi.schedule_id',
@@ -139,7 +138,6 @@ class BookingLists extends BaseAdminDataLists implements ListsExtendInterface
         foreach ($lists as &$item) {
             $item['customer_name'] = $item['contact_name'] ?: ($item['user_nickname'] ?? '');
             $item['customer_phone'] = $item['contact_mobile'] ?: ($item['user_mobile'] ?? '');
-            $item['time_slot_desc'] = $this->getTimeSlotDesc((int)$item['time_slot']);
             $item['item_status_desc'] = $this->getItemStatusDesc((int)$item['item_status']);
             $item['confirm_status_desc'] = (int)$item['confirm_status'] === 1 ? '已确认' : '待确认';
             $item['order_status_desc'] = $this->getOrderStatusDesc((int)$item['order_status']);
@@ -199,22 +197,6 @@ class BookingLists extends BaseAdminDataLists implements ListsExtendInterface
             'completed' => (clone $baseQuery)->where('oi.item_status', OrderItem::STATUS_COMPLETED)->count(),
             'cancelled' => (clone $baseQuery)->where('oi.item_status', OrderItem::STATUS_CANCELLED)->count(),
         ];
-    }
-
-    /**
-     * @notes 时间段文案
-     * @param int $timeSlot
-     * @return string
-     */
-    private function getTimeSlotDesc(int $timeSlot): string
-    {
-        $map = [
-            0 => '全天',
-            1 => '早礼',
-            2 => '午宴',
-            3 => '晚宴',
-        ];
-        return $map[$timeSlot] ?? '未知';
     }
 
     /**

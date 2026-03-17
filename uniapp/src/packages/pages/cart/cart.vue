@@ -167,7 +167,7 @@
                                         <view class="slot-info">
                                             <view class="slot-row">
                                                 <text class="slot-label">{{
-                                                    getTimeSlotLabel(item)
+                                                    `预约日期：${item.schedule_date || '-'}`
                                                 }}</text>
                                                 <text
                                                     class="slot-price"
@@ -383,28 +383,11 @@ const groupedItems = computed(() => {
     })
 
     groups.forEach((group) => {
-        group.packages.forEach((pkg: any) => {
-            pkg.items.sort((a: any, b: any) => Number(a.time_slot || 0) - Number(b.time_slot || 0))
-        })
         delete group.packageMap
     })
 
     return groups
 })
-
-const getTimeSlotLabel = (item: any) => {
-    if (item?.time_slot_desc) {
-        return item.time_slot_desc
-    }
-    const map: Record<number, string> = {
-        0: '全天',
-        1: '早礼',
-        2: '午宴',
-        3: '晚宴'
-    }
-    const slot = Number(item?.time_slot)
-    return Number.isFinite(slot) ? map[slot] || '未知场次' : '未知场次'
-}
 
 // 获取购物车数据
 const fetchCart = async () => {
@@ -425,7 +408,7 @@ const applyPlanToCart = async (planId: number) => {
     try {
         const res = await applyCartPlan({ plan_id: planId })
         const copiedCount = Number(res?.copied_count || 0)
-        const message = copiedCount > 0 ? `已应用${copiedCount}个场次` : '应用成功'
+        const message = copiedCount > 0 ? `已应用${copiedCount}个项目` : '应用成功'
         uni.showToast({ title: message, icon: 'success' })
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '应用失败'
@@ -472,7 +455,7 @@ const handleDeletePackage = (pkg: any) => {
     }
     uni.showModal({
         title: '删除确认',
-        content: '确定要删除该套餐下所有场次吗？',
+        content: '确定要删除该套餐吗？',
         confirmColor: '#FF2C3C',
         success: async (res) => {
             if (res.confirm) {

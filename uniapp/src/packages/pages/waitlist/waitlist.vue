@@ -124,19 +124,6 @@
                             <text class="info-value">{{ item.package?.name || '套餐已删除' }}</text>
                         </view>
                     </view>
-
-                    <view class="info-item">
-                        <view
-                            class="icon-wrapper"
-                            :style="{ background: getColorWithOpacity($theme.accentColor, 0.1) }"
-                        >
-                            <tn-icon name="time" size="36" :color="$theme.accentColor" />
-                        </view>
-                        <view class="info-content">
-                            <text class="info-label">时间段</text>
-                            <text class="info-value">{{ getTimeSlotLabel(item) }}</text>
-                        </view>
-                    </view>
                 </view>
 
                 <!-- 底部：时间 + 操作按钮 -->
@@ -291,21 +278,6 @@ const formatTime = (timestamp: any) => {
     return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
-// 获取时间段文案
-const getTimeSlotLabel = (item: any) => {
-    if (item?.time_slot_desc) {
-        return item.time_slot_desc
-    }
-    const map: Record<number, string> = {
-        0: '全天',
-        1: '早礼',
-        2: '午宴',
-        3: '晚宴'
-    }
-    const slot = Number(item?.time_slot)
-    return Number.isFinite(slot) ? map[slot] || '未知场次' : '未知场次'
-}
-
 // 点击卡片
 const handleItemClick = (item: any) => {
     // 可以跳转到详情页或其他操作
@@ -316,9 +288,6 @@ const handleBook = (item: any) => {
     const params = [`staff_id=${item.staff_id}`, `date=${item.schedule_date}`]
     if (item.package_id) {
         params.push(`package_id=${item.package_id}`)
-    }
-    if (item.time_slot !== null && item.time_slot !== undefined) {
-        params.push(`time_slot=${item.time_slot}`)
     }
     uni.navigateTo({
         url: `/packages/pages/schedule_calendar/schedule_calendar?${params.join('&')}`

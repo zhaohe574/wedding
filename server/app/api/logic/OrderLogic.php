@@ -133,7 +133,7 @@ class OrderLogic extends BaseLogic
         }
 
         $list = $query->with(['items' => function ($q) {
-                $q->field('id, order_id, staff_id, staff_name, package_name, service_date, time_slot, item_status, price, quantity, subtotal')
+                $q->field('id, order_id, staff_id, staff_name, package_name, service_date, item_status, price, quantity, subtotal')
                     ->with(['staff' => function ($staffQuery) {
                         $staffQuery->field('id, name, avatar');
                     }]);

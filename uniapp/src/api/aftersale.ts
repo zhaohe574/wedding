@@ -118,7 +118,6 @@ export function applyReshoot(data: {
     reason?: string
     images?: string[]
     expect_date?: string
-    expect_time_slot?: string
     staff_id?: number
     order_item_id?: number
 }) {

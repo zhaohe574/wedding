@@ -10,12 +10,11 @@ namespace app\adminapi\logic\staff;
 use app\common\logic\BaseLogic;
 use app\common\model\auth\Admin;
 use app\common\model\auth\AdminRole;
-use app\common\model\staff\Staff;
-use app\common\model\staff\StaffTag;
-use app\common\model\staff\StaffPackage;
-use app\common\model\staff\StaffWork;
-use app\common\model\staff\StaffCertificate;
 use app\common\model\service\ServicePackage;
+use app\common\model\staff\Staff;
+use app\common\model\staff\StaffCertificate;
+use app\common\model\staff\StaffTag;
+use app\common\model\staff\StaffWork;
 use app\common\model\user\User;
 use app\common\service\ConfigService;
 use app\common\service\FileService;
@@ -52,7 +51,7 @@ class StaffLogic extends BaseLogic
         $data['has_price'] = $displayPrice['has_price'];
         $data['price_text'] = $displayPrice['price_text'];
         $data['tag_ids'] = StaffTag::getTagIds($id);
-        $data['packages'] = StaffPackage::getPackages($id);
+        $data['packages'] = self::getStaffOwnedPackages($id);
         // 编辑场景需要完整手机号：优先 mobile_full，否则用原始 mobile（toArray 中 mobile 已被 getMobileAttr 脱敏）
         $fullMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
         $data['mobile'] = $fullMobile;
@@ -139,11 +138,6 @@ class StaffLogic extends BaseLogic
             // 设置标签
             if (!empty($params['tag_ids'])) {
                 StaffTag::setTags($staff->id, $params['tag_ids']);
-            }
-
-            // 设置套餐
-            if (!empty($params['packages'])) {
-                StaffPackage::setPackages($staff->id, $params['packages']);
             }
 
             Db::commit();
@@ -238,11 +232,6 @@ class StaffLogic extends BaseLogic
             $staffId = (int) $params['id'];
             if (isset($params['tag_ids'])) {
                 StaffTag::setTags($staffId, $params['tag_ids']);
-            }
-
-            // 更新套餐
-            if (isset($params['packages'])) {
-                StaffPackage::setPackages($staffId, $params['packages']);
             }
 
             Db::commit();
@@ -342,44 +331,19 @@ class StaffLogic extends BaseLogic
     }
 
     /**
-     * @notes 配置员工关联套餐（增强版，支持个人价格和时段价格）
+     * @notes 旧的全局套餐关联入口已下线
      * @param int $staffId 员工ID
      * @param array $packages 套餐配置数组
      *        格式: [
-     *            ['package_id' => 1, 'custom_price' => 100.00, 'custom_slot_prices' => [...], 'status' => 1],
+     *            ['package_id' => 1, 'price' => 100.00, 'status' => 1],
      *            ...
      *        ]
      * @return bool
      */
     public static function configurePackages(int $staffId, array $packages): bool
     {
-        try {
-            $staff = Staff::find($staffId);
-            if (!$staff) {
-                self::setError('员工不存在');
-                return false;
-            }
-
-            // 验证套餐是否存在
-            foreach ($packages as $pkg) {
-                $package = ServicePackage::find($pkg['package_id'] ?? 0);
-                if (!$package) {
-                    self::setError('套餐ID ' . ($pkg['package_id'] ?? 0) . ' 不存在');
-                    return false;
-                }
-                // 人员专属套餐不能被其他员工关联
-                if ($package->package_type == ServicePackage::TYPE_STAFF_ONLY && $package->staff_id != $staffId) {
-                    self::setError('套餐 ' . $package->name . ' 是其他员工的专属套餐，无法关联');
-                    return false;
-                }
-            }
-
-            StaffPackage::setPackages($staffId, $packages);
-            return true;
-        } catch (\Exception $e) {
-            self::setError($e->getMessage());
-            return false;
-        }
+        self::setError('全局套餐关联能力已下线，请直接维护该人员自己的套餐');
+        return false;
     }
 
     /**
@@ -390,34 +354,7 @@ class StaffLogic extends BaseLogic
      */
     public static function getPackageConfig(int $staffId, bool $includeGlobal = false): array
     {
-        $result = [
-            'configured_packages' => [],  // 已配置的套餐
-            'staff_packages' => [],       // 员工专属套餐
-            'available_packages' => [],   // 可关联的全局套餐
-        ];
-
-        // 获取已配置的套餐
-        $result['configured_packages'] = StaffPackage::getPackages($staffId);
-
-        // 获取员工专属套餐
-        $result['staff_packages'] = ServicePackage::where('staff_id', $staffId)
-            ->where('package_type', ServicePackage::TYPE_STAFF_ONLY)
-            ->where('delete_time', null)
-            ->select()
-            ->toArray();
-
-        // 获取可关联的全局套餐
-        if ($includeGlobal) {
-            $configuredIds = array_column($result['configured_packages'], 'package_id');
-            $result['available_packages'] = ServicePackage::where('package_type', ServicePackage::TYPE_GLOBAL)
-                ->where('delete_time', null)
-                ->where('is_show', 1)
-                ->whereNotIn('id', $configuredIds)
-                ->select()
-                ->toArray();
-        }
-
-        return $result;
+        return self::getStaffOwnedPackages($staffId);
     }
 
     /**
@@ -465,7 +402,7 @@ class StaffLogic extends BaseLogic
                 return false;
             }
 
-            if ($package->package_type != ServicePackage::TYPE_STAFF_ONLY || (int) $package->staff_id !== $staffId) {
+            if ((int) $package->staff_id !== $staffId) {
                 self::setError('只能编辑自己的专属套餐');
                 return false;
             }
@@ -488,16 +425,36 @@ class StaffLogic extends BaseLogic
     }
 
     /**
-     * @notes 更新单个套餐配置
+     * @notes 更新单个套餐配置（兼容旧入口，直接修改人员专属套餐）
      * @param int $staffId 员工ID
      * @param int $packageId 套餐ID
-     * @param array $data 配置数据 ['custom_price' => ..., 'custom_slot_prices' => [...], 'status' => ...]
+     * @param array $data 配置数据 ['price' => ..., 'original_price' => ..., 'status' => ...]
      * @return bool
      */
     public static function updatePackageConfig(int $staffId, int $packageId, array $data): bool
     {
         try {
-            return StaffPackage::updatePackageConfig($staffId, $packageId, $data);
+            $package = ServicePackage::where('id', $packageId)
+                ->where('staff_id', $staffId)
+                ->find();
+            if (!$package) {
+                self::setError('套餐不存在');
+                return false;
+            }
+
+            $updateData = [];
+            foreach (['price', 'original_price', 'name', 'description', 'content', 'image', 'sort', 'is_show', 'is_recommend', 'category_id'] as $field) {
+                if (array_key_exists($field, $data)) {
+                    $updateData[$field] = $data[$field];
+                }
+            }
+            if (empty($updateData)) {
+                return true;
+            }
+            $updateData['staff_id'] = $staffId;
+            $updateData['update_time'] = time();
+            $package->save($updateData);
+            return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());
             return false;
@@ -520,7 +477,7 @@ class StaffLogic extends BaseLogic
             }
 
             // 只能删除自己的专属套餐
-            if ($package->package_type != ServicePackage::TYPE_STAFF_ONLY || $package->staff_id != $staffId) {
+            if ((int)$package->staff_id !== $staffId) {
                 self::setError('只能删除自己的专属套餐');
                 return false;
             }
@@ -666,6 +623,23 @@ class StaffLogic extends BaseLogic
     {
         $raw = bin2hex(random_bytes((int)ceil($length / 2)));
         return substr($raw, 0, $length);
+    }
+
+    /**
+     * @notes 获取人员直属套餐
+     * @param int $staffId
+     * @return array
+     */
+    protected static function getStaffOwnedPackages(int $staffId): array
+    {
+        return ServicePackage::where('staff_id', $staffId)
+            ->whereNull('delete_time')
+            ->field('id, staff_id, category_id, name, price, original_price, content, description, image, sort, is_show, is_recommend')
+            ->append(['category_name', 'staff_name'])
+            ->order('sort', 'desc')
+            ->order('id', 'desc')
+            ->select()
+            ->toArray();
     }
 
     /**

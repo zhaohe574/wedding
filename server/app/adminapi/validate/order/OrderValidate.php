@@ -22,7 +22,6 @@ class OrderValidate extends BaseValidate
         'order_type' => 'integer|in:1,2,3',
         'items' => 'require|array|min:1',
         'service_date' => 'date',
-        'time_slot' => 'integer|between:0,3',
         'service_address' => 'max:255',
         'contact_name' => 'require|max:50',
         'contact_mobile' => 'require|mobile',
@@ -48,7 +47,6 @@ class OrderValidate extends BaseValidate
         'items.array' => '订单项格式错误',
         'items.min' => '至少添加一个订单项',
         'service_date.date' => '服务日期格式错误',
-        'time_slot.between' => '时间段参数错误',
         'service_address.max' => '服务地址最多255个字符',
         'contact_name.require' => '请填写联系人',
         'contact_name.max' => '联系人姓名最多50个字符',
@@ -84,7 +82,7 @@ class OrderValidate extends BaseValidate
      */
     public function sceneAdd()
     {
-        return $this->only(['user_id', 'order_type', 'items', 'service_date', 'time_slot', 'service_address', 'contact_name', 'contact_mobile', 'wedding_date', 'wedding_venue', 'discount_amount', 'deposit_ratio', 'admin_remark']);
+        return $this->only(['user_id', 'order_type', 'items', 'service_date', 'service_address', 'contact_name', 'contact_mobile', 'wedding_date', 'wedding_venue', 'discount_amount', 'deposit_ratio', 'admin_remark']);
     }
 
     /**
@@ -93,7 +91,7 @@ class OrderValidate extends BaseValidate
      */
     public function sceneEdit()
     {
-        return $this->only(['id', 'service_date', 'time_slot', 'service_address', 'contact_name', 'contact_mobile', 'wedding_date', 'wedding_venue', 'admin_remark'])
+        return $this->only(['id', 'service_date', 'service_address', 'contact_name', 'contact_mobile', 'wedding_date', 'wedding_venue', 'admin_remark'])
             ->remove('contact_name', 'require')
             ->remove('contact_mobile', 'require');
     }

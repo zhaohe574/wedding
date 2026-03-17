@@ -77,10 +77,6 @@
                         <tn-icon name="calendar" size="24" color="#999999" />
                         <text>{{ item.service_date || '未选择日期' }}</text>
                     </view>
-                    <view class="service-detail">
-                        <tn-icon name="clock" size="24" color="#999999" />
-                        <text>{{ item.time_slot_desc || '未知场次' }}</text>
-                    </view>
                     <view class="service-meta">
                         <view
                             class="meta-tag"

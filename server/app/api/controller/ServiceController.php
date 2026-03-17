@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace app\api\controller;
 
-use app\api\lists\service\PackageLists;
 use app\api\logic\ServiceLogic;
 
 /**
@@ -18,8 +17,7 @@ use app\api\logic\ServiceLogic;
 class ServiceController extends BaseApiController
 {
     public array $notNeedLogin = [
-        'categories', 'categoryTree', 'packages', 'packageLists', 'packageDetail', 'tags',
-        'checkPackageAvailability', 'batchCheckAvailability', 'packageSlotPrices', 'calculatePrice'
+        'categories', 'categoryTree', 'tags'
     ];
 
     /**
@@ -49,9 +47,7 @@ class ServiceController extends BaseApiController
      */
     public function packages()
     {
-        $categoryId = $this->request->get('category_id/d', 0);
-        $result = ServiceLogic::packages($categoryId);
-        return $this->data($result);
+        return $this->fail('独立套餐入口已下线，请从人员详情进入预约');
     }
 
     /**
@@ -60,7 +56,7 @@ class ServiceController extends BaseApiController
      */
     public function packageLists()
     {
-        return $this->dataLists(new PackageLists());
+        return $this->fail('独立套餐入口已下线，请从人员详情进入预约');
     }
 
     /**
@@ -69,15 +65,7 @@ class ServiceController extends BaseApiController
      */
     public function packageDetail()
     {
-        $id = $this->request->get('id/d');
-        if (!$id) {
-            return $this->fail('参数错误');
-        }
-        $result = ServiceLogic::packageDetail($id);
-        if (empty($result)) {
-            return $this->fail('套餐不存在');
-        }
-        return $this->data($result);
+        return $this->fail('独立套餐入口已下线，请从人员详情进入预约');
     }
 
     /**
@@ -99,17 +87,7 @@ class ServiceController extends BaseApiController
      */
     public function checkPackageAvailability()
     {
-        $packageId = $this->request->get('package_id/d');
-        $date = $this->request->get('date/s', '');
-        $staffId = $this->request->get('staff_id/d', 0);
-        $timeSlot = $this->request->get('time_slot/d', 0);
-
-        if (empty($packageId) || empty($date)) {
-            return $this->fail('参数错误');
-        }
-
-        $result = ServiceLogic::checkPackageAvailability($packageId, $date, $staffId, $timeSlot);
-        return $this->data($result);
+        return $this->fail('独立套餐入口已下线，请从人员详情进入预约');
     }
 
     /**
@@ -118,17 +96,7 @@ class ServiceController extends BaseApiController
      */
     public function batchCheckAvailability()
     {
-        $packageIds = $this->request->post('package_ids/a', []);
-        $date = $this->request->post('date/s', '');
-        $staffId = $this->request->post('staff_id/d', 0);
-        $timeSlot = $this->request->post('time_slot/d', 0);
-
-        if (empty($packageIds) || empty($date)) {
-            return $this->fail('参数错误');
-        }
-
-        $result = ServiceLogic::batchCheckAvailability($packageIds, $date, $staffId, $timeSlot);
-        return $this->data($result);
+        return $this->fail('独立套餐入口已下线，请从人员详情进入预约');
     }
 
     /**
@@ -137,15 +105,7 @@ class ServiceController extends BaseApiController
      */
     public function packageSlotPrices()
     {
-        $packageId = $this->request->get('package_id/d');
-        $staffId = $this->request->get('staff_id/d', 0);
-
-        if (empty($packageId)) {
-            return $this->fail('参数错误');
-        }
-
-        $result = ServiceLogic::getPackageSlotPrices($packageId, $staffId);
-        return $this->data($result);
+        return $this->fail('场次价格能力已下线');
     }
 
     /**
@@ -154,17 +114,6 @@ class ServiceController extends BaseApiController
      */
     public function calculatePrice()
     {
-        $packageId = $this->request->get('package_id/d');
-        $staffId = $this->request->get('staff_id/d', 0);
-        $startTime = $this->request->get('start_time/s', '');
-        $endTime = $this->request->get('end_time/s', '');
-        $timeSlot = $this->request->get('time_slot/d', -1);
-
-        if (empty($packageId)) {
-            return $this->fail('参数错误');
-        }
-
-        $result = ServiceLogic::calculatePrice($packageId, $staffId, $startTime, $endTime, $timeSlot);
-        return $this->data($result);
+        return $this->fail('场次价格能力已下线');
     }
 }

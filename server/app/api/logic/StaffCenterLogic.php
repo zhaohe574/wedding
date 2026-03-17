@@ -15,7 +15,6 @@ use app\common\model\order\OrderItem;
 use app\common\model\schedule\Schedule;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
-use app\common\model\staff\StaffPackage;
 use app\common\model\staff\StaffWork;
 use app\common\service\OrderNotificationService;
 use app\common\service\StaffPriceService;
@@ -73,7 +72,9 @@ class StaffCenterLogic extends BaseLogic
             ->where('delete_time', null)
             ->count();
 
-        $data['packageCount'] = StaffPackage::where('staff_id', $staff->id)->count();
+        $data['packageCount'] = ServicePackage::where('staff_id', $staff->id)
+            ->where('delete_time', null)
+            ->count();
 
         $data['scheduleCount'] = Schedule::where('staff_id', $staff->id)->count();
 
@@ -249,66 +250,20 @@ class StaffCenterLogic extends BaseLogic
             return [];
         }
 
-        // 手动关联的套餐
-        $configured = StaffPackage::where('staff_id', $staffId)
-            ->with(['package'])
-            ->select()
-            ->toArray();
-        $configuredIds = array_column($configured, 'package_id');
-
-        // 人员专属套餐直接视为已关联（排除已在 staff_package 中的）
-        $staffOnlyPackages = ServicePackage::where('package_type', ServicePackage::TYPE_STAFF_ONLY)
-            ->where('staff_id', $staffId)
+        return ServicePackage::where('staff_id', $staffId)
             ->where('delete_time', null)
-            ->where('is_show', 1)
-            ->when(!empty($configuredIds), function ($query) use ($configuredIds) {
-                $query->whereNotIn('id', $configuredIds);
-            })
+            ->field('id, staff_id, category_id, name, price, original_price, content, description, image, sort, is_show, is_recommend')
+            ->append(['category_name'])
+            ->order('sort', 'desc')
+            ->order('id', 'desc')
             ->select()
             ->toArray();
-
-        // 将专属套餐包装成与 configured 相同的结构
-        foreach ($staffOnlyPackages as $pkg) {
-            $configured[] = [
-                'id' => 0,
-                'staff_id' => $staffId,
-                'package_id' => $pkg['id'],
-                'custom_price' => null,
-                'custom_slot_prices' => [],
-                'booking_type' => $pkg['booking_type'] ?? 0,
-                'allowed_time_slots' => $pkg['allowed_time_slots'] ?? [],
-                'status' => 1,
-                'price' => $pkg['price'] ?? 0,
-                'original_price' => $pkg['original_price'] ?? null,
-                'is_default' => 0,
-                'is_staff_only' => true,
-                'package' => $pkg,
-            ];
-        }
-
-        // 合并所有已关联的套餐ID
-        $allConfiguredIds = array_column($configured, 'package_id');
-
-        // 可选套餐：仅全局套餐（排除已关联的）
-        $available = ServicePackage::where('package_type', ServicePackage::TYPE_GLOBAL)
-            ->where('delete_time', null)
-            ->where('is_show', 1)
-            ->when(!empty($allConfiguredIds), function ($query) use ($allConfiguredIds) {
-                $query->whereNotIn('id', $allConfiguredIds);
-            })
-            ->select()
-            ->toArray();
-
-        return [
-            'configured' => $configured,
-            'available' => $available,
-        ];
     }
 
     /**
-     * @notes 关联套餐
+     * @notes 添加套餐
      */
-    public static function packageAdd(int $userId, int $packageId): bool
+    public static function packageAdd(int $userId, array $params): bool
     {
         $staffId = self::getStaffId($userId);
         if ($staffId <= 0) {
@@ -316,42 +271,17 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
-        $package = ServicePackage::find($packageId);
-        if (!$package) {
-            self::setError('套餐不存在');
+        try {
+            ServicePackage::create(self::buildPackagePayload($staffId, $params));
+            return true;
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
             return false;
         }
-        // 允许全局套餐和当前人员的专属套餐
-        if ($package->package_type == ServicePackage::TYPE_STAFF_ONLY && $package->staff_id != $staffId) {
-            self::setError('该套餐不可关联');
-            return false;
-        }
-
-        $exists = StaffPackage::where('staff_id', $staffId)
-            ->where('package_id', $packageId)
-            ->find();
-        if ($exists) {
-            self::setError('套餐已关联');
-            return false;
-        }
-
-        StaffPackage::create([
-            'staff_id' => $staffId,
-            'package_id' => $packageId,
-            'price' => $package->price ?? 0,
-            'original_price' => $package->original_price ?? null,
-            'status' => 1,
-            'booking_type' => $package->booking_type ?? null,
-            'allowed_time_slots' => $package->allowed_time_slots ?? null,
-            'create_time' => time(),
-            'update_time' => time(),
-        ]);
-
-        return true;
     }
 
     /**
-     * @notes 更新套餐配置
+     * @notes 更新套餐
      */
     public static function packageUpdate(int $userId, int $packageId, array $params): bool
     {
@@ -361,30 +291,21 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
-        // 如果 staff_package 表中没有记录（专属套餐首次编辑），先自动创建
-        $exists = StaffPackage::where('staff_id', $staffId)
-            ->where('package_id', $packageId)
+        $package = ServicePackage::where('id', $packageId)
+            ->where('staff_id', $staffId)
             ->find();
-        if (!$exists) {
-            $package = ServicePackage::find($packageId);
-            if (!$package) {
-                self::setError('套餐不存在');
-                return false;
-            }
-            StaffPackage::create([
-                'staff_id' => $staffId,
-                'package_id' => $packageId,
-                'price' => $package->price ?? 0,
-                'original_price' => $package->original_price ?? null,
-                'status' => 1,
-                'booking_type' => $package->booking_type ?? null,
-                'allowed_time_slots' => $package->allowed_time_slots ?? null,
-                'create_time' => time(),
-                'update_time' => time(),
-            ]);
+        if (!$package) {
+            self::setError('套餐不存在');
+            return false;
         }
 
-        return StaffPackage::updatePackageConfig($staffId, $packageId, $params);
+        try {
+            $package->save(self::buildPackagePayload($staffId, $params, false));
+            return true;
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -398,9 +319,16 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
-        return StaffPackage::where('staff_id', $staffId)
-            ->where('package_id', $packageId)
-            ->delete() > 0;
+        $package = ServicePackage::where('id', $packageId)
+            ->where('staff_id', $staffId)
+            ->find();
+        if (!$package) {
+            self::setError('套餐不存在');
+            return false;
+        }
+
+        $package->delete();
+        return true;
     }
 
     /**
@@ -433,12 +361,11 @@ class StaffCenterLogic extends BaseLogic
         }
 
         $date = $params['date'];
-        $timeSlot = (int) ($params['time_slot'] ?? 0);
         $status = (int) $params['status'];
 
         $schedule = Schedule::where('staff_id', $staffId)
             ->where('schedule_date', $date)
-            ->where('time_slot', $timeSlot)
+            ->where('time_slot', Schedule::TIME_SLOT_ALL)
             ->find();
 
         if ($schedule && in_array((int) $schedule->status, [Schedule::STATUS_BOOKED, Schedule::STATUS_LOCKED, Schedule::STATUS_RESERVED], true)) {
@@ -455,7 +382,7 @@ class StaffCenterLogic extends BaseLogic
             Schedule::create([
                 'staff_id' => $staffId,
                 'schedule_date' => $date,
-                'time_slot' => $timeSlot,
+                'time_slot' => Schedule::TIME_SLOT_ALL,
                 'status' => $status,
                 'remark' => $params['remark'] ?? '',
                 'version' => 1,
@@ -490,7 +417,7 @@ class StaffCenterLogic extends BaseLogic
 
         $list = $query->with([
                 'items' => function ($q) use ($staffId) {
-                    $q->field('id, order_id, staff_id, staff_name, package_name, service_date, time_slot, item_status, confirm_status, schedule_id, price, quantity, subtotal')
+                        $q->field('id, order_id, staff_id, staff_name, package_name, service_date, item_status, confirm_status, schedule_id, price, quantity, subtotal')
                         ->where('staff_id', $staffId)
                         ->with(['staff' => function ($staffQuery) {
                             $staffQuery->field('id, name, avatar');
@@ -524,7 +451,7 @@ class StaffCenterLogic extends BaseLogic
 
         $order = Order::with([
                 'items' => function ($q) use ($staffId) {
-                    $q->field('id, order_id, staff_id, staff_name, package_name, service_date, time_slot, item_status, confirm_status, schedule_id, price, quantity, subtotal')
+                        $q->field('id, order_id, staff_id, staff_name, package_name, service_date, item_status, confirm_status, schedule_id, price, quantity, subtotal')
                         ->where('staff_id', $staffId)
                         ->with(['staff' => function ($staffQuery) {
                             $staffQuery->field('id, name, avatar');
@@ -607,7 +534,7 @@ class StaffCenterLogic extends BaseLogic
                     [$ok, $msg] = Schedule::confirmBooking(
                         (int) $item['staff_id'],
                         (string) $item['service_date'],
-                        (int) ($item['time_slot'] ?? 0),
+                        0,
                         (int) $order->id,
                         (int) $order->user_id
                     );
@@ -864,5 +791,37 @@ class StaffCenterLogic extends BaseLogic
             Order::PAY_WAY_COMBINATION => '组合支付',
         ];
         return $map[$type] ?? '未知';
+    }
+
+    /**
+     * @notes 构造套餐写入载荷
+     * @param int $staffId
+     * @param array $params
+     * @param bool $withCreateFields
+     * @return array
+     */
+    protected static function buildPackagePayload(int $staffId, array $params, bool $withCreateFields = true): array
+    {
+        $payload = [
+            'staff_id' => $staffId,
+            'category_id' => (int)($params['category_id'] ?? 0),
+            'name' => (string)($params['name'] ?? ''),
+            'price' => round((float)($params['price'] ?? 0), 2),
+            'original_price' => round((float)($params['original_price'] ?? 0), 2),
+            'content' => $params['content'] ?? [],
+            'description' => (string)($params['description'] ?? ''),
+            'image' => (string)($params['image'] ?? ''),
+            'sort' => (int)($params['sort'] ?? 0),
+            'is_show' => (int)($params['is_show'] ?? 1),
+            'is_recommend' => (int)($params['is_recommend'] ?? 0),
+            'duration' => (int)($params['duration'] ?? 0),
+            'update_time' => time(),
+        ];
+
+        if ($withCreateFields) {
+            $payload['create_time'] = time();
+        }
+
+        return $payload;
     }
 }

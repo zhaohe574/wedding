@@ -31,9 +31,8 @@
                     <view class="order-card__info-icon-wrapper">
                         <tn-icon name="calendar" size="28" :color="$theme.primaryColor" />
                     </view>
-                    <view class="order-card__info-content">
-                        <text class="order-card__info-label">预约档期</text>
-                        <!-- 按日期分组显示场次 -->
+                        <view class="order-card__info-content">
+                            <text class="order-card__info-label">预约档期</text>
                         <view class="order-card__schedule-list">
                             <view
                                 v-for="(group, index) in groupedSchedules"
@@ -44,20 +43,6 @@
                                     <text class="order-card__schedule-date-text">{{
                                         group.date
                                     }}</text>
-                                </view>
-                                <view class="order-card__schedule-slots">
-                                    <view
-                                        v-for="(slot, slotIndex) in group.slots"
-                                        :key="slotIndex"
-                                        class="order-card__schedule-slot"
-                                        :style="{
-                                            backgroundColor: getSlotBgColor($theme.primaryColor),
-                                            color: $theme.primaryColor,
-                                            borderColor: $theme.primaryColor
-                                        }"
-                                    >
-                                        {{ slot.timeSlotDesc }}
-                                    </view>
                                 </view>
                             </view>
                         </view>
@@ -150,8 +135,6 @@ interface OrderData {
         staffAvatar: string
         packageName: string
         serviceDate: string
-        timeSlot: number
-        timeSlotDesc?: string
     }>
     actions: Array<{
         text: string
@@ -171,17 +154,6 @@ const emit = defineEmits<{
     (event: 'click', orderId: number): void
     (event: 'action', action: { text: string; type: string; action: string }, order: OrderData): void
 }>()
-
-const getTimeSlotLabel = (timeSlot: any) => {
-    const map: Record<number, string> = {
-        0: '全天',
-        1: '早礼',
-        2: '午宴',
-        3: '晚宴'
-    }
-    const slot = Number(timeSlot ?? -1)
-    return Number.isFinite(slot) && slot >= 0 ? map[slot] || '未知场次' : '未选择场次'
-}
 
 // 状态配置（使用设计规范中的状态色）
 const statusConfig = {
@@ -218,45 +190,17 @@ const packageList = computed(() => {
     return Array.from(set.values())
 })
 
-const dateList = computed(() => {
-    const set = new Set<string>()
-    props.order.items.forEach((item) => {
-        const date = item.serviceDate || '未选择日期'
-        const slotText = item.timeSlotDesc || getTimeSlotLabel(item.timeSlot)
-        set.add(`${date} ${slotText}`)
-    })
-    return Array.from(set.values())
-})
-
-// 按日期分组的场次列表
 const groupedSchedules = computed(() => {
-    const groups = new Map<string, Array<{ timeSlot: number; timeSlotDesc: string }>>()
+    const groups = new Map<string, { date: string }>()
 
     props.order.items.forEach((item) => {
         const date = item.serviceDate || '未选择日期'
-        const slotText = item.timeSlotDesc || getTimeSlotLabel(item.timeSlot)
-
         if (!groups.has(date)) {
-            groups.set(date, [])
-        }
-
-        // 检查是否已存在相同场次
-        const slots = groups.get(date)!
-        const exists = slots.some((s) => s.timeSlot === item.timeSlot)
-
-        if (!exists) {
-            slots.push({
-                timeSlot: item.timeSlot,
-                timeSlotDesc: slotText
-            })
+            groups.set(date, { date })
         }
     })
 
-    // 转换为数组格式，并按场次排序
-    return Array.from(groups.entries()).map(([date, slots]) => ({
-        date,
-        slots: slots.sort((a, b) => a.timeSlot - b.timeSlot)
-    }))
+    return Array.from(groups.values())
 })
 
 const primaryStaff = computed(() => {
@@ -276,12 +220,6 @@ const packageSummary = computed(() => {
     if (packageList.value.length === 0) return '服务套餐'
     if (packageList.value.length <= 2) return packageList.value.join(' / ')
     return `${packageList.value[0]} 等${packageList.value.length}个套餐`
-})
-
-const dateSummary = computed(() => {
-    if (dateList.value.length === 0) return '未选择档期'
-    if (dateList.value.length <= 2) return dateList.value.join(' / ')
-    return `${dateList.value[0]} 等${dateList.value.length}个场次`
 })
 
 // 计算状态文本
@@ -322,12 +260,6 @@ const getActionTextStyle = (type: string) => {
     return {
         color: '#666666'
     }
-}
-
-// 获取场次标签浅色背景
-const getSlotBgColor = (primaryColor: string) => {
-    // 将主题色转换为浅色背景（透明度10%）
-    return `${primaryColor}1A`
 }
 
 // 处理卡片点击

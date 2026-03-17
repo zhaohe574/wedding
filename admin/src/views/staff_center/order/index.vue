@@ -185,9 +185,6 @@
                         <el-table-column label="工作人员" prop="staff_name" />
                         <el-table-column label="套餐" prop="package_name" />
                         <el-table-column label="服务日期" prop="service_date" />
-                        <el-table-column label="场次" prop="time_slot">
-                            <template #default="{ row }">{{ getTimeSlotText(row.time_slot) }}</template>
-                        </el-table-column>
                         <el-table-column label="状态" prop="item_status">
                             <template #default="{ row }">
                                 <el-tag :type="getItemStatusType(row.item_status)">{{ getItemStatusText(row.item_status) }}</el-tag>
@@ -198,7 +195,7 @@
                         <el-table-column label="小计" prop="subtotal" />
                     </el-table>
                     <div class="text-xs text-gray-400 mt-2">
-                        注：非本人订单项已按权限脱敏，仅保留服务人员、日期、场次和状态。
+                        注：非本人订单项已按权限脱敏，仅保留服务人员、日期和状态。
                     </div>
                 </div>
             </div>
@@ -280,11 +277,6 @@ const getDisplayServiceDate = (order: any) => {
 
 const getDisplayPaidAmount = (order: any) => {
     return Number(order?.paid_amount ?? 0).toFixed(2)
-}
-
-const getTimeSlotText = (slot: number) => {
-    const map: Record<number, string> = { 0: '全天', 1: '早礼', 2: '午宴', 3: '晚宴' }
-    return map[slot] || '-'
 }
 
 const getItemStatusText = (status: number) => {

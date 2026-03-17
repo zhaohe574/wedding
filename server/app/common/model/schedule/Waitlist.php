@@ -8,8 +8,8 @@ declare(strict_types=1);
 namespace app\common\model\schedule;
 
 use app\common\model\BaseModel;
-use app\common\model\staff\Staff;
 use app\common\model\service\ServicePackage;
+use app\common\model\staff\Staff;
 use app\common\model\subscribe\SubscribeMessageTemplate;
 use app\common\model\user\User;
 use app\common\service\SubscribeMessageService;
@@ -25,7 +25,6 @@ class Waitlist extends BaseModel
 
     protected $append = [
         'notify_status_desc',
-        'time_slot_desc',
     ];
 
     // 通知状态
@@ -63,8 +62,8 @@ class Waitlist extends BaseModel
 
     /**
      * @notes 通知状态描述获取器
-     * @param $value
-     * @param $data
+     * @param mixed $value
+     * @param array $data
      * @return string
      */
     public function getNotifyStatusDescAttr($value, $data): string
@@ -75,18 +74,7 @@ class Waitlist extends BaseModel
             self::NOTIFY_STATUS_ORDERED => '已下单',
             self::NOTIFY_STATUS_EXPIRED => '已过期',
         ];
-        return $map[$data['notify_status']] ?? '未知';
-    }
-
-    /**
-     * @notes 时间段描述获取器
-     * @param $value
-     * @param $data
-     * @return string
-     */
-    public function getTimeSlotDescAttr($value, $data): string
-    {
-        return Schedule::getTimeSlotOptions()[$data['time_slot']]['label'] ?? '未知';
+        return $map[(int)($data['notify_status'] ?? -1)] ?? '未知';
     }
 
     /**
@@ -97,22 +85,22 @@ class Waitlist extends BaseModel
      * @param int $timeSlot
      * @param int $packageId
      * @param string $remark
-     * @param int $expireHours 过期时间（小时）
-     * @param string $batchNo 候补批次号
-     * @return array [bool $success, string $message, int|null $waitlistId]
+     * @param int $expireHours
+     * @param string $batchNo
+     * @return array
      */
     public static function addToWaitlist(int $userId, int $staffId, string $date, int $timeSlot = 0, int $packageId = 0, string $remark = '', int $expireHours = 72, string $batchNo = ''): array
     {
-        // 检查是否已在候补名单中
         $exists = self::where('user_id', $userId)
             ->where('staff_id', $staffId)
             ->where('schedule_date', $date)
-            ->where('time_slot', $timeSlot)
+            ->where('time_slot', 0)
+            ->where('package_id', $packageId)
             ->where('notify_status', 'in', [self::NOTIFY_STATUS_PENDING, self::NOTIFY_STATUS_NOTIFIED])
             ->find();
 
         if ($exists) {
-            return [false, '您已在该档期的候补名单中', null];
+            return [false, '您已在该日期的候补名单中', null];
         }
 
         try {
@@ -120,7 +108,7 @@ class Waitlist extends BaseModel
                 'user_id' => $userId,
                 'staff_id' => $staffId,
                 'schedule_date' => $date,
-                'time_slot' => $timeSlot,
+                'time_slot' => 0,
                 'package_id' => $packageId,
                 'batch_no' => $batchNo,
                 'notify_status' => self::NOTIFY_STATUS_PENDING,
@@ -129,8 +117,8 @@ class Waitlist extends BaseModel
                 'create_time' => time(),
                 'update_time' => time(),
             ]);
-            return [true, '已加入候补名单', $waitlist->id];
-        } catch (\Exception $e) {
+            return [true, '已加入候补名单', (int)$waitlist->id];
+        } catch (\Throwable $e) {
             return [false, '加入候补失败：' . $e->getMessage(), null];
         }
     }
@@ -140,13 +128,13 @@ class Waitlist extends BaseModel
      * @param int $staffId
      * @param string $date
      * @param int $timeSlot
-     * @return array 需要通知的用户列表
+     * @return array
      */
     public static function notifyWaitlistUsers(int $staffId, string $date, int $timeSlot): array
     {
         $waitlists = self::where('staff_id', $staffId)
             ->where('schedule_date', $date)
-            ->where('time_slot', $timeSlot)
+            ->where('time_slot', 0)
             ->where('notify_status', self::NOTIFY_STATUS_PENDING)
             ->where('expire_time', '>', time())
             ->with([
@@ -170,11 +158,11 @@ class Waitlist extends BaseModel
             self::sendWaitlistSubscribeMessage($waitlist);
 
             $notifyUsers[] = [
-                'waitlist_id' => $waitlist->id,
-                'user_id' => $waitlist->user_id,
-                'staff_id' => $waitlist->staff_id,
-                'schedule_date' => $waitlist->schedule_date,
-                'time_slot' => $waitlist->time_slot,
+                'waitlist_id' => (int)$waitlist->id,
+                'user_id' => (int)$waitlist->user_id,
+                'staff_id' => (int)$waitlist->staff_id,
+                'schedule_date' => (string)$waitlist->schedule_date,
+                'package_id' => (int)$waitlist->package_id,
             ];
         }
 
@@ -191,18 +179,17 @@ class Waitlist extends BaseModel
         $data = [
             'staff_name' => $waitlist->staff->name ?? '服务人员',
             'schedule_date' => $waitlist->schedule_date ?? '',
-            'time_slot_desc' => $waitlist->time_slot_desc ?? '全天',
             'package_name' => $waitlist->package->name ?? '',
             'remark' => $waitlist->remark ?? '',
-            'waitlist_id' => (string) $waitlist->id,
+            'waitlist_id' => (string)$waitlist->id,
         ];
 
         SubscribeMessageService::send(
-            (int) $waitlist->user_id,
+            (int)$waitlist->user_id,
             SubscribeMessageTemplate::SCENE_WAITLIST_RELEASE,
             $data,
             'waitlist',
-            (int) $waitlist->id
+            (int)$waitlist->id
         );
     }
 
@@ -221,7 +208,7 @@ class Waitlist extends BaseModel
 
     /**
      * @notes 处理过期候补
-     * @return int 处理数量
+     * @return int
      */
     public static function processExpiredWaitlists(): int
     {
@@ -247,7 +234,7 @@ class Waitlist extends BaseModel
             $query->where('notify_status', $status);
         }
 
-        return $query->with([
+        $lists = $query->with([
                 'staff' => function ($q) {
                     $q->field('id, name, avatar, category_id');
                 },
@@ -258,13 +245,20 @@ class Waitlist extends BaseModel
             ->order('create_time', 'desc')
             ->select()
             ->toArray();
+
+        foreach ($lists as &$item) {
+            unset($item['time_slot']);
+        }
+        unset($item);
+
+        return $lists;
     }
 
     /**
      * @notes 取消候补
      * @param int $waitlistId
      * @param int $userId
-     * @return array [bool $success, string $message]
+     * @return array
      */
     public static function cancelWaitlist(int $waitlistId, int $userId): array
     {
@@ -276,7 +270,7 @@ class Waitlist extends BaseModel
             return [false, '候补记录不存在'];
         }
 
-        if ($waitlist->notify_status == self::NOTIFY_STATUS_ORDERED) {
+        if ((int)$waitlist->notify_status === self::NOTIFY_STATUS_ORDERED) {
             return [false, '已下单的候补不能取消'];
         }
 

@@ -25,7 +25,7 @@ class ScheduleLists extends BaseAdminDataLists implements ListsExcelInterface
     public function setSearch(): array
     {
         return [
-            '=' => ['staff_id', 'status', 'time_slot', 'lock_type'],
+            '=' => ['staff_id', 'status', 'lock_type'],
             'between_date' => ['schedule_date'],
         ];
     }
@@ -46,13 +46,13 @@ class ScheduleLists extends BaseAdminDataLists implements ListsExcelInterface
             $query->where('staff_id', $staffScopeId);
         }
 
-        $lists = $query->order($this->sortOrder ?: ['schedule_date' => 'asc', 'time_slot' => 'asc'])
+        $lists = $query->where('time_slot', Schedule::TIME_SLOT_ALL)
+            ->order($this->sortOrder ?: ['schedule_date' => 'asc'])
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();
 
         foreach ($lists as &$item) {
-            $item['time_slot_desc'] = $this->getTimeSlotDesc($item['time_slot']);
             $item['status_desc'] = $this->getStatusDesc($item['status']);
             $item['lock_type_desc'] = $this->getLockTypeDesc($item['lock_type']);
         }
@@ -71,7 +71,7 @@ class ScheduleLists extends BaseAdminDataLists implements ListsExcelInterface
         if ($staffScopeId > 0) {
             $query->where('staff_id', $staffScopeId);
         }
-        return $query->count();
+        return $query->where('time_slot', Schedule::TIME_SLOT_ALL)->count();
     }
 
     /**
@@ -84,7 +84,6 @@ class ScheduleLists extends BaseAdminDataLists implements ListsExcelInterface
             'id' => 'ID',
             'staff.name' => '工作人员',
             'schedule_date' => '日期',
-            'time_slot_desc' => '时间段',
             'status_desc' => '状态',
             'price' => '价格',
             'remark' => '备注',
@@ -99,22 +98,6 @@ class ScheduleLists extends BaseAdminDataLists implements ListsExcelInterface
     public function setFileName(): string
     {
         return '档期列表';
-    }
-
-    /**
-     * @notes 获取时间段描述
-     * @param int $timeSlot
-     * @return string
-     */
-    protected function getTimeSlotDesc(int $timeSlot): string
-    {
-        $map = [
-            0 => '全天',
-            1 => '早礼',
-            2 => '午宴',
-            3 => '晚宴',
-        ];
-        return $map[$timeSlot] ?? '未知';
     }
 
     /**

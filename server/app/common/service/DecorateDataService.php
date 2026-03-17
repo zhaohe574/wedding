@@ -31,10 +31,6 @@ class DecorateDataService
             'id_field' => 'staff_id',
             'data_type' => 'staff'
         ],
-        'service-packages' => [
-            'id_field' => 'package_id',
-            'data_type' => 'package'
-        ],
         'coupon-receive' => [
             'id_field' => 'coupon_id',
             'data_type' => 'coupon'
@@ -76,12 +72,20 @@ class DecorateDataService
             return $pageData;
         }
 
-        // 遍历所有组件，解析并填充数据
-        foreach ($data as $index => $widget) {
-            if (isset($widget['id']) && isset($widget['name'])) {
-                $data[$index] = self::parseWidget($widget);
+        $filteredData = [];
+        foreach ($data as $widget) {
+            if (!is_array($widget)) {
+                continue;
             }
+            if (($widget['name'] ?? '') === 'service-packages') {
+                continue;
+            }
+            if (isset($widget['id']) && isset($widget['name'])) {
+                $widget = self::parseWidget($widget);
+            }
+            $filteredData[] = $widget;
         }
+        $data = $filteredData;
 
         // 如果原始数据是 JSON 字符串，转换回 JSON 字符串
         if ($isJsonString) {

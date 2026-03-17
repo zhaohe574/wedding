@@ -235,7 +235,7 @@ class Order extends BaseModel
                 'deposit_amount' => $depositAmount,
                 'balance_amount' => $balanceAmount,
                 'service_date' => $orderInfo['service_date'] ?? null,
-                'service_time_slot' => $orderInfo['time_slot'] ?? 0,
+                'service_time_slot' => 0,
                 'service_address' => $orderInfo['service_address'] ?? '',
                 'contact_name' => $orderInfo['contact_name'] ?? '',
                 'contact_mobile' => $orderInfo['contact_mobile'] ?? '',
@@ -258,7 +258,7 @@ class Order extends BaseModel
                     'package_id' => $item['package_id'] ?? 0,
                     'schedule_id' => $item['schedule_id'] ?? 0,
                     'service_date' => $item['schedule_date'],
-                    'time_slot' => $item['time_slot'] ?? 0,
+                    'time_slot' => 0,
                     'staff_name' => $item['staff']['name'] ?? '',
                     'package_name' => $item['package']['name'] ?? '',
                     'price' => $item['price'],
@@ -270,26 +270,23 @@ class Order extends BaseModel
                     'update_time' => time(),
                 ]);
 
-                // 确认档期预约
-                if (!empty($item['schedule_id'])) {
-                    $schedule = Schedule::find($item['schedule_id']);
-                    if ($schedule && $schedule->status == Schedule::STATUS_LOCKED && (int)$schedule->lock_user_id === (int)$userId) {
-                        Schedule::where('id', $schedule->id)->update([
-                            'lock_expire_time' => time() + $confirmLockDuration,
-                            'update_time' => time(),
-                        ]);
-                    } else {
-                        [$locked, $message] = Schedule::lockSchedule(
-                            $item['staff_id'],
-                            $item['schedule_date'],
-                            $item['time_slot'] ?? 0,
-                            $userId,
-                            Schedule::LOCK_TYPE_NORMAL,
-                            $confirmLockDuration
-                        );
-                        if (!$locked) {
-                            throw new \Exception($message);
-                        }
+                if ((int)($item['staff_id'] ?? 0) > 0 && !empty($item['schedule_date'])) {
+                    $scheduleResult = Schedule::confirmBooking(
+                        (int)$item['staff_id'],
+                        (string)$item['schedule_date'],
+                        0,
+                        (int)$order->id,
+                        $userId
+                    );
+                    if (!($scheduleResult[0] ?? false)) {
+                        throw new \Exception((string)($scheduleResult[1] ?? '档期锁定失败'));
+                    }
+
+                    $scheduleId = (int)($scheduleResult['schedule_id'] ?? 0);
+                    if ($scheduleId > 0) {
+                        $orderItem->schedule_id = $scheduleId;
+                        $orderItem->time_slot = 0;
+                        $orderItem->save();
                     }
                 }
 
@@ -299,7 +296,7 @@ class Order extends BaseModel
                         (int)$item['package_id'],
                         (int)$item['staff_id'],
                         (string)$item['schedule_date'],
-                        (int)($item['time_slot'] ?? 0),
+                        0,
                         (int)$order->id,
                         (int)$orderItem->id
                     );
@@ -308,7 +305,7 @@ class Order extends BaseModel
                             (int)$item['package_id'],
                             (string)$item['schedule_date'],
                             (int)$item['staff_id'],
-                            (int)($item['time_slot'] ?? 0)
+                            0
                         );
                         $message = $availability['available'] ?? false
                             ? '套餐预订锁定失败，请刷新后重试'

@@ -104,7 +104,7 @@
                                     <view class="slot-info">
                                         <view class="slot-row">
                                             <text class="slot-label"
-                                                >场次：{{ getTimeSlotLabel(item) }}</text
+                                                >预约日期：{{ item.schedule_date || '-' }}</text
                                             >
                                             <text
                                                 class="slot-price"
@@ -278,28 +278,11 @@ const groupedItems = computed(() => {
     })
 
     groups.forEach((group) => {
-        group.packages.forEach((pkg: any) => {
-            pkg.items.sort((a: any, b: any) => Number(a.time_slot || 0) - Number(b.time_slot || 0))
-        })
         delete group.packageMap
     })
 
     return groups
 })
-
-const getTimeSlotLabel = (item: any) => {
-    if (item?.time_slot_desc) {
-        return item.time_slot_desc
-    }
-    const map: Record<number, string> = {
-        0: '全天',
-        1: '早礼',
-        2: '午宴',
-        3: '晚宴'
-    }
-    const slot = Number(item?.time_slot)
-    return Number.isFinite(slot) ? map[slot] || '未知场次' : '未知场次'
-}
 
 const initContact = async () => {
     await userStore.getUser()

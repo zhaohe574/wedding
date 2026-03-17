@@ -81,15 +81,14 @@ class OrderNotificationService
                 return;
             }
 
-            $timeSlotDesc = self::getTimeSlotLabel((int) $change->new_time_slot);
-            $summary = sprintf('改期申请，拟改为%s %s。', (string) $change->new_service_date, $timeSlotDesc);
+            $summary = sprintf('改期申请，拟改为%s。', (string) $change->new_service_date);
             self::sendStaffOrderNotice(
                 (int) $change->order_id,
                 '订单改期申请待处理',
                 self::formatOrderContent(
                     (int) $change->order_id,
-                    '提交了改期申请，拟改为%s %s。',
-                    [(string) $change->new_service_date, $timeSlotDesc]
+                    '提交了改期申请，拟改为%s。',
+                    [(string) $change->new_service_date]
                 ),
                 $summary
             );
@@ -109,16 +108,15 @@ class OrderNotificationService
                 return;
             }
 
-            $timeSlotDesc = self::getTimeSlotLabel((int) $change->new_time_slot);
             if ((int) $change->change_status === OrderChange::STATUS_APPROVED) {
-                $summary = sprintf('改期申请已审核通过，待执行时间为%s %s。', (string) $change->new_service_date, $timeSlotDesc);
+                $summary = sprintf('改期申请已审核通过，待执行时间为%s。', (string) $change->new_service_date);
                 self::sendStaffOrderNotice(
                     (int) $change->order_id,
                     '订单改期申请已通过',
                     self::formatOrderContent(
                         (int) $change->order_id,
-                        '的改期申请已审核通过，待执行时间为%s %s。',
-                        [(string) $change->new_service_date, $timeSlotDesc]
+                        '的改期申请已审核通过，待执行时间为%s。',
+                        [(string) $change->new_service_date]
                     ),
                     $summary
                 );
@@ -148,15 +146,14 @@ class OrderNotificationService
                 return;
             }
 
-            $timeSlotDesc = self::getTimeSlotLabel((int) $change->new_time_slot);
-            $summary = sprintf('服务时间已改为%s %s，请按新时间安排服务。', (string) $change->new_service_date, $timeSlotDesc);
+            $summary = sprintf('服务时间已改为%s，请按新时间安排服务。', (string) $change->new_service_date);
             self::sendStaffOrderNotice(
                 (int) $change->order_id,
                 '订单服务时间已改期',
                 self::formatOrderContent(
                     (int) $change->order_id,
-                    '已改期为%s %s，请按新时间安排服务。',
-                    [(string) $change->new_service_date, $timeSlotDesc]
+                    '已改期为%s，请按新时间安排服务。',
+                    [(string) $change->new_service_date]
                 ),
                 $summary
             );
@@ -650,17 +647,4 @@ class OrderNotificationService
         return sprintf('订单%s%s', (string) $order->order_sn, $suffix);
     }
 
-    /**
-     * 时间段文案。
-     */
-    private static function getTimeSlotLabel(int $timeSlot): string
-    {
-        return match ($timeSlot) {
-            OrderChange::TIME_SLOT_ALL => '全天',
-            OrderChange::TIME_SLOT_MORNING => '早礼',
-            OrderChange::TIME_SLOT_AFTERNOON => '午宴',
-            OrderChange::TIME_SLOT_EVENING => '晚宴',
-            default => '未知',
-        };
-    }
 }

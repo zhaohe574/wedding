@@ -39,7 +39,6 @@ class BookingLogic extends BaseLogic
                 'oi.staff_name',
                 'oi.package_name',
                 'oi.service_date',
-                'oi.time_slot',
                 'oi.item_status',
                 'oi.confirm_status',
                 'oi.schedule_id',
@@ -73,7 +72,6 @@ class BookingLogic extends BaseLogic
         $data = $item->toArray();
         $data['customer_name'] = $data['contact_name'] ?: ($data['user_nickname'] ?? '');
         $data['customer_phone'] = $data['contact_mobile'] ?: ($data['user_mobile'] ?? '');
-        $data['time_slot_desc'] = self::getTimeSlotDesc((int)$data['time_slot']);
         $data['item_status_desc'] = self::getItemStatusDesc((int)$data['item_status']);
         $data['confirm_status_desc'] = (int)$data['confirm_status'] === 1 ? '已确认' : '待确认';
 
@@ -128,7 +126,7 @@ class BookingLogic extends BaseLogic
                     [$ok, $msg] = Schedule::confirmBooking(
                         (int)$item->staff_id,
                         (string)$item->service_date,
-                        (int)$item->time_slot,
+                        0,
                         (int)$order->id,
                         (int)$order->user_id
                     );
@@ -309,22 +307,6 @@ class BookingLogic extends BaseLogic
             'completed' => (clone $baseQuery)->where('oi.item_status', OrderItem::STATUS_COMPLETED)->count(),
             'cancelled' => (clone $baseQuery)->where('oi.item_status', OrderItem::STATUS_CANCELLED)->count(),
         ];
-    }
-
-    /**
-     * @notes 时间段文案
-     * @param int $timeSlot
-     * @return string
-     */
-    private static function getTimeSlotDesc(int $timeSlot): string
-    {
-        $map = [
-            0 => '全天',
-            1 => '早礼',
-            2 => '午宴',
-            3 => '晚宴',
-        ];
-        return $map[$timeSlot] ?? '未知';
     }
 
     /**

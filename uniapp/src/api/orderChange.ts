@@ -42,11 +42,6 @@ export function getChangeTypeOptions() {
     return request.get({ url: '/orderChange/typeOptions' })
 }
 
-// 获取时间段选项
-export function getTimeSlotOptions() {
-    return request.get({ url: '/orderChange/timeSlotOptions' })
-}
-
 // ==================== 订单转让 ====================
 
 // 转让申请列表

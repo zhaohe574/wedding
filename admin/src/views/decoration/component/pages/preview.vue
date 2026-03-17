@@ -120,7 +120,7 @@
     </el-dialog>
 </template>
 <script lang="ts" setup>
-import { ArrowDownBold, ArrowUpBold, Hide, View, Picture, Document, Star, User, ShoppingCart, Ticket, Calendar, Delete } from '@element-plus/icons-vue'
+import { ArrowDownBold, ArrowUpBold, Hide, View, Picture, Document, Star, User, Ticket, Calendar, Delete } from '@element-plus/icons-vue'
 import { cloneDeep } from 'lodash-es'
 import type { PropType } from 'vue'
 import { computed } from 'vue'
@@ -145,7 +145,6 @@ const availableWidgets = [
     { name: 'nav', title: '导航菜单', icon: 'Grid' },
     { name: 'middle-banner', title: '中部轮播图', icon: Picture },
     { name: 'staff-showcase', title: '人员推荐', icon: User },
-    { name: 'service-packages', title: '服务套餐', icon: ShoppingCart },
     { name: 'portfolio-gallery', title: '案例作品', icon: Picture },
     { name: 'customer-reviews', title: '客户评价', icon: Star },
     { name: 'activity-zone', title: '活动专区', icon: Ticket },

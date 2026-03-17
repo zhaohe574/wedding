@@ -139,155 +139,29 @@
                         <div class="admin-edit-section">
                             <div class="admin-edit-toolbar">
                                 <div>
-                                    <div class="admin-edit-section__title">关联全局套餐</div>
-                                    <div class="admin-edit-section__desc">支持设置默认价格、场次价格、预约类型和单个套餐状态。</div>
-                                </div>
-                                <el-button @click="openPackageDialog">添加套餐</el-button>
-                            </div>
-                            <div class="staff-table-card mt-4">
-                                <el-table :data="configuredPackages" border>
-                                    <el-table-column label="套餐名称" prop="package_name" min-width="150" />
-                                    <el-table-column label="默认价格" width="150">
-                                        <template #default="{ row }">
-                                            <el-input-number
-                                                v-model="row.price"
-                                                :min="0"
-                                                :precision="2"
-                                                size="small"
-                                                controls-position="right"
-                                                placeholder="默认价格"
-                                            />
-                                        </template>
-                                    </el-table-column>
-                                    <el-table-column label="原价" width="150">
-                                        <template #default="{ row }">
-                                            <el-input-number
-                                                v-model="row.original_price"
-                                                :min="0"
-                                                :precision="2"
-                                                size="small"
-                                                controls-position="right"
-                                                placeholder="选填"
-                                            />
-                                        </template>
-                                    </el-table-column>
-                                    <el-table-column label="个人价格" width="150">
-                                        <template #default="{ row }">
-                                            <el-input-number
-                                                v-model="row.custom_price"
-                                                :min="0"
-                                                :precision="2"
-                                                size="small"
-                                                controls-position="right"
-                                                placeholder="不填则使用默认"
-                                            />
-                                        </template>
-                                    </el-table-column>
-                                    <el-table-column label="场次价格" width="100">
-                                        <template #default="{ row, $index }">
-                                            <el-button
-                                                v-if="row.booking_type === 1"
-                                                type="primary"
-                                                link
-                                                @click="openSlotPriceDialog($index)"
-                                            >
-                                                配置{{ normalizeSlotPrices(row.custom_slot_prices).length ? `(${normalizeSlotPrices(row.custom_slot_prices).length})` : '' }}
-                                            </el-button>
-                                            <span v-else class="admin-edit-muted">全天</span>
-                                        </template>
-                                    </el-table-column>
-                                    <el-table-column label="预约类型" width="140">
-                                        <template #default="{ row }">
-                                            <el-select
-                                                v-model="row.booking_type"
-                                                size="small"
-                                                class="w-full"
-                                                @change="handlePackageBookingTypeChange(row)"
-                                            >
-                                                <el-option label="全天套餐" :value="0" />
-                                                <el-option label="分场次套餐" :value="1" />
-                                            </el-select>
-                                        </template>
-                                    </el-table-column>
-                                    <el-table-column label="允许场次" min-width="180">
-                                        <template #default="{ row }">
-                                            <el-checkbox-group
-                                                v-if="row.booking_type === 1"
-                                                v-model="row.allowed_time_slots"
-                                                size="small"
-                                            >
-                                                <el-checkbox
-                                                    v-for="slot in timeSlotOptions"
-                                                    :key="slot.value"
-                                                    :value="slot.value"
-                                                    :label="slot.label"
-                                                />
-                                            </el-checkbox-group>
-                                            <span v-else class="admin-edit-muted">全天</span>
-                                        </template>
-                                    </el-table-column>
-                                    <el-table-column label="状态" width="100">
-                                        <template #default="{ row }">
-                                            <el-switch v-model="row.status" :active-value="1" :inactive-value="0" />
-                                        </template>
-                                    </el-table-column>
-                                    <el-table-column label="操作" width="140">
-                                        <template #default="{ row }">
-                                            <el-button type="primary" link @click="savePackageConfig(row)">保存</el-button>
-                                            <el-button
-                                                class="staff-secondary-action"
-                                                type="danger"
-                                                link
-                                                @click="removeConfiguredPackage(row)"
-                                            >
-                                                移除
-                                            </el-button>
-                                        </template>
-                                    </el-table-column>
-                                </el-table>
-                            </div>
-                        </div>
-
-                        <div class="admin-edit-section mt-4">
-                            <div class="admin-edit-toolbar">
-                                <div>
-                                    <div class="admin-edit-section__title">专属套餐</div>
-                                    <div class="admin-edit-section__desc">维护个人专属套餐，支持场次价格与上下架配置。</div>
+                                    <div class="admin-edit-section__title">我的套餐</div>
+                                    <div class="admin-edit-section__desc">只维护本人专属套餐，预约统一按日期处理。</div>
                                 </div>
                                 <el-button type="primary" @click="openCreateStaffPackage">创建专属套餐</el-button>
                             </div>
                             <div class="staff-table-card mt-4">
                                 <el-table :data="staffPackages" border>
                                     <el-table-column label="套餐名称" prop="name" min-width="150" />
-                                    <el-table-column label="价格" prop="price" width="100">
+                                    <el-table-column label="分类" prop="category_name" min-width="120" />
+                                    <el-table-column label="价格" prop="price" width="140">
                                         <template #default="{ row }">¥{{ row.price }}</template>
                                     </el-table-column>
-                                    <el-table-column label="场次价格" width="100">
+                                    <el-table-column label="原价" width="140">
                                         <template #default="{ row }">
-                                            <span v-if="normalizeSlotPrices(row.slot_prices).length">
-                                                {{ normalizeSlotPrices(row.slot_prices).length }}个场次
-                                            </span>
-                                            <span v-else class="admin-edit-muted">未配置</span>
+                                            <span v-if="Number(row.original_price || 0) > 0">¥{{ row.original_price }}</span>
+                                            <span v-else class="admin-edit-muted">-</span>
                                         </template>
                                     </el-table-column>
-                                    <el-table-column label="预约类型" width="120">
+                                    <el-table-column label="推荐" width="100">
                                         <template #default="{ row }">
-                                            <el-tag v-if="Number(row.booking_type) === 0" type="info">全天套餐</el-tag>
-                                            <el-tag v-else type="warning">分场次套餐</el-tag>
-                                        </template>
-                                    </el-table-column>
-                                    <el-table-column label="允许场次" min-width="160">
-                                        <template #default="{ row }">
-                                            <span v-if="Number(row.booking_type) !== 1" class="admin-edit-muted">全天</span>
-                                            <span v-else>
-                                                <el-tag
-                                                    v-for="slot in normalizeAllowedSlots(row.allowed_time_slots)"
-                                                    :key="slot"
-                                                    class="mr-1"
-                                                >
-                                                    {{ timeSlotLabelMap[slot] || slot }}
-                                                </el-tag>
-                                            </span>
+                                            <el-tag :type="row.is_recommend ? 'warning' : 'info'">
+                                                {{ row.is_recommend ? '推荐' : '普通' }}
+                                            </el-tag>
                                         </template>
                                     </el-table-column>
                                     <el-table-column label="状态" prop="is_show" width="100">
@@ -448,51 +322,6 @@
             <el-button type="primary" :loading="saveLoading" @click="handleSaveProfile">保存资料</el-button>
         </footer-btns>
 
-        <el-dialog v-model="showPackageDialog" title="选择套餐" width="600px" class="staff-edit-dialog">
-            <el-alert
-                v-if="!availablePackages.length"
-                type="info"
-                :closable="false"
-                title="当前没有可关联的现有套餐"
-                class="mb-3"
-            />
-            <el-table ref="packageTableRef" v-else :data="availablePackages" @selection-change="handlePackageSelect">
-                <el-table-column type="selection" width="55" />
-                <el-table-column label="套餐名称" prop="name" />
-                <el-table-column label="分类" prop="category_name" />
-                <el-table-column label="价格" prop="price" width="100">
-                    <template #default="{ row }">¥{{ row.price }}</template>
-                </el-table-column>
-            </el-table>
-            <template #footer>
-                <el-button @click="showPackageDialog = false">取消</el-button>
-                <el-button type="primary" @click="confirmPackageSelect">确定</el-button>
-            </template>
-        </el-dialog>
-
-        <el-dialog v-model="showSlotPriceDialog" title="场次价格配置" width="600px" class="staff-edit-dialog">
-            <div class="admin-edit-tip-block">
-                <div class="admin-edit-tip-block__title">配置说明</div>
-                <div class="admin-edit-muted">未填写的场次将使用默认价格</div>
-            </div>
-            <div class="slot-price-list mt-4">
-                <div v-for="(slot, index) in currentSlotPrices" :key="index" class="flex items-center gap-4 mb-4">
-                    <span class="w-16">{{ timeSlotLabelMap[slot.time_slot] || slot.time_slot }}</span>
-                    <el-input-number
-                        v-model="slot.price"
-                        :min="0"
-                        :precision="2"
-                        placeholder="价格"
-                        style="width: 150px"
-                    />
-                </div>
-            </div>
-            <template #footer>
-                <el-button @click="showSlotPriceDialog = false">取消</el-button>
-                <el-button type="primary" @click="confirmSlotPrice">确定</el-button>
-            </template>
-        </el-dialog>
-
         <el-dialog
             v-model="showStaffPackageDialog"
             :title="isEditingStaffPackage ? '编辑专属套餐' : '创建专属套餐'"
@@ -519,42 +348,8 @@
                 <el-form-item label="原价" prop="original_price">
                     <el-input-number v-model="staffPackageForm.original_price" :min="0" :precision="2" class="w-full" />
                 </el-form-item>
-                <el-form-item label="预约类型" prop="booking_type">
-                    <el-radio-group v-model="staffPackageForm.booking_type">
-                        <el-radio :value="0">全天套餐</el-radio>
-                        <el-radio :value="1">分场次套餐</el-radio>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item v-if="staffPackageForm.booking_type === 1" label="允许场次" prop="allowed_time_slots">
-                    <el-checkbox-group v-model="staffPackageForm.allowed_time_slots">
-                        <el-checkbox
-                            v-for="slot in timeSlotOptions"
-                            :key="slot.value"
-                            :value="slot.value"
-                            :label="slot.label"
-                        />
-                    </el-checkbox-group>
-                </el-form-item>
-                <el-form-item v-if="staffPackageForm.booking_type === 1" label="场次价格">
-                    <div class="w-full">
-                        <div
-                            v-for="(slot, index) in staffPackageForm.slot_prices"
-                            :key="index"
-                            class="flex items-center gap-4 mb-2"
-                        >
-                            <span class="w-16">{{ timeSlotLabelMap[slot.time_slot] || slot.time_slot }}</span>
-                            <el-input-number
-                                v-model="slot.price"
-                                :min="0"
-                                :precision="2"
-                                placeholder="价格"
-                                style="width: 120px"
-                            />
-                        </div>
-                    </div>
-                </el-form-item>
-                <el-form-item label="上架状态" prop="is_show">
-                    <el-switch v-model="staffPackageForm.is_show" :active-value="1" :inactive-value="0" />
+                <el-form-item label="封面图" prop="image">
+                    <material-picker v-model="staffPackageForm.image" :limit="1" />
                 </el-form-item>
                 <el-form-item label="套餐说明" prop="description">
                     <el-input
@@ -563,6 +358,23 @@
                         :rows="3"
                         placeholder="请输入套餐说明"
                     />
+                </el-form-item>
+                <div class="grid staff-edit-grid gap-x-8">
+                    <el-form-item label="排序" prop="sort">
+                        <el-input-number v-model="staffPackageForm.sort" :min="0" :max="9999" class="w-full" />
+                    </el-form-item>
+                    <el-form-item label="推荐" prop="is_recommend">
+                        <el-radio-group v-model="staffPackageForm.is_recommend">
+                            <el-radio :value="1">是</el-radio>
+                            <el-radio :value="0">否</el-radio>
+                        </el-radio-group>
+                    </el-form-item>
+                </div>
+                <el-form-item label="状态" prop="is_show">
+                    <el-radio-group v-model="staffPackageForm.is_show">
+                        <el-radio :value="1">上架</el-radio>
+                        <el-radio :value="0">下架</el-radio>
+                    </el-radio-group>
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -610,7 +422,7 @@
 </template>
 
 <script setup lang="ts" name="staffCenterProfile">
-import { nextTick, onMounted, reactive, ref, shallowRef, watch } from 'vue'
+import { onMounted, reactive, ref, shallowRef, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { VideoPlay } from '@element-plus/icons-vue'
@@ -624,24 +436,19 @@ import {
     myProfileBannerEdit,
     myProfileBannerList,
     myProfileBannerSort,
-    myProfileConfigurePackages,
     myProfileCreatePackage,
     myProfileDeletePackage,
     myProfilePackageConfig,
     myProfileUpdate,
-    myProfileUpdatePackageConfig,
     myProfileUpdateStaffPackage
 } from '@/api/staff-center'
 
 const formRef = shallowRef<FormInstance>()
 const staffPackageFormRef = shallowRef<FormInstance>()
 const bannerFormRef = shallowRef<FormInstance>()
-const packageTableRef = shallowRef<any>()
 
 const activeTab = ref('basic')
 const saveLoading = ref(false)
-const showPackageDialog = ref(false)
-const showSlotPriceDialog = ref(false)
 const showStaffPackageDialog = ref(false)
 const showBannerDialog = ref(false)
 const isEditingStaffPackage = ref(false)
@@ -649,13 +456,8 @@ const isEditingBanner = ref(false)
 
 const categoryOptions = ref<any[]>([])
 const groupedTags = ref<Record<string, any[]>>({})
-const configuredPackages = ref<any[]>([])
 const staffPackages = ref<any[]>([])
-const availablePackages = ref<any[]>([])
-const selectedPackages = ref<any[]>([])
 const bannerList = ref<any[]>([])
-const currentSlotPriceIndex = ref(-1)
-const currentSlotPrices = ref<{ time_slot: number; price: number | undefined }[]>([])
 
 const adminInfo = reactive({
     account: '',
@@ -667,20 +469,6 @@ const tagTypeLabelMap: Record<number, string> = {
     2: '特长',
     3: '其他'
 }
-
-const timeSlotOptions = [
-    { value: 1, label: '早礼' },
-    { value: 2, label: '午宴' },
-    { value: 3, label: '晚宴' }
-]
-
-const timeSlotLabelMap: Record<number, string> = {
-    1: '早礼',
-    2: '午宴',
-    3: '晚宴'
-}
-
-const validTimeSlotValues = new Set(timeSlotOptions.map((item) => item.value))
 
 const formData = reactive({
     id: 0,
@@ -708,16 +496,17 @@ const staffPackageForm = reactive({
     category_id: '',
     price: 0,
     original_price: 0,
+    image: '',
     description: '',
-    slot_prices: [] as { time_slot: number; price: number | undefined }[],
-    booking_type: 0,
-    allowed_time_slots: [] as number[],
-    is_show: 1
+    sort: 0,
+    is_show: 1,
+    is_recommend: 0
 })
 
 const staffPackageRules: FormRules = {
     name: [{ required: true, message: '请输入套餐名称', trigger: 'blur' }],
-    category_id: [{ required: true, message: '请选择服务分类', trigger: 'change' }]
+    category_id: [{ required: true, message: '请选择服务分类', trigger: 'change' }],
+    price: [{ required: true, message: '请输入套餐价格', trigger: 'blur' }]
 }
 
 const bannerConfig = reactive({
@@ -754,63 +543,6 @@ const bannerFormRules: FormRules = {
     ]
 }
 
-const normalizeJsonArray = (value: any): any[] => {
-    if (Array.isArray(value)) {
-        return value
-    }
-    if (typeof value === 'string' && value) {
-        try {
-            const parsed = JSON.parse(value)
-            return Array.isArray(parsed) ? parsed : []
-        } catch (error) {
-            return []
-        }
-    }
-    return []
-}
-
-const normalizeAllowedSlots = (value: any): number[] => {
-    return normalizeJsonArray(value)
-        .map((item) => Number(item))
-        .filter((item) => !Number.isNaN(item) && validTimeSlotValues.has(item))
-}
-
-const normalizeSlotPrices = (value: any) => {
-    return normalizeJsonArray(value)
-}
-
-const buildSlotPriceRows = (allowedSlots: number[], slotPrices: any[]) => {
-    return allowedSlots.map((slot) => {
-        const matched = slotPrices.find((item: any) => Number(item.time_slot) === slot)
-        return {
-            time_slot: slot,
-            price: matched?.price ?? undefined
-        }
-    })
-}
-
-const normalizeSlotPricePayload = (
-    slots: { time_slot: number; price: number | undefined }[],
-    allowedSlots: number[] = []
-) => {
-    const allowedSet = allowedSlots.length ? new Set(allowedSlots) : null
-    return slots
-        .filter((slot) => slot.price !== undefined && slot.price !== null)
-        .map((slot) => ({
-            time_slot: Number(slot.time_slot),
-            price: Number(slot.price)
-        }))
-        .filter((slot) => !allowedSet || allowedSet.has(slot.time_slot))
-}
-
-const resolveAllowedSlots = (row: any) => {
-    if (Number(row.booking_type) !== 1) {
-        return []
-    }
-    const allowedSlots = normalizeAllowedSlots(row.allowed_time_slots)
-    return allowedSlots.length ? allowedSlots : timeSlotOptions.map((item) => item.value)
-}
-
 const syncSelectedTags = (tagsByType: Record<string, any[]>) => {
     const availableIds = new Set<number>()
     Object.values(tagsByType).forEach((list) => {
@@ -823,18 +555,6 @@ const syncSelectedTags = (tagsByType: Record<string, any[]>) => {
     if (formData.tag_ids.length) {
         formData.tag_ids = formData.tag_ids.filter((id) => availableIds.has(Number(id)))
     }
-}
-
-const syncStaffPackageSlotPrices = () => {
-    if (staffPackageForm.booking_type !== 1) {
-        staffPackageForm.slot_prices = []
-        return
-    }
-    const allowedSlots = staffPackageForm.allowed_time_slots.length
-        ? normalizeAllowedSlots(staffPackageForm.allowed_time_slots)
-        : timeSlotOptions.map((item) => item.value)
-    const slotPrices = normalizeSlotPrices(staffPackageForm.slot_prices)
-    staffPackageForm.slot_prices = buildSlotPriceRows(allowedSlots, slotPrices)
 }
 
 const findCategoryName = (options: any[], targetId: number): string => {
@@ -860,45 +580,6 @@ const resolveCategoryName = (categoryId: string | number) => {
     return findCategoryName(categoryOptions.value, currentId)
 }
 
-const buildPackageConfigPayload = (rows: any[]) => {
-    return rows.map((row) => {
-        const packageId = Number(row.package_id ?? row.id ?? 0)
-        const bookingType = Number(row.booking_type ?? 0)
-        const allowedSlots = bookingType === 1 ? normalizeAllowedSlots(row.allowed_time_slots) : []
-        return {
-            package_id: packageId,
-            price: Number(row.price ?? 0),
-            original_price: row.original_price ?? null,
-            custom_price: row.custom_price ?? null,
-            custom_slot_prices:
-                bookingType === 1
-                    ? normalizeSlotPricePayload(normalizeSlotPrices(row.custom_slot_prices), allowedSlots)
-                    : [],
-            booking_type: bookingType,
-            allowed_time_slots: allowedSlots,
-            status: Number(row.status ?? 1)
-        }
-    })
-}
-
-const validateConfiguredPackages = (rows: any[]) => {
-    for (const row of rows) {
-        if (Number(row.booking_type) === 1) {
-            const allowedSlots = normalizeAllowedSlots(row.allowed_time_slots)
-            if (!allowedSlots.length) {
-                ElMessage.error(`套餐「${row.package_name || row.name || row.package_id}」请选择允许场次`)
-                return false
-            }
-            const slotPrices = normalizeSlotPricePayload(normalizeSlotPrices(row.custom_slot_prices), allowedSlots)
-            if (slotPrices.some((slot) => Number.isNaN(slot.price) || slot.price < 0)) {
-                ElMessage.error(`套餐「${row.package_name || row.name || row.package_id}」的场次价格不能为负数`)
-                return false
-            }
-        }
-    }
-    return true
-}
-
 const resetStaffPackageForm = () => {
     Object.assign(staffPackageForm, {
         id: 0,
@@ -906,11 +587,11 @@ const resetStaffPackageForm = () => {
         category_id: '',
         price: 0,
         original_price: 0,
+        image: '',
         description: '',
-        slot_prices: [],
-        booking_type: 0,
-        allowed_time_slots: [],
-        is_show: 1
+        sort: 0,
+        is_show: 1,
+        is_recommend: 0
     })
     isEditingStaffPackage.value = false
 }
@@ -974,40 +655,15 @@ const loadProfile = async () => {
 }
 
 const loadPackageConfig = async () => {
-    const res = await myProfilePackageConfig({ include_global: 1 })
-    configuredPackages.value = (res.configured_packages || []).map((item: any) => {
-        const bookingType = Number(item.booking_type ?? item.package?.booking_type ?? 0)
-        let allowedSlots = normalizeAllowedSlots(item.allowed_time_slots ?? item.package?.allowed_time_slots)
-        if (bookingType === 1 && !allowedSlots.length) {
-            allowedSlots = timeSlotOptions.map((slot) => slot.value)
-        }
-        return {
-            package_id: Number(item.package_id ?? item.id ?? 0),
-            package_name: item.package?.name || item.package_name || `套餐#${item.package_id}`,
-            price: Number(item.price ?? item.package?.price ?? 0),
-            original_price: item.original_price ?? item.package?.original_price ?? null,
-            custom_price: item.custom_price ?? null,
-            custom_slot_prices: normalizeSlotPrices(item.custom_slot_prices),
-            booking_type: bookingType,
-            allowed_time_slots: allowedSlots,
-            status: Number(item.status ?? 1)
-        }
-    })
-    staffPackages.value = (res.staff_packages || []).map((item: any) => ({
+    const res = await myProfilePackageConfig()
+    const packageList = Array.isArray(res) ? res : []
+    staffPackages.value = packageList.map((item: any) => ({
         ...item,
         price: Number(item.price ?? 0),
-        booking_type: Number(item.booking_type ?? 0),
-        allowed_time_slots: normalizeAllowedSlots(item.allowed_time_slots),
-        slot_prices: normalizeSlotPrices(item.slot_prices),
+        original_price: Number(item.original_price ?? 0),
+        sort: Number(item.sort ?? 0),
         is_show: Number(item.is_show ?? 1)
     }))
-    availablePackages.value = (res.available_packages || []).map((item: any) => ({
-        ...item,
-        price: Number(item.price ?? 0),
-        booking_type: Number(item.booking_type ?? 0),
-        allowed_time_slots: normalizeAllowedSlots(item.allowed_time_slots)
-    }))
-    selectedPackages.value = []
 }
 
 const loadBannerList = async () => {
@@ -1033,138 +689,6 @@ const handleSaveProfile = async () => {
     }
 }
 
-const openPackageDialog = async () => {
-    selectedPackages.value = []
-    showPackageDialog.value = true
-    await nextTick()
-    packageTableRef.value?.clearSelection?.()
-}
-
-const handlePackageSelect = (selection: any[]) => {
-    selectedPackages.value = selection || []
-}
-
-const confirmPackageSelect = async () => {
-    if (!selectedPackages.value.length) {
-        ElMessage.warning('请选择要关联的套餐')
-        return
-    }
-    if (!validateConfiguredPackages(configuredPackages.value)) {
-        return
-    }
-
-    const existingIds = new Set(configuredPackages.value.map((item) => Number(item.package_id)))
-    const appendRows = selectedPackages.value
-        .filter((item) => !existingIds.has(Number(item.id)))
-        .map((item) => {
-            const bookingType = Number(item.booking_type ?? 0)
-            const allowedSlots = bookingType === 1 ? resolveAllowedSlots(item) : []
-            return {
-                package_id: Number(item.id),
-                package_name: item.name || '',
-                price: Number(item.price ?? 0),
-                original_price: item.original_price ?? null,
-                custom_price: null,
-                custom_slot_prices: [],
-                booking_type: bookingType,
-                allowed_time_slots: allowedSlots,
-                status: 1
-            }
-        })
-
-    if (!appendRows.length) {
-        ElMessage.warning('所选套餐已关联')
-        return
-    }
-
-    await myProfileConfigurePackages({
-        packages: buildPackageConfigPayload([...configuredPackages.value, ...appendRows])
-    })
-    ElMessage.success('关联成功')
-    showPackageDialog.value = false
-    await loadPackageConfig()
-}
-
-const removeConfiguredPackage = async (row: any) => {
-    await feedback.confirm(`确定移除套餐「${row.package_name || ''}」吗？`)
-    const remainingRows = configuredPackages.value.filter((item) => Number(item.package_id) !== Number(row.package_id))
-    if (!validateConfiguredPackages(remainingRows)) {
-        return
-    }
-    await myProfileConfigurePackages({
-        packages: buildPackageConfigPayload(remainingRows)
-    })
-    ElMessage.success('移除成功')
-    await loadPackageConfig()
-}
-
-const handlePackageBookingTypeChange = (row: any) => {
-    if (Number(row.booking_type) === 0) {
-        row.allowed_time_slots = []
-        row.custom_slot_prices = []
-        return
-    }
-    if (!normalizeAllowedSlots(row.allowed_time_slots).length) {
-        row.allowed_time_slots = timeSlotOptions.map((item) => item.value)
-    }
-}
-
-const openSlotPriceDialog = (index: number) => {
-    const row = configuredPackages.value[index]
-    if (Number(row?.booking_type) !== 1) {
-        ElMessage.warning('全天套餐无需配置场次价格')
-        return
-    }
-    currentSlotPriceIndex.value = index
-    const allowedSlots = resolveAllowedSlots(row)
-    currentSlotPrices.value = buildSlotPriceRows(allowedSlots, normalizeSlotPrices(row.custom_slot_prices))
-    showSlotPriceDialog.value = true
-}
-
-const confirmSlotPrice = () => {
-    const row = configuredPackages.value[currentSlotPriceIndex.value]
-    if (!row) {
-        showSlotPriceDialog.value = false
-        return
-    }
-    const allowedSlots = resolveAllowedSlots(row)
-    const payload = normalizeSlotPricePayload(currentSlotPrices.value, allowedSlots)
-    if (payload.some((slot) => Number.isNaN(slot.price) || slot.price < 0)) {
-        ElMessage.error('价格不能为负数')
-        return
-    }
-    row.custom_slot_prices = payload
-    showSlotPriceDialog.value = false
-}
-
-const savePackageConfig = async (row: any) => {
-    const allowedSlots = Number(row.booking_type) === 1 ? normalizeAllowedSlots(row.allowed_time_slots) : []
-    if (Number(row.booking_type) === 1 && !allowedSlots.length) {
-        ElMessage.error('请选择允许场次')
-        return
-    }
-    const slotPricesPayload = Number(row.booking_type) === 1
-        ? normalizeSlotPricePayload(normalizeSlotPrices(row.custom_slot_prices), allowedSlots)
-        : []
-    if (slotPricesPayload.some((slot) => Number.isNaN(slot.price) || slot.price < 0)) {
-        ElMessage.error('价格不能为负数')
-        return
-    }
-
-    await myProfileUpdatePackageConfig({
-        package_id: row.package_id,
-        price: Number(row.price ?? 0),
-        original_price: row.original_price ?? null,
-        custom_price: row.custom_price ?? null,
-        custom_slot_prices: slotPricesPayload,
-        booking_type: Number(row.booking_type ?? 0),
-        allowed_time_slots: allowedSlots,
-        status: Number(row.status ?? 1)
-    })
-    ElMessage.success('保存成功')
-    await loadPackageConfig()
-}
-
 const openCreateStaffPackage = () => {
     resetStaffPackageForm()
     showStaffPackageDialog.value = true
@@ -1179,46 +703,27 @@ const openEditStaffPackage = (row: any) => {
         category_id: row.category_id || '',
         price: Number(row.price || 0),
         original_price: Number(row.original_price || 0),
+        image: row.image || '',
         description: row.description || '',
-        booking_type: Number(row.booking_type ?? 0),
-        allowed_time_slots: normalizeAllowedSlots(row.allowed_time_slots),
-        slot_prices: normalizeSlotPrices(row.slot_prices),
-        is_show: Number(row.is_show ?? 1)
+        sort: Number(row.sort || 0),
+        is_show: Number(row.is_show ?? 1),
+        is_recommend: Number(row.is_recommend ?? 0)
     })
-    if (staffPackageForm.booking_type === 1 && !staffPackageForm.allowed_time_slots.length) {
-        staffPackageForm.allowed_time_slots = timeSlotOptions.map((item) => item.value)
-    }
-    syncStaffPackageSlotPrices()
     showStaffPackageDialog.value = true
 }
 
 const submitStaffPackage = async () => {
     await staffPackageFormRef.value?.validate()
-    const allowedSlots = staffPackageForm.booking_type === 1
-        ? normalizeAllowedSlots(staffPackageForm.allowed_time_slots)
-        : []
-    if (staffPackageForm.booking_type === 1 && !allowedSlots.length) {
-        ElMessage.error('请选择允许场次')
-        return
-    }
-    const slotPricesPayload = staffPackageForm.booking_type === 1
-        ? normalizeSlotPricePayload(staffPackageForm.slot_prices, allowedSlots)
-        : []
-    if (slotPricesPayload.some((slot) => Number.isNaN(slot.price) || slot.price < 0)) {
-        ElMessage.error('价格不能为负数')
-        return
-    }
-
     const payload = {
         name: staffPackageForm.name,
         category_id: staffPackageForm.category_id,
         price: Number(staffPackageForm.price ?? 0),
         original_price: staffPackageForm.original_price ?? null,
+        image: staffPackageForm.image,
         description: staffPackageForm.description,
-        booking_type: Number(staffPackageForm.booking_type ?? 0),
-        allowed_time_slots: allowedSlots,
-        slot_prices: slotPricesPayload,
-        is_show: Number(staffPackageForm.is_show ?? 1)
+        sort: Number(staffPackageForm.sort ?? 0),
+        is_show: Number(staffPackageForm.is_show ?? 1),
+        is_recommend: Number(staffPackageForm.is_recommend ?? 0)
     }
 
     if (isEditingStaffPackage.value) {
@@ -1308,31 +813,6 @@ const saveBannerConfig = async () => {
     })
     ElMessage.success('配置保存成功')
 }
-
-watch(
-    () => staffPackageForm.booking_type,
-    (value) => {
-        if (value === 0) {
-            staffPackageForm.allowed_time_slots = []
-            syncStaffPackageSlotPrices()
-            return
-        }
-        if (!normalizeAllowedSlots(staffPackageForm.allowed_time_slots).length) {
-            staffPackageForm.allowed_time_slots = timeSlotOptions.map((item) => item.value)
-        }
-        syncStaffPackageSlotPrices()
-    }
-)
-
-watch(
-    () => staffPackageForm.allowed_time_slots,
-    () => {
-        if (staffPackageForm.booking_type === 1) {
-            syncStaffPackageSlotPrices()
-        }
-    },
-    { deep: true }
-)
 
 watch(
     () => formData.category_id,

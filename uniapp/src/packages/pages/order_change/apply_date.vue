@@ -43,23 +43,13 @@
         <!-- 选择新日期 -->
         <view class="bg-white mt-3 p-4">
             <view class="section-title">选择新服务日期</view>
-            <view class="form-item" @click="showDatePicker = true">
+            <view class="form-item" @click="openDatePicker">
                 <text class="label">新服务日期</text>
                 <view class="value-area">
                     <text v-if="formData.new_date" class="text-primary">{{
                         formData.new_date
                     }}</text>
                     <text v-else class="placeholder">请选择日期</text>
-                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
-                </view>
-            </view>
-            <view class="form-item" @click="showTimePicker = true">
-                <text class="label">时间段</text>
-                <view class="value-area">
-                    <text v-if="formData.new_time_slot !== null" class="text-primary">
-                        {{ timeSlotOptions[formData.new_time_slot]?.label }}
-                    </text>
-                    <text v-else class="placeholder">请选择时间段</text>
                     <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
                 </view>
             </view>
@@ -135,28 +125,6 @@
                 </picker-view>
             </view>
         </uni-popup>
-
-        <!-- 时间段选择器 -->
-        <uni-popup ref="timePopup" type="bottom" :safe-area="false">
-            <view class="picker-popup">
-                <view class="picker-header">
-                    <text class="cancel" @click="closeTimePicker">取消</text>
-                    <text class="title">选择时间段</text>
-                    <text class="confirm" @click="confirmTime">确定</text>
-                </view>
-                <view class="time-options">
-                    <view
-                        v-for="option in timeSlotOptions"
-                        :key="option.value"
-                        class="time-option"
-                        :class="{ active: tempTimeSlot === option.value }"
-                        @click="tempTimeSlot = option.value"
-                    >
-                        {{ option.label }}
-                    </view>
-                </view>
-            </view>
-        </uni-popup>
     </view>
 </template>
 
@@ -165,32 +133,23 @@ import { ref, reactive, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { applyDateChange, checkCanChange } from '@/api/orderChange'
 import { getOrderDetail } from '@/api/order'
+import { useThemeStore } from '@/stores/theme'
+
+const $theme = useThemeStore()
 
 const orderId = ref(0)
 const orderInfo = ref<any>(null)
 const submitting = ref(false)
-const showDatePicker = ref(false)
-const showTimePicker = ref(false)
 
 const formData = reactive({
     new_date: '',
-    new_time_slot: null as number | null,
     reason: '',
     attach_images: [] as string[]
 })
 
-const timeSlotOptions = [
-    { value: 0, label: '全天' },
-    { value: 1, label: '早礼' },
-    { value: 2, label: '午宴' },
-    { value: 3, label: '晚宴' }
-]
-
 // 日期选择器相关
 const datePopup = ref()
-const timePopup = ref()
 const datePickerValue = ref([0, 0, 0])
-const tempTimeSlot = ref(0)
 
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: 3 }, (_, i) => currentYear + i)
@@ -245,16 +204,6 @@ const confirmDate = () => {
     closeDatePicker()
 }
 
-const closeTimePicker = () => {
-    timePopup.value?.close()
-}
-
-const confirmTime = () => {
-    formData.new_time_slot = tempTimeSlot.value
-    closeTimePicker()
-}
-
-// 监听 showDatePicker 变化
 const openDatePicker = () => {
     // 设置默认值为今天
     const today = new Date()
@@ -265,12 +214,6 @@ const openDatePicker = () => {
     datePopup.value?.open()
 }
 
-const openTimePicker = () => {
-    tempTimeSlot.value = formData.new_time_slot ?? 0
-    timePopup.value?.open()
-}
-
-// 使用 watch 或直接在模板中调用
 const chooseImage = () => {
     uni.chooseImage({
         count: 5 - formData.attach_images.length,
@@ -293,17 +236,12 @@ const handleSubmit = async () => {
         uni.showToast({ title: '请选择新服务日期', icon: 'none' })
         return
     }
-    if (formData.new_time_slot === null) {
-        uni.showToast({ title: '请选择时间段', icon: 'none' })
-        return
-    }
 
     submitting.value = true
     try {
         const res = await applyDateChange({
             order_id: orderId.value,
             new_date: formData.new_date,
-            new_time_slot: formData.new_time_slot,
             reason: formData.reason,
             attach_images: formData.attach_images
         })
@@ -327,20 +265,6 @@ onLoad((options: any) => {
         checkOrder()
     }
 })
-
-// 处理点击事件
-watch(
-    () => showDatePicker.value,
-    (val) => {
-        if (val) openDatePicker()
-    }
-)
-watch(
-    () => showTimePicker.value,
-    (val) => {
-        if (val) openTimePicker()
-    }
-)
 </script>
 
 <style lang="scss" scoped>
@@ -502,24 +426,4 @@ watch(
     font-size: 30rpx;
 }
 
-.time-options {
-    padding: 30rpx;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20rpx;
-}
-
-.time-option {
-    padding: 24rpx;
-    text-align: center;
-    border: 2rpx solid #eee;
-    border-radius: 12rpx;
-    font-size: 28rpx;
-
-    &.active {
-        border-color: var(--color-primary, #7C3AED);
-        color: var(--color-primary, #7C3AED);
-        background: rgba(124, 58, 237, 0.05);
-    }
-}
 </style>

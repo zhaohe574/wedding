@@ -115,12 +115,7 @@ class PackageController extends BaseAdminController
      */
     public function updateSlotPrices()
     {
-        $params = (new PackageValidate())->post()->goCheck('slotPrices');
-        $result = PackageLogic::updateSlotPrices($params);
-        if (true === $result) {
-            return $this->success('保存成功', [], 1, 1);
-        }
-        return $this->fail(PackageLogic::getError());
+        return $this->fail('场次价格能力已下线');
     }
 
     /**
@@ -129,17 +124,7 @@ class PackageController extends BaseAdminController
      */
     public function checkAvailability()
     {
-        $packageId = $this->request->get('package_id', 0, 'intval');
-        $date = $this->request->get('date', '');
-        $staffId = $this->request->get('staff_id', 0, 'intval');
-        $timeSlot = $this->request->get('time_slot', 0, 'intval');
-        
-        if (empty($packageId) || empty($date)) {
-            return $this->fail('参数错误');
-        }
-        
-        $result = PackageLogic::checkAvailability($packageId, $date, $staffId, $timeSlot);
-        return $this->data($result);
+        return $this->fail('独立套餐可用性入口已下线');
     }
 
     /**
@@ -148,15 +133,6 @@ class PackageController extends BaseAdminController
      */
     public function getBookingCalendar()
     {
-        $packageId = $this->request->get('package_id', 0, 'intval');
-        $startDate = $this->request->get('start_date', '');
-        $endDate = $this->request->get('end_date', '');
-        
-        if (empty($packageId) || empty($startDate) || empty($endDate)) {
-            return $this->fail('参数错误');
-        }
-        
-        $result = PackageLogic::getBookingCalendar($packageId, $startDate, $endDate);
-        return $this->data($result);
+        return $this->fail('独立套餐预约日历入口已下线');
     }
 }

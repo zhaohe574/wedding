@@ -67,7 +67,7 @@
                             <view class="item-name">{{ item.packageName }}</view>
                             <view class="item-detail">
                                 <tn-icon name="calendar" size="24" color="#999999" />
-                                <text>{{ item.serviceDate }} {{ item.timeSlotDesc }}</text>
+                                <text>{{ item.serviceDate }}</text>
                             </view>
                             <view class="item-detail">
                                 <tn-icon name="map-pin" size="24" color="#999999" />
@@ -216,9 +216,7 @@ const formatOrder = (order: any) => {
             staffName: item.staff_name || item.staff?.name || '服务人员',
             staffAvatar: item.staff?.avatar || '/static/images/user/default_avatar.png',
             packageName: item.package_name,
-            serviceDate: item.service_date,
-            timeSlot: item.time_slot,
-            timeSlotDesc: item.time_slot_desc
+            serviceDate: item.service_date
         })),
         actions:
             orderStatus === 0 && hasPendingConfirm

@@ -63,13 +63,13 @@ class OrderLogic extends BaseLogic
 
                 foreach ($pendingItems as $item) {
                     if ((int)$item->schedule_id > 0) {
-                        [$ok, $msg] = Schedule::confirmBooking(
-                            (int)$item->staff_id,
-                            (string)$item->service_date,
-                            (int)$item->time_slot,
-                            (int)$order->id,
-                            (int)$order->user_id
-                        );
+                    [$ok, $msg] = Schedule::confirmBooking(
+                        (int)$item->staff_id,
+                        (string)$item->service_date,
+                        0,
+                        (int)$order->id,
+                        (int)$order->user_id
+                    );
                         if (!$ok) {
                             throw new \RuntimeException($msg);
                         }
@@ -208,7 +208,7 @@ class OrderLogic extends BaseLogic
                 'deposit_amount' => $depositAmount,
                 'balance_amount' => $balanceAmount,
                 'service_date' => $params['service_date'] ?? null,
-                'service_time_slot' => $params['time_slot'] ?? 0,
+                'service_time_slot' => 0,
                 'service_address' => $params['service_address'] ?? '',
                 'contact_name' => $params['contact_name'] ?? '',
                 'contact_mobile' => $params['contact_mobile'] ?? '',
@@ -229,7 +229,7 @@ class OrderLogic extends BaseLogic
                     'package_id' => $item['package_id'] ?? 0,
                     'schedule_id' => $item['schedule_id'] ?? 0,
                     'service_date' => $item['service_date'] ?? $params['service_date'],
-                    'time_slot' => $item['time_slot'] ?? 0,
+                    'time_slot' => 0,
                     'staff_name' => $item['staff_name'] ?? '',
                     'package_name' => $item['package_name'] ?? '',
                     'price' => $item['price'],
@@ -246,7 +246,7 @@ class OrderLogic extends BaseLogic
                     Schedule::confirmBooking(
                         $item['staff_id'],
                         $item['service_date'] ?? $params['service_date'],
-                        $item['time_slot'] ?? 0,
+                        0,
                         $order->id,
                         $params['user_id']
                     );

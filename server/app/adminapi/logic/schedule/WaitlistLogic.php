@@ -152,13 +152,12 @@ class WaitlistLogic extends BaseLogic
     private static function sendWaitlistNotification(Waitlist $waitlist): void
     {
         $staffName = $waitlist->staff->name ?? '服务人员';
-        $timeSlotDesc = $waitlist->time_slot_desc ?? '全天';
         $scheduleDate = $waitlist->schedule_date ?? '';
         $packageName = $waitlist->package->name ?? '';
         $packageText = $packageName ? "，套餐：{$packageName}" : '';
 
         $title = '候补档期已释放';
-        $content = "您候补的{$staffName}档期（{$scheduleDate} {$timeSlotDesc}{$packageText}）已释放，请尽快预约。";
+        $content = "您候补的{$staffName}档期（{$scheduleDate}{$packageText}）已释放，请尽快预约。";
 
         Notification::send(
             (int) $waitlist->user_id,

@@ -33,7 +33,6 @@ class ScheduleLogic extends BaseLogic
             return [];
         }
         $data = $schedule->toArray();
-        $data['time_slot_desc'] = $schedule->time_slot_desc;
         $data['status_desc'] = $schedule->status_desc;
         return $data;
     }
@@ -57,7 +56,7 @@ class ScheduleLogic extends BaseLogic
         if ($staffId > 0) {
             $query->where('staff_id', $staffId);
         }
-        $schedules = $query->select()->toArray();
+        $schedules = $query->where('time_slot', Schedule::TIME_SLOT_ALL)->select()->toArray();
 
         // 按日期组织数据
         $result = [];
@@ -97,7 +96,7 @@ class ScheduleLogic extends BaseLogic
         try {
             $schedule = Schedule::where('staff_id', $params['staff_id'])
                 ->where('schedule_date', $params['date'])
-                ->where('time_slot', $params['time_slot'] ?? 0)
+                ->where('time_slot', Schedule::TIME_SLOT_ALL)
                 ->find();
 
             if ($schedule) {
@@ -109,7 +108,7 @@ class ScheduleLogic extends BaseLogic
                 Schedule::create([
                     'staff_id' => $params['staff_id'],
                     'schedule_date' => $params['date'],
-                    'time_slot' => $params['time_slot'] ?? 0,
+                    'time_slot' => Schedule::TIME_SLOT_ALL,
                     'status' => $params['status'],
                     'remark' => $params['remark'] ?? '',
                     'version' => 1,
@@ -136,7 +135,6 @@ class ScheduleLogic extends BaseLogic
             $staffIds = $params['staff_ids'];
             $startDate = $params['start_date'];
             $endDate = $params['end_date'];
-            $timeSlots = $params['time_slots'] ?? [0];
             $status = $params['status'];
             $price = $params['price'] ?? 0;
 
@@ -154,37 +152,34 @@ class ScheduleLogic extends BaseLogic
                 }
 
                 foreach ($staffIds as $staffId) {
-                    foreach ($timeSlots as $timeSlot) {
-                        $schedule = Schedule::where('staff_id', $staffId)
-                            ->where('schedule_date', $currentDate)
-                            ->where('time_slot', $timeSlot)
-                            ->find();
+                    $schedule = Schedule::where('staff_id', $staffId)
+                        ->where('schedule_date', $currentDate)
+                        ->where('time_slot', Schedule::TIME_SLOT_ALL)
+                        ->find();
 
-                        if ($schedule) {
-                            // 已预约的不能修改
-                            if ($schedule->status == Schedule::STATUS_BOOKED) {
-                                continue;
-                            }
-                            $schedule->status = $status;
-                            if ($price > 0) {
-                                $schedule->price = $price;
-                            }
-                            $schedule->update_time = time();
-                            $schedule->save();
-                        } else {
-                            Schedule::create([
-                                'staff_id' => $staffId,
-                                'schedule_date' => $currentDate,
-                                'time_slot' => $timeSlot,
-                                'status' => $status,
-                                'price' => $price,
-                                'version' => 1,
-                                'create_time' => time(),
-                                'update_time' => time(),
-                            ]);
+                    if ($schedule) {
+                        if ($schedule->status == Schedule::STATUS_BOOKED) {
+                            continue;
                         }
-                        $count++;
+                        $schedule->status = $status;
+                        if ($price > 0) {
+                            $schedule->price = $price;
+                        }
+                        $schedule->update_time = time();
+                        $schedule->save();
+                    } else {
+                        Schedule::create([
+                            'staff_id' => $staffId,
+                            'schedule_date' => $currentDate,
+                            'time_slot' => Schedule::TIME_SLOT_ALL,
+                            'status' => $status,
+                            'price' => $price,
+                            'version' => 1,
+                            'create_time' => time(),
+                            'update_time' => time(),
+                        ]);
                     }
+                    $count++;
                 }
                 $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 day'));
             }
@@ -213,7 +208,7 @@ class ScheduleLogic extends BaseLogic
             [$success, $message] = Schedule::lockScheduleWithRedis(
                 $params['staff_id'],
                 $params['date'],
-                $params['time_slot'] ?? 0,
+                Schedule::TIME_SLOT_ALL,
                 0, // 管理员操作，user_id为0
                 $lockType,
                 86400 * 365 // 管理员锁定默认1年
@@ -228,7 +223,7 @@ class ScheduleLogic extends BaseLogic
             // 记录锁定日志
             $schedule = Schedule::where('staff_id', $params['staff_id'])
                 ->where('schedule_date', $params['date'])
-                ->where('time_slot', $params['time_slot'] ?? 0)
+                ->where('time_slot', Schedule::TIME_SLOT_ALL)
                 ->find();
 
             ScheduleLock::create([
@@ -306,7 +301,7 @@ class ScheduleLogic extends BaseLogic
         try {
             $schedule = Schedule::where('staff_id', $params['staff_id'])
                 ->where('schedule_date', $params['date'])
-                ->where('time_slot', $params['time_slot'] ?? 0)
+                ->where('time_slot', Schedule::TIME_SLOT_ALL)
                 ->find();
 
             if ($schedule) {
@@ -324,7 +319,7 @@ class ScheduleLogic extends BaseLogic
                 $schedule = Schedule::create([
                     'staff_id' => $params['staff_id'],
                     'schedule_date' => $params['date'],
-                    'time_slot' => $params['time_slot'] ?? 0,
+                    'time_slot' => Schedule::TIME_SLOT_ALL,
                     'status' => Schedule::STATUS_RESERVED,
                     'lock_type' => Schedule::LOCK_TYPE_INTERNAL,
                     'lock_reason' => $params['reason'] ?? '',
@@ -416,6 +411,7 @@ class ScheduleLogic extends BaseLogic
         if ($staffId > 0) {
             $query->where('staff_id', $staffId);
         }
+        $query->where('time_slot', Schedule::TIME_SLOT_ALL);
 
         $total = (clone $query)->count();
         $available = (clone $query)->where('status', Schedule::STATUS_AVAILABLE)->count();
