@@ -16,6 +16,7 @@
             v-model="staffList"
             @query="queryList"
             :auto="false"
+            :default-page-size="STAFF_LIST_PAGE_SIZE"
             :refresher-enabled="pagingRefresherEnabled"
         >
             <!-- 顶部固定区域 -->
@@ -621,6 +622,7 @@ type StaffViewMode = 'poster' | 'list'
 
 const $theme = useThemeStore()
 const STAFF_VIEW_MODE_STORAGE_KEY = 'staff_list_view_mode'
+const STAFF_LIST_PAGE_SIZE = 10
 
 const getPrimaryGradient = () =>
     `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
@@ -864,11 +866,11 @@ const handleTagFilterConfirm = () => {
 }
 
 // 查询列表
-const queryList = async (pageNo: number, pageSize: number) => {
+const queryList = async (pageNo: number, _pageSize: number) => {
     try {
         const params: any = {
             page_no: pageNo,
-            page_size: pageSize,
+            page_size: STAFF_LIST_PAGE_SIZE,
             sort: currentSort.value
         }
         if (keyword.value) {
@@ -1497,7 +1499,8 @@ onReady(() => {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 18rpx;
-    padding: 20rpx;
+    padding: 20rpx 20rpx calc(176rpx + constant(safe-area-inset-bottom));
+    padding: 20rpx 20rpx calc(176rpx + env(safe-area-inset-bottom));
 }
 
 .poster-card {
@@ -1741,7 +1744,8 @@ onReady(() => {
 }
 
 .staff-cards {
-    padding: 20rpx;
+    padding: 20rpx 20rpx calc(176rpx + constant(safe-area-inset-bottom));
+    padding: 20rpx 20rpx calc(176rpx + env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
     gap: 20rpx;
