@@ -64,7 +64,7 @@ class ScheduleController extends BaseApiController
     }
 
     /**
-     * @notes 锁定档期（加入购物车时调用）
+     * @notes 锁定档期（兼容旧调用）
      * @return \think\response\Json
      */
     public function lockSchedule()

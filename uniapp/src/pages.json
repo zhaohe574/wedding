@@ -473,24 +473,6 @@
                 }
             },
             {
-                "path": "pages/cart/cart",
-                "style": {
-                    "navigationBarTitleText": "购物车"
-                },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/cart_plan/cart_plan",
-                "style": {
-                    "navigationBarTitleText": "我的方案"
-                },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
                 "path": "pages/order_confirm/order_confirm",
                 "style": {
                     "navigationBarTitleText": "订单确认"
@@ -506,12 +488,6 @@
                 },
                 "meta": {
                     "auth": true
-                }
-            },
-            {
-                "path": "pages/share_plan/share_plan",
-                "style": {
-                    "navigationBarTitleText": "输入分享码"
                 }
             },
             {

@@ -18,7 +18,9 @@ class OrderValidate extends BaseValidate
 {
     protected $rule = [
         'id' => 'require|integer|gt:0',
-        'cart_ids' => 'array',
+        'staff_id' => 'require|integer|gt:0',
+        'package_id' => 'require|integer|gt:0',
+        'date' => 'require|date',
         'contact_name' => 'require|max:50',
         'contact_mobile' => 'require|mobile',
         'service_date' => 'date',
@@ -39,6 +41,14 @@ class OrderValidate extends BaseValidate
     protected $message = [
         'id.require' => '请选择订单',
         'id.integer' => '订单ID格式错误',
+        'staff_id.require' => '请选择服务人员',
+        'staff_id.integer' => '服务人员参数错误',
+        'staff_id.gt' => '服务人员参数错误',
+        'package_id.require' => '请选择套餐',
+        'package_id.integer' => '套餐参数错误',
+        'package_id.gt' => '套餐参数错误',
+        'date.require' => '请选择预约日期',
+        'date.date' => '预约日期格式错误',
         'contact_name.require' => '请填写联系人',
         'contact_name.max' => '联系人姓名最多50个字符',
         'contact_mobile.require' => '请填写联系电话',
@@ -74,7 +84,28 @@ class OrderValidate extends BaseValidate
      */
     public function sceneCreate()
     {
-        return $this->only(['cart_ids', 'contact_name', 'contact_mobile', 'service_date', 'service_address', 'wedding_date', 'wedding_venue', 'remark', 'coupon_id', 'user_coupon_id', 'deposit_ratio']);
+        return $this->only([
+            'staff_id',
+            'package_id',
+            'date',
+            'contact_name',
+            'contact_mobile',
+            'service_address',
+            'wedding_date',
+            'wedding_venue',
+            'remark',
+            'user_coupon_id',
+            'deposit_ratio',
+        ]);
+    }
+
+    /**
+     * @notes 直购选择场景
+     * @return OrderValidate
+     */
+    public function sceneSelection()
+    {
+        return $this->only(['staff_id', 'package_id', 'date', 'user_coupon_id', 'deposit_ratio']);
     }
 
     /**

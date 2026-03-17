@@ -58,66 +58,37 @@
                 </view>
             </view>
 
-            <view class="section" v-if="hasItems">
+            <view class="section" v-if="selectedItem">
                 <view class="section-title">服务项目</view>
-                <view class="service-group" v-for="group in groupedItems" :key="group.key">
-                    <view class="group-header">
+                <view class="service-card">
+                    <view class="service-header">
                         <view class="staff-section">
                             <image
                                 :src="
-                                    group.staff?.avatar || '/static/images/user/default_avatar.png'
+                                    selectedItem.staff?.avatar || '/static/images/user/default_avatar.png'
                                 "
                                 class="staff-avatar"
                                 mode="aspectFill"
                             />
                             <view class="staff-info">
                                 <text class="staff-name"
-                                    >人员：{{ group.staff?.name || '服务人员' }}</text
+                                    >人员：{{ selectedItem.staff?.name || '服务人员' }}</text
                                 >
                                 <text class="staff-subtitle"
-                                    >日期：{{ group.schedule_date || '未指定日期' }}</text
+                                    >预约日期：{{ selectedItem.schedule_date || '-' }}</text
+                                >
+                                <text class="package-name"
+                                    >套餐：{{ selectedItem.package?.name || '服务套餐' }}</text
                                 >
                             </view>
                         </view>
-                        <view class="group-total">
-                            <text class="group-total-label">小计</text>
-                            <text class="group-total-value" :style="{ color: $theme.ctaColor }">
-                                ¥{{ formatPrice(group.total_price) }}
-                            </text>
-                        </view>
+                        <text class="package-price" :style="{ color: $theme.ctaColor }">
+                            ¥{{ formatPrice(selectedItem.price) }}
+                        </text>
                     </view>
-
-                    <view class="group-packages">
-                        <view class="package-group" v-for="pkg in group.packages" :key="pkg.key">
-                            <view class="package-header">
-                                <view class="package-title">
-                                    <tn-icon name="gift" size="24" />
-                                    <text>套餐：{{ pkg.package?.name || '服务套餐' }}</text>
-                                </view>
-                                <text class="package-total" :style="{ color: $theme.ctaColor }">
-                                    ¥{{ formatPrice(pkg.total_price) }}
-                                </text>
-                            </view>
-
-                            <view class="package-items">
-                                <view class="package-item" v-for="item in pkg.items" :key="item.id">
-                                    <view class="slot-info">
-                                        <view class="slot-row">
-                                            <text class="slot-label"
-                                                >预约日期：{{ item.schedule_date || '-' }}</text
-                                            >
-                                            <text
-                                                class="slot-price"
-                                                :style="{ color: $theme.ctaColor }"
-                                            >
-                                                ¥{{ formatPrice(item.price) }}
-                                            </text>
-                                        </view>
-                                    </view>
-                                </view>
-                            </view>
-                        </view>
-                    </view>
+                    <text v-if="selectedItem.package?.description" class="package-desc">
+                        {{ selectedItem.package?.description }}
+                    </text>
                 </view>
             </view>
 
@@ -208,6 +179,11 @@ const submitting = ref(false)
 const initialized = ref(false)
 const selectedCouponId = ref(0)
 const availableCoupons = ref<any[]>([])
+const selection = reactive({
+    staff_id: 0,
+    package_id: 0,
+    date: ''
+})
 
 const preview = ref<any>({
     items: [],
@@ -228,61 +204,13 @@ const form = reactive({
 const hasItems = computed(
     () => Array.isArray(preview.value.items) && preview.value.items.length > 0
 )
+const selectedItem = computed(() => (hasItems.value ? preview.value.items[0] || null : null))
 const canSubmit = computed(() => hasItems.value && !loading.value && !submitting.value)
 const selectedCoupon = computed(
     () => availableCoupons.value.find((item: any) => Number(item.user_coupon_id) === selectedCouponId.value) || null
 )
 
 const formatPrice = (value: any) => Number(value || 0).toFixed(2)
-
-const groupedItems = computed(() => {
-    const groups: any[] = []
-    const groupMap = new Map<string, any>()
-    const items = preview.value.items || []
-
-    items.forEach((item: any) => {
-        const staffId = Number(item.staff_id || 0)
-        const date = item.schedule_date || ''
-        const key = `${staffId}-${date}`
-        let group = groupMap.get(key)
-        if (!group) {
-            group = {
-                key,
-                staff: item.staff,
-                schedule_date: date,
-                packages: [],
-                total_price: 0,
-                packageMap: new Map<number, any>()
-            }
-            groupMap.set(key, group)
-            groups.push(group)
-        }
-
-        group.total_price += Number(item.price || 0)
-
-        const pkgKey = Number(item.package_id || 0)
-        let pkgGroup = group.packageMap.get(pkgKey)
-        if (!pkgGroup) {
-            pkgGroup = {
-                key: `${key}-${pkgKey}`,
-                package: item.package,
-                items: [],
-                total_price: 0
-            }
-            group.packageMap.set(pkgKey, pkgGroup)
-            group.packages.push(pkgGroup)
-        }
-
-        pkgGroup.items.push(item)
-        pkgGroup.total_price += Number(item.price || 0)
-    })
-
-    groups.forEach((group) => {
-        delete group.packageMap
-    })
-
-    return groups
-})
 
 const initContact = async () => {
     await userStore.getUser()
@@ -295,17 +223,50 @@ const initContact = async () => {
     }
 }
 
+const buildSelectionParams = (extra: Record<string, any> = {}) => {
+    return {
+        staff_id: selection.staff_id,
+        package_id: selection.package_id,
+        date: selection.date,
+        ...extra
+    }
+}
+
+const getScheduleCalendarUrl = () => {
+    if (!selection.staff_id) {
+        return ''
+    }
+
+    let url = `/packages/pages/schedule_calendar/schedule_calendar?staff_id=${selection.staff_id}`
+    if (selection.date) {
+        url += `&date=${selection.date}`
+    }
+    if (selection.package_id) {
+        url += `&package_id=${selection.package_id}`
+    }
+    return url
+}
+
 const handlePreviewError = (message: string) => {
     uni.showToast({ title: message, icon: 'none' })
-    uni.redirectTo({ url: '/packages/pages/cart/cart' })
+    const url = getScheduleCalendarUrl()
+    setTimeout(() => {
+        if (url) {
+            uni.redirectTo({ url })
+            return
+        }
+        uni.navigateBack()
+    }, 1200)
 }
 
 const fetchPreview = async () => {
     loading.value = true
     try {
-        const data = await previewOrder({
-            user_coupon_id: selectedCouponId.value || undefined
-        })
+        const data = await previewOrder(
+            buildSelectionParams({
+                user_coupon_id: selectedCouponId.value || undefined
+            })
+        )
         preview.value = {
             items: data?.items || [],
             total_amount: data?.total_amount || 0,
@@ -328,7 +289,7 @@ const fetchPreview = async () => {
 
 const fetchAvailableCoupons = async () => {
     try {
-        const res = await getAvailableCoupons({})
+        const res = await getAvailableCoupons(buildSelectionParams())
         availableCoupons.value = res?.lists || []
         if (
             selectedCouponId.value > 0 &&
@@ -394,6 +355,7 @@ const handleSubmit = async () => {
         }
 
         const params: any = {
+            ...buildSelectionParams(),
             contact_name: form.contact_name.trim(),
             contact_mobile: form.contact_mobile.trim(),
             user_coupon_id: selectedCouponId.value || undefined
@@ -424,7 +386,16 @@ const initPage = async () => {
     initialized.value = true
 }
 
-onLoad(() => {
+onLoad((options: any) => {
+    selection.staff_id = Number(options?.staff_id || 0)
+    selection.package_id = Number(options?.package_id || 0)
+    selection.date = options?.date || ''
+
+    if (!selection.staff_id || !selection.package_id || !selection.date) {
+        handlePreviewError('预约信息不完整，请重新选择')
+        return
+    }
+
     initPage()
 })
 
@@ -482,8 +453,11 @@ onShow(() => {
     margin-bottom: 12rpx;
 }
 
-.service-group + .service-group {
-    margin-top: 20rpx;
+.service-card {
+    background: #f9fafb;
+    border-radius: 20rpx;
+    padding: 24rpx;
+    border: 1rpx solid #f0f0f0;
 }
 
 .coupon-row {
@@ -524,11 +498,11 @@ onShow(() => {
     font-weight: 600;
 }
 
-.group-header {
+.service-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16rpx;
+    gap: 20rpx;
 }
 
 .staff-section {
@@ -560,92 +534,22 @@ onShow(() => {
     color: #999999;
 }
 
-.group-total {
-    text-align: right;
+.package-name {
+    font-size: 26rpx;
+    color: #333333;
+    font-weight: 600;
 }
 
-.group-total-label {
-    display: block;
-    font-size: 22rpx;
-    color: #999999;
-}
-
-.group-total-value {
+.package-price {
     font-size: 28rpx;
     font-weight: 600;
 }
 
-.group-packages {
-    display: flex;
-    flex-direction: column;
-    gap: 16rpx;
-}
-
-.package-group {
-    background: #f9fafb;
-    border-radius: 16rpx;
-    padding: 20rpx;
-    border: 1rpx solid #f0f0f0;
-}
-
-.package-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12rpx;
-}
-
-.package-title {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-    font-size: 26rpx;
-    font-weight: 600;
-    color: #333333;
-}
-
-.package-total {
-    font-size: 26rpx;
-    font-weight: 600;
-}
-
-.package-items {
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-}
-
-.package-item {
-    display: flex;
-    align-items: center;
-    padding: 16rpx;
-    background: #ffffff;
-    border-radius: 12rpx;
-    border: 1rpx solid #eeeeee;
-}
-
-.slot-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
-}
-
-.slot-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12rpx;
-}
-
-.slot-label {
+.package-desc {
+    display: block;
+    margin-top: 20rpx;
     font-size: 24rpx;
     color: #666666;
-}
-
-.slot-price {
-    font-size: 26rpx;
-    font-weight: 600;
 }
 
 .price-row {

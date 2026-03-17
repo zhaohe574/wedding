@@ -7,9 +7,6 @@ declare(strict_types=1);
 
 namespace app\api\controller;
 
-use app\api\logic\CartLogic;
-use app\api\validate\CartValidate;
-
 /**
  * 小程序端购物车控制器
  * Class CartController
@@ -18,328 +15,136 @@ use app\api\validate\CartValidate;
 class CartController extends BaseApiController
 {
     /**
-     * @notes 获取购物车列表
+     * @notes 统一下线响应
      * @return \think\response\Json
      */
+    private function offlineResponse()
+    {
+        return $this->fail('购物车功能已下线，请直接下单');
+    }
+
     public function lists()
     {
-        $result = CartLogic::getUserCart($this->userId);
-        return $this->data($result);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 添加到购物车
-     * @return \think\response\Json
-     */
     public function add()
     {
-        $params = (new CartValidate())->post()->goCheck('add');
-        $params['user_id'] = $this->userId;
-        $result = CartLogic::addToCart($params);
-        if ($result['success']) {
-            return $this->success($result['message'], [
-                'cart_id' => $result['cart_id'],
-                'cart_ids' => $result['cart_ids'] ?? [],
-            ]);
-        }
-        return $this->fail($result['message']);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 更新购物车项
-     * @return \think\response\Json
-     */
     public function update()
     {
-        $params = (new CartValidate())->post()->goCheck('update');
-        $result = CartLogic::updateCartItem((int)$params['id'], $this->userId, $params);
-        if ($result['success']) {
-            return $this->success($result['message']);
-        }
-        return $this->fail($result['message']);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 删除购物车项
-     * @return \think\response\Json
-     */
     public function delete()
     {
-        $params = (new CartValidate())->post()->goCheck('delete');
-        $result = CartLogic::removeFromCart((int)$params['id'], $this->userId);
-        if ($result['success']) {
-            return $this->success($result['message']);
-        }
-        return $this->fail($result['message']);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 批量删除
-     * @return \think\response\Json
-     */
     public function batchDelete()
     {
-        $params = (new CartValidate())->post()->goCheck('batchDelete');
-        $count = CartLogic::batchRemove($params['ids'], $this->userId);
-        return $this->success('成功删除 ' . $count . ' 项');
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 切换选中状态
-     * @return \think\response\Json
-     */
     public function toggleSelect()
     {
-        $params = (new CartValidate())->post()->goCheck('toggleSelect');
-        $result = CartLogic::toggleSelect((int)$params['id'], $this->userId);
-        return $result ? $this->success('操作成功') : $this->fail('操作失败');
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 全选/取消全选
-     * @return \think\response\Json
-     */
     public function selectAll()
     {
-        $params = $this->request->post();
-        $selected = !empty($params['selected']);
-        CartLogic::selectAll($this->userId, $selected);
-        return $this->success('操作成功');
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 计算总价
-     * @return \think\response\Json
-     */
     public function calculate()
     {
-        $result = CartLogic::calculateTotal($this->userId);
-        return $this->data($result);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 检查冲突
-     * @return \think\response\Json
-     */
     public function checkConflicts()
     {
-        $result = CartLogic::checkConflicts($this->userId);
-        return $this->data($result);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 清空购物车
-     * @return \think\response\Json
-     */
     public function clear()
     {
-        $count = CartLogic::clearCart($this->userId);
-        return $this->success('已清空 ' . $count . ' 项');
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 获取购物车数量
-     * @return \think\response\Json
-     */
     public function count()
     {
-        $count = CartLogic::getCartCount($this->userId);
-        return $this->data(['count' => $count]);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 生成分享码
-     * @return \think\response\Json
-     */
     public function generateShareCode()
     {
-        $params = (new CartValidate())->post()->goCheck('delete');
-        $shareCode = CartLogic::generateShareCode((int)$params['id'], $this->userId);
-        if ($shareCode) {
-            return $this->data(['share_code' => $shareCode]);
-        }
-        return $this->fail('生成分享码失败');
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 通过分享码获取购物车项
-     * @return \think\response\Json
-     */
     public function getByShareCode()
     {
-        $params = (new CartValidate())->goCheck('shareCode');
-        $result = CartLogic::getByShareCode($params['share_code']);
-        if ($result) {
-            return $this->data($result);
-        }
-        return $this->fail('分享码无效或已过期');
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 保存为方案
-     * @return \think\response\Json
-     */
     public function savePlan()
     {
-        $params = (new CartValidate())->post()->goCheck('savePlan');
-        $params['user_id'] = $this->userId;
-        $result = CartLogic::createPlan($params);
-        if ($result['success']) {
-            return $this->success($result['message'], ['plan_id' => $result['plan_id']]);
-        }
-        return $this->fail($result['message']);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 获取我的方案列表
-     * @return \think\response\Json
-     */
     public function myPlans()
     {
-        $result = CartLogic::getUserPlans($this->userId);
-        return $this->data($result);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 获取方案详情
-     * @return \think\response\Json
-     */
     public function planDetail()
     {
-        $params = (new CartValidate())->goCheck('planDetail');
-        $result = CartLogic::getPlanDetail((int)$params['plan_id'], $this->userId);
-        if ($result) {
-            return $this->data($result);
-        }
-        return $this->fail('方案不存在');
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 删除方案
-     * @return \think\response\Json
-     */
     public function deletePlan()
     {
-        $params = (new CartValidate())->post()->goCheck('planDetail');
-        $result = CartLogic::deletePlan((int)$params['plan_id'], $this->userId);
-        // $result 是索引数组 [bool, string]
-        if ($result[0]) {
-            return $this->success($result[1]);
-        }
-        return $this->fail($result[1]);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 设为默认方案
-     * @return \think\response\Json
-     */
     public function setDefaultPlan()
     {
-        $params = (new CartValidate())->post()->goCheck('planDetail');
-        $result = CartLogic::setDefaultPlan((int)$params['plan_id'], $this->userId);
-        if ($result['success']) {
-            return $this->success($result['message']);
-        }
-        return $this->fail($result['message']);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 取消默认方案
-     * @return \think\response\Json
-     */
     public function cancelDefaultPlan()
     {
-        $result = CartLogic::cancelDefaultPlan($this->userId);
-        if ($result['success']) {
-            return $this->success($result['message']);
-        }
-        return $this->fail($result['message']);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 通过分享码复制方案
-     * @return \think\response\Json
-     */
     public function copyPlanByShareCode()
     {
-        $params = (new CartValidate())->post()->goCheck('shareCode');
-        $result = CartLogic::copyPlanToCart($params['share_code'], $this->userId);
-        if ($result['success']) {
-            return $this->success($result['message'], ['copied_count' => $result['copied_count']]);
-        }
-        return $this->fail($result['message']);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 通过分享码保存为我的方案
-     * @return \think\response\Json
-     */
     public function savePlanByShareCode()
     {
-        $params = (new CartValidate())->post()->goCheck('shareCode');
-        $planName = $params['plan_name'] ?? '';
-        $result = CartLogic::savePlanByShareCode($params['share_code'], $this->userId, $planName);
-        if ($result['success']) {
-            return $this->success($result['message'], ['plan_id' => $result['plan_id']]);
-        }
-        return $this->fail($result['message']);
+        return $this->offlineResponse();
     }
 
-
-    /**
-     * @notes 应用方案到购物车
-     * @return \think\response\Json
-     */
     public function applyPlanToCart()
     {
-        $params = (new CartValidate())->post()->goCheck('planDetail');
-        $result = CartLogic::applyPlanToCart((int)$params['plan_id'], $this->userId);
-        if ($result['success']) {
-            return $this->success($result['message'], ['copied_count' => $result['copied_count']]);
-        }
-        return $this->fail($result['message']);
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 比较方案
-     * @return \think\response\Json
-     */
     public function comparePlans()
     {
-        $params = (new CartValidate())->goCheck('compare');
-        $result = CartLogic::comparePlans((int)$params['plan_id_1'], (int)$params['plan_id_2'], $this->userId);
-        if ($result) {
-            return $this->data($result);
-        }
-        return $this->fail('方案不存在');
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 生成方案分享码
-     * @return \think\response\Json
-     */
     public function generatePlanShareCode()
     {
-        $params = (new CartValidate())->post()->goCheck('planDetail');
-        $force = !empty($params['force']);
-        $shareCode = CartLogic::generatePlanShareCode((int)$params['plan_id'], $this->userId, $force);
-        if ($shareCode) {
-            return $this->data(['share_code' => $shareCode]);
-        }
-        return $this->fail('生成分享码失败');
+        return $this->offlineResponse();
     }
 
-    /**
-     * @notes 通过分享码获取方案
-     * @return \think\response\Json
-     */
     public function getPlanByShareCode()
     {
-        $params = (new CartValidate())->goCheck('shareCode');
-        $result = CartLogic::getPlanByShareCode($params['share_code']);
-        if ($result) {
-            return $this->data($result);
-        }
-        return $this->fail('方案不存在或已过期');
+        return $this->offlineResponse();
     }
 }

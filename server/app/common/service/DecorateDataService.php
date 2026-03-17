@@ -24,6 +24,15 @@ use think\facade\Db;
 class DecorateDataService
 {
     /**
+     * 已下线的装修跳转路径
+     */
+    const DISABLED_DECORATE_PATHS = [
+        '/packages/pages/cart/cart',
+        '/packages/pages/cart_plan/cart_plan',
+        '/packages/pages/share_plan/share_plan',
+    ];
+
+    /**
      * 组件类型与数据源的映射关系
      */
     const WIDGET_DATA_SOURCE_MAP = [
@@ -72,12 +81,14 @@ class DecorateDataService
             return $pageData;
         }
 
+        $data = self::sanitizeDecorateNode($data);
+        if (!is_array($data)) {
+            return $pageData;
+        }
+
         $filteredData = [];
         foreach ($data as $widget) {
             if (!is_array($widget)) {
-                continue;
-            }
-            if (($widget['name'] ?? '') === 'service-packages') {
                 continue;
             }
             if (isset($widget['id']) && isset($widget['name'])) {
@@ -95,6 +106,53 @@ class DecorateDataService
         }
         
         return $pageData;
+    }
+
+    /**
+     * @notes 递归清理已下线组件与页面入口
+     * @param mixed $node
+     * @return mixed
+     */
+    private static function sanitizeDecorateNode($node)
+    {
+        if (!is_array($node)) {
+            return $node;
+        }
+
+        if (self::shouldRemoveDecorateNode($node)) {
+            return null;
+        }
+
+        $result = [];
+        foreach ($node as $key => $value) {
+            $sanitized = self::sanitizeDecorateNode($value);
+            if ($sanitized === null) {
+                continue;
+            }
+            $result[$key] = $sanitized;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @notes 判断当前节点是否需要剔除
+     * @param array $node
+     * @return bool
+     */
+    private static function shouldRemoveDecorateNode(array $node): bool
+    {
+        if (($node['name'] ?? '') === 'service-packages') {
+            return true;
+        }
+
+        $path = (string)($node['path'] ?? '');
+        if ($path !== '' && in_array($path, self::DISABLED_DECORATE_PATHS, true)) {
+            return true;
+        }
+
+        $linkPath = (string)($node['link']['path'] ?? '');
+        return $linkPath !== '' && in_array($linkPath, self::DISABLED_DECORATE_PATHS, true);
     }
 
     /**

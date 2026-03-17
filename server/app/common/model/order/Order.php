@@ -191,17 +191,17 @@ class Order extends BaseModel
     /**
      * @notes 创建订单
      * @param int $userId
-     * @param array $cartItems 购物车项
+     * @param array $selectedItems 已选服务项
      * @param array $orderInfo 订单信息
      * @return array [bool $success, string $message, Order|null $order]
      */
-    public static function createOrder(int $userId, array $cartItems, array $orderInfo): array
+    public static function createOrder(int $userId, array $selectedItems, array $orderInfo): array
     {
         Db::startTrans();
         try {
             // 计算订单金额
             $totalAmount = 0;
-            foreach ($cartItems as $item) {
+            foreach ($selectedItems as $item) {
                 $totalAmount += $item['price'] * ($item['quantity'] ?? 1);
             }
 
@@ -234,7 +234,7 @@ class Order extends BaseModel
                 'pay_amount' => $payAmount,
                 'deposit_amount' => $depositAmount,
                 'balance_amount' => $balanceAmount,
-                'service_date' => $orderInfo['service_date'] ?? null,
+                'service_date' => $orderInfo['date'] ?? $orderInfo['service_date'] ?? ($selectedItems[0]['schedule_date'] ?? null),
                 'service_time_slot' => 0,
                 'service_address' => $orderInfo['service_address'] ?? '',
                 'contact_name' => $orderInfo['contact_name'] ?? '',
@@ -251,7 +251,7 @@ class Order extends BaseModel
             ]);
 
             // 创建订单项
-            foreach ($cartItems as $item) {
+            foreach ($selectedItems as $item) {
                 $orderItem = OrderItem::create([
                     'order_id' => $order->id,
                     'staff_id' => $item['staff_id'],
@@ -259,11 +259,11 @@ class Order extends BaseModel
                     'schedule_id' => $item['schedule_id'] ?? 0,
                     'service_date' => $item['schedule_date'],
                     'time_slot' => 0,
-                    'staff_name' => $item['staff']['name'] ?? '',
-                    'package_name' => $item['package']['name'] ?? '',
+                    'staff_name' => $item['staff']['name'] ?? ($item['staff_name'] ?? ''),
+                    'package_name' => $item['package']['name'] ?? ($item['package_name'] ?? ''),
                     'price' => $item['price'],
-                    'quantity' => $item['quantity'] ?? 1,
-                    'subtotal' => $item['price'] * ($item['quantity'] ?? 1),
+                    'quantity' => 1,
+                    'subtotal' => $item['price'],
                     'confirm_status' => 0,
                     'remark' => $item['remark'] ?? '',
                     'create_time' => time(),

@@ -44,7 +44,7 @@ class OrderController extends BaseApiController
     }
 
     /**
-     * @notes 创建订单（从购物车）
+     * @notes 创建订单（直购）
      * @return \think\response\Json
      */
     public function create()
@@ -62,12 +62,12 @@ class OrderController extends BaseApiController
     }
 
     /**
-     * @notes 订单预览（结算页）
+     * @notes 订单预览（直购确认页）
      * @return \think\response\Json
      */
     public function preview()
     {
-        $params = $this->request->post();
+        $params = (new OrderValidate())->post()->goCheck('selection');
         $result = OrderLogic::previewOrder($this->userId, $params);
         if ($result['success']) {
             return $this->data($result['data']);
@@ -229,7 +229,7 @@ class OrderController extends BaseApiController
      */
     public function availableCoupons()
     {
-        $params = $this->request->get();
+        $params = (new OrderValidate())->get()->goCheck('selection');
         $result = OrderLogic::getAvailableCoupons($this->userId, $params);
         return $this->data($result);
     }

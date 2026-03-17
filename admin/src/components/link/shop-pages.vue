@@ -62,7 +62,6 @@ const linkGroups = ref([
             { path: '/packages/pages/staff_list/staff_list', name: '人员列表', type: T },
             { path: '/packages/pages/staff_favorite/staff_favorite', name: '收藏人员', type: T },
             { path: '/packages/pages/schedule_calendar/schedule_calendar', name: '档期查询', type: T },
-            { path: '/packages/pages/cart_plan/cart_plan', name: '婚礼方案', type: T },
             { path: '/packages/pages/staff_center/staff_center', name: '服务人员中心', type: T },
             { path: '/packages/pages/admin_dashboard/admin_dashboard', name: '管理员看板', type: T }
         ]
@@ -71,7 +70,6 @@ const linkGroups = ref([
         label: '订单与购物',
         items: [
             { path: '/pages/order/order', name: '我的订单', type: T },
-            { path: '/packages/pages/cart/cart', name: '购物车', type: T },
             { path: '/packages/pages/waitlist/waitlist', name: '候补列表', type: T }
         ]
     },

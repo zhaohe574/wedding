@@ -13,9 +13,11 @@ use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\order\OrderLog;
 use app\common\model\order\Payment;
+use app\common\model\package\PackageBooking;
 use app\common\model\order\Refund;
-use app\common\model\cart\Cart;
 use app\common\model\schedule\Schedule;
+use app\common\model\service\ServicePackage;
+use app\common\model\staff\Staff;
 use app\common\model\user\User;
 use app\common\logic\AccountLogLogic;
 use app\common\enum\user\AccountLogEnum;
@@ -30,32 +32,132 @@ use think\facade\Db;
 class OrderLogic extends BaseLogic
 {
     /**
-     * @notes 获取当前结算购物车项
+     * @notes 构造直购选择项
      */
-    private static function getCheckoutCartItems(int $userId, array $cartIds = []): array
+    private static function buildSelectedItems(array $params): array
     {
-        $query = Cart::where('user_id', $userId)
-            ->with(['staff', 'package']);
+        $staffId = (int)($params['staff_id'] ?? 0);
+        $packageId = (int)($params['package_id'] ?? 0);
+        $date = (string)($params['date'] ?? '');
 
-        if (empty($cartIds)) {
-            $query->where('is_selected', 1);
-        } else {
-            $query->whereIn('id', array_map('intval', $cartIds));
+        $staff = Staff::where('id', $staffId)
+            ->where('status', Staff::STATUS_ENABLE)
+            ->whereNull('delete_time')
+            ->find();
+        if (!$staff) {
+            throw new \Exception('服务人员不存在或已下线');
         }
 
-        return $query->select()->toArray();
+        $package = ServicePackage::where('id', $packageId)
+            ->where('staff_id', $staffId)
+            ->where('is_show', 1)
+            ->whereNull('delete_time')
+            ->find();
+        if (!$package) {
+            throw new \Exception('套餐不存在或已下线');
+        }
+
+        return [[
+            'staff_id' => $staffId,
+            'package_id' => $packageId,
+            'schedule_id' => 0,
+            'schedule_date' => $date,
+            'time_slot' => 0,
+            'price' => round((float)$package->price, 2),
+            'quantity' => 1,
+            'remark' => $params['remark'] ?? '',
+            'staff' => [
+                'id' => (int)$staff->id,
+                'name' => (string)$staff->name,
+                'avatar' => (string)$staff->avatar,
+                'category_id' => (int)$staff->category_id,
+            ],
+            'package' => [
+                'id' => (int)$package->id,
+                'name' => (string)$package->name,
+                'category_id' => (int)$package->category_id,
+                'price' => round((float)$package->price, 2),
+                'original_price' => round((float)$package->original_price, 2),
+                'description' => (string)($package->description ?? ''),
+                'image' => (string)($package->image ?? ''),
+                'content' => $package->content,
+            ],
+        ]];
+    }
+
+    /**
+     * @notes 校验预约日期是否可下单
+     */
+    private static function ensureScheduleAvailable(array $selectedItems): void
+    {
+        foreach ($selectedItems as $item) {
+            [$available, $reason] = Schedule::checkAvailabilityWithReason(
+                (int)$item['staff_id'],
+                (string)$item['schedule_date'],
+                0
+            );
+            if (!$available) {
+                throw new \Exception($reason ?: '请重新确认预约信息');
+            }
+        }
+    }
+
+    /**
+     * @notes 刷新用户当前直购选择的套餐临时锁
+     */
+    private static function refreshTempLock(int $userId, array $selectedItem): void
+    {
+        $lock = PackageBooking::createTempLock(
+            (int)$selectedItem['package_id'],
+            (int)$selectedItem['staff_id'],
+            (string)$selectedItem['schedule_date'],
+            0,
+            $userId
+        );
+
+        if ($lock) {
+            return;
+        }
+
+        $availability = PackageBooking::checkAvailability(
+            (int)$selectedItem['package_id'],
+            (string)$selectedItem['schedule_date'],
+            (int)$selectedItem['staff_id'],
+            0
+        );
+
+        throw new \Exception((string)($availability['message'] ?? '请重新确认预约信息'));
+    }
+
+    /**
+     * @notes 校验用户是否持有当前套餐临时锁
+     */
+    private static function ensureTempLockOwned(int $userId, array $selectedItem): void
+    {
+        $lock = PackageBooking::where('user_id', $userId)
+            ->where('package_id', (int)$selectedItem['package_id'])
+            ->where('staff_id', (int)$selectedItem['staff_id'])
+            ->where('booking_date', (string)$selectedItem['schedule_date'])
+            ->where('time_slot', 0)
+            ->where('status', PackageBooking::STATUS_TEMP_LOCK)
+            ->lock(true)
+            ->find();
+
+        if (!$lock) {
+            throw new \Exception('请重新确认预约信息');
+        }
     }
 
     /**
      * @notes 汇总结算上下文
      */
-    private static function buildCheckoutSummary(array $cartItems): array
+    private static function buildCheckoutSummary(array $selectedItems): array
     {
         $totalAmount = 0;
         $staffIds = [];
         $categoryIds = [];
 
-        foreach ($cartItems as $item) {
+        foreach ($selectedItems as $item) {
             $totalAmount += (float)$item['price'] * (int)($item['quantity'] ?? 1);
             $staffIds[] = (int)($item['staff_id'] ?? 0);
 
@@ -198,15 +300,13 @@ class OrderLogic extends BaseLogic
      */
     public static function previewOrder(int $userId, array $params): array
     {
-        $cartIds = $params['cart_ids'] ?? [];
-        $cartItems = self::getCheckoutCartItems($userId, $cartIds);
-
-        if (empty($cartItems)) {
-            return ['success' => false, 'message' => '请选择要结算的服务'];
-        }
-
         try {
-            $summary = self::buildCheckoutSummary($cartItems);
+            $selectedItems = self::buildSelectedItems($params);
+            PackageBooking::releaseByUserId($userId);
+            self::ensureScheduleAvailable($selectedItems);
+            self::refreshTempLock($userId, $selectedItems[0]);
+
+            $summary = self::buildCheckoutSummary($selectedItems);
             $couponData = self::resolveSelectedCoupon(
                 $userId,
                 $summary,
@@ -232,7 +332,7 @@ class OrderLogic extends BaseLogic
         return [
             'success' => true,
             'data' => [
-                'items' => $cartItems,
+                'items' => $selectedItems,
                 'total_amount' => round($totalAmount, 2),
                 'coupon_amount' => round($couponAmount, 2),
                 'pay_amount' => round($payAmount, 2),
@@ -253,37 +353,12 @@ class OrderLogic extends BaseLogic
     {
         Db::startTrans();
         try {
-            $userId = $params['user_id'];
+            $userId = (int)$params['user_id'];
+            $selectedItems = self::buildSelectedItems($params);
+            self::ensureScheduleAvailable($selectedItems);
+            self::ensureTempLockOwned($userId, $selectedItems[0]);
 
-            $cartIds = $params['cart_ids'] ?? [];
-            $cartItems = self::getCheckoutCartItems($userId, $cartIds);
-
-            if (empty($cartItems)) {
-                return ['success' => false, 'message' => '请选择要结算的服务'];
-            }
-
-            // 检查档期是否仍然可用
-            foreach ($cartItems as $item) {
-                if (empty($item['schedule_id'])) {
-                    continue;
-                }
-                $schedule = Schedule::find($item['schedule_id']);
-                if (!$schedule) {
-                    return ['success' => false, 'message' => '部分档期已不可用，请刷新购物车'];
-                }
-                if ($schedule->status == Schedule::STATUS_LOCKED && $schedule->lock_expire_time > 0 && $schedule->lock_expire_time < time()) {
-                    Schedule::releaseLock($schedule->id);
-                    $schedule->status = Schedule::STATUS_AVAILABLE;
-                }
-                if ($schedule->status == Schedule::STATUS_LOCKED && (int)$schedule->lock_user_id !== (int)$userId) {
-                    return ['success' => false, 'message' => '部分档期已被他人锁定，请刷新购物车'];
-                }
-                if (in_array($schedule->status, [Schedule::STATUS_BOOKED, Schedule::STATUS_RESERVED, Schedule::STATUS_UNAVAILABLE])) {
-                    return ['success' => false, 'message' => '部分档期已不可用，请刷新购物车'];
-                }
-            }
-
-            $summary = self::buildCheckoutSummary($cartItems);
+            $summary = self::buildCheckoutSummary($selectedItems);
             $couponData = self::resolveSelectedCoupon(
                 $userId,
                 $summary,
@@ -293,9 +368,10 @@ class OrderLogic extends BaseLogic
             $params['coupon_amount'] = $couponData['coupon_amount'];
             $params['coupon_id'] = $couponData['coupon_id'];
             $params['user_coupon_id'] = $couponData['user_coupon_id'];
+            $params['service_date'] = $params['date'] ?? ($selectedItems[0]['schedule_date'] ?? '');
 
             // 创建订单
-            [$success, $message, $order] = Order::createOrder($userId, $cartItems, $params);
+            [$success, $message, $order] = Order::createOrder($userId, $selectedItems, $params);
             
             if (!$success) {
                 Db::rollback();
@@ -313,9 +389,6 @@ class OrderLogic extends BaseLogic
                 }
             }
 
-            // 清空已结算的购物车项
-            Cart::where('user_id', $userId)->whereIn('id', array_column($cartItems, 'id'))->delete();
-
             Db::commit();
 
             OrderNotificationService::notifyStaffOnOrderCreated((int) $order->id);
@@ -328,7 +401,7 @@ class OrderLogic extends BaseLogic
             ];
         } catch (\Exception $e) {
             Db::rollback();
-            return ['success' => false, 'message' => '创建失败：' . $e->getMessage()];
+            return ['success' => false, 'message' => $e->getMessage() ?: '请重新确认预约信息'];
         }
     }
 
@@ -765,8 +838,9 @@ class OrderLogic extends BaseLogic
      */
     public static function getAvailableCoupons(int $userId, array $params = []): array
     {
-        $cartItems = self::getCheckoutCartItems($userId, $params['cart_ids'] ?? []);
-        if (empty($cartItems)) {
+        try {
+            $selectedItems = self::buildSelectedItems($params);
+        } catch (\Exception $e) {
             return [
                 'lists' => [],
                 'total' => 0,
@@ -774,7 +848,7 @@ class OrderLogic extends BaseLogic
             ];
         }
 
-        $summary = self::buildCheckoutSummary($cartItems);
+        $summary = self::buildCheckoutSummary($selectedItems);
         return CouponLogic::orderAvailable([
             'user_id' => $userId,
             'order_amount' => $summary['total_amount'],

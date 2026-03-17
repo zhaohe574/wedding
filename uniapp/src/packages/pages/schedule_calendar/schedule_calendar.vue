@@ -273,10 +273,10 @@
                                 ? `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
                                 : '#CCCCCC'
                     }"
-                    @click="handleAddToCart"
+                    @click="handleDirectOrder"
                 >
                     <tn-icon name="cart" size="32" color="#FFFFFF" />
-                    <text>加入购物车</text>
+                    <text>立即下单</text>
                 </view>
             </view>
         </view>
@@ -287,7 +287,6 @@
 import { ref, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getStaffSchedule, joinWaitlist } from '@/api/schedule'
-import { addToCart } from '@/api/cart'
 import { getStaffDetail, getStaffList } from '@/api/staff'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
@@ -631,7 +630,7 @@ const handleJoinWaitlist = async () => {
     }
 }
 
-const handleAddToCart = async () => {
+const handleDirectOrder = async () => {
     if (!ensureReady()) {
         return
     }
@@ -645,22 +644,10 @@ const handleAddToCart = async () => {
         return
     }
 
-    try {
-        const payload: any = {
-            staff_id: staffId.value,
-            date: selectedDate.value,
-            package_id: selectedPackageId.value
-        }
-        await addToCart(payload)
-        uni.showToast({ title: '已加入购物车', icon: 'success' })
-
-        setTimeout(() => {
-            uni.navigateTo({ url: '/packages/pages/cart/cart' })
-        }, 1500)
-    } catch (e: any) {
-        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加入购物车失败'
-        uni.showToast({ title: errorMsg, icon: 'none' })
-    }
+    const orderUrl =
+        `/packages/pages/order_confirm/order_confirm?staff_id=${staffId.value}` +
+        `&package_id=${selectedPackageId.value}&date=${selectedDate.value}`
+    uni.navigateTo({ url: orderUrl })
 }
 
 const selectPackage = (pkg: any) => {
