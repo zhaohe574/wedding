@@ -53,19 +53,6 @@ class DataController extends BaseAdminController
     }
 
     /**
-     * @notes 优惠券列表（装修组件选择器）
-     * @return Json
-     * @author AI
-     * @date 2026/01/22
-     */
-    public function couponList(): Json
-    {
-        $params = $this->request->get();
-        $result = DecorateDataLogic::getCouponList($params);
-        return $this->success('获取成功', $result);
-    }
-
-    /**
      * @notes 公告列表（装修组件选择器）
      * @return Json
      * @author AI

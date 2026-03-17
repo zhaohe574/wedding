@@ -97,6 +97,19 @@
                             <text class="text-red-500 ml-2">+{{ item.add_price }}元</text>
                         </view>
 
+                        <!-- 附加服务变更 -->
+                        <view v-else-if="item.change_type === 4" class="text-sm text-gray-600 mt-2">
+                            <text>{{ item.addon_action_desc || '附加服务变更' }}: </text>
+                            <text class="text-primary">{{ getAddonNames(item.addon_items) }}</text>
+                            <text
+                                v-if="Number(item.price_diff || 0) !== 0"
+                                :class="Number(item.price_diff || 0) > 0 ? 'text-red-500' : 'text-green-500'"
+                                class="ml-2"
+                            >
+                                {{ Number(item.price_diff || 0) > 0 ? '+' : '' }}{{ item.price_diff }}元
+                            </text>
+                        </view>
+
                         <view v-if="item.apply_reason" class="text-xs text-gray-400 mt-2">
                             原因: {{ item.apply_reason }}
                         </view>
@@ -108,61 +121,6 @@
                                 @click.stop="handleCancelChange(item)"
                             >
                                 取消申请
-                            </button>
-                        </view>
-                    </view>
-                </template>
-
-                <!-- 转让申请列表 -->
-                <template v-if="currentType === 'transfer'">
-                    <view
-                        v-for="item in list"
-                        :key="item.id"
-                        class="bg-white rounded-lg mb-3 p-4"
-                        @click="goTransferDetail(item.id)"
-                    >
-                        <view class="flex justify-between items-start mb-2">
-                            <view>
-                                <text class="text-xs text-gray-400">{{ item.transfer_sn }}</text>
-                                <view class="mt-1">
-                                    <view
-                                        class="tag"
-                                        :class="getTransferStatusClass(item.transfer_status)"
-                                    >
-                                        {{ item.transfer_status_desc }}
-                                    </view>
-                                </view>
-                            </view>
-                            <text class="text-xs text-gray-400">{{ item.create_time }}</text>
-                        </view>
-
-                        <view class="text-sm text-gray-600 mt-2">
-                            <view class="flex items-center">
-                                <text class="text-gray-400 w-16">转让方:</text>
-                                <text>{{ item.from_user_name }} ({{ item.from_user_mobile }})</text>
-                            </view>
-                            <view class="flex items-center mt-1">
-                                <text class="text-gray-400 w-16">接收方:</text>
-                                <text class="text-primary"
-                                    >{{ item.to_user_name }} ({{ item.to_user_mobile }})</text
-                                >
-                            </view>
-                        </view>
-
-                        <view v-if="item.transfer_reason" class="text-xs text-gray-400 mt-2">
-                            原因: {{ item.transfer_reason }}
-                        </view>
-
-                        <!-- 操作按钮 -->
-                        <view
-                            v-if="item.transfer_status <= 1 && item.is_from_user"
-                            class="mt-3 flex justify-end"
-                        >
-                            <button
-                                class="btn-outline text-red-500 border-red-500"
-                                @click.stop="handleCancelTransfer(item)"
-                            >
-                                取消转让
                             </button>
                         </view>
                     </view>
@@ -237,15 +195,12 @@ import { onLoad, onShow, onReachBottom } from '@dcloudio/uni-app'
 import {
     getChangeList,
     cancelChange,
-    getTransferList,
-    cancelTransfer,
     getPauseList,
     cancelPause
 } from '@/api/orderChange'
 
 const typeTabs = [
     { label: '变更申请', value: 'change' },
-    { label: '转让申请', value: 'transfer' },
     { label: '暂停申请', value: 'pause' }
 ]
 
@@ -260,9 +215,17 @@ const getTypeClass = (type: number) => {
     const classes: Record<number, string> = {
         1: 'bg-blue-100 text-blue-600',
         2: 'bg-orange-100 text-orange-600',
-        3: 'bg-green-100 text-green-600'
+        3: 'bg-green-100 text-green-600',
+        4: 'bg-purple-100 text-purple-600'
     }
     return classes[type] || 'bg-gray-100 text-gray-600'
+}
+
+const getAddonNames = (items: any[] = []) => {
+    return (items || [])
+        .map((item: any) => item.addon_name)
+        .filter(Boolean)
+        .join('、')
 }
 
 // 变更状态样式
@@ -273,19 +236,6 @@ const getStatusClass = (status: number) => {
         2: 'bg-red-100 text-red-600',
         3: 'bg-green-100 text-green-600',
         4: 'bg-gray-100 text-gray-600'
-    }
-    return classes[status] || 'bg-gray-100 text-gray-600'
-}
-
-// 转让状态样式
-const getTransferStatusClass = (status: number) => {
-    const classes: Record<number, string> = {
-        0: 'bg-orange-100 text-orange-600',
-        1: 'bg-blue-100 text-blue-600',
-        2: 'bg-purple-100 text-purple-600',
-        3: 'bg-green-100 text-green-600',
-        4: 'bg-red-100 text-red-600',
-        5: 'bg-gray-100 text-gray-600'
     }
     return classes[status] || 'bg-gray-100 text-gray-600'
 }
@@ -328,8 +278,6 @@ const fetchList = async (refresh = false) => {
 
         if (currentType.value === 'change') {
             res = await getChangeList(params)
-        } else if (currentType.value === 'transfer') {
-            res = await getTransferList(params)
         } else {
             res = await getPauseList(params)
         }
@@ -366,10 +314,6 @@ const goChangeDetail = (id: number) => {
     uni.navigateTo({ url: `/packages/pages/order_change/change_detail?id=${id}` })
 }
 
-const goTransferDetail = (id: number) => {
-    uni.navigateTo({ url: `/packages/pages/order_change/transfer_detail?id=${id}` })
-}
-
 const goPauseDetail = (id: number) => {
     uni.navigateTo({ url: `/packages/pages/order_change/pause_detail?id=${id}` })
 }
@@ -382,22 +326,6 @@ const handleCancelChange = async (item: any) => {
     if (res.confirm) {
         try {
             await cancelChange({ id: item.id })
-            uni.showToast({ title: '已取消' })
-            fetchList(true)
-        } catch (e: any) {
-            uni.showToast({ title: e.message || '操作失败', icon: 'none' })
-        }
-    }
-}
-
-const handleCancelTransfer = async (item: any) => {
-    const res = await uni.showModal({
-        title: '提示',
-        content: '确定要取消该转让申请吗？'
-    })
-    if (res.confirm) {
-        try {
-            await cancelTransfer({ id: item.id })
             uni.showToast({ title: '已取消' })
             fetchList(true)
         } catch (e: any) {
@@ -423,7 +351,7 @@ const handleCancelPause = async (item: any) => {
 }
 
 onLoad((options: any) => {
-    if (options.type) {
+    if (options.type && ['change', 'pause'].includes(options.type)) {
         currentType.value = options.type
     }
 })

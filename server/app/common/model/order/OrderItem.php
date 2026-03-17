@@ -57,6 +57,17 @@ class OrderItem extends BaseModel
     }
 
     /**
+     * @notes 关联生效中的附加服务快照
+     * @return \think\model\relation\HasMany
+     */
+    public function addons()
+    {
+        return $this->hasMany(OrderItemAddon::class, 'order_item_id', 'id')
+            ->where('status', OrderItemAddon::STATUS_ACTIVE)
+            ->order('id', 'asc');
+    }
+
+    /**
      * @notes 状态描述获取器
      * @param $value
      * @param $data

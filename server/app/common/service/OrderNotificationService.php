@@ -185,6 +185,129 @@ class OrderNotificationService
     }
 
     /**
+     * 附加服务变更申请提交后通知服务人员。
+     */
+    public static function notifyStaffOnAddonChangeApplied(int $changeId): void
+    {
+        try {
+            $change = OrderChange::with(['addonItems'])->find($changeId);
+            if (!$change || (int) $change->change_type !== OrderChange::TYPE_ADDON) {
+                return;
+            }
+
+            $summary = self::buildAddonChangeSummary($change);
+            self::sendStaffOrderNotice(
+                (int) $change->order_id,
+                '订单附加服务变更待处理',
+                self::formatOrderContent(
+                    (int) $change->order_id,
+                    '提交了附加服务变更申请：%s。',
+                    [$summary]
+                ),
+                $summary
+            );
+        } catch (\Throwable $e) {
+            Log::error('附加服务变更申请通知服务人员失败：' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 附加服务变更审核后通知服务人员。
+     */
+    public static function notifyStaffOnAddonChangeAudited(int $changeId): void
+    {
+        try {
+            $change = OrderChange::with(['addonItems'])->find($changeId);
+            if (!$change || (int) $change->change_type !== OrderChange::TYPE_ADDON) {
+                return;
+            }
+
+            $summary = self::buildAddonChangeSummary($change);
+            if ((int) $change->change_status === OrderChange::STATUS_APPROVED) {
+                self::sendStaffOrderNotice(
+                    (int) $change->order_id,
+                    '订单附加服务变更已通过',
+                    self::formatOrderContent(
+                        (int) $change->order_id,
+                        '的附加服务变更申请已审核通过：%s。',
+                        [$summary]
+                    ),
+                    '附加服务变更申请已审核通过。' . $summary
+                );
+            }
+
+            if ((int) $change->change_status === OrderChange::STATUS_REJECTED) {
+                self::sendStaffOrderNotice(
+                    (int) $change->order_id,
+                    '订单附加服务变更已拒绝',
+                    self::formatOrderContent(
+                        (int) $change->order_id,
+                        '的附加服务变更申请已被拒绝：%s。',
+                        [$summary]
+                    ),
+                    '附加服务变更申请已被拒绝。' . $summary
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::error('附加服务变更审核通知服务人员失败：' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 附加服务变更执行完成后通知服务人员。
+     */
+    public static function notifyStaffOnAddonChangeExecuted(int $changeId): void
+    {
+        try {
+            $change = OrderChange::with(['addonItems'])->find($changeId);
+            if (!$change || (int) $change->change_type !== OrderChange::TYPE_ADDON || (int) $change->change_status !== OrderChange::STATUS_EXECUTED) {
+                return;
+            }
+
+            $summary = self::buildAddonChangeSummary($change);
+            self::sendStaffOrderNotice(
+                (int) $change->order_id,
+                '订单附加服务已更新',
+                self::formatOrderContent(
+                    (int) $change->order_id,
+                    '已完成附加服务变更：%s。',
+                    [$summary]
+                ),
+                $summary
+            );
+        } catch (\Throwable $e) {
+            Log::error('附加服务变更执行通知服务人员失败：' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 附加服务变更申请取消后通知服务人员。
+     */
+    public static function notifyStaffOnAddonChangeCancelled(int $changeId): void
+    {
+        try {
+            $change = OrderChange::with(['addonItems'])->find($changeId);
+            if (!$change || (int) $change->change_type !== OrderChange::TYPE_ADDON || (int) $change->change_status !== OrderChange::STATUS_CANCELLED) {
+                return;
+            }
+
+            $summary = self::buildAddonChangeSummary($change);
+            self::sendStaffOrderNotice(
+                (int) $change->order_id,
+                '订单附加服务变更已取消',
+                self::formatOrderContent(
+                    (int) $change->order_id,
+                    '的附加服务变更申请已取消：%s。',
+                    [$summary]
+                ),
+                '附加服务变更申请已取消。' . $summary
+            );
+        } catch (\Throwable $e) {
+            Log::error('附加服务变更取消通知服务人员失败：' . $e->getMessage());
+        }
+    }
+
+    /**
      * 暂停申请提交后通知服务人员。
      */
     public static function notifyStaffOnPauseApplied(int $pauseId): void
@@ -645,6 +768,33 @@ class OrderNotificationService
 
         $suffix = empty($args) ? $template : vsprintf($template, $args);
         return sprintf('订单%s%s', (string) $order->order_sn, $suffix);
+    }
+
+    /**
+     * 组装附加服务变更摘要。
+     */
+    private static function buildAddonChangeSummary(OrderChange $change): string
+    {
+        $items = $change->addonItems;
+        if (is_object($items) && method_exists($items, 'toArray')) {
+            $items = $items->toArray();
+        }
+        if (!is_array($items)) {
+            $items = [];
+        }
+
+        $names = array_values(array_unique(array_filter(array_map(static function ($item) {
+            return trim((string) ($item['addon_name'] ?? ''));
+        }, $items))));
+
+        $actionText = (int) $change->addon_action === OrderChange::ADDON_ACTION_REMOVE ? '移除附加服务' : '新增附加服务';
+        $nameText = empty($names) ? '未命名附加服务' : implode('、', $names);
+        $priceDiff = round((float) ($change->price_diff ?? 0), 2);
+        $priceText = $priceDiff > 0
+            ? sprintf('，净差额+%.2f元', $priceDiff)
+            : ($priceDiff < 0 ? sprintf('，净差额%.2f元', $priceDiff) : '');
+
+        return $actionText . '：' . $nameText . $priceText;
     }
 
 }

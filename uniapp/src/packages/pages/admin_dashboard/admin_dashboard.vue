@@ -9,38 +9,42 @@
         <!-- #endif -->
     </page-meta>
 
-    <view class="dashboard-page min-h-screen pb-[40rpx]" :style="pageBgStyle">
-        <view class="hero-card mx-[20rpx] mt-[20rpx]" :style="heroCardStyle">
+    <view class="dashboard-page min-h-screen" :style="pageBgStyle">
+        <view class="hero-card mx-[24rpx] mt-[24rpx]" :style="heroCardStyle">
             <view class="hero-top">
                 <view class="hero-main">
-                    <view class="hero-title-wrap">
-                        <tn-icon name="star-fill" size="28" :color="$theme.btnColor" />
-                        <text class="hero-title">经营总览</text>
-                    </view>
+                    <text class="hero-eyebrow">经营驾驶舱</text>
+                    <text class="hero-title">先看结果，再看团队执行</text>
                     <text class="hero-period">{{ periodLabel }}</text>
                 </view>
-                <view class="hero-refresh touch-target" :style="heroRefreshStyle" @click="loadData">
-                    <tn-icon name="refresh" size="24" :color="$theme.btnColor" />
-                    <text>{{ loading ? '更新中' : '刷新' }}</text>
+                <view class="hero-refresh" :style="heroRefreshStyle" @click="loadData">
+                    <text class="hero-refresh-text">{{ loading ? '更新中' : '刷新数据' }}</text>
                 </view>
             </view>
-            <view class="hero-footer">
-                <view class="hero-meta-item">
-                    <tn-icon name="clock" size="24" :color="$theme.btnColor" />
-                    <text>更新时间：{{ lastUpdated || '--' }}</text>
-                </view>
-                <view class="hero-meta-item">
-                    <tn-icon name="calendar" size="24" :color="$theme.btnColor" />
-                    <text>数据范围：{{ activeRangeLabel }}</text>
+
+            <view class="hero-meta">
+                <text class="hero-meta-text">更新时间：{{ lastUpdated || '--' }}</text>
+                <text class="hero-meta-text">范围：{{ activeRangeLabel }}</text>
+            </view>
+
+            <view class="hero-chip-list">
+                <view
+                    v-for="item in summaryChips"
+                    :key="item.label"
+                    class="hero-chip"
+                    :style="heroChipStyle"
+                >
+                    <text class="hero-chip-label">{{ item.label }}</text>
+                    <text class="hero-chip-value">{{ item.value }}</text>
                 </view>
             </view>
         </view>
 
-        <view class="range-tabs mx-[20rpx] mt-[16rpx]">
+        <view class="range-tabs mx-[24rpx] mt-[16rpx]">
             <view
                 v-for="tab in rangeTabs"
                 :key="tab.key"
-                class="range-tab-item touch-target"
+                class="range-tab-item"
                 :style="tab.key === rangeKey ? activeTabStyle : defaultTabStyle"
                 @click="changeRange(tab.key)"
             >
@@ -48,56 +52,139 @@
             </view>
         </view>
 
-        <view class="kpi-grid mx-[20rpx] mt-[16rpx]">
-            <view
-                v-for="item in kpiCards"
-                :key="item.label"
-                class="kpi-card"
-                :style="getKpiCardStyle(item.color)"
-            >
-                <view class="kpi-top">
-                    <text class="kpi-label">{{ item.label }}</text>
-                    <view class="kpi-dot" :style="{ backgroundColor: item.color }"></view>
+        <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
+            <view class="section-header">
+                <view>
+                    <text class="section-title">经营核心</text>
+                    <text class="section-subtitle">核心指标保留在首屏，便于快速判断经营走势</text>
                 </view>
-                <text class="kpi-value">{{ item.value }}</text>
-                <text class="kpi-hint">{{ item.hint }}</text>
+            </view>
+
+            <view class="metric-grid">
+                <view
+                    v-for="item in coreMetrics"
+                    :key="item.label"
+                    class="metric-card"
+                    :style="getMetricCardStyle(item.color)"
+                >
+                    <text class="metric-label">{{ item.label }}</text>
+                    <text class="metric-value">{{ item.value }}</text>
+                    <text class="metric-hint">{{ item.hint }}</text>
+                </view>
+            </view>
+
+            <view class="snapshot-row">
+                <view v-for="item in todaySnapshots" :key="item.label" class="snapshot-item">
+                    <text class="snapshot-label">{{ item.label }}</text>
+                    <text class="snapshot-value">{{ item.value }}</text>
+                </view>
             </view>
         </view>
 
-        <view class="panel mx-[20rpx] mt-[16rpx]" :style="glassPanelStyle">
-            <view class="panel-header">
-                <view class="panel-title-wrap">
-                    <tn-icon name="clock" size="30" :color="$theme.primaryColor" />
-                    <text class="panel-title">收入趋势</text>
+        <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
+            <view class="section-header">
+                <view>
+                    <text class="section-title">团队总览</text>
+                    <text class="section-subtitle">
+                        本月档期占用 {{ formatPercent(capacityStats.booking_rate) }}，已占
+                        {{ capacityStats.month_occupied_slots }} /
+                        {{ capacityStats.month_total_slots }}
+                    </text>
                 </view>
-                <text class="panel-subtitle">
-                    峰值 ¥{{ formatMoney(trendSummary.peak) }} · 日均 ¥{{ formatMoney(trendSummary.avg) }}
-                </text>
             </view>
 
-            <view v-if="trendList.length === 0" class="panel-empty">暂无趋势数据</view>
-            <view v-else class="trend-chart">
-                <view class="trend-bars">
-                    <view v-for="item in trendList" :key="item.date" class="trend-column">
-                        <text class="trend-value">¥{{ formatMoney(item.value) }}</text>
-                        <view class="trend-track">
-                            <view class="trend-fill" :style="getTrendFillStyle(item.height)" />
+            <view class="team-grid">
+                <view
+                    v-for="item in teamStatsCards"
+                    :key="item.label"
+                    class="team-stat-item"
+                    :style="teamStatStyle"
+                >
+                    <text class="team-stat-label">{{ item.label }}</text>
+                    <text class="team-stat-value">{{ item.value }}</text>
+                </view>
+            </view>
+        </view>
+
+        <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
+            <view class="section-header">
+                <view>
+                    <text class="section-title">成员负载</text>
+                    <text class="section-subtitle"
+                        >按未来 30 天已占档期优先排序，便于判断谁忙、谁可分配</text
+                    >
+                </view>
+            </view>
+
+            <view v-if="memberCards.length === 0" class="panel-empty">暂无成员负载数据</view>
+            <scroll-view v-else class="member-scroll" scroll-x show-scrollbar="false">
+                <view class="member-list">
+                    <view v-for="item in memberCards" :key="item.id" class="member-card">
+                        <view class="member-top">
+                            <image class="member-avatar" :src="item.avatar" mode="aspectFill" />
+                            <view class="member-main">
+                                <view class="member-name-row">
+                                    <text class="member-name">{{ item.name }}</text>
+                                    <view
+                                        v-if="item.isRecommend"
+                                        class="member-recommend"
+                                        :style="memberRecommendStyle"
+                                    >
+                                        推荐
+                                    </view>
+                                </view>
+                                <text class="member-role">{{
+                                    item.categoryName || '服务人员'
+                                }}</text>
+                            </view>
+                            <view class="member-load-tag" :style="getLoadTagStyle(item.loadLevel)">
+                                {{ item.loadLevel }}
+                            </view>
                         </view>
-                        <text class="trend-label">{{ item.label }}</text>
+
+                        <view class="member-data-grid">
+                            <view class="member-data-item">
+                                <text class="member-data-label">近30天订单</text>
+                                <text class="member-data-value">{{ item.recentOrderCount }}</text>
+                            </view>
+                            <view class="member-data-item">
+                                <text class="member-data-label">未来30天占用</text>
+                                <text class="member-data-value">{{
+                                    item.upcomingBookedSlots
+                                }}</text>
+                            </view>
+                            <view class="member-data-item">
+                                <text class="member-data-label">待跟进</text>
+                                <text class="member-data-value">{{ item.followUpCount }}</text>
+                            </view>
+                        </view>
                     </view>
                 </view>
-            </view>
+            </scroll-view>
         </view>
 
-        <view class="panel mx-[20rpx] mt-[16rpx]" :style="glassPanelStyle">
-            <view class="panel-header">
-                <view class="panel-title-wrap">
-                    <tn-icon name="order" size="30" :color="$theme.primaryColor" />
-                    <text class="panel-title">订单结构</text>
+        <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
+            <view class="section-header">
+                <view>
+                    <text class="section-title">业务推进</text>
+                    <text class="section-subtitle">
+                        总订单 {{ totalOrders }} 单，支付推进率
+                        {{ formatPercent(paidProgressRate) }}
+                    </text>
                 </view>
-                <text class="panel-subtitle">
-                    总订单 {{ totalOrders }} · 支付推进率 {{ formatPercent(paidProgressRate) }}
-                </text>
+            </view>
+
+            <view class="todo-grid">
+                <view
+                    v-for="item in todoCards"
+                    :key="item.label"
+                    class="todo-card"
+                    :style="getTodoCardStyle(item.color)"
+                >
+                    <text class="todo-label">{{ item.label }}</text>
+                    <text class="todo-value">{{ item.value }}</text>
+                    <text class="todo-hint">{{ item.hint }}</text>
+                </view>
             </view>
 
             <view v-if="statusItems.length === 0" class="panel-empty">暂无订单统计</view>
@@ -108,64 +195,65 @@
                             <view class="status-dot" :style="{ backgroundColor: item.color }" />
                             <text class="status-label">{{ item.label }}</text>
                         </view>
-                        <text class="status-meta">{{ item.count }} 单 · {{ formatPercent(item.percent) }}</text>
+                        <text class="status-meta"
+                            >{{ item.count }} 单 · {{ formatPercent(item.percent) }}</text
+                        >
                     </view>
                     <view class="status-track">
-                        <view class="status-fill" :style="getStatusFillStyle(item.color, item.percent)" />
+                        <view
+                            class="status-fill"
+                            :style="getStatusFillStyle(item.color, item.percent)"
+                        />
                     </view>
                 </view>
             </view>
         </view>
 
-        <view class="panel mx-[20rpx] mt-[16rpx]" :style="glassPanelStyle">
-            <view class="panel-header">
-                <view class="panel-title-wrap">
-                    <tn-icon name="tip" size="30" :color="$theme.primaryColor" />
-                    <text class="panel-title">经营洞察</text>
+        <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
+            <view class="section-header">
+                <view>
+                    <text class="section-title">收入趋势</text>
+                    <text class="section-subtitle">
+                        峰值 ¥{{ formatMoney(trendSummary.peak) }}，日均 ¥{{
+                            formatMoney(trendSummary.avg)
+                        }}
+                    </text>
                 </view>
-                <text class="panel-subtitle">系统根据当前数据自动生成</text>
+            </view>
+
+            <view v-if="trendList.length === 0" class="panel-empty">暂无趋势数据</view>
+            <view v-else class="trend-chart">
+                <view class="trend-bars">
+                    <view v-for="item in trendList" :key="item.date" class="trend-column">
+                        <view class="trend-track">
+                            <view class="trend-fill" :style="getTrendFillStyle(item.height)" />
+                        </view>
+                        <text class="trend-amount">{{ formatMoney(item.value) }}</text>
+                        <text class="trend-label">{{ item.label }}</text>
+                    </view>
+                </view>
+            </view>
+        </view>
+
+        <view class="section-card mx-[24rpx] mt-[16rpx] mb-[32rpx]" :style="panelStyle">
+            <view class="section-header">
+                <view>
+                    <text class="section-title">经营提醒</text>
+                    <text class="section-subtitle">结合经营结果和团队执行状态生成重点提示</text>
+                </view>
             </view>
 
             <view class="insight-list">
-                <view v-for="item in insights" :key="item.text" class="insight-item" :style="item.style">
-                    <view class="insight-level" :style="item.tagStyle">{{ item.levelText }}</view>
+                <view
+                    v-for="item in insights"
+                    :key="item.text"
+                    class="insight-item"
+                    :style="item.style"
+                >
+                    <view class="insight-tag" :style="item.tagStyle">{{ item.levelText }}</view>
                     <text class="insight-text">{{ item.text }}</text>
                 </view>
             </view>
-        </view>
-
-        <view class="panel mx-[20rpx] mt-[16rpx]" :style="glassPanelStyle">
-            <view class="panel-header">
-                <view class="panel-title-wrap">
-                    <tn-icon name="time" size="30" :color="$theme.primaryColor" />
-                    <text class="panel-title">今日经营快照</text>
-                </view>
-                <text class="panel-subtitle">重点关注当日订单与收款变化</text>
-            </view>
-
-            <view class="today-grid">
-                <view
-                    v-for="item in todayMetrics"
-                    :key="item.label"
-                    class="today-item"
-                    :style="todayItemStyle"
-                >
-                    <text class="today-label">{{ item.label }}</text>
-                    <text class="today-value">{{ item.value }}</text>
-                </view>
-            </view>
-        </view>
-
-        <view class="mx-[20rpx] mt-[20rpx]">
-            <tn-button
-                shape="round"
-                size="lg"
-                :plain="true"
-                :custom-style="backBtnStyle"
-                @click="handleBack"
-            >
-                返回
-            </tn-button>
         </view>
     </view>
 </template>
@@ -176,7 +264,8 @@ import { onShow } from '@dcloudio/uni-app'
 import {
     adminDashboardIncomeTrend,
     adminDashboardOrderStats,
-    adminDashboardOverview
+    adminDashboardOverview,
+    adminDashboardTeamOverview
 } from '@/api/adminDashboard'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
@@ -192,8 +281,40 @@ interface TrendItem {
     height: number
 }
 
+interface TeamOverviewData {
+    team: {
+        total_staff: number
+        active_staff: number
+        recommended_staff: number
+    }
+    capacity: {
+        month_label: string
+        month_total_slots: number
+        month_booked_slots: number
+        month_occupied_slots: number
+        booking_rate: number
+    }
+    todo: {
+        pending_confirm: number
+        pending_pay: number
+        in_service: number
+        waitlist_total: number
+        total: number
+    }
+    members: Array<{
+        id: number
+        name: string
+        avatar: string
+        category_name: string
+        is_recommend: number
+        recent_order_count: number
+        upcoming_booked_slots: number
+        follow_up_count: number
+        load_level: string
+    }>
+}
+
 interface InsightItem {
-    level: InsightLevel
     levelText: string
     text: string
     style: Record<string, string>
@@ -204,9 +325,33 @@ const appStore = useAppStore()
 const userStore = useUserStore()
 const $theme = useThemeStore()
 
+const createEmptyTeamOverview = (): TeamOverviewData => ({
+    team: {
+        total_staff: 0,
+        active_staff: 0,
+        recommended_staff: 0
+    },
+    capacity: {
+        month_label: '',
+        month_total_slots: 0,
+        month_booked_slots: 0,
+        month_occupied_slots: 0,
+        booking_rate: 0
+    },
+    todo: {
+        pending_confirm: 0,
+        pending_pay: 0,
+        in_service: 0,
+        waitlist_total: 0,
+        total: 0
+    },
+    members: []
+})
+
 const overview = ref<any>({})
 const orderStats = ref<any>({})
 const trendList = ref<TrendItem[]>([])
+const teamOverview = ref<TeamOverviewData>(createEmptyTeamOverview())
 const loading = ref(false)
 const lastUpdated = ref('')
 const rangeKey = ref<RangeKey>('7d')
@@ -230,7 +375,7 @@ const hexToRgb = (hexColor: string) => {
 
 const toRgba = (hexColor: string, alpha: number) => {
     const rgb = hexToRgb(hexColor)
-    if (!rgb) return `rgba(124,58,237,${alpha})`
+    if (!rgb) return `rgba(59, 130, 246, ${alpha})`
     return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`
 }
 
@@ -281,7 +426,7 @@ const getDateRange = (key: RangeKey) => {
 
 const activeRangeLabel = computed(() => {
     const current = rangeTabs.find((item) => item.key === rangeKey.value)
-    return current?.label || ''
+    return current?.label || '--'
 })
 
 const periodLabel = computed(() => {
@@ -290,66 +435,57 @@ const periodLabel = computed(() => {
 })
 
 const pageBgStyle = computed(() => ({
-    background: `linear-gradient(180deg, ${toRgba($theme.primaryColor, 0.1)} 0%, ${toRgba(
-        $theme.secondaryColor,
-        0.08
-    )} 42%, #F6F6F6 100%)`
+    backgroundColor: '#F6F7FB'
 }))
 
 const heroCardStyle = computed(() => ({
-    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor} 100%)`,
-    boxShadow: `0 12rpx 28rpx ${toRgba($theme.primaryColor, 0.28)}`
+    background: `linear-gradient(135deg, ${mixColor(
+        $theme.primaryColor,
+        '#FFFFFF',
+        0.9
+    )} 0%, ${mixColor($theme.secondaryColor, '#FFFFFF', 0.82)} 100%)`,
+    borderColor: toRgba($theme.primaryColor, 0.12),
+    boxShadow: `0 12rpx 32rpx ${toRgba($theme.primaryColor, 0.08)}`
 }))
 
 const heroRefreshStyle = computed(() => ({
-    backgroundColor: toRgba('#FFFFFF', 0.18),
-    borderColor: toRgba('#FFFFFF', 0.35)
+    backgroundColor: '#FFFFFF',
+    borderColor: toRgba($theme.primaryColor, 0.18)
+}))
+
+const heroChipStyle = computed(() => ({
+    backgroundColor: '#FFFFFF',
+    borderColor: toRgba($theme.primaryColor, 0.12)
+}))
+
+const panelStyle = computed(() => ({
+    backgroundColor: '#FFFFFF',
+    borderColor: toRgba($theme.primaryColor, 0.08),
+    boxShadow: `0 8rpx 24rpx ${toRgba($theme.primaryColor, 0.05)}`
 }))
 
 const activeTabStyle = computed(() => ({
-    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor} 100%)`,
+    backgroundColor: $theme.primaryColor,
     color: '#FFFFFF',
-    boxShadow: `0 6rpx 16rpx ${toRgba($theme.primaryColor, 0.22)}`
+    borderColor: $theme.primaryColor,
+    boxShadow: `0 8rpx 18rpx ${toRgba($theme.primaryColor, 0.18)}`
 }))
 
 const defaultTabStyle = computed(() => ({
     backgroundColor: '#FFFFFF',
-    color: '#333333',
-    borderColor: toRgba($theme.primaryColor, 0.2)
+    color: '#334155',
+    borderColor: toRgba($theme.primaryColor, 0.12)
 }))
 
-const glassPanelStyle = computed(() => ({
-    borderColor: toRgba('#FFFFFF', 0.45),
-    boxShadow: `0 8rpx 24rpx ${toRgba($theme.primaryColor, 0.12)}`
+const teamStatStyle = computed(() => ({
+    backgroundColor: mixColor($theme.primaryColor, '#FFFFFF', 0.95),
+    borderColor: toRgba($theme.primaryColor, 0.12)
 }))
 
-const todayItemStyle = computed(() => ({
-    backgroundColor: mixColor($theme.primaryColor, '#FFFFFF', 0.93),
-    borderColor: toRgba($theme.primaryColor, 0.2)
-}))
-
-const backBtnStyle = computed(() => ({
-    height: '72rpx',
-    borderRadius: '32rpx',
-    border: `2rpx solid ${$theme.primaryColor}`,
+const memberRecommendStyle = computed(() => ({
     color: $theme.primaryColor,
-    background: 'transparent'
+    backgroundColor: toRgba($theme.primaryColor, 0.1)
 }))
-
-const getKpiCardStyle = (color: string) => ({
-    borderColor: toRgba(color, 0.24),
-    boxShadow: `0 2rpx 10rpx ${toRgba(color, 0.12)}`
-})
-
-const getTrendFillStyle = (height: number) => ({
-    height: `${height}rpx`,
-    background: `linear-gradient(180deg, ${$theme.secondaryColor} 0%, ${$theme.primaryColor} 100%)`
-})
-
-const getStatusFillStyle = (color: string, percent: number) => ({
-    width: `${percent}%`,
-    backgroundColor: color
-})
 
 const totalOrders = computed(() => Number(orderStats.value?.total_orders || 0))
 
@@ -365,71 +501,154 @@ const paidProgressRate = computed(() => {
     return (paidProgressOrders.value / totalOrders.value) * 100
 })
 
-const kpiPalette = computed(() => [
-    $theme.primaryColor,
-    $theme.secondaryColor,
-    '#19BE6B',
-    '#FF9900',
-    $theme.ctaColor,
-    $theme.accentColor
+const capacityStats = computed(
+    () => teamOverview.value.capacity || createEmptyTeamOverview().capacity
+)
+const teamStats = computed(() => teamOverview.value.team || createEmptyTeamOverview().team)
+const todoStats = computed(() => teamOverview.value.todo || createEmptyTeamOverview().todo)
+
+const summaryChips = computed(() => [
+    {
+        label: '团队人数',
+        value: `${teamStats.value.total_staff || 0} 人`
+    },
+    {
+        label: '当月档期占用',
+        value: formatPercent(capacityStats.value.booking_rate)
+    },
+    {
+        label: '待处理事项',
+        value: `${todoStats.value.total || 0} 项`
+    }
 ])
 
-const kpiCards = computed(() => [
+const formatGrowthText = (value: any, prefix: string) => {
+    const amount = Number(value || 0)
+    if (amount > 0) return `${prefix} +${amount.toFixed(1)}%`
+    if (amount < 0) return `${prefix} ${amount.toFixed(1)}%`
+    return `${prefix} 持平`
+}
+
+const coreMetrics = computed(() => [
     {
         label: '总收入',
         value: `¥${formatMoney(overview.value?.total_income)}`,
-        hint: '本周期累计实收金额',
-        color: kpiPalette.value[0]
+        hint: formatGrowthText(overview.value?.income_growth, '较上期'),
+        color: $theme.primaryColor
     },
     {
         label: '净收入',
         value: `¥${formatMoney(overview.value?.net_income)}`,
-        hint: '已扣除退款后的净额',
-        color: kpiPalette.value[1]
+        hint: `退款 ¥${formatMoney(overview.value?.total_refund)}`,
+        color: $theme.secondaryColor
     },
     {
-        label: '总退款',
-        value: `¥${formatMoney(overview.value?.total_refund)}`,
-        hint: '本周期累计退款金额',
-        color: kpiPalette.value[2]
-    },
-    {
-        label: '订单总量',
+        label: '支付订单',
         value: `${Number(overview.value?.order_count || 0)} 单`,
-        hint: '本周期支付订单数',
-        color: kpiPalette.value[3]
+        hint: `支付推进率 ${formatPercent(paidProgressRate.value)}`,
+        color: '#19BE6B'
     },
     {
-        label: '平均客单价',
+        label: '客单价',
         value: `¥${formatMoney(overview.value?.avg_order_amount)}`,
-        hint: '每单平均收入水平',
-        color: kpiPalette.value[4]
-    },
-    {
-        label: '支付推进率',
-        value: formatPercent(paidProgressRate.value),
-        hint: '已支付、服务中、已完成与已评价占比',
-        color: kpiPalette.value[5]
+        hint: `今日收款 ¥${formatMoney(orderStats.value?.today?.amount)}`,
+        color: '#F97316'
     }
 ])
 
-const trendSummary = computed(() => {
-    const values = trendList.value.map((item) => item.value)
-    if (!values.length) return { peak: 0, avg: 0 }
-    const total = values.reduce((sum, value) => sum + value, 0)
-    return { peak: Math.max(...values), avg: total / values.length }
-})
+const todaySnapshots = computed(() => [
+    {
+        label: '今日新增订单',
+        value: `${Number(orderStats.value?.today?.orders || 0)} 单`
+    },
+    {
+        label: '今日已支付',
+        value: `${Number(orderStats.value?.today?.paid_orders || 0)} 单`
+    },
+    {
+        label: '候补跟进',
+        value: `${todoStats.value.waitlist_total || 0} 条`
+    }
+])
+
+const teamStatsCards = computed(() => [
+    {
+        label: '团队人数',
+        value: `${teamStats.value.total_staff || 0} 人`
+    },
+    {
+        label: '在岗可排班',
+        value: `${teamStats.value.active_staff || 0} 人`
+    },
+    {
+        label: '推荐成员',
+        value: `${teamStats.value.recommended_staff || 0} 人`
+    },
+    {
+        label: '候补跟进',
+        value: `${todoStats.value.waitlist_total || 0} 条`
+    },
+    {
+        label: '待确认订单',
+        value: `${todoStats.value.pending_confirm || 0} 单`
+    },
+    {
+        label: '服务中订单',
+        value: `${todoStats.value.in_service || 0} 单`
+    }
+])
+
+const memberCards = computed(() =>
+    (teamOverview.value.members || []).map((item) => ({
+        id: item.id,
+        name: item.name,
+        avatar: item.avatar || '/static/images/user/default_avatar.png',
+        categoryName: item.category_name,
+        isRecommend: item.is_recommend === 1,
+        recentOrderCount: item.recent_order_count || 0,
+        upcomingBookedSlots: item.upcoming_booked_slots || 0,
+        followUpCount: item.follow_up_count || 0,
+        loadLevel: item.load_level || '可分配'
+    }))
+)
+
+const todoCards = computed(() => [
+    {
+        label: '待确认',
+        value: `${todoStats.value.pending_confirm || 0}`,
+        hint: '优先推进确认',
+        color: '#3B82F6'
+    },
+    {
+        label: '待支付',
+        value: `${todoStats.value.pending_pay || 0}`,
+        hint: '重点跟进催付',
+        color: '#F59E0B'
+    },
+    {
+        label: '服务中',
+        value: `${todoStats.value.in_service || 0}`,
+        hint: '关注履约稳定',
+        color: '#14B8A6'
+    },
+    {
+        label: '候补跟进',
+        value: `${todoStats.value.waitlist_total || 0}`,
+        hint: '注意排班承接',
+        color: '#8B5CF6'
+    }
+])
 
 const statusColorMap: Record<string, string> = {
-    待确认: '#909399',
-    待支付: '#FF9900',
-    已支付: '#19BE6B',
-    服务中: '#3B82F6',
+    待确认: '#3B82F6',
+    待支付: '#F59E0B',
+    已支付: '#10B981',
+    服务中: '#14B8A6',
     已完成: '#64748B',
-    已评价: '#14B8A6',
-    已取消: '#FF2C3C',
+    已评价: '#0EA5E9',
+    已取消: '#EF4444',
     已暂停: '#F97316',
-    已退款: '#FF2C3C'
+    已退款: '#DC2626'
 }
 
 const statusItems = computed(() => {
@@ -441,88 +660,151 @@ const statusItems = computed(() => {
             label: item.label,
             count,
             percent: Number(percent.toFixed(1)),
-            color: statusColorMap[item.label] || '#909399'
+            color: statusColorMap[item.label] || '#94A3B8'
         }
     })
+
     return list.sort((a: any, b: any) => b.count - a.count)
+})
+
+const trendSummary = computed(() => {
+    const values = trendList.value.map((item) => item.value)
+    if (!values.length) return { peak: 0, avg: 0 }
+    const total = values.reduce((sum, value) => sum + value, 0)
+    return {
+        peak: Math.max(...values),
+        avg: total / values.length
+    }
 })
 
 const insights = computed<InsightItem[]>(() => {
     const result: InsightItem[] = []
 
     const totalIncome = Number(overview.value?.total_income || 0)
-    const netIncome = Number(overview.value?.net_income || 0)
     const totalRefund = Number(overview.value?.total_refund || 0)
     const refundRate = totalIncome > 0 ? (totalRefund / totalIncome) * 100 : 0
-    const pendingPay = statusItems.value.find((item: any) => item.label === '待支付')?.percent || 0
-    const cancelled = statusItems.value.find((item: any) => item.label === '已取消')?.percent || 0
+    const pendingPayRate = statusItems.value.find((item) => item.label === '待支付')?.percent || 0
+    const cancelledRate = statusItems.value.find((item) => item.label === '已取消')?.percent || 0
+    const waitlistTotal = Number(todoStats.value.waitlist_total || 0)
+    const bookingRate = Number(capacityStats.value.booking_rate || 0)
+    const activeStaff = Number(teamStats.value.active_staff || 0)
 
     const buildInsight = (level: InsightLevel, text: string): InsightItem => {
         const config = {
             good: {
-                levelText: '良好',
-                tagColor: '#19BE6B',
-                bgColor: toRgba('#19BE6B', 0.1)
+                levelText: '稳定',
+                color: '#10B981'
             },
             warning: {
                 levelText: '关注',
-                tagColor: '#FF9900',
-                bgColor: toRgba('#FF9900', 0.1)
+                color: '#F59E0B'
             },
             risk: {
                 levelText: '重点',
-                tagColor: '#FF2C3C',
-                bgColor: toRgba('#FF2C3C', 0.1)
+                color: '#EF4444'
             }
         }[level]
 
         return {
-            level,
             levelText: config.levelText,
             text,
             style: {
-                backgroundColor: config.bgColor,
-                borderColor: toRgba(config.tagColor, 0.2)
+                backgroundColor: toRgba(config.color, 0.08),
+                borderColor: toRgba(config.color, 0.14)
             },
             tagStyle: {
-                color: config.tagColor,
-                backgroundColor: toRgba(config.tagColor, 0.14)
+                color: config.color,
+                backgroundColor: toRgba(config.color, 0.12)
             }
         }
     }
 
-    if (totalIncome > 0 && netIncome <= 0) {
-        result.push(buildInsight('risk', '当前净收入已接近或低于 0，建议优先检查退款与支付回收情况。'))
+    if (activeStaff <= 0) {
+        result.push(buildInsight('risk', '当前暂无可排班成员，团队模块需要先补齐在岗服务人员。'))
+    }
+    if (bookingRate >= 85) {
+        result.push(
+            buildInsight(
+                'warning',
+                `本月档期占用已达 ${formatPercent(bookingRate)}，需提前协调可承接成员。`
+            )
+        )
+    }
+    if (waitlistTotal >= Math.max(3, activeStaff * 2) && activeStaff > 0) {
+        result.push(
+            buildInsight(
+                'risk',
+                `候补跟进 ${waitlistTotal} 条，当前团队承接压力较高，建议优先消化候补。`
+            )
+        )
     }
     if (refundRate > 5) {
         result.push(
-            buildInsight('warning', `退款率达到 ${formatPercent(refundRate)}，建议排查履约质量与客户沟通环节。`)
+            buildInsight(
+                'warning',
+                `退款率达到 ${formatPercent(refundRate)}，建议排查履约质量与沟通环节。`
+            )
         )
     }
-    if (pendingPay > 30) {
+    if (cancelledRate > 10) {
         result.push(
-            buildInsight('warning', `待支付订单占比 ${formatPercent(pendingPay)}，可增加催付与分期提醒策略。`)
+            buildInsight(
+                'risk',
+                `取消订单占比 ${formatPercent(cancelledRate)}，需要关注预约到确认阶段的流失。`
+            )
         )
     }
-    if (cancelled > 10) {
+    if (pendingPayRate > 20) {
         result.push(
-            buildInsight('risk', `取消订单占比 ${formatPercent(cancelled)}，建议跟进预约到履约的关键流失节点。`)
+            buildInsight(
+                'warning',
+                `待支付订单占比 ${formatPercent(pendingPayRate)}，可安排集中催付与提醒。`
+            )
         )
     }
     if (!result.length) {
-        result.push(buildInsight('good', '当前经营指标整体稳定，可持续关注订单转化效率与客户复购。'))
+        result.push(
+            buildInsight('good', '经营结果与团队执行整体平稳，可持续关注排班利用率和待支付转化。')
+        )
     }
 
     return result.slice(0, 3)
 })
 
-const todayMetrics = computed(() => {
-    const today = orderStats.value?.today || {}
-    return [
-        { label: '今日新增订单', value: `${Number(today.orders || 0)} 单` },
-        { label: '今日已支付订单', value: `${Number(today.paid_orders || 0)} 单` },
-        { label: '今日收款金额', value: `¥${formatMoney(today.amount)}` }
-    ]
+const getMetricCardStyle = (color: string) => ({
+    backgroundColor: mixColor(color, '#FFFFFF', 0.95),
+    borderColor: toRgba(color, 0.14)
+})
+
+const getTodoCardStyle = (color: string) => ({
+    backgroundColor: mixColor(color, '#FFFFFF', 0.95),
+    borderColor: toRgba(color, 0.14)
+})
+
+const getLoadTagStyle = (level: string) => {
+    const toneMap: Record<string, { color: string }> = {
+        高负载: { color: '#EF4444' },
+        平稳: { color: '#F59E0B' },
+        可分配: { color: '#10B981' }
+    }
+
+    const tone = toneMap[level] || toneMap['可分配']
+    return {
+        color: tone.color,
+        backgroundColor: toRgba(tone.color, 0.1)
+    }
+}
+
+const getTrendFillStyle = (height: number) => ({
+    height: `${height}rpx`,
+    background: `linear-gradient(180deg, ${toRgba($theme.secondaryColor, 0.9)} 0%, ${
+        $theme.primaryColor
+    } 100%)`
+})
+
+const getStatusFillStyle = (color: string, percent: number) => ({
+    width: `${Math.max(percent, 4)}%`,
+    backgroundColor: color
 })
 
 const buildTrend = (data: Record<string, number>) => {
@@ -532,7 +814,7 @@ const buildTrend = (data: Record<string, number>) => {
         return
     }
 
-    const maxPoints = 10
+    const maxPoints = 8
     let sampled = entries
     if (entries.length > maxPoints) {
         const step = Math.ceil(entries.length / maxPoints)
@@ -548,10 +830,26 @@ const buildTrend = (data: Record<string, number>) => {
             date,
             label: date.slice(5),
             value: amount,
-            height: Math.max(20, Math.round((amount / maxValue) * 150))
+            height: Math.max(26, Math.round((amount / maxValue) * 160))
         }
     })
 }
+
+const normalizeTeamOverview = (data: any): TeamOverviewData => ({
+    team: {
+        ...createEmptyTeamOverview().team,
+        ...(data?.team || {})
+    },
+    capacity: {
+        ...createEmptyTeamOverview().capacity,
+        ...(data?.capacity || {})
+    },
+    todo: {
+        ...createEmptyTeamOverview().todo,
+        ...(data?.todo || {})
+    },
+    members: Array.isArray(data?.members) ? data.members : []
+})
 
 const getAllowedUserIds = () => {
     const rawUserIds = String(appStore.config?.feature_switch?.admin_dashboard_user_ids || '')
@@ -571,19 +869,24 @@ const getAllowedUserIds = () => {
 const loadData = async () => {
     if (loading.value) return
     loading.value = true
+
     try {
         dateRange.value = getDateRange(rangeKey.value)
         const params = {
             start_date: dateRange.value.startDate,
             end_date: dateRange.value.endDate
         }
-        const [overviewRes, trendRes, orderRes] = await Promise.all([
+
+        const [overviewRes, trendRes, orderRes, teamRes] = await Promise.all([
             adminDashboardOverview(params),
             adminDashboardIncomeTrend({ type: 'daily', ...params }),
-            adminDashboardOrderStats(params)
+            adminDashboardOrderStats(params),
+            adminDashboardTeamOverview(params)
         ])
+
         overview.value = overviewRes || {}
         orderStats.value = orderRes || {}
+        teamOverview.value = normalizeTeamOverview(teamRes)
         buildTrend(trendRes?.data || {})
         lastUpdated.value = formatDateTime(new Date())
     } catch (e: any) {
@@ -601,13 +904,18 @@ const changeRange = (nextRange: RangeKey) => {
 }
 
 const ensureAccess = async () => {
-    if (!appStore.config?.feature_switch) await appStore.getConfig()
+    if (!appStore.config?.feature_switch) {
+        await appStore.getConfig()
+    }
 
     if (!userStore.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
         return false
     }
-    if (!userStore.userInfo?.id) await userStore.getUser()
+
+    if (!userStore.userInfo?.id) {
+        await userStore.getUser()
+    }
 
     if (appStore.config?.feature_switch?.admin_dashboard !== 1) {
         uni.showToast({ title: '管理员看板已关闭', icon: 'none' })
@@ -626,10 +934,6 @@ const ensureAccess = async () => {
     return true
 }
 
-const handleBack = () => {
-    uni.navigateBack()
-}
-
 onShow(async () => {
     if (!(await ensureAccess())) return
     await loadData()
@@ -638,21 +942,25 @@ onShow(async () => {
 
 <style lang="scss" scoped>
 .dashboard-page {
-    padding-bottom: 28rpx;
+    padding-bottom: 32rpx;
+}
+
+.hero-card,
+.section-card {
+    border-radius: 24rpx;
+    border-width: 2rpx;
+    border-style: solid;
 }
 
 .hero-card {
-    border-radius: 24rpx;
-    padding: 24rpx;
-    color: #ffffff;
-    transition: all 0.2s ease;
+    padding: 28rpx;
 }
 
 .hero-top {
     display: flex;
-    justify-content: space-between;
     align-items: flex-start;
-    gap: 12rpx;
+    justify-content: space-between;
+    gap: 20rpx;
 }
 
 .hero-main {
@@ -660,265 +968,381 @@ onShow(async () => {
     min-width: 0;
 }
 
-.hero-title-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
+.hero-eyebrow {
+    display: block;
+    font-size: 22rpx;
+    line-height: 1.4;
+    color: #64748b;
 }
 
 .hero-title {
-    font-size: 34rpx;
+    display: block;
+    margin-top: 8rpx;
+    font-size: 38rpx;
+    line-height: 1.35;
+    color: #0f172a;
     font-weight: 600;
-    line-height: 1.4;
 }
 
 .hero-period {
-    margin-top: 10rpx;
+    display: block;
+    margin-top: 12rpx;
     font-size: 24rpx;
     line-height: 1.5;
-    opacity: 0.92;
+    color: #475569;
 }
 
 .hero-refresh {
-    min-width: 116rpx;
-    height: 64rpx;
-    padding: 0 16rpx;
-    border-radius: 32rpx;
+    flex-shrink: 0;
+    min-width: 148rpx;
+    padding: 18rpx 24rpx;
+    border-radius: 999rpx;
     border-width: 2rpx;
     border-style: solid;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6rpx;
-    font-size: 24rpx;
+    text-align: center;
 }
 
-.hero-footer {
-    margin-top: 18rpx;
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
+.hero-refresh-text {
+    font-size: 24rpx;
+    color: #0f172a;
+    line-height: 1;
 }
 
-.hero-meta-item {
+.hero-meta {
     display: flex;
-    align-items: center;
-    gap: 8rpx;
-    font-size: 24rpx;
+    flex-wrap: wrap;
+    gap: 12rpx 24rpx;
+    margin-top: 24rpx;
+}
+
+.hero-meta-text {
+    font-size: 22rpx;
+    color: #64748b;
     line-height: 1.5;
-    opacity: 0.95;
 }
 
-.touch-target {
-    min-height: 88rpx;
+.hero-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+    margin-top: 24rpx;
+}
+
+.hero-chip {
+    min-width: 180rpx;
+    padding: 18rpx 20rpx;
+    border-radius: 20rpx;
+    border-width: 2rpx;
+    border-style: solid;
+}
+
+.hero-chip-label,
+.hero-chip-value {
+    display: block;
+}
+
+.hero-chip-label {
+    font-size: 22rpx;
+    color: #64748b;
+}
+
+.hero-chip-value {
+    margin-top: 8rpx;
+    font-size: 30rpx;
+    line-height: 1.3;
+    color: #0f172a;
+    font-weight: 600;
 }
 
 .range-tabs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12rpx;
+    display: flex;
+    gap: 16rpx;
 }
 
 .range-tab-item {
-    border-radius: 14rpx;
+    flex: 1;
+    padding: 20rpx 0;
+    border-radius: 18rpx;
     border-width: 2rpx;
     border-style: solid;
+    font-size: 26rpx;
+    line-height: 1;
+    text-align: center;
+}
+
+.section-card {
+    padding: 28rpx;
+}
+
+.section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.section-title,
+.section-subtitle {
+    display: block;
+}
+
+.section-title {
+    font-size: 30rpx;
+    line-height: 1.35;
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.section-subtitle {
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: #64748b;
+}
+
+.metric-grid,
+.team-grid,
+.todo-grid {
+    display: grid;
+    gap: 16rpx;
+    margin-top: 24rpx;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metric-card,
+.todo-card,
+.team-stat-item {
+    border-radius: 20rpx;
+    border-width: 2rpx;
+    border-style: solid;
+}
+
+.metric-card,
+.todo-card {
+    padding: 24rpx;
+}
+
+.team-stat-item {
+    padding: 22rpx;
+}
+
+.metric-label,
+.metric-value,
+.metric-hint,
+.todo-label,
+.todo-value,
+.todo-hint,
+.team-stat-label,
+.team-stat-value {
+    display: block;
+}
+
+.metric-label,
+.todo-label,
+.team-stat-label {
+    font-size: 22rpx;
+    color: #64748b;
+}
+
+.metric-value,
+.todo-value,
+.team-stat-value {
+    margin-top: 10rpx;
+    font-size: 34rpx;
+    line-height: 1.3;
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.metric-hint,
+.todo-hint {
+    margin-top: 10rpx;
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: #475569;
+}
+
+.snapshot-row {
+    display: flex;
+    gap: 16rpx;
+    margin-top: 20rpx;
+}
+
+.snapshot-item {
+    flex: 1;
+    padding-top: 20rpx;
+    border-top: 2rpx solid #eef2f7;
+}
+
+.snapshot-label,
+.snapshot-value {
+    display: block;
+}
+
+.snapshot-label {
+    font-size: 22rpx;
+    color: #64748b;
+}
+
+.snapshot-value {
+    margin-top: 8rpx;
     font-size: 28rpx;
-    font-weight: 500;
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.member-scroll {
+    margin-top: 24rpx;
+    white-space: nowrap;
+}
+
+.member-list {
+    display: inline-flex;
+    gap: 16rpx;
+    padding-right: 8rpx;
+}
+
+.member-card {
+    width: 420rpx;
+    padding: 24rpx;
+    border-radius: 22rpx;
+    background: #f8fafc;
+    border: 2rpx solid #edf2f7;
+    box-sizing: border-box;
+}
+
+.member-top {
     display: flex;
     align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
+    gap: 16rpx;
 }
 
-.kpi-grid {
+.member-avatar {
+    width: 84rpx;
+    height: 84rpx;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: #e5e7eb;
+}
+
+.member-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.member-name-row {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+}
+
+.member-name {
+    max-width: 160rpx;
+    font-size: 28rpx;
+    line-height: 1.35;
+    color: #0f172a;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.member-recommend,
+.member-load-tag {
+    padding: 6rpx 12rpx;
+    border-radius: 999rpx;
+    font-size: 20rpx;
+    line-height: 1.2;
+}
+
+.member-role {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+.member-data-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12rpx;
+    margin-top: 24rpx;
 }
 
-.kpi-card {
+.member-data-item {
+    padding: 16rpx 12rpx;
+    border-radius: 18rpx;
     background: #ffffff;
-    border-radius: 14rpx;
-    border: 2rpx solid transparent;
-    padding: 20rpx;
-    transition: all 0.2s ease;
 }
 
-.kpi-top {
+.member-data-label,
+.member-data-value {
+    display: block;
+    text-align: center;
+}
+
+.member-data-label {
+    font-size: 20rpx;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+.member-data-value {
+    margin-top: 8rpx;
+    font-size: 28rpx;
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.status-list {
+    margin-top: 24rpx;
+}
+
+.status-item + .status-item {
+    margin-top: 20rpx;
+}
+
+.status-title {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8rpx;
+    gap: 16rpx;
 }
 
-.kpi-dot {
+.status-label-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+}
+
+.status-dot {
     width: 14rpx;
     height: 14rpx;
     border-radius: 50%;
     flex-shrink: 0;
 }
 
-.kpi-label {
+.status-label,
+.status-meta {
     font-size: 24rpx;
-    color: #666666;
     line-height: 1.5;
-}
-
-.kpi-value {
-    margin-top: 8rpx;
-    font-size: 34rpx;
-    font-weight: 600;
-    color: #333333;
-    line-height: 1.4;
-}
-
-.kpi-hint {
-    margin-top: 6rpx;
-    font-size: 22rpx;
-    color: #999999;
-    line-height: 1.5;
-}
-
-.panel {
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(20rpx);
-    border: 2rpx solid rgba(255, 255, 255, 0.38);
-    border-radius: 24rpx;
-    padding: 20rpx;
-    transition: all 0.2s ease;
-}
-
-.panel-header {
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
-}
-
-.panel-title-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-}
-
-.panel-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333333;
-    line-height: 1.4;
-}
-
-.panel-subtitle {
-    font-size: 24rpx;
-    color: #666666;
-    line-height: 1.5;
-}
-
-.panel-empty {
-    padding: 40rpx 0;
-    text-align: center;
-    font-size: 24rpx;
-    color: #999999;
-}
-
-.trend-chart {
-    margin-top: 20rpx;
-}
-
-.trend-bars {
-    min-height: 240rpx;
-    display: flex;
-    align-items: flex-end;
-    gap: 10rpx;
-}
-
-.trend-column {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.trend-value {
-    font-size: 20rpx;
-    color: #999999;
-    margin-bottom: 8rpx;
-    transform: scale(0.92);
-    transform-origin: bottom center;
-    white-space: nowrap;
-}
-
-.trend-track {
-    width: 24rpx;
-    height: 156rpx;
-    border-radius: 999rpx;
-    background: #e5e7eb;
-    overflow: hidden;
-    display: flex;
-    align-items: flex-end;
-}
-
-.trend-fill {
-    width: 100%;
-    border-radius: 999rpx;
-}
-
-.trend-label {
-    margin-top: 8rpx;
-    font-size: 22rpx;
-    color: #666666;
-    line-height: 1.5;
-}
-
-.status-list {
-    margin-top: 16rpx;
-    display: flex;
-    flex-direction: column;
-    gap: 14rpx;
-}
-
-.status-item {
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-}
-
-.status-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8rpx;
-}
-
-.status-label-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-}
-
-.status-dot {
-    width: 12rpx;
-    height: 12rpx;
-    border-radius: 50%;
 }
 
 .status-label {
-    font-size: 26rpx;
-    color: #333333;
-    line-height: 1.5;
+    color: #1e293b;
 }
 
 .status-meta {
-    font-size: 24rpx;
-    color: #666666;
-    line-height: 1.5;
+    color: #64748b;
 }
 
 .status-track {
-    height: 12rpx;
+    width: 100%;
+    height: 14rpx;
+    margin-top: 10rpx;
+    background: #edf2f7;
     border-radius: 999rpx;
-    background: #e5e7eb;
     overflow: hidden;
 }
 
@@ -927,75 +1351,98 @@ onShow(async () => {
     border-radius: 999rpx;
 }
 
-.insight-list {
-    margin-top: 16rpx;
+.trend-chart {
+    margin-top: 24rpx;
+}
+
+.trend-bars {
     display: flex;
-    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
     gap: 12rpx;
 }
 
-.insight-item {
-    border: 2rpx solid transparent;
-    border-radius: 14rpx;
-    padding: 16rpx;
+.trend-column {
+    flex: 1;
     display: flex;
-    align-items: flex-start;
-    gap: 10rpx;
+    flex-direction: column;
+    align-items: center;
 }
 
-.insight-level {
-    min-width: 72rpx;
-    height: 38rpx;
-    border-radius: 999rpx;
+.trend-track {
+    width: 100%;
+    height: 180rpx;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
-    font-size: 22rpx;
-    font-weight: 500;
+    padding: 0 6rpx;
+    background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+    border-radius: 18rpx;
+}
+
+.trend-fill {
+    width: 100%;
+    border-radius: 14rpx 14rpx 0 0;
+}
+
+.trend-amount,
+.trend-label {
+    display: block;
+    text-align: center;
+}
+
+.trend-amount {
+    margin-top: 10rpx;
+    font-size: 20rpx;
+    color: #475569;
+    line-height: 1.4;
+}
+
+.trend-label {
+    margin-top: 6rpx;
+    font-size: 20rpx;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.insight-list {
+    margin-top: 24rpx;
+}
+
+.insight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16rpx;
+    padding: 22rpx 20rpx;
+    border-radius: 20rpx;
+    border-width: 2rpx;
+    border-style: solid;
+}
+
+.insight-item + .insight-item {
+    margin-top: 16rpx;
+}
+
+.insight-tag {
     flex-shrink: 0;
+    padding: 8rpx 16rpx;
+    border-radius: 999rpx;
+    font-size: 22rpx;
+    line-height: 1.2;
 }
 
 .insight-text {
     flex: 1;
-    min-width: 0;
     font-size: 24rpx;
-    color: #333333;
     line-height: 1.6;
+    color: #334155;
 }
 
-.today-grid {
-    margin-top: 16rpx;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10rpx;
-}
-
-.today-item {
-    border-radius: 14rpx;
-    border: 2rpx solid transparent;
-    padding: 16rpx 12rpx;
-    text-align: center;
-}
-
-.today-label {
-    font-size: 22rpx;
-    color: #666666;
+.panel-empty {
+    padding: 36rpx 0 12rpx;
+    font-size: 24rpx;
     line-height: 1.5;
-}
-
-.today-value {
-    margin-top: 8rpx;
-    font-size: 30rpx;
-    font-weight: 600;
-    color: #333333;
-    line-height: 1.4;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
+    color: #94a3b8;
+    text-align: center;
 }
 </style>

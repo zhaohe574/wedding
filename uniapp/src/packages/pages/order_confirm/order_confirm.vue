@@ -92,30 +92,59 @@
                 </view>
             </view>
 
-            <view class="section" v-if="hasItems">
-                <view class="section-title">优惠券</view>
-                <view class="coupon-row" @click="handleSelectCoupon">
-                    <view class="coupon-main">
-                        <text class="coupon-label">可用优惠券</text>
-                        <text class="coupon-desc">
-                            {{
-                                selectedCoupon
-                                    ? `${selectedCoupon.coupon_name}，优惠¥${formatPrice(selectedCoupon.discount_amount)}`
-                                    : availableCoupons.length
-                                    ? `共 ${availableCoupons.length} 张可用`
-                                    : '暂无可用优惠券'
-                            }}
-                        </text>
-                    </view>
-                    <view class="coupon-action">
-                        <text
-                            v-if="selectedCoupon"
-                            class="coupon-discount"
-                            :style="{ color: $theme.ctaColor }"
-                        >
-                            -¥{{ formatPrice(selectedCoupon.discount_amount) }}
-                        </text>
-                        <tn-icon name="right" size="24" color="#999999" />
+            <view class="section" v-if="availableAddons.length">
+                <view class="section-title">附加服务</view>
+                <view class="addon-tip">按当前人员可选，多选后会实时重算金额</view>
+                <view class="addon-list">
+                    <view
+                        v-for="addon in availableAddons"
+                        :key="addon.id"
+                        class="addon-card"
+                        :class="{ 'addon-card--active': isAddonSelected(addon.id) }"
+                        :style="
+                            isAddonSelected(addon.id)
+                                ? {
+                                      borderColor: $theme.ctaColor,
+                                      boxShadow: `0 10rpx 26rpx ${hexToRgba($theme.ctaColor, 0.14)}`
+                                  }
+                                : {}
+                        "
+                        @click="toggleAddon(addon)"
+                    >
+                        <view class="addon-card__main">
+                            <view class="addon-card__title-row">
+                                <text class="addon-card__title">{{ addon.name }}</text>
+                                <view
+                                    class="addon-card__check"
+                                    :style="
+                                        isAddonSelected(addon.id)
+                                            ? { backgroundColor: $theme.ctaColor, borderColor: $theme.ctaColor }
+                                            : {}
+                                    "
+                                >
+                                    <tn-icon
+                                        v-if="isAddonSelected(addon.id)"
+                                        name="check"
+                                        size="20"
+                                        color="#FFFFFF"
+                                    />
+                                </view>
+                            </view>
+                            <text v-if="addon.description" class="addon-card__desc">
+                                {{ addon.description }}
+                            </text>
+                        </view>
+                        <view class="addon-card__price">
+                            <text class="addon-card__price-current">
+                                +¥{{ formatPrice(addon.price) }}
+                            </text>
+                            <text
+                                v-if="Number(addon.original_price || 0) > Number(addon.price || 0)"
+                                class="addon-card__price-original"
+                            >
+                                ¥{{ formatPrice(addon.original_price) }}
+                            </text>
+                        </view>
                     </view>
                 </view>
             </view>
@@ -123,12 +152,12 @@
             <view class="section" v-if="hasItems">
                 <view class="section-title">费用明细</view>
                 <view class="price-row">
-                    <text>商品金额</text>
-                    <text>¥{{ formatPrice(preview.total_amount) }}</text>
+                    <text>主服务金额</text>
+                    <text>¥{{ formatPrice(serviceAmount) }}</text>
                 </view>
-                <view class="price-row" v-if="preview.coupon_amount > 0">
-                    <text>优惠金额</text>
-                    <text class="text-discount">-¥{{ formatPrice(preview.coupon_amount) }}</text>
+                <view class="price-row" v-if="preview.addon_amount > 0">
+                    <text>附加服务金额</text>
+                    <text>+¥{{ formatPrice(preview.addon_amount) }}</text>
                 </view>
                 <view class="price-row total">
                     <text>应付金额</text>
@@ -166,7 +195,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { previewOrder, createOrder, getAvailableCoupons } from '@/api/order'
+import { previewOrder, createOrder } from '@/api/order'
+import { getStaffAddons } from '@/api/staff'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { requestSubscribeByScene } from '@/utils/subscribe'
@@ -177,8 +207,8 @@ const userStore = useUserStore()
 const loading = ref(false)
 const submitting = ref(false)
 const initialized = ref(false)
-const selectedCouponId = ref(0)
-const availableCoupons = ref<any[]>([])
+const availableAddons = ref<any[]>([])
+const selectedAddonIds = ref<number[]>([])
 const selection = reactive({
     staff_id: 0,
     package_id: 0,
@@ -187,8 +217,9 @@ const selection = reactive({
 
 const preview = ref<any>({
     items: [],
+    service_amount: 0,
+    addon_amount: 0,
     total_amount: 0,
-    coupon_amount: 0,
     pay_amount: 0,
     deposit_amount: 0,
     balance_amount: 0
@@ -206,11 +237,23 @@ const hasItems = computed(
 )
 const selectedItem = computed(() => (hasItems.value ? preview.value.items[0] || null : null))
 const canSubmit = computed(() => hasItems.value && !loading.value && !submitting.value)
-const selectedCoupon = computed(
-    () => availableCoupons.value.find((item: any) => Number(item.user_coupon_id) === selectedCouponId.value) || null
-)
+const serviceAmount = computed(() => {
+    const amount = Number(preview.value.service_amount ?? -1)
+    if (amount >= 0) {
+        return amount
+    }
+    return Math.max(0, Number(preview.value.total_amount || 0) - Number(preview.value.addon_amount || 0))
+})
 
 const formatPrice = (value: any) => Number(value || 0).toFixed(2)
+const hexToRgba = (hex: string, alpha: number) => {
+    const normalized = (hex || '').replace('#', '')
+    if (normalized.length !== 6) return `rgba(0, 0, 0, ${alpha})`
+    const r = Number.parseInt(normalized.slice(0, 2), 16)
+    const g = Number.parseInt(normalized.slice(2, 4), 16)
+    const b = Number.parseInt(normalized.slice(4, 6), 16)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
 
 const initContact = async () => {
     await userStore.getUser()
@@ -224,32 +267,39 @@ const initContact = async () => {
 }
 
 const buildSelectionParams = (extra: Record<string, any> = {}) => {
-    return {
+    const params: Record<string, any> = {
         staff_id: selection.staff_id,
         package_id: selection.package_id,
         date: selection.date,
         ...extra
     }
+
+    if (selectedAddonIds.value.length) {
+        params.addon_ids = [...selectedAddonIds.value]
+    }
+
+    return params
 }
 
-const getScheduleCalendarUrl = () => {
+const getStaffDetailUrl = () => {
     if (!selection.staff_id) {
         return ''
     }
 
-    let url = `/packages/pages/schedule_calendar/schedule_calendar?staff_id=${selection.staff_id}`
+    const params = [`id=${selection.staff_id}`]
     if (selection.date) {
-        url += `&date=${selection.date}`
+        params.push(`date=${selection.date}`)
     }
     if (selection.package_id) {
-        url += `&package_id=${selection.package_id}`
+        params.push(`package_id=${selection.package_id}`)
     }
-    return url
+    params.push('open_date_picker=1')
+    return `/packages/pages/staff_detail/staff_detail?${params.join('&')}`
 }
 
 const handlePreviewError = (message: string) => {
     uni.showToast({ title: message, icon: 'none' })
-    const url = getScheduleCalendarUrl()
+    const url = getStaffDetailUrl()
     setTimeout(() => {
         if (url) {
             uni.redirectTo({ url })
@@ -262,20 +312,16 @@ const handlePreviewError = (message: string) => {
 const fetchPreview = async () => {
     loading.value = true
     try {
-        const data = await previewOrder(
-            buildSelectionParams({
-                user_coupon_id: selectedCouponId.value || undefined
-            })
-        )
+        const data = await previewOrder(buildSelectionParams())
         preview.value = {
             items: data?.items || [],
+            service_amount: data?.service_amount || 0,
+            addon_amount: data?.addon_amount || 0,
             total_amount: data?.total_amount || 0,
-            coupon_amount: data?.coupon_amount || 0,
             pay_amount: data?.pay_amount || 0,
             deposit_amount: data?.deposit_amount || 0,
             balance_amount: data?.balance_amount || 0
         }
-        selectedCouponId.value = Number(data?.user_coupon_id || selectedCouponId.value || 0)
         if (!preview.value.items.length) {
             handlePreviewError('暂无可结算的服务')
         }
@@ -287,46 +333,35 @@ const fetchPreview = async () => {
     }
 }
 
-const fetchAvailableCoupons = async () => {
+const fetchAddons = async () => {
     try {
-        const res = await getAvailableCoupons(buildSelectionParams())
-        availableCoupons.value = res?.lists || []
-        if (
-            selectedCouponId.value > 0 &&
-            !availableCoupons.value.some((item: any) => Number(item.user_coupon_id) === selectedCouponId.value)
-        ) {
-            selectedCouponId.value = 0
-            await fetchPreview()
-        }
+        const res = await getStaffAddons({ staff_id: selection.staff_id })
+        availableAddons.value = Array.isArray(res) ? res : []
+        const validAddonIds = new Set(availableAddons.value.map((item: any) => Number(item.id)))
+        selectedAddonIds.value = selectedAddonIds.value.filter((id) => validAddonIds.has(Number(id)))
     } catch (e) {
-        availableCoupons.value = []
+        availableAddons.value = []
+        selectedAddonIds.value = []
     }
 }
 
-const handleSelectCoupon = () => {
-    if (!hasItems.value || loading.value) return
+const isAddonSelected = (addonId: number) => {
+    return selectedAddonIds.value.includes(Number(addonId))
+}
 
-    const itemList = ['不使用优惠券', ...availableCoupons.value.map((item: any) => {
-        const discount = Number(item.discount_amount || 0).toFixed(2)
-        return `${item.coupon_name} - 优惠¥${discount}`
-    })]
+const toggleAddon = async (addon: any) => {
+    if (loading.value) return
 
-    uni.showActionSheet({
-        itemList,
-        success: async ({ tapIndex }) => {
-            const nextCouponId =
-                tapIndex === 0
-                    ? 0
-                    : Number(availableCoupons.value[tapIndex - 1]?.user_coupon_id || 0)
+    const addonId = Number(addon?.id || 0)
+    if (!addonId) return
 
-            if (nextCouponId === selectedCouponId.value) {
-                return
-            }
+    if (isAddonSelected(addonId)) {
+        selectedAddonIds.value = selectedAddonIds.value.filter((id) => id !== addonId)
+    } else {
+        selectedAddonIds.value = [...selectedAddonIds.value, addonId]
+    }
 
-            selectedCouponId.value = nextCouponId
-            await fetchPreview()
-        }
-    })
+    await fetchPreview()
 }
 
 const isValidMobile = (mobile: string) => /^1[3-9]\d{9}$/.test(mobile)
@@ -357,8 +392,7 @@ const handleSubmit = async () => {
         const params: any = {
             ...buildSelectionParams(),
             contact_name: form.contact_name.trim(),
-            contact_mobile: form.contact_mobile.trim(),
-            user_coupon_id: selectedCouponId.value || undefined
+            contact_mobile: form.contact_mobile.trim()
         }
         if (form.service_address.trim()) params.service_address = form.service_address.trim()
         if (form.remark.trim()) params.remark = form.remark.trim()
@@ -381,8 +415,8 @@ const handleSubmit = async () => {
 
 const initPage = async () => {
     await initContact()
+    await fetchAddons()
     await fetchPreview()
-    await fetchAvailableCoupons()
     initialized.value = true
 }
 
@@ -401,7 +435,7 @@ onLoad((options: any) => {
 
 onShow(() => {
     if (initialized.value) {
-        Promise.all([fetchPreview(), fetchAvailableCoupons()])
+        fetchPreview()
     }
 })
 </script>
@@ -460,42 +494,93 @@ onShow(() => {
     border: 1rpx solid #f0f0f0;
 }
 
-.coupon-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20rpx;
-    padding: 8rpx 0;
+.addon-tip {
+    margin-bottom: 18rpx;
+    font-size: 24rpx;
+    color: #8c8c8c;
 }
 
-.coupon-main {
+.addon-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+}
+
+.addon-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+    padding: 22rpx;
+    border-radius: 20rpx;
+    border: 2rpx solid #edf0f3;
+    background: linear-gradient(180deg, #ffffff 0%, #fafbfd 100%);
+    transition: all 0.2s ease;
+}
+
+.addon-card--active {
+    background: #fffaf5;
+}
+
+.addon-card__main {
     flex: 1;
     min-width: 0;
 }
 
-.coupon-label {
-    display: block;
+.addon-card__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.addon-card__title {
+    flex: 1;
+    min-width: 0;
     font-size: 28rpx;
     font-weight: 600;
     color: #333333;
 }
 
-.coupon-desc {
+.addon-card__desc {
     display: block;
     margin-top: 10rpx;
     font-size: 24rpx;
-    color: #999999;
+    line-height: 1.6;
+    color: #7a7a7a;
 }
 
-.coupon-action {
+.addon-card__check {
+    width: 36rpx;
+    height: 36rpx;
+    border-radius: 50%;
+    border: 2rpx solid #d7dce2;
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #ffffff;
+}
+
+.addon-card__price {
+    min-width: 140rpx;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
     gap: 8rpx;
 }
 
-.coupon-discount {
-    font-size: 26rpx;
-    font-weight: 600;
+.addon-card__price-current {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: #d85c61;
+}
+
+.addon-card__price-original {
+    font-size: 22rpx;
+    color: #a0a0a0;
+    text-decoration: line-through;
 }
 
 .service-header {

@@ -10,6 +10,7 @@ namespace app\adminapi\logic\staff;
 use app\common\logic\BaseLogic;
 use app\common\model\auth\Admin;
 use app\common\model\auth\AdminRole;
+use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffCertificate;
@@ -187,6 +188,8 @@ class StaffLogic extends BaseLogic
             }
             // 未传 mobile 时用原始完整号，不能用 $staff->mobile（getter 已脱敏）
             $rawMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
+            $oldCategoryId = (int)$staff->category_id;
+            $newCategoryId = (int)($params['category_id'] ?? $oldCategoryId);
 
             // 更新工作人员信息
             $staff->save([
@@ -205,6 +208,11 @@ class StaffLogic extends BaseLogic
                 'status' => $params['status'] ?? $staff->status,
                 'update_time' => time(),
             ]);
+
+            if ($newCategoryId > 0 && $newCategoryId !== $oldCategoryId) {
+                self::syncOwnedPackageCategory($staff->id, $newCategoryId);
+                self::syncOwnedAddonCategory($staff->id, $newCategoryId);
+            }
 
             if (!empty($staff->admin_id)) {
                 $adminUpdate = [];
@@ -443,7 +451,7 @@ class StaffLogic extends BaseLogic
             }
 
             $updateData = [];
-            foreach (['price', 'original_price', 'name', 'description', 'content', 'image', 'sort', 'is_show', 'is_recommend', 'category_id'] as $field) {
+            foreach (['price', 'original_price', 'name', 'description', 'image', 'sort', 'is_show', 'is_recommend'] as $field) {
                 if (array_key_exists($field, $data)) {
                     $updateData[$field] = $data[$field];
                 }
@@ -483,6 +491,96 @@ class StaffLogic extends BaseLogic
             }
 
             return PackageLogic::delete(['id' => $packageId]);
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 获取员工附加服务配置
+     * @param int $staffId
+     * @return array
+     */
+    public static function getAddonConfig(int $staffId): array
+    {
+        return self::getStaffOwnedAddons($staffId);
+    }
+
+    /**
+     * @notes 创建员工专属附加服务
+     * @param int $staffId
+     * @param array $addonData
+     * @return bool
+     */
+    public static function createStaffAddon(int $staffId, array $addonData): bool
+    {
+        try {
+            $staff = Staff::find($staffId);
+            if (!$staff) {
+                self::setError('员工不存在');
+                return false;
+            }
+
+            ServiceAddon::create(self::buildAddonPayload($staffId, $addonData));
+            return true;
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 编辑员工专属附加服务
+     * @param int $staffId
+     * @param int $addonId
+     * @param array $addonData
+     * @return bool
+     */
+    public static function updateStaffAddon(int $staffId, int $addonId, array $addonData): bool
+    {
+        try {
+            $addon = ServiceAddon::find($addonId);
+            if (!$addon) {
+                self::setError('附加服务不存在');
+                return false;
+            }
+
+            if ((int)$addon->staff_id !== $staffId) {
+                self::setError('只能编辑自己的附加服务');
+                return false;
+            }
+
+            $addon->save(self::buildAddonPayload($staffId, $addonData, false));
+            return true;
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 删除员工专属附加服务
+     * @param int $staffId
+     * @param int $addonId
+     * @return bool
+     */
+    public static function deleteStaffAddon(int $staffId, int $addonId): bool
+    {
+        try {
+            $addon = ServiceAddon::find($addonId);
+            if (!$addon) {
+                self::setError('附加服务不存在');
+                return false;
+            }
+
+            if ((int)$addon->staff_id !== $staffId) {
+                self::setError('只能删除自己的附加服务');
+                return false;
+            }
+
+            $addon->delete();
+            return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());
             return false;
@@ -634,12 +732,108 @@ class StaffLogic extends BaseLogic
     {
         return ServicePackage::where('staff_id', $staffId)
             ->whereNull('delete_time')
-            ->field('id, staff_id, category_id, name, price, original_price, content, description, image, sort, is_show, is_recommend')
+            ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show, is_recommend')
             ->append(['category_name', 'staff_name'])
             ->order('sort', 'desc')
             ->order('id', 'desc')
             ->select()
             ->toArray();
+    }
+
+    /**
+     * @notes 获取人员直属附加服务
+     * @param int $staffId
+     * @return array
+     */
+    protected static function getStaffOwnedAddons(int $staffId): array
+    {
+        return ServiceAddon::where('staff_id', $staffId)
+            ->whereNull('delete_time')
+            ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show')
+            ->append(['category_name', 'staff_name'])
+            ->order('sort', 'desc')
+            ->order('id', 'desc')
+            ->select()
+            ->toArray();
+    }
+
+    /**
+     * @notes 同步人员名下套餐分类
+     * @param int $staffId
+     * @param int $categoryId
+     * @return void
+     */
+    protected static function syncOwnedPackageCategory(int $staffId, int $categoryId): void
+    {
+        if ($staffId <= 0 || $categoryId <= 0) {
+            return;
+        }
+
+        ServicePackage::where('staff_id', $staffId)
+            ->whereNull('delete_time')
+            ->update([
+                'category_id' => $categoryId,
+                'update_time' => time(),
+            ]);
+    }
+
+    /**
+     * @notes 同步人员名下附加服务分类
+     * @param int $staffId
+     * @param int $categoryId
+     * @return void
+     */
+    protected static function syncOwnedAddonCategory(int $staffId, int $categoryId): void
+    {
+        if ($staffId <= 0 || $categoryId <= 0) {
+            return;
+        }
+
+        ServiceAddon::where('staff_id', $staffId)
+            ->whereNull('delete_time')
+            ->update([
+                'category_id' => $categoryId,
+                'update_time' => time(),
+            ]);
+    }
+
+    /**
+     * @notes 构造附加服务写入数据
+     * @param int $staffId
+     * @param array $params
+     * @param bool $withCreateFields
+     * @return array
+     */
+    protected static function buildAddonPayload(int $staffId, array $params, bool $withCreateFields = true): array
+    {
+        $staff = Staff::find($staffId);
+        if (!$staff) {
+            throw new \RuntimeException('员工不存在');
+        }
+
+        $categoryId = (int)($staff->category_id ?? 0);
+        if ($categoryId <= 0) {
+            throw new \RuntimeException('请先为员工设置服务分类');
+        }
+
+        $payload = [
+            'staff_id' => $staffId,
+            'category_id' => $categoryId,
+            'name' => trim((string)($params['name'] ?? '')),
+            'price' => round((float)($params['price'] ?? 0), 2),
+            'original_price' => round((float)($params['original_price'] ?? 0), 2),
+            'description' => (string)($params['description'] ?? ''),
+            'image' => (string)($params['image'] ?? ''),
+            'sort' => (int)($params['sort'] ?? 0),
+            'is_show' => (int)($params['is_show'] ?? 1),
+            'update_time' => time(),
+        ];
+
+        if ($withCreateFields) {
+            $payload['create_time'] = time();
+        }
+
+        return $payload;
     }
 
     /**

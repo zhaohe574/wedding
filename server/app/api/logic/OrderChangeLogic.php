@@ -48,7 +48,8 @@ class OrderChangeLogic extends BaseLogic
         $lists = $query->with([
             'order' => function ($q) {
                 $q->field('id, order_sn, service_date, order_status');
-            }
+            },
+            'addonItems',
         ])
             ->order('id', 'desc')
             ->page($page, $pageSize)
@@ -58,6 +59,7 @@ class OrderChangeLogic extends BaseLogic
         foreach ($lists as &$item) {
             $item['change_type_desc'] = (new OrderChange(['change_type' => $item['change_type']]))->change_type_desc;
             $item['change_status_desc'] = (new OrderChange(['change_status' => $item['change_status']]))->change_status_desc;
+            $item['addon_action_desc'] = (new OrderChange(['addon_action' => $item['addon_action'] ?? 0]))->addon_action_desc;
         }
 
         return [
@@ -82,6 +84,7 @@ class OrderChangeLogic extends BaseLogic
                 $q->field('id, order_sn, user_id, service_date, order_status, pay_amount');
             },
             'orderItem',
+            'addonItems',
             'oldStaff' => function ($q) {
                 $q->field('id, name, avatar');
             },
@@ -100,6 +103,7 @@ class OrderChangeLogic extends BaseLogic
         $data = $change->toArray();
         $data['change_type_desc'] = $change->change_type_desc;
         $data['change_status_desc'] = $change->change_status_desc;
+        $data['addon_action_desc'] = $change->addon_action_desc;
 
         return $data;
     }
@@ -180,15 +184,11 @@ class OrderChangeLogic extends BaseLogic
         string $reason = '',
         array $attachImages = []
     ): array {
-        [$success, $message, $change] = OrderChange::applyStaffChange(
-            $userId, $orderId, $orderItemId, $newStaffId, $reason, $attachImages
-        );
-
         return [
-            'success' => $success,
-            'message' => $message,
-            'change_id' => $change ? $change->id : 0,
-            'price_diff' => $change ? $change->price_diff : 0,
+            'success' => false,
+            'message' => self::getDeprecatedMessage(),
+            'change_id' => 0,
+            'price_diff' => 0,
         ];
     }
 
@@ -223,6 +223,48 @@ class OrderChangeLogic extends BaseLogic
     }
 
     /**
+     * @notes 申请附加服务变更
+     * @param int $userId
+     * @param int $orderId
+     * @param int $orderItemId
+     * @param int $addonAction
+     * @param array $addonIds
+     * @param string $reason
+     * @param array $attachImages
+     * @return array
+     */
+    public static function applyAddonChange(
+        int $userId,
+        int $orderId,
+        int $orderItemId,
+        int $addonAction,
+        array $addonIds,
+        string $reason = '',
+        array $attachImages = []
+    ): array {
+        [$success, $message, $change] = OrderChange::applyAddonChange(
+            $userId,
+            $orderId,
+            $orderItemId,
+            $addonAction,
+            $addonIds,
+            $reason,
+            $attachImages
+        );
+
+        if ($success && $change) {
+            OrderNotificationService::notifyStaffOnAddonChangeApplied((int) $change->id);
+        }
+
+        return [
+            'success' => $success,
+            'message' => $message,
+            'change_id' => $change ? $change->id : 0,
+            'price_diff' => $change ? $change->price_diff : 0,
+        ];
+    }
+
+    /**
      * @notes 取消变更申请
      * @param int $changeId
      * @param int $userId
@@ -230,9 +272,16 @@ class OrderChangeLogic extends BaseLogic
      */
     public static function cancelChange(int $changeId, int $userId): array
     {
+        $change = OrderChange::find($changeId);
         [$success, $message] = OrderChange::cancelChange($changeId, $userId);
         if ($success) {
-            OrderNotificationService::notifyStaffOnDateChangeCancelled($changeId);
+            $changeType = (int)($change->change_type ?? 0);
+            if ($changeType === OrderChange::TYPE_DATE) {
+                OrderNotificationService::notifyStaffOnDateChangeCancelled($changeId);
+            }
+            if ($changeType === OrderChange::TYPE_ADDON) {
+                OrderNotificationService::notifyStaffOnAddonChangeCancelled($changeId);
+            }
         }
         return ['success' => $success, 'message' => $message];
     }
@@ -253,18 +302,10 @@ class OrderChangeLogic extends BaseLogic
         string $toUserMobile,
         string $reason = ''
     ): array {
-        [$success, $message, $transfer] = OrderTransfer::applyTransfer(
-            $userId, $orderId, $toUserName, $toUserMobile, $reason
-        );
-
-        if ($success && $transfer) {
-            OrderNotificationService::notifyStaffOnTransferApplied((int) $transfer->id);
-        }
-
         return [
-            'success' => $success,
-            'message' => $message,
-            'transfer_id' => $transfer ? $transfer->id : 0,
+            'success' => false,
+            'message' => self::getDeprecatedMessage(),
+            'transfer_id' => 0,
         ];
     }
 
@@ -276,11 +317,7 @@ class OrderChangeLogic extends BaseLogic
      */
     public static function cancelTransfer(int $transferId, int $userId): array
     {
-        [$success, $message] = OrderTransfer::cancelTransfer($transferId, $userId);
-        if ($success) {
-            OrderNotificationService::notifyStaffOnTransferCancelled($transferId);
-        }
-        return ['success' => $success, 'message' => $message];
+        return ['success' => false, 'message' => self::getDeprecatedMessage()];
     }
 
     /**
@@ -292,11 +329,7 @@ class OrderChangeLogic extends BaseLogic
      */
     public static function acceptTransfer(int $transferId, string $mobile, string $code): array
     {
-        [$success, $message] = OrderTransfer::acceptTransfer($transferId, $mobile, $code);
-        if ($success) {
-            OrderNotificationService::notifyStaffOnTransferCompleted($transferId);
-        }
-        return ['success' => $success, 'message' => $message];
+        return ['success' => false, 'message' => self::getDeprecatedMessage()];
     }
 
     /**
@@ -307,27 +340,7 @@ class OrderChangeLogic extends BaseLogic
      */
     public static function getTransferDetail(int $transferId, int $userId): ?array
     {
-        $transfer = OrderTransfer::with([
-            'order' => function ($q) {
-                $q->field('id, order_sn, service_date, order_status, pay_amount');
-            },
-        ])->where('id', $transferId)
-            ->where(function ($query) use ($userId) {
-                $query->where('from_user_id', $userId)->whereOr('to_user_id', $userId);
-            })
-            ->find();
-
-        if (!$transfer) {
-            return null;
-        }
-
-        $data = $transfer->toArray();
-        $data['transfer_status_desc'] = $transfer->transfer_status_desc;
-        $data['is_from_user'] = $transfer->from_user_id == $userId;
-        // 隐藏验证码
-        unset($data['accept_code']);
-
-        return $data;
+        return null;
     }
 
     /**
@@ -338,47 +351,12 @@ class OrderChangeLogic extends BaseLogic
      */
     public static function getUserTransfers(int $userId, array $params): array
     {
-        $page = intval($params['page'] ?? 1);
-        $pageSize = intval($params['page_size'] ?? 15);
-        $type = $params['type'] ?? 'all'; // all, from, to
-
-        $query = OrderTransfer::where(function ($q) use ($userId, $type) {
-            if ($type == 'from') {
-                $q->where('from_user_id', $userId);
-            } elseif ($type == 'to') {
-                $q->where('to_user_id', $userId);
-            } else {
-                $q->where('from_user_id', $userId)->whereOr('to_user_id', $userId);
-            }
-        });
-
-        if (!empty($params['transfer_status'])) {
-            $query->where('transfer_status', $params['transfer_status']);
-        }
-
-        $total = (clone $query)->count();
-        $lists = $query->with([
-            'order' => function ($q) {
-                $q->field('id, order_sn, service_date, order_status');
-            }
-        ])
-            ->order('id', 'desc')
-            ->page($page, $pageSize)
-            ->select()
-            ->toArray();
-
-        foreach ($lists as &$item) {
-            $item['transfer_status_desc'] = (new OrderTransfer(['transfer_status' => $item['transfer_status']]))->transfer_status_desc;
-            $item['is_from_user'] = $item['from_user_id'] == $userId;
-            unset($item['accept_code']);
-        }
-
         return [
-            'lists' => $lists,
-            'total' => $total,
-            'page' => $page,
-            'page_size' => $pageSize,
-            'last_page' => ceil($total / $pageSize),
+            'lists' => [],
+            'total' => 0,
+            'page' => intval($params['page'] ?? 1),
+            'page_size' => intval($params['page_size'] ?? 15),
+            'last_page' => 0,
         ];
     }
 
@@ -532,5 +510,14 @@ class OrderChangeLogic extends BaseLogic
         return [
             ['value' => 0, 'label' => '全天'],
         ];
+    }
+
+    /**
+     * @notes 已下线功能提示
+     * @return string
+     */
+    protected static function getDeprecatedMessage(): string
+    {
+        return '功能已下线，请取消订单后重新下单';
     }
 }

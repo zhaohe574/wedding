@@ -59,6 +59,20 @@ class AdminDashboardController extends BaseApiController
     }
 
     /**
+     * @notes 团队总览
+     */
+    public function teamOverview()
+    {
+        if (!$this->checkAccess()) {
+            return $this->fail(AdminDashboardLogic::getError());
+        }
+
+        $params = $this->request->get();
+        $result = AdminDashboardLogic::teamOverview($params);
+        return $this->success('获取成功', $result);
+    }
+
+    /**
      * @notes 校验访问权限
      */
     protected function checkAccess(): bool

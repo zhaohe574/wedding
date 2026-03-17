@@ -2,7 +2,7 @@
     <admin-page-shell
         class="order-change-lists"
         title="订单变更"
-        description="管理改期、换人、加项等订单变更流程。"
+        description="管理改期、加项、附加服务变更等订单变更流程。"
     >
         <template #search>
             <search-panel>
@@ -27,8 +27,8 @@
                     <el-select v-model="queryParams.change_type" placeholder="选择类型" clearable>
                         <el-option label="全部" value="" />
                         <el-option label="改期" :value="1" />
-                        <el-option label="换人" :value="2" />
                         <el-option label="加项" :value="3" />
+                        <el-option label="附加服务变更" :value="4" />
                     </el-select>
                 </el-form-item>
                 <el-form-item class="w-[180px]" label="变更状态">
@@ -115,6 +115,19 @@
                             <span class="text-gray-400 ml-1">({{ row.add_package_name }})</span>
                             <span class="text-red-500 ml-2">+{{ row.add_price }}元</span>
                         </div>
+                        <div v-else-if="row.change_type === 4">
+                            <span class="text-primary">{{ row.addon_action_desc || '附加服务变更' }}</span>
+                            <span class="text-gray-400 ml-1">
+                                {{ getAddonNames(row.addon_items) }}
+                            </span>
+                            <span
+                                v-if="Number(row.price_diff || 0) !== 0"
+                                :class="Number(row.price_diff || 0) > 0 ? 'text-red-500' : 'text-green-500'"
+                                class="ml-2"
+                            >
+                                {{ Number(row.price_diff || 0) > 0 ? '+' : '' }}{{ row.price_diff }}元
+                            </span>
+                        </div>
                     </template>
                 </el-table-column>
                 <el-table-column label="状态" width="100">
@@ -129,22 +142,22 @@
                 <el-table-column label="操作" width="180" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
-                        <el-button 
-                            v-if="row.change_status === 0" 
-                            type="success" 
-                            link 
+                        <el-button
+                            v-if="row.change_status === 0 && row.change_type !== 2"
+                            type="success"
+                            link
                             @click="handleAudit(row, true)"
                         >通过</el-button>
-                        <el-button 
-                            v-if="row.change_status === 0" 
-                            type="danger" 
-                            link 
+                        <el-button
+                            v-if="row.change_status === 0 && row.change_type !== 2"
+                            type="danger"
+                            link
                             @click="handleAudit(row, false)"
                         >拒绝</el-button>
-                        <el-button 
-                            v-if="row.change_status === 1" 
-                            type="warning" 
-                            link 
+                        <el-button
+                            v-if="row.change_status === 1 && row.change_type !== 2"
+                            type="warning"
+                            link
                             @click="handleExecute(row)"
                         >执行</el-button>
                     </template>
@@ -159,6 +172,15 @@
         <!-- 详情弹窗 -->
         <el-dialog v-model="detailVisible" title="变更详情" width="700px">
             <div v-if="currentChange" class="change-detail">
+                <el-alert
+                    v-if="currentChange.change_type === 2"
+                    class="mb-4"
+                    title="换人功能已下线"
+                    description="该记录为历史换人申请，仅保留只读展示，新需求请改为取消订单后重新下单。"
+                    type="warning"
+                    :closable="false"
+                    show-icon
+                />
                 <el-descriptions :column="2" border>
                     <el-descriptions-item label="变更单号">{{ currentChange.change_sn }}</el-descriptions-item>
                     <el-descriptions-item label="变更类型">
@@ -203,6 +225,33 @@
                         <el-descriptions-item label="服务日期">{{ currentChange.add_service_date }}</el-descriptions-item>
                         <el-descriptions-item label="增加金额">
                             <span class="text-red-500">+¥{{ currentChange.add_price }}</span>
+                        </el-descriptions-item>
+                    </template>
+
+                    <template v-if="currentChange.change_type === 4">
+                        <el-descriptions-item label="变更动作">
+                            {{ currentChange.addon_action_desc || '-' }}
+                        </el-descriptions-item>
+                        <el-descriptions-item label="净差额">
+                            <span :class="currentChange.price_diff > 0 ? 'text-red-500' : 'text-green-500'">
+                                {{ currentChange.price_diff > 0 ? '+' : '' }}{{ currentChange.price_diff }}元
+                            </span>
+                        </el-descriptions-item>
+                        <el-descriptions-item label="附加服务清单" :span="2">
+                            <div
+                                v-if="currentChange.addon_items && currentChange.addon_items.length"
+                                class="flex flex-wrap gap-2"
+                            >
+                                <el-tag
+                                    v-for="addon in currentChange.addon_items"
+                                    :key="addon.id"
+                                    size="small"
+                                    type="warning"
+                                >
+                                    {{ addon.addon_name }} {{ currentChange.addon_action === 2 ? '-' : '+' }}¥{{ addon.subtotal || addon.price }}
+                                </el-tag>
+                            </div>
+                            <span v-else>-</span>
                         </el-descriptions-item>
                     </template>
                     
@@ -354,9 +403,17 @@ const getTypeTagType = (type: number) => {
     const types: Record<number, StatusTagType> = {
         1: 'primary',
         2: 'warning',
-        3: 'success'
+        3: 'success',
+        4: 'danger'
     }
     return types[type] || 'info'
+}
+
+const getAddonNames = (items: any[] = []) => {
+    return (items || [])
+        .map((item: any) => item.addon_name)
+        .filter(Boolean)
+        .join('、')
 }
 
 const getStatusTagType = (status: number): StatusTagType => {

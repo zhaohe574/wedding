@@ -80,22 +80,7 @@ class OrderChangeController extends BaseApiController
      */
     public function applyStaffChange()
     {
-        $params = (new OrderChangeValidate())->post()->goCheck('staffChange');
-        $result = OrderChangeLogic::applyStaffChange(
-            $this->userId,
-            $params['order_id'],
-            $params['order_item_id'],
-            $params['new_staff_id'],
-            $params['reason'] ?? '',
-            $params['attach_images'] ?? []
-        );
-        if ($result['success']) {
-            return $this->success($result['message'], [
-                'change_id' => $result['change_id'],
-                'price_diff' => $result['price_diff'] ?? 0,
-            ]);
-        }
-        return $this->fail($result['message']);
+        return $this->fail('功能已下线，请取消订单后重新下单');
     }
 
     /**
@@ -123,6 +108,31 @@ class OrderChangeController extends BaseApiController
     }
 
     /**
+     * @notes 申请附加服务变更
+     * @return \think\response\Json
+     */
+    public function applyAddonChange()
+    {
+        $params = (new OrderChangeValidate())->post()->goCheck('addonChange');
+        $result = OrderChangeLogic::applyAddonChange(
+            $this->userId,
+            (int)$params['order_id'],
+            (int)$params['order_item_id'],
+            (int)$params['addon_action'],
+            $params['addon_ids'] ?? [],
+            $params['reason'] ?? '',
+            $params['attach_images'] ?? []
+        );
+        if ($result['success']) {
+            return $this->success($result['message'], [
+                'change_id' => $result['change_id'],
+                'price_diff' => $result['price_diff'] ?? 0,
+            ]);
+        }
+        return $this->fail($result['message']);
+    }
+
+    /**
      * @notes 取消变更申请
      * @return \think\response\Json
      */
@@ -142,18 +152,7 @@ class OrderChangeController extends BaseApiController
      */
     public function applyTransfer()
     {
-        $params = (new OrderChangeValidate())->post()->goCheck('transfer');
-        $result = OrderChangeLogic::applyTransfer(
-            $this->userId,
-            $params['order_id'],
-            $params['to_user_name'],
-            $params['to_user_mobile'],
-            $params['reason'] ?? ''
-        );
-        if ($result['success']) {
-            return $this->success($result['message'], ['transfer_id' => $result['transfer_id']]);
-        }
-        return $this->fail($result['message']);
+        return $this->fail('功能已下线，请取消订单后重新下单');
     }
 
     /**
@@ -162,12 +161,7 @@ class OrderChangeController extends BaseApiController
      */
     public function cancelTransfer()
     {
-        $params = (new OrderChangeValidate())->post()->goCheck('transferDetail');
-        $result = OrderChangeLogic::cancelTransfer($params['id'], $this->userId);
-        if ($result['success']) {
-            return $this->success($result['message']);
-        }
-        return $this->fail($result['message']);
+        return $this->fail('功能已下线，请取消订单后重新下单');
     }
 
     /**
@@ -176,16 +170,7 @@ class OrderChangeController extends BaseApiController
      */
     public function acceptTransfer()
     {
-        $params = (new OrderChangeValidate())->post()->goCheck('acceptTransfer');
-        $result = OrderChangeLogic::acceptTransfer(
-            $params['id'],
-            $params['mobile'],
-            $params['code']
-        );
-        if ($result['success']) {
-            return $this->success($result['message']);
-        }
-        return $this->fail($result['message']);
+        return $this->fail('功能已下线，请取消订单后重新下单');
     }
 
     /**
@@ -194,12 +179,7 @@ class OrderChangeController extends BaseApiController
      */
     public function transferDetail()
     {
-        $params = (new OrderChangeValidate())->goCheck('transferDetail');
-        $result = OrderChangeLogic::getTransferDetail($params['id'], $this->userId);
-        if ($result === null) {
-            return $this->fail('转让记录不存在');
-        }
-        return $this->data($result);
+        return $this->fail('功能已下线，请取消订单后重新下单');
     }
 
     /**
@@ -208,9 +188,7 @@ class OrderChangeController extends BaseApiController
      */
     public function transferLists()
     {
-        $params = $this->request->get();
-        $result = OrderChangeLogic::getUserTransfers($this->userId, $params);
-        return $this->data($result);
+        return $this->fail('功能已下线，请取消订单后重新下单');
     }
 
     /**

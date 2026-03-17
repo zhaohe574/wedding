@@ -65,7 +65,6 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="套餐名称" prop="name" min-width="180" />
-                <el-table-column label="服务分类" prop="category_name" min-width="120" />
                 <el-table-column label="价格" width="180">
                     <template #default="{ row }">
                         <span class="text-red-500 font-bold">¥{{ row.price }}</span>
@@ -137,15 +136,6 @@
                 <el-form-item label="套餐名称" prop="name">
                     <el-input v-model="editForm.name" placeholder="请输入套餐名称" maxlength="100" />
                 </el-form-item>
-                <el-form-item label="服务分类" prop="category_id">
-                    <el-cascader
-                        v-model="editForm.category_id"
-                        :options="optionsData.categories"
-                        :props="{ value: 'id', label: 'name', checkStrictly: true, emitPath: false }"
-                        placeholder="请选择服务分类"
-                        class="w-full"
-                    />
-                </el-form-item>
                 <div class="grid grid-cols-2 gap-4">
                     <el-form-item label="套餐价格" prop="price">
                         <el-input-number v-model="editForm.price" :min="0" :precision="2" class="w-full" />
@@ -156,28 +146,6 @@
                 </div>
                 <el-form-item label="封面图" prop="image">
                     <material-picker v-model="editForm.image" :limit="1" />
-                </el-form-item>
-                <el-form-item label="套餐内容" prop="content">
-                    <div class="w-full">
-                        <el-tag
-                            v-for="(item, index) in editForm.content"
-                            :key="`${index}-${item}`"
-                            closable
-                            class="mr-2 mb-2"
-                            @close="editForm.content.splice(index, 1)"
-                        >
-                            {{ item }}
-                        </el-tag>
-                        <el-input
-                            v-if="showContentInput"
-                            v-model="contentInputValue"
-                            size="small"
-                            class="w-[220px]"
-                            @keyup.enter="handleAddContent"
-                            @blur="handleAddContent"
-                        />
-                        <el-button v-else size="small" @click="showContentInput = true">+ 添加内容</el-button>
-                    </div>
                 </el-form-item>
                 <el-form-item label="描述" prop="description">
                     <el-input
@@ -238,18 +206,14 @@ const queryParams = reactive({
 })
 
 const showEditDialog = ref(false)
-const showContentInput = ref(false)
-const contentInputValue = ref('')
 const editFormRef = shallowRef<FormInstance>()
 
 const createDefaultForm = () => ({
     id: '',
     staff_id: 0,
     name: '',
-    category_id: '',
     price: 0,
     original_price: 0,
-    content: [] as string[],
     image: '',
     description: '',
     sort: 0,
@@ -262,7 +226,6 @@ const editForm = reactive(createDefaultForm())
 const editRules = reactive({
     staff_id: [{ required: true, message: '请选择所属人员', trigger: 'change' }],
     name: [{ required: true, message: '请输入套餐名称', trigger: 'blur' }],
-    category_id: [{ required: true, message: '请选择服务分类', trigger: 'change' }],
     price: [{ required: true, message: '请输入套餐价格', trigger: 'blur' }]
 })
 
@@ -285,17 +248,6 @@ const { optionsData } = useDictOptions<{
 
 const resetEditForm = () => {
     Object.assign(editForm, createDefaultForm())
-    showContentInput.value = false
-    contentInputValue.value = ''
-}
-
-const handleAddContent = () => {
-    const value = contentInputValue.value.trim()
-    if (value) {
-        editForm.content.push(value)
-    }
-    contentInputValue.value = ''
-    showContentInput.value = false
 }
 
 const handleAdd = () => {
@@ -309,10 +261,8 @@ const handleEdit = (row: any) => {
         id: row.id,
         staff_id: row.staff_id || 0,
         name: row.name || '',
-        category_id: row.category_id || '',
         price: Number(row.price || 0),
         original_price: Number(row.original_price || 0),
-        content: Array.isArray(row.content) ? row.content : [],
         image: row.image || '',
         description: row.description || '',
         sort: Number(row.sort || 0),
@@ -325,8 +275,7 @@ const handleEdit = (row: any) => {
 const handleSave = async () => {
     await editFormRef.value?.validate()
     const payload = {
-        ...editForm,
-        content: editForm.content.filter((item) => item)
+        ...editForm
     }
     if (editForm.id) {
         await packageEdit(payload)
@@ -343,9 +292,9 @@ const handleDelete = async (id: number) => {
     getLists()
 }
 
-const handleChangeStatus = async (is_show: number, id: number) => {
+const handleChangeStatus = async (is_show: string | number | boolean, id: number) => {
     try {
-        await packageChangeStatus({ id, is_show })
+        await packageChangeStatus({ id, is_show: Number(is_show) })
     } finally {
         getLists()
     }

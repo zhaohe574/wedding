@@ -26,8 +26,8 @@ class PackageLists extends BaseAdminDataLists implements ListsSearchInterface, L
     public function setSearch(): array
     {
         return [
-            '=' => ['category_id', 'is_show', 'is_recommend', 'staff_id'],
-            '%like%' => ['name'],
+            '=' => ['p.is_show', 'p.is_recommend', 'p.staff_id'],
+            '%like%' => ['p.name'],
         ];
     }
 
@@ -40,12 +40,21 @@ class PackageLists extends BaseAdminDataLists implements ListsSearchInterface, L
      */
     public function lists(): array
     {
-        $list = ServicePackage::where($this->searchWhere)
-            ->where('staff_id', '>', 0)
-            ->whereNull('delete_time')
+        $query = ServicePackage::alias('p')
+            ->leftJoin('staff s', 's.id = p.staff_id')
+            ->where($this->searchWhere)
+            ->where('p.staff_id', '>', 0)
+            ->whereNull('p.delete_time');
+
+        if (!empty($this->params['category_id'])) {
+            $query->where('s.category_id', (int)$this->params['category_id']);
+        }
+
+        $list = $query
+            ->field('p.*')
             ->with(['staff'])
             ->append(['category_name', 'is_show_desc', 'is_recommend_desc', 'staff_name'])
-            ->order($this->sortOrder ?: ['sort' => 'desc', 'id' => 'desc'])
+            ->order($this->sortOrder ?: ['p.sort' => 'desc', 'p.id' => 'desc'])
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();
@@ -59,10 +68,17 @@ class PackageLists extends BaseAdminDataLists implements ListsSearchInterface, L
      */
     public function count(): int
     {
-        return ServicePackage::where($this->searchWhere)
-            ->where('staff_id', '>', 0)
-            ->whereNull('delete_time')
-            ->count();
+        $query = ServicePackage::alias('p')
+            ->leftJoin('staff s', 's.id = p.staff_id')
+            ->where($this->searchWhere)
+            ->where('p.staff_id', '>', 0)
+            ->whereNull('p.delete_time');
+
+        if (!empty($this->params['category_id'])) {
+            $query->where('s.category_id', (int)$this->params['category_id']);
+        }
+
+        return $query->count();
     }
 
     /**
@@ -74,7 +90,6 @@ class PackageLists extends BaseAdminDataLists implements ListsSearchInterface, L
         return [
             'id' => 'ID',
             'name' => '套餐名称',
-            'category_name' => '所属分类',
             'staff_name' => '所属员工',
             'price' => '价格',
             'original_price' => '原价',

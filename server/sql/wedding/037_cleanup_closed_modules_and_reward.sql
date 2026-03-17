@@ -27,26 +27,6 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 -- ----------------------------
--- 订单优惠券关联字段
--- ----------------------------
-SET @add_order_user_coupon_id = (
-    SELECT IF(
-        EXISTS(
-            SELECT 1
-            FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = 'la_order'
-              AND COLUMN_NAME = 'user_coupon_id'
-        ),
-        'SELECT 1',
-        'ALTER TABLE `la_order` ADD COLUMN `user_coupon_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT ''使用的用户优惠券ID'' AFTER `coupon_id`'
-    )
-);
-PREPARE stmt FROM @add_order_user_coupon_id;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
--- ----------------------------
 -- 评价奖励发放幂等字段
 -- ----------------------------
 SET @add_review_reward_grant_time = (

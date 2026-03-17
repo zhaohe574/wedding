@@ -89,6 +89,16 @@
                         </view>
                         <text class="meta-quantity">数量 x{{ item.quantity || 1 }}</text>
                     </view>
+                    <view v-if="item.addons && item.addons.length" class="addon-box">
+                        <view class="addon-header">
+                            <text class="addon-title">附加服务</text>
+                            <text class="addon-total">+¥{{ formatAmount(getItemAddonTotal(item)) }}</text>
+                        </view>
+                        <view v-for="addon in item.addons" :key="`${item.id}-${addon.id}`" class="addon-row">
+                            <text class="addon-name">{{ addon.addon_name || addon.name }}</text>
+                            <text class="addon-price">+¥{{ formatAmount(addon.subtotal || addon.price) }}</text>
+                        </view>
+                    </view>
                 </view>
             </view>
             <view v-else class="empty-tip">暂无服务项目</view>
@@ -132,22 +142,22 @@
             </view>
             <view class="amount-list">
                 <view class="amount-row">
-                    <text class="amount-label">商品总额</text>
-                    <text class="amount-value">¥{{ order.total_amount || 0 }}</text>
+                    <text class="amount-label">主服务金额</text>
+                    <text class="amount-value">¥{{ formatAmount(orderServiceAmount) }}</text>
+                </view>
+                <view class="amount-row" v-if="Number(order.addon_amount || 0) > 0">
+                    <text class="amount-label">附加服务金额</text>
+                    <text class="amount-value">+¥{{ formatAmount(order.addon_amount) }}</text>
                 </view>
                 <view class="amount-row" v-if="order.discount_amount > 0">
                     <text class="amount-label">优惠金额</text>
-                    <text class="amount-value discount">-¥{{ order.discount_amount }}</text>
-                </view>
-                <view class="amount-row" v-if="order.coupon_amount > 0">
-                    <text class="amount-label">优惠券</text>
-                    <text class="amount-value discount">-¥{{ order.coupon_amount }}</text>
+                    <text class="amount-value discount">-¥{{ formatAmount(order.discount_amount) }}</text>
                 </view>
                 <view class="amount-row total">
                     <text class="amount-label">实付金额</text>
                     <text class="amount-value total-value" :style="{ color: $theme.ctaColor }">
                         <text class="price-symbol">¥</text>
-                        <text class="price-number">{{ order.pay_amount || 0 }}</text>
+                        <text class="price-number">{{ formatAmount(order.pay_amount || 0) }}</text>
                     </text>
                 </view>
             </view>
@@ -221,6 +231,16 @@ const statusInfo = computed(() => {
     return statusConfig[key] || statusConfig.pending_pay
 })
 
+const orderServiceAmount = computed(() => {
+    const serviceAmount = Number(order.value?.service_amount ?? -1)
+    if (serviceAmount >= 0) {
+        return serviceAmount
+    }
+    const total = Number(order.value?.total_amount || 0)
+    const addonAmount = Number(order.value?.addon_amount || 0)
+    return Math.max(0, total - addonAmount)
+})
+
 // 是否可确认
 const canConfirm = computed(() => {
     const hasPending = (order.value?.items || []).some(
@@ -228,6 +248,16 @@ const canConfirm = computed(() => {
     )
     return Number(order.value?.order_status ?? -1) === 0 && hasPending
 })
+
+const formatAmount = (amount: number | string) => {
+    return Number(amount || 0).toFixed(2)
+}
+
+const getItemAddonTotal = (item: any) => {
+    return (item?.addons || []).reduce((sum: number, addon: any) => {
+        return sum + Number(addon?.subtotal || addon?.price || 0)
+    }, 0)
+}
 
 // 获取订单详情
 const fetchDetail = async (id: number) => {
@@ -447,6 +477,51 @@ onLoad(async (options: any) => {
 .meta-quantity {
     font-size: 24rpx;
     color: #999999;
+}
+
+.addon-box {
+    margin-top: 18rpx;
+    padding: 18rpx;
+    border-radius: 16rpx;
+    background: rgba(14, 165, 233, 0.06);
+}
+
+.addon-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10rpx;
+}
+
+.addon-title {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.addon-total {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #0ea5e9;
+}
+
+.addon-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10rpx;
+    font-size: 24rpx;
+    color: #475569;
+}
+
+.addon-row:not(:first-of-type) {
+    border-top: 1rpx solid rgba(14, 165, 233, 0.08);
+    margin-top: 10rpx;
+}
+
+.addon-price {
+    color: #0ea5e9;
+    font-weight: 600;
 }
 
 /* 信息列表 */

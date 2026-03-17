@@ -36,10 +36,6 @@
             <template v-if="item.name == 'quick-entry' && isComponentEnabled(item)">
                 <w-quick-entry :content="item.content" :styles="item.styles" />
             </template>
-            <!-- 优惠券领取组件 -->
-            <template v-if="item.name == 'coupon-receive' && isComponentEnabled(item)">
-                <w-coupon-receive :content="item.content" :styles="item.styles" />
-            </template>
             <!-- 数据统计卡片组件 -->
             <template v-if="item.name == 'data-stats' && isComponentEnabled(item)">
                 <w-data-stats :content="item.content" :styles="item.styles" />

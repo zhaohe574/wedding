@@ -41,7 +41,6 @@ UPDATE `la_system_menu` SET `perms` = REPLACE(`perms`, 'crm.customer/', 'growth.
 UPDATE `la_system_menu` SET `perms` = REPLACE(`perms`, 'crm.sales_advisor/', 'growth.advisor/') WHERE `perms` LIKE 'crm.sales_advisor/%';
 UPDATE `la_system_menu` SET `perms` = REPLACE(`perms`, 'crm.customer_loss_warning/', 'growth.lossWarning/') WHERE `perms` LIKE 'crm.customer_loss_warning/%';
 UPDATE `la_system_menu` SET `perms` = REPLACE(`perms`, 'crm.followRecord/', 'growth.followRecord/') WHERE `perms` LIKE 'crm.followRecord/%';
-UPDATE `la_system_menu` SET `perms` = REPLACE(`perms`, 'coupon.coupon/', 'growth.campaign/') WHERE `perms` LIKE 'coupon.coupon/%';
 UPDATE `la_system_menu` SET `perms` = REPLACE(`perms`, 'dynamic.dynamic/', 'growth.dynamic/') WHERE `perms` LIKE 'dynamic.dynamic/%';
 UPDATE `la_system_menu` SET `perms` = REPLACE(`perms`, 'dynamic.dynamicComment/', 'growth.dynamicComment/') WHERE `perms` LIKE 'dynamic.dynamicComment/%';
 UPDATE `la_system_menu` SET `perms` = REPLACE(`perms`, 'review.review/', 'growth.review/') WHERE `perms` LIKE 'review.review/%';

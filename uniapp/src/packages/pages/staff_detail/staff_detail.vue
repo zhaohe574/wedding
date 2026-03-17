@@ -224,6 +224,36 @@
             </view>
         </view>
 
+        <view class="booking-date-section">
+            <view
+                class="schedule-date-card"
+                :class="{ 'schedule-date-card--empty': !presetDate }"
+                @click="openDatePicker"
+            >
+                <view class="schedule-date-main">
+                    <view class="schedule-date-label-row">
+                        <tn-icon name="calendar" size="28" :color="$theme.primaryColor" />
+                        <text class="schedule-date-label">预约日期</text>
+                    </view>
+                    <text
+                        class="schedule-date-value"
+                        :class="{ 'schedule-date-value--empty': !presetDate }"
+                    >
+                        {{ presetDate || '请选择预约日期' }}
+                    </text>
+                    <text class="schedule-date-tip">
+                        {{ presetDate ? '点击修改预约日期' : '选择后将直接用于下单' }}
+                    </text>
+                </view>
+                <tn-icon
+                    class="schedule-date-arrow"
+                    name="right"
+                    size="28"
+                    :color="presetDate ? $theme.primaryColor : '#98A2B3'"
+                />
+            </view>
+        </view>
+
         <!-- 标签页切换 -->
         <view class="tabs-section">
             <view class="tabs-wrapper">
@@ -280,18 +310,44 @@
                     <view class="block-title">服务套餐</view>
                     <view class="packages-list">
                         <view
-                            v-for="pkg in staffInfo.packages"
-                            :key="pkg.id"
+                            v-for="pkg in displayPackages"
+                            :key="getPackageId(pkg)"
                             class="package-item"
+                            :class="{ active: selectedPackageId === getPackageId(pkg) }"
+                            @click="handleSelectPackage(pkg)"
                         >
                             <view class="package-info">
-                                <text class="package-name">{{ pkg.name }}</text>
+                                <view class="package-name-row">
+                                    <text class="package-name">{{ getPackageName(pkg) }}</text>
+                                    <view class="package-badges">
+                                        <text
+                                            v-if="isRecommendedPackage(pkg)"
+                                            class="package-recommend-tag"
+                                        >
+                                            推荐
+                                        </text>
+                                        <text
+                                            v-if="selectedPackageId === getPackageId(pkg)"
+                                            class="package-selected-tag"
+                                        >
+                                            已选
+                                        </text>
+                                    </view>
+                                </view>
+                                <text v-if="getPackageDescription(pkg)" class="package-desc">
+                                    {{ getPackageDescription(pkg) }}
+                                </text>
                             </view>
                             <view class="package-price-group">
-                                <text v-if="pkg.original_price" class="package-original-price">
-                                    ¥{{ pkg.original_price }}
+                                <text
+                                    v-if="getPackageOriginalPrice(pkg) !== null"
+                                    class="package-original-price"
+                                >
+                                    ¥{{ formatPackagePrice(getPackageOriginalPrice(pkg)) }}
                                 </text>
-                                <text class="package-price">¥{{ pkg.price }}</text>
+                                <text class="package-price">
+                                    ¥{{ formatPackagePrice(getPackagePrice(pkg)) }}
+                                </text>
                             </view>
                         </view>
                     </view>
@@ -541,6 +597,60 @@
                 <text class="book-text">立即预约</text>
             </view>
         </view>
+
+        <u-popup
+            v-model="showDatePopup"
+            mode="bottom"
+            :mask="true"
+            :mask-close-able="true"
+            :safe-area-inset-bottom="true"
+            :border-radius="24"
+        >
+            <view class="picker-container">
+                <view class="picker-header">
+                    <text class="picker-action" @click="closeDatePicker">取消</text>
+                    <text class="picker-title">选择预约日期</text>
+                    <text class="picker-action picker-action-primary" @click="confirmDatePicker">
+                        确定
+                    </text>
+                </view>
+                <view class="date-picker-content">
+                    <picker-view
+                        class="date-picker-view"
+                        :value="datePickerValue"
+                        @change="handleDatePickerChange"
+                    >
+                        <picker-view-column>
+                            <view
+                                v-for="year in datePickerYears"
+                                :key="`year-${year}`"
+                                class="picker-item"
+                            >
+                                {{ year }}年
+                            </view>
+                        </picker-view-column>
+                        <picker-view-column>
+                            <view
+                                v-for="month in datePickerMonths"
+                                :key="`month-${month}`"
+                                class="picker-item"
+                            >
+                                {{ month }}月
+                            </view>
+                        </picker-view-column>
+                        <picker-view-column>
+                            <view
+                                v-for="day in datePickerDays"
+                                :key="`day-${day}`"
+                                class="picker-item"
+                            >
+                                {{ day }}日
+                            </view>
+                        </picker-view-column>
+                    </picker-view>
+                </view>
+            </view>
+        </u-popup>
     </view>
 
     <!-- 加载状态 -->
@@ -563,6 +673,10 @@ const staffInfo = ref<any>(null)
 const currentTab = ref('intro')
 const isExpanded = ref(false) // 轮播图展开状态
 const presetDate = ref('') // 预设日期
+const showDatePopup = ref(false)
+const datePickerValue = ref([0, 0, 0])
+const openDatePickerRequested = ref(false)
+const selectedPackageId = ref<number>(0)
 const appStore = useAppStore()
 
 type StaffDetailStyleMode = 'classic' | 'immersive' | 'conversion'
@@ -617,6 +731,195 @@ const reviewStats = ref({
     good_rate: 100
 })
 
+const getTomorrowDate = () => {
+    const tomorrow = new Date()
+    tomorrow.setHours(0, 0, 0, 0)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return tomorrow
+}
+
+const getMaxDateForPicker = () => {
+    const maxDate = getTomorrowDate()
+    maxDate.setFullYear(maxDate.getFullYear() + 5)
+    return maxDate
+}
+
+const formatDateText = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
+const parseDateText = (value = '') => {
+    const [year, month, day] = value.split('-').map((item) => Number(item))
+    if (!year || !month || !day) {
+        return null
+    }
+    const date = new Date(year, month - 1, day)
+    date.setHours(0, 0, 0, 0)
+    if (Number.isNaN(date.getTime())) {
+        return null
+    }
+    return date
+}
+
+const isSelectableDate = (value = '') => {
+    const parsedDate = parseDateText(value)
+    if (!parsedDate) {
+        return false
+    }
+    const minDate = getTomorrowDate()
+    const maxDate = getMaxDateForPicker()
+    return parsedDate >= minDate && parsedDate <= maxDate
+}
+
+const normalizeSelectedDateText = (value = '') => {
+    if (!isSelectableDate(value)) {
+        return ''
+    }
+    return formatDateText(parseDateText(value) as Date)
+}
+
+const getEffectiveSelectableDate = (value = '') => {
+    const parsedDate = parseDateText(value)
+    const minDate = getTomorrowDate()
+    const maxDate = getMaxDateForPicker()
+    if (!parsedDate || parsedDate < minDate) {
+        return minDate
+    }
+    if (parsedDate > maxDate) {
+        return maxDate
+    }
+    return parsedDate
+}
+
+const datePickerYears = computed(() => {
+    const minDate = getTomorrowDate()
+    const maxDate = getMaxDateForPicker()
+    const totalYears = maxDate.getFullYear() - minDate.getFullYear() + 1
+    return Array.from({ length: totalYears }, (_, index) => minDate.getFullYear() + index)
+})
+
+const getDatePickerMonthsByYear = (year: number) => {
+    const minDate = getTomorrowDate()
+    const maxDate = getMaxDateForPicker()
+    const startMonth = year === minDate.getFullYear() ? minDate.getMonth() + 1 : 1
+    const endMonth = year === maxDate.getFullYear() ? maxDate.getMonth() + 1 : 12
+    return Array.from({ length: endMonth - startMonth + 1 }, (_, index) => startMonth + index)
+}
+
+const getDatePickerDaysByYearMonth = (year: number, month: number) => {
+    const minDate = getTomorrowDate()
+    const maxDate = getMaxDateForPicker()
+    const isMinMonth = year === minDate.getFullYear() && month === minDate.getMonth() + 1
+    const isMaxMonth = year === maxDate.getFullYear() && month === maxDate.getMonth() + 1
+    const startDay = isMinMonth ? minDate.getDate() : 1
+    const endDay = isMaxMonth ? maxDate.getDate() : new Date(year, month, 0).getDate()
+    return Array.from({ length: endDay - startDay + 1 }, (_, index) => startDay + index)
+}
+
+const normalizeDatePickerValue = (value: number[]) => {
+    const yearIndex = Math.min(Math.max(value[0] ?? 0, 0), datePickerYears.value.length - 1)
+    const year = datePickerYears.value[yearIndex]
+    const months = getDatePickerMonthsByYear(year)
+    const monthIndex = Math.min(Math.max(value[1] ?? 0, 0), months.length - 1)
+    const month = months[monthIndex]
+    const days = getDatePickerDaysByYearMonth(year, month)
+    const dayIndex = Math.min(Math.max(value[2] ?? 0, 0), days.length - 1)
+    return [yearIndex, monthIndex, dayIndex]
+}
+
+const datePickerMonths = computed(() => {
+    const yearIndex = Math.min(
+        Math.max(datePickerValue.value[0] ?? 0, 0),
+        datePickerYears.value.length - 1
+    )
+    const year = datePickerYears.value[yearIndex]
+    return getDatePickerMonthsByYear(year)
+})
+
+const datePickerDays = computed(() => {
+    const yearIndex = Math.min(
+        Math.max(datePickerValue.value[0] ?? 0, 0),
+        datePickerYears.value.length - 1
+    )
+    const year = datePickerYears.value[yearIndex]
+    const monthIndex = Math.min(
+        Math.max(datePickerValue.value[1] ?? 0, 0),
+        Math.max(datePickerMonths.value.length - 1, 0)
+    )
+    const month = datePickerMonths.value[monthIndex]
+    return getDatePickerDaysByYearMonth(year, month)
+})
+
+const getPackageId = (pkg: any) => Number(pkg?.package_id || pkg?.id || 0)
+const getPackageName = (pkg: any) => pkg?.name || pkg?.package?.name || '未命名套餐'
+const getPackageDescription = (pkg: any) =>
+    pkg?.description || pkg?.package?.description || ''
+const isRecommendedPackage = (pkg: any) =>
+    Number(pkg?.is_recommend ?? pkg?.package?.is_recommend ?? 0) === 1
+const getPackagePrice = (pkg: any) => {
+    if (pkg?.price !== null && pkg?.price !== undefined && pkg?.price !== '') {
+        return Number(pkg.price)
+    }
+    return Number(pkg?.package?.price || 0)
+}
+const getPackageOriginalPrice = (pkg: any) => {
+    if (
+        pkg?.original_price !== null &&
+        pkg?.original_price !== undefined &&
+        pkg?.original_price !== ''
+    ) {
+        return Number(pkg.original_price)
+    }
+    if (
+        pkg?.package?.original_price !== null &&
+        pkg?.package?.original_price !== undefined &&
+        pkg?.package?.original_price !== ''
+    ) {
+        return Number(pkg.package.original_price)
+    }
+    return null
+}
+const formatPackagePrice = (value: number | null) => Number(value || 0).toFixed(2)
+
+const displayPackages = computed(() => {
+    const packages = Array.isArray(staffInfo.value?.packages) ? staffInfo.value.packages : []
+    return packages
+        .map((pkg: any, index: number) => ({ pkg, index }))
+        .sort((left: { pkg: any; index: number }, right: { pkg: any; index: number }) => {
+            const recommendDiff =
+                Number(isRecommendedPackage(right.pkg)) - Number(isRecommendedPackage(left.pkg))
+            if (recommendDiff !== 0) {
+                return recommendDiff
+            }
+            return left.index - right.index
+        })
+        .map((item: { pkg: any; index: number }) => item.pkg)
+})
+
+const selectedPackage = computed(() => {
+    const packages = Array.isArray(staffInfo.value?.packages) ? staffInfo.value.packages : []
+    return packages.find((pkg: any) => getPackageId(pkg) === selectedPackageId.value) || null
+})
+
+const syncSelectedPackage = () => {
+    const packages = Array.isArray(staffInfo.value?.packages) ? staffInfo.value.packages : []
+    if (!packages.length) {
+        selectedPackageId.value = 0
+        return
+    }
+
+    const hasSelected = packages.some((pkg: any) => getPackageId(pkg) === selectedPackageId.value)
+    if (hasSelected) {
+        return
+    }
+
+    const recommendedPackage = packages.find((pkg: any) => isRecommendedPackage(pkg))
+    selectedPackageId.value = getPackageId(recommendedPackage || packages[0])
+}
+
 // 标签页配置
 const tabs = [
     { key: 'intro', label: '简介' },
@@ -643,6 +946,7 @@ const getDetail = async () => {
     try {
         const data = await getStaffDetail({ id: staffId.value })
         staffInfo.value = data
+        syncSelectedPackage()
 
         // 加载轮播图配置
         if (data.banner_mode !== undefined) {
@@ -775,16 +1079,73 @@ const handleContact = () => {
     })
 }
 
+const handleSelectPackage = (pkg: any) => {
+    const packageId = getPackageId(pkg)
+    if (!packageId) {
+        return
+    }
+    selectedPackageId.value = packageId
+}
+
+const syncDatePickerValue = (value = '') => {
+    const targetDate = getEffectiveSelectableDate(value)
+    const yearIndex = datePickerYears.value.indexOf(targetDate.getFullYear())
+    const safeYearIndex = yearIndex >= 0 ? yearIndex : 0
+    const months = getDatePickerMonthsByYear(datePickerYears.value[safeYearIndex])
+    const monthIndex = Math.max(months.indexOf(targetDate.getMonth() + 1), 0)
+    const days = getDatePickerDaysByYearMonth(
+        datePickerYears.value[safeYearIndex],
+        months[monthIndex]
+    )
+    const dayIndex = Math.max(days.indexOf(targetDate.getDate()), 0)
+    datePickerValue.value = [safeYearIndex, monthIndex, dayIndex]
+}
+
+const openDatePicker = () => {
+    syncDatePickerValue(presetDate.value)
+    showDatePopup.value = true
+}
+
+const closeDatePicker = () => {
+    showDatePopup.value = false
+}
+
+const handleDatePickerChange = (event: any) => {
+    datePickerValue.value = normalizeDatePickerValue(event.detail.value || [])
+}
+
+const confirmDatePicker = () => {
+    const year = datePickerYears.value[datePickerValue.value[0]]
+    const month = String(datePickerMonths.value[datePickerValue.value[1]]).padStart(2, '0')
+    const day = String(datePickerDays.value[datePickerValue.value[2]]).padStart(2, '0')
+    presetDate.value = `${year}-${month}-${day}`
+    closeDatePicker()
+}
+
 // 立即预约
 const handleBook = () => {
     if (!staffId.value || staffId.value === 0) {
         uni.showToast({ title: '服务人员信息错误', icon: 'none' })
         return
     }
-    let url = `/packages/pages/schedule_calendar/schedule_calendar?staff_id=${staffId.value}`
-    if (presetDate.value) {
-        url += `&date=${presetDate.value}`
+
+    if (!presetDate.value) {
+        openDatePicker()
+        return
     }
+
+    if (!selectedPackage.value) {
+        const hasPackages = Array.isArray(staffInfo.value?.packages) && staffInfo.value.packages.length
+        uni.showToast({
+            title: hasPackages ? '请选择套餐' : '暂无可预约套餐',
+            icon: 'none'
+        })
+        return
+    }
+
+    const url =
+        `/packages/pages/order_confirm/order_confirm?staff_id=${staffId.value}` +
+        `&package_id=${selectedPackageId.value}&date=${presetDate.value}`
     uni.navigateTo({ url })
 }
 
@@ -877,7 +1238,13 @@ onLoad((options) => {
         staffId.value = Number(options.id)
     }
     if (options?.date) {
-        presetDate.value = options.date
+        presetDate.value = normalizeSelectedDateText(options.date)
+    }
+    if (options?.package_id) {
+        selectedPackageId.value = Number(options.package_id)
+    }
+    if (options?.open_date_picker === '1') {
+        openDatePickerRequested.value = true
     }
     if (options?.tab && ['intro', 'works', 'reviews'].includes(options.tab)) {
         currentTab.value = options.tab
@@ -896,7 +1263,11 @@ onShow(async () => {
 
     await appStore.getConfig()
     if (staffId.value) {
-        getDetail()
+        await getDetail()
+        if (openDatePickerRequested.value) {
+            openDatePickerRequested.value = false
+            openDatePicker()
+        }
     }
 })
 
@@ -1363,7 +1734,7 @@ onShareTimeline(() => {
 
 /* 标签页切换 */
 .tabs-section {
-    margin: 24rpx 24rpx 0;
+    margin: 16rpx 24rpx 0;
     background: #ffffff;
     border-radius: 16rpx;
     padding: 0 24rpx;
@@ -1433,6 +1804,132 @@ onShareTimeline(() => {
     line-height: 1.8;
 }
 
+.booking-date-section {
+    margin: 24rpx 24rpx 0;
+}
+
+.schedule-date-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20rpx;
+    padding: 24rpx;
+    border-radius: 20rpx;
+    background: #ffffff;
+    border: 1rpx solid var(--color-primary-light-7);
+    box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+
+    &:active {
+        transform: scale(0.99);
+    }
+}
+
+.schedule-date-card--empty {
+    border-style: dashed;
+}
+
+.schedule-date-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.schedule-date-label-row {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+}
+
+.schedule-date-label {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: var(--color-main);
+}
+
+.schedule-date-value {
+    display: block;
+    margin-top: 12rpx;
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.schedule-date-value--empty {
+    color: var(--color-muted);
+    font-weight: 600;
+}
+
+.schedule-date-tip {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 24rpx;
+    color: var(--color-content);
+}
+
+.schedule-date-arrow {
+    flex-shrink: 0;
+}
+
+.picker-container {
+    background: #ffffff;
+    width: 100vw;
+    max-width: 100vw;
+    margin: 0;
+    border-radius: 24rpx 24rpx 0 0;
+    box-shadow: 0 -12rpx 36rpx rgba(15, 23, 42, 0.1);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .picker-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 22rpx 24rpx;
+        border-bottom: 1rpx solid #eef1f5;
+    }
+
+    .picker-title {
+        font-size: 30rpx;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .picker-action {
+        min-width: 96rpx;
+        font-size: 28rpx;
+        color: #667085;
+        text-align: center;
+
+        &:active {
+            opacity: 0.72;
+        }
+    }
+
+    .picker-action-primary {
+        color: var(--color-primary);
+        font-weight: 600;
+    }
+}
+
+.date-picker-content {
+    padding: 12rpx 16rpx 24rpx;
+}
+
+.date-picker-view {
+    height: 420rpx;
+}
+
+.picker-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 30rpx;
+    color: #111827;
+}
+
 /* 标签 */
 .tags-wrapper {
     display: flex;
@@ -1467,15 +1964,71 @@ onShareTimeline(() => {
     padding: 24rpx;
     background: #f9fafb;
     border-radius: 12rpx;
+    border: 1rpx solid transparent;
+    transition: all 0.2s ease;
+
+    &:active {
+        transform: scale(0.99);
+    }
+
+    &.active {
+        background: var(--color-primary-light-9);
+        border-color: var(--color-primary-light-7);
+        box-shadow: 0 8rpx 22rpx rgba(0, 0, 0, 0.06);
+    }
 
     .package-info {
         flex: 1;
 
+        .package-name-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12rpx;
+            margin-bottom: 8rpx;
+        }
+
         .package-name {
+            flex: 1;
+            min-width: 0;
             font-size: 28rpx;
             font-weight: 600;
             color: var(--color-main);
-            margin-bottom: 8rpx;
+        }
+
+        .package-badges {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 8rpx;
+            flex-shrink: 0;
+        }
+
+        .package-recommend-tag {
+            padding: 4rpx 12rpx;
+            border-radius: 999rpx;
+            font-size: 20rpx;
+            font-weight: 600;
+            color: #ff4d8d;
+            background: rgba(255, 77, 141, 0.12);
+            border: 1rpx solid rgba(255, 77, 141, 0.24);
+        }
+
+        .package-selected-tag {
+            padding: 4rpx 12rpx;
+            border-radius: 999rpx;
+            font-size: 20rpx;
+            font-weight: 600;
+            color: #ffffff;
+            background: var(--color-primary);
+        }
+
+        .package-desc {
+            display: block;
+            font-size: 24rpx;
+            color: var(--color-content);
+            line-height: 1.6;
         }
     }
 

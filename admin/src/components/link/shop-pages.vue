@@ -61,7 +61,6 @@ const linkGroups = ref([
         items: [
             { path: '/packages/pages/staff_list/staff_list', name: '人员列表', type: T },
             { path: '/packages/pages/staff_favorite/staff_favorite', name: '收藏人员', type: T },
-            { path: '/packages/pages/schedule_calendar/schedule_calendar', name: '档期查询', type: T },
             { path: '/packages/pages/staff_center/staff_center', name: '服务人员中心', type: T },
             { path: '/packages/pages/admin_dashboard/admin_dashboard', name: '管理员看板', type: T }
         ]
@@ -83,10 +82,8 @@ const linkGroups = ref([
         ]
     },
     {
-        label: '优惠活动',
+        label: '账户与充值',
         items: [
-            { path: '/pages/coupon/list', name: '我的优惠券', type: T },
-            { path: '/pages/coupon/center', name: '领券中心', type: T },
             { path: '/packages/pages/recharge/recharge', name: '充值中心', type: T },
             { path: '/packages/pages/recharge_record/recharge_record', name: '充值记录', type: T }
         ]

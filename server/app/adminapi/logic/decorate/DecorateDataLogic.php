@@ -16,7 +16,6 @@ namespace app\adminapi\logic\decorate;
 use app\common\logic\BaseLogic;
 use app\common\model\article\Article;
 use app\common\model\decorate\DecoratePage;
-use app\common\model\coupon\Coupon;
 use app\common\model\notification\Notification;
 use app\common\model\dynamic\Dynamic;
 use app\common\service\DecorateDataService;
@@ -67,72 +66,6 @@ class DecorateDataLogic extends BaseLogic
             'update_time' => $updateTime,
             'pc_url' => request()->domain() . '/pc'
         ];
-    }
-
-    /**
-     * @notes 获取优惠券列表（装修组件选择器）
-     * @param array $params 查询参数
-     * @return array 优惠券列表
-     * @author AI
-     * @date 2026/01/22
-     */
-    public static function getCouponList(array $params): array
-    {
-        $page = $params['page'] ?? 1;
-        $limit = $params['limit'] ?? 20;
-        $status = $params['status'] ?? '';
-        $name = $params['name'] ?? '';
-
-        $query = Coupon::order('id', 'desc');
-
-        // 状态筛选
-        if ($status !== '') {
-            $query->where('status', $status);
-        }
-
-        // 名称搜索
-        if (!empty($name)) {
-            $query->where('name', 'like', '%' . $name . '%');
-        }
-
-        $result = $query->field([
-                'id', 'name', 'coupon_type', 'discount_amount', 
-                'threshold_amount', 'valid_start_time', 'valid_end_time',
-                'total_count', 'receive_count', 'status'
-            ])
-            ->paginate([
-                'list_rows' => $limit,
-                'page' => $page,
-            ])
-            ->toArray();
-
-        // 格式化数据
-        foreach ($result['data'] as &$item) {
-            // 计算剩余数量
-            $item['remain_count'] = $item['total_count'] - $item['receive_count'];
-            
-            // 格式化优惠券类型文本
-            if ($item['coupon_type'] == 1) {
-                $item['type_text'] = '满减券';
-                $item['discount_text'] = '满' . $item['threshold_amount'] . '减' . $item['discount_amount'];
-            } elseif ($item['coupon_type'] == 2) {
-                $item['type_text'] = '折扣券';
-                $item['discount_text'] = $item['discount_amount'] . '折';
-            } else {
-                $item['type_text'] = '无门槛券';
-                $item['discount_text'] = '立减' . $item['discount_amount'] . '元';
-            }
-
-            // 格式化状态文本
-            $item['status_text'] = $item['status'] == 1 ? '启用' : '禁用';
-
-            // 格式化有效期 - 类型转换 - PHP 8.0+ 严格类型检查
-            $validStartTime = is_numeric($item['valid_start_time']) ? (int)$item['valid_start_time'] : strtotime($item['valid_start_time']);
-            $validEndTime = is_numeric($item['valid_end_time']) ? (int)$item['valid_end_time'] : strtotime($item['valid_end_time']);
-            $item['valid_period'] = date('Y-m-d H:i:s', $validStartTime) . ' 至 ' . date('Y-m-d H:i:s', $validEndTime);
-        }
-
-        return $result;
     }
 
     /**

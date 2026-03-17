@@ -111,7 +111,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
-import { getMyCouponStats } from '@/api/coupon'
 
 const props = defineProps({
     content: {
@@ -128,7 +127,6 @@ const $theme = useThemeStore()
 
 const statsData = ref<any>({
     order_count: 0,
-    coupon_count: 0,
     collect_count: 0,
     view_count: 0,
     points: 0
@@ -165,7 +163,6 @@ const getIconColor = (index: number) => {
 const handleClick = (item: any) => {
     const routeMap: any = {
         order_count: '/pages/order/list',
-        coupon_count: '/packages/pages/coupon/list',
         collect_count: '/pages/collect/list',
         view_count: '/pages/history/list'
     }
@@ -188,10 +185,6 @@ const loadStats = async () => {
             statsData.value.points = userInfo.user_points || 0
         }
 
-        const couponRes = await getMyCouponStats()
-        if (couponRes) {
-            statsData.value.coupon_count = couponRes.total || 0
-        }
     } catch (error) {
         console.error('加载统计数据失败:', error)
     }

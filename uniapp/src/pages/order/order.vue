@@ -200,7 +200,7 @@ const fetchOrders = async (refresh = false) => {
         const res = await getOrderList(params)
         const dataList = Array.isArray(res?.data) ? res.data : []
         const list = dataList.map((order: any) => {
-            const discount = Number(order.discount_amount || 0) + Number(order.coupon_amount || 0)
+            const discount = Number(order.discount_amount || 0)
             return {
                 id: order.id,
                 orderNo: order.order_sn,

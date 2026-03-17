@@ -17,16 +17,6 @@
             </view>
 
             <view class="form-item">
-                <text class="form-label">服务分类</text>
-                <view class="picker-input" @click="showCategorySheet = true">
-                    <text :class="categoryLabel ? 'picker-value' : 'picker-placeholder'">
-                        {{ categoryLabel || '请选择服务分类' }}
-                    </text>
-                    <tn-icon name="arrow-right" size="26" color="#9CA3AF" />
-                </view>
-            </view>
-
-            <view class="form-item">
                 <text class="form-label">套餐价格</text>
                 <tn-input v-model="form.price" type="number" placeholder="请输入价格" :border="false" />
             </view>
@@ -82,13 +72,6 @@
             </view>
         </view>
 
-        <u-action-sheet
-            v-model="showCategorySheet"
-            :list="categoryOptions"
-            label-name="text"
-            @click="handleCategorySelect"
-        />
-
         <view class="save-wrapper">
             <view
                 class="save-btn"
@@ -114,19 +97,15 @@ import {
     staffCenterPackageLists,
     staffCenterPackageUpdate
 } from '@/api/staffCenter'
-import { getServiceCategories } from '@/api/service'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 
 const $theme = useThemeStore()
 const saving = ref(false)
-const showCategorySheet = ref(false)
-const categoryOptions = ref<any[]>([])
 
 const form = reactive({
     package_id: 0,
     name: '',
-    category_id: '',
     price: '',
     original_price: '',
     image: '',
@@ -150,34 +129,9 @@ const recommendSwitch = computed({
     }
 })
 
-const categoryLabel = computed(() => {
-    const categoryId = Number(form.category_id || 0)
-    if (!categoryId) {
-        return ''
-    }
-    const current = categoryOptions.value.find((item: any) => Number(item.value) === categoryId)
-    return current?.text || ''
-})
-
-const flattenCategories = (list: any[], prefix = ''): any[] => {
-    const result: any[] = []
-    list.forEach((item: any) => {
-        const label = prefix ? `${prefix} / ${item.name}` : item.name
-        result.push({
-            text: label,
-            value: Number(item.id || 0)
-        })
-        if (Array.isArray(item.children) && item.children.length) {
-            result.push(...flattenCategories(item.children, label))
-        }
-    })
-    return result.filter((item) => item.value > 0)
-}
-
 const fillForm = (data: any) => {
     form.package_id = Number(data.package_id || data.id || 0)
     form.name = data.name || ''
-    form.category_id = data.category_id !== undefined && data.category_id !== null ? String(data.category_id) : ''
     form.price = data.price !== undefined && data.price !== null ? String(data.price) : ''
     form.original_price =
         data.original_price !== undefined && data.original_price !== null ? String(data.original_price) : ''
@@ -186,15 +140,6 @@ const fillForm = (data: any) => {
     form.sort = data.sort !== undefined && data.sort !== null ? String(data.sort) : '0'
     form.is_show = Number(data.is_show ?? 1)
     form.is_recommend = Number(data.is_recommend ?? 0)
-}
-
-const loadCategoryOptions = async () => {
-    try {
-        const data = await getServiceCategories()
-        categoryOptions.value = flattenCategories(Array.isArray(data) ? data : [])
-    } catch (e) {
-        categoryOptions.value = []
-    }
 }
 
 const loadFallback = async (packageId: number) => {
@@ -206,21 +151,9 @@ const loadFallback = async (packageId: number) => {
     }
 }
 
-const handleCategorySelect = (index: number) => {
-    const current = categoryOptions.value[index]
-    if (!current) {
-        return
-    }
-    form.category_id = String(current.value)
-}
-
 const handleSave = async () => {
     if (!form.name.trim()) {
         uni.showToast({ title: '请输入套餐名称', icon: 'none' })
-        return
-    }
-    if (!form.category_id.trim()) {
-        uni.showToast({ title: '请选择服务分类', icon: 'none' })
         return
     }
     if (!form.price.trim()) {
@@ -230,7 +163,6 @@ const handleSave = async () => {
 
     const payload: any = {
         name: form.name.trim(),
-        category_id: Number(form.category_id || 0),
         price: Number(form.price || 0),
         original_price: form.original_price === '' ? 0 : Number(form.original_price),
         image: form.image.trim(),
@@ -262,7 +194,6 @@ const handleSave = async () => {
 
 onLoad(async (options: any) => {
     if (!(await ensureStaffCenterAccess())) return
-    await loadCategoryOptions()
     const packageId = Number(options?.package_id || 0)
     const instance = getCurrentInstance()
     const channel = instance?.proxy?.getOpenerEventChannel?.()
@@ -306,24 +237,6 @@ onLoad(async (options: any) => {
 
 .form-item.no-border {
     border-bottom: none;
-}
-
-.picker-input {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 44rpx;
-}
-
-.picker-value {
-    font-size: 28rpx;
-    color: #111827;
-}
-
-.picker-placeholder {
-    font-size: 28rpx;
-    color: #9ca3af;
 }
 
 .form-label {

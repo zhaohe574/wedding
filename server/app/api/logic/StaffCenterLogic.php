@@ -13,6 +13,7 @@ use app\common\model\order\Order;
 use app\common\model\order\OrderLog;
 use app\common\model\order\OrderItem;
 use app\common\model\schedule\Schedule;
+use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffWork;
@@ -76,6 +77,10 @@ class StaffCenterLogic extends BaseLogic
             ->where('delete_time', null)
             ->count();
 
+        $data['addonCount'] = ServiceAddon::where('staff_id', $staff->id)
+            ->where('delete_time', null)
+            ->count();
+
         $data['scheduleCount'] = Schedule::where('staff_id', $staff->id)->count();
 
         return $data;
@@ -92,24 +97,42 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
-        if (!empty($params['mobile'])) {
-            $params['mobile_full'] = $params['mobile'];
+        Db::startTrans();
+        try {
+            if (!empty($params['mobile'])) {
+                $params['mobile_full'] = $params['mobile'];
+            }
+
+            $oldCategoryId = (int)$staff->category_id;
+            $newCategoryId = (int)($params['category_id'] ?? $oldCategoryId);
+            $rawMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
+
+            $update = [
+                'name' => $params['name'],
+                'avatar' => $params['avatar'] ?? $staff->avatar,
+                'mobile' => $params['mobile'] ?? $rawMobile,
+                'mobile_full' => $params['mobile_full'] ?? $rawMobile,
+                'category_id' => $newCategoryId,
+                'experience_years' => $params['experience_years'] ?? $staff->experience_years,
+                'profile' => $params['profile'] ?? $staff->profile,
+                'service_desc' => $params['service_desc'] ?? $staff->service_desc,
+                'update_time' => time(),
+            ];
+
+            $staff->save($update);
+
+            if ($newCategoryId > 0 && $newCategoryId !== $oldCategoryId) {
+                self::syncOwnedPackageCategory((int)$staff->id, $newCategoryId);
+                self::syncOwnedAddonCategory((int)$staff->id, $newCategoryId);
+            }
+
+            Db::commit();
+            return true;
+        } catch (\Throwable $e) {
+            Db::rollback();
+            self::setError($e->getMessage());
+            return false;
         }
-
-        $update = [
-            'name' => $params['name'],
-            'avatar' => $params['avatar'] ?? $staff->avatar,
-            'mobile' => $params['mobile'] ?? $staff->getData('mobile_full') ?: $staff->getData('mobile'),
-            'mobile_full' => $params['mobile_full'] ?? ($staff->getData('mobile_full') ?: $staff->getData('mobile')),
-            'category_id' => $params['category_id'] ?? $staff->category_id,
-            'experience_years' => $params['experience_years'] ?? $staff->experience_years,
-            'profile' => $params['profile'] ?? $staff->profile,
-            'service_desc' => $params['service_desc'] ?? $staff->service_desc,
-            'update_time' => time(),
-        ];
-
-        $staff->save($update);
-        return true;
     }
 
     /**
@@ -252,7 +275,7 @@ class StaffCenterLogic extends BaseLogic
 
         return ServicePackage::where('staff_id', $staffId)
             ->where('delete_time', null)
-            ->field('id, staff_id, category_id, name, price, original_price, content, description, image, sort, is_show, is_recommend')
+            ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show, is_recommend')
             ->append(['category_name'])
             ->order('sort', 'desc')
             ->order('id', 'desc')
@@ -328,6 +351,98 @@ class StaffCenterLogic extends BaseLogic
         }
 
         $package->delete();
+        return true;
+    }
+
+    /**
+     * @notes 附加服务列表
+     */
+    public static function addonLists(int $userId): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        return ServiceAddon::where('staff_id', $staffId)
+            ->where('delete_time', null)
+            ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show')
+            ->append(['category_name'])
+            ->order('sort', 'desc')
+            ->order('id', 'desc')
+            ->select()
+            ->toArray();
+    }
+
+    /**
+     * @notes 添加附加服务
+     */
+    public static function addonAdd(int $userId, array $params): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        try {
+            ServiceAddon::create(self::buildAddonPayload($staffId, $params));
+            return true;
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 更新附加服务
+     */
+    public static function addonUpdate(int $userId, int $addonId, array $params): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $addon = ServiceAddon::where('id', $addonId)
+            ->where('staff_id', $staffId)
+            ->find();
+        if (!$addon) {
+            self::setError('附加服务不存在');
+            return false;
+        }
+
+        try {
+            $addon->save(self::buildAddonPayload($staffId, $params, false));
+            return true;
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 删除附加服务
+     */
+    public static function addonRemove(int $userId, int $addonId): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $addon = ServiceAddon::where('id', $addonId)
+            ->where('staff_id', $staffId)
+            ->find();
+        if (!$addon) {
+            self::setError('附加服务不存在');
+            return false;
+        }
+
+        $addon->delete();
         return true;
     }
 
@@ -421,6 +536,8 @@ class StaffCenterLogic extends BaseLogic
                         ->where('staff_id', $staffId)
                         ->with(['staff' => function ($staffQuery) {
                             $staffQuery->field('id, name, avatar');
+                        }, 'addons' => function ($addonQuery) {
+                            $addonQuery->field('id, order_item_id, addon_id, addon_name, price, quantity, subtotal');
                         }]);
                 },
             ])
@@ -455,6 +572,8 @@ class StaffCenterLogic extends BaseLogic
                         ->where('staff_id', $staffId)
                         ->with(['staff' => function ($staffQuery) {
                             $staffQuery->field('id, name, avatar');
+                        }, 'addons' => function ($addonQuery) {
+                            $addonQuery->field('id, order_item_id, addon_id, addon_name, price, quantity, subtotal');
                         }]);
                 },
             ])
@@ -706,39 +825,48 @@ class StaffCenterLogic extends BaseLogic
     protected static function applyStaffOrderAmounts(array $order): array
     {
         $items = $order['items'] ?? [];
-        $staffTotal = 0.0;
-        foreach ($items as $item) {
+        $staffServiceAmount = 0.0;
+        $staffAddonAmount = 0.0;
+        foreach ($items as $index => $item) {
             $subtotal = isset($item['subtotal']) ? (float) $item['subtotal'] : 0.0;
             if ($subtotal <= 0) {
                 $price = (float) ($item['price'] ?? 0);
                 $quantity = (int) ($item['quantity'] ?? 1);
                 $subtotal = $price * max($quantity, 1);
             }
-            $staffTotal += $subtotal;
+            $addonAmount = 0.0;
+            foreach (($item['addons'] ?? []) as $addon) {
+                $addonAmount += (float)($addon['subtotal'] ?? $addon['price'] ?? 0);
+            }
+            $addonAmount = round($addonAmount, 2);
+            $items[$index]['addon_amount'] = $addonAmount;
+            $staffServiceAmount += $subtotal;
+            $staffAddonAmount += $addonAmount;
         }
-        $staffTotal = round($staffTotal, 2);
+        $order['items'] = $items;
+        $staffServiceAmount = round($staffServiceAmount, 2);
+        $staffAddonAmount = round($staffAddonAmount, 2);
+        $staffTotal = round($staffServiceAmount + $staffAddonAmount, 2);
 
         $orderTotal = (float) ($order['total_amount'] ?? 0);
         $discountTotal = (float) ($order['discount_amount'] ?? 0);
-        $couponTotal = (float) ($order['coupon_amount'] ?? 0);
 
         if ($orderTotal > 0 && $staffTotal > 0) {
             $ratio = $staffTotal / $orderTotal;
             $staffDiscount = round($discountTotal * $ratio, 2);
-            $staffCoupon = round($couponTotal * $ratio, 2);
         } else {
             $staffDiscount = 0.0;
-            $staffCoupon = 0.0;
         }
 
-        $staffPay = round($staffTotal - $staffDiscount - $staffCoupon, 2);
+        $staffPay = round($staffTotal - $staffDiscount, 2);
         if ($staffPay < 0) {
             $staffPay = 0.0;
         }
 
+        $order['service_amount'] = $staffServiceAmount;
+        $order['addon_amount'] = $staffAddonAmount;
         $order['total_amount'] = $staffTotal;
         $order['discount_amount'] = $staffDiscount;
-        $order['coupon_amount'] = $staffCoupon;
         $order['pay_amount'] = $staffPay;
 
         return $order;
@@ -804,11 +932,10 @@ class StaffCenterLogic extends BaseLogic
     {
         $payload = [
             'staff_id' => $staffId,
-            'category_id' => (int)($params['category_id'] ?? 0),
+            'category_id' => self::resolveStaffCategoryId($staffId),
             'name' => (string)($params['name'] ?? ''),
             'price' => round((float)($params['price'] ?? 0), 2),
             'original_price' => round((float)($params['original_price'] ?? 0), 2),
-            'content' => $params['content'] ?? [],
             'description' => (string)($params['description'] ?? ''),
             'image' => (string)($params['image'] ?? ''),
             'sort' => (int)($params['sort'] ?? 0),
@@ -823,5 +950,94 @@ class StaffCenterLogic extends BaseLogic
         }
 
         return $payload;
+    }
+
+    /**
+     * @notes 构造附加服务写入载荷
+     * @param int $staffId
+     * @param array $params
+     * @param bool $withCreateFields
+     * @return array
+     */
+    protected static function buildAddonPayload(int $staffId, array $params, bool $withCreateFields = true): array
+    {
+        $payload = [
+            'staff_id' => $staffId,
+            'category_id' => self::resolveStaffCategoryId($staffId),
+            'name' => (string)($params['name'] ?? ''),
+            'price' => round((float)($params['price'] ?? 0), 2),
+            'original_price' => round((float)($params['original_price'] ?? 0), 2),
+            'description' => (string)($params['description'] ?? ''),
+            'image' => (string)($params['image'] ?? ''),
+            'sort' => (int)($params['sort'] ?? 0),
+            'is_show' => (int)($params['is_show'] ?? 1),
+            'update_time' => time(),
+        ];
+
+        if ($withCreateFields) {
+            $payload['create_time'] = time();
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @notes 同步人员名下套餐分类
+     * @param int $staffId
+     * @param int $categoryId
+     * @return void
+     */
+    protected static function syncOwnedPackageCategory(int $staffId, int $categoryId): void
+    {
+        if ($staffId <= 0 || $categoryId <= 0) {
+            return;
+        }
+
+        ServicePackage::where('staff_id', $staffId)
+            ->whereNull('delete_time')
+            ->update([
+                'category_id' => $categoryId,
+                'update_time' => time(),
+            ]);
+    }
+
+    /**
+     * @notes 同步人员名下附加服务分类
+     * @param int $staffId
+     * @param int $categoryId
+     * @return void
+     */
+    protected static function syncOwnedAddonCategory(int $staffId, int $categoryId): void
+    {
+        if ($staffId <= 0 || $categoryId <= 0) {
+            return;
+        }
+
+        ServiceAddon::where('staff_id', $staffId)
+            ->whereNull('delete_time')
+            ->update([
+                'category_id' => $categoryId,
+                'update_time' => time(),
+            ]);
+    }
+
+    /**
+     * @notes 读取所属人员当前服务分类
+     * @param int $staffId
+     * @return int
+     */
+    protected static function resolveStaffCategoryId(int $staffId): int
+    {
+        $staff = Staff::find($staffId);
+        if (!$staff) {
+            throw new \Exception('所属人员不存在');
+        }
+
+        $categoryId = (int)($staff->category_id ?? 0);
+        if ($categoryId <= 0) {
+            throw new \Exception('请先设置服务分类');
+        }
+
+        return $categoryId;
     }
 }

@@ -9,7 +9,6 @@ namespace app\adminapi\logic\service;
 
 use app\common\logic\BaseLogic;
 use app\common\model\package\PackageBooking;
-use app\common\model\service\ServiceCategory;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 
@@ -58,15 +57,15 @@ class PackageLogic extends BaseLogic
             if ($staffId <= 0) {
                 throw new \Exception('请选择所属人员');
             }
+            $categoryId = self::resolveStaffCategoryId($staffId);
 
             ServicePackage::create([
-                'category_id' => $params['category_id'] ?? 0,
+                'category_id' => $categoryId,
                 'staff_id' => $staffId,
                 'name' => $params['name'],
                 'price' => $params['price'] ?? 0,
                 'original_price' => $params['original_price'] ?? 0,
                 'duration' => $params['duration'] ?? 0,
-                'content' => $params['content'] ?? [],
                 'image' => $params['image'] ?? '',
                 'description' => $params['description'] ?? '',
                 'sort' => $params['sort'] ?? 0,
@@ -96,14 +95,19 @@ class PackageLogic extends BaseLogic
                 throw new \Exception('套餐不存在');
             }
 
+            $staffId = (int)($params['staff_id'] ?? $package->staff_id);
+            if ($staffId <= 0) {
+                throw new \Exception('请选择所属人员');
+            }
+            $categoryId = self::resolveStaffCategoryId($staffId);
+
             $updateData = [
-                'category_id' => $params['category_id'] ?? $package->category_id,
-                'staff_id' => (int)($params['staff_id'] ?? $package->staff_id),
+                'category_id' => $categoryId,
+                'staff_id' => $staffId,
                 'name' => $params['name'],
                 'price' => $params['price'] ?? $package->price,
                 'original_price' => $params['original_price'] ?? $package->original_price,
                 'duration' => $params['duration'] ?? $package->duration,
-                'content' => $params['content'] ?? $package->content,
                 'image' => $params['image'] ?? $package->image,
                 'description' => $params['description'] ?? $package->description,
                 'sort' => $params['sort'] ?? $package->sort,
@@ -111,10 +115,6 @@ class PackageLogic extends BaseLogic
                 'is_recommend' => $params['is_recommend'] ?? $package->is_recommend,
                 'update_time' => time(),
             ];
-
-            if ((int)$updateData['staff_id'] <= 0) {
-                throw new \Exception('请选择所属人员');
-            }
 
             $package->save($updateData);
 
@@ -186,7 +186,13 @@ class PackageLogic extends BaseLogic
             ->where('staff_id', '>', 0);
 
         if (!empty($params['category_id'])) {
-            $query->where('category_id', $params['category_id']);
+            $staffIds = Staff::where('category_id', (int)$params['category_id'])
+                ->whereNull('delete_time')
+                ->column('id');
+            if (empty($staffIds)) {
+                return [];
+            }
+            $query->whereIn('staff_id', $staffIds);
         }
 
         if (isset($params['staff_id'])) {
@@ -194,7 +200,7 @@ class PackageLogic extends BaseLogic
         }
 
         return $query->order('sort desc, id desc')
-            ->field('id, staff_id, category_id, name, price, original_price, content, description, image, sort, is_show, is_recommend')
+            ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show, is_recommend')
             ->select()
             ->toArray();
     }
@@ -245,14 +251,14 @@ class PackageLogic extends BaseLogic
     public static function addStaffPackage(int $staffId, array $packageData)
     {
         try {
+            $categoryId = self::resolveStaffCategoryId($staffId);
             $package = ServicePackage::create([
-                'category_id' => $packageData['category_id'] ?? 0,
+                'category_id' => $categoryId,
                 'staff_id' => $staffId,
                 'name' => $packageData['name'],
                 'price' => $packageData['price'] ?? 0,
                 'original_price' => $packageData['original_price'] ?? 0,
                 'duration' => $packageData['duration'] ?? 0,
-                'content' => $packageData['content'] ?? [],
                 'image' => $packageData['image'] ?? '',
                 'description' => $packageData['description'] ?? '',
                 'sort' => $packageData['sort'] ?? 0,
@@ -267,6 +273,26 @@ class PackageLogic extends BaseLogic
             self::setError($e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * @notes 读取所属人员当前服务分类
+     * @param int $staffId
+     * @return int
+     */
+    protected static function resolveStaffCategoryId(int $staffId): int
+    {
+        $staff = Staff::find($staffId);
+        if (!$staff) {
+            throw new \Exception('所属人员不存在');
+        }
+
+        $categoryId = (int)($staff->category_id ?? 0);
+        if ($categoryId <= 0) {
+            throw new \Exception('请先为所属人员设置服务分类');
+        }
+
+        return $categoryId;
     }
 
     /**
@@ -307,7 +333,7 @@ class PackageLogic extends BaseLogic
         // 默认字段
         $defaultFields = [
             'id', 'name', 'image', 'description as desc',
-            'price', 'original_price', 'content', 'status'
+            'price', 'original_price', 'status'
         ];
 
         $fields = empty($fields) ? $defaultFields : $fields;

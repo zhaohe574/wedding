@@ -78,3 +78,12 @@ export function getMyFavoriteStaff() {
 export function getStaffPackages(data: { staff_id: number }) {
     return request.get({ url: '/staff/packages', data })
 }
+
+/**
+ * @description 获取工作人员附加服务
+ * @param { number } staff_id
+ * @return { Promise }
+ */
+export function getStaffAddons(data: { staff_id: number }) {
+    return request.get({ url: '/staff/addons', data })
+}

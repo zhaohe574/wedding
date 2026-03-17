@@ -121,7 +121,6 @@ class BookingLists extends BaseAdminDataLists implements ListsExtendInterface
                 'o.pay_type',
                 'o.total_amount',
                 'o.discount_amount',
-                'o.coupon_amount',
                 'o.pay_amount',
                 'o.contact_name',
                 'o.contact_mobile',

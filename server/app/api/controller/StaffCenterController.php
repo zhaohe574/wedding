@@ -216,6 +216,73 @@ class StaffCenterController extends BaseApiController
     }
 
     /**
+     * @notes 附加服务列表
+     */
+    public function addonLists()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $result = StaffCenterLogic::addonLists($this->userId);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 新增附加服务
+     */
+    public function addonAdd()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('addonAdd');
+        $result = StaffCenterLogic::addonAdd($this->userId, $params);
+        if (true === $result) {
+            return $this->success('添加成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
+     * @notes 更新附加服务
+     */
+    public function addonUpdate()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('addonUpdate');
+        $result = StaffCenterLogic::addonUpdate($this->userId, (int) $params['addon_id'], $params);
+        if (true === $result) {
+            return $this->success('保存成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
+     * @notes 删除附加服务
+     */
+    public function addonRemove()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('addonRemove');
+        $result = StaffCenterLogic::addonRemove($this->userId, (int) $params['addon_id']);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
      * @notes 月度档期
      */
     public function scheduleMonth()

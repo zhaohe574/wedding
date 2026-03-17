@@ -200,7 +200,7 @@ const handleBooking = (item: any) => {
         return
     }
     uni.navigateTo({
-        url: `/packages/pages/schedule_calendar/schedule_calendar?staff_id=${item.id}`
+        url: `/packages/pages/staff_detail/staff_detail?id=${item.id}&open_date_picker=1`
     })
 }
 

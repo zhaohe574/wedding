@@ -28,9 +28,8 @@ class OrderValidate extends BaseValidate
         'wedding_date' => 'date',
         'wedding_venue' => 'max:255',
         'remark' => 'max:500',
+        'addon_ids' => 'array',
         'reason' => 'max:255',
-        'coupon_id' => 'integer|egt:0',
-        'user_coupon_id' => 'integer|egt:0',
         'deposit_ratio' => 'integer|between:0,100',
         'pay_way' => 'require|integer|in:1,2,3,4,5',
         'pay_type' => 'integer|in:1,2,3',
@@ -58,6 +57,7 @@ class OrderValidate extends BaseValidate
         'wedding_date.date' => '婚礼日期格式错误',
         'wedding_venue.max' => '婚礼地点最多255个字符',
         'remark.max' => '备注最多500个字符',
+        'addon_ids.array' => '附加服务参数格式错误',
         'reason.max' => '原因最多255个字符',
         'deposit_ratio.between' => '定金比例应在0-100之间',
         'pay_way.require' => '请选择支付方式',
@@ -94,7 +94,7 @@ class OrderValidate extends BaseValidate
             'wedding_date',
             'wedding_venue',
             'remark',
-            'user_coupon_id',
+            'addon_ids',
             'deposit_ratio',
         ]);
     }
@@ -105,7 +105,7 @@ class OrderValidate extends BaseValidate
      */
     public function sceneSelection()
     {
-        return $this->only(['staff_id', 'package_id', 'date', 'user_coupon_id', 'deposit_ratio']);
+        return $this->only(['staff_id', 'package_id', 'date', 'addon_ids', 'deposit_ratio']);
     }
 
     /**

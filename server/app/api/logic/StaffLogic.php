@@ -12,6 +12,7 @@ use app\common\model\staff\Staff;
 use app\common\model\staff\StaffWork;
 use app\common\model\staff\Favorite;
 use app\common\model\staff\StaffTag;
+use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
 use app\common\service\ConfigService;
 use app\common\service\StaffPriceService;
@@ -176,6 +177,26 @@ class StaffLogic extends BaseLogic
             ->where('delete_time', null)
             ->where('is_show', 1);
         return self::transformPackages($packages->order('sort desc, id desc')->select()->toArray());
+    }
+
+    /**
+     * @notes 获取工作人员附加服务列表（用于确认页选择）
+     * @param int $staffId
+     * @return array
+     */
+    public static function addons(int $staffId): array
+    {
+        if ($staffId <= 0) {
+            return [];
+        }
+
+        return ServiceAddon::where('staff_id', $staffId)
+            ->whereNull('delete_time')
+            ->where('is_show', 1)
+            ->field('id, staff_id, category_id, name, price, original_price, image, description, sort, is_show')
+            ->order('sort desc, id desc')
+            ->select()
+            ->toArray();
     }
 
     /**

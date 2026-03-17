@@ -129,7 +129,7 @@
         <!-- 底部提示 -->
         <view class="tip-bar">
             <tn-icon name="info" size="26" color="#9CA3AF" />
-            <text class="tip-text">仅可维护本人资料、订单、作品、套餐、档期与动态</text>
+            <text class="tip-text">仅可维护本人资料、订单、作品、套餐、附加服务、档期与动态</text>
         </view>
     </view>
 </template>
@@ -167,6 +167,13 @@ const stats = computed(() => [
         label: '套餐',
         color: '#F97316',
         path: '/packages/pages/staff_package_list/staff_package_list'
+    },
+    {
+        icon: 'gift-fill',
+        value: profile.value.addonCount || 0,
+        label: '附加',
+        color: '#0EA5E9',
+        path: '/packages/pages/staff_addon_list/staff_addon_list'
     },
     {
         icon: 'calendar',
@@ -210,6 +217,14 @@ const menus = [
         iconBg: 'linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%)',
         iconColor: '#F97316',
         path: '/packages/pages/staff_package_list/staff_package_list'
+    },
+    {
+        name: '附加服务管理',
+        desc: '维护本人可售附加服务',
+        icon: 'gift-fill',
+        iconBg: 'linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%)',
+        iconColor: '#0EA5E9',
+        path: '/packages/pages/staff_addon_list/staff_addon_list'
     },
     {
         name: '档期管理',

@@ -285,12 +285,23 @@ const handleItemClick = (item: any) => {
 
 // 立即预约
 const handleBook = (item: any) => {
-    const params = [`staff_id=${item.staff_id}`, `date=${item.schedule_date}`]
+    if (!item.staff_id) {
+        uni.showToast({ title: '服务人员信息错误', icon: 'none' })
+        return
+    }
+
+    const params = [`id=${item.staff_id}`]
+    if (item.schedule_date) {
+        params.push(`date=${item.schedule_date}`)
+    }
     if (item.package_id) {
         params.push(`package_id=${item.package_id}`)
     }
+    if (!item.schedule_date) {
+        params.push('open_date_picker=1')
+    }
     uni.navigateTo({
-        url: `/packages/pages/schedule_calendar/schedule_calendar?${params.join('&')}`
+        url: `/packages/pages/staff_detail/staff_detail?${params.join('&')}`
     })
 }
 

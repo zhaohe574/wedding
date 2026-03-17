@@ -81,6 +81,7 @@ class OrderChangeLists extends BaseAdminDataLists implements ListsExcelInterface
             'addStaff' => function ($query) {
                 $query->field('id, name, avatar');
             },
+            'addonItems',
         ])
             ->where($this->searchWhere)
             ->where($this->queryWhere())
@@ -92,6 +93,7 @@ class OrderChangeLists extends BaseAdminDataLists implements ListsExcelInterface
         foreach ($lists as &$item) {
             $item['change_type_desc'] = $this->getTypeDesc($item['change_type']);
             $item['change_status_desc'] = $this->getStatusDesc($item['change_status']);
+            $item['addon_action_desc'] = (new OrderChange(['addon_action' => $item['addon_action'] ?? 0]))->addon_action_desc;
         }
 
         return $lists;
@@ -153,6 +155,7 @@ class OrderChangeLists extends BaseAdminDataLists implements ListsExcelInterface
             OrderChange::TYPE_DATE => '改期',
             OrderChange::TYPE_STAFF => '换人',
             OrderChange::TYPE_ADD_ITEM => '加项',
+            OrderChange::TYPE_ADDON => '附加服务变更',
         ];
         return $map[$type] ?? '未知';
     }

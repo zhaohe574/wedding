@@ -9,7 +9,6 @@ namespace app\adminapi\validate\service;
 
 use app\common\validate\BaseValidate;
 use app\common\model\service\ServicePackage;
-use app\common\model\service\ServiceCategory;
 use app\common\model\staff\Staff;
 
 /**
@@ -25,12 +24,10 @@ class PackageValidate extends BaseValidate
      */
     protected $rule = [
         'id' => 'require|checkPackage',
-        'category_id' => 'require|checkCategory',
         'name' => 'require|max:100',
         'price' => 'require|float|egt:0',
         'original_price' => 'float|egt:0',
         'duration' => 'integer|egt:1',
-        'content' => 'array',
         'image' => 'max:255',
         'description' => 'max:500',
         'sort' => 'integer|egt:0',
@@ -45,7 +42,6 @@ class PackageValidate extends BaseValidate
      */
     protected $message = [
         'id.require' => '请选择套餐',
-        'category_id.require' => '请选择所属分类',
         'name.require' => '请输入套餐名称',
         'name.max' => '套餐名称最多100个字符',
         'price.require' => '请输入套餐价格',
@@ -53,7 +49,6 @@ class PackageValidate extends BaseValidate
         'price.egt' => '价格必须大于等于0',
         'original_price.float' => '原价必须为数字',
         'original_price.egt' => '原价必须大于等于0',
-        'content.array' => '套餐内容格式错误',
         'image.max' => '图片地址最多255个字符',
         'description.max' => '描述最多500个字符',
         'sort.integer' => '排序必须为整数',
@@ -70,8 +65,8 @@ class PackageValidate extends BaseValidate
      * @var array
      */
     protected $scene = [
-        'add' => ['category_id', 'name', 'price', 'original_price', 'duration', 'content', 'image', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id'],
-        'edit' => ['id', 'category_id', 'name', 'price', 'original_price', 'duration', 'content', 'image', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id'],
+        'add' => ['name', 'price', 'original_price', 'duration', 'image', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id'],
+        'edit' => ['id', 'name', 'price', 'original_price', 'duration', 'image', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id'],
         'detail' => ['id'],
         'delete' => ['id'],
         'status' => ['id', 'is_show'],
@@ -95,22 +90,6 @@ class PackageValidate extends BaseValidate
         } catch (\Exception $e) {
             return '验证套餐失败: ' . $e->getMessage();
         }
-    }
-
-    /**
-     * @notes 验证分类是否存在
-     * @param $value
-     * @param $rule
-     * @param $data
-     * @return bool|string
-     */
-    protected function checkCategory($value, $rule, $data)
-    {
-        $category = ServiceCategory::find($value);
-        if (!$category) {
-            return '所属分类不存在';
-        }
-        return true;
     }
 
     /**

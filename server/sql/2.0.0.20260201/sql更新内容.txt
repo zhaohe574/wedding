@@ -20,6 +20,7 @@ la_waitlist
 la_calendar_event
 la_order
 la_order_item
+la_order_item_addon
 la_order_log
 la_payment
 la_refund
@@ -29,9 +30,8 @@ la_dynamic_like
 la_dynamic_collect
 la_follow
 la_notification
-la_coupon
-la_user_coupon
 la_order_change
+la_order_change_addon
 la_order_transfer
 la_order_pause
 la_order_change_log
@@ -76,6 +76,7 @@ la_subscribe_message_log
 la_subscribe_message_scene
 la_package_booking
 la_staff_banner
+la_service_addon
 
 表数据初始化/调整
 la_service_category
@@ -83,7 +84,6 @@ la_style_tag
 la_service_package
 la_schedule_rule
 la_calendar_event
-la_coupon
 la_dict_data
 la_dynamic
 la_dynamic_comment

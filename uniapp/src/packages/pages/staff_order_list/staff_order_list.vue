@@ -197,7 +197,7 @@ const getStatusText = (status: string) => {
 // 格式化订单数据
 const formatOrder = (order: any) => {
     const orderStatus = Number(order.order_status ?? order.status ?? -1)
-    const discount = Number(order.discount_amount || 0) + Number(order.coupon_amount || 0)
+    const discount = Number(order.discount_amount || 0)
     const hasPendingConfirm = (order.items || []).some(
         (item: any) => Number(item.confirm_status ?? 0) === 0
     )

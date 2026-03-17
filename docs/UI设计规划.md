@@ -524,7 +524,7 @@ transition: all 0.3s ease;
 #### 核心元素
 1. **搜索栏**：顶部固定，支持人员/服务搜索
 2. **轮播图**：展示活动、优惠、精选案例
-3. **导航菜单**：快速入口（人员分类、档期查询、优惠券等）
+3. **导航菜单**：快速入口（人员分类、档期查询、订单等）
 4. **人员推荐**：横向滚动卡片
 5. **服务套餐**：网格布局展示
 6. **案例作品**：瀑布流或网格展示
@@ -753,7 +753,6 @@ interface DecorateConfig {
 - `portfolio-gallery` - 案例作品
 - `customer-reviews` - 客户评价
 - `activity-zone` - 活动专区
-- `coupon-receive` - 优惠券领取
 - `hot-topics` - 热门话题
 - `wedding-countdown` - 婚礼倒计时
 

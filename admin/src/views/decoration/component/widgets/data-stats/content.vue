@@ -92,7 +92,6 @@ const showList = computed(() => {
 function getMockValue(type: string): number {
     const mockData: Record<string, number> = {
         order_count: 12,
-        coupon_count: 5,
         collect_count: 28,
         view_count: 156,
         points: 2580,

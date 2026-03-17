@@ -305,14 +305,6 @@ class NotificationLogic extends BaseLogic
             ],
             [
                 'id' => 4,
-                'name' => '优惠券到账通知',
-                'type' => Notification::TYPE_ACTIVITY,
-                'title' => '优惠券到账通知',
-                'content' => '恭喜您获得{coupon_name}优惠券，面额{amount}元，有效期至{expire_date}，快去使用吧！',
-                'variables' => ['coupon_name', 'amount', 'expire_date'],
-            ],
-            [
-                'id' => 5,
                 'name' => '系统公告通知',
                 'type' => Notification::TYPE_SYSTEM,
                 'title' => '系统公告',

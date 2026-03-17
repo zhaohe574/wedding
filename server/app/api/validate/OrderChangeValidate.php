@@ -25,6 +25,8 @@ class OrderChangeValidate extends BaseValidate
         'staff_id' => 'require|integer|gt:0',
         'package_id' => 'require|integer|gt:0',
         'service_date' => 'require|date',
+        'addon_action' => 'require|integer|in:1,2',
+        'addon_ids' => 'require|array|min:1',
         'reason' => 'max:255',
         'attach_images' => 'array|max:5',
         'proof_images' => 'array|max:10',
@@ -54,6 +56,11 @@ class OrderChangeValidate extends BaseValidate
         'package_id.integer' => '套餐ID格式错误',
         'service_date.require' => '请选择服务日期',
         'service_date.date' => '服务日期格式错误',
+        'addon_action.require' => '请选择附加服务操作',
+        'addon_action.in' => '附加服务操作参数错误',
+        'addon_ids.require' => '请选择附加服务',
+        'addon_ids.array' => '附加服务参数格式错误',
+        'addon_ids.min' => '请至少选择一个附加服务',
         'reason.max' => '原因最多255个字符',
         'attach_images.array' => '附件图片格式错误',
         'attach_images.max' => '附件图片最多5张',
@@ -118,6 +125,15 @@ class OrderChangeValidate extends BaseValidate
     public function sceneAddItem()
     {
         return $this->only(['order_id', 'staff_id', 'package_id', 'service_date', 'reason']);
+    }
+
+    /**
+     * @notes 附加服务变更场景
+     * @return OrderChangeValidate
+     */
+    public function sceneAddonChange()
+    {
+        return $this->only(['order_id', 'order_item_id', 'addon_action', 'addon_ids', 'reason', 'attach_images']);
     }
 
     /**

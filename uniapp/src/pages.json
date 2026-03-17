@@ -245,27 +245,9 @@
                 }
             },
             {
-                "path": "pages/order_change/apply_transfer",
-                "style": {
-                    "navigationBarTitleText": "申请转让"
-                },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
                 "path": "pages/order_change/apply_pause",
                 "style": {
                     "navigationBarTitleText": "申请暂停"
-                },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/order_change/transfer_detail",
-                "style": {
-                    "navigationBarTitleText": "转让详情"
                 },
                 "meta": {
                     "auth": true
@@ -290,9 +272,9 @@
                 }
             },
             {
-                "path": "pages/order_change/apply_staff",
+                "path": "pages/order_change/apply_addon",
                 "style": {
-                    "navigationBarTitleText": "换人申请"
+                    "navigationBarTitleText": "附加服务变更"
                 },
                 "meta": {
                     "auth": true
@@ -323,27 +305,6 @@
                 },
                 "meta": {
                     "auth": true
-                }
-            },
-            {
-                "path": "pages/coupon/list",
-                "style": {
-                    "navigationBarTitleText": "我的优惠券"
-                },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/coupon/center",
-                "style": {
-                    "navigationBarTitleText": "领券中心"
-                }
-            },
-            {
-                "path": "pages/coupon/detail",
-                "style": {
-                    "navigationBarTitleText": "优惠券详情"
                 }
             },
             {
@@ -467,12 +428,6 @@
                 }
             },
             {
-                "path": "pages/schedule_calendar/schedule_calendar",
-                "style": {
-                    "navigationBarTitleText": "选择档期"
-                }
-            },
-            {
                 "path": "pages/order_confirm/order_confirm",
                 "style": {
                     "navigationBarTitleText": "订单确认"
@@ -563,6 +518,24 @@
                 }
             },
             {
+                "path": "pages/staff_addon_list/staff_addon_list",
+                "style": {
+                    "navigationBarTitleText": "附加服务管理"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_addon_edit/staff_addon_edit",
+                "style": {
+                    "navigationBarTitleText": "附加服务编辑"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
                 "path": "pages/staff_schedule/staff_schedule",
                 "style": {
                     "navigationBarTitleText": "档期管理"
@@ -587,12 +560,6 @@
                 },
                 "meta": {
                     "auth": true
-                }
-            },
-            {
-                "path": "pages/admin_login/admin_login",
-                "style": {
-                    "navigationBarTitleText": "管理员登录"
                 }
             },
             {

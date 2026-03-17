@@ -219,13 +219,13 @@
                     <el-descriptions-item label="婚礼日期">{{ currentOrder.wedding_date || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="服务地址" :span="2">{{ currentOrder.service_address || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="订单总额">¥{{ currentOrder.total_amount }}</el-descriptions-item>
-                    <el-descriptions-item label="优惠金额">¥{{ currentOrder.discount_amount }}</el-descriptions-item>
                     <el-descriptions-item
-                        v-if="Number(currentOrder.coupon_amount || 0) > 0"
-                        label="优惠券金额"
+                        v-if="Number(currentOrder.addon_amount || 0) > 0"
+                        label="附加服务金额"
                     >
-                        ¥{{ currentOrder.coupon_amount }}
+                        ¥{{ currentOrder.addon_amount }}
                     </el-descriptions-item>
+                    <el-descriptions-item label="优惠金额">¥{{ currentOrder.discount_amount }}</el-descriptions-item>
                     <el-descriptions-item label="应付金额">¥{{ currentOrder.pay_amount }}</el-descriptions-item>
                     <el-descriptions-item label="已付金额">
                         <span class="text-red-500 font-bold">¥{{ getDisplayPaidAmount(currentOrder) }}</span>
@@ -263,6 +263,21 @@
                         <el-table-column label="数量" prop="quantity" />
                         <el-table-column label="小计" prop="subtotal">
                             <template #default="{ row }">¥{{ row.subtotal }}</template>
+                        </el-table-column>
+                        <el-table-column label="附加服务" min-width="220">
+                            <template #default="{ row }">
+                                <div v-if="row.addons && row.addons.length" class="flex flex-wrap gap-2">
+                                    <el-tag
+                                        v-for="addon in row.addons"
+                                        :key="addon.id"
+                                        size="small"
+                                        type="warning"
+                                    >
+                                        {{ addon.addon_name || addon.name }} +¥{{ addon.subtotal || addon.price }}
+                                    </el-tag>
+                                </div>
+                                <span v-else>-</span>
+                            </template>
                         </el-table-column>
                     </el-table>
                 </div>

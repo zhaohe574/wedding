@@ -24,7 +24,6 @@
                 <view class="package-header">
                     <view class="package-title-wrap">
                         <text class="package-title">{{ item.name || '未命名套餐' }}</text>
-                        <text class="package-category">{{ item.category_name || '未分类' }}</text>
                     </view>
                     <view class="package-status" :class="{ off: !item.is_show }">
                         {{ item.is_show ? '上架' : '下架' }}
@@ -201,13 +200,6 @@ onShow(async () => {
     font-size: 30rpx;
     font-weight: 700;
     color: #111827;
-}
-
-.package-category {
-    display: block;
-    margin-top: 8rpx;
-    font-size: 22rpx;
-    color: #9ca3af;
 }
 
 .package-status {

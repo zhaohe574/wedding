@@ -43,6 +43,7 @@ class OrderChangeLogic extends BaseLogic
                     $q->field('id, name, avatar');
                 }]);
             },
+            'addonItems',
             'oldStaff' => function ($query) {
                 $query->field('id, name, avatar');
             },
@@ -61,6 +62,7 @@ class OrderChangeLogic extends BaseLogic
         $data = $change->toArray();
         $data['change_type_desc'] = $change->change_type_desc;
         $data['change_status_desc'] = $change->change_status_desc;
+        $data['addon_action_desc'] = $change->addon_action_desc;
 
         return $data;
     }
@@ -81,13 +83,23 @@ class OrderChangeLogic extends BaseLogic
         string $remark = '',
         string $rejectReason = ''
     ): bool {
+        $change = OrderChange::find($changeId);
+        if (!$change) {
+            self::setError('变更记录不存在');
+            return false;
+        }
+        if ((int)$change->change_type === OrderChange::TYPE_STAFF) {
+            self::setError('功能已下线，请取消订单后重新下单');
+            return false;
+        }
+
         [$success, $message] = OrderChange::auditChange($changeId, $adminId, $approved, $remark, $rejectReason);
         if (!$success) {
             self::setError($message);
             return false;
         }
 
-        OrderNotificationService::notifyStaffOnDateChangeAudited($changeId);
+        self::notifyStaffOnChangeAudited($changeId);
         return true;
     }
 
@@ -99,13 +111,23 @@ class OrderChangeLogic extends BaseLogic
      */
     public static function execute(int $changeId, int $adminId): bool
     {
+        $change = OrderChange::find($changeId);
+        if (!$change) {
+            self::setError('变更记录不存在');
+            return false;
+        }
+        if ((int)$change->change_type === OrderChange::TYPE_STAFF) {
+            self::setError('功能已下线，请取消订单后重新下单');
+            return false;
+        }
+
         [$success, $message] = OrderChange::executeChange($changeId, $adminId);
         if (!$success) {
             self::setError($message);
             return false;
         }
 
-        OrderNotificationService::notifyStaffOnDateChangeExecuted($changeId);
+        self::notifyStaffOnChangeExecuted($changeId);
         return true;
     }
 
@@ -153,8 +175,8 @@ class OrderChangeLogic extends BaseLogic
         $typeCounts = [];
         foreach ([
             OrderChange::TYPE_DATE => '改期',
-            OrderChange::TYPE_STAFF => '换人',
             OrderChange::TYPE_ADD_ITEM => '加项',
+            OrderChange::TYPE_ADDON => '附加服务变更',
         ] as $type => $label) {
             $typeCounts[] = [
                 'type' => $type,
@@ -285,5 +307,45 @@ class OrderChangeLogic extends BaseLogic
     public static function getStatusOptions(): array
     {
         return OrderChange::getStatusOptions();
+    }
+
+    /**
+     * @notes 发送变更审核通知
+     * @param int $changeId
+     * @return void
+     */
+    protected static function notifyStaffOnChangeAudited(int $changeId): void
+    {
+        $change = OrderChange::find($changeId);
+        if (!$change) {
+            return;
+        }
+
+        if ((int)$change->change_type === OrderChange::TYPE_DATE) {
+            OrderNotificationService::notifyStaffOnDateChangeAudited($changeId);
+        }
+        if ((int)$change->change_type === OrderChange::TYPE_ADDON) {
+            OrderNotificationService::notifyStaffOnAddonChangeAudited($changeId);
+        }
+    }
+
+    /**
+     * @notes 发送变更执行通知
+     * @param int $changeId
+     * @return void
+     */
+    protected static function notifyStaffOnChangeExecuted(int $changeId): void
+    {
+        $change = OrderChange::find($changeId);
+        if (!$change) {
+            return;
+        }
+
+        if ((int)$change->change_type === OrderChange::TYPE_DATE) {
+            OrderNotificationService::notifyStaffOnDateChangeExecuted($changeId);
+        }
+        if ((int)$change->change_type === OrderChange::TYPE_ADDON) {
+            OrderNotificationService::notifyStaffOnAddonChangeExecuted($changeId);
+        }
     }
 }

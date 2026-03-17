@@ -134,7 +134,6 @@ class AuthLogic
             'crm.customer_loss_warning/' => 'growth.lossWarning/',
             'crm.customerLossWarning/' => 'growth.lossWarning/',
             'crm.followRecord/' => 'growth.followRecord/',
-            'coupon.coupon/' => 'growth.campaign/',
             'dynamic.dynamic/' => 'growth.dynamic/',
             'dynamic.dynamicComment/' => 'growth.dynamicComment/',
             'review.review/' => 'growth.review/',

@@ -163,7 +163,6 @@
                     <el-descriptions-item label="订单总额">¥{{ currentDetail.total_amount }}</el-descriptions-item>
                     <el-descriptions-item label="应付金额">¥{{ currentDetail.pay_amount }}</el-descriptions-item>
                     <el-descriptions-item label="优惠金额">¥{{ currentDetail.discount_amount }}</el-descriptions-item>
-                    <el-descriptions-item label="优惠券金额">¥{{ currentDetail.coupon_amount }}</el-descriptions-item>
                     <el-descriptions-item label="备注" :span="2">{{ currentDetail.remark || '-' }}</el-descriptions-item>
                 </el-descriptions>
             </div>

@@ -17,7 +17,6 @@ CREATE TABLE `la_order` (
     `pay_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付状态：0=未支付,1=已支付,2=部分退款,3=全额退款',
     `total_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '订单总额',
     `discount_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '优惠金额',
-    `coupon_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '优惠券抵扣',
     `pay_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '实付金额',
     `paid_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '已支付金额',
     `deposit_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '定金金额',
@@ -40,7 +39,6 @@ CREATE TABLE `la_order` (
     `wedding_venue` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '婚礼场地',
     `user_remark` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '用户备注',
     `admin_remark` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '管理员备注',
-    `coupon_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '使用的优惠券ID',
     `cancel_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '取消原因',
     `cancel_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '取消时间',
     `complete_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '完成时间',
@@ -302,71 +300,3 @@ CREATE TABLE `la_notification` (
     KEY `idx_is_read` (`is_read`),
     KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='消息通知表';
-
--- -----------------------------------------------------------
--- 12. 优惠券表 (la_coupon)
--- -----------------------------------------------------------
-DROP TABLE IF EXISTS `la_coupon`;
-CREATE TABLE `la_coupon` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `name` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '优惠券名称',
-    `coupon_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '类型：1=满减券,2=折扣券,3=立减券',
-    `threshold_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '使用门槛金额(0=无门槛)',
-    `discount_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '优惠金额/折扣率',
-    `max_discount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '最大优惠金额(折扣券用)',
-    `total_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发放总量(0=不限)',
-    `receive_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '已领取数量',
-    `used_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '已使用数量',
-    `per_limit` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '每人限领数量',
-    `receive_start_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '领取开始时间',
-    `receive_end_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '领取结束时间',
-    `valid_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '有效期类型：1=固定日期,2=领取后N天',
-    `valid_start_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '有效期开始',
-    `valid_end_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '有效期结束',
-    `valid_days` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '领取后有效天数',
-    `use_scope` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '使用范围：1=全部,2=指定分类,3=指定人员',
-    `scope_ids` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '适用范围ID(JSON)',
-    `status` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '状态：0=禁用,1=启用',
-    `remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '备注',
-    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    `delete_time` INT UNSIGNED DEFAULT NULL COMMENT '删除时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_status` (`status`),
-    KEY `idx_receive_time` (`receive_start_time`, `receive_end_time`),
-    KEY `idx_valid_time` (`valid_start_time`, `valid_end_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='优惠券表';
-
--- -----------------------------------------------------------
--- 13. 用户优惠券表 (la_user_coupon)
--- -----------------------------------------------------------
-DROP TABLE IF EXISTS `la_user_coupon`;
-CREATE TABLE `la_user_coupon` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `coupon_id` INT UNSIGNED NOT NULL COMMENT '优惠券ID',
-    `coupon_sn` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '优惠券码',
-    `status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态：0=未使用,1=已使用,2=已过期',
-    `order_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '使用订单ID',
-    `use_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '使用时间',
-    `valid_start_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '有效期开始',
-    `valid_end_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '有效期结束',
-    `receive_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '领取时间',
-    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_coupon_sn` (`coupon_sn`),
-    KEY `idx_user_id` (`user_id`),
-    KEY `idx_coupon_id` (`coupon_id`),
-    KEY `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户优惠券表';
-
--- -----------------------------------------------------------
--- 初始化数据
--- -----------------------------------------------------------
-
--- 系统优惠券模板
-INSERT INTO `la_coupon` (`name`, `coupon_type`, `threshold_amount`, `discount_amount`, `max_discount`, `total_count`, `per_limit`, `valid_type`, `valid_days`, `use_scope`, `status`, `remark`, `create_time`, `update_time`) VALUES
-('新人专享券', 1, 1000.00, 100.00, 0.00, 0, 1, 2, 30, 1, 1, '新用户注册赠送', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('满2000减200', 1, 2000.00, 200.00, 0.00, 1000, 1, 1, 0, 1, 1, '限时活动', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('9折优惠券', 2, 500.00, 90.00, 500.00, 500, 2, 2, 15, 1, 1, '会员专享', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());

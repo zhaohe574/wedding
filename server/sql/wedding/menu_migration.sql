@@ -144,14 +144,12 @@ WHERE `type` = 'C'
       `component` LIKE 'crm/%'
       OR `component` LIKE 'dynamic/%'
       OR `component` LIKE 'review/%'
-      OR `component` LIKE 'coupon/%'
       OR `component` LIKE 'notification/%'
       OR `component` LIKE 'subscribe/%'
       OR `component` LIKE 'timeline/%'
       OR `perms` LIKE 'crm.%/%'
       OR `perms` LIKE 'dynamic.%/%'
       OR `perms` LIKE 'review.%/%'
-      OR `perms` LIKE 'coupon.%/%'
       OR `perms` LIKE 'notification.%/%'
       OR `perms` LIKE 'subscribe.%/%'
       OR `perms` LIKE 'timeline.%/%'
@@ -271,7 +269,6 @@ UPDATE `la_system_menu` SET `name` = '售后工单', `paths` = 'aftersale-ticket
 UPDATE `la_system_menu` SET `name` = '客户管理', `paths` = 'customers', `component` = 'crm/customer/index', `sort` = 200, `update_time` = UNIX_TIMESTAMP() WHERE `type` = 'C' AND `perms` = 'crm.customer/lists';
 UPDATE `la_system_menu` SET `name` = '顾问管理', `paths` = 'advisors', `component` = 'crm/advisor/index', `sort` = 190, `update_time` = UNIX_TIMESTAMP() WHERE `type` = 'C' AND `perms` = 'crm.sales_advisor/lists';
 UPDATE `la_system_menu` SET `name` = '流失预警', `paths` = 'loss-warning', `component` = 'crm/warning/index', `sort` = 180, `update_time` = UNIX_TIMESTAMP() WHERE `type` = 'C' AND `perms` = 'crm.customer_loss_warning/lists';
-UPDATE `la_system_menu` SET `name` = '营销活动', `paths` = 'campaigns', `component` = 'coupon/lists/index', `sort` = 170, `update_time` = UNIX_TIMESTAMP() WHERE `type` = 'C' AND `perms` = 'coupon.coupon/lists';
 UPDATE `la_system_menu` SET `name` = '动态管理', `paths` = 'dynamic-manage', `component` = 'dynamic/lists/index', `sort` = 160, `update_time` = UNIX_TIMESTAMP() WHERE `type` = 'C' AND `perms` = 'dynamic.dynamic/lists';
 UPDATE `la_system_menu` SET `name` = '评论审核', `paths` = 'comment-review', `component` = 'dynamic/comment/review', `sort` = 150, `update_time` = UNIX_TIMESTAMP() WHERE `type` = 'C' AND `perms` = 'dynamic.dynamicComment/reviewList';
 UPDATE `la_system_menu` SET `name` = '动态配置', `paths` = 'dynamic-config', `component` = 'dynamic/config/index', `sort` = 140, `update_time` = UNIX_TIMESTAMP() WHERE `type` = 'C' AND `perms` = 'dynamic.dynamicComment/getReviewConfig';

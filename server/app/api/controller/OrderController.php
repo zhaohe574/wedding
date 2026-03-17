@@ -223,14 +223,4 @@ class OrderController extends BaseApiController
         return $this->data($result);
     }
 
-    /**
-     * @notes 可用优惠券列表
-     * @return \think\response\Json
-     */
-    public function availableCoupons()
-    {
-        $params = (new OrderValidate())->get()->goCheck('selection');
-        $result = OrderLogic::getAvailableCoupons($this->userId, $params);
-        return $this->data($result);
-    }
 }

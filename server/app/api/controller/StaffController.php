@@ -18,7 +18,7 @@ use app\api\logic\StaffLogic;
  */
 class StaffController extends BaseApiController
 {
-    public array $notNeedLogin = ['lists', 'detail', 'works', 'workLists', 'workDetail', 'recommend', 'packages'];
+    public array $notNeedLogin = ['lists', 'detail', 'works', 'workLists', 'workDetail', 'recommend', 'packages', 'addons'];
 
     /**
      * @notes 工作人员列表
@@ -108,6 +108,21 @@ class StaffController extends BaseApiController
             return $this->fail('参数错误');
         }
         $result = StaffLogic::packages($staffId);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 工作人员附加服务列表
+     * @return \think\response\Json
+     */
+    public function addons()
+    {
+        $staffId = $this->request->get('staff_id/d');
+        if (!$staffId) {
+            return $this->fail('参数错误');
+        }
+
+        $result = StaffLogic::addons($staffId);
         return $this->data($result);
     }
 

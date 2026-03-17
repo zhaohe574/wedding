@@ -200,15 +200,22 @@ class Order extends BaseModel
         Db::startTrans();
         try {
             // 计算订单金额
-            $totalAmount = 0;
+            $serviceAmount = 0;
+            $addonAmount = 0;
             foreach ($selectedItems as $item) {
-                $totalAmount += $item['price'] * ($item['quantity'] ?? 1);
+                $serviceAmount += (float)$item['price'] * (int)($item['quantity'] ?? 1);
+
+                foreach (($item['addons'] ?? []) as $addon) {
+                    $addonAmount += (float)($addon['price'] ?? 0) * (int)($addon['quantity'] ?? 1);
+                }
             }
+            $serviceAmount = round($serviceAmount, 2);
+            $addonAmount = round($addonAmount, 2);
+            $totalAmount = round($serviceAmount + $addonAmount, 2);
 
             // 计算优惠
             $discountAmount = $orderInfo['discount_amount'] ?? 0;
-            $couponAmount = $orderInfo['coupon_amount'] ?? 0;
-            $payAmount = $totalAmount - $discountAmount - $couponAmount;
+            $payAmount = $totalAmount - $discountAmount;
             
             // 定金/尾款模式
             $depositAmount = 0;
@@ -229,8 +236,8 @@ class Order extends BaseModel
                 'pay_status' => self::PAY_STATUS_UNPAID,
                 'paid_amount' => 0,
                 'total_amount' => $totalAmount,
+                'addon_amount' => $addonAmount,
                 'discount_amount' => $discountAmount,
-                'coupon_amount' => $couponAmount,
                 'pay_amount' => $payAmount,
                 'deposit_amount' => $depositAmount,
                 'balance_amount' => $balanceAmount,
@@ -242,8 +249,6 @@ class Order extends BaseModel
                 'wedding_date' => $orderInfo['wedding_date'] ?? null,
                 'wedding_venue' => $orderInfo['wedding_venue'] ?? '',
                 'user_remark' => $orderInfo['remark'] ?? '',
-                'coupon_id' => $orderInfo['coupon_id'] ?? 0,
-                'user_coupon_id' => $orderInfo['user_coupon_id'] ?? 0,
                 'source' => $orderInfo['source'] ?? self::SOURCE_MINIAPP,
                 'pay_type' => self::PAY_WAY_NONE,
                 'create_time' => time(),
@@ -313,7 +318,18 @@ class Order extends BaseModel
                         throw new \Exception($message);
                     }
                 }
+
+                if (!empty($item['addons']) && is_array($item['addons'])) {
+                    OrderItemAddon::createSnapshots(
+                        (int)$order->id,
+                        (int)$orderItem->id,
+                        $item['addons'],
+                        OrderItemAddon::SOURCE_ORDER
+                    );
+                }
             }
+
+            OrderItemAddon::refreshOrderAmounts((int)$order->id);
 
             // 记录订单日志
             OrderLog::addLog($order->id, 1, $userId, 'create', 0, self::STATUS_PENDING_CONFIRM, '创建订单');
@@ -369,13 +385,6 @@ class Order extends BaseModel
 
             // 记录日志
             OrderLog::addLog($orderId, $operatorType, $operatorId, 'cancel', $beforeStatus, self::STATUS_CANCELLED, '取消订单：' . $reason);
-
-            if ((int)($order->user_coupon_id ?? 0) > 0) {
-                $userCoupon = \app\common\model\coupon\UserCoupon::find((int)$order->user_coupon_id);
-                if ($userCoupon) {
-                    $userCoupon->refund();
-                }
-            }
 
             // 已支付订单自动创建退款申请
             if ($beforeStatus == self::STATUS_PAID && $order->pay_status == self::PAY_STATUS_PAID) {
@@ -569,6 +578,7 @@ class Order extends BaseModel
             'date_change' => 0,
             'staff_change' => 0,
             'add_item' => 0,
+            'addon_change' => 0,
             'pending' => 0,
             'approved' => 0,
             'executed' => 0,
@@ -584,6 +594,9 @@ class Order extends BaseModel
                     break;
                 case OrderChange::TYPE_ADD_ITEM:
                     $stats['add_item']++;
+                    break;
+                case OrderChange::TYPE_ADDON:
+                    $stats['addon_change']++;
                     break;
             }
 

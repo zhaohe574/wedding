@@ -70,7 +70,6 @@
                                                 style="width: 200px"
                                             >
                                                 <el-option label="订单数量" value="order_count" />
-                                                <el-option label="优惠券数量" value="coupon_count" />
                                                 <el-option label="收藏数量" value="collect_count" />
                                                 <el-option label="浏览记录" value="view_count" />
                                                 <el-option label="积分余额" value="points" />

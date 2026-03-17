@@ -325,6 +325,8 @@ class OrderController extends BaseAdminController
             return $this->fail('订单不存在');
         }
 
+        $result = OrderLogic::applyStaffVisibleOrderAmounts($result, $staffScopeId);
+
         if (!empty($result['items']) && is_array($result['items'])) {
             foreach ($result['items'] as $index => $item) {
                 $itemStaffId = (int)($item['staff_id'] ?? 0);
@@ -335,6 +337,8 @@ class OrderController extends BaseAdminController
                     $result['items'][$index]['subtotal'] = '--';
                     $result['items'][$index]['remark'] = '--';
                     $result['items'][$index]['schedule_id'] = 0;
+                    $result['items'][$index]['addons'] = [];
+                    $result['items'][$index]['addon_amount'] = '--';
                     if (isset($result['items'][$index]['staff']) && is_array($result['items'][$index]['staff'])) {
                         $result['items'][$index]['staff']['avatar'] = '';
                     }

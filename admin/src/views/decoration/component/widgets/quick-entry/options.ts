@@ -32,18 +32,11 @@ export default () => ({
                 sort: 2
             },
             {
-                icon: 'icon-youhuiquan',
-                title: '优惠券',
-                link: { path: '/pages/coupon/list', type: 'shop' },
-                is_show: '1',
-                sort: 3
-            },
-            {
                 icon: 'icon-kefu',
                 title: '联系客服',
                 link: { path: '/pages/customer-service/index', type: 'shop' },
                 is_show: '1',
-                sort: 4
+                sort: 3
             }
         ] as QuickEntryItem[]
     },

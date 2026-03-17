@@ -6,7 +6,7 @@
 
 ## 变更范围
 
-- `server`：订单预览、可用优惠券、创建订单接口改为基于 `staff_id + package_id + date` 直购。
+- `server`：订单预览、创建订单接口改为基于 `staff_id + package_id + date` 直购。
 - `uniapp`：选档期页改为立即下单，确认页改为单服务确认，移除购物车、方案、分享方案页面和路由。
 - `admin`：装修链接选择器移除购物车和婚礼方案入口。
 
@@ -14,9 +14,9 @@
 
 - `server/app/api/validate/OrderValidate.php`
   - 新增直购参数校验：`staff_id`、`package_id`、`date`。
-  - 新增 `selection` 场景，供预览和优惠券接口复用。
+  - 新增 `selection` 场景，供预览与直购建单复用。
 - `server/app/api/controller/OrderController.php`
-  - `preview`、`availableCoupons` 改为走直购参数校验。
+  - `preview` 改为走直购参数校验。
   - `create` 语义改为直购创建订单。
 - `server/app/api/logic/OrderLogic.php`
   - 新增直购选择构建逻辑。
@@ -44,7 +44,7 @@
   - 直接跳转订单确认页，并携带 `staff_id`、`package_id`、`date`。
 - `uniapp/src/packages/pages/order_confirm/order_confirm.vue`
   - 改为单服务确认页。
-  - 预览、优惠券、创建订单全部仅依赖 `staff_id`、`package_id`、`date`。
+  - 预览、创建订单全部仅依赖 `staff_id`、`package_id`、`date`。
   - 删除购物车回跳和多项分组结算逻辑。
 - `uniapp/src/pages.json`
   - 删除购物车、我的方案、分享方案页面路由。

@@ -152,7 +152,6 @@ const availableWidgets = [
     { name: 'news', title: '最新资讯', icon: Document },
 
     { name: 'quick-entry', title: '快捷入口', icon: Document },
-    { name: 'coupon-receive', title: '优惠券领取', icon: Ticket },
     { name: 'data-stats', title: '数据统计', icon: Document },
     { name: 'faq', title: '常见问题', icon: Document },
     { name: 'service-process', title: '服务流程', icon: Document },

@@ -67,7 +67,7 @@
                         <view class="group-total">
                             <text class="group-total-label">小计</text>
                             <text class="group-total-value" :style="{ color: $theme.ctaColor }"
-                                >￥{{ group.total_price }}</text
+                                >￥{{ formatAmount(group.total_price) }}</text
                             >
                         </view>
                     </view>
@@ -79,7 +79,7 @@
                                     <tn-icon name="gift" size="24" />
                                     <text>{{ pkg.package_name }}</text>
                                 </view>
-                                <text class="package-total">￥{{ pkg.total_price }}</text>
+                                <text class="package-total">￥{{ formatAmount(pkg.total_price) }}</text>
                             </view>
                             <view class="package-items">
                                 <view v-for="item in pkg.items" :key="item.id" class="package-item">
@@ -100,6 +100,29 @@
                                                     >x{{ item.quantity }}</text
                                                 >
                                             </view>
+                                        </view>
+                                    </view>
+                                    <view
+                                        v-if="item.addons && item.addons.length"
+                                        class="slot-addon-list"
+                                    >
+                                        <view class="slot-addon-header">
+                                            <text class="slot-addon-title">附加服务</text>
+                                            <text class="slot-addon-total">
+                                                +￥{{ formatAmount(getItemAddonTotal(item)) }}
+                                            </text>
+                                        </view>
+                                        <view
+                                            v-for="addon in item.addons"
+                                            :key="`${item.id}-${addon.id}`"
+                                            class="slot-addon-row"
+                                        >
+                                            <text class="slot-addon-name">
+                                                {{ addon.addon_name || addon.name }}
+                                            </text>
+                                            <text class="slot-addon-price">
+                                                +￥{{ formatAmount(addon.subtotal || addon.price) }}
+                                            </text>
                                         </view>
                                     </view>
                                 </view>
@@ -158,16 +181,16 @@
             </view>
             <view class="amount-list">
                 <view class="amount-row">
-                    <text class="amount-label">商品总额</text>
-                    <text class="amount-value">¥{{ order.total_amount }}</text>
+                    <text class="amount-label">主服务金额</text>
+                    <text class="amount-value">¥{{ formatAmount(orderServiceAmount) }}</text>
+                </view>
+                <view class="amount-row" v-if="Number(order.addon_amount || 0) > 0">
+                    <text class="amount-label">附加服务金额</text>
+                    <text class="amount-value">+¥{{ formatAmount(order.addon_amount) }}</text>
                 </view>
                 <view class="amount-row" v-if="order.discount_amount > 0">
                     <text class="amount-label">优惠金额</text>
                     <text class="amount-value discount">-¥{{ order.discount_amount }}</text>
-                </view>
-                <view class="amount-row" v-if="order.coupon_amount > 0">
-                    <text class="amount-label">优惠券</text>
-                    <text class="amount-value discount">-¥{{ order.coupon_amount }}</text>
                 </view>
                 <view class="amount-divider"></view>
                 <view class="amount-row total">
@@ -272,6 +295,17 @@
         <!-- 底部按钮 -->
         <view class="action-bar">
             <view class="action-buttons">
+                <view
+                    v-if="[2, 3].includes(order.order_status)"
+                    class="btn-secondary"
+                    :style="{
+                        borderColor: $theme.primaryColor,
+                        color: $theme.primaryColor
+                    }"
+                    @click="openChangeActions"
+                >
+                    <text>申请变更</text>
+                </view>
                 <view
                     class="btn-secondary"
                     :style="{
@@ -517,6 +551,19 @@ const voucherForm = reactive({
     image: '',
     uploading: false
 })
+const formatAmount = (value: any) => Number(value || 0).toFixed(2)
+const getItemAddonTotal = (item: any) =>
+    (item?.addons || []).reduce(
+        (sum: number, addon: any) => sum + Number(addon?.subtotal || addon?.price || 0),
+        0
+    )
+const orderServiceAmount = computed(() => {
+    const serviceAmount = Number(order.value?.service_amount ?? -1)
+    if (serviceAmount >= 0) {
+        return serviceAmount
+    }
+    return Math.max(0, Number(order.value?.total_amount || 0) - Number(order.value?.addon_amount || 0))
+})
 
 const needPayAmount = computed(() => {
     if (!order.value) return 0
@@ -565,7 +612,8 @@ const groupedItems = computed(() => {
         }
 
         const itemTotal = Number(item.price || 0) * Number(item.quantity || 1)
-        group.total_price += itemTotal
+        const addonTotal = getItemAddonTotal(item)
+        group.total_price += itemTotal + addonTotal
 
         const pkgKey = String(item.package_id ?? item.package?.id ?? item.package_name ?? 'unknown')
         let pkgGroup = group.packageMap.get(pkgKey)
@@ -581,7 +629,7 @@ const groupedItems = computed(() => {
         }
 
         pkgGroup.items.push(item)
-        pkgGroup.total_price += itemTotal
+        pkgGroup.total_price += itemTotal + addonTotal
     })
 
     groups.forEach((group) => {
@@ -656,6 +704,25 @@ const copyOrderSn = () => {
 const handleContactAdvisor = () => {
     uni.navigateTo({
         url: `/packages/pages/customer_service/customer_service?scene=order_detail&order_id=${orderId.value}`
+    })
+}
+
+const openChangeActions = () => {
+    uni.showActionSheet({
+        itemList: ['申请改期', '申请加项', '附加服务变更', '申请暂停', '我的申请'],
+        success: ({ tapIndex }) => {
+            const routes = [
+                `/packages/pages/order_change/apply_date?order_id=${orderId.value}`,
+                `/packages/pages/order_change/apply_add_item?order_id=${orderId.value}`,
+                `/packages/pages/order_change/apply_addon?order_id=${orderId.value}`,
+                `/packages/pages/order_change/apply_pause?order_id=${orderId.value}`,
+                '/packages/pages/order_change/list?type=change'
+            ]
+            const url = routes[tapIndex]
+            if (url) {
+                uni.navigateTo({ url })
+            }
+        }
     })
 }
 
@@ -1107,6 +1174,50 @@ onLoad((options: any) => {
 .slot-quantity {
     font-size: 24rpx;
     color: #999999;
+}
+
+.slot-addon-list {
+    margin-top: 14rpx;
+    padding-top: 14rpx;
+    border-top: 1rpx dashed #eceff3;
+}
+
+.slot-addon-header,
+.slot-addon-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.slot-addon-header {
+    margin-bottom: 8rpx;
+}
+
+.slot-addon-title {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #5b6470;
+}
+
+.slot-addon-total {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #d85c61;
+}
+
+.slot-addon-row + .slot-addon-row {
+    margin-top: 6rpx;
+}
+
+.slot-addon-name {
+    font-size: 24rpx;
+    color: #6b7280;
+}
+
+.slot-addon-price {
+    font-size: 24rpx;
+    color: #d85c61;
 }
 
 // 信息列表

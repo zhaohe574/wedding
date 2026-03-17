@@ -663,6 +663,95 @@ class StaffController extends BaseAdminController
     }
 
     /**
+     * @notes 我的附加服务列表
+     * @return \think\response\Json
+     */
+    public function myProfileAddonList()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $result = StaffLogic::getAddonConfig($staffScopeId);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 添加我的附加服务
+     * @return \think\response\Json
+     */
+    public function myProfileAddonAdd()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $params = $this->request->post();
+        if (empty($params['name'])) {
+            return $this->fail('请输入附加服务名称');
+        }
+
+        $result = StaffLogic::createStaffAddon($staffScopeId, $params);
+        if (true === $result) {
+            return $this->success('创建成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 编辑我的附加服务
+     * @return \think\response\Json
+     */
+    public function myProfileAddonUpdate()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $params = $this->request->post();
+        $addonId = intval($params['addon_id'] ?? 0);
+        if ($addonId <= 0) {
+            return $this->fail('参数错误');
+        }
+        if (empty($params['name'])) {
+            return $this->fail('请输入附加服务名称');
+        }
+
+        $result = StaffLogic::updateStaffAddon($staffScopeId, $addonId, $params);
+        if (true === $result) {
+            return $this->success('更新成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 删除我的附加服务
+     * @return \think\response\Json
+     */
+    public function myProfileAddonDelete()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $params = $this->request->post();
+        $addonId = intval($params['addon_id'] ?? 0);
+        if ($addonId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $result = StaffLogic::deleteStaffAddon($staffScopeId, $addonId);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
      * @notes 我的轮播图列表
      * @return \think\response\Json
      */

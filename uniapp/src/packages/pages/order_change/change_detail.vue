@@ -136,6 +136,37 @@
                         </view>
                     </view>
                 </template>
+
+                <!-- 附加服务变更 -->
+                <template v-else-if="detail.change_type === 4">
+                    <view class="addon-change-content">
+                        <view class="addon-action-badge">
+                            {{ detail.addon_action_desc || '附加服务变更' }}
+                        </view>
+                        <view
+                            v-for="addon in detail.addon_items || []"
+                            :key="addon.id"
+                            class="addon-change-item"
+                        >
+                            <view class="addon-change-item__main">
+                                <text class="addon-change-item__name">{{ addon.addon_name }}</text>
+                                <text class="addon-change-item__meta">数量 x{{ addon.quantity || 1 }}</text>
+                            </view>
+                            <text class="addon-change-item__price">
+                                {{ detail.addon_action === 2 ? '-' : '+' }}¥{{ addon.subtotal || addon.price }}
+                            </text>
+                        </view>
+                        <view class="price-diff mt-4 text-center" v-if="detail.price_diff !== 0">
+                            <text class="text-gray-500">净差额: </text>
+                            <text
+                                :class="detail.price_diff > 0 ? 'text-red-500' : 'text-green-500'"
+                                class="text-lg font-bold"
+                            >
+                                {{ detail.price_diff > 0 ? '+' : '' }}{{ detail.price_diff }}元
+                            </text>
+                        </view>
+                    </view>
+                </template>
             </view>
 
             <!-- 申请原因 -->
@@ -233,7 +264,8 @@ const getTypeClass = (type: number) => {
     const classes: Record<number, string> = {
         1: 'bg-blue-100 text-blue-600',
         2: 'bg-orange-100 text-orange-600',
-        3: 'bg-green-100 text-green-600'
+        3: 'bg-green-100 text-green-600',
+        4: 'bg-purple-100 text-purple-600'
     }
     return classes[type] || 'bg-gray-100 text-gray-600'
 }
@@ -441,6 +473,58 @@ onLoad((options: any) => {
 
 .add-price {
     text-align: right;
+}
+
+.addon-change-content {
+    padding: 8rpx 0 4rpx;
+}
+
+.addon-action-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 8rpx 18rpx;
+    border-radius: 999rpx;
+    font-size: 24rpx;
+    color: #7c3aed;
+    background: rgba(124, 58, 237, 0.1);
+    margin-bottom: 20rpx;
+}
+
+.addon-change-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20rpx;
+    padding: 18rpx 20rpx;
+    background: #f9f9fb;
+    border-radius: 12rpx;
+}
+
+.addon-change-item + .addon-change-item {
+    margin-top: 12rpx;
+}
+
+.addon-change-item__main {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.addon-change-item__name {
+    font-size: 28rpx;
+    color: #333;
+    font-weight: 600;
+}
+
+.addon-change-item__meta {
+    font-size: 24rpx;
+    color: #999;
+}
+
+.addon-change-item__price {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: #d85c61;
 }
 
 .image-list {

@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\adminapi\lists\order;
 
 use app\adminapi\lists\BaseAdminDataLists;
+use app\adminapi\logic\order\OrderLogic;
 use app\common\lists\ListsExcelInterface;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
@@ -84,6 +85,15 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
 
         $staffScopeId = $this->getStaffScopeId();
         if ($staffScopeId > 0) {
+            $query->with([
+                'items' => function ($itemQuery) use ($staffScopeId) {
+                    $itemQuery->field('id, order_id, staff_id, staff_name, package_name, service_date, item_status, confirm_status, schedule_id, price, quantity, subtotal')
+                        ->where('staff_id', $staffScopeId)
+                        ->with(['addons' => function ($addonQuery) {
+                            $addonQuery->field('id, order_item_id, addon_id, addon_name, price, quantity, subtotal');
+                        }]);
+                }
+            ]);
             $query->whereIn('id', function ($subQuery) use ($staffScopeId) {
                 $subQuery->name('order_item')
                     ->where('staff_id', $staffScopeId)
@@ -111,6 +121,9 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
         }
 
         foreach ($lists as &$item) {
+            if ($staffScopeId > 0) {
+                $item = OrderLogic::applyStaffVisibleOrderAmounts($item, $staffScopeId);
+            }
             $item['order_status_desc'] = $this->getStatusDesc($item['order_status']);
             $item['pay_status_desc'] = $this->getPayStatusDesc($item['pay_status']);
             $item['pay_type_desc'] = $this->getPayTypeDesc($item['pay_type']);

@@ -1,5 +1,13 @@
 <template>
     <div class="order-transfer-lists">
+        <el-alert
+            class="mb-4"
+            title="订单转让功能已下线"
+            description="历史转让记录仅保留只读查看，新的换人/转让需求请改为取消订单后重新下单。"
+            type="warning"
+            :closable="false"
+            show-icon
+        />
         <el-card class="!border-none" shadow="never">
             <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item class="w-[180px]" label="转让单号">
@@ -137,39 +145,9 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="申请时间" prop="create_time" width="160" />
-                <el-table-column label="操作" width="200" fixed="right">
+                <el-table-column label="操作" width="100" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
-                        <el-button 
-                            v-if="row.transfer_status === 0" 
-                            type="success" 
-                            link 
-                            @click="handleAudit(row, true)"
-                        >通过</el-button>
-                        <el-button 
-                            v-if="row.transfer_status === 0" 
-                            type="danger" 
-                            link 
-                            @click="handleAudit(row, false)"
-                        >拒绝</el-button>
-                        <el-button 
-                            v-if="row.transfer_status === 1" 
-                            type="warning" 
-                            link 
-                            @click="handleResendCode(row)"
-                        >重发验证码</el-button>
-                        <el-button 
-                            v-if="row.transfer_status === 1 || row.transfer_status === 2" 
-                            type="success" 
-                            link 
-                            @click="handleComplete(row)"
-                        >完成转让</el-button>
-                        <el-button 
-                            v-if="row.transfer_status <= 2" 
-                            type="danger" 
-                            link 
-                            @click="handleCancel(row)"
-                        >取消</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -181,6 +159,14 @@
         <!-- 详情弹窗 -->
         <el-dialog v-model="detailVisible" title="转让详情" width="700px">
             <div v-if="currentTransfer" class="transfer-detail">
+                <el-alert
+                    class="mb-4"
+                    title="该记录为历史转让数据"
+                    description="当前仅支持只读查看，审核、完成、取消、重发验证码等操作均已下线。"
+                    type="info"
+                    :closable="false"
+                    show-icon
+                />
                 <el-descriptions :column="2" border>
                     <el-descriptions-item label="转让单号">{{ currentTransfer.transfer_sn }}</el-descriptions-item>
                     <el-descriptions-item label="转让状态">
@@ -234,69 +220,19 @@
                 </el-descriptions>
             </div>
         </el-dialog>
-
-        <!-- 审核弹窗 -->
-        <el-dialog v-model="auditVisible" :title="auditForm.approved ? '审核通过' : '审核拒绝'" width="500px">
-            <el-form :model="auditForm" label-width="100px">
-                <el-form-item label="审核备注">
-                    <el-input 
-                        v-model="auditForm.remark" 
-                        type="textarea" 
-                        :rows="3" 
-                        placeholder="请输入审核备注（选填）"
-                    />
-                </el-form-item>
-                <el-form-item label="拒绝原因" v-if="!auditForm.approved" required>
-                    <el-input 
-                        v-model="auditForm.reject_reason" 
-                        type="textarea" 
-                        :rows="3" 
-                        placeholder="请输入拒绝原因"
-                    />
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="auditVisible = false">取消</el-button>
-                <el-button 
-                    :type="auditForm.approved ? 'success' : 'danger'" 
-                    @click="submitAudit"
-                >确认</el-button>
-            </template>
-        </el-dialog>
-
-        <!-- 取消弹窗 -->
-        <el-dialog v-model="cancelVisible" title="取消转让" width="500px">
-            <el-form :model="cancelForm" label-width="100px">
-                <el-form-item label="取消原因">
-                    <el-input 
-                        v-model="cancelForm.reason" 
-                        type="textarea" 
-                        :rows="3" 
-                        placeholder="请输入取消原因（选填）"
-                    />
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="cancelVisible = false">取消</el-button>
-                <el-button type="danger" @click="submitCancel">确认取消</el-button>
-            </template>
-        </el-dialog>
     </div>
 </template>
 
 <script lang="ts" setup name="orderTransfer">
+import { useRouter } from 'vue-router'
 import { 
     orderTransferLists, 
     orderTransferDetail, 
-    orderTransferStatistics,
-    orderTransferAudit,
-    orderTransferComplete,
-    orderTransferCancel,
-    orderTransferResendCode
+    orderTransferStatistics
 } from '@/api/order/transfer'
 import { usePaging } from '@/hooks/usePaging'
-import feedback from '@/utils/feedback'
 
+const router = useRouter()
 const queryParams = reactive({
     transfer_sn: '',
     order_sn: '',
@@ -308,18 +244,6 @@ const queryParams = reactive({
 const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentTransfer = ref<any>(null)
-const auditVisible = ref(false)
-const auditForm = reactive({
-    id: 0,
-    approved: true,
-    remark: '',
-    reject_reason: ''
-})
-const cancelVisible = ref(false)
-const cancelForm = reactive({
-    id: 0,
-    reason: ''
-})
 
 const { pager, getLists, resetPage, resetParams } = usePaging({
     fetchFun: orderTransferLists,
@@ -350,67 +274,21 @@ const getStatusTagType = (status: number) => {
 }
 
 const viewOrder = (orderId: number) => {
-    console.log('View order:', orderId)
+    if (!orderId) {
+        return
+    }
+    router.push({
+        path: '/order/lists',
+        query: {
+            detail_id: String(orderId)
+        }
+    })
 }
 
 const handleDetail = async (row: any) => {
     const res = await orderTransferDetail({ id: row.id })
     currentTransfer.value = res
     detailVisible.value = true
-}
-
-const handleAudit = (row: any, approved: boolean) => {
-    auditForm.id = row.id
-    auditForm.approved = approved
-    auditForm.remark = ''
-    auditForm.reject_reason = ''
-    auditVisible.value = true
-}
-
-const submitAudit = async () => {
-    if (!auditForm.approved && !auditForm.reject_reason) {
-        feedback.msgError('请填写拒绝原因')
-        return
-    }
-    await orderTransferAudit({
-        id: auditForm.id,
-        approved: auditForm.approved ? 1 : 0,
-        remark: auditForm.remark,
-        reject_reason: auditForm.reject_reason
-    })
-    feedback.msgSuccess('操作成功')
-    auditVisible.value = false
-    getLists()
-    getStatistics()
-}
-
-const handleResendCode = async (row: any) => {
-    await feedback.confirm('确定要重新发送验证码吗？')
-    await orderTransferResendCode({ id: row.id })
-    feedback.msgSuccess('验证码已发送')
-    getLists()
-}
-
-const handleComplete = async (row: any) => {
-    await feedback.confirm('确定要手动完成此转让吗？')
-    await orderTransferComplete({ id: row.id })
-    feedback.msgSuccess('转让完成')
-    getLists()
-    getStatistics()
-}
-
-const handleCancel = (row: any) => {
-    cancelForm.id = row.id
-    cancelForm.reason = ''
-    cancelVisible.value = true
-}
-
-const submitCancel = async () => {
-    await orderTransferCancel(cancelForm)
-    feedback.msgSuccess('已取消')
-    cancelVisible.value = false
-    getLists()
-    getStatistics()
 }
 
 onActivated(() => {

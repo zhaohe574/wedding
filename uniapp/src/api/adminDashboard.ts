@@ -11,3 +11,7 @@ export function adminDashboardIncomeTrend(params?: any) {
 export function adminDashboardOrderStats(params?: any) {
     return request.get({ url: '/admin_dashboard/orderStats', data: params }, { isAuth: true })
 }
+
+export function adminDashboardTeamOverview(params?: any) {
+    return request.get({ url: '/admin_dashboard/teamOverview', data: params }, { isAuth: true })
+}

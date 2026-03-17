@@ -196,7 +196,7 @@
                             <view
                                 class="filter-item"
                                 :style="selectedDate ? getFilterItemActiveStyle() : {}"
-                                @click="showDatePicker = true"
+                                @click="openDatePicker"
                             >
                                 <tn-icon
                                     name="calendar"
@@ -215,20 +215,13 @@
                                     :color="selectedDate ? $theme.primaryColor : '#999999'"
                                 />
                             </view>
-                            <view
-                                v-if="selectedDate"
-                                class="clear-date-btn"
-                                @click.stop="clearDate"
-                            >
-                                <tn-icon name="close-circle-fill" size="32" color="#999999" />
-                            </view>
                         </view>
 
                         <!-- 排序筛选 -->
                         <view
                             class="filter-item"
                             :style="currentSort !== 'default' ? getFilterItemActiveStyle() : {}"
-                            @click="showSortPicker = true"
+                            @click="openSortPicker"
                         >
                             <tn-icon
                                 name="sort"
@@ -259,15 +252,21 @@
                     <view class="empty-icon-wrap">
                         <tn-icon name="inbox" size="156" color="#D1D5DB" />
                     </view>
-                    <text class="empty-title">暂无符合条件的服务人员</text>
-                    <text class="empty-subtitle">试试调整筛选条件，发现更多优质团队</text>
+                    <text class="empty-title">{{
+                        selectedDate ? '暂无符合条件的服务人员' : '请先选择预约日期'
+                    }}</text>
+                    <text class="empty-subtitle">{{
+                        selectedDate
+                            ? '试试调整筛选条件，发现更多优质团队'
+                            : '选择日期后再查看可预约的服务人员'
+                    }}</text>
                     <view
                         class="empty-action-btn"
                         :style="getPrimaryButtonStyle(0.26)"
-                        @click="handleResetFilters"
+                        @click="handleEmptyAction"
                     >
                         <text class="empty-action-text" :style="{ color: $theme.btnColor }">
-                            重置筛选
+                            {{ selectedDate ? '重置筛选' : '选择日期' }}
                         </text>
                     </view>
                 </view>
@@ -305,7 +304,12 @@
                         </view>
                         <view class="poster-overlay">
                             <view class="poster-name-row">
-                                <text class="poster-name">{{ item.name }}</text>
+                                <view class="poster-name-group">
+                                    <text class="poster-name">{{ item.name }}</text>
+                                    <text v-if="item.is_recommend" class="poster-recommend-badge">
+                                        推荐
+                                    </text>
+                                </view>
                                 <text v-if="item.experience_years" class="poster-experience">
                                     {{ item.experience_years }}年
                                 </text>
@@ -391,7 +395,12 @@
                         />
                         <view class="staff-info">
                             <view class="info-top">
-                                <text class="staff-name">{{ item.name }}</text>
+                                <view class="staff-name-group">
+                                    <text class="staff-name">{{ item.name }}</text>
+                                    <text v-if="item.is_recommend" class="staff-recommend-badge">
+                                        推荐
+                                    </text>
+                                </view>
                                 <view class="favorite-btn" @click.stop="handleToggleFavorite(item)">
                                     <tn-icon
                                         :name="item.is_favorite ? 'like-fill' : 'like'"
@@ -494,11 +503,14 @@
         </z-paging>
 
         <!-- 标签选择器 -->
-        <TnPopup
-            v-model="showTagPicker"
-            open-direction="bottom"
-            :radius="24"
+        <u-popup
+            v-model="showTagPopup"
+            mode="bottom"
+            :mask="true"
+            :mask-close-able="true"
             :safe-area-inset-bottom="true"
+            :border-radius="24"
+            @close="handleTagPopupClose"
         >
             <view class="picker-container">
                 <view class="picker-header">
@@ -547,19 +559,21 @@
                     </view>
                 </view>
             </view>
-        </TnPopup>
+        </u-popup>
 
         <!-- 排序选择器 -->
-        <TnPopup
-            v-model="showSortPicker"
-            open-direction="bottom"
-            :radius="24"
+        <u-popup
+            v-model="showSortPopup"
+            mode="bottom"
+            :mask="true"
+            :mask-close-able="true"
             :safe-area-inset-bottom="true"
+            :border-radius="24"
         >
             <view class="picker-container">
                 <view class="picker-header">
                     <text class="picker-title">选择排序</text>
-                    <view class="picker-close" @click="showSortPicker = false">
+                    <view class="picker-close" @click="closeSortPicker">
                         <tn-icon name="close" size="32" color="#666666" />
                     </view>
                 </view>
@@ -586,43 +600,81 @@
                     </view>
                 </view>
             </view>
-        </TnPopup>
+        </u-popup>
 
-        <!-- 日期时间选择器 -->
-        <TnDateTimePicker
-            v-model="selectedDate"
-            v-model:open="showDatePicker"
-            mode="date"
-            :min-time="getTomorrowDate()"
-            :init-current-date-time="false"
-            format="YYYY-MM-DD"
-            :confirm-color="$theme.primaryColor"
-            cancel-text="重置"
-            cancel-color="#666666"
-            @confirm="handleDateConfirm"
-            @cancel="handleDateCancel"
-            @close="handleDateClose"
-        />
+        <!-- 日期选择器 -->
+        <u-popup
+            v-model="showDatePopup"
+            mode="bottom"
+            :mask="true"
+            :mask-close-able="true"
+            :safe-area-inset-bottom="true"
+            :border-radius="24"
+        >
+            <view class="picker-container">
+                <view class="picker-header">
+                    <text class="picker-action" @click="closeDatePicker">取消</text>
+                    <text class="picker-title">选择预约日期</text>
+                    <text class="picker-action picker-action-primary" @click="confirmDatePicker">
+                        确定
+                    </text>
+                </view>
+                <view class="date-picker-content">
+                    <picker-view
+                        class="date-picker-view"
+                        :value="datePickerValue"
+                        @change="handleDatePickerChange"
+                    >
+                        <picker-view-column>
+                            <view
+                                v-for="year in datePickerYears"
+                                :key="`year-${year}`"
+                                class="picker-item"
+                            >
+                                {{ year }}年
+                            </view>
+                        </picker-view-column>
+                        <picker-view-column>
+                            <view
+                                v-for="month in datePickerMonths"
+                                :key="`month-${month}`"
+                                class="picker-item"
+                            >
+                                {{ month }}月
+                            </view>
+                        </picker-view-column>
+                        <picker-view-column>
+                            <view
+                                v-for="day in datePickerDays"
+                                :key="`day-${day}`"
+                                class="picker-item"
+                            >
+                                {{ day }}日
+                            </view>
+                        </picker-view-column>
+                    </picker-view>
+                </view>
+            </view>
+        </u-popup>
 
         <tabbar />
     </view>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onUnmounted } from 'vue'
-import { onLoad, onReady } from '@dcloudio/uni-app'
+import { ref, computed, onUnmounted, nextTick, watch } from 'vue'
+import { onLoad, onReady, onShow } from '@dcloudio/uni-app'
 import { getStaffList, toggleStaffFavorite } from '@/api/staff'
 import { getServiceCategories, getStyleTags } from '@/api/service'
 import { useThemeStore } from '@/stores/theme'
 import { alphaColor } from '@/utils/color'
-import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
-import TnDateTimePicker from '@tuniao/tnui-vue3-uniapp/components/date-time-picker/src/date-time-picker.vue'
 
 type StaffViewMode = 'poster' | 'list'
 
 const $theme = useThemeStore()
 const STAFF_VIEW_MODE_STORAGE_KEY = 'staff_list_view_mode'
 const STAFF_LIST_PAGE_SIZE = 10
+const POPUP_REOPEN_DELAY = 280
 
 const getPrimaryGradient = () =>
     `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
@@ -685,24 +737,129 @@ const categoryMouseDragging = ref(false)
 const categoryTouchDragging = ref(false)
 const categoryMovedDistance = ref(0)
 const categoryMoveThreshold = 6
-
-// 弹窗控制
-const showTagPicker = ref(false)
-const showDatePicker = ref(false)
-const showSortPicker = ref(false)
+const showTagPopup = ref(false)
+const showSortPopup = ref(false)
+const showDatePopup = ref(false)
 
 // 获取明天的日期（最小可选日期）
 const getTomorrowDate = () => {
     const tomorrow = new Date()
+    tomorrow.setHours(0, 0, 0, 0)
     tomorrow.setDate(tomorrow.getDate() + 1)
-    const year = tomorrow.getFullYear()
-    const month = String(tomorrow.getMonth() + 1).padStart(2, '0')
-    const day = String(tomorrow.getDate()).padStart(2, '0')
+    return tomorrow
+}
+
+const getMaxDateForPicker = () => {
+    const maxDate = getTomorrowDate()
+    maxDate.setFullYear(maxDate.getFullYear() + 5)
+    return maxDate
+}
+
+const formatDateText = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
     return `${year}-${month}-${day}`
+}
+
+const parseDateText = (value = '') => {
+    const [year, month, day] = value.split('-').map((item) => Number(item))
+    if (!year || !month || !day) {
+        return null
+    }
+    const date = new Date(year, month - 1, day)
+    date.setHours(0, 0, 0, 0)
+    if (Number.isNaN(date.getTime())) {
+        return null
+    }
+    return date
+}
+
+const isSelectableDate = (value = '') => {
+    const parsedDate = parseDateText(value)
+    if (!parsedDate) {
+        return false
+    }
+    const minDate = getTomorrowDate()
+    const maxDate = getMaxDateForPicker()
+    return parsedDate >= minDate && parsedDate <= maxDate
+}
+
+const normalizeSelectedDateText = (value = '') => {
+    if (!isSelectableDate(value)) {
+        return ''
+    }
+    return formatDateText(parseDateText(value) as Date)
+}
+
+const getEffectiveSelectableDate = (value = '') => {
+    const parsedDate = parseDateText(value)
+    const minDate = getTomorrowDate()
+    const maxDate = getMaxDateForPicker()
+    if (!parsedDate || parsedDate < minDate) {
+        return minDate
+    }
+    if (parsedDate > maxDate) {
+        return maxDate
+    }
+    return parsedDate
 }
 
 // 日期筛选
 const selectedDate = ref('')
+const datePickerValue = ref([0, 0, 0])
+const datePickerYears = computed(() => {
+    const minDate = getTomorrowDate()
+    const maxDate = getMaxDateForPicker()
+    const totalYears = maxDate.getFullYear() - minDate.getFullYear() + 1
+    return Array.from({ length: totalYears }, (_, index) => minDate.getFullYear() + index)
+})
+
+const getDatePickerMonthsByYear = (year: number) => {
+    const minDate = getTomorrowDate()
+    const maxDate = getMaxDateForPicker()
+    const startMonth = year === minDate.getFullYear() ? minDate.getMonth() + 1 : 1
+    const endMonth = year === maxDate.getFullYear() ? maxDate.getMonth() + 1 : 12
+    return Array.from({ length: endMonth - startMonth + 1 }, (_, index) => startMonth + index)
+}
+
+const getDatePickerDaysByYearMonth = (year: number, month: number) => {
+    const minDate = getTomorrowDate()
+    const maxDate = getMaxDateForPicker()
+    const isMinMonth = year === minDate.getFullYear() && month === minDate.getMonth() + 1
+    const isMaxMonth = year === maxDate.getFullYear() && month === maxDate.getMonth() + 1
+    const startDay = isMinMonth ? minDate.getDate() : 1
+    const endDay = isMaxMonth ? maxDate.getDate() : new Date(year, month, 0).getDate()
+    return Array.from({ length: endDay - startDay + 1 }, (_, index) => startDay + index)
+}
+
+const normalizeDatePickerValue = (value: number[]) => {
+    const yearIndex = Math.min(Math.max(value[0] ?? 0, 0), datePickerYears.value.length - 1)
+    const year = datePickerYears.value[yearIndex]
+    const months = getDatePickerMonthsByYear(year)
+    const monthIndex = Math.min(Math.max(value[1] ?? 0, 0), months.length - 1)
+    const month = months[monthIndex]
+    const days = getDatePickerDaysByYearMonth(year, month)
+    const dayIndex = Math.min(Math.max(value[2] ?? 0, 0), days.length - 1)
+    return [yearIndex, monthIndex, dayIndex]
+}
+
+const datePickerMonths = computed(() => {
+    const yearIndex = Math.min(Math.max(datePickerValue.value[0] ?? 0, 0), datePickerYears.value.length - 1)
+    const year = datePickerYears.value[yearIndex]
+    return getDatePickerMonthsByYear(year)
+})
+
+const datePickerDays = computed(() => {
+    const yearIndex = Math.min(Math.max(datePickerValue.value[0] ?? 0, 0), datePickerYears.value.length - 1)
+    const year = datePickerYears.value[yearIndex]
+    const monthIndex = Math.min(
+        Math.max(datePickerValue.value[1] ?? 0, 0),
+        Math.max(datePickerMonths.value.length - 1, 0)
+    )
+    const month = datePickerMonths.value[monthIndex]
+    return getDatePickerDaysByYearMonth(year, month)
+})
 
 const sortOptions = [
     { label: '综合排序', value: 'default' },
@@ -734,7 +891,7 @@ const dateRangeText = computed(() => {
     if (selectedDate.value) {
         return selectedDate.value
     }
-    return '日期'
+    return '请选择日期'
 })
 
 // 日期选择处理
@@ -742,37 +899,60 @@ const pagingRefresherEnabled = computed(() => {
     return import.meta.env.UNI_PLATFORM !== 'h5'
 })
 
-const handleDateConfirm = (value: string) => {
-    selectedDate.value = value
-    showDatePicker.value = false
-    pagingRef.value.reload()
+const openDatePicker = () => {
+    if (showDatePopup.value) {
+        return
+    }
+    showDatePopup.value = true
 }
 
-const handleDateCancel = () => {
-    selectedDate.value = ''
-    showDatePicker.value = false
-    pagingRef.value.reload()
+const syncDatePickerValue = (value = '') => {
+    const targetDate = getEffectiveSelectableDate(value)
+    const yearIndex = datePickerYears.value.indexOf(targetDate.getFullYear())
+    const safeYearIndex = yearIndex >= 0 ? yearIndex : 0
+    const months = getDatePickerMonthsByYear(datePickerYears.value[safeYearIndex])
+    const monthIndex = Math.max(months.indexOf(targetDate.getMonth() + 1), 0)
+    const days = getDatePickerDaysByYearMonth(
+        datePickerYears.value[safeYearIndex],
+        months[monthIndex]
+    )
+    const dayIndex = Math.max(days.indexOf(targetDate.getDate()), 0)
+    datePickerValue.value = [safeYearIndex, monthIndex, dayIndex]
 }
 
-const handleDateClose = () => {
-    showDatePicker.value = false
+const closeDatePicker = () => {
+    showDatePopup.value = false
 }
 
-// 清除日期
-const clearDate = () => {
-    selectedDate.value = ''
-    pagingRef.value.reload()
+const handleDatePickerChange = (event: any) => {
+    datePickerValue.value = normalizeDatePickerValue(event.detail.value || [])
+}
+
+const confirmDatePicker = () => {
+    const year = datePickerYears.value[datePickerValue.value[0]]
+    const month = String(datePickerMonths.value[datePickerValue.value[1]]).padStart(2, '0')
+    const day = String(datePickerDays.value[datePickerValue.value[2]]).padStart(2, '0')
+    selectedDate.value = `${year}-${month}-${day}`
+    closeDatePicker()
+    pagingRef.value?.reload()
 }
 
 const handleResetFilters = () => {
     keyword.value = ''
-    selectedDate.value = ''
     selectedTagIds.value = []
     tempSelectedTagIds.value = []
     currentSort.value = 'default'
-    showTagPicker.value = false
-    showSortPicker.value = false
+    closeTagPicker()
+    closeSortPicker()
     pagingRef.value?.reload()
+}
+
+const handleEmptyAction = () => {
+    if (!selectedDate.value) {
+        openDatePicker()
+        return
+    }
+    handleResetFilters()
 }
 
 // 扁平化分类树
@@ -833,13 +1013,16 @@ const openTagPicker = async () => {
         await getCategoryTags()
     }
     tempSelectedTagIds.value = [...selectedTagIds.value]
-    showTagPicker.value = true
+    showTagPopup.value = true
 }
 
 // 关闭标签选择
 const closeTagPicker = () => {
+    showTagPopup.value = false
+}
+
+const handleTagPopupClose = () => {
     tempSelectedTagIds.value = [...selectedTagIds.value]
-    showTagPicker.value = false
 }
 
 // 切换标签（多选）
@@ -861,12 +1044,17 @@ const resetTagSelection = () => {
 // 确认标签筛选
 const handleTagFilterConfirm = () => {
     selectedTagIds.value = [...tempSelectedTagIds.value]
-    showTagPicker.value = false
+    closeTagPicker()
     pagingRef.value.reload()
 }
 
 // 查询列表
 const queryList = async (pageNo: number, _pageSize: number) => {
+    if (!selectedDate.value) {
+        pagingRef.value.complete([])
+        return
+    }
+
     try {
         const params: any = {
             page_no: pageNo,
@@ -1022,11 +1210,47 @@ onUnmounted(() => {
 })
 
 // 切换排序
+const openSortPicker = () => {
+    showSortPopup.value = true
+}
+
+const closeSortPicker = () => {
+    showSortPopup.value = false
+}
+
 const handleSortChange = (sort: string) => {
     currentSort.value = sort
-    showSortPicker.value = false
+    closeSortPicker()
     pagingRef.value.reload()
 }
+
+const ensureDateSelection = () => {
+    if (!isSelectableDate(selectedDate.value)) {
+        selectedDate.value = ''
+    }
+    if (!selectedDate.value && !showDatePopup.value) {
+        openDatePicker()
+    }
+}
+
+watch(showDatePopup, (visible, previousVisible) => {
+    if (visible) {
+        nextTick(() => {
+            setTimeout(() => {
+                syncDatePickerValue(selectedDate.value)
+            }, 0)
+        })
+        return
+    }
+
+    if (previousVisible && !selectedDate.value) {
+        setTimeout(() => {
+            if (!selectedDate.value) {
+                showDatePopup.value = true
+            }
+        }, POPUP_REOPEN_DELAY)
+    }
+})
 
 // 收藏/取消收藏
 const handleToggleFavorite = async (item: any) => {
@@ -1052,6 +1276,9 @@ const goToDetail = (id: number) => {
 }
 
 onLoad(async (options) => {
+    if (options?.date) {
+        selectedDate.value = normalizeSelectedDateText(options.date)
+    }
     if (options?.category_id) {
         const categoryId = Number(options.category_id)
         if (!Number.isNaN(categoryId) && categoryId > 0) {
@@ -1063,7 +1290,12 @@ onLoad(async (options) => {
 })
 
 onReady(() => {
+    ensureDateSelection()
     pagingRef.value?.reload()
+})
+
+onShow(() => {
+    ensureDateSelection()
 })
 </script>
 
@@ -1253,23 +1485,6 @@ onReady(() => {
         picker {
             flex: 1;
         }
-
-        .clear-date-btn {
-            position: absolute;
-            right: 10rpx;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 56rpx;
-            height: 56rpx;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 8;
-
-            &:active {
-                opacity: 0.65;
-            }
-        }
     }
 
     .filter-item {
@@ -1410,6 +1625,22 @@ onReady(() => {
                 background: #f4f5f7;
             }
         }
+
+        .picker-action {
+            min-width: 96rpx;
+            font-size: 28rpx;
+            color: #667085;
+            text-align: center;
+
+            &:active {
+                opacity: 0.72;
+            }
+        }
+
+        .picker-action-primary {
+            color: var(--color-primary);
+            font-weight: 600;
+        }
     }
 
     .button-picker-content {
@@ -1455,6 +1686,23 @@ onReady(() => {
         text-align: center;
         font-size: 26rpx;
         color: #98a2b3;
+    }
+
+    .date-picker-content {
+        padding: 12rpx 16rpx 24rpx;
+    }
+
+    .date-picker-view {
+        height: 420rpx;
+    }
+
+    .picker-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        font-size: 30rpx;
+        color: #111827;
     }
 
     .picker-footer {
@@ -1593,6 +1841,14 @@ onReady(() => {
         gap: 10rpx;
     }
 
+    .poster-name-group {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 10rpx;
+    }
+
     .poster-name {
         flex: 1;
         min-width: 0;
@@ -1601,6 +1857,17 @@ onReady(() => {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .poster-recommend-badge {
+        flex-shrink: 0;
+        padding: 4rpx 12rpx;
+        border-radius: 999rpx;
+        font-size: 20rpx;
+        font-weight: 600;
+        color: #ffffff;
+        background: linear-gradient(135deg, #ff6aa2 0%, #ff4d8d 100%);
+        box-shadow: 0 8rpx 18rpx rgba(255, 77, 141, 0.26);
     }
 
     .poster-experience {
@@ -1789,17 +2056,36 @@ onReady(() => {
             .info-top {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
                 gap: 12rpx;
+
+                .staff-name-group {
+                    flex: 1;
+                    min-width: 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 10rpx;
+                }
 
                 .staff-name {
                     flex: 1;
+                    min-width: 0;
                     font-size: 32rpx;
                     font-weight: 700;
                     color: #1f2937;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
+                }
+
+                .staff-recommend-badge {
+                    flex-shrink: 0;
+                    padding: 4rpx 12rpx;
+                    border-radius: 999rpx;
+                    font-size: 20rpx;
+                    font-weight: 600;
+                    color: #ffffff;
+                    background: linear-gradient(135deg, #ff6aa2 0%, #ff4d8d 100%);
+                    box-shadow: 0 8rpx 18rpx rgba(255, 77, 141, 0.18);
                 }
 
                 .favorite-btn {

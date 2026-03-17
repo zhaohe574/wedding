@@ -8,12 +8,9 @@ declare(strict_types=1);
 namespace app\common\service;
 
 use app\common\model\staff\Staff;
-use app\common\model\service\ServicePackage;
-use app\common\model\coupon\Coupon;
 use app\common\model\notification\Notification;
 use app\common\model\dynamic\Dynamic;
 use think\facade\Log;
-use think\facade\Db;
 
 /**
  * 装修数据解析服务
@@ -30,6 +27,13 @@ class DecorateDataService
         '/packages/pages/cart/cart',
         '/packages/pages/cart_plan/cart_plan',
         '/packages/pages/share_plan/share_plan',
+        '/pages/coupon/list',
+        '/pages/coupon/center',
+        '/pages/coupon/detail',
+        '/packages/pages/coupon/list',
+        '/packages/pages/coupon/center',
+        '/packages/pages/coupon/detail',
+        '/packages/pages/coupon_center/coupon_center',
     ];
 
     /**
@@ -39,10 +43,6 @@ class DecorateDataService
         'staff-showcase' => [
             'id_field' => 'staff_id',
             'data_type' => 'staff'
-        ],
-        'coupon-receive' => [
-            'id_field' => 'coupon_id',
-            'data_type' => 'coupon'
         ],
         'notice-bar' => [
             'id_field' => 'notice_id',
@@ -203,7 +203,12 @@ class DecorateDataService
      */
     private static function shouldRemoveDecorateNode(array $node): bool
     {
-        if (($node['name'] ?? '') === 'service-packages') {
+        $name = (string)($node['name'] ?? '');
+        if ($name === 'service-packages' || $name === 'coupon-receive') {
+            return true;
+        }
+
+        if ((string)($node['value'] ?? '') === 'coupon_count') {
             return true;
         }
 
@@ -278,10 +283,6 @@ class DecorateDataService
         try {
             if ($dataType === 'staff') {
                 $businessDataMap = self::batchGetStaffData($ids);
-            } elseif ($dataType === 'package') {
-                $businessDataMap = self::batchGetPackageData($ids);
-            } elseif ($dataType === 'coupon') {
-                $businessDataMap = self::batchGetCouponData($ids);
             } elseif ($dataType === 'notice') {
                 $businessDataMap = self::batchGetNoticeData($ids);
             } elseif ($dataType === 'topic') {
@@ -370,192 +371,6 @@ class DecorateDataService
             return $result;
         } catch (\Exception $e) {
             Log::error('批量查询员工数据失败: ' . $e->getMessage());
-            return [];
-        }
-    }
-
-    /**
-     * @notes 批量获取套餐数据
-     * @param array $packageIds 套餐ID列表
-     * @return array 套餐数据映射 [id => data]
-     */
-    private static function batchGetPackageData(array $packageIds): array
-    {
-        if (empty($packageIds)) {
-            return [];
-        }
-
-        // 限制单次查询数量，避免性能问题
-        $maxBatchSize = 50;
-        if (count($packageIds) > $maxBatchSize) {
-            $packageIds = array_slice($packageIds, 0, $maxBatchSize);
-        }
-
-        try {
-            $packageList = ServicePackage::whereIn('id', $packageIds)
-                ->where('delete_time', null)
-                ->field([
-                    'id', 'name', 'image', 'description',
-                    'price', 'original_price', 'content', 'is_recommend', 'is_show'
-                ])
-                ->select()
-                ->toArray();
-
-            // 转换为以 ID 为键的映射
-            $result = [];
-            foreach ($packageList as $package) {
-                // 处理服务项：content 可能是数组或 JSON 字符串
-                $services = [];
-                if (!empty($package['content'])) {
-                    if (is_string($package['content'])) {
-                        $content = json_decode($package['content'], true);
-                        if (json_last_error() === JSON_ERROR_NONE && is_array($content)) {
-                            $services = $content;
-                        }
-                    } elseif (is_array($package['content'])) {
-                        $services = $package['content'];
-                    }
-                }
-
-                // 如果 services 是对象数组，提取名称
-                if (!empty($services) && is_array($services[0] ?? null)) {
-                    $services = array_map(function($item) {
-                        return is_string($item) ? $item : ($item['name'] ?? $item['title'] ?? '');
-                    }, $services);
-                    $services = array_filter($services);
-                }
-
-                $result[$package['id']] = [
-                    'id' => $package['id'],
-                    'name' => $package['name'],
-                    'image' => $package['image'] ?? '',
-                    'desc' => $package['description'] ?? '',
-                    'price' => (string)($package['price'] ?? '0'),
-                    'original_price' => $package['original_price'] ? (string)$package['original_price'] : '',
-                    'tag' => ($package['is_recommend'] ?? 0) ? '推荐' : '',
-                    'services' => $services,
-                ];
-            }
-
-            return $result;
-        } catch (\Exception $e) {
-            Log::error('批量查询套餐数据失败: ' . $e->getMessage());
-            return [];
-        }
-    }
-
-    /**
-     * @notes 批量获取优惠券数据
-     * @param array $couponIds 优惠券ID列表
-     * @return array 优惠券数据映射 [id => data]
-     */
-    private static function batchGetCouponData(array $couponIds): array
-    {
-        if (empty($couponIds)) {
-            return [];
-        }
-
-        // 限制单次查询数量，避免性能问题
-        $maxBatchSize = 50;
-        if (count($couponIds) > $maxBatchSize) {
-            $couponIds = array_slice($couponIds, 0, $maxBatchSize);
-        }
-
-        try {
-            $couponList = Coupon::whereIn('id', $couponIds)
-                ->where('status', 1) // 只查询启用的优惠券
-                ->field([
-                    'id', 'name', 'coupon_type', 'discount_amount', 
-                    'threshold_amount', 'valid_type', 'valid_days',
-                    'valid_start_time', 'valid_end_time',
-                    'receive_start_time', 'receive_end_time',
-                    'total_count', 'receive_count'
-                ])
-                ->select()
-                ->toArray();
-
-            // 转换为以 ID 为键的映射
-            $result = [];
-            $currentTime = time();
-            $startLimit = $currentTime + Coupon::RECEIVE_PREVIEW_SECONDS;
-            foreach ($couponList as $coupon) {
-                $receiveStartTime = (int)($coupon['receive_start_time'] ?? 0);
-                $receiveEndTime = (int)($coupon['receive_end_time'] ?? 0);
-                $hasReceiveTime = $receiveStartTime > 0 || $receiveEndTime > 0;
-
-                // 不在展示窗口的优惠券不返回
-                if ($hasReceiveTime) {
-                    if (($receiveStartTime > 0 && $receiveStartTime > $startLimit) ||
-                        ($receiveEndTime > 0 && $receiveEndTime < $currentTime)) {
-                        continue;
-                    }
-                } elseif ((int)$coupon['valid_type'] == Coupon::VALID_TYPE_FIXED) {
-                    $validStartTime = (int)($coupon['valid_start_time'] ?? 0);
-                    $validEndTime = (int)($coupon['valid_end_time'] ?? 0);
-                    if (($validStartTime > 0 && $validStartTime > $startLimit) ||
-                        ($validEndTime > 0 && $validEndTime < $currentTime)) {
-                        continue;
-                    }
-                }
-
-                // 计算剩余数量
-                if ((int)$coupon['total_count'] === 0) {
-                    $remainCount = -1;
-                } else {
-                    $remainCount = max(0, (int)$coupon['total_count'] - (int)$coupon['receive_count']);
-                }
-
-                // 判断是否可领取
-                $canReceive = true;
-                $statusText = '立即领取';
-
-                if ($remainCount === 0) {
-                    $canReceive = false;
-                    $statusText = '已抢光';
-                } else {
-                    [$timeOk, $timeStatusText, $countdown] = Coupon::getReceiveTimeStatus($coupon, $currentTime);
-                    if (!$timeOk) {
-                        $canReceive = false;
-                        $statusText = $timeStatusText;
-                        if ($timeStatusText === '未开始' && $countdown > 0) {
-                            $statusText = Coupon::formatCountdownText($countdown);
-                        }
-                    }
-                }
-
-                // 格式化优惠券类型和金额
-                $discountText = '';
-                if ($coupon['coupon_type'] == 1) { // 满减券
-                    $discountText = '满' . $coupon['threshold_amount'] . '减' . $coupon['discount_amount'];
-                } elseif ($coupon['coupon_type'] == 2) { // 折扣券
-                    $discountText = $coupon['discount_amount'] . '折';
-                } else { // 无门槛券
-                    $discountText = '立减' . $coupon['discount_amount'] . '元';
-                }
-
-                $result[$coupon['id']] = [
-                    'id' => $coupon['id'],
-                    'name' => $coupon['name'],
-                    'coupon_type' => $coupon['coupon_type'],
-                    'discount_text' => $discountText,
-                    'discount_amount' => (string)$coupon['discount_amount'],
-                    'threshold_amount' => (string)$coupon['threshold_amount'],
-                    'valid_type' => (int)$coupon['valid_type'],
-                    'valid_days' => (int)$coupon['valid_days'],
-                    'valid_start_time' => (int)$coupon['valid_start_time'],
-                    'valid_end_time' => (int)$coupon['valid_end_time'],
-                    'receive_start_time' => (int)($coupon['receive_start_time'] ?? 0),
-                    'receive_end_time' => (int)($coupon['receive_end_time'] ?? 0),
-                    'receive_countdown' => $countdown,
-                    'remain_count' => $remainCount,
-                    'can_receive' => $canReceive,
-                    'status_text' => $statusText,
-                ];
-            }
-
-            return $result;
-        } catch (\Exception $e) {
-            Log::error('批量查询优惠券数据失败: ' . $e->getMessage());
             return [];
         }
     }
@@ -727,7 +542,7 @@ class DecorateDataService
      * @notes 合并引用数据和业务数据
      * @param array $item 引用数据项（包含 ID 和控制信息）
      * @param array $businessData 业务数据
-     * @param string $type 数据类型 (staff/package/coupon/notice/topic)
+     * @param string $type 数据类型 (staff/notice/topic)
      * @return array 合并后的数据
      */
     private static function mergeData(array $item, array $businessData, string $type): array
@@ -748,20 +563,6 @@ class DecorateDataService
             $result['tags'] = $businessData['tag_names'] ?? [];
             $result['link'] = [
                 'path' => '/packages/pages/staff_detail/staff_detail',
-                'query' => ['id' => $businessData['id']],
-                'type' => 'shop'
-            ];
-        } elseif ($type === 'package') {
-            $result['package_id'] = $businessData['id'];
-            $result['link'] = [
-                'path' => '/packages/pages/package_detail/package_detail',
-                'query' => ['id' => $businessData['id']],
-                'type' => 'shop'
-            ];
-        } elseif ($type === 'coupon') {
-            $result['coupon_id'] = $businessData['id'];
-            $result['link'] = [
-                'path' => '/packages/pages/coupon_center/coupon_center',
                 'query' => ['id' => $businessData['id']],
                 'type' => 'shop'
             ];

@@ -134,7 +134,7 @@ class OrderLogic extends BaseLogic
             'items' => function ($query) {
                 $query->with(['staff' => function ($q) {
                     $q->field('id, name, avatar');
-                }]);
+                }, 'addons']);
             },
             'payments',
             'logs' => function ($query) {
@@ -153,6 +153,79 @@ class OrderLogic extends BaseLogic
         $data['pay_voucher_status_desc'] = $order->pay_voucher_status_desc ?? '';
 
         return $data;
+    }
+
+    /**
+     * @notes 计算工作人员可见订单金额
+     * @param array $order
+     * @param int $staffId
+     * @return array
+     */
+    public static function applyStaffVisibleOrderAmounts(array $order, int $staffId): array
+    {
+        $items = $order['items'] ?? [];
+        $serviceAmount = 0.0;
+        $addonAmount = 0.0;
+
+        foreach ($items as $index => $item) {
+            if ((int)($item['staff_id'] ?? 0) !== $staffId) {
+                continue;
+            }
+
+            $subtotal = isset($item['subtotal']) ? (float)$item['subtotal'] : 0.0;
+            if ($subtotal <= 0) {
+                $price = (float)($item['price'] ?? 0);
+                $quantity = (int)($item['quantity'] ?? 1);
+                $subtotal = $price * max($quantity, 1);
+            }
+
+            $itemAddonAmount = 0.0;
+            foreach (($item['addons'] ?? []) as $addon) {
+                $itemAddonAmount += (float)($addon['subtotal'] ?? $addon['price'] ?? 0);
+            }
+            $itemAddonAmount = round($itemAddonAmount, 2);
+            $items[$index]['addon_amount'] = $itemAddonAmount;
+
+            $serviceAmount += $subtotal;
+            $addonAmount += $itemAddonAmount;
+        }
+
+        $order['items'] = $items;
+        $serviceAmount = round($serviceAmount, 2);
+        $addonAmount = round($addonAmount, 2);
+        $visibleTotal = round($serviceAmount + $addonAmount, 2);
+
+        $originTotalAmount = (float)($order['total_amount'] ?? 0);
+        $originPayAmount = (float)($order['pay_amount'] ?? 0);
+        $discountTotal = (float)($order['discount_amount'] ?? 0);
+        $paidTotal = (float)($order['paid_amount'] ?? 0);
+
+        $staffDiscount = 0.0;
+        if ($originTotalAmount > 0 && $visibleTotal > 0) {
+            $staffDiscount = round($discountTotal * ($visibleTotal / $originTotalAmount), 2);
+        }
+
+        $staffPayAmount = round($visibleTotal - $staffDiscount, 2);
+        if ($staffPayAmount < 0) {
+            $staffPayAmount = 0.0;
+        }
+
+        $staffPaidAmount = 0.0;
+        if ($originPayAmount > 0 && $staffPayAmount > 0 && $paidTotal > 0) {
+            $staffPaidAmount = round($paidTotal * ($staffPayAmount / $originPayAmount), 2);
+            if ($staffPaidAmount > $staffPayAmount) {
+                $staffPaidAmount = $staffPayAmount;
+            }
+        }
+
+        $order['service_amount'] = $serviceAmount;
+        $order['addon_amount'] = $addonAmount;
+        $order['total_amount'] = $visibleTotal;
+        $order['discount_amount'] = $staffDiscount;
+        $order['pay_amount'] = $staffPayAmount;
+        $order['paid_amount'] = $staffPaidAmount;
+
+        return $order;
     }
 
     /**
@@ -203,7 +276,6 @@ class OrderLogic extends BaseLogic
                 'paid_amount' => 0,
                 'total_amount' => $totalAmount,
                 'discount_amount' => $discountAmount,
-                'coupon_amount' => 0,
                 'pay_amount' => $payAmount,
                 'deposit_amount' => $depositAmount,
                 'balance_amount' => $balanceAmount,

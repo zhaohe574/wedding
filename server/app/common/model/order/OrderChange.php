@@ -9,15 +9,16 @@ namespace app\common\model\order;
 
 use app\common\model\BaseModel;
 use app\common\model\package\PackageBooking;
-use app\common\model\user\User;
-use app\common\model\staff\Staff;
 use app\common\model\schedule\Schedule;
+use app\common\model\service\ServiceAddon;
+use app\common\model\staff\Staff;
+use app\common\model\user\User;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
 
 /**
  * 订单变更模型
- * 支持改期、换人、加项三种变更类型
+ * 支持改期、换人、加项、附加服务变更四种类型
  * Class OrderChange
  * @package app\common\model\order
  */
@@ -32,6 +33,11 @@ class OrderChange extends BaseModel
     const TYPE_DATE = 1;        // 改期
     const TYPE_STAFF = 2;       // 换人
     const TYPE_ADD_ITEM = 3;    // 加项
+    const TYPE_ADDON = 4;       // 附加服务变更
+
+    // 附加服务动作
+    const ADDON_ACTION_ADD = 1;      // 新增
+    const ADDON_ACTION_REMOVE = 2;   // 移除
 
     // 变更状态
     const STATUS_PENDING = 0;       // 待审核
@@ -101,6 +107,16 @@ class OrderChange extends BaseModel
     }
 
     /**
+     * @notes 关联附加服务变更明细
+     * @return \think\model\relation\HasMany
+     */
+    public function addonItems()
+    {
+        return $this->hasMany(OrderChangeAddon::class, 'change_id', 'id')
+            ->order('id', 'asc');
+    }
+
+    /**
      * @notes 变更类型描述获取器
      * @param $value
      * @param $data
@@ -112,6 +128,7 @@ class OrderChange extends BaseModel
             self::TYPE_DATE => '改期',
             self::TYPE_STAFF => '换人',
             self::TYPE_ADD_ITEM => '加项',
+            self::TYPE_ADDON => '附加服务变更',
         ];
         return $map[$data['change_type']] ?? '未知';
     }
@@ -132,6 +149,22 @@ class OrderChange extends BaseModel
             self::STATUS_CANCELLED => '已取消',
         ];
         return $map[$data['change_status']] ?? '未知';
+    }
+
+    /**
+     * @notes 附加服务动作描述获取器
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getAddonActionDescAttr($value, $data): string
+    {
+        $map = [
+            self::ADDON_ACTION_ADD => '新增附加服务',
+            self::ADDON_ACTION_REMOVE => '移除附加服务',
+        ];
+
+        return $map[(int)($data['addon_action'] ?? 0)] ?? '';
     }
 
     /**
@@ -553,6 +586,201 @@ class OrderChange extends BaseModel
     }
 
     /**
+     * @notes 申请附加服务变更
+     * @param int $userId
+     * @param int $orderId
+     * @param int $orderItemId
+     * @param int $addonAction
+     * @param array $addonIds
+     * @param string $reason
+     * @param array $attachImages
+     * @return array [bool $success, string $message, OrderChange|null $change]
+     */
+    public static function applyAddonChange(
+        int $userId,
+        int $orderId,
+        int $orderItemId,
+        int $addonAction,
+        array $addonIds,
+        string $reason = '',
+        array $attachImages = []
+    ): array {
+        [$canChange, $message] = self::checkCanChange($orderId);
+        if (!$canChange) {
+            return [false, $message, null];
+        }
+
+        $order = Order::find($orderId);
+        if (!$order || (int)$order->user_id !== $userId) {
+            return [false, '无权操作此订单', null];
+        }
+
+        $orderItem = OrderItem::where('id', $orderItemId)
+            ->where('order_id', $orderId)
+            ->find();
+        if (!$orderItem) {
+            return [false, '订单项不存在', null];
+        }
+
+        $addonAction = self::normalizeAddonAction($addonAction);
+        if ($addonAction <= 0) {
+            return [false, '附加服务动作参数错误', null];
+        }
+
+        $addonIds = self::normalizeAddonIds($addonIds);
+        if (empty($addonIds)) {
+            return [false, '请选择附加服务', null];
+        }
+
+        Db::startTrans();
+        try {
+            $priceDiff = 0.0;
+            $detailItems = [];
+            $addonNames = [];
+
+            if ($addonAction === self::ADDON_ACTION_ADD) {
+                $addons = ServiceAddon::whereIn('id', $addonIds)
+                    ->where('staff_id', (int)$orderItem->staff_id)
+                    ->where('is_show', 1)
+                    ->whereNull('delete_time')
+                    ->field('id, name, price')
+                    ->select()
+                    ->toArray();
+
+                if (count($addons) !== count($addonIds)) {
+                    throw new \RuntimeException('所选附加服务不存在、已下架或不属于当前人员');
+                }
+
+                $activeAddonIds = OrderItemAddon::getActiveAddonIds($orderItemId);
+                if (!empty(array_intersect($addonIds, $activeAddonIds))) {
+                    throw new \RuntimeException('所选附加服务已存在，请勿重复新增');
+                }
+
+                $addonMap = [];
+                foreach ($addons as $addon) {
+                    $addonMap[(int)$addon['id']] = $addon;
+                }
+
+                foreach ($addonIds as $addonId) {
+                    $addon = $addonMap[$addonId] ?? null;
+                    if (!$addon) {
+                        continue;
+                    }
+                    $price = round((float)($addon['price'] ?? 0), 2);
+                    $detailItems[] = [
+                        'order_item_addon_id' => 0,
+                        'addon_id' => $addonId,
+                        'addon_name' => (string)($addon['name'] ?? ''),
+                        'price' => $price,
+                        'quantity' => 1,
+                        'subtotal' => $price,
+                    ];
+                    $addonNames[] = (string)($addon['name'] ?? '');
+                    $priceDiff += $price;
+                }
+            } else {
+                $addonSnapshots = OrderItemAddon::where('order_item_id', $orderItemId)
+                    ->whereIn('addon_id', $addonIds)
+                    ->where('status', OrderItemAddon::STATUS_ACTIVE)
+                    ->select()
+                    ->toArray();
+
+                if (count($addonSnapshots) !== count($addonIds)) {
+                    throw new \RuntimeException('所选附加服务不存在或已移除，无法重复移除');
+                }
+
+                $snapshotMap = [];
+                foreach ($addonSnapshots as $snapshot) {
+                    $snapshotMap[(int)$snapshot['addon_id']] = $snapshot;
+                }
+
+                foreach ($addonIds as $addonId) {
+                    $snapshot = $snapshotMap[$addonId] ?? null;
+                    if (!$snapshot) {
+                        continue;
+                    }
+                    $subtotal = round((float)($snapshot['subtotal'] ?? $snapshot['price'] ?? 0), 2);
+                    $detailItems[] = [
+                        'order_item_addon_id' => (int)($snapshot['id'] ?? 0),
+                        'addon_id' => $addonId,
+                        'addon_name' => (string)($snapshot['addon_name'] ?? ''),
+                        'price' => round((float)($snapshot['price'] ?? 0), 2),
+                        'quantity' => 1,
+                        'subtotal' => $subtotal,
+                    ];
+                    $addonNames[] = (string)($snapshot['addon_name'] ?? '');
+                    $priceDiff -= $subtotal;
+                }
+            }
+
+            if (empty($detailItems)) {
+                throw new \RuntimeException('附加服务明细不存在');
+            }
+
+            $priceDiff = round($priceDiff, 2);
+            $change = self::create([
+                'change_sn' => self::generateChangeSn(),
+                'order_id' => $orderId,
+                'order_sn' => $order->order_sn,
+                'user_id' => $userId,
+                'change_type' => self::TYPE_ADDON,
+                'addon_action' => $addonAction,
+                'change_status' => self::STATUS_PENDING,
+                'order_item_id' => $orderItemId,
+                'price_diff' => $priceDiff,
+                'apply_reason' => $reason,
+                'attach_images' => $attachImages,
+                'create_time' => time(),
+                'update_time' => time(),
+            ]);
+
+            $now = time();
+            foreach ($detailItems as $detailItem) {
+                OrderChangeAddon::create([
+                    'change_id' => (int)$change->id,
+                    'order_item_addon_id' => (int)$detailItem['order_item_addon_id'],
+                    'addon_id' => (int)$detailItem['addon_id'],
+                    'addon_name' => (string)$detailItem['addon_name'],
+                    'price' => (float)$detailItem['price'],
+                    'quantity' => 1,
+                    'subtotal' => (float)$detailItem['subtotal'],
+                    'create_time' => $now,
+                    'update_time' => $now,
+                ]);
+            }
+
+            $actionText = $addonAction === self::ADDON_ACTION_ADD ? '新增附加服务' : '移除附加服务';
+            $priceDiffText = $priceDiff > 0 ? '，净差额+' . $priceDiff . '元' : ($priceDiff < 0 ? '，净差额' . $priceDiff . '元' : '');
+            OrderChangeLog::addLog(
+                $orderId,
+                OrderChangeLog::RELATED_TYPE_CHANGE,
+                (int)$change->id,
+                OrderChangeLog::OPERATOR_USER,
+                $userId,
+                'apply',
+                0,
+                self::STATUS_PENDING,
+                '申请' . $actionText . '：' . implode('、', $addonNames) . $priceDiffText
+            );
+
+            Order::where('id', $orderId)->update([
+                'has_changed' => 1,
+                'update_time' => time(),
+            ]);
+
+            Db::commit();
+            return [
+                true,
+                $addonAction === self::ADDON_ACTION_ADD ? '附加服务新增申请已提交，请等待审核' : '附加服务移除申请已提交，请等待审核',
+                $change,
+            ];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return [false, '申请失败：' . $e->getMessage(), null];
+        }
+    }
+
+    /**
      * @notes 解析订单项价格（使用统一价格服务）
      * @param int $staffId
      * @param int $packageId
@@ -679,6 +907,10 @@ class OrderChange extends BaseModel
                 case self::TYPE_ADD_ITEM:
                     // 加项：创建新的订单项
                     $result = self::executeAddItem($change, $order);
+                    break;
+                case self::TYPE_ADDON:
+                    // 附加服务变更：新增或移除订单项附加服务
+                    $result = self::executeAddonChange($change, $order);
                     break;
                 default:
                     return [false, '未知的变更类型'];
@@ -869,11 +1101,7 @@ class OrderChange extends BaseModel
         if (!$order) {
             return ['success' => false, 'message' => '订单不存在'];
         }
-        $newTotalAmount = OrderItem::where('order_id', $order->id)->sum('subtotal');
-        $order->total_amount = $newTotalAmount;
-        $order->pay_amount = $newTotalAmount - $order->discount_amount - $order->coupon_amount;
-        $order->update_time = time();
-        $order->save();
+        OrderItemAddon::refreshOrderAmounts((int)$order->id);
 
         return ['success' => true];
     }
@@ -929,13 +1157,77 @@ class OrderChange extends BaseModel
             }
         }
 
-        // 更新订单总金额
-        $newTotalAmount = OrderItem::where('order_id', $order->id)->sum('subtotal');
-        $order->total_amount = $newTotalAmount;
-        $order->pay_amount = $newTotalAmount - $order->discount_amount - $order->coupon_amount;
-        $order->update_time = time();
-        $order->save();
+        OrderItemAddon::refreshOrderAmounts((int)$order->id);
 
+        return ['success' => true];
+    }
+
+    /**
+     * @notes 执行附加服务变更
+     * @param OrderChange $change
+     * @param Order $order
+     * @return array
+     */
+    private static function executeAddonChange(OrderChange $change, Order $order): array
+    {
+        $changeAddonItems = OrderChangeAddon::where('change_id', (int)$change->id)
+            ->order('id', 'asc')
+            ->select()
+            ->toArray();
+
+        if (empty($changeAddonItems)) {
+            return ['success' => false, 'message' => '附加服务变更明细不存在'];
+        }
+
+        if ((int)$change->addon_action === self::ADDON_ACTION_ADD) {
+            $pendingAddonIds = array_values(array_unique(array_map('intval', array_column($changeAddonItems, 'addon_id'))));
+            $activeAddonIds = OrderItemAddon::getActiveAddonIds((int)$change->order_item_id);
+            if (!empty(array_intersect($pendingAddonIds, $activeAddonIds))) {
+                return ['success' => false, 'message' => '部分附加服务已存在，无法重复执行'];
+            }
+
+            $createdItems = OrderItemAddon::createSnapshots(
+                (int)$order->id,
+                (int)$change->order_item_id,
+                array_map(static function (array $item) {
+                    return [
+                        'id' => (int)($item['addon_id'] ?? 0),
+                        'name' => (string)($item['addon_name'] ?? ''),
+                        'price' => (float)($item['price'] ?? 0),
+                        'quantity' => 1,
+                    ];
+                }, $changeAddonItems),
+                OrderItemAddon::SOURCE_CHANGE,
+                (int)$change->id
+            );
+
+            $createdMap = [];
+            foreach ($createdItems as $createdItem) {
+                $createdMap[(int)$createdItem->addon_id] = (int)$createdItem->id;
+            }
+
+            foreach ($changeAddonItems as $item) {
+                $addonId = (int)($item['addon_id'] ?? 0);
+                if (isset($createdMap[$addonId])) {
+                    OrderChangeAddon::where('id', (int)$item['id'])->update([
+                        'order_item_addon_id' => $createdMap[$addonId],
+                        'update_time' => time(),
+                    ]);
+                }
+            }
+        } else {
+            $addonIds = array_column($changeAddonItems, 'addon_id');
+            $affected = OrderItemAddon::markRemoved(
+                (int)$change->order_item_id,
+                $addonIds,
+                (int)$change->id
+            );
+            if ($affected !== count(array_unique(array_map('intval', $addonIds)))) {
+                return ['success' => false, 'message' => '部分附加服务已被移除，无法重复执行'];
+            }
+        }
+
+        OrderItemAddon::refreshOrderAmounts((int)$order->id);
         return ['success' => true];
     }
 
@@ -1004,8 +1296,8 @@ class OrderChange extends BaseModel
     {
         return [
             ['value' => self::TYPE_DATE, 'label' => '改期'],
-            ['value' => self::TYPE_STAFF, 'label' => '换人'],
             ['value' => self::TYPE_ADD_ITEM, 'label' => '加项'],
+            ['value' => self::TYPE_ADDON, 'label' => '附加服务变更'],
         ];
     }
 
@@ -1032,5 +1324,29 @@ class OrderChange extends BaseModel
     protected static function normalizeTimeSlot(int $timeSlot): int
     {
         return 0;
+    }
+
+    /**
+     * @notes 归一化附加服务动作
+     * @param int $addonAction
+     * @return int
+     */
+    protected static function normalizeAddonAction(int $addonAction): int
+    {
+        return in_array($addonAction, [self::ADDON_ACTION_ADD, self::ADDON_ACTION_REMOVE], true)
+            ? $addonAction
+            : 0;
+    }
+
+    /**
+     * @notes 归一化附加服务ID列表
+     * @param array $addonIds
+     * @return array
+     */
+    protected static function normalizeAddonIds(array $addonIds): array
+    {
+        $addonIds = array_map('intval', $addonIds);
+        $addonIds = array_filter($addonIds, static fn (int $addonId) => $addonId > 0);
+        return array_values(array_unique($addonIds));
     }
 }

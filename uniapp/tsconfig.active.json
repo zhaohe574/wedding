@@ -35,7 +35,6 @@
         "src/packages/pages/cart/**/*.vue",
         "src/packages/pages/cart_plan/**/*.vue",
         "src/packages/pages/order_confirm/**/*.vue",
-        "src/packages/pages/schedule_calendar/**/*.vue",
         "src/packages/pages/share_plan/**/*.vue",
         "src/packages/pages/staff_detail/**/*.vue",
         "src/packages/pages/staff_favorite/**/*.vue",

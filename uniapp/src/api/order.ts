@@ -69,8 +69,3 @@ export function getRefundDetail(params: any) {
 export function getOrderStatistics() {
     return request.get({ url: '/order/statistics' })
 }
-
-// 获取可用优惠券
-export function getAvailableCoupons(params?: any) {
-    return request.get({ url: '/order/availableCoupons', params })
-}

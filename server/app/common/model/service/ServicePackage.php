@@ -40,26 +40,6 @@ class ServicePackage extends BaseModel
     }
 
     /**
-     * @notes 套餐内容获取器(JSON转数组)
-     * @param $value
-     * @return array
-     */
-    public function getContentAttr($value)
-    {
-        return $value ? json_decode($value, true) : [];
-    }
-
-    /**
-     * @notes 套餐内容设置器(数组转JSON)
-     * @param $value
-     * @return false|string
-     */
-    public function setContentAttr($value)
-    {
-        return $value ? json_encode($value, JSON_UNESCAPED_UNICODE) : '';
-    }
-
-    /**
      * @notes 统一返回全天预约配置
      * @param int $packageId
      * @param int $staffId
@@ -183,7 +163,16 @@ class ServicePackage extends BaseModel
      */
     public function getCategoryNameAttr($value, $data)
     {
-        $category = ServiceCategory::find($data['category_id']);
+        $staffId = (int)($data['staff_id'] ?? 0);
+        if ($staffId > 0) {
+            $staff = Staff::find($staffId);
+            if ($staff && (int)$staff->category_id > 0) {
+                $category = ServiceCategory::find((int)$staff->category_id);
+                return $category ? $category->name : '';
+            }
+        }
+
+        $category = ServiceCategory::find((int)($data['category_id'] ?? 0));
         return $category ? $category->name : '';
     }
 

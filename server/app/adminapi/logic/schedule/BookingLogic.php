@@ -52,7 +52,6 @@ class BookingLogic extends BaseLogic
                 'o.pay_type',
                 'o.total_amount',
                 'o.discount_amount',
-                'o.coupon_amount',
                 'o.pay_amount',
                 'o.contact_name',
                 'o.contact_mobile',
@@ -243,8 +242,7 @@ class BookingLogic extends BaseLogic
                 $activeSubtotal = (float)(clone $activeItemsQuery)->sum('subtotal');
 
                 $discount = (float)$order->discount_amount;
-                $coupon = (float)$order->coupon_amount;
-                $payAmount = round(max($activeSubtotal - $discount - $coupon, 0), 2);
+                $payAmount = round(max($activeSubtotal - $discount, 0), 2);
 
                 $beforeStatus = (int)$order->order_status;
                 $order->total_amount = round($activeSubtotal, 2);

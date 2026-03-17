@@ -62,7 +62,6 @@ CREATE TABLE IF NOT EXISTS `la_service_package` (
   `original_price` decimal(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '原价',
   `duration` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务时长(小时)',
   `description` text COMMENT '套餐描述',
-  `content` text COMMENT '套餐内容(JSON格式)',
   `image` varchar(255) NOT NULL DEFAULT '' COMMENT '套餐图片',
   `sort` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
   `is_recommend` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否推荐:0-否,1-是',
@@ -427,7 +426,6 @@ CREATE TABLE IF NOT EXISTS `la_order` (
     -- 金额
     `total_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '订单总额',
     `discount_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '优惠金额',
-    `coupon_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '优惠券抵扣',
     `pay_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '实付金额',
     `paid_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '已支付金额',
     `deposit_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '定金金额',
@@ -453,7 +451,6 @@ CREATE TABLE IF NOT EXISTS `la_order` (
     -- 备注
     `user_remark` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '用户备注',
     `admin_remark` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '管理员备注',
-    `coupon_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '使用的优惠券ID',
     -- 取消/完成
     `cancel_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '取消原因',
     `cancel_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '取消时间',
@@ -872,58 +869,6 @@ CREATE TABLE IF NOT EXISTS `la_notification` (
     KEY `idx_is_read` (`is_read`),
     KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='消息通知表';
-
--- la_coupon
-CREATE TABLE IF NOT EXISTS `la_coupon` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `name` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '优惠券名称',
-    `coupon_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '类型：1=满减券,2=折扣券,3=立减券',
-    `threshold_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '使用门槛金额(0=无门槛)',
-    `discount_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '优惠金额/折扣率',
-    `max_discount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '最大优惠金额(折扣券用)',
-    `total_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发放总量(0=不限)',
-    `receive_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '已领取数量',
-    `used_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '已使用数量',
-    `per_limit` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '每人限领数量',
-    `receive_start_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '领取开始时间',
-    `receive_end_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '领取结束时间',
-    `valid_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '有效期类型：1=固定日期,2=领取后N天',
-    `valid_start_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '有效期开始',
-    `valid_end_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '有效期结束',
-    `valid_days` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '领取后有效天数',
-    `use_scope` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '使用范围：1=全部,2=指定分类,3=指定人员',
-    `scope_ids` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '适用范围ID(JSON)',
-    `status` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '状态：0=禁用,1=启用',
-    `remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '备注',
-    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    `delete_time` INT UNSIGNED DEFAULT NULL COMMENT '删除时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_status` (`status`),
-    KEY `idx_receive_time` (`receive_start_time`, `receive_end_time`),
-    KEY `idx_valid_time` (`valid_start_time`, `valid_end_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='优惠券表';
-
--- la_user_coupon
-CREATE TABLE IF NOT EXISTS `la_user_coupon` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `coupon_id` INT UNSIGNED NOT NULL COMMENT '优惠券ID',
-    `coupon_sn` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '优惠券码',
-    `status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态：0=未使用,1=已使用,2=已过期',
-    `order_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '使用订单ID',
-    `use_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '使用时间',
-    `valid_start_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '有效期开始',
-    `valid_end_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '有效期结束',
-    `receive_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '领取时间',
-    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_coupon_sn` (`coupon_sn`),
-    KEY `idx_user_id` (`user_id`),
-    KEY `idx_coupon_id` (`coupon_id`),
-    KEY `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户优惠券表';
 
 -- la_review
 CREATE TABLE IF NOT EXISTS `la_review` (
@@ -2082,8 +2027,6 @@ PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 -- 2.6 基础框架关联补丁
 SET @sql = IF(EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'la_user' AND COLUMN_NAME = 'user_points'),'SELECT 1','ALTER TABLE `la_user` ADD COLUMN `user_points` INT(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT ''用户积分'' AFTER `user_money`');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-SET @sql = IF(EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'la_order' AND COLUMN_NAME = 'user_coupon_id'),'SELECT 1','ALTER TABLE `la_order` ADD COLUMN `user_coupon_id` INT(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT ''使用的用户优惠券ID'' AFTER `coupon_id`');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET @confirm_status_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'la_order_item' AND COLUMN_NAME = 'confirm_status');
 SET @sql = IF(@confirm_status_exists > 0,'SELECT 1','ALTER TABLE `la_order_item` ADD COLUMN `confirm_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT ''确认状态：0=待确认,1=已确认'' AFTER `item_status`');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
@@ -2136,27 +2079,27 @@ INSERT INTO `la_style_tag` (`id`, `name`, `type`, `category_id`, `sort`, `is_sho
 ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `type`=VALUES(`type`), `category_id`=VALUES(`category_id`), `sort`=VALUES(`sort`), `is_show`=VALUES(`is_show`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`), `delete_time`=VALUES(`delete_time`);
 
 -- la_service_package
-INSERT INTO `la_service_package` (`id`, `category_id`, `staff_id`, `package_type`, `name`, `price`, `slot_prices`, `booking_type`, `allowed_time_slots`, `original_price`, `duration`, `description`, `content`, `image`, `sort`, `is_recommend`, `is_show`, `create_time`, `update_time`, `delete_time`) VALUES
-(1, 1, 0, 1, '婚礼跟拍-基础套餐', '2999.00', NULL, 0, NULL, '3999.00', 8, '8小时婚礼全程跟拍', '["精修照片50张","原片全送","专业设备"]', '', 100, 1, 1, 1773413103, 1773413103, NULL),
-(2, 1, 0, 1, '婚礼跟拍-标准套餐', '4999.00', NULL, 0, NULL, '5999.00', 10, '10小时婚礼全程跟拍', '["精修照片80张","原片全送","专业设备","相册一本"]', '', 90, 1, 1, 1773413103, 1773413103, NULL),
-(3, 1, 0, 1, '婚礼跟拍-豪华套餐', '7999.00', NULL, 0, NULL, '9999.00', 12, '12小时婚礼全程跟拍+晚宴', '["精修照片120张","原片全送","专业设备","相册两本","视频花絮"]', '', 80, 1, 1, 1773413103, 1773413103, NULL),
-(4, 2, 0, 1, '婚礼摄像-基础套餐', '3999.00', NULL, 0, NULL, '4999.00', 8, '8小时婚礼全程摄像', '["成片15分钟","原素材","4K画质"]', '', 100, 1, 1, 1773413103, 1773413103, NULL),
-(5, 2, 0, 1, '婚礼摄像-标准套餐', '5999.00', NULL, 0, NULL, '7999.00', 10, '10小时双机位摄像', '["成片20分钟","原素材","4K画质","快剪"]', '', 90, 1, 1, 1773413103, 1773413103, NULL),
-(6, 3, 0, 1, '新娘跟妆-全天', '1999.00', NULL, 0, NULL, '2499.00', 10, '全天新娘妆容服务', '["早妆","晚宴补妆","造型2套"]', '', 100, 1, 1, 1773413103, 1773413103, NULL),
-(7, 3, 0, 1, '新娘跟妆-半天', '999.00', NULL, 0, NULL, '1299.00', 5, '半天新娘妆容服务', '["早妆或晚宴妆","造型1套"]', '', 90, 0, 1, 1773413103, 1773413103, NULL),
-(8, 4, 0, 1, '婚礼主持-标准', '2999.00', NULL, 0, NULL, '3999.00', 4, '婚礼仪式主持', '["仪式主持","互动环节","专业设备"]', '', 100, 1, 1, 1773413103, 1773413103, NULL),
-(9, 4, 8, 2, '全程接亲', '1600.00', '', 0, '[]', '1600.00', 0, '', '', '', 0, 0, 1, 1773563974, 1773563974, NULL),
-(10, 4, 10, 2, '全程接亲', '3280.00', '', 0, '[]', '3280.00', 0, '', '', '', 0, 0, 1, 1773565129, 1773565129, NULL),
-(11, 4, 3, 2, '婚礼主持-标准版', '1580.00', '', 0, '[]', '0.00', 0, '', '', '', 0, 0, 1, 1773567945, 1773567968, 1773567968),
-(12, 4, 3, 2, '婚礼主持-标准版', '1580.00', '', 0, '[]', '0.00', 0, '', '', '', 0, 0, 1, 1773567947, 1773567971, 1773567971),
-(13, 4, 3, 2, '婚礼主持-标准版', '1580.00', '', 0, '[]', '0.00', 0, '', '', '', 0, 0, 1, 1773567951, 1773567973, 1773567973),
-(14, 4, 3, 2, '婚礼主持-标准版', '1580.00', '', 0, '[]', '0.00', 0, '', '', '', 0, 0, 1, 1773567951, 1773567981, 1773567981),
-(15, 4, 3, 2, '婚礼主持-标准版', '1580.00', '', 1, '[2]', '1880.00', 0, '', '', '', 0, 0, 1, 1773568027, 1773568027, NULL),
-(16, 4, 3, 2, '婚礼主持-全程', '2580.00', '', 0, '[]', '2880.00', 0, '', '', '', 0, 0, 1, 1773568118, 1773568118, NULL),
-(17, 4, 9, 2, '婚礼全程主持', '2280.00', '', 0, '[]', '2280.00', 0, '', '', '', 0, 0, 1, 1773578041, 1773578041, NULL),
-(18, 4, 6, 2, '午宴PRO档', '1580.00', '[{"time_slot":"2","price":"0"}]', 1, '[2]', '1580.00', 0, '主持人+督导老师+现场音控', '', '', 0, 0, 1, 1773619584, 1773621115, NULL),
-(19, 4, 6, 2, '全程MAX档', '2580.00', '', 0, '[]', '2580.00', 0, '主持人提供陪同新郎全程接亲服务、配合总管组织、协调人员、车辆、把控各环节流程和时间节点、新郎和新娘家出发仪式、双方家中改口仪式、组织合影等相关工作。人员配置：主持人、午宴督导、现场音控', '', '', 0, 0, 1, 1773619885, 1773621140, NULL)
-ON DUPLICATE KEY UPDATE `category_id`=VALUES(`category_id`), `staff_id`=VALUES(`staff_id`), `package_type`=VALUES(`package_type`), `name`=VALUES(`name`), `price`=VALUES(`price`), `slot_prices`=VALUES(`slot_prices`), `booking_type`=VALUES(`booking_type`), `allowed_time_slots`=VALUES(`allowed_time_slots`), `original_price`=VALUES(`original_price`), `duration`=VALUES(`duration`), `description`=VALUES(`description`), `content`=VALUES(`content`), `image`=VALUES(`image`), `sort`=VALUES(`sort`), `is_recommend`=VALUES(`is_recommend`), `is_show`=VALUES(`is_show`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`), `delete_time`=VALUES(`delete_time`);
+INSERT INTO `la_service_package` (`id`, `category_id`, `staff_id`, `package_type`, `name`, `price`, `slot_prices`, `booking_type`, `allowed_time_slots`, `original_price`, `duration`, `description`, `image`, `sort`, `is_recommend`, `is_show`, `create_time`, `update_time`, `delete_time`) VALUES
+(1, 1, 0, 1, '婚礼跟拍-基础套餐', '2999.00', NULL, 0, NULL, '3999.00', 8, '8小时婚礼全程跟拍', '', 100, 1, 1, 1773413103, 1773413103, NULL),
+(2, 1, 0, 1, '婚礼跟拍-标准套餐', '4999.00', NULL, 0, NULL, '5999.00', 10, '10小时婚礼全程跟拍', '', 90, 1, 1, 1773413103, 1773413103, NULL),
+(3, 1, 0, 1, '婚礼跟拍-豪华套餐', '7999.00', NULL, 0, NULL, '9999.00', 12, '12小时婚礼全程跟拍+晚宴', '', 80, 1, 1, 1773413103, 1773413103, NULL),
+(4, 2, 0, 1, '婚礼摄像-基础套餐', '3999.00', NULL, 0, NULL, '4999.00', 8, '8小时婚礼全程摄像', '', 100, 1, 1, 1773413103, 1773413103, NULL),
+(5, 2, 0, 1, '婚礼摄像-标准套餐', '5999.00', NULL, 0, NULL, '7999.00', 10, '10小时双机位摄像', '', 90, 1, 1, 1773413103, 1773413103, NULL),
+(6, 3, 0, 1, '新娘跟妆-全天', '1999.00', NULL, 0, NULL, '2499.00', 10, '全天新娘妆容服务', '', 100, 1, 1, 1773413103, 1773413103, NULL),
+(7, 3, 0, 1, '新娘跟妆-半天', '999.00', NULL, 0, NULL, '1299.00', 5, '半天新娘妆容服务', '', 90, 0, 1, 1773413103, 1773413103, NULL),
+(8, 4, 0, 1, '婚礼主持-标准', '2999.00', NULL, 0, NULL, '3999.00', 4, '婚礼仪式主持', '', 100, 1, 1, 1773413103, 1773413103, NULL),
+(9, 4, 8, 2, '全程接亲', '1600.00', '', 0, '[]', '1600.00', 0, '', '', 0, 0, 1, 1773563974, 1773563974, NULL),
+(10, 4, 10, 2, '全程接亲', '3280.00', '', 0, '[]', '3280.00', 0, '', '', 0, 0, 1, 1773565129, 1773565129, NULL),
+(11, 4, 3, 2, '婚礼主持-标准版', '1580.00', '', 0, '[]', '0.00', 0, '', '', 0, 0, 1, 1773567945, 1773567968, 1773567968),
+(12, 4, 3, 2, '婚礼主持-标准版', '1580.00', '', 0, '[]', '0.00', 0, '', '', 0, 0, 1, 1773567947, 1773567971, 1773567971),
+(13, 4, 3, 2, '婚礼主持-标准版', '1580.00', '', 0, '[]', '0.00', 0, '', '', 0, 0, 1, 1773567951, 1773567973, 1773567973),
+(14, 4, 3, 2, '婚礼主持-标准版', '1580.00', '', 0, '[]', '0.00', 0, '', '', 0, 0, 1, 1773567951, 1773567981, 1773567981),
+(15, 4, 3, 2, '婚礼主持-标准版', '1580.00', '', 1, '[2]', '1880.00', 0, '', '', 0, 0, 1, 1773568027, 1773568027, NULL),
+(16, 4, 3, 2, '婚礼主持-全程', '2580.00', '', 0, '[]', '2880.00', 0, '', '', 0, 0, 1, 1773568118, 1773568118, NULL),
+(17, 4, 9, 2, '婚礼全程主持', '2280.00', '', 0, '[]', '2280.00', 0, '', '', 0, 0, 1, 1773578041, 1773578041, NULL),
+(18, 4, 6, 2, '午宴PRO档', '1580.00', '[{"time_slot":"2","price":"0"}]', 1, '[2]', '1580.00', 0, '主持人+督导老师+现场音控', '', 0, 0, 1, 1773619584, 1773621115, NULL),
+(19, 4, 6, 2, '全程MAX档', '2580.00', '', 0, '[]', '2580.00', 0, '主持人提供陪同新郎全程接亲服务、配合总管组织、协调人员、车辆、把控各环节流程和时间节点、新郎和新娘家出发仪式、双方家中改口仪式、组织合影等相关工作。人员配置：主持人、午宴督导、现场音控', '', 0, 0, 1, 1773619885, 1773621140, NULL)
+ON DUPLICATE KEY UPDATE `category_id`=VALUES(`category_id`), `staff_id`=VALUES(`staff_id`), `package_type`=VALUES(`package_type`), `name`=VALUES(`name`), `price`=VALUES(`price`), `slot_prices`=VALUES(`slot_prices`), `booking_type`=VALUES(`booking_type`), `allowed_time_slots`=VALUES(`allowed_time_slots`), `original_price`=VALUES(`original_price`), `duration`=VALUES(`duration`), `description`=VALUES(`description`), `image`=VALUES(`image`), `sort`=VALUES(`sort`), `is_recommend`=VALUES(`is_recommend`), `is_show`=VALUES(`is_show`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`), `delete_time`=VALUES(`delete_time`);
 
 -- la_schedule_rule
 INSERT INTO `la_schedule_rule` (`id`, `staff_id`, `advance_days`, `max_orders_per_day`, `interval_hours`, `work_start_time`, `work_end_time`, `rest_days`, `is_enabled`, `create_time`, `update_time`) VALUES
@@ -2171,13 +2114,6 @@ INSERT INTO `la_calendar_event` (`id`, `event_date`, `lunar_date`, `is_lucky_day
 (4, '2026-05-20', '四月初四', 1, '嫁娶,订盟,纳采', '安葬,破土', 0, '', 3, '', 1773413104, 1773413104),
 (5, '2026-10-01', '八月廿一', 1, '嫁娶,祈福,订盟', '安葬,动土', 1, '国庆节', 3, '', 1773413104, 1773413104)
 ON DUPLICATE KEY UPDATE `event_date`=VALUES(`event_date`), `lunar_date`=VALUES(`lunar_date`), `is_lucky_day`=VALUES(`is_lucky_day`), `lucky_events`=VALUES(`lucky_events`), `unlucky_events`=VALUES(`unlucky_events`), `is_holiday`=VALUES(`is_holiday`), `holiday_name`=VALUES(`holiday_name`), `congestion_level`=VALUES(`congestion_level`), `remark`=VALUES(`remark`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`);
-
--- la_coupon
-INSERT INTO `la_coupon` (`id`, `name`, `coupon_type`, `threshold_amount`, `discount_amount`, `max_discount`, `total_count`, `receive_count`, `used_count`, `per_limit`, `receive_start_time`, `receive_end_time`, `valid_type`, `valid_start_time`, `valid_end_time`, `valid_days`, `use_scope`, `scope_ids`, `status`, `remark`, `create_time`, `update_time`, `delete_time`) VALUES
-(1, '新人专享券', 1, '1000.00', '100.00', '0.00', 0, 0, 0, 1, 0, 0, 2, 0, 0, 30, 1, '', 1, '新用户注册赠送', 1773413105, 1773413105, NULL),
-(2, '满2000减200', 1, '2000.00', '200.00', '0.00', 1000, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, '', 1, '限时活动', 1773413105, 1773413105, NULL),
-(3, '9折优惠券', 2, '500.00', '90.00', '500.00', 500, 1, 0, 2, 0, 0, 2, 0, 0, 15, 1, '', 1, '会员专享', 1773413105, 1773413105, NULL)
-ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `coupon_type`=VALUES(`coupon_type`), `threshold_amount`=VALUES(`threshold_amount`), `discount_amount`=VALUES(`discount_amount`), `max_discount`=VALUES(`max_discount`), `total_count`=VALUES(`total_count`), `receive_count`=VALUES(`receive_count`), `used_count`=VALUES(`used_count`), `per_limit`=VALUES(`per_limit`), `receive_start_time`=VALUES(`receive_start_time`), `receive_end_time`=VALUES(`receive_end_time`), `valid_type`=VALUES(`valid_type`), `valid_start_time`=VALUES(`valid_start_time`), `valid_end_time`=VALUES(`valid_end_time`), `valid_days`=VALUES(`valid_days`), `use_scope`=VALUES(`use_scope`), `scope_ids`=VALUES(`scope_ids`), `status`=VALUES(`status`), `remark`=VALUES(`remark`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`), `delete_time`=VALUES(`delete_time`);
 
 -- la_review_tag
 INSERT INTO `la_review_tag` (`id`, `name`, `type`, `icon`, `color`, `sort`, `use_count`, `status`, `create_time`, `update_time`, `delete_time`) VALUES
@@ -2461,8 +2397,6 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (205, 202, 'C', '流失预警', '', 80, 'crm.customer_loss_warning/lists', 'warning', 'crm/warning/index', '', '', 0, 1, 0, 1773413107, 1773623215),
 (206, 0, 'M', '售后服务', 'el-icon-Service', 550, '', 'aftersale', '', '', '', 0, 0, 1, 1773413107, 1773556013),
 (207, 206, 'C', '售后工单', '', 100, 'aftersale.aftersale/ticketLists', 'ticket', 'aftersale/ticket/index', '', '', 0, 0, 1, 1773413107, 1773556013),
-(208, 0, 'M', '营销管理', 'el-icon-Present', 500, '', 'marketing', '', '', '', 0, 1, 0, 1773413107, 1773413107),
-(209, 208, 'C', '优惠券管理', '', 100, 'coupon.coupon/lists', 'coupon', 'coupon/lists/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (210, 0, 'M', '消息中心', 'el-icon-Bell', 450, '', 'message', '', '', '', 0, 1, 0, 1773413107, 1773413107),
 (211, 210, 'C', '消息通知', '', 100, 'notification.notification/lists', 'notification', 'notification/lists/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (212, 210, 'C', '订阅消息', '', 90, 'subscribe.subscribe/templateList', 'subscribe', 'subscribe/template/index', '', '', 0, 1, 0, 1773413107, 1773413107),
@@ -2653,5 +2587,206 @@ INSERT INTO `la_config` (`id`, `type`, `name`, `value`, `create_time`, `update_t
 (2, 'feature_switch', 'staff_admin', '1', 1773413108, 1773413108),
 (1, 'feature_switch', 'staff_center', '1', 1773413108, 1773413108),
 (36, 'feature_switch', 'staff_detail_style', 'classic', 1773556898, 1773556898);
+
+-- =====================================================
+-- 附加服务闭环补充
+-- 说明：
+-- 1. 新增附加服务配置、订单快照、变更明细表
+-- 2. 扩展订单与变更单字段
+-- 3. 新增后台附加服务菜单
+-- 4. 隐藏订单转让菜单与对应权限入口（非破坏性）
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS `la_service_addon` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `staff_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '所属服务人员ID',
+    `category_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '所属服务分类ID',
+    `name` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '附加服务名称',
+    `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '售价',
+    `original_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '原价',
+    `image` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '图片',
+    `description` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '描述',
+    `sort` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '排序',
+    `is_show` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '是否上架：0=下架，1=上架',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    `delete_time` INT UNSIGNED DEFAULT NULL COMMENT '删除时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_staff_id` (`staff_id`),
+    KEY `idx_category_id` (`category_id`),
+    KEY `idx_is_show` (`is_show`),
+    KEY `idx_sort` (`sort`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='附加服务配置表';
+
+CREATE TABLE IF NOT EXISTS `la_order_item_addon` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `order_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单ID',
+    `order_item_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '主订单项ID',
+    `addon_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '附加服务ID',
+    `addon_name` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '附加服务快照名称',
+    `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '快照单价',
+    `quantity` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '数量，固定为1',
+    `subtotal` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '小计',
+    `status` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '状态：1=生效中，2=已移除',
+    `create_source` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '创建来源：1=下单，2=变更',
+    `create_change_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建变更单ID',
+    `remove_change_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '移除变更单ID',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_order_id` (`order_id`),
+    KEY `idx_order_item_id` (`order_item_id`),
+    KEY `idx_addon_id` (`addon_id`),
+    KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单附加服务快照表';
+
+CREATE TABLE IF NOT EXISTS `la_order_change_addon` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `change_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '变更单ID',
+    `order_item_addon_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单附加服务快照ID',
+    `addon_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '附加服务ID',
+    `addon_name` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '附加服务名称',
+    `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '单价',
+    `quantity` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '数量',
+    `subtotal` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '小计',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_change_id` (`change_id`),
+    KEY `idx_order_item_addon_id` (`order_item_addon_id`),
+    KEY `idx_addon_id` (`addon_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单变更附加服务明细表';
+
+SET @add_order_addon_amount_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order'
+          AND COLUMN_NAME = 'addon_amount'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_order` ADD COLUMN `addon_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT ''附加服务金额'' AFTER `total_amount`'
+);
+
+PREPARE stmt FROM @add_order_addon_amount_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+ALTER TABLE `la_order_change`
+    MODIFY COLUMN `change_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '变更类型：1=改期，2=换人，3=加项，4=附加服务变更';
+
+SET @add_order_change_addon_action_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order_change'
+          AND COLUMN_NAME = 'addon_action'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_order_change` ADD COLUMN `addon_action` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT ''附加服务动作：1=新增，2=移除'' AFTER `change_type`'
+);
+
+PREPARE stmt FROM @add_order_change_addon_action_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'C', '附加服务', '', 75, 'ops.addon/lists', 'addon', 'service/addon/index', '', '', 0, 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `paths` = 'service' AND `type` = 'M'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.addon/lists')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '详情', '', 0, 'ops.addon/detail', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.addon/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.addon/detail')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '新增', '', 0, 'ops.addon/add', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.addon/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.addon/add')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '编辑', '', 0, 'ops.addon/edit', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.addon/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.addon/edit')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '删除', '', 0, 'ops.addon/delete', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.addon/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.addon/delete')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '状态切换', '', 0, 'ops.addon/changeStatus', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.addon/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.addon/changeStatus')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '全部', '', 0, 'ops.addon/all', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.addon/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.addon/all')
+LIMIT 1;
+
+INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`)
+SELECT DISTINCT service_role.`role_id`, addon_menu.`id`
+FROM `la_system_role_menu` service_role
+JOIN `la_system_menu` service_root
+  ON service_root.`id` = service_role.`menu_id`
+ AND service_root.`type` = 'M'
+ AND service_root.`paths` = 'service'
+JOIN `la_system_menu` addon_menu
+  ON addon_menu.`perms` = 'ops.addon/lists'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `la_system_role_menu` exists_map
+    WHERE exists_map.`role_id` = service_role.`role_id`
+      AND exists_map.`menu_id` = addon_menu.`id`
+);
+
+INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`)
+SELECT DISTINCT service_role.`role_id`, addon_action.`id`
+FROM `la_system_role_menu` service_role
+JOIN `la_system_menu` service_root
+  ON service_root.`id` = service_role.`menu_id`
+ AND service_root.`type` = 'M'
+ AND service_root.`paths` = 'service'
+JOIN `la_system_menu` addon_menu
+  ON addon_menu.`perms` = 'ops.addon/lists'
+JOIN `la_system_menu` addon_action
+  ON addon_action.`pid` = addon_menu.`id`
+ AND addon_action.`type` = 'A'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `la_system_role_menu` exists_map
+    WHERE exists_map.`role_id` = service_role.`role_id`
+      AND exists_map.`menu_id` = addon_action.`id`
+);
+
+UPDATE `la_system_menu`
+SET `is_show` = 0,
+    `is_disable` = 1,
+    `update_time` = UNIX_TIMESTAMP()
+WHERE `type` IN ('C', 'A')
+  AND (
+      `perms` IN ('order.order_transfer/lists', 'ops.orderTransfer/lists')
+      OR `perms` LIKE 'order.order_transfer/%'
+      OR `perms` LIKE 'ops.orderTransfer/%'
+      OR `component` = 'order/transfer/index'
+      OR `paths` IN ('transfer', 'order-transfer')
+  );
 
 SET FOREIGN_KEY_CHECKS = 1;

@@ -20,6 +20,15 @@ use app\adminapi\validate\order\OrderTransferValidate;
 class OrderTransferController extends BaseAdminController
 {
     /**
+     * @notes 转让能力已下线
+     * @return string
+     */
+    protected function getDeprecatedMessage(): string
+    {
+        return '功能已下线，请取消订单后重新下单';
+    }
+
+    /**
      * @notes 转让申请列表
      * @return \think\response\Json
      */
@@ -48,18 +57,7 @@ class OrderTransferController extends BaseAdminController
      */
     public function audit()
     {
-        $params = (new OrderTransferValidate())->post()->goCheck('audit');
-        $result = OrderTransferLogic::audit(
-            $params['id'],
-            $this->adminId,
-            $params['approved'],
-            $params['remark'] ?? '',
-            $params['reject_reason'] ?? ''
-        );
-        if (true === $result) {
-            return $this->success($params['approved'] ? '审核通过' : '已拒绝');
-        }
-        return $this->fail(OrderTransferLogic::getError());
+        return $this->fail($this->getDeprecatedMessage());
     }
 
     /**
@@ -68,12 +66,7 @@ class OrderTransferController extends BaseAdminController
      */
     public function complete()
     {
-        $params = (new OrderTransferValidate())->post()->goCheck('detail');
-        $result = OrderTransferLogic::complete($params['id'], $this->adminId);
-        if (true === $result) {
-            return $this->success('转让完成');
-        }
-        return $this->fail(OrderTransferLogic::getError());
+        return $this->fail($this->getDeprecatedMessage());
     }
 
     /**
@@ -82,16 +75,7 @@ class OrderTransferController extends BaseAdminController
      */
     public function cancel()
     {
-        $params = (new OrderTransferValidate())->post()->goCheck('cancel');
-        $result = OrderTransferLogic::cancel(
-            $params['id'],
-            $this->adminId,
-            $params['reason'] ?? ''
-        );
-        if (true === $result) {
-            return $this->success('已取消');
-        }
-        return $this->fail(OrderTransferLogic::getError());
+        return $this->fail($this->getDeprecatedMessage());
     }
 
     /**
@@ -100,12 +84,7 @@ class OrderTransferController extends BaseAdminController
      */
     public function resendCode()
     {
-        $params = (new OrderTransferValidate())->post()->goCheck('resendCode');
-        $result = OrderTransferLogic::resendCode($params['id'], $this->adminId);
-        if (true === $result) {
-            return $this->success('验证码已发送');
-        }
-        return $this->fail(OrderTransferLogic::getError());
+        return $this->fail($this->getDeprecatedMessage());
     }
 
     /**

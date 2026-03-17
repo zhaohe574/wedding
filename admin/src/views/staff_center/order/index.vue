@@ -109,9 +109,10 @@
                         <div class="text-gray-400 text-xs">{{ row.contact_mobile || row.user?.mobile || '-' }}</div>
                     </template>
                 </el-table-column>
-                <el-table-column label="订单金额" width="120">
+                <el-table-column label="可见金额" width="140">
                     <template #default="{ row }">
-                        <div class="text-red-500 font-bold">¥{{ row.pay_amount }}</div>
+                        <div class="text-red-500 font-bold">¥{{ formatAmount(row.pay_amount) }}</div>
+                        <div class="text-xs text-gray-400">含附加服务 ¥{{ formatAmount(row.addon_amount) }}</div>
                     </template>
                 </el-table-column>
                 <el-table-column label="订单状态" width="100">
@@ -168,10 +169,11 @@
                     <el-descriptions-item label="联系电话">{{ getDisplayContactMobile(currentOrder) }}</el-descriptions-item>
                     <el-descriptions-item label="服务日期">{{ getDisplayServiceDate(currentOrder) }}</el-descriptions-item>
                     <el-descriptions-item label="婚礼日期">{{ currentOrder.wedding_date || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="订单总额">¥{{ currentOrder.total_amount }}</el-descriptions-item>
-                    <el-descriptions-item label="优惠金额">¥{{ currentOrder.discount_amount }}</el-descriptions-item>
-                    <el-descriptions-item label="优惠券金额">¥{{ currentOrder.coupon_amount || 0 }}</el-descriptions-item>
-                    <el-descriptions-item label="应付金额">¥{{ currentOrder.pay_amount }}</el-descriptions-item>
+                    <el-descriptions-item label="主服务金额">¥{{ formatAmount(currentOrder.service_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="附加服务金额">¥{{ formatAmount(currentOrder.addon_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="订单总额（本人）">¥{{ formatAmount(currentOrder.total_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="优惠金额（本人）">¥{{ formatAmount(currentOrder.discount_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="应付金额（本人）">¥{{ formatAmount(currentOrder.pay_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="已付金额">
                         <span class="text-red-500 font-bold">¥{{ getDisplayPaidAmount(currentOrder) }}</span>
                     </el-descriptions-item>
@@ -190,12 +192,29 @@
                                 <el-tag :type="getItemStatusType(row.item_status)">{{ getItemStatusText(row.item_status) }}</el-tag>
                             </template>
                         </el-table-column>
+                        <el-table-column label="附加服务" min-width="220">
+                            <template #default="{ row }">
+                                <div v-if="isMaskedItem(row)" class="text-gray-400">已脱敏</div>
+                                <div v-else-if="row.addons?.length" class="flex flex-col gap-1">
+                                    <div v-for="addon in row.addons" :key="addon.id" class="text-xs text-gray-600">
+                                        {{ addon.addon_name }} +¥{{ formatAmount(addon.subtotal || addon.price) }}
+                                    </div>
+                                </div>
+                                <span v-else class="text-gray-400">无附加服务</span>
+                            </template>
+                        </el-table-column>
                         <el-table-column label="单价" prop="price" />
                         <el-table-column label="数量" prop="quantity" />
+                        <el-table-column label="附加服务金额" width="120">
+                            <template #default="{ row }">
+                                <span v-if="isMaskedItem(row)">--</span>
+                                <span v-else>¥{{ formatAmount(row.addon_amount) }}</span>
+                            </template>
+                        </el-table-column>
                         <el-table-column label="小计" prop="subtotal" />
                     </el-table>
                     <div class="text-xs text-gray-400 mt-2">
-                        注：非本人订单项已按权限脱敏，仅保留服务人员、日期和状态。
+                        注：订单金额已按当前工作人员视角重算；非本人订单项仅保留服务人员、日期和状态，附加服务同步脱敏。
                     </div>
                 </div>
             </div>
@@ -277,6 +296,14 @@ const getDisplayServiceDate = (order: any) => {
 
 const getDisplayPaidAmount = (order: any) => {
     return Number(order?.paid_amount ?? 0).toFixed(2)
+}
+
+const formatAmount = (amount: number | string | undefined) => {
+    return Number(amount ?? 0).toFixed(2)
+}
+
+const isMaskedItem = (item: any) => {
+    return item?.package_name === '--'
 }
 
 const getItemStatusText = (status: number) => {

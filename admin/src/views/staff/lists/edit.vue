@@ -195,7 +195,6 @@
                             <div class="staff-table-card mt-4">
                                 <el-table :data="staffPackages" border>
                                     <el-table-column label="套餐名称" prop="name" min-width="150" />
-                                    <el-table-column label="分类" prop="category_name" min-width="120" />
                                     <el-table-column label="价格" prop="price" width="140">
                                         <template #default="{ row }">¥{{ row.price }}</template>
                                     </el-table-column>
@@ -390,15 +389,6 @@
             >
                 <el-form-item label="套餐名称" prop="name">
                     <el-input v-model="staffPackageForm.name" placeholder="请输入套餐名称" />
-                </el-form-item>
-                <el-form-item label="所属分类" prop="category_id">
-                    <el-cascader
-                        v-model="staffPackageForm.category_id"
-                        :options="optionsData.categories"
-                        :props="{ value: 'id', label: 'name', checkStrictly: true, emitPath: false }"
-                        placeholder="选择服务分类"
-                        class="w-full"
-                    />
                 </el-form-item>
                 <el-form-item label="默认价格" prop="price">
                     <el-input-number v-model="staffPackageForm.price" :min="0" :precision="2" class="w-full" />
@@ -696,7 +686,6 @@ const loadCurrentUserOption = async () => {
 const staffPackageForm = reactive({
     id: 0,
     name: '',
-    category_id: '',
     price: 0,
     original_price: 0,
     image: '',
@@ -734,7 +723,6 @@ const rules = reactive({
 
 const staffPackageRules = reactive({
     name: [{ required: true, message: '请输入套餐名称', trigger: 'blur' }],
-    category_id: [{ required: true, message: '请选择所属分类', trigger: 'change' }],
     price: [{ required: true, message: '请输入套餐价格', trigger: 'blur' }]
 })
 
@@ -765,7 +753,6 @@ const resetStaffPackageForm = () => {
     Object.assign(staffPackageForm, {
         id: 0,
         name: '',
-        category_id: '',
         price: 0,
         original_price: 0,
         image: '',
@@ -888,7 +875,6 @@ const openEditStaffPackage = (row: any) => {
     isEditingStaffPackage.value = true
     staffPackageForm.id = row.id
     staffPackageForm.name = row.name || ''
-    staffPackageForm.category_id = row.category_id || ''
     staffPackageForm.price = row.price || 0
     staffPackageForm.original_price = row.original_price || 0
     staffPackageForm.image = row.image || ''
@@ -926,7 +912,6 @@ const submitStaffPackage = async () => {
             staff_id: route.query.id,
             id: staffPackageForm.id,
             name: staffPackageForm.name,
-            category_id: staffPackageForm.category_id,
             price: staffPackageForm.price,
             original_price: staffPackageForm.original_price,
             image: staffPackageForm.image,

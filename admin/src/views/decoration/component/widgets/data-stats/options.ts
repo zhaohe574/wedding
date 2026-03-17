@@ -26,20 +26,12 @@ export default () => ({
                 sort: 1
             },
             {
-                icon: 'icon-youhuiquan',
-                title: '优惠券',
-                value: 'coupon_count',
-                unit: '张',
-                is_show: '1',
-                sort: 2
-            },
-            {
                 icon: 'icon-shoucang',
                 title: '我的收藏',
                 value: 'collect_count',
                 unit: '个',
                 is_show: '1',
-                sort: 3
+                sort: 2
             },
             {
                 icon: 'icon-liulan',
@@ -47,7 +39,7 @@ export default () => ({
                 value: 'view_count',
                 unit: '条',
                 is_show: '1',
-                sort: 4
+                sort: 3
             }
         ] as DataStatsItem[]
     },

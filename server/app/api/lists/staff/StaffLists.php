@@ -264,7 +264,7 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
             case 'new':
                 return 'id desc';
             default:
-                return 'sort desc, id desc';
+                return 'is_recommend desc, sort desc, id desc';
         }
     }
 
