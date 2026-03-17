@@ -81,6 +81,15 @@ class DecorateDataService
             return $pageData;
         }
 
+        if (!self::isWidgetListData($data)) {
+            if ($isJsonString) {
+                $pageData['data'] = json_encode($data, JSON_UNESCAPED_UNICODE);
+            } else {
+                $pageData['data'] = $data;
+            }
+            return $pageData;
+        }
+
         $data = self::sanitizeDecorateNode($data);
         if (!is_array($data)) {
             return $pageData;
@@ -109,6 +118,52 @@ class DecorateDataService
     }
 
     /**
+     * @notes 判断是否为装修组件列表数据
+     * @param array $data
+     * @return bool
+     */
+    private static function isWidgetListData(array $data): bool
+    {
+        if (!self::isNumericListNode($data)) {
+            return false;
+        }
+
+        foreach ($data as $item) {
+            if (!is_array($item)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @notes 判断当前节点是否为数字键列表
+     * @param array $node
+     * @return bool
+     */
+    private static function isNumericListNode(array $node): bool
+    {
+        if ($node === []) {
+            return true;
+        }
+
+        foreach (array_keys($node) as $key) {
+            if (is_int($key)) {
+                continue;
+            }
+
+            if (is_string($key) && ctype_digit($key)) {
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * @notes 递归清理已下线组件与页面入口
      * @param mixed $node
      * @return mixed
@@ -118,6 +173,8 @@ class DecorateDataService
         if (!is_array($node)) {
             return $node;
         }
+
+        $isNumericListNode = self::isNumericListNode($node);
 
         if (self::shouldRemoveDecorateNode($node)) {
             return null;
@@ -130,6 +187,10 @@ class DecorateDataService
                 continue;
             }
             $result[$key] = $sanitized;
+        }
+
+        if ($isNumericListNode) {
+            return array_values($result);
         }
 
         return $result;

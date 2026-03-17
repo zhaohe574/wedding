@@ -87,37 +87,37 @@
                 </div>
             </div>
         </div>
-    </el-scrollbar>
-    </div>
+        </el-scrollbar>
 
-    <!-- 组件选择器弹窗 -->
-    <el-dialog v-model="showWidgetSelector" title="添加组件" width="600px">
-        <div v-if="filteredAvailableWidgets.length > 0" class="grid grid-cols-3 gap-4">
-            <div
-                v-for="item in filteredAvailableWidgets"
-                :key="item.name"
-                class="p-4 border rounded-lg cursor-pointer hover:border-primary hover:bg-blue-50 transition-colors"
-                :class="{ 'border-primary bg-blue-50': isWidgetAdded(item.name), 'opacity-50': isWidgetAdded(item.name) }"
-                @click="handleAddWidget(item)"
-            >
-                <div class="text-center">
-                    <div class="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <el-icon class="text-xl text-gray-500">
-                            <component :is="item.icon" />
-                        </el-icon>
+        <!-- 组件选择器弹窗 -->
+        <el-dialog v-model="showWidgetSelector" title="添加组件" width="600px">
+            <div v-if="filteredAvailableWidgets.length > 0" class="grid grid-cols-3 gap-4">
+                <div
+                    v-for="item in filteredAvailableWidgets"
+                    :key="item.name"
+                    class="p-4 border rounded-lg cursor-pointer hover:border-primary hover:bg-blue-50 transition-colors"
+                    :class="{ 'border-primary bg-blue-50': isWidgetAdded(item.name), 'opacity-50': isWidgetAdded(item.name) }"
+                    @click="handleAddWidget(item)"
+                >
+                    <div class="text-center">
+                        <div class="w-12 h-12 mx-auto mb-2 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <el-icon class="text-xl text-gray-500">
+                                <component :is="item.icon" />
+                            </el-icon>
+                        </div>
+                        <div class="text-sm font-medium">{{ item.title }}</div>
+                        <div class="text-xs text-gray-400 mt-1">{{ isWidgetAdded(item.name) ? '已添加' : '点击添加' }}</div>
                     </div>
-                    <div class="text-sm font-medium">{{ item.title }}</div>
-                    <div class="text-xs text-gray-400 mt-1">{{ isWidgetAdded(item.name) ? '已添加' : '点击添加' }}</div>
                 </div>
             </div>
-        </div>
-        <div v-else class="text-center py-8 text-gray-400">
-            暂无可添加的组件
-        </div>
-        <template #footer>
-            <el-button @click="showWidgetSelector = false">关闭</el-button>
-        </template>
-    </el-dialog>
+            <div v-else class="text-center py-8 text-gray-400">
+                暂无可添加的组件
+            </div>
+            <template #footer>
+                <el-button @click="showWidgetSelector = false">关闭</el-button>
+            </template>
+        </el-dialog>
+    </div>
 </template>
 <script lang="ts" setup>
 import { ArrowDownBold, ArrowUpBold, Hide, View, Picture, Document, Star, User, Ticket, Calendar, Delete } from '@element-plus/icons-vue'

@@ -48,6 +48,37 @@ const updatePageData = (value: any) => {
     menus[activeMenu.value].pageData = [...value]
 }
 
+const isNumericKeyObject = (value: any) => {
+    if (!value || Array.isArray(value) || typeof value !== 'object') {
+        return false
+    }
+
+    const keys = Object.keys(value)
+    if (!keys.length) {
+        return false
+    }
+
+    return keys.every((key) => /^\d+$/.test(key))
+}
+
+const normalizeListLikeValue = (value: any) => {
+    if (Array.isArray(value)) {
+        return value
+    }
+
+    if (isNumericKeyObject(value)) {
+        return Object.values(value)
+    }
+
+    return value
+}
+
+const normalizePageWidgets = (rawData: any) => {
+    const parsedData = typeof rawData === 'string' ? JSON.parse(rawData) : rawData
+    const normalizedData = normalizeListLikeValue(parsedData)
+    return Array.isArray(normalizedData) ? normalizedData : []
+}
+
 const generatePageData = (widgetNames: string[]) => {
     return widgetNames.map((widgetName) => {
         const options = {
@@ -142,11 +173,14 @@ const getSelectWidget = computed(() => {
 
 const getData = async () => {
     const data = await getDecoratePages({ id: activeMenu.value })
-    const pageData = JSON.parse(data.data)
+    const pageData = normalizePageWidgets(data.data)
     // 兼容旧数据：移除废弃的disabled字段，确保content.enabled存在，补全默认字段
     pageData.forEach((item: any) => {
         if (item?.name === 'service-packages') {
             return
+        }
+        if (item?.content && 'data' in item.content) {
+            item.content.data = normalizeListLikeValue(item.content.data)
         }
         if ('disabled' in item && item.name !== 'user-info') {
             delete item.disabled

@@ -25,26 +25,54 @@ import { getDecoratePages, setDecoratePages } from '@/api/decoration'
 import MobileStyle from './components/mobile-style.vue'
 
 const currentTabIndex = ref(0)
+const defaultMobileStyleData = () => ({
+    themeColorId: 1,
+    topTextColor: 'white',
+    navigationBarColor: '',
+    themeColor1: '',
+    themeColor2: '',
+    buttonColor: 'white'
+})
+
+const normalizeStyleData = (rawData: any) => {
+    let parsedData = rawData
+
+    if (typeof rawData === 'string') {
+        const content = rawData.trim()
+        if (!content) {
+            return defaultMobileStyleData()
+        }
+
+        try {
+            parsedData = JSON.parse(content)
+        } catch (error) {
+            return defaultMobileStyleData()
+        }
+    }
+
+    if (!parsedData || Array.isArray(parsedData) || typeof parsedData !== 'object') {
+        return defaultMobileStyleData()
+    }
+
+    return {
+        ...defaultMobileStyleData(),
+        ...parsedData
+    }
+}
+
 const tabsList = ref([
     {
         name: '移动端',
         id: 5,
         component: markRaw(MobileStyle),
-        data: {
-            themeColorId: 1,
-            topTextColor: 'white',
-            navigationBarColor: '',
-            themeColor1: '',
-            themeColor2: '',
-            buttonColor: 'white'
-        }
+        data: defaultMobileStyleData()
     }
 ])
 const currentTab = computed(() => tabsList.value[currentTabIndex.value] || {})
 //获取数据
 const getData = async () => {
     const res = await getDecoratePages({ id: currentTab.value.id })
-    currentTab.value.data = JSON.parse(res.data)
+    currentTab.value.data = normalizeStyleData(res.data)
 }
 
 //保存数据
