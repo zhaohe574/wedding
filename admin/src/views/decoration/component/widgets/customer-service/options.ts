@@ -5,7 +5,7 @@ export default () => ({
     content: {
         enabled: 1,
         title: '联系专属顾问',
-        subtitle: '所有咨询统一进入企业微信顾问体系，由顾问持续跟进。',
+        subtitle: '',
         qrTitle: '统一客服二维码',
         time: '',
         mobile: '',
@@ -14,8 +14,8 @@ export default () => ({
         buttonText: '联系专属顾问',
         phoneText: '一键拨打客服',
         qrcode: '',
-        remark: '无可分配顾问时将展示统一客服资料',
-        tips: '订单状态变化仍通过站内消息中心与订阅通知触达'
+        remark: '',
+        tips: ''
     },
     styles: {
         themeColor: '#E56B6F',

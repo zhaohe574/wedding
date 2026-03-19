@@ -10,7 +10,6 @@ namespace app\api\logic;
 use app\common\logic\BaseLogic;
 use app\common\model\order\Order;
 use app\common\model\order\OrderChange;
-use app\common\model\order\OrderTransfer;
 use app\common\model\order\OrderPause;
 use app\common\model\order\OrderChangeLog;
 use app\common\service\OrderNotificationService;
@@ -156,6 +155,7 @@ class OrderChangeLogic extends BaseLogic
         );
 
         if ($success && $change) {
+            OrderNotificationService::notifyUserOnDateChangeApplied((int) $change->id);
             OrderNotificationService::notifyStaffOnDateChangeApplied((int) $change->id);
         }
 
@@ -253,6 +253,7 @@ class OrderChangeLogic extends BaseLogic
         );
 
         if ($success && $change) {
+            OrderNotificationService::notifyUserOnAddonChangeApplied((int) $change->id);
             OrderNotificationService::notifyStaffOnAddonChangeApplied((int) $change->id);
         }
 
@@ -277,87 +278,15 @@ class OrderChangeLogic extends BaseLogic
         if ($success) {
             $changeType = (int)($change->change_type ?? 0);
             if ($changeType === OrderChange::TYPE_DATE) {
+                OrderNotificationService::notifyUserOnDateChangeCancelled($changeId);
                 OrderNotificationService::notifyStaffOnDateChangeCancelled($changeId);
             }
             if ($changeType === OrderChange::TYPE_ADDON) {
+                OrderNotificationService::notifyUserOnAddonChangeCancelled($changeId);
                 OrderNotificationService::notifyStaffOnAddonChangeCancelled($changeId);
             }
         }
         return ['success' => $success, 'message' => $message];
-    }
-
-    /**
-     * @notes 申请转让
-     * @param int $userId
-     * @param int $orderId
-     * @param string $toUserName
-     * @param string $toUserMobile
-     * @param string $reason
-     * @return array
-     */
-    public static function applyTransfer(
-        int $userId,
-        int $orderId,
-        string $toUserName,
-        string $toUserMobile,
-        string $reason = ''
-    ): array {
-        return [
-            'success' => false,
-            'message' => self::getDeprecatedMessage(),
-            'transfer_id' => 0,
-        ];
-    }
-
-    /**
-     * @notes 取消转让申请
-     * @param int $transferId
-     * @param int $userId
-     * @return array
-     */
-    public static function cancelTransfer(int $transferId, int $userId): array
-    {
-        return ['success' => false, 'message' => self::getDeprecatedMessage()];
-    }
-
-    /**
-     * @notes 接收转让
-     * @param int $transferId
-     * @param string $mobile
-     * @param string $code
-     * @return array
-     */
-    public static function acceptTransfer(int $transferId, string $mobile, string $code): array
-    {
-        return ['success' => false, 'message' => self::getDeprecatedMessage()];
-    }
-
-    /**
-     * @notes 获取转让详情
-     * @param int $transferId
-     * @param int $userId
-     * @return array|null
-     */
-    public static function getTransferDetail(int $transferId, int $userId): ?array
-    {
-        return null;
-    }
-
-    /**
-     * @notes 获取用户转让列表
-     * @param int $userId
-     * @param array $params
-     * @return array
-     */
-    public static function getUserTransfers(int $userId, array $params): array
-    {
-        return [
-            'lists' => [],
-            'total' => 0,
-            'page' => intval($params['page'] ?? 1),
-            'page_size' => intval($params['page_size'] ?? 15),
-            'last_page' => 0,
-        ];
     }
 
     /**
@@ -385,6 +314,7 @@ class OrderChangeLogic extends BaseLogic
         );
 
         if ($success && $pause) {
+            OrderNotificationService::notifyUserOnPauseApplied((int) $pause->id);
             OrderNotificationService::notifyStaffOnPauseApplied((int) $pause->id);
         }
 
@@ -405,6 +335,7 @@ class OrderChangeLogic extends BaseLogic
     {
         [$success, $message] = OrderPause::cancelPause($pauseId, $userId);
         if ($success) {
+            OrderNotificationService::notifyUserOnPauseCancelled($pauseId);
             OrderNotificationService::notifyStaffOnPauseCancelled($pauseId);
         }
         return ['success' => $success, 'message' => $message];

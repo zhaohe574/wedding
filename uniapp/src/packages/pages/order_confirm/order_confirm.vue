@@ -17,6 +17,22 @@
 
         <view v-else>
             <view class="section">
+                <view class="section-title">预约信息</view>
+                <view class="booking-info-card">
+                    <view class="booking-info-item">
+                        <text class="booking-info-item__label">预约日期</text>
+                        <text class="booking-info-item__value">{{ bookingDateText || '-' }}</text>
+                    </view>
+                    <view class="booking-info-item">
+                        <text class="booking-info-item__label">服务地区</text>
+                        <text class="booking-info-item__value">
+                            {{ serviceRegionText || '未选择区县' }}
+                        </text>
+                    </view>
+                </view>
+            </view>
+
+            <view class="section">
                 <view class="section-title">联系人信息</view>
                 <view class="form-item">
                     <text class="form-label">联系人</text>
@@ -38,10 +54,10 @@
                     />
                 </view>
                 <view class="form-item">
-                    <text class="form-label">服务地址</text>
+                    <text class="form-label">详细地址</text>
                     <tn-input
                         v-model="form.service_address"
-                        placeholder="请输入服务地址（选填）"
+                        placeholder="请输入详细地址"
                         :border="true"
                         height="80"
                     />
@@ -59,7 +75,10 @@
             </view>
 
             <view class="section" v-if="selectedItem">
-                <view class="section-title">服务项目</view>
+                <view class="section-header">
+                    <view class="section-title">服务项目</view>
+                    <text class="section-action" @click="handleReselect">重新选择</text>
+                </view>
                 <view class="service-card">
                     <view class="service-header">
                         <view class="staff-section">
@@ -74,9 +93,6 @@
                                 <text class="staff-name"
                                     >人员：{{ selectedItem.staff?.name || '服务人员' }}</text
                                 >
-                                <text class="staff-subtitle"
-                                    >预约日期：{{ selectedItem.schedule_date || '-' }}</text
-                                >
                                 <text class="package-name"
                                     >套餐：{{ selectedItem.package?.name || '服务套餐' }}</text
                                 >
@@ -89,61 +105,29 @@
                     <text v-if="selectedItem.package?.description" class="package-desc">
                         {{ selectedItem.package?.description }}
                     </text>
-                </view>
-            </view>
-
-            <view class="section" v-if="availableAddons.length">
-                <view class="section-title">附加服务</view>
-                <view class="addon-tip">按当前人员可选，多选后会实时重算金额</view>
-                <view class="addon-list">
-                    <view
-                        v-for="addon in availableAddons"
-                        :key="addon.id"
-                        class="addon-card"
-                        :class="{ 'addon-card--active': isAddonSelected(addon.id) }"
-                        :style="
-                            isAddonSelected(addon.id)
-                                ? {
-                                      borderColor: $theme.ctaColor,
-                                      boxShadow: `0 10rpx 26rpx ${hexToRgba($theme.ctaColor, 0.14)}`
-                                  }
-                                : {}
-                        "
-                        @click="toggleAddon(addon)"
-                    >
-                        <view class="addon-card__main">
-                            <view class="addon-card__title-row">
-                                <text class="addon-card__title">{{ addon.name }}</text>
-                                <view
-                                    class="addon-card__check"
-                                    :style="
-                                        isAddonSelected(addon.id)
-                                            ? { backgroundColor: $theme.ctaColor, borderColor: $theme.ctaColor }
-                                            : {}
-                                    "
-                                >
-                                    <tn-icon
-                                        v-if="isAddonSelected(addon.id)"
-                                        name="check"
-                                        size="20"
-                                        color="#FFFFFF"
-                                    />
+                    <view v-if="selectedAddons.length" class="selected-addon-section">
+                        <view class="selected-addon-section__header">
+                            <text class="selected-addon-section__title">已选附加服务</text>
+                        </view>
+                        <view class="selected-addon-list">
+                            <view
+                                v-for="addon in selectedAddons"
+                                :key="addon.id || addon.addon_id"
+                                class="selected-addon-card"
+                            >
+                                <view class="selected-addon-card__main">
+                                    <text class="selected-addon-card__title">{{ addon.name }}</text>
+                                    <text
+                                        v-if="addon.description"
+                                        class="selected-addon-card__desc"
+                                    >
+                                        {{ addon.description }}
+                                    </text>
+                                </view>
+                                <view class="selected-addon-card__price">
+                                    +¥{{ formatPrice(addon.price) }}
                                 </view>
                             </view>
-                            <text v-if="addon.description" class="addon-card__desc">
-                                {{ addon.description }}
-                            </text>
-                        </view>
-                        <view class="addon-card__price">
-                            <text class="addon-card__price-current">
-                                +¥{{ formatPrice(addon.price) }}
-                            </text>
-                            <text
-                                v-if="Number(addon.original_price || 0) > Number(addon.price || 0)"
-                                class="addon-card__price-original"
-                            >
-                                ¥{{ formatPrice(addon.original_price) }}
-                            </text>
                         </view>
                     </view>
                 </view>
@@ -196,10 +180,20 @@
 import { computed, reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { previewOrder, createOrder } from '@/api/order'
-import { getStaffAddons } from '@/api/staff'
+import { BACK_URL } from '@/enums/constantEnums'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
+import cache from '@/utils/cache'
 import { requestSubscribeByScene } from '@/utils/subscribe'
+import {
+    buildServiceRegionQuery,
+    formatServiceRegionText,
+    hasServiceRegion,
+    loadServiceRegionSelection,
+    normalizeServiceRegion,
+    saveServiceRegionSelection,
+    toServiceRegionParams
+} from '@/utils/service-region'
 
 const $theme = useThemeStore()
 const userStore = useUserStore()
@@ -207,12 +201,17 @@ const userStore = useUserStore()
 const loading = ref(false)
 const submitting = ref(false)
 const initialized = ref(false)
-const availableAddons = ref<any[]>([])
 const selectedAddonIds = ref<number[]>([])
 const selection = reactive({
     staff_id: 0,
     package_id: 0,
-    date: ''
+    date: '',
+    province_code: '',
+    province_name: '',
+    city_code: '',
+    city_name: '',
+    district_code: '',
+    district_name: ''
 })
 
 const preview = ref<any>({
@@ -236,6 +235,11 @@ const hasItems = computed(
     () => Array.isArray(preview.value.items) && preview.value.items.length > 0
 )
 const selectedItem = computed(() => (hasItems.value ? preview.value.items[0] || null : null))
+const selectedAddons = computed(() =>
+    Array.isArray(selectedItem.value?.addons) ? selectedItem.value.addons : []
+)
+const bookingDateText = computed(() => selectedItem.value?.schedule_date || selection.date || '')
+const serviceRegionText = computed(() => formatServiceRegionText(selection, ' / '))
 const canSubmit = computed(() => hasItems.value && !loading.value && !submitting.value)
 const serviceAmount = computed(() => {
     const amount = Number(preview.value.service_amount ?? -1)
@@ -246,13 +250,57 @@ const serviceAmount = computed(() => {
 })
 
 const formatPrice = (value: any) => Number(value || 0).toFixed(2)
-const hexToRgba = (hex: string, alpha: number) => {
-    const normalized = (hex || '').replace('#', '')
-    if (normalized.length !== 6) return `rgba(0, 0, 0, ${alpha})`
-    const r = Number.parseInt(normalized.slice(0, 2), 16)
-    const g = Number.parseInt(normalized.slice(2, 4), 16)
-    const b = Number.parseInt(normalized.slice(4, 6), 16)
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+const parseAddonIds = (value: unknown): number[] => {
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => Number(item))
+            .filter((item, index, list) => item > 0 && list.indexOf(item) === index)
+    }
+
+    if (typeof value !== 'string' || !value.trim()) {
+        return []
+    }
+
+    return value
+        .split(',')
+        .map((item) => Number(item.trim()))
+        .filter((item, index, list) => item > 0 && list.indexOf(item) === index)
+}
+const serializeAddonIds = (addonIds: number[]) => {
+    return addonIds
+        .map((item) => Number(item))
+        .filter((item, index, list) => item > 0 && list.indexOf(item) === index)
+        .join(',')
+}
+
+const getConfirmPageUrl = () => {
+    const params = [
+        `staff_id=${selection.staff_id}`,
+        `package_id=${selection.package_id}`,
+        `date=${encodeURIComponent(selection.date)}`
+    ]
+    const regionQuery = buildServiceRegionQuery(selection)
+    if (regionQuery) {
+        params.push(regionQuery)
+    }
+    const addonQuery = serializeAddonIds(selectedAddonIds.value)
+    if (addonQuery) {
+        params.push(`addon_ids=${encodeURIComponent(addonQuery)}`)
+    }
+    return `/packages/pages/order_confirm/order_confirm?${params.join('&')}`
+}
+
+const ensureSubmitLogin = () => {
+    if (userStore.isLogin) {
+        return true
+    }
+
+    cache.set(BACK_URL, getConfirmPageUrl())
+    uni.showToast({ title: '请先登录后提交订单', icon: 'none' })
+    setTimeout(() => {
+        uni.navigateTo({ url: '/pages/login/login' })
+    }, 300)
+    return false
 }
 
 const initContact = async () => {
@@ -271,6 +319,7 @@ const buildSelectionParams = (extra: Record<string, any> = {}) => {
         staff_id: selection.staff_id,
         package_id: selection.package_id,
         date: selection.date,
+        ...toServiceRegionParams(selection),
         ...extra
     }
 
@@ -287,13 +336,21 @@ const getStaffDetailUrl = () => {
     }
 
     const params = [`id=${selection.staff_id}`]
+    const regionQuery = buildServiceRegionQuery(selection)
+    if (regionQuery) {
+        params.push(regionQuery)
+    }
     if (selection.date) {
-        params.push(`date=${selection.date}`)
+        params.push(`date=${encodeURIComponent(selection.date)}`)
     }
     if (selection.package_id) {
         params.push(`package_id=${selection.package_id}`)
     }
-    params.push('open_date_picker=1')
+    const addonQuery = serializeAddonIds(selectedAddonIds.value)
+    if (addonQuery) {
+        params.push(`addon_ids=${encodeURIComponent(addonQuery)}`)
+    }
+    params.push('open_booking_popup=1')
     return `/packages/pages/staff_detail/staff_detail?${params.join('&')}`
 }
 
@@ -333,41 +390,22 @@ const fetchPreview = async () => {
     }
 }
 
-const fetchAddons = async () => {
-    try {
-        const res = await getStaffAddons({ staff_id: selection.staff_id })
-        availableAddons.value = Array.isArray(res) ? res : []
-        const validAddonIds = new Set(availableAddons.value.map((item: any) => Number(item.id)))
-        selectedAddonIds.value = selectedAddonIds.value.filter((id) => validAddonIds.has(Number(id)))
-    } catch (e) {
-        availableAddons.value = []
-        selectedAddonIds.value = []
-    }
-}
-
-const isAddonSelected = (addonId: number) => {
-    return selectedAddonIds.value.includes(Number(addonId))
-}
-
-const toggleAddon = async (addon: any) => {
-    if (loading.value) return
-
-    const addonId = Number(addon?.id || 0)
-    if (!addonId) return
-
-    if (isAddonSelected(addonId)) {
-        selectedAddonIds.value = selectedAddonIds.value.filter((id) => id !== addonId)
-    } else {
-        selectedAddonIds.value = [...selectedAddonIds.value, addonId]
-    }
-
-    await fetchPreview()
-}
-
 const isValidMobile = (mobile: string) => /^1[3-9]\d{9}$/.test(mobile)
+
+const handleReselect = () => {
+    const url = getStaffDetailUrl()
+    if (!url) {
+        uni.navigateBack()
+        return
+    }
+    uni.redirectTo({ url })
+}
 
 const handleSubmit = async () => {
     if (!canSubmit.value) return
+    if (!ensureSubmitLogin()) {
+        return
+    }
     if (!form.contact_name.trim()) {
         uni.showToast({ title: '请输入联系人姓名', icon: 'none' })
         return
@@ -378,6 +416,10 @@ const handleSubmit = async () => {
     }
     if (!isValidMobile(form.contact_mobile.trim())) {
         uni.showToast({ title: '手机号格式不正确', icon: 'none' })
+        return
+    }
+    if (!form.service_address.trim()) {
+        uni.showToast({ title: '请输入详细地址', icon: 'none' })
         return
     }
 
@@ -392,9 +434,9 @@ const handleSubmit = async () => {
         const params: any = {
             ...buildSelectionParams(),
             contact_name: form.contact_name.trim(),
-            contact_mobile: form.contact_mobile.trim()
+            contact_mobile: form.contact_mobile.trim(),
+            service_address: form.service_address.trim()
         }
-        if (form.service_address.trim()) params.service_address = form.service_address.trim()
         if (form.remark.trim()) params.remark = form.remark.trim()
 
         const res = await createOrder(params)
@@ -415,7 +457,6 @@ const handleSubmit = async () => {
 
 const initPage = async () => {
     await initContact()
-    await fetchAddons()
     await fetchPreview()
     initialized.value = true
 }
@@ -424,9 +465,26 @@ onLoad((options: any) => {
     selection.staff_id = Number(options?.staff_id || 0)
     selection.package_id = Number(options?.package_id || 0)
     selection.date = options?.date || ''
+    const region = normalizeServiceRegion({
+        ...loadServiceRegionSelection(),
+        ...options
+    })
+    selection.province_code = region.province_code
+    selection.province_name = region.province_name
+    selection.city_code = region.city_code
+    selection.city_name = region.city_name
+    selection.district_code = region.district_code
+    selection.district_name = region.district_name
 
-    if (!selection.staff_id || !selection.package_id || !selection.date) {
-        handlePreviewError('预约信息不完整，请重新选择')
+    if (hasServiceRegion(region)) {
+        saveServiceRegionSelection(region)
+    }
+    if (options?.addon_ids) {
+        selectedAddonIds.value = parseAddonIds(options.addon_ids)
+    }
+
+    if (!selection.staff_id || !selection.package_id || !selection.date || !hasServiceRegion(selection)) {
+        handlePreviewError('预约信息不完整，请重新选择服务地区和日期')
         return
     }
 
@@ -476,6 +534,52 @@ onShow(() => {
     margin-bottom: 20rpx;
 }
 
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-bottom: 20rpx;
+}
+
+.section-header .section-title {
+    margin-bottom: 0;
+}
+
+.section-action {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #d85c61;
+}
+
+.booking-info-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+}
+
+.booking-info-item {
+    padding: 20rpx 24rpx;
+    border-radius: 18rpx;
+    background: #f9fafb;
+    border: 1rpx solid #edf0f3;
+}
+
+.booking-info-item__label {
+    display: block;
+    font-size: 24rpx;
+    color: #999999;
+}
+
+.booking-info-item__value {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 28rpx;
+    font-weight: 600;
+    line-height: 1.5;
+    color: #333333;
+}
+
 .form-item + .form-item {
     margin-top: 16rpx;
 }
@@ -492,6 +596,69 @@ onShow(() => {
     border-radius: 20rpx;
     padding: 24rpx;
     border: 1rpx solid #f0f0f0;
+}
+
+.selected-addon-section {
+    margin-top: 20rpx;
+    padding-top: 20rpx;
+    border-top: 1rpx solid #ebeef2;
+}
+
+.selected-addon-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-bottom: 16rpx;
+}
+
+.selected-addon-section__title {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #333333;
+}
+
+.selected-addon-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+}
+
+.selected-addon-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16rpx;
+    padding: 20rpx;
+    border-radius: 18rpx;
+    background: #ffffff;
+    border: 1rpx solid #edf0f3;
+}
+
+.selected-addon-card__main {
+    flex: 1;
+    min-width: 0;
+}
+
+.selected-addon-card__title {
+    display: block;
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #333333;
+}
+
+.selected-addon-card__desc {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 24rpx;
+    line-height: 1.6;
+    color: #7a7a7a;
+}
+
+.selected-addon-card__price {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: #d85c61;
 }
 
 .addon-tip {

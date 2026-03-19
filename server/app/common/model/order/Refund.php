@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\model\order;
 
 use app\common\model\BaseModel;
+use app\common\service\OrderNotificationService;
 use think\facade\Db;
 
 /**
@@ -282,6 +283,7 @@ class Refund extends BaseModel
             );
 
             Db::commit();
+            OrderNotificationService::notifyUserAndStaffOnRefundCompleted($refundId);
             return [true, '退款完成'];
         } catch (\Exception $e) {
             Db::rollback();

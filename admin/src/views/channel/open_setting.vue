@@ -1,12 +1,7 @@
 <template>
     <div>
         <el-card class="!border-none" shadow="never">
-            <el-alert
-                type="warning"
-                title="温馨提示：填写微信开放平台开发配置，请前往微信开放平台创建应用并完成认证；网站应用配置主要用于网站微信登录和微信支付"
-                :closable="false"
-                show-icon
-            />
+            <el-alert type="warning" title="请先完成微信开放平台配置" :closable="false" show-icon />
         </el-card>
         <el-form ref="formRef" :model="formData" :rules="formRules" label-width="160px">
             <el-card class="!border-none mt-4" shadow="never">

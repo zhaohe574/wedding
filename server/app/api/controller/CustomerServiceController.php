@@ -15,6 +15,8 @@ use app\api\validate\CustomerServiceValidate;
  */
 class CustomerServiceController extends BaseApiController
 {
+    public array $notNeedLogin = ['startConsult'];
+
     /**
      * @notes 启动咨询并返回当前应联系的顾问/兜底客服
      * @return \think\response\Json

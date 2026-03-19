@@ -228,6 +228,8 @@ import { ref, reactive, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { publishDynamic, getHotTags } from '@/api/dynamic'
 import { uploadImage } from '@/api/app'
+import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
+import cache from '@/utils/cache'
 
 const dynamicTypes = [
     { label: '图文', value: 1 },
@@ -421,6 +423,7 @@ const handlePublish = async () => {
         }
 
         await publishDynamic(params)
+        cache.set(DYNAMIC_LIST_REFRESH_KEY, 1)
 
         uni.showToast({ title: '发布成功' })
         setTimeout(() => {

@@ -8,13 +8,16 @@ declare(strict_types=1);
 namespace app\api\logic;
 
 use app\common\logic\BaseLogic;
+use app\common\model\schedule\Schedule;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffWork;
 use app\common\model\staff\Favorite;
 use app\common\model\staff\StaffTag;
 use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
+use app\common\model\service\ServicePackageAddon;
 use app\common\service\ConfigService;
+use app\common\service\PackageRegionPriceService;
 use app\common\service\StaffPriceService;
 
 /**
@@ -51,8 +54,16 @@ class StaffLogic extends BaseLogic
      * @param int $userId
      * @return array
      */
-    public static function detail(int $id, int $userId = 0): array
+    public static function detail(
+        int $id,
+        int $userId = 0,
+        array $regionContext = [],
+        string $date = ''
+    ): array
     {
+        $resolvedRegion = self::resolveRegionContext($regionContext);
+        $scheduleStatus = self::resolveScheduleStatus($id, $date);
+
         $staff = Staff::where('id', $id)
             ->where('delete_time', null)
             ->where('status', Staff::STATUS_ENABLE)
@@ -70,10 +81,12 @@ class StaffLogic extends BaseLogic
         Staff::incrementViewCount($id);
 
         $data = $staff->toArray();
-        $displayPrice = StaffPriceService::getDisplayPriceByStaffId((int)$staff->id);
+        $displayPrice = StaffPriceService::getDisplayPriceByStaffId((int)$staff->id, $resolvedRegion);
         $data['price'] = $displayPrice['price'];
         $data['has_price'] = $displayPrice['has_price'];
         $data['price_text'] = $displayPrice['price_text'];
+        $data['schedule_available'] = $scheduleStatus['available'];
+        $data['schedule_message'] = $scheduleStatus['message'];
 
         // 详情页风格（后台配置）
         $data['staff_detail_style'] = (string) ConfigService::get('feature_switch', 'staff_detail_style', 'classic');
@@ -93,7 +106,7 @@ class StaffLogic extends BaseLogic
             ->order('sort desc, id desc')
             ->select()
             ->toArray();
-        $data['packages'] = self::transformPackages($packages);
+        $data['packages'] = self::transformPackages($packages, $resolvedRegion);
 
         // 获取轮播图
         $data['banners'] = \app\common\model\staff\StaffBanner::where('staff_id', $id)
@@ -167,16 +180,21 @@ class StaffLogic extends BaseLogic
      * @param int $staffId
      * @return array
      */
-    public static function packages(int $staffId): array
+    public static function packages(int $staffId, array $regionContext = [], string $date = ''): array
     {
         if ($staffId <= 0) {
             return [];
         }
 
+        self::resolveScheduleStatus($staffId, $date);
+        $resolvedRegion = self::resolveRegionContext($regionContext);
         $packages = ServicePackage::where('staff_id', $staffId)
             ->where('delete_time', null)
             ->where('is_show', 1);
-        return self::transformPackages($packages->order('sort desc, id desc')->select()->toArray());
+        return self::transformPackages(
+            $packages->order('sort desc, id desc')->select()->toArray(),
+            $resolvedRegion
+        );
     }
 
     /**
@@ -184,17 +202,34 @@ class StaffLogic extends BaseLogic
      * @param int $staffId
      * @return array
      */
-    public static function addons(int $staffId): array
+    public static function addons(int $staffId, int $packageId = 0): array
     {
         if ($staffId <= 0) {
             return [];
         }
 
-        return ServiceAddon::where('staff_id', $staffId)
-            ->whereNull('delete_time')
-            ->where('is_show', 1)
-            ->field('id, staff_id, category_id, name, price, original_price, image, description, sort, is_show')
-            ->order('sort desc, id desc')
+        $query = ServiceAddon::alias('addon')
+            ->where('addon.staff_id', $staffId)
+            ->whereNull('addon.delete_time')
+            ->where('addon.is_show', 1)
+            ->field('addon.id, addon.staff_id, addon.category_id, addon.name, addon.price, addon.original_price, addon.image, addon.description, addon.sort, addon.is_show');
+
+        if ($packageId > 0) {
+            $package = ServicePackage::where('id', $packageId)
+                ->where('staff_id', $staffId)
+                ->whereNull('delete_time')
+                ->find();
+            if (!$package) {
+                return [];
+            }
+
+            $query->join(
+                'service_package_addon relation',
+                'relation.addon_id = addon.id AND relation.package_id = ' . $packageId
+            );
+        }
+
+        return $query->order('addon.sort desc, addon.id desc')
             ->select()
             ->toArray();
     }
@@ -312,8 +347,12 @@ class StaffLogic extends BaseLogic
      * @param array $packages
      * @return array
      */
-    protected static function transformPackages(array $packages): array
+    protected static function transformPackages(array $packages, array $regionContext = []): array
     {
+        if (PackageRegionPriceService::hasRegionContext($regionContext)) {
+            $packages = PackageRegionPriceService::applyResolvedPrices($packages, $regionContext, true);
+        }
+
         $result = [];
         foreach ($packages as $package) {
             $result[] = array_merge($package, [
@@ -322,6 +361,48 @@ class StaffLogic extends BaseLogic
                 'status' => 1,
             ]);
         }
-        return $result;
+        return ServicePackageAddon::attachAddonIds($result);
+    }
+
+    /**
+     * @notes 解析地区上下文
+     * @param array $regionContext
+     * @return array
+     */
+    protected static function resolveRegionContext(array $regionContext): array
+    {
+        $normalized = PackageRegionPriceService::normalizeRegionContext($regionContext);
+        $hasRegionInput = $normalized['province_code'] !== ''
+            || $normalized['city_code'] !== ''
+            || $normalized['district_code'] !== '';
+
+        if (!$hasRegionInput) {
+            return [];
+        }
+
+        return PackageRegionPriceService::validateEnabledRegion($normalized);
+    }
+
+    /**
+     * @notes 解析档期状态
+     * @param int $staffId
+     * @param string $date
+     * @return array
+     */
+    protected static function resolveScheduleStatus(int $staffId, string $date): array
+    {
+        $date = trim($date);
+        if ($staffId <= 0 || $date === '') {
+            return [
+                'available' => true,
+                'message' => '',
+            ];
+        }
+
+        [$available, $message] = Schedule::checkAvailabilityWithReason($staffId, $date, 0);
+        return [
+            'available' => $available,
+            'message' => $message,
+        ];
     }
 }

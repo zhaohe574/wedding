@@ -11,6 +11,7 @@ use app\common\model\BaseModel;
 use app\common\model\package\PackageBooking;
 use app\common\model\schedule\Schedule;
 use app\common\model\service\ServiceAddon;
+use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
 use think\model\concern\SoftDelete;
@@ -639,16 +640,34 @@ class OrderChange extends BaseModel
             $addonNames = [];
 
             if ($addonAction === self::ADDON_ACTION_ADD) {
-                $addons = ServiceAddon::whereIn('id', $addonIds)
+                $packageId = (int)($orderItem->package_id ?? 0);
+                if ($packageId <= 0) {
+                    throw new \RuntimeException('当前主服务项未配置可新增的附加服务');
+                }
+
+                $package = ServicePackage::where('id', $packageId)
                     ->where('staff_id', (int)$orderItem->staff_id)
-                    ->where('is_show', 1)
                     ->whereNull('delete_time')
-                    ->field('id, name, price')
+                    ->find();
+                if (!$package) {
+                    throw new \RuntimeException('当前主服务项套餐不存在');
+                }
+
+                $addons = ServiceAddon::alias('addon')
+                    ->join(
+                        'service_package_addon relation',
+                        'relation.addon_id = addon.id AND relation.package_id = ' . $packageId
+                    )
+                    ->whereIn('addon.id', $addonIds)
+                    ->where('addon.staff_id', (int)$orderItem->staff_id)
+                    ->where('addon.is_show', 1)
+                    ->whereNull('addon.delete_time')
+                    ->field('addon.id, addon.name, addon.price')
                     ->select()
                     ->toArray();
 
                 if (count($addons) !== count($addonIds)) {
-                    throw new \RuntimeException('所选附加服务不存在、已下架或不属于当前人员');
+                    throw new \RuntimeException('所选附加服务不存在、已下架或不属于当前套餐');
                 }
 
                 $activeAddonIds = OrderItemAddon::getActiveAddonIds($orderItemId);
@@ -1129,6 +1148,7 @@ class OrderChange extends BaseModel
             'time_slot' => 0,
             'staff_name' => $change->add_staff_name,
             'package_name' => $change->add_package_name,
+            'package_description' => OrderItem::resolvePackageDescription((int)$change->add_package_id),
             'price' => $change->add_price,
             'quantity' => 1,
             'subtotal' => $change->add_price,

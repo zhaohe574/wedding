@@ -14,8 +14,6 @@ la_schedule_rule
 la_schedule
 la_schedule_lock
 la_schedule_share
-la_cart
-la_cart_plan
 la_waitlist
 la_calendar_event
 la_order
@@ -32,7 +30,6 @@ la_follow
 la_notification
 la_order_change
 la_order_change_addon
-la_order_transfer
 la_order_pause
 la_order_change_log
 la_review
@@ -54,8 +51,6 @@ la_financial_monthly
 la_invoice
 la_staff_settlement_config
 la_financial_reconciliation
-la_timeline_template
-la_order_timeline
 la_sales_advisor
 la_customer
 la_follow_record
@@ -77,6 +72,9 @@ la_subscribe_message_scene
 la_package_booking
 la_staff_banner
 la_service_addon
+la_service_package_addon
+la_service_city_pool
+la_service_package_region_price
 
 表数据初始化/调整
 la_service_category
@@ -90,7 +88,6 @@ la_dynamic_comment
 la_review_tag
 la_review_reward_config
 la_staff_settlement_config
-la_timeline_template
 la_escalate_rule
 la_callback_questionnaire
 la_subscribe_message_scene

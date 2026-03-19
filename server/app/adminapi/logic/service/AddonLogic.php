@@ -9,6 +9,7 @@ namespace app\adminapi\logic\service;
 
 use app\common\logic\BaseLogic;
 use app\common\model\service\ServiceAddon;
+use app\common\model\service\ServicePackageAddon;
 use app\common\model\staff\Staff;
 
 /**
@@ -120,6 +121,7 @@ class AddonLogic extends BaseLogic
                 throw new \Exception('附加服务不存在');
             }
 
+            ServicePackageAddon::clearByAddonId((int)$params['id']);
             ServiceAddon::destroy((int)$params['id']);
             return true;
         } catch (\Exception $e) {

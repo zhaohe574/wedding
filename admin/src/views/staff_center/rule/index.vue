@@ -10,9 +10,7 @@
                 </div>
             </template>
 
-            <div class="text-sm text-gray-500">
-                说明：全局模板仅供参考（只读），你只能维护自己的个人规则。
-            </div>
+            <div class="text-sm text-gray-500">全局模板只读</div>
         </el-card>
 
         <el-card class="!border-none mb-4" shadow="never">

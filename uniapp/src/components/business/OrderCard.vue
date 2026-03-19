@@ -49,13 +49,14 @@
                     </view>
                 </view>
 
-                <!-- 服务地址 -->
+                <!-- 服务地点 -->
                 <view class="order-card__info-row">
                     <view class="order-card__info-icon-wrapper">
                         <tn-icon name="location" size="28" color="#999999" />
                     </view>
                     <view class="order-card__info-content">
                         <view class="order-card__location-wrapper">
+                            <text class="order-card__info-label">服务地点</text>
                             <text class="order-card__location-text">{{ order.location }}</text>
                         </view>
                     </view>
@@ -477,8 +478,9 @@ export default {
 
     &__location-wrapper {
         display: flex;
+        flex-direction: column;
         align-items: flex-start;
-        gap: 10rpx;
+        gap: 6rpx;
         padding: 12rpx 16rpx;
         background: #fafafa;
         border-radius: 12rpx;
@@ -566,11 +568,17 @@ export default {
     }
 
     &__action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         height: 64rpx;
+        min-width: 112rpx;
         padding: 0 28rpx;
+        box-sizing: border-box;
         border-radius: 32rpx;
         border: 2rpx solid #e5e5e5;
         transition: all 0.2s ease;
+        flex-shrink: 0;
 
         &--primary {
             box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
@@ -584,8 +592,11 @@ export default {
     }
 
     &__action-text {
+        display: block;
         font-size: 26rpx;
         font-weight: 600;
+        line-height: 1;
+        text-align: center;
     }
 }
 </style>

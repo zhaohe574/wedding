@@ -12,7 +12,7 @@ use app\api\validate\OrderChangeValidate;
 
 /**
  * 小程序端订单变更控制器
- * 支持用户申请改期、换人、加项、转让、暂停
+ * 支持用户申请改期、换人、加项、暂停
  * Class OrderChangeController
  * @package app\api\controller
  */
@@ -144,51 +144,6 @@ class OrderChangeController extends BaseApiController
             return $this->success($result['message']);
         }
         return $this->fail($result['message']);
-    }
-
-    /**
-     * @notes 申请转让
-     * @return \think\response\Json
-     */
-    public function applyTransfer()
-    {
-        return $this->fail('功能已下线，请取消订单后重新下单');
-    }
-
-    /**
-     * @notes 取消转让申请
-     * @return \think\response\Json
-     */
-    public function cancelTransfer()
-    {
-        return $this->fail('功能已下线，请取消订单后重新下单');
-    }
-
-    /**
-     * @notes 接收转让（接收方）
-     * @return \think\response\Json
-     */
-    public function acceptTransfer()
-    {
-        return $this->fail('功能已下线，请取消订单后重新下单');
-    }
-
-    /**
-     * @notes 转让详情
-     * @return \think\response\Json
-     */
-    public function transferDetail()
-    {
-        return $this->fail('功能已下线，请取消订单后重新下单');
-    }
-
-    /**
-     * @notes 我的转让列表
-     * @return \think\response\Json
-     */
-    public function transferLists()
-    {
-        return $this->fail('功能已下线，请取消订单后重新下单');
     }
 
     /**

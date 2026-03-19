@@ -9,7 +9,9 @@ namespace app\adminapi\controller\staff;
 
 use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\staff\StaffLists;
+use app\adminapi\logic\service\RegionLogic;
 use app\adminapi\logic\staff\StaffLogic;
+use app\adminapi\validate\service\RegionValidate;
 use app\adminapi\validate\staff\StaffValidate;
 use app\common\model\staff\StaffBanner;
 use app\common\service\StaffService;
@@ -179,7 +181,7 @@ class StaffController extends BaseAdminController
      */
     public function configurePackages()
     {
-        return $this->fail('全局套餐关联能力已下线，请直接维护该人员自己的套餐');
+        return $this->fail('请直接维护人员套餐');
     }
 
     /**
@@ -315,6 +317,108 @@ class StaffController extends BaseAdminController
         }
 
         $result = StaffLogic::deleteStaffPackage($staffId, $packageId);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 获取员工附加服务配置
+     * @return \think\response\Json
+     */
+    public function getAddonConfig()
+    {
+        $staffId = intval($this->request->get('staff_id', 0));
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+        }
+
+        if ($staffId <= 0) {
+            return $this->fail('请选择员工');
+        }
+
+        $result = StaffLogic::getAddonConfig($staffId);
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 创建员工附加服务
+     * @return \think\response\Json
+     */
+    public function createStaffAddon()
+    {
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
+
+        if ($staffId <= 0) {
+            return $this->fail('请选择员工');
+        }
+
+        if (empty($params['name'])) {
+            return $this->fail('请输入附加服务名称');
+        }
+
+        $result = StaffLogic::createStaffAddon($staffId, $params);
+        if (true === $result) {
+            return $this->success('创建成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 编辑员工附加服务
+     * @return \think\response\Json
+     */
+    public function updateStaffAddon()
+    {
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+        $addonId = intval($params['addon_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
+
+        if ($staffId <= 0 || $addonId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        if (empty($params['name'])) {
+            return $this->fail('请输入附加服务名称');
+        }
+
+        $result = StaffLogic::updateStaffAddon($staffId, $addonId, $params);
+        if (true === $result) {
+            return $this->success('更新成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 删除员工附加服务
+     * @return \think\response\Json
+     */
+    public function deleteStaffAddon()
+    {
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+        $addonId = intval($params['addon_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
+
+        if ($staffId <= 0 || $addonId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $result = StaffLogic::deleteStaffAddon($staffId, $addonId);
         if (true === $result) {
             return $this->success('删除成功', [], 1, 1);
         }
@@ -531,6 +635,35 @@ class StaffController extends BaseAdminController
     }
 
     /**
+     * @notes 我的资料-已启用服务城市选项
+     * @return \think\response\Json
+     */
+    public function myProfileRegionEnabledCityOptions()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        return $this->data(RegionLogic::enabledCityOptions());
+    }
+
+    /**
+     * @notes 我的资料-区县选项
+     * @return \think\response\Json
+     */
+    public function myProfileRegionDistrictOptions()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $params = (new RegionValidate())->goCheck('districtOptions');
+        return $this->data(RegionLogic::districtOptions((string)$params['city_code']));
+    }
+
+    /**
      * @notes 我的套餐配置
      * @return \think\response\Json
      */
@@ -551,7 +684,7 @@ class StaffController extends BaseAdminController
      */
     public function myProfileConfigurePackages()
     {
-        return $this->fail('全局套餐关联能力已下线，请直接维护自己的套餐');
+        return $this->fail('请直接维护我的套餐');
     }
 
     /**

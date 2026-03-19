@@ -8,11 +8,13 @@ declare(strict_types=1);
 namespace app\common\model\schedule;
 
 use app\common\model\BaseModel;
+use app\common\model\notification\Notification;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\model\subscribe\SubscribeMessageTemplate;
 use app\common\model\user\User;
 use app\common\service\SubscribeMessageService;
+use app\common\service\StationNotificationService;
 
 /**
  * 候补订单模型
@@ -156,6 +158,7 @@ class Waitlist extends BaseModel
             $waitlist->save();
 
             self::sendWaitlistSubscribeMessage($waitlist);
+            self::sendWaitlistStationNotification($waitlist);
 
             $notifyUsers[] = [
                 'waitlist_id' => (int)$waitlist->id,
@@ -189,6 +192,28 @@ class Waitlist extends BaseModel
             SubscribeMessageTemplate::SCENE_WAITLIST_RELEASE,
             $data,
             'waitlist',
+            (int)$waitlist->id
+        );
+    }
+
+    /**
+     * @notes 发送候补释放站内消息
+     * @param Waitlist $waitlist
+     * @return void
+     */
+    private static function sendWaitlistStationNotification(Waitlist $waitlist): void
+    {
+        $staffName = $waitlist->staff->name ?? '服务人员';
+        $scheduleDate = $waitlist->schedule_date ?? '';
+        $packageName = $waitlist->package->name ?? '';
+        $packageText = $packageName ? "，套餐：{$packageName}" : '';
+
+        StationNotificationService::send(
+            (int)$waitlist->user_id,
+            Notification::TYPE_ORDER,
+            '候补档期已释放',
+            "您候补的{$staffName}档期（{$scheduleDate}{$packageText}）已释放，请尽快预约。",
+            StationNotificationService::TARGET_WAITLIST,
             (int)$waitlist->id
         );
     }

@@ -22,7 +22,7 @@ export function getRecommendStaff(data?: { limit?: number }) {
  * @param { number } id
  * @return { Promise }
  */
-export function getStaffDetail(data: { id: number }) {
+export function getStaffDetail(data: Record<string, any> & { id: number }) {
     return request.get({ url: '/staff/detail', data })
 }
 
@@ -75,7 +75,7 @@ export function getMyFavoriteStaff() {
  * @param { number } staff_id
  * @return { Promise }
  */
-export function getStaffPackages(data: { staff_id: number }) {
+export function getStaffPackages(data: Record<string, any> & { staff_id: number }) {
     return request.get({ url: '/staff/packages', data })
 }
 
@@ -84,6 +84,6 @@ export function getStaffPackages(data: { staff_id: number }) {
  * @param { number } staff_id
  * @return { Promise }
  */
-export function getStaffAddons(data: { staff_id: number }) {
+export function getStaffAddons(data: { staff_id: number; package_id?: number }) {
     return request.get({ url: '/staff/addons', data })
 }

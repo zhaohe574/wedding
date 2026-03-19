@@ -12,6 +12,7 @@ use app\common\model\review\Review;
 use app\common\model\review\ReviewReply;
 use app\common\model\review\ReviewTag;
 use app\common\model\review\StaffReviewStats;
+use app\common\service\OrderNotificationService;
 use app\common\service\UserPointService;
 use think\facade\Db;
 
@@ -51,6 +52,9 @@ class ReviewLogic extends BaseLogic
      */
     public static function audit(array $params): bool
     {
+        $reviewId = (int)($params['id'] ?? 0);
+        $approved = (int)($params['status'] ?? 0) === Review::STATUS_APPROVED;
+
         try {
             $review = Review::find($params['id']);
             if (!$review) {
@@ -86,6 +90,11 @@ class ReviewLogic extends BaseLogic
                 }
 
                 Db::commit();
+
+                OrderNotificationService::notifyUserOnReviewAudited($reviewId);
+                if ($approved) {
+                    OrderNotificationService::notifyStaffOnNewReview($reviewId);
+                }
                 return true;
             } catch (\Exception $e) {
                 Db::rollback();
@@ -104,6 +113,9 @@ class ReviewLogic extends BaseLogic
      */
     public static function batchAudit(array $params): bool
     {
+        $auditedReviewIds = [];
+        $approved = (int)($params['status'] ?? 0) === Review::STATUS_APPROVED;
+
         try {
             Db::startTrans();
             try {
@@ -117,6 +129,7 @@ class ReviewLogic extends BaseLogic
                             'audit_time' => time(),
                             'reject_reason' => $params['reject_reason'] ?? '',
                         ]);
+                        $auditedReviewIds[] = (int)$review->id;
                         if ($params['status'] == Review::STATUS_APPROVED) {
                             if (!UserPointService::grantReviewReward($review)) {
                                 throw new \Exception('评价奖励积分发放失败');
@@ -133,6 +146,13 @@ class ReviewLogic extends BaseLogic
                 }
 
                 Db::commit();
+
+                foreach ($auditedReviewIds as $reviewId) {
+                    OrderNotificationService::notifyUserOnReviewAudited($reviewId);
+                    if ($approved) {
+                        OrderNotificationService::notifyStaffOnNewReview($reviewId);
+                    }
+                }
                 return true;
             } catch (\Exception $e) {
                 Db::rollback();

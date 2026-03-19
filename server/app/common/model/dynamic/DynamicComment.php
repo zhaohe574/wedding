@@ -10,6 +10,7 @@ namespace app\common\model\dynamic;
 use app\common\model\BaseModel;
 use app\common\model\review\SensitiveWord;
 use app\common\model\user\User;
+use app\common\service\InteractNotificationService;
 use think\model\concern\SoftDelete;
 
 /**
@@ -148,7 +149,9 @@ class DynamicComment extends BaseModel
                 }
             }
 
-            // TODO: 发送通知给动态作者/被回复者
+            if ($reviewStatus == self::REVIEW_STATUS_APPROVED) {
+                InteractNotificationService::notifyOnCommentVisible((int)$comment->id);
+            }
 
             $message = $reviewEnabled ? '评论成功，等待审核' : '评论成功';
             return [true, $message, $comment];
@@ -324,7 +327,8 @@ class DynamicComment extends BaseModel
             self::where('id', $comment->parent_id)->inc('reply_count')->update();
         }
 
-        // TODO: 发送通知给用户
+        InteractNotificationService::notifyCommentAuditResult($commentId, true);
+        InteractNotificationService::notifyOnCommentVisible($commentId);
 
         return [true, '审核通过'];
     }
@@ -353,7 +357,7 @@ class DynamicComment extends BaseModel
         $comment->review_remark = $remark;
         $comment->save();
 
-        // TODO: 发送通知给用户
+        InteractNotificationService::notifyCommentAuditResult($commentId, false, $remark);
 
         return [true, '已拒绝'];
     }

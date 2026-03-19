@@ -31,6 +31,38 @@ class StaffCenterController extends BaseApiController
     }
 
     /**
+     * @notes 工作台首页
+     */
+    public function dashboard()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $result = StaffCenterLogic::dashboard($this->userId);
+        if (empty($result)) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 订单状态统计
+     */
+    public function orderStats()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $result = StaffCenterLogic::orderStats($this->userId);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
      * @notes 个人资料
      */
     public function profile()

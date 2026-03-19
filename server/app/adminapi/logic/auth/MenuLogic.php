@@ -15,7 +15,6 @@
 namespace app\adminapi\logic\auth;
 
 
-use app\common\enum\YesNoEnum;
 use app\common\logic\BaseLogic;
 use app\common\model\auth\Admin;
 use app\common\model\auth\SystemMenu;
@@ -141,16 +140,23 @@ class MenuLogic extends BaseLogic
      */
     private static function filterUnavailableMenus(array $menu): array
     {
-        $blockedPaths = ['timeline', 'aftersale'];
+        $blockedPaths = ['timeline', 'aftersale', 'marketing'];
         $blockedComponents = [
+            'coupon/lists/index',
             'aftersale/ticket/index',
+            'order/transfer/index',
             'timeline/lists/index',
             'financial/cost/index',
             'financial/invoice/index',
             'schedule/booking/index',
             'schedule/event/index',
+            'crm/customer/index',
+            'crm/advisor/index',
+            'crm/warning/index',
         ];
         $blockedPermPrefixes = [
+            'coupon.coupon/',
+            'growth.campaign/',
             'timeline.timeline/',
             'growth.timeline/',
             'aftersale.aftersale/',
@@ -163,6 +169,18 @@ class MenuLogic extends BaseLogic
             'ops.calendarEvent/',
             'schedule.booking/',
             'ops.booking/',
+            'crm.customer/',
+            'growth.customer/',
+            'crm.sales_advisor/',
+            'crm.salesAdvisor/',
+            'growth.advisor/',
+            'crm.customer_loss_warning/',
+            'crm.customerLossWarning/',
+            'growth.lossWarning/',
+            'crm.followRecord/',
+            'growth.followRecord/',
+            'order.order_transfer/',
+            'ops.orderTransfer/',
         ];
 
         return array_values(array_filter($menu, function ($item) use (
@@ -183,13 +201,32 @@ class MenuLogic extends BaseLogic
             }
 
             foreach ($blockedPermPrefixes as $prefix) {
-                if ($perms !== '' && str_starts_with($perms, $prefix)) {
+                if (self::isBlockedPermission($perms, $prefix)) {
                     return false;
                 }
             }
 
             return true;
         }));
+    }
+
+
+    /**
+     * @notes 判断权限是否属于已下线模块
+     */
+    private static function isBlockedPermission(string $permission, string $prefix): bool
+    {
+        if ($permission === '' || !str_starts_with($permission, $prefix)) {
+            return false;
+        }
+
+        // 服务人员中心的预约能力仍在线，不能被后台预约壳模块误伤
+        if (in_array($prefix, ['schedule.booking/', 'ops.booking/'], true)) {
+            return !str_starts_with($permission, 'schedule.booking/my')
+                && !str_starts_with($permission, 'ops.booking/my');
+        }
+
+        return true;
     }
 
 

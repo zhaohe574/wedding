@@ -34,6 +34,8 @@ class PackageValidate extends BaseValidate
         'is_show' => 'in:0,1',
         'is_recommend' => 'in:0,1',
         'staff_id' => 'require|integer|gt:0|checkStaff',
+        'addon_ids' => 'array',
+        'region_prices' => 'array',
     ];
 
     /**
@@ -58,6 +60,8 @@ class PackageValidate extends BaseValidate
         'staff_id.require' => '请选择所属人员',
         'staff_id.integer' => '员工ID必须为整数',
         'staff_id.gt' => '请选择所属人员',
+        'addon_ids.array' => '附加服务参数格式错误',
+        'region_prices.array' => '地区价格参数格式错误',
     ];
 
     /**
@@ -65,8 +69,8 @@ class PackageValidate extends BaseValidate
      * @var array
      */
     protected $scene = [
-        'add' => ['name', 'price', 'original_price', 'duration', 'image', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id'],
-        'edit' => ['id', 'name', 'price', 'original_price', 'duration', 'image', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id'],
+        'add' => ['name', 'price', 'original_price', 'duration', 'image', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id', 'addon_ids', 'region_prices'],
+        'edit' => ['id', 'name', 'price', 'original_price', 'duration', 'image', 'description', 'sort', 'is_show', 'is_recommend', 'staff_id', 'addon_ids', 'region_prices'],
         'detail' => ['id'],
         'delete' => ['id'],
         'status' => ['id', 'is_show'],

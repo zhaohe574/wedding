@@ -10,6 +10,7 @@ namespace app\common\model\dynamic;
 use app\common\model\BaseModel;
 use app\common\model\user\User;
 use app\common\model\staff\Staff;
+use app\common\service\InteractNotificationService;
 
 /**
  * 关注模型
@@ -66,8 +67,8 @@ class Follow extends BaseModel
                 'follow_id' => $followId,
                 'create_time' => time(),
             ]);
-            
-            // TODO: 发送通知
+
+            InteractNotificationService::notifyOnFollow($userId, $followType, $followId);
             
             return [true, '关注成功', true];
         }

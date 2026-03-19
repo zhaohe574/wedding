@@ -4,13 +4,11 @@
             <view class="entry-badge" :style="badgeStyle">顾问咨询</view>
             <view class="entry-arrow">立即联系</view>
         </view>
-        <view class="entry-title">{{ content.title || '婚礼顾问在线承接' }}</view>
-        <view class="entry-subtitle">
-            {{ content.subtitle || '所有咨询将统一进入企业微信顾问体系，由顾问持续跟进。' }}
-        </view>
+        <view class="entry-title">{{ content.title || '联系顾问' }}</view>
+        <view v-if="content.subtitle" class="entry-subtitle">{{ content.subtitle }}</view>
         <view class="entry-footer">
-            <view class="entry-tips">{{ content.tips || '订单状态变化仍以站内消息与订阅通知为准。' }}</view>
-            <view class="entry-btn" :style="buttonStyle">{{ content.buttonText || '联系专属顾问' }}</view>
+            <view v-if="content.tips" class="entry-tips">{{ content.tips }}</view>
+            <view class="entry-btn" :style="buttonStyle">{{ content.buttonText || '联系顾问' }}</view>
         </view>
     </view>
 </template>

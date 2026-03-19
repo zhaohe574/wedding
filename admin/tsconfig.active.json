@@ -16,8 +16,6 @@
     ],
     "exclude": [
         "src/views/aftersale/**/*",
-        "src/views/crm/**/*",
-        "src/views/timeline/**/*",
         "src/views/order/refund/**/*",
         "src/views/finance/**/*",
         "src/views/financial/**/*",

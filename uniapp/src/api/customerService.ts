@@ -7,5 +7,5 @@ export function startConsult(params: {
     order_id?: number | string
     category_id?: number | string
 }) {
-    return request.post({ url: '/customer_service/startConsult', params }, { isAuth: true })
+    return request.post({ url: '/customer_service/startConsult', params })
 }

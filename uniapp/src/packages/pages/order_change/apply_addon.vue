@@ -284,7 +284,10 @@ const fetchAvailableAddons = async () => {
 
     loadingAddons.value = true
     try {
-        const res = await getStaffAddons({ staff_id: Number(selectedOrderItem.value.staff_id) })
+        const res = await getStaffAddons({
+            staff_id: Number(selectedOrderItem.value.staff_id),
+            package_id: Number(selectedOrderItem.value.package_id || 0)
+        })
         availableAddons.value = Array.isArray(res) ? res : []
     } catch (error) {
         availableAddons.value = []

@@ -136,13 +136,13 @@
         <MpPrivacyPopup></MpPrivacyPopup>
         <!--  #endif  -->
 
-        <tabbar />
+        <tabbar :badge-refresh-key="tabbarRefreshKey" />
     </view>
 </template>
 
 <script setup lang="ts">
 import { getIndex } from '@/api/shop'
-import { onLoad, onPageScroll } from '@dcloudio/uni-app'
+import { onLoad, onPageScroll, onShow } from '@dcloudio/uni-app'
 import { computed, reactive, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
@@ -171,6 +171,7 @@ const state = reactive<{
 
 const scrollTop = ref<number>(0)
 const percent = ref<number>(0)
+const tabbarRefreshKey = ref(0)
 
 // 判断组件是否启用（使用computed缓存）
 const isComponentEnabled = (item: any) => {
@@ -294,6 +295,10 @@ const handleBackTop = () => {
 onLoad(() => {
     // 首页数据仅在首次加载时初始化，避免首屏 onLoad/onShow 重复请求
     getData()
+})
+
+onShow(() => {
+    tabbarRefreshKey.value += 1
 })
 </script>
 

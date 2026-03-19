@@ -10,6 +10,7 @@ namespace app\adminapi\logic\schedule;
 use app\common\logic\BaseLogic;
 use app\common\model\notification\Notification;
 use app\common\model\schedule\Waitlist;
+use app\common\service\StationNotificationService;
 use think\facade\Db;
 
 /**
@@ -84,11 +85,12 @@ class WaitlistLogic extends BaseLogic
                     'update_time' => $now,
                 ]);
 
+            Db::commit();
+
             foreach ($waitlists as $waitlist) {
                 self::sendWaitlistNotification($waitlist);
             }
 
-            Db::commit();
             return $count;
         } catch (\Exception $e) {
             Db::rollback();
@@ -133,9 +135,9 @@ class WaitlistLogic extends BaseLogic
             $waitlist->update_time = $now;
             $waitlist->save();
 
-            self::sendWaitlistNotification($waitlist);
-
             Db::commit();
+
+            self::sendWaitlistNotification($waitlist);
             return true;
         } catch (\Exception $e) {
             Db::rollback();
@@ -159,12 +161,12 @@ class WaitlistLogic extends BaseLogic
         $title = '候补档期已释放';
         $content = "您候补的{$staffName}档期（{$scheduleDate}{$packageText}）已释放，请尽快预约。";
 
-        Notification::send(
+        StationNotificationService::send(
             (int) $waitlist->user_id,
             Notification::TYPE_ORDER,
             $title,
             $content,
-            'waitlist',
+            StationNotificationService::TARGET_WAITLIST,
             (int) $waitlist->id
         );
     }

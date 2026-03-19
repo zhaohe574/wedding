@@ -72,6 +72,30 @@
             </view>
         </view>
 
+        <view class="form-card">
+            <view class="card-title">附加服务</view>
+            <view class="addon-tip">仅展示已勾选项</view>
+            <view v-if="addonOptions.length" class="addon-list">
+                <view
+                    v-for="addon in addonOptions"
+                    :key="addon.id"
+                    class="addon-card"
+                    :class="{ 'addon-card--active': isAddonSelected(addon.id) }"
+                    @click="toggleAddon(addon.id)"
+                >
+                    <view class="addon-card__main">
+                        <text class="addon-card__name">
+                            {{ addon.name }}
+                            <text v-if="Number(addon.is_show) !== 1" class="addon-card__status">（已下架）</text>
+                        </text>
+                        <text v-if="addon.description" class="addon-card__desc">{{ addon.description }}</text>
+                    </view>
+                    <text class="addon-card__price">¥{{ formatPrice(addon.price) }}</text>
+                </view>
+            </view>
+            <view v-else class="addon-empty">暂无可配置的附加服务</view>
+        </view>
+
         <view class="save-wrapper">
             <view
                 class="save-btn"
@@ -93,6 +117,7 @@
 import { computed, getCurrentInstance, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import {
+    staffCenterAddonLists,
     staffCenterPackageAdd,
     staffCenterPackageLists,
     staffCenterPackageUpdate
@@ -102,6 +127,7 @@ import { useThemeStore } from '@/stores/theme'
 
 const $theme = useThemeStore()
 const saving = ref(false)
+const addonOptions = ref<any[]>([])
 
 const form = reactive({
     package_id: 0,
@@ -110,6 +136,7 @@ const form = reactive({
     original_price: '',
     image: '',
     description: '',
+    addon_ids: [] as number[],
     sort: '0',
     is_show: 1,
     is_recommend: 0
@@ -137,9 +164,41 @@ const fillForm = (data: any) => {
         data.original_price !== undefined && data.original_price !== null ? String(data.original_price) : ''
     form.image = data.image || ''
     form.description = data.description || ''
+    form.addon_ids = Array.isArray(data.addon_ids) ? data.addon_ids.map((item: any) => Number(item)) : []
     form.sort = data.sort !== undefined && data.sort !== null ? String(data.sort) : '0'
     form.is_show = Number(data.is_show ?? 1)
     form.is_recommend = Number(data.is_recommend ?? 0)
+}
+
+const formatPrice = (value: any) => Number(value || 0).toFixed(2)
+
+const isAddonSelected = (addonId: number) => {
+    return form.addon_ids.includes(Number(addonId))
+}
+
+const toggleAddon = (addonId: number) => {
+    const currentId = Number(addonId)
+    if (!currentId) return
+
+    if (isAddonSelected(currentId)) {
+        form.addon_ids = form.addon_ids.filter((id) => id !== currentId)
+        return
+    }
+
+    form.addon_ids = [...form.addon_ids, currentId]
+}
+
+const loadAddonOptions = async () => {
+    const data = await staffCenterAddonLists()
+    const list = Array.isArray(data) ? data : []
+    addonOptions.value = list.map((item: any) => ({
+        ...item,
+        id: Number(item.id || 0),
+        is_show: Number(item.is_show ?? 1)
+    }))
+
+    const validIds = new Set(addonOptions.value.map((item: any) => Number(item.id)))
+    form.addon_ids = form.addon_ids.filter((id) => validIds.has(Number(id)))
 }
 
 const loadFallback = async (packageId: number) => {
@@ -167,6 +226,7 @@ const handleSave = async () => {
         original_price: form.original_price === '' ? 0 : Number(form.original_price),
         image: form.image.trim(),
         description: form.description.trim(),
+        addon_ids: [...form.addon_ids],
         sort: Number(form.sort || 0),
         is_show: form.is_show,
         is_recommend: form.is_recommend
@@ -194,6 +254,7 @@ const handleSave = async () => {
 
 onLoad(async (options: any) => {
     if (!(await ensureStaffCenterAccess())) return
+    await loadAddonOptions()
     const packageId = Number(options?.package_id || 0)
     const instance = getCurrentInstance()
     const channel = instance?.proxy?.getOpenerEventChannel?.()
@@ -224,6 +285,74 @@ onLoad(async (options: any) => {
     font-size: 30rpx;
     font-weight: 700;
     color: #1f2937;
+}
+
+.addon-tip {
+    margin-bottom: 20rpx;
+    font-size: 24rpx;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+.addon-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+}
+
+.addon-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16rpx;
+    padding: 22rpx;
+    border-radius: 18rpx;
+    border: 2rpx solid #edf0f3;
+    background: #f9fafb;
+}
+
+.addon-card--active {
+    border-color: #16a34a;
+    background: #f0fdf4;
+}
+
+.addon-card__main {
+    flex: 1;
+    min-width: 0;
+}
+
+.addon-card__name {
+    display: block;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #111827;
+}
+
+.addon-card__status {
+    color: #9ca3af;
+    font-size: 24rpx;
+    font-weight: 400;
+}
+
+.addon-card__desc {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 24rpx;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+.addon-card__price {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: #dc2626;
+}
+
+.addon-empty {
+    padding: 28rpx 0 8rpx;
+    text-align: center;
+    font-size: 26rpx;
+    color: #9ca3af;
 }
 
 .form-item {

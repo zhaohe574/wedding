@@ -8,48 +8,75 @@
     </page-meta>
 
     <view class="page-container">
-        <view class="header-card">
-            <view>
-                <text class="header-title">我的套餐</text>
-                <text class="header-desc">直接维护本人套餐，价格按固定价展示。</text>
+        <view
+            class="hero-card"
+            :style="{
+                background: `linear-gradient(145deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || $theme.primaryColor} 78%)`
+            }"
+        >
+            <view class="hero-top">
+                <view>
+                    <text class="hero-title">套餐工作区</text>
+                    <text class="hero-desc">集中维护服务组合、价格展示和推荐策略</text>
+                </view>
+                <view class="hero-add-btn" @click="goCreate">
+                    <tn-icon name="add" size="28" color="#FFFFFF" />
+                    <text>新增套餐</text>
+                </view>
             </view>
-            <view class="header-btn" :style="{ background: $theme.primaryColor }" @click="goCreate">
-                <tn-icon name="add" size="28" color="#FFFFFF" />
-                <text>新增</text>
+
+            <view class="hero-stats">
+                <view class="hero-stat">
+                    <text class="hero-stat-label">总套餐</text>
+                    <text class="hero-stat-value">{{ packages.length }}</text>
+                </view>
+                <view class="hero-stat">
+                    <text class="hero-stat-label">上架中</text>
+                    <text class="hero-stat-value">{{ activeCount }}</text>
+                </view>
+                <view class="hero-stat">
+                    <text class="hero-stat-label">推荐款</text>
+                    <text class="hero-stat-value">{{ recommendCount }}</text>
+                </view>
             </view>
         </view>
 
         <view v-if="packages.length" class="package-list">
             <view v-for="item in packages" :key="item.id" class="package-card">
-                <view class="package-header">
+                <view class="package-head">
                     <view class="package-title-wrap">
                         <text class="package-title">{{ item.name || '未命名套餐' }}</text>
+                        <text class="package-category">{{ item.category_name || '服务分类自动同步' }}</text>
                     </view>
                     <view class="package-status" :class="{ off: !item.is_show }">
-                        {{ item.is_show ? '上架' : '下架' }}
+                        {{ item.is_show ? '上架中' : '已下架' }}
                     </view>
                 </view>
 
-                <view class="package-price-row">
-                    <text class="price-main">¥{{ item.price || 0 }}</text>
+                <view class="price-row">
+                    <text class="price-main">¥{{ formatPrice(item.price) }}</text>
                     <text v-if="Number(item.original_price || 0) > 0" class="price-origin">
-                        ¥{{ item.original_price }}
+                        ¥{{ formatPrice(item.original_price) }}
                     </text>
                 </view>
 
-                <view class="package-meta">
-                    <text>排序：{{ item.sort || 0 }}</text>
-                    <text>{{ item.is_recommend ? '推荐套餐' : '普通套餐' }}</text>
+                <view class="meta-row">
+                    <view class="meta-chip">
+                        排序 {{ item.sort || 0 }}
+                    </view>
+                    <view class="meta-chip" :class="{ recommend: !!item.is_recommend }">
+                        {{ item.is_recommend ? '推荐套餐' : '普通套餐' }}
+                    </view>
                 </view>
 
-                <view v-if="item.description" class="package-desc">{{ item.description }}</view>
+                <text v-if="item.description" class="package-desc">{{ item.description }}</text>
 
-                <view class="package-actions">
-                    <view class="action-btn edit" @click="handleEdit(item)">
+                <view class="action-row">
+                    <view class="action-btn action-btn--ghost" @click="handleEdit(item)">
                         <tn-icon name="edit" size="26" :color="$theme.primaryColor" />
                         <text>编辑</text>
                     </view>
-                    <view class="action-btn remove" @click="handleRemove(item)">
+                    <view class="action-btn action-btn--danger" @click="handleRemove(item)">
                         <tn-icon name="delete" size="26" color="#FF2C3C" />
                         <text>删除</text>
                     </view>
@@ -58,25 +85,30 @@
         </view>
 
         <view v-else class="empty-state">
-            <tn-icon name="gift" size="120" color="#E5E7EB" />
-            <text class="empty-title">暂无套餐</text>
-            <text class="empty-desc">创建后将在预约页供用户选择。</text>
+            <tn-icon name="gift" size="120" color="#D1D5DB" />
+            <text class="empty-title">还没有套餐内容</text>
+            <text class="empty-desc">先创建一个可售套餐，让客户能快速下单</text>
+            <view class="empty-btn" :style="{ background: $theme.primaryColor }" @click="goCreate">
+                立即新增
+            </view>
         </view>
     </view>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import {
-    staffCenterPackageLists,
-    staffCenterPackageRemove
-} from '@/api/staffCenter'
+import { staffCenterPackageLists, staffCenterPackageRemove } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 
 const $theme = useThemeStore()
 const packages = ref<any[]>([])
+
+const activeCount = computed(() => packages.value.filter((item) => Number(item.is_show) === 1).length)
+const recommendCount = computed(() =>
+    packages.value.filter((item) => Number(item.is_recommend) === 1).length
+)
 
 const fetchPackages = async () => {
     try {
@@ -121,6 +153,11 @@ const handleRemove = (item: any) => {
     })
 }
 
+const formatPrice = (value: number | string) => {
+    const amount = Number(value || 0)
+    return Number.isInteger(amount) ? String(amount) : amount.toFixed(2)
+}
+
 onShow(async () => {
     if (!(await ensureStaffCenterAccess())) return
     fetchPackages()
@@ -131,63 +168,100 @@ onShow(async () => {
 .page-container {
     min-height: 100vh;
     padding: 24rpx;
-    background: #f4f5f7;
+    background:
+        radial-gradient(circle at top left, rgba(191, 219, 254, 0.72) 0, rgba(246, 248, 252, 0) 36%),
+        linear-gradient(180deg, #F6F8FC 0%, #F4F6FB 100%);
 }
 
-.header-card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 24rpx;
+.hero-card {
     padding: 28rpx;
-    background: #ffffff;
-    border-radius: 24rpx;
-    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
+    border-radius: 30rpx;
+    box-shadow: 0 18rpx 36rpx rgba(37, 99, 235, 0.18);
 }
 
-.header-title {
-    display: block;
-    font-size: 34rpx;
-    font-weight: 700;
-    color: #1f2937;
-}
-
-.header-desc {
-    display: block;
-    margin-top: 10rpx;
-    font-size: 24rpx;
-    color: #9ca3af;
-}
-
-.header-btn {
+.hero-top {
     display: flex;
-    align-items: center;
-    gap: 8rpx;
-    padding: 18rpx 28rpx;
-    border-radius: 999rpx;
-    color: #ffffff;
-    font-size: 26rpx;
-    font-weight: 600;
-}
-
-.package-list {
-    margin-top: 24rpx;
-    display: flex;
-    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 20rpx;
 }
 
-.package-card {
-    padding: 24rpx;
-    background: #ffffff;
-    border-radius: 24rpx;
-    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
+.hero-title {
+    display: block;
+    font-size: 36rpx;
+    font-weight: 700;
+    color: #FFFFFF;
 }
 
-.package-header {
+.hero-desc {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 22rpx;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.hero-add-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    padding: 16rpx 22rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.16);
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #FFFFFF;
+}
+
+.hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14rpx;
+    margin-top: 26rpx;
+}
+
+.hero-stat {
+    padding: 20rpx;
+    border-radius: 22rpx;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.hero-stat-label {
+    display: block;
+    font-size: 22rpx;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.hero-stat-value {
+    display: block;
+    margin-top: 12rpx;
+    font-size: 38rpx;
+    font-weight: 800;
+    color: #FFFFFF;
+}
+
+.package-list {
+    margin-top: 22rpx;
+}
+
+.package-card + .package-card {
+    margin-top: 18rpx;
+}
+
+.package-card {
+    padding: 28rpx;
+    border-radius: 28rpx;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1rpx solid rgba(255, 255, 255, 0.72);
+    box-shadow: 0 18rpx 30rpx rgba(15, 23, 42, 0.05);
+}
+
+.package-head {
     display: flex;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 24rpx;
+    gap: 18rpx;
 }
 
 .package-title-wrap {
@@ -197,60 +271,81 @@ onShow(async () => {
 
 .package-title {
     display: block;
-    font-size: 30rpx;
+    font-size: 32rpx;
     font-weight: 700;
-    color: #111827;
+    color: #0F172A;
+}
+
+.package-category {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 22rpx;
+    color: #94A3B8;
 }
 
 .package-status {
-    align-self: flex-start;
-    padding: 8rpx 18rpx;
+    flex-shrink: 0;
+    padding: 10rpx 18rpx;
     border-radius: 999rpx;
     font-size: 22rpx;
+    font-weight: 600;
     color: #059669;
-    background: rgba(5, 150, 105, 0.12);
+    background: rgba(16, 185, 129, 0.12);
 }
 
 .package-status.off {
-    color: #6b7280;
-    background: rgba(107, 114, 128, 0.12);
+    color: #64748B;
+    background: rgba(148, 163, 184, 0.16);
 }
 
-.package-price-row {
+.price-row {
     display: flex;
     align-items: baseline;
     gap: 12rpx;
-    margin-top: 20rpx;
+    margin-top: 22rpx;
 }
 
 .price-main {
-    font-size: 40rpx;
-    font-weight: 700;
-    color: #ef4444;
+    font-size: 42rpx;
+    font-weight: 800;
+    color: #F97316;
 }
 
 .price-origin {
     font-size: 24rpx;
-    color: #9ca3af;
+    color: #94A3B8;
     text-decoration: line-through;
 }
 
-.package-meta {
+.meta-row {
     display: flex;
-    gap: 20rpx;
-    margin-top: 12rpx;
+    flex-wrap: wrap;
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
+
+.meta-chip {
+    padding: 10rpx 16rpx;
+    border-radius: 999rpx;
+    background: #F8FAFC;
     font-size: 22rpx;
-    color: #6b7280;
+    color: #64748B;
+}
+
+.meta-chip.recommend {
+    color: #D97706;
+    background: rgba(245, 158, 11, 0.12);
 }
 
 .package-desc {
+    display: block;
     margin-top: 18rpx;
     font-size: 24rpx;
     line-height: 1.7;
-    color: #4b5563;
+    color: #475569;
 }
 
-.package-actions {
+.action-row {
     display: flex;
     gap: 16rpx;
     margin-top: 24rpx;
@@ -258,23 +353,23 @@ onShow(async () => {
 
 .action-btn {
     flex: 1;
+    height: 72rpx;
+    border-radius: 999rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8rpx;
-    height: 72rpx;
-    border-radius: 999rpx;
     font-size: 26rpx;
     font-weight: 600;
 }
 
-.action-btn.edit {
+.action-btn--ghost {
     color: var(--color-primary);
     border: 2rpx solid currentColor;
 }
 
-.action-btn.remove {
-    color: #ff2c3c;
+.action-btn--danger {
+    color: #FF2C3C;
     border: 2rpx solid currentColor;
 }
 
@@ -290,12 +385,21 @@ onShow(async () => {
     margin-top: 24rpx;
     font-size: 30rpx;
     font-weight: 600;
-    color: #6b7280;
+    color: #475569;
 }
 
 .empty-desc {
-    margin-top: 12rpx;
-    font-size: 24rpx;
-    color: #9ca3af;
+    margin-top: 10rpx;
+    font-size: 22rpx;
+    color: #94A3B8;
+}
+
+.empty-btn {
+    margin-top: 24rpx;
+    padding: 18rpx 42rpx;
+    border-radius: 999rpx;
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #FFFFFF;
 }
 </style>

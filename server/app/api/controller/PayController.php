@@ -57,6 +57,7 @@ class PayController extends BaseApiController
     public function prepay()
     {
         $params = (new PayValidate())->post()->goCheck();
+        $params['user_id'] = $this->userId;
         //订单信息
         $order = PaymentLogic::getPayOrderInfo($params);
         if (false === $order) {

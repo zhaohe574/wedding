@@ -5,13 +5,9 @@
             <div class="entry-arrow">立即联系</div>
         </div>
         <div class="entry-title">{{ content.title || '联系专属顾问' }}</div>
-        <div class="entry-subtitle">
-            {{ content.subtitle || '所有咨询统一进入企业微信顾问体系，由顾问持续跟进。' }}
-        </div>
+        <div v-if="content.subtitle" class="entry-subtitle">{{ content.subtitle }}</div>
         <div class="entry-footer">
-            <div class="entry-tips">
-                {{ content.tips || '订单状态变化仍通过站内消息中心与订阅通知触达' }}
-            </div>
+            <div v-if="content.tips" class="entry-tips">{{ content.tips }}</div>
             <div class="entry-btn" :style="buttonStyle">
                 {{ content.buttonText || '联系专属顾问' }}
             </div>

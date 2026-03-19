@@ -112,10 +112,24 @@ class Payment extends BaseModel
      * @param int $payWay
      * @param float $payAmount
      * @param int $expireMinutes 过期时间(分钟)
+     * @param int|null $expireTime 指定过期时间戳
      * @return Payment
      */
-    public static function createPayment(int $orderId, string $orderSn, int $userId, int $payType, int $payWay, float $payAmount, int $expireMinutes = 30): Payment
+    public static function createPayment(
+        int $orderId,
+        string $orderSn,
+        int $userId,
+        int $payType,
+        int $payWay,
+        float $payAmount,
+        int $expireMinutes = 30,
+        ?int $expireTime = null
+    ): Payment
     {
+        $resolvedExpireTime = $expireTime !== null
+            ? max(0, $expireTime)
+            : time() + ($expireMinutes * 60);
+
         return self::create([
             'payment_sn' => self::generatePaymentSn(),
             'order_id' => $orderId,
@@ -125,10 +139,25 @@ class Payment extends BaseModel
             'pay_way' => $payWay,
             'pay_amount' => $payAmount,
             'pay_status' => self::STATUS_PENDING,
-            'expire_time' => time() + ($expireMinutes * 60),
+            'expire_time' => $resolvedExpireTime,
             'create_time' => time(),
             'update_time' => time(),
         ]);
+    }
+
+    /**
+     * @notes 将订单下待支付流水标记为失败
+     * @param int $orderId
+     * @return void
+     */
+    public static function markOrderPendingAsFailed(int $orderId): void
+    {
+        self::where('order_id', $orderId)
+            ->where('pay_status', self::STATUS_PENDING)
+            ->update([
+                'pay_status' => self::STATUS_FAILED,
+                'update_time' => time(),
+            ]);
     }
 
     /**
@@ -136,17 +165,38 @@ class Payment extends BaseModel
      * @param string $paymentSn
      * @param string $transactionId
      * @param array $callbackData
-     * @return array [bool $success, string $message]
+     * @return array [bool $success, string $message, array $context]
      */
     public static function paySuccess(string $paymentSn, string $transactionId, array $callbackData = []): array
     {
-        $payment = self::where('payment_sn', $paymentSn)->find();
+        $payment = self::where('payment_sn', $paymentSn)->lock(true)->find();
         if (!$payment) {
-            return [false, '支付记录不存在'];
+            return [false, '支付记录不存在', []];
         }
 
         if ($payment->pay_status == self::STATUS_PAID) {
-            return [true, '已处理'];
+            return [true, '已处理', [
+                'order_id' => (int)$payment->order_id,
+                'pay_type' => (int)$payment->pay_type,
+                'should_notify' => false,
+            ]];
+        }
+
+        // 更新订单状态
+        $order = Order::where('id', $payment->order_id)->lock(true)->find();
+        if (!$order) {
+            self::recordCallbackInfo($payment, $transactionId, $callbackData);
+            return [false, '订单不存在', []];
+        }
+
+        if ((int)$order->order_status !== Order::STATUS_PENDING_PAY) {
+            self::recordCallbackInfo($payment, $transactionId, $callbackData);
+            return [false, '订单状态不允许确认支付', []];
+        }
+
+        if ($order->shouldAutoCancelExpiredUnpaid()) {
+            self::recordCallbackInfo($payment, $transactionId, $callbackData);
+            return [false, Order::AUTO_CANCEL_MESSAGE, []];
         }
 
         $payment->pay_status = self::STATUS_PAID;
@@ -157,50 +207,69 @@ class Payment extends BaseModel
         $payment->update_time = time();
         $payment->save();
 
-        // 更新订单状态
-        $order = Order::find($payment->order_id);
-        if ($order) {
-            if ($payment->pay_type == self::TYPE_DEPOSIT) {
-                $order->deposit_paid = 1;
-                $order->pay_time = time();
-            } elseif ($payment->pay_type == self::TYPE_BALANCE) {
-                $order->balance_paid = 1;
-            }
-
-            // 累计已支付金额
-            $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payment->pay_amount, 2);
-
-            // 检查是否全额支付
-            if ($order->deposit_amount > 0) {
-                if ($order->deposit_paid && $order->balance_paid) {
-                    $order->order_status = Order::STATUS_PAID;
-                    $order->pay_status = Order::PAY_STATUS_PAID;
-                }
-            } else {
-                if ($order->paid_amount >= $order->pay_amount) {
-                    $order->order_status = Order::STATUS_PAID;
-                    $order->pay_status = Order::PAY_STATUS_PAID;
-                }
-            }
-
-            if ($order->pay_type != Order::PAY_WAY_COMBINATION) {
-                $order->pay_type = $payment->pay_way;
-            }
-            $order->update_time = time();
-            $order->save();
-
-            // 记录日志
-            OrderLog::addLog(
-                $order->id,
-                OrderLog::OPERATOR_SYSTEM,
-                0,
-                $payment->pay_type == self::TYPE_DEPOSIT ? 'pay_deposit' : ($payment->pay_type == self::TYPE_BALANCE ? 'pay_balance' : 'pay'),
-                Order::STATUS_PENDING_PAY,
-                $order->order_status,
-                '支付成功，金额：' . $payment->pay_amount
-            );
+        if ($payment->pay_type == self::TYPE_DEPOSIT) {
+            $order->deposit_paid = 1;
+            $order->pay_time = time();
+            $order->pay_deadline_time = 0;
+        } elseif ($payment->pay_type == self::TYPE_BALANCE) {
+            $order->balance_paid = 1;
         }
 
-        return [true, '支付成功'];
+        // 累计已支付金额
+        $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payment->pay_amount, 2);
+
+        // 检查是否全额支付
+        if ($order->deposit_amount > 0) {
+            if ($order->deposit_paid && $order->balance_paid) {
+                $order->order_status = Order::STATUS_PAID;
+                $order->pay_status = Order::PAY_STATUS_PAID;
+                $order->pay_deadline_time = 0;
+            }
+        } else {
+            if ($order->paid_amount >= $order->pay_amount) {
+                $order->order_status = Order::STATUS_PAID;
+                $order->pay_status = Order::PAY_STATUS_PAID;
+                $order->pay_deadline_time = 0;
+            }
+        }
+
+        if ($order->pay_type != Order::PAY_WAY_COMBINATION) {
+            $order->pay_type = $payment->pay_way;
+        }
+        $order->update_time = time();
+        $order->save();
+
+        // 记录日志
+        OrderLog::addLog(
+            $order->id,
+            OrderLog::OPERATOR_SYSTEM,
+            0,
+            $payment->pay_type == self::TYPE_DEPOSIT ? 'pay_deposit' : ($payment->pay_type == self::TYPE_BALANCE ? 'pay_balance' : 'pay'),
+            Order::STATUS_PENDING_PAY,
+            $order->order_status,
+            '支付成功，金额：' . $payment->pay_amount
+        );
+
+        return [true, '支付成功', [
+            'order_id' => (int)$order->id,
+            'pay_type' => (int)$payment->pay_type,
+            'should_notify' => true,
+        ]];
+    }
+
+    /**
+     * @notes 记录回调信息
+     * @param Payment $payment
+     * @param string $transactionId
+     * @param array $callbackData
+     * @return void
+     */
+    protected static function recordCallbackInfo(self $payment, string $transactionId, array $callbackData = []): void
+    {
+        $payment->transaction_id = $transactionId;
+        $payment->callback_time = time();
+        $payment->callback_data = json_encode($callbackData, JSON_UNESCAPED_UNICODE);
+        $payment->update_time = time();
+        $payment->save();
     }
 }

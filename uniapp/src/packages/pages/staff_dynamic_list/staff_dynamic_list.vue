@@ -10,14 +10,38 @@
     <view class="page-container">
         <z-paging ref="pagingRef" v-model="dynamicList" @query="queryList" :auto="false">
             <template #top>
-                <view class="top-bar">
+                <view class="hero-wrap">
                     <view
-                        class="publish-btn"
-                        :style="{ background: $theme.primaryColor, color: $theme.btnColor }"
-                        @click="handleAdd"
+                        class="hero-card"
+                        :style="{
+                            background: `linear-gradient(145deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || $theme.primaryColor} 78%)`
+                        }"
                     >
-                        <tn-icon name="plus" size="30" :color="$theme.btnColor" />
-                        <text>发布动态</text>
+                        <view class="hero-top">
+                            <view>
+                                <text class="hero-title">动态工作区</text>
+                                <text class="hero-desc">持续发布图文、视频与活动内容，保持服务活跃度</text>
+                            </view>
+                            <view class="hero-add-btn" @click="handleAdd">
+                                <tn-icon name="plus" size="28" color="#FFFFFF" />
+                                <text>发布动态</text>
+                            </view>
+                        </view>
+
+                        <view class="hero-stats">
+                            <view class="hero-stat">
+                                <text class="hero-stat-label">总动态</text>
+                                <text class="hero-stat-value">{{ dynamicList.length }}</text>
+                            </view>
+                            <view class="hero-stat">
+                                <text class="hero-stat-label">已发布</text>
+                                <text class="hero-stat-value">{{ publishedCount }}</text>
+                            </view>
+                            <view class="hero-stat">
+                                <text class="hero-stat-label">待审核</text>
+                                <text class="hero-stat-value">{{ pendingCount }}</text>
+                            </view>
+                        </view>
                     </view>
                 </view>
             </template>
@@ -129,7 +153,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { staffCenterDynamicLists, staffCenterDynamicDelete } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
@@ -140,6 +164,9 @@ const $theme = useThemeStore()
 const appStore = useAppStore()
 const pagingRef = ref<any>(null)
 const dynamicList = ref<any[]>([])
+
+const publishedCount = computed(() => dynamicList.value.filter((item) => Number(item.status) === 1).length)
+const pendingCount = computed(() => dynamicList.value.filter((item) => Number(item.status) === 0).length)
 
 const typeText = (type: number) => {
     const map: Record<number, string> = { 1: '图文', 2: '视频', 4: '活动' }
@@ -253,33 +280,90 @@ onShow(async () => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: #F4F5F7;
+    background:
+        radial-gradient(circle at top left, rgba(191, 219, 254, 0.72) 0, rgba(246, 248, 252, 0) 36%),
+        linear-gradient(180deg, #F6F8FC 0%, #F4F6FB 100%);
 }
 
-.top-bar {
-    padding: 16rpx 24rpx;
-    background: #FFF;
+.hero-wrap {
+    padding: 24rpx 24rpx 0;
 }
 
-.publish-btn {
+.hero-card {
+    padding: 28rpx;
+    border-radius: 30rpx;
+    box-shadow: 0 18rpx 36rpx rgba(37, 99, 235, 0.18);
+}
+
+.hero-top {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    gap: 20rpx;
+}
+
+.hero-title {
+    display: block;
+    font-size: 36rpx;
+    font-weight: 700;
+    color: #FFFFFF;
+}
+
+.hero-desc {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 22rpx;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.hero-add-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
     gap: 8rpx;
-    height: 68rpx;
-    border-radius: 40rpx;
-    font-size: 28rpx;
+    padding: 16rpx 22rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.16);
+    font-size: 24rpx;
     font-weight: 600;
-    &:active { opacity: 0.85; }
+    color: #FFFFFF;
+}
+
+.hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14rpx;
+    margin-top: 26rpx;
+}
+
+.hero-stat {
+    padding: 20rpx;
+    border-radius: 22rpx;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.hero-stat-label {
+    display: block;
+    font-size: 22rpx;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.hero-stat-value {
+    display: block;
+    margin-top: 12rpx;
+    font-size: 38rpx;
+    font-weight: 800;
+    color: #FFFFFF;
 }
 
 .dynamic-list {
-    padding: 16rpx;
+    padding: 18rpx 24rpx 48rpx;
 }
 
 /* 卡片 */
 .card {
-    margin-bottom: 12rpx;
+    margin-bottom: 16rpx;
     padding: 16rpx 20rpx;
     background: #FFF;
     border-radius: 16rpx;

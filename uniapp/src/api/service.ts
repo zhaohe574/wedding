@@ -17,3 +17,11 @@ export function getServiceCategories() {
 export function getStyleTags(data?: { type?: number; grouped?: number; category_id?: number }) {
     return request.get({ url: '/service/tags', data })
 }
+
+/**
+ * @description 获取可服务地区树
+ * @return { Promise }
+ */
+export function getServiceRegionTree() {
+    return request.get({ url: '/region/serviceTree' })
+}

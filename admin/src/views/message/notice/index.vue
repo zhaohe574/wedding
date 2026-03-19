@@ -1,12 +1,7 @@
 <template>
     <div>
         <el-card class="!border-none" shadow="never">
-            <el-alert
-                type="warning"
-                title="温馨提示：平台配置在各个场景下的通知发送方式和内容模板"
-                :closable="false"
-                show-icon
-            ></el-alert>
+            <el-alert type="warning" title="按场景配置通知" :closable="false" show-icon></el-alert>
         </el-card>
         <el-card class="!border-none mt-4" shadow="never">
             <el-tabs v-model="tabsActive" @tab-change="getLists">

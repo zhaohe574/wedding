@@ -1,5 +1,14 @@
 import request from '@/utils/request'
 
+// 工作台
+export function staffCenterDashboard() {
+    return request.get({ url: '/staff_center/dashboard' }, { isAuth: true })
+}
+
+export function staffCenterOrderStats() {
+    return request.get({ url: '/staff_center/orderStats' }, { isAuth: true })
+}
+
 // 个人资料
 export function staffCenterProfile() {
     return request.get({ url: '/staff_center/profile' }, { isAuth: true })

@@ -9,12 +9,14 @@ namespace app\api\logic;
 
 use app\common\logic\BaseLogic;
 use app\common\model\dynamic\Dynamic;
+use app\common\model\notification\Notification;
 use app\common\model\order\Order;
 use app\common\model\order\OrderLog;
 use app\common\model\order\OrderItem;
 use app\common\model\schedule\Schedule;
 use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
+use app\common\model\service\ServicePackageAddon;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffWork;
 use app\common\service\OrderNotificationService;
@@ -82,8 +84,228 @@ class StaffCenterLogic extends BaseLogic
             ->count();
 
         $data['scheduleCount'] = Schedule::where('staff_id', $staff->id)->count();
+        $data['todoCount'] = self::getTodoCount((int) $staff->id);
 
         return $data;
+    }
+
+    /**
+     * @notes 获取工作台首页数据
+     */
+    public static function dashboard(int $userId): array
+    {
+        $profile = self::profile($userId);
+        if (empty($profile)) {
+            return [];
+        }
+
+        $staffId = (int) ($profile['id'] ?? 0);
+        $unreadMessageCount = Notification::getUnreadCount($userId);
+        $pendingConfirmOrders = self::getTodoCount($staffId);
+        $todayServiceCount = self::getTodayServiceCount($staffId);
+        $upcomingScheduleCount = self::getUpcomingScheduleCount($staffId);
+
+        return [
+            'profile' => [
+                'name' => $profile['name'] ?? '',
+                'avatar' => $profile['avatar'] ?? '',
+                'status' => (int) ($profile['status'] ?? 0),
+                'status_desc' => $profile['status_desc'] ?? '',
+                'audit_status' => (int) ($profile['audit_status'] ?? 0),
+                'audit_status_desc' => $profile['audit_status_desc'] ?? '',
+                'mobile' => $profile['mobile_full'] ?? ($profile['mobile'] ?? ''),
+                'price_text' => $profile['price_text'] ?? '',
+                'has_price' => (bool) ($profile['has_price'] ?? false),
+                'category_name' => $profile['category_name'] ?? '',
+            ],
+            'overview' => [
+                'order_count' => (int) ($profile['orderCount'] ?? 0),
+                'work_count' => (int) ($profile['workCount'] ?? 0),
+                'package_count' => (int) ($profile['packageCount'] ?? 0),
+                'addon_count' => (int) ($profile['addonCount'] ?? 0),
+                'schedule_count' => (int) ($profile['scheduleCount'] ?? 0),
+            ],
+            'todo' => [
+                'pending_confirm_orders' => $pendingConfirmOrders,
+                'today_service_count' => $todayServiceCount,
+                'upcoming_7d_schedule_count' => $upcomingScheduleCount,
+                'unread_message_count' => $unreadMessageCount,
+                'total' => $pendingConfirmOrders + $todayServiceCount + $upcomingScheduleCount + $unreadMessageCount,
+            ],
+            'recent_orders' => self::getRecentOrders($staffId),
+        ];
+    }
+
+    /**
+     * @notes 获取订单状态统计
+     */
+    public static function orderStats(int $userId): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $query = self::buildStaffOrderQuery($staffId);
+        $statuses = [
+            'pending_confirm' => Order::STATUS_PENDING_CONFIRM,
+            'pending_pay' => Order::STATUS_PENDING_PAY,
+            'paid' => Order::STATUS_PAID,
+            'in_service' => Order::STATUS_IN_SERVICE,
+            'completed' => Order::STATUS_COMPLETED,
+            'reviewed' => Order::STATUS_REVIEWED,
+            'cancelled' => Order::STATUS_CANCELLED,
+            'paused' => Order::STATUS_PAUSED,
+            'refunded' => Order::STATUS_REFUNDED,
+        ];
+
+        $result = [
+            'all' => (int) (clone $query)->distinct(true)->count('oi.order_id'),
+        ];
+
+        foreach ($statuses as $key => $status) {
+            $result[$key] = (int) (clone $query)
+                ->where('o.order_status', $status)
+                ->distinct(true)
+                ->count('oi.order_id');
+        }
+
+        return $result;
+    }
+
+    /**
+     * @notes 获取服务人员待办数量
+     */
+    private static function getTodoCount(int $staffId): int
+    {
+        $orderTable = (new Order())->getTable();
+
+        return (int) OrderItem::alias('oi')
+            ->join($orderTable . ' o', 'o.id = oi.order_id')
+            ->where('oi.staff_id', $staffId)
+            ->where('oi.confirm_status', 0)
+            ->where('oi.item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->where('o.order_status', Order::STATUS_PENDING_CONFIRM)
+            ->whereNull('o.delete_time')
+            ->distinct(true)
+            ->count('oi.order_id');
+    }
+
+    /**
+     * @notes 获取今日服务数量
+     */
+    private static function getTodayServiceCount(int $staffId): int
+    {
+        $today = date('Y-m-d');
+
+        return (int) (clone self::buildStaffOrderQuery($staffId))
+            ->where('oi.service_date', $today)
+            ->where('oi.item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->whereNotIn('o.order_status', [Order::STATUS_CANCELLED, Order::STATUS_REFUNDED])
+            ->distinct(true)
+            ->count('oi.order_id');
+    }
+
+    /**
+     * @notes 获取未来7日安排数量
+     */
+    private static function getUpcomingScheduleCount(int $staffId): int
+    {
+        $startDate = date('Y-m-d', strtotime('+1 day'));
+        $endDate = date('Y-m-d', strtotime('+7 day'));
+
+        return (int) Schedule::where('staff_id', $staffId)
+            ->whereBetween('schedule_date', [$startDate, $endDate])
+            ->whereIn('status', [Schedule::STATUS_BOOKED, Schedule::STATUS_LOCKED, Schedule::STATUS_RESERVED])
+            ->count();
+    }
+
+    /**
+     * @notes 获取最近订单
+     */
+    private static function getRecentOrders(int $staffId): array
+    {
+        $orderTable = (new Order())->getTable();
+
+        $orders = Order::with([
+                'items' => function ($query) use ($staffId) {
+                    $query->field('id, order_id, staff_id, package_name, service_date, confirm_status, item_status')
+                        ->where('staff_id', $staffId)
+                        ->order('id', 'asc');
+                },
+            ])
+            ->field([
+                $orderTable . '.id' => 'id',
+                $orderTable . '.order_sn',
+                $orderTable . '.order_status',
+                $orderTable . '.pay_status',
+                $orderTable . '.pay_amount',
+                $orderTable . '.service_address',
+                $orderTable . '.contact_name',
+                $orderTable . '.contact_mobile',
+                $orderTable . '.create_time',
+            ])
+            ->hasWhere('items', ['staff_id' => $staffId])
+            ->order($orderTable . '.id', 'desc')
+            ->limit(5)
+            ->select()
+            ->toArray();
+
+        $result = [];
+        foreach ($orders as $order) {
+            $result[] = self::formatRecentOrder($order);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @notes 格式化最近订单
+     */
+    private static function formatRecentOrder(array $order): array
+    {
+        $items = $order['items'] ?? [];
+        $serviceDates = array_values(array_filter(array_map(function ($item) {
+            return (string) ($item['service_date'] ?? '');
+        }, $items)));
+        sort($serviceDates);
+
+        $packageNames = array_values(array_filter(array_unique(array_map(function ($item) {
+            return (string) ($item['package_name'] ?? '');
+        }, $items))));
+        $pendingConfirmCount = count(array_filter($items, function ($item) {
+            return (int) ($item['confirm_status'] ?? 0) === 0
+                && (int) ($item['item_status'] ?? OrderItem::STATUS_PENDING) !== OrderItem::STATUS_CANCELLED;
+        }));
+
+        return [
+            'id' => (int) ($order['id'] ?? 0),
+            'order_sn' => $order['order_sn'] ?? '',
+            'service_date' => $serviceDates[0] ?? '',
+            'contact_name' => $order['contact_name'] ?? '',
+            'contact_mobile' => $order['contact_mobile'] ?? '',
+            'service_address' => $order['service_address'] ?? '',
+            'order_status' => (int) ($order['order_status'] ?? 0),
+            'order_status_desc' => self::getStatusDesc((int) ($order['order_status'] ?? 0)),
+            'pay_amount' => round((float) ($order['pay_amount'] ?? 0), 2),
+            'item_count' => count($items),
+            'package_names' => $packageNames,
+            'pending_confirm_count' => $pendingConfirmCount,
+        ];
+    }
+
+    /**
+     * @notes 构造服务人员订单基础查询
+     */
+    private static function buildStaffOrderQuery(int $staffId)
+    {
+        $orderTable = (new Order())->getTable();
+
+        return OrderItem::alias('oi')
+            ->join($orderTable . ' o', 'o.id = oi.order_id')
+            ->where('oi.staff_id', $staffId)
+            ->whereNull('o.delete_time');
     }
 
     /**
@@ -273,7 +495,7 @@ class StaffCenterLogic extends BaseLogic
             return [];
         }
 
-        return ServicePackage::where('staff_id', $staffId)
+        $list = ServicePackage::where('staff_id', $staffId)
             ->where('delete_time', null)
             ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show, is_recommend')
             ->append(['category_name'])
@@ -281,6 +503,8 @@ class StaffCenterLogic extends BaseLogic
             ->order('id', 'desc')
             ->select()
             ->toArray();
+
+        return ServicePackageAddon::attachAddonIds($list);
     }
 
     /**
@@ -295,7 +519,10 @@ class StaffCenterLogic extends BaseLogic
         }
 
         try {
-            ServicePackage::create(self::buildPackagePayload($staffId, $params));
+            Db::transaction(function () use ($staffId, $params) {
+                $package = ServicePackage::create(self::buildPackagePayload($staffId, $params));
+                ServicePackageAddon::syncPackageAddons((int)$package->id, $staffId, $params['addon_ids'] ?? []);
+            });
             return true;
         } catch (\Throwable $e) {
             self::setError($e->getMessage());
@@ -323,7 +550,10 @@ class StaffCenterLogic extends BaseLogic
         }
 
         try {
-            $package->save(self::buildPackagePayload($staffId, $params, false));
+            Db::transaction(function () use ($package, $staffId, $params) {
+                $package->save(self::buildPackagePayload($staffId, $params, false));
+                ServicePackageAddon::syncPackageAddons((int)$package->id, $staffId, $params['addon_ids'] ?? []);
+            });
             return true;
         } catch (\Throwable $e) {
             self::setError($e->getMessage());
@@ -350,6 +580,7 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
+        ServicePackageAddon::clearByPackageId($packageId);
         $package->delete();
         return true;
     }
@@ -442,6 +673,7 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
+        ServicePackageAddon::clearByAddonId($addonId);
         $addon->delete();
         return true;
     }
@@ -532,7 +764,7 @@ class StaffCenterLogic extends BaseLogic
 
         $list = $query->with([
                 'items' => function ($q) use ($staffId) {
-                        $q->field('id, order_id, staff_id, staff_name, package_name, service_date, item_status, confirm_status, schedule_id, price, quantity, subtotal')
+                        $q->field('id, order_id, staff_id, staff_name, package_name, package_description, service_date, item_status, confirm_status, schedule_id, price, quantity, subtotal')
                         ->where('staff_id', $staffId)
                         ->with(['staff' => function ($staffQuery) {
                             $staffQuery->field('id, name, avatar');
@@ -568,7 +800,7 @@ class StaffCenterLogic extends BaseLogic
 
         $order = Order::with([
                 'items' => function ($q) use ($staffId) {
-                        $q->field('id, order_id, staff_id, staff_name, package_name, service_date, item_status, confirm_status, schedule_id, price, quantity, subtotal')
+                        $q->field('id, order_id, staff_id, staff_name, package_name, package_description, service_date, item_status, confirm_status, schedule_id, price, quantity, subtotal')
                         ->where('staff_id', $staffId)
                         ->with(['staff' => function ($staffQuery) {
                             $staffQuery->field('id, name, avatar');
@@ -678,6 +910,7 @@ class StaffCenterLogic extends BaseLogic
                 $order->order_status = Order::STATUS_PENDING_PAY;
                 $order->update_time = time();
                 $order->save();
+                Order::syncPendingPayDeadline($order);
                 $shouldNotifyUser = true;
 
                 OrderLog::addLog(

@@ -8,56 +8,83 @@
     </page-meta>
 
     <view class="page-container">
-        <view class="header-card">
-            <view>
-                <text class="header-title">我的附加服务</text>
-                <text class="header-desc">仅维护本人附加服务，分类会随本人服务分类自动同步。</text>
+        <view
+            class="hero-card"
+            :style="{
+                background: `linear-gradient(145deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || $theme.primaryColor} 78%)`
+            }"
+        >
+            <view class="hero-top">
+                <view>
+                    <text class="hero-title">附加服务工作区</text>
+                    <text class="hero-desc">维护加拍、加时、加项等增值内容，提升客单能力</text>
+                </view>
+                <view class="hero-add-btn" @click="goCreate">
+                    <tn-icon name="add" size="28" color="#FFFFFF" />
+                    <text>新增服务</text>
+                </view>
             </view>
-            <view class="header-btn" :style="{ background: $theme.primaryColor }" @click="goCreate">
-                <tn-icon name="add" size="28" color="#FFFFFF" />
-                <text>新增</text>
+
+            <view class="hero-stats">
+                <view class="hero-stat">
+                    <text class="hero-stat-label">总服务</text>
+                    <text class="hero-stat-value">{{ addons.length }}</text>
+                </view>
+                <view class="hero-stat">
+                    <text class="hero-stat-label">上架中</text>
+                    <text class="hero-stat-value">{{ activeCount }}</text>
+                </view>
+                <view class="hero-stat">
+                    <text class="hero-stat-label">下架中</text>
+                    <text class="hero-stat-value">{{ inactiveCount }}</text>
+                </view>
             </view>
         </view>
 
         <view v-if="addons.length" class="addon-list">
             <view v-for="item in addons" :key="item.id" class="addon-card">
-                <view class="addon-header">
+                <view class="addon-head">
                     <view class="addon-title-wrap">
                         <text class="addon-title">{{ item.name || '未命名附加服务' }}</text>
+                        <text class="addon-category">{{ item.category_name || '分类自动同步' }}</text>
                     </view>
                     <view class="addon-status" :class="{ off: !item.is_show }">
-                        {{ item.is_show ? '上架' : '下架' }}
+                        {{ item.is_show ? '上架中' : '已下架' }}
                     </view>
                 </view>
 
-                <view class="addon-price-row">
-                    <text class="price-main">¥{{ item.price || 0 }}</text>
+                <view class="price-row">
+                    <text class="price-main">¥{{ formatPrice(item.price) }}</text>
                     <text v-if="Number(item.original_price || 0) > 0" class="price-origin">
-                        ¥{{ item.original_price }}
+                        ¥{{ formatPrice(item.original_price) }}
                     </text>
                 </view>
 
-                <view class="addon-meta">
-                    <text>排序：{{ item.sort || 0 }}</text>
-                    <text>{{ item.category_name || '分类自动同步' }}</text>
+                <view class="meta-row">
+                    <view class="meta-chip">
+                        排序 {{ item.sort || 0 }}
+                    </view>
+                    <view class="meta-chip">
+                        {{ item.is_show ? '支持售卖' : '暂不售卖' }}
+                    </view>
                 </view>
 
-                <view v-if="item.description" class="addon-desc">{{ item.description }}</view>
+                <text v-if="item.description" class="addon-desc">{{ item.description }}</text>
 
-                <view class="addon-actions">
-                    <view class="action-btn edit" @click="handleEdit(item)">
+                <view class="action-row">
+                    <view class="action-btn action-btn--ghost" @click="handleEdit(item)">
                         <tn-icon name="edit" size="26" :color="$theme.primaryColor" />
                         <text>编辑</text>
                     </view>
-                    <view class="action-btn toggle" @click="handleToggle(item)">
+                    <view class="action-btn action-btn--toggle" @click="handleToggle(item)">
                         <tn-icon
                             :name="item.is_show ? 'close-circle' : 'check-circle'"
                             size="26"
-                            :color="item.is_show ? '#F97316' : '#19BE6B'"
+                            :color="item.is_show ? '#F97316' : '#10B981'"
                         />
                         <text>{{ item.is_show ? '下架' : '上架' }}</text>
                     </view>
-                    <view class="action-btn remove" @click="handleRemove(item)">
+                    <view class="action-btn action-btn--danger" @click="handleRemove(item)">
                         <tn-icon name="delete" size="26" color="#FF2C3C" />
                         <text>删除</text>
                     </view>
@@ -66,15 +93,18 @@
         </view>
 
         <view v-else class="empty-state">
-            <tn-icon name="gift" size="120" color="#E5E7EB" />
-            <text class="empty-title">暂无附加服务</text>
-            <text class="empty-desc">创建后可用于订单确认与后续附加服务变更。</text>
+            <tn-icon name="gift" size="120" color="#D1D5DB" />
+            <text class="empty-title">还没有附加服务</text>
+            <text class="empty-desc">补充可选增值项目，方便客户在下单时灵活组合</text>
+            <view class="empty-btn" :style="{ background: $theme.primaryColor }" @click="goCreate">
+                立即新增
+            </view>
         </view>
     </view>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import {
     staffCenterAddonLists,
@@ -86,6 +116,9 @@ import { useThemeStore } from '@/stores/theme'
 
 const $theme = useThemeStore()
 const addons = ref<any[]>([])
+
+const activeCount = computed(() => addons.value.filter((item) => Number(item.is_show) === 1).length)
+const inactiveCount = computed(() => addons.value.filter((item) => Number(item.is_show) !== 1).length)
 
 const fetchAddons = async () => {
     try {
@@ -150,6 +183,11 @@ const handleRemove = (item: any) => {
     })
 }
 
+const formatPrice = (value: number | string) => {
+    const amount = Number(value || 0)
+    return Number.isInteger(amount) ? String(amount) : amount.toFixed(2)
+}
+
 onShow(async () => {
     if (!(await ensureStaffCenterAccess())) return
     fetchAddons()
@@ -160,63 +198,100 @@ onShow(async () => {
 .page-container {
     min-height: 100vh;
     padding: 24rpx;
-    background: #f4f5f7;
+    background:
+        radial-gradient(circle at top left, rgba(191, 219, 254, 0.72) 0, rgba(246, 248, 252, 0) 36%),
+        linear-gradient(180deg, #F6F8FC 0%, #F4F6FB 100%);
 }
 
-.header-card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 24rpx;
+.hero-card {
     padding: 28rpx;
-    background: #ffffff;
-    border-radius: 24rpx;
-    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
+    border-radius: 30rpx;
+    box-shadow: 0 18rpx 36rpx rgba(37, 99, 235, 0.18);
 }
 
-.header-title {
-    display: block;
-    font-size: 34rpx;
-    font-weight: 700;
-    color: #1f2937;
-}
-
-.header-desc {
-    display: block;
-    margin-top: 10rpx;
-    font-size: 24rpx;
-    color: #9ca3af;
-}
-
-.header-btn {
+.hero-top {
     display: flex;
-    align-items: center;
-    gap: 8rpx;
-    padding: 18rpx 28rpx;
-    border-radius: 999rpx;
-    color: #ffffff;
-    font-size: 26rpx;
-    font-weight: 600;
-}
-
-.addon-list {
-    margin-top: 24rpx;
-    display: flex;
-    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 20rpx;
 }
 
-.addon-card {
-    padding: 24rpx;
-    background: #ffffff;
-    border-radius: 24rpx;
-    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
+.hero-title {
+    display: block;
+    font-size: 36rpx;
+    font-weight: 700;
+    color: #FFFFFF;
 }
 
-.addon-header {
+.hero-desc {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 22rpx;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.hero-add-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    padding: 16rpx 22rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.16);
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #FFFFFF;
+}
+
+.hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14rpx;
+    margin-top: 26rpx;
+}
+
+.hero-stat {
+    padding: 20rpx;
+    border-radius: 22rpx;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.hero-stat-label {
+    display: block;
+    font-size: 22rpx;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.hero-stat-value {
+    display: block;
+    margin-top: 12rpx;
+    font-size: 38rpx;
+    font-weight: 800;
+    color: #FFFFFF;
+}
+
+.addon-list {
+    margin-top: 22rpx;
+}
+
+.addon-card + .addon-card {
+    margin-top: 18rpx;
+}
+
+.addon-card {
+    padding: 28rpx;
+    border-radius: 28rpx;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1rpx solid rgba(255, 255, 255, 0.72);
+    box-shadow: 0 18rpx 30rpx rgba(15, 23, 42, 0.05);
+}
+
+.addon-head {
     display: flex;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 24rpx;
+    gap: 18rpx;
 }
 
 .addon-title-wrap {
@@ -226,89 +301,105 @@ onShow(async () => {
 
 .addon-title {
     display: block;
-    font-size: 30rpx;
+    font-size: 32rpx;
     font-weight: 700;
-    color: #111827;
+    color: #0F172A;
+}
+
+.addon-category {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 22rpx;
+    color: #94A3B8;
 }
 
 .addon-status {
-    align-self: flex-start;
-    padding: 8rpx 18rpx;
+    flex-shrink: 0;
+    padding: 10rpx 18rpx;
     border-radius: 999rpx;
     font-size: 22rpx;
+    font-weight: 600;
     color: #059669;
-    background: rgba(5, 150, 105, 0.12);
+    background: rgba(16, 185, 129, 0.12);
 }
 
 .addon-status.off {
-    color: #6b7280;
-    background: rgba(107, 114, 128, 0.12);
+    color: #64748B;
+    background: rgba(148, 163, 184, 0.16);
 }
 
-.addon-price-row {
+.price-row {
     display: flex;
     align-items: baseline;
     gap: 12rpx;
-    margin-top: 20rpx;
+    margin-top: 22rpx;
 }
 
 .price-main {
-    font-size: 40rpx;
-    font-weight: 700;
-    color: #ef4444;
+    font-size: 42rpx;
+    font-weight: 800;
+    color: #0EA5E9;
 }
 
 .price-origin {
     font-size: 24rpx;
-    color: #9ca3af;
+    color: #94A3B8;
     text-decoration: line-through;
 }
 
-.addon-meta {
+.meta-row {
     display: flex;
-    gap: 20rpx;
-    margin-top: 12rpx;
+    flex-wrap: wrap;
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
+
+.meta-chip {
+    padding: 10rpx 16rpx;
+    border-radius: 999rpx;
+    background: #F8FAFC;
     font-size: 22rpx;
-    color: #6b7280;
+    color: #64748B;
 }
 
 .addon-desc {
+    display: block;
     margin-top: 18rpx;
     font-size: 24rpx;
     line-height: 1.7;
-    color: #4b5563;
+    color: #475569;
 }
 
-.addon-actions {
+.action-row {
     display: flex;
-    gap: 16rpx;
+    gap: 14rpx;
     margin-top: 24rpx;
 }
 
 .action-btn {
     flex: 1;
+    height: 72rpx;
+    border-radius: 999rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8rpx;
-    height: 72rpx;
-    border-radius: 999rpx;
-    font-size: 26rpx;
+    font-size: 24rpx;
     font-weight: 600;
 }
 
-.action-btn.edit {
+.action-btn--ghost {
     color: var(--color-primary);
     border: 2rpx solid currentColor;
 }
 
-.action-btn.toggle {
-    color: #f97316;
+.action-btn--toggle {
+    color: #F97316;
     border: 2rpx solid currentColor;
 }
 
-.action-btn.remove {
-    color: #ff2c3c;
+.action-btn--danger {
+    color: #FF2C3C;
     border: 2rpx solid currentColor;
 }
 
@@ -324,12 +415,21 @@ onShow(async () => {
     margin-top: 24rpx;
     font-size: 30rpx;
     font-weight: 600;
-    color: #6b7280;
+    color: #475569;
 }
 
 .empty-desc {
-    margin-top: 12rpx;
-    font-size: 24rpx;
-    color: #9ca3af;
+    margin-top: 10rpx;
+    font-size: 22rpx;
+    color: #94A3B8;
+}
+
+.empty-btn {
+    margin-top: 24rpx;
+    padding: 18rpx 42rpx;
+    border-radius: 999rpx;
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #FFFFFF;
 }
 </style>

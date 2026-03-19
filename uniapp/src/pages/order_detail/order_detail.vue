@@ -6,517 +6,276 @@
             :background-color="$theme.navBgColor"
         />
     </page-meta>
-    <view class="order-detail" v-if="order">
-        <!-- 订单状态 -->
-        <view class="status-banner" :style="getStatusStyle(order.order_status)">
-            <view class="status-icon">
-                <tn-icon :name="getStatusIcon(order.order_status)" size="48" color="#FFFFFF" />
-            </view>
-            <view class="status-text">
-                <text class="status-title">{{ order.order_status_desc }}</text>
-                <text class="status-desc" v-if="order.order_status === 0"> 等待工作人员确认 </text>
-                <text class="status-desc" v-else-if="order.order_status === 1">
-                    请在30分钟内完成支付
-                </text>
-            </view>
-        </view>
 
-        <!-- 联系信息 -->
-        <view class="contact-card">
-            <view class="contact-header">
-                <tn-icon name="location-fill" size="32" :color="$theme.primaryColor" />
-                <text class="contact-label">服务地址</text>
-            </view>
-            <view class="contact-info">
-                <view class="contact-row">
-                    <text class="contact-name">{{ order.contact_name }}</text>
-                    <text class="contact-phone">{{ order.contact_mobile }}</text>
+    <view v-if="order" class="order-detail">
+        <view class="status-hero" :style="{ background: statusTheme.background }">
+            <view class="status-hero__glow status-hero__glow--left"></view>
+            <view class="status-hero__glow status-hero__glow--right"></view>
+            <view class="status-hero__main">
+                <view class="status-hero__icon" :style="{ background: statusTheme.iconBg }">
+                    <tn-icon :name="statusTheme.icon" size="48" color="#FFFFFF" />
                 </view>
-                <view class="contact-address" v-if="order.service_address">
-                    {{ order.service_address }}
-                </view>
-            </view>
-        </view>
-
-        <!-- 服务信息 -->
-        <view class="service-card">
-            <view class="card-header">
-                <tn-icon name="list" size="32" :color="$theme.primaryColor" />
-                <text class="card-title">服务项目</text>
-            </view>
-            <view class="service-groups">
-                <view v-for="group in groupedItems" :key="group.key" class="service-group">
-                    <view class="group-header">
-                        <view class="staff-section">
-                            <image
-                                :src="
-                                    group.staff?.avatar ||
-                                    group.staff_avatar ||
-                                    '/static/images/user/default_avatar.png'
-                                "
-                                class="staff-avatar"
-                                mode="aspectFill"
-                            />
-                            <view class="staff-info">
-                                <text class="staff-name">{{
-                                    group.staff?.name || group.staff_name || '未知人员'
-                                }}</text>
-                                <text class="staff-subtitle">{{ group.service_date }}</text>
-                            </view>
-                        </view>
-                        <view class="group-total">
-                            <text class="group-total-label">小计</text>
-                            <text class="group-total-value" :style="{ color: $theme.ctaColor }"
-                                >￥{{ formatAmount(group.total_price) }}</text
-                            >
-                        </view>
+                <view class="status-hero__content">
+                    <text class="status-hero__title">{{ order.order_status_desc }}</text>
+                    <text class="status-hero__desc">{{ statusDescription }}</text>
+                    <view v-if="showPayCountdown" class="status-hero__countdown">
+                        <text class="status-hero__countdown-label">剩余支付时间</text>
+                        <text class="status-hero__countdown-value">{{ payCountdownText }}</text>
                     </view>
+                    <view v-else-if="showVoucherPending" class="status-hero__countdown">
+                        <text class="status-hero__countdown-label">线下凭证</text>
+                        <text class="status-hero__countdown-value">审核中</text>
+                    </view>
+                </view>
+                <view
+                    v-if="order.order_status === 1 && Number(needPayAmount) > 0"
+                    class="status-hero__pay"
+                >
+                    <text class="status-hero__pay-label">当前待支付</text>
+                    <text class="status-hero__pay-value">¥{{ formatAmount(needPayAmount) }}</text>
+                </view>
+            </view>
+            <view class="status-hero__meta" @click="copyOrderSn">
+                <text class="status-hero__meta-label">订单编号</text>
+                <view class="status-hero__meta-value">
+                    <text>{{ order.order_sn }}</text>
+                    <tn-icon name="copy" size="24" color="rgba(255,255,255,0.88)" />
+                </view>
+            </view>
+        </view>
 
-                    <view class="group-packages">
-                        <view v-for="pkg in group.packages" :key="pkg.key" class="package-group">
-                            <view class="package-header">
-                                <view class="package-title">
-                                    <tn-icon name="gift" size="24" />
-                                    <text>{{ pkg.package_name }}</text>
+        <view class="page-body">
+            <view class="card summary-card">
+                <view class="card__header">
+                    <tn-icon name="calendar" size="32" :color="$theme.primaryColor" />
+                    <text class="card__title">服务摘要</text>
+                </view>
+                <template v-if="primaryItem">
+                    <view class="summary-card__top">
+                        <view class="summary-card__staff">
+                            <image class="summary-card__avatar" :src="primaryStaffAvatar" mode="aspectFill" />
+                            <view class="summary-card__staff-copy">
+                                <view class="summary-card__staff-row">
+                                    <text class="summary-card__staff-name">{{ primaryStaffName }}</text>
+                                    <text class="summary-card__badge">服务人员</text>
                                 </view>
-                                <text class="package-total">￥{{ formatAmount(pkg.total_price) }}</text>
-                            </view>
-                            <view class="package-items">
-                                <view v-for="item in pkg.items" :key="item.id" class="package-item">
-                                    <view class="slot-main">
-                                        <view class="slot-info">
-                                            <view class="slot-row">
-                                                <text class="slot-label">{{
-                                                    `预约日期：${item.service_date || group.service_date || '-'}`
-                                                }}</text>
-                                                <text
-                                                    class="slot-price"
-                                                    :style="{ color: $theme.ctaColor }"
-                                                    >￥{{ item.price }}</text
-                                                >
-                                            </view>
-                                            <view class="slot-meta">
-                                                <text class="slot-quantity"
-                                                    >x{{ item.quantity }}</text
-                                                >
-                                            </view>
-                                        </view>
-                                    </view>
-                                    <view
-                                        v-if="item.addons && item.addons.length"
-                                        class="slot-addon-list"
-                                    >
-                                        <view class="slot-addon-header">
-                                            <text class="slot-addon-title">附加服务</text>
-                                            <text class="slot-addon-total">
-                                                +￥{{ formatAmount(getItemAddonTotal(item)) }}
-                                            </text>
-                                        </view>
-                                        <view
-                                            v-for="addon in item.addons"
-                                            :key="`${item.id}-${addon.id}`"
-                                            class="slot-addon-row"
-                                        >
-                                            <text class="slot-addon-name">
-                                                {{ addon.addon_name || addon.name }}
-                                            </text>
-                                            <text class="slot-addon-price">
-                                                +￥{{ formatAmount(addon.subtotal || addon.price) }}
-                                            </text>
-                                        </view>
-                                    </view>
-                                </view>
+                                <text class="summary-card__staff-note">本次订单已确认服务人员</text>
                             </view>
                         </view>
+                        <view class="summary-card__price">
+                            <text class="summary-card__price-label">套餐金额</text>
+                            <text class="summary-card__price-value" :style="{ color: $theme.ctaColor }">
+                                ¥{{ formatAmount(primaryPackagePrice) }}
+                            </text>
+                        </view>
                     </view>
-                </view>
-            </view>
-        </view>
-
-        <view class="info-card">
-            <view class="card-header">
-                <tn-icon name="document" size="32" :color="$theme.primaryColor" />
-                <text class="card-title">订单信息</text>
-            </view>
-            <view class="info-list">
-                <view class="info-row">
-                    <text class="info-label">订单编号</text>
-                    <view class="info-value-row" @click="copyOrderSn">
-                        <text class="info-value">{{ order.order_sn }}</text>
-                        <tn-icon name="copy" size="28" color="#999999" />
+                    <view class="summary-grid">
+                        <view class="summary-grid__item summary-grid__item--wide">
+                            <text class="summary-grid__label">服务日期</text>
+                            <text class="summary-grid__value">{{ primaryServiceDate }}</text>
+                        </view>
+                        <view class="summary-grid__item">
+                            <text class="summary-grid__label">套餐</text>
+                            <text class="summary-grid__value summary-grid__value--multi">
+                                {{ primaryPackageName }}
+                            </text>
+                        </view>
+                        <view class="summary-grid__item">
+                            <text class="summary-grid__label">附加服务</text>
+                            <text class="summary-grid__value">
+                                {{ primaryAddons.length ? `已选 ${primaryAddons.length} 项` : '暂无' }}
+                            </text>
+                        </view>
                     </view>
-                </view>
-                <view class="info-row">
-                    <text class="info-label">下单时间</text>
-                    <text class="info-value">{{ order.create_time }}</text>
-                </view>
-                <view class="info-row" v-if="order.service_date">
-                    <text class="info-label">服务日期</text>
-                    <text class="info-value">{{ order.service_date }}</text>
-                </view>
-                <view class="info-row" v-if="order.wedding_date">
-                    <text class="info-label">婚礼日期</text>
-                    <text class="info-value">{{ order.wedding_date }}</text>
-                </view>
-                <view class="info-row" v-if="order.wedding_venue">
-                    <text class="info-label">婚礼地点</text>
-                    <text class="info-value">{{ order.wedding_venue }}</text>
-                </view>
-                <view class="info-row" v-if="order.pay_time">
-                    <text class="info-label">支付时间</text>
-                    <text class="info-value">{{ order.pay_time }}</text>
-                </view>
-                <view class="info-row" v-if="order.user_remark">
-                    <text class="info-label">备注</text>
-                    <text class="info-value remark">{{ order.user_remark }}</text>
+                    <view v-if="primaryPackageDescription" class="summary-card__description">
+                        <text class="summary-card__description-label">套餐内容</text>
+                        <text class="summary-card__description-text">
+                            {{ primaryPackageDescription }}
+                        </text>
+                    </view>
+                </template>
+                <view v-else class="empty-state">
+                    <tn-icon name="document" size="56" color="#CBD5E1" />
+                    <text class="empty-state__title">服务信息缺失</text>
+                    <text class="empty-state__desc">当前订单未返回主服务项，但金额和支付信息仍可查看。</text>
                 </view>
             </view>
-        </view>
 
-        <!-- 金额明细 -->
-        <view class="amount-card">
-            <view class="card-header">
-                <tn-icon name="money" size="32" :color="$theme.primaryColor" />
-                <text class="card-title">金额明细</text>
-            </view>
-            <view class="amount-list">
-                <view class="amount-row">
-                    <text class="amount-label">主服务金额</text>
-                    <text class="amount-value">¥{{ formatAmount(orderServiceAmount) }}</text>
-                </view>
-                <view class="amount-row" v-if="Number(order.addon_amount || 0) > 0">
-                    <text class="amount-label">附加服务金额</text>
-                    <text class="amount-value">+¥{{ formatAmount(order.addon_amount) }}</text>
-                </view>
-                <view class="amount-row" v-if="order.discount_amount > 0">
-                    <text class="amount-label">优惠金额</text>
-                    <text class="amount-value discount">-¥{{ order.discount_amount }}</text>
-                </view>
-                <view class="amount-divider"></view>
-                <view class="amount-row total">
-                    <text class="amount-label">实付金额</text>
-                    <text class="amount-value primary" :style="{ color: $theme.ctaColor }">
-                        ¥{{ order.pay_amount }}
+            <view v-if="primaryAddons.length" class="card">
+                <view class="card__header">
+                    <tn-icon name="gift" size="32" :color="$theme.primaryColor" />
+                    <text class="card__title">附加服务</text>
+                    <text class="card__extra" :style="{ color: $theme.ctaColor }">
+                        +¥{{ formatAmount(primaryAddonAmount) }}
                     </text>
                 </view>
-                <view class="amount-row" v-if="order.deposit_amount > 0">
-                    <text class="amount-label">定金</text>
-                    <view class="amount-value-row">
-                        <text class="amount-value">¥{{ order.deposit_amount }}</text>
-                        <text
-                            class="amount-status"
-                            :style="{
-                                color: order.deposit_paid ? '#19BE6B' : '#FF9900',
-                                backgroundColor: order.deposit_paid
-                                    ? 'rgba(25, 190, 107, 0.1)'
-                                    : 'rgba(255, 153, 0, 0.1)'
-                            }"
-                        >
-                            {{ order.deposit_paid ? '已付' : '待付' }}
-                        </text>
-                    </view>
-                </view>
-                <view class="amount-row" v-if="order.balance_amount > 0">
-                    <text class="amount-label">尾款</text>
-                    <view class="amount-value-row">
-                        <text class="amount-value">¥{{ order.balance_amount }}</text>
-                        <text
-                            class="amount-status"
-                            :style="{
-                                color: order.balance_paid ? '#19BE6B' : '#FF9900',
-                                backgroundColor: order.balance_paid
-                                    ? 'rgba(25, 190, 107, 0.1)'
-                                    : 'rgba(255, 153, 0, 0.1)'
-                            }"
-                        >
-                            {{ order.balance_paid ? '已付' : '待付' }}
-                        </text>
-                    </view>
-                </view>
-            </view>
-        </view>
-
-        <!-- 线下支付凭证 -->
-        <view class="voucher-card" v-if="order.pay_type === 4 || order.pay_voucher">
-            <view class="card-header">
-                <tn-icon name="image" size="32" :color="$theme.primaryColor" />
-                <text class="card-title">线下支付凭证</text>
-            </view>
-            <view class="voucher-body">
-                <view class="voucher-row">
-                    <text class="voucher-label">凭证状态</text>
-                    <text class="voucher-status">{{
-                        order.pay_voucher_status_desc || '未上传'
-                    }}</text>
-                </view>
-                <view class="voucher-row" v-if="order.pay_voucher_audit_remark">
-                    <text class="voucher-label">审核备注</text>
-                    <text class="voucher-remark">{{ order.pay_voucher_audit_remark }}</text>
-                </view>
-                <view class="voucher-image" v-if="order.pay_voucher">
-                    <image :src="order.pay_voucher" mode="aspectFill" />
-                </view>
-                <view class="voucher-empty" v-else>
-                    <text>暂无凭证</text>
-                </view>
-            </view>
-        </view>
-
-        <!-- 退款信息 -->
-        <view class="refund-card" v-if="order.refund">
-            <view class="card-header">
-                <tn-icon name="refund" size="32" color="#FF2C3C" />
-                <text class="card-title">退款信息</text>
-            </view>
-            <view class="refund-list">
-                <view class="refund-row">
-                    <text class="refund-label">退款状态</text>
-                    <text
-                        class="refund-status"
-                        :style="{
-                            color: getRefundStatusStyle(order.refund.refund_status).color,
-                            backgroundColor: getRefundStatusStyle(order.refund.refund_status).bg
-                        }"
+                <view class="addon-list">
+                    <view
+                        v-for="(addon, index) in primaryAddons"
+                        :key="`${getAddonKey(addon)}-${index}`"
+                        class="addon-item"
                     >
-                        {{ order.refund.refund_status_desc }}
-                    </text>
+                        <view class="addon-item__main">
+                            <view class="addon-item__name-row">
+                                <text class="addon-item__name">{{ getAddonName(addon) }}</text>
+                                <text class="addon-item__tag">附加套餐</text>
+                            </view>
+                            <text v-if="addon.description" class="addon-item__desc">{{ addon.description }}</text>
+                        </view>
+                        <text class="addon-item__price">+¥{{ formatAmount(getAddonPrice(addon)) }}</text>
+                    </view>
                 </view>
-                <view class="refund-row">
-                    <text class="refund-label">退款金额</text>
-                    <text class="refund-value">¥{{ order.refund.refund_amount }}</text>
+            </view>
+
+            <view class="card">
+                <view class="card__header">
+                    <tn-icon name="location-fill" size="32" :color="$theme.primaryColor" />
+                    <text class="card__title">联系与履约信息</text>
                 </view>
-                <view class="refund-row">
-                    <text class="refund-label">退款原因</text>
-                    <text class="refund-reason">{{ order.refund.refund_reason }}</text>
+                <view class="detail-list">
+                    <view class="detail-row"><text class="detail-row__label">联系人</text><text class="detail-row__value">{{ order.contact_name || '-' }}</text></view>
+                    <view class="detail-row"><text class="detail-row__label">手机号码</text><text class="detail-row__value">{{ order.contact_mobile || '-' }}</text></view>
+                    <view class="detail-row"><text class="detail-row__label">服务地区</text><text class="detail-row__value">{{ order.service_region_text || '-' }}</text></view>
+                    <view class="detail-row"><text class="detail-row__label">详细地址</text><text class="detail-row__value detail-row__value--left">{{ order.service_address || '-' }}</text></view>
+                    <view v-if="order.wedding_date" class="detail-row"><text class="detail-row__label">婚礼日期</text><text class="detail-row__value">{{ order.wedding_date }}</text></view>
+                    <view v-if="order.wedding_venue" class="detail-row"><text class="detail-row__label">婚礼地点</text><text class="detail-row__value detail-row__value--left">{{ order.wedding_venue }}</text></view>
+                    <view v-if="order.user_remark" class="detail-row detail-row--stack"><text class="detail-row__label">备注</text><text class="detail-row__value detail-row__value--left">{{ order.user_remark }}</text></view>
+                </view>
+            </view>
+
+            <view class="card">
+                <view class="card__header">
+                    <tn-icon name="document" size="32" :color="$theme.primaryColor" />
+                    <text class="card__title">订单与金额</text>
+                </view>
+                <view class="section">
+                    <text class="section__title">订单信息</text>
+                    <view class="detail-list detail-list--compact">
+                        <view class="detail-row">
+                            <text class="detail-row__label">订单编号</text>
+                            <view class="detail-row__copy" @click="copyOrderSn">
+                                <text class="detail-row__value">{{ order.order_sn }}</text>
+                                <tn-icon name="copy" size="24" color="#94A3B8" />
+                            </view>
+                        </view>
+                        <view class="detail-row"><text class="detail-row__label">下单时间</text><text class="detail-row__value">{{ order.create_time || '-' }}</text></view>
+                        <view v-if="order.pay_time" class="detail-row"><text class="detail-row__label">支付时间</text><text class="detail-row__value">{{ order.pay_time }}</text></view>
+                    </view>
+                </view>
+                <view class="divider-block"></view>
+                <view class="section">
+                    <text class="section__title">金额明细</text>
+                    <view class="amount-list">
+                        <view class="amount-row"><text class="amount-row__label">主服务金额</text><text class="amount-row__value">¥{{ formatAmount(orderServiceAmount) }}</text></view>
+                        <view v-if="Number(primaryAddonAmount) > 0" class="amount-row"><text class="amount-row__label">附加服务金额</text><text class="amount-row__value">+¥{{ formatAmount(primaryAddonAmount) }}</text></view>
+                        <view v-if="Number(order.discount_amount || 0) > 0" class="amount-row"><text class="amount-row__label">优惠金额</text><text class="amount-row__value amount-row__value--discount">-¥{{ formatAmount(order.discount_amount) }}</text></view>
+                        <view class="amount-divider"></view>
+                        <view class="amount-row amount-row--total"><text class="amount-row__label">实付金额</text><text class="amount-row__value amount-row__value--total" :style="{ color: $theme.ctaColor }">¥{{ formatAmount(order.pay_amount) }}</text></view>
+                        <view v-if="Number(order.deposit_amount || 0) > 0" class="amount-row">
+                            <text class="amount-row__label">定金</text>
+                            <view class="amount-row__wrap">
+                                <text class="amount-row__value">¥{{ formatAmount(order.deposit_amount) }}</text>
+                                <text class="amount-status" :style="{ color: order.deposit_paid ? '#16A34A' : '#D97706', backgroundColor: order.deposit_paid ? 'rgba(22,163,74,0.1)' : 'rgba(217,119,6,0.1)' }">{{ order.deposit_paid ? '已付' : '待付' }}</text>
+                            </view>
+                        </view>
+                        <view v-if="Number(order.balance_amount || 0) > 0" class="amount-row">
+                            <text class="amount-row__label">尾款</text>
+                            <view class="amount-row__wrap">
+                                <text class="amount-row__value">¥{{ formatAmount(order.balance_amount) }}</text>
+                                <text class="amount-status" :style="{ color: order.balance_paid ? '#16A34A' : '#D97706', backgroundColor: order.balance_paid ? 'rgba(22,163,74,0.1)' : 'rgba(217,119,6,0.1)' }">{{ order.balance_paid ? '已付' : '待付' }}</text>
+                            </view>
+                        </view>
+                    </view>
+                </view>
+            </view>
+
+            <view v-if="order.pay_type === 4 || order.pay_voucher" class="card">
+                <view class="card__header">
+                    <tn-icon name="image" size="32" :color="$theme.primaryColor" />
+                    <text class="card__title">线下支付凭证</text>
+                </view>
+                <view class="detail-list">
+                    <view class="detail-row"><text class="detail-row__label">凭证状态</text><text class="detail-row__value">{{ order.pay_voucher_status_desc || '未上传' }}</text></view>
+                    <view v-if="order.pay_voucher_audit_remark" class="detail-row detail-row--stack"><text class="detail-row__label">审核备注</text><text class="detail-row__value detail-row__value--left">{{ order.pay_voucher_audit_remark }}</text></view>
+                    <view v-if="order.pay_voucher" class="voucher-image"><image :src="order.pay_voucher" mode="aspectFill" /></view>
+                    <view v-else class="voucher-empty"><text>暂无凭证</text></view>
+                </view>
+            </view>
+
+            <view v-if="order.refund" class="card">
+                <view class="card__header">
+                    <tn-icon name="refund" size="32" color="#FF2C3C" />
+                    <text class="card__title">退款信息</text>
+                </view>
+                <view class="detail-list">
+                    <view class="detail-row"><text class="detail-row__label">退款状态</text><text class="refund-status" :style="{ color: getRefundStatusStyle(order.refund.refund_status).color, backgroundColor: getRefundStatusStyle(order.refund.refund_status).bg }">{{ order.refund.refund_status_desc }}</text></view>
+                    <view class="detail-row"><text class="detail-row__label">退款金额</text><text class="detail-row__value">¥{{ formatAmount(order.refund.refund_amount) }}</text></view>
+                    <view class="detail-row detail-row--stack"><text class="detail-row__label">退款原因</text><text class="detail-row__value detail-row__value--left">{{ order.refund.refund_reason }}</text></view>
                 </view>
             </view>
         </view>
 
-        <!-- 底部按钮 -->
         <view class="action-bar">
-            <view class="action-buttons">
-                <view
-                    v-if="[2, 3].includes(order.order_status)"
-                    class="btn-secondary"
-                    :style="{
-                        borderColor: $theme.primaryColor,
-                        color: $theme.primaryColor
-                    }"
-                    @click="openChangeActions"
-                >
-                    <text>申请变更</text>
-                </view>
-                <view
-                    class="btn-secondary"
-                    :style="{
-                        borderColor: '#D85C61',
-                        color: '#D85C61'
-                    }"
-                    @click="handleContactAdvisor"
-                >
-                    <text>联系顾问</text>
-                </view>
-                <view
-                    v-if="[0, 1].includes(order.order_status)"
-                    class="btn-secondary"
-                    :style="{
-                        borderColor: $theme.primaryColor,
-                        color: $theme.primaryColor
-                    }"
-                    @click="handleCancel"
-                >
-                    <text>取消订单</text>
-                </view>
-                <view
-                    v-if="canPayOnline"
-                    class="btn-primary"
-                    :style="{
-                        background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)`,
-                        color: $theme.btnColor
-                    }"
-                    @click="handlePay"
-                >
+            <view class="action-bar__buttons">
+                <view v-if="[2, 3].includes(order.order_status)" class="btn-secondary" :style="{ borderColor: $theme.primaryColor, color: $theme.primaryColor }" @click="openChangeActions"><text>申请变更</text></view>
+                <view class="btn-secondary" :style="{ borderColor: '#D85C61', color: '#D85C61' }" @click="handleContactAdvisor"><text>联系顾问</text></view>
+                <view v-if="[0, 1].includes(order.order_status)" class="btn-secondary" :style="{ borderColor: $theme.primaryColor, color: $theme.primaryColor }" @click="handleCancel"><text>取消订单</text></view>
+                <view v-if="canPayOnline" class="btn-primary" :style="{ background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)`, color: $theme.btnColor }" @click="handlePay">
                     <tn-icon name="wallet-fill" size="28" :color="$theme.btnColor" />
-                    <text>立即支付 ¥{{ needPayAmount }}</text>
+                    <text>立即支付 ¥{{ formatAmount(needPayAmount) }}</text>
                 </view>
-                <view
-                    v-if="canUploadVoucher"
-                    class="btn-secondary"
-                    :style="{
-                        borderColor: $theme.primaryColor,
-                        color: $theme.primaryColor
-                    }"
-                    @click="showVoucherPopup = true"
-                >
-                    <text>上传凭证</text>
-                </view>
-                <view
-                    v-if="order.order_status === 3"
-                    class="btn-primary"
-                    :style="{
-                        background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                        color: $theme.btnColor
-                    }"
-                    @click="handleConfirm"
-                >
+                <view v-if="canUploadVoucher" class="btn-secondary" :style="{ borderColor: $theme.primaryColor, color: $theme.primaryColor }" @click="showVoucherPopup = true"><text>上传凭证</text></view>
+                <view v-if="order.order_status === 3" class="btn-primary" :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`, color: $theme.btnColor }" @click="handleConfirm">
                     <tn-icon name="check-circle-fill" size="28" :color="$theme.btnColor" />
                     <text>确认完成</text>
                 </view>
-                <view
-                    v-if="[2, 3].includes(order.order_status) && !order.refund"
-                    class="btn-secondary"
-                    :style="{
-                        borderColor: '#FF2C3C',
-                        color: '#FF2C3C'
-                    }"
-                    @click="showRefundPopup = true"
-                >
-                    <text>申请退款</text>
-                </view>
-                <view
-                    v-if="[4, 5, 6, 8].includes(order.order_status)"
-                    class="btn-secondary"
-                    :style="{
-                        borderColor: '#999999',
-                        color: '#999999'
-                    }"
-                    @click="handleDelete"
-                >
-                    <text>删除订单</text>
-                </view>
+                <view v-if="[2, 3].includes(order.order_status) && !order.refund" class="btn-secondary" :style="{ borderColor: '#FF2C3C', color: '#FF2C3C' }" @click="showRefundPopup = true"><text>申请退款</text></view>
+                <view v-if="[4, 5, 6, 8].includes(order.order_status)" class="btn-secondary" :style="{ borderColor: '#999999', color: '#999999' }" @click="handleDelete"><text>删除订单</text></view>
             </view>
         </view>
 
-        <!-- 退款弹窗 -->
-        <tn-popup
-            v-model="showRefundPopup"
-            open-direction="bottom"
-            :radius="32"
-            safe-area-inset-bottom
-        >
-            <view class="refund-popup">
-                <view class="popup-header">
-                    <text class="popup-title">申请退款</text>
-                    <tn-icon
-                        name="close"
-                        size="40"
-                        color="#999999"
-                        @click="showRefundPopup = false"
-                    />
+        <tn-popup v-model="showRefundPopup" open-direction="bottom" :radius="32" safe-area-inset-bottom>
+            <view class="popup">
+                <view class="popup__header"><text class="popup__title">申请退款</text><tn-icon name="close" size="40" color="#999999" @click="showRefundPopup = false" /></view>
+                <view class="popup__content">
+                    <view class="form-item"><text class="form-item__label">退款金额</text><tn-input v-model="refundForm.amount" type="number" :placeholder="`最多可退 ¥${formatAmount(order.pay_amount)}`" border /></view>
+                    <view class="form-item"><text class="form-item__label">退款原因</text><tn-input v-model="refundForm.reason" type="textarea" placeholder="请输入退款原因" :maxlength="200" border height="200" /></view>
                 </view>
-                <view class="popup-content">
-                    <view class="form-item">
-                        <text class="form-label">退款金额</text>
-                        <tn-input
-                            v-model="refundForm.amount"
-                            type="number"
-                            :placeholder="`最多可退 ¥${order.pay_amount}`"
-                            border
-                        />
-                    </view>
-                    <view class="form-item">
-                        <text class="form-label">退款原因</text>
-                        <tn-input
-                            v-model="refundForm.reason"
-                            type="textarea"
-                            placeholder="请输入退款原因"
-                            :maxlength="200"
-                            border
-                            height="200"
-                        />
-                    </view>
-                </view>
-                <view class="popup-actions">
-                    <view
-                        class="popup-btn cancel"
-                        :style="{
-                            borderColor: $theme.primaryColor,
-                            color: $theme.primaryColor
-                        }"
-                        @click="showRefundPopup = false"
-                    >
-                        <text>取消</text>
-                    </view>
-                    <view
-                        class="popup-btn confirm"
-                        :style="{
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                            color: $theme.btnColor
-                        }"
-                        @click="submitRefund"
-                    >
-                        <text>提交申请</text>
-                    </view>
+                <view class="popup__actions">
+                    <view class="popup__btn popup__btn--secondary" :style="{ borderColor: $theme.primaryColor, color: $theme.primaryColor }" @click="showRefundPopup = false"><text>取消</text></view>
+                    <view class="popup__btn popup__btn--primary" :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`, color: $theme.btnColor }" @click="submitRefund"><text>提交申请</text></view>
                 </view>
             </view>
         </tn-popup>
 
-        <!-- 线下凭证上传弹窗 -->
-        <tn-popup
-            v-model="showVoucherPopup"
-            open-direction="bottom"
-            :radius="32"
-            safe-area-inset-bottom
-        >
-            <view class="voucher-popup">
-                <view class="popup-header">
-                    <text class="popup-title">上传支付凭证</text>
-                    <tn-icon
-                        name="close"
-                        size="40"
-                        color="#999999"
-                        @click="showVoucherPopup = false"
-                    />
-                </view>
-
-                <view class="popup-content">
-                    <view class="form-item">
-                        <text class="form-label">凭证图片</text>
-                        <text class="form-tip">请上传转账截图或付款凭证</text>
-                    </view>
-
-                    <view class="voucher-upload-area">
-                        <view class="voucher-preview" v-if="voucherForm.image">
+        <tn-popup v-model="showVoucherPopup" open-direction="bottom" :radius="32" safe-area-inset-bottom>
+            <view class="popup">
+                <view class="popup__header"><text class="popup__title">上传支付凭证</text><tn-icon name="close" size="40" color="#999999" @click="showVoucherPopup = false" /></view>
+                <view class="popup__content">
+                    <view class="form-item"><text class="form-item__label">凭证图片</text><text class="form-item__tip">请上传转账截图或付款凭证</text></view>
+                    <view class="voucher-upload">
+                        <view v-if="voucherForm.image" class="voucher-upload__preview">
                             <image :src="voucherForm.image" mode="aspectFill" />
-                            <view class="voucher-remove" @click="voucherForm.image = ''">
-                                <tn-icon name="close" size="32" color="#FFFFFF" />
-                            </view>
+                            <view class="voucher-upload__remove" @click="voucherForm.image = ''"><tn-icon name="close" size="32" color="#FFFFFF" /></view>
                         </view>
-                        <view class="voucher-add" v-else @click="chooseVoucherImage">
-                            <tn-icon name="add" size="64" color="#CCCCCC" />
-                            <text class="voucher-add-text">选择图片</text>
-                            <text class="voucher-add-tip">支持jpg、png格式</text>
+                        <view v-else class="voucher-upload__add" @click="chooseVoucherImage">
+                            <tn-icon name="add" size="64" color="#CBD5E1" />
+                            <text class="voucher-upload__text">选择图片</text>
+                            <text class="voucher-upload__tip">支持 jpg、png 格式</text>
                         </view>
                     </view>
                 </view>
-
-                <view class="popup-actions">
-                    <view
-                        class="popup-btn cancel"
-                        :style="{
-                            borderColor: $theme.primaryColor,
-                            color: $theme.primaryColor
-                        }"
-                        @click="showVoucherPopup = false"
-                    >
-                        <text>取消</text>
-                    </view>
-                    <view
-                        class="popup-btn confirm"
-                        :style="{
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                            color: $theme.btnColor
-                        }"
-                        @click="submitVoucher"
-                    >
-                        <text>{{ voucherForm.uploading ? '上传中...' : '提交审核' }}</text>
-                    </view>
+                <view class="popup__actions">
+                    <view class="popup__btn popup__btn--secondary" :style="{ borderColor: $theme.primaryColor, color: $theme.primaryColor }" @click="showVoucherPopup = false"><text>取消</text></view>
+                    <view class="popup__btn popup__btn--primary" :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`, color: $theme.btnColor }" @click="submitVoucher"><text>{{ voucherForm.uploading ? '上传中...' : '提交审核' }}</text></view>
                 </view>
             </view>
         </tn-popup>
 
+        <payment v-model:show="payState.showPay" v-model:show-check="payState.showCheck" :order-id="orderId" :from="payState.from" :redirect="payState.redirect" :payment-sn="payState.paymentSn" @success="handlePaySuccess" @fail="handlePayFail" />
         <view class="safe-bottom"></view>
     </view>
+
     <view v-else class="loading-container">
         <tn-loading mode="circle" />
         <text class="loading-text">加载中...</text>
@@ -524,336 +283,249 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { computed, reactive, ref } from 'vue'
+import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import { useThemeStore } from '@/stores/theme'
-import {
-    getOrderDetail,
-    cancelOrder,
-    confirmOrder,
-    deleteOrder,
-    applyRefund,
-    orderPay,
-    uploadPayVoucher
-} from '@/api/order'
+import { applyRefund, cancelOrder, confirmOrder, deleteOrder, getOrderDetail, uploadPayVoucher } from '@/api/order'
 import { uploadImage } from '@/api/app'
 
+const DEFAULT_AVATAR = '/static/images/user/default_avatar.png'
 const $theme = useThemeStore()
 const orderId = ref(0)
 const order = ref<any>(null)
 const showRefundPopup = ref(false)
 const showVoucherPopup = ref(false)
-const refundForm = reactive({
-    amount: '',
-    reason: ''
-})
-const voucherForm = reactive({
-    image: '',
-    uploading: false
-})
+const payState = reactive({ showPay: false, showCheck: false, from: 'order', redirect: '/pages/order_detail/order_detail', paymentSn: '' })
+const refundForm = reactive({ amount: '', reason: '' })
+const voucherForm = reactive({ image: '', uploading: false })
+const payCountdownSeconds = ref(0)
+let payCountdownTimer: ReturnType<typeof setInterval> | null = null
+let payCountdownRefreshing = false
+
 const formatAmount = (value: any) => Number(value || 0).toFixed(2)
-const getItemAddonTotal = (item: any) =>
-    (item?.addons || []).reduce(
-        (sum: number, addon: any) => sum + Number(addon?.subtotal || addon?.price || 0),
-        0
-    )
+const formatCountdown = (seconds: number) => {
+    const total = Math.max(seconds, 0)
+    const hours = Math.floor(total / 3600)
+    const minutes = Math.floor((total % 3600) / 60)
+    const remainSeconds = total % 60
+    return [hours, minutes, remainSeconds].map((item) => String(item).padStart(2, '0')).join(':')
+}
+const getItemAddonTotal = (item: any) => (item?.addons || []).reduce((sum: number, addon: any) => sum + Number(addon?.subtotal || addon?.price || 0), 0)
+const getAddonKey = (addon: any) => String(addon?.addon_id || addon?.id || addon?.name || 'addon')
+const getAddonName = (addon: any) => addon?.addon_name || addon?.name || '附加服务'
+const getAddonPrice = (addon: any) => Number(addon?.subtotal || addon?.price || 0)
+
+const getStatusTheme = (status: number) =>
+    ({
+        0: { background: 'linear-gradient(135deg, #F59E0B 0%, #EA580C 100%)', iconBg: 'rgba(255,255,255,0.18)', icon: 'time-fill' },
+        1: { background: 'linear-gradient(135deg, #FB7185 0%, #F97316 100%)', iconBg: 'rgba(255,255,255,0.18)', icon: 'wallet-fill' },
+        2: { background: 'linear-gradient(135deg, #2563EB 0%, #0891B2 100%)', iconBg: 'rgba(255,255,255,0.18)', icon: 'check-circle-fill' },
+        3: { background: 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)', iconBg: 'rgba(255,255,255,0.18)', icon: 'loading' },
+        4: { background: 'linear-gradient(135deg, #16A34A 0%, #22C55E 100%)', iconBg: 'rgba(255,255,255,0.18)', icon: 'check-circle-fill' },
+        5: { background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)', iconBg: 'rgba(255,255,255,0.18)', icon: 'check-circle-fill' },
+        6: { background: 'linear-gradient(135deg, #64748B 0%, #475569 100%)', iconBg: 'rgba(255,255,255,0.18)', icon: 'close-circle-fill' },
+        7: { background: 'linear-gradient(135deg, #D97706 0%, #F59E0B 100%)', iconBg: 'rgba(255,255,255,0.18)', icon: 'time-fill' },
+        8: { background: 'linear-gradient(135deg, #DC2626 0%, #EF4444 100%)', iconBg: 'rgba(255,255,255,0.18)', icon: 'refund' }
+    } as Record<number, { background: string; iconBg: string; icon: string }>)[status] || { background: 'linear-gradient(135deg, #64748B 0%, #475569 100%)', iconBg: 'rgba(255,255,255,0.18)', icon: 'document' }
+
+const getRefundStatusStyle = (status: number) =>
+    ({
+        0: { color: '#D97706', bg: 'rgba(217,119,6,0.1)' },
+        1: { color: '#2563EB', bg: 'rgba(37,99,235,0.1)' },
+        2: { color: '#0F766E', bg: 'rgba(15,118,110,0.1)' },
+        3: { color: '#16A34A', bg: 'rgba(22,163,74,0.1)' },
+        4: { color: '#DC2626', bg: 'rgba(220,38,38,0.1)' }
+    } as Record<number, { color: string; bg: string }>)[status] || { color: '#64748B', bg: 'rgba(100,116,139,0.1)' }
+
+const primaryItem = computed(() => (Array.isArray(order.value?.items) ? order.value.items[0] || null : null))
+const primaryAddons = computed(() => (Array.isArray(primaryItem.value?.addons) ? primaryItem.value.addons : []))
+const primaryStaffAvatar = computed(() => primaryItem.value?.staff?.avatar || primaryItem.value?.staff_avatar || DEFAULT_AVATAR)
+const primaryStaffName = computed(() => primaryItem.value?.staff?.name || primaryItem.value?.staff_name || '待分配服务人员')
+const primaryPackageName = computed(() => primaryItem.value?.package?.name || primaryItem.value?.package_name || '待确认主套餐')
+const primaryPackageDescription = computed(() =>
+    String(primaryItem.value?.package_description || '').trim()
+)
+const primaryServiceDate = computed(() => primaryItem.value?.service_date || primaryItem.value?.schedule_date || order.value?.service_date || '待确认服务日期')
+const primaryPackagePrice = computed(() => Number(primaryItem.value?.price || primaryItem.value?.package?.price || 0))
+const primaryAddonAmount = computed(() => {
+    const addonAmount = Number(order.value?.addon_amount ?? -1)
+    return addonAmount >= 0 ? addonAmount : getItemAddonTotal(primaryItem.value)
+})
 const orderServiceAmount = computed(() => {
     const serviceAmount = Number(order.value?.service_amount ?? -1)
-    if (serviceAmount >= 0) {
-        return serviceAmount
-    }
-    return Math.max(0, Number(order.value?.total_amount || 0) - Number(order.value?.addon_amount || 0))
+    return serviceAmount >= 0 ? serviceAmount : Math.max(0, Number(order.value?.total_amount || 0) - Number(order.value?.addon_amount || 0))
 })
-
 const needPayAmount = computed(() => {
     if (!order.value) return 0
-    if (order.value.deposit_amount > 0) {
-        if (!order.value.deposit_paid) return order.value.deposit_amount
-        if (!order.value.balance_paid) return order.value.balance_amount
+    if (Number(order.value.deposit_amount || 0) > 0) {
+        if (!order.value.deposit_paid) return Number(order.value.deposit_amount || 0)
+        if (!order.value.balance_paid) return Number(order.value.balance_amount || 0)
     }
-    return order.value.pay_amount
+    return Number(order.value.pay_amount || 0)
 })
+const showVoucherPending = computed(() => !!order.value && Number(order.value.pay_type) === 4 && Number(order.value.pay_voucher_status) === 0)
+const showPayCountdown = computed(() => !!order.value && payCountdownSeconds.value > 0)
+const payCountdownText = computed(() => formatCountdown(payCountdownSeconds.value))
+const canPayOnline = computed(() => !!order.value && Number(order.value.order_status) === 1 && !(Number(order.value.pay_type) === 4 && Number(order.value.pay_voucher_status) === 0))
+const canUploadVoucher = computed(() => !!order.value && Number(order.value.order_status) === 1 && Number(order.value.pay_voucher_status) !== 0)
+const statusTheme = computed(() => getStatusTheme(Number(order.value?.order_status ?? 6)))
+const statusDescription = computed(() => ({
+    0: '工作人员确认后，订单会进入支付流程。',
+    1: showVoucherPending.value
+        ? '线下支付凭证审核中，审核结果会及时同步到订单状态。'
+        : showPayCountdown.value
+            ? `请在 ${payCountdownText.value} 内完成支付，超时订单将自动取消。`
+            : '请尽快完成支付，系统会自动计算当前应付金额。',
+    2: '订单已支付成功，服务准备中。',
+    3: '服务进行中，完成后可在这里确认完成。',
+    4: '本次服务已完成，感谢你的信任。',
+    5: '订单已评价，服务流程已闭环。',
+    6: '订单已取消，如需继续预约可重新下单。',
+    7: '订单当前处于暂停状态，恢复后会继续履约。',
+    8: '订单已进入退款完成状态。'
+} as Record<number, string>)[Number(order.value?.order_status ?? -1)] || '订单状态已更新，请留意后续进度。')
 
-const canPayOnline = computed(() => {
-    if (!order.value) return false
-    if (order.value.order_status !== 1) return false
-    return !(order.value.pay_type === 4 && order.value.pay_voucher_status === 0)
-})
-
-const canUploadVoucher = computed(() => {
-    if (!order.value) return false
-    if (order.value.order_status !== 1) return false
-    return order.value.pay_voucher_status !== 0
-})
-
-const groupedItems = computed(() => {
-    const items = order.value?.items || []
-    const groups: any[] = []
-    const groupMap = new Map<string, any>()
-
-    items.forEach((item: any) => {
-        const staffId = item.staff_id ?? item.staff?.id ?? 'unknown'
-        const serviceDate = item.service_date || item.schedule_date || item.date || ''
-        const key = `${staffId}-${serviceDate}`
-        let group = groupMap.get(key)
-        if (!group) {
-            group = {
-                key,
-                staff: item.staff,
-                staff_name: item.staff_name,
-                staff_avatar: item.staff_avatar,
-                service_date: serviceDate,
-                packages: [],
-                total_price: 0,
-                packageMap: new Map<string, any>()
-            }
-            groupMap.set(key, group)
-            groups.push(group)
-        }
-
-        const itemTotal = Number(item.price || 0) * Number(item.quantity || 1)
-        const addonTotal = getItemAddonTotal(item)
-        group.total_price += itemTotal + addonTotal
-
-        const pkgKey = String(item.package_id ?? item.package?.id ?? item.package_name ?? 'unknown')
-        let pkgGroup = group.packageMap.get(pkgKey)
-        if (!pkgGroup) {
-            pkgGroup = {
-                key: `${key}-${pkgKey}`,
-                package_name: item.package?.name || item.package_name || '未命名套餐',
-                items: [],
-                total_price: 0
-            }
-            group.packageMap.set(pkgKey, pkgGroup)
-            group.packages.push(pkgGroup)
-        }
-
-        pkgGroup.items.push(item)
-        pkgGroup.total_price += itemTotal + addonTotal
-    })
-
-    groups.forEach((group) => {
-        delete group.packageMap
-    })
-
-    return groups
-})
-
-// 获取订单状态样式
-const getStatusStyle = (status: number) => {
-    const styles: Record<number, { background: string }> = {
-        0: { background: 'linear-gradient(135deg, #F59E0B 0%, #F97316 100%)' }, // 待确认
-        1: { background: 'linear-gradient(135deg, #F97316 0%, #FB923C 100%)' }, // 待支付
-        2: { background: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)' }, // 已支付
-        3: { background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)' }, // 服务中
-        4: { background: 'linear-gradient(135deg, #19BE6B 0%, #0FA958 100%)' }, // 已完成
-        5: { background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }, // 已评价
-        6: { background: 'linear-gradient(135deg, #9CA3AF 0%, #6B7280 100%)' }, // 已取消
-        7: { background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' }, // 已暂停
-        8: { background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' } // 已退款
+const clearPayCountdown = () => {
+    if (payCountdownTimer) {
+        clearInterval(payCountdownTimer)
+        payCountdownTimer = null
     }
-    return styles[status] || styles[6]
 }
 
-// 获取订单状态图标
-const getStatusIcon = (status: number) => {
-    const icons: Record<number, string> = {
-        0: 'time-fill', // 待确认
-        1: 'wallet-fill', // 待支付
-        2: 'check-circle-fill', // 已支付
-        3: 'loading', // 服务中
-        4: 'check-circle-fill', // 已完成
-        5: 'check-circle-fill', // 已评价
-        6: 'close-circle-fill', // 已取消
-        7: 'time-fill', // 已暂停
-        8: 'refund' // 已退款
-    }
-    return icons[status] || 'document'
-}
+const syncPayCountdown = (seconds: number | string) => {
+    clearPayCountdown()
+    payCountdownSeconds.value = Math.max(Number(seconds || 0), 0)
+    if (payCountdownSeconds.value <= 0) return
 
-// 获取退款状态样式
-const getRefundStatusStyle = (status: number) => {
-    const styles: Record<number, { color: string; bg: string }> = {
-        0: { color: '#FF9900', bg: 'rgba(255, 153, 0, 0.1)' }, // 待审核
-        1: { color: '#3574FF', bg: 'rgba(53, 116, 255, 0.1)' }, // 审核中
-        2: { color: '#7C4DFF', bg: 'rgba(124, 77, 255, 0.1)' }, // 退款中
-        3: { color: '#19BE6B', bg: 'rgba(25, 190, 107, 0.1)' }, // 已退款
-        4: { color: '#FF2C3C', bg: 'rgba(255, 44, 60, 0.1)' } // 已拒绝
-    }
-    return styles[status] || { color: '#999999', bg: 'rgba(153, 153, 153, 0.1)' }
+    payCountdownTimer = setInterval(async () => {
+        if (payCountdownSeconds.value > 0) {
+            payCountdownSeconds.value -= 1
+        }
+
+        if (payCountdownSeconds.value <= 0) {
+            clearPayCountdown()
+            if (payCountdownRefreshing) return
+            payCountdownRefreshing = true
+            try {
+                await fetchDetail()
+            } finally {
+                payCountdownRefreshing = false
+            }
+        }
+    }, 1000)
 }
 
 const fetchDetail = async () => {
     try {
-        const res = await getOrderDetail({ id: orderId.value })
-        order.value = res
+        order.value = await getOrderDetail({ id: orderId.value })
+        syncPayCountdown(order.value?.pay_remain_seconds || 0)
     } catch (e: any) {
-        uni.showToast({ title: e.message || '加载失败', icon: 'none' })
+        clearPayCountdown()
+        uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
     }
 }
 
 const copyOrderSn = () => {
-    uni.setClipboardData({
-        data: order.value.order_sn,
-        success: () => {
-            uni.showToast({ title: '已复制订单编号', icon: 'success' })
-        }
-    })
+    if (!order.value?.order_sn) return
+    uni.setClipboardData({ data: order.value.order_sn, success: () => uni.showToast({ title: '已复制订单编号', icon: 'success' }) })
 }
 
-const handleContactAdvisor = () => {
-    uni.navigateTo({
-        url: `/packages/pages/customer_service/customer_service?scene=order_detail&order_id=${orderId.value}`
-    })
-}
-
-const openChangeActions = () => {
+const handleContactAdvisor = () => uni.navigateTo({ url: `/packages/pages/customer_service/customer_service?scene=order_detail&order_id=${orderId.value}` })
+const openChangeActions = () =>
     uni.showActionSheet({
-        itemList: ['申请改期', '申请加项', '附加服务变更', '申请暂停', '我的申请'],
+        itemList: ['申请改期', '附加服务变更', '申请暂停', '我的申请'],
         success: ({ tapIndex }) => {
             const routes = [
                 `/packages/pages/order_change/apply_date?order_id=${orderId.value}`,
-                `/packages/pages/order_change/apply_add_item?order_id=${orderId.value}`,
                 `/packages/pages/order_change/apply_addon?order_id=${orderId.value}`,
                 `/packages/pages/order_change/apply_pause?order_id=${orderId.value}`,
                 '/packages/pages/order_change/list?type=change'
             ]
             const url = routes[tapIndex]
-            if (url) {
-                uni.navigateTo({ url })
-            }
+            if (url) uni.navigateTo({ url })
         }
     })
+
+const handlePay = () => {
+    if (Number(order.value?.pay_deadline_time || 0) > 0 && payCountdownSeconds.value <= 0) {
+        uni.showToast({ title: '支付时间已到，正在刷新订单', icon: 'none' })
+        fetchDetail()
+        return
+    }
+    payState.paymentSn = ''
+    payState.showPay = true
 }
 
-const handlePay = async () => {
-    try {
-        const payType = !order.value.deposit_paid ? 1 : !order.value.balance_paid ? 2 : 3
-        const payWay = await new Promise<number>((resolve, reject) => {
-            uni.showActionSheet({
-                itemList: ['微信支付', '余额支付', '组合支付', '线下支付（上传凭证）'],
-                success: (res) => {
-                    const ways = [1, 3, 5, 4]
-                    resolve(ways[res.tapIndex])
-                },
-                fail: () => reject(new Error('取消选择'))
-            })
-        })
+const handlePaySuccess = async () => {
+    payState.showPay = false
+    payState.showCheck = false
+    payState.paymentSn = ''
+    uni.showToast({ title: '支付成功', icon: 'success' })
+    await fetchDetail()
+}
 
-        if (payWay === 4) {
-            showVoucherPopup.value = true
-            return
-        }
-
-        const res = await orderPay({ id: orderId.value, pay_way: payWay, pay_type: payType })
-        // 调用微信支付
-        // @ts-ignore
-        if (res.data?.pay_params) {
-            // @ts-ignore
-            uni.requestPayment({
-                ...res.data.pay_params,
-                success: () => {
-                    uni.showToast({ title: '支付成功', icon: 'success' })
-                    fetchDetail()
-                },
-                fail: () => {
-                    uni.showToast({ title: '支付取消', icon: 'none' })
-                }
-            })
-        } else {
-            uni.showToast({ title: '支付成功', icon: 'success' })
-            fetchDetail()
-        }
-    } catch (e: any) {
-        if (e?.message !== '取消选择') {
-            uni.showToast({ title: e.message || '支付失败', icon: 'none' })
-        }
+const handlePayFail = async (payload?: { reason?: string; message?: string }) => {
+    if (payload?.reason === 'timeout') {
+        await fetchDetail()
+        return
     }
+    uni.showToast({ title: payload?.message || '支付失败，请重试', icon: 'none' })
 }
 
 const handleCancel = async () => {
-    const res = await uni.showModal({
-        title: '提示',
-        content: '确定要取消该订单吗？'
-    })
-    if (res.confirm) {
-        try {
-            await cancelOrder({ id: orderId.value, reason: '用户取消' })
-            uni.showToast({ title: '订单已取消', icon: 'success' })
-            fetchDetail()
-        } catch (e: any) {
-            uni.showToast({ title: e.message || '操作失败', icon: 'none' })
-        }
+    const res = await uni.showModal({ title: '提示', content: '确定要取消该订单吗？' })
+    if (!res.confirm) return
+    try {
+        await cancelOrder({ id: orderId.value, reason: '用户取消' })
+        uni.showToast({ title: '订单已取消', icon: 'success' })
+        await fetchDetail()
+    } catch (e: any) {
+        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
     }
 }
 
 const handleConfirm = async () => {
-    const res = await uni.showModal({
-        title: '提示',
-        content: '确定服务已完成吗？'
-    })
-    if (res.confirm) {
-        try {
-            await confirmOrder({ id: orderId.value })
-            uni.showToast({ title: '订单已完成', icon: 'success' })
-            fetchDetail()
-        } catch (e: any) {
-            uni.showToast({ title: e.message || '操作失败', icon: 'none' })
-        }
+    const res = await uni.showModal({ title: '提示', content: '确定服务已完成吗？' })
+    if (!res.confirm) return
+    try {
+        await confirmOrder({ id: orderId.value })
+        uni.showToast({ title: '订单已完成', icon: 'success' })
+        await fetchDetail()
+    } catch (e: any) {
+        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
     }
 }
 
 const handleDelete = async () => {
-    const res = await uni.showModal({
-        title: '提示',
-        content: '确定要删除该订单吗？'
-    })
-    if (res.confirm) {
-        try {
-            await deleteOrder({ id: orderId.value })
-            uni.showToast({ title: '删除成功', icon: 'success' })
-            setTimeout(() => {
-                uni.navigateBack()
-            }, 1500)
-        } catch (e: any) {
-            uni.showToast({ title: e.message || '操作失败', icon: 'none' })
-        }
+    const res = await uni.showModal({ title: '提示', content: '确定要删除该订单吗？' })
+    if (!res.confirm) return
+    try {
+        await deleteOrder({ id: orderId.value })
+        uni.showToast({ title: '删除成功', icon: 'success' })
+        setTimeout(() => uni.navigateBack(), 1500)
+    } catch (e: any) {
+        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
     }
 }
 
 const submitRefund = async () => {
-    if (!refundForm.amount || Number(refundForm.amount) <= 0) {
-        uni.showToast({ title: '请输入退款金额', icon: 'none' })
-        return
-    }
-    if (Number(refundForm.amount) > order.value.pay_amount) {
-        uni.showToast({ title: '退款金额不能超过实付金额', icon: 'none' })
-        return
-    }
-    if (!refundForm.reason.trim()) {
-        uni.showToast({ title: '请输入退款原因', icon: 'none' })
-        return
-    }
+    if (!refundForm.amount || Number(refundForm.amount) <= 0) return uni.showToast({ title: '请输入退款金额', icon: 'none' })
+    if (Number(refundForm.amount) > Number(order.value?.pay_amount || 0)) return uni.showToast({ title: '退款金额不能超过实付金额', icon: 'none' })
+    if (!refundForm.reason.trim()) return uni.showToast({ title: '请输入退款原因', icon: 'none' })
     try {
-        await applyRefund({
-            id: orderId.value,
-            amount: Number(refundForm.amount),
-            reason: refundForm.reason
-        })
+        await applyRefund({ id: orderId.value, amount: Number(refundForm.amount), reason: refundForm.reason })
         uni.showToast({ title: '申请已提交', icon: 'success' })
         showRefundPopup.value = false
         refundForm.amount = ''
         refundForm.reason = ''
-        fetchDetail()
+        await fetchDetail()
     } catch (e: any) {
-        uni.showToast({ title: e.message || '申请失败', icon: 'none' })
+        uni.showToast({ title: e?.message || '申请失败', icon: 'none' })
     }
 }
 
 const chooseVoucherImage = () => {
-    if (voucherForm.uploading) {
-        return
-    }
+    if (voucherForm.uploading) return
     uni.chooseImage({
         count: 1,
         sizeType: ['compressed'],
@@ -864,13 +536,10 @@ const chooseVoucherImage = () => {
             try {
                 voucherForm.uploading = true
                 const uploadRes: any = await uploadImage(path)
-                if (uploadRes?.url) {
-                    voucherForm.image = uploadRes.url
-                } else {
-                    uni.showToast({ title: '上传失败，请重试', icon: 'none' })
-                }
+                if (uploadRes?.url) voucherForm.image = uploadRes.url
+                else uni.showToast({ title: '上传失败，请重试', icon: 'none' })
             } catch (e: any) {
-                uni.showToast({ title: e.message || '上传失败', icon: 'none' })
+                uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
             } finally {
                 voucherForm.uploading = false
             }
@@ -880,748 +549,156 @@ const chooseVoucherImage = () => {
 
 const submitVoucher = async () => {
     if (voucherForm.uploading) return
-    if (!voucherForm.image) {
-        uni.showToast({ title: '请先选择凭证图片', icon: 'none' })
-        return
-    }
+    if (!voucherForm.image) return uni.showToast({ title: '请先选择凭证图片', icon: 'none' })
     try {
         await uploadPayVoucher({ id: orderId.value, voucher: voucherForm.image })
         uni.showToast({ title: '凭证已提交', icon: 'success' })
         showVoucherPopup.value = false
         voucherForm.image = ''
-        fetchDetail()
+        await fetchDetail()
     } catch (e: any) {
-        uni.showToast({ title: e.message || '提交失败', icon: 'none' })
+        uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
     }
 }
 
 onLoad((options: any) => {
-    orderId.value = Number(options.id)
+    orderId.value = Number(options?.id || 0)
+    if (options?.payment_sn) payState.paymentSn = String(options.payment_sn)
+    if (options?.checkPay) payState.showCheck = true
     fetchDetail()
+})
+
+onShow(() => {
+    if (orderId.value > 0 && order.value) {
+        fetchDetail()
+    }
+})
+
+onHide(() => {
+    clearPayCountdown()
+})
+
+onUnload(() => {
+    clearPayCountdown()
 })
 </script>
 
 <style lang="scss" scoped>
-.order-detail {
-    min-height: 100vh;
-    background-color: #f6f6f6;
-    padding-bottom: calc(env(safe-area-inset-bottom) + 120rpx);
-}
-
-// 订单状态横幅
-.status-banner {
-    padding: 80rpx 48rpx 100rpx;
-    display: flex;
-    align-items: center;
-    gap: 24rpx;
-
-    .status-icon {
-        flex-shrink: 0;
-    }
-
-    .status-text {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 8rpx;
-    }
-
-    .status-title {
-        font-size: 40rpx;
-        font-weight: 700;
-        color: #ffffff;
-        line-height: 1.4;
-    }
-
-    .status-desc {
-        font-size: 26rpx;
-        color: rgba(255, 255, 255, 0.85);
-        line-height: 1.5;
-    }
-}
-
-// 联系信息卡片
-.contact-card {
-    background: #ffffff;
-    margin: -40rpx 20rpx 20rpx;
-    padding: 20rpx;
-    border-radius: 14rpx;
-    box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
-    position: relative;
-    z-index: 10;
-
-    .contact-header {
-        display: flex;
-        align-items: center;
-        gap: 12rpx;
-        margin-bottom: 16rpx;
-    }
-
-    .contact-label {
-        font-size: 28rpx;
-        font-weight: 600;
-        color: #333333;
-    }
-
-    .contact-info {
-        padding-left: 44rpx;
-    }
-
-    .contact-row {
-        display: flex;
-        align-items: center;
-        gap: 24rpx;
-        margin-bottom: 8rpx;
-    }
-
-    .contact-name {
-        font-size: 32rpx;
-        font-weight: 600;
-        color: #333333;
-    }
-
-    .contact-phone {
-        font-size: 28rpx;
-        color: #666666;
-    }
-
-    .contact-address {
-        font-size: 26rpx;
-        color: #999999;
-        line-height: 1.6;
-    }
-}
-
-// 通用卡片样式
-.service-card,
-.info-card,
-.amount-card,
-.refund-card,
-.voucher-card {
-    background: #ffffff;
-    margin: 0 20rpx 20rpx;
-    border-radius: 14rpx;
-    box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-}
-
-// 卡片头部
-.card-header {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-    padding: 20rpx;
-    border-bottom: 1rpx solid #f5f5f5;
-}
-
-.card-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333333;
-}
-
-// 服务项目
-.service-groups {
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-    padding: 0 20rpx 20rpx;
-}
-
-.service-group {
-    background: #f9fafb;
-    border-radius: 14rpx;
-    padding: 16rpx;
-    border: 1rpx solid #f0f0f0;
-}
-
-.group-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16rpx;
-}
-
-.staff-section {
-    display: flex;
-    align-items: center;
-    gap: 16rpx;
-}
-
-.staff-avatar {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: 16rpx;
-}
-
-.staff-info {
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
-}
-
-.staff-name {
-    font-size: 30rpx;
-    font-weight: 600;
-    color: #333333;
-}
-
-.staff-subtitle {
-    font-size: 24rpx;
-    color: #999999;
-}
-
-.group-total {
-    text-align: right;
-}
-
-.group-total-label {
-    display: block;
-    font-size: 22rpx;
-    color: #999999;
-}
-
-.group-total-value {
-    font-size: 30rpx;
-    font-weight: 700;
-}
-
-.group-packages {
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-}
-
-.package-group {
-    background: #ffffff;
-    border-radius: 12rpx;
-    padding: 16rpx;
-    border: 1rpx solid #eeeeee;
-}
-
-.package-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12rpx;
-}
-
-.package-title {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-    font-size: 26rpx;
-    font-weight: 600;
-    color: #333333;
-}
-
-.package-total {
-    font-size: 26rpx;
-    font-weight: 600;
-    color: #333333;
-}
-
-.package-items {
-    display: flex;
-    flex-direction: column;
-    gap: 10rpx;
-}
-
-.package-item {
-    padding: 12rpx 0;
-    border-top: 1rpx solid #f5f5f5;
-
-    &:first-child {
-        border-top: none;
-        padding-top: 0;
-    }
-}
-
-.slot-main {
-    display: flex;
-    align-items: center;
-}
-
-.slot-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
-}
-
-.slot-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.slot-label {
-    font-size: 26rpx;
-    font-weight: 500;
-    color: #333333;
-}
-
-.slot-price {
-    font-size: 26rpx;
-    font-weight: 600;
-}
-
-.slot-meta {
-    display: flex;
-    justify-content: flex-end;
-}
-
-.slot-quantity {
-    font-size: 24rpx;
-    color: #999999;
-}
-
-.slot-addon-list {
-    margin-top: 14rpx;
-    padding-top: 14rpx;
-    border-top: 1rpx dashed #eceff3;
-}
-
-.slot-addon-header,
-.slot-addon-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16rpx;
-}
-
-.slot-addon-header {
-    margin-bottom: 8rpx;
-}
-
-.slot-addon-title {
-    font-size: 24rpx;
-    font-weight: 600;
-    color: #5b6470;
-}
-
-.slot-addon-total {
-    font-size: 24rpx;
-    font-weight: 600;
-    color: #d85c61;
-}
-
-.slot-addon-row + .slot-addon-row {
-    margin-top: 6rpx;
-}
-
-.slot-addon-name {
-    font-size: 24rpx;
-    color: #6b7280;
-}
-
-.slot-addon-price {
-    font-size: 24rpx;
-    color: #d85c61;
-}
-
-// 信息列表
-.info-list {
-    padding: 0 20rpx 12rpx;
-}
-
-.info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 16rpx 0;
-    gap: 24rpx;
-}
-
-.info-label {
-    font-size: 28rpx;
-    color: #999999;
-    flex-shrink: 0;
-}
-
-.info-value {
-    font-size: 28rpx;
-    color: #333333;
-    text-align: right;
-    flex: 1;
-
-    &.remark {
-        line-height: 1.6;
-    }
-}
-
-.info-value-row {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-}
-
-// 金额明细
-.amount-list {
-    padding: 0 20rpx 12rpx;
-}
-
-.amount-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16rpx 0;
-
-    &.total {
-        padding-top: 24rpx;
-    }
-}
-
-.amount-label {
-    font-size: 28rpx;
-    color: #666666;
-}
-
-.amount-value {
-    font-size: 28rpx;
-    color: #333333;
-    font-weight: 500;
-
-    &.discount {
-        color: #ff2c3c;
-    }
-
-    &.primary {
-        font-size: 44rpx;
-        font-weight: 700;
-    }
-}
-
-.amount-value-row {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-}
-
-.amount-status {
-    padding: 4rpx 12rpx;
-    border-radius: 8rpx;
-    font-size: 24rpx;
-    font-weight: 500;
-}
-
-.amount-divider {
-    height: 1rpx;
-    background: #f5f5f5;
-    margin: 12rpx 0;
-}
-
-// 退款信息
-.refund-list {
-    padding: 0 20rpx 12rpx;
-}
-
-.refund-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 16rpx 0;
-    gap: 24rpx;
-}
-
-.refund-label {
-    font-size: 28rpx;
-    color: #999999;
-    flex-shrink: 0;
-}
-
-.refund-status {
-    padding: 6rpx 16rpx;
-    border-radius: 12rpx;
-    font-size: 26rpx;
-    font-weight: 500;
-}
-
-.refund-value {
-    font-size: 28rpx;
-    color: #333333;
-    font-weight: 600;
-}
-
-.refund-reason {
-    font-size: 28rpx;
-    color: #666666;
-    text-align: right;
-    flex: 1;
-    line-height: 1.6;
-}
-
-// 线下凭证
-.voucher-body {
-    padding: 0 20rpx 20rpx;
-}
-
-.voucher-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 16rpx 0;
-    gap: 24rpx;
-}
-
-.voucher-label {
-    font-size: 28rpx;
-    color: #999999;
-    flex-shrink: 0;
-}
-
-.voucher-status {
-    font-size: 28rpx;
-    color: #333333;
-    text-align: right;
-    flex: 1;
-}
-
-.voucher-remark {
-    font-size: 28rpx;
-    color: #666666;
-    text-align: right;
-    flex: 1;
-    line-height: 1.6;
-}
-
-.voucher-image {
-    margin-top: 12rpx;
-    border-radius: 12rpx;
-    overflow: hidden;
-
-    image {
-        width: 100%;
-        height: 320rpx;
-        border-radius: 12rpx;
-    }
-}
-
-.voucher-empty {
-    margin-top: 12rpx;
-    padding: 40rpx 0;
-    text-align: center;
-    font-size: 26rpx;
-    color: #999999;
-    background: #f9fafb;
-    border-radius: 12rpx;
-}
-
-// 底部操作栏
-.action-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20rpx);
-    padding: 12rpx 20rpx;
-    padding-bottom: calc(env(safe-area-inset-bottom) + 12rpx);
-    box-shadow: 0 -2rpx 16rpx rgba(0, 0, 0, 0.08);
-    z-index: 100;
-}
-
-.action-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 12rpx;
-}
-
-.btn-primary,
-.btn-secondary {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8rpx;
-    height: 72rpx;
-    padding: 0 28rpx;
-    border-radius: 32rpx;
-    font-size: 26rpx;
-    font-weight: 600;
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.9;
-    }
-}
-
-.btn-primary {
-    box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.12);
-}
-
-.btn-secondary {
-    background: transparent;
-    border: 2rpx solid;
-}
-
-// 退款弹窗
-.refund-popup {
-    padding: 32rpx;
-}
-
-.popup-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 32rpx;
-}
-
-.popup-title {
-    font-size: 36rpx;
-    font-weight: 700;
-    color: #333333;
-}
-
-.popup-content {
-    margin-bottom: 32rpx;
-}
-
-.form-item {
-    margin-bottom: 32rpx;
-
-    &:last-child {
-        margin-bottom: 0;
-    }
-}
-
-.form-label {
-    display: block;
-    font-size: 28rpx;
-    color: #666666;
-    margin-bottom: 16rpx;
-}
-
-.popup-actions {
-    display: flex;
-    gap: 16rpx;
-}
-
-.popup-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20rpx;
-    border-radius: 40rpx;
-    font-size: 28rpx;
-    font-weight: 600;
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.9;
-    }
-
-    &.cancel {
-        background: transparent;
-        border: 2rpx solid;
-    }
-
-    &.confirm {
-        box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.12);
-    }
-}
-
-// 凭证上传弹窗
-.voucher-popup {
-    padding: 32rpx;
-}
-
-.voucher-upload-area {
-    display: flex;
-    justify-content: center;
-    padding: 24rpx 0;
-}
-
-.voucher-preview {
-    position: relative;
-    width: 480rpx;
-    height: 480rpx;
-    border-radius: 24rpx;
-    overflow: hidden;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
-
-    image {
-        width: 100%;
-        height: 100%;
-    }
-}
-
-.voucher-remove {
-    position: absolute;
-    top: 16rpx;
-    right: 16rpx;
-    width: 56rpx;
-    height: 56rpx;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: scale(0.9);
-    }
-}
-
-.voucher-add {
-    width: 480rpx;
-    height: 480rpx;
-    border-radius: 24rpx;
-    border: 3rpx dashed #dddddd;
-    background: #f9fafb;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16rpx;
-    transition: all 0.2s ease;
-
-    &:active {
-        background: #f3f4f6;
-        border-color: #cccccc;
-    }
-}
-
-.voucher-add-text {
-    font-size: 28rpx;
-    color: #666666;
-    font-weight: 500;
-}
-
-.voucher-add-tip {
-    font-size: 24rpx;
-    color: #999999;
-}
-
-.form-tip {
-    display: block;
-    font-size: 24rpx;
-    color: #999999;
-    margin-top: 8rpx;
-}
-
-// 加载状态
-.loading-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 200rpx 0;
-    gap: 24rpx;
-}
-
-.loading-text {
-    font-size: 28rpx;
-    color: #999999;
-}
-
-// 安全区域
-.safe-bottom {
-    height: calc(env(safe-area-inset-bottom) + 120rpx);
-}
+.order-detail{min-height:100vh;background:linear-gradient(180deg,#fff 0%,#f6f7fb 260rpx,#f6f7fb 100%);padding-bottom:calc(env(safe-area-inset-bottom) + 132rpx)}
+.page-body{position:relative;z-index:2;margin-top:-96rpx}
+.card{margin:0 20rpx 20rpx;background:#fff;border-radius:24rpx;box-shadow:0 16rpx 40rpx rgba(15,23,42,.08);overflow:hidden}
+.card__header{display:flex;align-items:center;gap:12rpx;padding:22rpx 24rpx;border-bottom:1rpx solid #f1f5f9}
+.card__title{flex:1;font-size:30rpx;font-weight:600;color:#0f172a}
+.card__extra{font-size:26rpx;font-weight:700}
+
+.status-hero{position:relative;overflow:hidden;padding:36rpx 24rpx 152rpx;border-bottom-left-radius:36rpx;border-bottom-right-radius:36rpx}
+.status-hero__glow{position:absolute;border-radius:50%;background:rgba(255,255,255,.12)}
+.status-hero__glow--left{width:220rpx;height:220rpx;top:-60rpx;left:-70rpx}
+.status-hero__glow--right{width:260rpx;height:260rpx;right:-100rpx;bottom:-80rpx}
+.status-hero__main,.status-hero__meta{position:relative;z-index:1}
+.status-hero__main{display:flex;align-items:flex-start;gap:20rpx}
+.status-hero__icon{width:88rpx;height:88rpx;border-radius:28rpx;display:flex;align-items:center;justify-content:center;flex-shrink:0;backdrop-filter:blur(12rpx)}
+.status-hero__content{flex:1;min-width:0}
+.status-hero__title{display:block;font-size:42rpx;font-weight:700;line-height:1.3;color:#fff}
+.status-hero__desc{display:block;margin-top:8rpx;font-size:24rpx;line-height:1.6;color:rgba(255,255,255,.88)}
+.status-hero__countdown{margin-top:14rpx;display:inline-flex;align-items:center;gap:12rpx;padding:10rpx 18rpx;border-radius:999rpx;background:rgba(255,255,255,.14);border:1rpx solid rgba(255,255,255,.14)}
+.status-hero__countdown-label{font-size:22rpx;color:rgba(255,255,255,.72)}
+.status-hero__countdown-value{font-size:28rpx;font-weight:700;color:#fff}
+.status-hero__pay{flex-shrink:0;padding:14rpx 18rpx;border-radius:22rpx;background:rgba(255,255,255,.16);border:1rpx solid rgba(255,255,255,.16);text-align:right}
+.status-hero__pay-label{display:block;font-size:22rpx;color:rgba(255,255,255,.72)}
+.status-hero__pay-value{display:block;margin-top:6rpx;font-size:28rpx;font-weight:700;color:#fff}
+.status-hero__meta{margin-top:28rpx;padding:20rpx 22rpx;border-radius:24rpx;background:rgba(255,255,255,.14);border:1rpx solid rgba(255,255,255,.14)}
+.status-hero__meta-label{display:block;font-size:22rpx;color:rgba(255,255,255,.72)}
+.status-hero__meta-value{margin-top:12rpx;display:flex;align-items:center;justify-content:space-between;gap:16rpx;font-size:28rpx;font-weight:600;color:#fff}
+
+.summary-card__top{display:flex;align-items:center;justify-content:space-between;gap:20rpx;padding:24rpx}
+.summary-card__staff{flex:1;min-width:0;display:flex;align-items:center;gap:16rpx}
+.summary-card__avatar{width:92rpx;height:92rpx;border-radius:24rpx;flex-shrink:0;background:#e2e8f0}
+.summary-card__staff-copy{min-width:0}
+.summary-card__staff-row{display:flex;align-items:center;gap:12rpx}
+.summary-card__staff-name{max-width:320rpx;font-size:32rpx;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.summary-card__badge{padding:6rpx 14rpx;border-radius:999rpx;background:rgba(216,92,97,.12);color:#d85c61;font-size:20rpx;font-weight:600;flex-shrink:0}
+.summary-card__staff-note{display:block;margin-top:8rpx;font-size:24rpx;color:#64748b}
+.summary-card__price{text-align:right;flex-shrink:0}
+.summary-card__price-label{display:block;font-size:22rpx;color:#94a3b8}
+.summary-card__price-value{display:block;margin-top:8rpx;font-size:34rpx;font-weight:700}
+.summary-grid{padding:0 24rpx 24rpx;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14rpx}
+.summary-grid__item{min-height:132rpx;padding:18rpx;border-radius:22rpx;border:1rpx solid #e2e8f0;background:#f8fafc}
+.summary-grid__item--wide{grid-column:1/-1;background:linear-gradient(135deg,#fff7ed 0%,#fff1f2 100%);border-color:#fed7aa}
+.summary-grid__label{display:block;font-size:22rpx;color:#64748b}
+.summary-grid__value{display:block;margin-top:16rpx;font-size:28rpx;line-height:1.45;font-weight:600;color:#0f172a;word-break:break-all}
+.summary-grid__value--multi{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.summary-card__description{margin:0 24rpx 24rpx;padding:22rpx 24rpx;border-radius:22rpx;background:linear-gradient(135deg,#fff7ed 0%,#ffffff 100%);border:1rpx solid #fde68a}
+.summary-card__description-label{display:block;font-size:22rpx;color:#b45309}
+.summary-card__description-text{display:block;margin-top:12rpx;font-size:26rpx;line-height:1.7;color:#334155;white-space:pre-wrap;word-break:break-word}
+.empty-state{padding:44rpx 32rpx 48rpx;display:flex;flex-direction:column;align-items:center;text-align:center}
+.empty-state__title{margin-top:20rpx;font-size:30rpx;font-weight:600;color:#334155}
+.empty-state__desc{margin-top:12rpx;font-size:24rpx;line-height:1.7;color:#94a3b8}
+
+.addon-list{padding:20rpx;display:flex;flex-direction:column;gap:14rpx}
+.addon-item{display:flex;align-items:flex-start;justify-content:space-between;gap:16rpx;padding:20rpx;border-radius:22rpx;border:1rpx solid #e2e8f0;background:linear-gradient(135deg,#fff 0%,#fffaf7 100%)}
+.addon-item__main{flex:1;min-width:0}
+.addon-item__name-row{display:flex;align-items:center;gap:10rpx}
+.addon-item__name{flex:1;min-width:0;font-size:28rpx;font-weight:600;color:#0f172a}
+.addon-item__tag{padding:4rpx 12rpx;border-radius:999rpx;background:rgba(245,158,11,.14);font-size:20rpx;color:#b45309;flex-shrink:0}
+.addon-item__desc{display:block;margin-top:8rpx;font-size:24rpx;line-height:1.6;color:#64748b}
+.addon-item__price{flex-shrink:0;font-size:28rpx;font-weight:700;color:#d85c61}
+.detail-list{padding:10rpx 24rpx 18rpx}
+.detail-list--compact{padding:0}
+.detail-row{display:flex;align-items:flex-start;justify-content:space-between;gap:24rpx;padding:16rpx 0}
+.detail-row + .detail-row{border-top:1rpx solid #f8fafc}
+.detail-row--stack{flex-direction:column;gap:12rpx}
+.detail-row__label{flex-shrink:0;font-size:26rpx;color:#64748b}
+.detail-row__value{flex:1;font-size:27rpx;line-height:1.6;color:#0f172a;text-align:right}
+.detail-row__value--left{text-align:left}
+.detail-row__copy{display:flex;align-items:center;justify-content:flex-end;gap:10rpx;flex:1;min-width:0}
+
+.section{padding:20rpx 24rpx 24rpx}
+.section__title{display:block;margin-bottom:8rpx;font-size:24rpx;font-weight:600;color:#94a3b8}
+.divider-block{height:12rpx;background:#f8fafc}
+.amount-list{padding-top:6rpx}
+.amount-row{display:flex;align-items:center;justify-content:space-between;gap:24rpx;padding:16rpx 0}
+.amount-row__label{font-size:27rpx;color:#475569}
+.amount-row__value{font-size:28rpx;font-weight:600;color:#0f172a}
+.amount-row__value--discount{color:#dc2626}
+.amount-row--total{padding-top:24rpx}
+.amount-row__value--total{font-size:42rpx;line-height:1.2;font-weight:700}
+.amount-row__wrap{display:flex;align-items:center;gap:12rpx}
+.amount-divider{height:1rpx;background:#e2e8f0;margin:8rpx 0}
+.amount-status{padding:6rpx 14rpx;border-radius:999rpx;font-size:22rpx;font-weight:600}
+
+.voucher-image{margin-top:16rpx;border-radius:22rpx;overflow:hidden;background:#e2e8f0}
+.voucher-image image{width:100%;height:360rpx;display:block}
+.voucher-empty{margin-top:16rpx;padding:40rpx 0;text-align:center;border-radius:22rpx;background:#f8fafc;font-size:24rpx;color:#94a3b8}
+.refund-status{padding:8rpx 16rpx;border-radius:999rpx;font-size:24rpx;font-weight:600}
+
+.action-bar{position:fixed;left:0;right:0;bottom:0;z-index:100;background:rgba(255,255,255,.94);backdrop-filter:blur(18rpx);box-shadow:0 -4rpx 24rpx rgba(15,23,42,.08);padding:12rpx 20rpx;padding-bottom:calc(env(safe-area-inset-bottom) + 12rpx)}
+.action-bar__buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12rpx}
+.btn-primary,.btn-secondary{height:72rpx;padding:0 28rpx;border-radius:999rpx;display:flex;align-items:center;justify-content:center;gap:8rpx;font-size:26rpx;font-weight:600}
+.btn-primary{box-shadow:0 8rpx 20rpx rgba(15,23,42,.12)}
+.btn-secondary{background:transparent;border:2rpx solid}
+
+.popup{background:#fff;border-top-left-radius:32rpx;border-top-right-radius:32rpx;padding:24rpx 24rpx calc(env(safe-area-inset-bottom) + 24rpx)}
+.popup__header{display:flex;align-items:center;justify-content:space-between;gap:20rpx}
+.popup__title{font-size:32rpx;font-weight:700;color:#0f172a}
+.popup__content{margin-top:24rpx}
+.form-item + .form-item{margin-top:20rpx}
+.form-item__label{display:block;margin-bottom:12rpx;font-size:26rpx;font-weight:600;color:#334155}
+.form-item__tip{display:block;margin-top:8rpx;font-size:22rpx;color:#94a3b8}
+.popup__actions{display:flex;gap:16rpx;margin-top:28rpx}
+.popup__btn{flex:1;height:80rpx;border-radius:999rpx;display:flex;align-items:center;justify-content:center;font-size:28rpx;font-weight:600}
+.popup__btn--secondary{background:transparent;border:2rpx solid}
+
+.voucher-upload{margin-top:16rpx}
+.voucher-upload__preview,.voucher-upload__add{width:100%;height:320rpx;border-radius:24rpx;overflow:hidden}
+.voucher-upload__preview{position:relative;background:#e2e8f0}
+.voucher-upload__preview image{width:100%;height:100%;display:block}
+.voucher-upload__remove{position:absolute;top:16rpx;right:16rpx;width:44rpx;height:44rpx;border-radius:50%;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center}
+.voucher-upload__add{border:2rpx dashed #cbd5e1;background:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.voucher-upload__text{margin-top:16rpx;font-size:28rpx;color:#475569;font-weight:600}
+.voucher-upload__tip{margin-top:8rpx;font-size:22rpx;color:#94a3b8}
+
+.safe-bottom{height:calc(env(safe-area-inset-bottom) + 24rpx)}
+.loading-container{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16rpx;background:#f6f7fb}
+.loading-text{font-size:26rpx;color:#94a3b8}
 </style>

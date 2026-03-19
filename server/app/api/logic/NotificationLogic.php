@@ -32,8 +32,13 @@ class NotificationLogic extends BaseLogic
             ['user_id', '=', $params['user_id']],
         ];
 
-        if ($notifyType > 0) {
-            $where[] = ['notify_type', '=', $notifyType];
+        $notifyTypes = self::resolveQueryNotifyTypes($notifyType);
+        if (!empty($notifyTypes)) {
+            if (count($notifyTypes) === 1) {
+                $where[] = ['notify_type', '=', $notifyTypes[0]];
+            } else {
+                $where[] = ['notify_type', 'in', $notifyTypes];
+            }
         }
 
         $total = Notification::where($where)->count();
@@ -45,9 +50,11 @@ class NotificationLogic extends BaseLogic
             ->toArray();
 
         foreach ($lists as &$item) {
+            $createTime = self::parseTimestampValue($item['create_time'] ?? null);
             $item['notify_type_text'] = self::getTypeText($item['notify_type']);
             $item['is_read_text'] = $item['is_read'] ? '已读' : '未读';
-            $item['create_time_text'] = self::formatTime($item['create_time']);
+            $item['create_time'] = $createTime;
+            $item['create_time_text'] = self::formatTime($createTime);
         }
 
         return [
@@ -85,9 +92,11 @@ class NotificationLogic extends BaseLogic
         }
 
         $data = $notification->toArray();
+        $createTime = self::parseTimestampValue($data['create_time'] ?? null);
         $data['notify_type_text'] = self::getTypeText($data['notify_type']);
         $data['is_read_text'] = '已读';
-        $data['create_time_text'] = date('Y-m-d H:i:s', $data['create_time']);
+        $data['create_time'] = $createTime;
+        $data['create_time_text'] = $createTime > 0 ? date('Y-m-d H:i:s', $createTime) : '';
 
         return $data;
     }
@@ -99,7 +108,9 @@ class NotificationLogic extends BaseLogic
      */
     public static function unreadCount(int $userId): array
     {
-        return Notification::getUnreadCountByType($userId);
+        $counts = Notification::getUnreadCountByType($userId);
+        $counts['system'] = (int)($counts['system'] ?? 0) + (int)($counts['activity'] ?? 0);
+        return $counts;
     }
 
     /**
@@ -126,7 +137,18 @@ class NotificationLogic extends BaseLogic
      */
     public static function markAllRead(int $userId, int $notifyType = 0): int
     {
-        return Notification::markAllRead($userId, $notifyType);
+        $query = Notification::where('user_id', $userId)
+            ->where('is_read', 0);
+
+        $notifyTypes = self::resolveQueryNotifyTypes($notifyType);
+        if (!empty($notifyTypes)) {
+            $query->whereIn('notify_type', $notifyTypes);
+        }
+
+        return $query->update([
+            'is_read' => 1,
+            'read_time' => time(),
+        ]);
     }
 
     /**
@@ -153,7 +175,33 @@ class NotificationLogic extends BaseLogic
      */
     public static function clear(int $userId, int $notifyType = 0): int
     {
-        return Notification::clearNotifications($userId, $notifyType);
+        $query = Notification::where('user_id', $userId);
+
+        $notifyTypes = self::resolveQueryNotifyTypes($notifyType);
+        if (!empty($notifyTypes)) {
+            $query->whereIn('notify_type', $notifyTypes);
+        }
+
+        return $query->delete();
+    }
+
+    /**
+     * @notes 统一解析时间值，兼容时间戳和日期字符串
+     * @param mixed $value
+     * @return int
+     */
+    private static function parseTimestampValue($value): int
+    {
+        if ($value === null || $value === '' || $value === false) {
+            return 0;
+        }
+
+        if (is_numeric($value)) {
+            return (int) $value;
+        }
+
+        $timestamp = strtotime((string) $value);
+        return $timestamp === false ? 0 : $timestamp;
     }
 
     /**
@@ -173,12 +221,34 @@ class NotificationLogic extends BaseLogic
     }
 
     /**
+     * @notes 解析 C 端消息分类对应的通知类型
+     * @param int $notifyType
+     * @return array
+     */
+    private static function resolveQueryNotifyTypes(int $notifyType): array
+    {
+        if ($notifyType <= 0) {
+            return [];
+        }
+
+        if ($notifyType === Notification::TYPE_SYSTEM) {
+            return [Notification::TYPE_SYSTEM, Notification::TYPE_ACTIVITY];
+        }
+
+        return [$notifyType];
+    }
+
+    /**
      * @notes 格式化时间
      * @param int $timestamp
      * @return string
      */
     private static function formatTime(int $timestamp): string
     {
+        if ($timestamp <= 0) {
+            return '';
+        }
+
         $diff = time() - $timestamp;
 
         if ($diff < 60) {

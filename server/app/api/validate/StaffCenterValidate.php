@@ -47,6 +47,7 @@ class StaffCenterValidate extends BaseValidate
         'is_show' => 'in:0,1',
         'is_recommend' => 'in:0,1',
         'status' => 'in:0,1',
+        'addon_ids' => 'array',
 
         'date' => 'require|dateFormat:Y-m-d',
 
@@ -85,6 +86,7 @@ class StaffCenterValidate extends BaseValidate
         'original_price.egt' => '原价不能小于0',
         'content' => '内容格式错误',
         'status.in' => '状态参数错误',
+        'addon_ids.array' => '附加服务参数格式错误',
 
         'date.require' => '请选择日期',
         'date.dateFormat' => '日期格式错误',
@@ -119,14 +121,14 @@ class StaffCenterValidate extends BaseValidate
 
     public function scenePackageAdd(): StaffCenterValidate
     {
-        return $this->only(['name', 'price', 'original_price', 'description', 'image', 'sort', 'is_show', 'is_recommend'])
+        return $this->only(['name', 'price', 'original_price', 'description', 'image', 'sort', 'is_show', 'is_recommend', 'addon_ids'])
             ->append('name', 'require')
             ->append('price', 'require');
     }
 
     public function scenePackageUpdate(): StaffCenterValidate
     {
-        return $this->only(['package_id', 'name', 'price', 'original_price', 'description', 'image', 'sort', 'is_show', 'is_recommend'])
+        return $this->only(['package_id', 'name', 'price', 'original_price', 'description', 'image', 'sort', 'is_show', 'is_recommend', 'addon_ids'])
             ->append('name', 'require')
             ->append('price', 'require');
     }

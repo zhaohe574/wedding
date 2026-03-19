@@ -1,9 +1,5 @@
 <template>
-    <admin-page-shell
-        class="financial-overview"
-        title="财务概览"
-        description="聚合收入、退款与支付结构，支持按周期比对。"
-    >
+    <admin-page-shell class="financial-overview" title="财务概览">
         <template #search>
             <search-panel>
                 <el-form :model="queryParams" inline>

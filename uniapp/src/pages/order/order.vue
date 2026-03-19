@@ -43,7 +43,6 @@
                     <tn-icon name="file-text" size="200" color="#E5E5E5" />
                 </view>
                 <text class="empty-title">暂无订单</text>
-                <text class="empty-subtitle">快去预约心仪的服务吧~</text>
                 <view
                     class="empty-action-btn"
                     :style="{
@@ -201,12 +200,16 @@ const fetchOrders = async (refresh = false) => {
         const dataList = Array.isArray(res?.data) ? res.data : []
         const list = dataList.map((order: any) => {
             const discount = Number(order.discount_amount || 0)
+            const locationText = [order.service_region_text, order.service_address]
+                .map((item: any) => String(item || '').trim())
+                .filter(Boolean)
+                .join(' · ')
             return {
                 id: order.id,
                 orderNo: order.order_sn,
                 status: getStatusKey(order.order_status),
                 createTime: order.create_time,
-                location: order.service_address || '服务地址未填写',
+                location: locationText || '服务地区未填写',
                 originalPrice: Number(order.total_amount || 0),
                 discount,
                 actualPrice: Number(order.pay_amount || 0),

@@ -22,7 +22,11 @@
             </template>
             <!-- 我的服务组件 -->
             <template v-if="item.name == 'my-service' && isComponentEnabled(item)">
-                <w-my-service :content="item.content" :styles="item.styles" />
+                <w-my-service
+                    :content="item.content"
+                    :styles="item.styles"
+                    :badge-refresh-key="badgeRefreshKey"
+                />
             </template>
             <!-- 用户banner组件 -->
             <template v-if="item.name == 'user-banner' && isComponentEnabled(item)">
@@ -69,7 +73,7 @@
                 <w-customer-service :content="item.content" :styles="item.styles" />
             </template>
         </template>
-        <tabbar />
+        <tabbar :badge-refresh-key="badgeRefreshKey" />
     </view>
 </template>
 
@@ -78,13 +82,14 @@ import { getDecorate } from '@/api/shop'
 import { useUserStore } from '@/stores/user'
 import { onShow } from '@dcloudio/uni-app'
 import { storeToRefs } from 'pinia'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 
 const state = reactive<{
     pages: any[]
 }>({
     pages: []
 })
+const badgeRefreshKey = ref(0)
 
 const userStore = useUserStore()
 const { userInfo, isLogin } = storeToRefs(userStore)
@@ -117,6 +122,7 @@ onShow(() => {
     if (isLogin.value && !userInfo.value?.id) {
         userStore.getUser()
     }
+    badgeRefreshKey.value += 1
     getData()
 })
 </script>

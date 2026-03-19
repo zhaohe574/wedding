@@ -287,6 +287,7 @@ import { ref, computed } from 'vue'
 import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
 import { useUserStore } from '@/stores/user'
 import TnCommentList from 'tnuiv3p-tn-comment-list/index.vue'
+import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
 import type {
     TnCommentListInstance,
     TnCommentListData,
@@ -303,6 +304,7 @@ import {
     likeComment
 } from '@/api/dynamic'
 import { toggleStaffFavorite } from '@/api/staff'
+import cache from '@/utils/cache'
 
 const userStore = useUserStore()
 const userId = computed(() => userStore.userInfo?.id)
@@ -321,6 +323,10 @@ const replyTo = ref<any>(null)
 const parentComment = ref<any>(null)
 
 const commentListRef = ref<TnCommentListInstance>()
+
+const markDynamicListShouldRefresh = () => {
+    cache.set(DYNAMIC_LIST_REFRESH_KEY, 1)
+}
 
 const getTypeClass = (type: number) => {
     const classes: Record<number, string> = {
@@ -497,6 +503,7 @@ const handleLike = async () => {
         await likeDynamic({ id: dynamicId.value })
         detail.value.is_liked = !detail.value.is_liked
         detail.value.like_count += detail.value.is_liked ? 1 : -1
+        markDynamicListShouldRefresh()
     } catch (e: any) {
         uni.showToast({ title: e.message || '操作失败', icon: 'none' })
     }
@@ -511,6 +518,7 @@ const handleCollect = async () => {
         await collectDynamic({ id: dynamicId.value })
         detail.value.is_collected = !detail.value.is_collected
         detail.value.collect_count += detail.value.is_collected ? 1 : -1
+        markDynamicListShouldRefresh()
         uni.showToast({ title: detail.value.is_collected ? '收藏成功' : '取消收藏', icon: 'none' })
     } catch (e: any) {
         uni.showToast({ title: e.message || '操作失败', icon: 'none' })
@@ -528,6 +536,7 @@ const handleFavorite = async () => {
     try {
         await toggleStaffFavorite({ id: detail.value.staff_id })
         detail.value.is_favorite = !detail.value.is_favorite
+        markDynamicListShouldRefresh()
         uni.showToast({
             title: detail.value.is_favorite ? '收藏成功' : '已取消收藏',
             icon: 'none'
@@ -650,6 +659,7 @@ const submitComment = async () => {
         replyTo.value = null
         parentComment.value = null
         detail.value.comment_count++
+        markDynamicListShouldRefresh()
     } catch (e: any) {
         uni.showToast({ title: e.message || '评论失败', icon: 'none' })
     }
@@ -666,6 +676,7 @@ const deleteCommentItem = async (id: string | number) => {
             uni.showToast({ title: '删除成功' })
             commentListRef.value?.deleteCommentReply(id)
             detail.value.comment_count--
+            markDynamicListShouldRefresh()
         } catch (e: any) {
             uni.showToast({ title: e.message || '删除失败', icon: 'none' })
         }

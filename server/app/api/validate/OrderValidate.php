@@ -24,6 +24,12 @@ class OrderValidate extends BaseValidate
         'contact_name' => 'require|max:50',
         'contact_mobile' => 'require|mobile',
         'service_date' => 'date',
+        'province_code' => 'require|max:12',
+        'province_name' => 'require|max:50',
+        'city_code' => 'require|max:12',
+        'city_name' => 'require|max:50',
+        'district_code' => 'require|max:12',
+        'district_name' => 'require|max:50',
         'service_address' => 'max:255',
         'wedding_date' => 'date',
         'wedding_venue' => 'max:255',
@@ -52,6 +58,12 @@ class OrderValidate extends BaseValidate
         'contact_name.max' => '联系人姓名最多50个字符',
         'contact_mobile.require' => '请填写联系电话',
         'contact_mobile.mobile' => '联系电话格式错误',
+        'province_code.require' => '请选择服务省份',
+        'province_name.require' => '请选择服务省份',
+        'city_code.require' => '请选择服务城市',
+        'city_name.require' => '请选择服务城市',
+        'district_code.require' => '请选择服务区县',
+        'district_name.require' => '请选择服务区县',
         'service_date.date' => '服务日期格式错误',
         'service_address.max' => '服务地址最多255个字符',
         'wedding_date.date' => '婚礼日期格式错误',
@@ -88,6 +100,12 @@ class OrderValidate extends BaseValidate
             'staff_id',
             'package_id',
             'date',
+            'province_code',
+            'province_name',
+            'city_code',
+            'city_name',
+            'district_code',
+            'district_name',
             'contact_name',
             'contact_mobile',
             'service_address',
@@ -105,7 +123,19 @@ class OrderValidate extends BaseValidate
      */
     public function sceneSelection()
     {
-        return $this->only(['staff_id', 'package_id', 'date', 'addon_ids', 'deposit_ratio']);
+        return $this->only([
+            'staff_id',
+            'package_id',
+            'date',
+            'province_code',
+            'province_name',
+            'city_code',
+            'city_name',
+            'district_code',
+            'district_name',
+            'addon_ids',
+            'deposit_ratio'
+        ]);
     }
 
     /**

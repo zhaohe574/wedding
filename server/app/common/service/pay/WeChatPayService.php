@@ -19,6 +19,7 @@ namespace app\common\service\pay;
 use app\common\enum\PayEnum;
 use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\PayNotifyLogic;
+use app\common\model\order\Payment as OrderPayment;
 use app\common\model\recharge\RechargeOrder;
 use app\common\model\user\UserAuth;
 use app\common\service\wechat\WeChatConfigService;
@@ -124,6 +125,36 @@ class WeChatPayService extends BasePayService
         }
     }
 
+    /**
+     * @notes 追加支付截止时间
+     * @param array $payload
+     * @param array $order
+     * @return array
+     */
+    protected function appendTimeExpire(array $payload, array $order): array
+    {
+        $timeExpire = $this->buildTimeExpire((int)($order['pay_deadline_time'] ?? 0));
+        if ($timeExpire !== '') {
+            $payload['time_expire'] = $timeExpire;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @notes 构造微信支付截止时间
+     * @param int $timestamp
+     * @return string
+     */
+    protected function buildTimeExpire(int $timestamp): string
+    {
+        if ($timestamp <= time()) {
+            return '';
+        }
+
+        return date('c', $timestamp);
+    }
+
 
     /**
      * @notes jsapiPay
@@ -138,7 +169,7 @@ class WeChatPayService extends BasePayService
      */
     public function jsapiPay($from, $order, $appId)
     {
-        $response = $this->app->getClient()->postJson("v3/pay/transactions/jsapi", [
+        $payload = $this->appendTimeExpire([
             "appid" => $appId,
             "mchid" => $this->config['mch_id'],
             "description" => $this->payDesc($from),
@@ -151,7 +182,9 @@ class WeChatPayService extends BasePayService
                 "openid" => $this->auth['openid']
             ],
             'attach' => $from
-        ]);
+        ], $order);
+
+        $response = $this->app->getClient()->postJson("v3/pay/transactions/jsapi", $payload);
 
         $result = $response->toArray(false);
         $this->checkResultFail($result);
@@ -172,7 +205,7 @@ class WeChatPayService extends BasePayService
      */
     public function nativePay($from, $order, $appId)
     {
-        $response = $this->app->getClient()->postJson('v3/pay/transactions/native', [
+        $payload = $this->appendTimeExpire([
             'appid' => $appId,
             'mchid' => $this->config['mch_id'],
             'description' => $this->payDesc($from),
@@ -182,7 +215,9 @@ class WeChatPayService extends BasePayService
                 'total' => intval($order['order_amount'] * 100),
             ],
             'attach' => $from
-        ]);
+        ], $order);
+
+        $response = $this->app->getClient()->postJson('v3/pay/transactions/native', $payload);
         $result = $response->toArray(false);
         $this->checkResultFail($result);
         return $result['code_url'];
@@ -202,7 +237,7 @@ class WeChatPayService extends BasePayService
      */
     public function appPay($from, $order, $appId)
     {
-        $response = $this->app->getClient()->postJson('v3/pay/transactions/app', [
+        $payload = $this->appendTimeExpire([
             'appid' => $appId,
             'mchid' => $this->config['mch_id'],
             'description' => $this->payDesc($from),
@@ -212,7 +247,9 @@ class WeChatPayService extends BasePayService
                 'total' => intval($order['order_amount'] * 100),
             ],
             'attach' => $from
-        ]);
+        ], $order);
+
+        $response = $this->app->getClient()->postJson('v3/pay/transactions/app', $payload);
         $result = $response->toArray(false);
         $this->checkResultFail($result);
         return $result['prepay_id'];
@@ -238,7 +275,7 @@ class WeChatPayService extends BasePayService
             $ip = env('project.test_web_ip');
         }
 
-        $response = $this->app->getClient()->postJson('v3/pay/transactions/h5', [
+        $payload = $this->appendTimeExpire([
             'appid' => $appId,
             'mchid' => $this->config['mch_id'],
             'description' => $this->payDesc($from),
@@ -254,7 +291,9 @@ class WeChatPayService extends BasePayService
                     'type' => 'Wap',
                 ]
             ]
-        ]);
+        ], $order);
+
+        $response = $this->app->getClient()->postJson('v3/pay/transactions/h5', $payload);
         $result = $response->toArray(false);
         $this->checkResultFail($result);
 
@@ -262,7 +301,11 @@ class WeChatPayService extends BasePayService
         if (!empty(env('project.test_web_domain')) && env('APP_DEBUG')) {
             $domain = env('project.test_web_domain');
         }
-        $redirectUrl = $domain . '/mobile'. $order['redirect_url'] .'?id=' . $order['id'] . '&from='. $from . '&checkPay=true';
+        $query = '?id=' . $order['id'] . '&from=' . $from . '&checkPay=true';
+        if ($from === 'order' && !empty($order['payment_sn'])) {
+            $query .= '&payment_sn=' . urlencode((string)$order['payment_sn']);
+        }
+        $redirectUrl = $domain . '/mobile' . $order['redirect_url'] . $query;
         return $result['h5_url'] . '&redirect_url=' . urlencode($redirectUrl);
     }
 
@@ -372,16 +415,31 @@ class WeChatPayService extends BasePayService
         // 支付通知
         $server->handlePaid(function (Message $message) {
             if ($message['trade_state'] === 'SUCCESS') {
-                $extra['transaction_id'] = $message['transaction_id'];
+                $extra = [
+                    'transaction_id' => $message['transaction_id'],
+                    'callback_data' => [
+                        'trade_state' => $message['trade_state'],
+                        'transaction_id' => $message['transaction_id'],
+                        'out_trade_no' => $message['out_trade_no'],
+                        'attach' => $message['attach'],
+                    ],
+                ];
                 $attach = $message['attach'];
-                $message['out_trade_no'] = mb_substr($message['out_trade_no'], 0, 18);
                 switch ($attach) {
                     case 'recharge':
-                        $order = RechargeOrder::where(['sn' => $message['out_trade_no']])->findOrEmpty();
+                        $rechargeSn = mb_substr($message['out_trade_no'], 0, 18);
+                        $order = RechargeOrder::where(['sn' => $rechargeSn])->findOrEmpty();
                         if($order->isEmpty() || $order->pay_status == PayEnum::ISPAID) {
                             return true;
                         }
-                        PayNotifyLogic::handle('recharge', $message['out_trade_no'], $extra);
+                        PayNotifyLogic::handle('recharge', $rechargeSn, $extra);
+                        break;
+                    case 'order':
+                        $payment = OrderPayment::where(['payment_sn' => $message['out_trade_no']])->findOrEmpty();
+                        if ($payment->isEmpty() || (int)$payment->pay_status === OrderPayment::STATUS_PAID) {
+                            return true;
+                        }
+                        PayNotifyLogic::handle('order', $message['out_trade_no'], $extra);
                         break;
                 }
             }

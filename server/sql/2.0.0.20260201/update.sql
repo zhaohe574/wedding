@@ -4,7 +4,7 @@
 -- 说明：
 -- 1. 执行目标：已有 LikeAdmin 基础库上的婚庆业务升级
 -- 2. 结构目标：以当前仓库 2.0 代码依赖为准
--- 3. 基础数据：以 2026-03-16 远端现网配置为准
+-- 3. 基础数据：以 2026-03-19 本地/远端数据库比对结果为准
 -- 4. 原则：保留业务数据，移除全量删表重建思路
 -- =============================================
 
@@ -327,48 +327,6 @@ CREATE TABLE IF NOT EXISTS `la_calendar_event` (
     KEY `idx_is_holiday` (`is_holiday`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='黄历/吉日表';
 
--- la_cart
-CREATE TABLE IF NOT EXISTS `la_cart` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `staff_id` INT UNSIGNED NOT NULL COMMENT '工作人员ID',
-    `package_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '套餐ID（0=仅预约人员）',
-    `schedule_date` DATE NOT NULL COMMENT '预约日期',
-    `time_slot` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '时间段：0=全天,1=早礼,2=午宴,3=晚宴',
-    `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '价格',
-    `quantity` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '数量',
-    `remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '备注',
-    `is_selected` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '是否选中：0=否,1=是',
-    `share_code` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '分享码',
-    `share_user_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '分享来源用户ID',
-    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_user_id` (`user_id`),
-    KEY `idx_staff_id` (`staff_id`),
-    KEY `idx_schedule_date` (`schedule_date`),
-    KEY `idx_share_code` (`share_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='购物车表';
-
--- la_cart_plan
-CREATE TABLE IF NOT EXISTS `la_cart_plan` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `plan_name` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '方案名称',
-    `cart_ids` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '购物车项ID列表（JSON）',
-    `items_snapshot` TEXT NULL COMMENT '方案明细快照（JSON）',
-    `total_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '方案总价',
-    `remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '方案备注',
-    `share_code` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '分享码',
-    `is_default` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否默认方案：0=否,1=是',
-    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    `delete_time` INT UNSIGNED DEFAULT NULL COMMENT '删除时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_user_id` (`user_id`),
-    KEY `idx_share_code` (`share_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='购物车方案表';
-
 -- la_waitlist
 CREATE TABLE IF NOT EXISTS `la_waitlist` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -456,14 +414,11 @@ CREATE TABLE IF NOT EXISTS `la_order` (
     `cancel_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '取消时间',
     `complete_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '完成时间',
     `is_reviewed` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否已评价：0=否,1=是',
-    -- 暂停/变更/转让（来自 004）
+    -- 暂停/变更（来自 004）
     `is_paused` TINYINT UNSIGNED DEFAULT 0 COMMENT '是否暂停：0=否,1=是',
     `pause_id` INT UNSIGNED DEFAULT 0 COMMENT '关联暂停记录ID',
     `has_changed` TINYINT UNSIGNED DEFAULT 0 COMMENT '是否有变更记录：0=否,1=是',
     `change_count` INT UNSIGNED DEFAULT 0 COMMENT '变更次数',
-    `is_transferred` TINYINT UNSIGNED DEFAULT 0 COMMENT '是否已转让：0=否,1=是',
-    `transfer_id` INT UNSIGNED DEFAULT 0 COMMENT '关联转让记录ID',
-    `original_user_id` INT UNSIGNED DEFAULT 0 COMMENT '原用户ID(转让前)',
     -- 来源
     `source` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '订单来源：1=小程序,2=H5,3=后台',
     `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
@@ -476,8 +431,7 @@ CREATE TABLE IF NOT EXISTS `la_order` (
     KEY `idx_pay_status` (`pay_status`),
     KEY `idx_service_date` (`service_date`),
     KEY `idx_create_time` (`create_time`),
-    KEY `idx_is_paused` (`is_paused`),
-    KEY `idx_is_transferred` (`is_transferred`)
+    KEY `idx_is_paused` (`is_paused`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单表';
 
 -- la_order_item
@@ -641,47 +595,6 @@ CREATE TABLE IF NOT EXISTS `la_order_change` (
     KEY `idx_change_status` (`change_status`),
     KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单变更申请表';
-
--- la_order_transfer
-CREATE TABLE IF NOT EXISTS `la_order_transfer` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `transfer_sn` VARCHAR(32) NOT NULL COMMENT '转让单号',
-    `order_id` INT UNSIGNED NOT NULL COMMENT '订单ID',
-    `order_sn` VARCHAR(32) NOT NULL COMMENT '订单编号(冗余)',
-    `from_user_id` INT UNSIGNED NOT NULL COMMENT '转让方用户ID',
-    `from_user_name` VARCHAR(50) DEFAULT '' COMMENT '转让方姓名',
-    `from_user_mobile` VARCHAR(20) DEFAULT '' COMMENT '转让方电话',
-    `to_user_id` INT UNSIGNED DEFAULT 0 COMMENT '接收方用户ID',
-    `to_user_name` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '接收方姓名',
-    `to_user_mobile` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '接收方电话',
-    `to_user_verified` TINYINT UNSIGNED DEFAULT 0 COMMENT '接收方是否验证：0=否,1=是',
-    `transfer_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '转让状态：0=待审核,1=待接收,2=接收确认,3=转让完成,4=已拒绝,5=已取消',
-    `transfer_reason` VARCHAR(500) DEFAULT '' COMMENT '转让原因',
-    `transfer_fee` DECIMAL(10,2) DEFAULT 0.00 COMMENT '转让手续费',
-    `fee_paid` TINYINT UNSIGNED DEFAULT 0 COMMENT '手续费是否支付：0=否,1=是',
-    `audit_admin_id` INT UNSIGNED DEFAULT 0 COMMENT '审核管理员ID',
-    `audit_time` INT UNSIGNED DEFAULT 0 COMMENT '审核时间',
-    `audit_remark` VARCHAR(500) DEFAULT '' COMMENT '审核备注',
-    `reject_reason` VARCHAR(500) DEFAULT '' COMMENT '拒绝原因',
-    `accept_code` VARCHAR(10) DEFAULT '' COMMENT '接收验证码',
-    `accept_code_expire` INT UNSIGNED DEFAULT 0 COMMENT '验证码过期时间',
-    `accept_code_send_time` INT UNSIGNED DEFAULT 0 COMMENT '验证码发送时间',
-    `accept_code_send_count` TINYINT UNSIGNED DEFAULT 0 COMMENT '验证码发送次数',
-    `accept_time` INT UNSIGNED DEFAULT 0 COMMENT '接收时间',
-    `complete_time` INT UNSIGNED DEFAULT 0 COMMENT '完成时间',
-    `complete_admin_id` INT UNSIGNED DEFAULT 0 COMMENT '完成操作管理员ID',
-    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    `delete_time` INT UNSIGNED DEFAULT NULL COMMENT '删除时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_transfer_sn` (`transfer_sn`),
-    KEY `idx_order_id` (`order_id`),
-    KEY `idx_from_user` (`from_user_id`),
-    KEY `idx_to_user` (`to_user_id`),
-    KEY `idx_to_mobile` (`to_user_mobile`),
-    KEY `idx_transfer_status` (`transfer_status`),
-    KEY `idx_create_time` (`create_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单转让表';
 
 -- la_order_pause
 CREATE TABLE IF NOT EXISTS `la_order_pause` (
@@ -1345,59 +1258,6 @@ CREATE TABLE IF NOT EXISTS `la_financial_reconciliation` (
     UNIQUE KEY `uk_date_channel` (`reconcile_date`, `pay_channel`),
     KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='财务对账记录表';
-
--- la_timeline_template
-CREATE TABLE IF NOT EXISTS `la_timeline_template` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `template_name` VARCHAR(100) NOT NULL COMMENT '模板名称',
-    `template_desc` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '模板描述',
-    `service_type` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '适用服务类型：0=通用,1=摄影,2=化妆,3=全套服务',
-    `tasks` TEXT NOT NULL COMMENT '任务配置JSON',
-    `is_default` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否默认模板',
-    `is_enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '是否启用',
-    `sort` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '排序权重',
-    `use_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '使用次数',
-    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    `delete_time` INT UNSIGNED DEFAULT NULL COMMENT '删除时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_service_type` (`service_type`),
-    KEY `idx_is_default` (`is_default`),
-    KEY `idx_is_enabled` (`is_enabled`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='时间轴模板表';
-
--- la_order_timeline
-CREATE TABLE IF NOT EXISTS `la_order_timeline` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `order_id` INT UNSIGNED NOT NULL COMMENT '订单ID',
-    `user_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '用户ID',
-    `template_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '来源模板ID',
-    `wedding_date` DATE NOT NULL COMMENT '婚期日期',
-    `task_title` VARCHAR(100) NOT NULL COMMENT '任务标题',
-    `task_desc` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '任务描述',
-    `task_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '任务类型：1=准备物料,2=确认事项,3=沟通联系,4=现场安排,5=其他',
-    `days_before` INT NOT NULL DEFAULT 0 COMMENT '婚期前N天(0=当天,负数=婚期后)',
-    `trigger_date` DATE NOT NULL COMMENT '实际触发日期',
-    `trigger_time` TIME DEFAULT NULL COMMENT '触发时间(可选)',
-    `is_completed` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否完成',
-    `complete_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '完成时间',
-    `complete_user_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '完成人ID',
-    `complete_remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '完成备注',
-    `is_reminded` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否已提醒',
-    `remind_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '提醒时间',
-    `is_system` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '是否系统任务：0=手动,1=系统',
-    `sort` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '排序权重',
-    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    `delete_time` INT UNSIGNED DEFAULT NULL COMMENT '删除时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_order_id` (`order_id`),
-    KEY `idx_user_id` (`user_id`),
-    KEY `idx_wedding_date` (`wedding_date`),
-    KEY `idx_trigger_date` (`trigger_date`),
-    KEY `idx_is_completed` (`is_completed`),
-    KEY `idx_task_type` (`task_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单时间轴任务表';
 
 -- la_sales_advisor
 CREATE TABLE IF NOT EXISTS `la_sales_advisor` (
@@ -2145,13 +2005,6 @@ INSERT INTO `la_staff_settlement_config` (`id`, `staff_id`, `category_id`, `sett
 (1, 0, 0, '70.00', '100.00', 1, 7, 1, 1, '默认结算配置：70%分成，月结，服务完成后7天可结算', 1773413106, 1773413106, NULL)
 ON DUPLICATE KEY UPDATE `staff_id`=VALUES(`staff_id`), `category_id`=VALUES(`category_id`), `settlement_rate`=VALUES(`settlement_rate`), `min_amount`=VALUES(`min_amount`), `settle_cycle`=VALUES(`settle_cycle`), `settle_delay_days`=VALUES(`settle_delay_days`), `is_default`=VALUES(`is_default`), `status`=VALUES(`status`), `remark`=VALUES(`remark`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`), `delete_time`=VALUES(`delete_time`);
 
--- la_timeline_template
-INSERT INTO `la_timeline_template` (`id`, `template_name`, `template_desc`, `service_type`, `tasks`, `is_default`, `is_enabled`, `sort`, `use_count`, `create_time`, `update_time`, `delete_time`) VALUES
-(1, '通用婚礼筹备模板', '适用于所有类型婚礼服务的标准筹备流程', 0, '[{"title":"确认服务细节","desc":"与工作人员确认服务内容、时间、地点等细节","days_before":30,"type":2},{"title":"试妆预约","desc":"预约试妆时间，确认妆容造型","days_before":21,"type":2},{"title":"最终方案确认","desc":"确认最终服务方案，签署补充协议","days_before":14,"type":2},{"title":"物料清单核对","desc":"核对婚礼当天所需物料清单","days_before":7,"type":1},{"title":"与工作人员确认集合时间","desc":"确认婚礼当天集合时间、地点和联系方式","days_before":3,"type":3},{"title":"婚礼前一天确认","desc":"最终确认所有细节，确保万无一失","days_before":1,"type":2},{"title":"婚礼当天","desc":"婚礼当天服务开始","days_before":0,"type":4}]', 1, 1, 100, 0, 1773413106, 1773413106, NULL),
-(2, '摄影服务专属模板', '适用于婚礼摄影、婚纱照等摄影服务', 1, '[{"title":"确认拍摄风格","desc":"与摄影师沟通确认拍摄风格和场景","days_before":30,"type":2},{"title":"场地踩点","desc":"提前踩点拍摄场地，规划拍摄路线","days_before":14,"type":2},{"title":"确认拍摄服装","desc":"确认拍摄当天的服装和配饰","days_before":7,"type":1},{"title":"设备检查","desc":"摄影师检查设备，确保万无一失","days_before":3,"type":1},{"title":"拍摄当天","desc":"拍摄服务开始","days_before":0,"type":4},{"title":"初片交付","desc":"交付初选照片供客户挑选","days_before":-7,"type":5},{"title":"精修交付","desc":"交付精修照片","days_before":-21,"type":5}]', 0, 1, 90, 0, 1773413106, 1773413106, NULL),
-(3, '化妆服务专属模板', '适用于新娘化妆、跟妆等化妆服务', 2, '[{"title":"确认妆容风格","desc":"与化妆师沟通确认妆容风格","days_before":30,"type":2},{"title":"试妆","desc":"进行试妆，调整妆容细节","days_before":14,"type":2},{"title":"确认化妆品","desc":"确认婚礼当天使用的化妆品","days_before":7,"type":1},{"title":"皮肤护理提醒","desc":"婚前皮肤护理，保持最佳状态","days_before":3,"type":2},{"title":"化妆当天","desc":"婚礼当天化妆服务开始","days_before":0,"type":4}]', 0, 1, 80, 0, 1773413106, 1773413106, NULL)
-ON DUPLICATE KEY UPDATE `template_name`=VALUES(`template_name`), `template_desc`=VALUES(`template_desc`), `service_type`=VALUES(`service_type`), `tasks`=VALUES(`tasks`), `is_default`=VALUES(`is_default`), `is_enabled`=VALUES(`is_enabled`), `sort`=VALUES(`sort`), `use_count`=VALUES(`use_count`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`), `delete_time`=VALUES(`delete_time`);
-
 -- la_escalate_rule
 INSERT INTO `la_escalate_rule` (`id`, `name`, `ticket_type`, `priority`, `timeout_hours`, `escalate_to`, `notify_method`, `status`, `create_time`, `update_time`) VALUES
 (1, '紧急工单2小时升级', 0, 4, 2, 0, 'system,sms', 1, 1773413107, 1773413107),
@@ -2374,13 +2227,11 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (182, 179, 'C', '服务套餐', '', 80, 'service.service_package/lists', 'package', 'service/package/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (183, 0, 'M', '档期管理', 'el-icon-Calendar', 850, '', 'schedule', '', '', '', 0, 1, 0, 1773413107, 1773413107),
 (184, 183, 'C', '档期日历', '', 100, 'schedule.schedule/lists', 'calendar', 'schedule/calendar/index', '', '', 0, 1, 0, 1773413107, 1773413107),
-(185, 183, 'C', '预约列表', '', 90, 'schedule.booking/lists', 'booking', 'schedule/booking/index', '', '', 0, 0, 1, 1773413107, 1773556013),
 (186, 183, 'C', '候补列表', '', 80, 'schedule.waitlist/lists', 'waitlist', 'schedule/waitlist/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (187, 0, 'M', '订单管理', 'el-icon-Document', 800, '', 'order', '', '', '', 0, 1, 0, 1773413107, 1773413107),
 (188, 187, 'C', '订单列表', '', 100, 'order.order/lists', 'lists', 'order/lists/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (189, 187, 'C', '退款管理', '', 90, 'order.refund/lists', 'refund', 'order/refund/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (190, 187, 'C', '订单变更', '', 80, 'order.order_change/lists', 'change', 'order/change/index', '', '', 0, 1, 0, 1773413107, 1773413107),
-(191, 187, 'C', '订单转让', '', 70, 'order.order_transfer/lists', 'transfer', 'order/transfer/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (192, 187, 'C', '订单暂停', '', 60, 'order.order_pause/lists', 'pause', 'order/pause/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (193, 0, 'M', '动态社区', 'el-icon-ChatDotRound', 750, '', 'dynamic', '', '', '', 0, 1, 0, 1773413107, 1773413107),
 (194, 193, 'C', '动态列表', '', 100, 'dynamic.dynamic/lists', 'lists', 'dynamic/lists/index', '', '', 0, 1, 0, 1773413107, 1773413107),
@@ -2391,17 +2242,11 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (199, 197, 'C', '结算管理', '', 80, 'financial.settlement/lists', 'settlement', 'financial/settlement/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (200, 197, 'C', '成本管理', '', 70, 'financial.cost/lists', 'cost', 'financial/cost/index', '', '', 0, 0, 1, 1773413107, 1773556013),
 (201, 197, 'C', '发票管理', '', 60, 'financial.invoice/lists', 'invoice', 'financial/invoice/index', '', '', 0, 0, 1, 1773413107, 1773556013),
-(202, 0, 'M', 'CRM管理', 'el-icon-Phone', 600, '', 'crm', '', '', '', 0, 1, 0, 1773413107, 1773623309),
-(203, 202, 'C', '客户管理', '', 100, 'crm.customer/lists', 'customer', 'crm/customer/index', '', '', 0, 1, 0, 1773413107, 1773623205),
-(204, 202, 'C', '顾问管理', '', 90, 'crm.sales_advisor/lists', 'advisor', 'crm/advisor/index', '', '', 0, 1, 0, 1773413107, 1773623210),
-(205, 202, 'C', '流失预警', '', 80, 'crm.customer_loss_warning/lists', 'warning', 'crm/warning/index', '', '', 0, 1, 0, 1773413107, 1773623215),
 (206, 0, 'M', '售后服务', 'el-icon-Service', 550, '', 'aftersale', '', '', '', 0, 0, 1, 1773413107, 1773556013),
 (207, 206, 'C', '售后工单', '', 100, 'aftersale.aftersale/ticketLists', 'ticket', 'aftersale/ticket/index', '', '', 0, 0, 1, 1773413107, 1773556013),
 (210, 0, 'M', '消息中心', 'el-icon-Bell', 450, '', 'message', '', '', '', 0, 1, 0, 1773413107, 1773413107),
 (211, 210, 'C', '消息通知', '', 100, 'notification.notification/lists', 'notification', 'notification/lists/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (212, 210, 'C', '订阅消息', '', 90, 'subscribe.subscribe/templateList', 'subscribe', 'subscribe/template/index', '', '', 0, 1, 0, 1773413107, 1773413107),
-(213, 0, 'M', '时间线管理', 'el-icon-Timer', 400, '', 'timeline', '', '', '', 0, 0, 1, 1773413107, 1773556013),
-(214, 213, 'C', '时间线模板', '', 100, 'timeline.timeline/templateList', 'lists', 'timeline/lists/index', '', '', 0, 0, 1, 1773413107, 1773556013),
 (215, 179, 'C', '服务人员添加/编辑', '', 99, 'staff.staff/add:edit', 'staff/edit', 'staff/lists/edit', '/service/staff', '', 0, 0, 0, 1773413108, 1773413108),
 (216, 193, 'C', '评论审核', '', 90, 'dynamic.dynamicComment/reviewList', 'comment/review', 'dynamic/comment/review', '', '', 0, 1, 0, 1773413108, 1773413108),
 (217, 193, 'C', '动态配置', '', 80, 'dynamic.dynamicComment/getReviewConfig', 'config', 'dynamic/config/index', '', '', 0, 1, 0, 1773413108, 1773413108),
@@ -2414,7 +2259,7 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (224, 223, 'C', '我的资料', '', 100, 'staff.staff/lists', 'profile', 'staff/lists/index', '', '', 0, 1, 0, 1773413108, 1773413108),
 (225, 223, 'C', '档期日历', '', 90, 'schedule.schedule/lists', 'calendar', 'schedule/calendar/index', '', '', 0, 1, 0, 1773413108, 1773413108),
 (226, 223, 'C', '档期规则', '', 80, 'schedule.scheduleRule/lists', 'rule', 'schedule/rule/index', '', '', 0, 1, 0, 1773413108, 1773413108),
-(227, 223, 'C', '预约列表', '', 70, 'schedule.booking/lists', 'booking', 'schedule/booking/index', '', '', 0, 0, 1, 1773413108, 1773556013),
+(227, 223, 'C', '预约列表', '', 70, 'schedule.booking/myBookings', 'booking', 'staff_center/booking/index', '', '', 0, 1, 0, 1773413108, 1773556013),
 (228, 223, 'C', '候补列表', '', 60, 'schedule.waitlist/lists', 'waitlist', 'schedule/waitlist/index', '', '', 0, 1, 0, 1773413108, 1773413108),
 (229, 223, 'C', '订单列表', '', 50, 'order.order/lists', 'order', 'order/lists/index', '', '', 0, 1, 0, 1773413108, 1773413108),
 (230, 223, 'C', '动态管理', '', 40, 'dynamic.dynamic/lists', 'dynamic', 'dynamic/lists/index', '', '', 0, 1, 0, 1773413108, 1773413108),
@@ -2547,7 +2392,6 @@ INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (2, 188),
 (2, 189),
 (2, 190),
-(2, 191),
 (2, 192),
 (2, 193),
 (2, 194),
@@ -2776,17 +2620,409 @@ WHERE NOT EXISTS (
       AND exists_map.`menu_id` = addon_action.`id`
 );
 
-UPDATE `la_system_menu`
-SET `is_show` = 0,
-    `is_disable` = 1,
-    `update_time` = UNIX_TIMESTAMP()
-WHERE `type` IN ('C', 'A')
-  AND (
-      `perms` IN ('order.order_transfer/lists', 'ops.orderTransfer/lists')
-      OR `perms` LIKE 'order.order_transfer/%'
-      OR `perms` LIKE 'ops.orderTransfer/%'
-      OR `component` = 'order/transfer/index'
-      OR `paths` IN ('transfer', 'order-transfer')
-  );
+-- =============================================================================
+-- Part 7: 套餐附加服务与地区能力（补齐 044 / 045 / 046）
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS `la_service_package_addon` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `package_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '套餐ID',
+    `addon_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '附加服务ID',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uniq_package_addon` (`package_id`, `addon_id`),
+    KEY `idx_package_id` (`package_id`),
+    KEY `idx_addon_id` (`addon_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='套餐附加服务关联表';
+
+CREATE TABLE IF NOT EXISTS `la_service_city_pool` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `province_code` VARCHAR(12) NOT NULL DEFAULT '' COMMENT '省编码',
+    `province_name` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '省名称',
+    `city_code` VARCHAR(12) NOT NULL DEFAULT '' COMMENT '市编码',
+    `city_name` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '市名称',
+    `sort` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '排序',
+    `status` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '状态：0=停用，1=启用',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uniq_city_code` (`city_code`),
+    KEY `idx_status_sort` (`status`, `sort`, `id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='可接单城市池';
+
+CREATE TABLE IF NOT EXISTS `la_service_package_region_price` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `package_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '套餐ID',
+    `staff_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '人员ID',
+    `region_level` TINYINT(1) UNSIGNED NOT NULL DEFAULT 2 COMMENT '地区层级：1=省，2=市，3=区县',
+    `province_code` VARCHAR(12) NOT NULL DEFAULT '' COMMENT '省编码',
+    `province_name` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '省名称',
+    `city_code` VARCHAR(12) NOT NULL DEFAULT '' COMMENT '市编码',
+    `city_name` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '市名称',
+    `district_code` VARCHAR(12) NOT NULL DEFAULT '' COMMENT '区县编码',
+    `district_name` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '区县名称',
+    `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '地区售价',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uniq_package_region` (`package_id`, `region_level`, `province_code`, `city_code`, `district_code`),
+    KEY `idx_staff_package` (`staff_id`, `package_id`),
+    KEY `idx_city_district` (`city_code`, `district_code`),
+    KEY `idx_province_city_district` (`province_code`, `city_code`, `district_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='套餐地区价格表';
+
+SET @add_order_service_province_code_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order'
+          AND COLUMN_NAME = 'service_province_code'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_order` ADD COLUMN `service_province_code` VARCHAR(12) NOT NULL DEFAULT '''' COMMENT ''服务省编码'' AFTER `service_address`'
+);
+PREPARE stmt FROM @add_order_service_province_code_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_order_service_province_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order'
+          AND COLUMN_NAME = 'service_province'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_order` ADD COLUMN `service_province` VARCHAR(50) NOT NULL DEFAULT '''' COMMENT ''服务省'' AFTER `service_province_code`'
+);
+PREPARE stmt FROM @add_order_service_province_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_order_service_city_code_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order'
+          AND COLUMN_NAME = 'service_city_code'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_order` ADD COLUMN `service_city_code` VARCHAR(12) NOT NULL DEFAULT '''' COMMENT ''服务市编码'' AFTER `service_province`'
+);
+PREPARE stmt FROM @add_order_service_city_code_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_order_service_city_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order'
+          AND COLUMN_NAME = 'service_city'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_order` ADD COLUMN `service_city` VARCHAR(50) NOT NULL DEFAULT '''' COMMENT ''服务市'' AFTER `service_city_code`'
+);
+PREPARE stmt FROM @add_order_service_city_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_order_service_district_code_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order'
+          AND COLUMN_NAME = 'service_district_code'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_order` ADD COLUMN `service_district_code` VARCHAR(12) NOT NULL DEFAULT '''' COMMENT ''服务区县编码'' AFTER `service_city`'
+);
+PREPARE stmt FROM @add_order_service_district_code_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_order_service_district_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order'
+          AND COLUMN_NAME = 'service_district'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_order` ADD COLUMN `service_district` VARCHAR(50) NOT NULL DEFAULT '''' COMMENT ''服务区县'' AFTER `service_district_code`'
+);
+PREPARE stmt FROM @add_order_service_district_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'C', '服务地区', '', 74, 'ops.region/lists', 'region', 'service/region/index', '', '', 0, 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `paths` = 'service' AND `type` = 'M'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.region/lists')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '城市选项', '', 0, 'ops.region/cityOptions', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.region/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.region/cityOptions')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '启用城市选项', '', 0, 'ops.region/enabledCityOptions', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.region/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.region/enabledCityOptions')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '区县选项', '', 0, 'ops.region/districtOptions', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.region/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.region/districtOptions')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '新增', '', 0, 'ops.region/add', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.region/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.region/add')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '编辑', '', 0, 'ops.region/edit', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.region/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.region/edit')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '删除', '', 0, 'ops.region/delete', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.region/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.region/delete')
+LIMIT 1;
+
+INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
+SELECT id, 'A', '状态切换', '', 0, 'ops.region/changeStatus', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+FROM `la_system_menu`
+WHERE `perms` = 'ops.region/lists'
+  AND NOT EXISTS (SELECT 1 FROM `la_system_menu` m2 WHERE m2.`perms` = 'ops.region/changeStatus')
+LIMIT 1;
+
+INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`)
+SELECT DISTINCT service_role.`role_id`, region_menu.`id`
+FROM `la_system_role_menu` service_role
+JOIN `la_system_menu` service_root
+  ON service_root.`id` = service_role.`menu_id`
+ AND service_root.`type` = 'M'
+ AND service_root.`paths` = 'service'
+JOIN `la_system_menu` region_menu
+  ON region_menu.`perms` = 'ops.region/lists'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `la_system_role_menu` exists_map
+    WHERE exists_map.`role_id` = service_role.`role_id`
+      AND exists_map.`menu_id` = region_menu.`id`
+);
+
+INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`)
+SELECT DISTINCT service_role.`role_id`, region_action.`id`
+FROM `la_system_role_menu` service_role
+JOIN `la_system_menu` service_root
+  ON service_root.`id` = service_role.`menu_id`
+ AND service_root.`type` = 'M'
+ AND service_root.`paths` = 'service'
+JOIN `la_system_menu` region_menu
+  ON region_menu.`perms` = 'ops.region/lists'
+JOIN `la_system_menu` region_action
+  ON region_action.`pid` = region_menu.`id`
+ AND region_action.`type` = 'A'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `la_system_role_menu` exists_map
+    WHERE exists_map.`role_id` = service_role.`role_id`
+      AND exists_map.`menu_id` = region_action.`id`
+);
+
+ALTER TABLE `la_service_package_region_price`
+    MODIFY COLUMN `region_level` TINYINT(1) UNSIGNED NOT NULL DEFAULT 2 COMMENT '地区层级：1=省，2=市，3=区县';
+
+SET @drop_old_region_price_uniq_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_service_package_region_price'
+          AND INDEX_NAME = 'uniq_package_region'
+    ),
+    'ALTER TABLE `la_service_package_region_price` DROP INDEX `uniq_package_region`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @drop_old_region_price_uniq_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_new_region_price_uniq_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_service_package_region_price'
+          AND INDEX_NAME = 'uniq_package_region'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_service_package_region_price` ADD UNIQUE KEY `uniq_package_region` (`package_id`, `region_level`, `province_code`, `city_code`, `district_code`)'
+);
+PREPARE stmt FROM @add_new_region_price_uniq_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_region_match_idx_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_service_package_region_price'
+          AND INDEX_NAME = 'idx_province_city_district'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_service_package_region_price` ADD KEY `idx_province_city_district` (`province_code`, `city_code`, `district_code`)'
+);
+PREPARE stmt FROM @add_region_match_idx_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 关闭业务清理：购物车、订单转让、时间线、优惠券与后台死菜单
+DROP TABLE IF EXISTS `la_cart`;
+DROP TABLE IF EXISTS `la_cart_plan`;
+DROP TABLE IF EXISTS `la_order_transfer`;
+DROP TABLE IF EXISTS `la_timeline_template`;
+DROP TABLE IF EXISTS `la_order_timeline`;
+DROP TABLE IF EXISTS `la_user_coupon`;
+DROP TABLE IF EXISTS `la_coupon`;
+
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'la_order' AND INDEX_NAME = 'idx_is_transferred'),
+    'ALTER TABLE `la_order` DROP INDEX `idx_is_transferred`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'la_order' AND COLUMN_NAME = 'is_transferred'),
+    'ALTER TABLE `la_order` DROP COLUMN `is_transferred`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'la_order' AND COLUMN_NAME = 'transfer_id'),
+    'ALTER TABLE `la_order` DROP COLUMN `transfer_id`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'la_order' AND COLUMN_NAME = 'original_user_id'),
+    'ALTER TABLE `la_order` DROP COLUMN `original_user_id`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'la_order' AND COLUMN_NAME = 'user_coupon_id'),
+    'ALTER TABLE `la_order` DROP COLUMN `user_coupon_id`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'la_order' AND COLUMN_NAME = 'coupon_id'),
+    'ALTER TABLE `la_order` DROP COLUMN `coupon_id`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'la_order' AND COLUMN_NAME = 'coupon_amount'),
+    'ALTER TABLE `la_order` DROP COLUMN `coupon_amount`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+UPDATE `la_system_menu` child
+JOIN `la_system_menu` parent
+  ON parent.`id` = child.`pid`
+ AND parent.`type` = 'M'
+ AND parent.`paths` IN ('staff_center', 'staff-center')
+SET child.`name` = '预约列表',
+    child.`perms` = 'schedule.booking/myBookings',
+    child.`component` = 'staff_center/booking/index',
+    child.`is_show` = 1,
+    child.`is_disable` = 0,
+    child.`update_time` = UNIX_TIMESTAMP()
+WHERE child.`type` = 'C'
+  AND child.`paths` = 'booking';
+
+CREATE TEMPORARY TABLE IF NOT EXISTS `tmp_closed_module_menu_ids` (
+    `id` INT UNSIGNED NOT NULL PRIMARY KEY
+);
+
+TRUNCATE TABLE `tmp_closed_module_menu_ids`;
+
+INSERT IGNORE INTO `tmp_closed_module_menu_ids` (`id`)
+SELECT `id`
+FROM `la_system_menu`
+WHERE `paths` IN ('marketing', 'crm', 'timeline')
+   OR `component` IN (
+       'order/transfer/index',
+       'crm/customer/index',
+       'crm/advisor/index',
+       'crm/warning/index',
+       'crm/follow/index',
+       'timeline/lists/index',
+       'schedule/event/index',
+       'schedule/booking/index'
+   )
+   OR `perms` IN (
+       'schedule.booking/lists',
+       'schedule.calendarEvent/lists',
+       'order.order_transfer/lists',
+       'ops.orderTransfer/lists',
+       'crm.customer/lists',
+       'crm.sales_advisor/lists',
+       'crm.customer_loss_warning/lists',
+       'crm.followRecord/lists',
+       'timeline.timeline/templateList'
+   )
+   OR `perms` LIKE 'order.order_transfer/%'
+   OR `perms` LIKE 'ops.orderTransfer/%'
+   OR `perms` LIKE 'crm.customer/%'
+   OR `perms` LIKE 'crm.sales_advisor/%'
+   OR `perms` LIKE 'crm.customer_loss_warning/%'
+   OR `perms` LIKE 'crm.customerLossWarning/%'
+   OR `perms` LIKE 'crm.followRecord/%'
+   OR `perms` LIKE 'growth.customer/%'
+   OR `perms` LIKE 'growth.advisor/%'
+   OR `perms` LIKE 'growth.lossWarning/%'
+   OR `perms` LIKE 'growth.followRecord/%'
+   OR `perms` LIKE 'timeline.timeline/%'
+   OR `perms` LIKE 'growth.timeline/%'
+   OR `perms` LIKE 'schedule.calendarEvent/%'
+   OR `perms` LIKE 'ops.calendarEvent/%'
+   OR `perms` LIKE 'coupon.coupon/%'
+   OR `perms` LIKE 'growth.campaign/%';
+
+DELETE rm
+FROM `la_system_role_menu` rm
+INNER JOIN `tmp_closed_module_menu_ids` t ON t.`id` = rm.`menu_id`;
+
+DELETE m
+FROM `la_system_menu` m
+INNER JOIN `tmp_closed_module_menu_ids` t ON t.`id` = m.`id`;
+
+DROP TEMPORARY TABLE IF EXISTS `tmp_closed_module_menu_ids`;
 
 SET FOREIGN_KEY_CHECKS = 1;

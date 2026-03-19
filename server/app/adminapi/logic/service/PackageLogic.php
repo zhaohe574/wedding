@@ -10,7 +10,11 @@ namespace app\adminapi\logic\service;
 use app\common\logic\BaseLogic;
 use app\common\model\package\PackageBooking;
 use app\common\model\service\ServicePackage;
+use app\common\model\service\ServicePackageAddon;
+use app\common\model\service\ServicePackageRegionPrice;
+use app\common\service\PackageRegionPriceService;
 use app\common\model\staff\Staff;
+use think\facade\Db;
 
 /**
  * 服务套餐管理逻辑
@@ -35,8 +39,9 @@ class PackageLogic extends BaseLogic
                 return [];
             }
 
-            $data = $package->append(['category_name', 'staff_name'])->toArray();
-            return $data;
+            $data = $package->append(['category_name', 'staff_name', 'addon_ids'])->toArray();
+            $list = PackageRegionPriceService::attachRegionPrices([$data]);
+            return $list[0] ?? $data;
         } catch (\Exception $e) {
             // 记录错误日志并返回空数组
             trace('获取套餐详情失败: ' . $e->getMessage() . ' - File: ' . $e->getFile() . ' Line: ' . $e->getLine(), 'error');
@@ -59,21 +64,30 @@ class PackageLogic extends BaseLogic
             }
             $categoryId = self::resolveStaffCategoryId($staffId);
 
-            ServicePackage::create([
-                'category_id' => $categoryId,
-                'staff_id' => $staffId,
-                'name' => $params['name'],
-                'price' => $params['price'] ?? 0,
-                'original_price' => $params['original_price'] ?? 0,
-                'duration' => $params['duration'] ?? 0,
-                'image' => $params['image'] ?? '',
-                'description' => $params['description'] ?? '',
-                'sort' => $params['sort'] ?? 0,
-                'is_show' => $params['is_show'] ?? 1,
-                'is_recommend' => $params['is_recommend'] ?? 0,
-                'create_time' => time(),
-                'update_time' => time(),
-            ]);
+            Db::transaction(function () use ($categoryId, $params, $staffId) {
+                $package = ServicePackage::create([
+                    'category_id' => $categoryId,
+                    'staff_id' => $staffId,
+                    'name' => $params['name'],
+                    'price' => $params['price'] ?? 0,
+                    'original_price' => $params['original_price'] ?? 0,
+                    'duration' => $params['duration'] ?? 0,
+                    'image' => $params['image'] ?? '',
+                    'description' => $params['description'] ?? '',
+                    'sort' => $params['sort'] ?? 0,
+                    'is_show' => $params['is_show'] ?? 1,
+                    'is_recommend' => $params['is_recommend'] ?? 0,
+                    'create_time' => time(),
+                    'update_time' => time(),
+                ]);
+
+                ServicePackageAddon::syncPackageAddons((int)$package->id, $staffId, $params['addon_ids'] ?? []);
+                PackageRegionPriceService::syncPackageRegionPrices(
+                    (int)$package->id,
+                    $staffId,
+                    $params['region_prices'] ?? []
+                );
+            });
 
             return true;
         } catch (\Exception $e) {
@@ -116,7 +130,15 @@ class PackageLogic extends BaseLogic
                 'update_time' => time(),
             ];
 
-            $package->save($updateData);
+            Db::transaction(function () use ($package, $updateData, $staffId, $params) {
+                $package->save($updateData);
+                ServicePackageAddon::syncPackageAddons((int)$package->id, $staffId, $params['addon_ids'] ?? []);
+                PackageRegionPriceService::syncPackageRegionPrices(
+                    (int)$package->id,
+                    $staffId,
+                    $params['region_prices'] ?? []
+                );
+            });
 
             return true;
         } catch (\Exception $e) {
@@ -146,7 +168,11 @@ class PackageLogic extends BaseLogic
                 throw new \Exception('该套餐存在有效预订，无法删除');
             }
 
-            ServicePackage::destroy($params['id']);
+            Db::transaction(function () use ($params) {
+                ServicePackageAddon::clearByPackageId((int)$params['id']);
+                ServicePackageRegionPrice::where('package_id', (int)$params['id'])->delete();
+                ServicePackage::destroy($params['id']);
+            });
             return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -199,10 +225,12 @@ class PackageLogic extends BaseLogic
             $query->where('staff_id', $params['staff_id']);
         }
 
-        return $query->order('sort desc, id desc')
+        $list = $query->order('sort desc, id desc')
             ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show, is_recommend')
             ->select()
             ->toArray();
+
+        return ServicePackageAddon::attachAddonIds($list);
     }
 
     /**
@@ -252,21 +280,31 @@ class PackageLogic extends BaseLogic
     {
         try {
             $categoryId = self::resolveStaffCategoryId($staffId);
-            $package = ServicePackage::create([
-                'category_id' => $categoryId,
-                'staff_id' => $staffId,
-                'name' => $packageData['name'],
-                'price' => $packageData['price'] ?? 0,
-                'original_price' => $packageData['original_price'] ?? 0,
-                'duration' => $packageData['duration'] ?? 0,
-                'image' => $packageData['image'] ?? '',
-                'description' => $packageData['description'] ?? '',
-                'sort' => $packageData['sort'] ?? 0,
-                'is_show' => $packageData['is_show'] ?? 1,
-                'is_recommend' => $packageData['is_recommend'] ?? 0,
-                'create_time' => time(),
-                'update_time' => time(),
-            ]);
+            $package = null;
+            Db::transaction(function () use ($categoryId, $packageData, $staffId, &$package) {
+                $package = ServicePackage::create([
+                    'category_id' => $categoryId,
+                    'staff_id' => $staffId,
+                    'name' => $packageData['name'],
+                    'price' => $packageData['price'] ?? 0,
+                    'original_price' => $packageData['original_price'] ?? 0,
+                    'duration' => $packageData['duration'] ?? 0,
+                    'image' => $packageData['image'] ?? '',
+                    'description' => $packageData['description'] ?? '',
+                    'sort' => $packageData['sort'] ?? 0,
+                    'is_show' => $packageData['is_show'] ?? 1,
+                    'is_recommend' => $packageData['is_recommend'] ?? 0,
+                    'create_time' => time(),
+                    'update_time' => time(),
+                ]);
+
+                ServicePackageAddon::syncPackageAddons((int)$package->id, $staffId, $packageData['addon_ids'] ?? []);
+                PackageRegionPriceService::syncPackageRegionPrices(
+                    (int)$package->id,
+                    $staffId,
+                    $packageData['region_prices'] ?? []
+                );
+            });
 
             return $package->id;
         } catch (\Exception $e) {

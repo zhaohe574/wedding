@@ -65,6 +65,22 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="套餐名称" prop="name" min-width="180" />
+                <el-table-column label="可选附加服务" min-width="140">
+                    <template #default="{ row }">
+                        <span v-if="Array.isArray(row.addon_ids) && row.addon_ids.length">
+                            {{ row.addon_ids.length }} 项
+                        </span>
+                        <span v-else class="text-gray-400">未配置</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="地区价" min-width="180">
+                    <template #default="{ row }">
+                        <package-region-price-summary
+                            :region-prices="row.region_prices"
+                            empty-class="text-gray-400"
+                        />
+                    </template>
+                </el-table-column>
                 <el-table-column label="价格" width="180">
                     <template #default="{ row }">
                         <span class="text-red-500 font-bold">¥{{ row.price }}</span>
@@ -115,7 +131,7 @@
         <el-dialog
             v-model="showEditDialog"
             :title="editForm.id ? '编辑套餐' : '新增套餐'"
-            width="720px"
+            width="960px"
         >
             <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-width="100px">
                 <el-form-item label="所属人员" prop="staff_id">
@@ -157,6 +173,29 @@
                         placeholder="请输入套餐描述"
                     />
                 </el-form-item>
+                <el-form-item label="可选附加服务" prop="addon_ids">
+                    <el-select
+                        v-model="editForm.addon_ids"
+                        multiple
+                        collapse-tags
+                        collapse-tags-tooltip
+                        clearable
+                        filterable
+                        class="w-full"
+                        :disabled="!editForm.staff_id"
+                        placeholder="先选择所属人员，再配置可选附加服务"
+                    >
+                        <el-option
+                            v-for="addon in staffAddonOptions"
+                            :key="addon.id"
+                            :label="addon.is_show ? addon.name : `${addon.name}（已下架）`"
+                            :value="addon.id"
+                        />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="地区价格">
+                    <package-region-price-editor v-model="editForm.region_prices" />
+                </el-form-item>
                 <div class="grid grid-cols-2 gap-4">
                     <el-form-item label="排序" prop="sort">
                         <el-input-number v-model="editForm.sort" :min="0" :max="9999" class="w-full" />
@@ -190,10 +229,13 @@ import {
     packageAdd,
     packageChangeStatus,
     packageDelete,
+    packageDetail,
     packageEdit,
     packageLists
 } from '@/api/service'
-import { staffAll } from '@/api/staff'
+import { staffAll, staffGetAddonConfig } from '@/api/staff'
+import PackageRegionPriceEditor from '@/components/service/package-region-price-editor.vue'
+import PackageRegionPriceSummary from '@/components/service/package-region-price-summary.vue'
 import { useDictOptions } from '@/hooks/useDictOptions'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
@@ -207,6 +249,7 @@ const queryParams = reactive({
 
 const showEditDialog = ref(false)
 const editFormRef = shallowRef<FormInstance>()
+const staffAddonOptions = ref<any[]>([])
 
 const createDefaultForm = () => ({
     id: '',
@@ -216,6 +259,8 @@ const createDefaultForm = () => ({
     original_price: 0,
     image: '',
     description: '',
+    addon_ids: [] as number[],
+    region_prices: [] as Record<string, any>[],
     sort: 0,
     is_recommend: 0,
     is_show: 1
@@ -248,6 +293,28 @@ const { optionsData } = useDictOptions<{
 
 const resetEditForm = () => {
     Object.assign(editForm, createDefaultForm())
+    staffAddonOptions.value = []
+}
+
+const loadStaffAddonOptions = async (staffId: number) => {
+    if (!staffId) {
+        staffAddonOptions.value = []
+        editForm.addon_ids = []
+        return
+    }
+
+    const res = await staffGetAddonConfig({ staff_id: staffId })
+    const list = Array.isArray(res) ? res : []
+    staffAddonOptions.value = list.map((item: any) => ({
+        ...item,
+        id: Number(item.id || 0),
+        is_show: Number(item.is_show ?? 1)
+    }))
+
+    const validIds = new Set(staffAddonOptions.value.map((item: any) => Number(item.id)))
+    editForm.addon_ids = editForm.addon_ids
+        .map((id: any) => Number(id))
+        .filter((id: number) => validIds.has(id))
 }
 
 const handleAdd = () => {
@@ -255,21 +322,30 @@ const handleAdd = () => {
     showEditDialog.value = true
 }
 
-const handleEdit = (row: any) => {
+const handleEdit = async (row: any) => {
     resetEditForm()
-    Object.assign(editForm, {
-        id: row.id,
-        staff_id: row.staff_id || 0,
-        name: row.name || '',
-        price: Number(row.price || 0),
-        original_price: Number(row.original_price || 0),
-        image: row.image || '',
-        description: row.description || '',
-        sort: Number(row.sort || 0),
-        is_recommend: Number(row.is_recommend || 0),
-        is_show: Number(row.is_show || 0)
-    })
-    showEditDialog.value = true
+    try {
+        const detail = await packageDetail({ id: row.id })
+        Object.assign(editForm, {
+            id: detail.id,
+            staff_id: Number(detail.staff_id || 0),
+            name: detail.name || '',
+            price: Number(detail.price || 0),
+            original_price: Number(detail.original_price || 0),
+            image: detail.image || '',
+            description: detail.description || '',
+            addon_ids: Array.isArray(detail.addon_ids)
+                ? detail.addon_ids.map((id: any) => Number(id))
+                : [],
+            region_prices: Array.isArray(detail.region_prices) ? detail.region_prices : [],
+            sort: Number(detail.sort || 0),
+            is_recommend: Number(detail.is_recommend || 0),
+            is_show: Number(detail.is_show || 0)
+        })
+        showEditDialog.value = true
+    } catch (error) {
+        console.error('加载套餐详情失败', error)
+    }
 }
 
 const handleSave = async () => {
@@ -303,6 +379,15 @@ const handleChangeStatus = async (is_show: string | number | boolean, id: number
 onActivated(() => {
     getLists()
 })
+
+watch(
+    () => editForm.staff_id,
+    (staffId) => {
+        loadStaffAddonOptions(Number(staffId || 0)).catch((error) => {
+            console.error('加载套餐附加服务选项失败', error)
+        })
+    }
+)
 
 getLists()
 </script>

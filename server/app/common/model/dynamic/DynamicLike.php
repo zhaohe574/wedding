@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\model\dynamic;
 
 use app\common\model\BaseModel;
+use app\common\service\InteractNotificationService;
 
 /**
  * 动态点赞模型
@@ -50,8 +51,14 @@ class DynamicLike extends BaseModel
                 'create_time' => time(),
             ]);
             self::updateLikeCount($targetType, $targetId, 1);
-            
-            // TODO: 发送通知
+
+            if ($targetType == self::TARGET_DYNAMIC) {
+                InteractNotificationService::notifyOnDynamicLiked($userId, $targetId);
+            }
+
+            if ($targetType == self::TARGET_COMMENT) {
+                InteractNotificationService::notifyOnCommentLiked($userId, $targetId);
+            }
             
             return [true, '点赞成功', true];
         }

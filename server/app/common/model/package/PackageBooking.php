@@ -460,6 +460,19 @@ class PackageBooking extends BaseModel
                 $currentBooking = self::where('order_item_id', $orderItemId)->lock(true)->find();
             }
 
+            $ownedTempLockQuery = self::where('user_id', $userId)
+                ->where('package_id', $packageId)
+                ->where('staff_id', $staffId)
+                ->where('booking_date', $date)
+                ->where('time_slot', 0)
+                ->where('status', self::STATUS_TEMP_LOCK);
+
+            if ($currentBooking) {
+                $ownedTempLockQuery->where('id', '<>', (int)$currentBooking->id);
+            }
+
+            $ownedTempLock = $ownedTempLockQuery->lock(true)->find();
+
             $conflictQuery = self::where('package_id', $packageId)
                 ->where('staff_id', $staffId)
                 ->where('booking_date', $date)
@@ -470,6 +483,10 @@ class PackageBooking extends BaseModel
                 $conflictQuery->where('id', '<>', (int)$currentBooking->id);
             }
 
+            if ($ownedTempLock) {
+                $conflictQuery->where('id', '<>', (int)$ownedTempLock->id);
+            }
+
             $conflict = $conflictQuery->lock(true)->find();
             if ($conflict) {
                 Db::rollback();
@@ -477,6 +494,17 @@ class PackageBooking extends BaseModel
             }
 
             if ($currentBooking) {
+                if ($ownedTempLock) {
+                    $ownedTempLock->save([
+                        'status' => self::STATUS_RELEASED,
+                        'order_id' => null,
+                        'order_item_id' => null,
+                        'lock_expire_time' => null,
+                        'version' => (int)$ownedTempLock->version + 1,
+                        'update_time' => time(),
+                    ]);
+                }
+
                 $currentBooking->save([
                     'package_id' => $packageId,
                     'staff_id' => $staffId,
@@ -488,6 +516,24 @@ class PackageBooking extends BaseModel
                     'status' => self::STATUS_CONFIRMED,
                     'lock_expire_time' => null,
                     'version' => (int)$currentBooking->version + 1,
+                    'update_time' => time(),
+                ]);
+                Db::commit();
+                return true;
+            }
+
+            if ($ownedTempLock) {
+                $ownedTempLock->save([
+                    'package_id' => $packageId,
+                    'staff_id' => $staffId,
+                    'booking_date' => $date,
+                    'time_slot' => 0,
+                    'order_id' => $orderId,
+                    'order_item_id' => $orderItemId,
+                    'user_id' => $userId,
+                    'status' => self::STATUS_CONFIRMED,
+                    'lock_expire_time' => null,
+                    'version' => (int)$ownedTempLock->version + 1,
                     'update_time' => time(),
                 ]);
                 Db::commit();

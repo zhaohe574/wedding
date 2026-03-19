@@ -30,10 +30,6 @@ class OrderChangeValidate extends BaseValidate
         'reason' => 'max:255',
         'attach_images' => 'array|max:5',
         'proof_images' => 'array|max:10',
-        'to_user_name' => 'require|max:50',
-        'to_user_mobile' => 'require|mobile',
-        'mobile' => 'require|mobile',
-        'code' => 'require|length:6',
         'pause_type' => 'require|integer|in:1,2,3,4',
         'start_date' => 'require|date',
         'end_date' => 'require|date',
@@ -66,14 +62,6 @@ class OrderChangeValidate extends BaseValidate
         'attach_images.max' => '附件图片最多5张',
         'proof_images.array' => '证明材料格式错误',
         'proof_images.max' => '证明材料最多10张',
-        'to_user_name.require' => '请填写接收方姓名',
-        'to_user_name.max' => '接收方姓名最多50个字符',
-        'to_user_mobile.require' => '请填写接收方手机号',
-        'to_user_mobile.mobile' => '接收方手机号格式错误',
-        'mobile.require' => '请填写手机号',
-        'mobile.mobile' => '手机号格式错误',
-        'code.require' => '请填写验证码',
-        'code.length' => '验证码为6位数字',
         'pause_type.require' => '请选择暂停类型',
         'pause_type.in' => '暂停类型参数错误',
         'start_date.require' => '请选择开始日期',
@@ -134,33 +122,6 @@ class OrderChangeValidate extends BaseValidate
     public function sceneAddonChange()
     {
         return $this->only(['order_id', 'order_item_id', 'addon_action', 'addon_ids', 'reason', 'attach_images']);
-    }
-
-    /**
-     * @notes 转让场景
-     * @return OrderChangeValidate
-     */
-    public function sceneTransfer()
-    {
-        return $this->only(['order_id', 'to_user_name', 'to_user_mobile', 'reason']);
-    }
-
-    /**
-     * @notes 转让详情场景
-     * @return OrderChangeValidate
-     */
-    public function sceneTransferDetail()
-    {
-        return $this->only(['id']);
-    }
-
-    /**
-     * @notes 接收转让场景
-     * @return OrderChangeValidate
-     */
-    public function sceneAcceptTransfer()
-    {
-        return $this->only(['id', 'mobile', 'code']);
     }
 
     /**

@@ -70,6 +70,7 @@ class OrderPauseLogic extends BaseLogic
             return false;
         }
 
+        OrderNotificationService::notifyUserOnPauseAudited($pauseId);
         OrderNotificationService::notifyStaffOnPauseAudited($pauseId);
         return true;
     }
@@ -94,6 +95,7 @@ class OrderPauseLogic extends BaseLogic
             return false;
         }
 
+        OrderNotificationService::notifyUserOnPauseResumed($pauseId);
         OrderNotificationService::notifyStaffOnPauseResumed($pauseId);
         return true;
     }
@@ -148,8 +150,10 @@ class OrderPauseLogic extends BaseLogic
             return false;
         }
 
-        // TODO: 发送提醒通知
-        // NoticeService::send($pause->user_id, 'pause_expiring', [...]);
+        if (!OrderNotificationService::sendPauseExpiringReminder($pauseId)) {
+            self::setError('暂停提醒发送失败');
+            return false;
+        }
 
         // 标记已提醒
         OrderPause::markReminded($pauseId);
@@ -266,6 +270,8 @@ class OrderPauseLogic extends BaseLogic
             [$success, $message] = OrderPause::auditPause($id, $adminId, $approved, $remark, $rejectReason);
             if ($success) {
                 $successCount++;
+                OrderNotificationService::notifyUserOnPauseAudited((int)$id);
+                OrderNotificationService::notifyStaffOnPauseAudited((int)$id);
             } else {
                 $failCount++;
                 $failIds[] = ['id' => $id, 'reason' => $message];
@@ -337,6 +343,7 @@ class OrderPauseLogic extends BaseLogic
         }
 
         OrderNotificationService::notifyStaffOnPauseExtended($pauseId);
+        OrderNotificationService::notifyUserOnPauseExtended($pauseId);
         return true;
     }
 

@@ -1,9 +1,5 @@
 <template>
-    <admin-page-shell
-        class="schedule-calendar"
-        title="档期日历"
-        description="集中管理人员档期、锁定与批量排班。"
-    >
+    <admin-page-shell class="schedule-calendar" title="档期日历">
         <!-- 顶部筛选 -->
         <search-panel class="mb-4">
             <el-form class="mb-[-16px]" :model="queryParams" :inline="true">

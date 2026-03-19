@@ -40,6 +40,22 @@ class ServicePackage extends BaseModel
     }
 
     /**
+     * @notes 获取套餐绑定的附加服务ID
+     * @param mixed $value
+     * @param array $data
+     * @return array
+     */
+    public function getAddonIdsAttr($value, $data): array
+    {
+        $packageId = (int)($data['id'] ?? 0);
+        if ($packageId <= 0) {
+            return [];
+        }
+
+        return ServicePackageAddon::getAddonIds($packageId);
+    }
+
+    /**
      * @notes 统一返回全天预约配置
      * @param int $packageId
      * @param int $staffId

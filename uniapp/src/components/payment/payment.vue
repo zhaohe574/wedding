@@ -23,6 +23,10 @@
                                 fontWeight="500"
                                 color="#333"
                             ></price>
+                            <view v-if="showPayCountdown" class="countdown-tip">
+                                <text class="countdown-tip__label">剩余支付时间</text>
+                                <text class="countdown-tip__value">{{ payRemainText }}</text>
+                            </view>
                         </view>
                         <view class="main flex-1 mx-[20rpx]">
                             <view>
@@ -30,8 +34,8 @@
                                     <tn-radio-group v-model="payWay" class="w-full">
                                         <view
                                             class="p-[20rpx] flex items-center w-full payway-item"
-                                            v-for="(item, index) in payData.lists"
-                                            :key="index"
+                                            v-for="item in payData.lists"
+                                            :key="item.pay_way"
                                             @click="selectPayWay(item.pay_way)"
                                         >
                                             <tn-icon
@@ -49,9 +53,9 @@
                                             </view>
 
                                             <tn-radio
-                                                activeColor="var(--color-primary)"
+                                                :active-color="$theme.primaryColor"
                                                 class="mr-[-20rpx]"
-                                                :name="item.pay_way"
+                                                :label="item.pay_way"
                                             >
                                             </tn-radio>
                                         </view>
@@ -63,11 +67,19 @@
                         <view class="submit-btn p-[20rpx]">
                             <tn-button
                                 @click="handlePay"
+                                width="100%"
+                                height="88rpx"
+                                size="lg"
                                 shape="round"
                                 type="primary"
+                                font-size="30rpx"
+                                bold
+                                :bg-color="$theme.primaryColor"
+                                :text-color="fallbackLightTextColor"
                                 :loading="isLock"
+                                :disabled="isPayDisabled"
                             >
-                                立即支付
+                                {{ isTimeoutLocked ? '支付已超时' : '立即支付' }}
                             </tn-button>
                         </view>
                     </view>
@@ -87,6 +99,12 @@
             <view class="text-2xl font-medium text-center"> 支付确认 </view>
             <view class="pt-[30rpx] pb-[40rpx]">
                 <view> 请在微信内完成支付，如果您已支付成功，请点击`已完成支付`按钮 </view>
+                <view v-if="showPayCountdown" class="check-popup__countdown">
+                    剩余支付时间：{{ payRemainText }}
+                </view>
+                <view v-else-if="isTimeoutLocked" class="check-popup__timeout">
+                    订单支付时间已到，请返回订单详情查看最新状态
+                </view>
             </view>
             <view class="flex">
                 <view class="flex-1 mr-[20rpx]">
@@ -96,7 +114,10 @@
                         plain
                         size="md"
                         hover-class="none"
+                        :border-color="$theme.primaryColor"
+                        :text-color="$theme.primaryColor"
                         :custom-style="{ width: '100%' }"
+                        :disabled="isTimeoutLocked"
                         @click="queryPayResult(false)"
                     >
                         重新支付
@@ -107,8 +128,12 @@
                         shape="round"
                         type="primary"
                         size="md"
+                        bold
                         hover-class="none"
+                        :bg-color="$theme.primaryColor"
+                        :text-color="payPrimaryTextColor"
                         :custom-style="{ width: '100%' }"
+                        :disabled="isTimeoutLocked"
                         @click="queryPayResult()"
                     >
                         已完成支付
@@ -122,10 +147,11 @@
 <script lang="ts" setup>
 import { pay, PayWayEnum } from '@/utils/pay'
 import { getPayWay, prepay, getPayResult } from '@/api/pay'
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useLockFn } from '@/hooks/useLockFn'
 import { series } from '@/utils/util'
 import { ClientEnum, PageStatusEnum, PayStatusEnum } from '@/enums/appEnums'
+import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { client } from '@/utils/client'
 /*
@@ -153,17 +179,27 @@ const props = defineProps({
     //h5微信支付回跳路径，一般为拉起支付的页面路径
     redirect: {
         type: String
+    },
+    // 当前支付流水号，主要用于 H5 回跳后的支付状态确认
+    paymentSn: {
+        type: String,
+        default: ''
     }
 })
 
 const emit = defineEmits(['update:showCheck', 'update:show', 'close', 'success', 'fail'])
 
+const $theme = useThemeStore()
 const payWay = ref()
 const popupStatus = ref(PageStatusEnum.LOADING)
 const payData = ref<any>({
     order_amount: '',
-    lists: []
+    lists: [],
+    pay_deadline_time: 0,
+    pay_remain_seconds: 0
 })
+const payCountdownSeconds = ref(0)
+let payCountdownTimer: ReturnType<typeof setInterval> | null = null
 
 const showCheckPay = computed({
     get() {
@@ -183,10 +219,127 @@ const showPay = computed({
     }
 })
 
+const contrastThreshold = 4.5
+const fallbackLightTextColor = '#FFFFFF'
+const fallbackDarkTextColor = '#1F2937'
+const presetColorMap: Record<string, string> = {
+    white: fallbackLightTextColor,
+    black: '#000000'
+}
+
+const normalizeColor = (color?: string) => {
+    if (!color) return ''
+    const normalized = presetColorMap[color.trim().toLowerCase()] || color.trim()
+    if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(normalized)) return ''
+    if (normalized.length === 4) {
+        const [r, g, b] = normalized.slice(1)
+        return `#${r}${r}${g}${g}${b}${b}`.toUpperCase()
+    }
+    return normalized.toUpperCase()
+}
+
+const getRelativeLuminance = (hexColor: string) => {
+    const normalized = normalizeColor(hexColor)
+    if (!normalized) return 0
+
+    const channels = [0, 2, 4].map(
+        (start) => parseInt(normalized.slice(start + 1, start + 3), 16) / 255
+    )
+    const [red, green, blue] = channels.map((channel) =>
+        channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+    )
+
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+}
+
+const getContrastRatio = (foregroundColor: string, backgroundColor: string) => {
+    const foregroundLuminance = getRelativeLuminance(foregroundColor)
+    const backgroundLuminance = getRelativeLuminance(backgroundColor)
+    const lighter = Math.max(foregroundLuminance, backgroundLuminance)
+    const darker = Math.min(foregroundLuminance, backgroundLuminance)
+
+    return (lighter + 0.05) / (darker + 0.05)
+}
+
+const resolveReadableTextColor = (backgroundColor: string, preferredColor: string) => {
+    const normalizedBackgroundColor = normalizeColor(backgroundColor)
+    const normalizedPreferredColor = normalizeColor(preferredColor)
+
+    if (!normalizedBackgroundColor) {
+        return normalizedPreferredColor || fallbackLightTextColor
+    }
+
+    if (
+        normalizedPreferredColor &&
+        getContrastRatio(normalizedPreferredColor, normalizedBackgroundColor) >= contrastThreshold
+    ) {
+        return normalizedPreferredColor
+    }
+
+    const lightTextContrast = getContrastRatio(fallbackLightTextColor, normalizedBackgroundColor)
+    const darkTextContrast = getContrastRatio(fallbackDarkTextColor, normalizedBackgroundColor)
+
+    return lightTextContrast >= darkTextContrast ? fallbackLightTextColor : fallbackDarkTextColor
+}
+
+const payPrimaryTextColor = computed(() =>
+    resolveReadableTextColor($theme.primaryColor, $theme.btnColor)
+)
+const showPayCountdown = computed(() => payCountdownSeconds.value > 0)
+const payRemainText = computed(() => formatPayRemain(payCountdownSeconds.value))
+const isTimeoutLocked = computed(
+    () => Number(payData.value?.pay_deadline_time || 0) > 0 && payCountdownSeconds.value <= 0
+)
+const isPayDisabled = computed(
+    () => isLock.value || popupStatus.value !== PageStatusEnum.NORMAL || isTimeoutLocked.value
+)
+
 const handleClose = () => {
     showPay.value = false
     emit('close')
 }
+
+const clearPayCountdown = () => {
+    if (payCountdownTimer) {
+        clearInterval(payCountdownTimer)
+        payCountdownTimer = null
+    }
+}
+
+const syncPayCountdown = (seconds: number | string) => {
+    clearPayCountdown()
+    payCountdownSeconds.value = Math.max(Number(seconds || 0), 0)
+    if (payCountdownSeconds.value <= 0) return
+
+    payCountdownTimer = setInterval(() => {
+        if (payCountdownSeconds.value > 0) {
+            payCountdownSeconds.value -= 1
+        }
+        if (payCountdownSeconds.value <= 0) {
+            clearPayCountdown()
+        }
+    }, 1000)
+}
+
+const formatPayRemain = (seconds: number) => {
+    const total = Math.max(seconds, 0)
+    const hours = Math.floor(total / 3600)
+    const minutes = Math.floor((total % 3600) / 60)
+    const remainSeconds = total % 60
+
+    return [hours, minutes, remainSeconds]
+        .map((item) => String(item).padStart(2, '0'))
+        .join(':')
+}
+
+const emitTimeoutResult = (message = '订单支付超时，已自动取消') => {
+    clearPayCountdown()
+    showPay.value = false
+    showCheckPay.value = false
+    uni.$u.toast(message)
+    emit('fail', { reason: 'timeout', message })
+}
+
 const getPayData = async () => {
     popupStatus.value = PageStatusEnum.LOADING
     try {
@@ -194,12 +347,24 @@ const getPayData = async () => {
             order_id: props.orderId,
             from: props.from
         })
+        syncPayCountdown(payData.value.pay_remain_seconds || 0)
+        if (Number(payData.value.pay_deadline_time || 0) > 0 && Number(payData.value.pay_remain_seconds || 0) <= 0) {
+            emitTimeoutResult()
+            return
+        }
         popupStatus.value = PageStatusEnum.NORMAL
         const checkPay =
             payData.value.lists.find((item: any) => item.is_default) || payData.value.lists[0]
         payWay.value = checkPay?.pay_way
-    } catch (error) {
+    } catch (error: any) {
+        clearPayCountdown()
+        const message = error?.message || '支付信息加载失败'
+        if (message.includes('超时')) {
+            emitTimeoutResult(message)
+            return
+        }
         popupStatus.value = PageStatusEnum.ERROR
+        uni.$u.toast(message)
     }
 }
 
@@ -257,6 +422,10 @@ const payment = (() => {
 })()
 const { isLock, lockFn: handlePay } = useLockFn(async () => {
     try {
+        if (isTimeoutLocked.value) {
+            emitTimeoutResult()
+            return
+        }
         const res: PayStatusEnum = await payment()
         handlePayResult(res)
         uni.hideLoading()
@@ -278,41 +447,66 @@ const handlePayResult = (status: PayStatusEnum) => {
 }
 
 const queryPayResult = async (confirm = true) => {
-    const res = await getPayResult({
-        order_id: props.orderId,
-        from: props.from
-    })
+    try {
+        const res = await getPayResult({
+            order_id: props.orderId,
+            from: props.from,
+            payment_sn: props.paymentSn
+        })
 
-    if (res.pay_status === 0) {
-        if (confirm == true) {
-            uni.$u.toast('您的订单还未支付，请重新支付')
+        payData.value.pay_deadline_time = Number(res?.order?.pay_deadline_time || 0)
+        syncPayCountdown(Number(res?.order?.pay_remain_seconds || 0))
+
+        if (res.pay_status === 0) {
+            if (Number(res?.order?.order_status || 0) === 6) {
+                emitTimeoutResult('订单已超时自动取消')
+                return
+            }
+            if (confirm == true) {
+                uni.$u.toast('您的订单还未支付，请重新支付')
+            }
+            if (!isTimeoutLocked.value) {
+                showPay.value = true
+            }
+            handlePayResult(PayStatusEnum.FAIL)
+        } else {
+            if (confirm == false) {
+                uni.$u.toast('您的订单已经支付，请勿重新支付')
+            }
+            handlePayResult(PayStatusEnum.SUCCESS)
         }
-        showPay.value = true
-        handlePayResult(PayStatusEnum.FAIL)
-    } else {
-        if (confirm == false) {
-            uni.$u.toast('您的订单已经支付，请勿重新支付')
+        showCheckPay.value = false
+    } catch (error: any) {
+        const message = error?.message || '支付状态查询失败'
+        if (message.includes('超时')) {
+            emitTimeoutResult(message)
+            return
         }
-        handlePayResult(PayStatusEnum.SUCCESS)
+        uni.$u.toast(message)
     }
-    showCheckPay.value = false
 }
 
 watch(
-    () => props.show,
-    (value) => {
-        if (value) {
+    () => [props.show, props.showCheck],
+    ([show, showCheck]) => {
+        if (show || showCheck) {
             if (!props.orderId) {
                 popupStatus.value = PageStatusEnum.ERROR
                 return
             }
             getPayData()
+        } else {
+            clearPayCountdown()
         }
     },
     {
         immediate: true
     }
 )
+
+onUnmounted(() => {
+    clearPayCountdown()
+})
 </script>
 
 <style lang="scss">
@@ -321,5 +515,36 @@ watch(
         border-bottom: 1px solid;
         @apply border-page;
     }
+}
+
+.countdown-tip {
+    margin-top: 20rpx;
+    padding: 12rpx 24rpx;
+    border-radius: 999rpx;
+    background: rgba(216, 92, 97, 0.1);
+}
+
+.countdown-tip__label {
+    font-size: 22rpx;
+    color: #d85c61;
+}
+
+.countdown-tip__value {
+    margin-left: 12rpx;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #d85c61;
+}
+
+.check-popup__countdown {
+    margin-top: 20rpx;
+    font-size: 24rpx;
+    color: #d85c61;
+}
+
+.check-popup__timeout {
+    margin-top: 20rpx;
+    font-size: 24rpx;
+    color: #dc2626;
 }
 </style>

@@ -1,12 +1,7 @@
 <template>
     <div>
         <el-card class="!border-none" shadow="never">
-            <el-alert
-                type="warning"
-                title="温馨提示：用于管理网站的分类，只可添加到一级"
-                :closable="false"
-                show-icon
-            />
+            <el-alert type="warning" title="仅支持一级分类" :closable="false" show-icon />
         </el-card>
         <el-card class="!border-none mt-4" shadow="never" v-loading="pager.loading">
             <div>

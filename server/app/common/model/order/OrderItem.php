@@ -30,6 +30,29 @@ class OrderItem extends BaseModel
     const STATUS_CANCELLED = 3;     // 已取消
 
     /**
+     * @notes 生成套餐说明快照
+     * @param int $packageId
+     * @param string $packageDescription
+     * @return string
+     */
+    public static function resolvePackageDescription(int $packageId = 0, string $packageDescription = ''): string
+    {
+        $description = trim($packageDescription);
+        if ($description === '' && $packageId > 0) {
+            $package = ServicePackage::field('description')->find($packageId);
+            $description = trim((string)($package->description ?? ''));
+        }
+
+        if ($description === '') {
+            return '';
+        }
+
+        return function_exists('mb_substr')
+            ? mb_substr($description, 0, 500)
+            : substr($description, 0, 500);
+    }
+
+    /**
      * @notes 关联订单
      * @return \think\model\relation\BelongsTo
      */

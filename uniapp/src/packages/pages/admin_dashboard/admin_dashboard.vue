@@ -56,7 +56,6 @@
             <view class="section-header">
                 <view>
                     <text class="section-title">经营核心</text>
-                    <text class="section-subtitle">核心指标保留在首屏，便于快速判断经营走势</text>
                 </view>
             </view>
 
@@ -110,9 +109,6 @@
             <view class="section-header">
                 <view>
                     <text class="section-title">成员负载</text>
-                    <text class="section-subtitle"
-                        >按未来 30 天已占档期优先排序，便于判断谁忙、谁可分配</text
-                    >
                 </view>
             </view>
 
@@ -183,7 +179,7 @@
                 >
                     <text class="todo-label">{{ item.label }}</text>
                     <text class="todo-value">{{ item.value }}</text>
-                    <text class="todo-hint">{{ item.hint }}</text>
+                    <text v-if="item.hint" class="todo-hint">{{ item.hint }}</text>
                 </view>
             </view>
 
@@ -239,7 +235,6 @@
             <view class="section-header">
                 <view>
                     <text class="section-title">经营提醒</text>
-                    <text class="section-subtitle">结合经营结果和团队执行状态生成重点提示</text>
                 </view>
             </view>
 
@@ -616,25 +611,25 @@ const todoCards = computed(() => [
     {
         label: '待确认',
         value: `${todoStats.value.pending_confirm || 0}`,
-        hint: '优先推进确认',
+        hint: '',
         color: '#3B82F6'
     },
     {
         label: '待支付',
         value: `${todoStats.value.pending_pay || 0}`,
-        hint: '重点跟进催付',
+        hint: '',
         color: '#F59E0B'
     },
     {
         label: '服务中',
         value: `${todoStats.value.in_service || 0}`,
-        hint: '关注履约稳定',
+        hint: '',
         color: '#14B8A6'
     },
     {
         label: '候补跟进',
         value: `${todoStats.value.waitlist_total || 0}`,
-        hint: '注意排班承接',
+        hint: '',
         color: '#8B5CF6'
     }
 ])
@@ -720,52 +715,25 @@ const insights = computed<InsightItem[]>(() => {
     }
 
     if (activeStaff <= 0) {
-        result.push(buildInsight('risk', '当前暂无可排班成员，团队模块需要先补齐在岗服务人员。'))
+        result.push(buildInsight('risk', '暂无可排班成员'))
     }
     if (bookingRate >= 85) {
-        result.push(
-            buildInsight(
-                'warning',
-                `本月档期占用已达 ${formatPercent(bookingRate)}，需提前协调可承接成员。`
-            )
-        )
+        result.push(buildInsight('warning', `本月档期占用 ${formatPercent(bookingRate)}`))
     }
     if (waitlistTotal >= Math.max(3, activeStaff * 2) && activeStaff > 0) {
-        result.push(
-            buildInsight(
-                'risk',
-                `候补跟进 ${waitlistTotal} 条，当前团队承接压力较高，建议优先消化候补。`
-            )
-        )
+        result.push(buildInsight('risk', `候补跟进 ${waitlistTotal} 条`))
     }
     if (refundRate > 5) {
-        result.push(
-            buildInsight(
-                'warning',
-                `退款率达到 ${formatPercent(refundRate)}，建议排查履约质量与沟通环节。`
-            )
-        )
+        result.push(buildInsight('warning', `退款率 ${formatPercent(refundRate)}`))
     }
     if (cancelledRate > 10) {
-        result.push(
-            buildInsight(
-                'risk',
-                `取消订单占比 ${formatPercent(cancelledRate)}，需要关注预约到确认阶段的流失。`
-            )
-        )
+        result.push(buildInsight('risk', `取消订单占比 ${formatPercent(cancelledRate)}`))
     }
     if (pendingPayRate > 20) {
-        result.push(
-            buildInsight(
-                'warning',
-                `待支付订单占比 ${formatPercent(pendingPayRate)}，可安排集中催付与提醒。`
-            )
-        )
+        result.push(buildInsight('warning', `待支付占比 ${formatPercent(pendingPayRate)}`))
     }
     if (!result.length) {
-        result.push(
-            buildInsight('good', '经营结果与团队执行整体平稳，可持续关注排班利用率和待支付转化。')
-        )
+        result.push(buildInsight('good', '经营状态平稳'))
     }
 
     return result.slice(0, 3)

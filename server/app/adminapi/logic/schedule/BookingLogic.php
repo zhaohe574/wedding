@@ -12,6 +12,7 @@ use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\order\OrderLog;
 use app\common\model\schedule\Schedule;
+use app\common\service\OrderNotificationService;
 use think\facade\Db;
 
 /**
@@ -86,8 +87,10 @@ class BookingLogic extends BaseLogic
      */
     public static function confirm(int $staffId, int $adminId, int $itemId): bool
     {
+        $notifyOrderId = 0;
+
         try {
-            return Db::transaction(function () use ($staffId, $adminId, $itemId) {
+            $result = Db::transaction(function () use ($staffId, $adminId, $itemId, &$notifyOrderId) {
                 /** @var OrderItem|null $item */
                 $item = OrderItem::where('id', $itemId)
                     ->where('staff_id', $staffId)
@@ -149,6 +152,8 @@ class BookingLogic extends BaseLogic
                     $order->order_status = Order::STATUS_PENDING_PAY;
                     $order->update_time = time();
                     $order->save();
+                    Order::syncPendingPayDeadline($order);
+                    $notifyOrderId = (int)$order->id;
 
                     OrderLog::addLog(
                         (int)$order->id,
@@ -173,6 +178,12 @@ class BookingLogic extends BaseLogic
 
                 return true;
             });
+
+            if ($result && $notifyOrderId > 0) {
+                OrderNotificationService::notifyUserOnOrderConfirmed($notifyOrderId);
+            }
+
+            return $result;
         } catch (\Throwable $e) {
             self::setError($e->getMessage());
             return false;
@@ -189,8 +200,12 @@ class BookingLogic extends BaseLogic
      */
     public static function cancel(int $staffId, int $adminId, int $itemId, string $reason = ''): bool
     {
+        $notifyOrderId = 0;
+        $notifyCancelled = false;
+        $notifyCancelReason = '';
+
         try {
-            return Db::transaction(function () use ($staffId, $adminId, $itemId, $reason) {
+            $result = Db::transaction(function () use ($staffId, $adminId, $itemId, $reason, &$notifyOrderId, &$notifyCancelled, &$notifyCancelReason) {
                 /** @var OrderItem|null $item */
                 $item = OrderItem::where('id', $itemId)
                     ->where('staff_id', $staffId)
@@ -253,14 +268,23 @@ class BookingLogic extends BaseLogic
                     $order->order_status = Order::STATUS_CANCELLED;
                     $order->cancel_reason = $reason ?: '服务人员取消全部预约项';
                     $order->cancel_time = time();
+                    $notifyOrderId = (int)$order->id;
+                    $notifyCancelled = true;
+                    $notifyCancelReason = (string)$order->cancel_reason;
                 } else {
                     $remainUnConfirm = OrderItem::where('order_id', (int)$order->id)
                         ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
                         ->where('confirm_status', 0)
                         ->count();
                     $order->order_status = $remainUnConfirm > 0 ? Order::STATUS_PENDING_CONFIRM : Order::STATUS_PENDING_PAY;
+                    if ((int)$order->order_status === Order::STATUS_PENDING_PAY) {
+                        $notifyOrderId = (int)$order->id;
+                    }
                 }
                 $order->save();
+                if ((int)$order->order_status === Order::STATUS_PENDING_PAY) {
+                    Order::syncPendingPayDeadline($order);
+                }
 
                 OrderLog::addLog(
                     (int)$order->id,
@@ -274,6 +298,20 @@ class BookingLogic extends BaseLogic
 
                 return true;
             });
+
+            if ($result && $notifyCancelled && $notifyOrderId > 0) {
+                OrderNotificationService::notifyUserAndStaffOnOrderCancelled(
+                    $notifyOrderId,
+                    OrderLog::OPERATOR_ADMIN,
+                    $notifyCancelReason
+                );
+            }
+
+            if ($result && !$notifyCancelled && $notifyOrderId > 0) {
+                OrderNotificationService::notifyUserOnOrderConfirmed($notifyOrderId);
+            }
+
+            return $result;
         } catch (\Throwable $e) {
             self::setError($e->getMessage());
             return false;

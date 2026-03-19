@@ -11,6 +11,7 @@ use app\common\logic\BaseLogic;
 use app\common\model\order\Order;
 use app\common\model\order\OrderLog;
 use app\common\model\order\Refund;
+use app\common\service\OrderNotificationService;
 use think\facade\Db;
 
 /**
@@ -59,6 +60,13 @@ class RefundLogic extends BaseLogic
         if (!$success) {
             self::setError($message);
             return false;
+        }
+
+        if ($approved) {
+            OrderNotificationService::notifyUserOnRefundApproved($refundId);
+            OrderNotificationService::notifyUserOnRefundProcessing($refundId);
+        } else {
+            OrderNotificationService::notifyUserOnRefundRejected($refundId);
         }
         return true;
     }
@@ -117,6 +125,8 @@ class RefundLogic extends BaseLogic
             );
 
             Db::commit();
+
+            OrderNotificationService::notifyUserAndStaffOnRefundCompleted($refundId);
             return true;
         } catch (\Exception $e) {
             Db::rollback();
@@ -132,6 +142,8 @@ class RefundLogic extends BaseLogic
      */
     public static function adminApply(array $params): bool
     {
+        $notifyRefundId = 0;
+
         Db::startTrans();
         try {
             $order = Order::find($params['order_id']);
@@ -187,7 +199,14 @@ class RefundLogic extends BaseLogic
                 '管理员发起退款：' . ($params['reason'] ?? '管理员操作')
             );
 
+            $notifyRefundId = (int)$refund->id;
+
             Db::commit();
+
+            if ($notifyRefundId > 0) {
+                OrderNotificationService::notifyUserAndStaffOnRefundApplied($notifyRefundId);
+                OrderNotificationService::notifyUserOnRefundApproved($notifyRefundId);
+            }
             return true;
         } catch (\Exception $e) {
             Db::rollback();

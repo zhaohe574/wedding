@@ -82,8 +82,10 @@
 import { userBindMobile } from '@/api/user'
 import { smsSend } from '@/api/app'
 import { SMSEnum } from '@/enums/appEnums'
+import { BACK_URL } from '@/enums/constantEnums'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
+import cache from '@/utils/cache'
 import { computed, reactive, ref } from 'vue'
 
 const themeStore = useThemeStore()
@@ -136,6 +138,21 @@ const sendSms = async () => {
     }
 }
 
+const redirectAfterBindMobile = () => {
+    const backUrl = cache.get(BACK_URL)
+    if (!backUrl) {
+        uni.navigateBack()
+        return
+    }
+
+    cache.remove(BACK_URL)
+    try {
+        uni.reLaunch({ url: backUrl })
+    } catch (error) {
+        uni.redirectTo({ url: backUrl })
+    }
+}
+
 const handleConfirm = async () => {
     if (!formData.mobile) return uni.$u.toast('请输入手机号码')
     if (!formData.code) return uni.$u.toast('请输入验证码')
@@ -144,7 +161,7 @@ const handleConfirm = async () => {
         await userBindMobile(formData, { token: userStore.temToken })
         uni.$u.toast('绑定成功')
         userStore.login(userStore.temToken!)
-        uni.navigateBack()
+        redirectAfterBindMobile()
     } catch (error: any) {
         uni.$u.toast(error || '绑定失败')
     }

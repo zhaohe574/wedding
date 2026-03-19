@@ -1,9 +1,5 @@
 <template>
-    <admin-page-shell
-        class="refund-lists"
-        title="退款管理"
-        description="跟踪退款审核、执行与状态流转。"
-    >
+    <admin-page-shell class="refund-lists" title="退款管理">
         <template #search>
             <search-panel>
                 <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">

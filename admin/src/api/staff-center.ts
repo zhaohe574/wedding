@@ -14,6 +14,14 @@ export function myProfilePackageConfig(params?: any) {
     return request.get({ url: '/ops.staff/myProfilePackageConfig', params })
 }
 
+export function myProfileRegionEnabledCityOptions() {
+    return request.get({ url: '/ops.staff/myProfileRegionEnabledCityOptions' })
+}
+
+export function myProfileRegionDistrictOptions(params: { city_code: string }) {
+    return request.get({ url: '/ops.staff/myProfileRegionDistrictOptions', params })
+}
+
 export function myProfileConfigurePackages(params: any) {
     return request.post({ url: '/ops.staff/myProfileConfigurePackages', params })
 }

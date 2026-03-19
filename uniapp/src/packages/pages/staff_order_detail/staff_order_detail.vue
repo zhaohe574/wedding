@@ -48,10 +48,17 @@
                     </view>
                     <text class="contact-value">{{ order.contact_mobile || '未填写' }}</text>
                 </view>
+                <view class="contact-row" v-if="order.service_region_text">
+                    <view class="contact-label">
+                        <tn-icon name="location" size="24" color="#999999" />
+                        <text>服务地区</text>
+                    </view>
+                    <text class="contact-value address">{{ order.service_region_text }}</text>
+                </view>
                 <view class="contact-row" v-if="order.service_address">
                     <view class="contact-label">
                         <tn-icon name="location" size="24" color="#999999" />
-                        <text>服务地址</text>
+                        <text>详细地址</text>
                     </view>
                     <text class="contact-value address">{{ order.service_address }}</text>
                 </view>
@@ -73,6 +80,9 @@
                             <text class="price-value">{{ item.price }}</text>
                         </text>
                     </view>
+                    <text v-if="getPackageDescription(item)" class="service-description">
+                        {{ getPackageDescription(item) }}
+                    </text>
                     <view class="service-detail">
                         <tn-icon name="calendar" size="24" color="#999999" />
                         <text>{{ item.service_date || '未选择日期' }}</text>
@@ -251,6 +261,10 @@ const canConfirm = computed(() => {
 
 const formatAmount = (amount: number | string) => {
     return Number(amount || 0).toFixed(2)
+}
+
+const getPackageDescription = (item: any) => {
+    return String(item?.package_description || '').trim()
 }
 
 const getItemAddonTotal = (item: any) => {
@@ -434,6 +448,16 @@ onLoad(async (options: any) => {
     font-size: 30rpx;
     font-weight: 600;
     color: #333333;
+}
+
+.service-description {
+    display: block;
+    margin-top: 4rpx;
+    font-size: 24rpx;
+    line-height: 1.7;
+    color: #64748b;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .service-price {

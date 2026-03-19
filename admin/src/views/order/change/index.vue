@@ -1,9 +1,5 @@
 <template>
-    <admin-page-shell
-        class="order-change-lists"
-        title="订单变更"
-        description="管理改期、加项、附加服务变更等订单变更流程。"
-    >
+    <admin-page-shell class="order-change-lists" title="订单变更">
         <template #search>
             <search-panel>
                 <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
@@ -175,8 +171,7 @@
                 <el-alert
                     v-if="currentChange.change_type === 2"
                     class="mb-4"
-                    title="换人功能已下线"
-                    description="该记录为历史换人申请，仅保留只读展示，新需求请改为取消订单后重新下单。"
+                    title="历史换人申请，仅支持查看"
                     type="warning"
                     :closable="false"
                     show-icon

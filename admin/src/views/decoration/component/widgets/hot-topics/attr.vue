@@ -139,7 +139,6 @@
                     title="自动获取热门话题"
                     type="info"
                     :closable="false"
-                    description="系统将自动获取最热门的话题，按参与人数排序。无需手动选择。"
                 />
             </el-card>
         </el-form>

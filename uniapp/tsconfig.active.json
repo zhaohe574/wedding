@@ -32,8 +32,6 @@
         "src/pages/review/**/*.vue",
         "src/pages/search/**/*.vue",
         "src/pages/user/**/*.vue",
-        "src/packages/pages/cart/**/*.vue",
-        "src/packages/pages/cart_plan/**/*.vue",
         "src/packages/pages/order_confirm/**/*.vue",
         "src/packages/pages/share_plan/**/*.vue",
         "src/packages/pages/staff_detail/**/*.vue",

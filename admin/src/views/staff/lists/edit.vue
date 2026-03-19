@@ -4,9 +4,6 @@
             <div class="admin-edit-head__top">
                 <div>
                     <h1 class="admin-edit-title">{{ route.query.id ? '编辑人员' : '新增人员' }}</h1>
-                    <p class="admin-edit-subtitle">
-                        {{ route.query.id ? '维护人员资料、标签、套餐和轮播展示内容。' : '创建人员并完成标签、套餐和轮播展示配置。' }}
-                    </p>
                 </div>
                 <div class="admin-edit-head__meta">
                     <div class="admin-edit-head__meta-label">后台账号状态</div>
@@ -39,7 +36,6 @@
                         <div class="admin-edit-section">
                             <div class="admin-edit-section__header">
                                 <div class="admin-edit-section__title">身份信息</div>
-                                <div class="admin-edit-section__desc">用于建立人员基础档案与后台账号关联。</div>
                             </div>
                             <div class="grid staff-edit-grid gap-x-8">
                                 <el-form-item label="姓名" prop="name">
@@ -92,7 +88,6 @@
                         <div class="admin-edit-section mt-4">
                             <div class="admin-edit-section__header">
                                 <div class="admin-edit-section__title">业务信息</div>
-                                <div class="admin-edit-section__desc">配置分类、价格、展示排序与推荐状态。</div>
                             </div>
                             <div class="grid staff-edit-grid gap-x-8">
                                 <el-form-item label="服务分类" prop="category_id">
@@ -131,7 +126,6 @@
                         <div class="admin-edit-section mt-4">
                             <div class="admin-edit-section__header">
                                 <div class="admin-edit-section__title">补充说明</div>
-                                <div class="admin-edit-section__desc">用于展示人员介绍与服务补充说明。</div>
                             </div>
                             <el-form-item label="个人简介" prop="profile">
                                 <el-input
@@ -160,7 +154,6 @@
                         <div class="admin-edit-section">
                             <div class="admin-edit-section__header">
                                 <div class="admin-edit-section__title">标签分组</div>
-                                <div class="admin-edit-section__desc">按标签类型批量设置人员风格与特长。</div>
                             </div>
                             <el-form-item class="staff-tag-form-item !mb-0" label="风格标签">
                                 <el-checkbox-group v-model="formData.tag_ids" class="staff-tag-groups">
@@ -188,13 +181,28 @@
                             <div class="admin-edit-toolbar">
                                 <div>
                                     <div class="admin-edit-section__title">人员套餐</div>
-                                    <div class="admin-edit-section__desc">只维护该人员自己的套餐，预约统一按日期处理。</div>
                                 </div>
                                 <el-button type="primary" @click="openCreateStaffPackage">创建专属套餐</el-button>
                             </div>
                             <div class="staff-table-card mt-4">
                                 <el-table :data="staffPackages" border>
                                     <el-table-column label="套餐名称" prop="name" min-width="150" />
+                                    <el-table-column label="可选附加服务" min-width="180">
+                                        <template #default="{ row }">
+                                            <span v-if="Array.isArray(row.addon_ids) && row.addon_ids.length">
+                                                {{ row.addon_ids.length }} 项
+                                            </span>
+                                            <span v-else class="admin-edit-muted">未配置</span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="地区价" min-width="150">
+                                        <template #default="{ row }">
+                                            <package-region-price-summary
+                                                :region-prices="row.region_prices"
+                                                empty-class="admin-edit-muted"
+                                            />
+                                        </template>
+                                    </el-table-column>
                                     <el-table-column label="价格" prop="price" width="140">
                                         <template #default="{ row }">¥{{ row.price }}</template>
                                     </el-table-column>
@@ -229,6 +237,46 @@
                                 </el-table>
                             </div>
                         </div>
+                        <div class="admin-edit-section mt-4">
+                            <div class="admin-edit-toolbar">
+                                <div>
+                                    <div class="admin-edit-section__title">附加服务</div>
+                                </div>
+                                <el-button type="primary" @click="openCreateStaffAddon">创建附加服务</el-button>
+                            </div>
+                            <div class="staff-table-card mt-4">
+                                <el-table :data="staffAddons" border>
+                                    <el-table-column label="名称" prop="name" min-width="150" />
+                                    <el-table-column label="价格" prop="price" width="140">
+                                        <template #default="{ row }">¥{{ row.price }}</template>
+                                    </el-table-column>
+                                    <el-table-column label="原价" width="140">
+                                        <template #default="{ row }">
+                                            <span v-if="Number(row.original_price || 0) > 0">¥{{ row.original_price }}</span>
+                                            <span v-else class="admin-edit-muted">-</span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="状态" prop="is_show" width="100">
+                                        <template #default="{ row }">
+                                            <el-tag :type="row.is_show ? 'success' : 'info'">
+                                                {{ row.is_show ? '上架' : '下架' }}
+                                            </el-tag>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="操作" width="200">
+                                        <template #default="{ row }">
+                                            <el-button type="primary" link @click="openEditStaffAddon(row)">编辑</el-button>
+                                            <el-button type="primary" link @click="toggleStaffAddonStatus(row)">
+                                                {{ row.is_show ? '下架' : '上架' }}
+                                            </el-button>
+                                            <el-button class="staff-secondary-action" type="danger" link @click="deleteStaffAddon(row)">
+                                                删除
+                                            </el-button>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                        </div>
                     </el-tab-pane>
 
                     <el-tab-pane label="轮播图配置" name="banner">
@@ -236,7 +284,6 @@
                             <div class="admin-edit-toolbar">
                                 <div>
                                     <div class="admin-edit-section__title">轮播基础配置</div>
-                                    <div class="admin-edit-section__desc">设置展示模式、高度、指示器与自动播放规则。</div>
                                 </div>
                                 <el-button type="primary" @click="saveBannerConfig">保存配置</el-button>
                             </div>
@@ -291,7 +338,6 @@
                             <div class="admin-edit-toolbar">
                                 <div>
                                     <div class="admin-edit-section__title">轮播图列表</div>
-                                    <div class="admin-edit-section__desc">维护图片或视频轮播素材并支持排序。</div>
                                 </div>
                                 <el-button type="primary" @click="openAddBanner">添加轮播图</el-button>
                             </div>
@@ -377,7 +423,7 @@
         <el-dialog
             v-model="showStaffPackageDialog"
             :title="isEditingStaffPackage ? '编辑专属套餐' : '创建专属套餐'"
-            width="700px"
+            width="960px"
             class="staff-edit-dialog"
             @closed="resetStaffPackageForm"
         >
@@ -407,6 +453,28 @@
                         placeholder="请输入套餐说明"
                     />
                 </el-form-item>
+                <el-form-item label="可选附加服务" prop="addon_ids">
+                    <el-select
+                        v-model="staffPackageForm.addon_ids"
+                        multiple
+                        collapse-tags
+                        collapse-tags-tooltip
+                        clearable
+                        filterable
+                        class="w-full"
+                        placeholder="未选择时前台不显示附加服务"
+                    >
+                        <el-option
+                            v-for="addon in staffAddons"
+                            :key="addon.id"
+                            :label="addon.is_show ? addon.name : `${addon.name}（已下架）`"
+                            :value="addon.id"
+                        />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="地区价格">
+                    <package-region-price-editor v-model="staffPackageForm.region_prices" />
+                </el-form-item>
                 <div class="grid staff-edit-grid gap-x-8">
                     <el-form-item label="排序" prop="sort">
                         <el-input-number v-model="staffPackageForm.sort" :min="0" :max="9999" class="w-full" />
@@ -429,6 +497,60 @@
                 <el-button @click="showStaffPackageDialog = false">取消</el-button>
                 <el-button type="primary" @click="submitStaffPackage">
                     {{ isEditingStaffPackage ? '保存' : '创建' }}
+                </el-button>
+            </template>
+        </el-dialog>
+
+        <!-- 创建附加服务弹窗 -->
+        <el-dialog
+            v-model="showStaffAddonDialog"
+            :title="isEditingStaffAddon ? '编辑附加服务' : '创建附加服务'"
+            width="680px"
+            class="staff-edit-dialog"
+            @closed="resetStaffAddonForm"
+        >
+            <el-form
+                ref="staffAddonFormRef"
+                :model="staffAddonForm"
+                :rules="staffAddonRules"
+                label-width="100px"
+            >
+                <el-form-item label="名称" prop="name">
+                    <el-input v-model="staffAddonForm.name" placeholder="请输入附加服务名称" />
+                </el-form-item>
+                <el-form-item label="售价" prop="price">
+                    <el-input-number v-model="staffAddonForm.price" :min="0" :precision="2" class="w-full" />
+                </el-form-item>
+                <el-form-item label="原价" prop="original_price">
+                    <el-input-number v-model="staffAddonForm.original_price" :min="0" :precision="2" class="w-full" />
+                </el-form-item>
+                <el-form-item label="图片" prop="image">
+                    <material-picker v-model="staffAddonForm.image" :limit="1" />
+                </el-form-item>
+                <el-form-item label="描述" prop="description">
+                    <el-input
+                        v-model="staffAddonForm.description"
+                        type="textarea"
+                        :rows="3"
+                        placeholder="请输入附加服务说明"
+                    />
+                </el-form-item>
+                <div class="grid staff-edit-grid gap-x-8">
+                    <el-form-item label="排序" prop="sort">
+                        <el-input-number v-model="staffAddonForm.sort" :min="0" :max="9999" class="w-full" />
+                    </el-form-item>
+                    <el-form-item label="状态" prop="is_show">
+                        <el-radio-group v-model="staffAddonForm.is_show">
+                            <el-radio :value="1">上架</el-radio>
+                            <el-radio :value="0">下架</el-radio>
+                        </el-radio-group>
+                    </el-form-item>
+                </div>
+            </el-form>
+            <template #footer>
+                <el-button @click="showStaffAddonDialog = false">取消</el-button>
+                <el-button type="primary" @click="submitStaffAddon">
+                    {{ isEditingStaffAddon ? '保存' : '创建' }}
                 </el-button>
             </template>
         </el-dialog>
@@ -509,6 +631,10 @@ import {
     staffEdit,
     staffDetail,
     staffResetAdminPassword,
+    staffGetAddonConfig,
+    staffCreateAddon,
+    staffUpdateStaffAddon,
+    staffDeleteAddon,
     staffCreatePackage,
     staffUpdateStaffPackage,
     staffDeletePackage,
@@ -522,6 +648,8 @@ import {
 } from '@/api/staff'
 import { getUserList, getUserDetail } from '@/api/consumer'
 import { categoryTree, styleTagAll } from '@/api/service'
+import PackageRegionPriceEditor from '@/components/service/package-region-price-editor.vue'
+import PackageRegionPriceSummary from '@/components/service/package-region-price-summary.vue'
 import { useDictOptions } from '@/hooks/useDictOptions'
 import useMultipleTabs from '@/hooks/useMultipleTabs'
 import { ElMessage } from 'element-plus'
@@ -533,16 +661,20 @@ const router = useRouter()
 const { removeTab } = useMultipleTabs()
 const formRef = shallowRef<FormInstance>()
 const staffPackageFormRef = shallowRef<FormInstance>()
+const staffAddonFormRef = shallowRef<FormInstance>()
 const bannerFormRef = shallowRef<FormInstance>()
 const activeTab = ref('basic')
 const showStaffPackageDialog = ref(false)
+const showStaffAddonDialog = ref(false)
 const showBannerDialog = ref(false)
 const credentialDialogVisible = ref(false)
 const pendingBack = ref(false)
 const isEditingStaffPackage = ref(false)
+const isEditingStaffAddon = ref(false)
 const isEditingBanner = ref(false)
 const groupedTags = ref<Record<string, any[]>>({})
 const staffPackages = ref<any[]>([])  // 专属套餐列表
+const staffAddons = ref<any[]>([])  // 附加服务列表
 const bannerList = ref<any[]>([])  // 轮播图列表
 const userOptions = ref<{ id: number; label: string; raw: any }[]>([])
 const userLoading = ref(false)
@@ -690,6 +822,8 @@ const staffPackageForm = reactive({
     original_price: 0,
     image: '',
     description: '',
+    addon_ids: [] as number[],
+    region_prices: [] as Record<string, any>[],
     sort: 0,
     is_show: 1,
     is_recommend: 0
@@ -726,6 +860,22 @@ const staffPackageRules = reactive({
     price: [{ required: true, message: '请输入套餐价格', trigger: 'blur' }]
 })
 
+const staffAddonForm = reactive({
+    id: 0,
+    name: '',
+    price: 0,
+    original_price: 0,
+    image: '',
+    description: '',
+    sort: 0,
+    is_show: 1
+})
+
+const staffAddonRules = reactive({
+    name: [{ required: true, message: '请输入附加服务名称', trigger: 'blur' }],
+    price: [{ required: true, message: '请输入附加服务价格', trigger: 'blur' }]
+})
+
 const bannerRules = reactive({
     type: [{ required: true, message: '请选择类型', trigger: 'change' }],
     file_url: [{ required: true, message: '请上传文件', trigger: 'change' }],
@@ -757,12 +907,29 @@ const resetStaffPackageForm = () => {
         original_price: 0,
         image: '',
         description: '',
+        addon_ids: [],
+        region_prices: [],
         sort: 0,
         is_show: 1,
         is_recommend: 0
     })
     isEditingStaffPackage.value = false
 }
+
+const resetStaffAddonForm = () => {
+    Object.assign(staffAddonForm, {
+        id: 0,
+        name: '',
+        price: 0,
+        original_price: 0,
+        image: '',
+        description: '',
+        sort: 0,
+        is_show: 1
+    })
+    isEditingStaffAddon.value = false
+}
+
 const { optionsData } = useDictOptions<{
     categories: any[]
 }>({
@@ -846,6 +1013,8 @@ const getDetails = async () => {
     formData.packages = []
     // 获取专属套餐
     await getStaffPackages()
+    // 获取附加服务
+    await getStaffAddons()
     // 加载轮播图配置
     loadBannerConfig(data)
     // 获取轮播图列表
@@ -865,6 +1034,25 @@ const getStaffPackages = async () => {
     }
 }
 
+const getStaffAddons = async () => {
+    if (!route.query.id) return
+    try {
+        const res = await staffGetAddonConfig({
+            staff_id: route.query.id
+        })
+        const addonList = Array.isArray(res) ? res : []
+        staffAddons.value = addonList.map((item: any) => ({
+            ...item,
+            price: Number(item.price ?? 0),
+            original_price: Number(item.original_price ?? 0),
+            sort: Number(item.sort ?? 0),
+            is_show: Number(item.is_show ?? 1)
+        }))
+    } catch (e) {
+        console.error('获取附加服务失败', e)
+    }
+}
+
 const openCreateStaffPackage = () => {
     resetStaffPackageForm()
     showStaffPackageDialog.value = true
@@ -879,6 +1067,8 @@ const openEditStaffPackage = (row: any) => {
     staffPackageForm.original_price = row.original_price || 0
     staffPackageForm.image = row.image || ''
     staffPackageForm.description = row.description || ''
+    staffPackageForm.addon_ids = Array.isArray(row.addon_ids) ? row.addon_ids.map((id: any) => Number(id)) : []
+    staffPackageForm.region_prices = Array.isArray(row.region_prices) ? row.region_prices : []
     staffPackageForm.sort = row.sort || 0
     staffPackageForm.is_show = Number(row.is_show || 0)
     staffPackageForm.is_recommend = Number(row.is_recommend || 0)
@@ -916,6 +1106,8 @@ const submitStaffPackage = async () => {
             original_price: staffPackageForm.original_price,
             image: staffPackageForm.image,
             description: staffPackageForm.description,
+            addon_ids: [...staffPackageForm.addon_ids],
+            region_prices: [...staffPackageForm.region_prices],
             is_show: staffPackageForm.is_show,
             is_recommend: staffPackageForm.is_recommend,
             sort: staffPackageForm.sort
@@ -936,6 +1128,104 @@ const submitStaffPackage = async () => {
         await getStaffPackages()
     } catch (e: any) {
         ElMessage.error(e.message || (isEditingStaffPackage.value ? '更新失败' : '创建失败'))
+    }
+}
+
+const openCreateStaffAddon = () => {
+    resetStaffAddonForm()
+    showStaffAddonDialog.value = true
+}
+
+const openEditStaffAddon = (row: any) => {
+    resetStaffAddonForm()
+    isEditingStaffAddon.value = true
+    Object.assign(staffAddonForm, {
+        id: Number(row.id || 0),
+        name: row.name || '',
+        price: Number(row.price || 0),
+        original_price: Number(row.original_price || 0),
+        image: row.image || '',
+        description: row.description || '',
+        sort: Number(row.sort || 0),
+        is_show: Number(row.is_show ?? 1)
+    })
+    showStaffAddonDialog.value = true
+}
+
+const submitStaffAddon = async () => {
+    await staffAddonFormRef.value?.validate()
+    if (!route.query.id) {
+        ElMessage.error('请先保存人员基本信息')
+        return
+    }
+
+    try {
+        const payload = {
+            staff_id: route.query.id,
+            name: staffAddonForm.name,
+            price: Number(staffAddonForm.price ?? 0),
+            original_price: Number(staffAddonForm.original_price ?? 0),
+            image: staffAddonForm.image,
+            description: staffAddonForm.description,
+            sort: Number(staffAddonForm.sort ?? 0),
+            is_show: Number(staffAddonForm.is_show ?? 1)
+        }
+
+        if (isEditingStaffAddon.value) {
+            await staffUpdateStaffAddon({
+                ...payload,
+                addon_id: staffAddonForm.id
+            })
+            ElMessage.success('更新成功')
+        } else {
+            await staffCreateAddon(payload)
+            ElMessage.success('创建成功')
+        }
+
+        showStaffAddonDialog.value = false
+        resetStaffAddonForm()
+        await getStaffAddons()
+    } catch (e: any) {
+        ElMessage.error(e.message || (isEditingStaffAddon.value ? '更新失败' : '创建失败'))
+    }
+}
+
+const deleteStaffAddon = async (row: any) => {
+    if (!route.query.id) {
+        ElMessage.error('请先保存人员基本信息')
+        return
+    }
+    await feedback.confirm(`确定要删除附加服务「${row.name || ''}」吗？`)
+    try {
+        await staffDeleteAddon({ staff_id: route.query.id, addon_id: row.id })
+        ElMessage.success('删除成功')
+        await getStaffAddons()
+    } catch (e: any) {
+        ElMessage.error(e.message || '删除失败')
+    }
+}
+
+const toggleStaffAddonStatus = async (row: any) => {
+    if (!route.query.id) {
+        ElMessage.error('请先保存人员基本信息')
+        return
+    }
+    try {
+        await staffUpdateStaffAddon({
+            staff_id: route.query.id,
+            addon_id: row.id,
+            name: row.name,
+            price: Number(row.price ?? 0),
+            original_price: Number(row.original_price ?? 0),
+            image: row.image || '',
+            description: row.description || '',
+            sort: Number(row.sort ?? 0),
+            is_show: Number(row.is_show ? 0 : 1)
+        })
+        ElMessage.success(row.is_show ? '已下架' : '已上架')
+        await getStaffAddons()
+    } catch (e: any) {
+        ElMessage.error(e.message || '状态更新失败')
     }
 }
 

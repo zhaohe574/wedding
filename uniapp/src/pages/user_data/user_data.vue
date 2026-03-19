@@ -19,7 +19,7 @@
                     :round="true"
                     @update:modelValue="handleAvatarChange"
                 />
-                <text class="avatar-tip">点击修改头像</text>
+                <text class="avatar-tip">更换头像</text>
             </view>
         </view>
 

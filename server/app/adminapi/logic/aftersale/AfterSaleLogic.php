@@ -13,6 +13,7 @@ use app\common\model\aftersale\AfterSaleTicketLog;
 use app\common\model\aftersale\Complaint;
 use app\common\model\aftersale\Reshoot;
 use app\common\model\aftersale\ServiceCallback;
+use app\common\service\OrderNotificationService;
 use think\facade\Db;
 
 /**
@@ -56,6 +57,12 @@ class AfterSaleLogic extends BaseLogic
         if (!$result[0]) {
             return $result[1];
         }
+
+        $ticket = $result[2] ?? null;
+        if ($ticket) {
+            OrderNotificationService::notifyUserOnTicketCreated((int)$ticket->id);
+        }
+
         return true;
     }
 
@@ -72,6 +79,8 @@ class AfterSaleLogic extends BaseLogic
         if (!$result[0]) {
             return $result[1];
         }
+
+        OrderNotificationService::notifyUserOnTicketAccepted($ticketId);
         return true;
     }
 
@@ -95,6 +104,8 @@ class AfterSaleLogic extends BaseLogic
             AfterSaleTicketLog::addLog($ticketId, 2, $adminId, 'handle_images', 0, 0, '处理附件', $images);
         }
 
+        OrderNotificationService::notifyUserOnTicketPendingConfirm($ticketId);
+
         return true;
     }
 
@@ -111,6 +122,8 @@ class AfterSaleLogic extends BaseLogic
         if (!$result[0]) {
             return $result[1];
         }
+
+        OrderNotificationService::notifyUserOnTicketClosed($ticketId);
         return true;
     }
 
@@ -402,6 +415,7 @@ class AfterSaleLogic extends BaseLogic
             $result = AfterSaleTicket::assignTicket($ticketId, $adminId, $operatorId);
             if ($result[0]) {
                 $success++;
+                OrderNotificationService::notifyUserOnTicketAccepted((int)$ticketId);
             } else {
                 $fail++;
             }
@@ -426,6 +440,7 @@ class AfterSaleLogic extends BaseLogic
             $result = AfterSaleTicket::closeTicket($ticketId, $adminId, $reason);
             if ($result[0]) {
                 $success++;
+                OrderNotificationService::notifyUserOnTicketClosed((int)$ticketId);
             } else {
                 $fail++;
             }

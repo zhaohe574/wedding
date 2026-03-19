@@ -50,11 +50,15 @@ class StaffController extends BaseApiController
         if (!$id) {
             return $this->fail('参数错误');
         }
-        $result = StaffLogic::detail($id, $this->userId);
-        if (empty($result)) {
-            return $this->fail('工作人员不存在');
+        try {
+            $result = StaffLogic::detail($id, $this->userId, $this->request->get(), $this->request->get('date/s', ''));
+            if (empty($result)) {
+                return $this->fail('工作人员不存在');
+            }
+            return $this->data($result);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage() ?: '获取详情失败');
         }
-        return $this->data($result);
     }
 
     /**
@@ -107,8 +111,12 @@ class StaffController extends BaseApiController
         if (!$staffId) {
             return $this->fail('参数错误');
         }
-        $result = StaffLogic::packages($staffId);
-        return $this->data($result);
+        try {
+            $result = StaffLogic::packages($staffId, $this->request->get(), $this->request->get('date/s', ''));
+            return $this->data($result);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage() ?: '获取套餐失败');
+        }
     }
 
     /**
@@ -118,11 +126,12 @@ class StaffController extends BaseApiController
     public function addons()
     {
         $staffId = $this->request->get('staff_id/d');
+        $packageId = $this->request->get('package_id/d', 0);
         if (!$staffId) {
             return $this->fail('参数错误');
         }
 
-        $result = StaffLogic::addons($staffId);
+        $result = StaffLogic::addons($staffId, $packageId);
         return $this->data($result);
     }
 

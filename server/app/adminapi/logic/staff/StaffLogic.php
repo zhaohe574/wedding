@@ -12,6 +12,8 @@ use app\common\model\auth\Admin;
 use app\common\model\auth\AdminRole;
 use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
+use app\common\model\service\ServicePackageAddon;
+use app\common\service\PackageRegionPriceService;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffCertificate;
 use app\common\model\staff\StaffTag;
@@ -350,7 +352,7 @@ class StaffLogic extends BaseLogic
      */
     public static function configurePackages(int $staffId, array $packages): bool
     {
-        self::setError('全局套餐关联能力已下线，请直接维护该人员自己的套餐');
+        self::setError('请直接维护人员套餐');
         return false;
     }
 
@@ -456,12 +458,26 @@ class StaffLogic extends BaseLogic
                     $updateData[$field] = $data[$field];
                 }
             }
-            if (empty($updateData)) {
+            $needSyncRegionPrices = array_key_exists('region_prices', $data) && is_array($data['region_prices']);
+            if (empty($updateData) && !$needSyncRegionPrices) {
                 return true;
             }
-            $updateData['staff_id'] = $staffId;
-            $updateData['update_time'] = time();
-            $package->save($updateData);
+
+            Db::transaction(function () use ($package, $updateData, $staffId, $needSyncRegionPrices, $data) {
+                if (!empty($updateData)) {
+                    $updateData['staff_id'] = $staffId;
+                    $updateData['update_time'] = time();
+                    $package->save($updateData);
+                }
+
+                if ($needSyncRegionPrices) {
+                    PackageRegionPriceService::syncPackageRegionPrices(
+                        (int)$package->id,
+                        $staffId,
+                        $data['region_prices'] ?? []
+                    );
+                }
+            });
             return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -579,6 +595,7 @@ class StaffLogic extends BaseLogic
                 return false;
             }
 
+            ServicePackageAddon::clearByAddonId($addonId);
             $addon->delete();
             return true;
         } catch (\Exception $e) {
@@ -730,7 +747,7 @@ class StaffLogic extends BaseLogic
      */
     protected static function getStaffOwnedPackages(int $staffId): array
     {
-        return ServicePackage::where('staff_id', $staffId)
+        $packages = ServicePackage::where('staff_id', $staffId)
             ->whereNull('delete_time')
             ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show, is_recommend')
             ->append(['category_name', 'staff_name'])
@@ -738,6 +755,9 @@ class StaffLogic extends BaseLogic
             ->order('id', 'desc')
             ->select()
             ->toArray();
+
+        $packages = ServicePackageAddon::attachAddonIds($packages);
+        return PackageRegionPriceService::attachRegionPrices($packages);
     }
 
     /**

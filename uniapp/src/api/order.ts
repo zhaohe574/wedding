@@ -12,7 +12,7 @@ export function getOrderDetail(params: any) {
 
 // 创建订单
 export function createOrder(params: any) {
-    return request.post({ url: '/order/create', params })
+    return request.post({ url: '/order/create', params }, { isAuth: true })
 }
 
 // 订单预览

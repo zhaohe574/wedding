@@ -22,6 +22,12 @@ class OrderValidate extends BaseValidate
         'order_type' => 'integer|in:1,2,3',
         'items' => 'require|array|min:1',
         'service_date' => 'date',
+        'province_code' => 'max:12',
+        'province_name' => 'max:50',
+        'city_code' => 'max:12',
+        'city_name' => 'max:50',
+        'district_code' => 'max:12',
+        'district_name' => 'max:50',
         'service_address' => 'max:255',
         'contact_name' => 'require|max:50',
         'contact_mobile' => 'require|mobile',
@@ -82,7 +88,26 @@ class OrderValidate extends BaseValidate
      */
     public function sceneAdd()
     {
-        return $this->only(['user_id', 'order_type', 'items', 'service_date', 'service_address', 'contact_name', 'contact_mobile', 'wedding_date', 'wedding_venue', 'discount_amount', 'deposit_ratio', 'admin_remark']);
+        return $this->only([
+            'user_id',
+            'order_type',
+            'items',
+            'service_date',
+            'province_code',
+            'province_name',
+            'city_code',
+            'city_name',
+            'district_code',
+            'district_name',
+            'service_address',
+            'contact_name',
+            'contact_mobile',
+            'wedding_date',
+            'wedding_venue',
+            'discount_amount',
+            'deposit_ratio',
+            'admin_remark'
+        ]);
     }
 
     /**
@@ -91,7 +116,22 @@ class OrderValidate extends BaseValidate
      */
     public function sceneEdit()
     {
-        return $this->only(['id', 'service_date', 'service_address', 'contact_name', 'contact_mobile', 'wedding_date', 'wedding_venue', 'admin_remark'])
+        return $this->only([
+            'id',
+            'service_date',
+            'province_code',
+            'province_name',
+            'city_code',
+            'city_name',
+            'district_code',
+            'district_name',
+            'service_address',
+            'contact_name',
+            'contact_mobile',
+            'wedding_date',
+            'wedding_venue',
+            'admin_remark'
+        ])
             ->remove('contact_name', 'require')
             ->remove('contact_mobile', 'require');
     }

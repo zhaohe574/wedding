@@ -9,3 +9,5 @@ export const HISTORY = 'history'
 export const BACK_URL = 'back_url'
 
 export const PAY_STATUS_EVENT = 'event:payStatus'
+
+export const DYNAMIC_LIST_REFRESH_KEY = 'dynamic_list_refresh'

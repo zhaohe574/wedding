@@ -17,6 +17,8 @@ use app\api\validate\OrderValidate;
  */
 class OrderController extends BaseApiController
 {
+    public array $notNeedLogin = ['preview'];
+
     /**
      * @notes 我的订单列表
      * @return \think\response\Json
@@ -144,6 +146,7 @@ class OrderController extends BaseApiController
         $params = (new OrderValidate())->post()->goCheck('pay');
         $params['id'] = (int)$params['id'];
         $params['user_id'] = $this->userId;
+        $params['terminal'] = (int)($this->userInfo['terminal'] ?? 0);
         $result = OrderLogic::createPayment($params);
         if ($result['success']) {
             return $this->data($result['data']);
@@ -176,6 +179,7 @@ class OrderController extends BaseApiController
         $params['id'] = (int)$params['id'];
         $params['user_id'] = $this->userId;
         $params['pay_type'] = 2; // 尾款
+        $params['terminal'] = (int)($this->userInfo['terminal'] ?? 0);
         $result = OrderLogic::createPayment($params);
         if ($result['success']) {
             return $this->data($result['data']);

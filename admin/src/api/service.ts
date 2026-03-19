@@ -79,6 +79,48 @@ export function packageAll(params?: any) {
     return request.get({ url: '/ops.package/all', params })
 }
 
+// ==================== 服务地区 ====================
+
+// 服务地区列表
+export function regionLists(params?: any) {
+    return request.get({ url: '/ops.region/lists', params })
+}
+
+// 全部城市选项
+export function regionCityOptions() {
+    return request.get({ url: '/ops.region/cityOptions' })
+}
+
+// 已启用城市选项
+export function regionEnabledCityOptions() {
+    return request.get({ url: '/ops.region/enabledCityOptions' })
+}
+
+// 城市下区县选项
+export function regionDistrictOptions(params: { city_code: string }) {
+    return request.get({ url: '/ops.region/districtOptions', params })
+}
+
+// 添加服务地区
+export function regionAdd(params: any) {
+    return request.post({ url: '/ops.region/add', params })
+}
+
+// 编辑服务地区
+export function regionEdit(params: any) {
+    return request.post({ url: '/ops.region/edit', params })
+}
+
+// 删除服务地区
+export function regionDelete(params: any) {
+    return request.post({ url: '/ops.region/delete', params })
+}
+
+// 切换服务地区状态
+export function regionChangeStatus(params: any) {
+    return request.post({ url: '/ops.region/changeStatus', params })
+}
+
 // ==================== 附加服务 ====================
 
 // 附加服务列表

@@ -1,9 +1,5 @@
 <template>
-    <admin-page-shell
-        class="aftersale-container"
-        title="售后工单"
-        description="投诉、补拍、回访统一在工单中心收口处理。"
-    >
+    <admin-page-shell class="aftersale-container" title="售后工单">
         <!-- 统计卡片 -->
         <el-row :gutter="16" class="mb-4">
             <el-col :span="6">

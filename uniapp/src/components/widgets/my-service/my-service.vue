@@ -9,14 +9,14 @@
         <view v-if="content.style == 1" class="service-grid bg-white rounded-[16rpx] p-[24rpx]">
             <view class="grid grid-cols-4 gap-[32rpx]">
                 <view
-                    v-for="(item, index) in showList"
+                    v-for="(item, index) in displayList"
                     :key="index"
                     class="service-item flex flex-col items-center"
                     @click="handleClick(item.link)"
                 >
                     <!-- 图标容器 -->
                     <view
-                        class="icon-wrapper mb-[16rpx] p-[20rpx] rounded-[20rpx]"
+                        class="icon-wrapper relative mb-[16rpx] p-[20rpx] rounded-[20rpx]"
                         :style="{ backgroundColor: getIconBg(index) }"
                     >
                         <image
@@ -24,6 +24,15 @@
                             :src="getImageUrl(item.image)"
                             mode="aspectFit"
                         />
+                        <view
+                            v-if="item.badgeCount > 0"
+                            class="count-badge absolute -top-[8rpx] -right-[8rpx] min-w-[36rpx] h-[36rpx] rounded-full flex items-center justify-center px-[8rpx]"
+                            :style="{ backgroundColor: $theme.ctaColor }"
+                        >
+                            <text class="text-white text-[20rpx] font-semibold">
+                                {{ item.badgeCount > 99 ? '99+' : item.badgeCount }}
+                            </text>
+                        </view>
                     </view>
                     <!-- 文字 -->
                     <text class="text-[24rpx] text-[#334155] text-center">{{ item.name }}</text>
@@ -37,14 +46,14 @@
             class="service-list bg-white rounded-[16rpx] overflow-hidden"
         >
             <view
-                v-for="(item, index) in showList"
+                v-for="(item, index) in displayList"
                 :key="index"
                 class="service-list-item flex items-center px-[32rpx] py-[28rpx] border-b border-[#F1F5F9] last:border-b-0"
                 @click="handleClick(item.link)"
             >
                 <!-- 图标 -->
                 <view
-                    class="icon-wrapper p-[16rpx] rounded-[16rpx]"
+                    class="icon-wrapper relative p-[16rpx] rounded-[16rpx]"
                     :style="{ backgroundColor: getIconBg(index) }"
                 >
                     <image
@@ -52,6 +61,15 @@
                         :src="getImageUrl(item.image)"
                         mode="aspectFit"
                     />
+                    <view
+                        v-if="item.badgeCount > 0"
+                        class="count-badge absolute -top-[8rpx] -right-[8rpx] min-w-[36rpx] h-[36rpx] rounded-full flex items-center justify-center px-[8rpx]"
+                        :style="{ backgroundColor: $theme.ctaColor }"
+                    >
+                        <text class="text-white text-[20rpx] font-semibold">
+                            {{ item.badgeCount > 99 ? '99+' : item.badgeCount }}
+                        </text>
+                    </view>
                 </view>
                 <!-- 文字 -->
                 <text class="flex-1 ml-[24rpx] text-[28rpx] text-[#1E293B]">{{ item.name }}</text>
@@ -63,11 +81,12 @@
 </template>
 <script lang="ts" setup>
 import { useAppStore } from '@/stores/app'
-import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
-import { navigateTo } from '@/utils/util'
-import { computed } from 'vue'
+import { useUserStore } from '@/stores/user'
+import { loadUserBadgeData } from '@/utils/user-badge'
+import { navigateTo, normalizeAppPath } from '@/utils/util'
 import { storeToRefs } from 'pinia'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
     content: {
@@ -77,6 +96,10 @@ const props = defineProps({
     styles: {
         type: Object,
         default: () => ({})
+    },
+    badgeRefreshKey: {
+        type: [Number, String],
+        default: 0
     }
 })
 
@@ -84,7 +107,19 @@ const appStore = useAppStore()
 const { getImageUrl } = appStore
 const userStore = useUserStore()
 const $theme = useThemeStore()
-const { userInfo } = storeToRefs(userStore)
+const { userInfo, isLogin } = storeToRefs(userStore)
+const badgeState = ref({
+    message: 0,
+    staffTodo: 0
+})
+const badgeRequestToken = ref(0)
+const hasInitializedBadgeLoad = ref(false)
+
+const NOTIFICATION_PATHS = new Set(['/packages/pages/notification/index'])
+const STAFF_CENTER_PATHS = new Set([
+    '/packages/pages/staff_center/staff_center',
+    '/pages/staff_center/staff_center'
+])
 
 const handleClick = (link: any) => {
     navigateTo(link)
@@ -160,6 +195,97 @@ const showList = computed(() => {
     const base = props.content.data?.filter((item: any) => item.is_show == '1') || []
     return [...base, ...extraItems.value]
 })
+
+const resolveLinkPath = (link: any) => {
+    const rawPath = typeof link === 'string' ? link : String(link?.path || '')
+    if (!rawPath) return ''
+    return normalizeAppPath(rawPath.split('?')[0])
+}
+
+const isNotificationItem = (item: any) => {
+    return NOTIFICATION_PATHS.has(resolveLinkPath(item?.link))
+}
+
+const isStaffCenterItem = (item: any) => {
+    return STAFF_CENTER_PATHS.has(resolveLinkPath(item?.link))
+}
+
+const shouldLoadMessageBadge = computed(() => {
+    return showList.value.some((item: any) => isNotificationItem(item))
+})
+
+const shouldLoadStaffTodoBadge = computed(() => {
+    return (
+        featureSwitch.value.staff_center === 1 &&
+        !!userInfo.value?.is_staff &&
+        showList.value.some((item: any) => isStaffCenterItem(item))
+    )
+})
+
+const getBadgeCount = (item: any) => {
+    if (isNotificationItem(item)) {
+        return badgeState.value.message
+    }
+    if (isStaffCenterItem(item)) {
+        return badgeState.value.staffTodo
+    }
+    return 0
+}
+
+const displayList = computed(() => {
+    return showList.value.map((item: any) => ({
+        ...item,
+        badgeCount: getBadgeCount(item)
+    }))
+})
+
+const loadBadgeData = async () => {
+    const requestToken = ++badgeRequestToken.value
+
+    if (!isLogin.value) {
+        badgeState.value = {
+            message: 0,
+            staffTodo: 0
+        }
+        hasInitializedBadgeLoad.value = true
+        return
+    }
+
+    const result = await loadUserBadgeData({
+        loadMessage: shouldLoadMessageBadge.value,
+        loadStaffTodo: shouldLoadStaffTodoBadge.value
+    })
+
+    if (requestToken !== badgeRequestToken.value) {
+        hasInitializedBadgeLoad.value = true
+        return
+    }
+
+    badgeState.value = {
+        message: result.messageCount,
+        staffTodo: result.staffTodoCount
+    }
+    hasInitializedBadgeLoad.value = true
+}
+
+watch(
+    [
+        isLogin,
+        showList
+    ],
+    () => {
+        loadBadgeData()
+    },
+    { immediate: true }
+)
+
+watch(
+    () => props.badgeRefreshKey,
+    () => {
+        if (!hasInitializedBadgeLoad.value) return
+        loadBadgeData()
+    }
+)
 </script>
 
 <style lang="scss" scoped>
@@ -182,6 +308,10 @@ const showList = computed(() => {
         .icon-wrapper {
             transition: all 0.2s ease;
         }
+
+        .count-badge {
+            box-shadow: 0 4rpx 12rpx rgba(249, 115, 22, 0.4);
+        }
     }
 
     .service-list-item {
@@ -190,6 +320,10 @@ const showList = computed(() => {
 
         &:active {
             background-color: #f8fafc;
+        }
+
+        .count-badge {
+            box-shadow: 0 4rpx 12rpx rgba(249, 115, 22, 0.4);
         }
     }
 }

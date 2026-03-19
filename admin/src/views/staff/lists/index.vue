@@ -1,9 +1,5 @@
 <template>
-    <admin-page-shell
-        class="staff-lists"
-        title="服务人员"
-        description="统一管理服务人员档案、状态与基础运营指标。"
-    >
+    <admin-page-shell class="staff-lists" title="服务人员">
         <template #search>
             <search-panel>
                 <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">

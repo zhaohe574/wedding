@@ -8,12 +8,12 @@
     </page-meta>
 
     <view class="consult-page">
-        <view class="consult-shell">
-            <view class="consult-hero">
-                <view class="consult-badge">{{ state.entryType === 'advisor' ? '专属顾问' : '统一客服' }}</view>
-                <view class="consult-title">添加顾问后继续沟通</view>
+            <view class="consult-shell">
+                <view class="consult-hero">
+                    <view class="consult-badge">{{ state.entryType === 'advisor' ? '专属顾问' : '统一客服' }}</view>
+                <view class="consult-title">{{ state.entryType === 'advisor' ? '联系顾问' : '联系客服' }}</view>
                 <view class="consult-subtitle">{{ sceneTitle }}</view>
-            </view>
+                </view>
 
             <view v-if="state.loading" class="loading-card">
                 <tn-icon name="loading" size="40" :color="$theme.primaryColor" />
@@ -101,7 +101,7 @@
                 </view>
 
                 <view class="tips-card">
-                    <view class="tips-title">温馨提示</view>
+                    <view class="tips-title">联系说明</view>
                     <view class="tips-text">{{ contact.tips || defaultTips }}</view>
                 </view>
             </view>
@@ -142,14 +142,14 @@ const state = reactive({
 })
 
 const sceneTitleMap: Record<string, string> = {
-    home: '首页咨询将进入顾问体系，由顾问统一承接沟通。',
-    staff_detail: '当前咨询将由顾问继续跟进，不会直接进入服务人员会话。',
-    order_detail: '订单状态仍以站内消息与订阅通知为准，顾问负责沟通协助。',
-    aftersale: '售后问题将由顾问或客服协助承接并推进处理。',
-    package_detail: '套餐咨询将进入顾问体系，便于统一跟进报价与排期。'
+    home: '首页咨询',
+    staff_detail: '人员咨询',
+    order_detail: '订单咨询',
+    aftersale: '售后咨询',
+    package_detail: '套餐咨询'
 }
 
-const defaultTips = '添加顾问后继续沟通，订单状态变化仍以站内消息中心与订阅通知为准。'
+const defaultTips = '如需帮助，请直接联系'
 
 const sceneTitle = computed(() => sceneTitleMap[query.scene] || sceneTitleMap.home)
 const contact = computed(() => state.contact)

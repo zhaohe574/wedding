@@ -14,6 +14,7 @@ use app\common\model\order\OrderLog;
 use app\common\model\order\Payment;
 use app\common\model\schedule\Schedule;
 use app\common\model\user\User;
+use app\common\service\OrderNotificationService;
 use think\facade\Db;
 
 /**
@@ -32,8 +33,9 @@ class OrderLogic extends BaseLogic
      */
     public static function confirmByStaff(int $orderId, int $staffId, int $adminId): bool
     {
+        $shouldNotifyUser = false;
         try {
-            return Db::transaction(function () use ($orderId, $staffId, $adminId) {
+            $result = Db::transaction(function () use ($orderId, $staffId, $adminId, &$shouldNotifyUser) {
                 /** @var Order|null $order */
                 $order = Order::where('id', $orderId)
                     ->lock(true)
@@ -90,6 +92,8 @@ class OrderLogic extends BaseLogic
                     $order->order_status = Order::STATUS_PENDING_PAY;
                     $order->update_time = time();
                     $order->save();
+                    Order::syncPendingPayDeadline($order);
+                    $shouldNotifyUser = true;
 
                     OrderLog::addLog(
                         $orderId,
@@ -114,6 +118,12 @@ class OrderLogic extends BaseLogic
 
                 return true;
             });
+
+            if ($result && $shouldNotifyUser) {
+                OrderNotificationService::notifyUserOnOrderConfirmed($orderId);
+            }
+
+            return $result;
         } catch (\Throwable $e) {
             self::setError($e->getMessage());
             return false;
@@ -151,6 +161,7 @@ class OrderLogic extends BaseLogic
         $data['pay_status_desc'] = $order->pay_status_desc;
         $data['pay_type_desc'] = $order->pay_type_desc;
         $data['pay_voucher_status_desc'] = $order->pay_voucher_status_desc ?? '';
+        $data['service_region_text'] = $order->service_region_text;
 
         return $data;
     }
@@ -235,6 +246,8 @@ class OrderLogic extends BaseLogic
      */
     public static function add(array $params): bool
     {
+        $createdOrderId = 0;
+
         Db::startTrans();
         try {
             // 验证用户
@@ -282,6 +295,12 @@ class OrderLogic extends BaseLogic
                 'service_date' => $params['service_date'] ?? null,
                 'service_time_slot' => 0,
                 'service_address' => $params['service_address'] ?? '',
+                'service_province_code' => $params['province_code'] ?? '',
+                'service_province' => $params['province_name'] ?? '',
+                'service_city_code' => $params['city_code'] ?? '',
+                'service_city' => $params['city_name'] ?? '',
+                'service_district_code' => $params['district_code'] ?? '',
+                'service_district' => $params['district_name'] ?? '',
                 'contact_name' => $params['contact_name'] ?? '',
                 'contact_mobile' => $params['contact_mobile'] ?? '',
                 'wedding_date' => $params['wedding_date'] ?? null,
@@ -304,6 +323,10 @@ class OrderLogic extends BaseLogic
                     'time_slot' => 0,
                     'staff_name' => $item['staff_name'] ?? '',
                     'package_name' => $item['package_name'] ?? '',
+                    'package_description' => OrderItem::resolvePackageDescription(
+                        (int)($item['package_id'] ?? 0),
+                        (string)($item['package_description'] ?? '')
+                    ),
                     'price' => $item['price'],
                     'quantity' => $item['quantity'] ?? 1,
                     'subtotal' => $item['subtotal'],
@@ -325,10 +348,23 @@ class OrderLogic extends BaseLogic
                 }
             }
 
+            Order::syncPendingPayDeadline($order);
+
             // 记录日志
             OrderLog::addLog($order->id, OrderLog::OPERATOR_ADMIN, $params['admin_id'], 'create', 0, Order::STATUS_PENDING_PAY, '后台创建订单');
 
+            $createdOrderId = (int)$order->id;
+
             Db::commit();
+
+            if ($createdOrderId > 0) {
+                OrderNotificationService::notifyUserOnOrderConfirmed(
+                    $createdOrderId,
+                    '后台已为您创建订单',
+                    '订单%s已创建，请尽快完成支付。',
+                    '订单已创建，请支付'
+                );
+            }
             return true;
         } catch (\Exception $e) {
             Db::rollback();
@@ -358,7 +394,41 @@ class OrderLogic extends BaseLogic
             }
 
             $updateData = [];
-            $allowFields = ['service_date', 'service_time_slot', 'service_address', 'contact_name', 'contact_mobile', 'wedding_date', 'wedding_venue', 'admin_remark'];
+            $allowFields = [
+                'service_date',
+                'service_time_slot',
+                'service_address',
+                'service_province_code',
+                'service_province',
+                'service_city_code',
+                'service_city',
+                'service_district_code',
+                'service_district',
+                'contact_name',
+                'contact_mobile',
+                'wedding_date',
+                'wedding_venue',
+                'admin_remark'
+            ];
+
+            if (isset($params['province_code'])) {
+                $params['service_province_code'] = $params['province_code'];
+            }
+            if (isset($params['province_name'])) {
+                $params['service_province'] = $params['province_name'];
+            }
+            if (isset($params['city_code'])) {
+                $params['service_city_code'] = $params['city_code'];
+            }
+            if (isset($params['city_name'])) {
+                $params['service_city'] = $params['city_name'];
+            }
+            if (isset($params['district_code'])) {
+                $params['service_district_code'] = $params['district_code'];
+            }
+            if (isset($params['district_name'])) {
+                $params['service_district'] = $params['district_name'];
+            }
             
             foreach ($allowFields as $field) {
                 if (isset($params[$field])) {
@@ -463,6 +533,9 @@ class OrderLogic extends BaseLogic
      */
     public static function confirmOfflinePay(array $params): bool
     {
+        $notifyOrderId = 0;
+        $notifyPayType = Payment::TYPE_FULL;
+
         Db::startTrans();
         try {
             $order = Order::find($params['id']);
@@ -521,6 +594,7 @@ class OrderLogic extends BaseLogic
 
             $order->pay_type = Order::PAY_WAY_OFFLINE;
             $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payAmount, 2);
+            $order->pay_deadline_time = 0;
             $order->update_time = time();
             $order->save();
 
@@ -528,7 +602,14 @@ class OrderLogic extends BaseLogic
             $action = $payType == Payment::TYPE_DEPOSIT ? 'pay_deposit' : ($payType == Payment::TYPE_BALANCE ? 'pay_balance' : 'pay');
             OrderLog::addLog($order->id, OrderLog::OPERATOR_ADMIN, $params['admin_id'], $action, Order::STATUS_PENDING_PAY, $order->order_status, '确认线下支付，金额：' . $payAmount);
 
+            $notifyOrderId = (int)$order->id;
+            $notifyPayType = (int)$payType;
+
             Db::commit();
+
+            if ($notifyOrderId > 0) {
+                OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($notifyOrderId, $notifyPayType);
+            }
             return true;
         } catch (\Exception $e) {
             Db::rollback();
@@ -671,6 +752,10 @@ class OrderLogic extends BaseLogic
      */
     public static function auditPayVoucher(array $params): bool
     {
+        $notifyOrderId = 0;
+        $notifyPayType = Payment::TYPE_FULL;
+        $notifyVoucherRejected = false;
+
         Db::startTrans();
         try {
             $order = Order::find($params['id']);
@@ -712,6 +797,7 @@ class OrderLogic extends BaseLogic
                         $payAmount = $order->deposit_amount;
                         $order->deposit_paid = 1;
                         $order->pay_time = time();
+                        $order->pay_deadline_time = 0;
                     } elseif (!$order->balance_paid) {
                         $payType = Payment::TYPE_BALANCE;
                         $payAmount = $order->balance_amount;
@@ -719,6 +805,7 @@ class OrderLogic extends BaseLogic
                         $order->order_status = Order::STATUS_PAID;
                         $order->pay_status = Order::PAY_STATUS_PAID;
                         $order->pay_time = time();
+                        $order->pay_deadline_time = 0;
                     } else {
                         self::setError('订单已完成支付');
                         return false;
@@ -727,6 +814,7 @@ class OrderLogic extends BaseLogic
                     $order->order_status = Order::STATUS_PAID;
                     $order->pay_status = Order::PAY_STATUS_PAID;
                     $order->pay_time = time();
+                    $order->pay_deadline_time = 0;
                 }
 
                 $payment = Payment::create([
@@ -757,6 +845,9 @@ class OrderLogic extends BaseLogic
                     $order->order_status,
                     '线下凭证审核通过，金额：' . $payment->pay_amount
                 );
+
+                $notifyOrderId = (int)$order->id;
+                $notifyPayType = (int)$payType;
             } else {
                 $order->update_time = time();
                 $order->save();
@@ -770,9 +861,20 @@ class OrderLogic extends BaseLogic
                     $order->order_status,
                     '线下凭证审核拒绝' . ($remark ? '：' . $remark : '')
                 );
+
+                $notifyOrderId = (int)$order->id;
+                $notifyVoucherRejected = true;
             }
 
             Db::commit();
+
+            if ($notifyVoucherRejected && $notifyOrderId > 0) {
+                OrderNotificationService::notifyUserOnOfflineVoucherRejected($notifyOrderId);
+            }
+
+            if (!$notifyVoucherRejected && $notifyOrderId > 0) {
+                OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($notifyOrderId, $notifyPayType);
+            }
             return true;
         } catch (\Exception $e) {
             Db::rollback();

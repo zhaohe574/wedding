@@ -167,28 +167,18 @@
 
                     <!-- 筛选条件栏 -->
                     <view class="filter-bar">
-                        <!-- 标签筛选 -->
+                        <!-- 地区筛选 -->
                         <view
                             class="filter-item"
-                            :style="selectedTagIds.length ? getFilterItemActiveStyle() : {}"
-                            @click="openTagPicker"
+                            :style="hasSelectedRegion ? getFilterItemActiveStyle() : {}"
+                            @click="openRegionPicker"
                         >
-                            <tn-icon
-                                name="list"
-                                size="28"
-                                :color="selectedTagIds.length ? $theme.primaryColor : '#666666'"
-                            />
                             <text
-                                :class="{ active: selectedTagIds.length }"
-                                :style="selectedTagIds.length ? { color: $theme.primaryColor } : {}"
+                                :class="{ active: hasSelectedRegion }"
+                                :style="hasSelectedRegion ? { color: $theme.primaryColor } : {}"
                             >
-                                {{ tagFilterText }}
+                                {{ selectedRegionText }}
                             </text>
-                            <tn-icon
-                                name="arrow-down"
-                                size="24"
-                                :color="selectedTagIds.length ? $theme.primaryColor : '#999999'"
-                            />
                         </view>
 
                         <!-- 日期筛选 -->
@@ -198,23 +188,27 @@
                                 :style="selectedDate ? getFilterItemActiveStyle() : {}"
                                 @click="openDatePicker"
                             >
-                                <tn-icon
-                                    name="calendar"
-                                    size="28"
-                                    :color="selectedDate ? $theme.primaryColor : '#666666'"
-                                />
                                 <text
                                     :class="{ active: selectedDate }"
                                     :style="selectedDate ? { color: $theme.primaryColor } : {}"
                                 >
                                     {{ dateRangeText }}
                                 </text>
-                                <tn-icon
-                                    name="arrow-down"
-                                    size="24"
-                                    :color="selectedDate ? $theme.primaryColor : '#999999'"
-                                />
                             </view>
+                        </view>
+
+                        <!-- 标签筛选 -->
+                        <view
+                            class="filter-item"
+                            :style="selectedTagIds.length ? getFilterItemActiveStyle() : {}"
+                            @click="openTagPicker"
+                        >
+                            <text
+                                :class="{ active: selectedTagIds.length }"
+                                :style="selectedTagIds.length ? { color: $theme.primaryColor } : {}"
+                            >
+                                {{ tagFilterText }}
+                            </text>
                         </view>
 
                         <!-- 排序筛选 -->
@@ -223,11 +217,6 @@
                             :style="currentSort !== 'default' ? getFilterItemActiveStyle() : {}"
                             @click="openSortPicker"
                         >
-                            <tn-icon
-                                name="sort"
-                                size="28"
-                                :color="currentSort !== 'default' ? $theme.primaryColor : '#666666'"
-                            />
                             <text
                                 :class="{ active: currentSort !== 'default' }"
                                 :style="
@@ -236,11 +225,6 @@
                             >
                                 {{ currentSortName }}
                             </text>
-                            <tn-icon
-                                name="arrow-down"
-                                size="24"
-                                :color="currentSort !== 'default' ? $theme.primaryColor : '#999999'"
-                            />
                         </view>
                     </view>
                 </view>
@@ -253,12 +237,18 @@
                         <tn-icon name="inbox" size="156" color="#D1D5DB" />
                     </view>
                     <text class="empty-title">{{
-                        selectedDate ? '暂无符合条件的服务人员' : '请先选择预约日期'
+                        !hasSelectedRegion
+                            ? '请先选择服务地区'
+                            : selectedDate
+                              ? '暂无符合条件的服务人员'
+                              : '请先选择预约日期'
                     }}</text>
                     <text class="empty-subtitle">{{
-                        selectedDate
-                            ? '试试调整筛选条件，发现更多优质团队'
-                            : '选择日期后再查看可预约的服务人员'
+                        !hasSelectedRegion
+                            ? '请选择区县'
+                            : selectedDate
+                              ? '调整筛选后重试'
+                              : '请选择预约日期'
                     }}</text>
                     <view
                         class="empty-action-btn"
@@ -266,7 +256,13 @@
                         @click="handleEmptyAction"
                     >
                         <text class="empty-action-text" :style="{ color: $theme.btnColor }">
-                            {{ selectedDate ? '重置筛选' : '选择日期' }}
+                            {{
+                                !hasSelectedRegion
+                                    ? '选择地区'
+                                    : selectedDate
+                                      ? '重置筛选'
+                                      : '选择日期'
+                            }}
                         </text>
                     </view>
                 </view>
@@ -502,6 +498,107 @@
             </view>
         </z-paging>
 
+        <!-- 地区选择器 -->
+        <u-popup
+            v-model="showRegionPopup"
+            mode="bottom"
+            :mask="true"
+            :mask-close-able="true"
+            :safe-area-inset-bottom="true"
+            :border-radius="24"
+        >
+            <view class="picker-container region-picker-container">
+                <view class="picker-header">
+                    <text class="picker-action" @click="closeRegionPicker">取消</text>
+                    <text class="picker-title">选择服务地区</text>
+                    <text class="picker-action picker-action-primary" @click="confirmRegionPicker">
+                        确定
+                    </text>
+                </view>
+                <view class="region-picker-content">
+                    <view class="region-picker-col">
+                        <view class="region-picker-col__title">省份</view>
+                        <scroll-view scroll-y class="region-picker-scroll">
+                            <view
+                                v-for="province in regionProvinces"
+                                :key="province.province_code"
+                                class="region-picker-item"
+                                :class="{ active: tempRegion.province_code === province.province_code }"
+                                :style="
+                                    tempRegion.province_code === province.province_code
+                                        ? {
+                                              background: alphaColor($theme.primaryColor, 0.1),
+                                              color: $theme.primaryColor
+                                          }
+                                        : {}
+                                "
+                                @click="handleProvinceSelect(province)"
+                            >
+                                {{ province.province_name }}
+                            </view>
+                        </scroll-view>
+                    </view>
+                    <view class="region-picker-col">
+                        <view class="region-picker-col__title">城市</view>
+                        <scroll-view scroll-y class="region-picker-scroll">
+                            <view
+                                v-for="city in regionCities"
+                                :key="city.city_code"
+                                class="region-picker-item"
+                                :class="{ active: tempRegion.city_code === city.city_code }"
+                                :style="
+                                    tempRegion.city_code === city.city_code
+                                        ? {
+                                              background: alphaColor($theme.primaryColor, 0.1),
+                                              color: $theme.primaryColor
+                                          }
+                                        : {}
+                                "
+                                @click="handleCitySelect(city)"
+                            >
+                                {{ city.city_name }}
+                            </view>
+                        </scroll-view>
+                    </view>
+                    <view class="region-picker-col">
+                        <view class="region-picker-col__title">区县</view>
+                        <scroll-view scroll-y class="region-picker-scroll">
+                            <view
+                                v-for="district in regionDistricts"
+                                :key="district.district_code"
+                                class="region-picker-item"
+                                :class="{ active: tempRegion.district_code === district.district_code }"
+                                :style="
+                                    tempRegion.district_code === district.district_code
+                                        ? {
+                                              background: alphaColor($theme.primaryColor, 0.1),
+                                              color: $theme.primaryColor
+                                          }
+                                        : {}
+                                "
+                                @click="handleDistrictSelect(district)"
+                            >
+                                {{ district.district_name }}
+                            </view>
+                        </scroll-view>
+                    </view>
+                </view>
+                <view class="picker-footer">
+                    <view class="picker-btn" @click="resetRegionSelection">清空</view>
+                    <view
+                        class="picker-btn picker-btn-primary"
+                        :style="{
+                            background: $theme.primaryColor,
+                            boxShadow: getPrimaryShadow(0.24)
+                        }"
+                        @click="confirmRegionPicker"
+                    >
+                        确定
+                    </view>
+                </view>
+            </view>
+        </u-popup>
+
         <!-- 标签选择器 -->
         <u-popup
             v-model="showTagPopup"
@@ -657,7 +754,7 @@
             </view>
         </u-popup>
 
-        <tabbar />
+        <tabbar :badge-refresh-key="tabbarRefreshKey" />
     </view>
 </template>
 
@@ -665,9 +762,17 @@
 import { ref, computed, onUnmounted, nextTick, watch } from 'vue'
 import { onLoad, onReady, onShow } from '@dcloudio/uni-app'
 import { getStaffList, toggleStaffFavorite } from '@/api/staff'
-import { getServiceCategories, getStyleTags } from '@/api/service'
+import { getServiceCategories, getServiceRegionTree, getStyleTags } from '@/api/service'
 import { useThemeStore } from '@/stores/theme'
 import { alphaColor } from '@/utils/color'
+import {
+    buildServiceRegionQuery,
+    hasServiceRegion,
+    loadServiceRegionSelection,
+    normalizeServiceRegion,
+    saveServiceRegionSelection,
+    toServiceRegionParams
+} from '@/utils/service-region'
 
 type StaffViewMode = 'poster' | 'list'
 
@@ -675,6 +780,7 @@ const $theme = useThemeStore()
 const STAFF_VIEW_MODE_STORAGE_KEY = 'staff_list_view_mode'
 const STAFF_LIST_PAGE_SIZE = 10
 const POPUP_REOPEN_DELAY = 280
+const tabbarRefreshKey = ref(0)
 
 const getPrimaryGradient = () =>
     `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
@@ -740,6 +846,10 @@ const categoryMoveThreshold = 6
 const showTagPopup = ref(false)
 const showSortPopup = ref(false)
 const showDatePopup = ref(false)
+const showRegionPopup = ref(false)
+const regionTree = ref<any[]>([])
+const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
+const tempRegion = ref(normalizeServiceRegion(selectedRegion.value))
 
 // 获取明天的日期（最小可选日期）
 const getTomorrowDate = () => {
@@ -894,16 +1004,124 @@ const dateRangeText = computed(() => {
     return '请选择日期'
 })
 
+const hasSelectedRegion = computed(() => hasServiceRegion(selectedRegion.value))
+const selectedRegionText = computed(() => {
+    if (!hasSelectedRegion.value) {
+        return '选择区县'
+    }
+    return selectedRegion.value.district_name || '选择区县'
+})
+
+const regionProvinces = computed(() => regionTree.value || [])
+const regionCities = computed(() => {
+    return (
+        regionTree.value.find((item: any) => item.province_code === tempRegion.value.province_code)?.cities || []
+    )
+})
+const regionDistricts = computed(() => {
+    return (
+        regionCities.value.find((item: any) => item.city_code === tempRegion.value.city_code)?.districts || []
+    )
+})
+
 // 日期选择处理
 const pagingRefresherEnabled = computed(() => {
     return import.meta.env.UNI_PLATFORM !== 'h5'
 })
 
 const openDatePicker = () => {
+    if (!hasSelectedRegion.value) {
+        openRegionPicker()
+        return
+    }
     if (showDatePopup.value) {
         return
     }
     showDatePopup.value = true
+}
+
+const syncTempRegion = (value?: Record<string, any>) => {
+    const region = normalizeServiceRegion(value || selectedRegion.value)
+    tempRegion.value = region
+    if (!tempRegion.value.province_code && regionTree.value.length) {
+        handleProvinceSelect(regionTree.value[0])
+        return
+    }
+
+    if (!tempRegion.value.city_code && regionCities.value.length) {
+        handleCitySelect(regionCities.value[0])
+    }
+}
+
+const openRegionPicker = () => {
+    if (showRegionPopup.value) {
+        return
+    }
+    syncTempRegion()
+    showRegionPopup.value = true
+}
+
+const closeRegionPicker = () => {
+    showRegionPopup.value = false
+}
+
+const handleProvinceSelect = (province: any) => {
+    tempRegion.value = normalizeServiceRegion({
+        province_code: province?.province_code || '',
+        province_name: province?.province_name || '',
+        city_code: '',
+        city_name: '',
+        district_code: '',
+        district_name: ''
+    })
+
+    const firstCity = (province?.cities || [])[0]
+    if (firstCity) {
+        handleCitySelect(firstCity)
+    }
+}
+
+const handleCitySelect = (city: any) => {
+    tempRegion.value = normalizeServiceRegion({
+        province_code: city?.province_code || tempRegion.value.province_code,
+        province_name: city?.province_name || tempRegion.value.province_name,
+        city_code: city?.city_code || '',
+        city_name: city?.city_name || '',
+        district_code: '',
+        district_name: ''
+    })
+}
+
+const handleDistrictSelect = (district: any) => {
+    tempRegion.value = normalizeServiceRegion({
+        ...tempRegion.value,
+        province_code: district?.province_code || tempRegion.value.province_code,
+        province_name: district?.province_name || tempRegion.value.province_name,
+        city_code: district?.city_code || tempRegion.value.city_code,
+        city_name: district?.city_name || tempRegion.value.city_name,
+        district_code: district?.district_code || '',
+        district_name: district?.district_name || ''
+    })
+}
+
+const resetRegionSelection = () => {
+    tempRegion.value = normalizeServiceRegion({})
+}
+
+const confirmRegionPicker = () => {
+    if (!hasServiceRegion(tempRegion.value)) {
+        uni.showToast({ title: '请选择到区县', icon: 'none' })
+        return
+    }
+
+    selectedRegion.value = normalizeServiceRegion(tempRegion.value)
+    saveServiceRegionSelection(selectedRegion.value)
+    closeRegionPicker()
+    if (!selectedDate.value) {
+        nextTick(() => openDatePicker())
+        return
+    }
+    pagingRef.value?.reload()
 }
 
 const syncDatePickerValue = (value = '') => {
@@ -948,6 +1166,10 @@ const handleResetFilters = () => {
 }
 
 const handleEmptyAction = () => {
+    if (!hasSelectedRegion.value) {
+        openRegionPicker()
+        return
+    }
     if (!selectedDate.value) {
         openDatePicker()
         return
@@ -981,6 +1203,30 @@ const getCategories = async () => {
         if (!hasCurrentCategory) {
             currentCategoryId.value = categories.value[0].id
         }
+    } catch (e) {
+        console.error(e)
+    }
+}
+
+const getRegionTree = async () => {
+    try {
+        const data = await getServiceRegionTree()
+        regionTree.value = Array.isArray(data) ? data : []
+        if (!regionTree.value.length) {
+            selectedRegion.value = normalizeServiceRegion({})
+            tempRegion.value = normalizeServiceRegion({})
+            return
+        }
+
+        if (hasServiceRegion(selectedRegion.value)) {
+            syncTempRegion(selectedRegion.value)
+            return
+        }
+
+        syncTempRegion({
+            province_code: regionTree.value[0]?.province_code || '',
+            province_name: regionTree.value[0]?.province_name || ''
+        })
     } catch (e) {
         console.error(e)
     }
@@ -1050,7 +1296,7 @@ const handleTagFilterConfirm = () => {
 
 // 查询列表
 const queryList = async (pageNo: number, _pageSize: number) => {
-    if (!selectedDate.value) {
+    if (!hasSelectedRegion.value || !selectedDate.value) {
         pagingRef.value.complete([])
         return
     }
@@ -1073,6 +1319,7 @@ const queryList = async (pageNo: number, _pageSize: number) => {
         if (selectedDate.value) {
             params.date = selectedDate.value
         }
+        Object.assign(params, toServiceRegionParams(selectedRegion.value))
         const res = await getStaffList(params)
         pagingRef.value.complete(res.lists)
     } catch (e) {
@@ -1225,6 +1472,12 @@ const handleSortChange = (sort: string) => {
 }
 
 const ensureDateSelection = () => {
+    if (!hasSelectedRegion.value) {
+        if (!showRegionPopup.value) {
+            openRegionPicker()
+        }
+        return
+    }
     if (!isSelectableDate(selectedDate.value)) {
         selectedDate.value = ''
     }
@@ -1232,6 +1485,23 @@ const ensureDateSelection = () => {
         openDatePicker()
     }
 }
+
+watch(showRegionPopup, (visible, previousVisible) => {
+    if (visible) {
+        nextTick(() => {
+            syncTempRegion()
+        })
+        return
+    }
+
+    if (previousVisible && !hasSelectedRegion.value) {
+        setTimeout(() => {
+            if (!hasSelectedRegion.value) {
+                showRegionPopup.value = true
+            }
+        }, POPUP_REOPEN_DELAY)
+    }
+})
 
 watch(showDatePopup, (visible, previousVisible) => {
     if (visible) {
@@ -1269,6 +1539,10 @@ const handleToggleFavorite = async (item: any) => {
 // 跳转详情
 const goToDetail = (id: number) => {
     let url = `/packages/pages/staff_detail/staff_detail?id=${id}`
+    const regionQuery = buildServiceRegionQuery(selectedRegion.value)
+    if (regionQuery) {
+        url += `&${regionQuery}`
+    }
     if (selectedDate.value) {
         url += `&date=${selectedDate.value}`
     }
@@ -1276,6 +1550,11 @@ const goToDetail = (id: number) => {
 }
 
 onLoad(async (options) => {
+    selectedRegion.value = normalizeServiceRegion({
+        ...loadServiceRegionSelection(),
+        ...options
+    })
+    tempRegion.value = normalizeServiceRegion(selectedRegion.value)
     if (options?.date) {
         selectedDate.value = normalizeSelectedDateText(options.date)
     }
@@ -1287,6 +1566,7 @@ onLoad(async (options) => {
     }
     await getCategories()
     await getCategoryTags()
+    await getRegionTree()
 })
 
 onReady(() => {
@@ -1295,6 +1575,7 @@ onReady(() => {
 })
 
 onShow(() => {
+    tabbarRefreshKey.value += 1
     ensureDateSelection()
 })
 </script>
@@ -1473,8 +1754,8 @@ onShow(() => {
 .filter-bar {
     display: flex;
     align-items: center;
-    padding: 12rpx 20rpx 8rpx;
-    gap: 12rpx;
+    padding: 12rpx 16rpx 8rpx;
+    gap: 8rpx;
 
     .filter-item-wrapper {
         flex: 1;
@@ -1492,13 +1773,13 @@ onShow(() => {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8rpx;
+        gap: 0;
         min-height: 88rpx;
-        padding: 0 18rpx;
+        padding: 0 12rpx;
         background: #ffffff;
         border-radius: 20rpx;
         border: 1rpx solid #e8ebf0;
-        font-size: 26rpx;
+        font-size: 24rpx;
         color: #5b6473;
         transition: all 0.2s ease;
 
@@ -1739,6 +2020,54 @@ onShow(() => {
                 box-shadow: 0 4rpx 10rpx rgba(15, 23, 42, 0.16);
             }
         }
+    }
+}
+
+.region-picker-content {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12rpx;
+    padding: 18rpx 18rpx 8rpx;
+}
+
+.region-picker-col {
+    min-width: 0;
+    border: 1rpx solid #eef1f5;
+    border-radius: 18rpx;
+    overflow: hidden;
+    background: #f9fafc;
+}
+
+.region-picker-col__title {
+    padding: 18rpx 20rpx 14rpx;
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1rpx solid #eef1f5;
+    background: #ffffff;
+}
+
+.region-picker-scroll {
+    height: 480rpx;
+}
+
+.region-picker-item {
+    padding: 20rpx;
+    font-size: 24rpx;
+    color: #4b5563;
+    border-bottom: 1rpx solid rgba(229, 231, 235, 0.72);
+    transition: all 0.2s ease;
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &:active {
+        opacity: 0.82;
+    }
+
+    &.active {
+        font-weight: 600;
     }
 }
 

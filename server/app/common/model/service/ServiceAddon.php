@@ -85,4 +85,23 @@ class ServiceAddon extends BaseModel
     {
         return !empty($data['is_show']) ? '上架' : '下架';
     }
+
+    /**
+     * @notes 获取绑定套餐ID列表
+     * @param mixed $value
+     * @param array $data
+     * @return array
+     */
+    public function getPackageIdsAttr($value, $data): array
+    {
+        $addonId = (int)($data['id'] ?? 0);
+        if ($addonId <= 0) {
+            return [];
+        }
+
+        return array_map(
+            'intval',
+            ServicePackageAddon::where('addon_id', $addonId)->column('package_id')
+        );
+    }
 }

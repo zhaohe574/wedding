@@ -1,9 +1,5 @@
 <template>
-    <admin-page-shell
-        class="review-share-reward"
-        title="晒单奖励"
-        description="审核评价晒单奖励申请，并查看对应评价与积分信息。"
-    >
+    <admin-page-shell class="review-share-reward" title="晒单奖励">
         <template #search>
             <search-panel>
                 <el-form class="mb-[-16px]" :model="queryParams" :inline="true">

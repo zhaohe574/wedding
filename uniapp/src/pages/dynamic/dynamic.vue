@@ -75,7 +75,7 @@
                     <tn-icon name="inbox" size="150" color="#D1D5DB" />
                 </view>
                 <text class="empty-title">暂无符合条件的动态</text>
-                <text class="empty-subtitle">换个类型或排序试试，广场里还有更多内容等你发现</text>
+                <text class="empty-subtitle">调整筛选后重试</text>
                 <view
                     v-if="showResetAction"
                     class="empty-action-btn"
@@ -154,7 +154,7 @@
             </view>
         </TnPopup>
 
-        <tabbar />
+        <tabbar :badge-refresh-key="tabbarRefreshKey" />
     </view>
 </template>
 
@@ -165,8 +165,10 @@ import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import DynamicCard from '@/components/business/DynamicCard.vue'
 import { getDynamicList, likeDynamic } from '@/api/dynamic'
 import { toggleStaffFavorite } from '@/api/staff'
+import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
+import cache from '@/utils/cache'
 import { alphaColor } from '@/utils/color'
 import { mapDynamicItem } from '@/utils/dynamic'
 import type { DynamicCardData } from '@/utils/dynamic'
@@ -197,6 +199,8 @@ const dynamics = ref<DynamicCardData[]>([])
 const loading = ref(false)
 const page = ref(1)
 const hasMore = ref(true)
+const hasInitialized = ref(false)
+const tabbarRefreshKey = ref(0)
 
 const currentType = computed(() => typeTabs[currentTypeIndex.value]?.value ?? '')
 const sortIsActive = computed(() => currentSort.value !== 'latest')
@@ -251,6 +255,12 @@ const buildQueryParams = () => {
     return params
 }
 
+const shouldRefreshOnShow = () => Boolean(cache.get(DYNAMIC_LIST_REFRESH_KEY))
+
+const consumeRefreshFlag = () => {
+    cache.remove(DYNAMIC_LIST_REFRESH_KEY)
+}
+
 const fetchDynamics = async (refresh = false) => {
     if (loading.value) {
         return
@@ -265,6 +275,7 @@ const fetchDynamics = async (refresh = false) => {
 
         const res = await getDynamicList(buildQueryParams())
         const list = (res.data || []).map(mapDynamicItem)
+        hasInitialized.value = true
 
         if (refresh) {
             dynamics.value = list
@@ -377,8 +388,18 @@ onLoad((options: any) => {
 })
 
 onShow(() => {
+    tabbarRefreshKey.value += 1
     showSortPicker.value = false
-    fetchDynamics(true)
+
+    if (shouldRefreshOnShow()) {
+        consumeRefreshFlag()
+        fetchDynamics(true)
+        return
+    }
+
+    if (!hasInitialized.value) {
+        fetchDynamics(true)
+    }
 })
 
 onReachBottom(() => {

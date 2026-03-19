@@ -44,8 +44,13 @@ class CustomerServiceLogic extends BaseLogic
     public static function startConsult(int $userId, array $params): array|false
     {
         if ($userId <= 0) {
-            self::setError('请先登录');
-            return false;
+            return [
+                'entry_type' => 'fallback',
+                'customer_id' => 0,
+                'advisor_id' => 0,
+                'is_new_assignment' => false,
+                'contact' => self::getFallbackContact(),
+            ];
         }
 
         $user = User::find($userId);
@@ -504,7 +509,7 @@ class CustomerServiceLogic extends BaseLogic
             'contact_qr_code' => (string) ($advisor->contact_qr_code ?? ''),
             'contact_link' => (string) ($advisor->contact_link ?? ''),
             'service_time' => $serviceTime !== '' ? $serviceTime : '工作日 09:00 - 18:00',
-            'tips' => $tips !== '' ? $tips : '添加专属顾问后继续沟通，请备注婚期与城市。',
+            'tips' => $tips !== '' ? $tips : '添加后可继续沟通',
         ];
     }
 
@@ -576,7 +581,7 @@ class CustomerServiceLogic extends BaseLogic
             'contact_qr_code' => $config['contact_qr_code'] ?? '',
             'contact_link' => $config['contact_link'] ?? '',
             'service_time' => $config['service_time'] !== '' ? $config['service_time'] : '工作日 09:00 - 18:00',
-            'tips' => $config['tips'] !== '' ? $config['tips'] : '当前暂无可分配顾问，请先联系统一客服。',
+            'tips' => $config['tips'] !== '' ? $config['tips'] : '请联系统一客服',
         ];
     }
 

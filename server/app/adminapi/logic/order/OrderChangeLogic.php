@@ -99,6 +99,7 @@ class OrderChangeLogic extends BaseLogic
             return false;
         }
 
+        self::notifyUserOnChangeAudited($changeId);
         self::notifyStaffOnChangeAudited($changeId);
         return true;
     }
@@ -127,6 +128,7 @@ class OrderChangeLogic extends BaseLogic
             return false;
         }
 
+        self::notifyUserOnChangeExecuted($changeId);
         self::notifyStaffOnChangeExecuted($changeId);
         return true;
     }
@@ -257,6 +259,8 @@ class OrderChangeLogic extends BaseLogic
             [$success, $message] = OrderChange::auditChange($id, $adminId, $approved, $remark, $rejectReason);
             if ($success) {
                 $successCount++;
+                self::notifyUserOnChangeAudited((int)$id);
+                self::notifyStaffOnChangeAudited((int)$id);
             } else {
                 $failCount++;
                 $failIds[] = ['id' => $id, 'reason' => $message];
@@ -282,6 +286,8 @@ class OrderChangeLogic extends BaseLogic
             [$success, $message] = OrderChange::executeChange($id, $adminId);
             if ($success) {
                 $successCount++;
+                self::notifyUserOnChangeExecuted((int)$id);
+                self::notifyStaffOnChangeExecuted((int)$id);
             } else {
                 $failCount++;
                 $failIds[] = ['id' => $id, 'reason' => $message];
@@ -330,6 +336,26 @@ class OrderChangeLogic extends BaseLogic
     }
 
     /**
+     * @notes 发送用户侧变更审核通知
+     * @param int $changeId
+     * @return void
+     */
+    protected static function notifyUserOnChangeAudited(int $changeId): void
+    {
+        $change = OrderChange::find($changeId);
+        if (!$change) {
+            return;
+        }
+
+        if ((int)$change->change_type === OrderChange::TYPE_DATE) {
+            OrderNotificationService::notifyUserOnDateChangeAudited($changeId);
+        }
+        if ((int)$change->change_type === OrderChange::TYPE_ADDON) {
+            OrderNotificationService::notifyUserOnAddonChangeAudited($changeId);
+        }
+    }
+
+    /**
      * @notes 发送变更执行通知
      * @param int $changeId
      * @return void
@@ -346,6 +372,26 @@ class OrderChangeLogic extends BaseLogic
         }
         if ((int)$change->change_type === OrderChange::TYPE_ADDON) {
             OrderNotificationService::notifyStaffOnAddonChangeExecuted($changeId);
+        }
+    }
+
+    /**
+     * @notes 发送用户侧变更执行通知
+     * @param int $changeId
+     * @return void
+     */
+    protected static function notifyUserOnChangeExecuted(int $changeId): void
+    {
+        $change = OrderChange::find($changeId);
+        if (!$change) {
+            return;
+        }
+
+        if ((int)$change->change_type === OrderChange::TYPE_DATE) {
+            OrderNotificationService::notifyUserOnDateChangeExecuted($changeId);
+        }
+        if ((int)$change->change_type === OrderChange::TYPE_ADDON) {
+            OrderNotificationService::notifyUserOnAddonChangeExecuted($changeId);
         }
     }
 }

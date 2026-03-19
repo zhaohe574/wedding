@@ -28,6 +28,34 @@ use app\common\model\auth\SystemRoleMenu;
 class AuthLogic
 {
     /**
+     * @notes 套餐区域定价依赖的地区只读权限集合
+     * @return string[]
+     */
+    private static function regionReadPermissionAliases(): array
+    {
+        return [
+            'service.region/enabledCityOptions',
+            'service.region/districtOptions',
+            'ops.region/enabledCityOptions',
+            'ops.region/districtOptions',
+        ];
+    }
+
+    /**
+     * @notes 服务人员中心地区选项权限集合
+     * @return string[]
+     */
+    private static function myProfileRegionOptionPermissions(): array
+    {
+        return [
+            'staff.staff/myProfileRegionEnabledCityOptions',
+            'staff.staff/myProfileRegionDistrictOptions',
+            'ops.staff/myProfileRegionEnabledCityOptions',
+            'ops.staff/myProfileRegionDistrictOptions',
+        ];
+    }
+
+    /**
      * @notes 服务人员中心“我的资料”权限兼容映射
      * @return array<string, string[]>
      */
@@ -61,6 +89,7 @@ class AuthLogic
                 'ops.staff/myProfileBannerDelete',
                 'ops.staff/myProfileBannerSort',
                 'ops.staff/myProfileBannerConfig',
+                ...self::myProfileRegionOptionPermissions(),
             ],
             'ops.staff/lists' => [
                 'staff.staff/myProfile',
@@ -89,7 +118,18 @@ class AuthLogic
                 'ops.staff/myProfileBannerDelete',
                 'ops.staff/myProfileBannerSort',
                 'ops.staff/myProfileBannerConfig',
+                ...self::myProfileRegionOptionPermissions(),
             ],
+            'service.package/add' => self::regionReadPermissionAliases(),
+            'service.package/edit' => self::regionReadPermissionAliases(),
+            'ops.package/add' => self::regionReadPermissionAliases(),
+            'ops.package/edit' => self::regionReadPermissionAliases(),
+            'staff.staff/edit' => self::regionReadPermissionAliases(),
+            'ops.staff/edit' => self::regionReadPermissionAliases(),
+            'staff.staff/createStaffPackage' => self::regionReadPermissionAliases(),
+            'staff.staff/updateStaffPackage' => self::regionReadPermissionAliases(),
+            'ops.staff/createStaffPackage' => self::regionReadPermissionAliases(),
+            'ops.staff/updateStaffPackage' => self::regionReadPermissionAliases(),
         ];
     }
 
@@ -106,6 +146,7 @@ class AuthLogic
             'staff.work/' => 'ops.work/',
             'service.category/' => 'ops.category/',
             'service.package/' => 'ops.package/',
+            'service.region/' => 'ops.region/',
             'service.service_category/' => 'ops.category/',
             'service.service_package/' => 'ops.package/',
             'service.styleTag/' => 'ops.styleTag/',
@@ -114,12 +155,9 @@ class AuthLogic
             'schedule.scheduleRule/' => 'ops.scheduleRule/',
             'schedule.booking/' => 'ops.booking/',
             'schedule.waitlist/' => 'ops.waitlist/',
-            'schedule.calendarEvent/' => 'ops.calendarEvent/',
             'order.order/' => 'ops.order/',
             'order.orderChange/' => 'ops.orderChange/',
             'order.order_change/' => 'ops.orderChange/',
-            'order.orderTransfer/' => 'ops.orderTransfer/',
-            'order.order_transfer/' => 'ops.orderTransfer/',
             'order.orderPause/' => 'ops.orderPause/',
             'order.order_pause/' => 'ops.orderPause/',
             'order.refund/' => 'ops.refund/',
@@ -128,12 +166,6 @@ class AuthLogic
             'aftersale.complaint/' => 'ops.complaint/',
             'aftersale.reshoot/' => 'ops.reshoot/',
             'aftersale.callback/' => 'ops.callback/',
-            'crm.customer/' => 'growth.customer/',
-            'crm.sales_advisor/' => 'growth.advisor/',
-            'crm.salesAdvisor/' => 'growth.advisor/',
-            'crm.customer_loss_warning/' => 'growth.lossWarning/',
-            'crm.customerLossWarning/' => 'growth.lossWarning/',
-            'crm.followRecord/' => 'growth.followRecord/',
             'dynamic.dynamic/' => 'growth.dynamic/',
             'dynamic.dynamicComment/' => 'growth.dynamicComment/',
             'review.review/' => 'growth.review/',
@@ -145,7 +177,6 @@ class AuthLogic
             'review.sensitive_word/' => 'growth.sensitiveWord/',
             'notification.notification/' => 'growth.notification/',
             'subscribe.subscribe/' => 'growth.subscribe/',
-            'timeline.timeline/' => 'growth.timeline/',
             'financial.' => 'finance.',
             'finance.account_log/' => 'finance.accountLog/',
             'recharge.recharge/' => 'finance.recharge/',

@@ -13,6 +13,7 @@ use app\common\model\aftersale\AfterSaleTicketLog;
 use app\common\model\aftersale\Complaint;
 use app\common\model\aftersale\Reshoot;
 use app\common\model\aftersale\ServiceCallback;
+use app\common\service\OrderNotificationService;
 use think\facade\Db;
 
 /**
@@ -97,6 +98,12 @@ class AfterSaleLogic extends BaseLogic
         if (!$result[0]) {
             return $result[1];
         }
+
+        $ticket = $result[2] ?? null;
+        if ($ticket) {
+            OrderNotificationService::notifyUserOnTicketCreated((int)$ticket->id);
+        }
+
         return true;
     }
 
@@ -144,6 +151,8 @@ class AfterSaleLogic extends BaseLogic
         if (!$result[0]) {
             return $result[1];
         }
+
+        OrderNotificationService::notifyUserOnTicketCompleted($ticketId);
         return true;
     }
 

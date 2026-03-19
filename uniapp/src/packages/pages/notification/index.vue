@@ -68,15 +68,6 @@
         <view class="section-card" v-if="currentType === 0">
             <view class="section-header">
                 <view class="section-title">最近消息</view>
-                <view
-                    v-if="notificationList.length > 0"
-                    class="section-more"
-                    :style="{ color: $theme.primaryColor }"
-                    @click="switchType(1)"
-                >
-                    <text>查看全部</text>
-                    <tn-icon name="right" :size="24" :color="$theme.primaryColor" />
-                </view>
             </view>
 
             <view v-if="notificationList.length > 0" class="message-list">
@@ -227,7 +218,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onReachBottom, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { useThemeStore } from '@/stores/theme'
 import {
     getNotificationList,
@@ -285,7 +276,8 @@ const getTypeBg = (type: number) => {
     const map: Record<number, string> = {
         1: $theme.primaryColor,
         2: $theme.ctaColor,
-        3: $theme.secondaryColor
+        3: $theme.secondaryColor,
+        4: $theme.primaryColor
     }
     const color = map[type] || $theme.primaryColor
     return `linear-gradient(135deg, ${color} 0%, ${color} 100%)`
@@ -296,7 +288,8 @@ const getTypeIcon = (type: number) => {
     const map: Record<number, string> = {
         1: 'notice',
         2: 'shop',
-        3: 'my-love'
+        3: 'my-love',
+        4: 'notice'
     }
     return map[type] || 'email'
 }
@@ -398,24 +391,33 @@ const handleItemClick = async (item: any) => {
     }
 
     // 跳转到目标页面
-    if (item.target_type && item.target_id) {
-        const routeMap: Record<string, string> = {
-            order: '/pages/order_detail/order_detail',
-            order_detail: '/pages/order_detail/order_detail',
-            staff_order: '/packages/pages/staff_order_detail/staff_order_detail',
-            dynamic: '/pages/dynamic_detail/dynamic_detail',
-            dynamic_detail: '/pages/dynamic_detail/dynamic_detail',
-            review: '/packages/pages/review/detail'
+    if (item.target_type) {
+        const routeMap: Record<string, (targetId?: number) => string> = {
+            order: (targetId) => `/pages/order_detail/order_detail?id=${targetId || 0}`,
+            order_detail: (targetId) => `/pages/order_detail/order_detail?id=${targetId || 0}`,
+            staff_order: (targetId) => `/packages/pages/staff_order_detail/staff_order_detail?id=${targetId || 0}`,
+            waitlist: () => '/packages/pages/waitlist/waitlist',
+            change: (targetId) => `/packages/pages/order_change/change_detail?id=${targetId || 0}`,
+            pause: (targetId) => `/packages/pages/order_change/pause_detail?id=${targetId || 0}`,
+            ticket_detail: (targetId) => `/packages/pages/aftersale/ticket_detail?id=${targetId || 0}`,
+            review: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
+            review_list: () => '/packages/pages/review/list',
+            review_detail: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
+            dynamic: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
+            dynamic_detail: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
+            staff_detail: (targetId) => `/packages/pages/staff_detail/staff_detail?id=${targetId || 0}`
         }
-        const route = routeMap[item.target_type]
+        const routeBuilder = routeMap[item.target_type]
+        const route = routeBuilder ? routeBuilder(item.target_id) : ''
         if (route) {
-            uni.navigateTo({ url: `${route}?id=${item.target_id}` })
-        } else {
-            try {
-                await getNotificationDetail({ id: item.id })
-            } catch (error) {
-                console.error(error)
-            }
+            uni.navigateTo({ url: route })
+            return
+        }
+
+        try {
+            await getNotificationDetail({ id: item.id })
+        } catch (error) {
+            console.error(error)
         }
     }
 }
@@ -484,6 +486,15 @@ onPullDownRefresh(() => {
 
 onMounted(() => {
     loadUnreadCount()
+    loadRecentList()
+})
+
+onShow(() => {
+    loadUnreadCount()
+    if (currentType.value > 0) {
+        loadList(true)
+        return
+    }
     loadRecentList()
 })
 </script>

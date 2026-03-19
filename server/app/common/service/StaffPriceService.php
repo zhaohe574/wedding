@@ -18,9 +18,10 @@ class StaffPriceService
     /**
      * @notes 批量获取人员展示价格映射
      * @param array $staffIds
+     * @param array $regionContext
      * @return array [staffId => ['price' => ?float, 'has_price' => bool, 'price_text' => string]]
      */
-    public static function getDisplayPriceMap(array $staffIds): array
+    public static function getDisplayPriceMap(array $staffIds, array $regionContext = []): array
     {
         $staffIds = array_values(array_unique(array_filter(array_map('intval', $staffIds))));
         if (empty($staffIds)) {
@@ -30,7 +31,7 @@ class StaffPriceService
         $packages = ServicePackage::whereIn('staff_id', $staffIds)
             ->where('is_show', 1)
             ->whereNull('delete_time')
-            ->field(['staff_id', 'price'])
+            ->field(['id', 'staff_id', 'price'])
             ->select()
             ->toArray();
 
@@ -38,12 +39,30 @@ class StaffPriceService
         foreach ($staffIds as $staffId) {
             $priceCandidates[$staffId] = [];
         }
-        foreach ($packages as $item) {
-            $staffId = (int)($item['staff_id'] ?? 0);
+
+        $normalizedRegion = PackageRegionPriceService::normalizeRegionContext($regionContext);
+        $useRegionPrice = PackageRegionPriceService::hasRegionContext($normalizedRegion);
+        $resolvedPriceMap = [];
+        if ($useRegionPrice) {
+            $resolvedPriceMap = PackageRegionPriceService::resolvePackagePriceMap(array_column($packages, 'id'), $normalizedRegion);
+        }
+
+        foreach ($packages as $package) {
+            $staffId = (int)($package['staff_id'] ?? 0);
             if ($staffId <= 0 || !isset($priceCandidates[$staffId])) {
                 continue;
             }
-            $price = round((float)($item['price'] ?? 0), 2);
+
+            if ($useRegionPrice) {
+                $resolved = $resolvedPriceMap[(int)($package['id'] ?? 0)] ?? ['available' => false];
+                if (!($resolved['available'] ?? false)) {
+                    continue;
+                }
+                $priceCandidates[$staffId][] = round((float)($resolved['price'] ?? 0), 2);
+                continue;
+            }
+
+            $price = round((float)($package['price'] ?? 0), 2);
             if ($price > 0) {
                 $priceCandidates[$staffId][] = $price;
             }
@@ -62,15 +81,16 @@ class StaffPriceService
     /**
      * @notes 获取单个人员展示价格
      * @param int $staffId
+     * @param array $regionContext
      * @return array
      */
-    public static function getDisplayPriceByStaffId(int $staffId): array
+    public static function getDisplayPriceByStaffId(int $staffId, array $regionContext = []): array
     {
         $staffId = (int)$staffId;
         if ($staffId <= 0) {
             return self::buildDisplayPrice(null);
         }
-        $map = self::getDisplayPriceMap([$staffId]);
+        $map = self::getDisplayPriceMap([$staffId], $regionContext);
         return $map[$staffId] ?? self::buildDisplayPrice(null);
     }
 
@@ -78,9 +98,10 @@ class StaffPriceService
      * @notes 批量注入展示价格字段
      * @param array $rows
      * @param string $staffIdField
+     * @param array $regionContext
      * @return void
      */
-    public static function injectDisplayPrice(array &$rows, string $staffIdField = 'id'): void
+    public static function injectDisplayPrice(array &$rows, string $staffIdField = 'id', array $regionContext = []): void
     {
         if (empty($rows)) {
             return;
@@ -93,7 +114,7 @@ class StaffPriceService
                 $staffIds[] = $staffId;
             }
         }
-        $priceMap = self::getDisplayPriceMap($staffIds);
+        $priceMap = self::getDisplayPriceMap($staffIds, $regionContext);
 
         foreach ($rows as &$row) {
             $staffId = (int)($row[$staffIdField] ?? 0);
@@ -142,9 +163,10 @@ class StaffPriceService
      * @param int $staffId
      * @param int $packageId
      * @param int $timeSlot
+     * @param array $regionContext
      * @return float
      */
-    public static function calculateOrderItemPrice(int $staffId, int $packageId, int $timeSlot = 0): float
+    public static function calculateOrderItemPrice(int $staffId, int $packageId, int $timeSlot = 0, array $regionContext = []): float
     {
         if ($staffId <= 0 || $packageId <= 0) {
             return 0.00;
@@ -157,6 +179,14 @@ class StaffPriceService
             ->find();
 
         if ($package) {
+            $normalizedRegion = PackageRegionPriceService::normalizeRegionContext($regionContext);
+            if (PackageRegionPriceService::hasRegionContext($normalizedRegion)) {
+                $resolved = PackageRegionPriceService::resolvePackagePrice($packageId, $normalizedRegion);
+                if ($resolved['available'] ?? false) {
+                    return round((float)($resolved['price'] ?? 0), 2);
+                }
+                return 0.00;
+            }
             return round((float)$package->price, 2);
         }
 

@@ -9,9 +9,11 @@ namespace app\api\lists\staff;
 
 use app\api\lists\BaseApiDataLists;
 use app\common\lists\ListsSearchInterface;
+use app\common\model\schedule\Schedule;
 use app\common\model\staff\Staff;
 use app\common\model\staff\Favorite;
 use app\common\model\staff\StaffTag;
+use app\common\service\PackageRegionPriceService;
 use app\common\service\StaffPriceService;
 
 /**
@@ -25,6 +27,11 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
      * @var int|null
      */
     protected ?int $manualCount = null;
+
+    /**
+     * @var array|null
+     */
+    protected ?array $resolvedRegionContext = null;
 
     /**
      * @notes 搜索条件
@@ -70,6 +77,8 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
         $this->manualCount = null;
         $sortType = (string)($this->params['sort'] ?? 'default');
         $field = 'id, sn, name, avatar, category_id, rating, order_count, experience_years, profile, is_recommend';
+        $regionContext = $this->getResolvedRegionContext();
+        $selectedDate = $this->getSelectedDate();
 
         $tagStaffIds = $this->getTagStaffIds();
         if ($tagStaffIds !== null && empty($tagStaffIds)) {
@@ -100,8 +109,8 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
             }
 
             $allIds = array_map('intval', $allIds);
-            $priceMap = StaffPriceService::getDisplayPriceMap($allIds);
-            $filteredIds = $this->filterIdsByPriceRange($allIds, $priceMap);
+            $priceMap = StaffPriceService::getDisplayPriceMap($allIds, $regionContext);
+            $filteredIds = $this->filterIdsByContext($allIds, $priceMap, $regionContext, $selectedDate);
 
             if (in_array($sortType, ['price_asc', 'price_desc'], true)) {
                 usort($filteredIds, function (int $a, int $b) use ($priceMap, $sortType) {
@@ -170,7 +179,7 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
                 ->select()
                 ->toArray();
 
-            StaffPriceService::injectDisplayPrice($result);
+            StaffPriceService::injectDisplayPrice($result, 'id', $regionContext);
         }
 
         // 获取用户收藏状态
@@ -242,8 +251,14 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
 
         if ($this->needPriceMemoryMode()) {
             $allIds = $query->column('id');
-            $priceMap = StaffPriceService::getDisplayPriceMap($allIds);
-            return count($this->filterIdsByPriceRange(array_map('intval', $allIds), $priceMap));
+            $allIds = array_map('intval', $allIds);
+            $priceMap = StaffPriceService::getDisplayPriceMap($allIds, $this->getResolvedRegionContext());
+            return count($this->filterIdsByContext(
+                $allIds,
+                $priceMap,
+                $this->getResolvedRegionContext(),
+                $this->getSelectedDate()
+            ));
         }
 
         return $query->count();
@@ -280,7 +295,9 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
         }
 
         return ($this->params['price_min'] ?? '') !== ''
-            || ($this->params['price_max'] ?? '') !== '';
+            || ($this->params['price_max'] ?? '') !== ''
+            || $this->getSelectedDate() !== ''
+            || PackageRegionPriceService::hasRegionContext($this->getResolvedRegionContext());
     }
 
     /**
@@ -313,17 +330,34 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
      * @param array $priceMap
      * @return array
      */
-    protected function filterIdsByPriceRange(array $staffIds, array $priceMap): array
+    protected function filterIdsByContext(
+        array $staffIds,
+        array $priceMap,
+        array $regionContext,
+        string $selectedDate
+    ): array
     {
         $priceMin = ($this->params['price_min'] ?? '') !== '' ? (float)$this->params['price_min'] : null;
         $priceMax = ($this->params['price_max'] ?? '') !== '' ? (float)$this->params['price_max'] : null;
-        if ($priceMin === null && $priceMax === null) {
-            return $staffIds;
-        }
+        $requireRegionPrice = PackageRegionPriceService::hasRegionContext($regionContext);
 
         $filtered = [];
         foreach ($staffIds as $staffId) {
             $display = $priceMap[$staffId] ?? ['price' => null, 'has_price' => false];
+
+            if ($requireRegionPrice && !($display['has_price'] ?? false)) {
+                continue;
+            }
+
+            if ($selectedDate !== '' && !Schedule::isAvailable((int)$staffId, $selectedDate, 0)) {
+                continue;
+            }
+
+            if ($priceMin === null && $priceMax === null) {
+                $filtered[] = (int)$staffId;
+                continue;
+            }
+
             if (!($display['has_price'] ?? false)) {
                 continue;
             }
@@ -339,5 +373,59 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
         }
 
         return $filtered;
+    }
+
+    /**
+     * @notes 获取地区上下文
+     * @return array
+     */
+    protected function getResolvedRegionContext(): array
+    {
+        if ($this->resolvedRegionContext !== null) {
+            return $this->resolvedRegionContext;
+        }
+
+        $context = PackageRegionPriceService::normalizeRegionContext([
+            'province_code' => (string)($this->params['province_code'] ?? ''),
+            'province_name' => (string)($this->params['province_name'] ?? ''),
+            'city_code' => (string)($this->params['city_code'] ?? ''),
+            'city_name' => (string)($this->params['city_name'] ?? ''),
+            'district_code' => (string)($this->params['district_code'] ?? ''),
+            'district_name' => (string)($this->params['district_name'] ?? ''),
+        ]);
+
+        $hasRegionInput = $context['province_code'] !== ''
+            || $context['city_code'] !== ''
+            || $context['district_code'] !== '';
+
+        if ($hasRegionInput) {
+            try {
+                $context = PackageRegionPriceService::validateEnabledRegion($context);
+            } catch (\Throwable $e) {
+                $context = [];
+            }
+        }
+
+        $this->resolvedRegionContext = $context;
+        return $this->resolvedRegionContext;
+    }
+
+    /**
+     * @notes 获取预约日期
+     * @return string
+     */
+    protected function getSelectedDate(): string
+    {
+        $date = trim((string)($this->params['date'] ?? ''));
+        if ($date === '') {
+            return '';
+        }
+
+        $timestamp = strtotime($date);
+        if ($timestamp === false) {
+            return '';
+        }
+
+        return date('Y-m-d', $timestamp);
     }
 }

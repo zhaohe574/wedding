@@ -1,9 +1,5 @@
 <template>
-    <admin-page-shell
-        class="order-lists"
-        title="订单管理"
-        description="覆盖查询、审核、履约和售后前置处理的订单运营主链路。"
-    >
+    <admin-page-shell class="order-lists" title="订单管理">
         <template #search>
             <search-panel>
                 <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
