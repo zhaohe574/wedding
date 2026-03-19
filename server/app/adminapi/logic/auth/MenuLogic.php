@@ -15,6 +15,7 @@
 namespace app\adminapi\logic\auth;
 
 
+use app\common\enum\YesNoEnum;
 use app\common\logic\BaseLogic;
 use app\common\model\auth\Admin;
 use app\common\model\auth\SystemMenu;
