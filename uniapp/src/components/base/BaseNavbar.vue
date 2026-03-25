@@ -73,8 +73,12 @@ export default {
 
 <style lang="scss" scoped>
 .base-navbar-wrapper {
-    // 确保导航栏在小程序中正确显示
     position: relative;
     z-index: 999;
+    border-bottom: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+
+    :deep(.tn-navbar) {
+        backdrop-filter: blur(20rpx);
+    }
 }
 </style>

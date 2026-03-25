@@ -50,6 +50,7 @@ class IndexLogic extends BaseLogic
         // 动态填充装修数据
         if (!empty($decoratePage)) {
             $decoratePage = DecorateDataService::parsePageData($decoratePage);
+            $decoratePage = self::normalizeHomeBannerPageData($decoratePage, 1);
         }
 
         // 首页文章
@@ -106,8 +107,8 @@ class IndexLogic extends BaseLogic
         
         // 动态填充业务数据
         $pageData = DecorateDataService::parsePageData($pageData);
-        
-        return $pageData;
+
+        return self::normalizeHomeBannerPageData($pageData, (int)$id);
     }
 
 
@@ -168,6 +169,48 @@ class IndexLogic extends BaseLogic
             'copyright' => $copyright,
             'feature_switch' => $featureSwitch,
         ];
+    }
+
+    /**
+     * @notes 首页轮播图固定常规模式
+     * @param array $pageData
+     * @param int $pageId
+     * @return array
+     */
+    private static function normalizeHomeBannerPageData(array $pageData, int $pageId): array
+    {
+        if ($pageId !== 1 || empty($pageData['data'])) {
+            return $pageData;
+        }
+
+        $data = $pageData['data'];
+        $isJsonString = is_string($data);
+
+        if ($isJsonString) {
+            $decodedData = json_decode($data, true);
+            $data = is_array($decodedData) ? $decodedData : [];
+        }
+
+        if (!is_array($data)) {
+            return $pageData;
+        }
+
+        foreach ($data as &$widget) {
+            if (!is_array($widget) || (string)($widget['name'] ?? '') !== 'banner') {
+                continue;
+            }
+
+            $content = isset($widget['content']) && is_array($widget['content']) ? $widget['content'] : [];
+            $content['style'] = 1;
+            $widget['content'] = $content;
+        }
+        unset($widget);
+
+        $pageData['data'] = $isJsonString
+            ? json_encode($data, JSON_UNESCAPED_UNICODE)
+            : $data;
+
+        return $pageData;
     }
 
 }

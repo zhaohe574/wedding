@@ -154,6 +154,7 @@
             "path": "pages/dynamic/dynamic",
             "style": {
                 "navigationBarTitleText": "动态广场",
+                "navigationStyle": "custom",
                 "enablePullDownRefresh": false
             }
         },
@@ -161,6 +162,7 @@
             "path": "pages/dynamic_detail/dynamic_detail",
             "style": {
                 "navigationBarTitleText": "动态详情",
+                "navigationStyle": "custom",
                 "enablePullDownRefresh": false
             }
         }
@@ -585,12 +587,6 @@
                 "selectedIconPath": "static/images/tabbar/home_s.png",
                 "pagePath": "pages/index/index",
                 "text": "首页"
-            },
-            {
-                "iconPath": "static/images/tabbar/news.png",
-                "selectedIconPath": "static/images/tabbar/news_s.png",
-                "pagePath": "pages/staff_list/staff_list",
-                "text": "档期"
             },
             {
                 "iconPath": "static/images/tabbar/news.png",

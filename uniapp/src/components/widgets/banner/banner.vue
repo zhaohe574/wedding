@@ -84,3 +84,12 @@ const handleChange = (index: number) => {
     }
 }
 </script>
+
+<style scoped lang="scss">
+.banner {
+    margin: 20rpx 20rpx 0;
+    overflow: hidden;
+    border-radius: 30rpx;
+    box-shadow: var(--cinema-shadow-strong, 0 24rpx 60rpx rgba(8, 10, 16, 0.18));
+}
+</style>

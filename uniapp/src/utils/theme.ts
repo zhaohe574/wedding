@@ -87,8 +87,9 @@ export const generateVars = (
     }, extra)
 
     const vars = Object.keys(varsMap).reduce((prev, key) => {
-        const color = colors.convert(varsMap[key])
-        return `${prev}${key}:${color};`
+        const rawValue = varsMap[key]
+        const value = rawValue.includes('color(') ? colors.convert(rawValue) : rawValue
+        return `${prev}${key}:${value};`
     }, '')
     return vars
 }

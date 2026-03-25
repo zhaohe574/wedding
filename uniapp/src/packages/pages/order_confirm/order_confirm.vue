@@ -9,148 +9,219 @@
         <!-- #endif -->
     </page-meta>
 
-    <view class="order-confirm-page">
-        <view v-if="loading" class="loading-state">
-            <tn-loading size="60" mode="flower" />
-            <text class="loading-text">加载中...</text>
+    <view class="order-confirm-page cinema-page">
+        <view class="order-confirm-page__hero">
+            <text class="order-confirm-page__hero-label">Booking Checkout</text>
+            <text class="order-confirm-page__hero-title">确认本次婚礼服务档期与联系信息</text>
+            <text class="order-confirm-page__hero-desc">
+                保持仪式感的沉浸头部，同时把联系人、地址和费用明细集中在浅色信息层里，降低确认成本。
+            </text>
+            <view class="order-confirm-page__hero-summary glass-card">
+                <view class="order-confirm-page__hero-item">
+                    <text class="order-confirm-page__hero-item-label">预约日期</text>
+                    <text class="order-confirm-page__hero-item-value">{{ bookingDateText || '-' }}</text>
+                </view>
+                <view class="order-confirm-page__hero-divider" />
+                <view class="order-confirm-page__hero-item">
+                    <text class="order-confirm-page__hero-item-label">服务地区</text>
+                    <text class="order-confirm-page__hero-item-value order-confirm-page__hero-item-value--small">
+                        {{ serviceRegionText || '未选择区县' }}
+                    </text>
+                </view>
+                <view class="order-confirm-page__hero-divider" />
+                <view class="order-confirm-page__hero-item">
+                    <text class="order-confirm-page__hero-item-label">预计支付</text>
+                    <text class="order-confirm-page__hero-item-value">¥{{ formatPrice(preview.pay_amount) }}</text>
+                </view>
+            </view>
         </view>
 
-        <view v-else>
-            <view class="section">
-                <view class="section-title">预约信息</view>
-                <view class="booking-info-card">
-                    <view class="booking-info-item">
-                        <text class="booking-info-item__label">预约日期</text>
-                        <text class="booking-info-item__value">{{ bookingDateText || '-' }}</text>
-                    </view>
-                    <view class="booking-info-item">
-                        <text class="booking-info-item__label">服务地区</text>
-                        <text class="booking-info-item__value">
-                            {{ serviceRegionText || '未选择区县' }}
-                        </text>
-                    </view>
-                </view>
+        <view class="order-confirm-page__surface cinema-surface">
+            <view v-if="loading" class="loading-state cinema-panel">
+                <tn-loading size="60" mode="flower" />
+                <text class="loading-text">加载中...</text>
             </view>
 
-            <view class="section">
-                <view class="section-title">联系人信息</view>
-                <view class="form-item">
-                    <text class="form-label">联系人</text>
-                    <tn-input
-                        v-model="form.contact_name"
-                        placeholder="请输入联系人姓名"
-                        :border="true"
-                        height="80"
-                    />
+            <view v-else class="order-confirm-page__content">
+                <view class="section cinema-panel">
+                    <view class="section-header section-header--stack">
+                        <view>
+                            <text class="section-title">预约信息</text>
+                            <text class="section-desc">当前档期和服务地区会直接写入订单，提交前请再次确认。</text>
+                        </view>
+                    </view>
+                    <view class="booking-info-card">
+                        <view class="booking-info-item">
+                            <text class="booking-info-item__label">预约日期</text>
+                            <text class="booking-info-item__value">{{ bookingDateText || '-' }}</text>
+                        </view>
+                        <view class="booking-info-item">
+                            <text class="booking-info-item__label">服务地区</text>
+                            <text class="booking-info-item__value">
+                                {{ serviceRegionText || '未选择区县' }}
+                            </text>
+                        </view>
+                    </view>
                 </view>
-                <view class="form-item">
-                    <text class="form-label">手机号码</text>
-                    <tn-input
-                        v-model="form.contact_mobile"
-                        placeholder="请输入手机号码"
-                        type="number"
-                        :border="true"
-                        height="80"
-                    />
-                </view>
-                <view class="form-item">
-                    <text class="form-label">详细地址</text>
-                    <tn-input
-                        v-model="form.service_address"
-                        placeholder="请输入详细地址"
-                        :border="true"
-                        height="80"
-                    />
-                </view>
-                <view class="form-item">
-                    <text class="form-label">备注</text>
-                    <tn-input
-                        v-model="form.remark"
-                        type="textarea"
-                        placeholder="请输入备注（选填）"
-                        :border="true"
-                        height="120"
-                    />
-                </view>
-            </view>
 
-            <view class="section" v-if="selectedItem">
-                <view class="section-header">
-                    <view class="section-title">服务项目</view>
-                    <text class="section-action" @click="handleReselect">重新选择</text>
-                </view>
-                <view class="service-card">
-                    <view class="service-header">
-                        <view class="staff-section">
-                            <image
-                                :src="
-                                    selectedItem.staff?.avatar || '/static/images/user/default_avatar.png'
-                                "
-                                class="staff-avatar"
-                                mode="aspectFill"
+                <view class="section cinema-panel">
+                    <view class="section-header section-header--stack">
+                        <view>
+                            <text class="section-title">联系人信息</text>
+                            <text class="section-desc">用于订单沟通、档期确认和上门服务，请尽量填写准确。</text>
+                        </view>
+                    </view>
+                    <view class="form-item">
+                        <text class="form-label">联系人</text>
+                        <view class="form-shell">
+                            <tn-input
+                                v-model="form.contact_name"
+                                placeholder="请输入联系人姓名"
+                                :border="true"
+                                height="80"
                             />
-                            <view class="staff-info">
-                                <text class="staff-name"
-                                    >人员：{{ selectedItem.staff?.name || '服务人员' }}</text
-                                >
-                                <text class="package-name"
-                                    >套餐：{{ selectedItem.package?.name || '服务套餐' }}</text
-                                >
-                            </view>
                         </view>
-                        <text class="package-price" :style="{ color: $theme.ctaColor }">
-                            ¥{{ formatPrice(selectedItem.price) }}
-                        </text>
                     </view>
-                    <text v-if="selectedItem.package?.description" class="package-desc">
-                        {{ selectedItem.package?.description }}
-                    </text>
-                    <view v-if="selectedAddons.length" class="selected-addon-section">
-                        <view class="selected-addon-section__header">
-                            <text class="selected-addon-section__title">已选附加服务</text>
+                    <view class="form-item">
+                        <text class="form-label">手机号码</text>
+                        <view class="form-shell">
+                            <tn-input
+                                v-model="form.contact_mobile"
+                                placeholder="请输入手机号码"
+                                type="number"
+                                :border="true"
+                                height="80"
+                            />
                         </view>
-                        <view class="selected-addon-list">
-                            <view
-                                v-for="addon in selectedAddons"
-                                :key="addon.id || addon.addon_id"
-                                class="selected-addon-card"
-                            >
-                                <view class="selected-addon-card__main">
-                                    <text class="selected-addon-card__title">{{ addon.name }}</text>
-                                    <text
-                                        v-if="addon.description"
-                                        class="selected-addon-card__desc"
-                                    >
-                                        {{ addon.description }}
+                    </view>
+                    <view class="form-item">
+                        <text class="form-label">详细地址</text>
+                        <view class="form-shell">
+                            <tn-input
+                                v-model="form.service_address"
+                                placeholder="请输入详细地址"
+                                :border="true"
+                                height="80"
+                            />
+                        </view>
+                    </view>
+                    <view class="form-item">
+                        <text class="form-label">备注</text>
+                        <view class="form-shell">
+                            <tn-input
+                                v-model="form.remark"
+                                type="textarea"
+                                placeholder="请输入备注（选填）"
+                                :border="true"
+                                height="120"
+                            />
+                        </view>
+                    </view>
+                </view>
+
+                <view class="section cinema-panel" v-if="selectedItem">
+                    <view class="section-header">
+                        <view>
+                            <text class="section-title">服务项目</text>
+                            <text class="section-desc">继续保持现有套餐和附加服务结构，无需重新录入内容。</text>
+                        </view>
+                        <text class="section-action" @click="handleReselect">重新选择</text>
+                    </view>
+                    <view class="service-card">
+                        <view class="service-header">
+                            <view class="staff-section">
+                                <image
+                                    :src="
+                                        selectedItem.staff?.avatar || '/static/images/user/default_avatar.png'
+                                    "
+                                    class="staff-avatar"
+                                    mode="aspectFill"
+                                />
+                                <view class="staff-info">
+                                    <text class="staff-title">
+                                        {{ selectedItem.staff?.name || '服务人员' }}
+                                    </text>
+                                    <text class="staff-subtitle">已为当前档期锁定服务人员</text>
+                                    <text class="package-name">
+                                        {{ selectedItem.package?.name || '服务套餐' }}
                                     </text>
                                 </view>
-                                <view class="selected-addon-card__price">
-                                    +¥{{ formatPrice(addon.price) }}
+                            </view>
+                            <view class="package-price-wrap">
+                                <text class="package-price-label">套餐金额</text>
+                                <text class="package-price" :style="{ color: $theme.ctaColor }">
+                                    ¥{{ formatPrice(selectedItem.price) }}
+                                </text>
+                            </view>
+                        </view>
+                        <text v-if="selectedItem.package?.description" class="package-desc">
+                            {{ selectedItem.package?.description }}
+                        </text>
+                        <view v-if="selectedAddons.length" class="selected-addon-section">
+                            <view class="selected-addon-section__header">
+                                <text class="selected-addon-section__title">已选附加服务</text>
+                                <text class="selected-addon-section__meta">
+                                    共 {{ selectedAddons.length }} 项
+                                </text>
+                            </view>
+                            <view class="selected-addon-list">
+                                <view
+                                    v-for="addon in selectedAddons"
+                                    :key="addon.id || addon.addon_id"
+                                    class="selected-addon-card"
+                                >
+                                    <view class="selected-addon-card__main">
+                                        <text class="selected-addon-card__title">{{ addon.name }}</text>
+                                        <text
+                                            v-if="addon.description"
+                                            class="selected-addon-card__desc"
+                                        >
+                                            {{ addon.description }}
+                                        </text>
+                                    </view>
+                                    <view class="selected-addon-card__price">
+                                        +¥{{ formatPrice(addon.price) }}
+                                    </view>
                                 </view>
                             </view>
                         </view>
                     </view>
                 </view>
-            </view>
 
-            <view class="section" v-if="hasItems">
-                <view class="section-title">费用明细</view>
-                <view class="price-row">
-                    <text>主服务金额</text>
-                    <text>¥{{ formatPrice(serviceAmount) }}</text>
-                </view>
-                <view class="price-row" v-if="preview.addon_amount > 0">
-                    <text>附加服务金额</text>
-                    <text>+¥{{ formatPrice(preview.addon_amount) }}</text>
-                </view>
-                <view class="price-row total">
-                    <text>应付金额</text>
-                    <text class="text-total">¥{{ formatPrice(preview.pay_amount) }}</text>
+                <view class="section cinema-panel" v-if="hasItems">
+                    <view class="section-header section-header--stack">
+                        <view>
+                            <text class="section-title">费用明细</text>
+                            <text class="section-desc">展示主服务、附加服务与最终应付金额，便于下单前确认。</text>
+                        </view>
+                    </view>
+                    <view class="price-list">
+                        <view class="price-row">
+                            <text>主服务金额</text>
+                            <text>¥{{ formatPrice(serviceAmount) }}</text>
+                        </view>
+                        <view class="price-row" v-if="preview.addon_amount > 0">
+                            <text>附加服务金额</text>
+                            <text>+¥{{ formatPrice(preview.addon_amount) }}</text>
+                        </view>
+                        <view class="price-row" v-if="preview.deposit_amount > 0">
+                            <text>定金</text>
+                            <text>¥{{ formatPrice(preview.deposit_amount) }}</text>
+                        </view>
+                        <view class="price-row" v-if="preview.balance_amount > 0">
+                            <text>尾款</text>
+                            <text>¥{{ formatPrice(preview.balance_amount) }}</text>
+                        </view>
+                        <view class="price-row total">
+                            <text>应付金额</text>
+                            <text class="text-total">¥{{ formatPrice(preview.pay_amount) }}</text>
+                        </view>
+                    </view>
                 </view>
             </view>
         </view>
 
-        <view class="submit-bar">
+        <view class="submit-bar glass-card">
             <view class="submit-price">
                 <text class="label">合计</text>
                 <text class="symbol" :style="{ color: $theme.ctaColor }">¥</text>
@@ -501,8 +572,112 @@ onShow(() => {
 <style lang="scss" scoped>
 .order-confirm-page {
     min-height: 100vh;
-    background: #f5f5f5;
-    padding-bottom: 180rpx;
+    padding-bottom: 196rpx;
+    background: transparent;
+
+    &__hero {
+        position: relative;
+        padding: 24rpx 24rpx 200rpx;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.12) 0, transparent 34%),
+            linear-gradient(145deg, rgba(10, 13, 18, 0.98) 0%, rgba(21, 28, 40, 0.96) 54%, rgba(77, 59, 31, 0.92) 100%);
+        overflow: hidden;
+    }
+
+    &__hero::after {
+        content: '';
+        position: absolute;
+        right: -48rpx;
+        top: 40rpx;
+        width: 280rpx;
+        height: 280rpx;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(232, 201, 142, 0.18) 0, transparent 72%);
+        pointer-events: none;
+    }
+
+    &__hero-label {
+        display: block;
+        font-size: 22rpx;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(255, 248, 236, 0.72);
+    }
+
+    &__hero-title {
+        display: block;
+        margin-top: 22rpx;
+        font-size: 48rpx;
+        font-weight: 700;
+        line-height: 1.22;
+        color: var(--cinema-text-inverse, #fff8ea);
+    }
+
+    &__hero-desc {
+        display: block;
+        margin-top: 18rpx;
+        max-width: 640rpx;
+        font-size: 25rpx;
+        line-height: 1.7;
+        color: rgba(255, 248, 236, 0.72);
+    }
+
+    &__hero-summary {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: stretch;
+        gap: 16rpx;
+        margin-top: 30rpx;
+        padding: 22rpx 24rpx;
+        background: rgba(255, 248, 236, 0.1);
+    }
+
+    &__hero-item {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__hero-item-label {
+        display: block;
+        font-size: 20rpx;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(255, 248, 236, 0.6);
+    }
+
+    &__hero-item-value {
+        display: block;
+        margin-top: 10rpx;
+        font-size: 30rpx;
+        font-weight: 700;
+        line-height: 1.36;
+        color: var(--cinema-text-inverse, #fff8ea);
+    }
+
+    &__hero-item-value--small {
+        font-size: 25rpx;
+    }
+
+    &__hero-divider {
+        width: 1rpx;
+        background: rgba(255, 248, 236, 0.16);
+    }
+
+    &__surface {
+        position: relative;
+        margin-top: -148rpx;
+        border-radius: 36rpx 36rpx 0 0;
+        padding: 0 24rpx 24rpx;
+        box-shadow: 0 -24rpx 48rpx rgba(8, 10, 16, 0.18);
+    }
+
+    &__content {
+        display: flex;
+        flex-direction: column;
+        gap: 24rpx;
+    }
 }
 
 .loading-state {
@@ -510,98 +685,195 @@ onShow(() => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 200rpx 48rpx;
+    gap: 24rpx;
+    min-height: 56vh;
+    margin-bottom: 24rpx;
 }
 
 .loading-text {
-    margin-top: 24rpx;
-    color: #999999;
+    color: var(--cinema-text-secondary, #5d6472);
     font-size: 28rpx;
 }
 
 .section {
-    background: #ffffff;
-    margin: 24rpx;
-    padding: 24rpx;
-    border-radius: 20rpx;
-    box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.04);
-}
-
-.section-title {
-    font-size: 30rpx;
-    font-weight: 600;
-    color: #333333;
-    margin-bottom: 20rpx;
+    padding: 26rpx 24rpx;
 }
 
 .section-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 16rpx;
     margin-bottom: 20rpx;
 }
 
-.section-header .section-title {
-    margin-bottom: 0;
+.section-header--stack {
+    justify-content: flex-start;
+}
+
+.section-title {
+    display: block;
+    font-size: 30rpx;
+    font-weight: 700;
+    color: var(--cinema-text-primary, #151a23);
+}
+
+.section-desc {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    line-height: 1.6;
+    color: var(--cinema-text-secondary, #5d6472);
 }
 
 .section-action {
-    font-size: 24rpx;
+    flex-shrink: 0;
+    padding: 12rpx 20rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+    font-size: 22rpx;
     font-weight: 600;
-    color: #d85c61;
+    color: var(--cinema-primary, #c6a86a);
 }
 
 .booking-info-card {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16rpx;
 }
 
 .booking-info-item {
-    padding: 20rpx 24rpx;
-    border-radius: 18rpx;
-    background: #f9fafb;
-    border: 1rpx solid #edf0f3;
+    padding: 24rpx;
+    border-radius: 20rpx;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 243, 234, 0.96));
+    border: 1rpx solid rgba(255, 255, 255, 0.72);
 }
 
 .booking-info-item__label {
     display: block;
-    font-size: 24rpx;
-    color: #999999;
+    font-size: 22rpx;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cinema-text-secondary, #5d6472);
 }
 
 .booking-info-item__value {
     display: block;
     margin-top: 10rpx;
-    font-size: 28rpx;
-    font-weight: 600;
-    line-height: 1.5;
-    color: #333333;
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.45;
+    color: var(--cinema-text-primary, #151a23);
 }
 
 .form-item + .form-item {
-    margin-top: 16rpx;
+    margin-top: 18rpx;
 }
 
 .form-label {
     display: block;
-    color: #666666;
+    color: var(--cinema-text-primary, #151a23);
     font-size: 26rpx;
+    font-weight: 600;
     margin-bottom: 12rpx;
 }
 
-.service-card {
-    background: #f9fafb;
+.form-shell {
+    padding: 4rpx;
     border-radius: 20rpx;
+    background: rgba(255, 255, 255, 0.76);
+    border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+}
+
+.form-shell :deep(.tn-input) {
+    border-radius: 18rpx !important;
+}
+
+.service-card {
     padding: 24rpx;
-    border: 1rpx solid #f0f0f0;
+    border-radius: 24rpx;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 243, 234, 0.96));
+    border: 1rpx solid rgba(255, 255, 255, 0.72);
+}
+
+.service-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20rpx;
+}
+
+.staff-section {
+    display: flex;
+    align-items: center;
+    gap: 18rpx;
+    min-width: 0;
+    flex: 1;
+}
+
+.staff-avatar {
+    width: 92rpx;
+    height: 92rpx;
+    border-radius: 24rpx;
+    border: 2rpx solid rgba(255, 255, 255, 0.92);
+    box-shadow: 0 10rpx 24rpx rgba(8, 10, 16, 0.12);
+}
+
+.staff-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+    min-width: 0;
+}
+
+.staff-title {
+    font-size: 30rpx;
+    font-weight: 700;
+    color: var(--cinema-text-primary, #151a23);
+}
+
+.staff-subtitle {
+    font-size: 22rpx;
+    color: var(--cinema-text-secondary, #5d6472);
+}
+
+.package-name {
+    font-size: 26rpx;
+    color: var(--cinema-primary, #c6a86a);
+    font-weight: 600;
+}
+
+.package-price-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8rpx;
+    flex-shrink: 0;
+}
+
+.package-price-label {
+    font-size: 22rpx;
+    color: var(--cinema-text-secondary, #5d6472);
+}
+
+.package-price {
+    font-size: 34rpx;
+    font-weight: 700;
+}
+
+.package-desc {
+    display: block;
+    margin-top: 22rpx;
+    font-size: 24rpx;
+    line-height: 1.7;
+    color: var(--cinema-text-secondary, #5d6472);
 }
 
 .selected-addon-section {
-    margin-top: 20rpx;
+    margin-top: 22rpx;
     padding-top: 20rpx;
-    border-top: 1rpx solid #ebeef2;
+    border-top: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
 }
 
 .selected-addon-section__header {
@@ -614,8 +886,13 @@ onShow(() => {
 
 .selected-addon-section__title {
     font-size: 26rpx;
-    font-weight: 600;
-    color: #333333;
+    font-weight: 700;
+    color: var(--cinema-text-primary, #151a23);
+}
+
+.selected-addon-section__meta {
+    font-size: 22rpx;
+    color: var(--cinema-text-secondary, #5d6472);
 }
 
 .selected-addon-list {
@@ -631,8 +908,8 @@ onShow(() => {
     gap: 16rpx;
     padding: 20rpx;
     border-radius: 18rpx;
-    background: #ffffff;
-    border: 1rpx solid #edf0f3;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1rpx solid rgba(255, 255, 255, 0.72);
 }
 
 .selected-addon-card__main {
@@ -644,7 +921,7 @@ onShow(() => {
     display: block;
     font-size: 26rpx;
     font-weight: 600;
-    color: #333333;
+    color: var(--cinema-text-primary, #151a23);
 }
 
 .selected-addon-card__desc {
@@ -652,225 +929,93 @@ onShow(() => {
     margin-top: 8rpx;
     font-size: 24rpx;
     line-height: 1.6;
-    color: #7a7a7a;
+    color: var(--cinema-text-secondary, #5d6472);
 }
 
 .selected-addon-card__price {
     font-size: 26rpx;
     font-weight: 700;
-    color: #d85c61;
+    color: var(--cinema-primary, #c6a86a);
 }
 
-.addon-tip {
-    margin-bottom: 18rpx;
-    font-size: 24rpx;
-    color: #8c8c8c;
-}
-
-.addon-list {
+.price-list {
     display: flex;
     flex-direction: column;
-    gap: 16rpx;
-}
-
-.addon-card {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20rpx;
-    padding: 22rpx;
-    border-radius: 20rpx;
-    border: 2rpx solid #edf0f3;
-    background: linear-gradient(180deg, #ffffff 0%, #fafbfd 100%);
-    transition: all 0.2s ease;
-}
-
-.addon-card--active {
-    background: #fffaf5;
-}
-
-.addon-card__main {
-    flex: 1;
-    min-width: 0;
-}
-
-.addon-card__title-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16rpx;
-}
-
-.addon-card__title {
-    flex: 1;
-    min-width: 0;
-    font-size: 28rpx;
-    font-weight: 600;
-    color: #333333;
-}
-
-.addon-card__desc {
-    display: block;
-    margin-top: 10rpx;
-    font-size: 24rpx;
-    line-height: 1.6;
-    color: #7a7a7a;
-}
-
-.addon-card__check {
-    width: 36rpx;
-    height: 36rpx;
-    border-radius: 50%;
-    border: 2rpx solid #d7dce2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    background: #ffffff;
-}
-
-.addon-card__price {
-    min-width: 140rpx;
-    text-align: right;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
     gap: 8rpx;
-}
-
-.addon-card__price-current {
-    font-size: 28rpx;
-    font-weight: 700;
-    color: #d85c61;
-}
-
-.addon-card__price-original {
-    font-size: 22rpx;
-    color: #a0a0a0;
-    text-decoration: line-through;
-}
-
-.service-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20rpx;
-}
-
-.staff-section {
-    display: flex;
-    align-items: center;
-    gap: 16rpx;
-}
-
-.staff-avatar {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: 16rpx;
-}
-
-.staff-info {
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
-}
-
-.staff-name {
-    font-size: 28rpx;
-    font-weight: 600;
-    color: #333333;
-}
-
-.staff-subtitle {
-    font-size: 24rpx;
-    color: #999999;
-}
-
-.package-name {
-    font-size: 26rpx;
-    color: #333333;
-    font-weight: 600;
-}
-
-.package-price {
-    font-size: 28rpx;
-    font-weight: 600;
-}
-
-.package-desc {
-    display: block;
-    margin-top: 20rpx;
-    font-size: 24rpx;
-    color: #666666;
 }
 
 .price-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 18rpx;
     font-size: 26rpx;
-    color: #666666;
+    color: var(--cinema-text-secondary, #5d6472);
     padding: 10rpx 0;
 }
 
 .price-row.total {
-    font-size: 28rpx;
-    color: #333333;
-    font-weight: 600;
-}
-
-.text-discount {
-    color: #ff4d4f;
+    margin-top: 8rpx;
+    padding-top: 20rpx;
+    border-top: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+    font-size: 30rpx;
+    color: var(--cinema-text-primary, #151a23);
+    font-weight: 700;
 }
 
 .text-total {
-    color: #ff4d4f;
-    font-weight: 600;
+    color: var(--color-cta, #d97706);
+    font-weight: 700;
 }
 
 .submit-bar {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    left: 20rpx;
+    right: 20rpx;
+    bottom: 20rpx;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20rpx 24rpx;
-    background: #ffffff;
-    box-shadow: 0 -8rpx 24rpx rgba(0, 0, 0, 0.06);
-    padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+    gap: 18rpx;
+    padding: 18rpx 20rpx;
+    border-radius: 28rpx;
+    background: rgba(255, 248, 236, 0.86);
+    box-shadow: var(--cinema-shadow-medium, 0 20rpx 52rpx rgba(8, 10, 16, 0.12));
+    padding-bottom: calc(18rpx + env(safe-area-inset-bottom));
 }
 
 .submit-price {
     display: flex;
     align-items: baseline;
     gap: 8rpx;
+    min-width: 0;
 }
 
 .submit-price .label {
-    color: #666666;
-    font-size: 26rpx;
+    color: var(--cinema-text-secondary, #5d6472);
+    font-size: 24rpx;
 }
 
 .submit-price .symbol,
 .submit-price .value {
-    font-size: 32rpx;
-    font-weight: 600;
+    font-size: 34rpx;
+    font-weight: 700;
 }
 
 .submit-btn {
-    min-width: 200rpx;
+    min-width: 232rpx;
     text-align: center;
-    padding: 22rpx 32rpx;
-    border-radius: 48rpx;
+    padding: 24rpx 34rpx;
+    border-radius: 999rpx;
     color: #ffffff;
     font-size: 28rpx;
-    font-weight: 600;
+    font-weight: 700;
     background: #cccccc;
+    box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
 }
 
 .submit-btn.disabled {
     opacity: 0.6;
+    box-shadow: none;
 }
 </style>

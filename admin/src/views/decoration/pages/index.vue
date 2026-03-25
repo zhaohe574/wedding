@@ -44,6 +44,8 @@ enum pagesTypeEnum {
     SERVICE = '3'
 }
 
+const HOME_WIDGET_NAMES = ['banner']
+
 const updatePageData = (value: any) => {
     menus[activeMenu.value].pageData = [...value]
 }
@@ -79,6 +81,23 @@ const normalizePageWidgets = (rawData: any) => {
     return Array.isArray(normalizedData) ? normalizedData : []
 }
 
+const parseJsonValue = <T>(value: any, fallback: T): T => {
+    if (value === null || value === undefined || value === '') {
+        return fallback
+    }
+
+    if (typeof value === 'string') {
+        try {
+            return JSON.parse(value) as T
+        } catch (error) {
+            console.error('装修数据解析失败', error)
+            return fallback
+        }
+    }
+
+    return value as T
+}
+
 const generatePageData = (widgetNames: string[]) => {
     return widgetNames.map((widgetName) => {
         const options = {
@@ -87,6 +106,43 @@ const generatePageData = (widgetNames: string[]) => {
         }
         return options
     })
+}
+
+const normalizeLoadedPageData = (rawData: any) => {
+    const pageData = normalizePageWidgets(rawData)
+
+    return pageData
+        .filter((item: any) => item?.name !== 'service-packages')
+        .map((item: any) => {
+            if (!item || typeof item !== 'object') {
+                return item
+            }
+
+            if (item?.content && 'data' in item.content) {
+                item.content.data = normalizeListLikeValue(item.content.data)
+            }
+            if ('disabled' in item && item.name !== 'user-info') {
+                delete item.disabled
+            }
+            if (item.content && !('enabled' in item.content)) {
+                item.content.enabled = 1
+            }
+
+            const defaultOptions = widgets[item.name]?.options()
+            if (defaultOptions?.content) {
+                item.content = { ...defaultOptions.content, ...item.content }
+            }
+            if (defaultOptions?.styles) {
+                item.styles = { ...defaultOptions.styles, ...(item.styles || {}) }
+            }
+
+            return item
+        })
+}
+
+const ensureHomeBannerOnly = (pageData: any[]) => {
+    const homePageData = pageData.filter((item: any) => item?.name === 'banner')
+    return homePageData.length ? homePageData : generatePageData(HOME_WIDGET_NAMES)
 }
 
 const menus: Record<
@@ -103,18 +159,7 @@ const menus: Record<
         type: 1,
         name: '首页装修',
         pageMeta: generatePageData(['page-meta']),
-        pageData: generatePageData([
-            'search',
-            'banner', 
-            'nav',
-            'middle-banner',
-            'staff-showcase',
-            'portfolio-gallery',
-            'customer-reviews',
-            'activity-zone',
-            'order-quick-entry',
-            'news'
-        ])
+        pageData: generatePageData(HOME_WIDGET_NAMES)
     },
     [pagesTypeEnum.USER]: {
         id: 2,
@@ -173,32 +218,15 @@ const getSelectWidget = computed(() => {
 
 const getData = async () => {
     const data = await getDecoratePages({ id: activeMenu.value })
-    const pageData = normalizePageWidgets(data.data)
-    // 兼容旧数据：移除废弃的disabled字段，确保content.enabled存在，补全默认字段
-    pageData.forEach((item: any) => {
-        if (item?.name === 'service-packages') {
-            return
-        }
-        if (item?.content && 'data' in item.content) {
-            item.content.data = normalizeListLikeValue(item.content.data)
-        }
-        if ('disabled' in item && item.name !== 'user-info') {
-            delete item.disabled
-        }
-        if (item.content && !('enabled' in item.content)) {
-            item.content.enabled = 1
-        }
-        // 将 options 默认值与后端数据合并，确保新增字段不丢失
-        const defaultOptions = widgets[item.name]?.options()
-        if (defaultOptions?.content) {
-            item.content = { ...defaultOptions.content, ...item.content }
-        }
-        if (defaultOptions?.styles) {
-            item.styles = { ...defaultOptions.styles, ...(item.styles || {}) }
-        }
-    })
-    menus[String(data.id)].pageData = pageData.filter((item: any) => item?.name !== 'service-packages')
-    menus[String(data.id)].pageMeta = data?.meta ? JSON.parse(data?.meta) : null
+    let pageData = normalizeLoadedPageData(data.data)
+
+    if (activeMenu.value === pagesTypeEnum.HOME) {
+        pageData = ensureHomeBannerOnly(pageData)
+    }
+
+    menus[String(data.id)].pageData = pageData
+    menus[String(data.id)].pageMeta = parseJsonValue<any[] | null>(data?.meta, null)
+    selectWidgetIndex.value = pageData.findIndex((item: any) => !item?.disabled)
 }
 
 const setData = async () => {

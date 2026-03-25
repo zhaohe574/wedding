@@ -1,154 +1,148 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar
-            title="动态广场"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-        <!-- #endif -->
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
 
     <view class="dynamic-page page-with-tabbar-safe-bottom">
-        <view class="filter-header">
-            <view v-if="currentTag" class="tag-filter-banner" :style="tagBannerStyle">
-                <view class="tag-filter-banner__icon">
-                    <tn-icon name="fire" size="28" color="#FFFFFF" />
-                </view>
-                <view class="tag-filter-banner__content">
-                    <text class="tag-filter-banner__label">当前话题</text>
-                    <text class="tag-filter-banner__text">#{{ currentTag }}</text>
-                </view>
-                <view class="tag-filter-banner__clear" @click="clearTagFilter">
-                    <tn-icon name="close" size="28" color="#FFFFFF" />
-                </view>
+        <view class="dynamic-page__header">
+            <view
+                class="dynamic-page__status"
+                :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
+            ></view>
+            <view class="dynamic-page__nav" :style="{ height: `${navBarMetrics.contentHeight}px` }">
+                <text class="dynamic-page__title">动态</text>
             </view>
 
-            <view class="type-scroll-wrapper">
-                <scroll-view :scroll-x="true" class="type-scroll" :show-scrollbar="false">
-                    <view class="type-scroll-content">
+            <view class="dynamic-page__filters">
+                <scroll-view
+                    :scroll-x="true"
+                    class="dynamic-page__filter-scroll"
+                    :show-scrollbar="false"
+                >
+                    <view class="dynamic-page__filter-track">
+                        <view
+                            v-if="currentTag"
+                            class="dynamic-page__topic-chip dynamic-page__topic-chip--active"
+                            @click="clearTagFilter"
+                        >
+                            <text class="dynamic-page__topic-text">#{{ currentTag }}</text>
+                            <tn-icon name="close" size="18" color="#E85A4F" />
+                        </view>
+
                         <view
                             v-for="(tab, index) in typeTabs"
                             :key="tab.label"
-                            class="type-chip"
-                            :class="{ active: currentTypeIndex === index }"
-                            :style="currentTypeIndex === index ? getActiveTypeChipStyle() : {}"
+                            class="dynamic-page__type-chip"
+                            :class="{ 'is-active': currentTypeIndex === index }"
                             @click="currentTypeIndex = index"
                         >
                             {{ tab.label }}
                         </view>
                     </view>
                 </scroll-view>
+
                 <view
-                    class="filter-item filter-item--sort"
-                    :style="sortIsActive ? getFilterItemActiveStyle() : {}"
+                    class="dynamic-page__sort-chip"
+                    :class="{ 'is-active': sortIsActive }"
                     @click="showSortPicker = true"
                 >
                     <tn-icon
                         name="sort"
-                        size="24"
-                        :color="sortIsActive ? $theme.primaryColor : '#666666'"
+                        size="22"
+                        :color="sortIsActive ? '#E85A4F' : '#978B83'"
                     />
-                    <text
-                        :class="{ active: sortIsActive }"
-                        :style="sortIsActive ? { color: $theme.primaryColor } : {}"
-                    >
-                        {{ currentSortLabel }}
-                    </text>
+                    <text>{{ currentSortLabel }}</text>
                     <tn-icon
                         name="arrow-down"
-                        size="20"
-                        :color="sortIsActive ? $theme.primaryColor : '#999999'"
+                        size="18"
+                        :color="sortIsActive ? '#E85A4F' : '#978B83'"
                     />
                 </view>
             </view>
         </view>
 
-        <view class="dynamic-feed">
-            <view v-if="loading && dynamics.length === 0" class="loading-state">
-                <tn-loading size="60" mode="flower" />
-                <text class="loading-text">动态加载中...</text>
+        <view class="dynamic-page__body">
+            <view v-if="loading && dynamics.length === 0" class="dynamic-page__loading">
+                <tn-loading size="56" mode="flower" color="#E85A4F" />
+                <text class="dynamic-page__loading-text">动态加载中...</text>
             </view>
 
-            <view v-else-if="dynamics.length === 0" class="empty-state">
-                <view class="empty-icon-wrap">
-                    <tn-icon name="inbox" size="150" color="#D1D5DB" />
+            <view v-else-if="dynamics.length === 0" class="dynamic-page__empty">
+                <view class="dynamic-page__empty-icon">
+                    <tn-icon name="inbox" size="112" color="#D9CDC7" />
                 </view>
-                <text class="empty-title">暂无符合条件的动态</text>
-                <text class="empty-subtitle">调整筛选后重试</text>
+                <text class="dynamic-page__empty-title">暂无符合条件的动态</text>
+                <text class="dynamic-page__empty-desc">调整筛选条件后再试一次</text>
                 <view
                     v-if="showResetAction"
-                    class="empty-action-btn"
-                    :style="{
-                        background: getPrimaryGradient(),
-                        boxShadow: getPrimaryShadow(0.26)
-                    }"
+                    class="dynamic-page__empty-action"
                     @click="handleResetFilters"
                 >
-                    <text class="empty-action-text" :style="{ color: $theme.btnColor }">
-                        重置筛选
-                    </text>
+                    重置筛选
                 </view>
             </view>
 
-            <view v-else class="dynamic-list">
-                <dynamic-card
+            <view v-else class="dynamic-page__list">
+                <DynamicCard
                     v-for="item in dynamics"
                     :key="item.id"
                     :dynamic="item"
-                    variant="plaza-unified"
+                    variant="editorial"
                     :show-share="false"
                     @click="goDetail"
                     @like="handleLike"
                     @comment="goDetail"
-                    @favorite="handleFavorite"
                 />
 
-                <view v-if="hasMore" class="load-more">
-                    <text v-if="loading" class="load-more-text">加载中...</text>
-                    <text v-else class="load-more-text load-more-clickable" @click="loadMore">
+                <view class="dynamic-page__load-more">
+                    <text v-if="loading" class="dynamic-page__load-more-text">加载中...</text>
+                    <text
+                        v-else-if="hasMore"
+                        class="dynamic-page__load-more-text dynamic-page__load-more-text--action"
+                        @click="loadMore"
+                    >
                         加载更多
                     </text>
-                </view>
-                <view v-else class="load-more">
-                    <text class="load-more-text">没有更多了</text>
+                    <text v-else class="dynamic-page__load-more-text">没有更多了</text>
                 </view>
             </view>
         </view>
 
+        <view
+            v-if="showSortPicker"
+            class="dynamic-page__picker-mask"
+            :style="{
+                zIndex: sortPopupMaskZIndex,
+                background: $theme.maskColor || 'rgba(8, 10, 16, 0.58)'
+            }"
+            @tap="showSortPicker = false"
+            @touchmove.stop.prevent="() => {}"
+        ></view>
+
         <TnPopup
             v-model="showSortPicker"
             open-direction="bottom"
-            :radius="24"
+            :radius="28"
+            :overlay="false"
+            :overlay-closeable="true"
             :safe-area-inset-bottom="true"
+            :z-index="sortPopupZIndex"
         >
-            <view class="picker-container">
-                <view class="picker-header">
-                    <text class="picker-title">选择排序</text>
-                    <view class="picker-close" @click="showSortPicker = false">
-                        <tn-icon name="close" size="32" color="#666666" />
+            <view class="dynamic-page__picker">
+                <view class="dynamic-page__picker-head">
+                    <text class="dynamic-page__picker-title">排序方式</text>
+                    <view class="dynamic-page__picker-close" @click="showSortPicker = false">
+                        <tn-icon name="close" size="30" color="#978B83" />
                     </view>
                 </view>
-                <view class="button-picker-content">
-                    <view class="button-grid">
-                        <view
-                            v-for="item in sortOptions"
-                            :key="item.value"
-                            class="button-item"
-                            :class="{ active: currentSort === item.value }"
-                            :style="
-                                currentSort === item.value
-                                    ? {
-                                          background: getPrimaryGradient(),
-                                          color: '#FFFFFF',
-                                          boxShadow: getPrimaryShadow(0.2)
-                                      }
-                                    : {}
-                            "
-                            @click="selectSort(item.value)"
-                        >
-                            {{ item.label }}
-                        </view>
+
+                <view class="dynamic-page__picker-grid">
+                    <view
+                        v-for="item in sortOptions"
+                        :key="item.value"
+                        class="dynamic-page__picker-item"
+                        :class="{ 'is-active': currentSort === item.value }"
+                        @click="selectSort(item.value)"
+                    >
+                        {{ item.label }}
                     </view>
                 </view>
             </view>
@@ -163,18 +157,20 @@ import { computed, ref, watch } from 'vue'
 import { onLoad, onReachBottom, onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import DynamicCard from '@/components/business/DynamicCard.vue'
+import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
 import { getDynamicList, likeDynamic } from '@/api/dynamic'
-import { toggleStaffFavorite } from '@/api/staff'
 import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import cache from '@/utils/cache'
-import { alphaColor } from '@/utils/color'
 import { mapDynamicItem } from '@/utils/dynamic'
 import type { DynamicCardData } from '@/utils/dynamic'
 
 const $theme = useThemeStore()
 const userStore = useUserStore()
+const navBarMetrics = useNavBarMetrics()
+const sortPopupMaskZIndex = 20108
+const sortPopupZIndex = 20110
 
 const typeTabs = [
     { label: '全部', value: '' },
@@ -211,31 +207,6 @@ const currentSortOption = computed(
     () => sortOptions.find((item) => item.value === currentSort.value) || sortOptions[0]
 )
 const currentSortLabel = computed(() => currentSortOption.value.label)
-
-const getPrimaryGradient = () =>
-    `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
-
-const getPrimaryShadow = (alpha = 0.2) => `0 8rpx 24rpx ${alphaColor($theme.primaryColor, alpha)}`
-
-const getTypeChipActiveShadow = () => `0 2rpx 8rpx ${alphaColor($theme.primaryColor, 0.14)}`
-
-const getFilterItemActiveStyle = () => ({
-    background: alphaColor($theme.primaryColor, 0.1),
-    borderColor: alphaColor($theme.primaryColor, 0.32),
-    boxShadow: `0 6rpx 14rpx ${alphaColor($theme.primaryColor, 0.12)}`
-})
-
-const getActiveTypeChipStyle = () => ({
-    background: getPrimaryGradient(),
-    borderColor: $theme.primaryColor,
-    color: '#FFFFFF',
-    boxShadow: getTypeChipActiveShadow()
-})
-
-const tagBannerStyle = computed(() => ({
-    background: getPrimaryGradient(),
-    boxShadow: getPrimaryShadow(0.2)
-}))
 
 const buildQueryParams = () => {
     const params: Record<string, any> = {
@@ -284,8 +255,8 @@ const fetchDynamics = async (refresh = false) => {
         }
 
         hasMore.value = list.length === 10
-    } catch (e) {
-        console.error(e)
+    } catch (error) {
+        console.error(error)
     } finally {
         loading.value = false
     }
@@ -317,38 +288,8 @@ const handleLike = async (dynamic: DynamicCardData) => {
         await likeDynamic({ id: dynamic.id })
         dynamic.isLiked = !dynamic.isLiked
         dynamic.likeCount += dynamic.isLiked ? 1 : -1
-    } catch (e: any) {
-        uni.showToast({ title: e?.message || e || '操作失败', icon: 'none' })
-    }
-}
-
-const handleFavorite = async (staffId: number) => {
-    if (!userStore.isLogin) {
-        uni.navigateTo({ url: '/pages/login/login' })
-        return
-    }
-
-    const target = dynamics.value.find((item) => item.user.staffId === staffId)
-    if (!target?.user.canFavorite) {
-        return
-    }
-
-    try {
-        const isFavorite = !target.user.isFavorite
-        await toggleStaffFavorite({ id: staffId })
-
-        dynamics.value.forEach((item) => {
-            if (item.user.staffId === staffId) {
-                item.user.isFavorite = isFavorite
-            }
-        })
-
-        uni.showToast({
-            title: isFavorite ? '收藏成功' : '已取消收藏',
-            icon: 'none'
-        })
-    } catch (e: any) {
-        uni.showToast({ title: e?.message || e || '操作失败', icon: 'none' })
+    } catch (error: any) {
+        uni.showToast({ title: error?.message || error || '操作失败', icon: 'none' })
     }
 }
 
@@ -413,335 +354,264 @@ onShareAppMessage(() => ({
 </script>
 
 <style lang="scss" scoped>
+@import '../../styles/dynamic.scss';
+
 .dynamic-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, #fcf8ff 0%, #f8f6fb 42%, #f5f5f5 100%);
-}
+    background: $dynamic-bg;
 
-.filter-header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    padding: 12rpx 0 8rpx;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(14rpx);
-    border-bottom: 1rpx solid rgba(229, 231, 235, 0.8);
-    box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.06);
-}
-
-.tag-filter-banner {
-    margin: 0 20rpx 12rpx;
-    padding: 18rpx 20rpx;
-    border-radius: 24rpx;
-    display: flex;
-    align-items: center;
-    gap: 16rpx;
-
-    &__icon {
-        width: 56rpx;
-        height: 56rpx;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.18);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
+    &__header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: rgba(252, 251, 249, 0.96);
+        backdrop-filter: blur(20rpx);
     }
 
-    &__content {
+    &__nav {
+        display: flex;
+        align-items: flex-end;
+        padding: 0 40rpx 6rpx;
+        box-sizing: border-box;
+    }
+
+    &__title {
+        font-size: 50rpx;
+        font-weight: 700;
+        line-height: 1.05;
+        color: $dynamic-text;
+    }
+
+    &__filters {
+        display: flex;
+        align-items: center;
+        gap: 14rpx;
+        padding: 20rpx 40rpx 0;
+    }
+
+    &__filter-scroll {
         flex: 1;
         min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4rpx;
-    }
-
-    &__label {
-        font-size: 22rpx;
-        color: rgba(255, 255, 255, 0.78);
-    }
-
-    &__text {
-        font-size: 28rpx;
-        font-weight: 700;
-        color: #ffffff;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
 
-    &__clear {
-        width: 56rpx;
-        height: 56rpx;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-
-        &:active {
-            opacity: 0.85;
-            transform: scale(0.98);
+        &::-webkit-scrollbar {
+            display: none;
         }
     }
-}
 
-.type-scroll-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-    padding: 8rpx 20rpx 4rpx;
-}
-
-.type-scroll {
-    flex: 1;
-    min-width: 0;
-    white-space: nowrap;
-
-    &::-webkit-scrollbar {
-        display: none;
-    }
-}
-
-.type-scroll-content {
-    display: inline-flex;
-    align-items: center;
-    padding: 6rpx 0 10rpx;
-    white-space: nowrap;
-    width: max-content;
-}
-
-.type-chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    min-width: 126rpx;
-    height: 68rpx;
-    margin-right: 12rpx;
-    padding: 0 26rpx;
-    border-radius: 999rpx;
-    border: 1rpx solid #e7eaf0;
-    background: #f7f8fb;
-    font-size: 26rpx;
-    color: #4b5563;
-    font-weight: 500;
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: scale(0.98);
-        opacity: 0.88;
+    &__filter-track {
+        display: inline-flex;
+        align-items: center;
+        gap: 14rpx;
+        width: max-content;
+        padding-right: 8rpx;
     }
 
-    &.active {
+    &__topic-chip {
+        @include dynamic-pill($dynamic-surface-strong, $dynamic-text-secondary);
+        gap: 8rpx;
+        min-height: 70rpx;
+        padding: 0 22rpx;
+        flex-shrink: 0;
+
+        &--active {
+            background: $dynamic-accent-soft;
+            border-color: rgba(232, 90, 79, 0.14);
+            color: $dynamic-accent;
+        }
+    }
+
+    &__topic-text {
+        font-size: 24rpx;
+        font-weight: 600;
+        line-height: 1;
+    }
+
+    &__type-chip {
+        @include dynamic-pill($dynamic-surface-strong, $dynamic-text-secondary);
+        min-width: 104rpx;
+        min-height: 70rpx;
+        padding: 0 24rpx;
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+
+        &.is-active {
+            color: #ffffff;
+            border-color: $dynamic-accent;
+            background: $dynamic-accent;
+            box-shadow: $dynamic-shadow-accent;
+        }
+    }
+
+    &__sort-chip {
+        @include dynamic-pill($dynamic-surface-strong, $dynamic-text-muted);
+        gap: 8rpx;
+        min-width: 160rpx;
+        min-height: 70rpx;
+        padding: 0 22rpx;
+        flex-shrink: 0;
+        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
+
+        text {
+            font-size: 24rpx;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        &.is-active {
+            color: $dynamic-accent;
+            border-color: rgba(232, 90, 79, 0.16);
+            background: $dynamic-accent-soft;
+        }
+    }
+
+    &__body {
+        padding: 26rpx 40rpx 156rpx;
+    }
+
+    &__picker-mask {
+        position: fixed;
+        inset: 0;
+        z-index: 20108;
+    }
+
+    &__loading,
+    &__empty {
+        min-height: 56vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__loading-text {
+        margin-top: 22rpx;
+        font-size: 26rpx;
+        color: $dynamic-text-muted;
+    }
+
+    &__empty {
+        padding: 0 40rpx;
+    }
+
+    &__empty-icon {
+        margin-bottom: 24rpx;
+    }
+
+    &__empty-title {
+        font-size: 32rpx;
+        font-weight: 700;
+        color: $dynamic-text;
+    }
+
+    &__empty-desc {
+        margin-top: 12rpx;
+        font-size: 26rpx;
+        color: $dynamic-text-muted;
+    }
+
+    &__empty-action {
+        margin-top: 30rpx;
+        min-width: 240rpx;
+        height: 84rpx;
+        padding: 0 36rpx;
+        border-radius: $dynamic-radius-pill;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: $dynamic-accent;
+        box-shadow: $dynamic-shadow-accent;
+        color: #ffffff;
+        font-size: 28rpx;
         font-weight: 600;
     }
 
-    &:last-child {
-        margin-right: 8rpx;
-    }
-}
-
-.filter-item {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8rpx;
-    height: 68rpx;
-    min-width: 180rpx;
-    max-width: 210rpx;
-    padding: 0 20rpx;
-    background: #ffffff;
-    border-radius: 999rpx;
-    border: 1rpx solid #e8ebf0;
-    font-size: 24rpx;
-    color: #5b6473;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-
-    &:active {
-        transform: scale(0.98);
-        background: #f7f8fb;
+    &__list {
+        display: flex;
+        flex-direction: column;
+        gap: 22rpx;
     }
 
-    text {
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    &__load-more {
+        padding: 24rpx 0 10rpx;
+        text-align: center;
+    }
 
-        &.active {
+    &__load-more-text {
+        font-size: 24rpx;
+        color: $dynamic-text-muted;
+
+        &--action {
+            color: $dynamic-accent;
             font-weight: 600;
         }
     }
 
-    &--sort {
-        box-shadow: 0 4rpx 14rpx rgba(15, 23, 42, 0.04);
+    &__picker {
+        width: 100vw;
+        max-width: 100vw;
+        padding: 20rpx 20rpx 28rpx;
+        background: $dynamic-bg;
+        border-radius: 28rpx 28rpx 0 0;
+        box-shadow: 0 -18rpx 36rpx rgba(214, 185, 167, 0.22);
+    }
+
+    &__picker-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18rpx;
+    }
+
+    &__picker-title {
+        font-size: 30rpx;
+        font-weight: 700;
+        color: $dynamic-text;
+    }
+
+    &__picker-close {
+        width: 56rpx;
+        height: 56rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1rpx solid rgba(232, 222, 216, 0.7);
+    }
+
+    &__picker-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12rpx;
+    }
+
+    &__picker-item {
+        height: 84rpx;
+        border-radius: 20rpx;
+        border: 1rpx solid $dynamic-border;
+        background: rgba(255, 255, 255, 0.92);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: $dynamic-text-secondary;
+        font-size: 26rpx;
+        font-weight: 500;
+
+        &.is-active {
+            color: #ffffff;
+            border-color: $dynamic-accent;
+            background: $dynamic-accent;
+            box-shadow: $dynamic-shadow-accent;
+        }
     }
 }
 
-.dynamic-feed {
-    padding: 20rpx;
+:deep(.tn-popup) {
+    pointer-events: none;
 }
 
-.loading-state {
-    min-height: 58vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.loading-text {
-    margin-top: 28rpx;
-    font-size: 28rpx;
-    color: #98a2b3;
-}
-
-.empty-state {
-    min-height: 58vh;
-    padding: 180rpx 48rpx 220rpx;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.empty-icon-wrap {
-    margin-bottom: 26rpx;
-}
-
-.empty-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #4b5563;
-    margin-bottom: 12rpx;
-}
-
-.empty-subtitle {
-    font-size: 26rpx;
-    color: #9aa3af;
-    text-align: center;
-    line-height: 1.5;
-}
-
-.empty-action-btn {
-    margin-top: 34rpx;
-    min-width: 240rpx;
-    height: 88rpx;
-    padding: 0 40rpx;
-    border-radius: 999rpx;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: translateY(2rpx) scale(0.98);
-    }
-}
-
-.empty-action-text {
-    font-size: 28rpx;
-    font-weight: 600;
-}
-
-.dynamic-list {
-    display: flex;
-    flex-direction: column;
-    gap: 20rpx;
-}
-
-.load-more {
-    padding: 24rpx 0 12rpx;
-    text-align: center;
-}
-
-.load-more-text {
-    font-size: 26rpx;
-    color: #98a2b3;
-}
-
-.load-more-clickable {
-    color: var(--color-primary, #7c3aed);
-    font-weight: 600;
-}
-
-.picker-container {
-    background: #ffffff;
-    width: 100vw;
-    max-width: 100vw;
-    margin: 0;
-    border-radius: 24rpx 24rpx 0 0;
-    box-shadow: 0 -12rpx 36rpx rgba(15, 23, 42, 0.1);
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.picker-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 22rpx 24rpx;
-    border-bottom: 1rpx solid #eef1f5;
-}
-
-.picker-title {
-    font-size: 30rpx;
-    font-weight: 700;
-    color: #1f2937;
-}
-
-.picker-close {
-    width: 56rpx;
-    height: 56rpx;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:active {
-        background: #f4f5f7;
-    }
-}
-
-.button-picker-content {
-    padding: 24rpx;
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-.button-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16rpx;
-}
-
-.button-item {
-    padding: 24rpx 16rpx;
-    background: #f8f9fb;
-    border: 1rpx solid #e7ebf1;
-    border-radius: 16rpx;
-    text-align: center;
-    font-size: 26rpx;
-    color: #3f4a5a;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-
-    &:active {
-        transform: scale(0.98);
-        opacity: 0.9;
-    }
-
-    &.active {
-        font-weight: 600;
-        border-color: transparent;
-    }
+:deep(.tn-popup__content) {
+    pointer-events: auto;
 }
 </style>

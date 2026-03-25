@@ -26,6 +26,85 @@ use app\common\service\FileService;
  */
 class DecorateTabbarLogic extends BaseLogic
 {
+    /**
+     * @notes 固定底部导航项
+     * @return array
+     */
+    protected static function defaultTabbarList(): array
+    {
+        return [
+            [
+                'name' => '首页',
+                'selected' => '',
+                'unselected' => '',
+                'link' => [
+                    'path' => '/pages/index/index',
+                    'name' => '首页',
+                    'type' => 'shop',
+                    'canTab' => true,
+                ],
+                'is_show' => 1,
+            ],
+            [
+                'name' => '动态',
+                'selected' => '',
+                'unselected' => '',
+                'link' => [
+                    'path' => '/pages/dynamic/dynamic',
+                    'name' => '动态',
+                    'type' => 'shop',
+                    'canTab' => true,
+                ],
+                'is_show' => 1,
+            ],
+            [
+                'name' => '我的',
+                'selected' => '',
+                'unselected' => '',
+                'link' => [
+                    'path' => '/pages/user/user',
+                    'name' => '我的',
+                    'type' => 'shop',
+                    'canTab' => true,
+                ],
+                'is_show' => 1,
+            ],
+        ];
+    }
+
+    /**
+     * @notes 规范化底部导航项，只保留设计稿固定的 3 项
+     * @param array $tabbars
+     * @return array
+     */
+    protected static function normalizeTabbarList(array $tabbars): array
+    {
+        $tabbarMap = [];
+        foreach ($tabbars as $item) {
+            $path = trim((string)($item['link']['path'] ?? ''));
+            if ($path === '') {
+                continue;
+            }
+
+            $tabbarMap[$path] = $item;
+        }
+
+        $result = [];
+        foreach (self::defaultTabbarList() as $defaultItem) {
+            $path = $defaultItem['link']['path'];
+            $currentItem = $tabbarMap[$path] ?? [];
+
+            $result[] = [
+                'name' => $defaultItem['name'],
+                'selected' => $currentItem['selected'] ?? $defaultItem['selected'],
+                'unselected' => $currentItem['unselected'] ?? $defaultItem['unselected'],
+                'link' => $defaultItem['link'],
+                'is_show' => 1,
+            ];
+        }
+
+        return $result;
+    }
 
     /**
      * @notes 获取底部导航详情
@@ -40,7 +119,7 @@ class DecorateTabbarLogic extends BaseLogic
     {
         $list = DecorateTabbar::getTabbarLists();
         $style = ConfigService::get('tabbar', 'style', config('project.decorate.tabbar_style'));
-        return ['style' => $style, 'list' => $list];
+        return ['style' => $style, 'list' => self::normalizeTabbarList($list)];
     }
 
 
@@ -59,7 +138,7 @@ class DecorateTabbarLogic extends BaseLogic
         $model->where('id', '>', 0)->delete();
 
         // 保存数据
-        $tabbars = $params['list'] ?? [];
+        $tabbars = self::normalizeTabbarList($params['list'] ?? []);
         $data = [];
         foreach ($tabbars as $item) {
             $data[] = [

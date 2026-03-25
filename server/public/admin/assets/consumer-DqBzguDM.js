@@ -1,1 +1,0 @@
-import{r as e}from"./index-BDwLdXT-.js";function n(t){return e.get({url:"/content.user/lists",params:t},{ignoreCancelToken:!0})}function u(t){return e.get({url:"/content.user/detail",params:t})}function s(t){return e.post({url:"/content.user/edit",params:t})}function o(t){return e.post({url:"/content.user/adjustMoney",params:t})}export{o as a,n as b,u as g,s as u};

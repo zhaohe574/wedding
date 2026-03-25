@@ -1,147 +1,220 @@
 <template>
     <view class="dynamic-card" :class="cardClass" :style="cardStyle" @click="handleCardClick">
-        <view class="dynamic-card__header">
-            <view class="dynamic-card__author">
-                <view class="dynamic-card__avatar-wrap" @click.stop="handleUserClick">
-                    <image class="dynamic-card__avatar" :src="avatarSrc" mode="aspectFill" />
-                </view>
-                <view class="dynamic-card__author-main">
-                    <view class="dynamic-card__name-row">
-                        <text class="dynamic-card__name">{{ dynamic.user.nickname }}</text>
-                        <view
-                            v-if="dynamic.user.roleLabel"
-                            class="dynamic-card__role-badge"
-                            :class="{
-                                'dynamic-card__role-badge--official':
-                                    dynamic.user.roleLabel === '官方'
-                            }"
-                        >
-                            {{ dynamic.user.roleLabel }}
-                        </view>
+        <template v-if="isEditorial">
+            <view class="dynamic-card__editorial-head">
+                <view class="dynamic-card__editorial-author">
+                    <view class="dynamic-card__avatar-wrap" @click.stop="handleUserClick">
+                        <image class="dynamic-card__avatar" :src="avatarSrc" mode="aspectFill" />
                     </view>
-                    <view class="dynamic-card__meta-row">
-                        <text class="dynamic-card__meta-text">{{
-                            formatTime(dynamic.createTime)
-                        }}</text>
-                        <template v-if="dynamic.location?.name">
-                            <text class="dynamic-card__meta-dot">·</text>
-                            <view class="dynamic-card__location">
-                                <tn-icon name="location" size="20" color="#98A2B3" />
-                                <text class="dynamic-card__meta-text">{{
-                                    dynamic.location.name
-                                }}</text>
+                    <view class="dynamic-card__editorial-author-main">
+                        <view class="dynamic-card__name-row">
+                            <text class="dynamic-card__name">{{ dynamic.user.nickname }}</text>
+                            <view
+                                v-if="dynamic.user.roleLabel"
+                                class="dynamic-card__role-badge"
+                                :class="{
+                                    'dynamic-card__role-badge--staff':
+                                        dynamic.user.roleLabel === '服务人员',
+                                    'dynamic-card__role-badge--official':
+                                        dynamic.user.roleLabel === '官方'
+                                }"
+                            >
+                                {{ dynamic.user.roleLabel }}
                             </view>
-                        </template>
+                        </view>
+                        <text class="dynamic-card__editorial-meta">{{ editorialMeta }}</text>
                     </view>
                 </view>
             </view>
 
-            <favorite-button
-                v-if="showFavoriteButton"
-                :is-favorited="dynamic.user.isFavorite"
-                size="sm"
-                @click="handleFavorite"
-            />
-        </view>
-
-        <view v-if="showTypeBadge || displayTopics.length" class="dynamic-card__tag-row">
-            <view v-if="showTypeBadge" class="dynamic-card__tag dynamic-card__tag--type">
-                {{ dynamic.dynamicTypeLabel }}
-            </view>
             <view
-                v-for="topic in displayTopics"
-                :key="topic.id"
-                class="dynamic-card__tag"
-                @click="handleTopicClick(topic)"
+                v-if="editorialCover"
+                class="dynamic-card__editorial-cover-wrap"
+                @click.stop="handleMediaClick(0)"
             >
-                #{{ topic.name }}
-            </view>
-        </view>
-
-        <text v-if="dynamic.content" class="dynamic-card__content">{{ truncatedContent }}</text>
-
-        <view v-if="displayedImages.length" class="dynamic-card__media" :class="mediaGridClass">
-            <view
-                v-for="(image, index) in displayedImages"
-                :key="`${dynamic.id}-${index}`"
-                class="dynamic-card__media-item"
-                @click.stop="handleMediaClick(index)"
-            >
-                <image class="dynamic-card__media-image" :src="image" mode="aspectFill" />
+                <image class="dynamic-card__editorial-cover" :src="editorialCover" mode="aspectFill" />
                 <view
-                    v-if="index === 0 && dynamic.dynamicType === 2"
-                    class="dynamic-card__video-badge"
-                    :style="videoBadgeStyle"
+                    v-if="dynamic.dynamicType === 2"
+                    class="dynamic-card__video-badge dynamic-card__video-badge--editorial"
                 >
                     <tn-icon name="play-fill" size="24" color="#FFFFFF" />
                     <text>播放</text>
                 </view>
-                <view
-                    v-if="hiddenImageCount > 0 && index === displayedImages.length - 1"
-                    class="dynamic-card__media-mask"
-                >
-                    +{{ hiddenImageCount }}
-                </view>
-            </view>
-        </view>
-
-        <view class="dynamic-card__footer">
-            <view class="dynamic-card__stats">
-                <view class="dynamic-card__stat">
-                    <tn-icon name="eye" size="22" color="#98A2B3" />
-                    <text>{{ formatCount(dynamic.viewCount) }} 浏览</text>
-                </view>
-                <view class="dynamic-card__stat">
-                    <tn-icon name="chat" size="22" color="#98A2B3" />
-                    <text>{{ formatCount(dynamic.commentCount) }} 评论</text>
-                </view>
-                <view class="dynamic-card__stat" :class="{ 'is-active': dynamic.isLiked }">
-                    <tn-icon
-                        :name="dynamic.isLiked ? 'like-fill' : 'like'"
-                        size="22"
-                        :color="dynamic.isLiked ? themeStore.primaryColor : '#98A2B3'"
-                    />
-                    <text>{{ formatCount(dynamic.likeCount) }} 点赞</text>
-                </view>
             </view>
 
-            <view class="dynamic-card__actions">
+            <text v-if="dynamic.content" class="dynamic-card__editorial-content">
+                {{ truncatedContent }}
+            </text>
+
+            <view class="dynamic-card__editorial-stats">
                 <view
-                    class="dynamic-card__action dynamic-card__action--ghost"
-                    @click.stop="handleComment"
-                >
-                    评论
-                </view>
-                <view
-                    class="dynamic-card__action"
-                    :class="
-                        dynamic.isLiked
-                            ? 'dynamic-card__action--active'
-                            : 'dynamic-card__action--primary'
-                    "
-                    :style="dynamic.isLiked ? undefined : primaryActionStyle"
+                    class="dynamic-card__editorial-stat dynamic-card__editorial-stat--like"
+                    :class="{ 'is-active': dynamic.isLiked }"
                     @click.stop="handleLike"
                 >
-                    <tn-icon
-                        :name="dynamic.isLiked ? 'like-fill' : 'like'"
-                        size="22"
-                        :color="
-                            dynamic.isLiked
-                                ? 'var(--color-primary, #7C3AED)'
-                                : 'var(--color-btn-text, #FFFFFF)'
-                        "
-                    />
-                    <text>{{ dynamic.isLiked ? '已赞' : '点赞' }}</text>
+                    <text class="dynamic-card__editorial-stat-text">
+                        赞 {{ formatCount(dynamic.likeCount) }}
+                    </text>
                 </view>
-                <view
-                    v-if="showShare"
-                    class="dynamic-card__icon-action"
-                    @click.stop="handleMore"
-                >
-                    <tn-icon name="share" size="24" color="#667085" />
+                <view class="dynamic-card__editorial-stat" @click.stop="handleComment">
+                    <text class="dynamic-card__editorial-stat-text">
+                        评论 {{ formatCount(dynamic.commentCount) }}
+                    </text>
+                </view>
+                <view class="dynamic-card__editorial-stat">
+                    <text class="dynamic-card__editorial-stat-text">
+                        浏览 {{ formatCount(dynamic.viewCount) }}
+                    </text>
                 </view>
             </view>
-        </view>
+        </template>
+
+        <template v-else>
+            <view class="dynamic-card__header">
+                <view class="dynamic-card__author">
+                    <view class="dynamic-card__avatar-wrap" @click.stop="handleUserClick">
+                        <image class="dynamic-card__avatar" :src="avatarSrc" mode="aspectFill" />
+                    </view>
+                    <view class="dynamic-card__author-main">
+                        <view class="dynamic-card__name-row">
+                            <text class="dynamic-card__name">{{ dynamic.user.nickname }}</text>
+                            <view
+                                v-if="dynamic.user.roleLabel"
+                                class="dynamic-card__role-badge"
+                                :class="{
+                                    'dynamic-card__role-badge--staff':
+                                        dynamic.user.roleLabel === '服务人员',
+                                    'dynamic-card__role-badge--official':
+                                        dynamic.user.roleLabel === '官方'
+                                }"
+                            >
+                                {{ dynamic.user.roleLabel }}
+                            </view>
+                        </view>
+                        <view class="dynamic-card__meta-row">
+                            <text class="dynamic-card__meta-text">{{
+                                formatTime(dynamic.createTime)
+                            }}</text>
+                            <template v-if="dynamic.location?.name">
+                                <text class="dynamic-card__meta-dot">·</text>
+                                <view class="dynamic-card__location">
+                                    <tn-icon name="location" size="20" color="#98A2B3" />
+                                    <text class="dynamic-card__meta-text">{{
+                                        dynamic.location.name
+                                    }}</text>
+                                </view>
+                            </template>
+                        </view>
+                    </view>
+                </view>
+
+                <favorite-button
+                    v-if="showFavoriteButton"
+                    :is-favorited="dynamic.user.isFavorite"
+                    size="sm"
+                    @click="handleFavorite"
+                />
+            </view>
+
+            <view v-if="showTypeBadge || displayTopics.length" class="dynamic-card__tag-row">
+                <view v-if="showTypeBadge" class="dynamic-card__tag dynamic-card__tag--type">
+                    {{ dynamic.dynamicTypeLabel }}
+                </view>
+                <view
+                    v-for="topic in displayTopics"
+                    :key="topic.id"
+                    class="dynamic-card__tag"
+                    @click="handleTopicClick(topic)"
+                >
+                    #{{ topic.name }}
+                </view>
+            </view>
+
+            <text v-if="dynamic.content" class="dynamic-card__content">{{ truncatedContent }}</text>
+
+            <view v-if="displayedImages.length" class="dynamic-card__media" :class="mediaGridClass">
+                <view
+                    v-for="(image, index) in displayedImages"
+                    :key="`${dynamic.id}-${index}`"
+                    class="dynamic-card__media-item"
+                    @click.stop="handleMediaClick(index)"
+                >
+                    <image class="dynamic-card__media-image" :src="image" mode="aspectFill" />
+                    <view
+                        v-if="index === 0 && dynamic.dynamicType === 2"
+                        class="dynamic-card__video-badge"
+                        :style="videoBadgeStyle"
+                    >
+                        <tn-icon name="play-fill" size="24" color="#FFFFFF" />
+                        <text>播放</text>
+                    </view>
+                    <view
+                        v-if="hiddenImageCount > 0 && index === displayedImages.length - 1"
+                        class="dynamic-card__media-mask"
+                    >
+                        +{{ hiddenImageCount }}
+                    </view>
+                </view>
+            </view>
+
+            <view class="dynamic-card__footer">
+                <view class="dynamic-card__stats">
+                    <view class="dynamic-card__stat">
+                        <tn-icon name="eye" size="22" color="#98A2B3" />
+                        <text>{{ formatCount(dynamic.viewCount) }} 浏览</text>
+                    </view>
+                    <view class="dynamic-card__stat">
+                        <tn-icon name="chat" size="22" color="#98A2B3" />
+                        <text>{{ formatCount(dynamic.commentCount) }} 评论</text>
+                    </view>
+                    <view class="dynamic-card__stat" :class="{ 'is-active': dynamic.isLiked }">
+                        <tn-icon
+                            :name="dynamic.isLiked ? 'like-fill' : 'like'"
+                            size="22"
+                            :color="dynamic.isLiked ? themeStore.primaryColor : '#98A2B3'"
+                        />
+                        <text>{{ formatCount(dynamic.likeCount) }} 点赞</text>
+                    </view>
+                </view>
+
+                <view class="dynamic-card__actions">
+                    <view
+                        class="dynamic-card__action dynamic-card__action--ghost"
+                        @click.stop="handleComment"
+                    >
+                        评论
+                    </view>
+                    <view
+                        class="dynamic-card__action"
+                        :class="
+                            dynamic.isLiked
+                                ? 'dynamic-card__action--active'
+                                : 'dynamic-card__action--primary'
+                        "
+                        :style="dynamic.isLiked ? undefined : primaryActionStyle"
+                        @click.stop="handleLike"
+                    >
+                        <tn-icon
+                            :name="dynamic.isLiked ? 'like-fill' : 'like'"
+                            size="22"
+                            :color="
+                                dynamic.isLiked
+                                    ? 'var(--color-primary, #7C3AED)'
+                                    : 'var(--color-btn-text, #FFFFFF)'
+                            "
+                        />
+                        <text>{{ dynamic.isLiked ? '已赞' : '点赞' }}</text>
+                    </view>
+                    <view
+                        v-if="showShare"
+                        class="dynamic-card__icon-action"
+                        @click.stop="handleMore"
+                    >
+                        <tn-icon name="share" size="24" color="#667085" />
+                    </view>
+                </view>
+            </view>
+        </template>
     </view>
 </template>
 
@@ -154,7 +227,7 @@ import { alphaColor } from '@/utils/color'
 
 interface Props {
     dynamic: DynamicCardData
-    variant?: 'default' | 'plaza-unified'
+    variant?: 'default' | 'plaza-unified' | 'editorial'
     showShare?: boolean
 }
 
@@ -179,26 +252,40 @@ const avatarSrc = computed(
     () => props.dynamic.user.avatar || '/static/images/user/default_avatar.png'
 )
 const isPlazaUnified = computed(() => props.variant === 'plaza-unified')
+const isEditorial = computed(() => props.variant === 'editorial')
 const cardClass = computed(() => ({
-    'dynamic-card--plaza-unified': isPlazaUnified.value
+    'dynamic-card--plaza-unified': isPlazaUnified.value,
+    'dynamic-card--editorial': isEditorial.value
 }))
 
 const displayTopics = computed(() => props.dynamic.topics?.slice(0, 4) || [])
 
-const showTypeBadge = computed(() => props.dynamic.dynamicType !== 1)
+const showTypeBadge = computed(() => !isEditorial.value && props.dynamic.dynamicType !== 1)
 
-const showFavoriteButton = computed(() => props.dynamic.user.canFavorite)
+const showFavoriteButton = computed(() => !isEditorial.value && props.dynamic.user.canFavorite)
+
+const editorialMeta = computed(() => {
+    const parts = [formatTime(props.dynamic.createTime)]
+    if (props.dynamic.location?.name) {
+        parts.push(props.dynamic.location.name)
+    }
+    return parts.join(' · ')
+})
 
 const truncatedContent = computed(() => {
     const content = props.dynamic.content || ''
-    const maxLength = 220
+    const maxLength = isEditorial.value ? 44 : 220
     if (content.length > maxLength) {
         return `${content.slice(0, maxLength)}...`
     }
     return content
 })
 
-const displayedImages = computed(() => props.dynamic.images?.slice(0, 4) || [])
+const displayedImages = computed(() =>
+    isEditorial.value ? props.dynamic.images?.slice(0, 1) || [] : props.dynamic.images?.slice(0, 4) || []
+)
+
+const editorialCover = computed(() => displayedImages.value[0] || '')
 
 const hiddenImageCount = computed(() => Math.max(0, (props.dynamic.images?.length || 0) - 4))
 
@@ -215,9 +302,11 @@ const primaryShadowColor = computed(() =>
 )
 
 const cardStyle = computed(() => ({
-    boxShadow: isPlazaUnified.value
-        ? '0 8rpx 22rpx rgba(15, 23, 42, 0.08)'
-        : `0 10rpx 28rpx ${alphaColor(primaryColor.value, 0.08)}`,
+    boxShadow: isEditorial.value
+        ? '0 16rpx 34rpx rgba(214, 185, 167, 0.22)'
+        : isPlazaUnified.value
+          ? '0 8rpx 22rpx rgba(15, 23, 42, 0.08)'
+          : `0 10rpx 28rpx ${alphaColor(primaryColor.value, 0.08)}`,
     '--dynamic-card-primary-soft': primarySoftColor.value,
     '--dynamic-card-primary-soft-border': primarySoftBorderColor.value,
     '--dynamic-card-primary-shadow': primaryShadowColor.value
@@ -312,6 +401,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import '../../styles/dynamic.scss';
+
 .dynamic-card {
     background: #ffffff;
     border-radius: 24rpx;
@@ -383,6 +474,12 @@ export default {
         font-size: 22rpx;
         font-weight: 600;
         color: var(--color-primary, #7c3aed);
+
+        &--staff {
+            color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.12);
+            border-color: rgba(139, 92, 246, 0.08);
+        }
 
         &--official {
             background: #fff4e5;
@@ -639,6 +736,150 @@ export default {
             transform: scale(0.98);
             background: #f8fafc;
         }
+    }
+}
+
+.dynamic-card--editorial {
+    border-radius: $dynamic-radius-card;
+    border-color: $dynamic-border;
+    background: $dynamic-surface;
+    box-shadow: $dynamic-shadow-card;
+    backdrop-filter: blur(18rpx);
+
+    .dynamic-card__editorial-head {
+        padding: 22rpx 22rpx 0;
+    }
+
+    .dynamic-card__editorial-author {
+        display: flex;
+        align-items: center;
+        gap: 18rpx;
+    }
+
+    .dynamic-card__editorial-author-main {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .dynamic-card__avatar {
+        width: 56rpx;
+        height: 56rpx;
+        border: 2rpx solid rgba(255, 255, 255, 0.92);
+        box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.18);
+    }
+
+    .dynamic-card__name {
+        font-size: 24rpx;
+        color: $dynamic-text;
+    }
+
+    .dynamic-card__role-badge {
+        padding: 6rpx 12rpx;
+        font-size: 18rpx;
+        color: $dynamic-accent;
+        background: $dynamic-accent-soft;
+        border-color: rgba(232, 90, 79, 0.14);
+    }
+
+    .dynamic-card__role-badge--staff {
+        color: #8b5cf6;
+        background: rgba(139, 92, 246, 0.12);
+        border-color: rgba(139, 92, 246, 0.08);
+    }
+
+    .dynamic-card__role-badge--official {
+        color: #a86d28;
+        background: rgba(243, 215, 163, 0.3);
+        border-color: rgba(168, 109, 40, 0.12);
+    }
+
+    .dynamic-card__editorial-meta {
+        display: block;
+        margin-top: 6rpx;
+        font-size: 20rpx;
+        line-height: 1.4;
+        color: $dynamic-text-muted;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dynamic-card__editorial-cover-wrap {
+        position: relative;
+        margin: 16rpx 22rpx 0;
+        border-radius: $dynamic-radius-media;
+        overflow: hidden;
+        background: $dynamic-soft;
+    }
+
+    .dynamic-card__editorial-cover {
+        width: 100%;
+        height: 288rpx;
+        display: block;
+    }
+
+    .dynamic-card__video-badge--editorial {
+        left: 18rpx;
+        bottom: 18rpx;
+        padding: 8rpx 14rpx;
+        border-radius: $dynamic-radius-pill;
+        background: rgba(30, 36, 50, 0.44);
+        box-shadow: none;
+
+        text {
+            color: #ffffff;
+            font-size: 22rpx;
+            font-weight: 600;
+            line-height: 1;
+        }
+    }
+
+    .dynamic-card__editorial-content {
+        display: block;
+        padding: 16rpx 22rpx 0;
+        font-size: 30rpx;
+        line-height: 1.6;
+        font-weight: 600;
+        color: $dynamic-text;
+        word-break: break-word;
+        @include dynamic-line-clamp(2);
+    }
+
+    .dynamic-card__editorial-stats {
+        display: flex;
+        align-items: center;
+        gap: 14rpx;
+        padding: 14rpx 22rpx 22rpx;
+        flex-wrap: wrap;
+    }
+
+    .dynamic-card__editorial-stat {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        flex-shrink: 0;
+        min-width: 0;
+        padding: 0;
+        border: none;
+        background: transparent;
+        box-shadow: none;
+        color: $dynamic-text-muted;
+
+        &.is-active {
+            color: $dynamic-accent;
+            font-weight: 700;
+        }
+    }
+
+    .dynamic-card__editorial-stat--like {
+        color: $dynamic-accent;
+    }
+
+    .dynamic-card__editorial-stat-text {
+        font-size: 22rpx;
+        font-weight: 600;
+        line-height: 1;
+        white-space: nowrap;
     }
 }
 

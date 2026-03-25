@@ -1,6 +1,9 @@
 <template>
     <view class="user-info-wrapper">
-        <view class="user-header-shell" :style="{ background: $theme.navBgColor || '#FFFFFF' }">
+        <view
+            class="user-header-shell"
+            :style="{ '--user-header-nav-bg': $theme.navBgColor || '#0F141D' }"
+        >
             <tn-navbar
                 fixed
                 :bg-color="$theme.navBgColor || '#FFFFFF'"
@@ -137,29 +140,39 @@ const navigateTo = (url: string) => {
 
 .user-header-shell {
     position: relative;
-    padding-bottom: 56rpx;
-    border-bottom-left-radius: 32rpx;
-    border-bottom-right-radius: 32rpx;
+    padding-bottom: 84rpx;
+    border-bottom-left-radius: 42rpx;
+    border-bottom-right-radius: 42rpx;
     overflow: hidden;
+    background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.18) 0, transparent 36%),
+        linear-gradient(
+            145deg,
+            var(--user-header-nav-bg, #0f141d) 0%,
+            rgba(25, 32, 45, 0.96) 52%,
+            rgba(76, 58, 29, 0.94) 100%
+        );
 }
 
 .user-header-title {
     max-width: 100%;
     font-size: 32rpx;
-    font-weight: 400;
+    font-weight: 600;
     line-height: 1.2;
-    color: currentColor;
+    color: var(--cinema-text-inverse, #fff8ea);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    letter-spacing: 1rpx;
 }
 
 .user-card {
     position: relative;
     z-index: 1;
-    margin-top: -24rpx;
-    background: #ffffff;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+    margin-top: -34rpx;
+    background: var(--cinema-surface-elevated, #fffdf8);
+    border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+    box-shadow: var(--cinema-shadow-medium, 0 20rpx 52rpx rgba(8, 10, 16, 0.12));
     transition: all 0.2s ease;
 }
 
@@ -193,13 +206,13 @@ const navigateTo = (url: string) => {
         .user-nickname {
             font-size: 36rpx;
             font-weight: 600;
-            color: #1e293b;
+            color: var(--cinema-text-primary, #151a23);
         }
 
         .verified-badge {
             margin-left: 12rpx;
-            padding: 4rpx 12rpx;
-            border-radius: 8rpx;
+            padding: 6rpx 14rpx;
+            border-radius: 999rpx;
 
             .verified-text {
                 font-size: 22rpx;
@@ -210,14 +223,14 @@ const navigateTo = (url: string) => {
         .account-row {
             .account-text {
                 font-size: 26rpx;
-                color: #64748b;
+                color: var(--cinema-text-secondary, #5d6472);
             }
         }
     }
 
     .login-tip {
         font-size: 26rpx;
-        color: #64748b;
+        color: var(--cinema-text-secondary, #5d6472);
     }
 }
 
@@ -229,6 +242,8 @@ const navigateTo = (url: string) => {
     display: flex;
     align-items: center;
     justify-content: center;
+    border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+    box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
     transition: all 0.2s ease;
 
     &:active {

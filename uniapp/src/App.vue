@@ -56,31 +56,46 @@ onLaunch(async () => {
 @import './styles/animations.scss';
 @import './styles/utilities.scss';
 
-/* 全局样式重置 */
 page {
-    background-color: var(--color-page, #f6f6f6);
-    font-family: 'Source Han Sans CN', 'Helvetica Neue', 'Arial', sans-serif;
+    background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.08) 0, transparent 36%),
+        linear-gradient(180deg, var(--cinema-page-bg, #0b0d12) 0%, var(--cinema-page-bg-soft, #141922) 100%);
+    font-family:
+        'PingFang SC',
+        'Hiragino Sans GB',
+        'Microsoft YaHei',
+        'Noto Sans SC',
+        sans-serif;
     font-size: 28rpx;
     line-height: 1.6;
-    color: var(--color-main, #333333);
+    color: var(--cinema-text-primary, #151a23);
+    letter-spacing: 0.3rpx;
 }
 
-/* 全局滚动条样式（H5） */
+page,
+view,
+text,
+button,
+input,
+textarea {
+    box-sizing: border-box;
+}
+
 ::-webkit-scrollbar {
     width: 8rpx;
     height: 8rpx;
 }
 
 ::-webkit-scrollbar-track {
-    background: #f5f5f5;
+    background: rgba(255, 255, 255, 0.05);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #cccccc;
+    background: rgba(255, 255, 255, 0.18);
     border-radius: 4rpx;
 
     &:hover {
-        background: #999999;
+        background: rgba(255, 255, 255, 0.28);
     }
 }
 </style>

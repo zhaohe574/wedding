@@ -3,7 +3,9 @@
         <!-- 顶部操作按钮 -->
         <div class="flex justify-center gap-2">
             <el-button v-if="showPageMetaButton" @click="handleClickPageMeta">页面设置</el-button>
-            <el-button type="primary" @click="showWidgetSelector = true">添加组件</el-button>
+            <el-button v-if="!isHomeBannerOnlyMode" type="primary" @click="showWidgetSelector = true">
+                添加组件
+            </el-button>
         </div>
         <el-scrollbar class="pages-preview-container">
             <div class="pages-preview-content">
@@ -36,7 +38,7 @@
                     />
                 </slot>
                 <!--  部件操作按钮组  -->
-                <div class="widget-btns py-[5px]" v-if="index == effectiveModelValue">
+                <div class="widget-btns py-[5px]" v-if="!isHomeBannerOnlyMode && index == effectiveModelValue">
                     <div>
                         <el-tooltip
                             effect="dark"
@@ -90,7 +92,7 @@
         </el-scrollbar>
 
         <!-- 组件选择器弹窗 -->
-        <el-dialog v-model="showWidgetSelector" title="添加组件" width="600px">
+        <el-dialog v-if="!isHomeBannerOnlyMode" v-model="showWidgetSelector" title="添加组件" width="600px">
             <div v-if="filteredAvailableWidgets.length > 0" class="grid grid-cols-3 gap-4">
                 <div
                     v-for="item in filteredAvailableWidgets"
@@ -206,6 +208,8 @@ const currentPageType = computed<PageType>(() => {
     return pageType
 })
 
+const isHomeBannerOnlyMode = computed(() => currentPageType.value === 'home')
+
 // 过滤可用组件
 const filteredAvailableWidgets = computed(() => {
     const currentType = currentPageType.value
@@ -281,11 +285,17 @@ const canShowCom = computed(() => {
 
 // 修改组件显示/隐藏
 const changeShowCom = (data: any) => {
+    if (isHomeBannerOnlyMode.value) {
+        return
+    }
     if (data.enabled === undefined) return
     data.enabled = data.enabled ? 0 : 1
 }
 
 const rearrangeArray = (currentIdx: number, targetIdx: number) => {
+    if (isHomeBannerOnlyMode.value) {
+        return
+    }
     if (
         currentIdx < 0 ||
         currentIdx >= props.pageData.length ||
@@ -312,6 +322,9 @@ const isWidgetAdded = (widgetName: string) => {
 
 // 添加组件
 const handleAddWidget = (widgetInfo: any) => {
+    if (isHomeBannerOnlyMode.value) {
+        return
+    }
     if (isWidgetAdded(widgetInfo.name)) {
         return // 已添加的组件不能重复添加
     }
@@ -345,6 +358,9 @@ const handleAddWidget = (widgetInfo: any) => {
 
 // 删除组件
 const handleDeleteWidget = (index: number) => {
+    if (isHomeBannerOnlyMode.value) {
+        return
+    }
     const newPageData = cloneDeep(props.pageData)
     newPageData.splice(index, 1)
     

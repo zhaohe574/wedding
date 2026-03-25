@@ -1,6 +1,7 @@
 <template>
     <tn-button
         :class="buttonClass"
+        :style="buttonVars"
         :size="computedSize"
         :shape="'round'"
         :disabled="disabled"
@@ -17,6 +18,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { alphaColor } from '@/utils/color'
 
 interface Props {
     type?: 'primary' | 'secondary' | 'cta'
@@ -77,9 +79,34 @@ const textColor = computed(() => {
 // 计算边框颜色
 const borderColor = computed(() => {
     if (props.type === 'secondary') {
-        return themeStore.primaryColor
+        return alphaColor(themeStore.primaryColor, 0.26)
     }
     return 'transparent'
+})
+
+const buttonVars = computed(() => {
+    if (props.type === 'primary') {
+        return {
+            '--button-bg-start': themeStore.primaryColor,
+            '--button-bg-end': themeStore.secondaryColor,
+            '--button-shadow': `0 14rpx 28rpx ${alphaColor(themeStore.primaryColor, 0.24)}`,
+            '--button-shadow-active': `0 8rpx 16rpx ${alphaColor(themeStore.primaryColor, 0.2)}`
+        }
+    }
+    if (props.type === 'cta') {
+        return {
+            '--button-bg-start': themeStore.ctaColor,
+            '--button-bg-end': themeStore.accentColor,
+            '--button-shadow': `0 14rpx 28rpx ${alphaColor(themeStore.ctaColor, 0.22)}`,
+            '--button-shadow-active': `0 8rpx 16rpx ${alphaColor(themeStore.ctaColor, 0.18)}`
+        }
+    }
+    return {
+        '--button-bg-start': themeStore.surfaceElevatedColor,
+        '--button-bg-end': themeStore.surfaceElevatedColor,
+        '--button-shadow': 'none',
+        '--button-shadow-active': 'none'
+    }
 })
 
 // 处理点击事件
@@ -101,75 +128,77 @@ export default {
 
 <style lang="scss" scoped>
 .base-button {
-    transition: all 0.2s ease;
-    border-radius: 32rpx;
+    transition: all var(--cinema-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 999rpx;
 
     &:active {
-        transform: translateY(2rpx);
+        transform: translateY(2rpx) scale(0.99);
     }
 
-    // 主要按钮样式增强
     &--primary {
         :deep(.tn-button) {
-            box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
+            background: linear-gradient(135deg, var(--button-bg-start) 0%, var(--button-bg-end) 100%);
+            box-shadow: var(--button-shadow);
             font-weight: 600;
-            letter-spacing: 0.5rpx;
+            letter-spacing: 1rpx;
+            border: none;
 
             &:active {
-                box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.22);
+                box-shadow: var(--button-shadow-active);
             }
         }
     }
 
-    // 次要按钮样式增强
     &--secondary {
         :deep(.tn-button) {
-            font-weight: 500;
-            border-width: 2rpx;
+            font-weight: 600;
+            border-width: 1rpx;
+            background: var(--cinema-surface-elevated, #fffdf8);
+            box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.48);
 
             &:active {
-                opacity: 0.8;
+                opacity: 0.86;
             }
         }
     }
 
-    // CTA按钮样式增强
     &--cta {
         :deep(.tn-button) {
-            box-shadow: 0 6rpx 16rpx rgba(249, 115, 22, 0.22);
+            background: linear-gradient(135deg, var(--button-bg-start) 0%, var(--button-bg-end) 100%);
+            box-shadow: var(--button-shadow);
             font-weight: 600;
-            letter-spacing: 0.5rpx;
+            letter-spacing: 1rpx;
+            border: none;
 
             &:active {
-                box-shadow: 0 3rpx 10rpx rgba(249, 115, 22, 0.22);
+                box-shadow: var(--button-shadow-active);
             }
         }
     }
 
-    // 尺寸样式
     &--lg {
         :deep(.tn-button) {
-            height: 72rpx;
-            padding: 0 32rpx;
+            height: 78rpx;
+            padding: 0 34rpx;
             font-size: 30rpx;
         }
     }
 
     &--md {
         :deep(.tn-button) {
-            height: 64rpx;
-            padding: 0 28rpx;
+            height: 68rpx;
+            padding: 0 30rpx;
             font-size: 28rpx;
         }
     }
 
     &--sm {
         :deep(.tn-button) {
-            height: 52rpx;
+            height: 58rpx;
             padding: 0 24rpx;
             font-size: 24rpx;
-            font-weight: 500;
-            letter-spacing: 0.3rpx;
+            font-weight: 600;
+            letter-spacing: 0.5rpx;
         }
     }
 }

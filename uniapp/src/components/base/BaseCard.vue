@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 
 interface Props {
-    type?: 'standard' | 'glass'
+    type?: 'standard' | 'glass' | 'dark'
     hoverable?: boolean
     padding?: string
     borderRadius?: string
@@ -64,44 +64,56 @@ export default {
 <style lang="scss" scoped>
 .base-card {
     width: 100%;
-    transition: all 0.3s ease;
+    transition: all var(--cinema-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 
-    // 标准卡片样式
     &--standard {
-        background: #ffffff;
-        border-radius: 14rpx;
+        background: var(--cinema-surface-elevated, #fffdf8);
+        border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+        border-radius: var(--cinema-radius-md, 24rpx);
         padding: 20rpx;
-        box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
+        box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
     }
 
-    // 玻璃态卡片样式
     &--glass {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(20rpx);
-        -webkit-backdrop-filter: blur(20rpx);
-        border: 2rpx solid rgba(255, 255, 255, 0.3);
-        border-radius: 24rpx;
+        background: var(--cinema-surface-overlay, rgba(255, 248, 236, 0.86));
+        backdrop-filter: blur(24rpx);
+        -webkit-backdrop-filter: blur(24rpx);
+        border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+        border-radius: var(--cinema-radius-lg, 32rpx);
         padding: 20rpx;
-        box-shadow: 0 16rpx 48rpx rgba(124, 58, 237, 0.12), 0 6rpx 12rpx rgba(0, 0, 0, 0.04);
-
-        // 确保文字对比度
-        color: var(--color-main, #333333);
+        box-shadow: var(--cinema-shadow-medium, 0 20rpx 52rpx rgba(8, 10, 16, 0.12));
+        color: var(--cinema-text-primary, #151a23);
     }
 
-    // 可悬停效果
+    &--dark {
+        background: var(
+            --cinema-hero-gradient,
+            linear-gradient(145deg, rgba(10, 13, 18, 0.98) 0%, rgba(25, 32, 45, 0.96) 52%, rgba(76, 58, 29, 0.94) 100%)
+        );
+        border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+        border-radius: var(--cinema-radius-lg, 32rpx);
+        padding: 24rpx;
+        box-shadow: var(--cinema-shadow-strong, 0 24rpx 60rpx rgba(8, 10, 16, 0.18));
+        color: var(--cinema-text-inverse, #fff8ea);
+    }
+
     &--hoverable {
         cursor: pointer;
 
         &:active {
-            transform: translateY(-3rpx);
+            transform: translateY(-2rpx) scale(0.995);
         }
 
         &.base-card--standard:active {
-            box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.12);
+            box-shadow: var(--cinema-shadow-medium, 0 20rpx 52rpx rgba(8, 10, 16, 0.12));
         }
 
         &.base-card--glass:active {
-            box-shadow: 0 12rpx 36rpx rgba(124, 58, 237, 0.16), 0 8rpx 16rpx rgba(0, 0, 0, 0.06);
+            box-shadow: var(--cinema-shadow-strong, 0 24rpx 60rpx rgba(8, 10, 16, 0.18));
+        }
+
+        &.base-card--dark:active {
+            box-shadow: var(--cinema-shadow-strong, 0 24rpx 60rpx rgba(8, 10, 16, 0.18));
         }
     }
 }

@@ -2,15 +2,6 @@
     <el-form label-width="70px">
         <el-card shadow="never" class="!border-none flex mt-2">
             <div class="flex items-end mb-4">
-                <div class="text-base dark:text-[#ffffff] text-[#101010] font-medium">展示样式</div>
-            </div>
-            <el-radio-group v-model="contentData.style">
-                <el-radio :value="1">常规</el-radio>
-                <el-radio :value="2">大屏</el-radio>
-            </el-radio-group>
-        </el-card>
-        <el-card shadow="never" class="!border-none flex mt-2" v-if="content.style == 1">
-            <div class="flex items-end mb-4">
                 <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">背景联动</div>
             </div>
             <el-radio-group v-model="contentData.bg_style">
@@ -48,12 +39,7 @@
         <el-card shadow="never" class="!border-none flex-1 mt-2">
             <div class="flex items-end">
                 <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">轮播图片</div>
-                <div v-if="content.style == 1" class="text-xs text-tx-secondary ml-2">
-                    最多添加5张，建议图片尺寸：750px*340px
-                </div>
-                <div v-else class="text-xs text-tx-secondary ml-2">
-                    最多添加5张，建议图片尺寸：750px*1100px
-                </div>
+                <div class="text-xs text-tx-secondary ml-2">最多添加5张，建议图片尺寸：750px*340px</div>
             </div>
             <div class="flex-1">
                 <draggable
@@ -67,45 +53,64 @@
                         <del-wrap :key="index" @close="handleDelete(index)" class="w-full">
                             <div class="bg-fill-light w-full p-4 mt-4">
                                 <div class="flex justify-center w-[467px]">
-                                    <template v-if="content.style == 1">
-                                        <material-picker
-                                            size="122px"
-                                            v-model="item.image"
-                                            upload-class="bg-body"
-                                            exclude-domain
-                                        >
-                                            <template #upload>
-                                                <div class="w-[122px] h-[122px] banner-upload-btn">
-                                                    轮播图
-                                                </div>
-                                            </template>
-                                        </material-picker>
-                                        <material-picker
-                                            v-if="content.style == 1 || content.bg_style == 1"
-                                            class="ml-[40px]"
-                                            size="122px"
-                                            v-model="item.bg"
-                                            upload-class="bg-body"
-                                            exclude-domain
-                                        >
-                                            <template #upload>
-                                                <div class="w-[122px] h-[122px] banner-upload-btn">
-                                                    背景图
-                                                </div>
-                                            </template>
-                                        </material-picker>
-                                    </template>
-                                    <template v-else>
-                                        <material-picker
-                                            width="396px"
-                                            height="196px"
-                                            v-model="item.image"
-                                            upload-class="bg-body"
-                                            exclude-domain
-                                        />
-                                    </template>
+                                    <material-picker
+                                        size="122px"
+                                        v-model="item.image"
+                                        upload-class="bg-body"
+                                        exclude-domain
+                                    >
+                                        <template #upload>
+                                            <div class="w-[122px] h-[122px] banner-upload-btn">
+                                                轮播图
+                                            </div>
+                                        </template>
+                                    </material-picker>
+                                    <material-picker
+                                        class="ml-[40px]"
+                                        size="122px"
+                                        v-model="item.bg"
+                                        upload-class="bg-body"
+                                        exclude-domain
+                                    >
+                                        <template #upload>
+                                            <div class="w-[122px] h-[122px] banner-upload-btn">
+                                                背景图
+                                            </div>
+                                        </template>
+                                    </material-picker>
                                 </div>
                                 <div class="flex-1">
+                                    <el-form-item class="mt-[18px]" label="宣传语">
+                                        <el-input
+                                            v-model="item.slogan"
+                                            type="textarea"
+                                            :rows="3"
+                                            maxlength="60"
+                                            show-word-limit
+                                            placeholder="请输入宣传语，支持换行显示"
+                                        />
+                                    </el-form-item>
+                                    <el-form-item label="距顶部" class="mt-[18px]">
+                                        <el-input-number
+                                            v-model="item.slogan_top"
+                                            :min="0"
+                                            :max="2000"
+                                            :step="10"
+                                            controls-position="right"
+                                            class="!w-full"
+                                        />
+                                        <div class="text-xs text-tx-secondary mt-2">
+                                            留空时使用默认值：{{ defaultSloganTop }}rpx
+                                        </div>
+                                    </el-form-item>
+                                    <el-form-item class="mt-[18px]" label="字体颜色">
+                                        <div class="w-full">
+                                            <color-picker v-model="item.slogan_color" />
+                                            <div class="text-xs text-tx-secondary mt-2">
+                                                未设置时默认白色
+                                            </div>
+                                        </div>
+                                    </el-form-item>
                                     <el-form-item class="mt-[18px]" label="图片链接">
                                         <link-picker v-if="type == 'mobile'" v-model="item.link" />
                                         <el-input
@@ -172,41 +177,40 @@ const contentData = computed({
     }
 })
 
-// 默认高度：常规模式321rpx，大屏模式1100rpx
 const defaultHeight = computed(() => {
-    return props.content.style === 1 ? 321 : 1100
+    return 321
 })
 
-// 高度提示文字
 const heightTip = computed(() => {
-    return props.content.style === 1 
-        ? '建议高度：250-500rpx' 
-        : '建议高度：800-1600rpx'
+    return '建议高度：250-500rpx'
 })
 
-// 是否显示警告：超出建议范围但在有效范围内
 const showHeightWarning = computed(() => {
     const height = contentData.value.height || defaultHeight.value
-    if (props.content.style === 1) {
-        return height < 250 || height > 500
-    } else {
-        return height < 800 || height > 1600
-    }
+    return height < 250 || height > 500
 })
 
-// 警告文字
 const heightWarningText = computed(() => {
     return '当前高度超出建议范围，可能影响显示效果'
 })
 
-// 监听样式切换：当样式切换且高度未自定义时，使用新样式的默认高度
-watch(() => props.content.style, (newStyle, oldStyle) => {
-    if (newStyle !== oldStyle && !contentData.value.height) {
-        // 样式切换时，如果没有自定义高度，则使用新样式的默认高度
-        // 这里不需要手动设置，因为 defaultHeight 会自动更新
-    }
+const defaultSloganTop = computed(() => {
+    return 120
 })
 
+watch(
+    () => props.content.style,
+    (style) => {
+        if (style === 1) {
+            return
+        }
+
+        const content = cloneDeep(props.content)
+        content.style = 1
+        emits('update:content', content)
+    },
+    { immediate: true }
+)
 
 const handleAdd = () => {
     if (props.content.data?.length < limit) {
@@ -216,6 +220,9 @@ const handleAdd = () => {
             image: '',
             bg: '',
             name: '',
+            slogan: '',
+            slogan_top: null,
+            slogan_color: '',
             link: {}
         })
         emits('update:content', content)

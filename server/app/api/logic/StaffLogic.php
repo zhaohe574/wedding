@@ -40,11 +40,18 @@ class StaffLogic extends BaseLogic
             ->where('audit_status', Staff::AUDIT_PASS)
             ->order('sort desc, rating desc, order_count desc')
             ->field('id, sn, name, avatar, category_id, rating, order_count, experience_years, profile')
+            ->append(['category_name', 'tag_names'])
             ->limit($limit)
             ->select()
             ->toArray();
 
         StaffPriceService::injectDisplayPrice($result);
+
+        foreach ($result as &$item) {
+            $item['tags'] = $item['tag_names'] ?? [];
+            unset($item['tag_names'], $item['status_desc'], $item['audit_status_desc']);
+        }
+
         return $result;
     }
 

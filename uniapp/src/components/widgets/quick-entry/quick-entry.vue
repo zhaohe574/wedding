@@ -109,12 +109,15 @@ const handleClick = (link: any) => {
 
 <style scoped lang="scss">
 .quick-entry-widget {
+    position: relative;
+
     /* 网格布局样式 */
     .grid-layout {
-        background: #ffffff;
-        border-radius: 14rpx;
-        padding: 24rpx 16rpx;
-        box-shadow: 0 4rpx 20rpx rgba(15, 23, 42, 0.06);
+        background: linear-gradient(180deg, var(--cinema-surface-elevated, #fffdf8) 0%, var(--cinema-surface, #f6f2ea) 100%);
+        border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+        border-radius: 28rpx;
+        padding: 28rpx 18rpx;
+        box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
 
         .entries-grid {
             display: grid;
@@ -125,10 +128,11 @@ const handleClick = (link: any) => {
 
     /* 横向滑动样式 */
     .scroll-layout {
-        background: #ffffff;
-        border-radius: 14rpx;
-        padding: 24rpx 0;
-        box-shadow: 0 4rpx 20rpx rgba(15, 23, 42, 0.06);
+        background: linear-gradient(180deg, var(--cinema-surface-elevated, #fffdf8) 0%, var(--cinema-surface, #f6f2ea) 100%);
+        border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+        border-radius: 28rpx;
+        padding: 28rpx 0;
+        box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
 
         .scroll-container {
             white-space: nowrap;
@@ -156,8 +160,8 @@ const handleClick = (link: any) => {
 
         /* 点击反馈 */
         &:active {
-            transform: scale(0.95);
-            opacity: 0.8;
+            transform: translateY(2rpx) scale(0.97);
+            opacity: 0.86;
         }
     }
 
@@ -178,9 +182,11 @@ const handleClick = (link: any) => {
             left: 0;
             right: 0;
             bottom: 0;
-            border-radius: 16rpx;
+            border-radius: 22rpx;
             transition: all 0.2s ease;
             z-index: 0;
+            border: 1rpx solid rgba(255, 255, 255, 0.42);
+            box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.45);
         }
 
         /* 图标 */
@@ -196,8 +202,8 @@ const handleClick = (link: any) => {
     /* 标题 */
     .entry-title {
         font-size: 26rpx;
-        font-weight: 500;
-        color: #334155;
+        font-weight: 600;
+        color: var(--cinema-text-primary, #151a23);
         text-align: center;
         line-height: 1.4;
         max-width: 120rpx;

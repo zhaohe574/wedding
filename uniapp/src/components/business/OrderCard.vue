@@ -8,6 +8,7 @@
         <!-- 订单抬头 -->
         <view class="order-card__header">
             <view class="order-card__order-info">
+                <text class="order-card__eyebrow">Wedding Service Order</text>
                 <text class="order-card__order-sn">订单号：{{ order.orderNo }}</text>
                 <text class="order-card__order-time">{{ order.createTime }}</text>
             </view>
@@ -232,8 +233,9 @@ const statusText = computed(() => {
 const statusStyle = computed(() => {
     const config = statusConfig[props.order.status]
     return {
-        backgroundColor: config?.bgColor || '#F5F5F5',
-        color: config?.color || '#999999'
+        background: config?.bgColor || 'rgba(148, 163, 184, 0.12)',
+        color: config?.color || '#999999',
+        border: `1rpx solid ${config?.color || '#999999'}1F`
     }
 })
 
@@ -241,13 +243,14 @@ const statusStyle = computed(() => {
 const getActionButtonStyle = (type: string) => {
     if (type === 'primary') {
         return {
-            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-            borderColor: $theme.primaryColor
+            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || $theme.primaryColor} 100%)`,
+            borderColor: $theme.primaryColor,
+            boxShadow: `0 14rpx 28rpx rgba(8, 10, 16, 0.12)`
         }
     }
     return {
-        background: 'transparent',
-        borderColor: '#E5E5E5'
+        background: 'rgba(255,255,255,0.78)',
+        borderColor: 'var(--cinema-border, rgba(198, 168, 106, 0.24))'
     }
 }
 
@@ -259,7 +262,7 @@ const getActionTextStyle = (type: string) => {
         }
     }
     return {
-        color: '#666666'
+        color: 'var(--cinema-text-primary, #151a23)'
     }
 }
 
@@ -286,36 +289,47 @@ export default {
 <style lang="scss" scoped>
 .order-card {
     position: relative;
-    background: #ffffff;
-    border-radius: 14rpx;
-    padding: 20rpx;
-    box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.08);
-    transition: all 0.2s ease;
+    background:
+        linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, rgba(246, 242, 234, 0.98) 100%);
+    border-radius: 28rpx;
+    padding: 24rpx;
+    border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+    box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
+    transition: transform var(--cinema-motion-base, 220ms) ease,
+        box-shadow var(--cinema-motion-base, 220ms) ease;
     overflow: hidden;
 
     &:active {
-        box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.12);
-        transform: translateY(-2rpx);
+        box-shadow: var(--cinema-shadow-medium, 0 20rpx 52rpx rgba(8, 10, 16, 0.12));
+        transform: translateY(-2rpx) scale(0.995);
+    }
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 32%);
+        pointer-events: none;
     }
 
     &__status {
         position: absolute;
-        top: 0;
-        right: 0;
-        padding: 8rpx 16rpx;
-        border-radius: 0 14rpx 0 16rpx;
-        font-size: 24rpx;
+        top: 20rpx;
+        right: 20rpx;
+        padding: 10rpx 18rpx;
+        border-radius: 999rpx;
+        font-size: 22rpx;
         font-weight: 600;
     }
 
     &__status-text {
-        font-size: 24rpx;
+        font-size: 22rpx;
         font-weight: 600;
     }
 
     &__header {
-        margin-bottom: 20rpx;
-        padding-right: 100rpx;
+        margin-bottom: 22rpx;
+        padding-right: 136rpx;
     }
 
     &__order-info {
@@ -324,40 +338,49 @@ export default {
         gap: 6rpx;
     }
 
-    &__order-sn {
-        font-size: 28rpx;
+    &__eyebrow {
+        font-size: 20rpx;
         font-weight: 600;
-        color: #333333;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--cinema-primary, #c6a86a);
+    }
+
+    &__order-sn {
+        font-size: 30rpx;
+        font-weight: 700;
+        color: var(--cinema-text-primary, #151a23);
     }
 
     &__order-time {
         font-size: 24rpx;
-        color: #999999;
+        color: var(--cinema-text-secondary, #5d6472);
     }
 
     &__main {
         display: flex;
         flex-direction: column;
         gap: 16rpx;
-        margin-bottom: 20rpx;
+        margin-bottom: 22rpx;
     }
 
     &__staff-section {
         display: flex;
         align-items: center;
         gap: 16rpx;
-        padding: 16rpx;
-        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-        border-radius: 12rpx;
+        padding: 18rpx;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(247, 243, 234, 0.96) 100%);
+        border: 1rpx solid rgba(255, 255, 255, 0.72);
+        border-radius: 20rpx;
     }
 
     &__avatar {
         width: 80rpx;
         height: 80rpx;
-        border-radius: 50%;
+        border-radius: 24rpx;
         flex-shrink: 0;
-        border: 2rpx solid #ffffff;
-        box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
+        border: 2rpx solid rgba(255, 255, 255, 0.9);
+        box-shadow: 0 8rpx 20rpx rgba(8, 10, 16, 0.12);
     }
 
     &__staff-info {
@@ -371,7 +394,7 @@ export default {
     &__staff-name {
         font-size: 28rpx;
         font-weight: 600;
-        color: #333333;
+        color: var(--cinema-text-primary, #151a23);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -379,7 +402,7 @@ export default {
 
     &__package-name {
         font-size: 24rpx;
-        color: #666666;
+        color: var(--cinema-text-secondary, #5d6472);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -422,7 +445,7 @@ export default {
 
     &__info-label {
         font-size: 24rpx;
-        color: #999999;
+        color: var(--cinema-text-secondary, #5d6472);
         margin-bottom: 6rpx;
     }
 
@@ -436,10 +459,10 @@ export default {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 12rpx 16rpx;
-        background: #ffffff;
-        border-radius: 10rpx;
-        border: 1rpx solid #f0f0f0;
+        padding: 14rpx 18rpx;
+        background: rgba(255, 255, 255, 0.76);
+        border-radius: 16rpx;
+        border: 1rpx solid rgba(255, 255, 255, 0.72);
         transition: all 0.2s ease;
         gap: 12rpx;
     }
@@ -454,7 +477,7 @@ export default {
     &__schedule-date-text {
         font-size: 26rpx;
         font-weight: 600;
-        color: #333333;
+        color: var(--cinema-text-primary, #151a23);
     }
 
     &__schedule-slots {
@@ -481,16 +504,16 @@ export default {
         flex-direction: column;
         align-items: flex-start;
         gap: 6rpx;
-        padding: 12rpx 16rpx;
-        background: #fafafa;
-        border-radius: 12rpx;
-        border: 1rpx solid #f0f0f0;
+        padding: 14rpx 18rpx;
+        background: rgba(255, 255, 255, 0.76);
+        border-radius: 16rpx;
+        border: 1rpx solid rgba(255, 255, 255, 0.72);
     }
 
     &__location-text {
         flex: 1;
         font-size: 26rpx;
-        color: #666666;
+        color: var(--cinema-text-secondary, #5d6472);
         line-height: 1.6;
     }
 
@@ -498,9 +521,9 @@ export default {
         display: flex;
         justify-content: space-between;
         align-items: flex-end;
-        padding: 16rpx 0;
-        border-top: 1rpx solid #e5e5e5;
-        margin-bottom: 16rpx;
+        padding: 18rpx 0 0;
+        border-top: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+        margin-bottom: 18rpx;
     }
 
     &__price-left {
@@ -517,12 +540,12 @@ export default {
 
     &__price-label {
         font-size: 24rpx;
-        color: #999999;
+        color: var(--cinema-text-secondary, #5d6472);
     }
 
     &__price-original {
         font-size: 24rpx;
-        color: #999999;
+        color: var(--cinema-text-secondary, #5d6472);
         text-decoration: line-through;
     }
 
@@ -541,7 +564,7 @@ export default {
 
     &__price-label-total {
         font-size: 24rpx;
-        color: #999999;
+        color: var(--cinema-text-secondary, #5d6472);
     }
 
     &__price-total-wrapper {
@@ -563,6 +586,7 @@ export default {
 
     &__actions {
         display: flex;
+        flex-wrap: wrap;
         gap: 12rpx;
         justify-content: flex-end;
     }
@@ -576,12 +600,12 @@ export default {
         padding: 0 28rpx;
         box-sizing: border-box;
         border-radius: 32rpx;
-        border: 2rpx solid #e5e5e5;
+        border: 2rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
         transition: all 0.2s ease;
         flex-shrink: 0;
 
         &--primary {
-            box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
+            box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
             border: none;
         }
 

@@ -87,6 +87,12 @@ const LEGACY_LINK_MAP: Record<string, string> = {
     '/pages/recharge_record/recharge_record': '/packages/pages/recharge_record/recharge_record'
 }
 
+const TABBAR_PATHS = new Set([
+    '/pages/index/index',
+    '/pages/dynamic/dynamic',
+    '/pages/user/user'
+])
+
 export const normalizeAppPath = (path = '') => {
     let nextPath = path.trim()
     if (!nextPath) return ''
@@ -138,7 +144,9 @@ export function navigateTo(
         return
     }
 
-    const shouldSwitchTab = navigateType === 'switchTab' || !!link.canTab
+    const shouldSwitchTab = TABBAR_PATHS.has(path) && (navigateType === 'switchTab' || !!link.canTab)
+    const url = buildUrl(path, link.query)
+
     if (shouldSwitchTab) {
         uni.switchTab({
             url: path,
@@ -147,7 +155,6 @@ export function navigateTo(
         return
     }
 
-    const url = buildUrl(path, link.query)
     if (navigateType === 'reLaunch') {
         uni.reLaunch({
             url,

@@ -292,7 +292,10 @@ watch(
 .my-service {
     .service-grid,
     .service-list {
-        box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+        background: linear-gradient(180deg, var(--cinema-surface-elevated, #fffdf8) 0%, var(--cinema-surface, #f6f2ea) 100%);
+        border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+        border-radius: 28rpx;
+        box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
         transition: all 0.2s ease;
     }
 
@@ -301,8 +304,8 @@ watch(
         cursor: pointer;
 
         &:active {
-            transform: scale(0.95);
-            opacity: 0.8;
+            transform: translateY(2rpx) scale(0.97);
+            opacity: 0.86;
         }
 
         .icon-wrapper {
@@ -310,7 +313,7 @@ watch(
         }
 
         .count-badge {
-            box-shadow: 0 4rpx 12rpx rgba(249, 115, 22, 0.4);
+            box-shadow: 0 10rpx 20rpx rgba(217, 119, 6, 0.28);
         }
     }
 
@@ -319,11 +322,11 @@ watch(
         cursor: pointer;
 
         &:active {
-            background-color: #f8fafc;
+            background-color: var(--cinema-surface, #f6f2ea);
         }
 
         .count-badge {
-            box-shadow: 0 4rpx 12rpx rgba(249, 115, 22, 0.4);
+            box-shadow: 0 10rpx 20rpx rgba(217, 119, 6, 0.28);
         }
     }
 }

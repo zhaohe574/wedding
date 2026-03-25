@@ -1,299 +1,423 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar
-            title="动态详情"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-        <!-- #endif -->
-    </page-meta>
-    <view class="dynamic-detail" v-if="detail">
-        <!-- 主体内容 -->
-        <scroll-view scroll-y class="content-scroll">
-            <!-- 用户信息卡片 -->
-            <view class="user-card">
-                <view class="flex items-start">
-                    <image
-                        :src="detail.user_avatar || '/static/images/user/default_avatar.png'"
-                        class="user-avatar"
-                        mode="aspectFill"
-                    />
-                    <view class="flex-1">
-                        <view class="flex items-center justify-between">
-                            <view>
-                                <view class="flex items-center">
-                                    <text class="user-name">{{ detail.user_nickname }}</text>
-                                    <view
-                                        v-if="detail.user_type === 2"
-                                        class="user-badge badge-staff"
-                                    >
-                                        服务人员
-                                    </view>
-                                    <view
-                                        v-if="detail.user_type === 3"
-                                        class="user-badge badge-official"
-                                    >
-                                        官方
-                                    </view>
-                                    <view v-if="detail.is_top === 1" class="user-badge badge-top">
-                                        置顶
-                                    </view>
-                                    <view v-if="detail.is_hot === 1" class="user-badge badge-hot">
-                                        热门
-                                    </view>
+    <page-meta :page-style="$theme.pageStyle" />
+
+    <view v-if="detail" class="dynamic-detail">
+        <view class="dynamic-detail__header">
+            <view
+                class="dynamic-detail__header-status"
+                :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
+            ></view>
+            <view
+                class="dynamic-detail__header-bar"
+                :style="{ height: `${navBarMetrics.contentHeight}px` }"
+            >
+                <view class="dynamic-detail__header-side" :style="headerSideStyle">
+                    <view class="dynamic-detail__back" @click="handleBack">
+                        <text class="dynamic-detail__back-text">‹ 返回</text>
+                    </view>
+                </view>
+                <view class="dynamic-detail__header-title">动态详情</view>
+                <view
+                    class="dynamic-detail__header-side dynamic-detail__header-side--placeholder"
+                    :style="headerSideStyle"
+                >
+                    <text class="dynamic-detail__header-placeholder">‹ 返回</text>
+                </view>
+            </view>
+        </view>
+
+        <scroll-view scroll-y class="dynamic-detail__scroll" :style="scrollStyle">
+            <view class="dynamic-detail__content">
+                <view class="dynamic-detail__author-card">
+                    <view class="dynamic-detail__author-main">
+                        <image
+                            :src="detail.user_avatar || '/static/images/user/default_avatar.png'"
+                            class="dynamic-detail__avatar"
+                            mode="aspectFill"
+                        />
+                        <view class="dynamic-detail__author-copy">
+                            <view class="dynamic-detail__author-row">
+                                <text class="dynamic-detail__author-name">
+                                    {{ detail.user_nickname }}
+                                </text>
+                                <view
+                                    v-if="detail.user_type === 2"
+                                    class="dynamic-detail__author-badge dynamic-detail__author-badge--staff"
+                                >
+                                    服务人员
                                 </view>
-                                <text class="user-time">{{ detail.create_time }}</text>
+                                <view
+                                    v-if="detail.user_type === 3"
+                                    class="dynamic-detail__author-badge dynamic-detail__author-badge--official"
+                                >
+                                    官方
+                                </view>
+                                <view
+                                    v-if="detail.is_top === 1"
+                                    class="dynamic-detail__author-badge dynamic-detail__author-badge--top"
+                                >
+                                    置顶
+                                </view>
+                                <view
+                                    v-if="detail.is_hot === 1"
+                                    class="dynamic-detail__author-badge dynamic-detail__author-badge--hot"
+                                >
+                                    热门
+                                </view>
                             </view>
-                            <view
-                                v-if="detail.can_favorite"
-                                class="favorite-btn"
-                                :class="
-                                    detail.is_favorite
-                                        ? 'favorite-btn-active'
-                                        : 'favorite-btn-inactive'
-                                "
-                                @click="handleFavorite"
-                            >
-                                {{ detail.is_favorite ? '已收藏' : '收藏' }}
-                            </view>
+                            <text class="dynamic-detail__author-meta">{{ authorMetaText }}</text>
                         </view>
+                    </view>
+
+                    <view
+                        v-if="detail.can_favorite"
+                        class="dynamic-detail__favorite-btn"
+                        :class="{ 'is-active': detail.is_favorite }"
+                        @click="handleFavorite"
+                    >
+                        {{ detail.is_favorite ? '已收藏' : '收藏' }}
                     </view>
                 </view>
 
-                <!-- 内容区域 -->
-                <view class="content-wrapper">
-                    <!-- 类型标签和动态标签 -->
-                    <view class="badges-row">
+                <view class="dynamic-detail__detail-actions">
+                    <view
+                        class="dynamic-detail__detail-action"
+                        :class="{ 'is-active': detail.is_collected }"
+                        @click="handleCollect"
+                    >
+                        <tn-icon :name="detail.is_collected ? 'star-fill' : 'star'" size="28" />
+                        <text>{{ detail.is_collected ? '已收藏动态' : '收藏动态' }}</text>
+                    </view>
+                    <button
+                        class="dynamic-detail__detail-action dynamic-detail__detail-action--share"
+                        open-type="share"
+                    >
+                        <tn-icon name="share" size="28" />
+                        <text>分享动态</text>
+                    </button>
+                </view>
+
+                <view v-if="detail.video" class="dynamic-detail__hero dynamic-detail__hero--video">
+                    <video
+                        :src="detail.video"
+                        class="dynamic-detail__hero-video"
+                        :poster="detail.video_cover"
+                        controls
+                        object-fit="cover"
+                    />
+                </view>
+                <view v-else-if="heroImage" class="dynamic-detail__hero">
+                    <image
+                        :src="heroImage"
+                        class="dynamic-detail__hero-image"
+                        mode="aspectFill"
+                        @click="previewImage(detail.images, 0)"
+                    />
+                </view>
+
+                <view v-if="galleryImages.length > 0" class="dynamic-detail__gallery">
+                    <view
+                        v-for="(img, idx) in galleryImages"
+                        :key="`${img}-${idx}`"
+                        class="dynamic-detail__gallery-item"
+                        @click="previewImage(detail.images, idx + 1)"
+                    >
+                        <image class="dynamic-detail__gallery-image" :src="img" mode="aspectFill" />
+                    </view>
+                </view>
+
+                <view class="dynamic-detail__copy">
+                    <view v-if="showMetaTags" class="dynamic-detail__tag-row">
                         <text
-                            v-if="detail.dynamic_type"
-                            class="type-badge"
+                            v-if="detail.dynamic_type && detail.dynamic_type !== 1"
+                            class="dynamic-detail__type-tag"
                             :class="getTypeClass(detail.dynamic_type)"
                         >
                             {{ getTypeText(detail.dynamic_type) }}
                         </text>
-                        <view v-for="(tag, tagIdx) in detail.tags" :key="tagIdx" class="tag-item">
-                            <text class="tag-text">#{{ tag }}</text>
+                        <view
+                            v-for="(tag, tagIdx) in detailTags"
+                            :key="`${tag}-${tagIdx}`"
+                            class="dynamic-detail__topic-tag"
+                        >
+                            <text>#{{ tag }}</text>
                         </view>
                     </view>
 
-                    <!-- 文字内容 -->
-                    <view class="content-text">{{ detail.content }}</view>
+                    <text class="dynamic-detail__content-text">{{ detail.content }}</text>
+                </view>
 
-                    <!-- 图片 -->
+                <view class="dynamic-detail__stats">
                     <view
-                        v-if="detail.images && detail.images.length > 0"
-                        class="image-grid"
-                        :class="getImageGridClass(detail.images.length)"
+                        class="dynamic-detail__stat-pill"
+                        :class="{ 'is-active': detail.is_liked }"
+                        @click="handleLike"
                     >
-                        <image
-                            v-for="(img, idx) in detail.images"
-                            :key="idx"
-                            :src="img"
-                            class="grid-image"
-                            mode="aspectFill"
-                            @click="previewImage(detail.images, idx)"
-                        />
-                    </view>
-
-                    <!-- 视频 -->
-                    <view v-if="detail.video" class="video-wrapper">
-                        <video
-                            :src="detail.video"
-                            class="video-player"
-                            :poster="detail.video_cover"
-                            controls
-                            object-fit="contain"
-                        />
-                    </view>
-                </view>
-
-                <!-- 互动数据 -->
-                <view class="stats-bar">
-                    <view class="stats-left">
-                        <view class="stat-item">
-                            <tn-icon name="eye" size="32" />
-                            <text>{{ detail.view_count }} 浏览</text>
-                        </view>
-                        <view class="stat-item">
-                            <tn-icon name="heart" size="32" />
-                            <text>{{ detail.like_count }} 点赞</text>
-                        </view>
-                        <view class="stat-item">
-                            <tn-icon name="star" size="32" />
-                            <text>{{ detail.collect_count }} 收藏</text>
-                        </view>
-                    </view>
-                    <!-- 位置信息 -->
-                    <view v-if="detail.location" class="location-info">
-                        <tn-icon name="map-pin" size="28" color="#64748b" />
-                        <text class="location-text">{{ detail.location }}</text>
-                    </view>
-                </view>
-            </view>
-
-            <!-- 评论区 -->
-            <view class="comment-section">
-                <view class="comment-header">
-                    <text class="comment-title">评论 ({{ detail.comment_count }})</text>
-                    <view class="comment-sort">
-                        <text
-                            class="sort-item"
-                            :class="{ 'sort-item-active': commentSort === 'hot' }"
-                            @click="changeCommentSort('hot')"
-                        >
-                            最热
+                        <text class="dynamic-detail__stat-text">
+                            点赞 {{ formatCount(detail.like_count) }}
                         </text>
-                        <text class="sort-divider">|</text>
-                        <text
-                            class="sort-item"
-                            :class="{ 'sort-item-active': commentSort === 'new' }"
-                            @click="changeCommentSort('new')"
-                        >
-                            最新
+                    </view>
+                    <view class="dynamic-detail__stat-pill" @click="showCommentInput">
+                        <text class="dynamic-detail__stat-text">
+                            评论 {{ formatCount(detail.comment_count) }}
+                        </text>
+                    </view>
+                    <view class="dynamic-detail__stat-pill">
+                        <text class="dynamic-detail__stat-text">
+                            浏览 {{ formatCount(detail.view_count) }}
                         </text>
                     </view>
                 </view>
 
-                <!-- 评论列表 - 使用图鸟评论列表组件 -->
-                <view v-if="comments.length === 0" class="comment-empty">
-                    暂无评论，快来抢沙发吧~
-                </view>
-                <view v-else class="comment-list-wrapper">
-                    <TnCommentList
-                        ref="commentListRef"
-                        :data="comments"
-                        :show-dislike="false"
-                        like-icon="like-fill"
-                        active-like-icon="like"
-                        active-like-icon-color="tn-red"
-                        @like="handleLikeComment"
-                        @reply="replyComment"
-                        @delete="deleteCommentItem"
-                        @show-more="loadMoreReplies"
-                    />
+                <view v-if="detail.location" class="dynamic-detail__location-row">
+                    <tn-icon name="location" size="22" color="#978B83" />
+                    <text class="dynamic-detail__location-text">{{ detail.location }}</text>
                 </view>
 
-                <!-- 加载更多评论 -->
-                <view v-if="commentHasMore && comments.length > 0" class="load-more">
-                    <text v-if="commentLoading">加载中...</text>
-                    <text v-else @click="loadMoreComments">点击加载更多</text>
+                <view class="dynamic-detail__comments">
+                    <view class="dynamic-detail__comments-head">
+                        <text class="dynamic-detail__comments-title">评论区</text>
+                        <view class="dynamic-detail__comments-sort">
+                            <text
+                                class="dynamic-detail__sort-item"
+                                :class="{ 'is-active': commentSort === 'hot' }"
+                                @click="changeCommentSort('hot')"
+                            >
+                                最热
+                            </text>
+                            <text class="dynamic-detail__sort-divider">|</text>
+                            <text
+                                class="dynamic-detail__sort-item"
+                                :class="{ 'is-active': commentSort === 'new' }"
+                                @click="changeCommentSort('new')"
+                            >
+                                最新
+                            </text>
+                        </view>
+                    </view>
+
+                    <view v-if="comments.length === 0" class="dynamic-detail__comment-empty">
+                        暂无评论，快来抢沙发吧～
+                    </view>
+                    <view v-else class="dynamic-detail__comment-list">
+                        <view class="dynamic-detail__comment-stack">
+                            <view
+                                v-for="item in comments"
+                                :key="`comment-${item.id}`"
+                                class="dynamic-detail__comment-item"
+                            >
+                                <view class="dynamic-detail__comment-main">
+                                    <view class="dynamic-detail__comment-meta">
+                                        <text class="dynamic-detail__comment-author">
+                                            {{ getCommentAuthorText(item) }}
+                                        </text>
+                                        <view class="dynamic-detail__comment-meta-right">
+                                            <text class="dynamic-detail__comment-time">
+                                                {{ formatCommentTime(item.date) }}
+                                            </text>
+                                            <text class="dynamic-detail__comment-meta-dot">·</text>
+                                            <text
+                                                class="dynamic-detail__comment-like-meta"
+                                                :class="{ 'is-active': item.likeActive }"
+                                                @tap.stop="handleLikeComment(item.id)"
+                                            >
+                                                赞 {{ formatCommentLikeCount(item.likeCount) }}
+                                            </text>
+                                        </view>
+                                    </view>
+                                    <text class="dynamic-detail__comment-content">
+                                        {{ item.content }}
+                                    </text>
+                                    <view class="dynamic-detail__comment-actions">
+                                        <text
+                                            class="dynamic-detail__comment-action"
+                                            @tap.stop="replyComment(item)"
+                                        >
+                                            回复
+                                        </text>
+                                        <text
+                                            v-if="item.allowDelete"
+                                            class="dynamic-detail__comment-action is-danger"
+                                            @tap.stop="deleteCommentItem(item.id)"
+                                        >
+                                            删除
+                                        </text>
+                                    </view>
+                                </view>
+
+                                <view
+                                    v-if="item.replyExpanded && item.comment.length > 0"
+                                    class="dynamic-detail__reply-list"
+                                >
+                                    <view
+                                        v-for="reply in item.comment"
+                                        :key="`reply-${reply.id}`"
+                                        class="dynamic-detail__reply-item"
+                                    >
+                                        <view class="dynamic-detail__comment-main">
+                                            <view class="dynamic-detail__comment-meta">
+                                                <text class="dynamic-detail__comment-author">
+                                                    {{ getCommentAuthorText(reply) }}
+                                                </text>
+                                                <view class="dynamic-detail__comment-meta-right">
+                                                    <text class="dynamic-detail__comment-time">
+                                                        {{ formatCommentTime(reply.date) }}
+                                                    </text>
+                                                    <text class="dynamic-detail__comment-meta-dot">
+                                                        ·
+                                                    </text>
+                                                    <text
+                                                        class="dynamic-detail__comment-like-meta"
+                                                        :class="{ 'is-active': reply.likeActive }"
+                                                        @tap.stop="handleLikeComment(reply.id)"
+                                                    >
+                                                        赞 {{ formatCommentLikeCount(reply.likeCount) }}
+                                                    </text>
+                                                </view>
+                                            </view>
+                                            <text class="dynamic-detail__comment-content">
+                                                {{ reply.content }}
+                                            </text>
+                                            <view class="dynamic-detail__comment-actions">
+                                                <text
+                                                    class="dynamic-detail__comment-action"
+                                                    @tap.stop="replyComment(reply)"
+                                                >
+                                                    回复
+                                                </text>
+                                                <text
+                                                    v-if="reply.allowDelete"
+                                                    class="dynamic-detail__comment-action is-danger"
+                                                    @tap.stop="deleteCommentItem(reply.id)"
+                                                >
+                                                    删除
+                                                </text>
+                                            </view>
+                                        </view>
+                                    </view>
+                                </view>
+
+                                <view
+                                    v-if="item.commentCount > 0"
+                                    class="dynamic-detail__reply-toggle"
+                                    @tap.stop="toggleReplies(item)"
+                                >
+                                    {{ getReplyToggleText(item) }}
+                                </view>
+                            </view>
+                        </view>
+                    </view>
+
+                    <view
+                        v-if="commentHasMore && comments.length > 0"
+                        class="dynamic-detail__comment-more"
+                    >
+                        <text v-if="commentLoading">加载中...</text>
+                        <text v-else @click="loadMoreComments">点击加载更多</text>
+                    </view>
                 </view>
             </view>
-
-            <!-- 底部占位 -->
-            <view class="bottom-spacer"></view>
         </scroll-view>
 
-        <!-- 底部操作栏 -->
-        <view class="action-bar" style="padding-bottom: calc(16rpx + env(safe-area-inset-bottom))">
-            <!-- 评论输入框 - 根据 allow_comment 控制显示 -->
-            <view
-                v-if="detail.allow_comment === 1"
-                class="comment-input-trigger"
-                @click="showCommentInput"
-            >
-                说点什么...
-            </view>
-            <!-- 评论已关闭提示 -->
-            <view v-else class="comment-disabled-tip">
-                <tn-icon name="info-circle" size="28" color="#999" />
-                <text class="tip-text">该动态已关闭评论</text>
-            </view>
+        <view
+            v-if="showComment"
+            class="dynamic-detail__popup-mask"
+            :style="{
+                zIndex: commentPopupMaskZIndex,
+                background: $theme.maskColor || 'rgba(8, 10, 16, 0.58)'
+            }"
+            @tap="closeCommentPopup"
+            @touchmove.stop.prevent="() => {}"
+        ></view>
 
-            <view class="action-buttons">
-                <view
-                    class="action-btn"
-                    :class="detail.is_liked ? 'action-btn-like-active' : 'action-btn-like'"
-                    @click="handleLike"
-                >
-                    <tn-icon :name="detail.is_liked ? 'like-fill' : 'like'" size="44" />
-                    <text class="action-btn-text">{{ formatCount(detail.like_count) }}</text>
-                </view>
-                <view
-                    class="action-btn"
-                    :class="
-                        detail.is_collected ? 'action-btn-collect-active' : 'action-btn-collect'
-                    "
-                    @click="handleCollect"
-                >
-                    <tn-icon :name="detail.is_collected ? 'star-fill' : 'star'" size="44" />
-                    <text class="action-btn-text">{{ formatCount(detail.collect_count) }}</text>
-                </view>
-                <view class="action-btn action-btn-comment">
-                    <tn-icon name="chat" size="44" />
-                    <text class="action-btn-text">{{ formatCount(detail.comment_count) }}</text>
-                </view>
-                <button class="share-btn action-btn action-btn-share" open-type="share">
-                    <tn-icon name="share" size="44" />
-                    <text class="action-btn-text">分享</text>
-                </button>
-            </view>
-        </view>
-
-        <!-- 评论输入弹窗 -->
-        <tn-popup
+        <TnPopup
             v-model="showComment"
             open-direction="bottom"
+            :overlay="false"
             :safe-area-inset-bottom="true"
-            :radius="24"
-            height="60%"
+            :radius="28"
+            height="68%"
+            :z-index="commentPopupZIndex"
         >
-            <view class="comment-popup">
-                <view class="popup-header">
-                    <view class="popup-title-bar">
-                        <text class="popup-title-text">
-                            {{ replyTo ? `回复 @${replyTo.user_nickname}` : '发表评论' }}
+            <view class="dynamic-detail__popup">
+                <view class="dynamic-detail__popup-head">
+                    <text class="dynamic-detail__popup-title">
+                        {{ replyTo ? `回复 @${replyTo.user_nickname}` : '发表评论' }}
+                    </text>
+                    <view class="dynamic-detail__popup-close" @click="closeCommentPopup">
+                        <tn-icon name="close" size="30" color="#978B83" />
+                    </view>
+                </view>
+                <view class="dynamic-detail__popup-body">
+                    <view class="dynamic-detail__textarea-panel">
+                        <textarea
+                            v-model="commentContent"
+                            class="dynamic-detail__textarea"
+                            :placeholder="replyTo ? `回复 @${replyTo.user_nickname}` : '说点什么...'"
+                            :maxlength="commentMaxLength"
+                            :focus="commentFocused && showComment"
+                            :selection-start="commentSelectionStart"
+                            :selection-end="commentSelectionEnd"
+                            cursor-spacing="120"
+                            fixed
+                            placeholder-class="dynamic-detail__textarea-placeholder"
+                            @focus="handleCommentFocus"
+                            @blur="handleCommentBlur"
+                            @input="handleCommentInput"
+                        />
+                    </view>
+                </view>
+                <view class="dynamic-detail__popup-footer">
+                    <view class="dynamic-detail__popup-actions">
+                        <text class="dynamic-detail__char-count">
+                            {{ commentDisplayLength }}/{{ commentMaxLength }}
                         </text>
-                        <view class="popup-close" @click="showComment = false">
-                            <tn-icon name="close" size="32" color="#94a3b8" />
+                        <view class="dynamic-detail__composer-actions">
+                            <button
+                                class="dynamic-detail__emoji-btn"
+                                :class="{ 'is-active': showEmojiPanel }"
+                                @click="toggleEmojiPanel"
+                            >
+                                表情
+                            </button>
+                            <button
+                                class="dynamic-detail__submit-btn"
+                                :class="{ 'is-disabled': !canSubmitComment }"
+                                :disabled="!canSubmitComment"
+                                @click="submitComment"
+                            >
+                                发送
+                            </button>
+                        </view>
+                    </view>
+                    <view v-if="showEmojiPanel" class="dynamic-detail__emoji-panel">
+                        <view
+                            v-for="emoji in emojiList"
+                            :key="emoji"
+                            class="dynamic-detail__emoji-item"
+                            @tap.stop="insertEmoji(emoji)"
+                        >
+                            <text class="dynamic-detail__emoji-char">{{ emoji }}</text>
                         </view>
                     </view>
                 </view>
-                <view class="popup-body">
-                    <textarea
-                        v-model="commentContent"
-                        class="comment-textarea"
-                        :placeholder="replyTo ? `回复 @${replyTo.user_nickname}` : '说点什么...'"
-                        :maxlength="500"
-                        :auto-height="true"
-                        :focus="showComment"
-                        placeholder-class="textarea-placeholder"
-                    />
-                </view>
-                <view class="popup-footer">
-                    <text class="char-count">{{ commentContent.length }}/500</text>
-                    <button
-                        class="submit-btn"
-                        :class="{ 'submit-btn-disabled': !commentContent.trim() }"
-                        :disabled="!commentContent.trim()"
-                        @click="submitComment"
-                    >
-                        发送
-                    </button>
-                </view>
             </view>
-        </tn-popup>
+        </TnPopup>
     </view>
 
-    <!-- 加载中 -->
-    <view v-else class="flex items-center justify-center h-screen">
-        <text class="text-gray-400">加载中...</text>
+    <view v-else class="dynamic-detail__loading-view">
+        <text class="dynamic-detail__loading-text">加载中...</text>
     </view>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
+import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
+import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
+import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
-import TnCommentList from 'tnuiv3p-tn-comment-list/index.vue'
 import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
-import type {
-    TnCommentListInstance,
-    TnCommentListData,
-    TnReplyCommentParams,
-    TnShowMoreCommentParams
-} from 'tnuiv3p-tn-comment-list'
 import {
     getDynamicDetail,
     likeDynamic,
@@ -306,12 +430,38 @@ import {
 import { toggleStaffFavorite } from '@/api/staff'
 import cache from '@/utils/cache'
 
+const $theme = useThemeStore()
 const userStore = useUserStore()
+const navBarMetrics = useNavBarMetrics()
+const commentPopupMaskZIndex = 20118
+const commentPopupZIndex = 20120
+const headerSideStyle = {
+    width: `${navBarMetrics.safeInset}px`
+}
 const userId = computed(() => userStore.userInfo?.id)
+
+type DynamicReplyItem = {
+    id: string | number
+    avatar: string
+    nickname: string
+    date: string
+    content: string
+    likeActive: boolean
+    likeCount: number
+    allowDelete: boolean
+    replyUserNickname?: string
+}
+
+type DynamicCommentItem = DynamicReplyItem & {
+    commentCount: number
+    comment: DynamicReplyItem[]
+    replyExpanded: boolean
+    replyLoading: boolean
+}
 
 const dynamicId = ref(0)
 const detail = ref<any>(null)
-const comments = ref<TnCommentListData>([])
+const comments = ref<DynamicCommentItem[]>([])
 const commentSort = ref('hot')
 const commentPage = ref(1)
 const commentHasMore = ref(true)
@@ -319,10 +469,55 @@ const commentLoading = ref(false)
 
 const showComment = ref(false)
 const commentContent = ref('')
+const commentFocused = ref(false)
+const showEmojiPanel = ref(false)
+const commentSelectionStart = ref(0)
+const commentSelectionEnd = ref(0)
 const replyTo = ref<any>(null)
 const parentComment = ref<any>(null)
+const commentMaxLength = 500
+// 常用表情面板，避免引入额外资源依赖。
+const emojiList = ['😀', '😄', '😊', '😍', '😘', '🤗', '🤔', '😅', '😭', '😡', '😎', '🥳', '😴', '👍', '👏', '🙏', '😇', '🤍', '💖', '🔥', '✨', '🎉', '💐', '🌹']
 
-const commentListRef = ref<TnCommentListInstance>()
+const scrollStyle = computed(() => ({
+    height: `calc(100vh - ${navBarMetrics.navBarHeight}px)`
+}))
+
+const commentDisplayLength = computed(() => Array.from(commentContent.value).length)
+const canSubmitComment = computed(() => Boolean(commentContent.value.trim()))
+
+const heroImage = computed(() => {
+    if (detail.value?.video) {
+        return detail.value.video_cover || ''
+    }
+    return detail.value?.images?.[0] || ''
+})
+
+const galleryImages = computed(() => {
+    if (detail.value?.video || !Array.isArray(detail.value?.images)) {
+        return []
+    }
+    return detail.value.images.slice(1)
+})
+
+const detailTags = computed(() => {
+    return Array.isArray(detail.value?.tags) ? detail.value.tags : []
+})
+
+const showMetaTags = computed(() => {
+    return detailTags.value.length > 0 || Number(detail.value?.dynamic_type || 1) !== 1
+})
+
+const authorMetaText = computed(() => {
+    const parts: string[] = []
+    if (detail.value?.create_time) {
+        parts.push(`发布于 ${detail.value.create_time}`)
+    }
+    if (detail.value?.location) {
+        parts.push(detail.value.location)
+    }
+    return parts.join(' · ') || '发布于刚刚'
+})
 
 const markDynamicListShouldRefresh = () => {
     cache.set(DYNAMIC_LIST_REFRESH_KEY, 1)
@@ -330,12 +525,11 @@ const markDynamicListShouldRefresh = () => {
 
 const getTypeClass = (type: number) => {
     const classes: Record<number, string> = {
-        1: 'bg-blue-100 text-blue-500',
-        2: 'bg-purple-100 text-purple-500',
-        3: 'bg-green-100 text-green-500',
-        4: 'bg-orange-100 text-orange-500'
+        2: 'dynamic-detail__type-tag--video',
+        3: 'dynamic-detail__type-tag--case',
+        4: 'dynamic-detail__type-tag--activity'
     }
-    return classes[type] || 'bg-gray-100 text-gray-500'
+    return classes[type] || 'dynamic-detail__type-tag--graphic'
 }
 
 const getTypeText = (type: number) => {
@@ -348,35 +542,146 @@ const getTypeText = (type: number) => {
     return texts[type] || ''
 }
 
-const getImageGridClass = (count: number) => {
-    if (count === 1) return 'grid-cols-1'
-    if (count === 2 || count === 4) return 'grid-cols-2'
-    return 'grid-cols-3'
-}
-
 const formatCount = (count: number) => {
-    if (!count) return 0
+    if (!count) return '0'
     if (count >= 10000) {
-        return (count / 10000).toFixed(1) + 'w'
+        return `${(count / 10000).toFixed(count >= 100000 ? 0 : 1).replace(/\.0$/, '')}万`
     }
     if (count >= 1000) {
-        return (count / 1000).toFixed(1) + 'k'
+        return `${(count / 1000).toFixed(1).replace(/\.0$/, '')}k`
     }
-    return count
+    return `${count}`
+}
+
+const padTimeUnit = (value: number) => `${value}`.padStart(2, '0')
+
+const formatCommentTime = (time: string) => {
+    const value = String(time || '').trim()
+    if (!value) return '刚刚'
+
+    const normalizedValue = value.includes('T') ? value : value.replace(' ', 'T')
+    const timestamp = new Date(normalizedValue).getTime()
+
+    if (Number.isNaN(timestamp)) {
+        const [dateText = '', timeText = ''] = value.split(' ')
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
+            return `${dateText.slice(5)}${timeText ? ` ${timeText.slice(0, 5)}` : ''}`
+        }
+        return value
+    }
+
+    const diff = Date.now() - timestamp
+    const minute = 60 * 1000
+    const hour = 60 * minute
+    const day = 24 * hour
+
+    if (diff < minute) return '刚刚'
+    if (diff < hour) return `${Math.floor(diff / minute)}分钟前`
+    if (diff < day) return `${Math.floor(diff / hour)}小时前`
+    if (diff < 7 * day) return `${Math.floor(diff / day)}天前`
+
+    const date = new Date(timestamp)
+    return `${padTimeUnit(date.getMonth() + 1)}-${padTimeUnit(date.getDate())} ${padTimeUnit(date.getHours())}:${padTimeUnit(date.getMinutes())}`
+}
+
+const formatCommentLikeCount = (count: number) => `${Number(count || 0)}`
+
+const getCommentAuthorText = (item: DynamicReplyItem) => {
+    return item.replyUserNickname ? `${item.nickname} 回复` : item.nickname
+}
+
+const createCommentItem = (item: any): DynamicCommentItem => ({
+    id: item.id,
+    avatar: item.user?.avatar || '/static/images/user/default_avatar.png',
+    nickname: item.user?.nickname || '匿名用户',
+    date: item.create_time || '',
+    content: item.content || '',
+    likeActive: item.is_liked || false,
+    likeCount: item.like_count || 0,
+    allowDelete: item.user_id === userId.value,
+    commentCount: item.reply_count || 0,
+    comment: [],
+    replyExpanded: false,
+    replyLoading: false
+})
+
+const createReplyItem = (reply: any): DynamicReplyItem => ({
+    id: reply.id,
+    avatar: reply.user_avatar || '/static/images/user/default_avatar.png',
+    nickname: reply.user_nickname || '匿名用户',
+    date: reply.create_time || '',
+    content: reply.content || '',
+    likeActive: reply.is_liked || false,
+    likeCount: reply.like_count || 0,
+    allowDelete: reply.user_id === userId.value,
+    replyUserNickname: reply.reply_user_nickname || ''
+})
+
+const findCommentLocation = (commentId: string | number) => {
+    for (let commentIndex = 0; commentIndex < comments.value.length; commentIndex += 1) {
+        const item = comments.value[commentIndex]
+        if (item.id === commentId) {
+            return { commentIndex, replyIndex: -1 }
+        }
+        const replyIndex = item.comment.findIndex((reply) => reply.id === commentId)
+        if (replyIndex !== -1) {
+            return { commentIndex, replyIndex }
+        }
+    }
+    return null
+}
+
+const findCommentItem = (commentId: string | number) => {
+    const location = findCommentLocation(commentId)
+    if (!location) return null
+
+    if (location.replyIndex === -1) {
+        return comments.value[location.commentIndex]
+    }
+
+    return comments.value[location.commentIndex].comment[location.replyIndex]
+}
+
+const toggleLocalCommentLike = (commentId: string | number) => {
+    const target = findCommentItem(commentId)
+    if (!target) return
+
+    target.likeActive = !target.likeActive
+    target.likeCount = Math.max(0, Number(target.likeCount || 0) + (target.likeActive ? 1 : -1))
+}
+
+const getReplyToggleText = (item: DynamicCommentItem) => {
+    if (item.replyLoading) return '加载中...'
+    if (!item.replyExpanded) {
+        const visibleCount = item.comment.length > 0 ? item.comment.length : item.commentCount
+        return `查看${visibleCount}条回复`
+    }
+    if (item.comment.length < item.commentCount) {
+        return '加载更多回复'
+    }
+    return '收起回复'
+}
+
+const handleBack = () => {
+    const pages = getCurrentPages()
+    if (pages.length > 1) {
+        uni.navigateBack()
+        return
+    }
+
+    uni.switchTab({ url: '/pages/dynamic/dynamic' })
 }
 
 const fetchDetail = async () => {
     try {
         const res = await getDynamicDetail({ id: dynamicId.value })
 
-        // 处理标签数据
         let tags: string[] = []
         if (res.tags) {
             if (typeof res.tags === 'string') {
-                // 如果是字符串，按逗号分割
                 tags = res.tags
                     .split(',')
-                    .map((t: string) => t.trim())
+                    .map((tag: string) => tag.trim())
                     .filter(Boolean)
             } else if (Array.isArray(res.tags)) {
                 tags = res.tags
@@ -385,17 +690,16 @@ const fetchDetail = async () => {
 
         detail.value = {
             ...res,
-            tags: tags,
+            tags,
             is_favorite: Boolean(res.is_favorite),
             can_favorite: Number(res.user_type) === 2 && Number(res.staff_id || 0) > 0,
-            // 统一视频字段名
             video: res.video_url || res.video || '',
             video_cover: res.video_cover || ''
         }
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '加载失败', icon: 'none' })
+    } catch (error: any) {
+        uni.showToast({ title: error.message || '加载失败', icon: 'none' })
         setTimeout(() => {
-            uni.navigateBack()
+            handleBack()
         }, 1500)
     }
 }
@@ -417,24 +721,7 @@ const fetchComments = async (refresh = false) => {
             sort: commentSort.value
         })
 
-        // 转换为图鸟评论列表组件所需的数据格式
-        const list = (res.data || []).map((item: any) => {
-            return {
-                id: item.id,
-                avatar: item.user?.avatar || '/static/images/user/default_avatar.png',
-                nickname: item.user?.nickname || '匿名用户',
-                date: item.create_time || '',
-                position: item.location || '',
-                content: item.content || '',
-                likeActive: item.is_liked || false,
-                likeCount: item.like_count || 0,
-                dislikeActive: false,
-                disabledReply: false,
-                allowDelete: item.user_id === userId.value,
-                commentCount: item.reply_count || 0,
-                comment: [] // 默认为空,点击"查看更多"时再加载
-            }
-        })
+        const list = (res.data || []).map(createCommentItem)
 
         if (refresh) {
             comments.value = list
@@ -443,8 +730,8 @@ const fetchComments = async (refresh = false) => {
         }
 
         commentHasMore.value = list.length === 20
-    } catch (e) {
-        console.error(e)
+    } catch (error) {
+        console.error(error)
     } finally {
         commentLoading.value = false
     }
@@ -457,41 +744,51 @@ const changeCommentSort = (sort: string) => {
 
 const loadMoreComments = () => {
     if (commentHasMore.value && !commentLoading.value) {
-        commentPage.value++
+        commentPage.value += 1
         fetchComments()
     }
 }
 
-const loadMoreReplies = async ({ id, currentCommentCount }: TnShowMoreCommentParams) => {
+const loadMoreReplies = async (item: DynamicCommentItem) => {
+    if (item.replyLoading) return
+    item.replyLoading = true
+
     try {
-        // 请求该评论的更多回复
         const res = await getCommentList({
             dynamic_id: dynamicId.value,
-            parent_id: id,
-            page: Math.floor(currentCommentCount / 20) + 1,
+            parent_id: item.id,
+            page: Math.floor(item.comment.length / 20) + 1,
             page_size: 20
         })
 
-        const replyList = (res.data || []).map((reply: any) => ({
-            id: reply.id,
-            avatar: reply.user_avatar || '/static/images/user/default_avatar.png',
-            nickname: reply.user_nickname || '匿名用户',
-            date: reply.create_time || '',
-            position: reply.location || '',
-            content: reply.reply_user_nickname
-                ? `回复 @${reply.reply_user_nickname}：${reply.content}`
-                : reply.content,
-            likeActive: reply.is_liked || false, // 正确映射点赞状态
-            likeCount: reply.like_count || 0,
-            dislikeActive: false,
-            disabledReply: true, // 子评论不允许回复
-            allowDelete: reply.user_id === userId.value
-        }))
-
-        commentListRef.value?.addCommentData(id, replyList)
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '加载失败', icon: 'none' })
+        const replyList = (res.data || []).map(createReplyItem)
+        item.comment.push(...replyList)
+        item.replyExpanded = true
+    } catch (error: any) {
+        uni.showToast({ title: error.message || '加载失败', icon: 'none' })
+    } finally {
+        item.replyLoading = false
     }
+}
+
+const toggleReplies = (item: DynamicCommentItem) => {
+    if (item.replyLoading) return
+
+    if (!item.replyExpanded) {
+        if (item.comment.length === 0) {
+            loadMoreReplies(item)
+            return
+        }
+        item.replyExpanded = true
+        return
+    }
+
+    if (item.comment.length < item.commentCount) {
+        loadMoreReplies(item)
+        return
+    }
+
+    item.replyExpanded = false
 }
 
 const handleLike = async () => {
@@ -504,8 +801,8 @@ const handleLike = async () => {
         detail.value.is_liked = !detail.value.is_liked
         detail.value.like_count += detail.value.is_liked ? 1 : -1
         markDynamicListShouldRefresh()
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+    } catch (error: any) {
+        uni.showToast({ title: error.message || '操作失败', icon: 'none' })
     }
 }
 
@@ -519,9 +816,12 @@ const handleCollect = async () => {
         detail.value.is_collected = !detail.value.is_collected
         detail.value.collect_count += detail.value.is_collected ? 1 : -1
         markDynamicListShouldRefresh()
-        uni.showToast({ title: detail.value.is_collected ? '收藏成功' : '取消收藏', icon: 'none' })
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+        uni.showToast({
+            title: detail.value.is_collected ? '收藏成功' : '取消收藏',
+            icon: 'none'
+        })
+    } catch (error: any) {
+        uni.showToast({ title: error.message || '操作失败', icon: 'none' })
     }
 }
 
@@ -541,8 +841,8 @@ const handleFavorite = async () => {
             title: detail.value.is_favorite ? '收藏成功' : '已取消收藏',
             icon: 'none'
         })
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+    } catch (error: any) {
+        uni.showToast({ title: error.message || '操作失败', icon: 'none' })
     }
 }
 
@@ -553,14 +853,95 @@ const handleLikeComment = async (id: string | number) => {
     }
     try {
         await likeComment({ id })
-        // 图鸟组件会自动更新UI状态
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+        toggleLocalCommentLike(id)
+    } catch (error: any) {
+        uni.showToast({ title: error.message || '操作失败', icon: 'none' })
     }
+}
+
+const resetCommentSelection = (value = commentContent.value) => {
+    const end = value.length
+    commentSelectionStart.value = end
+    commentSelectionEnd.value = end
+}
+
+const syncCommentSelection = (detail?: Record<string, any>) => {
+    const valueLength = commentContent.value.length
+    const fallbackCursor =
+        typeof detail?.cursor === 'number' ? detail.cursor : commentSelectionEnd.value
+    const start =
+        typeof detail?.selectionStart === 'number' ? detail.selectionStart : fallbackCursor
+    const end = typeof detail?.selectionEnd === 'number' ? detail.selectionEnd : fallbackCursor
+
+    commentSelectionStart.value = Math.max(0, Math.min(start, valueLength))
+    commentSelectionEnd.value = Math.max(0, Math.min(end, valueLength))
+}
+
+const focusCommentInput = () => {
+    showEmojiPanel.value = false
+    commentFocused.value = false
+    nextTick(() => {
+        commentFocused.value = true
+    })
+}
+
+const closeCommentPopup = () => {
+    commentFocused.value = false
+    uni.hideKeyboard()
+    showComment.value = false
+}
+
+const handleCommentFocus = (event: any) => {
+    commentFocused.value = true
+    showEmojiPanel.value = false
+    syncCommentSelection(event?.detail)
+}
+
+const handleCommentBlur = (event: any) => {
+    commentFocused.value = false
+    syncCommentSelection(event?.detail)
+}
+
+const handleCommentInput = (event: any) => {
+    commentContent.value = event?.detail?.value ?? ''
+    syncCommentSelection(event?.detail)
+}
+
+const toggleEmojiPanel = () => {
+    if (showEmojiPanel.value) {
+        focusCommentInput()
+        return
+    }
+
+    commentFocused.value = false
+    uni.hideKeyboard()
+    setTimeout(() => {
+        if (showComment.value) {
+            showEmojiPanel.value = true
+        }
+    }, 80)
+}
+
+const insertEmoji = (emoji: string) => {
+    const start = Math.max(0, Math.min(commentSelectionStart.value, commentContent.value.length))
+    const end = Math.max(start, Math.min(commentSelectionEnd.value, commentContent.value.length))
+    const nextValue = `${commentContent.value.slice(0, start)}${emoji}${commentContent.value.slice(end)}`
+
+    if (Array.from(nextValue).length > commentMaxLength) {
+        uni.showToast({
+            title: `评论内容最多 ${commentMaxLength} 个字符`,
+            icon: 'none'
+        })
+        return
+    }
+
+    commentContent.value = nextValue
+    const nextCursor = start + emoji.length
+    commentSelectionStart.value = nextCursor
+    commentSelectionEnd.value = nextCursor
 }
 
 const showCommentInput = () => {
-    // 检查评论开关
     if (detail.value.allow_comment !== 1) {
         uni.showToast({
             title: '该动态不允许评论',
@@ -573,13 +954,17 @@ const showCommentInput = () => {
         uni.navigateTo({ url: '/pages/login/login' })
         return
     }
+
     replyTo.value = null
     parentComment.value = null
+    commentContent.value = ''
+    showEmojiPanel.value = false
+    commentFocused.value = false
+    resetCommentSelection('')
     showComment.value = true
 }
 
-const replyComment = ({ id, nickname }: TnReplyCommentParams) => {
-    // 检查评论开关
+const replyComment = (comment: DynamicCommentItem | DynamicReplyItem) => {
     if (detail.value.allow_comment !== 1) {
         uni.showToast({
             title: '该动态不允许评论',
@@ -593,33 +978,23 @@ const replyComment = ({ id, nickname }: TnReplyCommentParams) => {
         return
     }
 
-    // 从评论列表中找到对应的评论
-    const findComment = (list: any[], commentId: string | number): any => {
-        for (const item of list) {
-            if (item.id === commentId) return item
-            if (item.comment && item.comment.length > 0) {
-                const found = findComment(item.comment, commentId)
-                if (found) return found
-            }
-        }
-        return null
-    }
-
-    const comment = findComment(comments.value, id)
-    if (comment) {
-        replyTo.value = { id, user_nickname: nickname }
-        parentComment.value = comment
-        showComment.value = true
-    }
+    replyTo.value = { id: comment.id, user_nickname: comment.nickname }
+    parentComment.value = comment
+    commentContent.value = ''
+    showEmojiPanel.value = false
+    commentFocused.value = false
+    resetCommentSelection('')
+    showComment.value = true
 }
 
 const submitComment = async () => {
-    if (!commentContent.value.trim()) return
+    const submittedContent = commentContent.value.trim()
+    if (!submittedContent) return
 
     try {
         const params: any = {
             dynamic_id: dynamicId.value,
-            content: commentContent.value.trim()
+            content: submittedContent
         }
 
         if (replyTo.value) {
@@ -631,37 +1006,62 @@ const submitComment = async () => {
 
         uni.showToast({ title: '评论成功' })
 
-        // 构造新评论数据
-        const newCommentData = {
-            id: res.comment_id || Date.now(),
-            avatar: userStore.userInfo?.avatar || '/static/images/user/default_avatar.png',
-            nickname: userStore.userInfo?.nickname || '我',
-            date: '刚刚',
-            position: '',
-            content: commentContent.value.trim(),
-            likeActive: false,
-            likeCount: 0,
-            dislikeActive: false,
-            disabledReply: replyTo.value ? true : false, // 子评论不允许回复
-            allowDelete: true
-        }
-
-        // 如果是回复评论，添加到对应评论的回复列表
         if (replyTo.value) {
-            commentListRef.value?.addCommentReply(parentComment.value.id, newCommentData)
+            const location = findCommentLocation(parentComment.value.id)
+            const newReplyData: DynamicReplyItem = {
+                id: res.comment_id || Date.now(),
+                avatar: userStore.userInfo?.avatar || '/static/images/user/default_avatar.png',
+                nickname: userStore.userInfo?.nickname || '我',
+                date: '刚刚',
+                content: submittedContent,
+                likeActive: false,
+                likeCount: 0,
+                allowDelete: true,
+                replyUserNickname: replyTo.value.user_nickname
+            }
+
+            if (location) {
+                const parent = comments.value[location.commentIndex]
+                parent.replyExpanded = true
+
+                if (location.replyIndex === -1) {
+                    parent.comment.unshift(newReplyData)
+                } else {
+                    parent.comment.splice(location.replyIndex + 1, 0, newReplyData)
+                }
+
+                parent.commentCount += 1
+            } else {
+                fetchComments(true)
+            }
         } else {
-            // 如果是新评论，刷新列表
-            fetchComments(true)
+            const newCommentData: DynamicCommentItem = {
+                id: res.comment_id || Date.now(),
+                avatar: userStore.userInfo?.avatar || '/static/images/user/default_avatar.png',
+                nickname: userStore.userInfo?.nickname || '我',
+                date: '刚刚',
+                content: submittedContent,
+                likeActive: false,
+                likeCount: 0,
+                allowDelete: true,
+                commentCount: 0,
+                comment: [],
+                replyExpanded: false,
+                replyLoading: false
+            }
+
+            comments.value.unshift(newCommentData)
         }
 
         commentContent.value = ''
+        resetCommentSelection('')
         showComment.value = false
         replyTo.value = null
         parentComment.value = null
-        detail.value.comment_count++
+        detail.value.comment_count += 1
         markDynamicListShouldRefresh()
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '评论失败', icon: 'none' })
+    } catch (error: any) {
+        uni.showToast({ title: error.message || '评论失败', icon: 'none' })
     }
 }
 
@@ -674,11 +1074,30 @@ const deleteCommentItem = async (id: string | number) => {
         try {
             await deleteComment({ comment_id: id })
             uni.showToast({ title: '删除成功' })
-            commentListRef.value?.deleteCommentReply(id)
-            detail.value.comment_count--
+
+            const location = findCommentLocation(id)
+            if (location) {
+                if (location.replyIndex === -1) {
+                    const [removedComment] = comments.value.splice(location.commentIndex, 1)
+                    const removedCount = 1 + Number(removedComment?.commentCount || 0)
+                    detail.value.comment_count = Math.max(
+                        0,
+                        Number(detail.value.comment_count || 0) - removedCount
+                    )
+                } else {
+                    const parent = comments.value[location.commentIndex]
+                    parent.comment.splice(location.replyIndex, 1)
+                    parent.commentCount = Math.max(0, Number(parent.commentCount || 0) - 1)
+                    detail.value.comment_count = Math.max(
+                        0,
+                        Number(detail.value.comment_count || 0) - 1
+                    )
+                }
+            }
+
             markDynamicListShouldRefresh()
-        } catch (e: any) {
-            uni.showToast({ title: e.message || '删除失败', icon: 'none' })
+        } catch (error: any) {
+            uni.showToast({ title: error.message || '删除失败', icon: 'none' })
         }
     }
 }
@@ -686,7 +1105,7 @@ const deleteCommentItem = async (id: string | number) => {
 const previewImage = (images: string[], current: number) => {
     uni.previewImage({
         urls: images,
-        current: current
+        current
     })
 }
 
@@ -698,545 +1117,782 @@ onLoad((options: any) => {
     }
 })
 
-onShareAppMessage(() => {
-    return {
-        title: detail.value?.content?.slice(0, 30) || '精彩动态',
-        path: `/pages/dynamic_detail/dynamic_detail?id=${dynamicId.value}`
+onShareAppMessage(() => ({
+    title: detail.value?.content?.slice(0, 30) || '精彩动态',
+    path: `/pages/dynamic_detail/dynamic_detail?id=${dynamicId.value}`
+}))
+
+watch(showComment, (visible) => {
+    if (visible) {
+        showEmojiPanel.value = false
+        nextTick(() => {
+            resetCommentSelection()
+            commentFocused.value = true
+        })
+        return
     }
+
+    showEmojiPanel.value = false
+    commentFocused.value = false
+    commentContent.value = ''
+    replyTo.value = null
+    parentComment.value = null
+    resetCommentSelection('')
 })
 </script>
 
 <style lang="scss" scoped>
+@import '../../styles/dynamic.scss';
+
 .dynamic-detail {
     min-height: 100vh;
-    background: linear-gradient(180deg, #f8fafc 0%, #f5f5f5 100%);
-}
+    background: $dynamic-bg;
 
-.content-scroll {
-    height: calc(100vh - 120rpx - env(safe-area-inset-bottom));
-}
+    &__header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(252, 251, 249, 0.96);
+        backdrop-filter: blur(20rpx);
+        border-bottom: 1rpx solid rgba(232, 222, 216, 0.65);
+    }
 
-/* 用户信息卡片 */
-.user-card {
-    background: #ffffff;
-    padding: 32rpx;
-    border-radius: 0 0 24rpx 24rpx;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
-}
+    &__header-status {
+        width: 100%;
+    }
 
-.user-avatar {
-    width: 96rpx;
-    height: 96rpx;
-    border-radius: 50%;
-    margin-right: 24rpx;
-    border: 3rpx solid #f5f5f5;
-}
+    &__header-bar {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 0 40rpx;
+        box-sizing: border-box;
+    }
 
-.user-name {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #1e293b;
-}
+    &__header-side {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        height: 100%;
 
-.user-badge {
-    padding: 6rpx 16rpx;
-    border-radius: 24rpx;
-    font-size: 20rpx;
-    font-weight: 500;
-    margin-left: 12rpx;
-}
+        &--placeholder {
+            justify-content: flex-end;
+        }
+    }
 
-.badge-staff {
-    background: rgba(37, 99, 235, 0.1);
-    color: #2563eb;
-}
+    &__header-title {
+        flex: 1;
+        min-width: 0;
+        padding: 0 16rpx;
+        text-align: center;
+        font-size: 36rpx;
+        font-weight: 700;
+        line-height: 1.2;
+        color: $dynamic-text;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-.badge-official {
-    background: rgba(96, 165, 250, 0.1);
-    color: #60a5fa;
-}
+    &__header-placeholder {
+        font-size: 28rpx;
+        font-weight: 600;
+        color: transparent;
+        line-height: 1;
+    }
 
-.badge-top {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-}
+    &__back {
+        min-height: 60rpx;
+        display: inline-flex;
+        align-items: center;
+        padding: 0 12rpx 0 2rpx;
+    }
 
-.badge-hot {
-    background: rgba(249, 115, 22, 0.1);
-    color: #f97316;
-}
+    &__back-text {
+        font-size: 28rpx;
+        font-weight: 600;
+        color: $dynamic-accent;
+        line-height: 1;
+    }
 
-.user-time {
-    font-size: 24rpx;
-    color: #94a3b8;
-    margin-top: 8rpx;
-}
+    &__scroll {
+        width: 100%;
+    }
 
-.favorite-btn {
-    padding: 12rpx 32rpx;
-    border-radius: 48rpx;
-    font-size: 26rpx;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
+    &__content {
+        padding: 12rpx 40rpx calc(28rpx + env(safe-area-inset-bottom));
+    }
 
-.favorite-btn-active {
-    background: #f1f5f9;
-    color: #64748b;
-}
+    &__author-card {
+        @include dynamic-glass-card(28rpx, 44rpx);
+        padding: 28rpx 32rpx;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20rpx;
+    }
 
-.favorite-btn-inactive {
-    background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
-    color: #ffffff;
-    box-shadow: 0 4rpx 12rpx rgba(37, 99, 235, 0.25);
-}
+    &__author-main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 24rpx;
+    }
 
-/* 内容区域 */
-.content-wrapper {
-    margin-top: 16rpx;
-}
+    &__avatar {
+        width: 92rpx;
+        height: 92rpx;
+        border-radius: 50%;
+        background: $dynamic-soft;
+        border: 3rpx solid rgba(255, 255, 255, 0.92);
+        box-shadow: 0 10rpx 22rpx rgba(214, 185, 167, 0.2);
+        flex-shrink: 0;
+    }
 
-.badges-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12rpx;
-    margin-bottom: 16rpx;
-}
+    &__author-copy {
+        flex: 1;
+        min-width: 0;
+    }
 
-.type-badge {
-    display: inline-block;
-    padding: 8rpx 20rpx;
-    border-radius: 24rpx;
-    font-size: 22rpx;
-    font-weight: 500;
-}
+    &__author-row {
+        display: flex;
+        align-items: center;
+        gap: 8rpx;
+        flex-wrap: wrap;
+    }
 
-.type-badge.bg-blue-100 {
-    background: rgba(37, 99, 235, 0.1);
-    color: #2563eb;
-}
+    &__author-name {
+        font-size: 26rpx;
+        font-weight: 700;
+        color: $dynamic-text;
+        line-height: 1.2;
+    }
 
-.type-badge.bg-purple-100 {
-    background: rgba(168, 85, 247, 0.1);
-    color: #a855f7;
-}
+    &__author-badge {
+        height: 34rpx;
+        padding: 0 12rpx;
+        border-radius: $dynamic-radius-pill;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18rpx;
+        font-weight: 600;
+        line-height: 1;
+        border: 1rpx solid transparent;
 
-.type-badge.bg-green-100 {
-    background: rgba(34, 197, 94, 0.1);
-    color: #22c55e;
-}
+        &--staff {
+            color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.12);
+            border-color: rgba(139, 92, 246, 0.08);
+        }
 
-.type-badge.bg-orange-100 {
-    background: rgba(244, 63, 94, 0.1);
-    color: #f43f5e;
-}
+        &--official {
+            color: #a86d28;
+            background: rgba(243, 215, 163, 0.34);
+            border-color: rgba(168, 109, 40, 0.08);
+        }
 
-/* 动态标签 */
-.tag-item {
-    padding: 8rpx 20rpx;
-    background: var(--color-primary-light-9);
-    border-radius: 24rpx;
-    border: 2rpx solid var(--color-primary-light-7);
-}
+        &--top {
+            color: $dynamic-accent;
+            background: rgba(232, 90, 79, 0.12);
+            border-color: rgba(232, 90, 79, 0.08);
+        }
 
-.tag-text {
-    font-size: 22rpx;
-    color: var(--color-primary);
-    font-weight: 500;
-}
+        &--hot {
+            color: #bf6f2d;
+            background: rgba(244, 191, 117, 0.22);
+            border-color: rgba(191, 111, 45, 0.08);
+        }
+    }
 
-/* 位置信息 */
-.location-info {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-}
+    &__author-meta {
+        display: block;
+        margin-top: 10rpx;
+        font-size: 22rpx;
+        line-height: 1.55;
+        color: $dynamic-text-muted;
+        @include dynamic-line-clamp(2);
+    }
 
-.location-text {
-    font-size: 24rpx;
-    color: #64748b;
-    max-width: 200rpx;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+    &__favorite-btn {
+        height: 64rpx;
+        padding: 0 24rpx;
+        border-radius: $dynamic-radius-pill;
+        border: 1rpx solid rgba(232, 90, 79, 0.14);
+        background: $dynamic-accent;
+        box-shadow: $dynamic-shadow-accent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-size: 26rpx;
+        font-weight: 600;
+        line-height: 1;
+        flex-shrink: 0;
 
-.content-text {
-    font-size: 30rpx;
-    line-height: 1.8;
-    color: #1e293b;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
+        &.is-active {
+            color: $dynamic-text-secondary;
+            background: rgba(255, 255, 255, 0.92);
+            border-color: $dynamic-border;
+            box-shadow: none;
+        }
+    }
 
-/* 图片网格 */
-.image-grid {
-    display: grid;
-    gap: 12rpx;
-    margin-top: 32rpx;
-}
+    &__detail-actions {
+        display: flex;
+        align-items: center;
+        gap: 20rpx;
+        margin-top: 18rpx;
+    }
 
-.image-grid.grid-cols-1 {
-    grid-template-columns: 1fr;
-}
+    &__detail-action {
+        @include dynamic-pill(rgba(255, 255, 255, 0.84), $dynamic-text);
+        flex: 1;
+        min-width: 0;
+        min-height: 88rpx;
+        gap: 12rpx;
+        border-radius: 36rpx;
+        backdrop-filter: blur(24rpx);
+        box-shadow:
+            inset 0 1rpx 0 rgba(255, 255, 255, 0.62),
+            0 12rpx 28rpx rgba(214, 185, 167, 0.14);
+        font-size: 26rpx;
+        font-weight: 600;
+        line-height: 1;
 
-.image-grid.grid-cols-2 {
-    grid-template-columns: repeat(2, 1fr);
-}
+        &.is-active {
+            color: $dynamic-accent;
+            background: $dynamic-accent-soft;
+            border-color: rgba(232, 90, 79, 0.14);
+            box-shadow: none;
+        }
 
-.image-grid.grid-cols-3 {
-    grid-template-columns: repeat(3, 1fr);
-}
+        &--share {
+            padding: 0 26rpx;
+            margin: 0;
+            background: rgba(255, 255, 255, 0.84);
 
-.grid-image {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 16rpx;
-    background: #f5f5f5;
-}
+            &::after {
+                display: none;
+            }
+        }
+    }
 
-/* 视频播放器 */
-.video-wrapper {
-    margin-top: 32rpx;
-    border-radius: 16rpx;
-    overflow: hidden;
-}
+    &__hero {
+        margin-top: 14rpx;
+        border-radius: 48rpx;
+        overflow: hidden;
+        background: $dynamic-soft;
+        box-shadow: $dynamic-shadow-soft;
+    }
 
-.video-player {
-    width: 100%;
-    border-radius: 16rpx;
-}
+    &__hero-image,
+    &__hero-video {
+        width: 100%;
+        height: 432rpx;
+        display: block;
+    }
 
-/* 互动数据 */
-.stats-bar {
-    margin-top: 32rpx;
-    padding-top: 32rpx;
-    border-top: 2rpx solid #f1f5f9;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
+    &__gallery {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8rpx;
+        margin-top: 8rpx;
+    }
 
-.stats-left {
-    display: flex;
-    align-items: center;
-    gap: 48rpx;
-}
+    &__gallery-item {
+        border-radius: 40rpx;
+        overflow: hidden;
+        background: $dynamic-soft;
+        box-shadow: $dynamic-shadow-soft;
+    }
 
-.stat-item {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-    font-size: 26rpx;
-    color: #64748b;
-}
+    &__gallery-image {
+        width: 100%;
+        height: 182rpx;
+        display: block;
+    }
 
-/* 评论区 */
-.comment-section {
-    margin-top: 16rpx;
-    background: #ffffff;
-    border-radius: 24rpx 24rpx 0 0;
-}
+    &__copy {
+        margin-top: 12rpx;
+    }
 
-.comment-header {
-    padding: 32rpx;
-    border-bottom: 2rpx solid #f1f5f9;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
+    &__tag-row {
+        display: flex;
+        align-items: center;
+        gap: 8rpx;
+        flex-wrap: wrap;
+        margin-bottom: 10rpx;
+    }
 
-.comment-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #1e293b;
-}
+    &__type-tag {
+        @include dynamic-pill(rgba(255, 255, 255, 0.92), $dynamic-text-secondary);
+        min-height: 52rpx;
+        padding: 0 18rpx;
 
-.comment-sort {
-    display: flex;
-    align-items: center;
-    gap: 24rpx;
-    font-size: 26rpx;
-}
+        &--graphic {
+            color: $dynamic-text-secondary;
+        }
 
-.sort-item {
-    color: #94a3b8;
-    transition: all 0.2s ease;
-}
+        &--video {
+            color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.12);
+            border-color: rgba(139, 92, 246, 0.08);
+        }
 
-.sort-item-active {
-    color: #2563eb;
-    font-weight: 500;
-}
+        &--case {
+            color: #0f9f6e;
+            background: rgba(15, 159, 110, 0.12);
+            border-color: rgba(15, 159, 110, 0.08);
+        }
 
-.sort-divider {
-    color: #e2e8f0;
-}
+        &--activity {
+            color: #bf6f2d;
+            background: rgba(244, 191, 117, 0.2);
+            border-color: rgba(191, 111, 45, 0.08);
+        }
+    }
 
-/* 评论列表 */
-.comment-empty {
-    padding: 160rpx 0;
-    text-align: center;
-    font-size: 28rpx;
-    color: #94a3b8;
-}
+    &__topic-tag {
+        @include dynamic-pill($dynamic-accent-soft, $dynamic-accent);
+        min-height: 52rpx;
+        padding: 0 18rpx;
 
-.comment-list-wrapper {
-    padding: 0;
-}
+        text {
+            font-size: 22rpx;
+            font-weight: 500;
+            line-height: 1;
+        }
+    }
 
-/* 加载更多 */
-.load-more {
-    padding: 32rpx 0;
-    text-align: center;
-    font-size: 26rpx;
-    color: #94a3b8;
-    cursor: pointer;
-}
+    &__content-text {
+        font-size: 30rpx;
+        line-height: 1.72;
+        color: $dynamic-text;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
 
-/* 底部操作栏 */
-.action-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: #ffffff;
-    border-top: 2rpx solid #f1f5f9;
-    padding: 16rpx 32rpx;
-    display: flex;
-    align-items: center;
-    gap: 24rpx;
-    box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.04);
-}
+    &__stats {
+        display: flex;
+        align-items: center;
+        gap: 20rpx;
+        margin-top: 14rpx;
+    }
 
-.comment-input-trigger {
-    flex: 1;
-    background: #f1f5f9;
-    border-radius: 48rpx;
-    padding: 16rpx 32rpx;
-    font-size: 28rpx;
-    color: #94a3b8;
-}
+    &__stat-pill {
+        @include dynamic-pill(rgba(255, 255, 255, 0.92), $dynamic-text-muted);
+        flex: 1;
+        min-height: 72rpx;
+        padding: 0 28rpx;
+        border-radius: 36rpx;
+        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.65);
 
-/* 评论已关闭提示 */
-.comment-disabled-tip {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12rpx;
-    background: #f5f5f5;
-    border-radius: 48rpx;
-    padding: 16rpx 32rpx;
-}
+        &.is-active {
+            color: $dynamic-accent;
+            background: $dynamic-accent-soft;
+            border-color: rgba(232, 90, 79, 0.14);
+        }
+    }
 
-.tip-text {
-    font-size: 26rpx;
-    color: #999999;
-}
+    &__stat-text {
+        font-size: 24rpx;
+        line-height: 1;
+        font-weight: 600;
+    }
 
-.action-buttons {
-    display: flex;
-    align-items: center;
-    gap: 32rpx;
-}
+    &__location-row {
+        margin-top: 10rpx;
+        display: inline-flex;
+        align-items: center;
+        gap: 8rpx;
+        color: $dynamic-text-muted;
+    }
 
-.action-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4rpx;
-    transition: all 0.2s ease;
-}
+    &__location-text {
+        font-size: 22rpx;
+        line-height: 1.4;
+    }
 
-.action-btn-text {
-    font-size: 20rpx;
-}
+    &__comments {
+        margin-top: 28rpx;
+    }
 
-.action-btn-like {
-    color: #64748b;
-}
+    &__comments-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18rpx;
+        padding: 0 0 18rpx;
+    }
 
-.action-btn-like-active {
-    color: #ef4444;
-}
+    &__comments-title {
+        font-size: 36rpx;
+        font-weight: 700;
+        color: $dynamic-text;
+    }
 
-.action-btn-collect {
-    color: #64748b;
-}
+    &__comments-sort {
+        display: inline-flex;
+        align-items: center;
+        gap: 14rpx;
+    }
 
-.action-btn-collect-active {
-    color: #f59e0b;
-}
+    &__sort-item {
+        font-size: 22rpx;
+        font-weight: 600;
+        color: $dynamic-text-muted;
 
-.action-btn-comment {
-    color: #64748b;
-}
+        &.is-active {
+            color: $dynamic-accent;
+            font-weight: 600;
+        }
+    }
 
-.action-btn-share {
-    color: #64748b;
-}
+    &__sort-divider {
+        color: #d8ccc5;
+        font-size: 20rpx;
+    }
 
-.share-btn {
-    padding: 0;
-    margin: 0;
-    background: none;
-    border: none;
-    line-height: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4rpx;
+    &__comment-empty {
+        padding: 72rpx 0 20rpx;
+        text-align: center;
+        font-size: 24rpx;
+        color: $dynamic-text-muted;
+    }
 
-    &::after {
-        display: none;
+    &__comment-list {
+        padding: 0;
+    }
+
+    &__comment-stack {
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__comment-item {
+        padding: 24rpx 8rpx;
+        border-bottom: 1rpx solid #f3ebe6;
+
+        &:last-child {
+            border-bottom: none;
+        }
+    }
+
+    &__comment-main {
+        display: flex;
+        flex-direction: column;
+        gap: 12rpx;
+    }
+
+    &__comment-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24rpx;
+    }
+
+    &__comment-author {
+        flex: 1;
+        min-width: 0;
+        font-size: 26rpx;
+        line-height: 1.35;
+        font-weight: 700;
+        color: $dynamic-text;
+    }
+
+    &__comment-meta-right {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8rpx;
+        font-size: 22rpx;
+        line-height: 1.3;
+        font-weight: 600;
+        color: #978b83;
+    }
+
+    &__comment-time,
+    &__comment-meta-dot {
+        color: #978b83;
+    }
+
+    &__comment-like-meta {
+        color: #978b83;
+
+        &.is-active {
+            color: $dynamic-accent;
+        }
+    }
+
+    &__comment-content {
+        font-size: 26rpx;
+        line-height: 1.6;
+        font-weight: 500;
+        color: #5f534b;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    &__comment-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 20rpx;
+    }
+
+    &__comment-action {
+        font-size: 22rpx;
+        line-height: 1.3;
+        font-weight: 600;
+        color: #6b615b;
+
+        &.is-danger {
+            color: #c96e64;
+        }
+    }
+
+    &__reply-list {
+        margin-top: 10rpx;
+        padding-left: 24rpx;
+        border-left: 2rpx solid #f3ebe6;
+    }
+
+    &__reply-item {
+        padding-top: 18rpx;
+
+        &:first-child {
+            padding-top: 0;
+        }
+    }
+
+    &__reply-toggle {
+        margin-top: 16rpx;
+        font-size: 22rpx;
+        line-height: 1.3;
+        font-weight: 600;
+        color: #978b83;
+    }
+
+    &__comment-more {
+        padding: 20rpx 0 8rpx;
+        text-align: center;
+        font-size: 22rpx;
+        color: #978b83;
+    }
+
+    &__popup {
+        height: 100%;
+        background: $dynamic-bg;
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__popup-mask {
+        position: fixed;
+        inset: 0;
+        z-index: 20118;
+    }
+
+    &__popup-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 28rpx 28rpx 20rpx;
+        border-bottom: 1rpx solid $dynamic-divider;
+    }
+
+    &__popup-title {
+        font-size: 32rpx;
+        font-weight: 700;
+        color: $dynamic-text;
+    }
+
+    &__popup-close {
+        width: 56rpx;
+        height: 56rpx;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1rpx solid rgba(232, 222, 216, 0.7);
+    }
+
+    &__popup-body {
+        flex: 1;
+        min-height: 0;
+        padding: 24rpx 24rpx 16rpx;
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__textarea-panel {
+        flex: 1;
+        min-height: 0;
+        border-radius: 24rpx;
+        border: 1rpx solid rgba(232, 222, 216, 0.86);
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow:
+            inset 0 1rpx 0 rgba(255, 255, 255, 0.6),
+            0 12rpx 30rpx rgba(214, 185, 167, 0.08);
+        overflow: hidden;
+    }
+
+    &__textarea {
+        display: block;
+        width: 100%;
+        height: 100%;
+        min-height: 320rpx;
+        padding: 24rpx 24rpx 20rpx;
+        border: none;
+        background: transparent;
+        box-sizing: border-box;
+        font-size: 28rpx;
+        line-height: 1.7;
+        color: $dynamic-text;
+    }
+
+    &__textarea-placeholder {
+        color: $dynamic-text-placeholder;
+    }
+
+    &__popup-footer {
+        display: flex;
+        flex-direction: column;
+        gap: 20rpx;
+        padding: 18rpx 24rpx 24rpx;
+        border-top: 1rpx solid $dynamic-divider;
+    }
+
+    &__popup-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20rpx;
+    }
+
+    &__char-count {
+        flex: 1;
+        min-width: 0;
+        font-size: 22rpx;
+        color: $dynamic-text-muted;
+    }
+
+    &__composer-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 16rpx;
+        flex-shrink: 0;
+    }
+
+    &__emoji-btn {
+        min-width: 116rpx;
+        height: 72rpx;
+        padding: 0 28rpx;
+        border-radius: $dynamic-radius-pill;
+        border: 1rpx solid rgba(232, 222, 216, 0.86);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow:
+            inset 0 1rpx 0 rgba(255, 255, 255, 0.56),
+            0 10rpx 22rpx rgba(214, 185, 167, 0.1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: $dynamic-text-secondary;
+        font-size: 24rpx;
+        font-weight: 600;
+        line-height: 1;
+
+        &::after {
+            display: none;
+        }
+
+        &.is-active {
+            color: $dynamic-accent;
+            background: $dynamic-accent-soft;
+            border-color: rgba(232, 90, 79, 0.14);
+            box-shadow: none;
+        }
+    }
+
+    &__submit-btn {
+        min-width: 228rpx;
+        height: 84rpx;
+        padding: 0 36rpx;
+        border-radius: $dynamic-radius-pill;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: $dynamic-accent;
+        box-shadow: $dynamic-shadow-accent;
+        color: #ffffff;
+        font-size: 28rpx;
+        font-weight: 600;
+
+        &::after {
+            display: none;
+        }
+
+        &.is-disabled {
+            opacity: 0.42;
+            box-shadow: none;
+        }
+    }
+
+    &__emoji-panel {
+        height: 296rpx;
+        padding: 20rpx 8rpx 6rpx;
+        border-radius: 28rpx;
+        border: 1rpx solid rgba(232, 222, 216, 0.8);
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow:
+            inset 0 1rpx 0 rgba(255, 255, 255, 0.56),
+            0 12rpx 28rpx rgba(214, 185, 167, 0.12);
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 14rpx 8rpx;
+        box-sizing: border-box;
+    }
+
+    &__emoji-item {
+        height: 72rpx;
+        border-radius: 22rpx;
+        border: 1rpx solid rgba(232, 222, 216, 0.72);
+        background: rgba(255, 255, 255, 0.94);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.08);
+    }
+
+    &__emoji-char {
+        font-size: 38rpx;
+        line-height: 1;
+    }
+
+    &__loading-view {
+        min-height: 100vh;
+        background: $dynamic-bg;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__loading-text {
+        font-size: 28rpx;
+        color: $dynamic-text-muted;
     }
 }
 
-/* 评论输入弹窗 */
-.comment-popup {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: #ffffff;
+:deep(.tn-popup) {
+    pointer-events: none;
 }
 
-.popup-header {
-    flex-shrink: 0;
-    padding: 32rpx 32rpx 24rpx;
-    border-bottom: 2rpx solid #f1f5f9;
-}
-
-.popup-title-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.popup-title-text {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #1e293b;
-}
-
-.popup-close {
-    width: 64rpx;
-    height: 64rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: #f8fafc;
-    transition: all 0.2s ease;
-}
-
-.popup-body {
-    flex: 1;
-    padding: 0;
-    overflow: hidden;
-}
-
-.comment-textarea {
-    width: 100%;
-    height: 100%;
-    background: #ffffff;
-    padding: 32rpx;
-    font-size: 28rpx;
-    line-height: 1.6;
-    color: #1e293b;
-    border: none;
-    box-sizing: border-box;
-}
-
-.textarea-placeholder {
-    color: #94a3b8;
-}
-
-.popup-footer {
-    flex-shrink: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 24rpx 32rpx;
-    border-top: 2rpx solid #f1f5f9;
-}
-
-.char-count {
-    font-size: 24rpx;
-    color: #94a3b8;
-}
-
-.submit-btn {
-    padding: 12rpx 80rpx;
-    background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
-    color: #ffffff;
-    font-size: 26rpx;
-    font-weight: 500;
-    border-radius: 40rpx;
-    box-shadow: 0 2rpx 8rpx rgba(37, 99, 235, 0.2);
-    border: none;
-    transition: all 0.2s ease;
-    min-width: 200rpx;
-}
-
-.submit-btn::after {
-    display: none;
-}
-
-.submit-btn-disabled {
-    opacity: 0.4;
-    box-shadow: none;
-}
-
-/* 底部占位 */
-.bottom-spacer {
-    height: 256rpx;
-}
-</style>
-
-<!-- 全局样式覆盖图鸟评论组件 -->
-<style lang="scss">
-/* 强制覆盖图鸟评论组件的底部操作栏样式 - 使用更高优先级 */
-uni-view.tn-tn-comment-bottom-operation {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    flex-wrap: nowrap !important;
-}
-
-uni-view.tn-tn-comment-bottom-operation__left {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 24rpx !important;
-    flex: 1 !important;
-    min-width: 0 !important;
-    flex-wrap: nowrap !important;
-}
-
-uni-view.tn-tn-comment-bottom-operation__date {
-    flex-shrink: 1 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    min-width: 0 !important;
-}
-
-uni-view.tn-tn-comment-bottom-operation__reply,
-uni-view.tn-tn-comment-bottom-operation__delete {
-    flex-shrink: 0 !important;
-    white-space: nowrap !important;
-}
-
-uni-view.tn-tn-comment-bottom-operation__right {
-    flex-shrink: 0 !important;
-    margin-left: 16rpx !important;
-}
-
-/* 如果上面的还不行，尝试覆盖父容器 */
-uni-view.tn-tn-comment-list__bottom-operation {
-    width: 100% !important;
+:deep(.tn-popup__content) {
+    pointer-events: auto;
 }
 </style>

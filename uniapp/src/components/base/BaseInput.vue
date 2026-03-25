@@ -96,28 +96,31 @@ export default {
 
 <style lang="scss" scoped>
 .base-input {
-    transition: all 0.2s ease;
+    transition: all var(--cinema-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 
     :deep(.tn-input) {
         height: 88rpx;
         padding: 0 24rpx;
-        background: #f9fafb;
-        border: 2rpx solid #e5e7eb;
-        border-radius: 16rpx;
+        background: var(--cinema-surface-muted, #f1ebdf);
+        border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+        border-radius: var(--cinema-radius-sm, 18rpx);
         font-size: 28rpx;
-        color: var(--color-main, #333333);
-        transition: all 0.2s ease;
+        color: var(--cinema-text-primary, #151a23);
+        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+        transition: all var(--cinema-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 
         &::placeholder {
-            color: #9ca3af;
+            color: var(--cinema-text-secondary, #5d6472);
         }
     }
 
     &--focused {
         :deep(.tn-input) {
-            background: #ffffff;
-            border-color: var(--color-primary, #7c3aed);
-            box-shadow: 0 0 0 6rpx rgba(124, 58, 237, 0.1);
+            background: var(--cinema-surface-elevated, #fffdf8);
+            border-color: var(--cinema-primary-border, rgba(124, 58, 237, 0.24));
+            box-shadow:
+                0 0 0 6rpx var(--cinema-primary-ring, rgba(124, 58, 237, 0.12)),
+                var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
         }
     }
 }

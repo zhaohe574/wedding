@@ -130,7 +130,9 @@ onShow(() => {
 <style lang="scss" scoped>
 .user-page {
     min-height: 100vh;
-    background-color: #f5f5f5 !important;
+    background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.08) 0, transparent 28%),
+        linear-gradient(180deg, var(--cinema-page-bg, #0b0d12) 0%, var(--cinema-page-bg-soft, #141922) 26%, var(--cinema-surface, #f6f2ea) 26%, var(--cinema-surface, #f6f2ea) 100%) !important;
     background-image: none !important;
 }
 </style>

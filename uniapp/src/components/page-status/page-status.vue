@@ -44,12 +44,14 @@ const props = defineProps({
     height: 100%;
     width: 100%;
     min-height: 100%;
-    padding: 0;
+    padding: 40rpx 24rpx;
     flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #ffffff;
+    background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.08) 0, transparent 30%),
+        linear-gradient(180deg, var(--cinema-page-bg, #0b0d12) 0%, var(--cinema-page-bg-soft, #141922) 100%);
     &--fixed {
         position: fixed;
         top: 0;
