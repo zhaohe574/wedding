@@ -2793,8 +2793,7 @@
                   "id": "cT8Lp",
                   "name": "headerSpacer",
                   "width": 80,
-                  "height": 32,
-                  "children": []
+                  "height": 32
                 }
               ]
             },

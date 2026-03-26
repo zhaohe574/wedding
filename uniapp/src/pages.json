@@ -94,6 +94,7 @@
         {
             "path": "pages/user_data/user_data",
             "style": {
+                "navigationStyle": "custom",
                 "navigationBarTitleText": "个人资料"
             },
             "meta": {

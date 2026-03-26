@@ -12,7 +12,7 @@ export function getNotificationDetail(params: any) {
 
 // 未读数量
 export function getUnreadCount() {
-    return request.get({ url: '/notification/unreadCount' })
+    return request.get({ url: '/notification/unreadCount' }, { duplicateStrategy: 'join' })
 }
 
 // 标记已读

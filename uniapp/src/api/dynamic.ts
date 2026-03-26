@@ -77,7 +77,7 @@ export function getNotifications(params?: any) {
 
 // 获取未读消息数量
 export function getUnreadCount() {
-    return request.get({ url: '/dynamic/unreadCount' })
+    return request.get({ url: '/dynamic/unreadCount' }, { duplicateStrategy: 'join' })
 }
 
 // 标记消息已读

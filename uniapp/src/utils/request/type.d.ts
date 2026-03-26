@@ -1,6 +1,7 @@
 export type RequestOptions = UniApp.RequestOptions & {
     params?: Record<string, any>
 }
+export type DuplicateStrategy = 'cancel' | 'join' | 'allow'
 export type ResponseResult =
     | UniApp.RequestSuccessCallbackResult
     | UniApp.UploadFileSuccessCallbackResult
@@ -19,6 +20,7 @@ export interface RequestConfig {
     isTransformResponse: boolean
     urlPrefix: string
     ignoreCancel: boolean
+    duplicateStrategy: DuplicateStrategy
     withToken: boolean
     isAuth: boolean
     retryCount: number

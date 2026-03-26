@@ -30,7 +30,8 @@ export enum FieldType {
     AVATAR = 'avatar',
     USERNAME = 'account',
     NICKNAME = 'nickname',
-    SEX = 'sex'
+    SEX = 'sex',
+    REAL_NAME = 'real_name'
 }
 
 // 支付结果

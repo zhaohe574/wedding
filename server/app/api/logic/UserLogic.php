@@ -308,7 +308,7 @@ class UserLogic extends BaseLogic
                 ->whereNotNull('wedding_date')
                 ->where('wedding_date', '<>', '')
                 ->order('wedding_date', 'asc')
-                ->field('id, order_sn, wedding_date, service_date, contact_name')
+                ->field('id, order_sn, wedding_date, wedding_venue, service_date, contact_name')
                 ->findOrEmpty();
 
             // 如果没有订单或没有婚期
@@ -320,6 +320,7 @@ class UserLogic extends BaseLogic
                     'days_remaining' => 0,
                     'service_date' => '',
                     'order_sn' => '',
+                    'wedding_venue' => '',
                 ];
             }
 
@@ -339,6 +340,7 @@ class UserLogic extends BaseLogic
                 'service_date' => $order->service_date ?? '',
                 'order_sn' => $order->order_sn,
                 'contact_name' => $order->contact_name ?? '',
+                'wedding_venue' => $order->wedding_venue ?? '',
             ];
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -349,6 +351,7 @@ class UserLogic extends BaseLogic
                 'days_remaining' => 0,
                 'service_date' => '',
                 'order_sn' => '',
+                'wedding_venue' => '',
             ];
         }
     }

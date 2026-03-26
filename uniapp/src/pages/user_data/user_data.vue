@@ -1,144 +1,108 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar
-            title="个人资料"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-        <!-- #endif -->
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
 
     <view class="user-data-page">
-        <!-- 头像区域 -->
-        <view class="avatar-section">
-            <view class="avatar-card">
-                <avatar-upload
-                    :modelValue="userInfo?.avatar"
-                    file-key="url"
-                    :round="true"
-                    @update:modelValue="handleAvatarChange"
-                />
-                <text class="avatar-tip">更换头像</text>
+        <view class="page-header" :style="{ paddingTop: `${statusBarHeight}px` }">
+            <view class="page-header__bar">
+                <view class="page-header__left" @click="handleBack">‹ 返回</view>
+                <text class="page-header__title">资料编辑</text>
+                <text class="page-header__right">占位</text>
             </view>
         </view>
 
-        <!-- 信息列表 -->
-        <view class="info-list">
-            <!-- 账号 -->
-            <view class="info-item" @click="handleAccountClick">
-                <view class="info-label">账号</view>
-                <view class="info-content">
-                    <text class="info-value">{{ userInfo?.account }}</text>
-                    <tn-icon name="right" size="32" color="#CBD5E1" />
+        <view class="page-content">
+            <view class="sync-card">
+                <view class="sync-tag">资料同步</view>
+                <view class="sync-profile">
+                    <view class="sync-avatar">
+                        <avatar-upload
+                            :modelValue="form.avatar"
+                            file-key="url"
+                            :round="true"
+                            @update:modelValue="handleAvatarChange"
+                        />
+                    </view>
+                    <view class="sync-profile__main">
+                        <text class="sync-name">{{ displayName }}</text>
+                        <text class="sync-subtitle">{{ weddingMainDateText }}</text>
+                    </view>
                 </view>
+                <text class="sync-tip">保存后会同步给主持、摄影与策划团队，避免服务信息不一致。</text>
             </view>
 
-            <!-- 昵称 -->
-            <view class="info-item" @click="handleNicknameClick">
-                <view class="info-label">昵称</view>
-                <view class="info-content">
-                    <text class="info-value">{{ userInfo?.nickname }}</text>
-                    <tn-icon name="right" size="32" color="#CBD5E1" />
+            <view class="section-card">
+                <text class="section-title">基本信息</text>
+                <view class="field-card">
+                    <text class="field-label">新人称呼</text>
+                    <input
+                        v-model="form.real_name"
+                        class="field-input"
+                        placeholder="请输入新人称呼"
+                        placeholder-class="field-placeholder"
+                    />
                 </view>
-            </view>
 
-            <!-- 性别 -->
-            <view class="info-item" @click="handleSexClick">
-                <view class="info-label">性别</view>
-                <view class="info-content">
-                    <text class="info-value">{{ getSexText(userInfo?.sex) }}</text>
-                    <tn-icon name="right" size="32" color="#CBD5E1" />
-                </view>
-            </view>
-
-            <!-- 手机号 -->
-            <view class="info-item phone-item">
-                <view class="info-label">手机号</view>
-                <view class="info-content">
-                    <text class="info-value" :class="{ 'text-muted': !userInfo?.mobile }">
-                        {{ userInfo?.mobile || '未绑定手机号' }}
-                    </text>
-                    <!-- #ifdef MP-WEIXIN -->
-                    <view
-                        class="bind-btn"
-                        :style="{
-                            backgroundColor: $theme.primaryColor + '15',
-                            color: $theme.primaryColor
-                        }"
-                    >
+                <view class="field-card">
+                    <text class="field-label">联系方式</text>
+                    <view class="contact-value">{{ contactText }}</view>
+                    <view class="contact-actions">
+                        <view class="contact-action" @click="handleAccountClick">修改账号</view>
+                        <!-- #ifdef MP-WEIXIN -->
                         <button
-                            class="bind-btn-inner"
+                            class="contact-action contact-action--button"
                             open-type="getPhoneNumber"
                             @getphonenumber="getPhoneNumber"
                         >
-                            {{ userInfo?.mobile ? '更换' : '绑定' }}
+                            {{ userInfo.mobile ? '更换手机号' : '绑定手机号' }}
                         </button>
+                        <!-- #endif -->
+                        <!-- #ifndef MP-WEIXIN -->
+                        <view class="contact-action" @click="showMobilePop = true">
+                            {{ userInfo.mobile ? '更换手机号' : '绑定手机号' }}
+                        </view>
+                        <!-- #endif -->
                     </view>
-                    <!-- #endif -->
-                    <!-- #ifndef MP-WEIXIN -->
-                    <view
-                        class="bind-btn"
-                        :style="{
-                            backgroundColor: $theme.primaryColor + '15',
-                            color: $theme.primaryColor
-                        }"
-                        @click="showMobilePop = true"
-                    >
-                        {{ userInfo?.mobile ? '更换' : '绑定' }}
+                </view>
+
+                <view class="field-card">
+                    <text class="field-label">昵称</text>
+                    <input
+                        v-model="form.nickname"
+                        class="field-input"
+                        placeholder="请输入昵称"
+                        placeholder-class="field-placeholder"
+                    />
+                </view>
+
+                <view class="field-card field-card--click" @click="handleSexClick">
+                    <text class="field-label">性别</text>
+                    <view class="field-click-value">
+                        <text>{{ getSexText(form.sex) }}</text>
+                        <tn-icon name="right" size="26" color="#B6B0AB" />
                     </view>
-                    <!-- #endif -->
                 </view>
             </view>
 
-            <!-- 注册时间 -->
-            <view class="info-item">
-                <view class="info-label">注册时间</view>
-                <view class="info-content">
-                    <text class="info-value text-muted">{{ userInfo?.create_time }}</text>
+            <view class="section-card">
+                <text class="section-title">婚礼信息与偏好</text>
+                <view class="field-card">
+                    <text class="field-label">婚礼日期</text>
+                    <text class="field-readonly">{{ weddingDateText }}</text>
+                </view>
+                <view class="field-card">
+                    <text class="field-label">婚礼城市 / 场地</text>
+                    <text class="field-readonly field-readonly--wrap">{{ weddingVenueText }}</text>
                 </view>
             </view>
         </view>
 
-        <!-- 昵称修改弹窗 -->
-        <tn-popup
-            v-model="showNickName"
-            :close-btn="true"
-            open-direction="center"
-            :overlay-closeable="false"
-            :radius="24"
-        >
-            <view class="edit-popup">
-                <form @submit="changeNameConfirm">
-                    <view class="popup-title">修改昵称</view>
-                    <view class="popup-input-wrapper">
-                        <input
-                            class="popup-input"
-                            :value="userInfo.nickname"
-                            name="nickname"
-                            type="nickname"
-                            placeholder="请输入昵称"
-                            placeholder-class="input-placeholder"
-                        />
-                    </view>
-                    <view class="popup-actions">
-                        <button
-                            class="popup-btn popup-btn-primary"
-                            :style="{
-                                background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                                color: $theme.btnColor
-                            }"
-                            form-type="submit"
-                            hover-class="none"
-                        >
-                            确定
-                        </button>
-                    </view>
-                </form>
+        <view class="page-actions">
+            <view class="action-btn action-btn--ghost" @click="handleCancelEdit">取消编辑</view>
+            <view class="action-btn action-btn--primary" @click="handleSaveProfile">
+                {{ saving ? '保存中...' : '保存资料' }}
             </view>
-        </tn-popup>
+        </view>
 
-        <!-- 账号修改弹窗 -->
         <tn-popup
             v-model="showUserName"
             :close-btn="true"
@@ -157,22 +121,13 @@
                     />
                 </view>
                 <view class="popup-actions">
-                    <button
-                        class="popup-btn popup-btn-primary"
-                        :style="{
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                            color: $theme.btnColor
-                        }"
-                        @click="changeUserNameConfirm"
-                        hover-class="none"
-                    >
+                    <button class="popup-btn popup-btn-primary" @click="changeUserNameConfirm" hover-class="none">
                         确定
                     </button>
                 </view>
             </view>
         </tn-popup>
 
-        <!-- 手机号修改弹窗 -->
         <tn-popup
             v-model="showMobilePop"
             :close-btn="true"
@@ -182,7 +137,7 @@
         >
             <view class="edit-popup">
                 <view class="popup-title">
-                    {{ userInfo?.mobile ? '更换手机号' : '绑定手机号' }}
+                    {{ userInfo.mobile ? '更换手机号' : '绑定手机号' }}
                 </view>
                 <view class="popup-input-wrapper">
                     <input
@@ -201,32 +156,18 @@
                         placeholder="请输入验证码"
                         placeholder-class="input-placeholder"
                     />
-                    <view
-                        class="code-btn"
-                        :class="{ 'code-btn-disabled': !canGetCode }"
-                        :style="canGetCode ? { color: $theme.primaryColor } : {}"
-                        @click="sendSms"
-                    >
+                    <view class="code-btn" :class="{ 'code-btn-disabled': !canGetCode }" @click="sendSms">
                         {{ codeTips }}
                     </view>
                 </view>
                 <view class="popup-actions">
-                    <button
-                        class="popup-btn popup-btn-primary"
-                        :style="{
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                            color: $theme.btnColor
-                        }"
-                        @click="changeCodeMobile"
-                        hover-class="none"
-                    >
+                    <button class="popup-btn popup-btn-primary" @click="changeCodeMobile" hover-class="none">
                         确定
                     </button>
                 </view>
             </view>
         </tn-popup>
 
-        <!-- 性别选择器 -->
         <tn-picker
             v-model="selectedSex"
             v-model:open="showSexPicker"
@@ -237,194 +178,316 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
-import { onShow, onUnload } from '@dcloudio/uni-app'
-import { useThemeStore } from '@/stores/theme'
-import { getUserInfo, userEdit, userBindMobile, userMnpMobile } from '@/api/user'
 import { smsSend } from '@/api/app'
+import { getUserWeddingDate, getUserInfo, userBindMobile, userEdit, userMnpMobile } from '@/api/user'
 import { FieldType, SMSEnum } from '@/enums/appEnums'
+import { useThemeStore } from '@/stores/theme'
+import { useUserStore } from '@/stores/user'
+import { onShow, onUnload } from '@dcloudio/uni-app'
+import { computed, reactive, ref } from 'vue'
 
 const $theme = useThemeStore()
+const userStore = useUserStore()
 
-// 用户信息
-const userInfo = ref<any>({})
-// 用户信息的枚举
-const fieldType = ref(FieldType.NONE)
+const statusBarHeight = uni.getSystemInfoSync().statusBarHeight || 0
+const saving = ref(false)
 
-// 显示昵称弹窗
-const showNickName = ref<boolean>(false)
-// 显示账户弹窗
-const showUserName = ref<boolean>(false)
-// 显示手机号验证码调整弹窗
-const showMobilePop = ref<boolean>(false)
+const userInfo = reactive<any>({})
+const weddingInfo = reactive<any>({})
+const form = reactive({
+    avatar: '',
+    real_name: '',
+    nickname: '',
+    sex: 0
+})
+const originalForm = reactive({
+    avatar: '',
+    real_name: '',
+    nickname: '',
+    sex: 0
+})
 
-// 性别选择器相关
-const showSexPicker = ref<boolean>(false)
-const selectedSex = ref<number | undefined>(undefined)
+const showUserName = ref(false)
+const showMobilePop = ref(false)
+const showSexPicker = ref(false)
+const selectedSex = ref<number | undefined>(0)
+const newUsername = ref('')
+const newMobile = ref('')
+const mobileCode = ref('')
+const codeTips = ref('获取验证码')
+const canGetCode = ref(true)
+let codeTimer: ReturnType<typeof setInterval> | null = null
+
 const sexPickerData = [
     { label: '未知', value: 0 },
     { label: '男', value: 1 },
     { label: '女', value: 2 }
 ]
 
-// 新昵称
-const newNickname = ref<string>('')
-// 新账号
-const newUsername = ref<string>('')
-// 新的手机号码
-const newMobile = ref<string>('')
+const displayName = computed(() => {
+    const realName = String(form.real_name || '').trim()
+    if (realName) return realName
+    const nickname = String(form.nickname || '').trim()
+    return nickname || '未填写称呼'
+})
 
-// 修改手机验证码
-const mobileCode = ref<string>('')
-const codeTips = ref('获取验证码')
-const canGetCode = ref(true)
-let codeTimer: any = null
+const weddingMainDateText = computed(() => {
+    const date = String(weddingInfo.wedding_date || '').trim()
+    return date ? `婚礼主档期：${date}` : '婚礼主档期待补充'
+})
 
-// 验证码倒计时
+const weddingDateText = computed(() => {
+    const date = String(weddingInfo.wedding_date || '').trim()
+    return date || '未同步婚礼日期'
+})
+
+const weddingVenueText = computed(() => {
+    const venue = String(weddingInfo.wedding_venue || '').trim()
+    return venue || '待补充婚礼场地'
+})
+
+const contactText = computed(() => {
+    const mobile = String(userInfo.mobile || '').trim() || '未绑定手机号'
+    const account = String(userInfo.account || '').trim() || '未设置账号'
+    return `${mobile} / ${account}`
+})
+
+const normalizeSex = (sex: any): number => {
+    if (sex === 2 || sex === '2' || sex === '女') return 2
+    if (sex === 1 || sex === '1' || sex === '男') return 1
+    return 0
+}
+
+const getSexText = (sex: any): string => {
+    if (normalizeSex(sex) === 2) return '女'
+    if (normalizeSex(sex) === 1) return '男'
+    return '未知'
+}
+
+const resetFormByUserInfo = (info: any) => {
+    form.avatar = String(info?.avatar || '')
+    form.real_name = String(info?.real_name || '')
+    form.nickname = String(info?.nickname || '')
+    form.sex = normalizeSex(info?.sex)
+
+    originalForm.avatar = form.avatar
+    originalForm.real_name = form.real_name
+    originalForm.nickname = form.nickname
+    originalForm.sex = form.sex
+}
+
+const loadPageData = async () => {
+    const [info, wedding] = await Promise.all([getUserInfo(), getUserWeddingDate().catch(() => ({}))])
+
+    Object.keys(userInfo).forEach((key) => delete userInfo[key])
+    Object.assign(userInfo, info || {})
+    Object.keys(weddingInfo).forEach((key) => delete weddingInfo[key])
+    Object.assign(weddingInfo, wedding || {})
+
+    resetFormByUserInfo(info)
+    selectedSex.value = form.sex
+}
+
+const handleBack = () => {
+    const pages = getCurrentPages()
+    if (pages.length > 1) {
+        uni.navigateBack()
+        return
+    }
+    uni.switchTab({ url: '/pages/user/user' })
+}
+
+const handleAvatarChange = (value: string) => {
+    form.avatar = value
+}
+
+const handleAccountClick = () => {
+    showUserName.value = true
+    newUsername.value = String(userInfo.account || '')
+}
+
+const handleSexClick = () => {
+    selectedSex.value = form.sex
+    showSexPicker.value = true
+}
+
+const handleSexConfirm = (value: number) => {
+    if (value === undefined || ![0, 1, 2].includes(value)) return
+    form.sex = Number(value)
+}
+
 const startCodeCountdown = () => {
     let seconds = 60
     canGetCode.value = false
     codeTips.value = `${seconds}秒`
 
+    if (codeTimer) clearInterval(codeTimer)
     codeTimer = setInterval(() => {
-        seconds--
+        seconds -= 1
         if (seconds > 0) {
             codeTips.value = `${seconds}秒`
-        } else {
-            clearInterval(codeTimer)
-            codeTips.value = '获取验证码'
-            canGetCode.value = true
+            return
         }
+        if (codeTimer) {
+            clearInterval(codeTimer)
+            codeTimer = null
+        }
+        codeTips.value = '获取验证码'
+        canGetCode.value = true
     }, 1000)
 }
 
-const getSexText = (sex: any): string => {
-    if (sex === 2 || sex === '2' || sex === '女') return '女'
-    if (sex === 1 || sex === '1' || sex === '男') return '男'
-    return '未知'
-}
-
-// 获取用户信息
-const getUser = async (): Promise<void> => {
-    userInfo.value = await getUserInfo()
-}
-
-// 发送验证码
 const sendSms = async () => {
-    if (!newMobile.value) return uni.$u.toast('请输入新的手机号码')
+    if (!newMobile.value) {
+        uni.$u.toast('请输入新的手机号码')
+        return
+    }
     if (!canGetCode.value) return
 
     await smsSend({
-        scene: userInfo.value.mobile ? SMSEnum.CHANGE_MOBILE : SMSEnum.BIND_MOBILE,
+        scene: userInfo.mobile ? SMSEnum.CHANGE_MOBILE : SMSEnum.BIND_MOBILE,
         mobile: newMobile.value
     })
     uni.$u.toast('发送成功')
     startCodeCountdown()
 }
 
-const handleAvatarChange = (value: string) => {
-    fieldType.value = FieldType.AVATAR
-    setUserInfoFun(value)
-}
-
-// 验证码修改手机号
 const changeCodeMobile = async () => {
+    if (!newMobile.value) {
+        uni.$u.toast('请输入新的手机号码')
+        return
+    }
+    if (!mobileCode.value) {
+        uni.$u.toast('请输入验证码')
+        return
+    }
+
     await userBindMobile({
-        type: userInfo.value.mobile ? 'change' : 'bind',
+        type: userInfo.mobile ? 'change' : 'bind',
         mobile: newMobile.value,
         code: mobileCode.value
     })
     uni.$u.toast('操作成功')
     showMobilePop.value = false
-    getUser()
+    newMobile.value = ''
+    mobileCode.value = ''
+    await loadPageData()
+    await userStore.getUser()
 }
 
-// 修改用户信息
-const setUserInfoFun = async (value: string): Promise<void> => {
+const changeUserNameConfirm = async () => {
+    const value = String(newUsername.value || '').trim()
+    if (!value) {
+        uni.$u.toast('账号不能为空')
+        return
+    }
+    if (value.length > 10) {
+        uni.$u.toast('账号长度不得超过十位数')
+        return
+    }
+
     await userEdit({
-        field: fieldType.value,
-        value: value
+        field: FieldType.USERNAME,
+        value
     })
     uni.$u.toast('操作成功')
-    getUser()
-}
-
-// 点击账号
-const handleAccountClick = () => {
-    showUserName.value = true
-    newUsername.value = userInfo.value?.account || ''
-}
-
-// 点击昵称
-const handleNicknameClick = () => {
-    showNickName.value = true
-    newNickname.value = userInfo.value?.nickname || ''
-}
-
-// 点击性别
-const handleSexClick = () => {
-    fieldType.value = FieldType.SEX
-    // 设置当前性别值
-    const currentSex = userInfo.value?.sex
-    if (currentSex === 2 || currentSex === '2' || currentSex === '女') {
-        selectedSex.value = 2
-    } else if (currentSex === 1 || currentSex === '1' || currentSex === '男') {
-        selectedSex.value = 1
-    } else {
-        selectedSex.value = 0
-    }
-    // 显示选择器
-    showSexPicker.value = true
-}
-
-// 性别选择确认
-const handleSexConfirm = (value: number) => {
-    if (value === undefined || ![0, 1, 2].includes(value)) return
-    setUserInfoFun(String(value))
-}
-
-// 修改用户账号
-const changeUserNameConfirm = () => {
-    if (newUsername.value == '') return uni.$u.toast('账号不能为空')
-    if (newUsername.value.length > 10) return uni.$u.toast('账号长度不得超过十位数')
-
-    fieldType.value = FieldType.USERNAME
-    setUserInfoFun(newUsername.value)
     showUserName.value = false
+    await loadPageData()
+    await userStore.getUser()
 }
 
-// 修改用户昵称
-const changeNameConfirm = async (e: any) => {
-    newNickname.value = e.detail.value.nickname
-    if (newNickname.value == '') return uni.$u.toast('昵称不能为空')
-    if (newNickname.value.length > 10) return uni.$u.toast('昵称长度不得超过十位数')
-    fieldType.value = FieldType.NICKNAME
-    await setUserInfoFun(newNickname.value)
-    showNickName.value = false
-}
-
-// 微信小程序 绑定/修改用户手机号
 const getPhoneNumber = async (e: any): Promise<void> => {
-    const { encryptedData, iv, code } = e.detail
-    const data = {
+    const { encryptedData, iv, code } = e.detail || {}
+    if (!encryptedData) return
+
+    await userMnpMobile({
         code,
         encrypted_data: encryptedData,
         iv
+    })
+    uni.$u.toast('操作成功')
+    await loadPageData()
+    await userStore.getUser()
+}
+
+const getDirtyFields = () => {
+    const payloads: Array<{ field: string; value: string }> = []
+
+    if (form.avatar !== originalForm.avatar) {
+        payloads.push({ field: FieldType.AVATAR, value: form.avatar })
     }
-    if (encryptedData) {
-        await userMnpMobile({ ...data })
-        uni.$u.toast('操作成功')
-        getUser()
+    if (form.real_name !== originalForm.real_name) {
+        payloads.push({ field: FieldType.REAL_NAME, value: form.real_name.trim() })
+    }
+    if (form.nickname !== originalForm.nickname) {
+        payloads.push({ field: FieldType.NICKNAME, value: form.nickname.trim() })
+    }
+    if (form.sex !== originalForm.sex) {
+        payloads.push({ field: FieldType.SEX, value: String(form.sex) })
+    }
+
+    return payloads
+}
+
+const validateProfileForm = () => {
+    if (!form.real_name.trim() && !form.nickname.trim()) {
+        uni.$u.toast('请至少填写新人称呼或昵称')
+        return false
+    }
+    if (form.real_name.trim().length > 32) {
+        uni.$u.toast('新人称呼长度不能超过32位')
+        return false
+    }
+    if (form.nickname.trim().length > 10) {
+        uni.$u.toast('昵称长度不得超过十位数')
+        return false
+    }
+    return true
+}
+
+const handleSaveProfile = async () => {
+    if (saving.value) return
+    if (!validateProfileForm()) return
+
+    const payloads = getDirtyFields()
+    if (!payloads.length) {
+        uni.$u.toast('暂无可保存的修改')
+        return
+    }
+
+    saving.value = true
+    try {
+        for (const item of payloads) {
+            await userEdit({
+                field: item.field,
+                value: item.value
+            })
+        }
+        uni.$u.toast('保存成功')
+        await loadPageData()
+        await userStore.getUser()
+    } finally {
+        saving.value = false
     }
 }
 
+const handleCancelEdit = () => {
+    form.avatar = originalForm.avatar
+    form.real_name = originalForm.real_name
+    form.nickname = originalForm.nickname
+    form.sex = originalForm.sex
+    selectedSex.value = form.sex
+    uni.$u.toast('已取消编辑')
+}
+
 onShow(async () => {
-    getUser()
+    await loadPageData()
 })
 
 onUnload(() => {
     if (codeTimer) {
         clearInterval(codeTimer)
+        codeTimer = null
     }
 })
 </script>
@@ -432,193 +495,328 @@ onUnload(() => {
 <style lang="scss" scoped>
 .user-data-page {
     min-height: 100vh;
-    background-color: #f5f5f5;
-    padding-bottom: 48rpx;
+    background: linear-gradient(180deg, #fcfbf9 0%, #f5f1ee 100%);
+    padding-bottom: calc(136rpx + env(safe-area-inset-bottom));
 }
 
-// 头像区域
-.avatar-section {
-    padding: 48rpx 24rpx 32rpx;
-    background: #ffffff;
-
-    .avatar-card {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 16rpx;
-
-        .avatar-tip {
-            font-size: 24rpx;
-            color: #94a3b8;
-        }
-    }
+.page-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(252, 251, 249, 0.92);
+    backdrop-filter: blur(10rpx);
 }
 
-// 信息列表
-.info-list {
-    margin-top: 24rpx;
-    background: #ffffff;
-    border-radius: 16rpx;
-    margin-left: 24rpx;
-    margin-right: 24rpx;
-    overflow: hidden;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
-}
-
-.info-item {
+.page-header__bar {
+    height: 88rpx;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 32rpx;
-    border-bottom: 1rpx solid #f1f5f9;
-    transition: all 0.2s ease;
-
-    &:last-child {
-        border-bottom: none;
-    }
-
-    &:active {
-        background-color: #f8fafc;
-    }
-
-    .info-label {
-        font-size: 28rpx;
-        color: #1e293b;
-        font-weight: 500;
-        width: 150rpx;
-        flex-shrink: 0;
-    }
-
-    .info-content {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 16rpx;
-
-        .info-value {
-            font-size: 28rpx;
-            color: #334155;
-            max-width: 400rpx;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-
-            &.text-muted {
-                color: #94a3b8;
-            }
-        }
-    }
+    padding: 0 20rpx;
 }
 
-.phone-item {
-    .bind-btn {
-        padding: 8rpx 24rpx;
-        border-radius: 24rpx;
-        font-size: 26rpx;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        position: relative;
-
-        &:active {
-            transform: scale(0.95);
-            opacity: 0.8;
-        }
-
-        .bind-btn-inner {
-            background: transparent;
-            border: none;
-            padding: 0;
-            margin: 0;
-            font-size: 26rpx;
-            font-weight: 500;
-            line-height: 1;
-            color: inherit;
-
-            &::after {
-                border: none;
-            }
-        }
-    }
+.page-header__left {
+    min-width: 92rpx;
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #e85a4f;
 }
 
-// 弹窗样式
+.page-header__title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: #1e2432;
+}
+
+.page-header__right {
+    min-width: 92rpx;
+    text-align: right;
+    font-size: 24rpx;
+    color: transparent;
+}
+
+.page-content {
+    padding: 6rpx 20rpx 0;
+}
+
+.sync-card {
+    border-radius: 26rpx;
+    border: 1rpx solid #f4c7bf;
+    background: linear-gradient(135deg, #fff5f1 0%, #fde7e1 100%);
+    padding: 16rpx 16rpx 18rpx;
+    box-shadow: 0 16rpx 34rpx rgba(214, 185, 167, 0.14);
+}
+
+.sync-tag {
+    align-self: flex-start;
+    display: inline-flex;
+    border-radius: 999rpx;
+    padding: 8rpx 12rpx;
+    background: #fff1ee;
+    color: #e85a4f;
+    font-size: 21rpx;
+    font-weight: 700;
+}
+
+.sync-profile {
+    margin-top: 12rpx;
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+}
+
+.sync-avatar {
+    width: 112rpx;
+    height: 112rpx;
+    border-radius: 999rpx;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f2d8d0;
+}
+
+.sync-profile__main {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+}
+
+.sync-name {
+    font-size: 42rpx;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #1e2432;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sync-subtitle {
+    font-size: 23rpx;
+    line-height: 1.45;
+    color: #7f7b78;
+}
+
+.sync-tip {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 23rpx;
+    line-height: 1.55;
+    color: #7f7b78;
+}
+
+.section-card {
+    margin-top: 12rpx;
+    border-radius: 24rpx;
+    border: 1rpx solid #efe6e1;
+    background: rgba(255, 255, 255, 0.84);
+    padding: 14rpx 16rpx;
+    box-shadow: 0 14rpx 30rpx rgba(214, 185, 167, 0.1);
+}
+
+.section-title {
+    display: block;
+    font-size: 26rpx;
+    font-weight: 700;
+    color: #1e2432;
+    margin-bottom: 10rpx;
+}
+
+.field-card {
+    border-radius: 16rpx;
+    border: 1rpx solid #efe6e1;
+    background: #fcfbf9;
+    padding: 10rpx 12rpx;
+}
+
+.field-card + .field-card {
+    margin-top: 10rpx;
+}
+
+.field-card--click {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.field-label {
+    display: block;
+    font-size: 21rpx;
+    font-weight: 600;
+    color: #7f7b78;
+    margin-bottom: 6rpx;
+}
+
+.field-input {
+    width: 100%;
+    min-height: 44rpx;
+    font-size: 28rpx;
+    color: #1e2432;
+    line-height: 1.4;
+}
+
+.field-placeholder {
+    color: #b6b0ab;
+}
+
+.field-readonly {
+    display: block;
+    font-size: 28rpx;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #1e2432;
+}
+
+.field-readonly--wrap {
+    white-space: normal;
+    word-break: break-word;
+}
+
+.field-click-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #1e2432;
+}
+
+.contact-value {
+    font-size: 25rpx;
+    line-height: 1.45;
+    color: #1e2432;
+}
+
+.contact-actions {
+    margin-top: 10rpx;
+    display: flex;
+    gap: 10rpx;
+    flex-wrap: wrap;
+}
+
+.contact-action {
+    padding: 7rpx 16rpx;
+    border-radius: 999rpx;
+    border: 1rpx solid #efe6e1;
+    background: #fff;
+    font-size: 22rpx;
+    color: #1e2432;
+}
+
+.contact-action--button {
+    line-height: 1.2;
+    margin: 0;
+}
+
+.contact-action--button::after {
+    border: none;
+}
+
+.page-actions {
+    position: fixed;
+    left: 20rpx;
+    right: 20rpx;
+    bottom: 20rpx;
+    z-index: 30;
+    display: flex;
+    gap: 10rpx;
+    padding: 2rpx 0 calc(env(safe-area-inset-bottom) + 2rpx);
+}
+
+.action-btn {
+    flex: 1;
+    height: 76rpx;
+    border-radius: 36rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 27rpx;
+    font-weight: 700;
+}
+
+.action-btn--ghost {
+    border: 1rpx solid #efe6e1;
+    color: #1e2432;
+    background: rgba(255, 255, 255, 0.84);
+}
+
+.action-btn--primary {
+    background: #e85a4f;
+    color: #fff;
+    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.22);
+}
+
 .edit-popup {
     width: 85vw;
     padding: 48rpx 40rpx 40rpx;
     background: #ffffff;
     border-radius: 24rpx;
+}
 
-    .popup-title {
-        font-size: 36rpx;
-        font-weight: 600;
-        color: #1e293b;
-        text-align: center;
-        margin-bottom: 48rpx;
-    }
+.popup-title {
+    font-size: 36rpx;
+    font-weight: 600;
+    color: #1e293b;
+    text-align: center;
+    margin-bottom: 48rpx;
+}
 
-    .popup-input-wrapper {
-        padding-bottom: 16rpx;
-        border-bottom: 2rpx solid #e2e8f0;
-        margin-bottom: 24rpx;
+.popup-input-wrapper {
+    padding-bottom: 16rpx;
+    border-bottom: 2rpx solid #e2e8f0;
+    margin-bottom: 24rpx;
+}
 
-        &.code-input-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 24rpx;
-        }
+.code-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+}
 
-        .popup-input {
-            width: 100%;
-            height: 72rpx;
-            font-size: 28rpx;
-            color: #1e293b;
+.popup-input {
+    width: 100%;
+    height: 72rpx;
+    font-size: 28rpx;
+    color: #1e293b;
+}
 
-            .input-placeholder {
-                color: #cbd5e1;
-            }
-        }
+.input-placeholder {
+    color: #cbd5e1;
+}
 
-        .code-btn {
-            padding: 12rpx 24rpx;
-            font-size: 26rpx;
-            font-weight: 500;
-            white-space: nowrap;
-            border-radius: 8rpx;
-            transition: all 0.2s ease;
+.code-btn {
+    padding: 12rpx 24rpx;
+    font-size: 26rpx;
+    font-weight: 500;
+    white-space: nowrap;
+    border-radius: 8rpx;
+    color: #e85a4f;
+}
 
-            &:active:not(.code-btn-disabled) {
-                transform: scale(0.95);
-                opacity: 0.8;
-            }
+.code-btn-disabled {
+    color: #94a3b8;
+}
 
-            &.code-btn-disabled {
-                color: #94a3b8;
-            }
-        }
-    }
+.popup-actions {
+    margin-top: 48rpx;
+}
 
-    .popup-actions {
-        margin-top: 48rpx;
+.popup-btn {
+    width: 100%;
+    height: 72rpx;
+    border-radius: 32rpx;
+    font-size: 30rpx;
+    font-weight: 600;
+    border: none;
+}
 
-        .popup-btn {
-            width: 100%;
-            height: 72rpx;
-            border-radius: 32rpx;
-            font-size: 30rpx;
-            font-weight: 600;
-            border: none;
-            transition: all 0.2s ease;
+.popup-btn::after {
+    border: none;
+}
 
-            &::after {
-                border: none;
-            }
-
-            &:active {
-                transform: translateY(2rpx);
-                opacity: 0.9;
-            }
-        }
-    }
+.popup-btn-primary {
+    background: #e85a4f;
+    color: #ffffff;
 }
 </style>

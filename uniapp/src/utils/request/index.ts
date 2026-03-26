@@ -88,6 +88,8 @@ const defaultOptions: HttpRequestOptions = {
     urlPrefix: 'api',
     // 忽略重复请求
     ignoreCancel: false,
+    // 重复请求默认使用新请求取消旧请求，兼容现有行为
+    duplicateStrategy: 'cancel',
     // 是否携带token
     withToken: true,
     isAuth: false,

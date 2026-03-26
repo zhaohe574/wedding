@@ -1,62 +1,70 @@
 <template>
-    <view
-        v-if="content.enabled && showList.length"
-        class="quick-entry-widget mx-[20rpx] mt-[20rpx]"
-    >
-        <!-- 网格布局 -->
-        <view v-if="content.style == 1" class="grid-layout">
-            <view
-                class="entries-grid"
-                :style="{ 'grid-template-columns': `repeat(${content.per_line || 4}, 1fr)` }"
-            >
+    <view v-if="content.enabled !== 0 && showList.length" class="quick-entry-widget mx-[24rpx] mt-[16rpx]">
+        <view v-if="isProfileStyle" class="profile-quick-card">
+            <view class="profile-quick-title-row">
+                <text class="profile-quick-title">快捷功能</text>
+                <text class="profile-quick-subtitle">常用入口</text>
+            </view>
+
+            <view class="profile-quick-grid">
+                <view
+                    v-for="(item, index) in showList"
+                    :key="item.key || index"
+                    class="profile-quick-item"
+                    :class="{
+                        'profile-quick-item--primary': index === 0,
+                        'profile-quick-item--disabled': !!item.disabled
+                    }"
+                    @click="handleClick(item)"
+                >
+                    <text class="profile-quick-item-title">{{ item.title }}</text>
+                    <text class="profile-quick-item-desc">{{ item.subtitle || '点击进入' }}</text>
+                </view>
+            </view>
+        </view>
+
+        <view v-else-if="content.style == 1" class="grid-layout">
+            <view class="entries-grid" :style="{ 'grid-template-columns': `repeat(${content.per_line || 4}, 1fr)` }">
                 <view
                     v-for="(item, index) in showList"
                     :key="index"
                     class="entry-item"
-                    @click="handleClick(item.link)"
+                    @click="handleClick(item)"
                 >
-                    <!-- 图标容器 -->
                     <view class="icon-wrapper">
-                        <view class="icon-bg" :style="{ backgroundColor: getIconBg(index) }"></view>
+                        <view class="icon-bg" :style="{ backgroundColor: getIconBg(index) }" />
                         <image
                             lazy-load
                             class="entry-icon"
-                            :src="getImageUrl(item.icon)"
+                            :src="getImageUrl(item.icon || '')"
                             :alt="item.title"
                             mode="aspectFit"
                         />
                     </view>
-                    <!-- 标题 -->
                     <text class="entry-title">{{ item.title }}</text>
                 </view>
             </view>
         </view>
 
-        <!-- 横向滑动 -->
-        <view v-if="content.style == 2" class="scroll-layout">
+        <view v-else class="scroll-layout">
             <scroll-view scroll-x class="scroll-container" show-scrollbar="false">
                 <view class="entries-scroll">
                     <view
                         v-for="(item, index) in showList"
                         :key="index"
                         class="entry-item"
-                        @click="handleClick(item.link)"
+                        @click="handleClick(item)"
                     >
-                        <!-- 图标容器 -->
                         <view class="icon-wrapper">
-                            <view
-                                class="icon-bg"
-                                :style="{ backgroundColor: getIconBg(index) }"
-                            ></view>
+                            <view class="icon-bg" :style="{ backgroundColor: getIconBg(index) }"></view>
                             <image
                                 lazy-load
                                 class="entry-icon"
-                                :src="getImageUrl(item.icon)"
+                                :src="getImageUrl(item.icon || '')"
                                 :alt="item.title"
                                 mode="aspectFit"
                             />
                         </view>
-                        <!-- 标题 -->
                         <text class="entry-title">{{ item.title }}</text>
                     </view>
                 </view>
@@ -66,10 +74,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { navigateTo } from '@/utils/util'
+import { computed } from 'vue'
+
+interface QuickEntryItem {
+    key?: string
+    icon?: string
+    title: string
+    subtitle?: string
+    link?: any
+    is_show?: string
+    disabled?: boolean
+}
 
 const props = defineProps({
     content: {
@@ -82,15 +100,17 @@ const props = defineProps({
     }
 })
 
-const { getImageUrl } = useAppStore()
+const appStore = useAppStore()
 const $theme = useThemeStore()
+const { getImageUrl } = appStore
 
-// 过滤显示的入口
-const showList = computed(() => {
-    return props.content.data?.filter((item: any) => item.is_show == '1') || []
+const isProfileStyle = computed(() => Number(props.content?.style || 0) === 3)
+
+const showList = computed<QuickEntryItem[]>(() => {
+    const list = Array.isArray(props.content?.data) ? props.content.data : []
+    return list.filter((item: QuickEntryItem) => String(item.is_show ?? '1') !== '0')
 })
 
-// 获取图标背景色（循环使用主题色浅色变体）
 const getIconBg = (index: number) => {
     const colors = [
         $theme.primaryColor + '15',
@@ -101,9 +121,12 @@ const getIconBg = (index: number) => {
     return colors[index % colors.length]
 }
 
-// 处理点击事件
-const handleClick = (link: any) => {
-    navigateTo(link)
+const handleClick = (item: QuickEntryItem) => {
+    if (item.disabled) {
+        uni.showToast({ title: item.subtitle || '当前不可用', icon: 'none' })
+        return
+    }
+    navigateTo(item.link)
 }
 </script>
 
@@ -111,7 +134,78 @@ const handleClick = (link: any) => {
 .quick-entry-widget {
     position: relative;
 
-    /* 网格布局样式 */
+    .profile-quick-card {
+        background: rgba(255, 255, 255, 0.84);
+        border: 1rpx solid #efe6e1;
+        border-radius: 24rpx;
+        padding: 18rpx 16rpx 16rpx;
+        box-shadow: 0 16rpx 38rpx rgba(214, 185, 167, 0.12);
+    }
+
+    .profile-quick-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12rpx;
+        padding: 0 6rpx;
+    }
+
+    .profile-quick-title {
+        font-size: 30rpx;
+        font-weight: 700;
+        color: #1e2432;
+    }
+
+    .profile-quick-subtitle {
+        font-size: 22rpx;
+        font-weight: 600;
+        color: #7f7b78;
+    }
+
+    .profile-quick-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10rpx;
+    }
+
+    .profile-quick-item {
+        border-radius: 18rpx;
+        padding: 16rpx 14rpx;
+        background: #fff8f5;
+        border: 1rpx solid #efe6e1;
+        transition: all 0.2s ease;
+
+        &:active {
+            transform: translateY(1rpx);
+            opacity: 0.92;
+        }
+    }
+
+    .profile-quick-item--primary {
+        background: #fff1ee;
+        border-color: #f4c7bf;
+    }
+
+    .profile-quick-item--disabled {
+        opacity: 0.56;
+    }
+
+    .profile-quick-item-title {
+        display: block;
+        font-size: 25rpx;
+        line-height: 1.4;
+        font-weight: 700;
+        color: #1e2432;
+    }
+
+    .profile-quick-item-desc {
+        display: block;
+        margin-top: 6rpx;
+        font-size: 21rpx;
+        line-height: 1.5;
+        color: #7f7b78;
+    }
+
     .grid-layout {
         background: linear-gradient(180deg, var(--cinema-surface-elevated, #fffdf8) 0%, var(--cinema-surface, #f6f2ea) 100%);
         border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
@@ -126,7 +220,6 @@ const handleClick = (link: any) => {
         }
     }
 
-    /* 横向滑动样式 */
     .scroll-layout {
         background: linear-gradient(180deg, var(--cinema-surface-elevated, #fffdf8) 0%, var(--cinema-surface, #f6f2ea) 100%);
         border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
@@ -136,10 +229,6 @@ const handleClick = (link: any) => {
 
         .scroll-container {
             white-space: nowrap;
-
-            &::-webkit-scrollbar {
-                display: none;
-            }
         }
 
         .entries-scroll {
@@ -149,7 +238,6 @@ const handleClick = (link: any) => {
         }
     }
 
-    /* 入口项通用样式 */
     .entry-item {
         display: flex;
         flex-direction: column;
@@ -158,14 +246,12 @@ const handleClick = (link: any) => {
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-        /* 点击反馈 */
         &:active {
             transform: translateY(2rpx) scale(0.97);
             opacity: 0.86;
         }
     }
 
-    /* 图标容器 */
     .icon-wrapper {
         position: relative;
         width: 80rpx;
@@ -175,7 +261,6 @@ const handleClick = (link: any) => {
         justify-content: center;
         flex-shrink: 0;
 
-        /* 背景装饰 */
         .icon-bg {
             position: absolute;
             top: 0;
@@ -189,17 +274,14 @@ const handleClick = (link: any) => {
             box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.45);
         }
 
-        /* 图标 */
         .entry-icon {
             width: 44rpx;
             height: 44rpx;
             position: relative;
             z-index: 2;
-            transition: transform 0.2s ease;
         }
     }
 
-    /* 标题 */
     .entry-title {
         font-size: 26rpx;
         font-weight: 600;
@@ -210,15 +292,6 @@ const handleClick = (link: any) => {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* 响应式适配 - 尊重用户的动画偏好 */
-    @media (prefers-reduced-motion: reduce) {
-        .quick-entry-widget * {
-            transition: none !important;
-            animation: none !important;
-        }
     }
 }
 </style>
