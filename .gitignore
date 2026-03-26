@@ -20,3 +20,10 @@ bin-release/
 /.idea
 
 /.screenshots
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# npm local cache
+uniapp/.npm-cache/
