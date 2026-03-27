@@ -112,11 +112,11 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="surface" scene="consumer" class="section" v-if="selectedItem">
+                <BaseCard variant="surface" scene="consumer" class="section" v-if="mainItem">
                     <view class="section-header">
                         <view>
                             <text class="section-title">服务项目</text>
-                            <text class="section-desc">继续保持现有套餐和附加服务结构，无需重新录入内容。</text>
+                            <text class="section-desc">先确认主服务，再统一核对附加项与关联服务人员。</text>
                         </view>
                         <text class="section-action" @click="handleReselect">重新选择</text>
                     </view>
@@ -125,56 +125,48 @@
                             <view class="staff-section">
                                 <image
                                     :src="
-                                        selectedItem.staff?.avatar || '/static/images/user/default_avatar.png'
+                                        mainItem.staff?.avatar || '/static/images/user/default_avatar.png'
                                     "
                                     class="staff-avatar"
                                     mode="aspectFill"
                                 />
                                 <view class="staff-info">
                                     <text class="staff-title">
-                                        {{ selectedItem.staff?.name || '服务人员' }}
+                                        {{ mainItem.staff?.name || '服务人员' }}
                                     </text>
                                     <text class="staff-subtitle">已为当前档期锁定服务人员</text>
                                     <text class="package-name">
-                                        {{ selectedItem.package?.name || '服务套餐' }}
+                                        {{ mainItem.package?.name || '服务套餐' }}
                                     </text>
                                 </view>
                             </view>
                             <view class="package-price-wrap">
                                 <text class="package-price-label">套餐金额</text>
                                 <text class="package-price" :style="{ color: $theme.ctaColor }">
-                                    ¥{{ formatPrice(selectedItem.price) }}
+                                    ¥{{ formatPrice(mainItem.price) }}
                                 </text>
                             </view>
                         </view>
-                        <text v-if="selectedItem.package?.description" class="package-desc">
-                            {{ selectedItem.package?.description }}
+                        <text v-if="mainItem.package?.description" class="package-desc">
+                            {{ mainItem.package?.description }}
                         </text>
-                        <view v-if="selectedAddons.length" class="selected-addon-section">
+
+                        <view v-if="extraItems.length" class="selected-addon-section">
                             <view class="selected-addon-section__header">
-                                <text class="selected-addon-section__title">已选附加服务</text>
-                                <text class="selected-addon-section__meta">
-                                    共 {{ selectedAddons.length }} 项
-                                </text>
+                                <text class="selected-addon-section__title">附加内容</text>
+                                <text class="selected-addon-section__meta">{{ extraItems.length }} 项</text>
                             </view>
                             <view class="selected-addon-list">
                                 <view
-                                    v-for="addon in selectedAddons"
-                                    :key="addon.id || addon.addon_id"
+                                    v-for="item in extraItems"
+                                    :key="`${item.item_type}-${item.staff_id}-${item.package_id}-${item.price}`"
                                     class="selected-addon-card"
                                 >
                                     <view class="selected-addon-card__main">
-                                        <text class="selected-addon-card__title">{{ addon.name }}</text>
-                                        <text
-                                            v-if="addon.description"
-                                            class="selected-addon-card__desc"
-                                        >
-                                            {{ addon.description }}
-                                        </text>
+                                        <text class="selected-addon-card__title">{{ getExtraItemTitle(item) }}</text>
+                                        <text class="selected-addon-card__desc">{{ getExtraItemDesc(item) }}</text>
                                     </view>
-                                    <view class="selected-addon-card__price">
-                                        +¥{{ formatPrice(addon.price) }}
-                                    </view>
+                                    <text class="selected-addon-card__price">¥{{ formatPrice(item.price) }}</text>
                                 </view>
                             </view>
                         </view>
@@ -185,7 +177,7 @@
                     <view class="section-header section-header--stack">
                         <view>
                             <text class="section-title">费用明细</text>
-                            <text class="section-desc">展示主服务、附加服务与最终应付金额，便于下单前确认。</text>
+                            <text class="section-desc">展示主服务与最终应付金额，便于下单前确认。</text>
                         </view>
                     </view>
                     <view class="price-list">
@@ -193,9 +185,9 @@
                             <text>主服务金额</text>
                             <text>¥{{ formatPrice(serviceAmount) }}</text>
                         </view>
-                        <view class="price-row" v-if="preview.addon_amount > 0">
-                            <text>附加服务金额</text>
-                            <text>+¥{{ formatPrice(preview.addon_amount) }}</text>
+                        <view class="price-row" v-if="Number(preview.addon_amount || 0) > 0">
+                            <text>附加内容金额</text>
+                            <text>¥{{ formatPrice(preview.addon_amount) }}</text>
                         </view>
                         <view class="price-row" v-if="preview.deposit_amount > 0">
                             <text>定金</text>
@@ -253,13 +245,17 @@ import { useUserStore } from '@/stores/user'
 import cache from '@/utils/cache'
 import { requestSubscribeByScene } from '@/utils/subscribe'
 import {
-    buildServiceRegionQuery,
+    getOrderConfirmPageUrl,
+    getStaffBookingPageUrl,
+    normalizeBookingQuery,
+    toBookingOrderParams
+} from '@/utils/staff-booking'
+import {
     formatServiceRegionText,
     hasServiceRegion,
     loadServiceRegionSelection,
     normalizeServiceRegion,
-    saveServiceRegionSelection,
-    toServiceRegionParams
+    saveServiceRegionSelection
 } from '@/utils/service-region'
 
 const $theme = useThemeStore()
@@ -268,7 +264,6 @@ const userStore = useUserStore()
 const loading = ref(false)
 const submitting = ref(false)
 const initialized = ref(false)
-const selectedAddonIds = ref<number[]>([])
 const selection = reactive({
     staff_id: 0,
     package_id: 0,
@@ -278,13 +273,17 @@ const selection = reactive({
     city_code: '',
     city_name: '',
     district_code: '',
-    district_name: ''
+    district_name: '',
+    custom_option_keys: [] as string[],
+    butler_staff_id: 0,
+    butler_package_id: 0,
+    director_staff_id: 0,
+    director_package_id: 0
 })
 
 const preview = ref<any>({
     items: [],
     service_amount: 0,
-    addon_amount: 0,
     total_amount: 0,
     pay_amount: 0,
     deposit_amount: 0,
@@ -301,11 +300,22 @@ const form = reactive({
 const hasItems = computed(
     () => Array.isArray(preview.value.items) && preview.value.items.length > 0
 )
-const selectedItem = computed(() => (hasItems.value ? preview.value.items[0] || null : null))
-const selectedAddons = computed(() =>
-    Array.isArray(selectedItem.value?.addons) ? selectedItem.value.addons : []
+const mainItem = computed(() => {
+    if (!hasItems.value) {
+        return null
+    }
+    return (
+        preview.value.items.find((item: any) => Number(item?.item_type || 1) === 1) ||
+        preview.value.items[0] ||
+        null
+    )
+})
+const extraItems = computed(() =>
+    hasItems.value
+        ? preview.value.items.filter((item: any) => Number(item?.item_type || 1) !== 1)
+        : []
 )
-const bookingDateText = computed(() => selectedItem.value?.schedule_date || selection.date || '')
+const bookingDateText = computed(() => mainItem.value?.schedule_date || selection.date || '')
 const serviceRegionText = computed(() => formatServiceRegionText(selection, ' / '))
 const canSubmit = computed(() => hasItems.value && !loading.value && !submitting.value)
 const serviceAmount = computed(() => {
@@ -313,48 +323,13 @@ const serviceAmount = computed(() => {
     if (amount >= 0) {
         return amount
     }
-    return Math.max(0, Number(preview.value.total_amount || 0) - Number(preview.value.addon_amount || 0))
+    return Math.max(0, Number(preview.value.total_amount || 0))
 })
 
 const formatPrice = (value: any) => Number(value || 0).toFixed(2)
-const parseAddonIds = (value: unknown): number[] => {
-    if (Array.isArray(value)) {
-        return value
-            .map((item) => Number(item))
-            .filter((item, index, list) => item > 0 && list.indexOf(item) === index)
-    }
-
-    if (typeof value !== 'string' || !value.trim()) {
-        return []
-    }
-
-    return value
-        .split(',')
-        .map((item) => Number(item.trim()))
-        .filter((item, index, list) => item > 0 && list.indexOf(item) === index)
-}
-const serializeAddonIds = (addonIds: number[]) => {
-    return addonIds
-        .map((item) => Number(item))
-        .filter((item, index, list) => item > 0 && list.indexOf(item) === index)
-        .join(',')
-}
 
 const getConfirmPageUrl = () => {
-    const params = [
-        `staff_id=${selection.staff_id}`,
-        `package_id=${selection.package_id}`,
-        `date=${encodeURIComponent(selection.date)}`
-    ]
-    const regionQuery = buildServiceRegionQuery(selection)
-    if (regionQuery) {
-        params.push(regionQuery)
-    }
-    const addonQuery = serializeAddonIds(selectedAddonIds.value)
-    if (addonQuery) {
-        params.push(`addon_ids=${encodeURIComponent(addonQuery)}`)
-    }
-    return `/packages/pages/order_confirm/order_confirm?${params.join('&')}`
+    return getOrderConfirmPageUrl(selection)
 }
 
 const ensureSubmitLogin = () => {
@@ -383,17 +358,9 @@ const initContact = async () => {
 
 const buildSelectionParams = (extra: Record<string, any> = {}) => {
     const params: Record<string, any> = {
-        staff_id: selection.staff_id,
-        package_id: selection.package_id,
-        date: selection.date,
-        ...toServiceRegionParams(selection),
+        ...toBookingOrderParams(selection),
         ...extra
     }
-
-    if (selectedAddonIds.value.length) {
-        params.addon_ids = [...selectedAddonIds.value]
-    }
-
     return params
 }
 
@@ -401,24 +368,7 @@ const getStaffDetailUrl = () => {
     if (!selection.staff_id) {
         return ''
     }
-
-    const params = [`id=${selection.staff_id}`]
-    const regionQuery = buildServiceRegionQuery(selection)
-    if (regionQuery) {
-        params.push(regionQuery)
-    }
-    if (selection.date) {
-        params.push(`date=${encodeURIComponent(selection.date)}`)
-    }
-    if (selection.package_id) {
-        params.push(`package_id=${selection.package_id}`)
-    }
-    const addonQuery = serializeAddonIds(selectedAddonIds.value)
-    if (addonQuery) {
-        params.push(`addon_ids=${encodeURIComponent(addonQuery)}`)
-    }
-    params.push('open_booking_popup=1')
-    return `/packages/pages/staff_detail/staff_detail?${params.join('&')}`
+    return getStaffBookingPageUrl(selection)
 }
 
 const handlePreviewError = (message: string) => {
@@ -440,7 +390,6 @@ const fetchPreview = async () => {
         preview.value = {
             items: data?.items || [],
             service_amount: data?.service_amount || 0,
-            addon_amount: data?.addon_amount || 0,
             total_amount: data?.total_amount || 0,
             pay_amount: data?.pay_amount || 0,
             deposit_amount: data?.deposit_amount || 0,
@@ -528,14 +477,42 @@ const initPage = async () => {
     initialized.value = true
 }
 
+const getExtraItemTitle = (item: any) => {
+    if (Number(item?.item_type || 1) === 2) {
+        return item?.item_meta?.label || item?.package?.name || item?.package_name || '预约附加项'
+    }
+    if (Number(item?.item_type || 1) === 3) {
+        const roleLabel = item?.item_meta?.role_label || '关联服务'
+        const staffName = item?.staff?.name || item?.staff_name || ''
+        return staffName ? `${roleLabel} · ${staffName}` : roleLabel
+    }
+    return item?.package?.name || item?.package_name || '服务项目'
+}
+
+const getExtraItemDesc = (item: any) => {
+    if (Number(item?.item_type || 1) === 2) {
+        return '服务人员自定义预约附加项'
+    }
+    if (Number(item?.item_type || 1) === 3) {
+        return item?.package?.name || item?.package_name || '已锁定推荐套餐'
+    }
+    return item?.package?.description || item?.package_description || ''
+}
+
 onLoad((options: any) => {
-    selection.staff_id = Number(options?.staff_id || 0)
-    selection.package_id = Number(options?.package_id || 0)
-    selection.date = options?.date || ''
-    const region = normalizeServiceRegion({
+    const normalized = normalizeBookingQuery({
         ...loadServiceRegionSelection(),
         ...options
     })
+    selection.staff_id = normalized.staff_id
+    selection.package_id = normalized.package_id
+    selection.date = normalized.date
+    selection.custom_option_keys = normalized.custom_option_keys
+    selection.butler_staff_id = normalized.butler_staff_id
+    selection.butler_package_id = normalized.butler_package_id
+    selection.director_staff_id = normalized.director_staff_id
+    selection.director_package_id = normalized.director_package_id
+    const region = normalizeServiceRegion(normalized)
     selection.province_code = region.province_code
     selection.province_name = region.province_name
     selection.city_code = region.city_code
@@ -545,9 +522,6 @@ onLoad((options: any) => {
 
     if (hasServiceRegion(region)) {
         saveServiceRegionSelection(region)
-    }
-    if (options?.addon_ids) {
-        selectedAddonIds.value = parseAddonIds(options.addon_ids)
     }
 
     if (!selection.staff_id || !selection.package_id || !selection.date || !hasServiceRegion(selection)) {

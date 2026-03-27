@@ -15,7 +15,7 @@ use app\common\model\staff\Favorite;
 use app\common\model\staff\StaffTag;
 use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
-use app\common\model\service\ServicePackageAddon;
+use app\common\service\BookingFlowService;
 use app\common\service\ConfigService;
 use app\common\service\PackageRegionPriceService;
 use app\common\service\StaffPriceService;
@@ -114,6 +114,8 @@ class StaffLogic extends BaseLogic
             ->select()
             ->toArray();
         $data['packages'] = self::transformPackages($packages, $resolvedRegion);
+        $data['booking_options'] = BookingFlowService::getStaffBookingOptions($staff);
+        $data['related_role_configs'] = BookingFlowService::getCategoryRoleConfigs((int)$staff->category_id);
 
         // 获取轮播图
         $data['banners'] = \app\common\model\staff\StaffBanner::where('staff_id', $id)
@@ -239,6 +241,23 @@ class StaffLogic extends BaseLogic
         return $query->order('addon.sort desc, addon.id desc')
             ->select()
             ->toArray();
+    }
+
+    /**
+     * @notes 获取预约角色候选人
+     * @param int $staffId
+     * @param string $roleKey
+     * @param array $regionContext
+     * @param string $date
+     * @return array
+     */
+    public static function bookingRoleCandidates(
+        int $staffId,
+        string $roleKey,
+        array $regionContext = [],
+        string $date = ''
+    ): array {
+        return BookingFlowService::getRoleCandidates($staffId, $roleKey, $regionContext, $date);
     }
 
     /**
@@ -368,7 +387,7 @@ class StaffLogic extends BaseLogic
                 'status' => 1,
             ]);
         }
-        return ServicePackageAddon::attachAddonIds($result);
+        return $result;
     }
 
     /**

@@ -137,6 +137,64 @@
             />
         </view>
 
+        <view class="section-card">
+            <view class="section-head">
+                <view>
+                    <text class="section-title">预约附加项</text>
+                    <text class="section-subtitle">用于客户预约时按步骤选择的附加服务</text>
+                </view>
+            </view>
+
+            <view class="form-list">
+                <view class="form-item">
+                    <view class="form-label">
+                        <text>附加项1名称</text>
+                    </view>
+                    <tn-input
+                        v-model="form.booking_option_1_name"
+                        placeholder="例如：早起接亲"
+                        class="form-input"
+                        :border="false"
+                    />
+                </view>
+                <view class="form-item">
+                    <view class="form-label">
+                        <text>附加项1价格</text>
+                    </view>
+                    <tn-input
+                        v-model="form.booking_option_1_price"
+                        type="digit"
+                        placeholder="请输入价格"
+                        class="form-input"
+                        :border="false"
+                    />
+                </view>
+                <view class="form-item">
+                    <view class="form-label">
+                        <text>附加项2名称</text>
+                    </view>
+                    <tn-input
+                        v-model="form.booking_option_2_name"
+                        placeholder="例如：候场互动"
+                        class="form-input"
+                        :border="false"
+                    />
+                </view>
+                <view class="form-item no-border">
+                    <view class="form-label">
+                        <text>附加项2价格</text>
+                    </view>
+                    <tn-input
+                        v-model="form.booking_option_2_price"
+                        type="digit"
+                        placeholder="请输入价格"
+                        class="form-input"
+                        :border="false"
+                    />
+                </view>
+            </view>
+        </view>
+
         <view class="save-bar">
             <view
                 class="save-btn"
@@ -173,7 +231,11 @@ const form = reactive({
     category_id: 0,
     experience_years: '',
     profile: '',
-    service_desc: ''
+    service_desc: '',
+    booking_option_1_name: '',
+    booking_option_1_price: '',
+    booking_option_2_name: '',
+    booking_option_2_price: ''
 })
 
 const currentCategoryName = computed(() => {
@@ -216,6 +278,16 @@ const loadProfile = async () => {
             : ''
     form.profile = data?.profile || ''
     form.service_desc = data?.service_desc || ''
+    form.booking_option_1_name = data?.booking_option_1_name || ''
+    form.booking_option_1_price =
+        data?.booking_option_1_price !== undefined && data?.booking_option_1_price !== null
+            ? String(data?.booking_option_1_price)
+            : ''
+    form.booking_option_2_name = data?.booking_option_2_name || ''
+    form.booking_option_2_price =
+        data?.booking_option_2_price !== undefined && data?.booking_option_2_price !== null
+            ? String(data?.booking_option_2_price)
+            : ''
 }
 
 const handleSave = async () => {
@@ -229,11 +301,15 @@ const handleSave = async () => {
         avatar: form.avatar,
         category_id: form.category_id,
         profile: form.profile,
-        service_desc: form.service_desc
+        service_desc: form.service_desc,
+        booking_option_1_name: form.booking_option_1_name.trim(),
+        booking_option_2_name: form.booking_option_2_name.trim()
     }
 
     if (form.mobile) payload.mobile = form.mobile
     if (form.experience_years !== '') payload.experience_years = Number(form.experience_years)
+    if (form.booking_option_1_price !== '') payload.booking_option_1_price = Number(form.booking_option_1_price)
+    if (form.booking_option_2_price !== '') payload.booking_option_2_price = Number(form.booking_option_2_price)
 
     saving.value = true
     try {

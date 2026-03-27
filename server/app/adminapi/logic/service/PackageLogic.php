@@ -39,7 +39,7 @@ class PackageLogic extends BaseLogic
                 return [];
             }
 
-            $data = $package->append(['category_name', 'staff_name', 'addon_ids'])->toArray();
+            $data = $package->append(['category_name', 'staff_name'])->toArray();
             $list = PackageRegionPriceService::attachRegionPrices([$data]);
             return $list[0] ?? $data;
         } catch (\Exception $e) {
@@ -81,7 +81,6 @@ class PackageLogic extends BaseLogic
                     'update_time' => time(),
                 ]);
 
-                ServicePackageAddon::syncPackageAddons((int)$package->id, $staffId, $params['addon_ids'] ?? []);
                 PackageRegionPriceService::syncPackageRegionPrices(
                     (int)$package->id,
                     $staffId,
@@ -132,7 +131,6 @@ class PackageLogic extends BaseLogic
 
             Db::transaction(function () use ($package, $updateData, $staffId, $params) {
                 $package->save($updateData);
-                ServicePackageAddon::syncPackageAddons((int)$package->id, $staffId, $params['addon_ids'] ?? []);
                 PackageRegionPriceService::syncPackageRegionPrices(
                     (int)$package->id,
                     $staffId,
@@ -230,7 +228,7 @@ class PackageLogic extends BaseLogic
             ->select()
             ->toArray();
 
-        return ServicePackageAddon::attachAddonIds($list);
+        return $list;
     }
 
     /**
@@ -298,7 +296,6 @@ class PackageLogic extends BaseLogic
                     'update_time' => time(),
                 ]);
 
-                ServicePackageAddon::syncPackageAddons((int)$package->id, $staffId, $packageData['addon_ids'] ?? []);
                 PackageRegionPriceService::syncPackageRegionPrices(
                     (int)$package->id,
                     $staffId,

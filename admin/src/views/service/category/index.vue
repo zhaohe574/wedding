@@ -55,6 +55,11 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="人员数" prop="staff_count" width="100" />
+                <el-table-column label="预约关联" min-width="180">
+                    <template #default="{ row }">
+                        <span>{{ row.booking_relation_summary || '未配置' }}</span>
+                    </template>
+                </el-table-column>
                 <el-table-column label="排序" prop="sort" width="80" />
                 <el-table-column label="状态" width="100">
                     <template #default="{ row }">
@@ -115,6 +120,32 @@
                 <el-form-item label="排序" prop="sort">
                     <el-input-number v-model="editForm.sort" :min="0" :max="9999" />
                 </el-form-item>
+                <el-form-item label="婚礼管家" prop="booking_butler_enabled">
+                    <el-switch v-model="editForm.booking_butler_enabled" :active-value="1" :inactive-value="0" />
+                </el-form-item>
+                <el-form-item v-if="editForm.booking_butler_enabled === 1" label="管家关联分类" prop="booking_butler_category_id">
+                    <el-select v-model="editForm.booking_butler_category_id" placeholder="请选择服务分类" class="w-full">
+                        <el-option
+                            v-for="item in relatedCategoryOptions"
+                            :key="`butler-${item.id}`"
+                            :label="item.name"
+                            :value="item.id"
+                        />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="婚礼督导" prop="booking_director_enabled">
+                    <el-switch v-model="editForm.booking_director_enabled" :active-value="1" :inactive-value="0" />
+                </el-form-item>
+                <el-form-item v-if="editForm.booking_director_enabled === 1" label="督导关联分类" prop="booking_director_category_id">
+                    <el-select v-model="editForm.booking_director_category_id" placeholder="请选择服务分类" class="w-full">
+                        <el-option
+                            v-for="item in relatedCategoryOptions"
+                            :key="`director-${item.id}`"
+                            :label="item.name"
+                            :value="item.id"
+                        />
+                    </el-select>
+                </el-form-item>
                 <el-form-item label="状态" prop="is_show">
                     <el-radio-group v-model="editForm.is_show">
                         <el-radio :value="1">显示</el-radio>
@@ -137,7 +168,8 @@ import {
     categoryAdd,
     categoryEdit,
     categoryDelete,
-    categoryChangeStatus
+    categoryChangeStatus,
+    categoryAll
 } from '@/api/service'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
@@ -149,17 +181,51 @@ const queryParams = reactive({
 
 const showEditDialog = ref(false)
 const editFormRef = shallowRef<FormInstance>()
+const categoryOptions = ref<any[]>([])
 
 const editForm = reactive({
     id: '',
     name: '',
     icon: '',
+    booking_butler_enabled: 0,
+    booking_butler_category_id: 0,
+    booking_director_enabled: 0,
+    booking_director_category_id: 0,
     sort: 0,
     is_show: 1
 })
 
 const editRules = reactive({
-    name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }]
+    name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }],
+    booking_butler_category_id: [
+        {
+            validator: (_rule: any, value: any, callback: (error?: Error) => void) => {
+                if (editForm.booking_butler_enabled === 1 && !Number(value)) {
+                    callback(new Error('请选择管家关联分类'))
+                    return
+                }
+                callback()
+            },
+            trigger: 'change'
+        }
+    ],
+    booking_director_category_id: [
+        {
+            validator: (_rule: any, value: any, callback: (error?: Error) => void) => {
+                if (editForm.booking_director_enabled === 1 && !Number(value)) {
+                    callback(new Error('请选择督导关联分类'))
+                    return
+                }
+                callback()
+            },
+            trigger: 'change'
+        }
+    ]
+})
+
+const relatedCategoryOptions = computed(() => {
+    const currentId = Number(editForm.id || 0)
+    return categoryOptions.value.filter((item) => Number(item.id) !== currentId)
 })
 
 const { pager, getLists, resetPage, resetParams } = usePaging({
@@ -172,6 +238,10 @@ const handleAdd = () => {
         id: '',
         name: '',
         icon: '',
+        booking_butler_enabled: 0,
+        booking_butler_category_id: 0,
+        booking_director_enabled: 0,
+        booking_director_category_id: 0,
         sort: 0,
         is_show: 1
     })
@@ -183,10 +253,18 @@ const handleEdit = (row: any) => {
         id: row.id,
         name: row.name,
         icon: row.icon,
+        booking_butler_enabled: Number(row.booking_butler_enabled || 0),
+        booking_butler_category_id: Number(row.booking_butler_category_id || 0),
+        booking_director_enabled: Number(row.booking_director_enabled || 0),
+        booking_director_category_id: Number(row.booking_director_category_id || 0),
         sort: row.sort,
         is_show: row.is_show
     })
     showEditDialog.value = true
+}
+
+const loadCategoryOptions = async () => {
+    categoryOptions.value = (await categoryAll()) || []
 }
 
 const handleSave = async () => {
@@ -216,8 +294,10 @@ const handleDelete = async (id: number) => {
 }
 
 onActivated(() => {
+    loadCategoryOptions()
     getLists()
 })
 
+loadCategoryOptions()
 getLists()
 </script>

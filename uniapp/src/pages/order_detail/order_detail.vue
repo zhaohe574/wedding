@@ -76,12 +76,6 @@
                                 {{ primaryPackageName }}
                             </text>
                         </view>
-                        <view class="summary-grid__item">
-                            <text class="summary-grid__label">附加服务</text>
-                            <text class="summary-grid__value">
-                                {{ primaryAddons.length ? `已选 ${primaryAddons.length} 项` : '暂无' }}
-                            </text>
-                        </view>
                     </view>
                     <view v-if="primaryPackageDescription" class="summary-card__description">
                         <text class="summary-card__description-label">套餐内容</text>
@@ -89,37 +83,23 @@
                             {{ primaryPackageDescription }}
                         </text>
                     </view>
+                    <view v-if="extraItems.length" class="addon-list">
+                        <view v-for="item in extraItems" :key="`${item.id}-${item.item_type}`" class="addon-item">
+                            <view class="addon-item__main">
+                                <view class="addon-item__name-row">
+                                    <text class="addon-item__name">{{ getExtraItemTitle(item) }}</text>
+                                    <text class="addon-item__tag">{{ item.item_type_desc || '附加内容' }}</text>
+                                </view>
+                                <text class="addon-item__desc">{{ getExtraItemDesc(item) }}</text>
+                            </view>
+                            <text class="addon-item__price">¥{{ formatAmount(item.price) }}</text>
+                        </view>
+                    </view>
                 </template>
                 <view v-else class="empty-state">
                     <tn-icon name="document" size="56" color="#CBD5E1" />
                     <text class="empty-state__title">服务信息缺失</text>
                     <text class="empty-state__desc">当前订单未返回主服务项，但金额和支付信息仍可查看。</text>
-                </view>
-            </view>
-
-            <view v-if="primaryAddons.length" class="card">
-                <view class="card__header">
-                    <tn-icon name="gift" size="32" :color="$theme.primaryColor" />
-                    <text class="card__title">附加服务</text>
-                    <text class="card__extra" :style="{ color: $theme.ctaColor }">
-                        +¥{{ formatAmount(primaryAddonAmount) }}
-                    </text>
-                </view>
-                <view class="addon-list">
-                    <view
-                        v-for="(addon, index) in primaryAddons"
-                        :key="`${getAddonKey(addon)}-${index}`"
-                        class="addon-item"
-                    >
-                        <view class="addon-item__main">
-                            <view class="addon-item__name-row">
-                                <text class="addon-item__name">{{ getAddonName(addon) }}</text>
-                                <text class="addon-item__tag">附加套餐</text>
-                            </view>
-                            <text v-if="addon.description" class="addon-item__desc">{{ addon.description }}</text>
-                        </view>
-                        <text class="addon-item__price">+¥{{ formatAmount(getAddonPrice(addon)) }}</text>
-                    </view>
                 </view>
             </view>
 
@@ -163,7 +143,7 @@
                     <text class="section__title">金额明细</text>
                     <view class="amount-list">
                         <view class="amount-row"><text class="amount-row__label">主服务金额</text><text class="amount-row__value">¥{{ formatAmount(orderServiceAmount) }}</text></view>
-                        <view v-if="Number(primaryAddonAmount) > 0" class="amount-row"><text class="amount-row__label">附加服务金额</text><text class="amount-row__value">+¥{{ formatAmount(primaryAddonAmount) }}</text></view>
+                        <view v-if="Number(order.addon_amount || 0) > 0" class="amount-row"><text class="amount-row__label">附加内容金额</text><text class="amount-row__value">¥{{ formatAmount(order.addon_amount) }}</text></view>
                         <view v-if="Number(order.discount_amount || 0) > 0" class="amount-row"><text class="amount-row__label">优惠金额</text><text class="amount-row__value amount-row__value--discount">-¥{{ formatAmount(order.discount_amount) }}</text></view>
                         <view class="amount-divider"></view>
                         <view class="amount-row amount-row--total"><text class="amount-row__label">实付金额</text><text class="amount-row__value amount-row__value--total" :style="{ color: $theme.ctaColor }">¥{{ formatAmount(order.pay_amount) }}</text></view>
@@ -310,11 +290,6 @@ const formatCountdown = (seconds: number) => {
     const remainSeconds = total % 60
     return [hours, minutes, remainSeconds].map((item) => String(item).padStart(2, '0')).join(':')
 }
-const getItemAddonTotal = (item: any) => (item?.addons || []).reduce((sum: number, addon: any) => sum + Number(addon?.subtotal || addon?.price || 0), 0)
-const getAddonKey = (addon: any) => String(addon?.addon_id || addon?.id || addon?.name || 'addon')
-const getAddonName = (addon: any) => addon?.addon_name || addon?.name || '附加服务'
-const getAddonPrice = (addon: any) => Number(addon?.subtotal || addon?.price || 0)
-
 const getStatusTheme = (status: number) =>
     ({
         0: { background: 'linear-gradient(180deg, #FFF5E8 0%, #FFFFFF 100%)', iconBg: '#C98524', icon: 'time-fill' },
@@ -337,8 +312,14 @@ const getRefundStatusStyle = (status: number) =>
         4: { color: '#DC2626', bg: 'rgba(220,38,38,0.1)' }
     } as Record<number, { color: string; bg: string }>)[status] || { color: '#64748B', bg: 'rgba(100,116,139,0.1)' }
 
-const primaryItem = computed(() => (Array.isArray(order.value?.items) ? order.value.items[0] || null : null))
-const primaryAddons = computed(() => (Array.isArray(primaryItem.value?.addons) ? primaryItem.value.addons : []))
+const primaryItem = computed(() => {
+    const items = Array.isArray(order.value?.items) ? order.value.items : []
+    return items.find((item: any) => Number(item?.item_type || 1) === 1) || items[0] || null
+})
+const extraItems = computed(() => {
+    const items = Array.isArray(order.value?.items) ? order.value.items : []
+    return items.filter((item: any) => Number(item?.item_type || 1) !== 1)
+})
 const primaryStaffAvatar = computed(() => primaryItem.value?.staff?.avatar || primaryItem.value?.staff_avatar || DEFAULT_AVATAR)
 const primaryStaffName = computed(() => primaryItem.value?.staff?.name || primaryItem.value?.staff_name || '待分配服务人员')
 const primaryPackageName = computed(() => primaryItem.value?.package?.name || primaryItem.value?.package_name || '待确认主套餐')
@@ -347,14 +328,30 @@ const primaryPackageDescription = computed(() =>
 )
 const primaryServiceDate = computed(() => primaryItem.value?.service_date || primaryItem.value?.schedule_date || order.value?.service_date || '待确认服务日期')
 const primaryPackagePrice = computed(() => Number(primaryItem.value?.price || primaryItem.value?.package?.price || 0))
-const primaryAddonAmount = computed(() => {
-    const addonAmount = Number(order.value?.addon_amount ?? -1)
-    return addonAmount >= 0 ? addonAmount : getItemAddonTotal(primaryItem.value)
-})
 const orderServiceAmount = computed(() => {
     const serviceAmount = Number(order.value?.service_amount ?? -1)
-    return serviceAmount >= 0 ? serviceAmount : Math.max(0, Number(order.value?.total_amount || 0) - Number(order.value?.addon_amount || 0))
+    return serviceAmount >= 0 ? serviceAmount : Math.max(0, Number(order.value?.total_amount || 0))
 })
+const getExtraItemTitle = (item: any) => {
+    if (Number(item?.item_type || 1) === 2) {
+        return item?.item_meta?.label || item?.package_name || '预约附加项'
+    }
+    if (Number(item?.item_type || 1) === 3) {
+        const roleLabel = item?.item_meta?.role_label || '关联服务'
+        const staffName = item?.staff?.name || item?.staff_name || ''
+        return staffName ? `${roleLabel} · ${staffName}` : roleLabel
+    }
+    return item?.package_name || '服务项目'
+}
+const getExtraItemDesc = (item: any) => {
+    if (Number(item?.item_type || 1) === 2) {
+        return '服务人员自定义预约附加项'
+    }
+    if (Number(item?.item_type || 1) === 3) {
+        return item?.package_name || '已锁定推荐套餐'
+    }
+    return item?.package_description || ''
+}
 const needPayAmount = computed(() => {
     if (!order.value) return 0
     if (Number(order.value.deposit_amount || 0) > 0) {
@@ -433,11 +430,10 @@ const copyOrderSn = () => {
 const handleContactAdvisor = () => uni.navigateTo({ url: `/packages/pages/customer_service/customer_service?scene=order_detail&order_id=${orderId.value}` })
 const openChangeActions = () =>
     uni.showActionSheet({
-        itemList: ['申请改期', '附加服务变更', '申请暂停', '我的申请'],
+        itemList: ['申请改期', '申请暂停', '我的申请'],
         success: ({ tapIndex }) => {
             const routes = [
                 `/packages/pages/order_change/apply_date?order_id=${orderId.value}`,
-                `/packages/pages/order_change/apply_addon?order_id=${orderId.value}`,
                 `/packages/pages/order_change/apply_pause?order_id=${orderId.value}`,
                 '/packages/pages/order_change/list?type=change'
             ]

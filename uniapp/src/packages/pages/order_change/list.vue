@@ -92,19 +92,6 @@
                             <text class="text-red-500 ml-2">+{{ item.add_price }}元</text>
                         </view>
 
-                        <!-- 附加服务变更 -->
-                        <view v-else-if="item.change_type === 4" class="text-sm text-gray-600 mt-2">
-                            <text>{{ item.addon_action_desc || '附加服务变更' }}: </text>
-                            <text class="text-primary">{{ getAddonNames(item.addon_items) }}</text>
-                            <text
-                                v-if="Number(item.price_diff || 0) !== 0"
-                                :class="Number(item.price_diff || 0) > 0 ? 'text-red-500' : 'text-green-500'"
-                                class="ml-2"
-                            >
-                                {{ Number(item.price_diff || 0) > 0 ? '+' : '' }}{{ item.price_diff }}元
-                            </text>
-                        </view>
-
                         <view v-if="item.apply_reason" class="text-xs text-gray-400 mt-2">
                             原因: {{ item.apply_reason }}
                         </view>
@@ -210,17 +197,9 @@ const getTypeClass = (type: number) => {
     const classes: Record<number, string> = {
         1: 'bg-blue-100 text-blue-600',
         2: 'bg-orange-100 text-orange-600',
-        3: 'bg-green-100 text-green-600',
-        4: 'bg-purple-100 text-purple-600'
+        3: 'bg-green-100 text-green-600'
     }
     return classes[type] || 'bg-gray-100 text-gray-600'
-}
-
-const getAddonNames = (items: any[] = []) => {
-    return (items || [])
-        .map((item: any) => item.addon_name)
-        .filter(Boolean)
-        .join('、')
 }
 
 // 变更状态样式
@@ -275,6 +254,14 @@ const fetchList = async (refresh = false) => {
             res = await getChangeList(params)
         } else {
             res = await getPauseList(params)
+        }
+
+        if (currentType.value === 'change') {
+            const rawList = Array.isArray(res?.lists) ? res.lists : []
+            res = {
+                ...res,
+                lists: rawList.filter((item: any) => Number(item?.change_type) !== 4)
+            }
         }
 
         const data = res.lists || []

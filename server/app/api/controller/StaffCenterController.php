@@ -256,11 +256,7 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $result = StaffCenterLogic::addonLists($this->userId);
-        if (empty($result) && StaffCenterLogic::getError()) {
-            return $this->fail(StaffCenterLogic::getError());
-        }
-        return $this->data($result);
+        return $this->data([]);
     }
 
     /**
@@ -272,12 +268,7 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $params = (new StaffCenterValidate())->post()->goCheck('addonAdd');
-        $result = StaffCenterLogic::addonAdd($this->userId, $params);
-        if (true === $result) {
-            return $this->success('添加成功', [], 1, 1);
-        }
-        return $this->fail(StaffCenterLogic::getError());
+        return $this->failLegacyAddonOffline();
     }
 
     /**
@@ -289,12 +280,7 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $params = (new StaffCenterValidate())->post()->goCheck('addonUpdate');
-        $result = StaffCenterLogic::addonUpdate($this->userId, (int) $params['addon_id'], $params);
-        if (true === $result) {
-            return $this->success('保存成功', [], 1, 1);
-        }
-        return $this->fail(StaffCenterLogic::getError());
+        return $this->failLegacyAddonOffline();
     }
 
     /**
@@ -306,12 +292,7 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $params = (new StaffCenterValidate())->post()->goCheck('addonRemove');
-        $result = StaffCenterLogic::addonRemove($this->userId, (int) $params['addon_id']);
-        if (true === $result) {
-            return $this->success('删除成功', [], 1, 1);
-        }
-        return $this->fail(StaffCenterLogic::getError());
+        return $this->failLegacyAddonOffline();
     }
 
     /**

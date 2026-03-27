@@ -329,18 +329,7 @@ class StaffController extends BaseAdminController
      */
     public function getAddonConfig()
     {
-        $staffId = intval($this->request->get('staff_id', 0));
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
-            $staffId = $staffScopeId;
-        }
-
-        if ($staffId <= 0) {
-            return $this->fail('请选择员工');
-        }
-
-        $result = StaffLogic::getAddonConfig($staffId);
-        return $this->data($result);
+        return $this->data([]);
     }
 
     /**
@@ -349,26 +338,7 @@ class StaffController extends BaseAdminController
      */
     public function createStaffAddon()
     {
-        $params = $this->request->post();
-        $staffId = intval($params['staff_id'] ?? 0);
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
-            return $this->fail('无权限操作');
-        }
-
-        if ($staffId <= 0) {
-            return $this->fail('请选择员工');
-        }
-
-        if (empty($params['name'])) {
-            return $this->fail('请输入附加服务名称');
-        }
-
-        $result = StaffLogic::createStaffAddon($staffId, $params);
-        if (true === $result) {
-            return $this->success('创建成功', [], 1, 1);
-        }
-        return $this->fail(StaffLogic::getError());
+        return $this->failLegacyAddonOffline();
     }
 
     /**
@@ -377,27 +347,7 @@ class StaffController extends BaseAdminController
      */
     public function updateStaffAddon()
     {
-        $params = $this->request->post();
-        $staffId = intval($params['staff_id'] ?? 0);
-        $addonId = intval($params['addon_id'] ?? 0);
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
-            return $this->fail('无权限操作');
-        }
-
-        if ($staffId <= 0 || $addonId <= 0) {
-            return $this->fail('参数错误');
-        }
-
-        if (empty($params['name'])) {
-            return $this->fail('请输入附加服务名称');
-        }
-
-        $result = StaffLogic::updateStaffAddon($staffId, $addonId, $params);
-        if (true === $result) {
-            return $this->success('更新成功', [], 1, 1);
-        }
-        return $this->fail(StaffLogic::getError());
+        return $this->failLegacyAddonOffline();
     }
 
     /**
@@ -406,23 +356,7 @@ class StaffController extends BaseAdminController
      */
     public function deleteStaffAddon()
     {
-        $params = $this->request->post();
-        $staffId = intval($params['staff_id'] ?? 0);
-        $addonId = intval($params['addon_id'] ?? 0);
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
-            return $this->fail('无权限操作');
-        }
-
-        if ($staffId <= 0 || $addonId <= 0) {
-            return $this->fail('参数错误');
-        }
-
-        $result = StaffLogic::deleteStaffAddon($staffId, $addonId);
-        if (true === $result) {
-            return $this->success('删除成功', [], 1, 1);
-        }
-        return $this->fail(StaffLogic::getError());
+        return $this->failLegacyAddonOffline();
     }
 
     /**
@@ -801,13 +735,7 @@ class StaffController extends BaseAdminController
      */
     public function myProfileAddonList()
     {
-        $staffScopeId = $this->getRequiredStaffScopeId();
-        if ($staffScopeId <= 0) {
-            return $this->failRequiredStaffScope();
-        }
-
-        $result = StaffLogic::getAddonConfig($staffScopeId);
-        return $this->data($result);
+        return $this->data([]);
     }
 
     /**
@@ -816,21 +744,7 @@ class StaffController extends BaseAdminController
      */
     public function myProfileAddonAdd()
     {
-        $staffScopeId = $this->getRequiredStaffScopeId();
-        if ($staffScopeId <= 0) {
-            return $this->failRequiredStaffScope();
-        }
-
-        $params = $this->request->post();
-        if (empty($params['name'])) {
-            return $this->fail('请输入附加服务名称');
-        }
-
-        $result = StaffLogic::createStaffAddon($staffScopeId, $params);
-        if (true === $result) {
-            return $this->success('创建成功', [], 1, 1);
-        }
-        return $this->fail(StaffLogic::getError());
+        return $this->failLegacyAddonOffline();
     }
 
     /**
@@ -839,25 +753,7 @@ class StaffController extends BaseAdminController
      */
     public function myProfileAddonUpdate()
     {
-        $staffScopeId = $this->getRequiredStaffScopeId();
-        if ($staffScopeId <= 0) {
-            return $this->failRequiredStaffScope();
-        }
-
-        $params = $this->request->post();
-        $addonId = intval($params['addon_id'] ?? 0);
-        if ($addonId <= 0) {
-            return $this->fail('参数错误');
-        }
-        if (empty($params['name'])) {
-            return $this->fail('请输入附加服务名称');
-        }
-
-        $result = StaffLogic::updateStaffAddon($staffScopeId, $addonId, $params);
-        if (true === $result) {
-            return $this->success('更新成功', [], 1, 1);
-        }
-        return $this->fail(StaffLogic::getError());
+        return $this->failLegacyAddonOffline();
     }
 
     /**
@@ -866,22 +762,7 @@ class StaffController extends BaseAdminController
      */
     public function myProfileAddonDelete()
     {
-        $staffScopeId = $this->getRequiredStaffScopeId();
-        if ($staffScopeId <= 0) {
-            return $this->failRequiredStaffScope();
-        }
-
-        $params = $this->request->post();
-        $addonId = intval($params['addon_id'] ?? 0);
-        if ($addonId <= 0) {
-            return $this->fail('参数错误');
-        }
-
-        $result = StaffLogic::deleteStaffAddon($staffScopeId, $addonId);
-        if (true === $result) {
-            return $this->success('删除成功', [], 1, 1);
-        }
-        return $this->fail(StaffLogic::getError());
+        return $this->failLegacyAddonOffline();
     }
 
     /**

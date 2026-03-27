@@ -34,7 +34,11 @@ class OrderValidate extends BaseValidate
         'wedding_date' => 'date',
         'wedding_venue' => 'max:255',
         'remark' => 'max:500',
-        'addon_ids' => 'array',
+        'custom_option_keys' => 'array',
+        'butler_staff_id' => 'integer|egt:0',
+        'butler_package_id' => 'integer|egt:0',
+        'director_staff_id' => 'integer|egt:0',
+        'director_package_id' => 'integer|egt:0',
         'reason' => 'max:255',
         'deposit_ratio' => 'integer|between:0,100',
         'pay_way' => 'require|integer|in:1,2,3,4,5',
@@ -69,7 +73,7 @@ class OrderValidate extends BaseValidate
         'wedding_date.date' => '婚礼日期格式错误',
         'wedding_venue.max' => '婚礼地点最多255个字符',
         'remark.max' => '备注最多500个字符',
-        'addon_ids.array' => '附加服务参数格式错误',
+        'custom_option_keys.array' => '预约附加项参数错误',
         'reason.max' => '原因最多255个字符',
         'deposit_ratio.between' => '定金比例应在0-100之间',
         'pay_way.require' => '请选择支付方式',
@@ -112,7 +116,6 @@ class OrderValidate extends BaseValidate
             'wedding_date',
             'wedding_venue',
             'remark',
-            'addon_ids',
             'deposit_ratio',
         ]);
     }
@@ -133,7 +136,6 @@ class OrderValidate extends BaseValidate
             'city_name',
             'district_code',
             'district_name',
-            'addon_ids',
             'deposit_ratio'
         ]);
     }

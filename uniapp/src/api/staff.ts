@@ -80,10 +80,12 @@ export function getStaffPackages(data: Record<string, any> & { staff_id: number 
 }
 
 /**
- * @description 获取工作人员附加服务
- * @param { number } staff_id
+ * @description 获取预约角色候选人
+ * @param data
  * @return { Promise }
  */
-export function getStaffAddons(data: { staff_id: number; package_id?: number }) {
-    return request.get({ url: '/staff/addons', data })
+export function getStaffBookingRoleCandidates(
+    data: Record<string, any> & { staff_id: number; role_key: string }
+) {
+    return request.get({ url: '/staff/bookingRoleCandidates', data })
 }

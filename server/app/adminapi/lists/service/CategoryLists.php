@@ -56,6 +56,10 @@ class CategoryLists extends BaseAdminDataLists implements ListsSearchInterface
             $item['staff_count'] = \app\common\model\staff\Staff::where('category_id', $item['id'])
                 ->where('delete_time', null)
                 ->count();
+            $item['booking_relation_summary'] = implode('，', array_filter([
+                (int)($item['booking_butler_enabled'] ?? 0) === 1 ? '管家已启用' : '',
+                (int)($item['booking_director_enabled'] ?? 0) === 1 ? '督导已启用' : '',
+            ]));
         }
 
         return $list;

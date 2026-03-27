@@ -285,7 +285,7 @@
             {
                 "path": "pages/order_change/apply_addon",
                 "style": {
-                    "navigationBarTitleText": "附加服务变更"
+                    "navigationBarTitleText": "功能下线"
                 },
                 "meta": {
                     "auth": true
@@ -424,6 +424,12 @@
                 }
             },
             {
+                "path": "pages/staff_booking/staff_booking",
+                "style": {
+                    "navigationBarTitleText": "预约服务"
+                }
+            },
+            {
                 "path": "pages/staff_work_detail/staff_work_detail",
                 "style": {
                     "navigationBarTitleText": "作品详情"
@@ -531,7 +537,7 @@
             {
                 "path": "pages/staff_addon_list/staff_addon_list",
                 "style": {
-                    "navigationBarTitleText": "附加服务管理"
+                    "navigationBarTitleText": "功能下线"
                 },
                 "meta": {
                     "auth": true
@@ -540,7 +546,7 @@
             {
                 "path": "pages/staff_addon_edit/staff_addon_edit",
                 "style": {
-                    "navigationBarTitleText": "附加服务编辑"
+                    "navigationBarTitleText": "功能下线"
                 },
                 "meta": {
                     "auth": true

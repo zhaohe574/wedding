@@ -118,6 +118,10 @@ class StaffLogic extends BaseLogic
                 'experience_years' => $params['experience_years'] ?? 0,
                 'profile' => $params['profile'] ?? '',
                 'service_desc' => $params['service_desc'] ?? '',
+                'booking_option_1_name' => trim((string)($params['booking_option_1_name'] ?? '')),
+                'booking_option_1_price' => round((float)($params['booking_option_1_price'] ?? 0), 2),
+                'booking_option_2_name' => trim((string)($params['booking_option_2_name'] ?? '')),
+                'booking_option_2_price' => round((float)($params['booking_option_2_price'] ?? 0), 2),
                 'sort' => $params['sort'] ?? 0,
                 'is_recommend' => $params['is_recommend'] ?? 0,
                 'status' => $params['status'] ?? 1,
@@ -205,6 +209,10 @@ class StaffLogic extends BaseLogic
                 'experience_years' => $params['experience_years'] ?? $staff->experience_years,
                 'profile' => $params['profile'] ?? $staff->profile,
                 'service_desc' => $params['service_desc'] ?? $staff->service_desc,
+                'booking_option_1_name' => trim((string)($params['booking_option_1_name'] ?? $staff->getData('booking_option_1_name') ?? '')),
+                'booking_option_1_price' => round((float)($params['booking_option_1_price'] ?? $staff->getData('booking_option_1_price') ?? 0), 2),
+                'booking_option_2_name' => trim((string)($params['booking_option_2_name'] ?? $staff->getData('booking_option_2_name') ?? '')),
+                'booking_option_2_price' => round((float)($params['booking_option_2_price'] ?? $staff->getData('booking_option_2_price') ?? 0), 2),
                 'sort' => $params['sort'] ?? $staff->sort,
                 'is_recommend' => $params['is_recommend'] ?? $staff->is_recommend,
                 'status' => $params['status'] ?? $staff->status,
@@ -756,7 +764,6 @@ class StaffLogic extends BaseLogic
             ->select()
             ->toArray();
 
-        $packages = ServicePackageAddon::attachAddonIds($packages);
         return PackageRegionPriceService::attachRegionPrices($packages);
     }
 

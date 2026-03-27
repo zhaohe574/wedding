@@ -26,6 +26,10 @@ class CategoryValidate extends BaseValidate
         'name' => 'require|max:50',
         'icon' => 'max:255',
         'image' => 'max:255',
+        'booking_butler_enabled' => 'in:0,1',
+        'booking_butler_category_id' => 'integer|egt:0',
+        'booking_director_enabled' => 'in:0,1',
+        'booking_director_category_id' => 'integer|egt:0',
         'sort' => 'integer|egt:0',
         'is_show' => 'in:0,1',
     ];
@@ -40,6 +44,12 @@ class CategoryValidate extends BaseValidate
         'name.max' => '分类名称最多50个字符',
         'icon.max' => '图标地址最多255个字符',
         'image.max' => '图片地址最多255个字符',
+        'booking_butler_enabled.in' => '婚礼管家开关参数错误',
+        'booking_butler_category_id.integer' => '婚礼管家关联分类参数错误',
+        'booking_butler_category_id.egt' => '婚礼管家关联分类参数错误',
+        'booking_director_enabled.in' => '婚礼督导开关参数错误',
+        'booking_director_category_id.integer' => '婚礼督导关联分类参数错误',
+        'booking_director_category_id.egt' => '婚礼督导关联分类参数错误',
         'sort.integer' => '排序必须为整数',
         'sort.egt' => '排序必须大于等于0',
         'is_show.in' => '显示状态值错误',
@@ -50,8 +60,8 @@ class CategoryValidate extends BaseValidate
      * @var array
      */
     protected $scene = [
-        'add' => ['name', 'icon', 'image', 'sort', 'is_show'],
-        'edit' => ['id', 'name', 'icon', 'image', 'sort', 'is_show'],
+        'add' => ['name', 'icon', 'image', 'booking_butler_enabled', 'booking_butler_category_id', 'booking_director_enabled', 'booking_director_category_id', 'sort', 'is_show'],
+        'edit' => ['id', 'name', 'icon', 'image', 'booking_butler_enabled', 'booking_butler_category_id', 'booking_director_enabled', 'booking_director_category_id', 'sort', 'is_show'],
         'detail' => ['id'],
         'delete' => ['id'],
         'status' => ['id', 'is_show'],

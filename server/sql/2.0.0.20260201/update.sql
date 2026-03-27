@@ -22,6 +22,10 @@ CREATE TABLE IF NOT EXISTS `la_service_category` (
   `pid` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '上级分类ID',
   `icon` varchar(255) NOT NULL DEFAULT '' COMMENT '分类图标',
   `image` varchar(255) NOT NULL DEFAULT '' COMMENT '分类图片',
+  `booking_butler_enabled` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否启用婚礼管家预约：0-否，1-是',
+  `booking_butler_category_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '婚礼管家关联服务分类ID',
+  `booking_director_enabled` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否启用婚礼督导预约：0-否，1-是',
+  `booking_director_category_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '婚礼督导关联服务分类ID',
   `sort` int(11) NOT NULL DEFAULT 0 COMMENT '排序(数值越大越靠前)',
   `is_show` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '是否显示:0-否,1-是',
   `create_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
@@ -158,6 +162,10 @@ CREATE TABLE IF NOT EXISTS `la_staff` (
   `experience_years` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '从业年限',
   `profile` text COMMENT '个人简介',
   `service_desc` text COMMENT '服务说明',
+  `booking_option_1_name` varchar(100) NOT NULL DEFAULT '' COMMENT '预约附加项1名称',
+  `booking_option_1_price` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT '预约附加项1价格',
+  `booking_option_2_name` varchar(100) NOT NULL DEFAULT '' COMMENT '预约附加项2名称',
+  `booking_option_2_price` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT '预约附加项2价格',
   -- 轮播图配置（来自 021）
   `banner_mode` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '轮播图展示模式：1=小图模式，2=大图模式',
   `banner_small_height` int(11) UNSIGNED NOT NULL DEFAULT 400 COMMENT '小图模式初始高度（rpx）',
@@ -507,6 +515,8 @@ CREATE TABLE IF NOT EXISTS `la_order_item` (
     `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '单价',
     `quantity` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '数量',
     `subtotal` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '小计',
+    `item_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '订单项类型：1=主服务，2=预约附加项，3=关联服务人员',
+    `item_meta` TEXT COMMENT '订单项扩展信息(JSON)',
     `item_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '项状态：0=待服务,1=服务中,2=已完成,3=已取消',
     `confirm_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '确认状态：0=待确认,1=已确认',
     -- 变更相关（来自 004）
@@ -2327,13 +2337,13 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (245, 240, 'A', '编辑', '', 0, 'ops.region/edit', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
 (246, 240, 'A', '删除', '', 0, 'ops.region/delete', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
 (247, 240, 'A', '状态切换', '', 0, 'ops.region/changeStatus', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
-(248, 179, 'C', '附加服务', '', 75, 'ops.addon/lists', 'addon', 'service/addon/index', '', '', 0, 1, 0, 1773650000, 1773650000),
-(249, 248, 'A', '详情', '', 0, 'ops.addon/detail', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
-(250, 248, 'A', '新增', '', 0, 'ops.addon/add', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
-(251, 248, 'A', '编辑', '', 0, 'ops.addon/edit', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
-(252, 248, 'A', '删除', '', 0, 'ops.addon/delete', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
-(253, 248, 'A', '状态切换', '', 0, 'ops.addon/changeStatus', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
-(254, 248, 'A', '全部', '', 0, 'ops.addon/all', '', '', '', '', 0, 0, 0, 1773650000, 1773650000);
+(248, 179, 'C', '附加服务', '', 75, 'ops.addon/lists', 'addon', 'service/addon/index', '', '', 0, 0, 1, 1773650000, 1773650000),
+(249, 248, 'A', '详情', '', 0, 'ops.addon/detail', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
+(250, 248, 'A', '新增', '', 0, 'ops.addon/add', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
+(251, 248, 'A', '编辑', '', 0, 'ops.addon/edit', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
+(252, 248, 'A', '删除', '', 0, 'ops.addon/delete', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
+(253, 248, 'A', '状态切换', '', 0, 'ops.addon/changeStatus', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
+(254, 248, 'A', '全部', '', 0, 'ops.addon/all', '', '', '', '', 0, 0, 1, 1773650000, 1773650000);
 
 -- la_system_role_menu
 INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
@@ -2489,13 +2499,6 @@ INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (2, 245),
 (2, 246),
 (2, 247),
-(2, 248),
-(2, 249),
-(2, 250),
-(2, 251),
-(2, 252),
-(2, 253),
-(2, 254),
 (2, 238),
 (2, 239);
 

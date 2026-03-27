@@ -20,6 +20,72 @@ use think\facade\Db;
 class CategoryLogic extends BaseLogic
 {
     /**
+     * @notes 解析预约关联角色配置
+     * @param array $params
+     * @param ServiceCategory|null $currentCategory
+     * @return array
+     * @throws \Exception
+     */
+    private static function resolveBookingRolePayload(array $params, ?ServiceCategory $currentCategory = null): array
+    {
+        $currentCategoryId = (int)($currentCategory->id ?? 0);
+
+        $butlerEnabled = (int)($params['booking_butler_enabled'] ?? ($currentCategory->booking_butler_enabled ?? 0));
+        $butlerCategoryId = $butlerEnabled === 1
+            ? (int)($params['booking_butler_category_id'] ?? ($currentCategory->booking_butler_category_id ?? 0))
+            : 0;
+        self::validateRelatedCategory($butlerEnabled, $butlerCategoryId, '婚礼管家', $currentCategoryId);
+
+        $directorEnabled = (int)($params['booking_director_enabled'] ?? ($currentCategory->booking_director_enabled ?? 0));
+        $directorCategoryId = $directorEnabled === 1
+            ? (int)($params['booking_director_category_id'] ?? ($currentCategory->booking_director_category_id ?? 0))
+            : 0;
+        self::validateRelatedCategory($directorEnabled, $directorCategoryId, '婚礼督导', $currentCategoryId);
+
+        return [
+            'booking_butler_enabled' => $butlerEnabled,
+            'booking_butler_category_id' => $butlerCategoryId,
+            'booking_director_enabled' => $directorEnabled,
+            'booking_director_category_id' => $directorCategoryId,
+        ];
+    }
+
+    /**
+     * @notes 校验关联分类
+     * @param int $enabled
+     * @param int $relatedCategoryId
+     * @param string $roleLabel
+     * @param int $currentCategoryId
+     * @return void
+     * @throws \Exception
+     */
+    private static function validateRelatedCategory(
+        int $enabled,
+        int $relatedCategoryId,
+        string $roleLabel,
+        int $currentCategoryId = 0
+    ): void {
+        if ($enabled !== 1) {
+            return;
+        }
+
+        if ($relatedCategoryId <= 0) {
+            throw new \Exception($roleLabel . '关联分类不能为空');
+        }
+
+        if ($currentCategoryId > 0 && $currentCategoryId === $relatedCategoryId) {
+            throw new \Exception($roleLabel . '关联分类不能选择当前分类');
+        }
+
+        $relatedCategory = ServiceCategory::where('id', $relatedCategoryId)
+            ->whereNull('delete_time')
+            ->find();
+        if (!$relatedCategory) {
+            throw new \Exception($roleLabel . '关联分类不存在');
+        }
+    }
+
+    /**
      * @notes 获取分类详情
      * @param int $id
      * @return array
@@ -41,7 +107,7 @@ class CategoryLogic extends BaseLogic
     {
         return ServiceCategory::where('delete_time', null)
             ->order('sort desc, id asc')
-            ->field('id, name, icon, is_show, sort, create_time')
+            ->field('id, name, icon, is_show, sort, create_time, booking_butler_enabled, booking_butler_category_id, booking_director_enabled, booking_director_category_id')
             ->select()
             ->toArray();
     }
@@ -62,10 +128,15 @@ class CategoryLogic extends BaseLogic
                 throw new \Exception('已存在相同名称的分类');
             }
 
+            $bookingRolePayload = self::resolveBookingRolePayload($params);
             ServiceCategory::create([
                 'name' => $params['name'],
                 'icon' => $params['icon'] ?? '',
                 'image' => $params['image'] ?? '',
+                'booking_butler_enabled' => $bookingRolePayload['booking_butler_enabled'],
+                'booking_butler_category_id' => $bookingRolePayload['booking_butler_category_id'],
+                'booking_director_enabled' => $bookingRolePayload['booking_director_enabled'],
+                'booking_director_category_id' => $bookingRolePayload['booking_director_category_id'],
                 'sort' => $params['sort'] ?? 0,
                 'is_show' => $params['is_show'] ?? 1,
                 'create_time' => time(),
@@ -101,10 +172,15 @@ class CategoryLogic extends BaseLogic
                 throw new \Exception('已存在相同名称的分类');
             }
 
+            $bookingRolePayload = self::resolveBookingRolePayload($params, $category);
             $category->save([
                 'name' => $params['name'],
                 'icon' => $params['icon'] ?? $category->icon,
                 'image' => $params['image'] ?? $category->image,
+                'booking_butler_enabled' => $bookingRolePayload['booking_butler_enabled'],
+                'booking_butler_category_id' => $bookingRolePayload['booking_butler_category_id'],
+                'booking_director_enabled' => $bookingRolePayload['booking_director_enabled'],
+                'booking_director_category_id' => $bookingRolePayload['booking_director_category_id'],
                 'sort' => $params['sort'] ?? $category->sort,
                 'is_show' => $params['is_show'] ?? $category->is_show,
                 'update_time' => time(),
@@ -175,7 +251,7 @@ class CategoryLogic extends BaseLogic
         return ServiceCategory::where('delete_time', null)
             ->where('is_show', 1)
             ->order('sort desc, id asc')
-            ->field('id, name, icon, sort, is_show')
+            ->field('id, name, icon, sort, is_show, booking_butler_enabled, booking_butler_category_id, booking_director_enabled, booking_director_category_id')
             ->select()
             ->toArray();
     }

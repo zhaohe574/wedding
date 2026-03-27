@@ -11,7 +11,6 @@ use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsSearchInterface;
 use app\common\lists\ListsExcelInterface;
 use app\common\model\service\ServicePackage;
-use app\common\model\service\ServicePackageAddon;
 use app\common\service\PackageRegionPriceService;
 
 /**
@@ -61,7 +60,6 @@ class PackageLists extends BaseAdminDataLists implements ListsSearchInterface, L
             ->select()
             ->toArray();
 
-        $list = ServicePackageAddon::attachAddonIds($list);
         return PackageRegionPriceService::attachRegionPrices($list);
     }
 

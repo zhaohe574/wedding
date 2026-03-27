@@ -244,7 +244,6 @@ interface DashboardOverview {
     order_count: number
     work_count: number
     package_count: number
-    addon_count: number
     schedule_count: number
 }
 
@@ -364,7 +363,6 @@ const createEmptyDashboard = (): DashboardState => ({
         order_count: 0,
         work_count: 0,
         package_count: 0,
-        addon_count: 0,
         schedule_count: 0
     },
     todo: {
@@ -656,13 +654,6 @@ const quickMenus = computed<QuickMenuItem[]>(() => [
         name: '套餐管理',
         desc: '维护价格',
         path: '/packages/pages/staff_package_list/staff_package_list',
-        badge: 0,
-        highlight: false
-    },
-    {
-        name: '附加服务',
-        desc: '扩展项目',
-        path: '/packages/pages/staff_addon_list/staff_addon_list',
         badge: 0,
         highlight: false
     },

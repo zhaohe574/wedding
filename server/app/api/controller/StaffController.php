@@ -18,7 +18,7 @@ use app\api\logic\StaffLogic;
  */
 class StaffController extends BaseApiController
 {
-    public array $notNeedLogin = ['lists', 'detail', 'works', 'workLists', 'workDetail', 'recommend', 'packages', 'addons'];
+    public array $notNeedLogin = ['lists', 'detail', 'works', 'workLists', 'workDetail', 'recommend', 'packages', 'addons', 'bookingRoleCandidates'];
 
     /**
      * @notes 工作人员列表
@@ -125,14 +125,32 @@ class StaffController extends BaseApiController
      */
     public function addons()
     {
+        return $this->data([]);
+    }
+
+    /**
+     * @notes 预约角色候选人
+     * @return \think\response\Json
+     */
+    public function bookingRoleCandidates()
+    {
         $staffId = $this->request->get('staff_id/d');
-        $packageId = $this->request->get('package_id/d', 0);
-        if (!$staffId) {
+        $roleKey = $this->request->get('role_key/s', '');
+        if (!$staffId || $roleKey === '') {
             return $this->fail('参数错误');
         }
 
-        $result = StaffLogic::addons($staffId, $packageId);
-        return $this->data($result);
+        try {
+            $result = StaffLogic::bookingRoleCandidates(
+                $staffId,
+                $roleKey,
+                $this->request->get(),
+                $this->request->get('date/s', '')
+            );
+            return $this->data($result);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage() ?: '获取候选人失败');
+        }
     }
 
     /**

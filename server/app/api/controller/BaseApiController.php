@@ -28,4 +28,20 @@ class BaseApiController extends BaseLikeAdminController
             $this->userId = $this->request->userInfo['user_id'];
         }
     }
+
+    /**
+     * @notes 旧版附加服务已下线提示
+     */
+    protected function getLegacyAddonOfflineMessage(): string
+    {
+        return '附加服务功能已下线，后续将重新设计';
+    }
+
+    /**
+     * @notes 返回旧版附加服务已下线响应
+     */
+    protected function failLegacyAddonOffline()
+    {
+        return $this->fail($this->getLegacyAddonOfflineMessage());
+    }
 }

@@ -21,13 +21,18 @@ class OrderItem extends BaseModel
     protected $name = 'order_item';
 
     // 追加属性到数组
-    protected $append = ['item_status_desc'];
+    protected $append = ['item_status_desc', 'item_type_desc'];
 
     // 项状态
     const STATUS_PENDING = 0;       // 待服务
     const STATUS_IN_SERVICE = 1;    // 服务中
     const STATUS_COMPLETED = 2;     // 已完成
     const STATUS_CANCELLED = 3;     // 已取消
+
+    // 订单项类型
+    const TYPE_SERVICE = 1;         // 主服务
+    const TYPE_CUSTOM_OPTION = 2;   // 自定义附加项
+    const TYPE_RELATED_STAFF = 3;   // 关联服务人员
 
     /**
      * @notes 生成套餐说明快照
@@ -98,11 +103,10 @@ class OrderItem extends BaseModel
      */
     public function getItemStatusDescAttr($value, $data): string
     {
-        // 防御性检查：确保 item_status 键存在
         if (!isset($data['item_status'])) {
             return '未知';
         }
-        
+
         $map = [
             self::STATUS_PENDING => '待服务',
             self::STATUS_IN_SERVICE => '服务中',
@@ -112,4 +116,54 @@ class OrderItem extends BaseModel
         return $map[$data['item_status']] ?? '未知';
     }
 
+    /**
+     * @notes 订单项类型描述
+     * @param $value
+     * @param $data
+     * @return string
+     */
+    public function getItemTypeDescAttr($value, $data): string
+    {
+        $map = [
+            self::TYPE_SERVICE => '主服务',
+            self::TYPE_CUSTOM_OPTION => '预约附加项',
+            self::TYPE_RELATED_STAFF => '关联服务人员',
+        ];
+
+        return $map[(int)($data['item_type'] ?? self::TYPE_SERVICE)] ?? '主服务';
+    }
+
+    /**
+     * @notes item_meta 获取器
+     * @param mixed $value
+     * @return array
+     */
+    public function getItemMetaAttr($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return $value ? (json_decode((string)$value, true) ?: []) : [];
+    }
+
+    /**
+     * @notes item_meta 设置器
+     * @param mixed $value
+     * @return string
+     */
+    public function setItemMetaAttr($value): string
+    {
+        return is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : (string)$value;
+    }
+
+    /**
+     * @notes 是否为主服务项
+     * @param array $item
+     * @return bool
+     */
+    public static function isServiceItem(array $item): bool
+    {
+        return (int)($item['item_type'] ?? self::TYPE_SERVICE) === self::TYPE_SERVICE;
+    }
 }

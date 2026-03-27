@@ -69,7 +69,10 @@
             <view v-if="order.items && order.items.length" class="service-list">
                 <view v-for="item in order.items" :key="item.id" class="service-item">
                     <view class="service-header">
-                        <text class="service-name">{{ item.package_name || '服务套餐' }}</text>
+                        <view class="service-title-wrap">
+                            <text class="service-name">{{ item.package_name || '服务套餐' }}</text>
+                            <text v-if="item.item_type_desc" class="service-type-tag">{{ item.item_type_desc }}</text>
+                        </view>
                         <text class="service-price" :style="{ color: $theme.ctaColor }">
                             <text class="price-symbol">¥</text>
                             <text class="price-value">{{ item.price }}</text>
@@ -151,7 +154,7 @@
                     <text class="amount-value">¥{{ formatAmount(orderServiceAmount) }}</text>
                 </view>
                 <view class="amount-row" v-if="Number(order.addon_amount || 0) > 0">
-                    <text class="amount-label">附加服务金额</text>
+                    <text class="amount-label">附加内容金额</text>
                     <text class="amount-value">+¥{{ formatAmount(order.addon_amount) }}</text>
                 </view>
                 <view class="amount-row" v-if="order.discount_amount > 0">
@@ -438,11 +441,28 @@ onLoad(async (options: any) => {
     margin-bottom: 12rpx;
 }
 
+.service-title-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+}
+
 .service-name {
     flex: 1;
     font-size: 30rpx;
     font-weight: 600;
     color: #333333;
+}
+
+.service-type-tag {
+    flex-shrink: 0;
+    padding: 4rpx 12rpx;
+    border-radius: 999rpx;
+    background: rgba(232, 90, 79, 0.12);
+    font-size: 20rpx;
+    color: #e85a4f;
 }
 
 .service-description {

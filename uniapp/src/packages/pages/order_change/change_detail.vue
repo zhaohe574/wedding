@@ -136,29 +136,10 @@
                 <template v-else-if="detail.change_type === 4">
                     <view class="addon-change-content">
                         <view class="addon-action-badge">
-                            {{ detail.addon_action_desc || '附加服务变更' }}
+                            附加服务变更已下线
                         </view>
-                        <view
-                            v-for="addon in detail.addon_items || []"
-                            :key="addon.id"
-                            class="addon-change-item"
-                        >
-                            <view class="addon-change-item__main">
-                                <text class="addon-change-item__name">{{ addon.addon_name }}</text>
-                                <text class="addon-change-item__meta">数量 x{{ addon.quantity || 1 }}</text>
-                            </view>
-                            <text class="addon-change-item__price">
-                                {{ detail.addon_action === 2 ? '-' : '+' }}¥{{ addon.subtotal || addon.price }}
-                            </text>
-                        </view>
-                        <view class="price-diff mt-4 text-center" v-if="detail.price_diff !== 0">
-                            <text class="text-gray-500">净差额: </text>
-                            <text
-                                :class="detail.price_diff > 0 ? 'text-red-500' : 'text-green-500'"
-                                class="text-lg font-bold"
-                            >
-                                {{ detail.price_diff > 0 ? '+' : '' }}{{ detail.price_diff }}元
-                            </text>
+                        <view class="text-sm text-gray-500 text-center mt-4">
+                            旧版附加服务内容不再在用户端展示，当前页面仅保留状态与基础申请信息。
                         </view>
                     </view>
                 </template>

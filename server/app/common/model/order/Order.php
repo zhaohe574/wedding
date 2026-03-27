@@ -445,7 +445,12 @@ class Order extends BaseModel
             $serviceAmount = 0;
             $addonAmount = 0;
             foreach ($selectedItems as $item) {
-                $serviceAmount += (float)$item['price'] * (int)($item['quantity'] ?? 1);
+                $itemAmount = round((float)$item['price'] * (int)($item['quantity'] ?? 1), 2);
+                if ((int)($item['item_type'] ?? OrderItem::TYPE_SERVICE) === OrderItem::TYPE_SERVICE) {
+                    $serviceAmount += $itemAmount;
+                } else {
+                    $addonAmount += $itemAmount;
+                }
 
                 foreach (($item['addons'] ?? []) as $addon) {
                     $addonAmount += (float)($addon['price'] ?? 0) * (int)($addon['quantity'] ?? 1);
@@ -468,6 +473,7 @@ class Order extends BaseModel
             }
 
             $confirmLockDuration = 3600;
+            $createdLegacyAddonSnapshots = false;
 
             // 创建订单
             $order = self::create([
@@ -519,15 +525,25 @@ class Order extends BaseModel
                         (string)($item['package']['description'] ?? ($item['package_description'] ?? ''))
                     ),
                     'price' => $item['price'],
-                    'quantity' => 1,
-                    'subtotal' => $item['price'],
+                    'quantity' => (int)($item['quantity'] ?? 1),
+                    'subtotal' => round((float)$item['price'] * (int)($item['quantity'] ?? 1), 2),
+                    'item_type' => (int)($item['item_type'] ?? OrderItem::TYPE_SERVICE),
+                    'item_meta' => $item['item_meta'] ?? [],
                     'confirm_status' => 0,
                     'remark' => $item['remark'] ?? '',
                     'create_time' => time(),
                     'update_time' => time(),
                 ]);
 
-                if ((int)($item['staff_id'] ?? 0) > 0 && !empty($item['schedule_date'])) {
+                if (
+                    (int)($item['staff_id'] ?? 0) > 0 &&
+                    !empty($item['schedule_date']) &&
+                    in_array(
+                        (int)($item['item_type'] ?? OrderItem::TYPE_SERVICE),
+                        [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF],
+                        true
+                    )
+                ) {
                     $scheduleResult = Schedule::confirmBooking(
                         (int)$item['staff_id'],
                         (string)$item['schedule_date'],
@@ -547,7 +563,14 @@ class Order extends BaseModel
                     }
                 }
 
-                if (!empty($item['package_id'])) {
+                if (
+                    !empty($item['package_id']) &&
+                    in_array(
+                        (int)($item['item_type'] ?? OrderItem::TYPE_SERVICE),
+                        [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF],
+                        true
+                    )
+                ) {
                     $confirmed = PackageBooking::confirmSelection(
                         $userId,
                         (int)$item['package_id'],
@@ -578,10 +601,13 @@ class Order extends BaseModel
                         $item['addons'],
                         OrderItemAddon::SOURCE_ORDER
                     );
+                    $createdLegacyAddonSnapshots = true;
                 }
             }
 
-            OrderItemAddon::refreshOrderAmounts((int)$order->id);
+            if ($createdLegacyAddonSnapshots) {
+                OrderItemAddon::refreshOrderAmounts((int)$order->id);
+            }
 
             // 记录订单日志
             OrderLog::addLog($order->id, 1, $userId, 'create', 0, self::STATUS_PENDING_CONFIRM, '创建订单');

@@ -113,23 +113,7 @@ class OrderChangeController extends BaseApiController
      */
     public function applyAddonChange()
     {
-        $params = (new OrderChangeValidate())->post()->goCheck('addonChange');
-        $result = OrderChangeLogic::applyAddonChange(
-            $this->userId,
-            (int)$params['order_id'],
-            (int)$params['order_item_id'],
-            (int)$params['addon_action'],
-            $params['addon_ids'] ?? [],
-            $params['reason'] ?? '',
-            $params['attach_images'] ?? []
-        );
-        if ($result['success']) {
-            return $this->success($result['message'], [
-                'change_id' => $result['change_id'],
-                'price_diff' => $result['price_diff'] ?? 0,
-            ]);
-        }
-        return $this->fail($result['message']);
+        return $this->failLegacyAddonOffline();
     }
 
     /**

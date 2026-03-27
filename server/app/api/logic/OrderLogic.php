@@ -16,9 +16,9 @@ use app\common\model\order\Payment;
 use app\common\model\package\PackageBooking;
 use app\common\model\order\Refund;
 use app\common\model\schedule\Schedule;
-use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
+use app\common\service\BookingFlowService;
 use app\common\service\OrderNotificationService;
 use app\common\service\PackageRegionPriceService;
 use think\facade\Db;
@@ -30,74 +30,6 @@ use think\facade\Db;
  */
 class OrderLogic extends BaseLogic
 {
-    /**
-     * @notes 归一化附加服务ID列表
-     * @param mixed $addonIds
-     * @return array
-     */
-    private static function normalizeAddonIds($addonIds): array
-    {
-        if (!is_array($addonIds)) {
-            return [];
-        }
-
-        $addonIds = array_map('intval', $addonIds);
-        $addonIds = array_filter($addonIds, static fn (int $id) => $id > 0);
-
-        return array_values(array_unique($addonIds));
-    }
-
-    /**
-     * @notes 解析当前人员可选附加服务
-     * @param int $staffId
-     * @param int $packageId
-     * @param mixed $addonIds
-     * @return array
-     */
-    private static function resolveSelectedAddons(int $staffId, int $packageId, $addonIds): array
-    {
-        $addonIds = self::normalizeAddonIds($addonIds);
-        if ($staffId <= 0 || $packageId <= 0 || empty($addonIds)) {
-            return [];
-        }
-
-        $addons = ServiceAddon::alias('addon')
-            ->join(
-                'service_package_addon relation',
-                'relation.addon_id = addon.id AND relation.package_id = ' . $packageId
-            )
-            ->whereIn('addon.id', $addonIds)
-            ->where('addon.staff_id', $staffId)
-            ->where('addon.is_show', 1)
-            ->whereNull('addon.delete_time')
-            ->field('addon.id, addon.staff_id, addon.category_id, addon.name, addon.price, addon.original_price, addon.image, addon.description, addon.sort, addon.is_show')
-            ->select()
-            ->toArray();
-
-        if (count($addons) !== count($addonIds)) {
-            throw new \Exception('所选附加服务不存在、已下架或不属于当前套餐');
-        }
-
-        $addonMap = [];
-        foreach ($addons as $addon) {
-            $addonId = (int)($addon['id'] ?? 0);
-            $addonMap[$addonId] = array_merge($addon, [
-                'addon_id' => $addonId,
-                'quantity' => 1,
-                'subtotal' => round((float)($addon['price'] ?? 0), 2),
-            ]);
-        }
-
-        $result = [];
-        foreach ($addonIds as $addonId) {
-            if (isset($addonMap[$addonId])) {
-                $result[] = $addonMap[$addonId];
-            }
-        }
-
-        return $result;
-    }
-
     /**
      * @notes 构造直购选择项
      */
@@ -130,9 +62,7 @@ class OrderLogic extends BaseLogic
             throw new \Exception('当前套餐暂不支持所选区县');
         }
 
-        $addons = self::resolveSelectedAddons($staffId, $packageId, $params['addon_ids'] ?? []);
-
-        return [[
+        $selectedItems = [[
             'staff_id' => $staffId,
             'package_id' => $packageId,
             'schedule_id' => 0,
@@ -140,6 +70,11 @@ class OrderLogic extends BaseLogic
             'time_slot' => 0,
             'price' => round((float)($resolvedPrice['price'] ?? 0), 2),
             'quantity' => 1,
+            'item_type' => OrderItem::TYPE_SERVICE,
+            'item_meta' => [
+                'role_key' => '',
+                'role_label' => '',
+            ],
             'remark' => $params['remark'] ?? '',
             'region_context' => $regionContext,
             'staff' => [
@@ -157,8 +92,106 @@ class OrderLogic extends BaseLogic
                 'description' => (string)($package->description ?? ''),
                 'image' => (string)($package->image ?? ''),
             ],
-            'addons' => $addons,
+            'addons' => [],
         ]];
+
+        $customOptions = BookingFlowService::resolveSelectedCustomOptions(
+            $staff,
+            BookingFlowService::normalizeCustomOptionKeys($params['custom_option_keys'] ?? [])
+        );
+        foreach ($customOptions as $option) {
+            $selectedItems[] = [
+                'staff_id' => $staffId,
+                'package_id' => 0,
+                'schedule_id' => 0,
+                'schedule_date' => $date,
+                'time_slot' => 0,
+                'price' => round((float)($option['price'] ?? 0), 2),
+                'quantity' => 1,
+                'item_type' => OrderItem::TYPE_CUSTOM_OPTION,
+                'item_meta' => [
+                    'key' => (string)($option['key'] ?? ''),
+                    'label' => (string)($option['name'] ?? ''),
+                ],
+                'remark' => '',
+                'region_context' => $regionContext,
+                'staff' => [
+                    'id' => (int)$staff->id,
+                    'name' => (string)$staff->name,
+                    'avatar' => (string)$staff->avatar,
+                    'category_id' => (int)$staff->category_id,
+                ],
+                'package' => [
+                    'id' => 0,
+                    'name' => (string)($option['name'] ?? ''),
+                    'category_id' => (int)$staff->category_id,
+                    'price' => round((float)($option['price'] ?? 0), 2),
+                    'original_price' => round((float)($option['price'] ?? 0), 2),
+                    'description' => '',
+                    'image' => '',
+                ],
+                'addons' => [],
+            ];
+        }
+
+        foreach ([
+            BookingFlowService::ROLE_BUTLER => [
+                'staff_id' => (int)($params['butler_staff_id'] ?? 0),
+                'package_id' => (int)($params['butler_package_id'] ?? 0),
+            ],
+            BookingFlowService::ROLE_DIRECTOR => [
+                'staff_id' => (int)($params['director_staff_id'] ?? 0),
+                'package_id' => (int)($params['director_package_id'] ?? 0),
+            ],
+        ] as $roleKey => $selection) {
+            if ($selection['staff_id'] <= 0 || $selection['package_id'] <= 0) {
+                continue;
+            }
+
+            $candidate = BookingFlowService::resolveSelectedRoleCandidate(
+                $staffId,
+                $roleKey,
+                $selection['staff_id'],
+                $selection['package_id'],
+                $regionContext,
+                $date
+            );
+
+            $selectedItems[] = [
+                'staff_id' => (int)$candidate['staff_id'],
+                'package_id' => (int)$candidate['package_id'],
+                'schedule_id' => 0,
+                'schedule_date' => $date,
+                'time_slot' => 0,
+                'price' => round((float)($candidate['price'] ?? 0), 2),
+                'quantity' => 1,
+                'item_type' => OrderItem::TYPE_RELATED_STAFF,
+                'item_meta' => [
+                    'role_key' => $roleKey,
+                    'role_label' => (string)($candidate['role_label'] ?? BookingFlowService::getRoleLabel($roleKey)),
+                ],
+                'remark' => '',
+                'region_context' => $regionContext,
+                'staff' => [
+                    'id' => (int)$candidate['staff_id'],
+                    'name' => (string)($candidate['name'] ?? ''),
+                    'avatar' => (string)($candidate['avatar'] ?? ''),
+                    'category_id' => (int)($candidate['category_id'] ?? 0),
+                ],
+                'package' => [
+                    'id' => (int)$candidate['package_id'],
+                    'name' => (string)($candidate['package_name'] ?? ''),
+                    'category_id' => (int)($candidate['category_id'] ?? 0),
+                    'price' => round((float)($candidate['price'] ?? 0), 2),
+                    'original_price' => round((float)($candidate['original_price'] ?? 0), 2),
+                    'description' => (string)($candidate['package_description'] ?? ''),
+                    'image' => '',
+                ],
+                'addons' => [],
+            ];
+        }
+
+        return $selectedItems;
     }
 
     /**
@@ -167,6 +200,10 @@ class OrderLogic extends BaseLogic
     private static function ensureScheduleAvailable(array $selectedItems): void
     {
         foreach ($selectedItems as $item) {
+            if (!self::itemRequiresScheduleLock($item)) {
+                continue;
+            }
+
             [$available, $reason] = Schedule::checkAvailabilityWithReason(
                 (int)$item['staff_id'],
                 (string)$item['schedule_date'],
@@ -183,6 +220,10 @@ class OrderLogic extends BaseLogic
      */
     private static function refreshTempLock(int $userId, array $selectedItem): void
     {
+        if (!self::itemRequiresPackageLock($selectedItem)) {
+            return;
+        }
+
         $lock = PackageBooking::createTempLock(
             (int)$selectedItem['package_id'],
             (int)$selectedItem['staff_id'],
@@ -210,6 +251,10 @@ class OrderLogic extends BaseLogic
      */
     private static function ensureTempLockOwned(int $userId, array $selectedItem): void
     {
+        if (!self::itemRequiresPackageLock($selectedItem)) {
+            return;
+        }
+
         $lock = PackageBooking::where('user_id', $userId)
             ->where('package_id', (int)$selectedItem['package_id'])
             ->where('staff_id', (int)$selectedItem['staff_id'])
@@ -235,7 +280,12 @@ class OrderLogic extends BaseLogic
         $categoryIds = [];
 
         foreach ($selectedItems as $item) {
-            $serviceAmount += (float)$item['price'] * (int)($item['quantity'] ?? 1);
+            $itemAmount = round((float)$item['price'] * (int)($item['quantity'] ?? 1), 2);
+            if ((int)($item['item_type'] ?? OrderItem::TYPE_SERVICE) === OrderItem::TYPE_SERVICE) {
+                $serviceAmount += $itemAmount;
+            } else {
+                $addonAmount += $itemAmount;
+            }
             $staffIds[] = (int)($item['staff_id'] ?? 0);
 
             $packageCategoryId = (int)($item['package']['category_id'] ?? 0);
@@ -284,7 +334,8 @@ class OrderLogic extends BaseLogic
         }
 
         $list = $query->with(['items' => function ($q) {
-                $q->field('id, order_id, staff_id, staff_name, package_name, service_date, item_status, price, quantity, subtotal')
+                $q->field('id, order_id, staff_id, staff_name, package_name, service_date, item_status, item_type, item_meta, price, quantity, subtotal')
+                    ->order('id', 'asc')
                     ->with(['staff' => function ($staffQuery) {
                         $staffQuery->field('id, name, avatar');
                     }]);
@@ -387,7 +438,9 @@ class OrderLogic extends BaseLogic
             }
             self::ensureScheduleAvailable($selectedItems);
             if ($userId > 0) {
-                self::refreshTempLock($userId, $selectedItems[0]);
+                foreach ($selectedItems as $selectedItem) {
+                    self::refreshTempLock($userId, $selectedItem);
+                }
             }
 
             $summary = self::buildCheckoutSummary($selectedItems);
@@ -433,7 +486,9 @@ class OrderLogic extends BaseLogic
             $userId = (int)$params['user_id'];
             $selectedItems = self::buildSelectedItems($params);
             self::ensureScheduleAvailable($selectedItems);
-            self::ensureTempLockOwned($userId, $selectedItems[0]);
+            foreach ($selectedItems as $selectedItem) {
+                self::ensureTempLockOwned($userId, $selectedItem);
+            }
 
             $summary = self::buildCheckoutSummary($selectedItems);
             $params['service_date'] = $params['date'] ?? ($selectedItems[0]['schedule_date'] ?? '');
@@ -478,6 +533,30 @@ class OrderLogic extends BaseLogic
             'district_code' => (string)($params['district_code'] ?? ''),
             'district_name' => (string)($params['district_name'] ?? ''),
         ]);
+    }
+
+    /**
+     * @notes 是否需要校验档期
+     * @param array $item
+     * @return bool
+     */
+    private static function itemRequiresScheduleLock(array $item): bool
+    {
+        return in_array(
+            (int)($item['item_type'] ?? OrderItem::TYPE_SERVICE),
+            [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF],
+            true
+        );
+    }
+
+    /**
+     * @notes 是否需要锁定套餐
+     * @param array $item
+     * @return bool
+     */
+    private static function itemRequiresPackageLock(array $item): bool
+    {
+        return self::itemRequiresScheduleLock($item) && (int)($item['package_id'] ?? 0) > 0;
     }
 
     /**

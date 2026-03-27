@@ -121,43 +121,6 @@ export function regionChangeStatus(params: any) {
     return request.post({ url: '/ops.region/changeStatus', params })
 }
 
-// ==================== 附加服务 ====================
-
-// 附加服务列表
-export function addonLists(params?: any) {
-    return request.get({ url: '/ops.addon/lists', params })
-}
-
-// 附加服务详情
-export function addonDetail(params: any) {
-    return request.get({ url: '/ops.addon/detail', params })
-}
-
-// 添加附加服务
-export function addonAdd(params: any) {
-    return request.post({ url: '/ops.addon/add', params })
-}
-
-// 编辑附加服务
-export function addonEdit(params: any) {
-    return request.post({ url: '/ops.addon/edit', params })
-}
-
-// 删除附加服务
-export function addonDelete(params: any) {
-    return request.post({ url: '/ops.addon/delete', params })
-}
-
-// 附加服务状态
-export function addonChangeStatus(params: any) {
-    return request.post({ url: '/ops.addon/changeStatus', params })
-}
-
-// 获取所有附加服务(下拉)
-export function addonAll(params?: any) {
-    return request.get({ url: '/ops.addon/all', params })
-}
-
 // ==================== 风格标签 ====================
 
 // 标签列表

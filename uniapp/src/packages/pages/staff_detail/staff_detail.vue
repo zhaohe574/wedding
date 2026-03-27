@@ -76,6 +76,29 @@
                     </view>
                 </view>
 
+                <view class="booking-brief-card">
+                    <view class="booking-brief-card__header">
+                        <view>
+                            <text class="booking-brief-card__title">预约信息</text>
+                            <text class="booking-brief-card__desc">先在详情页确认地区和日期，再进入设计稿的多步骤预约页。</text>
+                        </view>
+                    </view>
+                    <view class="booking-brief-card__grid">
+                        <view class="booking-brief-card__item" @click="handleInlineRegionEdit">
+                            <text class="booking-brief-card__label">服务地区</text>
+                            <text class="booking-brief-card__value">
+                                {{ hasSelectedRegion ? selectedRegionText : '请选择服务区县' }}
+                            </text>
+                        </view>
+                        <view class="booking-brief-card__item" @click="handleInlineDateEdit">
+                            <text class="booking-brief-card__label">预约日期</text>
+                            <text class="booking-brief-card__value">
+                                {{ presetDate || '请选择预约日期' }}
+                            </text>
+                        </view>
+                    </view>
+                </view>
+
                 <!-- 标签页切换 -->
                 <view class="tabs-section">
                     <view class="tabs-wrapper">
@@ -355,405 +378,6 @@
             </view>
 
         <u-popup
-            v-model="showBookingGuardPopup"
-            mode="bottom"
-            :mask="true"
-            :mask-close-able="true"
-            :safe-area-inset-bottom="true"
-            :border-radius="24"
-        >
-            <view class="booking-guard-popup">
-                <view class="booking-popup-handle"></view>
-                <view class="booking-guard-popup__header">
-                    <text class="booking-guard-popup__action" @click="closeBookingGuardPopup">
-                        稍后再选
-                    </text>
-                    <text class="booking-guard-popup__title">补充预约信息</text>
-                    <view class="booking-guard-popup__action booking-guard-popup__action--placeholder"></view>
-                </view>
-                <view class="booking-guard-popup__body">
-                    <text class="booking-guard-popup__desc">
-                        立即预约前，请先补充预约地区与预约时间，确认后会保留在当前详情页。
-                    </text>
-                    <view class="booking-guard-popup__fields">
-                        <view
-                            class="booking-popup-field"
-                            :class="{ 'booking-popup-field--empty': !hasBookingGuardSelectedRegion }"
-                            @click="handleBookingGuardRegionEdit"
-                        >
-                            <view class="booking-popup-field__label-row">
-                                <tn-icon
-                                    name="location"
-                                    size="22"
-                                    :color="$theme.primaryColor"
-                                />
-                                <text class="booking-popup-field__label">预约地区</text>
-                            </view>
-                            <view class="booking-popup-field__content">
-                                <text
-                                    class="booking-popup-field__value"
-                                    :class="{
-                                        'booking-popup-field__value--empty':
-                                            !hasBookingGuardSelectedRegion
-                                    }"
-                                >
-                                    {{
-                                        hasBookingGuardSelectedRegion
-                                            ? bookingGuardSelectedRegionText
-                                            : '请选择服务区县'
-                                    }}
-                                </text>
-                                <tn-icon
-                                    class="booking-popup-field__arrow"
-                                    name="right"
-                                    size="22"
-                                    :color="
-                                        hasBookingGuardSelectedRegion
-                                            ? $theme.primaryColor
-                                            : '#98A2B3'
-                                    "
-                                />
-                            </view>
-                        </view>
-
-                        <view
-                            class="booking-popup-field"
-                            :class="{ 'booking-popup-field--empty': !bookingGuardDraft.date }"
-                            @click="handleBookingGuardDateEdit"
-                        >
-                            <view class="booking-popup-field__label-row">
-                                <tn-icon
-                                    name="calendar"
-                                    size="22"
-                                    :color="$theme.primaryColor"
-                                />
-                                <text class="booking-popup-field__label">预约时间</text>
-                            </view>
-                            <view class="booking-popup-field__content">
-                                <text
-                                    class="booking-popup-field__value"
-                                    :class="{
-                                        'booking-popup-field__value--empty': !bookingGuardDraft.date
-                                    }"
-                                >
-                                    {{ bookingGuardDraft.date || '请选择预约日期' }}
-                                </text>
-                                <tn-icon
-                                    class="booking-popup-field__arrow"
-                                    name="right"
-                                    size="22"
-                                    :color="bookingGuardDraft.date ? $theme.primaryColor : '#98A2B3'"
-                                />
-                            </view>
-                        </view>
-                    </view>
-                </view>
-                <view class="booking-guard-popup__footer">
-                    <view
-                        class="booking-guard-popup__confirm"
-                        :style="{
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
-                        }"
-                        @click="handleBookingGuardConfirm"
-                    >
-                        <text>确认选择</text>
-                    </view>
-                </view>
-            </view>
-        </u-popup>
-
-        <u-popup
-            v-model="showBookingPopup"
-            mode="bottom"
-            :mask="true"
-            :mask-close-able="true"
-            :safe-area-inset-bottom="true"
-            :border-radius="24"
-        >
-            <view class="booking-popup">
-                <view class="booking-popup-handle"></view>
-                <scroll-view scroll-y class="booking-popup-scroll">
-                    <view class="booking-popup-body">
-                        <view class="booking-popup-fields">
-                            <view
-                                class="booking-popup-field"
-                                :class="{ 'booking-popup-field--empty': !hasSelectedRegion }"
-                                @click="handleBookingRegionEdit"
-                            >
-                                <view class="booking-popup-field__label-row">
-                                    <tn-icon
-                                        name="location"
-                                        size="22"
-                                        :color="$theme.primaryColor"
-                                    />
-                                    <text class="booking-popup-field__label">地区</text>
-                                </view>
-                                <view class="booking-popup-field__content">
-                                    <text
-                                        class="booking-popup-field__value"
-                                        :class="{
-                                            'booking-popup-field__value--empty': !hasSelectedRegion
-                                        }"
-                                    >
-                                        {{ hasSelectedRegion ? selectedRegionText : '请选择区县' }}
-                                    </text>
-                                    <tn-icon
-                                        class="booking-popup-field__arrow"
-                                        name="right"
-                                        size="22"
-                                        :color="hasSelectedRegion ? $theme.primaryColor : '#98A2B3'"
-                                    />
-                                </view>
-                            </view>
-
-                            <view
-                                class="booking-popup-field"
-                                :class="{ 'booking-popup-field--empty': !presetDate }"
-                                @click="handleBookingDateEdit"
-                            >
-                                <view class="booking-popup-field__label-row">
-                                    <tn-icon
-                                        name="calendar"
-                                        size="22"
-                                        :color="$theme.primaryColor"
-                                    />
-                                    <text class="booking-popup-field__label">日期</text>
-                                </view>
-                                <view class="booking-popup-field__content">
-                                    <text
-                                        class="booking-popup-field__value"
-                                        :class="{ 'booking-popup-field__value--empty': !presetDate }"
-                                    >
-                                        {{ presetDate || '请选择日期' }}
-                                    </text>
-                                    <tn-icon
-                                        class="booking-popup-field__arrow"
-                                        name="right"
-                                        size="22"
-                                        :color="presetDate ? $theme.primaryColor : '#98A2B3'"
-                                    />
-                                </view>
-                            </view>
-                        </view>
-
-                        <view
-                            v-if="presetDate && staffInfo.schedule_available === false"
-                            class="booking-popup-status booking-popup-status--warning"
-                        >
-                            <tn-icon name="warning-fill" size="24" color="#F97316" />
-                            <text>
-                                {{
-                                    staffInfo.schedule_message ||
-                                    '所选日期当前不可预约，请重新选择预约日期'
-                                }}
-                            </text>
-                        </view>
-
-                        <view class="booking-popup-section">
-                            <view class="booking-popup-section__header">
-                                <text class="booking-popup-section__title">套餐</text>
-                                <text class="booking-popup-section__hint">单选</text>
-                            </view>
-                            <view class="booking-popup-package-list">
-                                <view
-                                    v-for="pkg in displayPackages"
-                                    :key="`popup-${getPackageId(pkg)}`"
-                                    class="booking-popup-package"
-                                    :class="{
-                                        'booking-popup-package--active':
-                                            selectedPackageId === getPackageId(pkg)
-                                    }"
-                                    :style="
-                                        selectedPackageId === getPackageId(pkg)
-                                            ? {
-                                                  borderColor: $theme.primaryColor
-                                              }
-                                            : {}
-                                    "
-                                    @click="handleBookingPackageSelect(pkg)"
-                                >
-                                    <view class="booking-popup-package__main">
-                                        <view class="booking-popup-package__title-group">
-                                            <text class="booking-popup-package__title">
-                                                {{ getPackageName(pkg) }}
-                                            </text>
-                                            <text
-                                                v-if="isRecommendedPackage(pkg)"
-                                                class="booking-popup-package__tag booking-popup-package__tag--recommend"
-                                            >
-                                                推荐
-                                            </text>
-                                        </view>
-                                        <text
-                                            v-if="getPackageDescription(pkg)"
-                                            class="booking-popup-package__desc"
-                                        >
-                                            {{ getPackageDescription(pkg) }}
-                                        </text>
-                                    </view>
-                                    <view class="booking-popup-package__side">
-                                        <view class="booking-popup-package__price">
-                                            <text
-                                                v-if="getPackageOriginalPrice(pkg) !== null"
-                                                class="booking-popup-package__price-original"
-                                            >
-                                                ¥{{ formatPrice(getPackageOriginalPrice(pkg)) }}
-                                            </text>
-                                            <text class="booking-popup-package__price-current">
-                                                ¥{{ formatPrice(getPackagePrice(pkg)) }}
-                                            </text>
-                                        </view>
-                                        <view
-                                            class="booking-popup-package__radio"
-                                            :style="
-                                                selectedPackageId === getPackageId(pkg)
-                                                    ? {
-                                                          backgroundColor: $theme.primaryColor,
-                                                          borderColor: $theme.primaryColor
-                                                      }
-                                                    : {}
-                                            "
-                                        >
-                                            <tn-icon
-                                                v-if="selectedPackageId === getPackageId(pkg)"
-                                                name="check"
-                                                size="16"
-                                                color="#FFFFFF"
-                                            >
-                                            </tn-icon>
-                                        </view>
-                                    </view>
-                                </view>
-                            </view>
-                        </view>
-
-                        <view class="booking-popup-section">
-                            <view class="booking-popup-section__header">
-                                <text class="booking-popup-section__title">附加服务</text>
-                                <text class="booking-popup-section__hint">
-                                    {{
-                                        bookingAddons.length
-                                            ? selectedAddonIds.length
-                                                ? `多选 · 已选${selectedAddonIds.length}项`
-                                                : '多选'
-                                            : '当前套餐暂无附加服务'
-                                    }}
-                                </text>
-                            </view>
-
-                            <view v-if="addonLoading" class="booking-popup-loading">
-                                <tn-loading mode="circle" />
-                                <text class="booking-popup-loading__text">正在加载附加服务...</text>
-                            </view>
-
-                            <view v-else-if="bookingAddons.length" class="booking-addon-list">
-                                <view
-                                    v-for="addon in bookingAddons"
-                                    :key="addon.id"
-                                    class="booking-addon-card"
-                                    :class="{
-                                        'booking-addon-card--active': isBookingAddonSelected(addon.id)
-                                    }"
-                                    :style="
-                                        isBookingAddonSelected(addon.id)
-                                            ? {
-                                                  borderColor: $theme.ctaColor
-                                              }
-                                            : {}
-                                    "
-                                    @click="toggleBookingAddon(addon)"
-                                >
-                                    <view class="booking-addon-card__main">
-                                        <text class="booking-addon-card__title">{{ addon.name }}</text>
-                                        <text
-                                            v-if="addon.description"
-                                            class="booking-addon-card__desc"
-                                        >
-                                            {{ addon.description }}
-                                        </text>
-                                    </view>
-                                    <view class="booking-addon-card__side">
-                                        <view class="booking-addon-card__price">
-                                            <text class="booking-addon-card__price-current">
-                                                +¥{{ formatPrice(addon.price) }}
-                                            </text>
-                                            <text
-                                                v-if="
-                                                    Number(addon.original_price || 0) >
-                                                    Number(addon.price || 0)
-                                                "
-                                                class="booking-addon-card__price-original"
-                                            >
-                                                ¥{{ formatPrice(addon.original_price) }}
-                                            </text>
-                                        </view>
-                                        <view
-                                            class="booking-addon-card__check"
-                                            :style="
-                                                isBookingAddonSelected(addon.id)
-                                                    ? {
-                                                          backgroundColor: $theme.ctaColor,
-                                                          borderColor: $theme.ctaColor
-                                                      }
-                                                    : {}
-                                            "
-                                        >
-                                            <tn-icon
-                                                v-if="isBookingAddonSelected(addon.id)"
-                                                name="check"
-                                                size="18"
-                                                color="#FFFFFF"
-                                            />
-                                        </view>
-                                    </view>
-                                </view>
-                            </view>
-
-                            <view v-else class="booking-popup-empty">
-                                <tn-icon name="gift" size="48" color="#cbd5e1" />
-                                <text class="booking-popup-empty__text">当前套餐暂无附加服务</text>
-                            </view>
-                        </view>
-                    </view>
-                </scroll-view>
-
-                <view class="booking-popup-footer">
-                    <view class="booking-popup-footer__price">
-                        <text class="booking-popup-footer__label">合计</text>
-                        <view class="booking-popup-footer__amount">
-                            <text class="booking-popup-footer__symbol">¥</text>
-                            <text class="booking-popup-footer__value">
-                                {{ formatPrice(bookingTotalAmount) }}
-                            </text>
-                        </view>
-                        <text class="booking-popup-footer__detail">
-                            套餐 ¥{{ formatPrice(bookingServiceAmount) }}
-                            <template v-if="bookingPreview.addon_amount > 0">
-                                ，附加服务 ¥{{ formatPrice(bookingPreview.addon_amount) }}
-                            </template>
-                        </text>
-                    </view>
-                    <view
-                        class="booking-popup-footer__action"
-                        :class="{ 'booking-popup-footer__action--disabled': !bookingCanConfirm }"
-                        :style="
-                            bookingCanConfirm
-                                ? {
-                                      background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
-                                  }
-                                : {}
-                        "
-                        @click="handleBookingConfirm"
-                    >
-                        <text>
-                            {{ bookingLoading ? '价格计算中...' : '下一步填写信息' }}
-                        </text>
-                    </view>
-                </view>
-            </view>
-        </u-popup>
-
-        <u-popup
             v-model="showRegionPopup"
             mode="bottom"
             :mask="true"
@@ -889,13 +513,12 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { onLoad, onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
-import { previewOrder } from '@/api/order'
-import { getStaffAddons, getStaffDetail, toggleStaffFavorite, getStaffWorks } from '@/api/staff'
+import { getStaffDetail, toggleStaffFavorite, getStaffWorks } from '@/api/staff'
 import { getStaffReviews, getStaffReviewStats } from '@/api/review'
 import { getServiceRegionTree } from '@/api/service'
 import { useThemeStore } from '@/stores/theme'
@@ -910,17 +533,12 @@ import {
     saveServiceRegionSelection,
     toServiceRegionParams
 } from '@/utils/service-region'
-
-const createBookingGuardDraft = () => ({
-    date: '',
-    ...normalizeServiceRegion({})
-})
+import { getStaffBookingPageUrl } from '@/utils/staff-booking'
 
 const staffId = ref<number>(0)
 const staffInfo = ref<any>(null)
 const currentTab = ref('intro')
 const presetDate = ref('') // 预设日期
-const showBookingGuardPopup = ref(false)
 const showDatePopup = ref(false)
 const showRegionPopup = ref(false)
 const datePickerValue = ref([0, 0, 0])
@@ -928,29 +546,11 @@ const openDatePickerRequested = ref(false)
 const openBookingPopupRequested = ref(false)
 const pendingDatePickerAfterRegion = ref(false)
 const selectedPackageId = ref<number>(0)
-const selectedAddonIds = ref<number[]>([])
-const showBookingPopup = ref(false)
-const bookingAddons = ref<any[]>([])
-const addonLoading = ref(false)
-const bookingLoading = ref(false)
-const bookingPreview = ref({
-    items: [],
-    service_amount: 0,
-    addon_amount: 0,
-    total_amount: 0,
-    pay_amount: 0,
-    deposit_amount: 0,
-    balance_amount: 0
-})
 const regionTree = ref<any[]>([])
 const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
-const bookingGuardDraft = reactive(createBookingGuardDraft())
 const tempRegion = ref(normalizeServiceRegion(selectedRegion.value))
 const $theme = useThemeStore()
 const userStore = useUserStore()
-
-type BookingPickerSource = '' | 'booking' | 'guard'
-const pickerSource = ref<BookingPickerSource>('')
 
 // 轮播图数据
 const bannerList = ref<any[]>([])
@@ -1114,13 +714,6 @@ const selectedRegionText = computed(() => {
     }
     return formatServiceRegionText(selectedRegion.value)
 })
-const hasBookingGuardSelectedRegion = computed(() => hasServiceRegion(bookingGuardDraft))
-const bookingGuardSelectedRegionText = computed(() => {
-    if (!hasBookingGuardSelectedRegion.value) {
-        return '请选择服务区县'
-    }
-    return formatServiceRegionText(bookingGuardDraft)
-})
 const regionProvinces = computed(() => regionTree.value || [])
 const regionCities = computed(() => {
     return (
@@ -1195,104 +788,8 @@ const staffPrice = computed(() => {
 })
 
 const getPackageId = (pkg: any) => Number(pkg?.package_id || pkg?.id || 0)
-const getPackageName = (pkg: any) => pkg?.name || pkg?.package?.name || '未命名套餐'
-const getPackageDescription = (pkg: any) =>
-    pkg?.description || pkg?.package?.description || ''
 const isRecommendedPackage = (pkg: any) =>
     Number(pkg?.is_recommend ?? pkg?.package?.is_recommend ?? 0) === 1
-const getPackagePrice = (pkg: any) => {
-    if (pkg?.price !== null && pkg?.price !== undefined && pkg?.price !== '') {
-        return Number(pkg.price)
-    }
-    return Number(pkg?.package?.price || 0)
-}
-const getPackageOriginalPrice = (pkg: any) => {
-    if (
-        pkg?.original_price !== null &&
-        pkg?.original_price !== undefined &&
-        pkg?.original_price !== ''
-    ) {
-        return Number(pkg.original_price)
-    }
-    if (
-        pkg?.package?.original_price !== null &&
-        pkg?.package?.original_price !== undefined &&
-        pkg?.package?.original_price !== ''
-    ) {
-        return Number(pkg.package.original_price)
-    }
-    return null
-}
-const formatPrice = (value: number | string | null | undefined) =>
-    Number(value || 0).toFixed(2)
-const parseAddonIds = (value: unknown): number[] => {
-    if (Array.isArray(value)) {
-        return value
-            .map((item) => Number(item))
-            .filter((item, index, list) => item > 0 && list.indexOf(item) === index)
-    }
-
-    if (typeof value !== 'string' || !value.trim()) {
-        return []
-    }
-
-    return value
-        .split(',')
-        .map((item) => Number(item.trim()))
-        .filter((item, index, list) => item > 0 && list.indexOf(item) === index)
-}
-const serializeAddonIds = (addonIds: number[]) => {
-    return addonIds
-        .map((item) => Number(item))
-        .filter((item, index, list) => item > 0 && list.indexOf(item) === index)
-        .join(',')
-}
-
-const displayPackages = computed(() => {
-    const packages = Array.isArray(staffInfo.value?.packages) ? staffInfo.value.packages : []
-    return packages
-        .map((pkg: any, index: number) => ({ pkg, index }))
-        .sort((left: { pkg: any; index: number }, right: { pkg: any; index: number }) => {
-            const recommendDiff =
-                Number(isRecommendedPackage(right.pkg)) - Number(isRecommendedPackage(left.pkg))
-            if (recommendDiff !== 0) {
-                return recommendDiff
-            }
-            return left.index - right.index
-        })
-        .map((item: { pkg: any; index: number }) => item.pkg)
-})
-
-const selectedPackage = computed(() => {
-    const packages = Array.isArray(staffInfo.value?.packages) ? staffInfo.value.packages : []
-    return packages.find((pkg: any) => getPackageId(pkg) === selectedPackageId.value) || null
-})
-const bookingCanConfirm = computed(
-    () =>
-        Boolean(selectedPackage.value) &&
-        hasSelectedRegion.value &&
-        Boolean(presetDate.value) &&
-        staffInfo.value?.schedule_available !== false &&
-        Array.isArray(bookingPreview.value.items) &&
-        bookingPreview.value.items.length > 0 &&
-        !bookingLoading.value &&
-        !addonLoading.value &&
-        Number(bookingPreview.value.pay_amount || 0) >= 0
-)
-const bookingServiceAmount = computed(() => {
-    const amount = Number(bookingPreview.value.service_amount ?? -1)
-    if (amount >= 0) {
-        return amount
-    }
-    return getPackagePrice(selectedPackage.value)
-})
-const bookingTotalAmount = computed(() => {
-    const payAmount = Number(bookingPreview.value.pay_amount ?? -1)
-    if (payAmount >= 0) {
-        return payAmount
-    }
-    return bookingServiceAmount.value
-})
 
 const syncSelectedPackage = () => {
     const packages = Array.isArray(staffInfo.value?.packages) ? staffInfo.value.packages : []
@@ -1310,198 +807,20 @@ const syncSelectedPackage = () => {
     selectedPackageId.value = getPackageId(recommendedPackage || packages[0])
 }
 
-const resetBookingPreview = () => {
-    bookingPreview.value = {
-        items: [],
-        service_amount: 0,
-        addon_amount: 0,
-        total_amount: 0,
-        pay_amount: 0,
-        deposit_amount: 0,
-        balance_amount: 0
-    }
-}
-
-const buildBookingSelectionParams = () => {
-    const params: Record<string, any> = {
-        staff_id: staffId.value,
-        package_id: selectedPackageId.value,
-        date: presetDate.value,
-        ...toServiceRegionParams(selectedRegion.value)
-    }
-
-    if (selectedAddonIds.value.length) {
-        params.addon_ids = [...selectedAddonIds.value]
-    }
-
-    return params
-}
-
-const fetchBookingAddons = async () => {
-    if (!staffId.value || !selectedPackageId.value) {
-        bookingAddons.value = []
-        selectedAddonIds.value = []
-        return
-    }
-
-    addonLoading.value = true
-    try {
-        const result = await getStaffAddons({
-            staff_id: staffId.value,
-            package_id: selectedPackageId.value
-        })
-        bookingAddons.value = Array.isArray(result) ? result : []
-        const validAddonIds = new Set(bookingAddons.value.map((item: any) => Number(item.id)))
-        const filteredAddonIds = selectedAddonIds.value.filter((id) => validAddonIds.has(Number(id)))
-
-        if (filteredAddonIds.length !== selectedAddonIds.value.length) {
-            uni.showToast({ title: '已移除不属于当前套餐的附加服务', icon: 'none' })
-        }
-
-        selectedAddonIds.value = filteredAddonIds
-    } catch (error: any) {
-        bookingAddons.value = []
-        selectedAddonIds.value = []
-        const errorMsg = typeof error === 'string' ? error : error?.msg || error?.message
-        if (errorMsg) {
-            uni.showToast({ title: errorMsg, icon: 'none' })
-        }
-    } finally {
-        addonLoading.value = false
-    }
-}
-
-const fetchBookingPreview = async () => {
-    if (
-        !staffId.value ||
-        !selectedPackageId.value ||
-        !presetDate.value ||
-        !hasSelectedRegion.value
-    ) {
-        resetBookingPreview()
-        return
-    }
-
-    bookingLoading.value = true
-    try {
-        const result = await previewOrder(buildBookingSelectionParams())
-        bookingPreview.value = {
-            items: result?.items || [],
-            service_amount: result?.service_amount || 0,
-            addon_amount: result?.addon_amount || 0,
-            total_amount: result?.total_amount || 0,
-            pay_amount: result?.pay_amount || 0,
-            deposit_amount: result?.deposit_amount || 0,
-            balance_amount: result?.balance_amount || 0
-        }
-    } catch (error: any) {
-        resetBookingPreview()
-        const errorMsg = typeof error === 'string' ? error : error?.msg || error?.message || '价格预览失败'
-        uni.showToast({ title: errorMsg, icon: 'none' })
-    } finally {
-        bookingLoading.value = false
-    }
-}
-
-const openBookingPopupPanel = async () => {
-    if (!selectedPackage.value) {
-        const hasPackages =
-            Array.isArray(staffInfo.value?.packages) && staffInfo.value.packages.length > 0
-        uni.showToast({
-            title: hasPackages ? '请选择套餐' : '暂无可预约套餐',
-            icon: 'none'
-        })
-        return
-    }
-
-    showBookingPopup.value = true
-    await fetchBookingAddons()
-    await fetchBookingPreview()
-}
-
-const openBookingPopupWithGuard = async (packageId = 0) => {
-    if (packageId > 0) {
-        selectedPackageId.value = packageId
-    } else {
-        syncSelectedPackage()
-    }
-
-    await openBookingPopupPanel()
-}
-
-const isBookingAddonSelected = (addonId: number) =>
-    selectedAddonIds.value.includes(Number(addonId))
-
-const handleBookingPackageSelect = async (pkg: any) => {
-    const packageId = getPackageId(pkg)
-    if (!packageId || packageId === selectedPackageId.value) {
-        return
-    }
-
-    selectedPackageId.value = packageId
-    await fetchBookingAddons()
-    await fetchBookingPreview()
-}
-
-const toggleBookingAddon = async (addon: any) => {
-    if (bookingLoading.value || addonLoading.value) {
-        return
-    }
-
-    const addonId = Number(addon?.id || 0)
-    if (!addonId) {
-        return
-    }
-
-    if (isBookingAddonSelected(addonId)) {
-        selectedAddonIds.value = selectedAddonIds.value.filter((id) => id !== addonId)
-    } else {
-        selectedAddonIds.value = [...selectedAddonIds.value, addonId]
-    }
-
-    await fetchBookingPreview()
-}
-
-const handleBookingRegionEdit = () => {
-    pickerSource.value = 'booking'
+const handleInlineRegionEdit = () => {
     pendingDatePickerAfterRegion.value = false
     openRegionPicker()
 }
 
-const handleBookingDateEdit = () => {
-    pickerSource.value = 'booking'
+const handleInlineDateEdit = () => {
     if (!hasSelectedRegion.value) {
-        pendingDatePickerAfterRegion.value = true
         uni.showToast({ title: '请先选择服务地区', icon: 'none' })
+        pendingDatePickerAfterRegion.value = true
         openRegionPicker()
         return
     }
-
     pendingDatePickerAfterRegion.value = false
     openDatePicker()
-}
-
-const handleBookingConfirm = () => {
-    if (!bookingCanConfirm.value) {
-        return
-    }
-
-    const queryParts = [
-        `staff_id=${staffId.value}`,
-        `package_id=${selectedPackageId.value}`,
-        `date=${encodeURIComponent(presetDate.value)}`
-    ]
-    const regionQuery = buildServiceRegionQuery(selectedRegion.value)
-    if (regionQuery) {
-        queryParts.push(regionQuery)
-    }
-    const addonQuery = serializeAddonIds(selectedAddonIds.value)
-    if (addonQuery) {
-        queryParts.push(`addon_ids=${encodeURIComponent(addonQuery)}`)
-    }
-    uni.navigateTo({
-        url: `/packages/pages/order_confirm/order_confirm?${queryParts.join('&')}`
-    })
 }
 
 // 标签页配置
@@ -1522,21 +841,6 @@ watch(currentTab, (newTab) => {
         if (!reviewsInitialized.value) {
             loadReviews(true)
         }
-    }
-})
-
-watch(showBookingPopup, (visible) => {
-    if (!visible) {
-        pendingDatePickerAfterRegion.value = false
-        pickerSource.value = ''
-    }
-})
-
-watch(showBookingGuardPopup, (visible) => {
-    if (!visible) {
-        pendingDatePickerAfterRegion.value = false
-        pickerSource.value = ''
-        syncBookingGuardDraft()
     }
 })
 
@@ -1713,87 +1017,8 @@ const handleShareFallback = () => {
     })
 }
 
-const syncBookingGuardDraft = () => {
-    Object.assign(bookingGuardDraft, normalizeServiceRegion(selectedRegion.value), {
-        date: presetDate.value
-    })
-}
-
-const openBookingGuardPopup = () => {
-    if (showBookingGuardPopup.value) {
-        return
-    }
-    syncBookingGuardDraft()
-    pendingDatePickerAfterRegion.value = false
-    pickerSource.value = ''
-    showBookingGuardPopup.value = true
-}
-
-const closeBookingGuardPopup = () => {
-    showBookingGuardPopup.value = false
-}
-
-const handleBookingGuardRegionEdit = () => {
-    pickerSource.value = 'guard'
-    pendingDatePickerAfterRegion.value = false
-    openRegionPicker()
-}
-
-const handleBookingGuardDateEdit = () => {
-    pickerSource.value = 'guard'
-    if (!hasBookingGuardSelectedRegion.value) {
-        pendingDatePickerAfterRegion.value = true
-        uni.showToast({ title: '请先选择服务地区', icon: 'none' })
-        openRegionPicker()
-        return
-    }
-
-    pendingDatePickerAfterRegion.value = false
-    openDatePicker()
-}
-
-const handleBookingGuardConfirm = async () => {
-    if (!hasBookingGuardSelectedRegion.value) {
-        uni.showToast({ title: '请选择服务地区', icon: 'none' })
-        return
-    }
-
-    const nextDate = normalizeSelectedDateText(bookingGuardDraft.date)
-    if (!nextDate) {
-        uni.showToast({ title: '请选择预约日期', icon: 'none' })
-        return
-    }
-
-    selectedRegion.value = normalizeServiceRegion(bookingGuardDraft)
-    presetDate.value = nextDate
-    saveServiceRegionSelection(selectedRegion.value)
-    showBookingGuardPopup.value = false
-    await getDetail()
-}
-
-const getPickerRegionValue = () => {
-    if (pickerSource.value === 'guard') {
-        return bookingGuardDraft
-    }
-    return selectedRegion.value
-}
-
-const getPickerDateValue = () => {
-    if (pickerSource.value === 'guard') {
-        return bookingGuardDraft.date
-    }
-    return presetDate.value
-}
-
-const hasRegionForPickerSource = () => {
-    if (pickerSource.value === 'guard') {
-        return hasBookingGuardSelectedRegion.value
-    }
-    return hasSelectedRegion.value
-}
-
 const syncTempRegion = (value?: Record<string, any>) => {
-    const region = normalizeServiceRegion(value || getPickerRegionValue())
+    const region = normalizeServiceRegion(value || selectedRegion.value)
     tempRegion.value = region
     if (!tempRegion.value.province_code && regionTree.value.length) {
         handleProvinceSelect(regionTree.value[0])
@@ -1820,7 +1045,6 @@ const hideRegionPicker = () => {
 const closeRegionPicker = () => {
     hideRegionPicker()
     pendingDatePickerAfterRegion.value = false
-    pickerSource.value = ''
 }
 
 const handleProvinceSelect = (province: any) => {
@@ -1872,43 +1096,17 @@ const confirmRegionPicker = async () => {
         return
     }
 
-    const isFromBooking = pickerSource.value === 'booking'
-    const isFromGuard = pickerSource.value === 'guard'
-    if (isFromGuard) {
-        Object.assign(bookingGuardDraft, normalizeServiceRegion(tempRegion.value))
-        hideRegionPicker()
-
-        if (pendingDatePickerAfterRegion.value) {
-            pendingDatePickerAfterRegion.value = false
-            pickerSource.value = 'guard'
-            setTimeout(() => openDatePicker(), 0)
-            return
-        }
-
-        pickerSource.value = ''
-        return
-    }
-
     selectedRegion.value = normalizeServiceRegion(tempRegion.value)
     saveServiceRegionSelection(selectedRegion.value)
     hideRegionPicker()
 
     await getDetail()
 
-    if (isFromBooking) {
-        if (pendingDatePickerAfterRegion.value) {
-            pendingDatePickerAfterRegion.value = false
-            pickerSource.value = 'booking'
-            setTimeout(() => openDatePicker(), 0)
-            return
-        }
-
-        pickerSource.value = ''
-        await fetchBookingPreview()
+    if (pendingDatePickerAfterRegion.value) {
+        pendingDatePickerAfterRegion.value = false
+        setTimeout(() => openDatePicker(), 0)
         return
     }
-
-    pickerSource.value = ''
 }
 
 const syncDatePickerValue = (value = '') => {
@@ -1926,14 +1124,11 @@ const syncDatePickerValue = (value = '') => {
 }
 
 const openDatePicker = () => {
-    if (!hasRegionForPickerSource()) {
-        if (pickerSource.value === 'booking' || pickerSource.value === 'guard') {
-            pendingDatePickerAfterRegion.value = true
-        }
+    if (!hasSelectedRegion.value) {
         openRegionPicker()
         return
     }
-    syncDatePickerValue(getPickerDateValue())
+    syncDatePickerValue(presetDate.value)
     showDatePopup.value = true
 }
 
@@ -1944,7 +1139,6 @@ const hideDatePicker = () => {
 const closeDatePicker = () => {
     hideDatePicker()
     pendingDatePickerAfterRegion.value = false
-    pickerSource.value = ''
 }
 
 const handleDatePickerChange = (event: any) => {
@@ -1955,28 +1149,12 @@ const confirmDatePicker = async () => {
     const year = datePickerYears.value[datePickerValue.value[0]]
     const month = String(datePickerMonths.value[datePickerValue.value[1]]).padStart(2, '0')
     const day = String(datePickerDays.value[datePickerValue.value[2]]).padStart(2, '0')
-    const isFromBooking = pickerSource.value === 'booking'
-    const isFromGuard = pickerSource.value === 'guard'
     const nextDate = `${year}-${month}-${day}`
-
-    if (isFromGuard) {
-        bookingGuardDraft.date = nextDate
-        hideDatePicker()
-        pickerSource.value = ''
-        return
-    }
 
     presetDate.value = nextDate
     hideDatePicker()
     await getDetail()
-
-    if (isFromBooking) {
-        pickerSource.value = ''
-        await fetchBookingPreview()
-        return
-    }
-
-    pickerSource.value = ''
+    pendingDatePickerAfterRegion.value = false
 }
 
 const buildStaffDetailQuery = (extra: Record<string, any> = {}) => {
@@ -2010,11 +1188,23 @@ const handleBook = () => {
     }
 
     if (!hasSelectedRegion.value || !presetDate.value) {
-        openBookingGuardPopup()
+        uni.showToast({ title: '请先选择服务地区与预约日期', icon: 'none' })
+        if (!hasSelectedRegion.value) {
+            handleInlineRegionEdit()
+            return
+        }
+        handleInlineDateEdit()
         return
     }
 
-    openBookingPopupWithGuard()
+    uni.navigateTo({
+        url: getStaffBookingPageUrl({
+            staff_id: staffId.value,
+            package_id: selectedPackageId.value,
+            date: presetDate.value,
+            ...selectedRegion.value
+        })
+    })
 }
 
 // 预览作品图片
@@ -2120,9 +1310,6 @@ onLoad((options) => {
     if (options?.package_id) {
         selectedPackageId.value = Number(options.package_id)
     }
-    if (options?.addon_ids) {
-        selectedAddonIds.value = parseAddonIds(options.addon_ids)
-    }
     if (options?.open_date_picker === '1') {
         openDatePickerRequested.value = true
     }
@@ -2145,16 +1332,17 @@ onShow(async () => {
     }
     // #endif
 
-    await getRegionTree()
+        await getRegionTree()
     if (staffId.value) {
         await getDetail()
         if (openBookingPopupRequested.value || openDatePickerRequested.value) {
             const shouldOpenDateEditor = openDatePickerRequested.value
             openBookingPopupRequested.value = false
             openDatePickerRequested.value = false
-            await openBookingPopupPanel()
-            if (shouldOpenDateEditor && showBookingPopup.value) {
-                setTimeout(() => handleBookingDateEdit(), 0)
+            if (shouldOpenDateEditor) {
+                setTimeout(() => handleInlineDateEdit(), 0)
+            } else {
+                setTimeout(() => handleBook(), 0)
             }
         }
     }
@@ -2334,434 +1522,7 @@ onShareTimeline(() => {
     }
 }
 
-.booking-guard-popup {
-    background: #ffffff;
-    width: 100vw;
-    max-width: 100vw;
-    border-radius: 24rpx 24rpx 0 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
 
-.booking-guard-popup__header {
-    display: grid;
-    grid-template-columns: 132rpx 1fr 132rpx;
-    align-items: center;
-    gap: 12rpx;
-    padding: 8rpx 24rpx 18rpx;
-}
-
-.booking-guard-popup__action {
-    font-size: 24rpx;
-    color: #8b95a7;
-}
-
-.booking-guard-popup__action--placeholder {
-    min-height: 24rpx;
-}
-
-.booking-guard-popup__title {
-    text-align: center;
-    font-size: 30rpx;
-    font-weight: 700;
-    color: #1e2432;
-}
-
-.booking-guard-popup__body {
-    padding: 0 20rpx 12rpx;
-}
-
-.booking-guard-popup__desc {
-    display: block;
-    margin-bottom: 16rpx;
-    font-size: 24rpx;
-    line-height: 1.7;
-    color: #667085;
-}
-
-.booking-guard-popup__fields {
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-}
-
-.booking-guard-popup__footer {
-    padding: 12rpx 20rpx;
-    padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-    border-top: 1rpx solid #eef1f5;
-    background: rgba(255, 255, 255, 0.98);
-}
-
-.booking-guard-popup__confirm {
-    width: 100%;
-    min-height: 92rpx;
-    border-radius: 999rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28rpx;
-    font-weight: 700;
-    color: #ffffff;
-    box-shadow: 0 16rpx 32rpx rgba(232, 90, 79, 0.18);
-}
-
-.booking-popup {
-    background: #ffffff;
-    width: 100vw;
-    max-width: 100vw;
-    border-radius: 24rpx 24rpx 0 0;
-    max-height: 84vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.booking-popup-handle {
-    width: 72rpx;
-    height: 8rpx;
-    border-radius: 999rpx;
-    background: #d9dee6;
-    margin: 14rpx auto 6rpx;
-    flex-shrink: 0;
-}
-
-.booking-popup-scroll {
-    flex: 1;
-    min-height: 0;
-    padding: 8rpx 16rpx 0;
-}
-
-.booking-popup-body {
-    padding-bottom: 8rpx;
-}
-
-.booking-popup-fields {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12rpx;
-}
-
-.booking-popup-field {
-    display: flex;
-    flex-direction: column;
-    gap: 10rpx;
-    min-width: 0;
-    padding: 16rpx;
-    border-radius: 16rpx;
-    background: #f7f8fa;
-    border: 1rpx solid #eceff4;
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: scale(0.995);
-    }
-}
-
-.booking-popup-field--empty {
-    border-style: dashed;
-    background: #fcfcfd;
-}
-
-.booking-popup-field__label-row {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-}
-
-.booking-popup-field__label {
-    font-size: 20rpx;
-    color: #8b95a7;
-    font-weight: 600;
-}
-
-.booking-popup-field__content {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-    min-width: 0;
-}
-
-.booking-popup-field__value {
-    flex: 1;
-    min-width: 0;
-    font-size: 26rpx;
-    line-height: 1.3;
-    font-weight: 600;
-    color: #1E2432;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.booking-popup-field__value--empty {
-    color: #98a2b3;
-    font-weight: 500;
-}
-
-.booking-popup-field__arrow {
-    flex-shrink: 0;
-}
-
-.booking-popup-status {
-    margin-top: 10rpx;
-    display: flex;
-    align-items: flex-start;
-    gap: 8rpx;
-    padding: 12rpx 14rpx;
-    border-radius: 14rpx;
-    font-size: 22rpx;
-    line-height: 1.5;
-}
-
-.booking-popup-status--warning {
-    color: #9a6b2f;
-    background: rgba(201, 155, 115, 0.12);
-    border: 1rpx solid rgba(201, 155, 115, 0.18);
-}
-
-.booking-popup-section {
-    margin-top: 14rpx;
-    padding: 18rpx 16rpx;
-    border-radius: 18rpx;
-    background: #ffffff;
-    border: 1rpx solid #edf0f3;
-}
-
-.booking-popup-section__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16rpx;
-    margin-bottom: 14rpx;
-}
-
-.booking-popup-section__title {
-    font-size: 26rpx;
-    font-weight: 700;
-    color: #1E2432;
-}
-
-.booking-popup-section__hint {
-    font-size: 21rpx;
-    color: #98a2b3;
-}
-
-.booking-popup-package-list,
-.booking-addon-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10rpx;
-}
-
-.booking-popup-package,
-.booking-addon-card {
-    display: flex;
-    align-items: center;
-    gap: 14rpx;
-    padding: 16rpx;
-    border-radius: 16rpx;
-    border: 1rpx solid #eceff4;
-    background: #fbfbfc;
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: scale(0.996);
-    }
-}
-
-.booking-popup-package--active,
-.booking-addon-card--active {
-    background: #fff8f2;
-}
-
-.booking-popup-package__main,
-.booking-addon-card__main {
-    flex: 1;
-    min-width: 0;
-}
-
-.booking-popup-package__title,
-.booking-addon-card__title {
-    flex: 1;
-    min-width: 0;
-    font-size: 25rpx;
-    font-weight: 600;
-    color: #1E2432;
-    line-height: 1.4;
-}
-
-.booking-popup-package__title-group {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8rpx;
-    flex: 1;
-    min-width: 0;
-}
-
-.booking-popup-package__tag {
-    padding: 2rpx 10rpx;
-    border-radius: 999rpx;
-    font-size: 18rpx;
-    font-weight: 600;
-}
-
-.booking-popup-package__tag--recommend {
-    color: #e67a3c;
-    background: rgba(230, 122, 60, 0.1);
-    border: 1rpx solid rgba(230, 122, 60, 0.16);
-}
-
-.booking-popup-package__side,
-.booking-addon-card__side {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 14rpx;
-}
-
-.booking-popup-package__radio {
-    width: 30rpx;
-    height: 30rpx;
-    border-radius: 50%;
-    border: 2rpx solid #cfd6df;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    background: #ffffff;
-}
-
-.booking-popup-package__desc,
-.booking-addon-card__desc {
-    display: block;
-    margin-top: 6rpx;
-    font-size: 22rpx;
-    line-height: 1.5;
-    color: #8b95a7;
-}
-
-.booking-popup-package__price,
-.booking-addon-card__price {
-    min-width: 120rpx;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4rpx;
-    text-align: right;
-}
-
-.booking-popup-package__price-original,
-.booking-addon-card__price-original {
-    font-size: 20rpx;
-    color: #b0b8c4;
-    text-decoration: line-through;
-}
-
-.booking-popup-package__price-current,
-.booking-addon-card__price-current {
-    font-size: 26rpx;
-    font-weight: 700;
-    color: #d85c61;
-}
-
-.booking-addon-card__check {
-    width: 30rpx;
-    height: 30rpx;
-    border-radius: 50%;
-    border: 2rpx solid #cfd6df;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    background: #ffffff;
-}
-
-.booking-popup-loading,
-.booking-popup-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10rpx;
-    padding: 34rpx 20rpx;
-    border-radius: 16rpx;
-    background: #f8fafc;
-    border: 1rpx dashed #d7dde6;
-}
-
-.booking-popup-loading__text,
-.booking-popup-empty__text {
-    font-size: 22rpx;
-    color: #98a2b3;
-}
-
-.booking-popup-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14rpx;
-    padding: 16rpx 18rpx;
-    padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-    border-top: 1rpx solid #eef1f5;
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 -6rpx 18rpx rgba(15, 23, 42, 0.05);
-}
-
-.booking-popup-footer__price {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
-}
-
-.booking-popup-footer__label {
-    font-size: 20rpx;
-    color: #667085;
-}
-
-.booking-popup-footer__amount {
-    display: flex;
-    align-items: baseline;
-    gap: 4rpx;
-}
-
-.booking-popup-footer__symbol,
-.booking-popup-footer__value {
-    color: #d85c61;
-    font-weight: 700;
-}
-
-.booking-popup-footer__symbol {
-    font-size: 28rpx;
-}
-
-.booking-popup-footer__value {
-    font-size: 36rpx;
-}
-
-.booking-popup-footer__detail {
-    font-size: 20rpx;
-    color: #98a2b3;
-    line-height: 1.5;
-}
-
-.booking-popup-footer__action {
-    min-width: 236rpx;
-    padding: 20rpx 24rpx;
-    border-radius: 999rpx;
-    text-align: center;
-    font-size: 26rpx;
-    font-weight: 600;
-    color: #ffffff;
-    background: #cbd5e1;
-}
-
-.booking-popup-footer__action--disabled {
-    opacity: 0.72;
-}
 </style>
 
 <style lang="scss" scoped>
@@ -2957,6 +1718,59 @@ onShareTimeline(() => {
 .info-card__price-negotiable {
     font-size: 28rpx;
     font-weight: 700;
+    color: #1e2432;
+}
+
+.booking-brief-card {
+    margin-top: 22rpx;
+    padding: 26rpx;
+    border-radius: 28rpx;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 244, 0.96));
+    border: 1rpx solid #efe6e1;
+    box-shadow: 0 18rpx 34rpx rgba(214, 185, 167, 0.12);
+}
+
+.booking-brief-card__title {
+    display: block;
+    font-size: 30rpx;
+    font-weight: 700;
+    color: #1e2432;
+}
+
+.booking-brief-card__desc {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 23rpx;
+    line-height: 1.6;
+    color: #7f7b78;
+}
+
+.booking-brief-card__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16rpx;
+    margin-top: 20rpx;
+}
+
+.booking-brief-card__item {
+    padding: 20rpx;
+    border-radius: 22rpx;
+    background: #ffffff;
+    border: 1rpx solid #efe6e1;
+}
+
+.booking-brief-card__label {
+    display: block;
+    font-size: 22rpx;
+    color: #8e8985;
+}
+
+.booking-brief-card__value {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 28rpx;
+    font-weight: 600;
+    line-height: 1.5;
     color: #1e2432;
 }
 

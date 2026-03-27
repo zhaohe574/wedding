@@ -46,3 +46,6 @@
 ## other
 - 完整的项目安装数据库为server/sql/2.0.0.20260201/update.sql
 - 分步实施的数据库目录为server/sql/wedding ，此目录下的sql文件只为了在本地测试时使用。
+- 数据库相关调整默认直接修改server/sql/2.0.0.20260201/update.sql中的建表语句、索引定义与初始化数据。
+- 未经彦祖明确要求，不新增server/sql/wedding下的数据库变更脚本；需要改库时优先改主安装SQL，而不是补迁移脚本。
+- 若彦祖明确要求用于本地数据库验证，可同步在server/sql/wedding下补充对应迁移脚本，并保持与主安装SQL一致。

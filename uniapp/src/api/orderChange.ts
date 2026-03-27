@@ -27,11 +27,6 @@ export function applyAddItem(params: any) {
     return request.post({ url: '/orderChange/applyAddItem', params })
 }
 
-// 申请附加服务变更
-export function applyAddonChange(params: any) {
-    return request.post({ url: '/orderChange/applyAddonChange', params })
-}
-
 // 取消变更
 export function cancelChange(params: any) {
     return request.post({ url: '/orderChange/cancel', params })
