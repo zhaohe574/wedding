@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            :title="pageTitle"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar :title="pageTitle" />
 
     <view class="page-container">
         <!-- 类型切换 Tab -->
@@ -574,7 +569,7 @@ onLoad(async (options: any) => {
     width: 100%;
     font-size: 30rpx;
     line-height: 1.7;
-    color: #1F2937;
+    color: #1E2432;
 }
 
 .content-footer {
@@ -607,7 +602,7 @@ onLoad(async (options: any) => {
 .card-title {
     font-size: 28rpx;
     font-weight: 700;
-    color: #1F2937;
+    color: #1E2432;
 }
 
 .card-hint {
@@ -844,7 +839,7 @@ onLoad(async (options: any) => {
     border: 2rpx solid;
     border-radius: 24rpx;
     font-size: 24rpx;
-    color: #1F2937;
+    color: #1E2432;
 }
 
 /* 设置区域 */

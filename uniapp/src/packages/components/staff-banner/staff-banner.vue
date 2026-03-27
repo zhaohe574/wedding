@@ -98,6 +98,19 @@
                 <view class="progress-bar" :style="{ width: progressWidth }"></view>
             </view>
 
+            <!-- 长条形指示器 -->
+            <view
+                v-if="showCapsuleIndicator"
+                class="capsule-indicator"
+            >
+                <view
+                    v-for="(_, index) in bannerList"
+                    :key="`capsule-${index}`"
+                    class="capsule-indicator__item"
+                    :class="{ 'capsule-indicator__item--active': currentIndex === index }"
+                ></view>
+            </view>
+
             <!-- 小图模式：底部渐变遮罩（仅视觉，不拦截点击） -->
             <view
                 v-if="config.banner_mode === 1 && !isExpanded && bannerList.length"
@@ -144,7 +157,7 @@ interface BannerConfig {
     banner_mode: number // 1=小图 2=大图
     banner_small_height: number
     banner_large_height: number
-    banner_indicator_style: number // 0=无 1=圆点 2=数字 3=进度条
+    banner_indicator_style: number // 0=无 1=圆点 2=数字 3=进度条 4=长条形
     banner_autoplay: number
     banner_interval: number
 }
@@ -194,6 +207,10 @@ const containerStyle = computed(() => {
 // 是否显示指示器
 const showIndicator = computed(() => {
     return props.config.banner_indicator_style === 1 && props.bannerList.length > 1
+})
+
+const showCapsuleIndicator = computed(() => {
+    return props.config.banner_indicator_style === 4 && props.bannerList.length > 1
 })
 
 // 指示器颜色
@@ -377,6 +394,30 @@ const handleVideoPause = () => {
     height: 100%;
     background-color: #ffffff;
     transition: width 0.3s ease;
+}
+
+.capsule-indicator {
+    position: absolute;
+    left: 50%;
+    bottom: 24rpx;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    z-index: 12;
+}
+
+.capsule-indicator__item {
+    width: 20rpx;
+    height: 6rpx;
+    border-radius: 999rpx;
+    background-color: rgba(255, 255, 255, 0.36);
+    transition: width 0.25s ease, background-color 0.25s ease;
+}
+
+.capsule-indicator__item--active {
+    width: 44rpx;
+    background-color: rgba(255, 255, 255, 0.96);
 }
 
 /* 小图模式：底部渐变遮罩（仅视觉层） */

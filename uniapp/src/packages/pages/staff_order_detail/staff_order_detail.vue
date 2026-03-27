@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            title="订单详情"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="订单详情" />
 
     <view class="page-container" v-if="order">
         <!-- 订单状态卡片 -->
@@ -211,7 +206,7 @@ const statusConfig: Record<string, { text: string; color: string; icon: string }
     pending_confirm: { text: '待确认', color: '#FF9900', icon: 'clock' },
     pending_pay: { text: '待支付', color: '#F97316', icon: 'money' },
     paid: { text: '已支付', color: '#19BE6B', icon: 'check-circle' },
-    in_service: { text: '服务中', color: '#7C3AED', icon: 'star' },
+    in_service: { text: '服务中', color: '#E85A4F', icon: 'star' },
     completed: { text: '已完成', color: '#19BE6B', icon: 'check-circle' },
     reviewed: { text: '已评价', color: '#19BE6B', icon: 'like' },
     cancelled: { text: '已取消', color: '#999999', icon: 'close-circle' },

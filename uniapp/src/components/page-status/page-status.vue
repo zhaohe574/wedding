@@ -50,8 +50,8 @@ const props = defineProps({
     justify-content: center;
     align-items: center;
     background:
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.08) 0, transparent 30%),
-        linear-gradient(180deg, var(--cinema-page-bg, #0b0d12) 0%, var(--cinema-page-bg-soft, #141922) 100%);
+        radial-gradient(circle at top right, rgba(232, 90, 79, 0.08) 0, transparent 30%),
+        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, var(--wm-color-bg-soft, #fff7f4) 100%);
     &--fixed {
         position: fixed;
         top: 0;

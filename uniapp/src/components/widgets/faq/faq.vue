@@ -111,7 +111,7 @@ const props = defineProps({
 })
 
 const themeStore = useThemeStore()
-const primaryColor = computed(() => themeStore.primaryColor || '#7C3AED')
+const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
 
 // 主题内联样式（兼容小程序，不使用CSS变量）
 const $theme = {

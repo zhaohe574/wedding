@@ -159,15 +159,15 @@ const emit = defineEmits<{
 
 // 状态配置（使用设计规范中的状态色）
 const statusConfig = {
-    pending_confirm: { text: '待确认', color: '#F59E0B', bgColor: 'rgba(245, 158, 11, 0.12)' },
-    pending_pay: { text: '待支付', color: '#F97316', bgColor: 'rgba(249, 115, 22, 0.12)' },
-    paid: { text: '已支付', color: '#19BE6B', bgColor: 'rgba(25, 190, 107, 0.12)' },
-    in_service: { text: '服务中', color: '#3B82F6', bgColor: 'rgba(59, 130, 246, 0.12)' },
-    completed: { text: '已完成', color: '#16A34A', bgColor: 'rgba(22, 163, 74, 0.12)' },
-    reviewed: { text: '已评价', color: '#10B981', bgColor: 'rgba(16, 185, 129, 0.12)' },
-    cancelled: { text: '已取消', color: '#9CA3AF', bgColor: 'rgba(156, 163, 175, 0.12)' },
-    paused: { text: '已暂停', color: '#F59E0B', bgColor: 'rgba(245, 158, 11, 0.12)' },
-    refunded: { text: '已退款', color: '#EF4444', bgColor: 'rgba(239, 68, 68, 0.12)' }
+    pending_confirm: { text: '待确认', color: '#C98524', bgColor: 'rgba(201, 133, 36, 0.12)' },
+    pending_pay: { text: '待支付', color: '#E85A4F', bgColor: 'rgba(232, 90, 79, 0.12)' },
+    paid: { text: '已支付', color: '#2F7D58', bgColor: 'rgba(47, 125, 88, 0.12)' },
+    in_service: { text: '服务中', color: '#607086', bgColor: 'rgba(96, 112, 134, 0.12)' },
+    completed: { text: '已完成', color: '#2F7D58', bgColor: 'rgba(47, 125, 88, 0.12)' },
+    reviewed: { text: '已评价', color: '#2F7D58', bgColor: 'rgba(47, 125, 88, 0.12)' },
+    cancelled: { text: '已取消', color: '#B4ACA8', bgColor: 'rgba(180, 172, 168, 0.14)' },
+    paused: { text: '已暂停', color: '#C98524', bgColor: 'rgba(201, 133, 36, 0.12)' },
+    refunded: { text: '已退款', color: '#B44A3A', bgColor: 'rgba(180, 74, 58, 0.12)' }
 }
 
 const staffList = computed(() => {
@@ -249,8 +249,8 @@ const getActionButtonStyle = (type: string) => {
         }
     }
     return {
-        background: 'rgba(255,255,255,0.78)',
-        borderColor: 'var(--cinema-border, rgba(198, 168, 106, 0.24))'
+        background: 'rgba(255,255,255,0.84)',
+        borderColor: 'var(--wm-color-border, #EFE6E1)'
     }
 }
 
@@ -262,7 +262,7 @@ const getActionTextStyle = (type: string) => {
         }
     }
     return {
-        color: 'var(--cinema-text-primary, #151a23)'
+        color: 'var(--wm-text-primary, #1E2432)'
     }
 }
 
@@ -289,18 +289,17 @@ export default {
 <style lang="scss" scoped>
 .order-card {
     position: relative;
-    background:
-        linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, rgba(246, 242, 234, 0.98) 100%);
-    border-radius: 28rpx;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 247, 244, 0.96) 100%);
+    border-radius: 26rpx;
     padding: 24rpx;
-    border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
-    box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
-    transition: transform var(--cinema-motion-base, 220ms) ease,
-        box-shadow var(--cinema-motion-base, 220ms) ease;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+    transition: transform var(--wm-motion-base, 220ms) ease,
+        box-shadow var(--wm-motion-base, 220ms) ease;
     overflow: hidden;
 
     &:active {
-        box-shadow: var(--cinema-shadow-medium, 0 20rpx 52rpx rgba(8, 10, 16, 0.12));
+        box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
         transform: translateY(-2rpx) scale(0.995);
     }
 
@@ -343,18 +342,18 @@ export default {
         font-weight: 600;
         letter-spacing: 0.16em;
         text-transform: uppercase;
-        color: var(--cinema-primary, #c6a86a);
+        color: var(--wm-color-secondary, #c99b73);
     }
 
     &__order-sn {
         font-size: 30rpx;
         font-weight: 700;
-        color: var(--cinema-text-primary, #151a23);
+        color: var(--wm-text-primary, #1e2432);
     }
 
     &__order-time {
         font-size: 24rpx;
-        color: var(--cinema-text-secondary, #5d6472);
+        color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__main {
@@ -369,8 +368,8 @@ export default {
         align-items: center;
         gap: 16rpx;
         padding: 18rpx;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(247, 243, 234, 0.96) 100%);
-        border: 1rpx solid rgba(255, 255, 255, 0.72);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 247, 244, 0.98) 100%);
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
         border-radius: 20rpx;
     }
 
@@ -380,7 +379,7 @@ export default {
         border-radius: 24rpx;
         flex-shrink: 0;
         border: 2rpx solid rgba(255, 255, 255, 0.9);
-        box-shadow: 0 8rpx 20rpx rgba(8, 10, 16, 0.12);
+        box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.16);
     }
 
     &__staff-info {
@@ -394,7 +393,7 @@ export default {
     &__staff-name {
         font-size: 28rpx;
         font-weight: 600;
-        color: var(--cinema-text-primary, #151a23);
+        color: var(--wm-text-primary, #1e2432);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -402,7 +401,7 @@ export default {
 
     &__package-name {
         font-size: 24rpx;
-        color: var(--cinema-text-secondary, #5d6472);
+        color: var(--wm-text-secondary, #7f7b78);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -445,7 +444,7 @@ export default {
 
     &__info-label {
         font-size: 24rpx;
-        color: var(--cinema-text-secondary, #5d6472);
+        color: var(--wm-text-secondary, #7f7b78);
         margin-bottom: 6rpx;
     }
 
@@ -477,7 +476,7 @@ export default {
     &__schedule-date-text {
         font-size: 26rpx;
         font-weight: 600;
-        color: var(--cinema-text-primary, #151a23);
+        color: var(--wm-text-primary, #1e2432);
     }
 
     &__schedule-slots {
@@ -513,7 +512,7 @@ export default {
     &__location-text {
         flex: 1;
         font-size: 26rpx;
-        color: var(--cinema-text-secondary, #5d6472);
+        color: var(--wm-text-secondary, #7f7b78);
         line-height: 1.6;
     }
 
@@ -522,7 +521,7 @@ export default {
         justify-content: space-between;
         align-items: flex-end;
         padding: 18rpx 0 0;
-        border-top: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+        border-top: 1rpx solid var(--wm-color-border, #efe6e1);
         margin-bottom: 18rpx;
     }
 
@@ -540,18 +539,18 @@ export default {
 
     &__price-label {
         font-size: 24rpx;
-        color: var(--cinema-text-secondary, #5d6472);
+        color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__price-original {
         font-size: 24rpx;
-        color: var(--cinema-text-secondary, #5d6472);
+        color: var(--wm-text-secondary, #7f7b78);
         text-decoration: line-through;
     }
 
     &__price-discount {
         font-size: 24rpx;
-        color: #ff9900;
+        color: var(--wm-color-secondary, #c99b73);
         font-weight: 600;
     }
 
@@ -564,7 +563,7 @@ export default {
 
     &__price-label-total {
         font-size: 24rpx;
-        color: var(--cinema-text-secondary, #5d6472);
+        color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__price-total-wrapper {
@@ -600,12 +599,12 @@ export default {
         padding: 0 28rpx;
         box-sizing: border-box;
         border-radius: 32rpx;
-        border: 2rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+        border: 2rpx solid var(--wm-color-border, #efe6e1);
         transition: all 0.2s ease;
         flex-shrink: 0;
 
         &--primary {
-            box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
+            box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
             border: none;
         }
 

@@ -1,5 +1,12 @@
 <template>
-    <view class="base-input" :class="{ 'base-input--focused': isFocused }">
+    <view
+        class="base-input"
+        :class="[
+            `base-input--${variant}`,
+            `base-input--${state}`,
+            { 'base-input--focused': isFocused }
+        ]"
+    >
         <tn-input
             v-model="inputValue"
             :placeholder="placeholder"
@@ -7,7 +14,7 @@
             :type="type"
             :maxlength="maxlength"
             :height="88"
-            :border-radius="16"
+            :border-radius="18"
             @focus="handleFocus"
             @blur="handleBlur"
             @input="handleInput"
@@ -29,6 +36,9 @@ import { ref, watch } from 'vue'
 interface Props {
     modelValue?: string | number
     placeholder?: string
+    variant?: 'filled' | 'outlined'
+    state?: 'default' | 'error' | 'disabled'
+    inputmode?: string
     disabled?: boolean
     type?: 'text' | 'number' | 'idcard' | 'digit' | 'tel' | 'password'
     maxlength?: number
@@ -37,6 +47,9 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     modelValue: '',
     placeholder: '请输入',
+    variant: 'filled',
+    state: 'default',
+    inputmode: 'text',
     disabled: false,
     type: 'text',
     maxlength: -1
@@ -53,7 +66,6 @@ const emit = defineEmits<{
 const inputValue = ref(props.modelValue)
 const isFocused = ref(false)
 
-// 监听外部值变化
 watch(
     () => props.modelValue,
     (newVal) => {
@@ -61,25 +73,21 @@ watch(
     }
 )
 
-// 处理焦点事件
 const handleFocus = (event: Event) => {
     isFocused.value = true
     emit('focus', event)
 }
 
-// 处理失焦事件
 const handleBlur = (event: Event) => {
     isFocused.value = false
     emit('blur', event)
 }
 
-// 处理输入事件
 const handleInput = (value: string | number) => {
     emit('update:modelValue', value)
     emit('input', value)
 }
 
-// 处理变化事件
 const handleChange = (value: string | number) => {
     emit('change', value)
 }
@@ -96,32 +104,51 @@ export default {
 
 <style lang="scss" scoped>
 .base-input {
-    transition: all var(--cinema-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 
     :deep(.tn-input) {
-        height: 88rpx;
+        min-height: 88rpx;
         padding: 0 24rpx;
-        background: var(--cinema-surface-muted, #f1ebdf);
-        border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
-        border-radius: var(--cinema-radius-sm, 18rpx);
+        border-radius: var(--wm-radius-input, 18rpx);
         font-size: 28rpx;
-        color: var(--cinema-text-primary, #151a23);
-        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
-        transition: all var(--cinema-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
+        color: var(--wm-text-primary, #1e2432);
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        transition: all var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 
         &::placeholder {
-            color: var(--cinema-text-secondary, #5d6472);
+            color: var(--wm-text-tertiary, #b4aca8);
+        }
+    }
+
+    &--filled {
+        :deep(.tn-input) {
+            background: var(--wm-color-bg-soft, #fff7f4);
+        }
+    }
+
+    &--outlined {
+        :deep(.tn-input) {
+            background: #ffffff;
         }
     }
 
     &--focused {
         :deep(.tn-input) {
-            background: var(--cinema-surface-elevated, #fffdf8);
-            border-color: var(--cinema-primary-border, rgba(124, 58, 237, 0.24));
-            box-shadow:
-                0 0 0 6rpx var(--cinema-primary-ring, rgba(124, 58, 237, 0.12)),
-                var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
+            background: #ffffff;
+            border-color: var(--wm-color-border-strong, #f4c7bf);
+            box-shadow: 0 0 0 6rpx rgba(232, 90, 79, 0.12);
         }
+    }
+
+    &--error {
+        :deep(.tn-input) {
+            border-color: rgba(180, 74, 58, 0.3);
+            box-shadow: 0 0 0 4rpx rgba(180, 74, 58, 0.08);
+        }
+    }
+
+    &--disabled {
+        opacity: 0.64;
     }
 }
 </style>

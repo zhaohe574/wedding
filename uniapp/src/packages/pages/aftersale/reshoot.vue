@@ -1,4 +1,5 @@
 <template>
+    <BaseNavbar title="补拍申请" />
     <view class="reshoot-page">
         <z-paging ref="paging" v-model="dataList" @query="queryList">
             <!-- 状态筛选 -->

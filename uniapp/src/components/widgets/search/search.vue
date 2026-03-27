@@ -129,8 +129,8 @@ const metaData = computed(() => {
 })
 
 const navbarTitleColor = computed(() => {
-    if (props.percent > 0.5) return '#111827'
-    return Number(metaData.value.text_color) === 1 ? '#FFFFFF' : '#111827'
+    if (props.percent > 0.5) return '#1E2432'
+    return Number(metaData.value.text_color) === 1 ? '#FFFFFF' : '#1E2432'
 })
 
 const navbarWrapperStyle = computed(() => ({

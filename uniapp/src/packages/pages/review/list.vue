@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            title="我的评价"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="我的评价" />
     <view class="my-reviews-page">
         <!-- 标签页 -->
         <view class="tabs">
@@ -131,16 +126,16 @@ const $theme = {
     pageStyle: computed(() => themeStore.pageStyle),
     navColor: computed(() => themeStore.navColor),
     navBgColor: computed(() => themeStore.navBgColor),
-    primaryColor: computed(() => themeStore.primaryColor || '#7C3AED'),
+    primaryColor: computed(() => themeStore.primaryColor || '#E85A4F'),
     activeTab: computed<CSSProperties>(() => ({
-        color: themeStore.primaryColor || '#7C3AED',
+        color: themeStore.primaryColor || '#E85A4F',
         fontWeight: 700
     })),
     tabIndicator: computed(() => ({
-        background: themeStore.primaryColor || '#7C3AED'
+        background: themeStore.primaryColor || '#E85A4F'
     })),
     btnReview: computed(() => ({
-        background: themeStore.primaryColor || '#7C3AED'
+        background: themeStore.primaryColor || '#E85A4F'
     }))
 }
 

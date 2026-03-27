@@ -53,8 +53,8 @@ const showList = computed(() => {
     return props.content.data?.filter((item: any) => item.is_show == '1') || []
 })
 
-const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#7C3AED', 0.16))
-const indicatorActiveColor = computed(() => themeStore.primaryColor || '#7C3AED')
+const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#E85A4F', 0.16))
+const indicatorActiveColor = computed(() => themeStore.primaryColor || '#E85A4F')
 </script>
 
 <style scoped lang="scss">

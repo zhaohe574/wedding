@@ -1,26 +1,26 @@
-$dynamic-bg: #fcfbf9;
-$dynamic-surface: rgba(255, 255, 255, 0.84);
-$dynamic-surface-strong: rgba(255, 255, 255, 0.92);
+$dynamic-bg: var(--wm-color-bg-page, #fcfbf9);
+$dynamic-surface: var(--wm-color-bg-card, rgba(255, 255, 255, 0.88));
+$dynamic-surface-strong: rgba(255, 255, 255, 0.94);
 $dynamic-surface-solid: #ffffff;
-$dynamic-border: #efe6e1;
-$dynamic-border-strong: #e8ded8;
+$dynamic-border: var(--wm-color-border, #efe6e1);
+$dynamic-border-strong: var(--wm-color-border-strong, #f4c7bf);
 $dynamic-divider: #f3ebe6;
-$dynamic-soft: #f7f1ed;
-$dynamic-accent: #e85a4f;
-$dynamic-accent-strong: #d84d43;
-$dynamic-accent-soft: #fff1ee;
+$dynamic-soft: var(--wm-color-bg-soft, #fff7f4);
+$dynamic-accent: var(--wm-color-primary, #e85a4f);
+$dynamic-accent-strong: var(--wm-color-primary-strong, #d84d43);
+$dynamic-accent-soft: var(--wm-color-primary-soft, #fff1ee);
 $dynamic-accent-softer: rgba(232, 90, 79, 0.1);
-$dynamic-text: #1e2432;
+$dynamic-text: var(--wm-text-primary, #1e2432);
 $dynamic-text-secondary: #5f534b;
 $dynamic-text-muted: #978b83;
-$dynamic-text-placeholder: #b5aba5;
-$dynamic-shadow-soft: 0 14rpx 32rpx rgba(214, 185, 167, 0.16);
-$dynamic-shadow-card: 0 18rpx 36rpx rgba(214, 185, 167, 0.2);
+$dynamic-text-placeholder: var(--wm-text-tertiary, #b4aca8);
+$dynamic-shadow-soft: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+$dynamic-shadow-card: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
 $dynamic-shadow-accent: 0 14rpx 30rpx rgba(232, 90, 79, 0.2);
-$dynamic-radius-page: 36rpx;
+$dynamic-radius-page: var(--wm-radius-shell, 36rpx);
 $dynamic-radius-card: 26rpx;
 $dynamic-radius-media: 22rpx;
-$dynamic-radius-pill: 999rpx;
+$dynamic-radius-pill: var(--wm-radius-pill, 999rpx);
 
 @mixin dynamic-glass-card($padding: 24rpx, $radius: $dynamic-radius-card) {
     padding: $padding;
@@ -29,6 +29,7 @@ $dynamic-radius-pill: 999rpx;
     background: $dynamic-surface;
     box-shadow: $dynamic-shadow-soft;
     backdrop-filter: blur(18rpx);
+    -webkit-backdrop-filter: blur(18rpx);
 }
 
 @mixin dynamic-pill($bg: $dynamic-surface-strong, $color: $dynamic-text-secondary) {

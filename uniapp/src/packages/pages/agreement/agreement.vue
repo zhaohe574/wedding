@@ -1,4 +1,5 @@
 <template>
+    <BaseNavbar :title="pageTitle" />
     <view class="p-[30rpx]">
         <u-parse :html="agreementContent"></u-parse>
     </view>
@@ -9,21 +10,20 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getPolicy } from '@/api/app'
 
-let agreementType = ref('') // 协议类型
+const agreementType = ref('') // 协议类型
+const pageTitle = ref('协议') // 页面标题
 const agreementContent = ref('') // 协议内容
 
-const getData = async (type) => {
+const getData = async (type: string) => {
     const res = await getPolicy({ type })
     agreementContent.value = res.content
-    uni.setNavigationBarTitle({
-        title: String(res.title)
-    })
+    pageTitle.value = String(res.title || '协议')
 }
 
 onLoad((options: any) => {
     if (options.type) {
-        agreementType = options.type
-        getData(agreementType)
+        agreementType.value = String(options.type)
+        getData(agreementType.value)
     }
 })
 </script>

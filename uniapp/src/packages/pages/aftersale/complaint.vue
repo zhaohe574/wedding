@@ -1,4 +1,5 @@
 <template>
+    <BaseNavbar title="我的投诉" />
     <view class="complaint-page">
         <z-paging ref="paging" v-model="dataList" @query="queryList">
             <!-- 状态筛选 -->

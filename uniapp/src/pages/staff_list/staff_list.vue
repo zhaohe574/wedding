@@ -1,772 +1,184 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar
-            title="服务人员"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-        <!-- #endif -->
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="人员列表" />
 
     <view class="staff-list-page page-with-tabbar-safe-bottom">
-        <!-- 人员列表 -->
+        <view class="result-summary">
+            <view class="result-summary__head">
+                <text class="result-summary__eyebrow">当前筛选</text>
+                <text class="result-summary__hint">结果已按所选档期与服务条件匹配</text>
+            </view>
+
+            <view class="result-summary__grid">
+                <view class="result-summary__item result-summary__item--date">
+                    <text class="result-summary__label">预约日期</text>
+                    <text class="result-summary__value">{{ selectedDate }}</text>
+                </view>
+                <view class="result-summary__item">
+                    <text class="result-summary__label">服务地区</text>
+                    <text class="result-summary__value">{{ selectedRegionText }}</text>
+                </view>
+                <view class="result-summary__item">
+                    <text class="result-summary__label">服务分类</text>
+                    <text class="result-summary__value">{{ displayCategoryName }}</text>
+                </view>
+            </view>
+        </view>
+
         <z-paging
             ref="pagingRef"
             v-model="staffList"
-            @query="queryList"
             :auto="false"
             :default-page-size="STAFF_LIST_PAGE_SIZE"
+            :fixed="false"
             :refresher-enabled="pagingRefresherEnabled"
+            use-page-scroll
+            @query="queryList"
         >
-            <!-- 顶部固定区域 -->
-            <template #top>
-                <!-- 筛选头部 -->
-                <view class="filter-header">
-                    <!-- 搜索栏 -->
-                    <view class="search-section">
-                        <view class="search-row">
-                            <view class="search-shell">
-                                <tn-search-box
-                                    v-model="keyword"
-                                    placeholder="搜索人员姓名"
-                                    shape="round"
-                                    :show-action="true"
-                                    :search-button-bg-color="$theme.primaryColor"
-                                    :bg-color="'#FFFFFF'"
-                                    border
-                                    height="56"
-                                    @search="handleSearch"
-                                    @clear="handleSearch"
-                                />
-                            </view>
-                            <view
-                                class="view-switch-btn"
-                                :style="{
-                                    backgroundColor: alphaColor($theme.primaryColor, 0.08),
-                                    borderColor: alphaColor($theme.primaryColor, 0.24),
-                                    boxShadow: `0 6rpx 16rpx ${alphaColor($theme.primaryColor, 0.12)}`
-                                }"
-                                @tap.stop="handleToggleViewMode"
-                            >
-                                <view v-if="staffViewMode === 'poster'" class="switch-icon-list">
-                                    <view class="switch-icon-list-row">
-                                        <view
-                                            class="switch-icon-list-dot"
-                                            :style="{ background: $theme.primaryColor }"
-                                        />
-                                        <view
-                                            class="switch-icon-list-line"
-                                            :style="{ background: $theme.primaryColor }"
-                                        />
-                                    </view>
-                                    <view class="switch-icon-list-row">
-                                        <view
-                                            class="switch-icon-list-dot"
-                                            :style="{ background: $theme.primaryColor }"
-                                        />
-                                        <view
-                                            class="switch-icon-list-line"
-                                            :style="{ background: $theme.primaryColor }"
-                                        />
-                                    </view>
-                                    <view class="switch-icon-list-row">
-                                        <view
-                                            class="switch-icon-list-dot"
-                                            :style="{ background: $theme.primaryColor }"
-                                        />
-                                        <view
-                                            class="switch-icon-list-line"
-                                            :style="{ background: $theme.primaryColor }"
-                                        />
-                                    </view>
-                                </view>
-                                <view v-else class="switch-icon-grid">
-                                    <view
-                                        v-for="cell in 4"
-                                        :key="cell"
-                                        class="switch-icon-grid-cell"
-                                        :style="{ borderColor: $theme.primaryColor }"
-                                    />
-                                </view>
-                            </view>
-                        </view>
-                    </view>
-
-                    <!-- 顶部横滑分类 -->
-                    <!-- #ifdef H5 -->
-                    <view
-                        class="category-scroll-wrapper category-scroll-wrapper-h5"
-                        @touchstart.stop="handleCategoryTouchStart"
-                        @touchmove.stop.prevent="handleCategoryTouchMove"
-                        @touchend.stop="handleCategoryDragEnd"
-                        @touchcancel.stop="handleCategoryDragEnd"
-                        @mousedown.prevent="handleCategoryMouseDown"
-                        @wheel.prevent="handleCategoryWheel"
-                    >
-                        <view
-                            ref="categoryScrollNativeRef"
-                            class="category-scroll category-scroll-h5-native"
-                        >
-                            <view class="category-scroll-content">
-                                <view
-                                    v-for="item in categories"
-                                    :key="item.id"
-                                    class="category-chip"
-                                    :class="{ active: currentCategoryId === item.id }"
-                                    :style="
-                                        currentCategoryId === item.id
-                                            ? {
-                                                  background: getPrimaryGradient(),
-                                                  borderColor: $theme.primaryColor,
-                                                  color: '#FFFFFF',
-                                                  boxShadow: getCategoryChipActiveShadow()
-                                              }
-                                            : {}
-                                    "
-                                    @click="handleCategoryChange(item.id)"
-                                >
-                                    {{ item.name }}
-                                </view>
-                            </view>
-                        </view>
-                    </view>
-                    <!-- #endif -->
-
-                    <!-- #ifndef H5 -->
-                    <view class="category-scroll-wrapper">
-                        <scroll-view
-                            :scroll-x="true"
-                            class="category-scroll"
-                            :show-scrollbar="false"
-                        >
-                            <view class="category-scroll-content">
-                                <view
-                                    v-for="item in categories"
-                                    :key="item.id"
-                                    class="category-chip"
-                                    :class="{ active: currentCategoryId === item.id }"
-                                    :style="
-                                        currentCategoryId === item.id
-                                            ? {
-                                                  background: getPrimaryGradient(),
-                                                  borderColor: $theme.primaryColor,
-                                                  color: '#FFFFFF',
-                                                  boxShadow: getCategoryChipActiveShadow()
-                                              }
-                                            : {}
-                                    "
-                                    @click="handleCategoryChange(item.id)"
-                                >
-                                    {{ item.name }}
-                                </view>
-                            </view>
-                        </scroll-view>
-                    </view>
-                    <!-- #endif -->
-
-                    <!-- 筛选条件栏 -->
-                    <view class="filter-bar">
-                        <!-- 地区筛选 -->
-                        <view
-                            class="filter-item"
-                            :style="hasSelectedRegion ? getFilterItemActiveStyle() : {}"
-                            @click="openRegionPicker"
-                        >
-                            <text
-                                :class="{ active: hasSelectedRegion }"
-                                :style="hasSelectedRegion ? { color: $theme.primaryColor } : {}"
-                            >
-                                {{ selectedRegionText }}
-                            </text>
-                        </view>
-
-                        <!-- 日期筛选 -->
-                        <view class="filter-item-wrapper">
-                            <view
-                                class="filter-item"
-                                :style="selectedDate ? getFilterItemActiveStyle() : {}"
-                                @click="openDatePicker"
-                            >
-                                <text
-                                    :class="{ active: selectedDate }"
-                                    :style="selectedDate ? { color: $theme.primaryColor } : {}"
-                                >
-                                    {{ dateRangeText }}
-                                </text>
-                            </view>
-                        </view>
-
-                        <!-- 标签筛选 -->
-                        <view
-                            class="filter-item"
-                            :style="selectedTagIds.length ? getFilterItemActiveStyle() : {}"
-                            @click="openTagPicker"
-                        >
-                            <text
-                                :class="{ active: selectedTagIds.length }"
-                                :style="selectedTagIds.length ? { color: $theme.primaryColor } : {}"
-                            >
-                                {{ tagFilterText }}
-                            </text>
-                        </view>
-
-                        <!-- 排序筛选 -->
-                        <view
-                            class="filter-item"
-                            :style="currentSort !== 'default' ? getFilterItemActiveStyle() : {}"
-                            @click="openSortPicker"
-                        >
-                            <text
-                                :class="{ active: currentSort !== 'default' }"
-                                :style="
-                                    currentSort !== 'default' ? { color: $theme.primaryColor } : {}
-                                "
-                            >
-                                {{ currentSortName }}
-                            </text>
-                        </view>
-                    </view>
-                </view>
-            </template>
-
-            <!-- 自定义空状态 -->
             <template #empty>
                 <view class="empty-state">
-                    <view class="empty-icon-wrap">
-                        <tn-icon name="inbox" size="156" color="#D1D5DB" />
+                    <view class="empty-state__icon">
+                        <tn-icon name="inbox" size="152" color="#D1D5DB" />
                     </view>
-                    <text class="empty-title">{{
-                        !hasSelectedRegion
-                            ? '请先选择服务地区'
-                            : selectedDate
-                              ? '暂无符合条件的服务人员'
-                              : '请先选择预约日期'
-                    }}</text>
-                    <text class="empty-subtitle">{{
-                        !hasSelectedRegion
-                            ? '请选择区县'
-                            : selectedDate
-                              ? '调整筛选后重试'
-                              : '请选择预约日期'
-                    }}</text>
+                    <text class="empty-state__title">当前筛选暂无可预约团队</text>
+                    <text class="empty-state__subtitle">
+                        返回档期查询页调整条件后，再重新筛选一批更合适的人员。
+                    </text>
                     <view
-                        class="empty-action-btn"
-                        :style="getPrimaryButtonStyle(0.26)"
-                        @click="handleEmptyAction"
+                        class="empty-state__btn"
+                        :style="getPrimaryButtonStyle(0.22)"
+                        @tap="handleEmptyAction"
                     >
-                        <text class="empty-action-text" :style="{ color: $theme.btnColor }">
-                            {{
-                                !hasSelectedRegion
-                                    ? '选择地区'
-                                    : selectedDate
-                                      ? '重置筛选'
-                                      : '选择日期'
-                            }}
+                        <text class="empty-state__btn-text" :style="{ color: $theme.btnColor }">
+                            返回重筛
                         </text>
                     </view>
                 </view>
             </template>
 
-            <!-- 人员卡片列表 -->
-            <view v-if="staffViewMode === 'poster'" class="poster-grid">
+            <view v-if="staffViewMode === 'poster'" class="poster-list">
                 <view
                     v-for="item in staffList"
                     :key="item.id"
                     class="poster-card"
-                    @click="goToDetail(item.id)"
+                    @tap="goToDetail(item.id)"
                 >
-                    <view class="poster-media">
-                        <image
-                            class="poster-image"
-                            :src="item.avatar || '/static/images/user/default_avatar.png'"
-                            mode="aspectFill"
-                        />
-                        <view class="poster-image-mask"></view>
-                        <view
-                            class="poster-category-badge"
-                            :style="{
-                                background: alphaColor('#111827', 0.72)
-                            }"
-                        >
-                            <text>{{ item.category_name }}</text>
-                        </view>
-                        <view class="poster-favorite" @click.stop="handleToggleFavorite(item)">
-                            <tn-icon
-                                :name="item.is_favorite ? 'like-fill' : 'like'"
-                                size="36"
-                                :color="item.is_favorite ? '#FF4D5A' : '#FFFFFF'"
-                            />
-                        </view>
-                        <view class="poster-overlay">
-                            <view class="poster-name-row">
-                                <view class="poster-name-group">
-                                    <text class="poster-name">{{ item.name }}</text>
-                                    <text v-if="item.is_recommend" class="poster-recommend-badge">
-                                        推荐
-                                    </text>
-                                </view>
-                                <text v-if="item.experience_years" class="poster-experience">
-                                    {{ item.experience_years }}年
-                                </text>
-                            </view>
-                            <view class="poster-meta">
-                                <view class="poster-rating">
-                                    <tn-icon name="star-fill" size="24" color="#FFD166" />
-                                    <text>{{ item.rating }}</text>
-                                </view>
-                                <text class="poster-orders">{{ item.order_count }}单</text>
-                            </view>
-                        </view>
-                    </view>
+                    <image
+                        class="poster-card__image"
+                        :src="item.avatar || '/static/images/user/default_avatar.png'"
+                        mode="aspectFill"
+                    />
 
-                    <view class="poster-body">
-                        <view v-if="item.tags && item.tags.length" class="poster-tags">
-                            <view
-                                v-for="(tag, index) in item.tags.slice(0, 2)"
-                                :key="index"
-                                class="poster-tag"
-                                :style="{
-                                    background: getTagBgColor(),
-                                    borderColor: getTagBorderColor()
-                                }"
-                            >
-                                <text :style="{ color: $theme.primaryColor }">{{ tag }}</text>
+                    <view class="poster-card__body">
+                        <view class="poster-card__head">
+                            <view class="poster-card__name-group">
+                                <text class="poster-card__name">{{ item.name }}</text>
+                                <text v-if="item.is_recommend" class="poster-card__badge">推荐</text>
+                            </view>
+                            <view class="poster-card__favorite" @tap.stop="handleToggleFavorite(item)">
+                                <tn-icon
+                                    :name="item.is_favorite ? 'like-fill' : 'like'"
+                                    size="34"
+                                    :color="item.is_favorite ? '#FF4D5A' : '#C7B9AF'"
+                                />
                             </view>
                         </view>
-                        <view v-else class="poster-tags poster-tags-empty"></view>
 
-                        <view class="poster-footer">
-                            <view class="poster-price-section">
-                                <template
-                                    v-if="
-                                        item.has_price !== false &&
-                                        item.price !== null &&
-                                        item.price !== undefined
-                                    "
-                                >
-                                    <view class="poster-price-row">
-                                        <text
-                                            class="poster-price-symbol"
-                                            :style="{ color: $theme.primaryColor }"
-                                        >
-                                            ¥
-                                        </text>
-                                        <text
-                                            class="poster-price-value"
-                                            :style="{ color: $theme.primaryColor }"
-                                        >
-                                            {{ item.price_text || item.price }}
-                                        </text>
-                                    </view>
-                                    <text class="poster-price-unit">/次</text>
-                                </template>
-                                <text v-else class="poster-price-negotiable">面议</text>
-                            </view>
-                            <view
-                                class="poster-book-btn"
-                                :style="getPrimaryButtonStyle(0.2)"
-                                @click.stop="goToDetail(item.id)"
-                            >
-                                <text :style="{ color: $theme.btnColor }">预约</text>
-                            </view>
+                        <text class="poster-card__role">
+                            {{ item.category_name || '服务人员' }}
+                            <text v-if="item.experience_years"> · {{ item.experience_years }}年经验</text>
+                        </text>
+
+                        <text class="poster-card__desc">{{ buildStaffDescription(item) }}</text>
+
+                        <view class="poster-card__meta">
+                            <text>评分 {{ item.rating || '0.0' }}</text>
+                            <text>{{ item.order_count || 0 }} 单</text>
+                            <text>{{ formatPriceText(item) }}</text>
                         </view>
                     </view>
                 </view>
             </view>
 
-            <view v-else class="staff-cards">
+            <view v-else class="compact-list">
                 <view
                     v-for="item in staffList"
                     :key="item.id"
-                    class="staff-card"
-                    @click="goToDetail(item.id)"
+                    class="compact-item"
+                    @tap="goToDetail(item.id)"
                 >
-                    <!-- 卡片头部 -->
-                    <view class="card-header">
-                        <image
-                            class="staff-avatar"
-                            :src="item.avatar || '/static/images/user/default_avatar.png'"
-                            mode="aspectFill"
-                        />
-                        <view class="staff-info">
-                            <view class="info-top">
-                                <view class="staff-name-group">
-                                    <text class="staff-name">{{ item.name }}</text>
-                                    <text v-if="item.is_recommend" class="staff-recommend-badge">
-                                        推荐
-                                    </text>
-                                </view>
-                                <view class="favorite-btn" @click.stop="handleToggleFavorite(item)">
-                                    <tn-icon
-                                        :name="item.is_favorite ? 'like-fill' : 'like'"
-                                        size="40"
-                                        :color="item.is_favorite ? '#FF2C3C' : '#CCCCCC'"
-                                    />
-                                </view>
+                    <image
+                        class="compact-item__image"
+                        :src="item.avatar || '/static/images/user/default_avatar.png'"
+                        mode="aspectFill"
+                    />
+
+                    <view class="compact-item__body">
+                        <view class="compact-item__head">
+                            <view class="compact-item__name-group">
+                                <text class="compact-item__name">{{ item.name }}</text>
+                                <text v-if="item.is_recommend" class="compact-item__badge">推荐</text>
                             </view>
-                            <view class="staff-category">
-                                <view
-                                    class="category-chip-mini"
-                                    :style="{
-                                        background: getTagBgColor(),
-                                        borderColor: getTagBorderColor()
-                                    }"
-                                >
-                                    <text :style="{ color: $theme.primaryColor }">
-                                        {{ item.category_name }}
-                                    </text>
-                                </view>
-                                <text v-if="item.experience_years" class="experience">
-                                    {{ item.experience_years }}年经验
-                                </text>
-                            </view>
-                            <view class="staff-rating">
-                                <view class="rating-stars">
-                                    <tn-icon name="star-fill" size="28" color="#FFD700" />
-                                    <text :style="{ color: $theme.ctaColor }">{{
-                                        item.rating
-                                    }}</text>
-                                </view>
-                                <view class="order-count">
-                                    <tn-icon name="shopping-bag" size="24" color="#999999" />
-                                    <text>{{ item.order_count }}单</text>
-                                </view>
+                            <view class="compact-item__favorite" @tap.stop="handleToggleFavorite(item)">
+                                <tn-icon
+                                    :name="item.is_favorite ? 'like-fill' : 'like'"
+                                    size="30"
+                                    :color="item.is_favorite ? '#FF4D5A' : '#D5CCC5'"
+                                />
                             </view>
                         </view>
-                    </view>
 
-                    <!-- 卡片内容 -->
-                    <view class="card-content">
-                        <text class="staff-profile">{{ item.profile || '暂无简介' }}</text>
+                        <text class="compact-item__line">
+                            {{ item.category_name || '服务人员' }}
+                            <text v-if="item.experience_years"> · {{ item.experience_years }}年经验</text>
+                        </text>
 
-                        <!-- 人员标签 -->
-                        <view v-if="item.tags && item.tags.length" class="staff-tags">
-                            <view
-                                v-for="(tag, index) in item.tags"
-                                :key="index"
-                                class="tag-item"
-                                :style="{
-                                    background: getTagBgColor(),
-                                    border: `1rpx solid ${getTagBorderColor()}`
-                                }"
-                            >
-                                <text class="tag-text" :style="{ color: $theme.primaryColor }">{{
-                                    tag
-                                }}</text>
-                            </view>
-                        </view>
-                    </view>
+                        <text class="compact-item__desc">{{ buildStaffDescription(item) }}</text>
 
-                    <!-- 卡片底部 -->
-                    <view class="card-footer">
-                        <view class="price-section">
-                            <text class="price-label">服务价格</text>
-                            <view class="price-amount">
-                                <template
-                                    v-if="
-                                        item.has_price !== false &&
-                                        item.price !== null &&
-                                        item.price !== undefined
-                                    "
-                                >
-                                    <text
-                                        class="price-symbol"
-                                        :style="{ color: $theme.primaryColor }"
-                                        >¥</text
-                                    >
-                                    <text
-                                        class="price-value"
-                                        :style="{ color: $theme.primaryColor }"
-                                    >
-                                        {{ item.price_text || item.price }}
-                                    </text>
-                                    <text class="price-unit">/次</text>
-                                </template>
-                                <text v-else class="price-text-negotiable">面议</text>
-                            </view>
-                        </view>
-                        <view
-                            class="book-btn"
-                            :style="getPrimaryButtonStyle(0.24)"
-                            @click.stop="goToDetail(item.id)"
-                        >
-                            <text :style="{ color: $theme.btnColor }">立即预约</text>
+                        <view class="compact-item__meta">
+                            <text>评分 {{ item.rating || '0.0' }}</text>
+                            <text>{{ item.order_count || 0 }} 单</text>
+                            <text>{{ formatPriceText(item) }}</text>
                         </view>
                     </view>
                 </view>
             </view>
         </z-paging>
 
-        <!-- 地区选择器 -->
-        <u-popup
-            v-model="showRegionPopup"
-            mode="bottom"
-            :mask="true"
-            :mask-close-able="true"
-            :safe-area-inset-bottom="true"
-            :border-radius="24"
+        <view
+            class="view-switch-btn"
+            :style="getSwitchButtonStyle()"
+            @tap.stop="handleToggleViewMode"
         >
-            <view class="picker-container region-picker-container">
-                <view class="picker-header">
-                    <text class="picker-action" @click="closeRegionPicker">取消</text>
-                    <text class="picker-title">选择服务地区</text>
-                    <text class="picker-action picker-action-primary" @click="confirmRegionPicker">
-                        确定
-                    </text>
-                </view>
-                <view class="region-picker-content">
-                    <view class="region-picker-col">
-                        <view class="region-picker-col__title">省份</view>
-                        <scroll-view scroll-y class="region-picker-scroll">
-                            <view
-                                v-for="province in regionProvinces"
-                                :key="province.province_code"
-                                class="region-picker-item"
-                                :class="{ active: tempRegion.province_code === province.province_code }"
-                                :style="
-                                    tempRegion.province_code === province.province_code
-                                        ? {
-                                              background: alphaColor($theme.primaryColor, 0.1),
-                                              color: $theme.primaryColor
-                                          }
-                                        : {}
-                                "
-                                @click="handleProvinceSelect(province)"
-                            >
-                                {{ province.province_name }}
-                            </view>
-                        </scroll-view>
-                    </view>
-                    <view class="region-picker-col">
-                        <view class="region-picker-col__title">城市</view>
-                        <scroll-view scroll-y class="region-picker-scroll">
-                            <view
-                                v-for="city in regionCities"
-                                :key="city.city_code"
-                                class="region-picker-item"
-                                :class="{ active: tempRegion.city_code === city.city_code }"
-                                :style="
-                                    tempRegion.city_code === city.city_code
-                                        ? {
-                                              background: alphaColor($theme.primaryColor, 0.1),
-                                              color: $theme.primaryColor
-                                          }
-                                        : {}
-                                "
-                                @click="handleCitySelect(city)"
-                            >
-                                {{ city.city_name }}
-                            </view>
-                        </scroll-view>
-                    </view>
-                    <view class="region-picker-col">
-                        <view class="region-picker-col__title">区县</view>
-                        <scroll-view scroll-y class="region-picker-scroll">
-                            <view
-                                v-for="district in regionDistricts"
-                                :key="district.district_code"
-                                class="region-picker-item"
-                                :class="{ active: tempRegion.district_code === district.district_code }"
-                                :style="
-                                    tempRegion.district_code === district.district_code
-                                        ? {
-                                              background: alphaColor($theme.primaryColor, 0.1),
-                                              color: $theme.primaryColor
-                                          }
-                                        : {}
-                                "
-                                @click="handleDistrictSelect(district)"
-                            >
-                                {{ district.district_name }}
-                            </view>
-                        </scroll-view>
-                    </view>
-                </view>
-                <view class="picker-footer">
-                    <view class="picker-btn" @click="resetRegionSelection">清空</view>
-                    <view
-                        class="picker-btn picker-btn-primary"
-                        :style="{
-                            background: $theme.primaryColor,
-                            boxShadow: getPrimaryShadow(0.24)
-                        }"
-                        @click="confirmRegionPicker"
-                    >
-                        确定
-                    </view>
+            <view v-if="staffViewMode === 'poster'" class="switch-icon-list">
+                <view v-for="row in 3" :key="row" class="switch-icon-list__row">
+                    <view class="switch-icon-list__dot" :style="{ background: $theme.primaryColor }" />
+                    <view class="switch-icon-list__line" :style="{ background: $theme.primaryColor }" />
                 </view>
             </view>
-        </u-popup>
-
-        <!-- 标签选择器 -->
-        <u-popup
-            v-model="showTagPopup"
-            mode="bottom"
-            :mask="true"
-            :mask-close-able="true"
-            :safe-area-inset-bottom="true"
-            :border-radius="24"
-            @close="handleTagPopupClose"
-        >
-            <view class="picker-container">
-                <view class="picker-header">
-                    <view class="picker-header-left">
-                        <view class="picker-clear" @click="resetTagSelection">重置</view>
-                        <text class="picker-title">选择标签</text>
-                    </view>
-                    <view class="picker-close" @click="closeTagPicker">
-                        <tn-icon name="close" size="32" color="#666666" />
-                    </view>
-                </view>
-                <view class="button-picker-content">
-                    <view v-if="styleTags.length" class="button-grid">
-                        <view
-                            v-for="item in styleTags"
-                            :key="item.id"
-                            class="button-item"
-                            :class="{ active: tempSelectedTagIds.includes(item.id) }"
-                            :style="
-                                tempSelectedTagIds.includes(item.id)
-                                    ? {
-                                          background: $theme.primaryColor,
-                                          color: '#FFFFFF',
-                                          boxShadow: getPrimaryShadow(0.2)
-                                      }
-                                    : {}
-                            "
-                            @click="toggleTagSelection(item.id)"
-                        >
-                            {{ item.name }}
-                        </view>
-                    </view>
-                    <view v-else class="empty-picker">当前分类暂无可选标签</view>
-                </view>
-                <view class="picker-footer">
-                    <view class="picker-btn" @click="resetTagSelection">清空</view>
-                    <view
-                        class="picker-btn picker-btn-primary"
-                        :style="{
-                            background: $theme.primaryColor,
-                            boxShadow: getPrimaryShadow(0.24)
-                        }"
-                        @click="handleTagFilterConfirm"
-                    >
-                        确定
-                    </view>
-                </view>
+            <view v-else class="switch-icon-grid">
+                <view
+                    v-for="cell in 4"
+                    :key="cell"
+                    class="switch-icon-grid__cell"
+                    :style="{ borderColor: $theme.primaryColor }"
+                />
             </view>
-        </u-popup>
-
-        <!-- 排序选择器 -->
-        <u-popup
-            v-model="showSortPopup"
-            mode="bottom"
-            :mask="true"
-            :mask-close-able="true"
-            :safe-area-inset-bottom="true"
-            :border-radius="24"
-        >
-            <view class="picker-container">
-                <view class="picker-header">
-                    <text class="picker-title">选择排序</text>
-                    <view class="picker-close" @click="closeSortPicker">
-                        <tn-icon name="close" size="32" color="#666666" />
-                    </view>
-                </view>
-                <view class="button-picker-content">
-                    <view class="button-grid">
-                        <view
-                            v-for="item in sortOptions"
-                            :key="item.value"
-                            class="button-item"
-                            :class="{ active: currentSort === item.value }"
-                            :style="
-                                currentSort === item.value
-                                    ? {
-                                          background: $theme.primaryColor,
-                                          color: '#FFFFFF',
-                                          boxShadow: getPrimaryShadow(0.2)
-                                      }
-                                    : {}
-                            "
-                            @click="handleSortChange(item.value)"
-                        >
-                            {{ item.label }}
-                        </view>
-                    </view>
-                </view>
-            </view>
-        </u-popup>
-
-        <!-- 日期选择器 -->
-        <u-popup
-            v-model="showDatePopup"
-            mode="bottom"
-            :mask="true"
-            :mask-close-able="true"
-            :safe-area-inset-bottom="true"
-            :border-radius="24"
-        >
-            <view class="picker-container">
-                <view class="picker-header">
-                    <text class="picker-action" @click="closeDatePicker">取消</text>
-                    <text class="picker-title">选择预约日期</text>
-                    <text class="picker-action picker-action-primary" @click="confirmDatePicker">
-                        确定
-                    </text>
-                </view>
-                <view class="date-picker-content">
-                    <picker-view
-                        class="date-picker-view"
-                        :value="datePickerValue"
-                        @change="handleDatePickerChange"
-                    >
-                        <picker-view-column>
-                            <view
-                                v-for="year in datePickerYears"
-                                :key="`year-${year}`"
-                                class="picker-item"
-                            >
-                                {{ year }}年
-                            </view>
-                        </picker-view-column>
-                        <picker-view-column>
-                            <view
-                                v-for="month in datePickerMonths"
-                                :key="`month-${month}`"
-                                class="picker-item"
-                            >
-                                {{ month }}月
-                            </view>
-                        </picker-view-column>
-                        <picker-view-column>
-                            <view
-                                v-for="day in datePickerDays"
-                                :key="`day-${day}`"
-                                class="picker-item"
-                            >
-                                {{ day }}日
-                            </view>
-                        </picker-view-column>
-                    </picker-view>
-                </view>
-            </view>
-        </u-popup>
+        </view>
 
         <tabbar :badge-refresh-key="tabbarRefreshKey" />
     </view>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onUnmounted, nextTick, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { onLoad, onReady, onShow } from '@dcloudio/uni-app'
 import { getStaffList, toggleStaffFavorite } from '@/api/staff'
-import { getServiceCategories, getServiceRegionTree, getStyleTags } from '@/api/service'
 import { useThemeStore } from '@/stores/theme'
 import { alphaColor } from '@/utils/color'
 import {
     buildServiceRegionQuery,
+    formatServiceRegionText,
     hasServiceRegion,
     loadServiceRegionSelection,
     normalizeServiceRegion,
@@ -776,201 +188,8 @@ import {
 
 type StaffViewMode = 'poster' | 'list'
 
-const $theme = useThemeStore()
 const STAFF_VIEW_MODE_STORAGE_KEY = 'staff_list_view_mode'
 const STAFF_LIST_PAGE_SIZE = 10
-const POPUP_REOPEN_DELAY = 280
-const tabbarRefreshKey = ref(0)
-
-const getPrimaryGradient = () =>
-    `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
-
-const getPrimaryShadow = (alpha = 0.2) => `0 8rpx 24rpx ${alphaColor($theme.primaryColor, alpha)}`
-
-const getPrimaryButtonStyle = (alpha = 0.2) => ({
-    backgroundColor: $theme.primaryColor,
-    backgroundImage: getPrimaryGradient(),
-    boxShadow: getPrimaryShadow(alpha)
-})
-
-const getCategoryChipActiveShadow = () => `0 2rpx 8rpx ${alphaColor($theme.primaryColor, 0.14)}`
-
-const getFilterItemActiveStyle = () => ({
-    background: alphaColor($theme.primaryColor, 0.1),
-    borderColor: alphaColor($theme.primaryColor, 0.32),
-    boxShadow: `0 6rpx 14rpx ${alphaColor($theme.primaryColor, 0.12)}`
-})
-
-// 获取标签背景色（主题色浅色变体）
-const getTagBgColor = () => {
-    return alphaColor($theme.primaryColor, 0.1)
-}
-
-// 获取标签边框色（主题色浅色变体）
-const getTagBorderColor = () => {
-    return alphaColor($theme.primaryColor, 0.28)
-}
-
-const isValidStaffViewMode = (value: unknown): value is StaffViewMode => {
-    return value === 'poster' || value === 'list'
-}
-
-const getInitialStaffViewMode = (): StaffViewMode => {
-    try {
-        const cachedMode = uni.getStorageSync(STAFF_VIEW_MODE_STORAGE_KEY)
-        return isValidStaffViewMode(cachedMode) ? cachedMode : 'poster'
-    } catch (error) {
-        console.error(error)
-        return 'poster'
-    }
-}
-
-const pagingRef = ref()
-const categoryScrollNativeRef = ref<any>(null)
-const keyword = ref('')
-const staffList = ref<any[]>([])
-const staffViewMode = ref<StaffViewMode>(getInitialStaffViewMode())
-const categories = ref<any[]>([])
-const currentCategoryId = ref<string | number>('')
-const styleTags = ref<any[]>([])
-const selectedTagIds = ref<number[]>([])
-const tempSelectedTagIds = ref<number[]>([])
-const currentSort = ref('default')
-
-const categoryStartX = ref(0)
-const categoryStartScrollLeft = ref(0)
-const categoryMouseDragging = ref(false)
-const categoryTouchDragging = ref(false)
-const categoryMovedDistance = ref(0)
-const categoryMoveThreshold = 6
-const showTagPopup = ref(false)
-const showSortPopup = ref(false)
-const showDatePopup = ref(false)
-const showRegionPopup = ref(false)
-const regionTree = ref<any[]>([])
-const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
-const tempRegion = ref(normalizeServiceRegion(selectedRegion.value))
-
-// 获取明天的日期（最小可选日期）
-const getTomorrowDate = () => {
-    const tomorrow = new Date()
-    tomorrow.setHours(0, 0, 0, 0)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    return tomorrow
-}
-
-const getMaxDateForPicker = () => {
-    const maxDate = getTomorrowDate()
-    maxDate.setFullYear(maxDate.getFullYear() + 5)
-    return maxDate
-}
-
-const formatDateText = (date: Date) => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-}
-
-const parseDateText = (value = '') => {
-    const [year, month, day] = value.split('-').map((item) => Number(item))
-    if (!year || !month || !day) {
-        return null
-    }
-    const date = new Date(year, month - 1, day)
-    date.setHours(0, 0, 0, 0)
-    if (Number.isNaN(date.getTime())) {
-        return null
-    }
-    return date
-}
-
-const isSelectableDate = (value = '') => {
-    const parsedDate = parseDateText(value)
-    if (!parsedDate) {
-        return false
-    }
-    const minDate = getTomorrowDate()
-    const maxDate = getMaxDateForPicker()
-    return parsedDate >= minDate && parsedDate <= maxDate
-}
-
-const normalizeSelectedDateText = (value = '') => {
-    if (!isSelectableDate(value)) {
-        return ''
-    }
-    return formatDateText(parseDateText(value) as Date)
-}
-
-const getEffectiveSelectableDate = (value = '') => {
-    const parsedDate = parseDateText(value)
-    const minDate = getTomorrowDate()
-    const maxDate = getMaxDateForPicker()
-    if (!parsedDate || parsedDate < minDate) {
-        return minDate
-    }
-    if (parsedDate > maxDate) {
-        return maxDate
-    }
-    return parsedDate
-}
-
-// 日期筛选
-const selectedDate = ref('')
-const datePickerValue = ref([0, 0, 0])
-const datePickerYears = computed(() => {
-    const minDate = getTomorrowDate()
-    const maxDate = getMaxDateForPicker()
-    const totalYears = maxDate.getFullYear() - minDate.getFullYear() + 1
-    return Array.from({ length: totalYears }, (_, index) => minDate.getFullYear() + index)
-})
-
-const getDatePickerMonthsByYear = (year: number) => {
-    const minDate = getTomorrowDate()
-    const maxDate = getMaxDateForPicker()
-    const startMonth = year === minDate.getFullYear() ? minDate.getMonth() + 1 : 1
-    const endMonth = year === maxDate.getFullYear() ? maxDate.getMonth() + 1 : 12
-    return Array.from({ length: endMonth - startMonth + 1 }, (_, index) => startMonth + index)
-}
-
-const getDatePickerDaysByYearMonth = (year: number, month: number) => {
-    const minDate = getTomorrowDate()
-    const maxDate = getMaxDateForPicker()
-    const isMinMonth = year === minDate.getFullYear() && month === minDate.getMonth() + 1
-    const isMaxMonth = year === maxDate.getFullYear() && month === maxDate.getMonth() + 1
-    const startDay = isMinMonth ? minDate.getDate() : 1
-    const endDay = isMaxMonth ? maxDate.getDate() : new Date(year, month, 0).getDate()
-    return Array.from({ length: endDay - startDay + 1 }, (_, index) => startDay + index)
-}
-
-const normalizeDatePickerValue = (value: number[]) => {
-    const yearIndex = Math.min(Math.max(value[0] ?? 0, 0), datePickerYears.value.length - 1)
-    const year = datePickerYears.value[yearIndex]
-    const months = getDatePickerMonthsByYear(year)
-    const monthIndex = Math.min(Math.max(value[1] ?? 0, 0), months.length - 1)
-    const month = months[monthIndex]
-    const days = getDatePickerDaysByYearMonth(year, month)
-    const dayIndex = Math.min(Math.max(value[2] ?? 0, 0), days.length - 1)
-    return [yearIndex, monthIndex, dayIndex]
-}
-
-const datePickerMonths = computed(() => {
-    const yearIndex = Math.min(Math.max(datePickerValue.value[0] ?? 0, 0), datePickerYears.value.length - 1)
-    const year = datePickerYears.value[yearIndex]
-    return getDatePickerMonthsByYear(year)
-})
-
-const datePickerDays = computed(() => {
-    const yearIndex = Math.min(Math.max(datePickerValue.value[0] ?? 0, 0), datePickerYears.value.length - 1)
-    const year = datePickerYears.value[yearIndex]
-    const monthIndex = Math.min(
-        Math.max(datePickerValue.value[1] ?? 0, 0),
-        Math.max(datePickerMonths.value.length - 1, 0)
-    )
-    const month = datePickerMonths.value[monthIndex]
-    return getDatePickerDaysByYearMonth(year, month)
-})
-
 const sortOptions = [
     { label: '综合排序', value: 'default' },
     { label: '价格从低到高', value: 'price_asc' },
@@ -979,357 +198,151 @@ const sortOptions = [
     { label: '销量最高', value: 'order_count' }
 ]
 
-// 计算属性
-const tagFilterText = computed(() => {
-    const count = selectedTagIds.value.length
-    if (!count) {
-        return '标签筛选'
-    }
-    if (count === 1) {
-        const tag = styleTags.value.find((item) => Number(item.id) === selectedTagIds.value[0])
-        return tag?.name || '已选1项'
-    }
-    return `已选${count}项`
-})
+const $theme = useThemeStore()
+const pagingRef = ref()
+const tabbarRefreshKey = ref(0)
+const queryReady = ref(false)
+const keyword = ref('')
+const staffList = ref<any[]>([])
+const selectedDate = ref('')
+const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
+const currentCategoryId = ref(0)
+const currentCategoryName = ref('')
+const selectedTagIds = ref<number[]>([])
+const selectedTagNames = ref<string[]>([])
+const currentSort = ref('default')
 
-const currentSortName = computed(() => {
-    const sort = sortOptions.find((s) => s.value === currentSort.value)
-    return sort ? sort.label : '排序'
-})
+const isValidSortValue = (value: unknown): value is string =>
+    sortOptions.some((item) => item.value === value)
 
-const dateRangeText = computed(() => {
-    if (selectedDate.value) {
-        return selectedDate.value
+const parseIdList = (value: unknown) =>
+    Array.from(
+        new Set(
+            (Array.isArray(value) ? value : String(value || '').split(','))
+                .map((item) => Number(item))
+                .filter((item) => Number.isInteger(item) && item > 0)
+        )
+    )
+
+const parseTextList = (value: unknown) =>
+    String(value || '')
+        .split(/[、,]/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+
+const getInitialStaffViewMode = (): StaffViewMode => {
+    try {
+        const cachedMode = uni.getStorageSync(STAFF_VIEW_MODE_STORAGE_KEY)
+        return cachedMode === 'list' ? 'list' : 'poster'
+    } catch (error) {
+        console.error(error)
+        return 'poster'
     }
-    return '请选择日期'
-})
+}
 
-const hasSelectedRegion = computed(() => hasServiceRegion(selectedRegion.value))
+const staffViewMode = ref<StaffViewMode>(getInitialStaffViewMode())
+
+const pagingRefresherEnabled = computed(() => import.meta.env.UNI_PLATFORM !== 'h5')
+const hasValidQuery = computed(
+    () => Boolean(selectedDate.value && hasServiceRegion(selectedRegion.value) && currentCategoryId.value > 0)
+)
 const selectedRegionText = computed(() => {
-    if (!hasSelectedRegion.value) {
-        return '选择区县'
+    const cityName = selectedRegion.value.city_name || selectedRegion.value.province_name
+    const districtName = selectedRegion.value.district_name
+    if (cityName && districtName) {
+        return `${cityName} · ${districtName}`
     }
-    return selectedRegion.value.district_name || '选择区县'
+    return formatServiceRegionText(selectedRegion.value, ' / ') || '未选择'
+})
+const displayCategoryName = computed(() => currentCategoryName.value || '已选分类')
+
+const normalizeSelectedDateText = (value = '') => {
+    const [year, month, day] = value.split('-').map((item) => Number(item))
+    if (!year || !month || !day) return ''
+    const date = new Date(year, month - 1, day)
+    date.setHours(0, 0, 0, 0)
+    if (Number.isNaN(date.getTime())) return ''
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+const getPrimaryGradient = () =>
+    `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || '#C99B73'} 100%)`
+
+const getPrimaryButtonStyle = (alpha = 0.2) => ({
+    backgroundColor: $theme.primaryColor,
+    backgroundImage: getPrimaryGradient(),
+    boxShadow: `0 12rpx 28rpx ${alphaColor($theme.primaryColor, alpha)}`
 })
 
-const regionProvinces = computed(() => regionTree.value || [])
-const regionCities = computed(() => {
-    return (
-        regionTree.value.find((item: any) => item.province_code === tempRegion.value.province_code)?.cities || []
-    )
-})
-const regionDistricts = computed(() => {
-    return (
-        regionCities.value.find((item: any) => item.city_code === tempRegion.value.city_code)?.districts || []
-    )
+const getSwitchButtonStyle = () => ({
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderColor: alphaColor($theme.primaryColor, 0.18),
+    boxShadow: `0 14rpx 30rpx ${alphaColor('#D4B09A', 0.18)}`
 })
 
-// 日期选择处理
-const pagingRefresherEnabled = computed(() => {
-    return import.meta.env.UNI_PLATFORM !== 'h5'
-})
-
-const openDatePicker = () => {
-    if (!hasSelectedRegion.value) {
-        openRegionPicker()
-        return
+const buildScheduleQueryUrl = () => {
+    const queryParts: string[] = []
+    if (selectedDate.value) queryParts.push(`date=${encodeURIComponent(selectedDate.value)}`)
+    if (currentCategoryId.value > 0) queryParts.push(`category_id=${currentCategoryId.value}`)
+    if (currentCategoryName.value) queryParts.push(`category_name=${encodeURIComponent(currentCategoryName.value)}`)
+    if (keyword.value) queryParts.push(`keyword=${encodeURIComponent(keyword.value)}`)
+    if (selectedTagIds.value.length) queryParts.push(`tag_ids=${selectedTagIds.value.join(',')}`)
+    if (selectedTagNames.value.length) {
+        queryParts.push(`tag_names=${encodeURIComponent(selectedTagNames.value.join('、'))}`)
     }
-    if (showDatePopup.value) {
-        return
+    if (currentSort.value !== 'default') queryParts.push(`sort=${encodeURIComponent(currentSort.value)}`)
+    const regionQuery = buildServiceRegionQuery(selectedRegion.value)
+    if (regionQuery) queryParts.push(regionQuery)
+    return queryParts.length
+        ? `/pages/schedule_query/schedule_query?${queryParts.join('&')}`
+        : '/pages/schedule_query/schedule_query'
+}
+
+const redirectToScheduleQuery = () => {
+    uni.redirectTo({ url: buildScheduleQueryUrl() })
+}
+
+const buildStaffDescription = (item: any) => {
+    const profile = String(item?.profile || '').trim()
+    if (profile) return profile
+    const tags = Array.isArray(item?.tags) ? item.tags.filter(Boolean).slice(0, 3) : []
+    if (tags.length) return tags.join(' · ')
+    return '点击查看服务档期与团队详情'
+}
+
+const formatPriceText = (item: any) => {
+    if (item?.has_price === false || item?.price === null || item?.price === undefined) {
+        return '面议'
     }
-    showDatePopup.value = true
-}
-
-const syncTempRegion = (value?: Record<string, any>) => {
-    const region = normalizeServiceRegion(value || selectedRegion.value)
-    tempRegion.value = region
-    if (!tempRegion.value.province_code && regionTree.value.length) {
-        handleProvinceSelect(regionTree.value[0])
-        return
-    }
-
-    if (!tempRegion.value.city_code && regionCities.value.length) {
-        handleCitySelect(regionCities.value[0])
-    }
-}
-
-const openRegionPicker = () => {
-    if (showRegionPopup.value) {
-        return
-    }
-    syncTempRegion()
-    showRegionPopup.value = true
-}
-
-const closeRegionPicker = () => {
-    showRegionPopup.value = false
-}
-
-const handleProvinceSelect = (province: any) => {
-    tempRegion.value = normalizeServiceRegion({
-        province_code: province?.province_code || '',
-        province_name: province?.province_name || '',
-        city_code: '',
-        city_name: '',
-        district_code: '',
-        district_name: ''
-    })
-
-    const firstCity = (province?.cities || [])[0]
-    if (firstCity) {
-        handleCitySelect(firstCity)
-    }
-}
-
-const handleCitySelect = (city: any) => {
-    tempRegion.value = normalizeServiceRegion({
-        province_code: city?.province_code || tempRegion.value.province_code,
-        province_name: city?.province_name || tempRegion.value.province_name,
-        city_code: city?.city_code || '',
-        city_name: city?.city_name || '',
-        district_code: '',
-        district_name: ''
-    })
-}
-
-const handleDistrictSelect = (district: any) => {
-    tempRegion.value = normalizeServiceRegion({
-        ...tempRegion.value,
-        province_code: district?.province_code || tempRegion.value.province_code,
-        province_name: district?.province_name || tempRegion.value.province_name,
-        city_code: district?.city_code || tempRegion.value.city_code,
-        city_name: district?.city_name || tempRegion.value.city_name,
-        district_code: district?.district_code || '',
-        district_name: district?.district_name || ''
-    })
-}
-
-const resetRegionSelection = () => {
-    tempRegion.value = normalizeServiceRegion({})
-}
-
-const confirmRegionPicker = () => {
-    if (!hasServiceRegion(tempRegion.value)) {
-        uni.showToast({ title: '请选择到区县', icon: 'none' })
-        return
-    }
-
-    selectedRegion.value = normalizeServiceRegion(tempRegion.value)
-    saveServiceRegionSelection(selectedRegion.value)
-    closeRegionPicker()
-    if (!selectedDate.value) {
-        nextTick(() => openDatePicker())
-        return
-    }
-    pagingRef.value?.reload()
-}
-
-const syncDatePickerValue = (value = '') => {
-    const targetDate = getEffectiveSelectableDate(value)
-    const yearIndex = datePickerYears.value.indexOf(targetDate.getFullYear())
-    const safeYearIndex = yearIndex >= 0 ? yearIndex : 0
-    const months = getDatePickerMonthsByYear(datePickerYears.value[safeYearIndex])
-    const monthIndex = Math.max(months.indexOf(targetDate.getMonth() + 1), 0)
-    const days = getDatePickerDaysByYearMonth(
-        datePickerYears.value[safeYearIndex],
-        months[monthIndex]
-    )
-    const dayIndex = Math.max(days.indexOf(targetDate.getDate()), 0)
-    datePickerValue.value = [safeYearIndex, monthIndex, dayIndex]
-}
-
-const closeDatePicker = () => {
-    showDatePopup.value = false
-}
-
-const handleDatePickerChange = (event: any) => {
-    datePickerValue.value = normalizeDatePickerValue(event.detail.value || [])
-}
-
-const confirmDatePicker = () => {
-    const year = datePickerYears.value[datePickerValue.value[0]]
-    const month = String(datePickerMonths.value[datePickerValue.value[1]]).padStart(2, '0')
-    const day = String(datePickerDays.value[datePickerValue.value[2]]).padStart(2, '0')
-    selectedDate.value = `${year}-${month}-${day}`
-    closeDatePicker()
-    pagingRef.value?.reload()
-}
-
-const handleResetFilters = () => {
-    keyword.value = ''
-    selectedTagIds.value = []
-    tempSelectedTagIds.value = []
-    currentSort.value = 'default'
-    closeTagPicker()
-    closeSortPicker()
-    pagingRef.value?.reload()
+    return `¥${item.price_text || item.price}/次`
 }
 
 const handleEmptyAction = () => {
-    if (!hasSelectedRegion.value) {
-        openRegionPicker()
-        return
-    }
-    if (!selectedDate.value) {
-        openDatePicker()
-        return
-    }
-    handleResetFilters()
+    redirectToScheduleQuery()
 }
 
-// 扁平化分类树
-const flattenCategories = (tree: any[], result: any[] = []): any[] => {
-    tree.forEach((item) => {
-        result.push({ id: Number(item.id), name: item.name })
-        if (item.children && item.children.length) {
-            flattenCategories(item.children, result)
-        }
-    })
-    return result
-}
-
-// 获取分类
-const getCategories = async () => {
-    try {
-        const data = await getServiceCategories()
-        categories.value = flattenCategories(data)
-        if (!categories.value.length) {
-            currentCategoryId.value = ''
-            return
-        }
-        const hasCurrentCategory = categories.value.some(
-            (item) => Number(item.id) === Number(currentCategoryId.value)
-        )
-        if (!hasCurrentCategory) {
-            currentCategoryId.value = categories.value[0].id
-        }
-    } catch (e) {
-        console.error(e)
-    }
-}
-
-const getRegionTree = async () => {
-    try {
-        const data = await getServiceRegionTree()
-        regionTree.value = Array.isArray(data) ? data : []
-        if (!regionTree.value.length) {
-            selectedRegion.value = normalizeServiceRegion({})
-            tempRegion.value = normalizeServiceRegion({})
-            return
-        }
-
-        if (hasServiceRegion(selectedRegion.value)) {
-            syncTempRegion(selectedRegion.value)
-            return
-        }
-
-        syncTempRegion({
-            province_code: regionTree.value[0]?.province_code || '',
-            province_name: regionTree.value[0]?.province_name || ''
-        })
-    } catch (e) {
-        console.error(e)
-    }
-}
-
-// 获取当前分类关联标签
-const getCategoryTags = async () => {
-    try {
-        const params: { category_id?: number } = {}
-        if (currentCategoryId.value !== '') {
-            params.category_id = Number(currentCategoryId.value)
-        }
-        const data = await getStyleTags(params)
-        styleTags.value = Array.isArray(data) ? data : []
-
-        const validTagIds = new Set(styleTags.value.map((item) => Number(item.id)))
-        selectedTagIds.value = selectedTagIds.value.filter((id) => validTagIds.has(id))
-        tempSelectedTagIds.value = [...selectedTagIds.value]
-    } catch (e) {
-        styleTags.value = []
-        selectedTagIds.value = []
-        tempSelectedTagIds.value = []
-        console.error(e)
-    }
-}
-
-// 打开标签选择
-const openTagPicker = async () => {
-    if (!styleTags.value.length) {
-        await getCategoryTags()
-    }
-    tempSelectedTagIds.value = [...selectedTagIds.value]
-    showTagPopup.value = true
-}
-
-// 关闭标签选择
-const closeTagPicker = () => {
-    showTagPopup.value = false
-}
-
-const handleTagPopupClose = () => {
-    tempSelectedTagIds.value = [...selectedTagIds.value]
-}
-
-// 切换标签（多选）
-const toggleTagSelection = (tagId: number | string) => {
-    const id = Number(tagId)
-    const index = tempSelectedTagIds.value.indexOf(id)
-    if (index > -1) {
-        tempSelectedTagIds.value.splice(index, 1)
-    } else {
-        tempSelectedTagIds.value.push(id)
-    }
-}
-
-// 重置标签选择（弹窗内）
-const resetTagSelection = () => {
-    tempSelectedTagIds.value = []
-}
-
-// 确认标签筛选
-const handleTagFilterConfirm = () => {
-    selectedTagIds.value = [...tempSelectedTagIds.value]
-    closeTagPicker()
-    pagingRef.value.reload()
-}
-
-// 查询列表
 const queryList = async (pageNo: number, _pageSize: number) => {
-    if (!hasSelectedRegion.value || !selectedDate.value) {
+    if (!queryReady.value || !hasValidQuery.value) {
         pagingRef.value.complete([])
         return
     }
 
     try {
-        const params: any = {
+        const params: Record<string, any> = {
             page_no: pageNo,
             page_size: STAFF_LIST_PAGE_SIZE,
+            category_id: currentCategoryId.value,
+            date: selectedDate.value,
             sort: currentSort.value
         }
-        if (keyword.value) {
-            params.keyword = keyword.value
-        }
-        if (currentCategoryId.value !== '') {
-            params.category_id = Number(currentCategoryId.value)
-        }
-        if (selectedTagIds.value.length) {
-            params.tag_ids = selectedTagIds.value.join(',')
-        }
-        if (selectedDate.value) {
-            params.date = selectedDate.value
-        }
+        if (keyword.value) params.keyword = keyword.value
+        if (selectedTagIds.value.length) params.tag_ids = selectedTagIds.value.join(',')
         Object.assign(params, toServiceRegionParams(selectedRegion.value))
         const res = await getStaffList(params)
         pagingRef.value.complete(res.lists)
-    } catch (e) {
+    } catch (error) {
         pagingRef.value.complete(false)
     }
-}
-
-// 搜索
-const handleSearch = () => {
-    pagingRef.value.reload()
 }
 
 const handleToggleViewMode = () => {
@@ -1341,188 +354,6 @@ const handleToggleViewMode = () => {
     }
 }
 
-// 切换分类
-const handleCategoryChange = async (id: string | number) => {
-    if (categoryMovedDistance.value > categoryMoveThreshold) {
-        return
-    }
-    if (currentCategoryId.value === id) {
-        return
-    }
-    currentCategoryId.value = id
-    selectedTagIds.value = []
-    tempSelectedTagIds.value = []
-    await getCategoryTags()
-    pagingRef.value.reload()
-}
-
-const getCategoryScrollElement = () => {
-    const fromRef = categoryScrollNativeRef.value?.$el || categoryScrollNativeRef.value
-    if (fromRef) {
-        return fromRef as HTMLElement
-    }
-    if (typeof window === 'undefined') {
-        return null
-    }
-    return document.querySelector('.category-scroll-h5-native') as HTMLElement | null
-}
-
-const clampCategoryScrollLeft = (value: number, scrollEl: HTMLElement) => {
-    const maxScrollLeft = Math.max(0, scrollEl.scrollWidth - scrollEl.clientWidth)
-    return Math.min(maxScrollLeft, Math.max(0, value))
-}
-
-const updateCategoryScrollByClientX = (clientX: number) => {
-    const scrollEl = getCategoryScrollElement()
-    if (!scrollEl) {
-        return
-    }
-    const deltaX = clientX - categoryStartX.value
-    const absDistance = Math.abs(deltaX)
-    if (absDistance > categoryMovedDistance.value) {
-        categoryMovedDistance.value = absDistance
-    }
-    const nextScrollLeft = categoryStartScrollLeft.value - deltaX
-    scrollEl.scrollLeft = clampCategoryScrollLeft(nextScrollLeft, scrollEl)
-}
-
-const handleCategoryTouchStart = (event: TouchEvent) => {
-    const scrollEl = getCategoryScrollElement()
-    const touch = event.touches?.[0]
-    if (!scrollEl || !touch) {
-        return
-    }
-    categoryTouchDragging.value = true
-    categoryStartX.value = touch.clientX
-    categoryStartScrollLeft.value = scrollEl.scrollLeft
-    categoryMovedDistance.value = 0
-}
-
-const handleCategoryTouchMove = (event: TouchEvent) => {
-    if (!categoryTouchDragging.value) {
-        return
-    }
-    const touch = event.touches?.[0]
-    if (!touch) {
-        return
-    }
-    updateCategoryScrollByClientX(touch.clientX)
-}
-
-const handleCategoryMouseMove = (event: MouseEvent) => {
-    if (!categoryMouseDragging.value) {
-        return
-    }
-    updateCategoryScrollByClientX(event.clientX)
-}
-
-const handleCategoryDragEnd = () => {
-    categoryMouseDragging.value = false
-    categoryTouchDragging.value = false
-    if (typeof window !== 'undefined') {
-        window.removeEventListener('mousemove', handleCategoryMouseMove)
-        window.removeEventListener('mouseup', handleCategoryDragEnd)
-    }
-    setTimeout(() => {
-        categoryMovedDistance.value = 0
-    }, 0)
-}
-
-const handleCategoryMouseDown = (event: MouseEvent) => {
-    const scrollEl = getCategoryScrollElement()
-    if (!scrollEl) {
-        return
-    }
-    categoryMouseDragging.value = true
-    categoryStartX.value = event.clientX
-    categoryStartScrollLeft.value = scrollEl.scrollLeft
-    categoryMovedDistance.value = 0
-    if (typeof window !== 'undefined') {
-        window.addEventListener('mousemove', handleCategoryMouseMove)
-        window.addEventListener('mouseup', handleCategoryDragEnd)
-    }
-}
-
-const handleCategoryWheel = (event: WheelEvent) => {
-    const scrollEl = getCategoryScrollElement()
-    if (!scrollEl) {
-        return
-    }
-    const moveX = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY
-    scrollEl.scrollLeft = clampCategoryScrollLeft(scrollEl.scrollLeft + moveX, scrollEl)
-}
-
-onUnmounted(() => {
-    handleCategoryDragEnd()
-})
-
-// 切换排序
-const openSortPicker = () => {
-    showSortPopup.value = true
-}
-
-const closeSortPicker = () => {
-    showSortPopup.value = false
-}
-
-const handleSortChange = (sort: string) => {
-    currentSort.value = sort
-    closeSortPicker()
-    pagingRef.value.reload()
-}
-
-const ensureDateSelection = () => {
-    if (!hasSelectedRegion.value) {
-        if (!showRegionPopup.value) {
-            openRegionPicker()
-        }
-        return
-    }
-    if (!isSelectableDate(selectedDate.value)) {
-        selectedDate.value = ''
-    }
-    if (!selectedDate.value && !showDatePopup.value) {
-        openDatePicker()
-    }
-}
-
-watch(showRegionPopup, (visible, previousVisible) => {
-    if (visible) {
-        nextTick(() => {
-            syncTempRegion()
-        })
-        return
-    }
-
-    if (previousVisible && !hasSelectedRegion.value) {
-        setTimeout(() => {
-            if (!hasSelectedRegion.value) {
-                showRegionPopup.value = true
-            }
-        }, POPUP_REOPEN_DELAY)
-    }
-})
-
-watch(showDatePopup, (visible, previousVisible) => {
-    if (visible) {
-        nextTick(() => {
-            setTimeout(() => {
-                syncDatePickerValue(selectedDate.value)
-            }, 0)
-        })
-        return
-    }
-
-    if (previousVisible && !selectedDate.value) {
-        setTimeout(() => {
-            if (!selectedDate.value) {
-                showDatePopup.value = true
-            }
-        }, POPUP_REOPEN_DELAY)
-    }
-})
-
-// 收藏/取消收藏
 const handleToggleFavorite = async (item: any) => {
     try {
         await toggleStaffFavorite({ id: item.id })
@@ -1531,108 +362,308 @@ const handleToggleFavorite = async (item: any) => {
             title: item.is_favorite ? '收藏成功' : '已取消收藏',
             icon: 'none'
         })
-    } catch (e: any) {
-        uni.showToast({ title: e.msg || '操作失败', icon: 'none' })
+    } catch (error: any) {
+        uni.showToast({ title: error?.msg || '操作失败', icon: 'none' })
     }
 }
 
-// 跳转详情
 const goToDetail = (id: number) => {
     let url = `/packages/pages/staff_detail/staff_detail?id=${id}`
     const regionQuery = buildServiceRegionQuery(selectedRegion.value)
-    if (regionQuery) {
-        url += `&${regionQuery}`
-    }
-    if (selectedDate.value) {
-        url += `&date=${selectedDate.value}`
-    }
+    if (regionQuery) url += `&${regionQuery}`
+    if (selectedDate.value) url += `&date=${selectedDate.value}`
     uni.navigateTo({ url })
 }
 
-onLoad(async (options) => {
+onLoad((options) => {
+    $theme.setScene('consumer')
     selectedRegion.value = normalizeServiceRegion({
         ...loadServiceRegionSelection(),
         ...options
     })
-    tempRegion.value = normalizeServiceRegion(selectedRegion.value)
-    if (options?.date) {
-        selectedDate.value = normalizeSelectedDateText(options.date)
+    if (hasServiceRegion(selectedRegion.value)) {
+        saveServiceRegionSelection(selectedRegion.value)
     }
+
+    if (typeof options?.keyword === 'string') keyword.value = options.keyword.trim()
+    if (typeof options?.date === 'string') selectedDate.value = normalizeSelectedDateText(options.date)
     if (options?.category_id) {
         const categoryId = Number(options.category_id)
-        if (!Number.isNaN(categoryId) && categoryId > 0) {
-            currentCategoryId.value = categoryId
-        }
+        if (!Number.isNaN(categoryId) && categoryId > 0) currentCategoryId.value = categoryId
     }
-    await getCategories()
-    await getCategoryTags()
-    await getRegionTree()
+    if (typeof options?.category_name === 'string') currentCategoryName.value = options.category_name.trim()
+    if (options?.tag_ids) selectedTagIds.value = parseIdList(options.tag_ids)
+    if (typeof options?.tag_names === 'string') selectedTagNames.value = parseTextList(options.tag_names)
+    if (isValidSortValue(options?.sort)) currentSort.value = String(options?.sort)
+
+    if (!hasValidQuery.value) {
+        redirectToScheduleQuery()
+        return
+    }
+
+    queryReady.value = true
 })
 
 onReady(() => {
-    ensureDateSelection()
-    pagingRef.value?.reload()
+    if (queryReady.value) pagingRef.value?.reload()
 })
 
 onShow(() => {
+    $theme.setScene('consumer')
     tabbarRefreshKey.value += 1
-    ensureDateSelection()
 })
 </script>
 
 <style lang="scss" scoped>
 .staff-list-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, #fcf8ff 0%, #f8f6fb 42%, #f5f5f5 100%);
+    background:
+        radial-gradient(circle at top right, rgba(232, 90, 79, 0.08) 0, transparent 34%),
+        linear-gradient(180deg, #fcfbf9 0%, #fff7f4 100%);
 }
 
-/* 顶部筛选区 */
-.filter-header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    padding: 12rpx 0 8rpx;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(14rpx);
-    border-bottom: 1rpx solid rgba(229, 231, 235, 0.8);
-    box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.06);
+.result-summary {
+    margin: 34rpx 20rpx 18rpx;
 }
 
-.search-section {
-    padding: 6rpx 20rpx 10rpx;
+.result-summary__head {
+    padding: 0 8rpx;
 }
 
-.search-row {
+.result-summary__eyebrow {
+    display: block;
+    font-size: 22rpx;
+    font-weight: 700;
+    letter-spacing: 4rpx;
+    color: rgba(232, 90, 79, 0.88);
+}
+
+.result-summary__hint {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 24rpx;
+    line-height: 1.5;
+    color: #8d837d;
+}
+
+.result-summary__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14rpx;
+    margin-top: 18rpx;
+}
+
+.result-summary__item {
+    min-height: 128rpx;
+    padding: 20rpx 18rpx 18rpx;
+    border-radius: 28rpx;
+    border: 1rpx solid rgba(239, 230, 225, 0.92);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 10rpx 22rpx rgba(214, 185, 167, 0.08);
+}
+
+.result-summary__item--date {
+    border-color: rgba(232, 90, 79, 0.18);
+    background: linear-gradient(180deg, rgba(232, 90, 79, 0.08) 0%, rgba(255, 255, 255, 0.96) 100%);
+}
+
+.result-summary__label {
+    display: block;
+    font-size: 20rpx;
+    font-weight: 600;
+    color: #8d837d;
+}
+
+.result-summary__value {
+    display: -webkit-box;
+    margin-top: 12rpx;
+    font-size: 24rpx;
+    font-weight: 700;
+    line-height: 1.45;
+    color: #1e2432;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-break: break-all;
+}
+
+.empty-state {
+    min-height: 58vh;
+    padding: 120rpx 48rpx 220rpx;
     display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.empty-state__title {
+    margin-top: 24rpx;
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #1e2432;
+}
+
+.empty-state__subtitle {
+    margin-top: 12rpx;
+    font-size: 26rpx;
+    line-height: 1.6;
+    color: #7f7b78;
+}
+
+.empty-state__btn {
+    margin-top: 34rpx;
+    min-width: 240rpx;
+    height: 88rpx;
+    padding: 0 40rpx;
+    border-radius: 999rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-state__btn-text {
+    font-size: 28rpx;
+    font-weight: 600;
+}
+
+.poster-list,
+.compact-list {
+    padding: 0 20rpx calc(196rpx + env(safe-area-inset-bottom));
+}
+
+.poster-list {
+    display: flex;
+    flex-direction: column;
     gap: 16rpx;
 }
 
-.search-shell {
+.poster-card {
+    display: flex;
+    gap: 18rpx;
+    padding: 16rpx;
+    border-radius: 28rpx;
+    border: 1rpx solid rgba(239, 230, 225, 0.92);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 16rpx 32rpx rgba(214, 185, 167, 0.12);
+}
+
+.poster-card__image {
+    width: 168rpx;
+    height: 192rpx;
+    flex-shrink: 0;
+    border-radius: 20rpx;
+    background: linear-gradient(135deg, #fce7e1 0%, #ddb4a6 100%);
+}
+
+.poster-card__body,
+.compact-item__body {
     flex: 1;
-    padding: 8rpx;
-    border-radius: 34rpx;
-    background: #ffffff;
-    border: 1rpx solid #eceff4;
-    box-shadow: 0 4rpx 14rpx rgba(15, 23, 42, 0.05);
+    min-width: 0;
+}
+
+.poster-card__head,
+.compact-item__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12rpx;
+}
+
+.poster-card__name-group,
+.compact-item__name-group {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+}
+
+.poster-card__name,
+.compact-item__name {
+    min-width: 0;
+    font-size: 30rpx;
+    font-weight: 700;
+    color: #1e2432;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.poster-card__badge,
+.compact-item__badge {
+    flex-shrink: 0;
+    padding: 4rpx 12rpx;
+    border-radius: 999rpx;
+    font-size: 20rpx;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #e85a4f 0%, #c99b73 100%);
+}
+
+.poster-card__role,
+.compact-item__line {
+    display: block;
+    margin-top: 12rpx;
+    font-size: 24rpx;
+    line-height: 1.5;
+    color: #8d837d;
+}
+
+.poster-card__desc,
+.compact-item__desc {
+    display: -webkit-box;
+    margin-top: 8rpx;
+    font-size: 26rpx;
+    line-height: 1.6;
+    color: #1e2432;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.poster-card__meta,
+.compact-item__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14rpx;
+    margin-top: 14rpx;
+    font-size: 22rpx;
+    color: #8d837d;
+}
+
+.compact-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.compact-item {
+    display: flex;
+    gap: 16rpx;
+    padding: 18rpx 0;
+    border-bottom: 1rpx solid rgba(239, 230, 225, 0.92);
+}
+
+.compact-item__image {
+    width: 96rpx;
+    height: 96rpx;
+    flex-shrink: 0;
+    border-radius: 20rpx;
+    background: linear-gradient(135deg, #fce7e1 0%, #ddb4a6 100%);
 }
 
 .view-switch-btn {
-    flex-shrink: 0;
+    position: fixed;
+    right: 28rpx;
+    bottom: calc(164rpx + env(safe-area-inset-bottom));
+    z-index: 30;
     width: 88rpx;
     height: 88rpx;
-    border-radius: 24rpx;
+    border-radius: 50%;
     border: 1rpx solid transparent;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 6rpx 16rpx rgba(15, 23, 42, 0.06);
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: scale(0.98);
-        opacity: 0.9;
-    }
 }
 
 .switch-icon-list {
@@ -1642,20 +673,20 @@ onShow(() => {
     gap: 6rpx;
 }
 
-.switch-icon-list-row {
+.switch-icon-list__row {
     display: flex;
     align-items: center;
     gap: 6rpx;
 }
 
-.switch-icon-list-dot {
+.switch-icon-list__dot {
     width: 6rpx;
     height: 6rpx;
     border-radius: 2rpx;
     flex-shrink: 0;
 }
 
-.switch-icon-list-line {
+.switch-icon-list__line {
     flex: 1;
     height: 4rpx;
     border-radius: 999rpx;
@@ -1669,923 +700,9 @@ onShow(() => {
     gap: 4rpx;
 }
 
-.switch-icon-grid-cell {
+.switch-icon-grid__cell {
     border: 2rpx solid transparent;
     border-radius: 6rpx;
     background: rgba(255, 255, 255, 0.45);
-}
-
-/* 分类横滑区域 */
-.category-scroll-wrapper {
-    padding: 8rpx 0 4rpx;
-
-    .category-scroll {
-        width: 100%;
-        white-space: nowrap;
-
-        &::-webkit-scrollbar {
-            display: none;
-        }
-    }
-
-    .category-scroll-h5-native {
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        touch-action: pan-x;
-
-        &::-webkit-scrollbar {
-            display: none;
-        }
-    }
-
-    .category-scroll-content {
-        display: inline-flex;
-        align-items: center;
-        padding: 6rpx 20rpx 10rpx;
-        white-space: nowrap;
-        width: max-content;
-    }
-
-    .category-chip {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        margin-right: 12rpx;
-        min-width: 126rpx;
-        height: 68rpx;
-        padding: 0 26rpx;
-        border-radius: 999rpx;
-        border: 1rpx solid #e7eaf0;
-        background: #f7f8fb;
-        font-size: 26rpx;
-        color: #4b5563;
-        font-weight: 500;
-        text-align: center;
-        transition: all 0.2s ease;
-        white-space: nowrap;
-
-        &:active {
-            transform: scale(0.98);
-            opacity: 0.88;
-        }
-
-        &.active {
-            font-weight: 600;
-        }
-
-        &:last-child {
-            margin-right: 20rpx;
-        }
-    }
-}
-
-.category-scroll-wrapper-h5 {
-    user-select: none;
-    cursor: grab;
-
-    &:active {
-        cursor: grabbing;
-    }
-}
-
-/* 筛选栏 */
-.filter-bar {
-    display: flex;
-    align-items: center;
-    padding: 12rpx 16rpx 8rpx;
-    gap: 8rpx;
-
-    .filter-item-wrapper {
-        flex: 1;
-        position: relative;
-        display: flex;
-        align-items: center;
-
-        picker {
-            flex: 1;
-        }
-    }
-
-    .filter-item {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0;
-        min-height: 88rpx;
-        padding: 0 12rpx;
-        background: #ffffff;
-        border-radius: 20rpx;
-        border: 1rpx solid #e8ebf0;
-        font-size: 24rpx;
-        color: #5b6473;
-        transition: all 0.2s ease;
-
-        &:active {
-            transform: scale(0.98);
-            background: #f7f8fb;
-        }
-
-        text {
-            flex: 1;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            text-align: center;
-
-            &.active {
-                font-weight: 600;
-            }
-        }
-    }
-}
-
-/* 空状态 */
-.empty-state {
-    min-height: 58vh;
-    padding: 180rpx 48rpx 220rpx;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.empty-icon-wrap {
-    margin-bottom: 26rpx;
-}
-
-.empty-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #4b5563;
-    margin-bottom: 12rpx;
-}
-
-.empty-subtitle {
-    font-size: 26rpx;
-    color: #9aa3af;
-    text-align: center;
-    line-height: 1.5;
-}
-
-.empty-action-btn {
-    margin-top: 34rpx;
-    min-width: 240rpx;
-    height: 88rpx;
-    padding: 0 40rpx;
-    border-radius: 999rpx;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: translateY(2rpx) scale(0.98);
-    }
-}
-
-.empty-action-text {
-    font-size: 28rpx;
-    font-weight: 600;
-}
-
-/* 选择器弹层 */
-.picker-container {
-    background: #ffffff;
-    width: 100vw;
-    max-width: 100vw;
-    margin: 0;
-    border-radius: 24rpx 24rpx 0 0;
-    box-shadow: 0 -12rpx 36rpx rgba(15, 23, 42, 0.1);
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-
-    .picker-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 22rpx 24rpx;
-        border-bottom: 1rpx solid #eef1f5;
-
-        .picker-header-left {
-            display: flex;
-            align-items: center;
-            gap: 18rpx;
-        }
-
-        .picker-clear {
-            font-size: 24rpx;
-            color: #667085;
-
-            &:active {
-                opacity: 0.7;
-            }
-        }
-
-        .picker-title {
-            font-size: 30rpx;
-            font-weight: 700;
-            color: #1f2937;
-        }
-
-        .picker-close {
-            width: 56rpx;
-            height: 56rpx;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-
-            &:active {
-                background: #f4f5f7;
-            }
-        }
-
-        .picker-action {
-            min-width: 96rpx;
-            font-size: 28rpx;
-            color: #667085;
-            text-align: center;
-
-            &:active {
-                opacity: 0.72;
-            }
-        }
-
-        .picker-action-primary {
-            color: var(--color-primary);
-            font-weight: 600;
-        }
-    }
-
-    .button-picker-content {
-        padding: 24rpx;
-        max-height: 60vh;
-        overflow-y: auto;
-
-        .button-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16rpx;
-
-            .button-item {
-                padding: 24rpx 16rpx;
-                background: #f8f9fb;
-                border: 1rpx solid #e7ebf1;
-                border-radius: 16rpx;
-                text-align: center;
-                font-size: 26rpx;
-                color: #3f4a5a;
-                font-weight: 500;
-                transition: all 0.2s ease;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-
-                &:active {
-                    transform: scale(0.98);
-                    opacity: 0.9;
-                }
-
-                &.active {
-                    font-weight: 600;
-                    border-color: transparent;
-                    box-shadow: 0 6rpx 16rpx rgba(15, 23, 42, 0.14);
-                }
-            }
-        }
-    }
-
-    .empty-picker {
-        padding: 48rpx 0;
-        text-align: center;
-        font-size: 26rpx;
-        color: #98a2b3;
-    }
-
-    .date-picker-content {
-        padding: 12rpx 16rpx 24rpx;
-    }
-
-    .date-picker-view {
-        height: 420rpx;
-    }
-
-    .picker-item {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        font-size: 30rpx;
-        color: #111827;
-    }
-
-    .picker-footer {
-        display: flex;
-        gap: 16rpx;
-        padding: 16rpx 24rpx 24rpx;
-        border-top: 1rpx solid #eef1f5;
-
-        .picker-btn {
-            flex: 1;
-            height: 82rpx;
-            border-radius: 16rpx;
-            background: #f3f4f6;
-            color: #475467;
-            font-size: 28rpx;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-
-            &:active {
-                opacity: 0.85;
-                transform: scale(0.98);
-            }
-        }
-
-        .picker-btn-primary {
-            color: #ffffff;
-            font-weight: 600;
-            box-shadow: 0 6rpx 16rpx rgba(15, 23, 42, 0.14);
-
-            &:active {
-                box-shadow: 0 4rpx 10rpx rgba(15, 23, 42, 0.16);
-            }
-        }
-    }
-}
-
-.region-picker-content {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12rpx;
-    padding: 18rpx 18rpx 8rpx;
-}
-
-.region-picker-col {
-    min-width: 0;
-    border: 1rpx solid #eef1f5;
-    border-radius: 18rpx;
-    overflow: hidden;
-    background: #f9fafc;
-}
-
-.region-picker-col__title {
-    padding: 18rpx 20rpx 14rpx;
-    font-size: 24rpx;
-    font-weight: 600;
-    color: #374151;
-    border-bottom: 1rpx solid #eef1f5;
-    background: #ffffff;
-}
-
-.region-picker-scroll {
-    height: 480rpx;
-}
-
-.region-picker-item {
-    padding: 20rpx;
-    font-size: 24rpx;
-    color: #4b5563;
-    border-bottom: 1rpx solid rgba(229, 231, 235, 0.72);
-    transition: all 0.2s ease;
-
-    &:last-child {
-        border-bottom: none;
-    }
-
-    &:active {
-        opacity: 0.82;
-    }
-
-    &.active {
-        font-weight: 600;
-    }
-}
-
-/* 人员卡片列表 */
-.poster-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18rpx;
-    padding: 20rpx 20rpx calc(176rpx + constant(safe-area-inset-bottom));
-    padding: 20rpx 20rpx calc(176rpx + env(safe-area-inset-bottom));
-}
-
-.poster-card {
-    background: #ffffff;
-    border-radius: 24rpx;
-    border: 1rpx solid #edf0f4;
-    overflow: hidden;
-    box-shadow: 0 8rpx 22rpx rgba(15, 23, 42, 0.08);
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: translateY(-2rpx);
-        box-shadow: 0 12rpx 28rpx rgba(15, 23, 42, 0.12);
-    }
-
-    .poster-media {
-        position: relative;
-        height: 460rpx;
-        overflow: hidden;
-        background: #f3f4f6;
-    }
-
-    .poster-image {
-        width: 100%;
-        height: 100%;
-        display: block;
-    }
-
-    .poster-image-mask {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(
-            180deg,
-            rgba(15, 23, 42, 0.04) 0%,
-            rgba(15, 23, 42, 0.14) 48%,
-            rgba(15, 23, 42, 0.82) 100%
-        );
-    }
-
-    .poster-category-badge {
-        position: absolute;
-        top: 18rpx;
-        left: 18rpx;
-        max-width: calc(100% - 100rpx);
-        padding: 8rpx 12rpx;
-        border-radius: 12rpx;
-        backdrop-filter: blur(10rpx);
-
-        text {
-            display: block;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 22rpx;
-            font-weight: 600;
-            color: #ffffff;
-        }
-    }
-
-    .poster-favorite {
-        position: absolute;
-        top: 12rpx;
-        right: 12rpx;
-        width: 64rpx;
-        height: 64rpx;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(15, 23, 42, 0.22);
-        backdrop-filter: blur(10rpx);
-
-        &:active {
-            transform: scale(1.04);
-        }
-    }
-
-    .poster-overlay {
-        position: absolute;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        padding: 88rpx 18rpx 18rpx;
-        color: #ffffff;
-    }
-
-    .poster-name-row {
-        display: flex;
-        align-items: center;
-        gap: 10rpx;
-    }
-
-    .poster-name-group {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        align-items: center;
-        gap: 10rpx;
-    }
-
-    .poster-name {
-        flex: 1;
-        min-width: 0;
-        font-size: 32rpx;
-        font-weight: 700;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .poster-recommend-badge {
-        flex-shrink: 0;
-        padding: 4rpx 12rpx;
-        border-radius: 999rpx;
-        font-size: 20rpx;
-        font-weight: 600;
-        color: #ffffff;
-        background: linear-gradient(135deg, #ff6aa2 0%, #ff4d8d 100%);
-        box-shadow: 0 8rpx 18rpx rgba(255, 77, 141, 0.26);
-    }
-
-    .poster-experience {
-        flex-shrink: 0;
-        padding: 4rpx 10rpx;
-        border-radius: 999rpx;
-        font-size: 20rpx;
-        color: rgba(255, 255, 255, 0.92);
-        background: rgba(255, 255, 255, 0.16);
-    }
-
-    .poster-meta {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12rpx;
-        margin-top: 12rpx;
-    }
-
-    .poster-rating {
-        display: inline-flex;
-        align-items: center;
-        gap: 6rpx;
-
-        text {
-            font-size: 24rpx;
-            font-weight: 700;
-            color: #ffd166;
-        }
-    }
-
-    .poster-orders {
-        font-size: 22rpx;
-        color: rgba(255, 255, 255, 0.86);
-    }
-
-    .poster-body {
-        padding: 18rpx 18rpx 20rpx;
-    }
-
-    .poster-tags {
-        min-height: 56rpx;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8rpx;
-        align-content: flex-start;
-    }
-
-    .poster-tags-empty {
-        min-height: 0;
-        margin-bottom: 0;
-    }
-
-    .poster-tag {
-        max-width: 100%;
-        padding: 6rpx 12rpx;
-        border-radius: 999rpx;
-        border: 1rpx solid transparent;
-
-        text {
-            display: block;
-            max-width: 100%;
-            font-size: 22rpx;
-            font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-    }
-
-    .poster-footer {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 12rpx;
-        margin-top: 16rpx;
-    }
-
-    .poster-price-section {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .poster-price-row {
-        display: flex;
-        align-items: baseline;
-        min-width: 0;
-    }
-
-    .poster-price-symbol {
-        font-size: 24rpx;
-        font-weight: 700;
-    }
-
-    .poster-price-value {
-        max-width: 100%;
-        font-size: 38rpx;
-        font-weight: 800;
-        line-height: 1;
-        margin-left: 4rpx;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .poster-price-unit {
-        display: block;
-        margin-top: 6rpx;
-        font-size: 20rpx;
-        color: #98a2b3;
-    }
-
-    .poster-price-negotiable {
-        display: block;
-        font-size: 32rpx;
-        font-weight: 700;
-        color: #98a2b3;
-        line-height: 1.1;
-    }
-
-    .poster-book-btn {
-        flex-shrink: 0;
-        min-width: 118rpx;
-        height: 64rpx;
-        padding: 0 18rpx;
-        border-radius: 999rpx;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4rpx;
-
-        text {
-            font-size: 22rpx;
-            font-weight: 600;
-        }
-
-        &:active {
-            transform: translateY(2rpx) scale(0.98);
-        }
-    }
-}
-
-.staff-cards {
-    padding: 20rpx 20rpx calc(176rpx + constant(safe-area-inset-bottom));
-    padding: 20rpx 20rpx calc(176rpx + env(safe-area-inset-bottom));
-    display: flex;
-    flex-direction: column;
-    gap: 20rpx;
-}
-
-.staff-card {
-    background: #ffffff;
-    border-radius: 24rpx;
-    border: 1rpx solid #edf0f4;
-    overflow: hidden;
-    box-shadow: 0 8rpx 22rpx rgba(15, 23, 42, 0.08);
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: translateY(-2rpx);
-        box-shadow: 0 12rpx 28rpx rgba(15, 23, 42, 0.12);
-    }
-
-    .card-header {
-        display: flex;
-        padding: 24rpx 24rpx 18rpx;
-        gap: 20rpx;
-
-        .staff-avatar {
-            width: 172rpx;
-            height: 172rpx;
-            border-radius: 20rpx;
-            flex-shrink: 0;
-            border: 2rpx solid #ffffff;
-            box-shadow: 0 8rpx 18rpx rgba(15, 23, 42, 0.12);
-            background: #f3f4f6;
-        }
-
-        .staff-info {
-            flex: 1;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-
-            .info-top {
-                display: flex;
-                align-items: center;
-                gap: 12rpx;
-
-                .staff-name-group {
-                    flex: 1;
-                    min-width: 0;
-                    display: flex;
-                    align-items: center;
-                    gap: 10rpx;
-                }
-
-                .staff-name {
-                    flex: 1;
-                    min-width: 0;
-                    font-size: 32rpx;
-                    font-weight: 700;
-                    color: #1f2937;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                }
-
-                .staff-recommend-badge {
-                    flex-shrink: 0;
-                    padding: 4rpx 12rpx;
-                    border-radius: 999rpx;
-                    font-size: 20rpx;
-                    font-weight: 600;
-                    color: #ffffff;
-                    background: linear-gradient(135deg, #ff6aa2 0%, #ff4d8d 100%);
-                    box-shadow: 0 8rpx 18rpx rgba(255, 77, 141, 0.18);
-                }
-
-                .favorite-btn {
-                    width: 88rpx;
-                    height: 88rpx;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                    transition: all 0.2s ease;
-
-                    &:active {
-                        transform: scale(1.06);
-                    }
-                }
-            }
-
-            .staff-category {
-                display: flex;
-                align-items: center;
-                gap: 12rpx;
-                margin-top: 12rpx;
-
-                .category-chip-mini {
-                    display: inline-flex;
-                    align-items: center;
-                    max-width: 230rpx;
-                    padding: 8rpx 16rpx;
-                    border-radius: 14rpx;
-                    border: 1rpx solid transparent;
-                    font-size: 24rpx;
-                    font-weight: 500;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                }
-
-                .experience {
-                    font-size: 24rpx;
-                    color: #7b8494;
-                    white-space: nowrap;
-                }
-            }
-
-            .staff-rating {
-                display: flex;
-                align-items: center;
-                gap: 20rpx;
-                margin-top: 14rpx;
-
-                .rating-stars {
-                    display: flex;
-                    align-items: center;
-                    gap: 8rpx;
-
-                    text {
-                        font-size: 28rpx;
-                        font-weight: 700;
-                    }
-                }
-
-                .order-count {
-                    display: flex;
-                    align-items: center;
-                    gap: 8rpx;
-                    font-size: 24rpx;
-                    color: #98a2b3;
-                }
-            }
-        }
-    }
-
-    .card-content {
-        padding: 0 24rpx 20rpx;
-
-        .staff-profile {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            font-size: 26rpx;
-            line-height: 1.62;
-            color: #667085;
-            margin-bottom: 16rpx;
-        }
-
-        .staff-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10rpx;
-
-            .tag-item {
-                padding: 8rpx 16rpx;
-                border-radius: 999rpx;
-
-                .tag-text {
-                    font-size: 24rpx;
-                    font-weight: 500;
-                }
-            }
-        }
-    }
-
-    .card-footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16rpx;
-        padding: 22rpx 24rpx;
-        background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
-        border-top: 1rpx solid #eef1f5;
-
-        .price-section {
-            flex: 1;
-
-            .price-label {
-                display: block;
-                font-size: 22rpx;
-                color: #98a2b3;
-                margin-bottom: 6rpx;
-            }
-
-            .price-amount {
-                display: flex;
-                align-items: baseline;
-
-                .price-symbol {
-                    font-size: 28rpx;
-                    font-weight: 700;
-                    margin-right: 4rpx;
-                }
-
-                .price-value {
-                    font-size: 44rpx;
-                    font-weight: 800;
-                    line-height: 1;
-                }
-
-                .price-unit {
-                    font-size: 24rpx;
-                    color: #98a2b3;
-                    margin-left: 4rpx;
-                }
-
-                .price-text-negotiable {
-                    font-size: 34rpx;
-                    font-weight: 700;
-                    color: #98a2b3;
-                    line-height: 1.1;
-                }
-            }
-        }
-
-        .book-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8rpx;
-            min-width: 196rpx;
-            min-height: 88rpx;
-            padding: 0 30rpx;
-            border-radius: 999rpx;
-            font-size: 28rpx;
-            font-weight: 600;
-            transition: all 0.2s ease;
-
-            &:active {
-                transform: translateY(2rpx) scale(0.98);
-            }
-        }
-    }
 }
 </style>

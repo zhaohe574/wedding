@@ -62,7 +62,7 @@ const iconSize = computed(() => {
 })
 
 const iconColor = computed(() => {
-    return props.isFavorited ? 'var(--color-primary, #7C3AED)' : 'var(--color-btn-text, #FFFFFF)'
+    return props.isFavorited ? 'var(--color-primary, #E85A4F)' : 'var(--color-btn-text, #FFFFFF)'
 })
 
 const handleClick = () => {

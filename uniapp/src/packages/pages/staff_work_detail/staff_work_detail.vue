@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="pageStyle">
-        <navigation-bar
-            title="作品详情"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="pageStyle" />
+    <BaseNavbar title="作品详情" />
 
     <view class="work-detail" v-if="workDetail">
         <!-- 顶部封面区域 -->
@@ -25,7 +20,7 @@
                     <text class="work-title">{{ workDetail.title || '未命名作品' }}</text>
                     <view class="badges-group">
                         <view class="view-badge">
-                            <tn-icon name="eye" size="24" color="#3B82F6" />
+                            <tn-icon name="eye" size="24" color="#C99B73" />
                             <text class="view-count">{{ workDetail.view_count || 0 }}</text>
                         </view>
                         <view class="type-badge" :style="{ backgroundColor: $theme.primaryColor }">

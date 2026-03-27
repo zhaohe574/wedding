@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            title="变更详情"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="变更详情" />
     <view class="change-detail">
         <view v-if="loading" class="py-20 text-center text-gray-400"> 加载中... </view>
         <template v-else-if="detail">
@@ -351,7 +346,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--color-primary, #7C3AED);
+    border-left: 6rpx solid var(--color-primary, #E85A4F);
 }
 
 .info-row {
@@ -409,7 +404,7 @@ onLoad((options: any) => {
         color: #999;
     }
     &.new {
-        color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #E85A4F);
     }
 }
 

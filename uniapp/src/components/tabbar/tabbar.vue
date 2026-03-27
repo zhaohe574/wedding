@@ -143,9 +143,9 @@ watch(
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 8rpx 18rpx 2rpx;
-    padding-bottom: calc(2rpx + constant(safe-area-inset-bottom));
-    padding-bottom: calc(2rpx + env(safe-area-inset-bottom));
+    padding: 12rpx 21rpx 6rpx;
+    padding-bottom: calc(8rpx + constant(safe-area-inset-bottom));
+    padding-bottom: calc(8rpx + env(safe-area-inset-bottom));
     z-index: 998;
 }
 
@@ -153,12 +153,13 @@ watch(
     display: flex;
     align-items: center;
     padding: 4rpx;
-    min-height: 104rpx;
-    border-radius: 28rpx;
+    min-height: 108rpx;
+    border-radius: 32rpx;
     background: rgba(255, 255, 255, 0.84);
     backdrop-filter: blur(24rpx);
-    border: 1rpx solid rgba(222, 209, 201, 0.96);
-    box-shadow: 0 16rpx 40rpx rgba(120, 83, 71, 0.12);
+    -webkit-backdrop-filter: blur(24rpx);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
 }
 
 .custom-tabbar__item {
@@ -169,19 +170,19 @@ watch(
     align-items: center;
     justify-content: center;
     border-radius: 24rpx;
-    transition: all 0.22s ease;
+    transition: all var(--wm-motion-base, 220ms) ease;
 }
 
 .custom-tabbar__item--active {
-    background: #ef5b4c;
-    box-shadow: 0 14rpx 30rpx rgba(239, 91, 76, 0.2);
+    background: var(--wm-color-primary, #e85a4f);
+    box-shadow: 0 14rpx 30rpx rgba(232, 90, 79, 0.2);
 }
 
 .custom-tabbar__text {
     font-size: 22rpx;
     line-height: 1;
     font-weight: 600;
-    color: #5f534b;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .custom-tabbar__item--active .custom-tabbar__text {
@@ -199,7 +200,7 @@ watch(
     align-items: center;
     justify-content: center;
     border-radius: 999rpx;
-    background: #ef5b4c;
+    background: var(--wm-color-primary, #e85a4f);
     border: 2rpx solid rgba(255, 255, 255, 0.9);
 }
 

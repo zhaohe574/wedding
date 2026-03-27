@@ -1,13 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar
-            title="设置"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-        <!-- #endif -->
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="设置" />
 
     <view class="user-set-page">
         <!-- 用户信息卡片 -->
@@ -367,6 +360,8 @@ onLoad(async (options) => {
 
 <style lang="scss" scoped>
 .user-set-page {
+    position: relative;
+    z-index: 1;
     min-height: 100vh;
     background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
     padding: 24rpx;

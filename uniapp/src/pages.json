@@ -37,7 +37,15 @@
         {
             "path": "pages/staff_list/staff_list",
             "style": {
-                "navigationBarTitleText": "服务人员"
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "人员列表"
+            }
+        },
+        {
+            "path": "pages/schedule_query/schedule_query",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "档期查询"
             }
         },
         {
@@ -108,7 +116,10 @@
             }
         },
         {
-            "path": "pages/webview/webview"
+            "path": "pages/webview/webview",
+            "style": {
+                "navigationStyle": "default"
+            }
         },
         {
             "path": "pages/bind_mobile/bind_mobile",
@@ -574,6 +585,7 @@
         "navigationBarTextStyle": "black",
         "navigationBarTitleText": "商城",
         "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationStyle": "custom",
         "backgroundColor": "#F8F8F8",
         "h5": {
             "navigationStyle": "custom"
@@ -605,6 +617,7 @@
     },
     "easycom": {
         "custom": {
+            "^Base(.*)": "@/components/base/Base$1.vue",
             "router-navigate": "@/components/router-navigate/router-navigate.vue",
             "^(?!z-paging-refresh|z-paging-load-more)z-paging(.*)": "z-paging/components/z-paging$1/z-paging$1.vue",
             "^w-(.*)": "@/components/widgets/$1/$1.vue",

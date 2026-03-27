@@ -1,4 +1,5 @@
 <template>
+    <BaseNavbar title="售后服务" />
     <view class="aftersale-container">
         <!-- 统计卡片 -->
         <view class="stat-cards">

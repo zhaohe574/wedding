@@ -224,7 +224,7 @@ const props = defineProps({
 
 const { getImageUrl } = useAppStore()
 const themeStore = useThemeStore()
-const primaryColor = computed(() => themeStore.primaryColor || '#7C3AED')
+const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
 const activeCategory = ref('全部')
 
 // 内联样式（替代Tailwind主题类，兼容小程序）

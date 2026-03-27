@@ -1,10 +1,8 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
-        <!-- #endif -->
-    </page-meta>
-    <view class="login-container">
+    <page-meta :page-style="themeStore.pageStyle" />
+    <PageShell scene="consumer">
+        <BaseNavbar title="登录" />
+        <view class="login-container">
         <!-- 背景装饰 -->
         <view class="bg-decoration">
             <view class="circle circle-1"></view>
@@ -294,10 +292,13 @@
             @update="handleUpdateUser"
         />
         <!--  #endif -->
-    </view>
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
+import PageShell from '@/components/base/PageShell.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import { login, mnpLogin, updateUser, OALogin } from '@/api/account'
 import { smsSend } from '@/api/app'
 import { SMSEnum } from '@/enums/appEnums'

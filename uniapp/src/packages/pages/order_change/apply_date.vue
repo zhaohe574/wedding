@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            title="申请改期"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="申请改期" />
     <view class="apply-page">
         <!-- 订单信息 -->
         <view class="bg-white p-4" v-if="orderInfo">
@@ -280,7 +275,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--color-primary, #7C3AED);
+    border-left: 6rpx solid var(--color-primary, #E85A4F);
 }
 
 .order-card {
@@ -378,7 +373,7 @@ onLoad((options: any) => {
     width: 100%;
     height: 72rpx;
     line-height: 72rpx;
-    background: var(--color-primary, #7C3AED);
+    background: var(--color-primary, #E85A4F);
     color: #fff;
     border-radius: 44rpx;
     font-size: 30rpx;
@@ -410,7 +405,7 @@ onLoad((options: any) => {
         font-weight: bold;
     }
     .confirm {
-        color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #E85A4F);
         font-size: 28rpx;
     }
 }

@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            title="发表评价"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="发表评价" />
     <view class="publish-page">
         <!-- 顶部渐变背景 -->
         <view class="top-bg" :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor}, ${$theme.primaryColor}88)` }"></view>

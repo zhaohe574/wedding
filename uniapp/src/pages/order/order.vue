@@ -1,20 +1,13 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar
-            title="我的订单"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-        <!-- #endif -->
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="我的订单" />
     <view class="order-page cinema-page page-with-tabbar-safe-bottom">
         <view class="order-page__hero">
             <view class="order-page__hero-copy">
-                <text class="order-page__hero-label">Order Theatre</text>
+                <text class="order-page__hero-label">Wedding Orders</text>
                 <text class="order-page__hero-title">订单进度、支付状态与履约信息一屏掌握</text>
                 <text class="order-page__hero-desc">
-                    以电影海报的氛围感承载关键状态，但列表区仍保持轻量和高可读性，方便持续跟单。
+                    用暖白面板承接关键状态和金额信息，列表区保持高可读节奏，方便持续跟单与处理售后。
                 </text>
             </view>
             <view class="order-page__hero-grid">
@@ -323,7 +316,7 @@ const goDetail = (orderId: number) => {
 }
 
 const goHome = () => {
-    uni.navigateTo({ url: '/pages/staff_list/staff_list' })
+    uni.navigateTo({ url: '/pages/schedule_query/schedule_query' })
 }
 
 const handleCardAction = (action: { action: string }, order: any) => {
@@ -411,6 +404,7 @@ watch(currentTabIndex, () => {
 })
 
 onLoad((options: any) => {
+    $theme.setScene('consumer')
     if (options.status !== undefined) {
         // 状态映射：支持字符串和数字两种格式
         const statusMap: Record<string, number> = {
@@ -441,6 +435,7 @@ onLoad((options: any) => {
 })
 
 onShow(() => {
+    $theme.setScene('consumer')
     fetchOrders(true)
     fetchStatistics()
 })
@@ -458,8 +453,8 @@ onReachBottom(() => {
     &__hero {
         padding: 24rpx 24rpx 184rpx;
         background:
-            radial-gradient(circle at top right, rgba(255, 255, 255, 0.1) 0, transparent 34%),
-            linear-gradient(145deg, rgba(10, 13, 18, 0.98) 0%, rgba(19, 25, 36, 0.96) 52%, rgba(66, 52, 29, 0.92) 100%);
+            radial-gradient(circle at top right, rgba(232, 90, 79, 0.1) 0, transparent 34%),
+            linear-gradient(180deg, #fff5f1 0%, #fcfbf9 70%, #f7f1ed 100%);
     }
 
     &__hero-copy {
@@ -472,7 +467,7 @@ onReachBottom(() => {
         font-weight: 600;
         letter-spacing: 0.16em;
         text-transform: uppercase;
-        color: rgba(255, 248, 236, 0.72);
+        color: var(--wm-color-primary, #e85a4f);
     }
 
     &__hero-title {
@@ -481,7 +476,7 @@ onReachBottom(() => {
         font-size: 48rpx;
         font-weight: 700;
         line-height: 1.22;
-        color: var(--cinema-text-inverse, #fff8ea);
+        color: var(--wm-text-primary, #1e2432);
     }
 
     &__hero-desc {
@@ -489,7 +484,7 @@ onReachBottom(() => {
         margin-top: 18rpx;
         font-size: 25rpx;
         line-height: 1.7;
-        color: rgba(255, 248, 236, 0.7);
+        color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__hero-grid {
@@ -501,28 +496,28 @@ onReachBottom(() => {
 
     &__hero-card {
         padding: 24rpx;
-        background: rgba(255, 248, 236, 0.1);
+        background: rgba(255, 255, 255, 0.78);
     }
 
     &__hero-card-value {
         display: block;
         font-size: 36rpx;
         font-weight: 700;
-        color: var(--cinema-text-inverse, #fff8ea);
+        color: var(--wm-text-primary, #1e2432);
     }
 
     &__hero-card-label {
         display: block;
         margin-top: 8rpx;
         font-size: 22rpx;
-        color: rgba(255, 248, 236, 0.64);
+        color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__surface {
         margin-top: -136rpx;
         border-radius: 36rpx 36rpx 0 0;
         padding: 0 24rpx 28rpx;
-        box-shadow: 0 -24rpx 48rpx rgba(8, 10, 16, 0.18);
+        box-shadow: 0 -20rpx 40rpx rgba(214, 185, 167, 0.14);
     }
 
     &__tabs-head,
@@ -545,7 +540,7 @@ onReachBottom(() => {
         display: block;
         font-size: 30rpx;
         font-weight: 700;
-        color: var(--cinema-text-primary, #151a23);
+        color: var(--wm-text-primary, #1e2432);
     }
 
     &__section-desc {
@@ -553,7 +548,7 @@ onReachBottom(() => {
         margin-top: 8rpx;
         font-size: 22rpx;
         line-height: 1.6;
-        color: var(--cinema-text-secondary, #5d6472);
+        color: var(--wm-text-secondary, #7f7b78);
     }
 }
 
@@ -596,7 +591,7 @@ onReachBottom(() => {
 
 .loading-text {
     font-size: 28rpx;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 /* 空状态 */
@@ -607,7 +602,7 @@ onReachBottom(() => {
     align-items: center;
     justify-content: center;
     padding: 48rpx;
-    background: var(--cinema-surface-elevated, #fffdf8);
+    background: #ffffff;
 }
 
 .empty-icon-wrapper {
@@ -622,7 +617,7 @@ onReachBottom(() => {
 .empty-title {
     font-size: 34rpx;
     font-weight: 600;
-    color: var(--cinema-text-primary, #151a23);
+    color: var(--wm-text-primary, #1e2432);
     margin-bottom: 16rpx;
     text-align: center;
 }
@@ -630,7 +625,7 @@ onReachBottom(() => {
 .empty-subtitle {
     font-size: 26rpx;
     line-height: 1.7;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
     margin-bottom: 48rpx;
     text-align: center;
 }
@@ -641,12 +636,12 @@ onReachBottom(() => {
     justify-content: center;
     padding: 28rpx 72rpx;
     border-radius: 56rpx;
-    box-shadow: var(--cinema-shadow-medium, 0 20rpx 52rpx rgba(8, 10, 16, 0.12));
+    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
     transition: all 0.3s ease;
 
     &:active {
         transform: translateY(2rpx);
-        box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
+        box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
     }
 }
 
@@ -679,7 +674,7 @@ onReachBottom(() => {
 
 .load-more-text {
     font-size: 28rpx;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .load-more-clickable {
@@ -700,10 +695,10 @@ onReachBottom(() => {
 }
 
 .order-page :deep(.tn-tabs__bar) {
-    background: linear-gradient(135deg, var(--cinema-primary, #c6a86a) 0%, var(--cinema-accent, #e8c98e) 100%);
+    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, var(--wm-color-secondary, #c99b73) 100%);
 }
 
 .order-page :deep(.tn-tabs-item) {
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
 }
 </style>

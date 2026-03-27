@@ -1,15 +1,8 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="资料编辑" @back="handleBack" />
 
     <view class="user-data-page">
-        <view class="page-header" :style="{ paddingTop: `${statusBarHeight}px` }">
-            <view class="page-header__bar">
-                <view class="page-header__left" @click="handleBack">‹ 返回</view>
-                <text class="page-header__title">资料编辑</text>
-                <text class="page-header__right">占位</text>
-            </view>
-        </view>
-
         <view class="page-content">
             <view class="sync-card">
                 <view class="sync-tag">资料同步</view>
@@ -189,7 +182,6 @@ import { computed, reactive, ref } from 'vue'
 const $theme = useThemeStore()
 const userStore = useUserStore()
 
-const statusBarHeight = uni.getSystemInfoSync().statusBarHeight || 0
 const saving = ref(false)
 
 const userInfo = reactive<any>({})
@@ -494,45 +486,11 @@ onUnload(() => {
 
 <style lang="scss" scoped>
 .user-data-page {
+    position: relative;
+    z-index: 1;
     min-height: 100vh;
     background: linear-gradient(180deg, #fcfbf9 0%, #f5f1ee 100%);
     padding-bottom: calc(136rpx + env(safe-area-inset-bottom));
-}
-
-.page-header {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: rgba(252, 251, 249, 0.92);
-    backdrop-filter: blur(10rpx);
-}
-
-.page-header__bar {
-    height: 88rpx;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20rpx;
-}
-
-.page-header__left {
-    min-width: 92rpx;
-    font-size: 24rpx;
-    font-weight: 600;
-    color: #e85a4f;
-}
-
-.page-header__title {
-    font-size: 32rpx;
-    font-weight: 700;
-    color: #1e2432;
-}
-
-.page-header__right {
-    min-width: 92rpx;
-    text-align: right;
-    font-size: 24rpx;
-    color: transparent;
 }
 
 .page-content {

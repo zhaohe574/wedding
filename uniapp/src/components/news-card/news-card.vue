@@ -26,7 +26,7 @@
                         <text class="meta-text">{{ item.create_time }}</text>
                     </view>
                     <view class="meta-item">
-                        <tn-icon name="eye" size="24" color="#94A3B8" />
+                        <tn-icon name="eye" size="24" color="#B4ACA8" />
                         <text class="meta-text">{{ item.click }}</text>
                     </view>
                 </view>
@@ -70,13 +70,12 @@ const $theme = useThemeStore()
     gap: 18rpx;
     padding: 18rpx;
     border-radius: 28rpx;
-    background:
-        linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, rgba(246, 242, 234, 0.98) 100%);
-    border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
-    box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 247, 244, 0.98) 100%);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
     overflow: hidden;
-    transition: transform var(--cinema-motion-base, 220ms) ease,
-        box-shadow var(--cinema-motion-base, 220ms) ease;
+    transition: transform var(--wm-motion-base, 220ms) ease,
+        box-shadow var(--wm-motion-base, 220ms) ease;
 
     &::after {
         content: '';
@@ -88,7 +87,7 @@ const $theme = useThemeStore()
 
     &:active {
         transform: translateY(-2rpx) scale(0.995);
-        box-shadow: var(--cinema-shadow-medium, 0 20rpx 52rpx rgba(8, 10, 16, 0.12));
+        box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
     }
 }
 
@@ -99,7 +98,7 @@ const $theme = useThemeStore()
     border-radius: 22rpx;
     flex-shrink: 0;
     overflow: hidden;
-    background: linear-gradient(145deg, #18212d 0%, #2a3647 52%, #635139 100%);
+    background: linear-gradient(145deg, #f6d8d1 0%, #f0b7aa 52%, #dba58d 100%);
 }
 
 .news-cover {
@@ -119,13 +118,13 @@ const $theme = useThemeStore()
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.3;
-    color: rgba(255, 248, 236, 0.92);
+    color: #ffffff;
 }
 
 .news-cover-mask {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(9, 11, 17, 0.02) 0%, rgba(9, 11, 17, 0.58) 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(30, 36, 50, 0.38) 100%);
 }
 
 .news-cover-badge {
@@ -134,11 +133,11 @@ const $theme = useThemeStore()
     top: 16rpx;
     padding: 8rpx 14rpx;
     border-radius: 999rpx;
-    background: rgba(9, 11, 17, 0.58);
-    border: 1rpx solid rgba(255, 248, 236, 0.18);
+    background: rgba(255, 255, 255, 0.74);
+    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
     font-size: 20rpx;
     font-weight: 600;
-    color: rgba(255, 248, 236, 0.86);
+    color: var(--wm-color-primary, #e85a4f);
     letter-spacing: 0.08em;
 }
 
@@ -162,7 +161,7 @@ const $theme = useThemeStore()
 .news-title {
     font-size: 30rpx;
     font-weight: 700;
-    color: var(--cinema-text-primary, #151a23);
+    color: var(--wm-text-primary, #1e2432);
     line-height: 1.45;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -174,7 +173,7 @@ const $theme = useThemeStore()
 .news-desc {
     margin-top: 12rpx;
     font-size: 24rpx;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
     line-height: 1.7;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -202,7 +201,7 @@ const $theme = useThemeStore()
 
 .meta-text {
     font-size: 22rpx;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .news-foot {
@@ -216,7 +215,7 @@ const $theme = useThemeStore()
 .news-foot__hint {
     font-size: 22rpx;
     font-weight: 600;
-    color: var(--cinema-primary, #c6a86a);
+    color: var(--wm-color-primary, #e85a4f);
     letter-spacing: 0.04em;
 }
 

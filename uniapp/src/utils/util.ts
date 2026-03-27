@@ -55,9 +55,9 @@ export enum LinkTypeEnum {
 }
 
 const LEGACY_LINK_MAP: Record<string, string> = {
-    '/pages/service/index': '/pages/staff_list/staff_list',
-    '/pages/staff/list': '/pages/staff_list/staff_list',
-    '/packages/pages/staff_list/staff_list': '/pages/staff_list/staff_list',
+    '/pages/service/index': '/pages/schedule_query/schedule_query',
+    '/pages/staff/list': '/pages/schedule_query/schedule_query',
+    '/packages/pages/staff_list/staff_list': '/pages/schedule_query/schedule_query',
     '/pages/order/list': '/pages/order/order',
     '/pages/customer-service/index': '/packages/pages/customer_service/customer_service',
     '/pages/customer_service/customer_service': '/packages/pages/customer_service/customer_service',

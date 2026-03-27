@@ -61,7 +61,7 @@ const showTitleImage = computed(() => {
 const resolvedTitle = computed(() => {
     return typeof props.title === 'string' && props.title.trim() ? props.title : ''
 })
-const titleTextColor = computed(() => themeStore.navColor || '#111827')
+const titleTextColor = computed(() => themeStore.navColor || '#1E2432')
 
 const sideSlotStyle = computed(() => ({
     width: `${navBarMetrics.safeInset}px`
@@ -116,7 +116,7 @@ const sideSlotStyle = computed(() => ({
         font-size: 32rpx;
         font-weight: 400;
         line-height: 1.2;
-        color: #111827;
+        color: #1E2432;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

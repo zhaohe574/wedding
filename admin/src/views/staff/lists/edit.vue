@@ -299,6 +299,7 @@
                                         <el-option label="圆点" :value="1" />
                                         <el-option label="数字" :value="2" />
                                         <el-option label="进度条" :value="3" />
+                                        <el-option label="长条形" :value="4" />
                                         <el-option label="无" :value="0" />
                                     </el-select>
                                 </el-form-item>

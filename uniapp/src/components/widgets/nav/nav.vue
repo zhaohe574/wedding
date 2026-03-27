@@ -101,8 +101,8 @@ const swiperHeight = computed(() => {
 })
 
 // 指示器颜色
-const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#7C3AED', 0.16))
-const indicatorActiveColor = computed(() => themeStore.primaryColor || '#7C3AED')
+const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#E85A4F', 0.16))
+const indicatorActiveColor = computed(() => themeStore.primaryColor || '#E85A4F')
 
 // 过滤后的可见数据（与admin端预览逻辑保持一致）
 const visibleData = computed(() => {

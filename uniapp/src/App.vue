@@ -53,22 +53,24 @@ onLaunch(async () => {
 <style lang="scss">
 @import '@tuniao/tn-style/dist/uniapp/index.css';
 @import '@tuniao/tn-icon/dist/index.css';
-@import './styles/animations.scss';
-@import './styles/utilities.scss';
 
 page {
     background:
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.08) 0, transparent 36%),
-        linear-gradient(180deg, var(--cinema-page-bg, #0b0d12) 0%, var(--cinema-page-bg-soft, #141922) 100%);
+        radial-gradient(circle at top right, rgba(232, 90, 79, 0.08) 0, transparent 32%),
+        linear-gradient(
+            180deg,
+            var(--wm-color-bg-page, #fcfbf9) 0%,
+            var(--wm-color-bg-soft, #fff7f4) 100%
+        );
     font-family:
-        'PingFang SC',
+        var(--wm-font-family-body, 'PingFang SC'),
         'Hiragino Sans GB',
         'Microsoft YaHei',
         'Noto Sans SC',
         sans-serif;
     font-size: 28rpx;
     line-height: 1.6;
-    color: var(--cinema-text-primary, #151a23);
+    color: var(--wm-text-primary, #1e2432);
     letter-spacing: 0.3rpx;
 }
 
@@ -79,6 +81,7 @@ button,
 input,
 textarea {
     box-sizing: border-box;
+    font-family: inherit;
 }
 
 ::-webkit-scrollbar {
@@ -87,15 +90,15 @@ textarea {
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.35);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.18);
+    background: rgba(232, 90, 79, 0.16);
     border-radius: 4rpx;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.28);
+        background: rgba(232, 90, 79, 0.22);
     }
 }
 </style>

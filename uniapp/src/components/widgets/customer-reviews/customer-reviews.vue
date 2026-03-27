@@ -216,7 +216,7 @@ const props = defineProps({
 
 const { getImageUrl } = useAppStore()
 const themeStore = useThemeStore()
-const primaryColor = computed(() => themeStore.primaryColor || '#7C3AED')
+const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
 const defaultAvatar = '/static/images/user/default_avatar.png'
 
 // 内联样式（替代CSS变量和Tailwind主题类，兼容小程序）

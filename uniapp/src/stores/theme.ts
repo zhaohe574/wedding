@@ -1,10 +1,16 @@
 import { getDecorate } from '@/api/shop'
-import { normalizeThemeConfig } from '@/design/theme'
+import {
+    createWmThemeTokens,
+    normalizeThemeConfig,
+    type WmScene,
+    type WmThemeTokens
+} from '@/design/theme'
 import { alphaColor, tintColor } from '@/utils/color'
 import { generateVars } from '@/utils/theme'
 import { defineStore } from 'pinia'
 
 interface ThemeStore {
+    scene: WmScene
     presetKey: string
     primaryColor: string
     secondaryColor: string
@@ -16,8 +22,10 @@ interface ThemeStore {
     surfaceOverlayColor: string
     textPrimaryColor: string
     textSecondaryColor: string
+    textTertiaryColor: string
     textInverseColor: string
     borderColor: string
+    borderStrongColor: string
     pageBgColor: string
     pageBgSoftColor: string
     heroGradient: string
@@ -30,42 +38,72 @@ interface ThemeStore {
     btnColor: string
     navColor: string
     navBgColor: string
+    tokens: WmThemeTokens
     vars: string
     pageStyle: string
 }
+
+const sceneHeroGradientMap: Record<WmScene, string> = {
+    consumer: 'linear-gradient(180deg, #FFF5F1 0%, #FCFBF9 68%, #F7F1ED 100%)',
+    staff: 'linear-gradient(135deg, #FFF5F1 0%, #FDE7E1 100%)',
+    admin: 'linear-gradient(180deg, #FFF7F4 0%, #FCFBF9 100%)'
+}
+
+const defaultTokens = createWmThemeTokens()
+
+const createCssVarRecord = (prefix: string, source: Record<string, string>) => {
+    return Object.keys(source).reduce(
+        (record, key) => ({
+            ...record,
+            [`--wm-${prefix}-${key}`]: source[key]
+        }),
+        {} as Record<string, string>
+    )
+}
+
 export const useThemeStore = defineStore({
     id: 'themeStore',
     state: (): ThemeStore => ({
+        scene: 'consumer',
         presetKey: 'obsidian-gold',
-        primaryColor: '#C6A86A',
-        secondaryColor: '#8D6B3B',
-        ctaColor: '#D97706',
-        accentColor: '#E8C98E',
-        minorColor: '#E8C98E',
-        surfaceColor: '#F6F2EA',
-        surfaceElevatedColor: '#FFFDF8',
-        surfaceOverlayColor: 'rgba(255, 248, 236, 0.86)',
-        textPrimaryColor: '#151A23',
-        textSecondaryColor: '#5D6472',
-        textInverseColor: '#FFF8EA',
-        borderColor: 'rgba(198, 168, 106, 0.24)',
-        pageBgColor: '#0B0D12',
-        pageBgSoftColor: '#141922',
-        heroGradient:
-            'linear-gradient(145deg, rgba(10,13,18,0.98) 0%, rgba(25,32,45,0.96) 52%, rgba(76,58,29,0.94) 100%)',
-        maskColor: 'rgba(8, 10, 16, 0.58)',
-        tabbarActiveColor: '#C6A86A',
-        tabbarInactiveColor: '#8D93A1',
+        primaryColor: '#E85A4F',
+        secondaryColor: '#C99B73',
+        ctaColor: '#E85A4F',
+        accentColor: '#C99B73',
+        minorColor: '#C99B73',
+        surfaceColor: '#FCFBF9',
+        surfaceElevatedColor: '#FFFFFF',
+        surfaceOverlayColor: 'rgba(255, 255, 255, 0.88)',
+        textPrimaryColor: '#1E2432',
+        textSecondaryColor: '#7F7B78',
+        textTertiaryColor: '#B4ACA8',
+        textInverseColor: '#FFFFFF',
+        borderColor: '#EFE6E1',
+        borderStrongColor: '#F4C7BF',
+        pageBgColor: '#FCFBF9',
+        pageBgSoftColor: '#FFF7F4',
+        heroGradient: sceneHeroGradientMap.consumer,
+        maskColor: 'rgba(30, 36, 50, 0.46)',
+        tabbarActiveColor: '#E85A4F',
+        tabbarInactiveColor: '#9D918B',
         navStyle: 'glass',
         cardStyle: 'glass',
-        shadowLevel: 'strong',
+        shadowLevel: 'medium',
         btnColor: 'white',
-        navColor: '#ffffff',
-        navBgColor: '#0F141D',
+        navColor: '#1E2432',
+        navBgColor: '#FCFBF9',
+        tokens: defaultTokens,
         vars: '',
         pageStyle: ''
     }),
     actions: {
+        setScene(scene: WmScene) {
+            if (this.scene === scene) {
+                return
+            }
+            this.scene = scene
+            this.updateVars()
+        },
         applyTheme(themeConfig: ReturnType<typeof normalizeThemeConfig>) {
             const { preset } = themeConfig
             this.presetKey = themeConfig.presetKey
@@ -74,16 +112,18 @@ export const useThemeStore = defineStore({
             this.ctaColor = preset.ctaColor
             this.accentColor = themeConfig.accentColor
             this.minorColor = themeConfig.accentColor
-            this.surfaceColor = preset.surface
+            this.surfaceColor = preset.pageBg
             this.surfaceElevatedColor = preset.surfaceElevated
             this.surfaceOverlayColor = preset.surfaceOverlay
             this.textPrimaryColor = preset.textPrimary
             this.textSecondaryColor = preset.textSecondary
+            this.textTertiaryColor = defaultTokens.text.tertiary
             this.textInverseColor = preset.textInverse
             this.borderColor = preset.borderColor
+            this.borderStrongColor = defaultTokens.colors['border-strong']
             this.pageBgColor = preset.pageBg
             this.pageBgSoftColor = preset.pageBgSoft
-            this.heroGradient = preset.heroGradient
+            this.heroGradient = sceneHeroGradientMap[this.scene]
             this.maskColor = preset.maskColor
             this.tabbarActiveColor = themeConfig.tabbarActiveColor
             this.tabbarInactiveColor = themeConfig.tabbarInactiveColor
@@ -91,7 +131,7 @@ export const useThemeStore = defineStore({
             this.cardStyle = themeConfig.cardStyle
             this.shadowLevel = themeConfig.shadowLevel
             this.btnColor = themeConfig.buttonColor
-            this.navColor = themeConfig.topTextColor === 'white' ? '#ffffff' : '#111827'
+            this.navColor = themeConfig.topTextColor === 'white' ? '#FFFFFF' : '#1E2432'
             this.navBgColor = themeConfig.navigationBarColor
             this.updateVars()
         },
@@ -100,13 +140,12 @@ export const useThemeStore = defineStore({
                 id: 5
             })
 
-            // 处理 data.data 字段，可能是字符串或对象
             let themeData = data.data
             if (typeof themeData === 'string') {
                 try {
                     themeData = JSON.parse(themeData)
-                } catch (e) {
-                    console.error('解析主题数据失败:', e)
+                } catch (error) {
+                    console.error('解析主题数据失败：', error)
                     return
                 }
             }
@@ -127,69 +166,113 @@ export const useThemeStore = defineStore({
         },
         setAccentColor(color: string) {
             this.accentColor = color
+            this.minorColor = color
             this.updateVars()
         },
         updateVars() {
+            const tokens = createWmThemeTokens(this.scene)
+            this.tokens = tokens
+            this.heroGradient = sceneHeroGradientMap[this.scene]
+
+            const wmVars = {
+                ...createCssVarRecord('color', {
+                    ...tokens.colors,
+                    'text-primary': this.textPrimaryColor,
+                    'text-secondary': this.textSecondaryColor,
+                    'text-tertiary': this.textTertiaryColor,
+                    'text-inverse': this.textInverseColor
+                }),
+                ...createCssVarRecord('text', {
+                    primary: this.textPrimaryColor,
+                    secondary: this.textSecondaryColor,
+                    tertiary: this.textTertiaryColor,
+                    inverse: this.textInverseColor
+                }),
+                ...createCssVarRecord('font', tokens.font),
+                ...createCssVarRecord('radius', tokens.radius),
+                ...createCssVarRecord('space', tokens.space),
+                ...createCssVarRecord('shadow', tokens.shadow),
+                ...createCssVarRecord('motion', tokens.motion),
+                ...createCssVarRecord('z', tokens.zIndex),
+                ...createCssVarRecord('safe', tokens.safe),
+                '--wm-scene': this.scene,
+                '--wm-nav-bg': this.navBgColor,
+                '--wm-nav-text': this.navColor,
+                '--wm-hero-gradient': this.heroGradient,
+                '--wm-mask-color': this.maskColor,
+                '--wm-tabbar-active': this.tabbarActiveColor,
+                '--wm-tabbar-inactive': this.tabbarInactiveColor,
+                '--wm-safe-bottom-tabbar': `calc(${tokens.safe.tabbar} + env(safe-area-inset-bottom))`,
+                '--wm-safe-bottom-action': `calc(${tokens.safe.action} + env(safe-area-inset-bottom))`
+            }
+
             this.vars = generateVars(
                 {
                     primary: this.primaryColor,
                     secondary: this.secondaryColor,
                     cta: this.ctaColor,
                     accent: this.accentColor,
-                    success: '#2F7D58',
-                    warning: '#C98524',
-                    error: '#B44A3A',
-                    info: '#607086'
+                    success: tokens.colors.success,
+                    warning: tokens.colors.warning,
+                    error: tokens.colors.danger,
+                    info: tokens.colors.info
                 },
                 {
+                    ...wmVars,
                     '--color-minor': this.minorColor,
                     '--color-btn-text': this.btnColor,
                     '--color-main': this.textPrimaryColor,
                     '--color-content': this.textSecondaryColor,
-                    '--color-muted': this.textSecondaryColor,
+                    '--color-muted': this.textTertiaryColor,
                     '--color-light': this.borderColor,
                     '--color-page': this.surfaceColor,
+                    '--cinema-primary': this.primaryColor,
+                    '--cinema-secondary': this.secondaryColor,
+                    '--cinema-accent': this.accentColor,
                     '--cinema-page-bg': this.pageBgColor,
                     '--cinema-page-bg-soft': this.pageBgSoftColor,
                     '--cinema-surface': this.surfaceColor,
                     '--cinema-surface-elevated': this.surfaceElevatedColor,
                     '--cinema-surface-overlay': this.surfaceOverlayColor,
-                    '--cinema-surface-muted': tintColor(this.primaryColor, 0.93),
+                    '--cinema-surface-muted': this.pageBgSoftColor,
                     '--cinema-text-primary': this.textPrimaryColor,
                     '--cinema-text-secondary': this.textSecondaryColor,
+                    '--cinema-text-tertiary': this.textTertiaryColor,
                     '--cinema-text-inverse': this.textInverseColor,
                     '--cinema-border': this.borderColor,
+                    '--cinema-border-strong': this.borderStrongColor,
                     '--cinema-primary-soft': alphaColor(this.primaryColor, 0.1),
-                    '--cinema-secondary-soft': alphaColor(this.secondaryColor, 0.1),
+                    '--cinema-secondary-soft': alphaColor(this.secondaryColor, 0.12),
                     '--cinema-primary-border': alphaColor(this.primaryColor, 0.24),
                     '--cinema-secondary-border': alphaColor(this.secondaryColor, 0.22),
-                    '--cinema-primary-ring': alphaColor(this.primaryColor, 0.12),
+                    '--cinema-primary-ring': alphaColor(this.primaryColor, 0.14),
                     '--cinema-tabbar-active': this.tabbarActiveColor,
                     '--cinema-tabbar-inactive': this.tabbarInactiveColor,
                     '--cinema-nav-bg': this.navBgColor,
-                    '--cinema-nav-glass': alphaColor(this.navBgColor, 0.88),
+                    '--cinema-nav-glass': alphaColor(this.surfaceElevatedColor, 0.94),
                     '--cinema-nav-text': this.navColor,
                     '--cinema-mask': this.maskColor,
                     '--cinema-hero-gradient': this.heroGradient,
-                    '--cinema-skeleton-start': tintColor(this.primaryColor, 0.92),
-                    '--cinema-skeleton-middle': tintColor(this.primaryColor, 0.8),
+                    '--cinema-skeleton-start': tintColor(this.primaryColor, 0.9),
+                    '--cinema-skeleton-middle': tintColor(this.primaryColor, 0.78),
                     '--cinema-card-style': this.cardStyle,
-                    '--cinema-shadow-soft': '0 18rpx 44rpx rgba(8, 10, 16, 0.08)',
-                    '--cinema-shadow-medium': '0 20rpx 52rpx rgba(8, 10, 16, 0.12)',
-                    '--cinema-shadow-strong': '0 24rpx 60rpx rgba(8, 10, 16, 0.18)',
-                    '--cinema-radius-sm': '18rpx',
-                    '--cinema-radius-md': '24rpx',
-                    '--cinema-radius-lg': '32rpx',
-                    '--cinema-space-xs': '12rpx',
-                    '--cinema-space-sm': '16rpx',
-                    '--cinema-space-md': '24rpx',
-                    '--cinema-space-lg': '32rpx',
-                    '--cinema-space-xl': '40rpx',
-                    '--cinema-motion-fast': '150ms',
-                    '--cinema-motion-base': '220ms',
-                    '--cinema-motion-slow': '260ms'
+                    '--cinema-shadow-soft': tokens.shadow.soft,
+                    '--cinema-shadow-medium': tokens.shadow.card,
+                    '--cinema-shadow-strong': tokens.shadow.hero,
+                    '--cinema-radius-sm': tokens.radius.input,
+                    '--cinema-radius-md': tokens.radius.card,
+                    '--cinema-radius-lg': tokens.radius['card-lg'],
+                    '--cinema-space-xs': tokens.space['3'],
+                    '--cinema-space-sm': tokens.space['4'],
+                    '--cinema-space-md': tokens.space['6'],
+                    '--cinema-space-lg': tokens.space['8'],
+                    '--cinema-space-xl': tokens.space['10'],
+                    '--cinema-motion-fast': tokens.motion.fast,
+                    '--cinema-motion-base': tokens.motion.base,
+                    '--cinema-motion-slow': tokens.motion.slow
                 }
             )
+
             this.pageStyle = this.vars
         }
     }

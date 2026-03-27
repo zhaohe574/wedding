@@ -55,11 +55,6 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
         $where[] = ['audit_status', '=', Staff::AUDIT_PASS];
         $where[] = ['delete_time', '=', null];
 
-        // 关键词搜索（名称）
-        if (!empty($this->params['keyword'])) {
-            $where[] = ['name', 'like', '%' . $this->params['keyword'] . '%'];
-        }
-
         // 从业年限筛选
         if (!empty($this->params['experience_min'])) {
             $where[] = ['experience_years', '>=', intval($this->params['experience_min'])];
@@ -86,11 +81,20 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
             return [];
         }
 
+        $keywordStaffIds = $this->getKeywordStaffIds();
+        if ($keywordStaffIds !== null && empty($keywordStaffIds)) {
+            $this->manualCount = 0;
+            return [];
+        }
+
         $baseQuery = Staff::where($this->queryWhere())
             ->where($this->searchWhere);
 
         if ($tagStaffIds !== null) {
             $baseQuery->whereIn('id', $tagStaffIds);
+        }
+        if ($keywordStaffIds !== null) {
+            $baseQuery->whereIn('id', $keywordStaffIds);
         }
 
         $result = [];
@@ -242,11 +246,19 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
             return 0;
         }
 
+        $keywordStaffIds = $this->getKeywordStaffIds();
+        if ($keywordStaffIds !== null && empty($keywordStaffIds)) {
+            return 0;
+        }
+
         $query = Staff::where($this->searchWhere)
             ->where($this->queryWhere());
 
         if ($tagStaffIds !== null) {
             $query->whereIn('id', $tagStaffIds);
+        }
+        if ($keywordStaffIds !== null) {
+            $query->whereIn('id', $keywordStaffIds);
         }
 
         if ($this->needPriceMemoryMode()) {
@@ -322,6 +334,37 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
         return StaffTag::whereIn('tag_id', $tagIds)
             ->group('staff_id')
             ->column('staff_id');
+    }
+
+    /**
+     * @notes 关键词匹配对应的 staff_id 列表
+     * @return array|null
+     */
+    protected function getKeywordStaffIds(): ?array
+    {
+        $keyword = trim((string)($this->params['keyword'] ?? ''));
+        if ($keyword === '') {
+            return null;
+        }
+
+        $keywordLike = '%' . $keyword . '%';
+
+        $staffIds = Staff::where(function ($query) use ($keywordLike) {
+            $query->whereLike('name', $keywordLike)
+                ->whereOrLike('profile', $keywordLike);
+        })->column('id');
+
+        $tagStaffIds = StaffTag::alias('st')
+            ->leftJoin('style_tag tag', 'st.tag_id = tag.id')
+            ->where('tag.delete_time', null)
+            ->where('tag.is_show', 1)
+            ->whereLike('tag.name', $keywordLike)
+            ->column('st.staff_id');
+
+        $staffIds = array_merge($staffIds, $tagStaffIds);
+        $staffIds = array_values(array_unique(array_filter(array_map('intval', $staffIds))));
+
+        return $staffIds;
     }
 
     /**

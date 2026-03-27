@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            title="订单管理"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="订单管理" />
 
     <view class="page-container">
         <z-paging ref="pagingRef" v-model="orderList" @query="queryList" :auto="false" :hide-empty-view="true">
@@ -348,11 +343,11 @@ const getStatusText = (status: number) => {
 const getStatusStyle = (status: number) => {
     const styles: Record<number, Record<string, string>> = {
         0: { background: 'rgba(249,115,22,0.12)', color: '#EA580C' },
-        1: { background: 'rgba(59,130,246,0.12)', color: '#2563EB' },
+        1: { background: 'rgba(201,155,115,0.12)', color: '#C99B73' },
         2: { background: 'rgba(16,185,129,0.12)', color: '#059669' },
         3: { background: 'rgba(14,165,233,0.12)', color: '#0284C7' },
         4: { background: 'rgba(100,116,139,0.12)', color: '#475569' },
-        5: { background: 'rgba(124,58,237,0.12)', color: '#7C3AED' },
+        5: { background: 'rgba(232,90,79,0.12)', color: '#E85A4F' },
         6: { background: 'rgba(239,68,68,0.12)', color: '#DC2626' },
         7: { background: 'rgba(245,158,11,0.12)', color: '#D97706' },
         8: { background: 'rgba(244,63,94,0.12)', color: '#E11D48' }

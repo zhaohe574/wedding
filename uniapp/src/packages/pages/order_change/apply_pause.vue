@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            title="申请暂停"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="申请暂停" />
     <view class="apply-page">
         <!-- 提示信息 -->
         <view class="tip-card">
@@ -323,7 +318,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--color-primary, #7C3AED);
+    border-left: 6rpx solid var(--color-primary, #E85A4F);
 }
 
 .order-card {
@@ -348,7 +343,7 @@ onLoad((options: any) => {
     border-radius: 12rpx;
 
     &.active {
-        border-color: var(--color-primary, #7C3AED);
+        border-color: var(--color-primary, #E85A4F);
         background: rgba(124, 58, 237, 0.05);
     }
 
@@ -359,7 +354,7 @@ onLoad((options: any) => {
     }
 
     &.active .type-label {
-        color: var(--color-primary, #7C3AED);
+        color: var(--color-primary, #E85A4F);
     }
 }
 
@@ -466,7 +461,7 @@ onLoad((options: any) => {
     width: 100%;
     height: 72rpx;
     line-height: 72rpx;
-    background: var(--color-primary, #7C3AED);
+    background: var(--color-primary, #E85A4F);
     color: #fff;
     border-radius: 44rpx;
     font-size: 30rpx;

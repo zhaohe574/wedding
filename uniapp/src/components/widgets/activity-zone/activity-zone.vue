@@ -255,7 +255,7 @@ const props = defineProps({
 const { getImageUrl } = useAppStore()
 const themeStore = useThemeStore()
 
-const primaryColor = computed(() => themeStore.primaryColor || '#7C3AED')
+const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
 const ctaColor = computed(() => themeStore.ctaColor || '#F97316')
 
 const titleBarStyle = computed(() => ({

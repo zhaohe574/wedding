@@ -146,7 +146,7 @@ const handleSubmit = (e: any) => {
     font-size: 36rpx;
     line-height: 1.3;
     font-weight: 700;
-    color: #111827;
+    color: #1E2432;
     word-break: break-all;
 }
 
@@ -195,7 +195,7 @@ const handleSubmit = (e: any) => {
     border-radius: 20rpx;
     background: #f8fafc;
     font-size: 28rpx;
-    color: #111827;
+    color: #1E2432;
     box-sizing: border-box;
 }
 

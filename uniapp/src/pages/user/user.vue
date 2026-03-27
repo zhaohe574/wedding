@@ -284,6 +284,7 @@ const loadWeddingInfo = async () => {
 }
 
 onShow(async () => {
+    $theme.setScene('consumer')
     if (isLogin.value && !userInfo.value?.id) {
         await userStore.getUser()
     }

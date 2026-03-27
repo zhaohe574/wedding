@@ -55,7 +55,7 @@
             </view>
 
             <view class="home-page__body">
-                <view class="home-page__cta" @tap="goToStaffList">
+                <view class="home-page__cta" @tap="goToScheduleQuery">
                     <text class="home-page__cta-text">查询档期</text>
                 </view>
 
@@ -113,6 +113,7 @@
 import { getIndex } from '@/api/shop'
 import { getRecommendStaff } from '@/api/staff'
 import { useAppStore } from '@/stores/app'
+import { useThemeStore } from '@/stores/theme'
 import { navigateTo } from '@/utils/util'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
@@ -162,6 +163,7 @@ interface RecommendStaffItem {
 }
 
 const appStore = useAppStore()
+const themeStore = useThemeStore()
 
 const widgets = ref<DecorateWidget[]>([])
 const metaList = ref<any[]>([])
@@ -348,7 +350,11 @@ const getData = async () => {
 }
 
 const goToStaffList = () => {
-    uni.navigateTo({ url: '/pages/staff_list/staff_list' })
+    uni.navigateTo({ url: '/pages/schedule_query/schedule_query' })
+}
+
+const goToScheduleQuery = () => {
+    uni.navigateTo({ url: '/pages/schedule_query/schedule_query' })
 }
 
 const handleBannerTap = (item: BannerItem) => {
@@ -374,10 +380,12 @@ const handleStaffTap = (item: RecommendStaffItem | null) => {
 }
 
 onLoad(() => {
+    themeStore.setScene('consumer')
     getData()
 })
 
 onShow(() => {
+    themeStore.setScene('consumer')
     tabbarRefreshKey.value += 1
 })
 </script>

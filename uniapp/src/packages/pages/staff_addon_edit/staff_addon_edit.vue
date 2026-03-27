@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            :title="form.addon_id ? '编辑附加服务' : '新增附加服务'"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar :title="form.addon_id ? '编辑附加服务' : '新增附加服务'" />
 
     <view class="page-container">
         <view class="form-card">

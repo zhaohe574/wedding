@@ -323,12 +323,14 @@ watch(currentTypeIndex, () => {
 })
 
 onLoad((options: any) => {
+    $theme.setScene('consumer')
     if (options?.tag) {
         currentTag.value = decodeURIComponent(options.tag)
     }
 })
 
 onShow(() => {
+    $theme.setScene('consumer')
     tabbarRefreshKey.value += 1
     showSortPicker.value = false
 

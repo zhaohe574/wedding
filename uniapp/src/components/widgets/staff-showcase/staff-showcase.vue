@@ -169,7 +169,7 @@ const props = defineProps({
 
 const { getImageUrl } = useAppStore()
 const themeStore = useThemeStore()
-const primaryColor = computed(() => themeStore.primaryColor || '#7C3AED')
+const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
 const ctaColor = computed(() => themeStore.ctaColor || '#F97316')
 const tagStyle = computed(() => ({
     background: `linear-gradient(135deg, ${tintColor(primaryColor.value, 0.85)} 0%, ${tintColor(

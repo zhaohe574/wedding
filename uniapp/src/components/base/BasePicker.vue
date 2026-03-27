@@ -3,7 +3,7 @@
         <view class="base-picker__display">
             <text v-if="displayText" class="base-picker__text">{{ displayText }}</text>
             <text v-else class="base-picker__placeholder">{{ placeholder }}</text>
-            <tn-icon name="arrow-down" size="32" color="#999999" />
+            <tn-icon name="arrow-down" size="32" color="#B4ACA8" />
         </view>
 
         <tn-picker
@@ -89,26 +89,26 @@ export default {
         justify-content: space-between;
         height: 88rpx;
         padding: 0 24rpx;
-        background: #f9fafb;
-        border-radius: 16rpx;
-        border: 2rpx solid #e5e7eb;
-        transition: all 0.2s ease;
+        background: var(--wm-color-bg-soft, #fff7f4);
+        border-radius: var(--wm-radius-input, 18rpx);
+        border: 2rpx solid var(--wm-color-border, #efe6e1);
+        transition: all var(--wm-motion-base, 220ms) ease;
         cursor: pointer;
 
         &:active {
             background: #ffffff;
-            border-color: var(--color-primary, #7c3aed);
+            border-color: var(--wm-color-border-strong, #f4c7bf);
         }
     }
 
     &__text {
         font-size: 28rpx;
-        color: var(--color-main, #333333);
+        color: var(--wm-text-primary, #1e2432);
     }
 
     &__placeholder {
         font-size: 28rpx;
-        color: var(--color-muted, #999999);
+        color: var(--wm-text-tertiary, #b4aca8);
     }
 }
 </style>

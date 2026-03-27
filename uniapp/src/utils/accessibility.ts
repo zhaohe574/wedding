@@ -196,7 +196,7 @@ export function validateInputAccessibility(input: {
  * @param color 主题色
  * @returns 焦点样式对象
  */
-export function generateFocusStyle(color = '#7C3AED'): Record<string, string> {
+export function generateFocusStyle(color = '#E85A4F'): Record<string, string> {
     return {
         outline: `4rpx solid ${color}`,
         outlineOffset: '4rpx'

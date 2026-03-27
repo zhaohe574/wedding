@@ -3,7 +3,7 @@
  * 说明：
  * - 只支持 #RRGGBB 格式输入，异常时回退到默认主色
  */
-const fallbackColor = '#7C3AED'
+const fallbackColor = '#E85A4F'
 
 const parseHex = (color: string): { r: number; g: number; b: number } => {
     const hex = /^#?([a-fA-F0-9]{6})$/.exec(color)

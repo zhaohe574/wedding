@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            title="附加服务变更"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="附加服务变更" />
     <view class="apply-addon-page">
         <view class="bg-white p-4" v-if="orderInfo">
             <view class="section-title">当前订单</view>

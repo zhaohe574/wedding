@@ -367,7 +367,10 @@
                         />
                     </view>
                 </view>
-                <view class="dynamic-detail__popup-footer">
+                <view
+                    class="dynamic-detail__popup-footer"
+                    :class="{ 'is-emoji-open': showEmojiPanel }"
+                >
                     <view class="dynamic-detail__popup-actions">
                         <text class="dynamic-detail__char-count">
                             {{ commentDisplayLength }}/{{ commentMaxLength }}
@@ -390,7 +393,11 @@
                             </button>
                         </view>
                     </view>
-                    <view v-if="showEmojiPanel" class="dynamic-detail__emoji-panel">
+                    <view
+                        v-if="showEmojiPanel"
+                        class="dynamic-detail__emoji-panel"
+                        @tap.stop="() => {}"
+                    >
                         <view
                             v-for="emoji in emojiList"
                             :key="emoji"
@@ -1760,11 +1767,18 @@ watch(showComment, (visible) => {
     }
 
     &__popup-footer {
+        position: relative;
+        z-index: 2;
+        flex-shrink: 0;
         display: flex;
         flex-direction: column;
         gap: 20rpx;
         padding: 18rpx 24rpx 24rpx;
         border-top: 1rpx solid $dynamic-divider;
+
+        &.is-emoji-open {
+            z-index: 3;
+        }
     }
 
     &__popup-actions {
@@ -1844,6 +1858,10 @@ watch(showComment, (visible) => {
     }
 
     &__emoji-panel {
+        position: absolute;
+        left: 24rpx;
+        right: 24rpx;
+        bottom: calc(100% + 16rpx);
         height: 296rpx;
         padding: 20rpx 8rpx 6rpx;
         border-radius: 28rpx;
@@ -1856,6 +1874,8 @@ watch(showComment, (visible) => {
         grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 14rpx 8rpx;
         box-sizing: border-box;
+        overflow-y: auto;
+        z-index: 4;
     }
 
     &__emoji-item {

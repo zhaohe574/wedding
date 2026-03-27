@@ -1,9 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
-        <!-- #endif -->
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="详情" />
     <view class="news-detail bg-white">
         <!-- 标题信心 -->
         <view class="news-detail-header py-[20rpx] px-[30rpx]">

@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            :title="form.package_id ? '编辑套餐' : '新增套餐'"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar :title="form.package_id ? '编辑套餐' : '新增套餐'" />
 
     <view class="page-container">
         <view class="form-card">
@@ -325,7 +320,7 @@ onLoad(async (options: any) => {
     display: block;
     font-size: 28rpx;
     font-weight: 600;
-    color: #111827;
+    color: #1E2432;
 }
 
 .addon-card__status {

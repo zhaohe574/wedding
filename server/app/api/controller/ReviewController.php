@@ -17,7 +17,7 @@ use app\api\validate\ReviewValidate;
  */
 class ReviewController extends BaseApiController
 {
-    public array $notNeedLogin = ['staffReviews', 'reviewDetail', 'tags'];
+    public array $notNeedLogin = ['staffReviews', 'reviewDetail', 'tags', 'staffStats'];
 
     /**
      * @notes 我的评价列表

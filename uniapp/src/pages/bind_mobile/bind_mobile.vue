@@ -1,9 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
-        <!-- #endif -->
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="绑定手机号" />
     <view class="bind-mobile-container">
         <!-- 背景装饰 -->
         <view class="bg-decoration">

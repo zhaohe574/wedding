@@ -1,9 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
-        <!-- #endif -->
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="充值" />
     <view class="recharge p-[20rpx]">
         <view class="bg-white rounded-[14rpx] p-[40rpx]">
             <view class="text-content">充值金额</view>

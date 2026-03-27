@@ -1,39 +1,62 @@
 <template>
-    <view class="base-navbar-wrapper">
-        <tn-navbar
-            :back-icon="backIcon"
-            :fixed="fixed"
-            :bg-color="computedBgColor"
-            :text-color="computedTextColor"
-            :title="title"
-            @back="handleBack"
-        >
-            <template v-if="$slots.left" #left>
-                <slot name="left" />
-            </template>
-            <template v-if="$slots.right" #right>
-                <slot name="right" />
-            </template>
-        </tn-navbar>
+    <view v-if="showSpacer" class="base-navbar-spacer" :style="spacerStyle"></view>
+    <view
+        class="base-navbar-wrapper"
+        :class="{
+            'base-navbar-wrapper--fixed': fixed,
+            'base-navbar-wrapper--transparent': transparent
+        }"
+    >
+        <view class="base-navbar" :style="navbarStyle">
+            <view
+                class="base-navbar__status"
+                :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
+            ></view>
+            <view class="base-navbar__bar" :style="{ height: `${navBarMetrics.contentHeight}px` }">
+                <view class="base-navbar__side" :style="sideStyle">
+                    <slot v-if="hasLeftSlot" name="left" />
+                    <view v-else-if="resolvedBack" class="base-navbar__back" @click="handleBack">
+                        <text class="base-navbar__back-text" :style="backTextStyle">‹ 返回</text>
+                    </view>
+                </view>
+
+                <text class="base-navbar__title" :style="titleStyle">{{ title }}</text>
+
+                <view
+                    class="base-navbar__side base-navbar__side--placeholder"
+                    :style="sideStyle"
+                >
+                    <slot v-if="hasRightSlot" name="right" />
+                    <text v-else-if="resolvedBack" class="base-navbar__placeholder">‹ 返回</text>
+                </view>
+            </view>
+        </view>
     </view>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, getCurrentInstance, useSlots } from 'vue'
+import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
 import { useThemeStore } from '@/stores/theme'
 
 interface Props {
     title?: string
+    back?: boolean
     backIcon?: boolean
     fixed?: boolean
+    reserveSpace?: boolean
+    transparent?: boolean
     bgColor?: string
     textColor?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
     title: '',
+    back: undefined,
     backIcon: true,
     fixed: true,
+    reserveSpace: true,
+    transparent: false,
     bgColor: '',
     textColor: ''
 })
@@ -42,23 +65,59 @@ const emit = defineEmits<{
     (event: 'back'): void
 }>()
 
+const instance = getCurrentInstance()
+const slots = useSlots()
 const themeStore = useThemeStore()
+const navBarMetrics = useNavBarMetrics()
 
-// 计算背景色，优先使用props，否则使用主题配置
-const computedBgColor = computed(() => {
-    return props.bgColor || themeStore.navBgColor
+const resolvedBack = computed(() => {
+    return props.back === undefined ? props.backIcon : props.back
 })
 
-// 计算文字色，优先使用props，否则使用主题配置
-const computedTextColor = computed(() => {
-    return props.textColor || themeStore.navColor
-})
+const hasLeftSlot = computed(() => Boolean(slots.left))
+const hasRightSlot = computed(() => Boolean(slots.right))
+const resolvedBgColor = computed(() =>
+    props.transparent
+        ? 'transparent'
+        : props.bgColor || 'var(--cinema-nav-glass, rgba(252, 251, 249, 0.96))'
+)
+const resolvedTextColor = computed(() => props.textColor || themeStore.navColor)
+const showSpacer = computed(() => props.fixed && props.reserveSpace)
+const spacerStyle = computed(() => ({
+    height: `${navBarMetrics.navBarHeight}px`
+}))
+const sideStyle = computed(() => ({
+    width: `${navBarMetrics.safeInset}px`
+}))
+const titleStyle = computed(() => ({
+    color: resolvedTextColor.value
+}))
+const backTextStyle = computed(() => ({
+    color: props.textColor || themeStore.primaryColor
+}))
+const hasBackListener = computed(() => Boolean(instance?.vnode.props?.onBack))
+const navbarStyle = computed(() => ({
+    background: resolvedBgColor.value,
+    borderBottomColor: props.transparent
+        ? 'transparent'
+        : 'var(--wm-color-border, rgba(232, 222, 216, 0.65))'
+}))
 
-// 处理返回事件
 const handleBack = () => {
     emit('back')
-    // 如果没有监听back事件，执行默认返回
-    uni.navigateBack()
+
+    if (hasBackListener.value) {
+        return
+    }
+
+    if (getCurrentPages().length > 1) {
+        uni.navigateBack()
+        return
+    }
+
+    uni.switchTab({
+        url: '/pages/index/index'
+    })
 }
 </script>
 
@@ -72,13 +131,100 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.base-navbar-spacer {
+    width: 100%;
+    flex-shrink: 0;
+}
+
 .base-navbar-wrapper {
     position: relative;
-    z-index: 999;
-    border-bottom: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+    z-index: 60;
+    width: 100%;
 
-    :deep(.tn-navbar) {
-        backdrop-filter: blur(20rpx);
+    &--fixed {
+        .base-navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 60;
+        }
     }
+
+    &--transparent {
+        .base-navbar {
+            border-bottom-color: transparent;
+            box-shadow: none;
+        }
+    }
+}
+
+.base-navbar {
+    width: 100%;
+    border-bottom: 1rpx solid rgba(232, 222, 216, 0.65);
+    background: var(--cinema-nav-glass, rgba(252, 251, 249, 0.96));
+    backdrop-filter: blur(20rpx);
+    -webkit-backdrop-filter: blur(20rpx);
+    box-sizing: border-box;
+}
+
+.base-navbar__status {
+    width: 100%;
+}
+
+.base-navbar__bar {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0 40rpx;
+    box-sizing: border-box;
+}
+
+.base-navbar__side {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    height: 100%;
+
+    &--placeholder {
+        justify-content: flex-end;
+    }
+}
+
+.base-navbar__title {
+    flex: 1;
+    min-width: 0;
+    padding: 0 16rpx;
+    text-align: center;
+    font-size: 36rpx;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--wm-text-primary, #1e2432);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.base-navbar__back {
+    min-height: 60rpx;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 12rpx 0 2rpx;
+}
+
+.base-navbar__back-text,
+.base-navbar__placeholder {
+    font-size: 28rpx;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.base-navbar__back-text {
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.base-navbar__placeholder {
+    color: transparent;
 }
 </style>

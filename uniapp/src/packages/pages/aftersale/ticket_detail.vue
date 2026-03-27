@@ -1,4 +1,5 @@
 <template>
+    <BaseNavbar title="工单详情" />
     <view class="ticket-detail-page">
         <view class="detail-card" v-if="detail">
             <!-- 工单状态 -->

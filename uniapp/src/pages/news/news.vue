@@ -12,9 +12,9 @@
     <view class="news-page cinema-page page-with-tabbar-safe-bottom">
         <view class="news-page__hero">
             <view class="news-page__hero-badge">Wedding Journal</view>
-            <text class="news-page__hero-title">婚礼灵感、案例趋势与服务攻略</text>
+            <text class="news-page__hero-title">婚礼灵感、案例趋势与备婚攻略</text>
             <text class="news-page__hero-desc">
-                用电影海报式的信息编排整理灵感，让备婚浏览更沉浸，也更容易快速找到所需内容。
+                用编辑感更强、信息更清晰的列表节奏整理灵感内容，让备婚浏览更轻盈，也更容易快速找到所需内容。
             </text>
             <view class="news-page__hero-stats glass-card">
                 <view class="news-page__hero-stat">
@@ -72,9 +72,11 @@ import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import NewsList from './component/news-list.vue'
 import { getArticleCate } from '@/api/news'
+import { useThemeStore } from '@/stores/theme'
 
 const tabList = ref<any>([])
 const current = ref<number>(0)
+const themeStore = useThemeStore()
 
 const activeTabName = computed(() => tabList.value[current.value]?.name || '全部')
 
@@ -88,6 +90,7 @@ const getData = async () => {
 }
 
 onLoad(() => {
+    themeStore.setScene('consumer')
     getData()
 })
 </script>
@@ -100,8 +103,8 @@ onLoad(() => {
         position: relative;
         padding: 24rpx 24rpx 196rpx;
         background:
-            radial-gradient(circle at top right, rgba(255, 255, 255, 0.12) 0, transparent 34%),
-            linear-gradient(145deg, rgba(10, 13, 18, 0.98) 0%, rgba(22, 29, 41, 0.96) 56%, rgba(76, 58, 29, 0.92) 100%);
+            radial-gradient(circle at top right, rgba(232, 90, 79, 0.12) 0, transparent 34%),
+            linear-gradient(180deg, #fff5f1 0%, #fcfbf9 72%, #f7f1ed 100%);
         overflow: hidden;
     }
 
@@ -113,7 +116,7 @@ onLoad(() => {
         width: 260rpx;
         height: 260rpx;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(232, 201, 142, 0.2) 0, transparent 72%);
+        background: radial-gradient(circle, rgba(232, 90, 79, 0.12) 0, transparent 72%);
         pointer-events: none;
     }
 
@@ -123,13 +126,13 @@ onLoad(() => {
         justify-content: center;
         padding: 10rpx 18rpx;
         border-radius: 999rpx;
-        border: 1rpx solid rgba(255, 248, 236, 0.22);
-        background: rgba(255, 248, 236, 0.08);
+        border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+        background: rgba(255, 255, 255, 0.74);
         font-size: 22rpx;
         font-weight: 600;
         letter-spacing: 0.16em;
         text-transform: uppercase;
-        color: rgba(255, 248, 236, 0.84);
+        color: var(--wm-color-primary, #e85a4f);
     }
 
     &__hero-title {
@@ -139,7 +142,7 @@ onLoad(() => {
         font-weight: 700;
         line-height: 1.2;
         letter-spacing: 0.02em;
-        color: var(--cinema-text-inverse, #fff8ea);
+        color: var(--wm-text-primary, #1e2432);
     }
 
     &__hero-desc {
@@ -148,7 +151,7 @@ onLoad(() => {
         max-width: 620rpx;
         font-size: 26rpx;
         line-height: 1.7;
-        color: rgba(255, 248, 236, 0.72);
+        color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__hero-stats {
@@ -159,7 +162,7 @@ onLoad(() => {
         gap: 20rpx;
         margin-top: 32rpx;
         padding: 22rpx 24rpx;
-        background: rgba(255, 248, 236, 0.1);
+        background: rgba(255, 255, 255, 0.76);
     }
 
     &__hero-stat {
@@ -171,7 +174,7 @@ onLoad(() => {
         display: block;
         font-size: 32rpx;
         font-weight: 700;
-        color: var(--cinema-text-inverse, #fff8ea);
+        color: var(--wm-text-primary, #1e2432);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -181,13 +184,13 @@ onLoad(() => {
         display: block;
         margin-top: 8rpx;
         font-size: 22rpx;
-        color: rgba(255, 248, 236, 0.64);
+        color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__hero-divider {
         width: 1rpx;
         height: 64rpx;
-        background: rgba(255, 248, 236, 0.16);
+        background: var(--wm-color-border, #efe6e1);
     }
 
     &__surface {
@@ -195,7 +198,7 @@ onLoad(() => {
         margin-top: -148rpx;
         border-radius: 36rpx 36rpx 0 0;
         padding: 0 24rpx 28rpx;
-        box-shadow: 0 -24rpx 48rpx rgba(8, 10, 16, 0.18);
+        box-shadow: 0 -20rpx 40rpx rgba(214, 185, 167, 0.14);
     }
 
     &__search {
@@ -216,7 +219,7 @@ onLoad(() => {
         font-weight: 600;
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: var(--cinema-text-secondary, #5d6472);
+        color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__search-title {
@@ -225,13 +228,13 @@ onLoad(() => {
         font-size: 30rpx;
         font-weight: 600;
         line-height: 1.35;
-        color: var(--cinema-text-primary, #151a23);
+        color: var(--wm-text-primary, #1e2432);
     }
 
     &__search-side {
         padding-top: 6rpx;
         font-size: 22rpx;
-        color: var(--cinema-primary, #c6a86a);
+        color: var(--wm-color-primary, #e85a4f);
     }
 
     &__tabs {
@@ -251,7 +254,7 @@ onLoad(() => {
         display: block;
         font-size: 30rpx;
         font-weight: 700;
-        color: var(--cinema-text-primary, #151a23);
+        color: var(--wm-text-primary, #1e2432);
     }
 
     &__section-desc {
@@ -259,7 +262,7 @@ onLoad(() => {
         margin-top: 8rpx;
         font-size: 22rpx;
         line-height: 1.6;
-        color: var(--cinema-text-secondary, #5d6472);
+        color: var(--wm-text-secondary, #7f7b78);
     }
 }
 
@@ -278,17 +281,17 @@ onLoad(() => {
 }
 
 .news-page :deep(.tabs__tab) {
-    color: var(--cinema-text-secondary, #5d6472) !important;
+    color: var(--wm-text-secondary, #7f7b78) !important;
     font-size: 26rpx !important;
     font-weight: 500 !important;
 }
 
 .news-page :deep(.tabs__tab.is-active) {
-    color: var(--cinema-primary, #c6a86a) !important;
+    color: var(--wm-color-primary, #e85a4f) !important;
 }
 
 .news-page :deep(.tabs__line) {
-    background: linear-gradient(135deg, var(--cinema-primary, #c6a86a) 0%, var(--cinema-accent, #e8c98e) 100%) !important;
+    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, var(--wm-color-secondary, #c99b73) 100%) !important;
     border-radius: 999rpx;
 }
 </style>

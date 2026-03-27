@@ -8,16 +8,22 @@
 import { computed } from 'vue'
 
 interface Props {
+    variant?: 'surface' | 'glass' | 'hero' | 'panel'
     type?: 'standard' | 'glass' | 'dark'
+    scene?: 'consumer' | 'staff' | 'admin'
+    interactive?: boolean
     hoverable?: boolean
     padding?: string
     borderRadius?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    variant: undefined,
     type: 'standard',
+    scene: 'consumer',
+    interactive: false,
     hoverable: true,
-    padding: '20rpx',
+    padding: '',
     borderRadius: ''
 })
 
@@ -25,28 +31,52 @@ const emit = defineEmits<{
     (event: 'click', payload: Event): void
 }>()
 
-// 计算卡片类名
-const cardClass = computed(() => {
-    const classes = ['base-card', `base-card--${props.type}`]
-    if (props.hoverable) {
-        classes.push('base-card--hoverable')
+const resolvedVariant = computed(() => {
+    if (props.variant) {
+        return props.variant
     }
+
+    if (props.type === 'glass') {
+        return 'glass'
+    }
+
+    if (props.type === 'dark') {
+        return 'hero'
+    }
+
+    return 'surface'
+})
+
+const isInteractive = computed(() => props.interactive || props.hoverable)
+
+const cardClass = computed(() => {
+    const classes = [
+        'base-card',
+        `base-card--${resolvedVariant.value}`,
+        `base-card--${props.scene}`
+    ]
+
+    if (isInteractive.value) {
+        classes.push('base-card--interactive')
+    }
+
     return classes.join(' ')
 })
 
-// 计算卡片样式
 const cardStyle = computed(() => {
     const styles: Record<string, string> = {}
+
     if (props.padding) {
         styles.padding = props.padding
     }
+
     if (props.borderRadius) {
         styles.borderRadius = props.borderRadius
     }
+
     return styles
 })
 
-// 处理点击事件
 const handleClick = (event: Event) => {
     emit('click', event)
 }
@@ -64,56 +94,54 @@ export default {
 <style lang="scss" scoped>
 .base-card {
     width: 100%;
-    transition: all var(--cinema-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: var(--wm-radius-card, 24rpx);
+    transition:
+        transform var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
+        border-color var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
+        background var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 
-    &--standard {
-        background: var(--cinema-surface-elevated, #fffdf8);
-        border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
-        border-radius: var(--cinema-radius-md, 24rpx);
+    &--surface,
+    &--panel {
+        background: #ffffff;
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+    }
+
+    &--surface {
         padding: 20rpx;
-        box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
+    }
+
+    &--panel {
+        padding: 16rpx 18rpx;
     }
 
     &--glass {
-        background: var(--cinema-surface-overlay, rgba(255, 248, 236, 0.86));
-        backdrop-filter: blur(24rpx);
-        -webkit-backdrop-filter: blur(24rpx);
-        border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
-        border-radius: var(--cinema-radius-lg, 32rpx);
         padding: 20rpx;
-        box-shadow: var(--cinema-shadow-medium, 0 20rpx 52rpx rgba(8, 10, 16, 0.12));
-        color: var(--cinema-text-primary, #151a23);
+        background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.88));
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
+        backdrop-filter: blur(20rpx);
+        -webkit-backdrop-filter: blur(20rpx);
     }
 
-    &--dark {
-        background: var(
-            --cinema-hero-gradient,
-            linear-gradient(145deg, rgba(10, 13, 18, 0.98) 0%, rgba(25, 32, 45, 0.96) 52%, rgba(76, 58, 29, 0.94) 100%)
-        );
-        border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
-        border-radius: var(--cinema-radius-lg, 32rpx);
+    &--hero {
         padding: 24rpx;
-        box-shadow: var(--cinema-shadow-strong, 0 24rpx 60rpx rgba(8, 10, 16, 0.18));
-        color: var(--cinema-text-inverse, #fff8ea);
+        border-radius: var(--wm-radius-card-lg, 28rpx);
+        background: var(--wm-hero-gradient, linear-gradient(180deg, #fff5f1 0%, #fcfbf9 68%, #f7f1ed 100%));
+        border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+        box-shadow: var(--wm-shadow-hero, 0 24rpx 56rpx rgba(177, 108, 95, 0.18));
     }
 
-    &--hoverable {
+    &--admin.base-card--panel {
+        border-radius: 20rpx;
+    }
+
+    &--interactive {
         cursor: pointer;
 
         &:active {
-            transform: translateY(-2rpx) scale(0.995);
-        }
-
-        &.base-card--standard:active {
-            box-shadow: var(--cinema-shadow-medium, 0 20rpx 52rpx rgba(8, 10, 16, 0.12));
-        }
-
-        &.base-card--glass:active {
-            box-shadow: var(--cinema-shadow-strong, 0 24rpx 60rpx rgba(8, 10, 16, 0.18));
-        }
-
-        &.base-card--dark:active {
-            box-shadow: var(--cinema-shadow-strong, 0 24rpx 60rpx rgba(8, 10, 16, 0.18));
+            transform: translateY(-2rpx);
         }
     }
 }

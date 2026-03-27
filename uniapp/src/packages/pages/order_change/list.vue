@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            title="我的申请"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="我的申请" />
     <view class="change-list">
         <!-- 类型筛选 -->
         <view class="type-tabs bg-white sticky top-0 z-10">

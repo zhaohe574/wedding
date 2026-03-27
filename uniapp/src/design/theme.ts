@@ -1,4 +1,17 @@
 export type ThemePresetKey = 'obsidian-gold' | 'midnight-rose' | 'navy-silver'
+export type WmScene = 'consumer' | 'staff' | 'admin'
+
+export interface WmThemeTokens {
+    colors: Record<string, string>
+    text: Record<string, string>
+    font: Record<string, string>
+    radius: Record<string, string>
+    space: Record<string, string>
+    shadow: Record<string, string>
+    motion: Record<string, string>
+    zIndex: Record<string, string>
+    safe: Record<string, string>
+}
 
 export interface ThemePreset {
     key: ThemePresetKey
@@ -47,97 +60,146 @@ export interface NormalizedThemeConfig {
     preset: ThemePreset
 }
 
-export const themePresets: Record<ThemePresetKey, ThemePreset> = {
-    'obsidian-gold': {
-        key: 'obsidian-gold',
-        name: '曜金夜幕',
-        legacyThemeId: 8,
-        primaryColor: '#C6A86A',
-        secondaryColor: '#8D6B3B',
-        ctaColor: '#D97706',
-        accentColor: '#E8C98E',
-        pageBg: '#0B0D12',
-        pageBgSoft: '#141922',
-        surface: '#F6F2EA',
-        surfaceElevated: '#FFFDF8',
-        surfaceOverlay: 'rgba(255, 248, 236, 0.86)',
-        textPrimary: '#151A23',
-        textSecondary: '#5D6472',
-        textInverse: '#FFF8EA',
-        borderColor: 'rgba(198, 168, 106, 0.24)',
-        tabbarActiveColor: '#C6A86A',
-        tabbarInactiveColor: '#8D93A1',
-        navBgColor: '#0F141D',
-        navTextColor: 'white',
-        buttonColor: 'white',
-        maskColor: 'rgba(8, 10, 16, 0.58)',
-        heroGradient:
-            'linear-gradient(145deg, rgba(10,13,18,0.98) 0%, rgba(25,32,45,0.96) 52%, rgba(76,58,29,0.94) 100%)',
-        navStyle: 'glass',
-        cardStyle: 'glass',
-        shadowLevel: 'strong'
+const WM_BASE_TOKENS: WmThemeTokens = {
+    colors: {
+        'bg-page': '#FCFBF9',
+        'bg-card': '#FFFFFFE8',
+        'bg-soft': '#FFF7F4',
+        'bg-mask': 'rgba(30, 36, 50, 0.46)',
+        primary: '#E85A4F',
+        'primary-strong': '#D84D43',
+        'primary-soft': '#FFF1EE',
+        secondary: '#C99B73',
+        'secondary-soft': '#F8EFE7',
+        border: '#EFE6E1',
+        'border-strong': '#F4C7BF',
+        success: '#2F7D58',
+        warning: '#C98524',
+        danger: '#B44A3A',
+        info: '#607086'
     },
-    'midnight-rose': {
-        key: 'midnight-rose',
-        name: '午夜玫瑰',
-        legacyThemeId: 6,
-        primaryColor: '#A54F72',
-        secondaryColor: '#E0A3BC',
-        ctaColor: '#C7744B',
-        accentColor: '#F3D5C0',
-        pageBg: '#120F16',
-        pageBgSoft: '#1B1521',
-        surface: '#FCF6F7',
-        surfaceElevated: '#FFFDFD',
-        surfaceOverlay: 'rgba(255, 246, 247, 0.88)',
-        textPrimary: '#1D1620',
-        textSecondary: '#6B5B66',
-        textInverse: '#FFF5F7',
-        borderColor: 'rgba(165, 79, 114, 0.2)',
-        tabbarActiveColor: '#C97D9F',
-        tabbarInactiveColor: '#94838F',
-        navBgColor: '#211924',
-        navTextColor: 'white',
-        buttonColor: 'white',
-        maskColor: 'rgba(16, 11, 19, 0.58)',
-        heroGradient:
-            'linear-gradient(145deg, rgba(19,15,23,0.98) 0%, rgba(53,31,44,0.96) 48%, rgba(123,65,90,0.92) 100%)',
-        navStyle: 'glass',
-        cardStyle: 'glass',
-        shadowLevel: 'strong'
+    text: {
+        primary: '#1E2432',
+        secondary: '#7F7B78',
+        tertiary: '#B4ACA8',
+        inverse: '#FFFFFF'
     },
-    'navy-silver': {
-        key: 'navy-silver',
-        name: '深蓝银辉',
-        legacyThemeId: 1,
-        primaryColor: '#58759D',
-        secondaryColor: '#91A8C9',
-        ctaColor: '#3A6EA5',
-        accentColor: '#D5DCE6',
-        pageBg: '#0D1521',
-        pageBgSoft: '#162235',
-        surface: '#F4F7FB',
-        surfaceElevated: '#FFFFFF',
-        surfaceOverlay: 'rgba(244, 247, 251, 0.88)',
-        textPrimary: '#152033',
-        textSecondary: '#5C6B81',
-        textInverse: '#F8FBFF',
-        borderColor: 'rgba(88, 117, 157, 0.18)',
-        tabbarActiveColor: '#7E95B8',
-        tabbarInactiveColor: '#8994A6',
-        navBgColor: '#162235',
-        navTextColor: 'white',
-        buttonColor: 'white',
-        maskColor: 'rgba(10, 16, 25, 0.54)',
-        heroGradient:
-            'linear-gradient(145deg, rgba(13,21,33,0.98) 0%, rgba(23,34,53,0.96) 48%, rgba(77,94,121,0.92) 100%)',
-        navStyle: 'solid',
-        cardStyle: 'soft',
-        shadowLevel: 'medium'
+    font: {
+        'family-display': 'SF Pro Display, PingFang SC, Microsoft YaHei, sans-serif',
+        'family-body': 'PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif',
+        hero: '44rpx',
+        h1: '36rpx',
+        h2: '32rpx',
+        h3: '30rpx',
+        body: '28rpx',
+        meta: '24rpx',
+        caption: '22rpx',
+        mini: '20rpx'
+    },
+    radius: {
+        input: '18rpx',
+        chip: '20rpx',
+        card: '24rpx',
+        'card-lg': '28rpx',
+        shell: '36rpx',
+        pill: '999rpx'
+    },
+    space: {
+        '2': '8rpx',
+        '3': '12rpx',
+        '4': '16rpx',
+        '5': '20rpx',
+        '6': '24rpx',
+        '7': '28rpx',
+        '8': '32rpx',
+        '10': '40rpx'
+    },
+    shadow: {
+        soft: '0 14rpx 32rpx rgba(214, 185, 167, 0.16)',
+        card: '0 18rpx 36rpx rgba(214, 185, 167, 0.20)',
+        hero: '0 24rpx 56rpx rgba(177, 108, 95, 0.18)'
+    },
+    motion: {
+        fast: '150ms',
+        base: '220ms',
+        slow: '260ms'
+    },
+    zIndex: {
+        header: '40',
+        tabbar: '80',
+        action: '90',
+        overlay: '200'
+    },
+    safe: {
+        tabbar: '118rpx',
+        action: '132rpx'
     }
 }
 
+const createPreset = (
+    key: ThemePresetKey,
+    name: string,
+    legacyThemeId: number,
+    overrides: Partial<ThemePreset> = {}
+): ThemePreset => ({
+    key,
+    name,
+    legacyThemeId,
+    primaryColor: '#E85A4F',
+    secondaryColor: '#C99B73',
+    ctaColor: '#E85A4F',
+    accentColor: '#C99B73',
+    pageBg: '#FCFBF9',
+    pageBgSoft: '#FFF7F4',
+    surface: '#FCFBF9',
+    surfaceElevated: '#FFFFFF',
+    surfaceOverlay: 'rgba(255, 255, 255, 0.88)',
+    textPrimary: '#1E2432',
+    textSecondary: '#7F7B78',
+    textInverse: '#FFFFFF',
+    borderColor: '#EFE6E1',
+    tabbarActiveColor: '#E85A4F',
+    tabbarInactiveColor: '#9D918B',
+    navBgColor: '#FCFBF9',
+    navTextColor: 'black',
+    buttonColor: 'white',
+    maskColor: 'rgba(30, 36, 50, 0.46)',
+    heroGradient: 'linear-gradient(180deg, #FFF5F1 0%, #FCFBF9 68%, #F7F1ED 100%)',
+    navStyle: 'glass',
+    cardStyle: 'glass',
+    shadowLevel: 'medium',
+    ...overrides
+})
+
+export const themePresets: Record<ThemePresetKey, ThemePreset> = {
+    'obsidian-gold': createPreset('obsidian-gold', '暖白珊瑚', 8),
+    'midnight-rose': createPreset('midnight-rose', '柔粉珊瑚', 6, {
+        secondaryColor: '#D7AFA1',
+        accentColor: '#D7AFA1'
+    }),
+    'navy-silver': createPreset('navy-silver', '香槟珊瑚', 1, {
+        secondaryColor: '#CBB7A4',
+        accentColor: '#CBB7A4'
+    })
+}
+
 const presetEntries = Object.values(themePresets)
+
+export const createWmThemeTokens = (scene: WmScene = 'consumer'): WmThemeTokens => {
+    const tokens: WmThemeTokens = JSON.parse(JSON.stringify(WM_BASE_TOKENS))
+
+    if (scene === 'staff') {
+        tokens.shadow.hero = '0 20rpx 44rpx rgba(192, 130, 115, 0.16)'
+    }
+
+    if (scene === 'admin') {
+        tokens.shadow.card = '0 12rpx 28rpx rgba(214, 185, 167, 0.16)'
+        tokens.space['6'] = '20rpx'
+        tokens.space['8'] = '28rpx'
+    }
+
+    return tokens
+}
 
 export const getThemePreset = (presetKey?: string): ThemePreset => {
     if (presetKey && themePresets[presetKey as ThemePresetKey]) {
@@ -153,10 +215,10 @@ const inferPresetKeyByLegacyId = (themeColorId?: number): ThemePresetKey => {
 
 const inferPresetKeyByColor = (color?: string): ThemePresetKey => {
     const value = String(color || '').toLowerCase()
-    if (['#fd498f', '#fa444d', '#a54f72'].includes(value)) {
+    if (['#fd498f', '#fa444d', '#a54f72', '#c97d9f'].includes(value)) {
         return 'midnight-rose'
     }
-    if (['#2f80ed', '#56ccf2', '#58759d'].includes(value)) {
+    if (['#2f80ed', '#56ccf2', '#58759d', '#7e95b8'].includes(value)) {
         return 'navy-silver'
     }
     return 'obsidian-gold'
@@ -172,29 +234,25 @@ export const normalizeThemeConfig = (rawData: any): NormalizedThemeConfig => {
               ? inferPresetKeyByLegacyId(source.themeColorId)
               : inferPresetKeyByColor(source.themeColor1)
     const preset = getThemePreset(presetKey)
-    const topTextColor =
-        source.topTextColor === 'white' || source.topTextColor === 'black'
-            ? source.topTextColor
-            : preset.navTextColor
 
     return {
         presetKey: preset.key,
         themeColorId: Number(source.themeColorId || preset.legacyThemeId),
-        themeColor1: source.themeColor1 || preset.primaryColor,
-        themeColor2: source.themeColor2 || preset.secondaryColor,
+        themeColor1: preset.primaryColor,
+        themeColor2: preset.secondaryColor,
         buttonColor:
             source.buttonColor === 'black' || source.buttonColor === 'white'
                 ? source.buttonColor
                 : preset.buttonColor,
-        navigationBarColor: source.navigationBarColor || preset.navBgColor,
-        topTextColor,
-        accentColor: source.accentColor || preset.accentColor,
-        tabbarActiveColor: source.tabbarActiveColor || preset.tabbarActiveColor,
-        tabbarInactiveColor: source.tabbarInactiveColor || preset.tabbarInactiveColor,
-        surfaceMode: source.surfaceMode === 'soft' ? 'soft' : 'cinema',
-        navStyle: source.navStyle === 'solid' ? 'solid' : preset.navStyle,
-        cardStyle: source.cardStyle === 'soft' ? 'soft' : preset.cardStyle,
-        shadowLevel: source.shadowLevel === 'medium' ? 'medium' : preset.shadowLevel,
+        navigationBarColor: preset.navBgColor,
+        topTextColor: preset.navTextColor,
+        accentColor: preset.accentColor,
+        tabbarActiveColor: preset.tabbarActiveColor,
+        tabbarInactiveColor: preset.tabbarInactiveColor,
+        surfaceMode: 'soft',
+        navStyle: preset.navStyle,
+        cardStyle: preset.cardStyle,
+        shadowLevel: preset.shadowLevel,
         preset
     }
 }

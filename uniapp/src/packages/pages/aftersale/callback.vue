@@ -1,4 +1,5 @@
 <template>
+    <BaseNavbar title="回访问卷" />
     <view class="callback-page">
         <z-paging ref="paging" v-model="dataList" @query="queryList">
             <!-- 状态筛选 -->

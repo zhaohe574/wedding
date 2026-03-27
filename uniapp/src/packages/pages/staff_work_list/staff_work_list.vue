@@ -1,11 +1,6 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <navigation-bar
-            title="作品管理"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <BaseNavbar title="作品管理" />
 
     <view class="page-container">
         <z-paging ref="pagingRef" v-model="workList" @query="queryList" :auto="false" :hide-empty-view="true">

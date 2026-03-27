@@ -221,7 +221,7 @@ const showPay = computed({
 
 const contrastThreshold = 4.5
 const fallbackLightTextColor = '#FFFFFF'
-const fallbackDarkTextColor = '#1F2937'
+const fallbackDarkTextColor = '#1E2432'
 const presetColorMap: Record<string, string> = {
     white: fallbackLightTextColor,
     black: '#000000'

@@ -2,6 +2,7 @@ import 'vue'
 declare module 'vue' {
     interface ComponentCustomProperties {
         $theme: {
+            scene: string
             primaryColor: string
             secondaryColor: string
             ctaColor: string
@@ -10,6 +11,7 @@ declare module 'vue' {
             pageStyle: string
             navColor: string
             navBgColor: string
+            tokens: Record<string, any>
             title: string
         }
     }

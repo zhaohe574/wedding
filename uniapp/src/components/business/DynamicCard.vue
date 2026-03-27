@@ -199,7 +199,7 @@
                             size="22"
                             :color="
                                 dynamic.isLiked
-                                    ? 'var(--color-primary, #7C3AED)'
+                                    ? 'var(--color-primary, #E85A4F)'
                                     : 'var(--color-btn-text, #FFFFFF)'
                             "
                         />
@@ -294,7 +294,7 @@ const mediaGridClass = computed(() => {
     return `dynamic-card__media--${count}`
 })
 
-const primaryColor = computed(() => themeStore.primaryColor || '#7C3AED')
+const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
 const primarySoftColor = computed(() => alphaColor(primaryColor.value, 0.1))
 const primarySoftBorderColor = computed(() => alphaColor(primaryColor.value, 0.28))
 const primaryShadowColor = computed(() =>

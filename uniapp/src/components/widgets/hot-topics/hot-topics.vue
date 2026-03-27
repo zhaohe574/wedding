@@ -155,7 +155,7 @@ const props = defineProps({
 const topicList = ref<any[]>([])
 const themeStore = useThemeStore()
 const palette = computed(() => [
-    themeStore.primaryColor || '#7C3AED',
+    themeStore.primaryColor || '#E85A4F',
     themeStore.ctaColor || '#F97316',
     themeStore.secondaryColor || '#EC4899',
     themeStore.accentColor || '#FFD700'

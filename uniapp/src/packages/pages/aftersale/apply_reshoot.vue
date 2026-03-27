@@ -1,4 +1,5 @@
 <template>
+    <BaseNavbar title="申请补拍" />
     <view class="apply-reshoot-page">
         <view class="form-card">
             <!-- 选择订单 -->

@@ -1,22 +1,16 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar
-            title="订单确认"
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-        <!-- #endif -->
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle" />
+    <PageShell scene="consumer" hasSafeBottom>
+        <BaseNavbar title="订单确认" />
 
-    <view class="order-confirm-page cinema-page">
+        <view class="order-confirm-page">
         <view class="order-confirm-page__hero">
-            <text class="order-confirm-page__hero-label">Booking Checkout</text>
+            <text class="order-confirm-page__hero-label">确认订单</text>
             <text class="order-confirm-page__hero-title">确认本次婚礼服务档期与联系信息</text>
             <text class="order-confirm-page__hero-desc">
-                保持仪式感的沉浸头部，同时把联系人、地址和费用明细集中在浅色信息层里，降低确认成本。
+                提交前把预约日期、服务地区、联系人和费用统一确认，避免后续改期与重复沟通。
             </text>
-            <view class="order-confirm-page__hero-summary glass-card">
+            <view class="order-confirm-page__hero-summary">
                 <view class="order-confirm-page__hero-item">
                     <text class="order-confirm-page__hero-item-label">预约日期</text>
                     <text class="order-confirm-page__hero-item-value">{{ bookingDateText || '-' }}</text>
@@ -36,14 +30,13 @@
             </view>
         </view>
 
-        <view class="order-confirm-page__surface cinema-surface">
-            <view v-if="loading" class="loading-state cinema-panel">
-                <tn-loading size="60" mode="flower" />
-                <text class="loading-text">加载中...</text>
-            </view>
+        <view class="order-confirm-page__surface">
+            <BaseCard v-if="loading" variant="surface" scene="consumer" class="loading-state">
+                <LoadingState text="加载中..." />
+            </BaseCard>
 
             <view v-else class="order-confirm-page__content">
-                <view class="section cinema-panel">
+                <BaseCard variant="surface" scene="consumer" class="section">
                     <view class="section-header section-header--stack">
                         <view>
                             <text class="section-title">预约信息</text>
@@ -62,9 +55,9 @@
                             </text>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="section cinema-panel">
+                <BaseCard variant="surface" scene="consumer" class="section">
                     <view class="section-header section-header--stack">
                         <view>
                             <text class="section-title">联系人信息</text>
@@ -117,9 +110,9 @@
                             />
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="section cinema-panel" v-if="selectedItem">
+                <BaseCard variant="surface" scene="consumer" class="section" v-if="selectedItem">
                     <view class="section-header">
                         <view>
                             <text class="section-title">服务项目</text>
@@ -186,9 +179,9 @@
                             </view>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="section cinema-panel" v-if="hasItems">
+                <BaseCard variant="surface" scene="consumer" class="section" v-if="hasItems">
                     <view class="section-header section-header--stack">
                         <view>
                             <text class="section-title">费用明细</text>
@@ -217,11 +210,11 @@
                             <text class="text-total">¥{{ formatPrice(preview.pay_amount) }}</text>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
             </view>
         </view>
 
-        <view class="submit-bar glass-card">
+        <ActionArea sticky safeBottom layout="split">
             <view class="submit-price">
                 <text class="label">合计</text>
                 <text class="symbol" :style="{ color: $theme.ctaColor }">¥</text>
@@ -229,27 +222,30 @@
                     {{ formatPrice(preview.pay_amount) }}
                 </text>
             </view>
-            <view
+            <BaseButton
                 class="submit-btn"
-                :class="{ disabled: !canSubmit }"
-                :style="
-                    canSubmit
-                        ? {
-                              background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
-                          }
-                        : {}
-                "
+                variant="primary"
+                size="lg"
+                :disabled="!canSubmit"
+                :loading="submitting"
                 @click="handleSubmit"
             >
-                <text>{{ submitting ? '提交中...' : '提交订单' }}</text>
-            </view>
+                提交订单
+            </BaseButton>
+        </ActionArea>
         </view>
-    </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
+import PageShell from '@/components/base/PageShell.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import ActionArea from '@/components/base/ActionArea.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
 import { previewOrder, createOrder } from '@/api/order'
 import { BACK_URL } from '@/enums/constantEnums'
 import { useThemeStore } from '@/stores/theme'
@@ -572,15 +568,24 @@ onShow(() => {
 <style lang="scss" scoped>
 .order-confirm-page {
     min-height: 100vh;
-    padding-bottom: 196rpx;
+    padding-bottom: 168rpx;
     background: transparent;
 
     &__hero {
         position: relative;
-        padding: 24rpx 24rpx 200rpx;
+        margin: 24rpx 24rpx 0;
+        padding: 28rpx 28rpx 180rpx;
+        border-radius: 32rpx;
         background:
-            radial-gradient(circle at top right, rgba(255, 255, 255, 0.12) 0, transparent 34%),
-            linear-gradient(145deg, rgba(10, 13, 18, 0.98) 0%, rgba(21, 28, 40, 0.96) 54%, rgba(77, 59, 31, 0.92) 100%);
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.48) 0, transparent 34%),
+            linear-gradient(
+                180deg,
+                var(--wm-color-primary-soft, #fff1ee) 0%,
+                rgba(255, 255, 255, 0.96) 58%,
+                var(--wm-color-bg-page, #fcfbf9) 100%
+            );
+        border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+        box-shadow: var(--wm-shadow-hero, 0 24rpx 56rpx rgba(177, 108, 95, 0.18));
         overflow: hidden;
     }
 
@@ -592,7 +597,7 @@ onShow(() => {
         width: 280rpx;
         height: 280rpx;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(232, 201, 142, 0.18) 0, transparent 72%);
+        background: radial-gradient(circle, rgba(201, 155, 115, 0.18) 0, transparent 72%);
         pointer-events: none;
     }
 
@@ -602,7 +607,7 @@ onShow(() => {
         font-weight: 600;
         letter-spacing: 0.16em;
         text-transform: uppercase;
-        color: rgba(255, 248, 236, 0.72);
+        color: var(--wm-color-primary, #e85a4f);
     }
 
     &__hero-title {
@@ -611,7 +616,7 @@ onShow(() => {
         font-size: 48rpx;
         font-weight: 700;
         line-height: 1.22;
-        color: var(--cinema-text-inverse, #fff8ea);
+        color: var(--wm-text-primary, #1e2432);
     }
 
     &__hero-desc {
@@ -620,7 +625,7 @@ onShow(() => {
         max-width: 640rpx;
         font-size: 25rpx;
         line-height: 1.7;
-        color: rgba(255, 248, 236, 0.72);
+        color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__hero-summary {
@@ -631,7 +636,10 @@ onShow(() => {
         gap: 16rpx;
         margin-top: 30rpx;
         padding: 22rpx 24rpx;
-        background: rgba(255, 248, 236, 0.1);
+        background: rgba(255, 255, 255, 0.86);
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        border-radius: 26rpx;
+        box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
     }
 
     &__hero-item {
@@ -644,7 +652,7 @@ onShow(() => {
         font-size: 20rpx;
         letter-spacing: 0.1em;
         text-transform: uppercase;
-        color: rgba(255, 248, 236, 0.6);
+        color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__hero-item-value {
@@ -653,7 +661,7 @@ onShow(() => {
         font-size: 30rpx;
         font-weight: 700;
         line-height: 1.36;
-        color: var(--cinema-text-inverse, #fff8ea);
+        color: var(--wm-text-primary, #1e2432);
     }
 
     &__hero-item-value--small {
@@ -662,15 +670,13 @@ onShow(() => {
 
     &__hero-divider {
         width: 1rpx;
-        background: rgba(255, 248, 236, 0.16);
+        background: var(--wm-color-border, #efe6e1);
     }
 
     &__surface {
         position: relative;
-        margin-top: -148rpx;
-        border-radius: 36rpx 36rpx 0 0;
+        margin-top: -132rpx;
         padding: 0 24rpx 24rpx;
-        box-shadow: 0 -24rpx 48rpx rgba(8, 10, 16, 0.18);
     }
 
     &__content {
@@ -681,22 +687,13 @@ onShow(() => {
 }
 
 .loading-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 24rpx;
     min-height: 56vh;
     margin-bottom: 24rpx;
 }
 
-.loading-text {
-    color: var(--cinema-text-secondary, #5d6472);
-    font-size: 28rpx;
-}
-
 .section {
-    padding: 26rpx 24rpx;
+    margin-bottom: 24rpx;
+    padding: 26rpx 24rpx !important;
 }
 
 .section-header {
@@ -715,7 +712,7 @@ onShow(() => {
     display: block;
     font-size: 30rpx;
     font-weight: 700;
-    color: var(--cinema-text-primary, #151a23);
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .section-desc {
@@ -723,18 +720,18 @@ onShow(() => {
     margin-top: 8rpx;
     font-size: 22rpx;
     line-height: 1.6;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .section-action {
     flex-shrink: 0;
     padding: 12rpx 20rpx;
     border-radius: 999rpx;
-    background: rgba(255, 255, 255, 0.78);
-    border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+    background: var(--wm-color-primary-soft, #fff1ee);
+    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
     font-size: 22rpx;
     font-weight: 600;
-    color: var(--cinema-primary, #c6a86a);
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .booking-info-card {
@@ -746,8 +743,8 @@ onShow(() => {
 .booking-info-item {
     padding: 24rpx;
     border-radius: 20rpx;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 243, 234, 0.96));
-    border: 1rpx solid rgba(255, 255, 255, 0.72);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 244, 0.96));
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
 }
 
 .booking-info-item__label {
@@ -755,7 +752,7 @@ onShow(() => {
     font-size: 22rpx;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .booking-info-item__value {
@@ -764,7 +761,7 @@ onShow(() => {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.45;
-    color: var(--cinema-text-primary, #151a23);
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .form-item + .form-item {
@@ -773,7 +770,7 @@ onShow(() => {
 
 .form-label {
     display: block;
-    color: var(--cinema-text-primary, #151a23);
+    color: var(--wm-text-primary, #1e2432);
     font-size: 26rpx;
     font-weight: 600;
     margin-bottom: 12rpx;
@@ -782,8 +779,8 @@ onShow(() => {
 .form-shell {
     padding: 4rpx;
     border-radius: 20rpx;
-    background: rgba(255, 255, 255, 0.76);
-    border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+    background: rgba(255, 255, 255, 0.92);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
 }
 
 .form-shell :deep(.tn-input) {
@@ -793,8 +790,8 @@ onShow(() => {
 .service-card {
     padding: 24rpx;
     border-radius: 24rpx;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 243, 234, 0.96));
-    border: 1rpx solid rgba(255, 255, 255, 0.72);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 244, 0.96));
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
 }
 
 .service-header {
@@ -817,7 +814,7 @@ onShow(() => {
     height: 92rpx;
     border-radius: 24rpx;
     border: 2rpx solid rgba(255, 255, 255, 0.92);
-    box-shadow: 0 10rpx 24rpx rgba(8, 10, 16, 0.12);
+    box-shadow: 0 10rpx 24rpx rgba(214, 185, 167, 0.16);
 }
 
 .staff-info {
@@ -830,17 +827,17 @@ onShow(() => {
 .staff-title {
     font-size: 30rpx;
     font-weight: 700;
-    color: var(--cinema-text-primary, #151a23);
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .staff-subtitle {
     font-size: 22rpx;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .package-name {
     font-size: 26rpx;
-    color: var(--cinema-primary, #c6a86a);
+    color: var(--wm-color-secondary, #c99b73);
     font-weight: 600;
 }
 
@@ -854,7 +851,7 @@ onShow(() => {
 
 .package-price-label {
     font-size: 22rpx;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .package-price {
@@ -867,13 +864,13 @@ onShow(() => {
     margin-top: 22rpx;
     font-size: 24rpx;
     line-height: 1.7;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .selected-addon-section {
     margin-top: 22rpx;
     padding-top: 20rpx;
-    border-top: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+    border-top: 1rpx solid var(--wm-color-border, #efe6e1);
 }
 
 .selected-addon-section__header {
@@ -887,12 +884,12 @@ onShow(() => {
 .selected-addon-section__title {
     font-size: 26rpx;
     font-weight: 700;
-    color: var(--cinema-text-primary, #151a23);
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .selected-addon-section__meta {
     font-size: 22rpx;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .selected-addon-list {
@@ -908,8 +905,8 @@ onShow(() => {
     gap: 16rpx;
     padding: 20rpx;
     border-radius: 18rpx;
-    background: rgba(255, 255, 255, 0.78);
-    border: 1rpx solid rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.88);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
 }
 
 .selected-addon-card__main {
@@ -921,7 +918,7 @@ onShow(() => {
     display: block;
     font-size: 26rpx;
     font-weight: 600;
-    color: var(--cinema-text-primary, #151a23);
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .selected-addon-card__desc {
@@ -929,13 +926,13 @@ onShow(() => {
     margin-top: 8rpx;
     font-size: 24rpx;
     line-height: 1.6;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .selected-addon-card__price {
     font-size: 26rpx;
     font-weight: 700;
-    color: var(--cinema-primary, #c6a86a);
+    color: var(--wm-color-secondary, #c99b73);
 }
 
 .price-list {
@@ -950,38 +947,22 @@ onShow(() => {
     align-items: center;
     gap: 18rpx;
     font-size: 26rpx;
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
     padding: 10rpx 0;
 }
 
 .price-row.total {
     margin-top: 8rpx;
     padding-top: 20rpx;
-    border-top: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+    border-top: 1rpx solid var(--wm-color-border, #efe6e1);
     font-size: 30rpx;
-    color: var(--cinema-text-primary, #151a23);
+    color: var(--wm-text-primary, #1e2432);
     font-weight: 700;
 }
 
 .text-total {
-    color: var(--color-cta, #d97706);
+    color: var(--wm-color-primary, #e85a4f);
     font-weight: 700;
-}
-
-.submit-bar {
-    position: fixed;
-    left: 20rpx;
-    right: 20rpx;
-    bottom: 20rpx;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18rpx;
-    padding: 18rpx 20rpx;
-    border-radius: 28rpx;
-    background: rgba(255, 248, 236, 0.86);
-    box-shadow: var(--cinema-shadow-medium, 0 20rpx 52rpx rgba(8, 10, 16, 0.12));
-    padding-bottom: calc(18rpx + env(safe-area-inset-bottom));
 }
 
 .submit-price {
@@ -989,10 +970,11 @@ onShow(() => {
     align-items: baseline;
     gap: 8rpx;
     min-width: 0;
+    flex: 1;
 }
 
 .submit-price .label {
-    color: var(--cinema-text-secondary, #5d6472);
+    color: var(--wm-text-secondary, #7f7b78);
     font-size: 24rpx;
 }
 
@@ -1004,18 +986,6 @@ onShow(() => {
 
 .submit-btn {
     min-width: 232rpx;
-    text-align: center;
-    padding: 24rpx 34rpx;
-    border-radius: 999rpx;
-    color: #ffffff;
-    font-size: 28rpx;
-    font-weight: 700;
-    background: #cccccc;
-    box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
-}
-
-.submit-btn.disabled {
-    opacity: 0.6;
-    box-shadow: none;
+    flex-shrink: 0;
 }
 </style>

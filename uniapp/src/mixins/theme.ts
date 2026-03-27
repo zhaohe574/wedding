@@ -8,6 +8,7 @@ export default {
             const appStore = useAppStore()
             return {
                 presetKey: themeStore.presetKey,
+                scene: themeStore.scene,
                 primaryColor: themeStore.primaryColor,
                 secondaryColor: themeStore.secondaryColor,
                 ctaColor: themeStore.ctaColor,
@@ -29,9 +30,10 @@ export default {
                 cardStyle: themeStore.cardStyle,
                 shadowLevel: themeStore.shadowLevel,
                 btnColor: themeStore.btnColor,
-                pageStyle: themeStore.vars,
+                pageStyle: themeStore.pageStyle,
                 navColor: themeStore.navColor,
                 navBgColor: themeStore.navBgColor,
+                tokens: themeStore.tokens,
                 title: appStore.getWebsiteConfig.shop_name
             }
         }
