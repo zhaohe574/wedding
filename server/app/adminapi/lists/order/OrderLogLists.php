@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\adminapi\lists\order;
 
 use app\adminapi\lists\BaseAdminDataLists;
+use app\common\model\order\Order;
 use app\common\model\order\OrderLog;
 
 /**
@@ -82,12 +83,16 @@ class OrderLogLists extends BaseAdminDataLists
     protected function getStatusDesc(int $status): string
     {
         $map = [
-            0 => '待支付',
-            1 => '已支付',
-            2 => '服务中',
-            3 => '已完成',
-            4 => '已取消',
-            5 => '已退款',
+            Order::STATUS_PENDING_CONFIRM => '待确认',
+            Order::STATUS_PENDING_PAY => '待支付',
+            Order::STATUS_PAID => '已支付',
+            Order::STATUS_IN_SERVICE => '服务中',
+            Order::STATUS_COMPLETED => '已完成',
+            Order::STATUS_REVIEWED => '已评价',
+            Order::STATUS_CANCELLED => '已取消',
+            Order::STATUS_PAUSED => '已暂停',
+            Order::STATUS_REFUNDED => '已退款',
+            Order::STATUS_USER_DELETED => '用户已删除',
         ];
         return $map[$status] ?? '-';
     }

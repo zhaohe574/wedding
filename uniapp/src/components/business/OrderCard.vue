@@ -290,8 +290,8 @@ export default {
 .order-card {
     position: relative;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 247, 244, 0.96) 100%);
-    border-radius: 26rpx;
-    padding: 24rpx;
+    border-radius: var(--wm-radius-card-glass, 26rpx);
+    padding: var(--wm-space-card-padding-lg, 24rpx);
     border: 1rpx solid var(--wm-color-border, #efe6e1);
     box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
     transition: transform var(--wm-motion-base, 220ms) ease,
@@ -316,7 +316,7 @@ export default {
         top: 20rpx;
         right: 20rpx;
         padding: 10rpx 18rpx;
-        border-radius: 999rpx;
+        border-radius: var(--wm-radius-pill, 999rpx);
         font-size: 22rpx;
         font-weight: 600;
     }
@@ -327,7 +327,7 @@ export default {
     }
 
     &__header {
-        margin-bottom: 22rpx;
+        margin-bottom: var(--wm-space-card-padding, 20rpx);
         padding-right: 136rpx;
     }
 
@@ -359,24 +359,24 @@ export default {
     &__main {
         display: flex;
         flex-direction: column;
-        gap: 16rpx;
-        margin-bottom: 22rpx;
+        gap: var(--wm-space-section-gap-lg, 16rpx);
+        margin-bottom: var(--wm-space-card-padding, 20rpx);
     }
 
     &__staff-section {
         display: flex;
         align-items: center;
-        gap: 16rpx;
-        padding: 18rpx;
+        gap: var(--wm-space-section-gap-lg, 16rpx);
+        padding: var(--wm-space-card-padding, 20rpx);
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 247, 244, 0.98) 100%);
         border: 1rpx solid var(--wm-color-border, #efe6e1);
-        border-radius: 20rpx;
+        border-radius: var(--wm-radius-card-soft, 20rpx);
     }
 
     &__avatar {
         width: 80rpx;
         height: 80rpx;
-        border-radius: 24rpx;
+        border-radius: var(--wm-radius-card, 24rpx);
         flex-shrink: 0;
         border: 2rpx solid rgba(255, 255, 255, 0.9);
         box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.16);
@@ -416,7 +416,7 @@ export default {
     &__info-row {
         display: flex;
         align-items: flex-start;
-        gap: 10rpx;
+        gap: var(--wm-space-section-gap-sm, 12rpx);
     }
 
     &__info-icon-wrapper {
@@ -451,16 +451,16 @@ export default {
     &__schedule-list {
         display: flex;
         flex-direction: column;
-        gap: 10rpx;
+        gap: var(--wm-space-section-gap-sm, 12rpx);
     }
 
     &__schedule-item {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 14rpx 18rpx;
+        padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding, 20rpx);
         background: rgba(255, 255, 255, 0.76);
-        border-radius: 16rpx;
+        border-radius: var(--wm-radius-card-soft, 20rpx);
         border: 1rpx solid rgba(255, 255, 255, 0.72);
         transition: all 0.2s ease;
         gap: 12rpx;
@@ -469,7 +469,7 @@ export default {
     &__schedule-date {
         display: flex;
         align-items: center;
-        gap: 10rpx;
+        gap: var(--wm-space-section-gap-sm, 12rpx);
         flex-shrink: 0;
     }
 
@@ -482,7 +482,7 @@ export default {
     &__schedule-slots {
         display: flex;
         align-items: center;
-        gap: 10rpx;
+        gap: var(--wm-space-section-gap-sm, 12rpx);
         flex-wrap: wrap;
     }
 
@@ -491,7 +491,7 @@ export default {
         align-items: center;
         justify-content: center;
         padding: 6rpx 16rpx;
-        border-radius: 20rpx;
+        border-radius: var(--wm-radius-chip, 20rpx);
         font-size: 24rpx;
         font-weight: 600;
         white-space: nowrap;
@@ -502,10 +502,10 @@ export default {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
-        gap: 6rpx;
-        padding: 14rpx 18rpx;
+        gap: 8rpx;
+        padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding, 20rpx);
         background: rgba(255, 255, 255, 0.76);
-        border-radius: 16rpx;
+        border-radius: var(--wm-radius-card-soft, 20rpx);
         border: 1rpx solid rgba(255, 255, 255, 0.72);
     }
 
@@ -520,9 +520,9 @@ export default {
         display: flex;
         justify-content: space-between;
         align-items: flex-end;
-        padding: 18rpx 0 0;
+        padding: var(--wm-space-card-padding, 20rpx) 0 0;
         border-top: 1rpx solid var(--wm-color-border, #efe6e1);
-        margin-bottom: 18rpx;
+        margin-bottom: var(--wm-space-card-padding, 20rpx);
     }
 
     &__price-left {
@@ -586,7 +586,7 @@ export default {
     &__actions {
         display: flex;
         flex-wrap: wrap;
-        gap: 12rpx;
+        gap: var(--wm-space-section-gap-sm, 12rpx);
         justify-content: flex-end;
     }
 
@@ -596,9 +596,9 @@ export default {
         justify-content: center;
         height: 64rpx;
         min-width: 112rpx;
-        padding: 0 28rpx;
+        padding: 0 var(--wm-space-card-padding-lg, 24rpx);
         box-sizing: border-box;
-        border-radius: 32rpx;
+        border-radius: var(--wm-radius-pill, 999rpx);
         border: 2rpx solid var(--wm-color-border, #efe6e1);
         transition: all 0.2s ease;
         flex-shrink: 0;

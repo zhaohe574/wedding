@@ -86,8 +86,8 @@ const handleClick = () => {
     &.not-favorited {
         background: linear-gradient(
             135deg,
-            var(--color-primary, #7c3aed) 0%,
-            var(--color-primary-dark-2, #6d28d9) 100%
+            var(--wm-color-primary, #e85a4f) 0%,
+            var(--wm-color-secondary, #c99b73) 100%
         );
         color: var(--color-btn-text, #ffffff);
         box-shadow: 0 8rpx 20rpx rgba(15, 23, 42, 0.12);
@@ -99,13 +99,13 @@ const handleClick = () => {
     }
 
     &.favorited {
-        background: var(--color-primary-light-9, rgba(124, 58, 237, 0.08));
-        color: var(--color-primary, #7c3aed);
-        border-color: var(--color-primary-light-7, rgba(124, 58, 237, 0.2));
+        background: rgba(232, 90, 79, 0.08);
+        color: var(--wm-color-primary, #e85a4f);
+        border-color: rgba(232, 90, 79, 0.18);
 
         &:active {
             transform: scale(0.98);
-            background: var(--color-primary-light-7, rgba(124, 58, 237, 0.12));
+            background: rgba(232, 90, 79, 0.12);
         }
     }
 

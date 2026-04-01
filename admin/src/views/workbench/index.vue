@@ -370,7 +370,7 @@ const orderStatusChartOption = computed(() => ({
                 label: { show: true, fontSize: 14, fontWeight: 'bold' },
             },
             data: workbenchData.order_status,
-            color: ['#e6a23c', '#f56c6c', '#409eff', '#67c23a', '#909399', '#c0c4cc', '#f89898'],
+            color: ['#e6a23c', '#f56c6c', '#409eff', '#67c23a', '#909399', '#c0c4cc', '#f89898', '#c084fc'],
         },
     ],
 }))
@@ -387,6 +387,7 @@ const statusTagType = (status: number) => {
         6: 'info',      // 已取消
         7: 'warning',   // 已暂停
         8: 'info',      // 已退款
+        9: 'danger',    // 用户已删除
     } as const
     return map[status as keyof typeof map] ?? 'info'
 }

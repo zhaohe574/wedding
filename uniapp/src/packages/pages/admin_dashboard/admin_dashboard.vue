@@ -643,7 +643,8 @@ const statusColorMap: Record<string, string> = {
     已评价: '#C99B73',
     已取消: '#EF4444',
     已暂停: '#F97316',
-    已退款: '#DC2626'
+    已退款: '#DC2626',
+    用户已删除: '#8B5CF6'
 }
 
 const statusItems = computed(() => {

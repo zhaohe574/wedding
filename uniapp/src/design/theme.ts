@@ -97,22 +97,42 @@ const WM_BASE_TOKENS: WmThemeTokens = {
         mini: '20rpx'
     },
     radius: {
-        input: '18rpx',
-        chip: '20rpx',
-        card: '24rpx',
-        'card-lg': '28rpx',
-        shell: '36rpx',
+        input: '34rpx',
+        control: '34rpx',
+        action: '34rpx',
+        chip: '37rpx',
+        'card-soft': '37rpx',
+        card: '45rpx',
+        'action-bar': '45rpx',
+        'card-glass': '49rpx',
+        'card-lg': '52rpx',
+        popup: '52rpx',
+        shell: '67rpx',
+        'tabbar-shell': '60rpx',
+        'tabbar-item': '52rpx',
         pill: '999rpx'
     },
     space: {
-        '2': '8rpx',
-        '3': '12rpx',
-        '4': '16rpx',
-        '5': '20rpx',
-        '6': '24rpx',
-        '7': '28rpx',
-        '8': '32rpx',
-        '10': '40rpx'
+        '2': '15rpx',
+        '3': '22rpx',
+        '4': '30rpx',
+        '5': '37rpx',
+        '6': '45rpx',
+        '7': '52rpx',
+        '8': '60rpx',
+        '10': '75rpx',
+        'page-x': '37rpx',
+        'section-gap-sm': '22rpx',
+        'section-gap-md': '26rpx',
+        'section-gap-lg': '30rpx',
+        'card-padding': '30rpx',
+        'card-padding-lg': '34rpx',
+        'action-top': '22rpx',
+        'action-x': '37rpx',
+        'action-bottom': '39rpx',
+        'tabbar-top': '22rpx',
+        'tabbar-x': '39rpx',
+        'tabbar-bottom': '39rpx'
     },
     shadow: {
         soft: '0 14rpx 32rpx rgba(214, 185, 167, 0.16)',
@@ -131,8 +151,8 @@ const WM_BASE_TOKENS: WmThemeTokens = {
         overlay: '200'
     },
     safe: {
-        tabbar: '118rpx',
-        action: '132rpx'
+        tabbar: '177rpx',
+        action: '150rpx'
     }
 }
 

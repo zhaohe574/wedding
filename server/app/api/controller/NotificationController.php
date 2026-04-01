@@ -109,7 +109,8 @@ class NotificationController extends BaseApiController
     public function clear()
     {
         $notifyType = $this->request->post('notify_type', 0);
-        $result = NotificationLogic::clear($this->userId, (int)$notifyType);
+        $readStatus = $this->request->post('read_status', -1);
+        $result = NotificationLogic::clear($this->userId, (int)$notifyType, (int)$readStatus);
         return $this->success('清空成功', ['count' => $result]);
     }
 }

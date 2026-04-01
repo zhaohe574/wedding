@@ -44,10 +44,10 @@ const shellClass = computed(() => [
 
 <style lang="scss" scoped>
 .wm-page-shell {
-    min-height: 100vh;
+    width: 100%;
 }
 
 .wm-page-shell--safe-bottom {
-    padding-bottom: calc(132rpx + env(safe-area-inset-bottom));
+    padding-bottom: 0;
 }
 </style>

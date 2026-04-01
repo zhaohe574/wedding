@@ -1,8 +1,9 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="资料编辑" @back="handleBack" />
+    <PageShell scene="consumer">
+        <BaseNavbar title="资料编辑" @back="handleBack" />
 
-    <view class="user-data-page">
+        <view class="user-data-page">
         <view class="page-content">
             <view class="sync-card">
                 <view class="sync-tag">资料同步</view>
@@ -167,13 +168,15 @@
             :data="sexPickerData"
             @confirm="handleSexConfirm"
         />
-    </view>
+        </view>
+    </PageShell>
 </template>
 
 <script lang="ts" setup>
 import { smsSend } from '@/api/app'
 import { getUserWeddingDate, getUserInfo, userBindMobile, userEdit, userMnpMobile } from '@/api/user'
 import { FieldType, SMSEnum } from '@/enums/appEnums'
+import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { onShow, onUnload } from '@dcloudio/uni-app'
@@ -473,6 +476,7 @@ const handleCancelEdit = () => {
 }
 
 onShow(async () => {
+    $theme.setScene('consumer')
     await loadPageData()
 })
 
@@ -488,20 +492,18 @@ onUnload(() => {
 .user-data-page {
     position: relative;
     z-index: 1;
-    min-height: 100vh;
-    background: linear-gradient(180deg, #fcfbf9 0%, #f5f1ee 100%);
-    padding-bottom: calc(136rpx + env(safe-area-inset-bottom));
+    padding-bottom: var(--wm-safe-bottom-action, calc(150rpx + env(safe-area-inset-bottom)));
 }
 
 .page-content {
-    padding: 6rpx 20rpx 0;
+    padding: 15rpx 37rpx 0;
 }
 
 .sync-card {
-    border-radius: 26rpx;
+    border-radius: 45rpx;
     border: 1rpx solid #f4c7bf;
     background: linear-gradient(135deg, #fff5f1 0%, #fde7e1 100%);
-    padding: 16rpx 16rpx 18rpx;
+    padding: 30rpx;
     box-shadow: 0 16rpx 34rpx rgba(214, 185, 167, 0.14);
 }
 
@@ -509,10 +511,10 @@ onUnload(() => {
     align-self: flex-start;
     display: inline-flex;
     border-radius: 999rpx;
-    padding: 8rpx 12rpx;
+    padding: 8rpx 14rpx;
     background: #fff1ee;
     color: #e85a4f;
-    font-size: 21rpx;
+    font-size: 20rpx;
     font-weight: 700;
 }
 
@@ -520,12 +522,12 @@ onUnload(() => {
     margin-top: 12rpx;
     display: flex;
     align-items: center;
-    gap: 12rpx;
+    gap: 16rpx;
 }
 
 .sync-avatar {
-    width: 112rpx;
-    height: 112rpx;
+    width: 88rpx;
+    height: 88rpx;
     border-radius: 999rpx;
     overflow: hidden;
     flex-shrink: 0;
@@ -537,11 +539,11 @@ onUnload(() => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4rpx;
+    gap: 6rpx;
 }
 
 .sync-name {
-    font-size: 42rpx;
+    font-size: 36rpx;
     font-weight: 700;
     line-height: 1.2;
     color: #1e2432;
@@ -551,15 +553,15 @@ onUnload(() => {
 }
 
 .sync-subtitle {
-    font-size: 23rpx;
-    line-height: 1.45;
+    font-size: 22rpx;
+    line-height: 1.5;
     color: #7f7b78;
 }
 
 .sync-tip {
     display: block;
-    margin-top: 8rpx;
-    font-size: 23rpx;
+    margin-top: 10rpx;
+    font-size: 22rpx;
     line-height: 1.55;
     color: #7f7b78;
 }
@@ -569,27 +571,27 @@ onUnload(() => {
     border-radius: 24rpx;
     border: 1rpx solid #efe6e1;
     background: rgba(255, 255, 255, 0.84);
-    padding: 14rpx 16rpx;
+    padding: 20rpx;
     box-shadow: 0 14rpx 30rpx rgba(214, 185, 167, 0.1);
 }
 
 .section-title {
     display: block;
-    font-size: 26rpx;
+    font-size: 24rpx;
     font-weight: 700;
     color: #1e2432;
-    margin-bottom: 10rpx;
+    margin-bottom: 12rpx;
 }
 
 .field-card {
-    border-radius: 16rpx;
+    border-radius: 20rpx;
     border: 1rpx solid #efe6e1;
-    background: #fcfbf9;
-    padding: 10rpx 12rpx;
+    background: rgba(252, 251, 249, 0.92);
+    padding: 16rpx;
 }
 
 .field-card + .field-card {
-    margin-top: 10rpx;
+    margin-top: 12rpx;
 }
 
 .field-card--click {
@@ -600,16 +602,16 @@ onUnload(() => {
 
 .field-label {
     display: block;
-    font-size: 21rpx;
+    font-size: 20rpx;
     font-weight: 600;
     color: #7f7b78;
-    margin-bottom: 6rpx;
+    margin-bottom: 8rpx;
 }
 
 .field-input {
     width: 100%;
-    min-height: 44rpx;
-    font-size: 28rpx;
+    min-height: 48rpx;
+    font-size: 26rpx;
     color: #1e2432;
     line-height: 1.4;
 }
@@ -620,7 +622,7 @@ onUnload(() => {
 
 .field-readonly {
     display: block;
-    font-size: 28rpx;
+    font-size: 26rpx;
     font-weight: 600;
     line-height: 1.4;
     color: #1e2432;
@@ -635,13 +637,13 @@ onUnload(() => {
     display: inline-flex;
     align-items: center;
     gap: 8rpx;
-    font-size: 28rpx;
+    font-size: 26rpx;
     font-weight: 600;
     color: #1e2432;
 }
 
 .contact-value {
-    font-size: 25rpx;
+    font-size: 24rpx;
     line-height: 1.45;
     color: #1e2432;
 }
@@ -649,16 +651,16 @@ onUnload(() => {
 .contact-actions {
     margin-top: 10rpx;
     display: flex;
-    gap: 10rpx;
+    gap: 12rpx;
     flex-wrap: wrap;
 }
 
 .contact-action {
-    padding: 7rpx 16rpx;
+    padding: 8rpx 16rpx;
     border-radius: 999rpx;
     border: 1rpx solid #efe6e1;
     background: #fff;
-    font-size: 22rpx;
+    font-size: 20rpx;
     color: #1e2432;
 }
 
@@ -678,18 +680,18 @@ onUnload(() => {
     bottom: 20rpx;
     z-index: 30;
     display: flex;
-    gap: 10rpx;
-    padding: 2rpx 0 calc(env(safe-area-inset-bottom) + 2rpx);
+    gap: 12rpx;
+    padding: 12rpx 0 calc(env(safe-area-inset-bottom) + 20rpx);
 }
 
 .action-btn {
     flex: 1;
-    height: 76rpx;
-    border-radius: 36rpx;
+    height: 84rpx;
+    border-radius: 18rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 27rpx;
+    font-size: 26rpx;
     font-weight: 700;
 }
 
@@ -707,9 +709,9 @@ onUnload(() => {
 
 .edit-popup {
     width: 85vw;
-    padding: 48rpx 40rpx 40rpx;
+    padding: 36rpx 24rpx 24rpx;
     background: #ffffff;
-    border-radius: 24rpx;
+    border-radius: 28rpx;
 }
 
 .popup-title {
@@ -717,7 +719,7 @@ onUnload(() => {
     font-weight: 600;
     color: #1e293b;
     text-align: center;
-    margin-bottom: 48rpx;
+    margin-bottom: 32rpx;
 }
 
 .popup-input-wrapper {
@@ -729,7 +731,7 @@ onUnload(() => {
 .code-input-wrapper {
     display: flex;
     align-items: center;
-    gap: 24rpx;
+    gap: 16rpx;
 }
 
 .popup-input {
@@ -744,11 +746,11 @@ onUnload(() => {
 }
 
 .code-btn {
-    padding: 12rpx 24rpx;
+    padding: 10rpx 20rpx;
     font-size: 26rpx;
     font-weight: 500;
     white-space: nowrap;
-    border-radius: 8rpx;
+    border-radius: 18rpx;
     color: #e85a4f;
 }
 
@@ -757,13 +759,13 @@ onUnload(() => {
 }
 
 .popup-actions {
-    margin-top: 48rpx;
+    margin-top: 32rpx;
 }
 
 .popup-btn {
     width: 100%;
     height: 72rpx;
-    border-radius: 32rpx;
+    border-radius: 20rpx;
     font-size: 30rpx;
     font-weight: 600;
     border: none;

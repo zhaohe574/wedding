@@ -98,6 +98,8 @@ class OrderLog extends BaseModel
             'refund_apply' => '申请退款',
             'refund_audit' => '审核退款',
             'refund_success' => '退款成功',
+            'user_delete' => '用户删除订单',
+            'admin_delete' => '后台删除订单',
             'remark' => '添加备注',
         ];
         return $map[$action] ?? $action;

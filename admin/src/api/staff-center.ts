@@ -42,6 +42,22 @@ export function myProfileDeletePackage(params: any) {
     return request.post({ url: '/ops.staff/myProfileDeletePackage', params })
 }
 
+export function myProfileAddonList(params?: any) {
+    return request.get({ url: '/ops.staff/myProfileAddonList', params })
+}
+
+export function myProfileAddonAdd(params: any) {
+    return request.post({ url: '/ops.staff/myProfileAddonAdd', params })
+}
+
+export function myProfileAddonUpdate(params: any) {
+    return request.post({ url: '/ops.staff/myProfileAddonUpdate', params })
+}
+
+export function myProfileAddonDelete(params: any) {
+    return request.post({ url: '/ops.staff/myProfileAddonDelete', params })
+}
+
 export function myProfileBannerList(params?: any) {
     return request.get({ url: '/ops.staff/myProfileBannerList', params })
 }

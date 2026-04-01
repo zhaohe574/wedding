@@ -175,6 +175,7 @@ class WorkbenchLogic extends BaseLogic
             Order::STATUS_COMPLETED => '已完成',
             Order::STATUS_CANCELLED => '已取消',
             Order::STATUS_REFUNDED => '已退款',
+            Order::STATUS_USER_DELETED => '用户已删除',
         ];
 
         $result = [];
@@ -275,6 +276,7 @@ class WorkbenchLogic extends BaseLogic
             Order::STATUS_CANCELLED => '已取消',
             Order::STATUS_PAUSED => '已暂停',
             Order::STATUS_REFUNDED => '已退款',
+            Order::STATUS_USER_DELETED => '用户已删除',
         ];
         return $map[$status] ?? '未知';
     }

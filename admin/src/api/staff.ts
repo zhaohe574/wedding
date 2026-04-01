@@ -77,6 +77,26 @@ export function staffDeletePackage(params: any) {
     return request.post({ url: '/ops.staff/deleteStaffPackage', params })
 }
 
+// 获取员工附加项配置
+export function staffGetAddonConfig(params: any) {
+    return request.get({ url: '/ops.staff/getAddonConfig', params })
+}
+
+// 创建员工附加项
+export function staffCreateAddon(params: any) {
+    return request.post({ url: '/ops.staff/createStaffAddon', params })
+}
+
+// 编辑员工附加项
+export function staffUpdateAddon(params: any) {
+    return request.post({ url: '/ops.staff/updateStaffAddon', params })
+}
+
+// 删除员工附加项
+export function staffDeleteAddon(params: any) {
+    return request.post({ url: '/ops.staff/deleteStaffAddon', params })
+}
+
 // ==================== 作品管理 ====================
 
 // 作品列表

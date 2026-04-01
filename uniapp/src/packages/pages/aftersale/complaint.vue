@@ -1,88 +1,107 @@
 <template>
-    <BaseNavbar title="我的投诉" />
-    <view class="complaint-page">
-        <z-paging ref="paging" v-model="dataList" @query="queryList">
-            <!-- 状态筛选 -->
-            <template #top>
-                <view class="filter-tabs">
-                    <view
-                        class="tab-item"
-                        :class="{ active: currentStatus === '' }"
-                        @click="changeStatus('')"
-                        >全部</view
-                    >
-                    <view
-                        class="tab-item"
-                        :class="{ active: currentStatus === 0 }"
-                        @click="changeStatus(0)"
-                        >待处理</view
-                    >
-                    <view
-                        class="tab-item"
-                        :class="{ active: currentStatus === 1 }"
-                        @click="changeStatus(1)"
-                        >处理中</view
-                    >
-                    <view
-                        class="tab-item"
-                        :class="{ active: currentStatus === 2 }"
-                        @click="changeStatus(2)"
-                        >已处理</view
-                    >
-                </view>
-            </template>
+    <page-meta :page-style="$theme.pageStyle" />
+    <PageShell scene="consumer" hasSafeBottom>
+        <BaseNavbar title="我的投诉" />
 
-            <!-- 投诉列表 -->
-            <view class="complaint-list">
-                <view
-                    class="complaint-item"
-                    v-for="item in dataList"
-                    :key="item.id"
-                    @click="goDetail(item.id)"
-                >
-                    <view class="complaint-header">
-                        <view class="complaint-level" :class="getLevelClass(item.level)">
-                            {{ getLevelText(item.level) }}
-                        </view>
-                        <view class="complaint-status" :class="getStatusClass(item.status)">
-                            {{ item.status_desc || getStatusText(item.status) }}
-                        </view>
-                    </view>
-                    <view class="complaint-title">{{ item.title }}</view>
-                    <view class="complaint-content" v-if="item.content">{{ item.content }}</view>
-                    <view class="complaint-footer">
-                        <text class="complaint-type">{{
-                            item.type_desc || getTypeText(item.type)
-                        }}</text>
-                        <text class="complaint-time">{{ item.create_time }}</text>
-                    </view>
-                </view>
+        <view class="complaint-page">
+            <view class="complaint-page__head">
+                <text class="complaint-page__title">投诉记录</text>
+                <text class="complaint-page__desc">跟进处理进度，查看投诉结果与满意度评价。</text>
             </view>
 
-            <!-- 空状态 -->
-            <template #empty>
-                <view class="empty-state">
-                    <tn-icon name="warning" size="120" color="#ccc"></tn-icon>
-                    <text class="empty-text">暂无投诉记录</text>
-                </view>
-            </template>
-        </z-paging>
+            <z-paging ref="paging" v-model="dataList" use-page-scroll @query="queryList">
+                <template #top>
+                    <scroll-view
+                        scroll-x
+                        class="complaint-page__filter-scroll"
+                        :show-scrollbar="false"
+                    >
+                        <view class="complaint-page__filters">
+                            <view
+                                v-for="item in statusTabs"
+                                :key="String(item.value)"
+                                class="complaint-page__filter"
+                                :class="{ 'is-active': currentStatus === item.value }"
+                                @click="changeStatus(item.value)"
+                            >
+                                {{ item.label }}
+                            </view>
+                        </view>
+                    </scroll-view>
+                </template>
 
-        <!-- 提交投诉按钮 -->
-        <view class="create-btn" @click="goCreate">
-            <tn-icon name="plus" size="40" color="#fff"></tn-icon>
+                <view class="complaint-list">
+                    <view
+                        v-for="item in dataList"
+                        :key="item.id"
+                        class="complaint-card"
+                        @click="goDetail(item.id)"
+                    >
+                        <view class="complaint-card__head">
+                            <view class="complaint-card__badges">
+                                <view class="complaint-card__level" :class="getLevelClass(item.level)">
+                                    {{ item.level_desc || getLevelText(item.level) }}
+                                </view>
+                                <view
+                                    class="complaint-card__status"
+                                    :class="getStatusClass(item.status)"
+                                >
+                                    {{ item.status_desc || getStatusText(item.status) }}
+                                </view>
+                            </view>
+                            <text class="complaint-card__time">{{ item.create_time }}</text>
+                        </view>
+
+                        <text class="complaint-card__title">{{ item.title }}</text>
+                        <text v-if="item.content" class="complaint-card__content">{{ item.content }}</text>
+
+                        <view class="complaint-card__footer">
+                            <text class="complaint-card__chip">
+                                {{ item.type_desc || getTypeText(item.type) }}
+                            </text>
+                            <text class="complaint-card__arrow">查看详情</text>
+                        </view>
+                    </view>
+                </view>
+
+                <template #empty>
+                    <view class="complaint-empty">
+                        <tn-icon name="warning-circle" size="112" color="#D9CDC7" />
+                        <text class="complaint-empty__title">暂无投诉记录</text>
+                        <text class="complaint-empty__desc">
+                            如遇服务异常、沟通问题或履约风险，可以随时发起投诉。
+                        </text>
+                    </view>
+                </template>
+            </z-paging>
+
+            <view class="complaint-page__fab" @click="goCreate">
+                <tn-icon name="plus" size="34" color="#FFFFFF" />
+            </view>
         </view>
-    </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref, shallowRef } from 'vue'
 import { getComplaintLists } from '@/api/aftersale'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import PageShell from '@/components/base/PageShell.vue'
+import { useThemeStore } from '@/stores/theme'
 import { onLoad } from '@dcloudio/uni-app'
 
+const $theme = useThemeStore()
 const paging = shallowRef()
 const dataList = ref<any[]>([])
 const currentStatus = ref<number | string>('')
+
+const statusTabs = [
+    { label: '全部', value: '' },
+    { label: '待处理', value: 0 },
+    { label: '处理中', value: 1 },
+    { label: '已处理', value: 2 },
+    { label: '已申诉', value: 3 }
+]
 
 const changeStatus = (status: number | string) => {
     currentStatus.value = status
@@ -110,7 +129,9 @@ const getStatusClass = (status: number) => {
     const map: Record<number, string> = {
         0: 'status-pending',
         1: 'status-processing',
-        2: 'status-completed'
+        2: 'status-handled',
+        3: 'status-appealed',
+        4: 'status-closed'
     }
     return map[status] || ''
 }
@@ -119,16 +140,18 @@ const getStatusText = (status: number) => {
     const map: Record<number, string> = {
         0: '待处理',
         1: '处理中',
-        2: '已处理'
+        2: '已处理',
+        3: '已申诉',
+        4: '已关闭'
     }
     return map[status] || '未知'
 }
 
 const getLevelClass = (level: number) => {
     const map: Record<number, string> = {
-        1: 'level-low',
-        2: 'level-medium',
-        3: 'level-high'
+        1: 'level-normal',
+        2: 'level-serious',
+        3: 'level-urgent'
     }
     return map[level] || ''
 }
@@ -136,7 +159,7 @@ const getLevelClass = (level: number) => {
 const getLevelText = (level: number) => {
     const map: Record<number, string> = {
         1: '一般',
-        2: '重要',
+        2: '严重',
         3: '紧急'
     }
     return map[level] || '一般'
@@ -145,9 +168,9 @@ const getLevelText = (level: number) => {
 const getTypeText = (type: number) => {
     const map: Record<number, string> = {
         1: '服务态度',
-        2: '服务质量',
-        3: '虚假宣传',
-        4: '价格问题',
+        2: '专业能力',
+        3: '迟到早退',
+        4: '违规行为',
         5: '其他'
     }
     return map[type] || '其他'
@@ -155,7 +178,7 @@ const getTypeText = (type: number) => {
 
 const goDetail = (id: number) => {
     uni.navigateTo({
-        url: `/packages/pages/aftersale/index?action=complaint_detail&id=${id}`
+        url: `/packages/pages/aftersale/complaint_detail?id=${id}`
     })
 }
 
@@ -164,157 +187,194 @@ const goCreate = () => {
 }
 
 onLoad((options: any) => {
-    if (options?.status) {
-        currentStatus.value = parseInt(options.status)
+    if (options?.status !== undefined) {
+        currentStatus.value = Number(options.status)
     }
 })
 </script>
 
 <style lang="scss" scoped>
+@import '../../../styles/aftersale.scss';
+
 .complaint-page {
-    min-height: 100vh;
-    background: #f5f5f5;
+    @include aftersale-page-base;
+    padding: 0 0 150rpx;
 }
 
-.filter-tabs {
-    display: flex;
-    background: #fff;
-    padding: 20rpx;
-    border-bottom: 1rpx solid #eee;
+.complaint-page__head {
+    padding: 14rpx 20rpx 18rpx;
 }
 
-.tab-item {
-    flex: 1;
-    text-align: center;
-    padding: 16rpx 0;
-    font-size: 28rpx;
-    color: #666;
-    border-radius: 8rpx;
+.complaint-page__title {
+    display: block;
+    font-size: 40rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
 
-    &.active {
-        color: #f5576c;
-        background: rgba(245, 87, 108, 0.1);
-        font-weight: 600;
+.complaint-page__desc {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 24rpx;
+    line-height: 1.6;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.complaint-page__filter-scroll {
+    margin-bottom: 18rpx;
+}
+
+.complaint-page__filters {
+    @include aftersale-filter-tabs;
+}
+
+.complaint-page__filter {
+    @include aftersale-filter-item;
+
+    &.is-active {
+        background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, #d9786d 100%);
+        border-color: transparent;
+        color: #ffffff;
+        box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.18);
     }
 }
 
 .complaint-list {
-    padding: 20rpx;
-}
-
-.complaint-item {
-    background: #fff;
-    border-radius: 16rpx;
-    padding: 30rpx;
-    margin-bottom: 20rpx;
-}
-
-.complaint-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16rpx;
-}
-
-.complaint-level {
-    font-size: 24rpx;
-    padding: 6rpx 16rpx;
-    border-radius: 8rpx;
-
-    &.level-low {
-        color: #52c41a;
-        background: rgba(82, 196, 26, 0.1);
-    }
-    &.level-medium {
-        color: #faad14;
-        background: rgba(250, 173, 20, 0.1);
-    }
-    &.level-high {
-        color: #f5222d;
-        background: rgba(245, 34, 45, 0.1);
-    }
-}
-
-.complaint-status {
-    font-size: 24rpx;
-    padding: 6rpx 16rpx;
-    border-radius: 8rpx;
-
-    &.status-pending {
-        color: #faad14;
-        background: rgba(250, 173, 20, 0.1);
-    }
-    &.status-processing {
-        color: #1890ff;
-        background: rgba(24, 144, 255, 0.1);
-    }
-    &.status-completed {
-        color: #52c41a;
-        background: rgba(82, 196, 26, 0.1);
-    }
-}
-
-.complaint-title {
-    font-size: 30rpx;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 12rpx;
-}
-
-.complaint-content {
-    font-size: 26rpx;
-    color: #666;
-    margin-bottom: 16rpx;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-}
-
-.complaint-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.complaint-type {
-    font-size: 24rpx;
-    color: #999;
-    padding: 4rpx 12rpx;
-    background: #f5f5f5;
-    border-radius: 4rpx;
-}
-
-.complaint-time {
-    font-size: 24rpx;
-    color: #999;
-}
-
-.empty-state {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 100rpx 0;
+    gap: 16rpx;
+    padding: 0 20rpx;
 }
 
-.empty-text {
-    font-size: 28rpx;
-    color: #999;
-    margin-top: 20rpx;
+.complaint-card {
+    @include aftersale-section-card;
 }
 
-.create-btn {
-    position: fixed;
-    right: 40rpx;
-    bottom: 100rpx;
-    width: 100rpx;
-    height: 100rpx;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+.complaint-card__head {
     display: flex;
     align-items: center;
-    justify-content: center;
-    box-shadow: 0 8rpx 24rpx rgba(245, 87, 108, 0.4);
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.complaint-card__badges {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+    flex-wrap: wrap;
+}
+
+.complaint-card__level,
+.complaint-card__status {
+    padding: 8rpx 16rpx;
+    border-radius: 999rpx;
+    font-size: 22rpx;
+    font-weight: 600;
+}
+
+.complaint-card__time {
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.complaint-card__title {
+    display: block;
+    margin-top: 18rpx;
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.complaint-card__content {
+    display: block;
+    margin-top: 12rpx;
+    font-size: 25rpx;
+    line-height: 1.65;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.complaint-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-top: 18rpx;
+}
+
+.complaint-card__chip {
+    padding: 8rpx 14rpx;
+    border-radius: 999rpx;
+    background: var(--wm-color-bg-soft, #fff7f4);
+    font-size: 22rpx;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.complaint-card__arrow {
+    font-size: 22rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.complaint-empty {
+    @include aftersale-empty-state;
+}
+
+.complaint-empty__title {
+    margin-top: 24rpx;
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.complaint-empty__desc {
+    margin-top: 12rpx;
+    font-size: 26rpx;
+    line-height: 1.7;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.complaint-page__fab {
+    @include aftersale-fab;
+    background: linear-gradient(135deg, #e85a4f 0%, #d9786d 100%);
+}
+
+.level-normal {
+    color: #607086;
+    background: rgba(96, 112, 134, 0.12);
+}
+
+.level-serious {
+    color: #c98524;
+    background: rgba(201, 133, 36, 0.12);
+}
+
+.level-urgent {
+    color: #b44a3a;
+    background: rgba(180, 74, 58, 0.12);
+}
+
+.status-pending {
+    color: #c98524;
+    background: rgba(201, 133, 36, 0.12);
+}
+
+.status-processing {
+    color: #607086;
+    background: rgba(96, 112, 134, 0.12);
+}
+
+.status-handled {
+    color: #2f7d58;
+    background: rgba(47, 125, 88, 0.12);
+}
+
+.status-appealed {
+    color: #8f6ab5;
+    background: rgba(143, 106, 181, 0.12);
+}
+
+.status-closed {
+    color: #978b83;
+    background: rgba(151, 139, 131, 0.12);
 }
 </style>

@@ -146,6 +146,15 @@ class OrderValidate extends BaseValidate
     }
 
     /**
+     * @notes 删除场景
+     * @return OrderValidate
+     */
+    public function sceneDelete()
+    {
+        return $this->only(['id']);
+    }
+
+    /**
      * @notes 备注场景
      * @return OrderValidate
      */

@@ -77,9 +77,7 @@ const resolvedBack = computed(() => {
 const hasLeftSlot = computed(() => Boolean(slots.left))
 const hasRightSlot = computed(() => Boolean(slots.right))
 const resolvedBgColor = computed(() =>
-    props.transparent
-        ? 'transparent'
-        : props.bgColor || 'var(--cinema-nav-glass, rgba(252, 251, 249, 0.96))'
+    props.transparent ? 'transparent' : props.bgColor || themeStore.navBgColor || '#FCFBF9'
 )
 const resolvedTextColor = computed(() => props.textColor || themeStore.navColor)
 const showSpacer = computed(() => props.fixed && props.reserveSpace)
@@ -97,10 +95,7 @@ const backTextStyle = computed(() => ({
 }))
 const hasBackListener = computed(() => Boolean(instance?.vnode.props?.onBack))
 const navbarStyle = computed(() => ({
-    background: resolvedBgColor.value,
-    borderBottomColor: props.transparent
-        ? 'transparent'
-        : 'var(--wm-color-border, rgba(232, 222, 216, 0.65))'
+    background: resolvedBgColor.value
 }))
 
 const handleBack = () => {
@@ -153,18 +148,14 @@ export default {
 
     &--transparent {
         .base-navbar {
-            border-bottom-color: transparent;
-            box-shadow: none;
+            background: transparent;
         }
     }
 }
 
 .base-navbar {
     width: 100%;
-    border-bottom: 1rpx solid rgba(232, 222, 216, 0.65);
-    background: var(--cinema-nav-glass, rgba(252, 251, 249, 0.96));
-    backdrop-filter: blur(20rpx);
-    -webkit-backdrop-filter: blur(20rpx);
+    background: var(--wm-nav-bg, #fcfbf9);
     box-sizing: border-box;
 }
 
@@ -176,7 +167,7 @@ export default {
     display: flex;
     align-items: center;
     width: 100%;
-    padding: 0 40rpx;
+    padding: 0 var(--wm-space-6, 45rpx);
     box-sizing: border-box;
 }
 
@@ -195,9 +186,9 @@ export default {
 .base-navbar__title {
     flex: 1;
     min-width: 0;
-    padding: 0 16rpx;
+    padding: 0 var(--wm-space-3, 22rpx);
     text-align: center;
-    font-size: 36rpx;
+    font-size: 40rpx;
     font-weight: 700;
     line-height: 1.2;
     color: var(--wm-text-primary, #1e2432);
@@ -207,15 +198,15 @@ export default {
 }
 
 .base-navbar__back {
-    min-height: 60rpx;
+    min-height: 82rpx;
     display: inline-flex;
     align-items: center;
-    padding: 0 12rpx 0 2rpx;
+    padding: 0 var(--wm-space-3, 22rpx) 0 0;
 }
 
 .base-navbar__back-text,
 .base-navbar__placeholder {
-    font-size: 28rpx;
+    font-size: 30rpx;
     font-weight: 600;
     line-height: 1;
 }

@@ -1,86 +1,98 @@
 <template>
-    <BaseNavbar title="我的工单" />
-    <view class="ticket-page">
-        <z-paging ref="paging" v-model="dataList" @query="queryList">
-            <!-- 状态筛选 -->
-            <template #top>
-                <view class="filter-tabs">
-                    <view
-                        class="tab-item"
-                        :class="{ active: currentStatus === '' }"
-                        @click="changeStatus('')"
-                        >全部</view
-                    >
-                    <view
-                        class="tab-item"
-                        :class="{ active: currentStatus === 0 }"
-                        @click="changeStatus(0)"
-                        >待处理</view
-                    >
-                    <view
-                        class="tab-item"
-                        :class="{ active: currentStatus === 1 }"
-                        @click="changeStatus(1)"
-                        >处理中</view
-                    >
-                    <view
-                        class="tab-item"
-                        :class="{ active: currentStatus === 2 }"
-                        @click="changeStatus(2)"
-                        >已完成</view
-                    >
-                </view>
-            </template>
+    <page-meta :page-style="$theme.pageStyle" />
+    <PageShell scene="consumer" hasSafeBottom>
+        <BaseNavbar title="我的工单" />
 
-            <!-- 工单列表 -->
-            <view class="ticket-list">
-                <view
-                    class="ticket-item"
-                    v-for="item in dataList"
-                    :key="item.id"
-                    @click="goDetail(item.id)"
-                >
-                    <view class="ticket-header">
-                        <text class="ticket-sn">{{ item.ticket_sn }}</text>
-                        <view class="ticket-status" :class="getStatusClass(item.status)">
-                            {{ item.status_desc || getStatusText(item.status) }}
-                        </view>
-                    </view>
-                    <view class="ticket-title">{{ item.title }}</view>
-                    <view class="ticket-content" v-if="item.content">{{ item.content }}</view>
-                    <view class="ticket-footer">
-                        <text class="ticket-type">{{
-                            item.type_desc || getTypeText(item.type)
-                        }}</text>
-                        <text class="ticket-time">{{ item.create_time }}</text>
-                    </view>
-                </view>
+        <view class="ticket-page">
+            <view class="ticket-page__head">
+                <text class="ticket-page__title">售后工单</text>
+                <text class="ticket-page__desc">查看当前进度，处理咨询、投诉与售后问题。</text>
             </view>
 
-            <!-- 空状态 -->
-            <template #empty>
-                <view class="empty-state">
-                    <tn-icon name="file-text" size="120" color="#ccc"></tn-icon>
-                    <text class="empty-text">暂无工单记录</text>
-                </view>
-            </template>
-        </z-paging>
+            <z-paging ref="paging" v-model="dataList" use-page-scroll @query="queryList">
+                <template #top>
+                    <scroll-view scroll-x class="ticket-page__filter-scroll" :show-scrollbar="false">
+                        <view class="ticket-page__filters">
+                            <view
+                                v-for="item in statusTabs"
+                                :key="String(item.value)"
+                                class="ticket-page__filter"
+                                :class="{ 'is-active': currentStatus === item.value }"
+                                @click="changeStatus(item.value)"
+                            >
+                                {{ item.label }}
+                            </view>
+                        </view>
+                    </scroll-view>
+                </template>
 
-        <!-- 创建工单按钮 -->
-        <view class="create-btn" @click="goCreate">
-            <tn-icon name="plus" size="40" color="#fff"></tn-icon>
+                <view class="ticket-list">
+                    <view
+                        v-for="item in dataList"
+                        :key="item.id"
+                        class="ticket-card"
+                        @click="goDetail(item.id)"
+                    >
+                        <view class="ticket-card__head">
+                            <view>
+                                <text class="ticket-card__sn">{{ item.ticket_sn }}</text>
+                                <text class="ticket-card__title">{{ item.title }}</text>
+                            </view>
+                            <view class="ticket-card__status" :class="getStatusClass(item.status)">
+                                {{ item.status_desc || getStatusText(item.status) }}
+                            </view>
+                        </view>
+
+                        <text v-if="item.content" class="ticket-card__content">{{ item.content }}</text>
+
+                        <view class="ticket-card__meta">
+                            <text class="ticket-card__chip">
+                                {{ item.type_desc || getTypeText(item.type) }}
+                            </text>
+                            <text class="ticket-card__time">{{ item.create_time }}</text>
+                        </view>
+                    </view>
+                </view>
+
+                <template #empty>
+                    <view class="ticket-empty">
+                        <tn-icon name="file-text" size="112" color="#D9CDC7" />
+                        <text class="ticket-empty__title">还没有工单记录</text>
+                        <text class="ticket-empty__desc">
+                            预约问题、服务咨询和售后处理都会在这里集中展示。
+                        </text>
+                    </view>
+                </template>
+            </z-paging>
+
+            <view class="ticket-page__fab" @click="goCreate">
+                <tn-icon name="plus" size="34" color="#FFFFFF" />
+            </view>
         </view>
-    </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref, shallowRef } from 'vue'
 import { getTicketLists } from '@/api/aftersale'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import PageShell from '@/components/base/PageShell.vue'
+import { useThemeStore } from '@/stores/theme'
 import { onLoad } from '@dcloudio/uni-app'
 
+const $theme = useThemeStore()
 const paging = shallowRef()
 const dataList = ref<any[]>([])
 const currentStatus = ref<number | string>('')
+
+const statusTabs = [
+    { label: '全部', value: '' },
+    { label: '待处理', value: 0 },
+    { label: '处理中', value: 1 },
+    { label: '待确认', value: 2 },
+    { label: '已完成', value: 3 },
+    { label: '已关闭', value: 4 }
+]
 
 const changeStatus = (status: number | string) => {
     currentStatus.value = status
@@ -108,8 +120,10 @@ const getStatusClass = (status: number) => {
     const map: Record<number, string> = {
         0: 'status-pending',
         1: 'status-processing',
-        2: 'status-completed',
-        3: 'status-closed'
+        2: 'status-confirming',
+        3: 'status-completed',
+        4: 'status-closed',
+        5: 'status-cancelled'
     }
     return map[status] || ''
 }
@@ -118,18 +132,20 @@ const getStatusText = (status: number) => {
     const map: Record<number, string> = {
         0: '待处理',
         1: '处理中',
-        2: '已完成',
-        3: '已关闭'
+        2: '待确认',
+        3: '已完成',
+        4: '已关闭',
+        5: '已取消'
     }
     return map[status] || '未知'
 }
 
 const getTypeText = (type: number) => {
     const map: Record<number, string> = {
-        1: '服务咨询',
-        2: '订单问题',
-        3: '技术问题',
-        4: '投诉建议',
+        1: '投诉',
+        2: '咨询',
+        3: '售后',
+        4: '建议',
         5: '其他'
     }
     return map[type] || '其他'
@@ -144,147 +160,174 @@ const goCreate = () => {
 }
 
 onLoad((options: any) => {
-    if (options?.status) {
-        currentStatus.value = parseInt(options.status)
+    if (options?.status !== undefined) {
+        currentStatus.value = Number(options.status)
     }
 })
 </script>
 
 <style lang="scss" scoped>
+@import '../../../styles/aftersale.scss';
+
 .ticket-page {
-    min-height: 100vh;
-    background: #f5f5f5;
+    @include aftersale-page-base;
+    padding: 0 0 150rpx;
 }
 
-.filter-tabs {
-    display: flex;
-    background: #fff;
-    padding: 20rpx;
-    border-bottom: 1rpx solid #eee;
+.ticket-page__head {
+    padding: 14rpx 20rpx 18rpx;
 }
 
-.tab-item {
-    flex: 1;
-    text-align: center;
-    padding: 16rpx 0;
-    font-size: 28rpx;
-    color: #666;
-    border-radius: 8rpx;
+.ticket-page__title {
+    display: block;
+    font-size: 40rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
 
-    &.active {
-        color: #ff758c;
-        background: rgba(255, 117, 140, 0.1);
-        font-weight: 600;
+.ticket-page__desc {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 24rpx;
+    line-height: 1.6;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.ticket-page__filter-scroll {
+    margin-bottom: 18rpx;
+}
+
+.ticket-page__filters {
+    @include aftersale-filter-tabs;
+}
+
+.ticket-page__filter {
+    @include aftersale-filter-item;
+
+    &.is-active {
+        background: var(--wm-color-primary, #e85a4f);
+        border-color: var(--wm-color-primary, #e85a4f);
+        color: #ffffff;
+        box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.18);
     }
 }
 
 .ticket-list {
-    padding: 20rpx;
-}
-
-.ticket-item {
-    background: #fff;
-    border-radius: 16rpx;
-    padding: 30rpx;
-    margin-bottom: 20rpx;
-}
-
-.ticket-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16rpx;
-}
-
-.ticket-sn {
-    font-size: 24rpx;
-    color: #999;
-}
-
-.ticket-status {
-    font-size: 24rpx;
-    padding: 6rpx 16rpx;
-    border-radius: 8rpx;
-
-    &.status-pending {
-        color: #faad14;
-        background: rgba(250, 173, 20, 0.1);
-    }
-    &.status-processing {
-        color: #1890ff;
-        background: rgba(24, 144, 255, 0.1);
-    }
-    &.status-completed {
-        color: #52c41a;
-        background: rgba(82, 196, 26, 0.1);
-    }
-    &.status-closed {
-        color: #999;
-        background: rgba(153, 153, 153, 0.1);
-    }
-}
-
-.ticket-title {
-    font-size: 30rpx;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 12rpx;
-}
-
-.ticket-content {
-    font-size: 26rpx;
-    color: #666;
-    margin-bottom: 16rpx;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-}
-
-.ticket-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.ticket-type {
-    font-size: 24rpx;
-    color: #999;
-    padding: 4rpx 12rpx;
-    background: #f5f5f5;
-    border-radius: 4rpx;
-}
-
-.ticket-time {
-    font-size: 24rpx;
-    color: #999;
-}
-
-.empty-state {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 100rpx 0;
+    gap: 16rpx;
+    padding: 0 20rpx;
 }
 
-.empty-text {
-    font-size: 28rpx;
-    color: #999;
-    margin-top: 20rpx;
+.ticket-card {
+    @include aftersale-section-card;
 }
 
-.create-btn {
-    position: fixed;
-    right: 40rpx;
-    bottom: 100rpx;
-    width: 100rpx;
-    height: 100rpx;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
+.ticket-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.ticket-card__sn {
+    display: block;
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.ticket-card__title {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.ticket-card__status {
+    flex-shrink: 0;
+    padding: 8rpx 16rpx;
+    border-radius: 999rpx;
+    font-size: 22rpx;
+    font-weight: 600;
+}
+
+.ticket-card__content {
+    display: block;
+    margin-top: 16rpx;
+    font-size: 25rpx;
+    line-height: 1.65;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.ticket-card__meta {
     display: flex;
     align-items: center;
-    justify-content: center;
-    box-shadow: 0 8rpx 24rpx rgba(255, 117, 140, 0.4);
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-top: 18rpx;
+}
+
+.ticket-card__chip {
+    padding: 8rpx 14rpx;
+    border-radius: 999rpx;
+    background: var(--wm-color-bg-soft, #fff7f4);
+    font-size: 22rpx;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.ticket-card__time {
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.ticket-empty {
+    @include aftersale-empty-state;
+}
+
+.ticket-empty__title {
+    margin-top: 24rpx;
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.ticket-empty__desc {
+    margin-top: 12rpx;
+    font-size: 26rpx;
+    line-height: 1.7;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.ticket-page__fab {
+    @include aftersale-fab;
+    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, var(--wm-color-secondary, #c99b73) 100%);
+}
+
+.status-pending {
+    color: #c98524;
+    background: rgba(201, 133, 36, 0.12);
+}
+
+.status-processing {
+    color: #607086;
+    background: rgba(96, 112, 134, 0.12);
+}
+
+.status-confirming {
+    color: #8f6ab5;
+    background: rgba(143, 106, 181, 0.12);
+}
+
+.status-completed {
+    color: #2f7d58;
+    background: rgba(47, 125, 88, 0.12);
+}
+
+.status-closed,
+.status-cancelled {
+    color: #978b83;
+    background: rgba(151, 139, 131, 0.12);
 }
 </style>

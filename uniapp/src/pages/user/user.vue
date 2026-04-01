@@ -1,35 +1,44 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <view class="user-page page-with-tabbar-safe-bottom">
-        <template v-for="(item, index) in state.pages" :key="index">
-            <template v-if="item.name === 'user-info'">
-                <w-user-info
-                    :content="mergeUserInfoContent(item.content || {})"
-                    :styles="item.styles"
-                    :user="userInfo"
-                    :isLogin="isLogin"
-                    :wedding-info="weddingInfo"
-                />
-            </template>
-            <template v-if="item.name === 'wedding-countdown' && isComponentEnabled(item)">
-                <w-wedding-countdown
-                    :content="mergeWeddingCountdownContent(item.content || {})"
-                    :styles="item.styles"
-                    :is-login="isLogin"
-                />
-            </template>
-            <template v-if="item.name === 'quick-entry' && isComponentEnabled(item)">
-                <w-quick-entry :content="mergeQuickEntryContent(item.content || {})" :styles="item.styles" />
-            </template>
-        </template>
-        <tabbar :badge-refresh-key="badgeRefreshKey" />
-    </view>
+    <PageShell scene="consumer" hasTabbar>
+        <view class="user-page">
+            <view class="user-page__body">
+                <template v-for="(item, index) in state.pages" :key="index">
+                    <template v-if="item.name === 'user-info'">
+                        <w-user-info
+                            :content="mergeUserInfoContent(item.content || {})"
+                            :styles="item.styles"
+                            :user="userInfo"
+                            :isLogin="isLogin"
+                        />
+                    </template>
+                    <template v-if="item.name === 'wedding-countdown' && isComponentEnabled(item)">
+                        <w-wedding-countdown
+                            :content="mergeWeddingCountdownContent(item.content || {})"
+                            :styles="item.styles"
+                            :is-login="isLogin"
+                            :wedding-info="weddingInfo"
+                        />
+                    </template>
+                    <template v-if="item.name === 'quick-entry' && isComponentEnabled(item)">
+                        <w-quick-entry
+                            :content="mergeQuickEntryContent(item.content || {})"
+                            :styles="item.styles"
+                            :is-login="isLogin"
+                        />
+                    </template>
+                </template>
+            </view>
+            <tabbar :badge-refresh-key="badgeRefreshKey" />
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { getDecorate } from '@/api/shop'
 import { getOrderStatistics } from '@/api/order'
 import { getUserWeddingDate } from '@/api/user'
+import PageShell from '@/components/base/PageShell.vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
@@ -42,6 +51,19 @@ type DecorateWidget = {
     name: string
     content?: Record<string, any>
     styles?: Record<string, any>
+}
+
+type QuickEntryItem = {
+    key: string
+    title: string
+    subtitle: string
+    is_show: string
+    disabled: boolean
+    requiresLogin?: boolean
+    link: {
+        path: string
+        type: string
+    }
 }
 
 const $theme = useThemeStore()
@@ -70,14 +92,14 @@ const adminEntryEnabled = computed(() => {
     const rawUserIds = String(featureSwitch.value.admin_dashboard_user_ids || '')
     if (!rawUserIds.trim()) return false
     const allowedUserIds = rawUserIds
-        .split(',')
+        .split(/[\s,，]+/)
         .map((item: string) => Number(item.trim()))
         .filter((item: number) => Number.isFinite(item) && item > 0)
     const currentUserId = Number(userInfo.value?.id || userInfo.value?.user_id || 0)
     return currentUserId > 0 && allowedUserIds.includes(currentUserId)
 })
 
-const buildQuickEntryData = () => {
+const buildQuickEntryData = (): QuickEntryItem[] => {
     const activeOrderCount =
         Number(orderStats.value.pending_confirm || 0) +
         Number(orderStats.value.pending_pay || 0) +
@@ -117,10 +139,19 @@ const buildQuickEntryData = () => {
             link: { path: '/packages/pages/waitlist/waitlist', type: 'shop' }
         },
         {
+            key: 'settings',
+            title: '设置',
+            subtitle: '账号与协议管理',
+            is_show: '1',
+            disabled: false,
+            requiresLogin: true,
+            link: { path: '/pages/user_set/user_set', type: 'shop' }
+        },
+        {
             key: 'staff-center',
             title: '服务人员入口',
             subtitle: staffEntryEnabled.value ? '服务人员管理页面' : '需服务人员身份',
-            is_show: isLogin.value ? '1' : '0',
+            is_show: isLogin.value && featureSwitch.value.staff_center === 1 ? '1' : '0',
             disabled: !staffEntryEnabled.value,
             link: { path: '/packages/pages/staff_center/staff_center', type: 'shop' }
         },
@@ -128,7 +159,7 @@ const buildQuickEntryData = () => {
             key: 'admin-dashboard',
             title: '驾驶舱',
             subtitle: adminEntryEnabled.value ? '管理员驾驶舱入口' : '需管理员权限',
-            is_show: isLogin.value ? '1' : '0',
+            is_show: isLogin.value && featureSwitch.value.admin_dashboard === 1 ? '1' : '0',
             disabled: !adminEntryEnabled.value,
             link: { path: '/packages/pages/admin_dashboard/admin_dashboard', type: 'shop' }
         }
@@ -302,9 +333,41 @@ onShow(async () => {
 
 <style lang="scss" scoped>
 .user-page {
-    min-height: 100vh;
-    background:
-        radial-gradient(circle at top right, rgba(232, 90, 79, 0.08) 0, transparent 36%),
-        linear-gradient(180deg, #fcfbf9 0%, #f7f3f0 58%, #f5f1ee 100%) !important;
+    position: relative;
+    box-sizing: border-box;
+    --wm-user-page-content-top: 11rpx;
+    --wm-user-page-content-side: 37rpx;
+    --wm-user-page-content-bottom: 30rpx;
+    --wm-user-page-section-gap: 30rpx;
+    --wm-user-profile-radius: 49rpx;
+    --wm-user-profile-padding: 30rpx;
+    --wm-user-profile-min-height: 149rpx;
+    --wm-user-profile-avatar-size: 104rpx;
+    --wm-user-profile-avatar-radius: 52rpx;
+    --wm-user-profile-gap: 30rpx;
+    --wm-user-countdown-radius: 52rpx;
+    --wm-user-countdown-padding-top: 34rpx;
+    --wm-user-countdown-padding-right: 34rpx;
+    --wm-user-countdown-padding-bottom: 37rpx;
+    --wm-user-countdown-padding-left: 34rpx;
+    --wm-user-countdown-gap: 15rpx;
+    --wm-user-quick-radius: 45rpx;
+    --wm-user-quick-padding: 30rpx;
+    --wm-user-quick-title-gap: 30rpx;
+    --wm-user-quick-grid-gap: 22rpx;
+    --wm-user-quick-item-radius: 37rpx;
+    --wm-user-quick-item-padding: 30rpx;
+    --wm-user-quick-item-gap: 11rpx;
+    --wm-user-quick-item-height: 116rpx;
+}
+
+.user-page__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wm-user-page-section-gap);
+    padding: var(--wm-user-page-content-top) var(--wm-user-page-content-side)
+        var(--wm-user-page-content-bottom)
+        var(--wm-user-page-content-side);
+    box-sizing: border-box;
 }
 </style>

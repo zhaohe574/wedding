@@ -12,5 +12,3 @@ onLoad((options) => {
     url.value = decodeURIComponent(options.url!)
 })
 </script>
-
-<style></style>

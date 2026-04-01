@@ -1,167 +1,255 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="动态管理" />
+    <PageShell scene="staff">
+        <BaseNavbar title="动态管理" />
 
-    <view class="page-container">
-        <z-paging ref="pagingRef" v-model="dynamicList" @query="queryList" :auto="false">
-            <template #top>
-                <view class="hero-wrap">
-                    <view
-                        class="hero-card"
-                        :style="{
-                            background: `linear-gradient(145deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || $theme.primaryColor} 78%)`
-                        }"
-                    >
-                        <view class="hero-top">
-                            <view>
-                                <text class="hero-title">动态工作区</text>
-                                <text class="hero-desc">持续发布图文、视频与活动内容，保持服务活跃度</text>
-                            </view>
-                            <view class="hero-add-btn" @click="handleAdd">
-                                <tn-icon name="plus" size="28" color="#FFFFFF" />
-                                <text>发布动态</text>
-                            </view>
-                        </view>
+        <view class="staff-resource-page">
+            <z-paging
+                ref="pagingRef"
+                v-model="dynamicList"
+                :auto="false"
+                :hide-empty-view="true"
+                :paging-style="pagingStyle"
+                @query="queryList"
+            >
+                <template #top>
+                    <view class="page-section page-section--top">
+                        <view class="page-head">
+                            <view class="page-head__main">
+                                <view class="page-head__copy">
+                                    <text class="page-head__title">动态管理</text>
+                                    <text class="page-head__meta">发布近期内容</text>
+                                </view>
 
-                        <view class="hero-stats">
-                            <view class="hero-stat">
-                                <text class="hero-stat-label">总动态</text>
-                                <text class="hero-stat-value">{{ dynamicList.length }}</text>
+                                <BaseButton
+                                    variant="secondary"
+                                    size="sm"
+                                    class="page-head__action"
+                                    @click="handleAdd"
+                                >
+                                    发布动态
+                                </BaseButton>
                             </view>
-                            <view class="hero-stat">
-                                <text class="hero-stat-label">已发布</text>
-                                <text class="hero-stat-value">{{ publishedCount }}</text>
+
+                            <view class="summary-row">
+                                <view
+                                    v-for="item in summaryPills"
+                                    :key="item.label"
+                                    :class="['summary-pill', { 'summary-pill--accent': item.accent }]"
+                                >
+                                    <text class="summary-pill__label">{{ item.label }}</text>
+                                    <text class="summary-pill__value">{{ item.value }}</text>
+                                </view>
                             </view>
-                            <view class="hero-stat">
-                                <text class="hero-stat-label">待审核</text>
-                                <text class="hero-stat-value">{{ pendingCount }}</text>
-                            </view>
+
+                            <scroll-view scroll-x class="filter-scroll" show-scrollbar="false">
+                                <view class="filter-row">
+                                    <FilterChip
+                                        v-for="item in filterOptions"
+                                        :key="item.key"
+                                        scene="staff"
+                                        :selected="currentFilter === item.key"
+                                        @click="switchFilter(item.key)"
+                                    >
+                                        {{ item.label }}
+                                    </FilterChip>
+                                </view>
+                            </scroll-view>
                         </view>
                     </view>
-                </view>
-            </template>
+                </template>
 
-            <view class="dynamic-list">
-                <view
-                    v-for="item in dynamicList"
-                    :key="item.id"
-                    class="card"
-                    @click="handleEdit(item)"
-                >
-                    <!-- 统一顶部行：类型 + 状态 -->
-                    <view class="card-head">
-                        <view
-                            class="type-badge"
-                            :style="{ background: `${$theme.primaryColor}15`, color: $theme.primaryColor }"
+                <view class="page-section page-section--list">
+                    <LoadingState v-if="loading && !hasLoaded" text="正在同步动态列表..." />
+
+                    <template v-else-if="dynamicList.length">
+                        <BaseCard
+                            v-for="item in dynamicList"
+                            :key="item.id"
+                            variant="glass"
+                            scene="staff"
+                            class="dynamic-card"
+                            interactive
+                            @click="handleEdit(item)"
                         >
-                            <tn-icon :name="getTypeIcon(item.dynamic_type)" size="22" :color="$theme.primaryColor" />
-                            <text>{{ typeText(item.dynamic_type) }}</text>
-                        </view>
-                        <view class="status-tag" :style="getStatusStyle(item.status)">{{ statusText(item.status) }}</view>
-                    </view>
+                            <view class="dynamic-card__head">
+                                <view class="dynamic-card__meta">
+                                    <view
+                                        :class="[
+                                            'type-pill',
+                                            `type-pill--${getTypeModifier(getDynamicType(item))}`
+                                        ]"
+                                    >
+                                        <tn-icon
+                                            :name="getTypeIcon(getDynamicType(item))"
+                                            size="18"
+                                            :color="getTypeColor(getDynamicType(item))"
+                                        />
+                                        <text>{{ typeText(getDynamicType(item)) }}</text>
+                                    </view>
 
-                    <!-- 图文类型：左文右图 -->
-                    <view v-if="item.dynamic_type === 1 && getImageList(item).length > 0" class="card-row">
-                        <view class="row-text">
-                            <text class="content-text">{{ item.content }}</text>
-                            <view v-if="getTagsList(item).length > 0" class="tags-row">
+                                    <StatusBadge
+                                        :tone="getStatusTone(Number(item.status))"
+                                        size="sm"
+                                    >
+                                        {{ statusText(Number(item.status)) }}
+                                    </StatusBadge>
+                                </view>
+
+                                <text class="dynamic-card__time">
+                                    {{ formatTime(item.create_time) || '刚刚' }}
+                                </text>
+                            </view>
+
+                            <text class="dynamic-card__content">
+                                {{ item.content || '未填写动态内容' }}
+                            </text>
+
+                            <view v-if="shouldShowMedia(item)" class="dynamic-card__media">
+                                <image
+                                    :src="appStore.getImageUrl(getCardCover(item))"
+                                    class="dynamic-card__image"
+                                    mode="aspectFill"
+                                />
+                                <view
+                                    v-if="getDynamicType(item) === 2"
+                                    class="dynamic-card__play"
+                                >
+                                    <text class="dynamic-card__play-icon">▶</text>
+                                </view>
+                                <view
+                                    v-else-if="getImageList(item).length > 1"
+                                    class="dynamic-card__media-count"
+                                >
+                                    {{ getImageList(item).length }} 图
+                                </view>
+                            </view>
+
+                            <view v-if="getTagsList(item).length" class="tag-row">
                                 <text
-                                    v-for="(tag, idx) in getTagsList(item).slice(0, 3)"
-                                    :key="idx"
-                                    class="tag-text"
-                                    :style="{ color: $theme.primaryColor }"
-                                >#{{ tag }}</text>
+                                    v-for="(tag, index) in getTagsList(item).slice(0, 2)"
+                                    :key="`${item.id}-${index}`"
+                                    class="tag-chip"
+                                >
+                                    #{{ tag }}
+                                </text>
                             </view>
-                        </view>
-                        <view class="row-thumb">
-                            <image :src="appStore.getImageUrl(getImageList(item)[0])" class="thumb-img" mode="aspectFill" />
-                            <view v-if="getImageList(item).length > 1" class="thumb-badge">{{ getImageList(item).length }}图</view>
-                        </view>
-                    </view>
 
-                    <!-- 视频类型 -->
-                    <view v-else-if="item.dynamic_type === 2" class="card-video">
-                        <view v-if="getVideoCover(item)" class="video-box">
-                            <image :src="appStore.getImageUrl(getVideoCover(item))" class="video-img" mode="aspectFill" />
-                            <view class="play-btn">
-                                <text class="play-icon">▶</text>
-                            </view>
-                        </view>
-                        <text class="content-text content-text--block">{{ item.content }}</text>
-                        <view v-if="getTagsList(item).length > 0" class="tags-row">
-                            <text
-                                v-for="(tag, idx) in getTagsList(item).slice(0, 3)"
-                                :key="idx"
-                                class="tag-text"
-                                :style="{ color: $theme.primaryColor }"
-                            >#{{ tag }}</text>
-                        </view>
-                    </view>
+                            <view class="card-footer">
+                                <view class="stats-row">
+                                    <view class="metric-chip">
+                                        <tn-icon
+                                            name="eye"
+                                            size="18"
+                                            color="var(--wm-color-secondary, #C99B73)"
+                                        />
+                                        <text>浏览 {{ Number(item.view_count || 0) }}</text>
+                                    </view>
+                                    <view class="metric-chip">
+                                        <tn-icon
+                                            name="like"
+                                            size="18"
+                                            color="var(--wm-color-secondary, #C99B73)"
+                                        />
+                                        <text>点赞 {{ Number(item.like_count || 0) }}</text>
+                                    </view>
+                                </view>
 
-                    <!-- 纯文字 / 活动 -->
-                    <view v-else class="card-plain">
-                        <text class="content-text content-text--block">{{ item.content }}</text>
-                        <view v-if="getTagsList(item).length > 0" class="tags-row">
-                            <text
-                                v-for="(tag, idx) in getTagsList(item).slice(0, 3)"
-                                :key="idx"
-                                class="tag-text"
-                                :style="{ color: $theme.primaryColor }"
-                            >#{{ tag }}</text>
-                        </view>
-                    </view>
+                                <view class="action-row">
+                                    <view
+                                        class="action-btn action-btn--ghost"
+                                        @click.stop="handleEdit(item)"
+                                    >
+                                        编辑
+                                    </view>
+                                    <view
+                                        class="action-btn action-btn--danger"
+                                        @click.stop="handleDelete(item)"
+                                    >
+                                        删除
+                                    </view>
+                                </view>
+                            </view>
+                        </BaseCard>
+                    </template>
 
-                    <!-- 底部栏 -->
-                    <view class="card-foot">
-                        <view class="foot-left">
-                            <text class="foot-time">{{ formatTime(item.create_time) }}</text>
-                            <text class="foot-sep">·</text>
-                            <tn-icon name="eye" size="22" color="#C0C0C0" />
-                            <text class="foot-num">{{ item.view_count || 0 }}</text>
-                            <tn-icon name="like" size="22" color="#C0C0C0" />
-                            <text class="foot-num">{{ item.like_count || 0 }}</text>
-                        </view>
-                        <view class="foot-right">
-                            <view class="foot-btn" @click.stop="handleEdit(item)">
-                                <tn-icon name="edit" size="28" :color="$theme.primaryColor" />
-                            </view>
-                            <view class="foot-btn" @click.stop="handleDelete(item)">
-                                <tn-icon name="delete" size="28" color="#FF4D4F" />
-                            </view>
-                        </view>
-                    </view>
+                    <EmptyState
+                        v-else-if="hasLoaded"
+                        :title="currentFilter === 'all' ? '还没有动态' : '当前类型暂无动态'"
+                        action-text="发布动态"
+                        @action="handleAdd"
+                    />
                 </view>
-
-                <!-- 空状态 -->
-                <view v-if="dynamicList.length === 0" class="empty-state">
-                    <tn-icon name="edit" size="100" color="#E0E0E0" />
-                    <text class="empty-text">还没有发布动态</text>
-                    <view
-                        class="empty-btn"
-                        :style="{ background: $theme.primaryColor, color: $theme.btnColor }"
-                        @click="handleAdd"
-                    >立即发布</view>
-                </view>
-            </view>
-        </z-paging>
-    </view>
+            </z-paging>
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { staffCenterDynamicLists, staffCenterDynamicDelete } from '@/api/staffCenter'
-import { ensureStaffCenterAccess } from '@/utils/staff-center'
-import { useThemeStore } from '@/stores/theme'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import FilterChip from '@/components/base/FilterChip.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
+import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
+import { staffCenterDynamicDelete, staffCenterDynamicLists } from '@/api/staffCenter'
+import { useFixedNavbarPagingStyle } from '@/hooks/useFixedNavbarPagingStyle'
 import { useAppStore } from '@/stores/app'
+import { useThemeStore } from '@/stores/theme'
+import { ensureStaffCenterAccess } from '@/utils/staff-center'
+
+type FilterKey = 'all' | 'image' | 'video' | 'activity'
+type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
+
+interface HeroMetric {
+    label: string
+    value: number
+    accent: boolean
+}
+
+interface FilterOption {
+    key: FilterKey
+    label: string
+}
+
+interface DynamicListSummary {
+    total: number
+    published_count: number
+    pending_count: number
+}
 
 const $theme = useThemeStore()
 const appStore = useAppStore()
+const pagingStyle = useFixedNavbarPagingStyle()
 const pagingRef = ref<any>(null)
 const dynamicList = ref<any[]>([])
+const loading = ref(false)
+const hasLoaded = ref(false)
+const currentFilter = ref<FilterKey>('all')
+const summary = ref<DynamicListSummary>({
+    total: 0,
+    published_count: 0,
+    pending_count: 0
+})
 
-const publishedCount = computed(() => dynamicList.value.filter((item) => Number(item.status) === 1).length)
-const pendingCount = computed(() => dynamicList.value.filter((item) => Number(item.status) === 0).length)
+const summaryPills = computed<HeroMetric[]>(() => [
+    { label: '总动态', value: summary.value.total, accent: false },
+    { label: '已发布', value: summary.value.published_count, accent: true },
+    { label: '待审核', value: summary.value.pending_count, accent: false }
+])
+
+const filterOptions = computed<FilterOption[]>(() => [
+    { key: 'all', label: '全部' },
+    { key: 'image', label: '图文' },
+    { key: 'video', label: '视频' },
+    { key: 'activity', label: '活动' }
+])
+
+const getDynamicType = (item: any) => Number(item?.dynamic_type || 0)
 
 const typeText = (type: number) => {
     const map: Record<number, string> = { 1: '图文', 2: '视频', 4: '活动' }
@@ -169,8 +257,22 @@ const typeText = (type: number) => {
 }
 
 const getTypeIcon = (type: number) => {
-    const icons: Record<number, string> = { 1: 'image', 2: 'video', 4: 'gift' }
-    return icons[type] || 'edit'
+    const map: Record<number, string> = { 1: 'image', 2: 'video', 4: 'gift' }
+    return map[type] || 'edit'
+}
+
+const getTypeModifier = (type: number) => {
+    const map: Record<number, string> = { 1: 'image', 2: 'video', 4: 'activity' }
+    return map[type] || 'default'
+}
+
+const getTypeColor = (type: number) => {
+    const map: Record<number, string> = {
+        1: 'var(--wm-color-primary, #E85A4F)',
+        2: 'var(--wm-color-info, #607086)',
+        4: 'var(--wm-color-warning, #C98524)'
+    }
+    return map[type] || 'var(--wm-color-primary, #E85A4F)'
 }
 
 const statusText = (status: number) => {
@@ -178,63 +280,131 @@ const statusText = (status: number) => {
     return map[status] || '未知'
 }
 
-const getStatusStyle = (status: number) => {
-    const styles: Record<number, any> = {
-        0: { background: 'rgba(255,153,0,0.1)', color: '#FF9900' },
-        1: { background: 'rgba(25,190,107,0.1)', color: '#19BE6B' },
-        2: { background: 'rgba(153,153,153,0.1)', color: '#999' },
-        3: { background: 'rgba(255,44,60,0.1)', color: '#FF2C3C' }
+const getStatusTone = (status: number): BadgeTone => {
+    const map: Record<number, BadgeTone> = {
+        0: 'warning',
+        1: 'success',
+        2: 'neutral',
+        3: 'danger'
     }
-    return styles[status] || styles[0]
+    return map[status] || 'neutral'
 }
 
 const getImageList = (item: any): string[] => {
-    if (item.images && Array.isArray(item.images) && item.images.length > 0) return item.images
+    if (Array.isArray(item?.images) && item.images.length > 0) {
+        return item.images
+    }
     return []
 }
 
 const getVideoCover = (item: any): string => {
-    if (item.video_cover) return item.video_cover
+    if (item?.video_cover) return item.video_cover
     const images = getImageList(item)
     if (images.length > 0) return images[0]
     return ''
 }
 
+const getCardCover = (item: any) => {
+    if (getDynamicType(item) === 2) {
+        return getVideoCover(item)
+    }
+    const images = getImageList(item)
+    if (images.length > 0) return images[0]
+    return ''
+}
+
+const shouldShowMedia = (item: any) => {
+    if (getDynamicType(item) === 2) return !!getVideoCover(item)
+    return getImageList(item).length > 0
+}
+
 const getTagsList = (item: any): string[] => {
-    if (item.tags_arr && Array.isArray(item.tags_arr) && item.tags_arr.length > 0) return item.tags_arr
-    if (item.tags && typeof item.tags === 'string') return item.tags.split(',').filter((t: string) => t.trim())
+    if (Array.isArray(item?.tags_arr) && item.tags_arr.length > 0) {
+        return item.tags_arr
+    }
+    if (typeof item?.tags === 'string') {
+        return item.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
+    }
     return []
 }
 
 const formatTime = (time: any): string => {
     if (!time) return ''
+
     let date: Date
     if (typeof time === 'number') {
         date = new Date(time < 1e12 ? time * 1000 : time)
     } else {
         date = new Date(String(time).replace(/-/g, '/'))
     }
+
     if (isNaN(date.getTime())) return String(time)
+
     const now = Date.now()
     const diff = now - date.getTime()
-    const min = Math.floor(diff / 60000)
-    if (min < 1) return '刚刚'
-    if (min < 60) return `${min}分钟前`
-    const hr = Math.floor(min / 60)
-    if (hr < 24) return `${hr}小时前`
-    const d = Math.floor(hr / 24)
-    if (d < 7) return `${d}天前`
-    const pad = (n: number) => String(n).padStart(2, '0')
+    const minute = Math.floor(diff / 60000)
+
+    if (minute < 1) return '刚刚'
+    if (minute < 60) return `${minute}分钟前`
+
+    const hour = Math.floor(minute / 60)
+    if (hour < 24) return `${hour}小时前`
+
+    const day = Math.floor(hour / 24)
+    if (day < 7) return `${day}天前`
+
+    const pad = (value: number) => String(value).padStart(2, '0')
     return `${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
-const queryList = async (pageNo: number, pageSize: number) => {
-    try {
-        const res: any = await staffCenterDynamicLists({ page: pageNo, page_size: pageSize })
-        pagingRef.value.complete(res?.data || [])
-    } catch (e) {
-        pagingRef.value.complete(false)
+const getQueryDynamicType = () => {
+    const map: Record<Exclude<FilterKey, 'all'>, number> = {
+        image: 1,
+        video: 2,
+        activity: 4
     }
+
+    if (currentFilter.value === 'all') {
+        return undefined
+    }
+
+    return map[currentFilter.value]
+}
+
+const queryList = async (pageNo: number, pageSize: number) => {
+    if (pageNo === 1) {
+        loading.value = true
+    }
+    try {
+        const dynamicType = getQueryDynamicType()
+        const res: any = await staffCenterDynamicLists({
+            page: pageNo,
+            page_size: pageSize,
+            ...(dynamicType ? { dynamic_type: dynamicType } : {})
+        })
+        summary.value = {
+            total: Number(res?.summary?.total || 0),
+            published_count: Number(res?.summary?.published_count || 0),
+            pending_count: Number(res?.summary?.pending_count || 0)
+        }
+        hasLoaded.value = true
+        pagingRef.value.complete(Array.isArray(res?.data) ? res.data : [])
+    } catch (e) {
+        hasLoaded.value = true
+        pagingRef.value.complete(false)
+    } finally {
+        if (pageNo === 1) {
+            loading.value = false
+        }
+    }
+}
+
+const switchFilter = (filterKey: FilterKey) => {
+    if (currentFilter.value === filterKey) return
+    currentFilter.value = filterKey
+    hasLoaded.value = false
+    loading.value = true
+    pagingRef.value?.reload()
 }
 
 const handleAdd = () => {
@@ -245,7 +415,9 @@ const handleEdit = (item: any) => {
     uni.setStorageSync('_temp_dynamic_detail', JSON.stringify(item))
     uni.navigateTo({
         url: `/packages/pages/staff_dynamic_edit/staff_dynamic_edit?id=${item.id}`,
-        success: (res) => { res.eventChannel.emit('detail', item) }
+        success: (res) => {
+            res.eventChannel.emit('detail', item)
+        }
     })
 }
 
@@ -268,315 +440,338 @@ const handleDelete = (item: any) => {
 
 onShow(async () => {
     if (!(await ensureStaffCenterAccess())) return
+    hasLoaded.value = false
+    loading.value = true
     pagingRef.value?.reload()
 })
 </script>
 
 <style lang="scss" scoped>
-.page-container {
+.staff-resource-page {
     min-height: 100vh;
+    padding-top: 20rpx;
+    box-sizing: border-box;
     background:
-        radial-gradient(circle at top left, rgba(191, 219, 254, 0.72) 0, rgba(246, 248, 252, 0) 36%),
-        linear-gradient(180deg, #F6F8FC 0%, #F4F6FB 100%);
+        radial-gradient(circle at top left, rgba(232, 90, 79, 0.1) 0, rgba(252, 251, 249, 0) 36%),
+        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
 }
 
-.hero-wrap {
-    padding: 24rpx 24rpx 0;
+.page-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    padding: 0 var(--wm-space-page-x, 37rpx);
+    box-sizing: border-box;
+
+    &--list {
+        padding-top: 12rpx;
+        padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+    }
 }
 
-.hero-card {
-    padding: 28rpx;
-    border-radius: 30rpx;
-    box-shadow: 0 18rpx 36rpx rgba(37, 99, 235, 0.18);
+.page-head {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
 }
 
-.hero-top {
+.page-head__main {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 20rpx;
 }
 
-.hero-title {
+.page-head__copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.page-head__title {
     display: block;
-    font-size: 36rpx;
+    font-size: 40rpx;
     font-weight: 700;
-    color: #FFFFFF;
+    line-height: 1.24;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.hero-desc {
+.page-head__meta {
     display: block;
-    margin-top: 10rpx;
-    font-size: 22rpx;
-    line-height: 1.55;
-    color: rgba(255, 255, 255, 0.8);
-}
-
-.hero-add-btn {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-    padding: 16rpx 22rpx;
-    border-radius: 999rpx;
-    background: rgba(255, 255, 255, 0.16);
+    margin-top: 6rpx;
     font-size: 24rpx;
     font-weight: 600;
-    color: #FFFFFF;
+    line-height: 1.4;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.hero-stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14rpx;
-    margin-top: 26rpx;
+.page-head__action {
+    flex-shrink: 0;
 }
 
-.hero-stat {
-    padding: 20rpx;
-    border-radius: 22rpx;
-    background: rgba(255, 255, 255, 0.14);
+.page-head__action :deep(.tn-button) {
+    background: rgba(255, 255, 255, 0.78);
+    border-color: rgba(232, 90, 79, 0.12);
 }
 
-.hero-stat-label {
-    display: block;
+.summary-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+}
+
+.summary-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 12rpx;
+    min-height: 54rpx;
+    padding: 0 18rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(255, 255, 255, 0.76);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+
+    &--accent {
+        background: var(--wm-color-primary-soft, #fff1ee);
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+    }
+}
+
+.summary-pill__label {
     font-size: 22rpx;
-    color: rgba(255, 255, 255, 0.75);
+    font-weight: 600;
+    line-height: 1;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.hero-stat-value {
-    display: block;
-    margin-top: 12rpx;
-    font-size: 38rpx;
-    font-weight: 800;
-    color: #FFFFFF;
+.summary-pill--accent .summary-pill__label {
+    color: var(--wm-color-primary, #e85a4f);
 }
 
-.dynamic-list {
-    padding: 18rpx 24rpx 48rpx;
+.summary-pill__value {
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-/* 卡片 */
-.card {
-    margin-bottom: 16rpx;
-    padding: 16rpx 20rpx;
-    background: #FFF;
-    border-radius: 16rpx;
-    box-shadow: 0 1rpx 8rpx rgba(0,0,0,0.03);
-    &:active { background: #FAFAFA; }
+.filter-scroll {
+    white-space: nowrap;
 }
 
-/* 卡片头部 */
-.card-head {
+.filter-row {
+    display: inline-flex;
+    gap: 12rpx;
+    padding-bottom: 2rpx;
+}
+
+.dynamic-card + .dynamic-card {
+    margin-top: 16rpx;
+}
+
+.dynamic-card__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12rpx;
+    gap: 16rpx;
 }
 
-.type-badge {
+.dynamic-card__meta {
     display: inline-flex;
     align-items: center;
-    gap: 4rpx;
-    padding: 2rpx 12rpx;
-    border-radius: 6rpx;
-    font-size: 22rpx;
-    font-weight: 500;
-    line-height: 36rpx;
-}
-
-.status-tag {
-    padding: 2rpx 12rpx;
-    border-radius: 6rpx;
-    font-size: 22rpx;
-    font-weight: 500;
-    line-height: 36rpx;
-    flex-shrink: 0;
-}
-
-/* 图文：左文右图 */
-.card-row {
-    display: flex;
-    gap: 16rpx;
-    margin-bottom: 12rpx;
-}
-
-.row-text {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    gap: 6rpx;
-}
-
-.row-thumb {
-    position: relative;
-    flex-shrink: 0;
-    width: 140rpx;
-    height: 140rpx;
-    border-radius: 10rpx;
-    overflow: hidden;
-}
-
-.thumb-img {
-    width: 140rpx;
-    height: 140rpx;
-}
-
-.thumb-badge {
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    padding: 0 10rpx;
-    background: rgba(0,0,0,0.5);
-    border-top-right-radius: 8rpx;
-    font-size: 20rpx;
-    color: #FFF;
-    line-height: 32rpx;
-}
-
-/* 内容文字 */
-.content-text {
-    font-size: 28rpx;
-    line-height: 1.45;
-    color: #333;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    word-break: break-all;
-}
-
-.content-text--block {
-    margin-bottom: 8rpx;
-}
-
-/* 标签 */
-.tags-row {
-    display: flex;
     flex-wrap: wrap;
     gap: 10rpx;
-    margin-top: 6rpx;
 }
 
-.tag-text {
+.dynamic-card__time {
+    flex-shrink: 0;
     font-size: 22rpx;
-    font-weight: 500;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--wm-text-tertiary, #948f8b);
 }
 
-/* 视频 */
-.card-video {
-    margin-bottom: 12rpx;
+.type-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    min-height: 44rpx;
+    padding: 0 14rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    border: 1rpx solid transparent;
+    font-size: 21rpx;
+    font-weight: 700;
+
+    &--image {
+        color: var(--wm-color-primary, #e85a4f);
+        background: var(--wm-color-primary-soft, #fff1ee);
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+    }
+
+    &--video {
+        color: var(--wm-color-info, #607086);
+        background: rgba(96, 112, 134, 0.1);
+        border-color: rgba(96, 112, 134, 0.16);
+    }
+
+    &--activity {
+        color: var(--wm-color-warning, #c98524);
+        background: rgba(201, 133, 36, 0.1);
+        border-color: rgba(201, 133, 36, 0.16);
+    }
+
+    &--default {
+        color: var(--wm-text-secondary, #7f7b78);
+        background: rgba(255, 255, 255, 0.72);
+        border-color: var(--wm-color-border, #efe6e1);
+    }
 }
 
-.video-box {
+.dynamic-card__media {
     position: relative;
-    width: 100%;
-    height: 280rpx;
-    border-radius: 10rpx;
+    margin-top: 16rpx;
     overflow: hidden;
-    margin-bottom: 10rpx;
+    border-radius: 28rpx;
+    background: #f7f1ed;
 }
 
-.video-img {
+.dynamic-card__image {
     width: 100%;
-    height: 100%;
+    height: 228rpx;
+    display: block;
 }
 
-.play-btn {
+.dynamic-card__play {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: 72rpx;
-    height: 72rpx;
-    border-radius: 50%;
-    background: rgba(0,0,0,0.4);
+    width: 88rpx;
+    height: 88rpx;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 50%;
+    background: rgba(30, 36, 50, 0.32);
+    transform: translate(-50%, -50%);
+    backdrop-filter: blur(8rpx);
+    -webkit-backdrop-filter: blur(8rpx);
 }
 
-.play-icon {
-    font-size: 28rpx;
-    color: #FFF;
+.dynamic-card__play-icon {
     margin-left: 4rpx;
+    font-size: 28rpx;
+    color: #ffffff;
 }
 
-/* 纯文字 */
-.card-plain {
-    margin-bottom: 12rpx;
+.dynamic-card__media-count {
+    position: absolute;
+    right: 16rpx;
+    bottom: 16rpx;
+    min-height: 40rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(30, 36, 50, 0.52);
+    font-size: 20rpx;
+    font-weight: 700;
+    color: #ffffff;
 }
 
-/* 底部栏 */
-.card-foot {
+.dynamic-card__content {
+    display: -webkit-box;
+    margin-top: 16rpx;
+    overflow: hidden;
+    font-size: 28rpx;
+    font-weight: 600;
+    line-height: 1.52;
+    color: var(--wm-text-primary, #1e2432);
+    text-overflow: ellipsis;
+    word-break: break-all;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+.tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10rpx;
+    margin-top: 14rpx;
+}
+
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40rpx;
+    padding: 0 12rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(255, 241, 238, 0.72);
+    border: 1rpx solid rgba(232, 90, 79, 0.12);
+    font-size: 20rpx;
+    font-weight: 600;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.card-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: 10rpx;
-    border-top: 1rpx solid #F2F2F2;
+    gap: 16rpx;
+    margin-top: 18rpx;
 }
 
-.foot-left {
+.stats-row {
     display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+}
+
+.metric-chip {
+    display: inline-flex;
     align-items: center;
-    gap: 6rpx;
+    gap: 8rpx;
+    min-height: 46rpx;
+    padding: 0 14rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(255, 255, 255, 0.74);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    font-size: 21rpx;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.foot-time {
-    font-size: 22rpx;
-    color: #C0C0C0;
-}
-
-.foot-sep {
-    font-size: 22rpx;
-    color: #D9D9D9;
-    margin: 0 2rpx;
-}
-
-.foot-num {
-    font-size: 22rpx;
-    color: #C0C0C0;
-    margin-right: 4rpx;
-}
-
-.foot-right {
+.action-row {
     display: flex;
-    align-items: center;
+    flex-shrink: 0;
+    gap: 12rpx;
 }
 
-.foot-btn {
-    width: 52rpx;
-    height: 52rpx;
+.action-btn {
+    min-width: 108rpx;
+    min-height: 56rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    &:active { background: rgba(0,0,0,0.04); }
-}
-
-/* 空状态 */
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 100rpx 0;
-    gap: 16rpx;
-}
-
-.empty-text {
-    font-size: 28rpx;
-    color: #999;
-}
-
-.empty-btn {
-    margin-top: 8rpx;
-    padding: 12rpx 44rpx;
-    border-radius: 40rpx;
-    font-size: 28rpx;
+    padding: 0 24rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    font-size: 22rpx;
     font-weight: 600;
-    &:active { opacity: 0.85; }
+    transition: all var(--wm-motion-base, 220ms) ease;
+
+    &:active {
+        transform: translateY(2rpx);
+        opacity: 0.92;
+    }
+
+    &--ghost {
+        color: var(--wm-color-primary, #e85a4f);
+        background: rgba(255, 255, 255, 0.7);
+        border: 1rpx solid rgba(232, 90, 79, 0.18);
+    }
+
+    &--danger {
+        color: var(--wm-color-danger, #b44a3a);
+        background: rgba(180, 74, 58, 0.08);
+        border: 1rpx solid rgba(180, 74, 58, 0.12);
+    }
 }
 </style>

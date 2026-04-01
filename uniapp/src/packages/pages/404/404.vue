@@ -1,18 +1,41 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="404" />
-    <view class="h-screen flex flex-col justify-center items-center">
-        <view>
-            <tn-empty text="对不起，您访问的页面不存在" mode="data"></tn-empty>
+    <PageShell scene="consumer">
+        <BaseNavbar title="404" />
+        <view class="wm-empty-shell not-found-page">
+            <view class="wm-page-card wm-page-card--soft not-found-page__card">
+                <EmptyState
+                    title="页面不存在"
+                    description="当前访问的页面可能已经被移除，或者链接地址有误。"
+                />
+                <BaseButton block size="lg" @click="goHome">返回首页</BaseButton>
+            </view>
         </view>
-        <view class="w-full px-[100rpx] mt-[40rpx]">
-            <router-navigate
-                class="bg-primary rounded-full text-btn-text leading-[80rpx] text-center"
-                to="/"
-                nav-type="reLaunch"
-            >
-                返回首页
-            </router-navigate>
-        </view>
-    </view>
+    </PageShell>
 </template>
+
+<script setup lang="ts">
+import BaseButton from '@/components/base/BaseButton.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import PageShell from '@/components/base/PageShell.vue'
+
+const goHome = () => {
+    uni.reLaunch({
+        url: '/pages/index/index'
+    })
+}
+</script>
+
+<style scoped>
+.not-found-page {
+    padding: 20rpx;
+}
+
+.not-found-page__card {
+    width: 100%;
+    max-width: 640rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+}
+</style>

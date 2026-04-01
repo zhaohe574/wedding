@@ -55,13 +55,7 @@ onLaunch(async () => {
 @import '@tuniao/tn-icon/dist/index.css';
 
 page {
-    background:
-        radial-gradient(circle at top right, rgba(232, 90, 79, 0.08) 0, transparent 32%),
-        linear-gradient(
-            180deg,
-            var(--wm-color-bg-page, #fcfbf9) 0%,
-            var(--wm-color-bg-soft, #fff7f4) 100%
-        );
+    background-color: transparent;
     font-family:
         var(--wm-font-family-body, 'PingFang SC'),
         'Hiragino Sans GB',
@@ -79,7 +73,12 @@ view,
 text,
 button,
 input,
-textarea {
+textarea,
+navigator,
+scroll-view,
+swiper,
+swiper-item,
+image {
     box-sizing: border-box;
     font-family: inherit;
 }

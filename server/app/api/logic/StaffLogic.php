@@ -114,7 +114,7 @@ class StaffLogic extends BaseLogic
             ->select()
             ->toArray();
         $data['packages'] = self::transformPackages($packages, $resolvedRegion);
-        $data['booking_options'] = BookingFlowService::getStaffBookingOptions($staff);
+        $data['addons'] = BookingFlowService::getStaffBookingAddons((int)$staff->id);
         $data['related_role_configs'] = BookingFlowService::getCategoryRoleConfigs((int)$staff->category_id);
 
         // 获取轮播图
@@ -217,28 +217,12 @@ class StaffLogic extends BaseLogic
             return [];
         }
 
-        $query = ServiceAddon::alias('addon')
+        return ServiceAddon::alias('addon')
             ->where('addon.staff_id', $staffId)
             ->whereNull('addon.delete_time')
             ->where('addon.is_show', 1)
-            ->field('addon.id, addon.staff_id, addon.category_id, addon.name, addon.price, addon.original_price, addon.image, addon.description, addon.sort, addon.is_show');
-
-        if ($packageId > 0) {
-            $package = ServicePackage::where('id', $packageId)
-                ->where('staff_id', $staffId)
-                ->whereNull('delete_time')
-                ->find();
-            if (!$package) {
-                return [];
-            }
-
-            $query->join(
-                'service_package_addon relation',
-                'relation.addon_id = addon.id AND relation.package_id = ' . $packageId
-            );
-        }
-
-        return $query->order('addon.sort desc, addon.id desc')
+            ->field('addon.id, addon.staff_id, addon.category_id, addon.name, addon.price, addon.original_price, addon.image, addon.description, addon.sort, addon.is_show')
+            ->order('addon.sort desc, addon.id desc')
             ->select()
             ->toArray();
     }

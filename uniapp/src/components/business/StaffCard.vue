@@ -190,24 +190,24 @@ export default {
         display: flex;
         flex-wrap: wrap;
         gap: 8rpx;
-        margin-top: 16rpx;
+        margin-top: 12rpx;
     }
 
     &__tag {
-        padding: 4rpx 12rpx;
+        padding: 6rpx 14rpx;
         background: var(--wm-color-primary-soft, #fff1ee);
         color: var(--wm-color-primary, #e85a4f);
         font-size: 24rpx;
         border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
-        border-radius: 999rpx;
+        border-radius: var(--wm-radius-pill, 999rpx);
     }
 
     &__favorite {
         position: absolute;
         top: 0;
         right: 0;
-        padding: 8rpx;
-        transition: transform 0.2s ease;
+        padding: 10rpx;
+        transition: transform var(--wm-motion-base, 220ms) ease;
 
         &:active {
             transform: scale(1.2);

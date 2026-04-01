@@ -80,9 +80,12 @@ const LEGACY_LINK_MAP: Record<string, string> = {
     '/pages/aftersale/ticket': '/packages/pages/aftersale/ticket',
     '/pages/aftersale/ticket_detail': '/packages/pages/aftersale/ticket_detail',
     '/pages/aftersale/complaint': '/packages/pages/aftersale/complaint',
+    '/pages/aftersale/complaint_detail': '/packages/pages/aftersale/complaint_detail',
     '/pages/aftersale/reshoot': '/packages/pages/aftersale/reshoot',
+    '/pages/aftersale/reshoot_detail': '/packages/pages/aftersale/reshoot_detail',
     '/pages/aftersale/apply_reshoot': '/packages/pages/aftersale/apply_reshoot',
     '/pages/aftersale/callback': '/packages/pages/aftersale/callback',
+    '/pages/aftersale/callback_detail': '/packages/pages/aftersale/callback_detail',
     '/pages/user_wallet/user_wallet': '/packages/pages/user_wallet/user_wallet',
     '/pages/recharge_record/recharge_record': '/packages/pages/recharge_record/recharge_record'
 }

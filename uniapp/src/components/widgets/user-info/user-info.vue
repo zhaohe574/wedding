@@ -7,34 +7,14 @@
             </view>
         </view>
 
-        <view class="user-card mx-[24rpx] rounded-[26rpx] overflow-hidden">
-            <view class="user-content">
-                <view class="settings-entry" @click.stop="handleSettingClick">
-                    <tn-icon name="set" :size="28" color="#7f7b78" />
+        <view class="user-card" @click="handleProfileClick">
+            <view class="profile-row">
+                <view class="avatar-shell">
+                    <tn-avatar :url="avatarUrl" :size="112" shape="circle" />
                 </view>
-
-                <view v-if="isLogin" class="profile-row" @click="handleProfileClick">
-                    <view class="avatar-shell">
-                        <tn-avatar
-                            :url="user.avatar || '/static/images/user/default_avatar.png'"
-                            :size="112"
-                            shape="circle"
-                        />
-                    </view>
-                    <view class="profile-main">
-                        <text class="profile-name">{{ displayName }}</text>
-                        <text class="profile-subtitle">{{ profileSubtitle }}</text>
-                    </view>
-                </view>
-
-                <view v-else class="profile-row" @click="handleProfileClick">
-                    <view class="avatar-shell">
-                        <tn-avatar url="/static/images/user/default_avatar.png" :size="112" shape="circle" />
-                    </view>
-                    <view class="profile-main">
-                        <text class="profile-name">未登录</text>
-                        <text class="profile-subtitle">点击登录后完善资料</text>
-                    </view>
+                <view class="profile-main">
+                    <text class="profile-name">{{ profileName }}</text>
+                    <text class="profile-subtitle">{{ profileSubtitle }}</text>
                 </view>
             </view>
         </view>
@@ -60,14 +40,14 @@ const props = defineProps({
     },
     isLogin: {
         type: Boolean
-    },
-    weddingInfo: {
-        type: Object,
-        default: () => ({})
     }
 })
 
 const navBarMetrics = useNavBarMetrics()
+
+const avatarUrl = computed(() => {
+    return String(props.user?.avatar || '').trim() || '/static/images/user/default_avatar.png'
+})
 
 const displayName = computed(() => {
     const realName = String(props.user?.real_name || '').trim()
@@ -76,11 +56,17 @@ const displayName = computed(() => {
     return nickname || '未填写称呼'
 })
 
+const profileName = computed(() => {
+    return props.isLogin ? displayName.value : '未登录'
+})
+
 const profileSubtitle = computed(() => {
+    if (!props.isLogin) {
+        return '点击登录后完善资料'
+    }
     const contentSubtitle = String(props.content?.profile_subtitle || '').trim()
     if (contentSubtitle) return contentSubtitle
-    const weddingDate = String(props.weddingInfo?.wedding_date || '').trim()
-    return weddingDate ? `婚礼主档期：${weddingDate}` : '点击完善资料，更新主档期'
+    return '点击完善资料，更新主档期'
 })
 
 const handleProfileClick = () => {
@@ -90,24 +76,17 @@ const handleProfileClick = () => {
     }
     uni.navigateTo({ url: '/pages/user_data/user_data' })
 }
-
-const handleSettingClick = () => {
-    if (!props.isLogin) {
-        uni.navigateTo({ url: '/pages/login/login' })
-        return
-    }
-    uni.navigateTo({ url: '/pages/user_set/user_set' })
-}
 </script>
 
 <style lang="scss" scoped>
 .user-info-wrapper {
-    padding-bottom: 14rpx;
+    display: flex;
+    flex-direction: column;
+    gap: var(--wm-user-page-section-gap, 32rpx);
 }
 
 .user-header-shell {
     position: relative;
-    padding-bottom: 74rpx;
 }
 
 .user-header-status {
@@ -117,13 +96,13 @@ const handleSettingClick = () => {
 .user-header-nav {
     display: flex;
     align-items: flex-end;
-    padding: 0 40rpx 6rpx;
+    padding: 0 var(--wm-space-page-x, 37rpx);
     box-sizing: border-box;
 }
 
 .user-header-title {
     max-width: 100%;
-    font-size: 50rpx;
+    font-size: 52rpx;
     font-weight: 700;
     line-height: 1.05;
     color: #1e2432;
@@ -135,10 +114,13 @@ const handleSettingClick = () => {
 .user-card {
     position: relative;
     z-index: 1;
-    margin-top: -22rpx;
+    border-radius: var(--wm-user-profile-radius, 52rpx);
+    overflow: hidden;
     background: rgba(255, 255, 255, 0.84);
-    border: 1rpx solid #efe6e1;
-    box-shadow: 0 20rpx 48rpx rgba(214, 185, 167, 0.16);
+    border: 2rpx solid var(--wm-color-border, #efe6e1);
+    box-shadow: 0 24rpx 48rpx rgba(214, 185, 167, 0.1);
+    backdrop-filter: blur(28rpx);
+    -webkit-backdrop-filter: blur(28rpx);
 
     &:active {
         transform: translateY(1rpx);
@@ -146,46 +128,22 @@ const handleSettingClick = () => {
     }
 }
 
-.user-content {
-    position: relative;
-    padding: 26rpx 24rpx;
-}
-
 .profile-row {
     display: flex;
     align-items: center;
-    width: 100%;
-    padding-right: 74rpx;
+    min-height: var(--wm-user-profile-min-height, 176rpx);
+    padding: var(--wm-user-profile-padding, 32rpx);
     box-sizing: border-box;
 }
 
-.settings-entry {
-    position: absolute;
-    top: 22rpx;
-    right: 24rpx;
-    width: 56rpx;
-    height: 56rpx;
-    border-radius: 999rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 248, 245, 0.96);
-    border: 1rpx solid #efe6e1;
-    box-shadow: 0 8rpx 22rpx rgba(214, 185, 167, 0.12);
-
-    &:active {
-        transform: scale(0.98);
-        opacity: 0.92;
-    }
-}
-
 .avatar-shell {
-    width: 112rpx;
-    height: 112rpx;
-    border-radius: 999rpx;
-    margin-right: 20rpx;
+    width: var(--wm-user-profile-avatar-size, 112rpx);
+    height: var(--wm-user-profile-avatar-size, 112rpx);
+    border-radius: var(--wm-user-profile-avatar-radius, 56rpx);
+    margin-right: var(--wm-user-profile-gap, 24rpx);
     flex-shrink: 0;
     background: #f2d8d0;
+    overflow: hidden;
 }
 
 .profile-main {
@@ -193,13 +151,13 @@ const handleSettingClick = () => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    gap: 11rpx;
 }
 
 .profile-name {
     font-size: 34rpx;
-    line-height: 1.28;
-    font-weight: 700;
+    line-height: 1.42;
+    font-weight: 600;
     color: #1e2432;
     white-space: nowrap;
     overflow: hidden;
@@ -207,11 +165,13 @@ const handleSettingClick = () => {
 }
 
 .profile-subtitle {
-    font-size: 25rpx;
+    font-size: 24rpx;
     line-height: 1.55;
+    font-weight: 600;
     color: #7f7b78;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
 }
 </style>

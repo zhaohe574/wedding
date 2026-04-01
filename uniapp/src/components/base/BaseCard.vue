@@ -94,7 +94,7 @@ export default {
 <style lang="scss" scoped>
 .base-card {
     width: 100%;
-    border-radius: var(--wm-radius-card, 24rpx);
+    border-radius: var(--wm-radius-card, 45rpx);
     transition:
         transform var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
         box-shadow var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
@@ -109,32 +109,33 @@ export default {
     }
 
     &--surface {
-        padding: 20rpx;
+        padding: var(--wm-space-card-padding, 30rpx);
     }
 
     &--panel {
-        padding: 16rpx 18rpx;
+        padding: var(--wm-space-card-padding, 30rpx) 34rpx;
     }
 
     &--glass {
-        padding: 20rpx;
+        padding: var(--wm-space-card-padding, 30rpx);
+        border-radius: var(--wm-radius-card-glass, 49rpx);
         background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.88));
         border: 1rpx solid var(--wm-color-border, #efe6e1);
         box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
-        backdrop-filter: blur(20rpx);
-        -webkit-backdrop-filter: blur(20rpx);
+        backdrop-filter: blur(24rpx);
+        -webkit-backdrop-filter: blur(24rpx);
     }
 
     &--hero {
-        padding: 24rpx;
-        border-radius: var(--wm-radius-card-lg, 28rpx);
+        padding: var(--wm-space-card-padding-lg, 34rpx);
+        border-radius: var(--wm-radius-card-lg, 52rpx);
         background: var(--wm-hero-gradient, linear-gradient(180deg, #fff5f1 0%, #fcfbf9 68%, #f7f1ed 100%));
         border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
         box-shadow: var(--wm-shadow-hero, 0 24rpx 56rpx rgba(177, 108, 95, 0.18));
     }
 
     &--admin.base-card--panel {
-        border-radius: 20rpx;
+        border-radius: 37rpx;
     }
 
     &--interactive {

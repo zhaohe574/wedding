@@ -95,23 +95,23 @@ class OrderLogic extends BaseLogic
             'addons' => [],
         ]];
 
-        $customOptions = BookingFlowService::resolveSelectedCustomOptions(
-            $staff,
-            BookingFlowService::normalizeCustomOptionKeys($params['custom_option_keys'] ?? [])
+        $selectedAddons = BookingFlowService::resolveSelectedAddons(
+            (int)$staff->id,
+            BookingFlowService::normalizeAddonIds($params['addon_ids'] ?? [])
         );
-        foreach ($customOptions as $option) {
+        foreach ($selectedAddons as $addon) {
             $selectedItems[] = [
                 'staff_id' => $staffId,
                 'package_id' => 0,
                 'schedule_id' => 0,
                 'schedule_date' => $date,
                 'time_slot' => 0,
-                'price' => round((float)($option['price'] ?? 0), 2),
+                'price' => round((float)($addon['price'] ?? 0), 2),
                 'quantity' => 1,
                 'item_type' => OrderItem::TYPE_CUSTOM_OPTION,
                 'item_meta' => [
-                    'key' => (string)($option['key'] ?? ''),
-                    'label' => (string)($option['name'] ?? ''),
+                    'addon_id' => (int)($addon['id'] ?? 0),
+                    'label' => (string)($addon['name'] ?? ''),
                 ],
                 'remark' => '',
                 'region_context' => $regionContext,
@@ -122,13 +122,13 @@ class OrderLogic extends BaseLogic
                     'category_id' => (int)$staff->category_id,
                 ],
                 'package' => [
-                    'id' => 0,
-                    'name' => (string)($option['name'] ?? ''),
-                    'category_id' => (int)$staff->category_id,
-                    'price' => round((float)($option['price'] ?? 0), 2),
-                    'original_price' => round((float)($option['price'] ?? 0), 2),
-                    'description' => '',
-                    'image' => '',
+                    'id' => (int)($addon['id'] ?? 0),
+                    'name' => (string)($addon['name'] ?? ''),
+                    'category_id' => (int)($addon['category_id'] ?? $staff->category_id),
+                    'price' => round((float)($addon['price'] ?? 0), 2),
+                    'original_price' => round((float)($addon['original_price'] ?? $addon['price'] ?? 0), 2),
+                    'description' => (string)($addon['description'] ?? ''),
+                    'image' => (string)($addon['image'] ?? ''),
                 ],
                 'addons' => [],
             ];
@@ -321,7 +321,8 @@ class OrderLogic extends BaseLogic
      */
     public static function getUserOrders(int $userId, array $params): array
     {
-        $query = Order::where('user_id', $userId);
+        $query = Order::where('user_id', $userId)
+            ->where('order_status', '<>', Order::STATUS_USER_DELETED);
 
         // 状态筛选
         if (isset($params['status']) && $params['status'] !== '') {
@@ -384,6 +385,10 @@ class OrderLogic extends BaseLogic
             return null;
         }
 
+        if ((int)$order->order_status === Order::STATUS_USER_DELETED) {
+            return null;
+        }
+
         if (Order::syncExpiredAutoCancel($order)) {
             $order = Order::with([
                 'items' => function ($query) {
@@ -399,6 +404,10 @@ class OrderLogic extends BaseLogic
                 }
             ])->where('user_id', $userId)->find($orderId);
             if (!$order) {
+                return null;
+            }
+
+            if ((int)$order->order_status === Order::STATUS_USER_DELETED) {
                 return null;
             }
         }
@@ -595,24 +604,54 @@ class OrderLogic extends BaseLogic
     }
 
     /**
-     * @notes 删除订单（软删除）
+     * @notes 删除订单（标记为用户删除）
      * @param int $orderId
      * @param int $userId
      * @return array
      */
     public static function deleteOrder(int $orderId, int $userId): array
     {
-        $order = Order::where('user_id', $userId)->find($orderId);
-        if (!$order) {
-            return ['success' => false, 'message' => '订单不存在'];
-        }
+        Db::startTrans();
+        try {
+            $order = Order::where('user_id', $userId)
+                ->lock(true)
+                ->find($orderId);
+            if (!$order) {
+                Db::rollback();
+                return ['success' => false, 'message' => '订单不存在'];
+            }
 
-        if (!in_array($order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED, Order::STATUS_CANCELLED, Order::STATUS_REFUNDED])) {
-            return ['success' => false, 'message' => '只能删除已完成、已评价、已取消或已退款的订单'];
-        }
+            if ((int)$order->order_status === Order::STATUS_USER_DELETED) {
+                Db::rollback();
+                return ['success' => false, 'message' => '订单已删除'];
+            }
 
-        $order->delete();
-        return ['success' => true, 'message' => '删除成功'];
+            if (!in_array($order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED, Order::STATUS_CANCELLED, Order::STATUS_REFUNDED], true)) {
+                Db::rollback();
+                return ['success' => false, 'message' => '只能删除已完成、已评价、已取消或已退款的订单'];
+            }
+
+            $beforeStatus = (int)$order->order_status;
+            $order->order_status = Order::STATUS_USER_DELETED;
+            $order->update_time = time();
+            $order->save();
+
+            OrderLog::addLog(
+                (int)$order->id,
+                OrderLog::OPERATOR_USER,
+                $userId,
+                'user_delete',
+                $beforeStatus,
+                Order::STATUS_USER_DELETED,
+                '用户删除订单'
+            );
+
+            Db::commit();
+            return ['success' => true, 'message' => '删除成功'];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return ['success' => false, 'message' => $e->getMessage() ?: '删除失败'];
+        }
     }
 
     /**
@@ -623,13 +662,17 @@ class OrderLogic extends BaseLogic
      */
     public static function getPayInfo(int $orderId, int $userId): ?array
     {
-        $order = Order::where('user_id', $userId)->find($orderId);
+        $order = Order::where('user_id', $userId)
+            ->where('order_status', '<>', Order::STATUS_USER_DELETED)
+            ->find($orderId);
         if (!$order) {
             return null;
         }
 
         if (Order::syncExpiredAutoCancel($order)) {
-            $order = Order::where('user_id', $userId)->find($orderId);
+            $order = Order::where('user_id', $userId)
+                ->where('order_status', '<>', Order::STATUS_USER_DELETED)
+                ->find($orderId);
             if (!$order) {
                 return null;
             }
@@ -784,9 +827,14 @@ class OrderLogic extends BaseLogic
             'paused' => Order::STATUS_PAUSED,
             'refund' => Order::STATUS_REFUNDED,
         ] as $key => $status) {
-            $counts[$key] = Order::where('user_id', $userId)->where('order_status', $status)->count();
+            $counts[$key] = Order::where('user_id', $userId)
+                ->where('order_status', '<>', Order::STATUS_USER_DELETED)
+                ->where('order_status', $status)
+                ->count();
         }
-        $counts['all'] = Order::where('user_id', $userId)->count();
+        $counts['all'] = Order::where('user_id', $userId)
+            ->where('order_status', '<>', Order::STATUS_USER_DELETED)
+            ->count();
 
         return $counts;
     }
@@ -806,6 +854,7 @@ class OrderLogic extends BaseLogic
             Order::STATUS_CANCELLED => '已取消',
             Order::STATUS_PAUSED => '已暂停',
             Order::STATUS_REFUNDED => '已退款',
+            Order::STATUS_USER_DELETED => '用户已删除',
         ];
         return $map[$status] ?? '未知';
     }

@@ -33,15 +33,18 @@ const actionClass = computed(() => [
 .wm-action-area {
     display: flex;
     align-items: center;
-    gap: 16rpx;
-    padding: 12rpx 20rpx;
-    background: rgba(255, 255, 255, 0.92);
-    border-top: 1rpx solid var(--wm-color-border, #efe6e1);
-    backdrop-filter: blur(18rpx);
-    -webkit-backdrop-filter: blur(18rpx);
+    gap: var(--wm-space-section-gap-sm, 22rpx);
+    padding: var(--wm-space-action-top, 22rpx) var(--wm-space-action-x, 37rpx)
+        var(--wm-space-action-bottom, 39rpx);
+    background: linear-gradient(
+        180deg,
+        rgba(252, 251, 249, 0) 0%,
+        rgba(252, 251, 249, 0.92) 24%,
+        rgba(252, 251, 249, 0.98) 100%
+    );
 
     &--safe {
-        padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+        padding-bottom: calc(var(--wm-space-action-bottom, 39rpx) + env(safe-area-inset-bottom));
     }
 
     &--sticky {
@@ -50,6 +53,8 @@ const actionClass = computed(() => [
         right: 0;
         bottom: 0;
         z-index: 90;
+        backdrop-filter: blur(12rpx);
+        -webkit-backdrop-filter: blur(12rpx);
     }
 }
 </style>

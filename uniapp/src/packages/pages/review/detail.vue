@@ -480,8 +480,7 @@ onPullDownRefresh(() => {
 
 <style scoped lang="scss">
 .review-detail-page {
-    min-height: 100vh;
-    background: linear-gradient(180deg, #f8f7ff 0%, #f5f5f5 100%);
+    background: transparent;
     padding: 24rpx 24rpx calc(env(safe-area-inset-bottom) + 24rpx);
 }
 
@@ -649,10 +648,10 @@ onPullDownRefresh(() => {
 .tag-item {
     padding: 10rpx 18rpx;
     border-radius: 999rpx;
-    background: rgba(124, 58, 237, 0.08);
-    border: 1rpx solid rgba(124, 58, 237, 0.18);
+    background: rgba(232, 90, 79, 0.08);
+    border: 1rpx solid rgba(232, 90, 79, 0.16);
     font-size: 24rpx;
-    color: #7c3aed;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .image-grid,
@@ -683,7 +682,7 @@ onPullDownRefresh(() => {
 .reward-points {
     font-size: 54rpx;
     font-weight: 700;
-    color: #7c3aed;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .reward-unit,
@@ -821,8 +820,8 @@ onPullDownRefresh(() => {
 }
 
 .upload-box {
-    border: 2rpx dashed rgba(124, 58, 237, 0.24);
-    background: rgba(124, 58, 237, 0.04);
+    border: 2rpx dashed rgba(232, 90, 79, 0.22);
+    background: rgba(232, 90, 79, 0.05);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -886,7 +885,7 @@ onPullDownRefresh(() => {
 
 .loading-wrap {
     min-height: 100vh;
-    background: #f8f7ff;
+    background: transparent;
     display: flex;
     flex-direction: column;
     align-items: center;

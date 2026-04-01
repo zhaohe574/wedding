@@ -114,10 +114,10 @@ export default {
         align-items: center;
         justify-content: space-between;
         height: 88rpx;
-        padding: 0 24rpx;
+        padding: 0 var(--wm-space-card-padding, 20rpx);
         background: var(--wm-color-bg-soft, #fff7f4);
-        border-radius: var(--wm-radius-input, 18rpx);
-        border: 2rpx solid var(--wm-color-border, #efe6e1);
+        border-radius: var(--wm-radius-control, 18rpx);
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
         transition: all var(--wm-motion-base, 220ms) ease;
         cursor: pointer;
 

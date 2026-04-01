@@ -6,55 +6,55 @@ module.exports = {
             // 中性色彩
             white: 'var(--color-white, #ffffff)',
             black: 'var(--color-black, #000000)',
-            main: 'var(--color-main, #333333)',
-            content: 'var(--color-content, #666666)',
-            muted: 'var(--color-muted, #999999)',
-            page: 'var(--color-bg, #f6f6f6)',
-            light: 'var(--color-light, #e5e5e5)',
-            disabled: 'var(--color-disabled, #c8c9cc)',
+            main: 'var(--color-main, #1E2432)',
+            content: 'var(--color-content, #7F7B78)',
+            muted: 'var(--color-muted, #B4ACA8)',
+            page: 'var(--color-page, #FCFBF9)',
+            light: 'var(--color-light, #EFE6E1)',
+            disabled: 'var(--color-disabled, #D8D0CB)',
 
             // 主题色系统
-            minor: 'var(--color-minor, #FFB814)',
+            minor: 'var(--color-minor, #C99B73)',
             'btn-text': 'var(--color-btn-text, white)',
 
-            // 主色（优雅紫）
+            // 主色（珊瑚红）
             primary: {
-                DEFAULT: 'var(--color-primary, #7C3AED)',
-                'light-3': 'var(--color-primary-light-3, #A78BFA)',
-                'light-5': 'var(--color-primary-light-5, #C4B5FD)',
-                'light-7': 'var(--color-primary-light-7, #DDD6FE)',
-                'light-9': 'var(--color-primary-light-9, #FAF5FF)',
-                'dark-2': 'var(--color-primary-dark-2, #6D28D9)'
+                DEFAULT: 'var(--color-primary, #E85A4F)',
+                'light-3': 'var(--color-primary-light-3, #EE8C84)',
+                'light-5': 'var(--color-primary-light-5, #F3AEA8)',
+                'light-7': 'var(--color-primary-light-7, #F8D6D2)',
+                'light-9': 'var(--color-primary-light-9, #FFF1EE)',
+                'dark-2': 'var(--color-primary-dark-2, #D84D43)'
             },
 
-            // 辅助色（玫瑰粉）
+            // 辅助色（香槟金）
             secondary: {
-                DEFAULT: 'var(--color-secondary, #EC4899)',
-                'light-3': 'var(--color-secondary-light-3, #F472B6)',
-                'light-5': 'var(--color-secondary-light-5, #F9A8D4)',
-                'light-7': 'var(--color-secondary-light-7, #FBCFE8)',
-                'light-9': 'var(--color-secondary-light-9, #FCE7F3)',
-                'dark-2': 'var(--color-secondary-dark-2, #DB2777)'
+                DEFAULT: 'var(--color-secondary, #C99B73)',
+                'light-3': 'var(--color-secondary-light-3, #D7B392)',
+                'light-5': 'var(--color-secondary-light-5, #E4CAB0)',
+                'light-7': 'var(--color-secondary-light-7, #F0E1D0)',
+                'light-9': 'var(--color-secondary-light-9, #F8EFE7)',
+                'dark-2': 'var(--color-secondary-dark-2, #B58660)'
             },
 
-            // CTA色（活力橙）
+            // CTA色（沿用主色，避免多主题分裂）
             cta: {
-                DEFAULT: 'var(--color-cta, #F97316)',
-                'light-3': 'var(--color-cta-light-3, #FB923C)',
-                'light-5': 'var(--color-cta-light-5, #FDBA74)',
-                'light-7': 'var(--color-cta-light-7, #FED7AA)',
-                'light-9': 'var(--color-cta-light-9, #FFEDD5)',
-                'dark-2': 'var(--color-cta-dark-2, #EA580C)'
+                DEFAULT: 'var(--color-cta, #E85A4F)',
+                'light-3': 'var(--color-cta-light-3, #EE8C84)',
+                'light-5': 'var(--color-cta-light-5, #F3AEA8)',
+                'light-7': 'var(--color-cta-light-7, #F8D6D2)',
+                'light-9': 'var(--color-cta-light-9, #FFF1EE)',
+                'dark-2': 'var(--color-cta-dark-2, #D84D43)'
             },
 
-            // 点缀色（金色）
+            // 点缀色（金香槟）
             accent: {
-                DEFAULT: 'var(--color-accent, #FFD700)',
-                'light-3': 'var(--color-accent-light-3, #FFE033)',
-                'light-5': 'var(--color-accent-light-5, #FFE966)',
-                'light-7': 'var(--color-accent-light-7, #FFF199)',
-                'light-9': 'var(--color-accent-light-9, #FFF9CC)',
-                'dark-2': 'var(--color-accent-dark-2, #CCAC00)'
+                DEFAULT: 'var(--color-accent, #C99B73)',
+                'light-3': 'var(--color-accent-light-3, #D7B392)',
+                'light-5': 'var(--color-accent-light-5, #E4CAB0)',
+                'light-7': 'var(--color-accent-light-7, #F0E1D0)',
+                'light-9': 'var(--color-accent-light-9, #F8EFE7)',
+                'dark-2': 'var(--color-accent-dark-2, #B58660)'
             },
 
             // 功能色彩
@@ -92,10 +92,10 @@ module.exports = {
             },
 
             // 背景色系统
-            'bg-primary': 'var(--color-bg-primary, #FAF5FF)',
-            'bg-secondary': 'var(--color-bg-secondary, #ECFDF5)',
+            'bg-primary': 'var(--color-bg-primary, #FFF1EE)',
+            'bg-secondary': 'var(--color-bg-secondary, #F8EFE7)',
             'bg-card': 'var(--color-bg-card, #FFFFFF)',
-            'bg-overlay': 'var(--color-bg-overlay, rgba(0, 0, 0, 0.5))',
+            'bg-overlay': 'var(--color-bg-overlay, rgba(30, 36, 50, 0.46))',
 
             // 订单状态色彩
             'order-pending': '#FF9900',
@@ -116,8 +116,8 @@ module.exports = {
             '5xl': '44rpx' // 大标题
         },
         fontFamily: {
-            sans: ['Source Han Sans CN', 'Helvetica Neue', 'Arial', 'sans-serif'],
-            heading: ['Source Han Sans CN', 'Helvetica Neue', 'Arial', 'sans-serif']
+            sans: ['PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'sans-serif'],
+            heading: ['SF Pro Display', 'PingFang SC', 'Microsoft YaHei', 'sans-serif']
         },
         fontWeight: {
             normal: '400',
@@ -140,20 +140,20 @@ module.exports = {
         },
         extend: {
             borderRadius: {
-                card: '16rpx',
-                'card-large': '32rpx',
-                button: '48rpx',
-                input: '16rpx',
-                badge: '12rpx'
+                card: '24rpx',
+                'card-large': '28rpx',
+                button: '999rpx',
+                input: '18rpx',
+                badge: '20rpx'
             },
             boxShadow: {
-                card: '0 2rpx 12rpx rgba(0, 0, 0, 0.08)',
-                'card-hover': '0 8rpx 24rpx rgba(0, 0, 0, 0.12)',
+                card: '0 14rpx 32rpx rgba(214, 185, 167, 0.16)',
+                'card-hover': '0 18rpx 36rpx rgba(214, 185, 167, 0.2)',
                 'card-glass':
-                    '0 20rpx 60rpx rgba(124, 58, 237, 0.12), 0 8rpx 16rpx rgba(0, 0, 0, 0.04)',
-                'button-primary': '0 8rpx 24rpx rgba(124, 58, 237, 0.3)',
-                'button-cta': '0 8rpx 24rpx rgba(249, 115, 22, 0.3)',
-                'input-focus': '0 0 0 6rpx rgba(124, 58, 237, 0.1)'
+                    '0 18rpx 36rpx rgba(214, 185, 167, 0.18), 0 8rpx 16rpx rgba(177, 108, 95, 0.08)',
+                'button-primary': '0 14rpx 28rpx rgba(232, 90, 79, 0.22)',
+                'button-cta': '0 14rpx 28rpx rgba(232, 90, 79, 0.22)',
+                'input-focus': '0 0 0 6rpx rgba(232, 90, 79, 0.12)'
             },
             transitionDuration: {
                 fast: '150ms',

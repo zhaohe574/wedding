@@ -25,10 +25,7 @@ class StaffCenterValidate extends BaseValidate
         'experience_years' => 'integer|egt:0',
         'profile' => 'max:500',
         'service_desc' => 'max:1000',
-        'booking_option_1_name' => 'max:100',
-        'booking_option_1_price' => 'float|egt:0',
-        'booking_option_2_name' => 'max:100',
-        'booking_option_2_price' => 'float|egt:0',
+        'tag_ids' => 'array',
 
         'title' => 'length:1,100',
         'cover' => 'max:255',
@@ -50,6 +47,7 @@ class StaffCenterValidate extends BaseValidate
         'is_show' => 'in:0,1',
         'is_recommend' => 'in:0,1',
         'status' => 'in:0,1',
+        'addon_id' => 'require|integer|gt:0',
 
         'date' => 'require|dateFormat:Y-m-d',
 
@@ -70,12 +68,7 @@ class StaffCenterValidate extends BaseValidate
         'experience_years.egt' => '从业年限不能小于0',
         'profile.max' => '个人简介长度不能超过500',
         'service_desc.max' => '服务说明长度不能超过1000',
-        'booking_option_1_name.max' => '预约附加项1名称长度不能超过100',
-        'booking_option_1_price.float' => '预约附加项1价格格式错误',
-        'booking_option_1_price.egt' => '预约附加项1价格不能小于0',
-        'booking_option_2_name.max' => '预约附加项2名称长度不能超过100',
-        'booking_option_2_price.float' => '预约附加项2价格格式错误',
-        'booking_option_2_price.egt' => '预约附加项2价格不能小于0',
+        'tag_ids.array' => '标签格式错误',
 
         'title.length' => '作品标题长度为1-100个字符',
         'shoot_date.dateFormat' => '拍摄日期格式错误',
@@ -91,6 +84,9 @@ class StaffCenterValidate extends BaseValidate
         'original_price.egt' => '原价不能小于0',
         'content' => '内容格式错误',
         'status.in' => '状态参数错误',
+        'addon_id.require' => '请选择附加项',
+        'addon_id.integer' => '附加项参数错误',
+        'addon_id.gt' => '请选择附加项',
 
         'date.require' => '请选择日期',
         'date.dateFormat' => '日期格式错误',
@@ -102,7 +98,7 @@ class StaffCenterValidate extends BaseValidate
 
     public function sceneProfile(): StaffCenterValidate
     {
-        return $this->only(['name', 'avatar', 'mobile', 'category_id', 'experience_years', 'profile', 'service_desc', 'booking_option_1_name', 'booking_option_1_price', 'booking_option_2_name', 'booking_option_2_price'])
+        return $this->only(['name', 'avatar', 'mobile', 'category_id', 'experience_years', 'profile', 'service_desc', 'tag_ids'])
             ->append('category_id', 'require');
     }
 
@@ -140,6 +136,25 @@ class StaffCenterValidate extends BaseValidate
     public function scenePackageRemove(): StaffCenterValidate
     {
         return $this->only(['package_id']);
+    }
+
+    public function sceneAddonAdd(): StaffCenterValidate
+    {
+        return $this->only(['name', 'price', 'original_price', 'description', 'image', 'sort', 'is_show'])
+            ->append('name', 'require')
+            ->append('price', 'require');
+    }
+
+    public function sceneAddonUpdate(): StaffCenterValidate
+    {
+        return $this->only(['addon_id', 'name', 'price', 'original_price', 'description', 'image', 'sort', 'is_show'])
+            ->append('name', 'require')
+            ->append('price', 'require');
+    }
+
+    public function sceneAddonRemove(): StaffCenterValidate
+    {
+        return $this->only(['addon_id']);
     }
 
     public function sceneScheduleSet(): StaffCenterValidate

@@ -1,26 +1,34 @@
 <template>
-    <BaseNavbar title="申请补拍" />
-    <view class="apply-reshoot-page">
-        <view class="form-card">
-            <!-- 选择订单 -->
-            <view class="form-section">
-                <view class="section-title">选择订单</view>
-                <view class="order-select" @click="showOrderPicker = true">
-                    <text v-if="form.order_id">{{ selectedOrder?.order_sn }}</text>
-                    <text v-else class="placeholder">请选择关联订单</text>
-                    <tn-icon name="right" size="28" color="#999"></tn-icon>
+    <page-meta :page-style="$theme.pageStyle" />
+    <PageShell scene="consumer" hasSafeBottom>
+        <BaseNavbar title="申请补拍" />
+
+        <view class="apply-reshoot">
+            <view class="apply-reshoot__hero">
+                <text class="apply-reshoot__title">提交补拍 / 重拍申请</text>
+                <text class="apply-reshoot__desc">
+                    填写关联订单、原因和期望日期，平台会尽快完成审核与安排。
+                </text>
+            </view>
+
+            <view class="apply-reshoot__section">
+                <text class="apply-reshoot__section-title">关联订单</text>
+                <view class="apply-reshoot__picker" @click="showOrderPicker = true">
+                    <text :class="{ 'apply-reshoot__placeholder': !selectedOrder }">
+                        {{ selectedOrder?.label || '请选择订单' }}
+                    </text>
+                    <tn-icon name="right" size="24" color="#B4ACA8" />
                 </view>
             </view>
 
-            <!-- 补拍类型 -->
-            <view class="form-section">
-                <view class="section-title">补拍类型</view>
-                <view class="type-options">
+            <view class="apply-reshoot__section">
+                <text class="apply-reshoot__section-title">申请类型</text>
+                <view class="apply-reshoot__chips">
                     <view
-                        class="type-option"
-                        :class="{ active: form.type === type.value }"
                         v-for="type in typeOptions"
                         :key="type.value"
+                        class="apply-reshoot__chip"
+                        :class="{ 'is-active': form.type === type.value }"
                         @click="form.type = type.value"
                     >
                         {{ type.label }}
@@ -28,15 +36,14 @@
                 </view>
             </view>
 
-            <!-- 申请原因 -->
-            <view class="form-section">
-                <view class="section-title">申请原因</view>
-                <view class="reason-options">
+            <view class="apply-reshoot__section">
+                <text class="apply-reshoot__section-title">申请原因</text>
+                <view class="apply-reshoot__chips">
                     <view
-                        class="reason-option"
-                        :class="{ active: form.reason_type === reason.value }"
                         v-for="reason in reasonOptions"
                         :key="reason.value"
+                        class="apply-reshoot__chip"
+                        :class="{ 'is-active': form.reason_type === reason.value }"
                         @click="form.reason_type = reason.value"
                     >
                         {{ reason.label }}
@@ -44,96 +51,79 @@
                 </view>
             </view>
 
-            <!-- 详细说明 -->
-            <view class="form-section">
-                <view class="section-title">详细说明</view>
+            <view class="apply-reshoot__section">
+                <text class="apply-reshoot__section-title">详细说明</text>
                 <textarea
-                    class="form-textarea"
                     v-model="form.reason"
-                    placeholder="请详细描述补拍原因（选填）"
-                    maxlength="500"
-                ></textarea>
+                    class="apply-reshoot__textarea"
+                    placeholder="请补充说明问题背景、期望效果和注意事项"
+                    maxlength="300"
+                />
             </view>
 
-            <!-- 上传图片 -->
-            <view class="form-section">
-                <view class="section-title">上传图片</view>
-                <view class="upload-area">
-                    <view class="image-list">
-                        <view class="image-item" v-for="(img, index) in form.images" :key="index">
-                            <image :src="img" mode="aspectFill"></image>
-                            <view class="delete-btn" @click="removeImage(index)">
-                                <tn-icon name="close" size="24" color="#fff"></tn-icon>
-                            </view>
-                        </view>
-                        <view class="upload-btn" @click="chooseImage" v-if="form.images.length < 9">
-                            <tn-icon name="plus" size="48" color="#999"></tn-icon>
-                            <text>上传图片</text>
-                        </view>
-                    </view>
-                    <text class="upload-tip">最多上传9张图片</text>
+            <view class="apply-reshoot__section">
+                <text class="apply-reshoot__section-title">期望日期</text>
+                <view class="apply-reshoot__picker" @click="showDatePicker = true">
+                    <text :class="{ 'apply-reshoot__placeholder': !form.expect_date }">
+                        {{ form.expect_date || '请选择期望补拍日期' }}
+                    </text>
+                    <tn-icon name="calendar" size="24" color="#B4ACA8" />
                 </view>
             </view>
 
-            <!-- 期望日期 -->
-            <view class="form-section">
-                <view class="section-title">期望补拍日期</view>
-                <view class="date-picker" @click="showDatePicker = true">
-                    <text v-if="form.expect_date">{{ form.expect_date }}</text>
-                    <text v-else class="placeholder">请选择期望日期（选填）</text>
-                    <tn-icon name="calendar" size="32" color="#999"></tn-icon>
-                </view>
+            <view class="apply-reshoot__tips">
+                <text>说明：</text>
+                <text>当前页面优先保证申请主流程稳定提交，图片凭证后续统一接入正式上传链路。</text>
             </view>
         </view>
 
-        <!-- 提交按钮 -->
-        <view class="submit-bar">
-            <tn-button type="primary" :loading="submitting" @click="handleSubmit"
-                >提交申请</tn-button
-            >
+        <view class="apply-reshoot__action-bar">
+            <BaseButton block size="lg" :loading="submitting" @click="handleSubmit">
+                提交申请
+            </BaseButton>
         </view>
 
-        <!-- 订单选择器 -->
         <tn-picker
             v-model="showOrderPicker"
             mode="selector"
             :range="orderOptions"
             range-key="label"
             @confirm="onOrderConfirm"
-        ></tn-picker>
-
-        <!-- 日期选择器 -->
-        <tn-picker v-model="showDatePicker" mode="time" @confirm="onDateConfirm"></tn-picker>
-    </view>
+        />
+        <tn-picker v-model="showDatePicker" mode="time" @confirm="onDateConfirm" />
+    </PageShell>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { reactive, ref } from 'vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import PageShell from '@/components/base/PageShell.vue'
 import { applyReshoot } from '@/api/aftersale'
 import { getOrderList } from '@/api/order'
+import { useThemeStore } from '@/stores/theme'
 import { onLoad } from '@dcloudio/uni-app'
 
+const $theme = useThemeStore()
 const form = reactive({
     order_id: 0,
     type: 1,
     reason_type: 1,
     reason: '',
-    images: [] as string[],
     expect_date: ''
 })
 
 const typeOptions = [
-    { value: 1, label: '全部重拍' },
-    { value: 2, label: '部分重拍' },
-    { value: 3, label: '补拍加片' }
+    { value: 1, label: '补拍' },
+    { value: 2, label: '重拍' }
 ]
 
 const reasonOptions = [
-    { value: 1, label: '拍摄效果不满意' },
-    { value: 2, label: '照片质量问题' },
-    { value: 3, label: '服务态度问题' },
-    { value: 4, label: '天气原因' },
-    { value: 5, label: '其他原因' }
+    { value: 1, label: '效果不满意' },
+    { value: 2, label: '天气原因' },
+    { value: 3, label: '设备故障' },
+    { value: 4, label: '人员原因' },
+    { value: 5, label: '其他' }
 ]
 
 const showOrderPicker = ref(false)
@@ -144,62 +134,47 @@ const selectedOrder = ref<any>(null)
 
 const loadOrders = async () => {
     try {
-        const res = await getOrderList({ status: 3 }) // 已完成的订单
-        const lists = res?.data?.lists || res?.lists || []
+        const res = await getOrderList()
+        const lists = res?.lists || res?.data?.lists || []
         orderOptions.value = lists.map((item: any) => ({
             value: item.id,
             label: item.order_sn,
             ...item
         }))
-    } catch (e) {
-        console.error('获取订单列表失败:', e)
+    } catch (error) {
+        console.error('获取订单列表失败', error)
     }
 }
 
-const onOrderConfirm = (e: any) => {
-    const index = e.detail?.value || e[0]
+const onOrderConfirm = (event: any) => {
+    const index = Number(event?.detail?.value ?? event?.[0] ?? 0)
     const order = orderOptions.value[index]
-    if (order) {
-        form.order_id = order.value
-        selectedOrder.value = order
-    }
+    if (!order) return
+    form.order_id = Number(order.value || 0)
+    selectedOrder.value = order
 }
 
-const onDateConfirm = (e: any) => {
-    form.expect_date = e.detail?.value || e
-}
-
-const chooseImage = () => {
-    uni.chooseImage({
-        count: 9 - form.images.length,
-        success: (res) => {
-            res.tempFilePaths.forEach((path) => {
-                // 实际项目中应该上传到服务器
-                form.images.push(path)
-            })
-        }
-    })
-}
-
-const removeImage = (index: number) => {
-    form.images.splice(index, 1)
+const onDateConfirm = (event: any) => {
+    form.expect_date = event?.detail?.value || event || ''
 }
 
 const handleSubmit = async () => {
     if (!form.order_id) {
-        uni.showToast({ title: '请选择关联订单', icon: 'none' })
-        return
+        return uni.showToast({ title: '请选择关联订单', icon: 'none' })
     }
 
     submitting.value = true
     try {
-        await applyReshoot(form)
-        uni.showToast({ title: '申请提交成功' })
+        await applyReshoot({
+            ...form,
+            reason: form.reason.trim()
+        })
+        uni.showToast({ title: '申请已提交', icon: 'none' })
         setTimeout(() => {
             uni.navigateBack()
-        }, 1500)
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '提交失败', icon: 'none' })
+        }, 1200)
+    } catch (error: any) {
+        uni.showToast({ title: error?.message || '提交失败', icon: 'none' })
     } finally {
         submitting.value = false
     }
@@ -207,158 +182,113 @@ const handleSubmit = async () => {
 
 onLoad((options: any) => {
     if (options?.order_id) {
-        form.order_id = parseInt(options.order_id)
+        form.order_id = Number(options.order_id)
     }
     loadOrders()
 })
 </script>
 
 <style lang="scss" scoped>
-.apply-reshoot-page {
-    min-height: 100vh;
-    background: #f5f5f5;
-    padding-bottom: 150rpx;
+@import '../../../styles/aftersale.scss';
+
+.apply-reshoot {
+    @include aftersale-page-base;
+    padding: 0 20rpx 180rpx;
 }
 
-.form-card {
-    background: #fff;
-    margin: 20rpx;
-    border-radius: 16rpx;
-    overflow: hidden;
+.apply-reshoot__hero {
+    padding: 16rpx 0 24rpx;
 }
 
-.form-section {
-    padding: 30rpx;
-    border-bottom: 1rpx solid #f5f5f5;
-
-    &:last-child {
-        border-bottom: none;
-    }
+.apply-reshoot__title {
+    display: block;
+    font-size: 42rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.section-title {
-    font-size: 30rpx;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 20rpx;
+.apply-reshoot__desc {
+    display: block;
+    margin-top: 12rpx;
+    font-size: 24rpx;
+    line-height: 1.7;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.order-select,
-.date-picker {
+.apply-reshoot__section {
+    @include aftersale-section-card;
+    margin-bottom: 16rpx;
+}
+
+.apply-reshoot__section-title {
+    display: block;
+    margin-bottom: 16rpx;
+    font-size: 28rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.apply-reshoot__picker {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 24rpx;
-    background: #f8f8f8;
-    border-radius: 12rpx;
+    min-height: 88rpx;
+    padding: 0 20rpx;
+    border-radius: 18rpx;
+    border: 1rpx solid $aftersale-border;
+    background: rgba(255, 255, 255, 0.82);
     font-size: 28rpx;
-    color: #333;
-
-    .placeholder {
-        color: #999;
-    }
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.type-options,
-.reason-options {
+.apply-reshoot__placeholder {
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.apply-reshoot__chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 16rpx;
+    gap: 12rpx;
 }
 
-.type-option,
-.reason-option {
-    padding: 16rpx 32rpx;
-    background: #f5f5f5;
-    border-radius: 8rpx;
-    font-size: 26rpx;
-    color: #666;
-
-    &.active {
-        background: rgba(79, 172, 254, 0.1);
-        color: #4facfe;
-        border: 1rpx solid #4facfe;
-    }
+.apply-reshoot__chip {
+    padding: 12rpx 18rpx;
+    border-radius: 999rpx;
+    border: 1rpx solid $aftersale-border;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 24rpx;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.form-textarea {
-    width: 100%;
-    height: 200rpx;
-    background: #f8f8f8;
-    border-radius: 12rpx;
+.apply-reshoot__chip.is-active {
+    color: #ffffff;
+    background: var(--wm-color-primary, #e85a4f);
+    border-color: var(--wm-color-primary, #e85a4f);
+}
+
+.apply-reshoot__textarea {
+    min-height: 200rpx;
     padding: 20rpx;
-    font-size: 28rpx;
+    border-radius: 18rpx;
+    border: 1rpx solid $aftersale-border;
+    background: rgba(255, 255, 255, 0.82);
+    font-size: 26rpx;
+    line-height: 1.7;
+    color: var(--wm-text-primary, #1e2432);
     box-sizing: border-box;
 }
 
-.upload-area {
-    margin-top: 20rpx;
+.apply-reshoot__tips {
+    padding: 0 4rpx;
+    font-size: 22rpx;
+    line-height: 1.7;
+    color: var(--wm-text-tertiary, #b4aca8);
 }
 
-.image-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16rpx;
-}
-
-.image-item {
-    position: relative;
-    width: 200rpx;
-    height: 200rpx;
-    border-radius: 12rpx;
-    overflow: hidden;
-
-    image {
-        width: 100%;
-        height: 100%;
-    }
-
-    .delete-btn {
-        position: absolute;
-        top: 8rpx;
-        right: 8rpx;
-        width: 40rpx;
-        height: 40rpx;
-        background: rgba(0, 0, 0, 0.5);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-}
-
-.upload-btn {
-    width: 200rpx;
-    height: 200rpx;
-    border: 2rpx dashed #ddd;
-    border-radius: 12rpx;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-
-    text {
-        font-size: 24rpx;
-        color: #999;
-        margin-top: 8rpx;
-    }
-}
-
-.upload-tip {
-    font-size: 24rpx;
-    color: #999;
-    margin-top: 16rpx;
-    display: block;
-}
-
-.submit-bar {
+.apply-reshoot__action-bar {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 20rpx 30rpx;
-    background: #fff;
-    box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
-    padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+    left: 20rpx;
+    right: 20rpx;
+    bottom: calc(20rpx + env(safe-area-inset-bottom));
 }
 </style>

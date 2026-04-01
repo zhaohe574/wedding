@@ -1,7 +1,8 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="我的申请" />
-    <view class="change-list">
+    <PageShell scene="consumer">
+        <BaseNavbar title="我的申请" />
+        <view class="change-list">
         <!-- 类型筛选 -->
         <view class="type-tabs bg-white sticky top-0 z-10">
             <scroll-view scroll-x class="whitespace-nowrap">
@@ -168,12 +169,14 @@
                 </view>
             </view>
         </view>
-    </view>
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad, onShow, onReachBottom } from '@dcloudio/uni-app'
+import PageShell from '@/components/base/PageShell.vue'
 import {
     getChangeList,
     cancelChange,

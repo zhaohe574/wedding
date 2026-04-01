@@ -171,15 +171,20 @@ class NotificationLogic extends BaseLogic
      * @notes 清空消息
      * @param int $userId
      * @param int $notifyType
+     * @param int $readStatus
      * @return int
      */
-    public static function clear(int $userId, int $notifyType = 0): int
+    public static function clear(int $userId, int $notifyType = 0, int $readStatus = -1): int
     {
         $query = Notification::where('user_id', $userId);
 
         $notifyTypes = self::resolveQueryNotifyTypes($notifyType);
         if (!empty($notifyTypes)) {
             $query->whereIn('notify_type', $notifyTypes);
+        }
+
+        if (in_array($readStatus, [0, 1], true)) {
+            $query->where('is_read', $readStatus);
         }
 
         return $query->delete();

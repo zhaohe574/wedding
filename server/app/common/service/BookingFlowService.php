@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\service;
 
 use app\common\model\schedule\Schedule;
+use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServiceCategory;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
@@ -17,100 +18,76 @@ use app\common\model\staff\Staff;
  */
 class BookingFlowService
 {
-    public const CUSTOM_OPTION_1 = 'booking_option_1';
-    public const CUSTOM_OPTION_2 = 'booking_option_2';
-
     public const ROLE_BUTLER = 'butler';
     public const ROLE_DIRECTOR = 'director';
 
     public const ROLE_SKIP_LABEL = '否，后续自行预约';
 
     /**
-     * @notes 获取服务人员自定义预约附加项
-     * @param Staff|array $staff
+     * @notes 获取服务人员预约附加项
+     * @param int $staffId
      * @return array
      */
-    public static function getStaffBookingOptions($staff): array
+    public static function getStaffBookingAddons(int $staffId): array
     {
-        $staffData = $staff instanceof Staff ? $staff->getData() : (array)$staff;
-        $options = [];
-
-        foreach ([
-            self::CUSTOM_OPTION_1 => [
-                'name_field' => 'booking_option_1_name',
-                'price_field' => 'booking_option_1_price',
-            ],
-            self::CUSTOM_OPTION_2 => [
-                'name_field' => 'booking_option_2_name',
-                'price_field' => 'booking_option_2_price',
-            ],
-        ] as $key => $config) {
-            $name = trim((string)($staffData[$config['name_field']] ?? ''));
-            if ($name === '') {
-                continue;
-            }
-
-            $price = round((float)($staffData[$config['price_field']] ?? 0), 2);
-            $options[] = [
-                'key' => $key,
-                'name' => $name,
-                'price' => $price,
-                'selected_label' => '是，增加' . $name,
-                'skip_label' => '否，暂不需要',
-            ];
-        }
-
-        return $options;
-    }
-
-    /**
-     * @notes 规范化自定义附加项 key
-     * @param mixed $optionKeys
-     * @return array
-     */
-    public static function normalizeCustomOptionKeys($optionKeys): array
-    {
-        if (is_string($optionKeys)) {
-            $optionKeys = $optionKeys === '' ? [] : explode(',', $optionKeys);
-        }
-
-        if (!is_array($optionKeys)) {
+        if ($staffId <= 0) {
             return [];
         }
 
-        $allowed = [
-            self::CUSTOM_OPTION_1,
-            self::CUSTOM_OPTION_2,
-        ];
-
-        $keys = array_map(function ($value) {
-            return trim((string)$value);
-        }, $optionKeys);
-
-        return array_values(array_unique(array_filter($keys, function ($value) use ($allowed) {
-            return in_array($value, $allowed, true);
-        })));
+        return ServiceAddon::where('staff_id', $staffId)
+            ->whereNull('delete_time')
+            ->where('is_show', 1)
+            ->field('id, staff_id, category_id, name, price, original_price, image, description, sort')
+            ->order('sort', 'desc')
+            ->order('id', 'desc')
+            ->select()
+            ->toArray();
     }
 
     /**
-     * @notes 校验并获取已选自定义附加项
-     * @param Staff|array $staff
-     * @param array $optionKeys
+     * @notes 规范化预约附加项 ID
+     * @param mixed $addonIds
      * @return array
      */
-    public static function resolveSelectedCustomOptions($staff, array $optionKeys): array
+    public static function normalizeAddonIds($addonIds): array
     {
-        $optionMap = [];
-        foreach (self::getStaffBookingOptions($staff) as $option) {
-            $optionMap[$option['key']] = $option;
+        if (is_string($addonIds)) {
+            $addonIds = $addonIds === '' ? [] : explode(',', $addonIds);
+        }
+
+        if (!is_array($addonIds)) {
+            return [];
+        }
+
+        $addonIds = array_map('intval', $addonIds);
+        $addonIds = array_filter($addonIds, static fn (int $addonId) => $addonId > 0);
+        return array_values(array_unique($addonIds));
+    }
+
+    /**
+     * @notes 校验并获取已选预约附加项
+     * @param int $staffId
+     * @param array $addonIds
+     * @return array
+     */
+    public static function resolveSelectedAddons(int $staffId, array $addonIds): array
+    {
+        $addonIds = self::normalizeAddonIds($addonIds);
+        if ($staffId <= 0 || empty($addonIds)) {
+            return [];
+        }
+
+        $addonMap = [];
+        foreach (self::getStaffBookingAddons($staffId) as $addon) {
+            $addonMap[(int)($addon['id'] ?? 0)] = $addon;
         }
 
         $result = [];
-        foreach (self::normalizeCustomOptionKeys($optionKeys) as $key) {
-            if (!isset($optionMap[$key])) {
+        foreach ($addonIds as $addonId) {
+            if (!isset($addonMap[$addonId])) {
                 throw new \InvalidArgumentException('预约附加项已失效，请重新选择');
             }
-            $result[] = $optionMap[$key];
+            $result[] = $addonMap[$addonId];
         }
 
         return $result;

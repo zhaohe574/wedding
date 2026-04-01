@@ -1,156 +1,200 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="作品管理" />
+    <PageShell scene="staff">
+        <BaseNavbar title="作品管理" />
 
-    <view class="page-container">
-        <z-paging ref="pagingRef" v-model="workList" @query="queryList" :auto="false" :hide-empty-view="true">
-            <template #top>
-                <view class="hero-wrap">
-                    <view
-                        class="hero-card"
-                        :style="{
-                            background: `linear-gradient(145deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || $theme.primaryColor} 78%)`
-                        }"
-                    >
-                        <view class="hero-top">
-                            <view>
-                                <text class="hero-title">作品工作区</text>
-                                <text class="hero-desc">维护案例内容，持续提升展示力与信任感</text>
-                            </view>
-                            <view class="hero-add-btn" @click="handleAdd">
-                                <tn-icon name="add" size="28" color="#FFFFFF" />
-                                <text>新增作品</text>
-                            </view>
-                        </view>
+        <view class="staff-resource-page">
+            <z-paging
+                ref="pagingRef"
+                v-model="workList"
+                :auto="false"
+                :hide-empty-view="true"
+                :paging-style="pagingStyle"
+                @query="queryList"
+            >
+                <template #top>
+                    <view class="page-section page-section--top">
+                        <view class="page-head">
+                            <view class="page-head__main">
+                                <view class="page-head__copy">
+                                    <text class="page-head__title">作品管理</text>
+                                    <text class="page-head__meta">维护展示内容</text>
+                                </view>
 
-                        <view class="hero-stats">
-                            <view class="hero-stat">
-                                <text class="hero-stat-label">总作品</text>
-                                <text class="hero-stat-value">{{ workList.length }}</text>
+                                <BaseButton
+                                    variant="secondary"
+                                    size="sm"
+                                    class="page-head__action"
+                                    @click="handleAdd"
+                                >
+                                    新增作品
+                                </BaseButton>
                             </view>
-                            <view class="hero-stat">
-                                <text class="hero-stat-label">展示中</text>
-                                <text class="hero-stat-value">{{ visibleCount }}</text>
-                            </view>
-                            <view class="hero-stat">
-                                <text class="hero-stat-label">待审核</text>
-                                <text class="hero-stat-value">{{ pendingAuditCount }}</text>
-                            </view>
-                        </view>
-                    </view>
-                </view>
-            </template>
 
-            <!-- 作品列表 -->
-            <view class="work-list">
-                <view
-                    v-for="item in workList"
-                    :key="item.id"
-                    class="work-card"
-                    @click="handleEdit(item)"
-                >
-                    <!-- 作品封面 -->
-                    <view class="work-cover-wrapper">
-                        <image
-                            class="work-cover"
-                            :src="item.cover || item.images?.[0] || defaultCover"
-                            mode="aspectFill"
-                        />
-                        <!-- 审核状态标签 -->
-                        <view class="audit-badge" :style="getAuditStyle(item.audit_status)">
-                            <tn-icon
-                                :name="getAuditIcon(item.audit_status)"
-                                size="24"
-                                color="#FFFFFF"
-                            />
-                            <text>{{ auditStatusText(item.audit_status) }}</text>
-                        </view>
-                    </view>
-
-                    <!-- 作品信息 -->
-                    <view class="work-info">
-                        <view class="work-title">{{ item.title || '未命名作品' }}</view>
-                        <view class="work-meta">
-                            <view class="meta-item">
-                                <tn-icon name="eye" size="24" color="#999999" />
-                                <text>{{ item.view_count || 0 }}</text>
-                            </view>
-                            <view class="meta-item">
-                                <tn-icon name="like" size="24" color="#999999" />
-                                <text>{{ item.like_count || 0 }}</text>
-                            </view>
-                            <view
-                                class="show-status"
-                                :style="{ color: item.is_show ? $theme.primaryColor : '#999999' }"
-                            >
-                                <tn-icon
-                                    :name="item.is_show ? 'eye' : 'eye-off'"
-                                    size="24"
-                                    :color="item.is_show ? $theme.primaryColor : '#999999'"
-                                />
-                                <text>{{ item.is_show ? '显示中' : '已隐藏' }}</text>
+                            <view class="summary-row">
+                                <view
+                                    v-for="item in summaryPills"
+                                    :key="item.label"
+                                    :class="['summary-pill', { 'summary-pill--accent': item.accent }]"
+                                >
+                                    <text class="summary-pill__label">{{ item.label }}</text>
+                                    <text class="summary-pill__value">{{ item.value }}</text>
+                                </view>
                             </view>
                         </view>
                     </view>
+                </template>
 
-                    <!-- 操作按钮 -->
-                    <view class="work-actions">
-                        <view
-                            class="action-btn edit-btn"
-                            :style="{
-                                color: $theme.primaryColor,
-                                borderColor: $theme.primaryColor
-                            }"
-                            @click.stop="handleEdit(item)"
+                <view class="page-section page-section--list">
+                    <LoadingState v-if="loading && !hasLoaded" text="正在同步作品列表..." />
+
+                    <template v-else-if="workList.length">
+                        <BaseCard
+                            v-for="item in workList"
+                            :key="item.id"
+                            variant="glass"
+                            scene="staff"
+                            class="work-card"
+                            interactive
+                            @click="handleEdit(item)"
                         >
-                            <tn-icon name="edit" size="28" :color="$theme.primaryColor" />
-                            <text>编辑</text>
-                        </view>
-                        <view class="action-btn delete-btn" @click.stop="handleDelete(item)">
-                            <tn-icon name="delete" size="28" color="#FF2C3C" />
-                            <text>删除</text>
-                        </view>
-                    </view>
-                </view>
+                            <view class="work-card__media">
+                                <image
+                                    class="work-card__cover"
+                                    :src="item.cover || item.images?.[0] || defaultCover"
+                                    mode="aspectFill"
+                                />
+                                <StatusBadge
+                                    class="work-card__audit"
+                                    :tone="getAuditTone(Number(item.audit_status))"
+                                    size="sm"
+                                >
+                                    {{ auditStatusText(Number(item.audit_status)) }}
+                                </StatusBadge>
+                            </view>
 
-                <!-- 空状态 -->
-                <view v-if="workList.length === 0" class="empty-state">
-                    <tn-icon name="image" size="120" color="#E5E5E5" />
-                    <text class="empty-text">暂无作品</text>
-                    <view
-                        class="empty-btn"
-                        :style="{
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                            color: $theme.btnColor
-                        }"
-                        @click="handleAdd"
-                    >
-                        立即添加
-                    </view>
+                            <view class="work-card__body">
+                                <view class="resource-head">
+                                    <view class="resource-head__copy">
+                                        <text class="resource-head__title">
+                                            {{ item.title || '未命名作品' }}
+                                        </text>
+                                        <text class="resource-head__meta">
+                                            {{ auditStatusText(Number(item.audit_status)) }}
+                                        </text>
+                                    </view>
+
+                                    <StatusBadge
+                                        :tone="Number(item.is_show) === 1 ? 'info' : 'neutral'"
+                                        size="sm"
+                                    >
+                                        {{ Number(item.is_show) === 1 ? '显示中' : '已隐藏' }}
+                                    </StatusBadge>
+                                </view>
+
+                                <view class="stats-row">
+                                    <view class="metric-chip">
+                                        <tn-icon
+                                            name="eye"
+                                            size="20"
+                                            color="var(--wm-color-secondary, #C99B73)"
+                                        />
+                                        <text>浏览 {{ Number(item.view_count || 0) }}</text>
+                                    </view>
+                                    <view class="metric-chip">
+                                        <tn-icon
+                                            name="like"
+                                            size="20"
+                                            color="var(--wm-color-secondary, #C99B73)"
+                                        />
+                                        <text>点赞 {{ Number(item.like_count || 0) }}</text>
+                                    </view>
+                                </view>
+
+                                <view class="card-footer">
+                                    <view class="card-footer__hint">
+                                        <text>{{ Number(item.is_show) === 1 ? '前台可见' : '暂不展示' }}</text>
+                                    </view>
+
+                                    <view class="action-row">
+                                        <view
+                                            class="action-btn action-btn--ghost"
+                                            @click.stop="handleEdit(item)"
+                                        >
+                                            编辑
+                                        </view>
+                                        <view
+                                            class="action-btn action-btn--danger"
+                                            @click.stop="handleDelete(item)"
+                                        >
+                                            删除
+                                        </view>
+                                    </view>
+                                </view>
+                            </view>
+                        </BaseCard>
+                    </template>
+
+                    <EmptyState
+                        v-else-if="hasLoaded"
+                        title="还没有作品"
+                        action-text="新增作品"
+                        @action="handleAdd"
+                    />
                 </view>
-            </view>
-        </z-paging>
-    </view>
+            </z-paging>
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { staffCenterWorkLists, staffCenterWorkDelete } from '@/api/staffCenter'
-import { ensureStaffCenterAccess } from '@/utils/staff-center'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
+import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
+import { staffCenterWorkDelete, staffCenterWorkLists } from '@/api/staffCenter'
+import { useFixedNavbarPagingStyle } from '@/hooks/useFixedNavbarPagingStyle'
 import { useThemeStore } from '@/stores/theme'
+import { ensureStaffCenterAccess } from '@/utils/staff-center'
+
+type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
+
+interface HeroMetric {
+    label: string
+    value: number
+    accent: boolean
+}
+
+interface WorkListSummary {
+    total: number
+    visible_count: number
+    pending_audit_count: number
+}
 
 const $theme = useThemeStore()
+const pagingStyle = useFixedNavbarPagingStyle()
 const pagingRef = ref<any>(null)
 const workList = ref<any[]>([])
+const loading = ref(false)
+const hasLoaded = ref(false)
+const summary = ref<WorkListSummary>({
+    total: 0,
+    visible_count: 0,
+    pending_audit_count: 0
+})
 const defaultCover = '/static/images/user/default_avatar.png'
 
-const visibleCount = computed(() => workList.value.filter((item) => Number(item.is_show) === 1).length)
-const pendingAuditCount = computed(
-    () => workList.value.filter((item) => Number(item.audit_status) === 0).length
-)
+const summaryPills = computed<HeroMetric[]>(() => [
+    { label: '总作品', value: summary.value.total, accent: false },
+    { label: '展示中', value: summary.value.visible_count, accent: true },
+    { label: '待审核', value: summary.value.pending_audit_count, accent: false }
+])
 
-// 审核状态文本
 const auditStatusText = (status: number) => {
     const map: Record<number, string> = {
         0: '待审核',
@@ -160,48 +204,47 @@ const auditStatusText = (status: number) => {
     return map[status] || '未知'
 }
 
-// 审核状态样式
-const getAuditStyle = (status: number) => {
-    const styles: Record<number, any> = {
-        0: { background: 'rgba(255, 153, 0, 0.9)', color: '#FFFFFF' },
-        1: { background: 'rgba(25, 190, 107, 0.9)', color: '#FFFFFF' },
-        2: { background: 'rgba(255, 44, 60, 0.9)', color: '#FFFFFF' }
+const getAuditTone = (status: number): BadgeTone => {
+    const map: Record<number, BadgeTone> = {
+        0: 'warning',
+        1: 'success',
+        2: 'danger'
     }
-    return styles[status] || styles[0]
+    return map[status] || 'neutral'
 }
 
-// 审核状态图标
-const getAuditIcon = (status: number) => {
-    const icons: Record<number, string> = {
-        0: 'clock',
-        1: 'check-circle',
-        2: 'close-circle'
-    }
-    return icons[status] || 'clock'
-}
-
-// 查询列表
 const queryList = async (pageNo: number, pageSize: number) => {
+    if (pageNo === 1) {
+        loading.value = true
+    }
     try {
         const res: any = await staffCenterWorkLists({ page: pageNo, page_size: pageSize })
-        const list = res?.data || []
+        const list = Array.isArray(res?.data) ? res.data : []
+        summary.value = {
+            total: Number(res?.summary?.total || 0),
+            visible_count: Number(res?.summary?.visible_count || 0),
+            pending_audit_count: Number(res?.summary?.pending_audit_count || 0)
+        }
+        hasLoaded.value = true
         pagingRef.value.complete(list)
     } catch (e) {
+        hasLoaded.value = true
         pagingRef.value.complete(false)
+    } finally {
+        if (pageNo === 1) {
+            loading.value = false
+        }
     }
 }
 
-// 新增作品
 const handleAdd = () => {
     uni.navigateTo({ url: '/packages/pages/staff_work_edit/staff_work_edit' })
 }
 
-// 编辑作品
 const handleEdit = (item: any) => {
     uni.navigateTo({ url: `/packages/pages/staff_work_edit/staff_work_edit?id=${item.id}` })
 }
 
-// 删除作品
 const handleDelete = (item: any) => {
     uni.showModal({
         title: '确认删除',
@@ -222,235 +265,248 @@ const handleDelete = (item: any) => {
 
 onShow(async () => {
     if (!(await ensureStaffCenterAccess())) return
+    hasLoaded.value = false
+    loading.value = true
     pagingRef.value?.reload()
 })
 </script>
 
 <style lang="scss" scoped>
-.page-container {
+.staff-resource-page {
     min-height: 100vh;
+    padding-top: 20rpx;
+    box-sizing: border-box;
     background:
-        radial-gradient(circle at top left, rgba(191, 219, 254, 0.72) 0, rgba(246, 248, 252, 0) 36%),
-        linear-gradient(180deg, #F6F8FC 0%, #F4F6FB 100%);
+        radial-gradient(circle at top left, rgba(232, 90, 79, 0.1) 0, rgba(252, 251, 249, 0) 36%),
+        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
 }
 
-.hero-wrap {
-    padding: 24rpx 24rpx 0;
+.page-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    padding: 0 var(--wm-space-page-x, 37rpx);
+    box-sizing: border-box;
+
+    &--list {
+        padding-top: 12rpx;
+        padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+    }
 }
 
-.hero-card {
-    padding: 28rpx;
-    border-radius: 30rpx;
-    box-shadow: 0 18rpx 36rpx rgba(37, 99, 235, 0.18);
+.page-head {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
 }
 
-.hero-top {
+.page-head__main {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 20rpx;
 }
 
-.hero-title {
+.page-head__copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.page-head__title {
     display: block;
-    font-size: 36rpx;
+    font-size: 40rpx;
     font-weight: 700;
-    color: #FFFFFF;
+    line-height: 1.24;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.hero-desc {
+.page-head__meta {
     display: block;
-    margin-top: 10rpx;
-    font-size: 22rpx;
-    line-height: 1.55;
-    color: rgba(255, 255, 255, 0.8);
-}
-
-.hero-add-btn {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    gap: 8rpx;
-    padding: 16rpx 22rpx;
-    border-radius: 999rpx;
-    background: rgba(255, 255, 255, 0.16);
+    margin-top: 6rpx;
     font-size: 24rpx;
     font-weight: 600;
-    color: #FFFFFF;
+    line-height: 1.4;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.hero-stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14rpx;
-    margin-top: 26rpx;
+.page-head__action {
+    flex-shrink: 0;
 }
 
-.hero-stat {
-    padding: 20rpx;
-    border-radius: 22rpx;
-    background: rgba(255, 255, 255, 0.14);
+.page-head__action :deep(.tn-button) {
+    background: rgba(255, 255, 255, 0.78);
+    border-color: rgba(232, 90, 79, 0.12);
 }
 
-.hero-stat-label {
-    display: block;
+.summary-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+}
+
+.summary-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 12rpx;
+    min-height: 54rpx;
+    padding: 0 18rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(255, 255, 255, 0.72);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+
+    &--accent {
+        background: var(--wm-color-primary-soft, #fff1ee);
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+    }
+}
+
+.summary-pill__label {
     font-size: 22rpx;
-    color: rgba(255, 255, 255, 0.75);
+    font-weight: 600;
+    line-height: 1;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.hero-stat-value {
-    display: block;
-    margin-top: 12rpx;
-    font-size: 38rpx;
-    font-weight: 800;
-    color: #FFFFFF;
+.summary-pill--accent .summary-pill__label {
+    color: var(--wm-color-primary, #e85a4f);
 }
 
-/* 作品列表 */
-.work-list {
-    padding: 24rpx;
+.summary-pill__value {
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.work-card {
-    margin-bottom: 20rpx;
-    background: #FFFFFF;
-    border-radius: 24rpx;
-    overflow: hidden;
-    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
-    transition: all 0.15s ease;
-
-    &:active {
-        background: #FAFAFA;
-    }
-
-    &:last-child {
-        margin-bottom: 0;
-    }
+.work-card + .work-card {
+    margin-top: 16rpx;
 }
 
-/* 作品封面 */
-.work-cover-wrapper {
+.work-card__media {
     position: relative;
-    width: 100%;
-    height: 400rpx;
+    overflow: hidden;
+    border-radius: 30rpx;
+    background: rgba(255, 255, 255, 0.72);
 }
 
-.work-cover {
+.work-card__cover {
     width: 100%;
-    height: 100%;
-    background: #f5f5f5;
+    height: 276rpx;
+    display: block;
+    background: #f7f1ed;
 }
 
-.audit-badge {
+.work-card__audit {
     position: absolute;
     top: 16rpx;
     right: 16rpx;
+}
+
+.work-card__body {
+    margin-top: 18rpx;
+}
+
+.resource-head {
     display: flex;
-    align-items: center;
-    gap: 6rpx;
-    padding: 8rpx 16rpx;
-    border-radius: 24rpx;
-    font-size: 24rpx;
-    font-weight: 500;
-    backdrop-filter: blur(10rpx);
-}
-
-/* 作品信息 */
-.work-info {
-    padding: 24rpx;
-}
-
-.work-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333333;
-    line-height: 1.4;
-    margin-bottom: 16rpx;
-}
-
-.work-meta {
-    display: flex;
-    align-items: center;
-    gap: 32rpx;
-}
-
-.meta-item {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-    font-size: 24rpx;
-    color: #999999;
-}
-
-.show-status {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-    font-size: 24rpx;
-    font-weight: 500;
-    margin-left: auto;
-}
-
-/* 操作按钮 */
-.work-actions {
-    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 16rpx;
-    padding: 0 24rpx 24rpx;
+}
+
+.resource-head__copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.resource-head__title {
+    display: block;
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--wm-text-primary, #1e2432);
+    word-break: break-all;
+}
+
+.resource-head__meta {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--wm-text-tertiary, #948f8b);
+}
+
+.stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+    margin-top: 14rpx;
+}
+
+.metric-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    min-height: 48rpx;
+    padding: 0 16rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(255, 255, 255, 0.74);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    font-size: 21rpx;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-top: 18rpx;
+}
+
+.card-footer__hint {
+    flex: 1;
+    min-width: 0;
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--wm-text-tertiary, #948f8b);
+}
+
+.action-row {
+    display: flex;
+    flex-shrink: 0;
+    gap: 12rpx;
 }
 
 .action-btn {
-    flex: 1;
+    min-width: 108rpx;
+    min-height: 56rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8rpx;
-    height: 64rpx;
-    border-radius: 48rpx;
-    font-size: 28rpx;
-    font-weight: 500;
-    border: 2rpx solid;
-    transition: all 0.2s ease;
-
-    &:active {
-        opacity: 0.8;
-    }
-}
-
-.edit-btn {
-    background: transparent;
-}
-
-.delete-btn {
-    background: transparent;
-    color: #ff2c3c;
-    border-color: #ff2c3c;
-}
-
-/* 空状态 */
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 120rpx 0;
-    gap: 24rpx;
-}
-
-.empty-text {
-    font-size: 28rpx;
-    color: #999999;
-}
-
-.empty-btn {
-    margin-top: 16rpx;
-    padding: 16rpx 48rpx;
-    border-radius: 48rpx;
-    font-size: 28rpx;
+    padding: 0 24rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    font-size: 22rpx;
     font-weight: 600;
-    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
+    transition: all var(--wm-motion-base, 220ms) ease;
 
     &:active {
-        opacity: 0.9;
+        transform: translateY(2rpx);
+        opacity: 0.92;
+    }
+
+    &--ghost {
+        color: var(--wm-color-primary, #e85a4f);
+        background: rgba(255, 255, 255, 0.7);
+        border: 1rpx solid rgba(232, 90, 79, 0.18);
+    }
+
+    &--danger {
+        color: var(--wm-color-danger, #b44a3a);
+        background: rgba(180, 74, 58, 0.08);
+        border: 1rpx solid rgba(180, 74, 58, 0.12);
     }
 }
 </style>

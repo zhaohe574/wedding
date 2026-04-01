@@ -61,15 +61,15 @@ const $theme = useThemeStore()
 <style lang="scss" scoped>
 .news-card-wrapper {
     display: block;
-    margin: 0 20rpx 24rpx;
+    margin: 0 var(--wm-space-page-x, 20rpx) var(--wm-space-card-padding-lg, 24rpx);
 }
 
 .news-card {
     position: relative;
     display: flex;
-    gap: 18rpx;
-    padding: 18rpx;
-    border-radius: 28rpx;
+    gap: var(--wm-space-section-gap-lg, 16rpx);
+    padding: var(--wm-space-card-padding, 20rpx);
+    border-radius: var(--wm-radius-card-lg, 28rpx);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 247, 244, 0.98) 100%);
     border: 1rpx solid var(--wm-color-border, #efe6e1);
     box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
@@ -95,7 +95,7 @@ const $theme = useThemeStore()
     position: relative;
     width: 250rpx;
     height: 206rpx;
-    border-radius: 22rpx;
+    border-radius: var(--wm-radius-card-soft, 20rpx);
     flex-shrink: 0;
     overflow: hidden;
     background: linear-gradient(145deg, #f6d8d1 0%, #f0b7aa 52%, #dba58d 100%);
@@ -111,7 +111,7 @@ const $theme = useThemeStore()
     display: flex;
     align-items: flex-end;
     justify-content: flex-start;
-    padding: 22rpx;
+    padding: var(--wm-space-card-padding, 20rpx);
 }
 
 .news-cover__placeholder-text {
@@ -131,8 +131,8 @@ const $theme = useThemeStore()
     position: absolute;
     left: 16rpx;
     top: 16rpx;
-    padding: 8rpx 14rpx;
-    border-radius: 999rpx;
+    padding: 8rpx 16rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
     background: rgba(255, 255, 255, 0.74);
     border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
     font-size: 20rpx;
@@ -186,7 +186,7 @@ const $theme = useThemeStore()
     margin-top: 18rpx;
     display: flex;
     align-items: center;
-    gap: 20rpx;
+    gap: var(--wm-space-section-gap-lg, 16rpx);
     flex-wrap: wrap;
 }
 
@@ -194,8 +194,8 @@ const $theme = useThemeStore()
     display: inline-flex;
     align-items: center;
     gap: 8rpx;
-    padding: 8rpx 12rpx;
-    border-radius: 999rpx;
+    padding: 8rpx 14rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
     background: rgba(255, 255, 255, 0.76);
 }
 
@@ -222,7 +222,7 @@ const $theme = useThemeStore()
 .news-foot__arrow {
     width: 44rpx;
     height: 44rpx;
-    border-radius: 999rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
     background: rgba(255, 255, 255, 0.78);
     display: flex;
     align-items: center;

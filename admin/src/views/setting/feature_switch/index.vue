@@ -15,6 +15,12 @@
                         <span class="text-gray-500 text-xs">创建服务人员时同步生成后台账号</span>
                     </div>
                 </el-form-item>
+                <el-form-item label="服务人员标签审核">
+                    <div class="flex items-center gap-3">
+                        <el-switch v-model="formData.staff_tag_review_enabled" :active-value="1" :inactive-value="0" />
+                        <span class="text-gray-500 text-xs">开启后，服务人员自助修改标签需要管理员审核</span>
+                    </div>
+                </el-form-item>
                 <el-form-item label="管理员看板入口">
                     <div class="flex items-center gap-3">
                         <el-switch v-model="formData.admin_dashboard" :active-value="1" :inactive-value="0" />
@@ -59,6 +65,7 @@ import { getFeatureSwitchConfig, setFeatureSwitchConfig } from '@/api/setting/fe
 const formData = reactive({
     staff_center: 1,
     staff_admin: 1,
+    staff_tag_review_enabled: 0,
     admin_dashboard: 1,
     admin_dashboard_user_ids: '',
     staff_detail_style: 'classic'

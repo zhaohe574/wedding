@@ -1,214 +1,261 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" hasSafeBottom>
+    <PageShell scene="consumer">
         <BaseNavbar title="订单详情" />
 
         <view v-if="order" class="order-detail">
-        <view class="status-hero" :style="{ background: statusTheme.background }">
-            <view class="status-hero__glow status-hero__glow--left"></view>
-            <view class="status-hero__glow status-hero__glow--right"></view>
-            <view class="status-hero__main">
-                <view class="status-hero__icon" :style="{ background: statusTheme.iconBg }">
-                    <tn-icon :name="statusTheme.icon" size="48" color="#FFFFFF" />
-                </view>
-                <view class="status-hero__content">
-                    <text class="status-hero__title">{{ order.order_status_desc }}</text>
-                    <text class="status-hero__desc">{{ statusDescription }}</text>
-                    <view v-if="showPayCountdown" class="status-hero__countdown">
-                        <text class="status-hero__countdown-label">剩余支付时间</text>
-                        <text class="status-hero__countdown-value">{{ payCountdownText }}</text>
+            <view class="page-body">
+                <view class="status-card" :style="{ background: statusTheme.background }">
+                    <view class="status-card__chip" :style="{ background: statusTheme.iconBg }">
+                        <text class="status-card__chip-text">{{ order.order_status_desc }}</text>
                     </view>
-                    <view v-else-if="showVoucherPending" class="status-hero__countdown">
-                        <text class="status-hero__countdown-label">线下凭证</text>
-                        <text class="status-hero__countdown-value">审核中</text>
+                    <text class="status-card__title">{{ statusHeadline }}</text>
+                    <text class="status-card__desc">{{ statusCardText }}</text>
+                    <view
+                        v-if="showPayCountdown || showVoucherPending || Number(needPayAmount) > 0"
+                        class="status-card__meta"
+                    >
+                        <view v-if="showPayCountdown" class="status-card__meta-item">
+                            <text class="status-card__meta-label">剩余支付时间</text>
+                            <text class="status-card__meta-value">{{ payCountdownText }}</text>
+                        </view>
+                        <view v-else-if="showVoucherPending" class="status-card__meta-item">
+                            <text class="status-card__meta-label">线下凭证</text>
+                            <text class="status-card__meta-value">审核中</text>
+                        </view>
+                        <view
+                            v-if="Number(needPayAmount) > 0 && [1, 2, 3].includes(order.order_status)"
+                            class="status-card__meta-item"
+                        >
+                            <text class="status-card__meta-label">当前待支付</text>
+                            <text class="status-card__meta-value">¥{{ formatAmount(needPayAmount) }}</text>
+                        </view>
                     </view>
                 </view>
-                <view
-                    v-if="order.order_status === 1 && Number(needPayAmount) > 0"
-                    class="status-hero__pay"
-                >
-                    <text class="status-hero__pay-label">当前待支付</text>
-                    <text class="status-hero__pay-value">¥{{ formatAmount(needPayAmount) }}</text>
-                </view>
-            </view>
-            <view class="status-hero__meta" @click="copyOrderSn">
-                <text class="status-hero__meta-label">订单编号</text>
-                <view class="status-hero__meta-value">
-                    <text>{{ order.order_sn }}</text>
-                    <tn-icon name="copy" size="24" color="rgba(255,255,255,0.88)" />
-                </view>
-            </view>
-        </view>
 
-        <view class="page-body">
-            <view class="card summary-card">
-                <view class="card__header">
-                    <tn-icon name="calendar" size="32" :color="$theme.primaryColor" />
-                    <text class="card__title">服务摘要</text>
-                </view>
-                <template v-if="primaryItem">
-                    <view class="summary-card__top">
-                        <view class="summary-card__staff">
-                            <image class="summary-card__avatar" :src="primaryStaffAvatar" mode="aspectFill" />
-                            <view class="summary-card__staff-copy">
-                                <view class="summary-card__staff-row">
-                                    <text class="summary-card__staff-name">{{ primaryStaffName }}</text>
-                                    <text class="summary-card__badge">服务人员</text>
-                                </view>
-                                <text class="summary-card__staff-note">本次订单已确认服务人员</text>
-                            </view>
+                <view class="card card--core">
+                    <text class="card__title">服务信息</text>
+                    <view class="service-summary">
+                        <text class="service-summary__label">主套餐</text>
+                        <view class="service-summary__headline">
+                            <text class="service-summary__title">{{ serviceCardTitle }}</text>
+                            <text class="service-summary__price">¥{{ formatAmount(primaryServiceAmount) }}</text>
                         </view>
-                        <view class="summary-card__price">
-                            <text class="summary-card__price-label">套餐金额</text>
-                            <text class="summary-card__price-value" :style="{ color: $theme.ctaColor }">
-                                ¥{{ formatAmount(primaryPackagePrice) }}
-                            </text>
-                        </view>
-                    </view>
-                    <view class="summary-grid">
-                        <view class="summary-grid__item summary-grid__item--wide">
-                            <text class="summary-grid__label">服务日期</text>
-                            <text class="summary-grid__value">{{ primaryServiceDate }}</text>
-                        </view>
-                        <view class="summary-grid__item">
-                            <text class="summary-grid__label">套餐</text>
-                            <text class="summary-grid__value summary-grid__value--multi">
-                                {{ primaryPackageName }}
-                            </text>
-                        </view>
-                    </view>
-                    <view v-if="primaryPackageDescription" class="summary-card__description">
-                        <text class="summary-card__description-label">套餐内容</text>
-                        <text class="summary-card__description-text">
+                        <text class="service-summary__meta">{{ serviceCardMeta }}</text>
+                        <text
+                            v-if="primaryPackageDescription"
+                            class="service-summary__desc"
+                        >
                             {{ primaryPackageDescription }}
                         </text>
                     </view>
-                    <view v-if="extraItems.length" class="addon-list">
-                        <view v-for="item in extraItems" :key="`${item.id}-${item.item_type}`" class="addon-item">
-                            <view class="addon-item__main">
-                                <view class="addon-item__name-row">
-                                    <text class="addon-item__name">{{ getExtraItemTitle(item) }}</text>
-                                    <text class="addon-item__tag">{{ item.item_type_desc || '附加内容' }}</text>
+                    <view v-if="serviceAddonRows.length" class="service-addon-section">
+                        <view class="service-addon-section__header">
+                            <text class="service-addon-section__title">附加服务明细</text>
+                            <text class="service-addon-section__meta">{{ serviceAddonSummaryText }}</text>
+                        </view>
+                        <view class="service-addon-list">
+                            <view
+                                v-for="item in serviceAddonRows"
+                                :key="item.key"
+                                class="service-addon-item"
+                            >
+                                <view class="service-addon-item__copy">
+                                    <view class="service-addon-item__title-row">
+                                        <text class="service-addon-item__title">{{ item.title }}</text>
+                                        <text class="service-addon-item__type">{{ item.typeText }}</text>
+                                    </view>
+                                    <text
+                                        v-if="item.description"
+                                        class="service-addon-item__desc"
+                                    >
+                                        {{ item.description }}
+                                    </text>
                                 </view>
-                                <text class="addon-item__desc">{{ getExtraItemDesc(item) }}</text>
+                                <text class="service-addon-item__price">{{ item.priceText }}</text>
                             </view>
-                            <text class="addon-item__price">¥{{ formatAmount(item.price) }}</text>
                         </view>
                     </view>
-                </template>
-                <view v-else class="empty-state">
-                    <tn-icon name="document" size="56" color="#CBD5E1" />
-                    <text class="empty-state__title">服务信息缺失</text>
-                    <text class="empty-state__desc">当前订单未返回主服务项，但金额和支付信息仍可查看。</text>
                 </view>
-            </view>
 
-            <view class="card">
-                <view class="card__header">
-                    <tn-icon name="location-fill" size="32" :color="$theme.primaryColor" />
+                <view class="card card--core">
+                    <text class="card__title">费用明细</text>
+                    <text class="card__main-text">总价 ¥{{ formatAmount(totalOrderAmount) }}</text>
+                    <text class="card__sub-text">已付 {{ paidAmountText }}</text>
+                    <text class="card__sub-text">待付 {{ pendingAmountText }}</text>
+                    <view
+                        v-if="hasFinancialDetails"
+                        class="inline-link"
+                        @click="showFinancialDetails = !showFinancialDetails"
+                    >
+                        <text class="inline-link__text">
+                            {{ showFinancialDetails ? '收起详细金额' : '查看详细金额' }}
+                        </text>
+                    </view>
+                    <view v-if="showFinancialDetails" class="sub-panel">
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">主服务金额</text>
+                            <text class="sub-panel__value">¥{{ formatAmount(orderServiceAmount) }}</text>
+                        </view>
+                        <view v-if="Number(order.addon_amount || 0) > 0" class="sub-panel__row">
+                            <text class="sub-panel__label">附加内容金额</text>
+                            <text class="sub-panel__value">¥{{ formatAmount(order.addon_amount) }}</text>
+                        </view>
+                        <view
+                            v-if="Number(order.discount_amount || 0) > 0"
+                            class="sub-panel__row"
+                        >
+                            <text class="sub-panel__label">优惠金额</text>
+                            <text class="sub-panel__value sub-panel__value--danger">
+                                -¥{{ formatAmount(order.discount_amount) }}
+                            </text>
+                        </view>
+                        <view v-if="Number(order.deposit_amount || 0) > 0" class="sub-panel__row">
+                            <text class="sub-panel__label">定金</text>
+                            <text class="sub-panel__value">¥{{ formatAmount(order.deposit_amount) }}</text>
+                        </view>
+                        <view v-if="Number(order.balance_amount || 0) > 0" class="sub-panel__row">
+                            <text class="sub-panel__label">尾款</text>
+                            <text class="sub-panel__value">¥{{ formatAmount(order.balance_amount) }}</text>
+                        </view>
+                    </view>
+                </view>
+
+                <view class="card card--core">
+                    <text class="card__title">流程进度</text>
+                    <view class="progress-list">
+                        <view
+                            v-for="item in progressItems"
+                            :key="item.label"
+                            class="progress-list__row"
+                        >
+                            <text class="progress-list__label">{{ item.label }}</text>
+                            <text class="progress-list__value">{{ item.value }}</text>
+                        </view>
+                    </view>
+                </view>
+
+                <view class="card card--core">
                     <text class="card__title">联系与履约信息</text>
-                </view>
-                <view class="detail-list">
-                    <view class="detail-row"><text class="detail-row__label">联系人</text><text class="detail-row__value">{{ order.contact_name || '-' }}</text></view>
-                    <view class="detail-row"><text class="detail-row__label">手机号码</text><text class="detail-row__value">{{ order.contact_mobile || '-' }}</text></view>
-                    <view class="detail-row"><text class="detail-row__label">服务地区</text><text class="detail-row__value">{{ order.service_region_text || '-' }}</text></view>
-                    <view class="detail-row"><text class="detail-row__label">详细地址</text><text class="detail-row__value detail-row__value--left">{{ order.service_address || '-' }}</text></view>
-                    <view v-if="order.wedding_date" class="detail-row"><text class="detail-row__label">婚礼日期</text><text class="detail-row__value">{{ order.wedding_date }}</text></view>
-                    <view v-if="order.wedding_venue" class="detail-row"><text class="detail-row__label">婚礼地点</text><text class="detail-row__value detail-row__value--left">{{ order.wedding_venue }}</text></view>
-                    <view v-if="order.user_remark" class="detail-row detail-row--stack"><text class="detail-row__label">备注</text><text class="detail-row__value detail-row__value--left">{{ order.user_remark }}</text></view>
-                </view>
-            </view>
-
-            <view class="card">
-                <view class="card__header">
-                    <tn-icon name="document" size="32" :color="$theme.primaryColor" />
-                    <text class="card__title">订单与金额</text>
-                </view>
-                <view class="section">
-                    <text class="section__title">订单信息</text>
-                    <view class="detail-list detail-list--compact">
-                        <view class="detail-row">
-                            <text class="detail-row__label">订单编号</text>
-                            <view class="detail-row__copy" @click="copyOrderSn">
-                                <text class="detail-row__value">{{ order.order_sn }}</text>
-                                <tn-icon name="copy" size="24" color="#94A3B8" />
-                            </view>
+                    <view class="info-list">
+                        <view class="info-list__row">
+                            <text class="info-list__main">{{ contactPrimaryText }}</text>
                         </view>
-                        <view class="detail-row"><text class="detail-row__label">下单时间</text><text class="detail-row__value">{{ order.create_time || '-' }}</text></view>
-                        <view v-if="order.pay_time" class="detail-row"><text class="detail-row__label">支付时间</text><text class="detail-row__value">{{ order.pay_time }}</text></view>
-                    </view>
-                </view>
-                <view class="divider-block"></view>
-                <view class="section">
-                    <text class="section__title">金额明细</text>
-                    <view class="amount-list">
-                        <view class="amount-row"><text class="amount-row__label">主服务金额</text><text class="amount-row__value">¥{{ formatAmount(orderServiceAmount) }}</text></view>
-                        <view v-if="Number(order.addon_amount || 0) > 0" class="amount-row"><text class="amount-row__label">附加内容金额</text><text class="amount-row__value">¥{{ formatAmount(order.addon_amount) }}</text></view>
-                        <view v-if="Number(order.discount_amount || 0) > 0" class="amount-row"><text class="amount-row__label">优惠金额</text><text class="amount-row__value amount-row__value--discount">-¥{{ formatAmount(order.discount_amount) }}</text></view>
-                        <view class="amount-divider"></view>
-                        <view class="amount-row amount-row--total"><text class="amount-row__label">实付金额</text><text class="amount-row__value amount-row__value--total" :style="{ color: $theme.ctaColor }">¥{{ formatAmount(order.pay_amount) }}</text></view>
-                        <view v-if="Number(order.deposit_amount || 0) > 0" class="amount-row">
-                            <text class="amount-row__label">定金</text>
-                            <view class="amount-row__wrap">
-                                <text class="amount-row__value">¥{{ formatAmount(order.deposit_amount) }}</text>
-                                <text class="amount-status" :style="{ color: order.deposit_paid ? '#16A34A' : '#D97706', backgroundColor: order.deposit_paid ? 'rgba(22,163,74,0.1)' : 'rgba(217,119,6,0.1)' }">{{ order.deposit_paid ? '已付' : '待付' }}</text>
-                            </view>
+                        <view class="info-list__row">
+                            <text class="info-list__sub">{{ contactSecondaryText }}</text>
                         </view>
-                        <view v-if="Number(order.balance_amount || 0) > 0" class="amount-row">
-                            <text class="amount-row__label">尾款</text>
-                            <view class="amount-row__wrap">
-                                <text class="amount-row__value">¥{{ formatAmount(order.balance_amount) }}</text>
-                                <text class="amount-status" :style="{ color: order.balance_paid ? '#16A34A' : '#D97706', backgroundColor: order.balance_paid ? 'rgba(22,163,74,0.1)' : 'rgba(217,119,6,0.1)' }">{{ order.balance_paid ? '已付' : '待付' }}</text>
-                            </view>
+                        <view v-if="contactTertiaryText" class="info-list__row">
+                            <text class="info-list__sub">{{ contactTertiaryText }}</text>
                         </view>
                     </view>
                 </view>
-            </view>
 
-            <view v-if="order.pay_type === 4 || order.pay_voucher" class="card">
-                <view class="card__header">
-                    <tn-icon name="image" size="32" :color="$theme.primaryColor" />
+                <view class="card card--secondary">
+                    <view class="card__title-row">
+                        <text class="card__title">订单信息</text>
+                        <view class="inline-copy" @click="copyOrderSn">
+                            <text class="inline-copy__text">复制编号</text>
+                        </view>
+                    </view>
+                    <view class="sub-panel">
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">订单编号</text>
+                            <text class="sub-panel__value">{{ order.order_sn }}</text>
+                        </view>
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">下单时间</text>
+                            <text class="sub-panel__value">{{ order.create_time || '-' }}</text>
+                        </view>
+                        <view v-if="order.pay_time" class="sub-panel__row">
+                            <text class="sub-panel__label">支付时间</text>
+                            <text class="sub-panel__value">{{ order.pay_time }}</text>
+                        </view>
+                    </view>
+                </view>
+
+                <view v-if="order.pay_type === 4 || order.pay_voucher" class="card card--secondary">
                     <text class="card__title">线下支付凭证</text>
-                </view>
-                <view class="detail-list">
-                    <view class="detail-row"><text class="detail-row__label">凭证状态</text><text class="detail-row__value">{{ order.pay_voucher_status_desc || '未上传' }}</text></view>
-                    <view v-if="order.pay_voucher_audit_remark" class="detail-row detail-row--stack"><text class="detail-row__label">审核备注</text><text class="detail-row__value detail-row__value--left">{{ order.pay_voucher_audit_remark }}</text></view>
-                    <view v-if="order.pay_voucher" class="voucher-image"><image :src="order.pay_voucher" mode="aspectFill" /></view>
+                    <view class="sub-panel">
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">凭证状态</text>
+                            <text class="sub-panel__value">{{ order.pay_voucher_status_desc || '未上传' }}</text>
+                        </view>
+                        <view
+                            v-if="order.pay_voucher_audit_remark"
+                            class="sub-panel__row sub-panel__row--stack"
+                        >
+                            <text class="sub-panel__label">审核备注</text>
+                            <text class="sub-panel__value sub-panel__value--left">
+                                {{ order.pay_voucher_audit_remark }}
+                            </text>
+                        </view>
+                    </view>
+                    <view v-if="order.pay_voucher" class="voucher-image">
+                        <image :src="order.pay_voucher" mode="aspectFill" />
+                    </view>
                     <view v-else class="voucher-empty"><text>暂无凭证</text></view>
                 </view>
-            </view>
 
-            <view v-if="order.refund" class="card">
-                <view class="card__header">
-                    <tn-icon name="refund" size="32" color="#FF2C3C" />
+                <view v-if="order.refund" class="card card--secondary">
                     <text class="card__title">退款信息</text>
-                </view>
-                <view class="detail-list">
-                    <view class="detail-row"><text class="detail-row__label">退款状态</text><text class="refund-status" :style="{ color: getRefundStatusStyle(order.refund.refund_status).color, backgroundColor: getRefundStatusStyle(order.refund.refund_status).bg }">{{ order.refund.refund_status_desc }}</text></view>
-                    <view class="detail-row"><text class="detail-row__label">退款金额</text><text class="detail-row__value">¥{{ formatAmount(order.refund.refund_amount) }}</text></view>
-                    <view class="detail-row detail-row--stack"><text class="detail-row__label">退款原因</text><text class="detail-row__value detail-row__value--left">{{ order.refund.refund_reason }}</text></view>
+                    <view class="sub-panel">
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">退款状态</text>
+                            <text
+                                class="refund-status"
+                                :style="{
+                                    color: getRefundStatusStyle(order.refund.refund_status).color,
+                                    backgroundColor: getRefundStatusStyle(order.refund.refund_status).bg
+                                }"
+                            >
+                                {{ order.refund.refund_status_desc }}
+                            </text>
+                        </view>
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">退款金额</text>
+                            <text class="sub-panel__value">
+                                ¥{{ formatAmount(order.refund.refund_amount) }}
+                            </text>
+                        </view>
+                        <view class="sub-panel__row sub-panel__row--stack">
+                            <text class="sub-panel__label">退款原因</text>
+                            <text class="sub-panel__value sub-panel__value--left">
+                                {{ order.refund.refund_reason }}
+                            </text>
+                        </view>
+                    </view>
                 </view>
             </view>
-        </view>
 
-        <ActionArea sticky safeBottom>
-            <view class="action-bar__buttons">
-                <view v-if="[2, 3].includes(order.order_status)" class="btn-secondary" :style="{ borderColor: $theme.primaryColor, color: $theme.primaryColor }" @click="openChangeActions"><text>申请变更</text></view>
-                <view class="btn-secondary" :style="{ borderColor: '#D85C61', color: '#D85C61' }" @click="handleContactAdvisor"><text>联系顾问</text></view>
-                <view v-if="[0, 1].includes(order.order_status)" class="btn-secondary" :style="{ borderColor: $theme.primaryColor, color: $theme.primaryColor }" @click="handleCancel"><text>取消订单</text></view>
-                <view v-if="canPayOnline" class="btn-primary" :style="{ background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)`, color: $theme.btnColor }" @click="handlePay">
-                    <tn-icon name="wallet-fill" size="28" :color="$theme.btnColor" />
-                    <text>立即支付 ¥{{ formatAmount(needPayAmount) }}</text>
+            <ActionArea sticky safeBottom>
+                <view class="action-bar">
+                    <view class="action-bar__buttons">
+                        <view
+                            v-if="secondaryVisibleAction"
+                            class="action-btn action-btn--secondary"
+                            :style="secondaryVisibleAction.style"
+                            @click="secondaryVisibleAction.onClick"
+                        >
+                            <text>{{ secondaryVisibleAction.label }}</text>
+                        </view>
+                        <view
+                            v-if="primaryVisibleAction"
+                            class="action-btn action-btn--primary"
+                            :style="primaryVisibleAction.style"
+                            @click="primaryVisibleAction.onClick"
+                        >
+                            <text>{{ primaryVisibleAction.label }}</text>
+                        </view>
+                    </view>
+                    <view
+                        v-if="moreActionItems.length"
+                        class="action-bar__more"
+                        @click="openMoreActions"
+                    >
+                        <text class="action-bar__more-text">更多操作</text>
+                    </view>
                 </view>
-                <view v-if="canUploadVoucher" class="btn-secondary" :style="{ borderColor: $theme.primaryColor, color: $theme.primaryColor }" @click="showVoucherPopup = true"><text>上传凭证</text></view>
-                <view v-if="order.order_status === 3" class="btn-primary" :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`, color: $theme.btnColor }" @click="handleConfirm">
-                    <tn-icon name="check-circle-fill" size="28" :color="$theme.btnColor" />
-                    <text>确认完成</text>
-                </view>
-                <view v-if="[2, 3].includes(order.order_status) && !order.refund" class="btn-secondary" :style="{ borderColor: '#FF2C3C', color: '#FF2C3C' }" @click="showRefundPopup = true"><text>申请退款</text></view>
-                <view v-if="[4, 5, 6, 8].includes(order.order_status)" class="btn-secondary" :style="{ borderColor: '#999999', color: '#999999' }" @click="handleDelete"><text>删除订单</text></view>
-            </view>
-        </ActionArea>
+            </ActionArea>
 
         <tn-popup v-model="showRefundPopup" open-direction="bottom" :radius="32" safe-area-inset-bottom>
             <view class="popup">
@@ -268,8 +315,6 @@ import ActionArea from '@/components/base/ActionArea.vue'
 import { useThemeStore } from '@/stores/theme'
 import { applyRefund, cancelOrder, confirmOrder, deleteOrder, getOrderDetail, uploadPayVoucher } from '@/api/order'
 import { uploadImage } from '@/api/app'
-
-const DEFAULT_AVATAR = '/static/images/user/default_avatar.png'
 const $theme = useThemeStore()
 const orderId = ref(0)
 const order = ref<any>(null)
@@ -278,6 +323,7 @@ const showVoucherPopup = ref(false)
 const payState = reactive({ showPay: false, showCheck: false, from: 'order', redirect: '/pages/order_detail/order_detail', paymentSn: '' })
 const refundForm = reactive({ amount: '', reason: '' })
 const voucherForm = reactive({ image: '', uploading: false })
+const showFinancialDetails = ref(false)
 const payCountdownSeconds = ref(0)
 let payCountdownTimer: ReturnType<typeof setInterval> | null = null
 let payCountdownRefreshing = false
@@ -292,16 +338,16 @@ const formatCountdown = (seconds: number) => {
 }
 const getStatusTheme = (status: number) =>
     ({
-        0: { background: 'linear-gradient(180deg, #FFF5E8 0%, #FFFFFF 100%)', iconBg: '#C98524', icon: 'time-fill' },
-        1: { background: 'linear-gradient(180deg, #FFF1EE 0%, #FFFFFF 100%)', iconBg: '#E85A4F', icon: 'wallet-fill' },
-        2: { background: 'linear-gradient(180deg, #FFF5F1 0%, #FFFFFF 100%)', iconBg: '#E85A4F', icon: 'check-circle-fill' },
-        3: { background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)', iconBg: '#2F7D58', icon: 'loading' },
-        4: { background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)', iconBg: '#2F7D58', icon: 'check-circle-fill' },
-        5: { background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)', iconBg: '#2F7D58', icon: 'check-circle-fill' },
-        6: { background: 'linear-gradient(180deg, #F7F3F1 0%, #FFFFFF 100%)', iconBg: '#7F7B78', icon: 'close-circle-fill' },
-        7: { background: 'linear-gradient(180deg, #FFF5E8 0%, #FFFFFF 100%)', iconBg: '#C98524', icon: 'time-fill' },
-        8: { background: 'linear-gradient(180deg, #FDEEEE 0%, #FFFFFF 100%)', iconBg: '#B44A3A', icon: 'refund' }
-    } as Record<number, { background: string; iconBg: string; icon: string }>)[status] || { background: 'linear-gradient(180deg, #F7F3F1 0%, #FFFFFF 100%)', iconBg: '#7F7B78', icon: 'document' }
+        0: { background: 'linear-gradient(180deg, #FFF5E8 0%, #FFFFFF 100%)', iconBg: '#C98524' },
+        1: { background: 'linear-gradient(180deg, #FFF1EE 0%, #FFFFFF 100%)', iconBg: '#E85A4F' },
+        2: { background: 'linear-gradient(180deg, #FFF5F1 0%, #FFFFFF 100%)', iconBg: '#E85A4F' },
+        3: { background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)', iconBg: '#2F7D58' },
+        4: { background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)', iconBg: '#2F7D58' },
+        5: { background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)', iconBg: '#2F7D58' },
+        6: { background: 'linear-gradient(180deg, #F7F3F1 0%, #FFFFFF 100%)', iconBg: '#7F7B78' },
+        7: { background: 'linear-gradient(180deg, #FFF5E8 0%, #FFFFFF 100%)', iconBg: '#C98524' },
+        8: { background: 'linear-gradient(180deg, #FDEEEE 0%, #FFFFFF 100%)', iconBg: '#B44A3A' }
+    } as Record<number, { background: string; iconBg: string }>)[status] || { background: 'linear-gradient(180deg, #F7F3F1 0%, #FFFFFF 100%)', iconBg: '#7F7B78' }
 
 const getRefundStatusStyle = (status: number) =>
     ({
@@ -320,18 +366,34 @@ const extraItems = computed(() => {
     const items = Array.isArray(order.value?.items) ? order.value.items : []
     return items.filter((item: any) => Number(item?.item_type || 1) !== 1)
 })
-const primaryStaffAvatar = computed(() => primaryItem.value?.staff?.avatar || primaryItem.value?.staff_avatar || DEFAULT_AVATAR)
 const primaryStaffName = computed(() => primaryItem.value?.staff?.name || primaryItem.value?.staff_name || '待分配服务人员')
 const primaryPackageName = computed(() => primaryItem.value?.package?.name || primaryItem.value?.package_name || '待确认主套餐')
 const primaryPackageDescription = computed(() =>
     String(primaryItem.value?.package_description || '').trim()
 )
 const primaryServiceDate = computed(() => primaryItem.value?.service_date || primaryItem.value?.schedule_date || order.value?.service_date || '待确认服务日期')
-const primaryPackagePrice = computed(() => Number(primaryItem.value?.price || primaryItem.value?.package?.price || 0))
+const getItemQuantity = (item: any) => Math.max(Number(item?.quantity || 1), 1)
+const getItemDisplayAmount = (item: any) => {
+    const subtotal = Number(item?.subtotal)
+    if (Number.isFinite(subtotal) && subtotal >= 0) {
+        return subtotal
+    }
+
+    return Math.max(Number(item?.price || 0) * getItemQuantity(item), 0)
+}
+const getAddonDisplayAmount = (addon: any) => {
+    const subtotal = Number(addon?.subtotal)
+    if (Number.isFinite(subtotal) && subtotal >= 0) {
+        return subtotal
+    }
+
+    return Math.max(Number(addon?.price || 0) * Math.max(Number(addon?.quantity || 1), 1), 0)
+}
 const orderServiceAmount = computed(() => {
     const serviceAmount = Number(order.value?.service_amount ?? -1)
     return serviceAmount >= 0 ? serviceAmount : Math.max(0, Number(order.value?.total_amount || 0))
 })
+const primaryServiceAmount = computed(() => primaryItem.value ? getItemDisplayAmount(primaryItem.value) : orderServiceAmount.value)
 const getExtraItemTitle = (item: any) => {
     if (Number(item?.item_type || 1) === 2) {
         return item?.item_meta?.label || item?.package_name || '预约附加项'
@@ -343,15 +405,89 @@ const getExtraItemTitle = (item: any) => {
     }
     return item?.package_name || '服务项目'
 }
-const getExtraItemDesc = (item: any) => {
-    if (Number(item?.item_type || 1) === 2) {
-        return '服务人员自定义预约附加项'
-    }
-    if (Number(item?.item_type || 1) === 3) {
-        return item?.package_name || '已锁定推荐套餐'
-    }
-    return item?.package_description || ''
+const getExtraItemTypeText = (item: any) => {
+    const itemType = Number(item?.item_type || 1)
+    if (itemType === 2) return '预约附加项'
+    if (itemType === 3) return '关联服务人员'
+    return item?.item_type_desc || '服务项目'
 }
+const getExtraItemDescription = (item: any) => {
+    const parts: string[] = []
+    const description = String(item?.package_description || item?.package?.description || '').trim()
+    if (description) {
+        parts.push(description)
+    }
+
+    const quantity = getItemQuantity(item)
+    if (quantity > 1) {
+        parts.push(`数量 x${quantity}`)
+    }
+
+    return parts.join(' · ')
+}
+const buildAddonRowKey = (kind: string, title: string, amount: number) => `${kind}:${title.trim()}:${formatAmount(amount)}`
+const serviceAddonRows = computed(() => {
+    const items = Array.isArray(order.value?.items) ? order.value.items : []
+    const rows: Array<{ key: string; title: string; typeText: string; description: string; priceText: string }> = []
+    const seen = new Set<string>()
+
+    const pushRow = (kind: string, title: string, amount: number, typeText: string, description = '') => {
+        const normalizedTitle = String(title || '').trim()
+        if (!normalizedTitle) return
+
+        const key = buildAddonRowKey(kind, normalizedTitle, amount)
+        if (seen.has(key)) return
+        seen.add(key)
+        rows.push({
+            key,
+            title: normalizedTitle,
+            typeText,
+            description: String(description || '').trim(),
+            priceText: `¥${formatAmount(amount)}`
+        })
+    }
+
+    extraItems.value.forEach((item: any) => {
+        pushRow(
+            Number(item?.item_type || 1) === 3 ? 'related' : 'addon',
+            getExtraItemTitle(item),
+            getItemDisplayAmount(item),
+            getExtraItemTypeText(item),
+            getExtraItemDescription(item)
+        )
+    })
+
+    items.forEach((item: any) => {
+        ;(item?.addons || []).forEach((addon: any) => {
+            pushRow(
+                'addon',
+                addon?.addon_name || addon?.name || '附加服务',
+                getAddonDisplayAmount(addon),
+                '附加服务'
+            )
+        })
+    })
+
+    return rows
+})
+const serviceAddonSummaryText = computed(() => `共 ${serviceAddonRows.value.length} 项`)
+const serviceCardTitle = computed(() => {
+    const packageName = String(primaryPackageName.value || '').trim()
+    const staffName = String(primaryStaffName.value || '').trim()
+
+    if (packageName && staffName && staffName !== '待分配服务人员') {
+        return `${packageName}｜${staffName}`
+    }
+
+    return packageName || staffName || '婚礼服务订单'
+})
+const serviceCardMeta = computed(() => {
+    const locationText = [order.value?.service_region_text, order.value?.wedding_venue, order.value?.service_address]
+        .map((item: any) => String(item || '').trim())
+        .filter(Boolean)[0]
+
+    return [primaryServiceDate.value, locationText].filter(Boolean).join(' · ') || '待确认服务信息'
+})
 const needPayAmount = computed(() => {
     if (!order.value) return 0
     if (Number(order.value.deposit_amount || 0) > 0) {
@@ -381,6 +517,204 @@ const statusDescription = computed(() => ({
     7: '订单当前处于暂停状态，恢复后会继续履约。',
     8: '订单已进入退款完成状态。'
 } as Record<number, string>)[Number(order.value?.order_status ?? -1)] || '订单状态已更新，请留意后续进度。')
+const statusHeadline = computed(() => {
+    const orderStatus = Number(order.value?.order_status ?? -1)
+    const serviceName = String(primaryPackageName.value || '服务').trim()
+
+    const headlines: Record<number, string> = {
+        0: `${serviceName}订单待确认`,
+        1: `${serviceName}订单待支付`,
+        2: `${serviceName}订单已锁定`,
+        3: `${serviceName}服务进行中`,
+        4: `${serviceName}订单已完成`,
+        5: `${serviceName}订单已评价`,
+        6: `${serviceName}订单已取消`,
+        7: `${serviceName}订单已暂停`,
+        8: `${serviceName}订单已退款`
+    }
+
+    return headlines[orderStatus] || `${serviceName}订单状态已更新`
+})
+const statusCardText = computed(() => `订单编号：${order.value?.order_sn || '-'}\n${statusDescription.value}`)
+const totalOrderAmount = computed(() =>
+    Math.max(Number(order.value?.total_amount || 0), Number(order.value?.pay_amount || 0))
+)
+const paidAmount = computed(() => {
+    if (!order.value) return 0
+
+    const depositAmount = Number(order.value.deposit_amount || 0)
+    const balanceAmount = Number(order.value.balance_amount || 0)
+
+    if (depositAmount > 0 || balanceAmount > 0) {
+        return (order.value.deposit_paid ? depositAmount : 0) + (order.value.balance_paid ? balanceAmount : 0)
+    }
+
+    return [2, 3, 4, 5, 8].includes(Number(order.value.order_status || 0))
+        ? Number(order.value.pay_amount || 0)
+        : 0
+})
+const pendingAmount = computed(() => {
+    if (Number(order.value?.order_status || 0) === 1 && Number(needPayAmount.value) > 0) {
+        return Number(needPayAmount.value)
+    }
+
+    return Math.max(totalOrderAmount.value - paidAmount.value, 0)
+})
+const paidAmountText = computed(() => `¥${formatAmount(paidAmount.value)}`)
+const pendingAmountText = computed(() => `¥${formatAmount(pendingAmount.value)}`)
+const hasFinancialDetails = computed(() =>
+    Number(order.value?.addon_amount || 0) > 0 ||
+    Number(order.value?.discount_amount || 0) > 0 ||
+    Number(order.value?.deposit_amount || 0) > 0 ||
+    Number(order.value?.balance_amount || 0) > 0
+)
+const paymentProgressText = computed(() => {
+    if (!order.value) return '待开始'
+    if (showVoucherPending.value) return '凭证审核中'
+    if (canPayOnline.value) return '待支付'
+    if (Number(order.value.deposit_amount || 0) > 0 || Number(order.value.balance_amount || 0) > 0) {
+        if (order.value.deposit_paid && order.value.balance_paid) return '已完成'
+        if (order.value.deposit_paid) return '定金已付'
+    }
+    if ([2, 3, 4, 5, 8].includes(Number(order.value.order_status || 0))) return '已完成'
+    return '待开始'
+})
+const progressItems = computed(() => [
+    {
+        label: '1. 档期确认',
+        value: Number(order.value?.order_status || 0) >= 1 ? '已完成' : '待确认'
+    },
+    {
+        label: '2. 支付进度',
+        value: paymentProgressText.value
+    },
+    {
+        label: '3. 婚礼执行',
+        value: primaryServiceDate.value || '待安排'
+    },
+    {
+        label: '4. 尾款结清',
+        value:
+            Number(order.value?.balance_amount || 0) > 0
+                ? order.value?.balance_paid
+                    ? '已完成'
+                    : '婚礼结束后结清'
+                : '无尾款'
+    }
+])
+const contactPrimaryText = computed(() => {
+    const contactName = String(order.value?.contact_name || '').trim() || primaryStaffName.value
+    return `联系人：${contactName || '待确认'}`
+})
+const contactSecondaryText = computed(
+    () => `手机号码：${String(order.value?.contact_mobile || '-').trim() || '-'}`
+)
+const contactTertiaryText = computed(() =>
+    [order.value?.service_region_text, order.value?.service_address, order.value?.user_remark]
+        .map((item: any) => String(item || '').trim())
+        .filter(Boolean)
+        .join(' · ')
+)
+const primaryVisibleAction = computed(() => {
+    if (!order.value) return null
+
+    const baseStyle = {
+        background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+        color: $theme.btnColor
+    }
+
+    if (canPayOnline.value) {
+        return {
+            key: 'pay',
+            label: '立即支付',
+            style: baseStyle,
+            onClick: handlePay
+        }
+    }
+
+    if (Number(order.value.order_status) === 3) {
+        return {
+            key: 'confirm',
+            label: '确认完成',
+            style: baseStyle,
+            onClick: handleConfirm
+        }
+    }
+
+    if (canUploadVoucher.value) {
+        return {
+            key: 'voucher',
+            label: '上传凭证',
+            style: baseStyle,
+            onClick: () => {
+                showVoucherPopup.value = true
+            }
+        }
+    }
+
+    return null
+})
+const secondaryVisibleAction = computed(() => {
+    if (!order.value) return null
+
+    return {
+        key: 'contact',
+        label: '联系顾问',
+        style: {
+            borderColor: 'var(--wm-color-border, #EFE6E1)',
+            color: 'var(--wm-text-primary, #1E2432)'
+        },
+        onClick: handleContactAdvisor
+    }
+})
+const moreActionItems = computed(() => {
+    if (!order.value) return []
+
+    const status = Number(order.value.order_status || -1)
+    const items: Array<{ label: string; onClick: () => void }> = []
+
+    if ([2, 3].includes(status)) {
+        items.push({ label: '申请变更', onClick: openChangeActions })
+    }
+
+    if ([0, 1].includes(status)) {
+        items.push({ label: '取消订单', onClick: handleCancel })
+    }
+
+    if (canUploadVoucher.value && primaryVisibleAction.value?.key !== 'voucher') {
+        items.push({
+            label: '上传凭证',
+            onClick: () => {
+                showVoucherPopup.value = true
+            }
+        })
+    }
+
+    if ([2, 3].includes(status) && !order.value.refund) {
+        items.push({
+            label: '申请退款',
+            onClick: () => {
+                showRefundPopup.value = true
+            }
+        })
+    }
+
+    if ([4, 5, 6, 8].includes(status)) {
+        items.push({ label: '删除订单', onClick: handleDelete })
+    }
+
+    return items
+})
+const openMoreActions = () => {
+    if (!moreActionItems.value.length) return
+
+    uni.showActionSheet({
+        itemList: moreActionItems.value.map((item) => item.label),
+        success: ({ tapIndex }) => {
+            moreActionItems.value[tapIndex]?.onClick()
+        }
+    })
+}
 
 const clearPayCountdown = () => {
     if (payCountdownTimer) {
@@ -582,120 +916,613 @@ onUnload(() => {
 </script>
 
 <style lang="scss" scoped>
-.order-detail{min-height:100vh;background:linear-gradient(180deg,var(--wm-color-bg-page,#fcfbf9) 0%,var(--wm-color-bg-soft,#fff7f4) 100%);padding-bottom:calc(env(safe-area-inset-bottom) + 132rpx)}
-.page-body{position:relative;z-index:2;margin-top:-88rpx}
-.card{margin:0 20rpx 20rpx;background:#fff;border-radius:24rpx;border:1rpx solid var(--wm-color-border,#efe6e1);box-shadow:var(--wm-shadow-soft,0 14rpx 32rpx rgba(214,185,167,.16));overflow:hidden}
-.card__header{display:flex;align-items:center;gap:12rpx;padding:22rpx 24rpx;border-bottom:1rpx solid var(--wm-color-border,#efe6e1)}
-.card__title{flex:1;font-size:30rpx;font-weight:700;color:var(--wm-text-primary,#1e2432)}
-.card__extra{font-size:26rpx;font-weight:700}
+.order-detail {
+    padding-bottom: var(--wm-safe-bottom-action, calc(env(safe-area-inset-bottom) + 150rpx));
+    background: var(--wm-color-page, #fcfbf9);
+}
 
-.status-hero{position:relative;overflow:hidden;margin:24rpx 20rpx 0;padding:28rpx 24rpx 144rpx;border-radius:32rpx;border:1rpx solid var(--wm-color-border-strong,#f4c7bf);box-shadow:var(--wm-shadow-hero,0 24rpx 56rpx rgba(177,108,95,.18))}
-.status-hero__glow{position:absolute;border-radius:50%;background:rgba(255,255,255,.28)}
-.status-hero__glow--left{width:220rpx;height:220rpx;top:-60rpx;left:-70rpx}
-.status-hero__glow--right{width:260rpx;height:260rpx;right:-100rpx;bottom:-80rpx}
-.status-hero__main,.status-hero__meta{position:relative;z-index:1}
-.status-hero__main{display:flex;align-items:flex-start;gap:20rpx}
-.status-hero__icon{width:88rpx;height:88rpx;border-radius:28rpx;display:flex;align-items:center;justify-content:center;flex-shrink:0;backdrop-filter:blur(12rpx)}
-.status-hero__content{flex:1;min-width:0}
-.status-hero__title{display:block;font-size:42rpx;font-weight:700;line-height:1.3;color:var(--wm-text-primary,#1e2432)}
-.status-hero__desc{display:block;margin-top:8rpx;font-size:24rpx;line-height:1.6;color:var(--wm-text-secondary,#7f7b78)}
-.status-hero__countdown{margin-top:14rpx;display:inline-flex;align-items:center;gap:12rpx;padding:10rpx 18rpx;border-radius:999rpx;background:var(--wm-color-primary-soft,#fff1ee);border:1rpx solid var(--wm-color-border-strong,#f4c7bf)}
-.status-hero__countdown-label{font-size:22rpx;color:var(--wm-text-secondary,#7f7b78)}
-.status-hero__countdown-value{font-size:28rpx;font-weight:700;color:var(--wm-color-primary,#e85a4f)}
-.status-hero__pay{flex-shrink:0;padding:14rpx 18rpx;border-radius:22rpx;background:rgba(255,255,255,.72);border:1rpx solid var(--wm-color-border,#efe6e1);text-align:right}
-.status-hero__pay-label{display:block;font-size:22rpx;color:var(--wm-text-secondary,#7f7b78)}
-.status-hero__pay-value{display:block;margin-top:6rpx;font-size:28rpx;font-weight:700;color:var(--wm-color-primary,#e85a4f)}
-.status-hero__meta{margin-top:28rpx;padding:20rpx 22rpx;border-radius:24rpx;background:rgba(255,255,255,.78);border:1rpx solid var(--wm-color-border,#efe6e1)}
-.status-hero__meta-label{display:block;font-size:22rpx;color:var(--wm-text-secondary,#7f7b78)}
-.status-hero__meta-value{margin-top:12rpx;display:flex;align-items:center;justify-content:space-between;gap:16rpx;font-size:28rpx;font-weight:600;color:var(--wm-text-primary,#1e2432)}
+.page-body {
+    padding: 22rpx 37rpx 37rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 30rpx;
+}
 
-.summary-card__top{display:flex;align-items:center;justify-content:space-between;gap:20rpx;padding:24rpx}
-.summary-card__staff{flex:1;min-width:0;display:flex;align-items:center;gap:16rpx}
-.summary-card__avatar{width:92rpx;height:92rpx;border-radius:24rpx;flex-shrink:0;background:var(--wm-color-bg-soft,#fff7f4)}
-.summary-card__staff-copy{min-width:0}
-.summary-card__staff-row{display:flex;align-items:center;gap:12rpx}
-.summary-card__staff-name{max-width:320rpx;font-size:32rpx;font-weight:700;color:var(--wm-text-primary,#1e2432);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.summary-card__badge{padding:6rpx 14rpx;border-radius:999rpx;background:var(--wm-color-primary-soft,#fff1ee);color:var(--wm-color-primary,#e85a4f);font-size:20rpx;font-weight:600;flex-shrink:0;border:1rpx solid var(--wm-color-border-strong,#f4c7bf)}
-.summary-card__staff-note{display:block;margin-top:8rpx;font-size:24rpx;color:var(--wm-text-secondary,#7f7b78)}
-.summary-card__price{text-align:right;flex-shrink:0}
-.summary-card__price-label{display:block;font-size:22rpx;color:var(--wm-text-tertiary,#b4aca8)}
-.summary-card__price-value{display:block;margin-top:8rpx;font-size:34rpx;font-weight:700}
-.summary-grid{padding:0 24rpx 24rpx;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14rpx}
-.summary-grid__item{min-height:132rpx;padding:18rpx;border-radius:22rpx;border:1rpx solid var(--wm-color-border,#efe6e1);background:var(--wm-color-bg-soft,#fff7f4)}
-.summary-grid__item--wide{grid-column:1/-1;background:linear-gradient(135deg,#fff7f4 0%,#fff1ee 100%);border-color:var(--wm-color-border-strong,#f4c7bf)}
-.summary-grid__label{display:block;font-size:22rpx;color:var(--wm-text-secondary,#7f7b78)}
-.summary-grid__value{display:block;margin-top:16rpx;font-size:28rpx;line-height:1.45;font-weight:600;color:var(--wm-text-primary,#1e2432);word-break:break-all}
-.summary-grid__value--multi{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.summary-card__description{margin:0 24rpx 24rpx;padding:22rpx 24rpx;border-radius:22rpx;background:linear-gradient(135deg,#fff7f4 0%,#ffffff 100%);border:1rpx solid var(--wm-color-border-strong,#f4c7bf)}
-.summary-card__description-label{display:block;font-size:22rpx;color:var(--wm-color-secondary,#c99b73)}
-.summary-card__description-text{display:block;margin-top:12rpx;font-size:26rpx;line-height:1.7;color:var(--wm-text-secondary,#7f7b78);white-space:pre-wrap;word-break:break-word}
-.empty-state{padding:44rpx 32rpx 48rpx;display:flex;flex-direction:column;align-items:center;text-align:center}
-.empty-state__title{margin-top:20rpx;font-size:30rpx;font-weight:600;color:var(--wm-text-primary,#1e2432)}
-.empty-state__desc{margin-top:12rpx;font-size:24rpx;line-height:1.7;color:var(--wm-text-tertiary,#b4aca8)}
+.status-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    padding: 34rpx 34rpx 37rpx;
+    border-radius: 45rpx;
+    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+    box-shadow: 0 14rpx 32rpx rgba(214, 185, 167, 0.12);
+}
 
-.addon-list{padding:20rpx;display:flex;flex-direction:column;gap:14rpx}
-.addon-item{display:flex;align-items:flex-start;justify-content:space-between;gap:16rpx;padding:20rpx;border-radius:22rpx;border:1rpx solid var(--wm-color-border,#efe6e1);background:linear-gradient(135deg,#fff 0%,#fff7f4 100%)}
-.addon-item__main{flex:1;min-width:0}
-.addon-item__name-row{display:flex;align-items:center;gap:10rpx}
-.addon-item__name{flex:1;min-width:0;font-size:28rpx;font-weight:600;color:var(--wm-text-primary,#1e2432)}
-.addon-item__tag{padding:4rpx 12rpx;border-radius:999rpx;background:rgba(201,155,115,.14);font-size:20rpx;color:var(--wm-color-secondary,#c99b73);flex-shrink:0}
-.addon-item__desc{display:block;margin-top:8rpx;font-size:24rpx;line-height:1.6;color:var(--wm-text-secondary,#7f7b78)}
-.addon-item__price{flex-shrink:0;font-size:28rpx;font-weight:700;color:var(--wm-color-primary,#e85a4f)}
-.detail-list{padding:10rpx 24rpx 18rpx}
-.detail-list--compact{padding:0}
-.detail-row{display:flex;align-items:flex-start;justify-content:space-between;gap:24rpx;padding:16rpx 0}
-.detail-row + .detail-row{border-top:1rpx solid var(--wm-color-border,#efe6e1)}
-.detail-row--stack{flex-direction:column;gap:12rpx}
-.detail-row__label{flex-shrink:0;font-size:26rpx;color:var(--wm-text-secondary,#7f7b78)}
-.detail-row__value{flex:1;font-size:27rpx;line-height:1.6;color:var(--wm-text-primary,#1e2432);text-align:right}
-.detail-row__value--left{text-align:left}
-.detail-row__copy{display:flex;align-items:center;justify-content:flex-end;gap:10rpx;flex:1;min-width:0}
+.status-card__chip {
+    align-self: flex-start;
+    min-height: 48rpx;
+    padding: 0 24rpx;
+    border-radius: 999rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
 
-.section{padding:20rpx 24rpx 24rpx}
-.section__title{display:block;margin-bottom:8rpx;font-size:24rpx;font-weight:600;color:var(--wm-text-tertiary,#b4aca8)}
-.divider-block{height:12rpx;background:var(--wm-color-bg-soft,#fff7f4)}
-.amount-list{padding-top:6rpx}
-.amount-row{display:flex;align-items:center;justify-content:space-between;gap:24rpx;padding:16rpx 0}
-.amount-row__label{font-size:27rpx;color:var(--wm-text-secondary,#7f7b78)}
-.amount-row__value{font-size:28rpx;font-weight:600;color:var(--wm-text-primary,#1e2432)}
-.amount-row__value--discount{color:#dc2626}
-.amount-row--total{padding-top:24rpx}
-.amount-row__value--total{font-size:42rpx;line-height:1.2;font-weight:700}
-.amount-row__wrap{display:flex;align-items:center;gap:12rpx}
-.amount-divider{height:1rpx;background:var(--wm-color-border,#efe6e1);margin:8rpx 0}
-.amount-status{padding:6rpx 14rpx;border-radius:999rpx;font-size:22rpx;font-weight:600}
+.status-card__chip-text {
+    font-size: 24rpx;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+}
 
-.voucher-image{margin-top:16rpx;border-radius:22rpx;overflow:hidden;background:var(--wm-color-bg-soft,#fff7f4)}
-.voucher-image image{width:100%;height:360rpx;display:block}
-.voucher-empty{margin-top:16rpx;padding:40rpx 0;text-align:center;border-radius:22rpx;background:var(--wm-color-bg-soft,#fff7f4);font-size:24rpx;color:var(--wm-text-tertiary,#b4aca8)}
-.refund-status{padding:8rpx 16rpx;border-radius:999rpx;font-size:24rpx;font-weight:600}
+.status-card__title {
+    font-size: 44rpx;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #1e2432);
+}
 
-.action-bar__buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12rpx}
-.btn-primary,.btn-secondary{height:72rpx;padding:0 28rpx;border-radius:999rpx;display:flex;align-items:center;justify-content:center;gap:8rpx;font-size:26rpx;font-weight:600}
-.btn-primary{box-shadow:0 10rpx 20rpx rgba(232,90,79,.18)}
-.btn-secondary{background:transparent;border:2rpx solid}
+.status-card__desc {
+    font-size: 24rpx;
+    font-weight: 500;
+    line-height: 1.65;
+    color: var(--wm-text-secondary, #7f7b78);
+    white-space: pre-line;
+}
 
-.popup{background:#fff;border-top-left-radius:32rpx;border-top-right-radius:32rpx;padding:24rpx 24rpx calc(env(safe-area-inset-bottom) + 24rpx)}
-.popup__header{display:flex;align-items:center;justify-content:space-between;gap:20rpx}
-.popup__title{font-size:32rpx;font-weight:700;color:var(--wm-text-primary,#1e2432)}
-.popup__content{margin-top:24rpx}
-.form-item + .form-item{margin-top:20rpx}
-.form-item__label{display:block;margin-bottom:12rpx;font-size:26rpx;font-weight:600;color:var(--wm-text-primary,#1e2432)}
-.form-item__tip{display:block;margin-top:8rpx;font-size:22rpx;color:var(--wm-text-tertiary,#b4aca8)}
-.popup__actions{display:flex;gap:16rpx;margin-top:28rpx}
-.popup__btn{flex:1;height:80rpx;border-radius:999rpx;display:flex;align-items:center;justify-content:center;font-size:28rpx;font-weight:600}
-.popup__btn--secondary{background:transparent;border:2rpx solid}
+.status-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+}
 
-.voucher-upload{margin-top:16rpx}
-.voucher-upload__preview,.voucher-upload__add{width:100%;height:320rpx;border-radius:24rpx;overflow:hidden}
-.voucher-upload__preview{position:relative;background:var(--wm-color-bg-soft,#fff7f4)}
-.voucher-upload__preview image{width:100%;height:100%;display:block}
-.voucher-upload__remove{position:absolute;top:16rpx;right:16rpx;width:44rpx;height:44rpx;border-radius:50%;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center}
-.voucher-upload__add{border:2rpx dashed var(--wm-color-border,#efe6e1);background:var(--wm-color-bg-soft,#fff7f4);display:flex;flex-direction:column;align-items:center;justify-content:center}
-.voucher-upload__text{margin-top:16rpx;font-size:28rpx;color:var(--wm-text-secondary,#7f7b78);font-weight:600}
-.voucher-upload__tip{margin-top:8rpx;font-size:22rpx;color:var(--wm-text-tertiary,#b4aca8)}
+.status-card__meta-item {
+    min-height: 52rpx;
+    padding: 0 24rpx;
+    border-radius: 999rpx;
+    display: inline-flex;
+    align-items: center;
+    gap: 10rpx;
+    background: rgba(255, 255, 255, 0.76);
+    border: 1rpx solid rgba(244, 199, 191, 0.88);
+    box-sizing: border-box;
+}
 
-.safe-bottom{height:calc(env(safe-area-inset-bottom) + 24rpx)}
-.loading-container{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16rpx;background:var(--wm-color-bg-page,#fcfbf9)}
-.loading-text{font-size:26rpx;color:var(--wm-text-tertiary,#b4aca8)}
+.status-card__meta-label {
+    font-size: 22rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.status-card__meta-value {
+    font-size: 24rpx;
+    font-weight: 700;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: 22rpx;
+    padding: 34rpx 34rpx;
+    border-radius: 45rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 10rpx 24rpx rgba(214, 185, 167, 0.08);
+}
+
+.card--secondary {
+    gap: 16rpx;
+}
+
+.card__title {
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.card__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.card__main-text {
+    font-size: 28rpx;
+    font-weight: 600;
+    line-height: 1.65;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.card__sub-text {
+    font-size: 26rpx;
+    line-height: 1.7;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.card__sub-text--muted {
+    font-weight: 500;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.service-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+}
+
+.service-summary__label {
+    font-size: 22rpx;
+    font-weight: 600;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.service-summary__headline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+}
+
+.service-summary__title {
+    flex: 1;
+    min-width: 0;
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.service-summary__price {
+    flex-shrink: 0;
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.service-summary__meta {
+    font-size: 24rpx;
+    line-height: 1.6;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.service-summary__desc {
+    font-size: 24rpx;
+    line-height: 1.7;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.service-addon-section {
+    display: flex;
+    flex-direction: column;
+    gap: 18rpx;
+    padding-top: 4rpx;
+}
+
+.service-addon-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.service-addon-section__title {
+    font-size: 26rpx;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.service-addon-section__meta {
+    flex-shrink: 0;
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.service-addon-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+}
+
+.service-addon-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+    padding: 22rpx 24rpx;
+    border-radius: 30rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #fcfbf9;
+}
+
+.service-addon-item__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.service-addon-item__title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10rpx;
+}
+
+.service-addon-item__title {
+    font-size: 26rpx;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.service-addon-item__type {
+    min-height: 38rpx;
+    padding: 0 14rpx;
+    border-radius: 999rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20rpx;
+    font-weight: 600;
+    color: var(--wm-color-primary, #e85a4f);
+    background: rgba(255, 241, 238, 0.92);
+    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+    box-sizing: border-box;
+}
+
+.service-addon-item__desc {
+    font-size: 22rpx;
+    line-height: 1.6;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.service-addon-item__price {
+    flex-shrink: 0;
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.inline-link {
+    padding-top: 4rpx;
+}
+
+.inline-link__text,
+.inline-copy__text {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.sub-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.sub-panel__row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24rpx;
+    padding: 18rpx 0;
+}
+
+.sub-panel__row + .sub-panel__row {
+    border-top: 1rpx solid var(--wm-color-border, #efe6e1);
+}
+
+.sub-panel__row--stack {
+    flex-direction: column;
+    gap: 12rpx;
+}
+
+.sub-panel__label {
+    flex-shrink: 0;
+    font-size: 24rpx;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.sub-panel__value {
+    flex: 1;
+    font-size: 26rpx;
+    line-height: 1.6;
+    text-align: right;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.sub-panel__value--left {
+    text-align: left;
+}
+
+.sub-panel__value--danger {
+    color: #dc2626;
+}
+
+.progress-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+}
+
+.progress-list__row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+}
+
+.progress-list__label {
+    flex-shrink: 0;
+    font-size: 24rpx;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.progress-list__value {
+    flex: 1;
+    font-size: 24rpx;
+    line-height: 1.6;
+    text-align: right;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+}
+
+.info-list__row {
+    display: flex;
+}
+
+.info-list__main {
+    font-size: 26rpx;
+    font-weight: 600;
+    line-height: 1.65;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.info-list__sub {
+    font-size: 24rpx;
+    line-height: 1.65;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.voucher-image {
+    margin-top: 4rpx;
+    border-radius: 45rpx;
+    overflow: hidden;
+    background: var(--wm-color-bg-soft, #fff7f4);
+}
+
+.voucher-image image {
+    width: 100%;
+    height: 420rpx;
+    display: block;
+}
+
+.voucher-empty {
+    margin-top: 4rpx;
+    min-height: 160rpx;
+    border-radius: 45rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--wm-color-bg-soft, #fff7f4);
+}
+
+.voucher-empty text {
+    font-size: 24rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.refund-status {
+    padding: 8rpx 18rpx;
+    border-radius: 999rpx;
+    font-size: 22rpx;
+    font-weight: 600;
+}
+
+.action-bar {
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+    width: 100%;
+}
+
+.action-bar__buttons {
+    display: flex;
+    flex: 1;
+    gap: 20rpx;
+    min-width: 0;
+}
+
+.action-bar__more {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 120rpx;
+}
+
+.action-bar__more-text {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #7f7b78);
+    white-space: nowrap;
+}
+
+.action-btn {
+    flex: 1;
+    min-height: 90rpx;
+    padding: 0 30rpx;
+    border-radius: 37rpx;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.action-btn--primary {
+    box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.16);
+}
+
+.action-btn--secondary {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+}
+
+.popup {
+    background: #fff;
+    border-top-left-radius: 52rpx;
+    border-top-right-radius: 52rpx;
+    padding: 34rpx 37rpx calc(env(safe-area-inset-bottom) + 37rpx);
+}
+
+.popup__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20rpx;
+}
+
+.popup__title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.popup__content {
+    margin-top: 28rpx;
+}
+
+.form-item + .form-item {
+    margin-top: 20rpx;
+}
+
+.form-item__label {
+    display: block;
+    margin-bottom: 12rpx;
+    font-size: 26rpx;
+    font-weight: 600;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.form-item__tip {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.popup__actions {
+    display: flex;
+    gap: 22rpx;
+    margin-top: 28rpx;
+}
+
+.popup__btn {
+    flex: 1;
+    height: 90rpx;
+    border-radius: 37rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28rpx;
+    font-weight: 700;
+}
+
+.popup__btn--secondary {
+    background: transparent;
+    border: 2rpx solid;
+}
+
+.voucher-upload {
+    margin-top: 16rpx;
+}
+
+.voucher-upload__preview,
+.voucher-upload__add {
+    width: 100%;
+    height: 360rpx;
+    border-radius: 45rpx;
+    overflow: hidden;
+}
+
+.voucher-upload__preview {
+    position: relative;
+    background: var(--wm-color-bg-soft, #fff7f4);
+}
+
+.voucher-upload__preview image {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.voucher-upload__remove {
+    position: absolute;
+    top: 16rpx;
+    right: 16rpx;
+    width: 48rpx;
+    height: 48rpx;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.58);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.voucher-upload__add {
+    border: 2rpx dashed var(--wm-color-border, #efe6e1);
+    background: var(--wm-color-bg-soft, #fff7f4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.voucher-upload__text {
+    margin-top: 16rpx;
+    font-size: 28rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+    font-weight: 600;
+}
+
+.voucher-upload__tip {
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.safe-bottom {
+    height: calc(env(safe-area-inset-bottom) + 37rpx);
+}
+
+.loading-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    background: var(--wm-color-page, #fcfbf9);
+}
+
+.loading-text {
+    font-size: 26rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
 </style>

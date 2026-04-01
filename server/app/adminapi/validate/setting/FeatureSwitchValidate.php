@@ -19,6 +19,7 @@ class FeatureSwitchValidate extends BaseValidate
     protected $rule = [
         'staff_center' => 'require|in:0,1',
         'staff_admin' => 'require|in:0,1',
+        'staff_tag_review_enabled' => 'require|in:0,1',
         'admin_dashboard' => 'require|in:0,1',
         'admin_dashboard_user_ids' => 'checkAdminDashboardUserIds',
         'staff_detail_style' => 'in:classic,immersive,conversion',
@@ -29,6 +30,8 @@ class FeatureSwitchValidate extends BaseValidate
         'staff_center.in' => '服务人员中心开关值错误',
         'staff_admin.require' => '请选择服务人员后台开关',
         'staff_admin.in' => '服务人员后台开关值错误',
+        'staff_tag_review_enabled.require' => '请选择标签审核开关',
+        'staff_tag_review_enabled.in' => '标签审核开关值错误',
         'admin_dashboard.require' => '请选择管理员看板开关',
         'admin_dashboard.in' => '管理员看板开关值错误',
         'admin_dashboard_user_ids.checkAdminDashboardUserIds' => '管理员可访问用户ID格式错误',
@@ -40,6 +43,7 @@ class FeatureSwitchValidate extends BaseValidate
         return $this->only([
             'staff_center',
             'staff_admin',
+            'staff_tag_review_enabled',
             'admin_dashboard',
             'admin_dashboard_user_ids',
             'staff_detail_style',

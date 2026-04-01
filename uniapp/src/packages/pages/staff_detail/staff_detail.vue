@@ -1,7 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" hasSafeBottom>
-        <BaseNavbar title="人员详情" />
+    <PageShell scene="consumer">
+        <BaseNavbar title="人员详情" :back="!isShareEntry" />
 
         <view class="staff-detail" v-if="staffInfo">
             <view class="staff-detail__content">
@@ -77,12 +77,7 @@
                 </view>
 
                 <view class="booking-brief-card">
-                    <view class="booking-brief-card__header">
-                        <view>
-                            <text class="booking-brief-card__title">预约信息</text>
-                            <text class="booking-brief-card__desc">先在详情页确认地区和日期，再进入设计稿的多步骤预约页。</text>
-                        </view>
-                    </view>
+                    <text class="booking-brief-card__title">预约信息</text>
                     <view class="booking-brief-card__grid">
                         <view class="booking-brief-card__item" @click="handleInlineRegionEdit">
                             <text class="booking-brief-card__label">服务地区</text>
@@ -537,6 +532,7 @@ import { getStaffBookingPageUrl } from '@/utils/staff-booking'
 
 const staffId = ref<number>(0)
 const staffInfo = ref<any>(null)
+const isShareEntry = ref(false)
 const currentTab = ref('intro')
 const presetDate = ref('') // 预设日期
 const showDatePopup = ref(false)
@@ -712,7 +708,11 @@ const selectedRegionText = computed(() => {
     if (!hasSelectedRegion.value) {
         return '请选择服务区县'
     }
-    return formatServiceRegionText(selectedRegion.value)
+
+    const cityName = String(selectedRegion.value.city_name || '').trim()
+    const districtName = String(selectedRegion.value.district_name || '').trim()
+
+    return [cityName, districtName].filter(Boolean).join(' / ') || districtName || '请选择服务区县'
 })
 const regionProvinces = computed(() => regionTree.value || [])
 const regionCities = computed(() => {
@@ -1280,7 +1280,7 @@ const buildSharePayload = () => {
         imageUrl?: string
     } = {
         title: getShareTitle(),
-        path: `/packages/pages/staff_detail/staff_detail?${buildStaffDetailQuery()}`
+        path: `/packages/pages/staff_detail/staff_detail?${buildStaffDetailQuery({ from_share: 1 })}`
     }
 
     const avatar = String(staffInfo.value?.avatar || '').trim()
@@ -1293,6 +1293,7 @@ const buildSharePayload = () => {
 
 onLoad((options) => {
     $theme.setScene('consumer')
+    isShareEntry.value = options?.from_share === '1'
     if (options?.id) {
         staffId.value = Number(options.id)
     }
@@ -1361,7 +1362,7 @@ onShareTimeline(() => {
         imageUrl?: string
     } = {
         title: sharePayload.title,
-        query: buildStaffDetailQuery()
+        query: buildStaffDetailQuery({ from_share: 1 })
     }
 
     if (sharePayload.imageUrl) {
@@ -1387,7 +1388,7 @@ onShareTimeline(() => {
     width: 100vw;
     max-width: 100vw;
     margin: 0;
-    border-radius: 24rpx 24rpx 0 0;
+    border-radius: 28rpx 28rpx 0 0;
     box-shadow: 0 -12rpx 36rpx rgba(15, 23, 42, 0.1);
     max-height: 80vh;
     display: flex;
@@ -1398,7 +1399,7 @@ onShareTimeline(() => {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 22rpx 24rpx;
+        padding: 20rpx;
         border-bottom: 1rpx solid #eef1f5;
     }
 
@@ -1426,7 +1427,7 @@ onShareTimeline(() => {
 }
 
 .date-picker-content {
-    padding: 12rpx 16rpx 24rpx;
+    padding: 12rpx 20rpx 24rpx;
 }
 
 .date-picker-view {
@@ -1444,15 +1445,15 @@ onShareTimeline(() => {
 
 .picker-footer {
     display: flex;
-    gap: 16rpx;
-    padding: 16rpx 24rpx 24rpx;
+    gap: 12rpx;
+    padding: 16rpx 20rpx 20rpx;
     border-top: 1rpx solid #eef1f5;
 }
 
 .picker-btn {
     flex: 1;
     height: 82rpx;
-    border-radius: 16rpx;
+    border-radius: 18rpx;
     background: #f3f4f6;
     color: #475467;
     font-size: 28rpx;
@@ -1476,19 +1477,19 @@ onShareTimeline(() => {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12rpx;
-    padding: 18rpx 18rpx 8rpx;
+    padding: 20rpx 20rpx 12rpx;
 }
 
 .region-picker-col {
     min-width: 0;
     border: 1rpx solid #eef1f5;
-    border-radius: 18rpx;
+    border-radius: 20rpx;
     overflow: hidden;
     background: #f9fafc;
 }
 
 .region-picker-col__title {
-    padding: 18rpx 20rpx 14rpx;
+    padding: 16rpx 20rpx;
     font-size: 24rpx;
     font-weight: 600;
     color: #374151;
@@ -1527,21 +1528,20 @@ onShareTimeline(() => {
 
 <style lang="scss" scoped>
 .staff-detail {
-    min-height: 100vh;
-    background: linear-gradient(180deg, #fcfbf9 0%, #f8f3ef 34%, #f5f1ee 100%);
+    background: transparent;
 }
 
 .staff-detail__content {
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
-    padding: 12rpx 20rpx 180rpx;
+    gap: 22rpx;
+    padding: 11rpx 37rpx calc(var(--wm-safe-bottom-action, 150rpx) + 37rpx);
 }
 
 .hero-card {
     position: relative;
     overflow: hidden;
-    border-radius: 28rpx;
+    border-radius: 52rpx;
     background: linear-gradient(135deg, #efcbc0 0%, #c99688 100%);
     box-shadow: 0 18rpx 40rpx rgba(180, 138, 123, 0.18);
 }
@@ -1555,15 +1555,15 @@ onShareTimeline(() => {
 .hero-card__banner :deep(.media-container),
 .hero-card__banner :deep(.banner-media),
 .hero-card__banner :deep(.banner-video) {
-    border-radius: 28rpx;
+    border-radius: 52rpx;
 }
 
 .info-card {
     display: flex;
     flex-direction: column;
-    gap: 20rpx;
-    padding: 24rpx 22rpx;
-    border-radius: 26rpx;
+    gap: 22rpx;
+    padding: 34rpx;
+    border-radius: 49rpx;
     background: rgba(255, 255, 255, 0.84);
     border: 1rpx solid rgba(239, 230, 225, 0.96);
     backdrop-filter: blur(20rpx);
@@ -1583,7 +1583,7 @@ onShareTimeline(() => {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 10rpx;
+    gap: 12rpx;
 }
 
 .info-card__name {
@@ -1625,7 +1625,7 @@ onShareTimeline(() => {
 .info-card__badge-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 10rpx;
+    gap: 12rpx;
 }
 
 .info-card__badge {
@@ -1652,8 +1652,8 @@ onShareTimeline(() => {
     display: flex;
     flex-direction: column;
     gap: 6rpx;
-    padding: 18rpx 14rpx;
-    border-radius: 22rpx;
+    padding: 20rpx 16rpx;
+    border-radius: 20rpx;
     background: linear-gradient(180deg, #fff8f4 0%, #fff2eb 100%);
 }
 
@@ -1674,7 +1674,7 @@ onShareTimeline(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 18rpx;
+    gap: 16rpx;
     padding-top: 4rpx;
 }
 
@@ -1723,8 +1723,8 @@ onShareTimeline(() => {
 
 .booking-brief-card {
     margin-top: 22rpx;
-    padding: 26rpx;
-    border-radius: 28rpx;
+    padding: 34rpx;
+    border-radius: 52rpx;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 244, 0.96));
     border: 1rpx solid #efe6e1;
     box-shadow: 0 18rpx 34rpx rgba(214, 185, 167, 0.12);
@@ -1737,24 +1737,16 @@ onShareTimeline(() => {
     color: #1e2432;
 }
 
-.booking-brief-card__desc {
-    display: block;
-    margin-top: 10rpx;
-    font-size: 23rpx;
-    line-height: 1.6;
-    color: #7f7b78;
-}
-
 .booking-brief-card__grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16rpx;
-    margin-top: 20rpx;
+    gap: 22rpx;
+    margin-top: 22rpx;
 }
 
 .booking-brief-card__item {
-    padding: 20rpx;
-    border-radius: 22rpx;
+    padding: 30rpx;
+    border-radius: 37rpx;
     background: #ffffff;
     border: 1rpx solid #efe6e1;
 }
@@ -1776,7 +1768,7 @@ onShareTimeline(() => {
 
 .tabs-section {
     padding: 4rpx;
-    border-radius: 22rpx;
+    border-radius: 37rpx;
     background: rgba(255, 255, 255, 0.84);
     border: 1rpx solid rgba(239, 230, 225, 0.96);
     backdrop-filter: blur(18rpx);
@@ -1792,9 +1784,9 @@ onShareTimeline(() => {
 .tab-item {
     flex: 1;
     min-width: 0;
-    height: 72rpx;
-    padding: 0 12rpx;
-    border-radius: 18rpx;
+    height: 82rpx;
+    padding: 0 22rpx;
+    border-radius: 34rpx;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1829,15 +1821,15 @@ onShareTimeline(() => {
 .content-section--stack {
     display: flex;
     flex-direction: column;
-    gap: 20rpx;
+    gap: 22rpx;
 }
 
 .soft-card {
     display: flex;
     flex-direction: column;
-    gap: 18rpx;
-    padding: 24rpx 22rpx;
-    border-radius: 24rpx;
+    gap: 22rpx;
+    padding: 30rpx 34rpx;
+    border-radius: 45rpx;
     background: rgba(255, 255, 255, 0.84);
     border: 1rpx solid rgba(239, 230, 225, 0.96);
     backdrop-filter: blur(18rpx);
@@ -1886,7 +1878,7 @@ onShareTimeline(() => {
 .work-item {
     position: relative;
     overflow: hidden;
-    border-radius: 22rpx;
+    border-radius: 37rpx;
     background: linear-gradient(135deg, #f8e3db 0%, #ead7cf 100%);
     box-shadow: 0 14rpx 30rpx rgba(185, 158, 147, 0.12);
 }
@@ -1899,7 +1891,7 @@ onShareTimeline(() => {
 .work-overlay {
     position: absolute;
     inset: auto 0 0 0;
-    padding: 18rpx 16rpx;
+    padding: 16rpx;
     background: linear-gradient(
         180deg,
         rgba(30, 36, 50, 0) 0%,
@@ -1928,8 +1920,8 @@ onShareTimeline(() => {
     display: flex;
     flex-direction: column;
     gap: 8rpx;
-    padding: 20rpx 16rpx;
-    border-radius: 22rpx;
+    padding: 30rpx 22rpx;
+    border-radius: 37rpx;
     background: rgba(255, 255, 255, 0.84);
     border: 1rpx solid rgba(239, 230, 225, 0.96);
 }
@@ -1950,7 +1942,7 @@ onShareTimeline(() => {
 .review-filter-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 10rpx;
+    gap: 12rpx;
 }
 
 .review-filter-item {
@@ -1966,12 +1958,12 @@ onShareTimeline(() => {
 .reviews-list {
     display: flex;
     flex-direction: column;
-    gap: 18rpx;
+    gap: 16rpx;
 }
 
 .review-card {
-    padding: 24rpx 22rpx;
-    border-radius: 24rpx;
+    padding: 30rpx 34rpx;
+    border-radius: 45rpx;
     background: rgba(255, 255, 255, 0.84);
     border: 1rpx solid rgba(239, 230, 225, 0.96);
 }
@@ -2037,7 +2029,7 @@ onShareTimeline(() => {
 .review-tag-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 10rpx;
+    gap: 12rpx;
     margin-top: 16rpx;
 }
 
@@ -2061,7 +2053,7 @@ onShareTimeline(() => {
 .review-image {
     width: calc((100% - 24rpx) / 3);
     height: 184rpx;
-    border-radius: 18rpx;
+    border-radius: 37rpx;
     background: #f4efec;
 }
 
@@ -2073,8 +2065,8 @@ onShareTimeline(() => {
 }
 
 .review-reply-item {
-    padding: 18rpx 16rpx;
-    border-radius: 18rpx;
+    padding: 22rpx;
+    border-radius: 34rpx;
     background: #fff7f3;
     border: 1rpx solid rgba(232, 90, 79, 0.08);
 }
@@ -2123,14 +2115,14 @@ onShareTimeline(() => {
 .cert-item {
     display: inline-flex;
     flex-direction: column;
-    gap: 10rpx;
+    gap: 12rpx;
     width: 216rpx;
 }
 
 .cert-image {
     width: 216rpx;
     height: 144rpx;
-    border-radius: 18rpx;
+    border-radius: 37rpx;
     background: #f4efec;
 }
 
@@ -2148,8 +2140,8 @@ onShareTimeline(() => {
     align-items: center;
     justify-content: center;
     min-height: 220rpx;
-    padding: 24rpx;
-    border-radius: 24rpx;
+    padding: 30rpx;
+    border-radius: 45rpx;
     background: rgba(255, 255, 255, 0.84);
     border: 1rpx dashed rgba(201, 179, 168, 0.8);
 }
@@ -2169,21 +2161,21 @@ onShareTimeline(() => {
 
 .loading-state {
     min-height: 220rpx;
-    border-radius: 24rpx;
+    border-radius: 45rpx;
     background: rgba(255, 255, 255, 0.72);
 }
 
 .staff-detail__action-bar {
     display: flex;
-    gap: 12rpx;
+    gap: 19rpx;
     width: 100%;
 }
 
 .action-button {
     position: relative;
     flex: 1;
-    height: 96rpx;
-    border-radius: 20rpx;
+    height: 90rpx;
+    border-radius: 37rpx;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -1,8 +1,9 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="我的候补" />
+    <PageShell scene="consumer">
+        <BaseNavbar title="我的候补" />
 
-    <view class="waitlist-page">
+        <view class="waitlist-page">
         <!-- 筛选标签 -->
         <view class="filter-tabs">
             <view
@@ -150,12 +151,14 @@
                 </view>
             </view>
         </view>
-    </view>
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import PageShell from '@/components/base/PageShell.vue'
 import { getMyWaitlist, cancelWaitlist } from '@/api/schedule'
 import { useThemeStore } from '@/stores/theme'
 
@@ -326,8 +329,7 @@ onShow(() => {
 
 <style lang="scss" scoped>
 .waitlist-page {
-    min-height: 100vh;
-    background: linear-gradient(180deg, #f9fafb 0%, #f5f5f5 100%);
+    background: transparent;
     padding-bottom: 24rpx;
 }
 

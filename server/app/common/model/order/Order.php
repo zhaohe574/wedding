@@ -43,6 +43,7 @@ class Order extends BaseModel
     const STATUS_CANCELLED = 6;       // 已取消
     const STATUS_PAUSED = 7;          // 已暂停
     const STATUS_REFUNDED = 8;        // 已退款
+    const STATUS_USER_DELETED = 9;    // 用户已删除
 
     // 支付状态
     const PAY_STATUS_UNPAID = 0;        // 未支付
@@ -125,6 +126,7 @@ class Order extends BaseModel
             self::STATUS_CANCELLED => '已取消',
             self::STATUS_PAUSED => '已暂停',
             self::STATUS_REFUNDED => '已退款',
+            self::STATUS_USER_DELETED => '用户已删除',
         ];
         return $map[$data['order_status']] ?? '未知';
     }
@@ -750,6 +752,7 @@ class Order extends BaseModel
             ['value' => self::STATUS_CANCELLED, 'label' => '已取消'],
             ['value' => self::STATUS_PAUSED, 'label' => '已暂停'],
             ['value' => self::STATUS_REFUNDED, 'label' => '已退款'],
+            ['value' => self::STATUS_USER_DELETED, 'label' => '用户已删除'],
         ];
     }
 

@@ -56,6 +56,23 @@ export function staffCenterPackageRemove(data: any) {
     return request.post({ url: '/staff_center/packageRemove', data }, { isAuth: true })
 }
 
+// 附加项
+export function staffCenterAddonLists() {
+    return request.get({ url: '/staff_center/addonLists' }, { isAuth: true })
+}
+
+export function staffCenterAddonAdd(data: any) {
+    return request.post({ url: '/staff_center/addonAdd', data }, { isAuth: true })
+}
+
+export function staffCenterAddonUpdate(data: any) {
+    return request.post({ url: '/staff_center/addonUpdate', data }, { isAuth: true })
+}
+
+export function staffCenterAddonRemove(data: any) {
+    return request.post({ url: '/staff_center/addonRemove', data }, { isAuth: true })
+}
+
 // 档期
 export function staffCenterScheduleMonth(data: any) {
     return request.get({ url: '/staff_center/scheduleMonth', data }, { isAuth: true })

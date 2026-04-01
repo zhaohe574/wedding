@@ -1,227 +1,117 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="消息中心" />
-    <view class="notification-page">
-        <!-- 顶部统计区域 -->
-        <view class="stats-header">
-            <view
-                class="stats-card"
-                :style="{
-                    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor} 100%)`
-                }"
-            >
-                <view class="stats-content">
-                    <view class="stats-number" :style="{ color: $theme.btnColor }">
-                        {{ unreadCount.total || 0 }}
-                    </view>
-                    <view class="stats-label" :style="{ color: $theme.btnColor }">
-                        条未读消息
+    <PageShell scene="consumer">
+        <BaseNavbar title="通知中心" />
+        <view class="notification-page">
+            <view class="notification-page__content">
+                <view class="notification-page__toolbar">
+                    <view class="notification-page__unread-pill">{{ unreadSummaryText }}</view>
+                    <view v-if="notificationList.length" class="notification-page__toolbar-actions">
+                        <view class="notification-page__toolbar-link" @click="handleDeleteRead">
+                            删除已读
+                        </view>
+                        <view class="notification-page__toolbar-link" @click="handleMarkAllRead">
+                            全部已读
+                        </view>
                     </view>
                 </view>
-                <view
-                    v-if="unreadCount.total > 0"
-                    class="stats-action"
-                    :style="{
-                        background: 'rgba(255, 255, 255, 0.2)',
-                        color: $theme.btnColor
-                    }"
-                    @click="handleMarkAllRead(0)"
-                >
-                    <tn-icon name="check-circle" :size="28" :color="$theme.btnColor" />
-                    <text :style="{ color: $theme.btnColor }">全部已读</text>
-                </view>
-            </view>
-        </view>
 
-        <!-- 消息分类入口 -->
-        <view class="section-card">
-            <view class="section-title">消息分类</view>
-            <view class="category-grid">
-                <view
-                    v-for="item in categoryList"
-                    :key="item.type"
-                    class="category-item"
-                    hover-class="category-item-hover"
-                    @click="switchType(item.type)"
+                <scroll-view
+                    scroll-x
+                    class="notification-page__filter-scroll"
+                    :show-scrollbar="false"
                 >
-                    <view class="category-icon-wrap" :style="{ background: getIconBg(item.color) }">
-                        <tn-icon :name="item.icon" :size="40" color="#FFFFFF" />
+                    <view class="wm-pill-tabs notification-page__filter-row">
                         <view
-                            v-if="getUnreadByType(item.type) > 0"
-                            class="category-badge"
+                            class="wm-pill-tab notification-page__filter-chip"
+                            :class="{ 'wm-pill-tab--active': currentType === 0 }"
+                            @click="switchType(0)"
                         >
-                            {{ getUnreadByType(item.type) > 99 ? '99+' : getUnreadByType(item.type) }}
+                            <text>全部</text>
+                            <text
+                                v-if="hasUnread"
+                                class="notification-page__filter-chip-count"
+                                :class="{
+                                    'notification-page__filter-chip-count--active':
+                                        currentType === 0
+                                }"
+                            >
+                                {{ formatUnreadCount(unreadCount.total) }}
+                            </text>
                         </view>
-                    </view>
-                    <view class="category-name">{{ item.name }}</view>
-                    <view class="category-desc">{{ item.desc }}</view>
-                </view>
-            </view>
-        </view>
-
-        <!-- 最近消息列表 -->
-        <view class="section-card" v-if="currentType === 0">
-            <view class="section-header">
-                <view class="section-title">最近消息</view>
-            </view>
-
-            <view v-if="notificationList.length > 0" class="message-list">
-                <view
-                    v-for="item in recentList"
-                    :key="item.id"
-                    class="message-item"
-                    hover-class="message-item-hover"
-                    @click="handleItemClick(item)"
-                >
-                    <view class="message-dot" v-if="!item.is_read">
                         <view
-                            class="dot"
-                            :style="{ background: $theme.ctaColor }"
-                        ></view>
-                    </view>
-                    <view
-                        class="message-icon"
-                        :style="{ background: getTypeBg(item.notify_type) }"
-                    >
-                        <tn-icon
-                            :name="getTypeIcon(item.notify_type)"
-                            :size="32"
-                            color="#FFFFFF"
-                        />
-                    </view>
-                    <view class="message-body">
-                        <view class="message-top">
-                            <text class="message-title">{{ item.title }}</text>
-                            <text class="message-time">{{ item.create_time_text }}</text>
-                        </view>
-                        <text class="message-content">{{ item.content }}</text>
-                    </view>
-                    <view class="message-arrow" v-if="item.target_type">
-                        <tn-icon name="right" :size="28" color="#C8C9CC" />
-                    </view>
-                </view>
-            </view>
-
-            <!-- 空状态 -->
-            <view v-else class="empty-state">
-                <tn-icon name="email" :size="120" color="#E5E5E5" />
-                <text class="empty-text">暂无消息</text>
-                <text class="empty-hint">新消息会在这里显示</text>
-            </view>
-        </view>
-
-        <!-- 分类消息列表 -->
-        <view class="section-card" v-if="currentType > 0">
-            <view class="section-header">
-                <view class="section-title-row">
-                    <view
-                        class="back-type"
-                        @click="switchType(0)"
-                    >
-                        <tn-icon name="left" :size="32" color="#666666" />
-                    </view>
-                    <view class="section-title">{{ currentTypeName }}</view>
-                </view>
-                <view class="action-group">
-                    <view
-                        class="action-btn"
-                        hover-class="action-btn-hover"
-                        @click="handleMarkAllRead(currentType)"
-                    >
-                        <tn-icon name="check-circle" :size="28" color="#666666" />
-                        <text>已读</text>
-                    </view>
-                    <view
-                        class="action-btn action-btn-danger"
-                        hover-class="action-btn-hover"
-                        @click="handleClear"
-                    >
-                        <tn-icon name="delete" :size="28" color="#FF2C3C" />
-                        <text style="color: #FF2C3C">清空</text>
-                    </view>
-                </view>
-            </view>
-
-            <view v-if="notificationList.length > 0" class="message-list">
-                <view
-                    v-for="item in notificationList"
-                    :key="item.id"
-                    class="message-item"
-                    hover-class="message-item-hover"
-                    @click="handleItemClick(item)"
-                >
-                    <view class="message-dot" v-if="!item.is_read">
-                        <view
-                            class="dot"
-                            :style="{ background: $theme.ctaColor }"
-                        ></view>
-                    </view>
-                    <view
-                        class="message-icon"
-                        :style="{ background: getTypeBg(item.notify_type) }"
-                    >
-                        <tn-icon
-                            :name="getTypeIcon(item.notify_type)"
-                            :size="32"
-                            color="#FFFFFF"
-                        />
-                    </view>
-                    <view class="message-body">
-                        <view class="message-top">
-                            <text class="message-title">{{ item.title }}</text>
-                            <text class="message-time">{{ item.create_time_text }}</text>
-                        </view>
-                        <text class="message-content">{{ item.content }}</text>
-                        <view
-                            v-if="item.target_type"
-                            class="message-link"
-                            :style="{ color: $theme.primaryColor }"
+                            v-for="item in categoryList"
+                            :key="item.type"
+                            class="wm-pill-tab notification-page__filter-chip"
+                            :class="{ 'wm-pill-tab--active': currentType === item.type }"
+                            @click="switchType(item.type)"
                         >
-                            <text>查看详情</text>
-                            <tn-icon name="right" :size="22" :color="$theme.primaryColor" />
+                            <text>{{ item.name }}</text>
+                            <text
+                                v-if="getUnreadByType(item.type) > 0"
+                                class="notification-page__filter-chip-count"
+                                :class="{
+                                    'notification-page__filter-chip-count--active':
+                                        currentType === item.type
+                                }"
+                            >
+                                {{ formatUnreadCount(getUnreadByType(item.type)) }}
+                            </text>
                         </view>
                     </view>
+                </scroll-view>
+
+                <view v-if="loading && !notificationList.length" class="loading-tip">
+                    <tn-icon name="loading" :size="32" color="#B4ACA8" />
+                    <text>加载中...</text>
+                </view>
+
+                <view v-else-if="!notificationList.length" class="empty-state">
+                    <tn-icon name="email" :size="120" color="#D9CDC7" />
+                    <text class="empty-text">暂无{{ currentTypeLabel }}</text>
+                    <text class="empty-hint">最新消息会在这里出现</text>
+                </view>
+
+                <view v-else class="notice-list">
+                    <view
+                        v-for="item in notificationList"
+                        :key="item.id"
+                        class="notice-card touch-active"
+                        :class="{ 'notice-card--read': isNoticeRead(item) }"
+                        @click="handleItemClick(item)"
+                    >
+                        <view class="notice-card__head">
+                            <text class="notice-card__title text-ellipsis">{{ item.title }}</text>
+                            <view class="notice-card__delete" @click.stop="handleDeleteItem(item)">
+                                删除
+                            </view>
+                        </view>
+                        <text class="notice-card__content text-ellipsis-2">{{ item.content }}</text>
+                    </view>
+                </view>
+
+                <view v-if="!loading && notificationList.length" class="load-more-tip">
+                    <text v-if="hasMore">上拉加载更多</text>
+                    <text v-else>没有更多了</text>
                 </view>
             </view>
-
-            <!-- 空状态 -->
-            <view v-else-if="!loading" class="empty-state">
-                <tn-icon name="email" :size="120" color="#E5E5E5" />
-                <text class="empty-text">暂无{{ currentTypeName }}</text>
-            </view>
         </view>
-
-        <!-- 加载状态 -->
-        <view v-if="loading" class="loading-tip">
-            <tn-icon name="loading" :size="32" color="#999999" />
-            <text>加载中...</text>
-        </view>
-
-        <!-- 加载更多 -->
-        <view
-            v-if="currentType > 0 && !loading && notificationList.length > 0"
-            class="load-more-tip"
-        >
-            <text v-if="hasMore">上拉加载更多</text>
-            <text v-else>— 没有更多了 —</text>
-        </view>
-
-        <!-- 底部安全区 -->
-        <view class="safe-bottom"></view>
-    </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { onReachBottom, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { computed, ref } from 'vue'
+import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import {
-    getNotificationList,
+    clearNotification,
+    deleteNotification,
     getNotificationDetail,
+    getNotificationList,
     getUnreadCount,
-    markNotificationRead,
     markAllNotificationRead,
-    clearNotification
+    markNotificationRead
 } from '@/api/notification'
 
 const $theme = useThemeStore()
@@ -237,80 +127,43 @@ const unreadCount = ref<any>({
 })
 const page = ref(1)
 const hasMore = ref(true)
-
-// 消息分类配置
 const categoryList = [
-    { type: 1, name: '系统通知', desc: '公告、活动通知', icon: 'notice', color: 'primary' },
-    { type: 2, name: '订单通知', desc: '订单状态、服务提醒', icon: 'shop', color: 'cta' },
-    { type: 3, name: '互动通知', desc: '点赞、评论等互动', icon: 'my-love', color: 'secondary' }
+    { type: 1, name: '系统通知', unreadKey: 'system' },
+    { type: 2, name: '订单通知', unreadKey: 'order' },
+    { type: 3, name: '互动通知', unreadKey: 'interact' }
 ]
 
-// 最近消息（首页展示最多5条）
-const recentList = computed(() => notificationList.value.slice(0, 5))
-
-// 当前分类名称
-const currentTypeName = computed(() => {
-    const item = categoryList.find((c) => c.type === currentType.value)
-    return item?.name || '全部消息'
+const unreadSummaryText = computed(() => `未读 ${unreadCount.value.total || 0} 条`)
+const hasUnread = computed(() => Number(unreadCount.value.total || 0) > 0)
+const currentTypeLabel = computed(() => {
+    if (currentType.value === 0) {
+        return '通知'
+    }
+    return categoryList.find((item) => item.type === currentType.value)?.name || '通知'
 })
-
-// 获取图标渐变背景
-const getIconBg = (type: string) => {
-    const colors: Record<string, string> = {
-        primary: $theme.primaryColor,
-        secondary: $theme.secondaryColor,
-        cta: $theme.ctaColor,
-        accent: $theme.accentColor
-    }
-    const color = colors[type] || $theme.primaryColor
-    return `linear-gradient(135deg, ${color} 0%, ${color} 100%)`
+const currentScopeLabel = computed(() => {
+    return currentType.value > 0 ? currentTypeLabel.value : '全部通知'
+})
+const isNoticeRead = (item: any) => Number(item?.is_read || 0) > 0
+const formatUnreadCount = (count?: number | string) => {
+    const value = Number(count || 0)
+    return value > 99 ? '99+' : `${value}`
 }
-
-// 根据消息类型获取图标背景色
-const getTypeBg = (type: number) => {
-    const map: Record<number, string> = {
-        1: $theme.primaryColor,
-        2: $theme.ctaColor,
-        3: $theme.secondaryColor,
-        4: $theme.primaryColor
-    }
-    const color = map[type] || $theme.primaryColor
-    return `linear-gradient(135deg, ${color} 0%, ${color} 100%)`
-}
-
-// 根据消息类型获取图标名称
-const getTypeIcon = (type: number) => {
-    const map: Record<number, string> = {
-        1: 'notice',
-        2: 'shop',
-        3: 'my-love',
-        4: 'notice'
-    }
-    return map[type] || 'email'
-}
-
-// 根据类型获取未读数
 const getUnreadByType = (type: number) => {
-    const map: Record<number, string> = {
-        1: 'system',
-        2: 'order',
-        3: 'interact'
+    const item = categoryList.find((target) => target.type === type)
+    if (!item) {
+        return 0
     }
-    return unreadCount.value[map[type]] || 0
+    return Number(unreadCount.value[item.unreadKey] || 0)
 }
-
-// 切换消息类型
 const switchType = (type: number) => {
-    currentType.value = type
-    if (type > 0) {
-        loadList(true)
-    } else {
-        // 回到首页时加载最近消息
-        loadRecentList()
+    if (currentType.value === type) {
+        return
     }
+    currentType.value = type
+    loadList(true)
 }
 
-// 加载未读数量
 const loadUnreadCount = async () => {
     try {
         const res = await getUnreadCount()
@@ -320,23 +173,6 @@ const loadUnreadCount = async () => {
     }
 }
 
-// 加载最近消息（首页用）
-const loadRecentList = async () => {
-    loading.value = true
-    try {
-        const res = await getNotificationList({
-            page: 1,
-            limit: 5
-        })
-        notificationList.value = res.lists || []
-    } catch (error) {
-        console.error(error)
-    } finally {
-        loading.value = false
-    }
-}
-
-// 加载分类消息列表
 const loadList = async (refresh = false) => {
     if (loading.value || (!refresh && !hasMore.value)) return
 
@@ -347,11 +183,14 @@ const loadList = async (refresh = false) => {
 
     loading.value = true
     try {
-        const res = await getNotificationList({
+        const params: Record<string, any> = {
             page: page.value,
-            limit: 10,
-            notify_type: currentType.value
-        })
+            limit: 10
+        }
+        if (currentType.value > 0) {
+            params.notify_type = currentType.value
+        }
+        const res = await getNotificationList(params)
 
         const list = res.lists || []
         if (refresh) {
@@ -360,9 +199,9 @@ const loadList = async (refresh = false) => {
             notificationList.value = [...notificationList.value, ...list]
         }
 
-        hasMore.value = res.has_more
+        hasMore.value = Boolean(res.has_more)
         if (hasMore.value) {
-            page.value++
+            page.value += 1
         }
     } catch (error) {
         console.error(error)
@@ -372,10 +211,12 @@ const loadList = async (refresh = false) => {
     }
 }
 
-// 点击消息项
+const refreshListState = async () => {
+    await Promise.all([loadUnreadCount(), loadList(true)])
+}
+
 const handleItemClick = async (item: any) => {
-    // 标记已读
-    if (!item.is_read) {
+    if (!isNoticeRead(item)) {
         try {
             await markNotificationRead({ id: item.id })
             item.is_read = 1
@@ -385,458 +226,284 @@ const handleItemClick = async (item: any) => {
         }
     }
 
-    // 跳转到目标页面
-    if (item.target_type) {
-        const routeMap: Record<string, (targetId?: number) => string> = {
-            order: (targetId) => `/pages/order_detail/order_detail?id=${targetId || 0}`,
-            order_detail: (targetId) => `/pages/order_detail/order_detail?id=${targetId || 0}`,
-            staff_order: (targetId) => `/packages/pages/staff_order_detail/staff_order_detail?id=${targetId || 0}`,
-            waitlist: () => '/packages/pages/waitlist/waitlist',
-            change: (targetId) => `/packages/pages/order_change/change_detail?id=${targetId || 0}`,
-            pause: (targetId) => `/packages/pages/order_change/pause_detail?id=${targetId || 0}`,
-            ticket_detail: (targetId) => `/packages/pages/aftersale/ticket_detail?id=${targetId || 0}`,
-            review: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
-            review_list: () => '/packages/pages/review/list',
-            review_detail: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
-            dynamic: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
-            dynamic_detail: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
-            staff_detail: (targetId) => `/packages/pages/staff_detail/staff_detail?id=${targetId || 0}`
-        }
-        const routeBuilder = routeMap[item.target_type]
-        const route = routeBuilder ? routeBuilder(item.target_id) : ''
-        if (route) {
-            uni.navigateTo({ url: route })
-            return
-        }
+    if (!item.target_type) {
+        return
+    }
 
-        try {
-            await getNotificationDetail({ id: item.id })
-        } catch (error) {
-            console.error(error)
-        }
+    const routeMap: Record<string, (targetId?: number) => string> = {
+        order: (targetId) => `/pages/order_detail/order_detail?id=${targetId || 0}`,
+        order_detail: (targetId) => `/pages/order_detail/order_detail?id=${targetId || 0}`,
+        staff_order: (targetId) =>
+            `/packages/pages/staff_order_detail/staff_order_detail?id=${targetId || 0}`,
+        waitlist: () => '/packages/pages/waitlist/waitlist',
+        change: (targetId) => `/packages/pages/order_change/change_detail?id=${targetId || 0}`,
+        pause: (targetId) => `/packages/pages/order_change/pause_detail?id=${targetId || 0}`,
+        ticket_detail: (targetId) => `/packages/pages/aftersale/ticket_detail?id=${targetId || 0}`,
+        review: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
+        review_list: () => '/packages/pages/review/list',
+        review_detail: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
+        dynamic: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
+        dynamic_detail: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
+        staff_detail: (targetId) => `/packages/pages/staff_detail/staff_detail?id=${targetId || 0}`
+    }
+
+    const routeBuilder = routeMap[item.target_type]
+    const route = routeBuilder ? routeBuilder(item.target_id) : ''
+    if (route) {
+        uni.navigateTo({ url: route })
+        return
+    }
+
+    try {
+        await getNotificationDetail({ id: item.id })
+    } catch (error) {
+        console.error(error)
     }
 }
 
-// 全部标记已读
-const handleMarkAllRead = (type: number) => {
+const handleMarkAllRead = () => {
     uni.showModal({
         title: '提示',
-        content: '确定将所有消息标记为已读吗？',
+        content: `确定将${currentScopeLabel.value}标记为已读吗？`,
         success: async (res) => {
-            if (res.confirm) {
-                try {
-                    await markAllNotificationRead({
-                        notify_type: type || undefined
-                    })
-                    uni.showToast({ title: '标记成功', icon: 'success' })
-                    loadUnreadCount()
-                    if (currentType.value > 0) {
-                        loadList(true)
-                    } else {
-                        loadRecentList()
-                    }
-                } catch (error) {
-                    console.error(error)
-                }
+            if (!res.confirm) return
+            try {
+                await markAllNotificationRead({
+                    notify_type: currentType.value || undefined
+                })
+                uni.showToast({ title: '标记成功', icon: 'success' })
+                refreshListState()
+            } catch (error) {
+                console.error(error)
             }
         }
     })
 }
 
-// 清空消息
-const handleClear = () => {
+const handleDeleteRead = () => {
     uni.showModal({
         title: '提示',
-        content: '确定清空所有消息吗？此操作不可恢复',
+        content: `确定删除${currentScopeLabel.value}中的已读消息吗？`,
         success: async (res) => {
-            if (res.confirm) {
-                try {
-                    await clearNotification({ notify_type: currentType.value })
-                    uni.showToast({ title: '清空成功', icon: 'success' })
-                    loadList(true)
-                    loadUnreadCount()
-                } catch (error) {
-                    console.error(error)
+            if (!res.confirm) return
+            try {
+                const result = await clearNotification({
+                    notify_type: currentType.value || undefined,
+                    read_status: 1
+                })
+                await refreshListState()
+                if (Number(result?.count || 0) > 0) {
+                    uni.showToast({ title: '删除成功', icon: 'success' })
+                    return
                 }
+                uni.showToast({ title: '没有可删除的已读消息', icon: 'none' })
+            } catch (error) {
+                console.error(error)
+            }
+        }
+    })
+}
+
+const handleDeleteItem = (item: any) => {
+    uni.showModal({
+        title: '提示',
+        content: '确定删除这条通知吗？',
+        success: async (res) => {
+            if (!res.confirm) return
+            try {
+                await deleteNotification({ id: item.id })
+                uni.showToast({ title: '删除成功', icon: 'success' })
+                await refreshListState()
+            } catch (error) {
+                console.error(error)
             }
         }
     })
 }
 
 onReachBottom(() => {
-    if (currentType.value > 0) {
-        loadList()
-    }
+    loadList()
 })
 
 onPullDownRefresh(() => {
     loadUnreadCount()
-    if (currentType.value > 0) {
-        loadList(true)
-    } else {
-        loadRecentList()
-        uni.stopPullDownRefresh()
-    }
-})
-
-onMounted(() => {
-    loadUnreadCount()
-    loadRecentList()
+    loadList(true)
 })
 
 onShow(() => {
+    $theme.setScene('consumer')
     loadUnreadCount()
-    if (currentType.value > 0) {
-        loadList(true)
-        return
-    }
-    loadRecentList()
+    loadList(true)
 })
 </script>
 
 <style scoped lang="scss">
 .notification-page {
-    min-height: 100vh;
-    background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
-    padding-bottom: 48rpx;
+    background: transparent;
 }
 
-/* 顶部统计卡片 */
-.stats-header {
-    padding: 24rpx 24rpx 0;
+.notification-page__content {
+    padding: 12rpx var(--wm-space-page-x, 37rpx)
+        calc(var(--wm-space-card-padding-lg, 34rpx) + env(safe-area-inset-bottom));
 }
 
-.stats-card {
-    border-radius: 24rpx;
-    padding: 40rpx 32rpx;
+.notification-page__toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 8rpx 32rpx rgba(124, 58, 237, 0.2);
+    gap: 18rpx;
 }
 
-.stats-content {
-    display: flex;
-    align-items: baseline;
-    gap: 12rpx;
-}
-
-.stats-number {
-    font-size: 64rpx;
+.notification-page__unread-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 56rpx;
+    padding: 0 26rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: var(--wm-color-primary-soft, #fff1ee);
+    font-size: 22rpx;
     font-weight: 700;
-    line-height: 1;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
-.stats-label {
-    font-size: 28rpx;
-    opacity: 0.9;
-}
-
-.stats-action {
-    display: flex;
+.notification-page__toolbar-actions {
+    display: inline-flex;
     align-items: center;
-    gap: 8rpx;
-    padding: 14rpx 28rpx;
-    border-radius: 32rpx;
+    gap: 18rpx;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.notification-page__toolbar-link {
+    flex-shrink: 0;
     font-size: 24rpx;
-    transition: all 0.2s ease;
-
-    &:active {
-        opacity: 0.7;
-    }
-}
-
-/* 区域卡片 */
-.section-card {
-    background: #ffffff;
-    border-radius: 24rpx;
-    margin: 24rpx;
-    padding: 28rpx 0;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
-    overflow: hidden;
-}
-
-.section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 28rpx 20rpx;
-}
-
-.section-title {
-    font-size: 30rpx;
     font-weight: 600;
-    color: #333333;
-    padding: 0 28rpx 0;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
-.section-title-row {
-    display: flex;
-    align-items: center;
+.notification-page__filter-scroll {
+    margin-top: 18rpx;
+    white-space: nowrap;
+}
+
+.notification-page__filter-row {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    gap: 12rpx;
+    padding-bottom: 4rpx;
+}
+
+.notification-page__filter-chip {
+    flex-shrink: 0;
     gap: 8rpx;
-
-    .section-title {
-        padding: 0;
-    }
+    min-height: 60rpx;
+    padding: 0 24rpx;
 }
 
-.back-type {
-    width: 56rpx;
-    height: 56rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 28rpx;
-    background: #f5f5f5;
-    transition: all 0.2s ease;
-
-    &:active {
-        background: #e5e5e5;
-    }
+.notification-page__filter-chip-count {
+    min-width: 32rpx;
+    padding: 0 8rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(232, 90, 79, 0.1);
+    font-size: 20rpx;
+    font-weight: 700;
+    line-height: 32rpx;
+    text-align: center;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
-.section-more {
-    display: flex;
-    align-items: center;
-    gap: 4rpx;
-    font-size: 24rpx;
+.notification-page__filter-chip-count--active {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
 }
 
-/* 分类网格 */
-.category-grid {
-    display: flex;
-    justify-content: space-around;
-    padding: 20rpx 16rpx 8rpx;
-}
-
-.category-item {
+.notice-list {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 30rpx;
+    margin-top: 30rpx;
+}
+
+.notice-card {
+    display: flex;
+    flex-direction: column;
     gap: 12rpx;
-    padding: 16rpx;
-    border-radius: 16rpx;
-    transition: all 0.2s ease;
+    padding: 30rpx 34rpx;
+    border-radius: var(--wm-radius-card, 45rpx);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 10rpx 28rpx rgba(214, 185, 167, 0.08);
+    backdrop-filter: blur(22rpx);
+    -webkit-backdrop-filter: blur(22rpx);
+
+    &--read {
+        background: rgba(255, 255, 255, 0.76);
+        opacity: 0.82;
+    }
 }
 
-.category-item-hover {
-    background: #f9fafb;
-}
-
-.category-icon-wrap {
-    width: 96rpx;
-    height: 96rpx;
-    border-radius: 24rpx;
+.notice-card__head {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.12);
-}
-
-.category-badge {
-    position: absolute;
-    top: -10rpx;
-    right: -10rpx;
-    min-width: 36rpx;
-    height: 36rpx;
-    line-height: 36rpx;
-    text-align: center;
-    font-size: 20rpx;
-    color: #ffffff;
-    background: #FF2C3C;
-    border-radius: 18rpx;
-    padding: 0 8rpx;
-    border: 3rpx solid #ffffff;
-}
-
-.category-name {
-    font-size: 26rpx;
-    font-weight: 500;
-    color: #333333;
-}
-
-.category-desc {
-    font-size: 22rpx;
-    color: #999999;
-}
-
-/* 操作按钮组 */
-.action-group {
-    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 16rpx;
 }
 
-.action-btn {
-    display: flex;
-    align-items: center;
-    gap: 6rpx;
-    padding: 10rpx 20rpx;
-    border-radius: 24rpx;
-    background: #f5f5f5;
-    font-size: 24rpx;
-    color: #666666;
-    transition: all 0.2s ease;
-}
-
-.action-btn-hover {
-    background: #e5e5e5;
-    transform: scale(0.98);
-}
-
-/* 消息列表 */
-.message-list {
-    padding: 0 8rpx;
-}
-
-.message-item {
-    display: flex;
-    align-items: flex-start;
-    padding: 24rpx 20rpx;
-    margin: 0 8rpx;
-    border-bottom: 1rpx solid #f5f5f5;
-    position: relative;
-    transition: all 0.2s ease;
-
-    &:last-child {
-        border-bottom: none;
-    }
-}
-
-.message-item-hover {
-    background: #f9fafb;
-    border-radius: 12rpx;
-}
-
-.message-dot {
-    position: absolute;
-    left: 8rpx;
-    top: 36rpx;
-
-    .dot {
-        width: 14rpx;
-        height: 14rpx;
-        border-radius: 50%;
-    }
-}
-
-.message-icon {
-    width: 72rpx;
-    height: 72rpx;
-    min-width: 72rpx;
-    border-radius: 18rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 20rpx;
-    margin-left: 16rpx;
-    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-}
-
-.message-body {
+.notice-card__title {
+    display: block;
     flex: 1;
     min-width: 0;
-}
-
-.message-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8rpx;
-}
-
-.message-title {
     font-size: 28rpx;
     font-weight: 600;
-    color: #333333;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    margin-right: 16rpx;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.message-time {
+.notice-card__delete {
+    flex-shrink: 0;
+    padding: 4rpx 0 0;
     font-size: 22rpx;
-    color: #C8C9CC;
-    white-space: nowrap;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--wm-text-tertiary, #b4aca8);
 }
 
-.message-content {
-    font-size: 26rpx;
-    color: #999999;
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
+.notice-card__content {
+    display: block;
+    font-size: 28rpx;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.message-link {
-    display: flex;
-    align-items: center;
-    gap: 4rpx;
-    margin-top: 12rpx;
-    font-size: 24rpx;
-}
-
-.message-arrow {
-    display: flex;
-    align-items: center;
-    margin-left: 8rpx;
-    padding-top: 20rpx;
-}
-
-/* 空状态 */
 .empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 60rpx 0 40rpx;
+    justify-content: center;
+    min-height: 56vh;
 }
 
 .empty-text {
+    margin-top: 18rpx;
     font-size: 28rpx;
-    color: #999999;
-    margin-top: 20rpx;
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .empty-hint {
-    font-size: 24rpx;
-    color: #C8C9CC;
     margin-top: 8rpx;
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
 }
 
-/* 加载状态 */
-.loading-tip {
+.loading-tip,
+.load-more-tip {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 12rpx;
-    padding: 32rpx;
-    font-size: 26rpx;
-    color: #999999;
-}
-
-.load-more-tip {
-    text-align: center;
-    padding: 24rpx;
-    font-size: 24rpx;
-    color: #C8C9CC;
-}
-
-/* 底部安全区 */
-.safe-bottom {
-    height: constant(safe-area-inset-bottom);
-    height: env(safe-area-inset-bottom);
-}
-
-/* 无障碍：减少动画 */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
+    padding: 30rpx 0 8rpx;
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
 }
 </style>

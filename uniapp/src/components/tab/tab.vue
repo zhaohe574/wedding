@@ -1,6 +1,12 @@
 <template>
     <view
-        :class="{ active, inactive: !active, tab: true }"
+        :class="[
+            'wm-tab-panel',
+            {
+                'wm-tab-panel--active': active,
+                'wm-tab-panel--inactive': !active
+            }
+        ]"
         :style="shouldShow ? '' : 'display: none;'"
     >
         <slot v-if="shouldRender"></slot>
@@ -71,12 +77,12 @@ watch(
 )
 </script>
 
-<style>
-.tab.active {
+<style scoped>
+.wm-tab-panel--active {
     height: auto;
 }
 
-.tab.inactive {
+.wm-tab-panel--inactive {
     height: 0;
     overflow: visible;
 }

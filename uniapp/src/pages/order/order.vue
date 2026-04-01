@@ -1,141 +1,154 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="我的订单" />
-    <view class="order-page cinema-page page-with-tabbar-safe-bottom">
-        <view class="order-page__hero">
-            <view class="order-page__hero-copy">
-                <text class="order-page__hero-label">Wedding Orders</text>
-                <text class="order-page__hero-title">订单进度、支付状态与履约信息一屏掌握</text>
-                <text class="order-page__hero-desc">
-                    用暖白面板承接关键状态和金额信息，列表区保持高可读节奏，方便持续跟单与处理售后。
-                </text>
-            </view>
-            <view class="order-page__hero-grid">
-                <view
-                    v-for="item in overviewCards"
-                    :key="item.key"
-                    class="order-page__hero-card glass-card"
-                >
-                    <text class="order-page__hero-card-value">{{ item.value }}</text>
-                    <text class="order-page__hero-card-label">{{ item.label }}</text>
+    <PageShell scene="consumer" hasTabbar>
+        <BaseNavbar title="我的订单" />
+        <view class="order-page">
+            <scroll-view scroll-x class="order-page__filter-scroll" :show-scrollbar="false">
+                <view class="order-page__filter-row">
+                    <view
+                        v-for="(tab, index) in statusTabs"
+                        :key="tab.key"
+                        class="order-page__filter-chip"
+                        :class="{ 'order-page__filter-chip--active': currentTabIndex === index }"
+                        @click="currentTabIndex = index"
+                    >
+                        <text class="order-page__filter-chip-text">{{ tab.label }}</text>
+                        <view
+                            v-if="statistics[tab.key] > 0"
+                            class="order-page__filter-chip-count"
+                        >
+                            <text class="order-page__filter-chip-count-text">
+                                {{ statistics[tab.key] }}
+                            </text>
+                        </view>
+                    </view>
                 </view>
-            </view>
-        </view>
+            </scroll-view>
 
-        <view class="order-page__surface cinema-surface">
-            <view class="status-tabs-wrapper cinema-panel">
-                <view class="order-page__tabs-head">
-                    <view>
-                        <text class="order-page__section-title">状态筛选</text>
-                        <text class="order-page__section-desc">
-                            当前查看：{{ statusTabs[currentTabIndex]?.label || '全部订单' }}
+            <view class="order-page__content">
+                <view v-if="loading && orders.length === 0" class="loading-state">
+                    <view class="loading-content">
+                        <tn-loading size="72" mode="flower" :color="$theme.primaryColor" />
+                        <text class="loading-text">加载中...</text>
+                    </view>
+                </view>
+
+                <view v-else-if="orders.length === 0" class="empty-state">
+                    <view class="empty-icon-wrapper">
+                        <tn-icon name="file-text" size="168" color="#D9CDC7" />
+                    </view>
+                    <text class="empty-title">当前筛选下还没有订单</text>
+                    <text class="empty-subtitle">
+                        继续去挑选服务人员，新的预约会第一时间同步到这里。
+                    </text>
+                    <view
+                        class="empty-action-btn"
+                        :style="{
+                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || $theme.primaryColor} 100%)`
+                        }"
+                        @click="goHome"
+                    >
+                        <text class="empty-action-text" :style="{ color: $theme.btnColor }">
+                            去预约
                         </text>
                     </view>
                 </view>
-                <tn-tabs
-                    v-model="currentTabIndex"
-                    :scroll="true"
-                    height="96rpx"
-                    class="tabs-main"
-                    :active-color="$theme.primaryColor"
-                >
-                    <tn-tabs-item
-                        v-for="(tab, index) in statusTabs"
-                        :key="index"
-                        :title="tab.label"
-                        :badge="statistics[tab.key] > 0 ? String(statistics[tab.key]) : ''"
-                    />
-                </tn-tabs>
-            </view>
 
-            <view class="order-list-wrapper">
-                <view class="order-page__list-head">
-                    <view>
-                        <text class="order-page__section-title">订单列表</text>
-                        <text class="order-page__section-desc">按订单状态快速查看支付、履约与售后进度。</text>
-                    </view>
-                </view>
-
-                <!-- 订单列表 -->
-                <view class="order-list-wrapper__body">
-                    <!-- 加载中 -->
-                    <view v-if="loading && orders.length === 0" class="loading-state">
-                        <view class="loading-content">
-                            <tn-loading size="80" mode="flower" :color="$theme.primaryColor" />
-                            <text class="loading-text">加载中...</text>
-                        </view>
-                    </view>
-
-                    <!-- 空状态 -->
-                    <view v-else-if="orders.length === 0" class="empty-state cinema-panel">
-                        <view class="empty-icon-wrapper">
-                            <tn-icon name="file-text" size="200" color="#D1D5DB" />
-                        </view>
-                        <text class="empty-title">当前筛选下还没有订单</text>
-                        <text class="empty-subtitle">回到服务人员页继续挑选，新的预约会第一时间同步到这里。</text>
-                        <view
-                            class="empty-action-btn"
-                            :style="{
-                                background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || $theme.primaryColor} 100%)`,
-                                color: $theme.btnColor
-                            }"
-                            @click="goHome"
-                        >
-                            <text class="empty-action-text" :style="{ color: $theme.btnColor }">
-                                去预约
-                            </text>
-                        </view>
-                    </view>
-
-                    <!-- 订单列表 - 使用OrderCard组件 -->
-                    <view v-else class="order-list">
-                        <order-card
-                            v-for="order in orders"
-                            :key="order.id"
-                            :order="order"
-                            @click="goDetail(order.id)"
-                            @action="handleCardAction"
-                        />
-
-                        <!-- 加载更多提示 -->
-                        <view v-if="hasMore" class="load-more">
-                            <view v-if="loading" class="load-more-loading">
-                                <tn-loading size="40" mode="flower" :color="$theme.primaryColor" />
-                                <text class="load-more-text">加载中...</text>
+                <view v-else class="order-list">
+                    <view
+                        v-for="order in orders"
+                        :key="order.id"
+                        class="order-card"
+                        @click="goDetail(order.id)"
+                    >
+                        <view class="order-card__body">
+                            <text class="order-card__title">{{ order.serviceTitle }}</text>
+                            <text class="order-card__summary">{{ order.displaySummary }}</text>
+                            <view class="order-card__status-row">
+                                <view
+                                    class="order-card__status"
+                                    :style="getStatusStyle(order.statusValue)"
+                                >
+                                    <text class="order-card__status-text">
+                                        {{ order.statusText }}
+                                    </text>
+                                </view>
                             </view>
-                            <text
-                                v-else
-                                class="load-more-text load-more-clickable"
-                                :style="{ color: $theme.primaryColor }"
-                                @click="loadMore"
+                        </view>
+
+                        <view class="order-card__foot">
+                            <view class="order-card__amount-wrap">
+                                <text class="order-card__order-no">订单号 {{ order.orderNo }}</text>
+                                <view class="order-card__amount-row">
+                                    <text class="order-card__amount-label">实付</text>
+                                    <text class="order-card__amount">¥{{ order.actualPrice }}</text>
+                                </view>
+                            </view>
+
+                            <view
+                                v-if="order.actions.length"
+                                class="order-card__actions"
+                                @click.stop
                             >
-                                加载更多
-                            </text>
+                                <view
+                                    v-for="(action, index) in order.actions"
+                                    :key="`${order.id}-${index}`"
+                                    class="order-card__action"
+                                    :class="{
+                                        'order-card__action--primary': action.type === 'primary'
+                                    }"
+                                    @click="handleCardAction(action, order)"
+                                >
+                                    <text
+                                        class="order-card__action-text"
+                                        :class="{
+                                            'order-card__action-text--primary':
+                                                action.type === 'primary'
+                                        }"
+                                    >
+                                        {{ action.text }}
+                                    </text>
+                                </view>
+                            </view>
+
+                            <view v-else class="order-card__link" @click.stop="goDetail(order.id)">
+                                <text class="order-card__link-text">查看详情</text>
+                            </view>
                         </view>
-                        <view v-else-if="orders.length > 0" class="load-more">
-                            <text class="load-more-text">已经到底了</text>
+                    </view>
+
+                    <view v-if="hasMore" class="load-more">
+                        <view v-if="loading" class="load-more-loading">
+                            <tn-loading size="36" mode="flower" :color="$theme.primaryColor" />
+                            <text class="load-more-text">加载中...</text>
                         </view>
+                        <text
+                            v-else
+                            class="load-more-text load-more-clickable"
+                            :style="{ color: $theme.primaryColor }"
+                            @click="loadMore"
+                        >
+                            加载更多
+                        </text>
+                    </view>
+
+                    <view v-else class="load-more">
+                        <text class="load-more-text">没有更多了</text>
                     </view>
                 </view>
             </view>
-        </view>
 
-        <tabbar />
-    </view>
+            <tabbar />
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { onLoad, onShow, onReachBottom } from '@dcloudio/uni-app'
+import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app'
+import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
-import {
-    getOrderList,
-    getOrderStatistics,
-    cancelOrder,
-    confirmOrder,
-    deleteOrder
-} from '@/api/order'
-import OrderCard from '@/components/business/OrderCard.vue'
+import { cancelOrder, confirmOrder, deleteOrder, getOrderList, getOrderStatistics } from '@/api/order'
 
 const $theme = useThemeStore()
 
@@ -171,44 +184,6 @@ const statistics = reactive<any>({
     refund: 0
 })
 
-const overviewCards = computed(() => [
-    {
-        key: 'all',
-        label: '全部订单',
-        value: statistics.all || 0
-    },
-    {
-        key: 'pending_pay',
-        label: '待支付',
-        value: statistics.pending_pay || 0
-    },
-    {
-        key: 'in_service',
-        label: '服务中',
-        value: statistics.in_service || 0
-    },
-    {
-        key: 'completed',
-        label: '已完成',
-        value: statistics.completed || 0
-    }
-])
-
-const getStatusKey = (status: number) => {
-    const statusMap: Record<number, string> = {
-        0: 'pending_confirm',
-        1: 'pending_pay',
-        2: 'paid',
-        3: 'in_service',
-        4: 'completed',
-        5: 'reviewed',
-        6: 'cancelled',
-        7: 'paused',
-        8: 'refunded'
-    }
-    return statusMap[status] || 'pending_pay'
-}
-
 const buildActions = (status: number) => {
     if (status === 0) {
         return [{ text: '取消', type: 'secondary', action: 'cancel' }]
@@ -228,12 +203,52 @@ const buildActions = (status: number) => {
     return []
 }
 
-// 获取服务人员头像（优先使用关联的staff对象）
 const getStaffAvatar = (item: any) => {
     if (item.staff && item.staff.avatar) {
         return item.staff.avatar
     }
     return '/static/images/user/default_avatar.png'
+}
+
+const getOrderPrimaryTitle = (items: Array<any>) => {
+    const primaryItem = items[0] || {}
+    const packageName = String(primaryItem.packageName || '').trim()
+    const staffName = String(primaryItem.staffName || '').trim()
+
+    if (packageName && staffName) {
+        return `${packageName}｜${staffName}`
+    }
+
+    return packageName || staffName || '婚礼服务订单'
+}
+
+const getOrderMetaText = (locationText: string, items: Array<any>) => {
+    const primaryItem = items[0] || {}
+    const packageName = String(primaryItem.packageName || '').trim()
+    return locationText || packageName || ''
+}
+
+const getStatusText = (status: number) => {
+    const texts: Record<number, string> = {
+        0: '待确认',
+        1: '待支付',
+        2: '已支付',
+        3: '服务中',
+        4: '已完成',
+        5: '已评价',
+        6: '已取消',
+        7: '已暂停',
+        8: '已退款'
+    }
+
+    return texts[status] || '订单状态'
+}
+
+const buildDisplaySummary = (serviceDateText: string, serviceMeta: string) => {
+    return [serviceDateText, serviceMeta]
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+        .join(' · ') || '待安排服务信息'
 }
 
 const fetchOrders = async (refresh = false) => {
@@ -254,29 +269,38 @@ const fetchOrders = async (refresh = false) => {
         const res = await getOrderList(params)
         const dataList = Array.isArray(res?.data) ? res.data : []
         const list = dataList.map((order: any) => {
-            const discount = Number(order.discount_amount || 0)
             const locationText = [order.service_region_text, order.service_address]
                 .map((item: any) => String(item || '').trim())
                 .filter(Boolean)
                 .join(' · ')
+            const items = (order.items || []).map((item: any) => ({
+                id: item.id,
+                staffId: item.staff_id,
+                staffName: item.staff_name,
+                staffAvatar: getStaffAvatar(item),
+                packageName: item.package_name,
+                serviceDate: item.service_date
+            }))
+            const serviceDateList = items
+                .map((item: any) => String(item.serviceDate || '').trim())
+                .filter(Boolean)
+                .sort()
+
             return {
                 id: order.id,
                 orderNo: order.order_sn,
-                status: getStatusKey(order.order_status),
-                createTime: order.create_time,
-                location: locationText || '服务地区未填写',
-                originalPrice: Number(order.total_amount || 0),
-                discount,
+                statusValue: Number(order.order_status || 0),
+                statusText: order.order_status_desc || getStatusText(Number(order.order_status || 0)),
                 actualPrice: Number(order.pay_amount || 0),
-                items: (order.items || []).map((item: any) => ({
-                    id: item.id,
-                    staffId: item.staff_id,
-                    staffName: item.staff_name,
-                    staffAvatar: getStaffAvatar(item),
-                    packageName: item.package_name,
-                    serviceDate: item.service_date
-                })),
-                actions: buildActions(order.order_status)
+                serviceTitle: getOrderPrimaryTitle(items),
+                serviceMeta: getOrderMetaText(locationText, items),
+                serviceDateText: serviceDateList[0] || '待安排服务日期',
+                displaySummary: buildDisplaySummary(
+                    serviceDateList[0] || '待安排服务日期',
+                    getOrderMetaText(locationText, items)
+                ),
+                items,
+                actions: buildActions(Number(order.order_status || 0))
             }
         })
 
@@ -288,8 +312,8 @@ const fetchOrders = async (refresh = false) => {
 
         const totalPage = Number(res?.last_page || 1)
         hasMore.value = page.value < totalPage
-    } catch (e) {
-        console.error(e)
+    } catch (error) {
+        console.error(error)
     } finally {
         loading.value = false
     }
@@ -299,14 +323,14 @@ const fetchStatistics = async () => {
     try {
         const res = await getOrderStatistics()
         Object.assign(statistics, res)
-    } catch (e) {
-        console.error(e)
+    } catch (error) {
+        console.error(error)
     }
 }
 
 const loadMore = () => {
     if (hasMore.value && !loading.value) {
-        page.value++
+        page.value += 1
         fetchOrders()
     }
 }
@@ -354,8 +378,8 @@ const handleCancel = async (orderId: number) => {
             uni.showToast({ title: '订单已取消' })
             fetchOrders(true)
             fetchStatistics()
-        } catch (e: any) {
-            uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+        } catch (error: any) {
+            uni.showToast({ title: error.message || '操作失败', icon: 'none' })
         }
     }
 }
@@ -371,14 +395,10 @@ const handleConfirm = async (orderId: number) => {
             uni.showToast({ title: '订单已完成' })
             fetchOrders(true)
             fetchStatistics()
-        } catch (e: any) {
-            uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+        } catch (error: any) {
+            uni.showToast({ title: error.message || '操作失败', icon: 'none' })
         }
     }
-}
-
-const handleRefund = (orderId: number) => {
-    uni.navigateTo({ url: `/pages/order_detail/order_detail?id=${orderId}&action=refund` })
 }
 
 const handleDelete = async (orderId: number) => {
@@ -392,13 +412,28 @@ const handleDelete = async (orderId: number) => {
             uni.showToast({ title: '删除成功' })
             fetchOrders(true)
             fetchStatistics()
-        } catch (e: any) {
-            uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+        } catch (error: any) {
+            uni.showToast({ title: error.message || '操作失败', icon: 'none' })
         }
     }
 }
 
-// 监听标签切换
+const getStatusStyle = (status: number) => {
+    const styles: Record<number, Record<string, string>> = {
+        0: { color: '#E85A4F', background: 'rgba(232, 90, 79, 0.12)', border: '1rpx solid rgba(232, 90, 79, 0.14)' },
+        1: { color: '#C98524', background: 'rgba(201, 133, 36, 0.12)', border: '1rpx solid rgba(201, 133, 36, 0.14)' },
+        2: { color: '#2F7D58', background: 'rgba(47, 125, 88, 0.12)', border: '1rpx solid rgba(47, 125, 88, 0.14)' },
+        3: { color: '#6A92E6', background: 'rgba(106, 146, 230, 0.12)', border: '1rpx solid rgba(106, 146, 230, 0.16)' },
+        4: { color: '#7F7B78', background: 'rgba(127, 123, 120, 0.12)', border: '1rpx solid rgba(127, 123, 120, 0.14)' },
+        5: { color: '#2F7D58', background: 'rgba(47, 125, 88, 0.12)', border: '1rpx solid rgba(47, 125, 88, 0.14)' },
+        6: { color: '#B4ACA8', background: 'rgba(180, 172, 168, 0.14)', border: '1rpx solid rgba(180, 172, 168, 0.16)' },
+        7: { color: '#C98524', background: 'rgba(201, 133, 36, 0.12)', border: '1rpx solid rgba(201, 133, 36, 0.14)' },
+        8: { color: '#B44A3A', background: 'rgba(180, 74, 58, 0.12)', border: '1rpx solid rgba(180, 74, 58, 0.14)' }
+    }
+
+    return styles[status] || styles[0]
+}
+
 watch(currentTabIndex, () => {
     fetchOrders(true)
 })
@@ -406,7 +441,6 @@ watch(currentTabIndex, () => {
 onLoad((options: any) => {
     $theme.setScene('consumer')
     if (options.status !== undefined) {
-        // 状态映射：支持字符串和数字两种格式
         const statusMap: Record<string, number> = {
             pending_confirm: 0,
             pending_pay: 1,
@@ -419,7 +453,6 @@ onLoad((options: any) => {
             refund: 8
         }
 
-        // 如果是字符串，先尝试映射，否则转换为数字
         let statusValue: number | string = options.status
         if (typeof statusValue === 'string' && statusMap[statusValue] !== undefined) {
             statusValue = statusMap[statusValue]
@@ -447,136 +480,76 @@ onReachBottom(() => {
 
 <style lang="scss" scoped>
 .order-page {
-    min-height: 100vh;
-    background: transparent;
+    min-height: 100%;
+    background: var(--wm-color-page, #fcfbf9);
 
-    &__hero {
-        padding: 24rpx 24rpx 184rpx;
-        background:
-            radial-gradient(circle at top right, rgba(232, 90, 79, 0.1) 0, transparent 34%),
-            linear-gradient(180deg, #fff5f1 0%, #fcfbf9 70%, #f7f1ed 100%);
-    }
-
-    &__hero-copy {
-        max-width: 640rpx;
-    }
-
-    &__hero-label {
-        display: block;
-        font-size: 22rpx;
-        font-weight: 600;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: var(--wm-color-primary, #e85a4f);
-    }
-
-    &__hero-title {
-        display: block;
+    &__filter-scroll {
         margin-top: 22rpx;
-        font-size: 48rpx;
-        font-weight: 700;
-        line-height: 1.22;
-        color: var(--wm-text-primary, #1e2432);
+        padding: 0 37rpx;
+        white-space: nowrap;
     }
 
-    &__hero-desc {
-        display: block;
-        margin-top: 18rpx;
-        font-size: 25rpx;
-        line-height: 1.7;
+    &__filter-row {
+        display: inline-flex;
+        gap: 22rpx;
+        padding-bottom: 15rpx;
+    }
+
+    &__filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 12rpx;
+        min-height: 82rpx;
+        padding: 0 30rpx;
+        border-radius: 999rpx;
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        background: rgba(255, 255, 255, 0.84);
         color: var(--wm-text-secondary, #7f7b78);
+        box-sizing: border-box;
+
+        &--active {
+            border-color: var(--wm-color-primary, #e85a4f);
+            background: var(--wm-color-primary, #e85a4f);
+            color: #ffffff;
+            box-shadow: 0 8rpx 18rpx rgba(232, 90, 79, 0.14);
+        }
     }
 
-    &__hero-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 16rpx;
-        margin-top: 28rpx;
+    &__filter-chip-text {
+        font-size: 28rpx;
+        font-weight: 600;
+        line-height: 1;
     }
 
-    &__hero-card {
-        padding: 24rpx;
-        background: rgba(255, 255, 255, 0.78);
+    &__filter-chip-count {
+        min-width: 36rpx;
+        height: 36rpx;
+        padding: 0 10rpx;
+        border-radius: 999rpx;
+        background: rgba(232, 90, 79, 0.08);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
     }
 
-    &__hero-card-value {
-        display: block;
-        font-size: 36rpx;
-        font-weight: 700;
-        color: var(--wm-text-primary, #1e2432);
+    &__filter-chip-count-text {
+        font-size: 20rpx;
+        line-height: 1;
+        color: currentColor;
     }
 
-    &__hero-card-label {
-        display: block;
-        margin-top: 8rpx;
-        font-size: 22rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+    &__filter-chip--active &__filter-chip-count {
+        background: rgba(255, 255, 255, 0.18);
     }
 
-    &__surface {
-        margin-top: -136rpx;
-        border-radius: 36rpx 36rpx 0 0;
-        padding: 0 24rpx 28rpx;
-        box-shadow: 0 -20rpx 40rpx rgba(214, 185, 167, 0.14);
-    }
-
-    &__tabs-head,
-    &__list-head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16rpx;
-    }
-
-    &__tabs-head {
-        padding: 24rpx 24rpx 6rpx;
-    }
-
-    &__list-head {
-        margin-bottom: 18rpx;
-    }
-
-    &__section-title {
-        display: block;
-        font-size: 30rpx;
-        font-weight: 700;
-        color: var(--wm-text-primary, #1e2432);
-    }
-
-    &__section-desc {
-        display: block;
-        margin-top: 8rpx;
-        font-size: 22rpx;
-        line-height: 1.6;
-        color: var(--wm-text-secondary, #7f7b78);
+    &__content {
+        padding: 22rpx 37rpx 45rpx;
     }
 }
 
-/* 状态筛选标签 */
-.status-tabs-wrapper {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    margin-bottom: 24rpx;
-    overflow: hidden;
-}
-
-.tabs-main {
-    width: 100%;
-}
-
-/* 订单列表容器 */
-.order-list-wrapper {
-    padding: 0 0 24rpx;
-}
-
-.order-list-wrapper__body {
-    min-height: 56vh;
-}
-
-/* 加载状态 */
 .loading-state {
-    min-height: 60vh;
+    min-height: 56vh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -586,29 +559,27 @@ onReachBottom(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24rpx;
+    gap: 16rpx;
 }
 
 .loading-text {
-    font-size: 28rpx;
+    font-size: 26rpx;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-/* 空状态 */
 .empty-state {
-    min-height: 60vh;
+    min-height: 56vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 48rpx;
-    background: #ffffff;
+    padding: 72rpx 24rpx 96rpx;
 }
 
 .empty-icon-wrapper {
-    width: 280rpx;
-    height: 280rpx;
-    margin-bottom: 32rpx;
+    width: 220rpx;
+    height: 220rpx;
+    margin-bottom: 24rpx;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -626,7 +597,7 @@ onReachBottom(() => {
     font-size: 26rpx;
     line-height: 1.7;
     color: var(--wm-text-secondary, #7f7b78);
-    margin-bottom: 48rpx;
+    margin-bottom: 40rpx;
     text-align: center;
 }
 
@@ -634,33 +605,178 @@ onReachBottom(() => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 28rpx 72rpx;
-    border-radius: 56rpx;
-    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
-    transition: all 0.3s ease;
+    min-width: 280rpx;
+    min-height: 88rpx;
+    padding: 0 36rpx;
+    border-radius: 999rpx;
+    box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.16);
 
     &:active {
-        transform: translateY(2rpx);
-        box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+        transform: translateY(1rpx);
     }
 }
 
 .empty-action-text {
-    font-size: 32rpx;
+    font-size: 30rpx;
     font-weight: 700;
 }
 
-/* 订单列表 */
 .order-list {
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
-    padding-bottom: 12rpx;
+    gap: 30rpx;
 }
 
-/* 加载更多 */
+.order-card {
+    padding: 34rpx 37rpx;
+    border-radius: 45rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.08);
+}
+
+.order-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+}
+
+.order-card__title {
+    display: block;
+    font-size: 30rpx;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.order-card__summary {
+    display: block;
+    font-size: 28rpx;
+    line-height: 1.6;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.order-card__status-row {
+    display: flex;
+    align-items: center;
+}
+
+.order-card__status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48rpx;
+    padding: 0 24rpx;
+    border-radius: 999rpx;
+    box-sizing: border-box;
+}
+
+.order-card__status-text {
+    font-size: 24rpx;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.order-card__foot {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24rpx;
+    margin-top: 28rpx;
+}
+
+.order-card__amount-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    min-width: 0;
+}
+
+.order-card__order-no {
+    font-size: 22rpx;
+    line-height: 1.4;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.order-card__amount-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10rpx;
+    flex-wrap: wrap;
+}
+
+.order-card__amount-label {
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
+    line-height: 1;
+}
+
+.order-card__amount {
+    font-size: 34rpx;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.order-card__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 16rpx;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.order-card__action {
+    min-width: 128rpx;
+    height: 82rpx;
+    padding: 0 30rpx;
+    border-radius: 999rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.82);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.order-card__action--primary {
+    border-color: var(--wm-color-primary, #e85a4f);
+    background: var(--wm-color-primary, #e85a4f);
+}
+
+.order-card__action-text {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-text-primary, #1e2432);
+    line-height: 1;
+}
+
+.order-card__link {
+    min-width: 128rpx;
+    height: 82rpx;
+    padding: 0 30rpx;
+    border-radius: 999rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    box-sizing: border-box;
+}
+
+.order-card__action-text--primary {
+    color: #ffffff;
+}
+
+.order-card__link-text {
+    font-size: 24rpx;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--wm-text-primary, #1e2432);
+}
+
 .load-more {
-    padding: 40rpx 0;
+    padding: 45rpx 0 30rpx;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -669,36 +785,23 @@ onReachBottom(() => {
 .load-more-loading {
     display: flex;
     align-items: center;
-    gap: 16rpx;
+    gap: 12rpx;
 }
 
 .load-more-text {
-    font-size: 28rpx;
+    font-size: 26rpx;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
 .load-more-clickable {
     font-weight: 600;
-    padding: 16rpx 32rpx;
-    border-radius: 48rpx;
-    background: rgba(255, 255, 255, 0.72);
-    transition: all 0.2s ease;
+    padding: 14rpx 28rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.84);
 
     &:active {
         opacity: 0.7;
-        transform: scale(0.98);
+        transform: translateY(1rpx);
     }
-}
-
-.order-page :deep(.tn-tabs) {
-    background: transparent;
-}
-
-.order-page :deep(.tn-tabs__bar) {
-    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, var(--wm-color-secondary, #c99b73) 100%);
-}
-
-.order-page :deep(.tn-tabs-item) {
-    color: var(--wm-text-secondary, #7f7b78);
 }
 </style>

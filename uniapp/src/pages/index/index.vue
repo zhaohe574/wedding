@@ -1,8 +1,9 @@
 <template>
     <page-meta :page-style="$theme.pageStyle">
     </page-meta>
-    <view class="home-page page-with-tabbar-safe-bottom">
-        <view class="home-page__content">
+    <PageShell scene="consumer" hasTabbar>
+        <view class="home-page">
+            <view class="home-page__content">
             <view class="home-page__hero" :style="heroStyle">
                 <swiper
                     v-if="bannerList.length"
@@ -105,13 +106,15 @@
         <MpPrivacyPopup></MpPrivacyPopup>
         <!--  #endif  -->
 
-        <tabbar :badge-refresh-key="tabbarRefreshKey" />
-    </view>
+            <tabbar :badge-refresh-key="tabbarRefreshKey" />
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { getIndex } from '@/api/shop'
 import { getRecommendStaff } from '@/api/staff'
+import PageShell from '@/components/base/PageShell.vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { navigateTo } from '@/utils/util'
@@ -392,10 +395,7 @@ onShow(() => {
 
 <style lang="scss" scoped>
 .home-page {
-    min-height: 100vh;
-    background:
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.9) 0, rgba(255, 255, 255, 0) 28%),
-        linear-gradient(180deg, #fbf5ef 0%, #f4eee7 100%);
+    --wm-space-page-x: 37rpx;
 }
 
 .home-page__content {
@@ -404,13 +404,13 @@ onShow(() => {
 }
 
 .home-page__body {
-    padding: 18rpx 20rpx 0;
+    padding: 30rpx var(--wm-space-page-x, 37rpx) 37rpx;
 }
 
 .home-page__hero {
     position: relative;
     overflow: hidden;
-    border-radius: 0 0 60rpx 60rpx;
+    border-radius: 0 0 56rpx 56rpx;
     box-shadow: 0 24rpx 56rpx rgba(177, 108, 95, 0.18);
 }
 
@@ -475,7 +475,7 @@ onShow(() => {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 28rpx;
+    bottom: 45rpx;
     z-index: 1;
     display: flex;
     align-items: center;
@@ -496,8 +496,8 @@ onShow(() => {
 }
 
 .home-page__cta {
-    height: 96rpx;
-    border-radius: 28rpx;
+    height: 101rpx;
+    border-radius: 37rpx;
     background: #ef5b4c;
     display: flex;
     align-items: center;
@@ -513,7 +513,7 @@ onShow(() => {
 }
 
 .home-page__section {
-    padding: 30rpx 0 12rpx;
+    padding: 37rpx 0 22rpx;
 }
 
 .home-page__section-head {
@@ -541,12 +541,12 @@ onShow(() => {
 .home-page__team-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16rpx;
+    gap: 22rpx;
 }
 
 .home-page__team-card {
     overflow: hidden;
-    border-radius: 28rpx;
+    border-radius: 45rpx;
     background: rgba(255, 251, 248, 0.92);
     border: 1rpx solid rgba(226, 214, 207, 0.92);
     box-shadow: 0 16rpx 36rpx rgba(94, 64, 54, 0.08);
@@ -569,7 +569,7 @@ onShow(() => {
 }
 
 .home-page__team-body {
-    padding: 18rpx 18rpx 22rpx;
+    padding: 30rpx 30rpx 34rpx;
 }
 
 .home-page__team-name,

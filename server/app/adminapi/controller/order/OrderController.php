@@ -373,6 +373,26 @@ class OrderController extends BaseAdminController
     }
 
     /**
+     * @notes 删除订单
+     * @return \think\response\Json
+     */
+    public function delete()
+    {
+        $params = (new OrderValidate())->post()->goCheck('delete');
+        if (StaffService::getStaffScopeId($this->adminId, $this->adminInfo) > 0) {
+            return $this->fail('无权限操作');
+        }
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+        $result = OrderLogic::delete((int)$params['id'], $this->adminId);
+        if (true === $result) {
+            return $this->success('删除成功');
+        }
+        return $this->fail(OrderLogic::getError());
+    }
+
+    /**
      * @notes 我的订单开始服务
      * @return \think\response\Json
      */

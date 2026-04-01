@@ -1,70 +1,66 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar :front-color="$theme.navColor" :background-color="$theme.navBgColor" />
-        <!-- #endif -->
-    </page-meta>
-    <!-- #ifndef H5 -->
-    <tn-sticky>
-        <tn-navbar :back="false" :fixed="false" title="婚礼资讯"> </tn-navbar>
-    </tn-sticky>
-    <!-- #endif -->
-    <view class="news-page cinema-page page-with-tabbar-safe-bottom">
-        <view class="news-page__hero">
-            <view class="news-page__hero-badge">Wedding Journal</view>
-            <text class="news-page__hero-title">婚礼灵感、案例趋势与备婚攻略</text>
-            <text class="news-page__hero-desc">
-                用编辑感更强、信息更清晰的列表节奏整理灵感内容，让备婚浏览更轻盈，也更容易快速找到所需内容。
-            </text>
-            <view class="news-page__hero-stats glass-card">
-                <view class="news-page__hero-stat">
-                    <text class="news-page__hero-stat-value">{{ tabList.length || 1 }}</text>
-                    <text class="news-page__hero-stat-label">栏目分类</text>
-                </view>
-                <view class="news-page__hero-divider" />
-                <view class="news-page__hero-stat">
-                    <text class="news-page__hero-stat-value">{{ activeTabName }}</text>
-                    <text class="news-page__hero-stat-label">当前频道</text>
+    <page-meta :page-style="$theme.pageStyle" />
+    <PageShell scene="consumer" hasTabbar>
+        <BaseNavbar title="婚礼资讯" :back="false" />
+        <view class="news-page cinema-page">
+            <view class="news-page__hero">
+                <view class="news-page__hero-badge">Wedding Journal</view>
+                <text class="news-page__hero-title">婚礼灵感、案例趋势与备婚攻略</text>
+                <text class="news-page__hero-desc">
+                    用编辑感更强、信息更清晰的列表节奏整理灵感内容，让备婚浏览更轻盈，也更容易快速找到所需内容。
+                </text>
+                <view class="news-page__hero-stats glass-card">
+                    <view class="news-page__hero-stat">
+                        <text class="news-page__hero-stat-value">{{ tabList.length || 1 }}</text>
+                        <text class="news-page__hero-stat-label">栏目分类</text>
+                    </view>
+                    <view class="news-page__hero-divider" />
+                    <view class="news-page__hero-stat">
+                        <text class="news-page__hero-stat-value">{{ activeTabName }}</text>
+                        <text class="news-page__hero-stat-label">当前频道</text>
+                    </view>
                 </view>
             </view>
-        </view>
 
-        <view class="news-page__surface cinema-surface">
-            <navigator class="news-page__search glass-card" url="/pages/search/search">
-                <view class="news-page__search-head">
-                    <view>
-                        <text class="news-page__search-label">灵感检索</text>
-                        <text class="news-page__search-title">搜索策划、案例、趋势关键词</text>
-                    </view>
-                    <text class="news-page__search-side">快速进入</text>
-                </view>
-                <tn-search-box placeholder="请输入关键词搜索" :disabled="true"></tn-search-box>
-            </navigator>
-
-            <view class="news-page__tabs cinema-panel">
-                <view class="news-page__tabs-head">
-                    <view>
-                        <text class="news-page__section-title">精选栏目</text>
-                        <text class="news-page__section-desc">保持海报感视觉，但优先保证长列表阅读效率。</text>
-                    </view>
-                </view>
-                <tabs
-                    :current="current"
-                    @change="handleChange"
-                    height="82"
-                    bar-width="60"
-                    :barStyle="{ bottom: '0' }"
-                >
-                    <tab v-for="(item, i) in tabList" :key="i" :name="item.name">
-                        <view class="news-list">
-                            <news-list :cid="item.id" :i="i" :index="current"></news-list>
+            <view class="news-page__surface cinema-surface">
+                <navigator class="news-page__search glass-card" url="/pages/search/search">
+                    <view class="news-page__search-head">
+                        <view>
+                            <text class="news-page__search-label">灵感检索</text>
+                            <text class="news-page__search-title">搜索策划、案例、趋势关键词</text>
                         </view>
-                    </tab>
-                </tabs>
+                        <text class="news-page__search-side">快速进入</text>
+                    </view>
+                    <tn-search-box placeholder="请输入关键词搜索" :disabled="true"></tn-search-box>
+                </navigator>
+
+                <view class="news-page__tabs cinema-panel">
+                    <view class="news-page__tabs-head">
+                        <view>
+                            <text class="news-page__section-title">精选栏目</text>
+                            <text class="news-page__section-desc">
+                                保持海报感视觉，但优先保证长列表阅读效率。
+                            </text>
+                        </view>
+                    </view>
+                    <tabs
+                        :current="current"
+                        @change="handleChange"
+                        height="82"
+                        bar-width="60"
+                        :barStyle="{ bottom: '0' }"
+                    >
+                        <tab v-for="(item, i) in tabList" :key="i" :name="item.name">
+                            <view class="news-list">
+                                <news-list :cid="item.id" :i="i" :index="current"></news-list>
+                            </view>
+                        </tab>
+                    </tabs>
+                </view>
             </view>
+            <tabbar />
         </view>
-        <tabbar />
-    </view>
+    </PageShell>
 </template>
 
 <script lang="ts" setup>
@@ -73,6 +69,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import NewsList from './component/news-list.vue'
 import { getArticleCate } from '@/api/news'
 import { useThemeStore } from '@/stores/theme'
+import PageShell from '@/components/base/PageShell.vue'
 
 const tabList = ref<any>([])
 const current = ref<number>(0)
@@ -90,15 +87,12 @@ const getData = async () => {
 }
 
 onLoad(() => {
-    themeStore.setScene('consumer')
     getData()
 })
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .news-page {
-    min-height: 100vh;
-
     &__hero {
         position: relative;
         padding: 24rpx 24rpx 196rpx;
@@ -196,13 +190,13 @@ onLoad(() => {
     &__surface {
         position: relative;
         margin-top: -148rpx;
-        border-radius: 36rpx 36rpx 0 0;
-        padding: 0 24rpx 28rpx;
+        border-radius: 67rpx 67rpx 0 0;
+        padding: 0 37rpx 37rpx;
         box-shadow: 0 -20rpx 40rpx rgba(214, 185, 167, 0.14);
     }
 
     &__search {
-        padding: 24rpx;
+        padding: 30rpx;
     }
 
     &__search-head {

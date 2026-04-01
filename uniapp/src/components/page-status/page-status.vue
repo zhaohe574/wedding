@@ -44,7 +44,7 @@ const props = defineProps({
     height: 100%;
     width: 100%;
     min-height: 100%;
-    padding: 40rpx 24rpx;
+    padding: 36rpx 24rpx;
     flex: 1;
     display: flex;
     justify-content: center;

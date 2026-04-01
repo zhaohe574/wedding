@@ -1,23 +1,30 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="档期查询" transparent />
-    <view class="page">
+    <PageShell scene="consumer" class="schedule-query-page">
+        <BaseNavbar class="schedule-query-page__navbar" title="档期查询" />
         <view class="content">
-            <text class="desc">选择婚礼日期、地区与服务模块，快速筛出可预约团队。</text>
-
             <view class="card" @tap="openDatePicker">
-                <text class="title">预约日期</text>
+                <view class="field-label">
+                    <text class="required-mark" :style="{ color: $theme.ctaColor }">*</text>
+                    <text class="title">预约日期</text>
+                </view>
                 <text class="value" :class="{ muted: !selectedDate }">{{ selectedDateText }}</text>
             </view>
 
             <view class="card" @tap="openRegionPicker">
-                <text class="title">预约地区</text>
+                <view class="field-label">
+                    <text class="required-mark" :style="{ color: $theme.ctaColor }">*</text>
+                    <text class="title">预约地区</text>
+                </view>
                 <text class="value" :class="{ muted: !hasSelectedRegion }">{{ selectedRegionText }}</text>
             </view>
 
             <view class="card">
                 <view class="head">
-                    <text class="title">服务分类</text>
+                    <view class="field-label">
+                        <text class="required-mark" :style="{ color: $theme.ctaColor }">*</text>
+                        <text class="title">服务分类</text>
+                    </view>
                     <text v-if="selectedCategoryName" class="hint">当前：{{ selectedCategoryName }}</text>
                 </view>
                 <view v-if="categories.length" class="chips">
@@ -78,16 +85,15 @@
                     </view>
                 </view>
             </view>
-
         </view>
 
-        <ActionArea sticky safeBottom>
+        <ActionArea class="schedule-query-page__action" sticky safeBottom>
             <view class="submit" :style="{ backgroundColor: $theme.primaryColor, boxShadow: getPrimaryShadow(0.2) }" @tap="handleSubmit">
                 <text class="submit__text">开始查询</text>
             </view>
         </ActionArea>
 
-        <u-popup v-model="showRegionPopup" mode="bottom" :mask="true" :mask-close-able="true" :safe-area-inset-bottom="true" :border-radius="24">
+        <u-popup v-model="showRegionPopup" mode="bottom" :mask="true" :mask-close-able="true" :safe-area-inset-bottom="true" :border-radius="popupBorderRadius">
             <view class="picker">
                 <view class="picker__head">
                     <text class="picker__action" @tap="closeRegionPicker">取消</text>
@@ -121,7 +127,7 @@
             </view>
         </u-popup>
 
-        <u-popup v-model="showDatePopup" mode="bottom" :mask="true" :mask-close-able="true" :safe-area-inset-bottom="true" :border-radius="24">
+        <u-popup v-model="showDatePopup" mode="bottom" :mask="true" :mask-close-able="true" :safe-area-inset-bottom="true" :border-radius="popupBorderRadius">
             <view class="picker">
                 <view class="picker__head">
                     <text class="picker__action" @tap="closeDatePicker">取消</text>
@@ -138,7 +144,7 @@
             </view>
         </u-popup>
 
-        <u-popup v-model="showTagPopup" mode="bottom" :mask="true" :mask-close-able="true" :safe-area-inset-bottom="true" :border-radius="24" @close="handleTagPopupClose">
+        <u-popup v-model="showTagPopup" mode="bottom" :mask="true" :mask-close-able="true" :safe-area-inset-bottom="true" :border-radius="popupBorderRadius" @close="handleTagPopupClose">
             <view class="picker">
                 <view class="picker__head">
                     <view class="picker__group">
@@ -161,13 +167,14 @@
                 </view>
             </view>
         </u-popup>
-    </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import ActionArea from '@/components/base/ActionArea.vue'
+import PageShell from '@/components/base/PageShell.vue'
 import { getServiceCategories, getServiceRegionTree, getStyleTags } from '@/api/service'
 import { useThemeStore } from '@/stores/theme'
 import { alphaColor } from '@/utils/color'
@@ -192,6 +199,7 @@ const selectedTagIds = ref<number[]>([])
 const tempSelectedTagIds = ref<number[]>([])
 const currentSort = ref('default')
 const selectedDate = ref('')
+const entrySource = ref('')
 const showDatePopup = ref(false)
 const showRegionPopup = ref(false)
 const showTagPopup = ref(false)
@@ -199,9 +207,10 @@ const datePickerValue = ref([0, 0, 0])
 const regionTree = ref<any[]>([])
 const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
 const tempRegion = ref(normalizeServiceRegion(selectedRegion.value))
-const keywordPlaceholderStyle = 'color: rgba(30, 36, 50, 0.42); font-size: 30rpx; font-weight: 600;'
+const popupBorderRadius = 28
+const keywordPlaceholderStyle = 'color: rgba(30, 36, 50, 0.42); font-size: 30rpx; font-weight: 600; line-height: 1.6;'
 
-const getPrimaryShadow = (alpha = 0.2) => `0 12rpx 28rpx ${alphaColor($theme.primaryColor, alpha)}`
+const getPrimaryShadow = (alpha = 0.18) => `0 24rpx 40rpx ${alphaColor($theme.primaryColor, alpha)}`
 const isValidSortValue = (value: unknown) => sortOptions.some((item) => item.value === value)
 const parseIdList = (value: unknown) => Array.from(new Set((Array.isArray(value) ? value : String(value || '').split(',')).map((item) => Number(item)).filter((item) => Number.isInteger(item) && item > 0)))
 const getTomorrowDate = () => { const tomorrow = new Date(); tomorrow.setHours(0, 0, 0, 0); tomorrow.setDate(tomorrow.getDate() + 1); return tomorrow }
@@ -281,11 +290,17 @@ const handleSubmit = () => {
     if (currentSort.value !== 'default') queryParts.push(`sort=${encodeURIComponent(currentSort.value)}`)
     const regionQuery = buildServiceRegionQuery(selectedRegion.value)
     if (regionQuery) queryParts.push(regionQuery)
-    uni.navigateTo({ url: `/pages/staff_list/staff_list?${queryParts.join('&')}` })
+    const url = `/pages/staff_list/staff_list?${queryParts.join('&')}`
+    if (entrySource.value === 'staff_list') {
+        uni.redirectTo({ url })
+        return
+    }
+    uni.navigateTo({ url })
 }
 
 onLoad(async (options) => {
     $theme.setScene('consumer')
+    if (typeof options?.source === 'string') entrySource.value = options.source.trim()
     selectedRegion.value = normalizeServiceRegion({ ...loadServiceRegionSelection(), ...options })
     tempRegion.value = normalizeServiceRegion(selectedRegion.value)
     if (typeof options?.keyword === 'string') keyword.value = options.keyword.trim()
@@ -301,47 +316,348 @@ onShow(() => { $theme.setScene('consumer') })
 </script>
 
 <style lang="scss" scoped>
-.page{min-height:100vh;background:#fcfbf9}
-.content{padding:12rpx 20rpx calc(184rpx + env(safe-area-inset-bottom))}
-.desc{display:block;padding:6rpx 0 8rpx;font-size:28rpx;line-height:1.6;color:#7f7b78}
-.card{margin-top:16rpx;padding:32rpx 36rpx;border-radius:48rpx;border:1rpx solid #efe6e1;background:rgba(255,255,255,.84);backdrop-filter:blur(24rpx);box-shadow:0 8rpx 20rpx rgba(214,185,167,.08)}
-.head{display:flex;align-items:center;justify-content:space-between;gap:20rpx}
-.title{display:block;font-size:28rpx;font-weight:700;color:#1e2432}
-.hint{font-size:22rpx;font-weight:600;color:var(--wm-color-primary,#e85a4f)}
-.value{display:block;margin-top:12rpx;font-size:30rpx;font-weight:600;line-height:1.6;color:#1e2432;white-space:pre-wrap}
-.muted,.helper,.empty{color:rgba(30,36,50,.42)}
-.helper,.empty{display:block;margin-top:18rpx;font-size:26rpx;line-height:1.6}
-.chips{display:flex;flex-wrap:wrap;gap:16rpx;margin-top:20rpx}
-.chips.dense{gap:14rpx}
-.chip{display:inline-flex;align-items:center;justify-content:center;min-height:64rpx;padding:0 28rpx;border-radius:999rpx;border:1rpx solid #efe6e1;background:rgba(255,255,255,.84);font-size:24rpx;font-weight:600;color:#7f7b78}
-.chip.soft{background:rgba(252,251,249,.88)}
-.chip.active{background:var(--wm-color-primary,#e85a4f);border-color:var(--wm-color-primary,#e85a4f);color:#fff;box-shadow:0 10rpx 18rpx rgba(232,90,79,.16)}
-.dropdown{display:flex;align-items:center;justify-content:space-between;gap:16rpx;margin-top:18rpx;min-height:88rpx;padding:0 24rpx;border-radius:24rpx;border:1rpx solid #efe6e1;background:rgba(252,251,249,.9)}
-.dropdown.disabled{background:rgba(248,241,236,.72)}
-.dropdown__text{flex:1;min-width:0;font-size:28rpx;font-weight:600;color:#1e2432;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dropdown.muted .dropdown__text{color:rgba(30,36,50,.42)}
-.keyword{width:100%;min-height:52rpx;margin-top:12rpx;font-size:30rpx;font-weight:600;line-height:1.6;color:#1e2432}
-.submit{display:flex;align-items:center;justify-content:center;width:100%;min-height:112rpx;border-radius:44rpx}
-.submit__text{font-size:32rpx;font-weight:700;color:#fff}
-.picker{padding-bottom:calc(24rpx + env(safe-area-inset-bottom));background:#fff}
-.picker__head{display:flex;align-items:center;justify-content:space-between;padding:28rpx 32rpx 24rpx;border-bottom:1rpx solid rgba(239,230,225,.92)}
-.picker__group{display:flex;align-items:center;gap:18rpx}
-.picker__action{font-size:26rpx;color:#7f7b78}
-.picker__action.primary,.picker__title{color:#1e2432;font-weight:700}
-.picker__title{font-size:30rpx}
-.picker__clear{font-size:24rpx;color:#7f7b78}
-.region{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16rpx;padding:24rpx 24rpx 0}
-.region__title{padding:0 12rpx 16rpx;font-size:24rpx;font-weight:700;color:#1e2432}
-.region__scroll{height:420rpx;border-radius:24rpx;background:#fcfbf9}
-.region__item{padding:20rpx 18rpx;font-size:24rpx;line-height:1.5;color:#7f7b78}
-.date{padding:12rpx 24rpx 0}
-.date__view{width:100%;height:420rpx}
-.date__item{display:flex;align-items:center;justify-content:center;font-size:30rpx;color:#1e2432}
-.panel{padding:24rpx;max-height:60vh;overflow-y:auto}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16rpx}
-.grid__item{padding:24rpx 16rpx;border-radius:18rpx;border:1rpx solid #efe6e1;background:rgba(252,251,249,.92);font-size:26rpx;font-weight:500;line-height:1.4;color:#7f7b78;text-align:center}
-.grid__item.active{color:#fff;font-weight:600;border-color:var(--wm-color-primary,#e85a4f);background:var(--wm-color-primary,#e85a4f);box-shadow:0 10rpx 18rpx rgba(232,90,79,.16)}
-.picker__foot{display:flex;gap:18rpx;padding:24rpx}
-.picker__btn{flex:1;display:flex;align-items:center;justify-content:center;min-height:84rpx;border-radius:999rpx;background:rgba(248,241,236,.86);font-size:28rpx;font-weight:600;color:#1e2432}
-.picker__btn.primary-bg{color:#fff}
+.schedule-query-page {
+    background: transparent;
+}
+
+.content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 30rpx;
+    padding: 22rpx 37rpx calc(220rpx + env(safe-area-inset-bottom));
+}
+
+.card {
+    padding: 34rpx 37rpx;
+    border-radius: 45rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.84);
+    backdrop-filter: blur(24rpx);
+    -webkit-backdrop-filter: blur(24rpx);
+}
+
+.head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20rpx;
+}
+
+.field-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10rpx;
+    min-width: 0;
+}
+
+.required-mark {
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.title {
+    display: block;
+    font-size: 28rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.hint {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.value {
+    display: block;
+    margin-top: 16rpx;
+    font-size: 30rpx;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #1e2432);
+    white-space: pre-wrap;
+}
+
+.muted,
+.helper,
+.empty {
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.helper,
+.empty {
+    display: block;
+    margin-top: 24rpx;
+    font-size: 26rpx;
+    line-height: 1.6;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20rpx;
+    margin-top: 24rpx;
+}
+
+.chips.dense {
+    gap: 20rpx;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 74rpx;
+    padding: 0 28rpx;
+    border-radius: 999rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.84);
+    backdrop-filter: blur(24rpx);
+    -webkit-backdrop-filter: blur(24rpx);
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.chip.soft {
+    background: rgba(255, 255, 255, 0.84);
+}
+
+.chip.active {
+    background: var(--wm-color-primary, #e85a4f);
+    border-color: var(--wm-color-primary, #e85a4f);
+    color: #fff;
+}
+
+.dropdown {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20rpx;
+    margin-top: 24rpx;
+    min-height: 104rpx;
+    padding: 0 30rpx;
+    border-radius: 37rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: var(--wm-color-bg-page, #fcfbf9);
+}
+
+.dropdown.disabled {
+    background: rgba(248, 241, 236, 0.72);
+}
+
+.dropdown__text {
+    flex: 1;
+    min-width: 0;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: var(--wm-text-primary, #1e2432);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dropdown.muted .dropdown__text {
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.keyword {
+    width: 100%;
+    min-height: 52rpx;
+    margin-top: 16rpx;
+    font-size: 30rpx;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 116rpx;
+    border-radius: 45rpx;
+}
+
+.submit__text {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: #fff;
+}
+
+.picker {
+    border-radius: 52rpx 52rpx 0 0;
+    padding-bottom: calc(var(--wm-space-card-padding, 30rpx) + env(safe-area-inset-bottom));
+    background: var(--wm-color-bg-page, #fcfbf9);
+    overflow: hidden;
+}
+
+.picker__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 34rpx 37rpx 30rpx;
+    border-bottom: 1rpx solid rgba(239, 230, 225, 0.92);
+}
+
+.picker__group {
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+}
+
+.picker__action {
+    font-size: 28rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.picker__action.primary,
+.picker__title {
+    color: var(--wm-text-primary, #1e2432);
+    font-weight: 700;
+}
+
+.picker__title {
+    font-size: 32rpx;
+}
+
+.picker__clear {
+    font-size: 24rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.region {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22rpx;
+    padding: 30rpx 30rpx 0;
+}
+
+.region__title {
+    padding: 0 16rpx 16rpx;
+    font-size: 24rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.region__scroll {
+    height: 420rpx;
+    border-radius: 37rpx;
+    background: rgba(255, 255, 255, 0.88);
+}
+
+.region__item {
+    padding: 20rpx 18rpx;
+    font-size: 24rpx;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.date {
+    padding: 12rpx 24rpx 0;
+}
+
+.date__view {
+    width: 100%;
+    height: 420rpx;
+}
+
+.date__item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30rpx;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.panel {
+    padding: 30rpx;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22rpx;
+}
+
+.grid__item {
+    padding: 30rpx 22rpx;
+    border-radius: 37rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.94);
+    font-size: 26rpx;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--wm-text-secondary, #7f7b78);
+    text-align: center;
+}
+
+.grid__item.active {
+    color: #fff;
+    font-weight: 600;
+    border-color: var(--wm-color-primary, #e85a4f);
+    background: var(--wm-color-primary, #e85a4f);
+    box-shadow: 0 10rpx 18rpx rgba(232, 90, 79, 0.16);
+}
+
+.picker__foot {
+    display: flex;
+    gap: 22rpx;
+    padding: 30rpx;
+}
+
+.picker__btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 101rpx;
+    border-radius: 37rpx;
+    background: rgba(248, 241, 236, 0.86);
+    font-size: 28rpx;
+    font-weight: 600;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.picker__btn.primary-bg {
+    color: #fff;
+}
+
+.schedule-query-page__navbar :deep(.base-navbar) {
+    background: transparent !important;
+}
+
+.schedule-query-page__navbar :deep(.base-navbar__bar) {
+    padding: 0 45rpx;
+}
+
+.schedule-query-page__navbar :deep(.base-navbar__title) {
+    font-size: 46rpx;
+    line-height: 1.2;
+}
+
+.schedule-query-page__navbar :deep(.base-navbar__back-text),
+.schedule-query-page__navbar :deep(.base-navbar__placeholder) {
+    font-size: 37rpx;
+}
+
+.schedule-query-page :deep(.schedule-query-page__action.wm-action-area) {
+    padding: 22rpx 37rpx 39rpx;
+    background: linear-gradient(
+        180deg,
+        rgba(252, 251, 249, 0) 0%,
+        rgba(252, 251, 249, 0.94) 24%,
+        rgba(252, 251, 249, 1) 100%
+    );
+}
+
+.schedule-query-page :deep(.schedule-query-page__action.wm-action-area--safe) {
+    padding-bottom: calc(39rpx + env(safe-area-inset-bottom));
+}
 </style>

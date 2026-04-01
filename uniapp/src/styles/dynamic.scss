@@ -18,11 +18,11 @@ $dynamic-shadow-soft: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.
 $dynamic-shadow-card: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
 $dynamic-shadow-accent: 0 14rpx 30rpx rgba(232, 90, 79, 0.2);
 $dynamic-radius-page: var(--wm-radius-shell, 36rpx);
-$dynamic-radius-card: 26rpx;
-$dynamic-radius-media: 22rpx;
+$dynamic-radius-card: var(--wm-radius-card-glass, 26rpx);
+$dynamic-radius-media: var(--wm-radius-card-soft, 20rpx);
 $dynamic-radius-pill: var(--wm-radius-pill, 999rpx);
 
-@mixin dynamic-glass-card($padding: 24rpx, $radius: $dynamic-radius-card) {
+@mixin dynamic-glass-card($padding: var(--wm-space-card-padding-lg, 24rpx), $radius: $dynamic-radius-card) {
     padding: $padding;
     border-radius: $radius;
     border: 1rpx solid $dynamic-border;
@@ -37,7 +37,7 @@ $dynamic-radius-pill: var(--wm-radius-pill, 999rpx);
     align-items: center;
     justify-content: center;
     min-height: 64rpx;
-    padding: 0 26rpx;
+    padding: 0 24rpx;
     border-radius: $dynamic-radius-pill;
     border: 1rpx solid $dynamic-border;
     background: $bg;

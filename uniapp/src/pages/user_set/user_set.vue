@@ -1,8 +1,9 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="设置" />
+    <PageShell scene="consumer">
+        <BaseNavbar title="设置" />
 
-    <view class="user-set-page">
+        <view class="user-set-page">
         <!-- 用户信息卡片 -->
         <navigator :url="`/pages/user_data/user_data`" hover-class="none">
             <view class="user-info-card">
@@ -11,7 +12,7 @@
                         :url="userInfo.avatar || '/static/images/user/default_avatar.png'"
                         shape="square"
                         :size="120"
-                        :border-radius="16"
+                        :border-radius="20"
                     ></tn-avatar>
                     <view class="user-details">
                         <view class="user-name">{{ userInfo.nickname }}</view>
@@ -225,12 +226,14 @@
                 </view>
             </view>
         </tn-popup>
-    </view>
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
+import PageShell from '@/components/base/PageShell.vue'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
@@ -362,8 +365,6 @@ onLoad(async (options) => {
 .user-set-page {
     position: relative;
     z-index: 1;
-    min-height: 100vh;
-    background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
     padding: 24rpx;
     padding-bottom: 48rpx;
 }
@@ -460,7 +461,7 @@ onLoad(async (options) => {
 .menu-icon {
     width: 72rpx;
     height: 72rpx;
-    border-radius: 16rpx;
+    border-radius: 20rpx;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -487,7 +488,7 @@ onLoad(async (options) => {
 /* 状态徽章 */
 .status-badge {
     padding: 8rpx 20rpx;
-    border-radius: 24rpx;
+    border-radius: 20rpx;
     font-size: 24rpx;
     font-weight: 500;
     letter-spacing: 0.5rpx;
@@ -504,7 +505,7 @@ onLoad(async (options) => {
     justify-content: center;
     gap: 16rpx;
     height: 96rpx;
-    border-radius: 48rpx;
+    border-radius: 20rpx;
     font-size: 32rpx;
     font-weight: 600;
     box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
@@ -526,8 +527,8 @@ onLoad(async (options) => {
 .logout-popup {
     background: #ffffff;
     width: 600rpx;
-    border-radius: 32rpx;
-    padding: 48rpx 40rpx 40rpx;
+    border-radius: 28rpx;
+    padding: 36rpx 24rpx 24rpx;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -563,14 +564,14 @@ onLoad(async (options) => {
 
 .popup-actions {
     display: flex;
-    gap: 24rpx;
+    gap: 12rpx;
     width: 100%;
 }
 
 .action-btn {
     flex: 1;
     height: 72rpx;
-    border-radius: 32rpx;
+    border-radius: 20rpx;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -596,7 +597,7 @@ onLoad(async (options) => {
 /* 密码操作弹窗 */
 .password-action-popup {
     background: #ffffff;
-    border-radius: 32rpx 32rpx 0 0;
+    border-radius: 28rpx 28rpx 0 0;
     padding-bottom: constant(safe-area-inset-bottom);
     padding-bottom: env(safe-area-inset-bottom);
 }
@@ -605,7 +606,7 @@ onLoad(async (options) => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 32rpx 32rpx 24rpx;
+    padding: 24rpx 24rpx 20rpx;
     border-bottom: 1rpx solid #f5f5f5;
 }
 
@@ -621,7 +622,7 @@ onLoad(async (options) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 28rpx;
+    border-radius: 20rpx;
     background: #f5f5f5;
     transition: all 0.2s ease;
 
@@ -638,7 +639,7 @@ onLoad(async (options) => {
 .action-item {
     display: flex;
     align-items: center;
-    padding: 28rpx 32rpx;
+    padding: 24rpx;
     gap: 24rpx;
     transition: all 0.2s ease;
 }
@@ -650,7 +651,7 @@ onLoad(async (options) => {
 .action-icon {
     width: 72rpx;
     height: 72rpx;
-    border-radius: 16rpx;
+    border-radius: 20rpx;
     display: flex;
     align-items: center;
     justify-content: center;

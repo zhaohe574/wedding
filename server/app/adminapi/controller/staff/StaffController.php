@@ -11,6 +11,7 @@ use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\staff\StaffLists;
 use app\adminapi\logic\service\RegionLogic;
 use app\adminapi\logic\staff\StaffLogic;
+use app\adminapi\validate\service\AddonValidate;
 use app\adminapi\validate\service\RegionValidate;
 use app\adminapi\validate\staff\StaffValidate;
 use app\common\model\staff\StaffBanner;
@@ -329,7 +330,18 @@ class StaffController extends BaseAdminController
      */
     public function getAddonConfig()
     {
-        return $this->data([]);
+        $staffId = intval($this->request->get('staff_id', 0));
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+        }
+
+        if ($staffId <= 0) {
+            return $this->fail('请选择员工');
+        }
+
+        $result = StaffLogic::getAddonConfig($staffId);
+        return $this->data($result);
     }
 
     /**
@@ -338,7 +350,22 @@ class StaffController extends BaseAdminController
      */
     public function createStaffAddon()
     {
-        return $this->failLegacyAddonOffline();
+        $params = (new AddonValidate())->post()->goCheck('add');
+        $staffId = intval($params['staff_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
+
+        if ($staffId <= 0) {
+            return $this->fail('请选择员工');
+        }
+
+        $result = StaffLogic::createStaffAddon($staffId, $params);
+        if (true === $result) {
+            return $this->success('创建成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
     }
 
     /**
@@ -347,7 +374,25 @@ class StaffController extends BaseAdminController
      */
     public function updateStaffAddon()
     {
-        return $this->failLegacyAddonOffline();
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+        $addonId = intval($params['addon_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
+
+        if ($staffId <= 0 || $addonId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $params['id'] = $addonId;
+        $params = (new AddonValidate())->post()->goCheck('edit', $params);
+        $result = StaffLogic::updateStaffAddon($staffId, $addonId, $params);
+        if (true === $result) {
+            return $this->success('更新成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
     }
 
     /**
@@ -356,7 +401,25 @@ class StaffController extends BaseAdminController
      */
     public function deleteStaffAddon()
     {
-        return $this->failLegacyAddonOffline();
+        $params = $this->request->post();
+        $staffId = intval($params['staff_id'] ?? 0);
+        $addonId = intval($params['addon_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
+
+        if ($staffId <= 0 || $addonId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $params['id'] = $addonId;
+        (new AddonValidate())->post()->goCheck('delete', $params);
+        $result = StaffLogic::deleteStaffAddon($staffId, $addonId);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
     }
 
     /**
@@ -561,9 +624,13 @@ class StaffController extends BaseAdminController
         $params['sort'] = (int)($origin['sort'] ?? 0);
 
         $params = (new StaffValidate())->post()->goCheck('myProfile', $params);
-        $result = StaffLogic::edit($params);
-        if (true === $result) {
-            return $this->success('保存成功', [], 1, 1);
+        $result = StaffLogic::updateSelfProfile($staffScopeId, $params);
+        if (false !== $result) {
+            $tagAction = is_array($result) ? ($result['tag_action'] ?? 'applied') : 'applied';
+            $message = $tagAction === 'pending'
+                ? '资料已保存，标签修改已提交审核'
+                : '保存成功';
+            return $this->success($message, is_array($result) ? $result : [], 1, 1);
         }
         return $this->fail(StaffLogic::getError());
     }
@@ -735,7 +802,13 @@ class StaffController extends BaseAdminController
      */
     public function myProfileAddonList()
     {
-        return $this->data([]);
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $result = StaffLogic::getAddonConfig($staffScopeId);
+        return $this->data($result);
     }
 
     /**
@@ -744,7 +817,19 @@ class StaffController extends BaseAdminController
      */
     public function myProfileAddonAdd()
     {
-        return $this->failLegacyAddonOffline();
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $params = $this->request->post();
+        $params['staff_id'] = $staffScopeId;
+        $params = (new AddonValidate())->post()->goCheck('add', $params);
+        $result = StaffLogic::createStaffAddon($staffScopeId, $params);
+        if (true === $result) {
+            return $this->success('创建成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
     }
 
     /**
@@ -753,7 +838,25 @@ class StaffController extends BaseAdminController
      */
     public function myProfileAddonUpdate()
     {
-        return $this->failLegacyAddonOffline();
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $params = $this->request->post();
+        $addonId = intval($params['addon_id'] ?? 0);
+        if ($addonId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $params['staff_id'] = $staffScopeId;
+        $params['id'] = $addonId;
+        $params = (new AddonValidate())->post()->goCheck('edit', $params);
+        $result = StaffLogic::updateStaffAddon($staffScopeId, $addonId, $params);
+        if (true === $result) {
+            return $this->success('更新成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
     }
 
     /**
@@ -762,7 +865,24 @@ class StaffController extends BaseAdminController
      */
     public function myProfileAddonDelete()
     {
-        return $this->failLegacyAddonOffline();
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $params = $this->request->post();
+        $addonId = intval($params['addon_id'] ?? 0);
+        if ($addonId <= 0) {
+            return $this->fail('参数错误');
+        }
+
+        $params['id'] = $addonId;
+        (new AddonValidate())->post()->goCheck('delete', $params);
+        $result = StaffLogic::deleteStaffAddon($staffScopeId, $addonId);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffLogic::getError());
     }
 
     /**

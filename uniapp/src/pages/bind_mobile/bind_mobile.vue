@@ -1,78 +1,53 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="绑定手机号" />
-    <view class="bind-mobile-container">
-        <!-- 背景装饰 -->
-        <view class="bg-decoration">
-            <view class="circle circle-1"></view>
-            <view class="circle circle-2"></view>
-        </view>
-
-        <!-- 主内容区 -->
-        <view class="content">
-            <!-- 头部区域 -->
-            <view class="header-section">
-                <view class="icon-wrapper">
-                    <tn-icon
-                        name="phone"
-                        size="80"
-                        :color="primaryColor"
-                        customClass="bind-mobile-icon"
-                    />
+    <AuthPageShell navbarTitle="绑定手机号">
+        <template #hero>
+            <view class="auth-hero">
+                <view class="auth-hero__icon">
+                    <tn-icon name="phone" size="54" color="#E85A4F" />
                 </view>
-                <view class="title-text">绑定手机号</view>
-                <view class="subtitle-text">为了您的账号安全，请绑定手机号</view>
+                <text class="auth-hero__title">绑定手机号</text>
+                <text class="auth-hero__desc">为了账号安全和订单通知，请先完成手机号绑定。</text>
+            </view>
+        </template>
+
+        <view class="auth-form">
+            <view class="auth-form__group">
+                <text class="auth-form__label">手机号</text>
+                <BaseInput v-model="formData.mobile" type="tel" placeholder="请输入手机号码">
+                    <template #prefix>
+                        <tn-icon name="phone" size="30" color="#B4ACA8" />
+                    </template>
+                </BaseInput>
             </view>
 
-            <!-- 表单卡片 -->
-            <view class="form-card">
-                <!-- 手机号 -->
-                <view class="input-group">
-                    <view class="input-wrapper">
-                        <tn-icon name="phone" size="36" color="#9ca3af" class="input-icon" />
-                        <tn-input
-                            class="custom-input"
-                            v-model="formData.mobile"
-                            :border="false"
-                            placeholder="请输入手机号码"
-                        />
-                    </view>
-                </view>
-
-                <!-- 验证码 -->
-                <view class="input-group">
-                    <view class="input-wrapper">
-                        <tn-icon name="shield-check" size="36" color="#9ca3af" class="input-icon" />
-                        <tn-input
-                            class="custom-input"
-                            v-model="formData.code"
-                            placeholder="请输入验证码"
-                            :border="false"
-                        />
-                        <view
-                            class="code-btn"
-                            :class="{ 'code-btn-active': canGetCode && formData.mobile }"
+            <view class="auth-form__group">
+                <text class="auth-form__label">验证码</text>
+                <BaseInput v-model="formData.code" placeholder="请输入验证码">
+                    <template #prefix>
+                        <tn-icon name="shield-check" size="30" color="#B4ACA8" />
+                    </template>
+                    <template #suffix>
+                        <text
+                            class="auth-code-btn"
+                            :class="{ 'auth-code-btn--active': canGetCode && formData.mobile }"
                             @click="sendSms"
                         >
                             {{ codeTips }}
-                        </view>
-                    </view>
-                </view>
-
-                <!-- 确定按钮 -->
-                <view class="btn-wrapper">
-                    <view
-                        class="btn-primary"
-                        :class="{ 'btn-disabled': !isFormValid }"
-                        @click="handleConfirm"
-                        hover-class="btn-hover"
-                    >
-                        <text class="btn-text">确定</text>
-                    </view>
-                </view>
+                        </text>
+                    </template>
+                </BaseInput>
             </view>
+
+            <BaseButton
+                block
+                size="lg"
+                :disabled="!isFormValid"
+                @click="handleConfirm"
+            >
+                确认绑定
+            </BaseButton>
         </view>
-    </view>
+    </AuthPageShell>
 </template>
 
 <script setup lang="ts">
@@ -80,16 +55,12 @@ import { userBindMobile } from '@/api/user'
 import { smsSend } from '@/api/app'
 import { SMSEnum } from '@/enums/appEnums'
 import { BACK_URL } from '@/enums/constantEnums'
+import AuthPageShell from '@/components/business/AuthPageShell.vue'
 import { useUserStore } from '@/stores/user'
-import { useThemeStore } from '@/stores/theme'
 import cache from '@/utils/cache'
 import { computed, reactive, ref } from 'vue'
 
-const themeStore = useThemeStore()
 const userStore = useUserStore()
-
-// 主题色
-const primaryColor = computed(() => themeStore.primaryColor)
 
 const codeTips = ref('获取验证码')
 const canGetCode = ref(true)
@@ -100,12 +71,10 @@ const formData = reactive({
     code: ''
 })
 
-// 表单验证
 const isFormValid = computed(() => {
     return formData.mobile && formData.code
 })
 
-// 验证码倒计时
 const startCodeCountdown = () => {
     let seconds = 60
     canGetCode.value = false
@@ -125,14 +94,14 @@ const startCodeCountdown = () => {
 
 const sendSms = async () => {
     if (!formData.mobile) return uni.$u.toast('请输入手机号码')
-    if (canGetCode.value) {
-        await smsSend({
-            scene: SMSEnum.BIND_MOBILE,
-            mobile: formData.mobile
-        })
-        uni.$u.toast('发送成功')
-        startCodeCountdown()
-    }
+    if (!canGetCode.value) return
+
+    await smsSend({
+        scene: SMSEnum.BIND_MOBILE,
+        mobile: formData.mobile
+    })
+    uni.$u.toast('发送成功')
+    startCodeCountdown()
 }
 
 const redirectAfterBindMobile = () => {
@@ -166,236 +135,65 @@ const handleConfirm = async () => {
 </script>
 
 <style lang="scss" scoped>
-page {
-    height: 100%;
-}
-
-.bind-mobile-container {
-    min-height: 100vh;
-    background: linear-gradient(180deg, var(--color-primary-light-9, #faf5ff) 0%, #ffffff 100%);
-    position: relative;
-    overflow: hidden;
-}
-
-/* 背景装饰 */
-.bg-decoration {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    z-index: 0;
-
-    .circle {
-        position: absolute;
-        border-radius: 50%;
-        opacity: 0.15;
-        animation: float 20s infinite ease-in-out;
-    }
-
-    .circle-1 {
-        width: 350rpx;
-        height: 350rpx;
-        background: linear-gradient(
-            135deg,
-            var(--color-primary, #7c3aed),
-            var(--color-primary-light-3, #a78bfa)
-        );
-        top: -80rpx;
-        right: -80rpx;
-    }
-
-    .circle-2 {
-        width: 250rpx;
-        height: 250rpx;
-        background: linear-gradient(
-            135deg,
-            var(--color-secondary, #ec4899),
-            var(--color-secondary-light-3, #f9a8d4)
-        );
-        bottom: 80rpx;
-        left: -60rpx;
-        animation-delay: 5s;
-    }
-}
-
-@keyframes float {
-    0%,
-    100% {
-        transform: translateY(0) scale(1);
-    }
-    50% {
-        transform: translateY(-30rpx) scale(1.05);
-    }
-}
-
-/* 主内容区 */
-.content {
-    position: relative;
-    z-index: 1;
-    padding: 60rpx 32rpx 40rpx;
-    min-height: 100vh;
-}
-
-/* 头部区域 */
-.header-section {
-    text-align: center;
-    margin-bottom: 56rpx;
-
-    .icon-wrapper {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 140rpx;
-        height: 140rpx;
-        padding: 0;
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 50%;
-        box-shadow: 0 8rpx 32rpx rgba(124, 58, 237, 0.2);
-        margin-bottom: 28rpx;
-    }
-
-    :deep(.bind-mobile-icon) {
-        display: block;
-        line-height: 1;
-    }
-
-    :deep(.bind-mobile-icon .icon) {
-        display: block;
-        line-height: 1;
-    }
-
-    .title-text {
-        font-size: 44rpx;
-        font-weight: 600;
-        color: var(--color-primary, #7c3aed);
-        margin-bottom: 16rpx;
-        letter-spacing: 1rpx;
-    }
-
-    .subtitle-text {
-        font-size: 28rpx;
-        color: var(--color-content, #666666);
-        font-weight: 400;
-    }
-}
-
-/* 表单卡片 */
-.form-card {
-    background: rgba(255, 255, 255, 0.85);
-    border-radius: 24rpx;
-    padding: 40rpx 32rpx;
-    box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12), 0 8rpx 16rpx rgba(0, 0, 0, 0.04);
-    backdrop-filter: blur(20rpx);
-    border: 2rpx solid rgba(255, 255, 255, 0.3);
-}
-
-/* 输入框组 */
-.input-group {
-    margin-bottom: 20rpx;
-
-    .input-wrapper {
-        display: flex;
-        align-items: center;
-        background: #f9fafb;
-        border: 2rpx solid #e5e7eb;
-        border-radius: 16rpx;
-        padding: 0 24rpx;
-        height: 88rpx;
-        transition: all 0.2s ease;
-
-        &:focus-within {
-            border-color: var(--color-primary, #7c3aed);
-            background: #ffffff;
-            box-shadow: 0 0 0 6rpx rgba(124, 58, 237, 0.1);
-        }
-
-        .input-icon {
-            margin-right: 16rpx;
-        }
-
-        .custom-input {
-            flex: 1;
-            font-size: 28rpx;
-        }
-
-        .code-btn {
-            font-size: 24rpx;
-            color: #9ca3af;
-            padding-left: 24rpx;
-            border-left: 2rpx solid #e5e7eb;
-            white-space: nowrap;
-            min-width: 160rpx;
-            text-align: center;
-            transition: all 0.2s ease;
-
-            &.code-btn-active {
-                color: var(--color-primary, #7c3aed);
-                font-weight: 600;
-                cursor: pointer;
-
-                &:active {
-                    color: var(--color-primary-dark-2, #6d28d9);
-                }
-            }
-        }
-    }
-}
-
-/* 按钮 */
-.btn-wrapper {
-    margin-top: 24rpx;
-}
-
-.btn-primary {
-    background: linear-gradient(
-        135deg,
-        var(--color-primary, #7c3aed) 0%,
-        var(--color-primary-dark-2, #6d28d9) 100%
-    );
-    border-radius: 32rpx;
-    height: 72rpx;
-    padding: 0 32rpx;
+.auth-hero {
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14rpx;
+}
+
+.auth-hero__icon {
+    width: 108rpx;
+    height: 108rpx;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
-
-    .btn-text {
-        font-size: 30rpx;
-        color: #ffffff;
-        font-weight: 600;
-        letter-spacing: 1rpx;
-        text-align: center;
-        display: block;
-        line-height: 1;
-    }
-
-    &:active {
-        transform: translateY(2rpx);
-        box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.22);
-    }
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1rpx solid rgba(244, 199, 191, 0.52);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
 }
 
-.btn-hover {
-    opacity: 0.9;
+.auth-hero__title {
+    font-size: 52rpx;
+    font-weight: 700;
+    line-height: 1.18;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.btn-disabled {
-    opacity: 0.5;
-    pointer-events: none;
-    box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.15);
+.auth-hero__desc {
+    font-size: 26rpx;
+    line-height: 1.65;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-/* 响应式优化 */
-@media (max-width: 375px) {
-    .content {
-        padding: 48rpx 28rpx 32rpx;
-    }
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+}
 
-    .form-card {
-        padding: 36rpx 28rpx;
-    }
+.auth-form__group {
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+}
+
+.auth-form__label {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.auth-code-btn {
+    padding-left: 20rpx;
+    font-size: 24rpx;
+    font-weight: 500;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.auth-code-btn--active {
+    color: var(--wm-color-primary, #e85a4f);
+    font-weight: 700;
 }
 </style>

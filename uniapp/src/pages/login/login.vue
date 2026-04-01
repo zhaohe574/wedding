@@ -1,304 +1,276 @@
 <template>
-    <page-meta :page-style="themeStore.pageStyle" />
-    <PageShell scene="consumer">
-        <BaseNavbar title="登录" />
-        <view class="login-container">
-        <!-- 背景装饰 -->
-        <view class="bg-decoration">
-            <view class="circle circle-1"></view>
-            <view class="circle circle-2"></view>
-            <view class="circle circle-3"></view>
-        </view>
-
-        <!-- 主内容区 -->
-        <view class="login-content">
-            <!-- Logo 区域 -->
-            <view class="logo-section">
-                <view class="logo-wrapper">
+    <AuthPageShell navbarTitle="登录">
+        <template #hero>
+            <view class="auth-hero">
+                <view class="auth-hero__brand">
                     <image
+                        v-if="appStore.getWebsiteConfig.shop_logo"
                         :src="appStore.getWebsiteConfig.shop_logo"
                         mode="aspectFit"
-                        class="logo-image"
+                        class="auth-hero__logo"
                     />
+                    <view v-else class="auth-hero__logo auth-hero__logo--fallback">
+                        <text>{{ (websiteConfig.shop_name || '婚礼').slice(0, 2) }}</text>
+                    </view>
                 </view>
-                <view class="welcome-text">欢迎回来</view>
-                <view class="subtitle-text">登录您的账号继续使用</view>
+                <text class="auth-hero__eyebrow">Welcome Back</text>
+                <text class="auth-hero__title">登录您的账号</text>
+                <text class="auth-hero__desc">
+                    {{ websiteConfig.shop_name || '婚礼服务平台' }}，继续查看预约、订单与动态内容。
+                </text>
+            </view>
+        </template>
+
+        <view class="auth-panel">
+            <view v-if="!phoneLogin" class="auth-entry-list">
+                <view
+                    v-if="showWechatLoginEntry"
+                    class="auth-entry auth-entry--primary"
+                    :style="wechatEntryStyle"
+                    @click="wxLogin"
+                >
+                    <view class="auth-entry__icon" :style="wechatEntryIconPillStyle">
+                        <tn-icon name="wechat-fill" size="34" :color="$theme.btnColor" />
+                    </view>
+                    <view class="auth-entry__content">
+                        <text class="auth-entry__title">微信一键登录</text>
+                        <text class="auth-entry__desc">适合快速进入，自动同步账号信息</text>
+                    </view>
+                    <tn-icon name="right" size="24" :color="$theme.btnColor" />
+                </view>
+
+                <view
+                    v-if="showLocalLoginEntry"
+                    class="auth-entry auth-entry--secondary"
+                    :style="localEntryStyle"
+                    @click="phoneLogin = true"
+                >
+                    <view class="auth-entry__icon" :style="localEntryIconPillStyle">
+                        <tn-icon name="phone" size="30" :color="primaryColor" />
+                    </view>
+                    <view class="auth-entry__content">
+                        <text class="auth-entry__title">{{ localLoginEntryText }}</text>
+                        <text class="auth-entry__desc">
+                            支持账号密码或验证码登录，适合多端账号使用
+                        </text>
+                    </view>
+                    <tn-icon name="right" size="24" :color="primaryColor" />
+                </view>
             </view>
 
-            <!-- 登录表单卡片 -->
-            <view class="form-card glass-card">
-                <block v-if="!phoneLogin">
-                    <!-- 快捷登录按钮 -->
-                    <view v-if="showWechatLoginEntry" class="quick-login-section">
-                        <view
-                            class="login-entry login-entry--wechat"
-                            :style="wechatEntryStyle"
-                            @click="wxLogin"
-                            hover-class="login-entry--hover"
-                        >
-                            <view class="login-entry__surface">
-                                <view class="login-entry__icon-pill" :style="wechatEntryIconPillStyle">
-                                    <tn-icon name="wechat-fill" size="34" :color="$theme.btnColor" />
-                                </view>
-                                <view class="login-entry__content">
-                                    <text class="login-entry__label" :style="{ color: $theme.btnColor }">
-                                        微信一键登录
-                                    </text>
-                                </view>
-                                <view class="login-entry__arrow">
-                                    <tn-icon name="right" size="28" :color="$theme.btnColor" />
-                                </view>
-                            </view>
-                        </view>
-                    </view>
-
-                    <view class="divider-section" v-if="showLoginDivider">
-                        <view class="divider-line"></view>
-                        <text class="divider-text">或</text>
-                        <view class="divider-line"></view>
-                    </view>
-
-                    <view
-                        v-if="showLocalLoginEntry"
-                        class="login-entry login-entry--secondary"
-                        :style="localEntryStyle"
-                        @click="phoneLogin = !phoneLogin"
-                        hover-class="login-entry--hover"
-                    >
-                        <view class="login-entry__surface login-entry__surface--secondary">
-                            <view class="login-entry__icon-pill" :style="localEntryIconPillStyle">
-                                <tn-icon name="phone" size="32" :color="primaryColor" />
-                            </view>
-                            <view class="login-entry__content">
-                                <text class="login-entry__label" :style="{ color: primaryColor }">
-                                    {{ localLoginEntryText }}
-                                </text>
-                            </view>
-                            <view class="login-entry__arrow">
-                                <tn-icon name="right" size="26" :color="primaryColor" />
-                            </view>
-                        </view>
-                    </view>
-                </block>
-
-                <block v-if="showLocalLoginForm">
-                    <!-- 登录方式标题 -->
-                    <view class="form-title">
+            <view v-if="showLocalLoginForm" class="auth-form">
+                <view class="auth-form__head">
+                    <text class="auth-form__title">
                         {{ formData.scene == LoginWayEnum.ACCOUNT ? '账号密码登录' : '验证码登录' }}
+                    </text>
+                    <text class="auth-form__desc">请输入账号信息完成登录</text>
+                </view>
+
+                <template
+                    v-if="
+                        formData.scene == LoginWayEnum.ACCOUNT &&
+                        includeLoginWay(LoginWayEnum.ACCOUNT)
+                    "
+                >
+                    <view class="auth-form__group">
+                        <text class="auth-form__label">账号</text>
+                        <BaseInput
+                            v-model="formData.account"
+                            placeholder="请输入账号或手机号"
+                        >
+                            <template #prefix>
+                                <tn-icon name="user" size="30" color="#B4ACA8" />
+                            </template>
+                        </BaseInput>
                     </view>
 
-                    <!-- 密码登录 -->
-                    <template
-                        v-if="
-                            formData.scene == LoginWayEnum.ACCOUNT &&
-                            includeLoginWay(LoginWayEnum.ACCOUNT)
-                        "
-                    >
-                        <view class="input-group">
-                            <view class="input-wrapper">
-                                <tn-icon name="user" size="36" color="#9ca3af" class="input-icon" />
-                                <tn-input
-                                    class="custom-input"
-                                    v-model="formData.account"
-                                    :border="false"
-                                    placeholder="请输入账号/手机号"
-                                />
-                            </view>
-                        </view>
-
-                        <view class="input-group">
-                            <view class="input-wrapper">
-                                <tn-icon name="lock" size="36" color="#9ca3af" class="input-icon" />
-                                <tn-input
-                                    class="custom-input"
-                                    v-model="formData.password"
-                                    type="password"
-                                    placeholder="请输入密码"
-                                    :border="false"
-                                />
-                                <navigator url="/pages/forget_pwd/forget_pwd" hover-class="none">
-                                    <view class="forgot-link">忘记?</view>
+                    <view class="auth-form__group">
+                        <text class="auth-form__label">密码</text>
+                        <BaseInput
+                            v-model="formData.password"
+                            type="password"
+                            placeholder="请输入密码"
+                        >
+                            <template #prefix>
+                                <tn-icon name="lock" size="30" color="#B4ACA8" />
+                            </template>
+                            <template #suffix>
+                                <navigator
+                                    url="/pages/forget_pwd/forget_pwd"
+                                    hover-class="none"
+                                    class="auth-link-inline"
+                                >
+                                    忘记密码
                                 </navigator>
-                            </view>
-                        </view>
-                    </template>
+                            </template>
+                        </BaseInput>
+                    </view>
+                </template>
 
-                    <!-- 验证码登录 -->
-                    <template
-                        v-if="
-                            formData.scene == LoginWayEnum.MOBILE &&
-                            includeLoginWay(LoginWayEnum.MOBILE)
-                        "
-                    >
-                        <view class="input-group">
-                            <view class="input-wrapper">
-                                <tn-icon
-                                    name="phone"
-                                    size="36"
-                                    color="#9ca3af"
-                                    class="input-icon"
-                                />
-                                <tn-input
-                                    class="custom-input"
-                                    v-model="formData.account"
-                                    :border="false"
-                                    placeholder="请输入手机号码"
-                                />
-                            </view>
-                        </view>
+                <template
+                    v-if="
+                        formData.scene == LoginWayEnum.MOBILE &&
+                        includeLoginWay(LoginWayEnum.MOBILE)
+                    "
+                >
+                    <view class="auth-form__group">
+                        <text class="auth-form__label">手机号</text>
+                        <BaseInput
+                            v-model="formData.account"
+                            type="tel"
+                            placeholder="请输入手机号码"
+                        >
+                            <template #prefix>
+                                <tn-icon name="phone" size="30" color="#B4ACA8" />
+                            </template>
+                        </BaseInput>
+                    </view>
 
-                        <view class="input-group">
-                            <view class="input-wrapper">
-                                <tn-icon
-                                    name="shield-check"
-                                    size="36"
-                                    color="#9ca3af"
-                                    class="input-icon"
-                                />
-                                <tn-input
-                                    class="custom-input"
-                                    v-model="formData.code"
-                                    placeholder="请输入验证码"
-                                    :border="false"
-                                />
-                                <view
-                                    class="code-btn"
-                                    :class="{ 'code-btn-active': canGetCode && formData.account }"
+                    <view class="auth-form__group">
+                        <text class="auth-form__label">验证码</text>
+                        <BaseInput v-model="formData.code" placeholder="请输入验证码">
+                            <template #prefix>
+                                <tn-icon name="shield-check" size="30" color="#B4ACA8" />
+                            </template>
+                            <template #suffix>
+                                <text
+                                    class="auth-code-btn"
+                                    :class="{
+                                        'auth-code-btn--active': canGetCode && formData.account
+                                    }"
                                     @click="sendSms"
-                                    hover-class="code-btn-hover"
                                 >
                                     {{ codeTips }}
-                                </view>
-                            </view>
-                        </view>
-                    </template>
-
-                    <!-- 协议勾选 -->
-                    <view class="agreement-section" v-if="isOpenAgreement">
-                        <tn-checkbox v-model="isCheckAgreement" shape="round">
-                            <view class="agreement-text">
-                                已阅读并同意
-                                <navigator
-                                    class="agreement-link"
-                                    hover-class="none"
-                                    url="/packages/pages/agreement/agreement?type=service"
-                                    @click.stop
-                                >
-                                    《服务协议》
-                                </navigator>
-                                和
-                                <navigator
-                                    class="agreement-link"
-                                    hover-class="none"
-                                    url="/packages/pages/agreement/agreement?type=privacy"
-                                    @click.stop
-                                >
-                                    《隐私协议》
-                                </navigator>
-                            </view>
-                        </tn-checkbox>
+                                </text>
+                            </template>
+                        </BaseInput>
                     </view>
+                </template>
 
-                    <!-- 登录按钮 -->
-                    <view class="login-btn-wrapper">
+                <view v-if="isOpenAgreement" class="agreement-panel">
+                    <tn-checkbox v-model="isCheckAgreement" shape="round">
+                        <view class="agreement-panel__text">
+                            已阅读并同意
+                            <navigator
+                                class="agreement-panel__link"
+                                hover-class="none"
+                                url="/packages/pages/agreement/agreement?type=service"
+                                @click.stop
+                            >
+                                《服务协议》
+                            </navigator>
+                            和
+                            <navigator
+                                class="agreement-panel__link"
+                                hover-class="none"
+                                url="/packages/pages/agreement/agreement?type=privacy"
+                                @click.stop
+                            >
+                                《隐私协议》
+                            </navigator>
+                        </view>
+                    </tn-checkbox>
+                </view>
+
+                <BaseButton
+                    block
+                    size="lg"
+                    :disabled="!DisableStyle"
+                    @click="handleLogin(formData.scene)"
+                >
+                    立即登录
+                </BaseButton>
+
+                <view class="auth-form__actions">
+                    <text
+                        v-if="
+                            formData.scene == LoginWayEnum.MOBILE &&
+                            includeLoginWay(LoginWayEnum.ACCOUNT)
+                        "
+                        class="auth-form__action"
+                        @click="changeLoginWay(LoginWayEnum.ACCOUNT)"
+                    >
+                        使用密码登录
+                    </text>
+                    <text
+                        v-if="
+                            formData.scene == LoginWayEnum.ACCOUNT &&
+                            includeLoginWay(LoginWayEnum.MOBILE)
+                        "
+                        class="auth-form__action"
+                        @click="changeLoginWay(LoginWayEnum.MOBILE)"
+                    >
+                        使用验证码登录
+                    </text>
+                    <text class="auth-form__action" @click="phoneLogin = false">
+                        返回登录方式
+                    </text>
+                </view>
+            </view>
+        </view>
+
+        <template #footer>
+            <view v-if="showRegisterEntry" class="auth-footer">
+                <text class="auth-footer__text">还没有账号？</text>
+                <navigator url="/pages/register/register" hover-class="none" class="auth-footer__link">
+                    注册账号
+                </navigator>
+            </view>
+        </template>
+
+        <template #overlay>
+            <tn-popup
+                v-model="showAgreementPopup"
+                open-direction="center"
+                :radius="24"
+                :overlay-closeable="false"
+            >
+                <view class="agreement-popup">
+                    <view class="agreement-popup__title">温馨提示</view>
+                    <view class="agreement-popup__content">
+                        请先阅读并同意
+                        <text class="agreement-popup__link" @click="openAgreement('service')">
+                            《服务协议》
+                        </text>
+                        和
+                        <text class="agreement-popup__link" @click="openAgreement('privacy')">
+                            《隐私协议》
+                        </text>
+                    </view>
+                    <view class="agreement-popup__actions">
                         <view
-                            class="btn-primary btn-login"
-                            :class="{ 'btn-disabled': !DisableStyle }"
-                            @click="handleLogin(formData.scene)"
-                            hover-class="btn-hover"
+                            class="agreement-popup__action agreement-popup__action--cancel"
+                            @click="closeAgreementPopup"
                         >
-                            <view class="btn-text">立即登录</view>
+                            取消
+                        </view>
+                        <view
+                            class="agreement-popup__action agreement-popup__action--confirm"
+                            :style="{
+                                background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor} 100%)`
+                            }"
+                            @click="confirmAgreement"
+                        >
+                            同意
                         </view>
                     </view>
-
-                    <!-- 底部操作 -->
-                    <view class="bottom-actions">
-                        <view class="action-item">
-                            <text
-                                class="action-link"
-                                @click="changeLoginWay(LoginWayEnum.ACCOUNT)"
-                                v-if="
-                                    formData.scene == LoginWayEnum.MOBILE &&
-                                    includeLoginWay(LoginWayEnum.ACCOUNT)
-                                "
-                            >
-                                密码登录
-                            </text>
-                            <text
-                                class="action-link"
-                                @click="changeLoginWay(LoginWayEnum.MOBILE)"
-                                v-if="
-                                    formData.scene == LoginWayEnum.ACCOUNT &&
-                                    includeLoginWay(LoginWayEnum.MOBILE)
-                                "
-                            >
-                                验证码登录
-                            </text>
-                        </view>
-                        <navigator v-if="showRegisterEntry" url="/pages/register/register" hover-class="none">
-                            <view class="action-link">注册账号</view>
-                        </navigator>
-                    </view>
-                </block>
-            </view>
-        </view>
-
-        <!-- 协议弹框 -->
-        <tn-popup
-            v-model="showAgreementPopup"
-            open-direction="center"
-            :radius="24"
-            :overlay-closeable="false"
-        >
-            <view class="agreement-popup">
-                <view class="agreement-popup__title">温馨提示</view>
-                <view class="agreement-popup__content">
-                    请先阅读并同意
-                    <text class="agreement-popup__link" @click="openAgreement('service')">
-                        《服务协议》
-                    </text>
-                    和
-                    <text class="agreement-popup__link" @click="openAgreement('privacy')">
-                        《隐私协议》
-                    </text>
                 </view>
-                <view class="agreement-popup__actions">
-                    <view
-                        class="agreement-popup__action agreement-popup__action--cancel"
-                        hover-class="agreement-popup__action--hover"
-                        @click="closeAgreementPopup"
-                    >
-                        取消
-                    </view>
-                    <view
-                        class="agreement-popup__action agreement-popup__action--confirm"
-                        :style="{
-                            background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor} 100%)`
-                        }"
-                        hover-class="agreement-popup__action--hover"
-                        @click="confirmAgreement"
-                    >
-                        同意
-                    </view>
-                </view>
-            </view>
-        </tn-popup>
+            </tn-popup>
 
-        <!-- #ifdef MP-WEIXIN -->
-        <mplogin-popup
-            v-model:show="showLoginPopup"
-            :logo="websiteConfig.shop_logo"
-            :title="websiteConfig.shop_name"
-            @update="handleUpdateUser"
-        />
-        <!--  #endif -->
-        </view>
-    </PageShell>
+            <!-- #ifdef MP-WEIXIN -->
+            <mplogin-popup
+                v-model:show="showLoginPopup"
+                :logo="websiteConfig.shop_logo"
+                :title="websiteConfig.shop_name"
+                @update="handleUpdateUser"
+            />
+            <!--  #endif -->
+        </template>
+    </AuthPageShell>
 </template>
 
 <script setup lang="ts">
-import PageShell from '@/components/base/PageShell.vue'
-import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import AuthPageShell from '@/components/business/AuthPageShell.vue'
 import { login, mnpLogin, updateUser, OALogin } from '@/api/account'
 import { smsSend } from '@/api/app'
 import { SMSEnum } from '@/enums/appEnums'
@@ -314,8 +286,8 @@ import { alphaColor, shadeColor } from '@/utils/color'
 // #ifdef H5
 import wechatOa, { UrlScene } from '@/utils/wechat'
 // #endif
-import { onLoad, onShow } from '@dcloudio/uni-app'
-import { computed, reactive, ref, shallowRef, watch } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+import { computed, reactive, ref, watch } from 'vue'
 
 enum LoginWayEnum {
     ACCOUNT = 1,
@@ -338,6 +310,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const appStore = useAppStore()
 const themeStore = useThemeStore()
+const $theme = themeStore
 const codeTips = ref('获取验证码')
 const canGetCode = ref(true)
 const showLoginPopup = ref(false)
@@ -353,26 +326,24 @@ const formData = reactive({
 const phoneLogin = ref(false)
 const loginData = ref()
 
-// 主题色
 const primaryColor = computed(() => themeStore.primaryColor)
 const wechatEntryStyle = computed(() => ({
-    background: `linear-gradient(135deg, ${primaryColor.value} 0%, ${shadeColor(primaryColor.value, 0.2)} 100%)`,
-    boxShadow: `0 8rpx 20rpx ${alphaColor(primaryColor.value, 0.22)}`,
-    border: `1rpx solid ${alphaColor(primaryColor.value, 0.16)}`
+    background: `linear-gradient(135deg, ${primaryColor.value} 0%, ${shadeColor(primaryColor.value, 0.1)} 100%)`,
+    boxShadow: `0 14rpx 28rpx ${alphaColor(primaryColor.value, 0.22)}`,
+    border: `1rpx solid ${alphaColor(primaryColor.value, 0.12)}`
 }))
 const wechatEntryIconPillStyle = computed(() => ({
     background: alphaColor('#ffffff', 0.18)
 }))
 const localEntryStyle = computed(() => ({
-    background: alphaColor(primaryColor.value, 0.07),
-    border: `2rpx solid ${alphaColor(primaryColor.value, 0.18)}`,
-    boxShadow: `0 6rpx 16rpx ${alphaColor(primaryColor.value, 0.08)}`
+    background: alphaColor('#ffffff', 0.84),
+    border: `1rpx solid ${alphaColor(primaryColor.value, 0.18)}`,
+    boxShadow: `0 10rpx 24rpx ${alphaColor('#D6B9A7', 0.14)}`
 }))
 const localEntryIconPillStyle = computed(() => ({
-    background: alphaColor(primaryColor.value, 0.12)
+    background: alphaColor(primaryColor.value, 0.1)
 }))
 
-// 验证码倒计时
 const startCodeCountdown = () => {
     let seconds = 60
     canGetCode.value = false
@@ -427,11 +398,10 @@ const showWechatLoginEntry = computed(() => isOpenOtherAuth.value && isWeixin.va
 const isMpWechatOnlyMode = computed(() => isMpWeixinPlatform.value && showWechatLoginEntry.value)
 const showLocalLoginEntry = computed(() => !isMpWechatOnlyMode.value)
 const showLocalLoginForm = computed(() => phoneLogin.value && showLocalLoginEntry.value)
-const showLoginDivider = computed(() => showWechatLoginEntry.value && showLocalLoginEntry.value)
 const showRegisterEntry = computed(() => !isMpWechatOnlyMode.value)
 const localLoginEntryText = computed(() => {
     if (hasAccountLogin.value && hasMobileLogin.value) {
-        return isH5Platform.value ? '账号/手机号登录' : '手机号登录'
+        return isH5Platform.value ? '账号 / 手机号登录' : '手机号登录'
     }
 
     if (hasAccountLogin.value) {
@@ -450,7 +420,6 @@ type AgreementType = 'service' | 'privacy'
 
 const pendingAgreementHandler = ref<AgreementConfirmHandler | null>(null)
 
-// 显示协议弹窗
 const showAgreementModal = (onConfirm?: AgreementConfirmHandler) => {
     pendingAgreementHandler.value = onConfirm ?? null
     showAgreementPopup.value = true
@@ -516,7 +485,6 @@ const loginHandle = async (data: any) => {
         await router.navigateBack()
         // @ts-ignore
         const { onLoad, options } = prevPage
-        // 刷新上一个页面
         onLoad && onLoad(options)
     } else if (cache.get(BACK_URL)) {
         try {
@@ -552,7 +520,6 @@ const wxLogin = async () => {
     }
 
     // #ifdef MP-WEIXIN
-
     uni.showLoading({
         title: '请稍后...'
     })
@@ -582,6 +549,7 @@ const wxLogin = async () => {
     }
     // #endif
 }
+
 const handleUpdateUser = async (value: any) => {
     await updateUser(value, { token: userStore.temToken })
     showLoginPopup.value = false
@@ -603,6 +571,7 @@ watch(
         immediate: true
     }
 )
+
 const DisableStyle = computed(() => {
     if (formData.scene == 1 && formData.account && formData.password) {
         return true
@@ -633,7 +602,6 @@ onLoad(async () => {
             const data = await oaLogin(options)
             if (data) {
                 loginData.value = data
-
                 loginHandle(loginData.value)
             }
         }
@@ -641,7 +609,6 @@ onLoad(async () => {
         removeWxQuery()
     } finally {
         uni.hideLoading()
-        //清除保存的授权数据
         wechatOa.setAuthData()
     }
     //#endif
@@ -649,493 +616,254 @@ onLoad(async () => {
 </script>
 
 <style lang="scss" scoped>
-page {
-    height: 100%;
+.auth-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
 }
 
-.login-container {
-    min-height: 100vh;
-    background: linear-gradient(180deg, var(--color-primary-light-9, #faf5ff) 0%, #ffffff 100%);
-    position: relative;
-    overflow: hidden;
+.auth-hero__brand {
+    width: 116rpx;
+    height: 116rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1rpx solid rgba(244, 199, 191, 0.52);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
 }
 
-/* 背景装饰圆圈 */
-.bg-decoration {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    z-index: 0;
-
-    .circle {
-        position: absolute;
-        border-radius: 50%;
-        opacity: 0.15;
-        animation: float 20s infinite ease-in-out;
-    }
-
-    .circle-1 {
-        width: 400rpx;
-        height: 400rpx;
-        background: linear-gradient(
-            135deg,
-            var(--color-primary, #7c3aed),
-            var(--color-primary-light-3, #a78bfa)
-        );
-        top: -100rpx;
-        right: -100rpx;
-        animation-delay: 0s;
-    }
-
-    .circle-2 {
-        width: 300rpx;
-        height: 300rpx;
-        background: linear-gradient(
-            135deg,
-            var(--color-secondary, #ec4899),
-            var(--color-secondary-light-3, #f9a8d4)
-        );
-        bottom: 100rpx;
-        left: -80rpx;
-        animation-delay: 5s;
-    }
-
-    .circle-3 {
-        width: 200rpx;
-        height: 200rpx;
-        background: linear-gradient(
-            135deg,
-            var(--color-cta, #f97316),
-            var(--color-cta-light-3, #fdba74)
-        );
-        top: 50%;
-        right: 50rpx;
-        animation-delay: 10s;
-    }
+.auth-hero__logo {
+    width: 74rpx;
+    height: 74rpx;
 }
 
-@keyframes float {
-    0%,
-    100% {
-        transform: translateY(0) scale(1);
-    }
-    50% {
-        transform: translateY(-40rpx) scale(1.1);
-    }
+.auth-hero__logo--fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28rpx;
+    font-weight: 700;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
-/* 主内容区 */
-.login-content {
-    position: relative;
-    z-index: 1;
-    padding: 60rpx 32rpx 40rpx;
-    min-height: 100vh;
+.auth-hero__eyebrow {
+    font-size: 22rpx;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.auth-hero__title {
+    font-size: 52rpx;
+    font-weight: 700;
+    line-height: 1.18;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.auth-hero__desc {
+    font-size: 26rpx;
+    line-height: 1.65;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.auth-panel,
+.auth-entry-list,
+.auth-form {
     display: flex;
     flex-direction: column;
 }
 
-/* Logo 区域 */
-.logo-section {
-    text-align: center;
-    margin-bottom: 56rpx;
-
-    .logo-wrapper {
-        display: inline-block;
-        padding: 16rpx;
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 50%;
-        box-shadow: 0 8rpx 32rpx rgba(124, 58, 237, 0.2);
-        margin-bottom: 28rpx;
-    }
-
-    .logo-image {
-        width: 140rpx;
-        height: 140rpx;
-        border-radius: 50%;
-        display: block;
-    }
-
-    .welcome-text {
-        font-size: 44rpx;
-        font-weight: 600;
-        color: var(--color-primary, #7c3aed);
-        margin-bottom: 16rpx;
-        letter-spacing: 1rpx;
-    }
-
-    .subtitle-text {
-        font-size: 28rpx;
-        color: var(--color-content, #666666);
-        font-weight: 400;
-    }
+.auth-panel,
+.auth-entry-list,
+.auth-form {
+    gap: 20rpx;
 }
 
-/* 表单卡片 - 玻璃态效果 */
-.form-card {
-    background: rgba(255, 255, 255, 0.85);
-    border-radius: 24rpx;
-    padding: 40rpx 32rpx;
-    box-shadow: 0 20rpx 60rpx rgba(124, 58, 237, 0.12), 0 8rpx 16rpx rgba(0, 0, 0, 0.04);
-    backdrop-filter: blur(20rpx);
-    border: 2rpx solid rgba(255, 255, 255, 0.3);
-}
-
-/* 快捷登录区域 */
-.quick-login-section {
-    margin-bottom: 16rpx;
-}
-
-/* 分割线 */
-.divider-section {
+.auth-entry {
+    min-height: 112rpx;
     display: flex;
     align-items: center;
-    margin: 24rpx 0;
-
-    .divider-line {
-        flex: 1;
-        height: 2rpx;
-        background: linear-gradient(to right, transparent, #e5e7eb, transparent);
-    }
-
-    .divider-text {
-        padding: 0 20rpx;
-        font-size: 24rpx;
-        color: #9ca3af;
-        font-weight: 500;
-    }
+    gap: 18rpx;
+    padding: 22rpx 24rpx;
+    border-radius: 24rpx;
 }
 
-.login-entry {
-    min-height: 88rpx;
-    padding: 4rpx 0;
-    border-radius: 40rpx;
-    box-sizing: border-box;
-    transition: all 0.2s ease;
-
-    &__surface {
-        min-height: 80rpx;
-        padding: 0 24rpx;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16rpx;
-        border-radius: 40rpx;
-        box-sizing: border-box;
-
-        &--secondary {
-            background: transparent;
-        }
-    }
-
-    &__icon-pill {
-        width: 64rpx;
-        height: 64rpx;
-        border-radius: 999rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-
-    &__content {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    &__label {
-        font-size: 30rpx;
-        line-height: 1.4;
-        font-weight: 600;
-        letter-spacing: 1rpx;
-        text-align: center;
-    }
-
-    &__arrow {
-        width: 36rpx;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        flex-shrink: 0;
-    }
-
-    &--hover {
-        opacity: 0.96;
-        transform: translateY(2rpx);
-    }
+.auth-entry__icon {
+    width: 68rpx;
+    height: 68rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999rpx;
+    flex-shrink: 0;
 }
 
-/* 表单标题 */
-.form-title {
+.auth-entry__content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.auth-entry__title {
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.3;
+    color: inherit;
+}
+
+.auth-entry__desc {
+    font-size: 22rpx;
+    line-height: 1.6;
+    color: inherit;
+    opacity: 0.82;
+}
+
+.auth-entry--primary {
+    color: #ffffff;
+}
+
+.auth-entry--secondary {
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.auth-form__head {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.auth-form__title {
     font-size: 34rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.auth-form__desc {
+    font-size: 24rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.auth-form__group {
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+}
+
+.auth-form__label {
+    font-size: 24rpx;
     font-weight: 600;
-    color: var(--color-primary, #7c3aed);
-    margin-bottom: 24rpx;
-    text-align: center;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-/* 输入框组 */
-.input-group {
-    margin-bottom: 20rpx;
-
-    .input-wrapper {
-        display: flex;
-        align-items: center;
-        background: #f9fafb;
-        border: 2rpx solid #e5e7eb;
-        border-radius: 16rpx;
-        padding: 0 24rpx;
-        height: 88rpx;
-        transition: all 0.2s ease;
-
-        &:focus-within {
-            border-color: var(--color-primary, #7c3aed);
-            background: #ffffff;
-            box-shadow: 0 0 0 6rpx rgba(124, 58, 237, 0.1);
-        }
-
-        .input-icon {
-            margin-right: 16rpx;
-        }
-
-        .custom-input {
-            flex: 1;
-            font-size: 28rpx;
-        }
-
-        .forgot-link {
-            font-size: 24rpx;
-            color: var(--color-primary, #7c3aed);
-            padding-left: 24rpx;
-            border-left: 2rpx solid #e5e7eb;
-            white-space: nowrap;
-            font-weight: 500;
-        }
-
-        .code-btn {
-            font-size: 24rpx;
-            color: #9ca3af;
-            padding-left: 24rpx;
-            border-left: 2rpx solid #e5e7eb;
-            white-space: nowrap;
-            min-width: 160rpx;
-            text-align: center;
-            transition: all 0.2s ease;
-
-            &.code-btn-active {
-                color: var(--color-primary, #7c3aed);
-                font-weight: 600;
-                cursor: pointer;
-
-                &:active {
-                    color: var(--color-primary-dark-2, #6d28d9);
-                }
-            }
-        }
-    }
+.auth-form__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20rpx;
 }
 
-/* 协议区域 */
-.agreement-section {
-    margin: 20rpx 0;
+.auth-form__action,
+.auth-link-inline,
+.agreement-panel__link,
+.auth-footer__link,
+.agreement-popup__link {
+    color: var(--wm-color-primary, #e85a4f);
+    font-weight: 600;
+}
 
-    .agreement-text {
-        font-size: 24rpx;
-        color: var(--color-content, #666666);
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
+.auth-link-inline {
+    padding-left: 16rpx;
+    font-size: 24rpx;
+}
 
-        .agreement-link {
-            color: var(--color-primary, #7c3aed);
-            font-weight: 500;
-            margin: 0 4rpx;
-        }
-    }
+.auth-code-btn {
+    padding-left: 20rpx;
+    font-size: 24rpx;
+    font-weight: 500;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.auth-code-btn--active {
+    color: var(--wm-color-primary, #e85a4f);
+    font-weight: 700;
+}
+
+.agreement-panel {
+    padding: 4rpx 0 8rpx;
+}
+
+.agreement-panel__text {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4rpx;
+    font-size: 24rpx;
+    line-height: 1.7;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.auth-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    font-size: 26rpx;
+}
+
+.auth-footer__text {
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .agreement-popup {
     width: 580rpx;
-    background: #ffffff;
     padding: 40rpx;
-
-    &__title {
-        font-size: 34rpx;
-        font-weight: 600;
-        color: #1f2937;
-        text-align: center;
-    }
-
-    &__content {
-        margin-top: 24rpx;
-        font-size: 28rpx;
-        line-height: 1.7;
-        color: #4b5563;
-        text-align: center;
-    }
-
-    &__link {
-        color: var(--color-primary, #7c3aed);
-        font-weight: 500;
-        margin: 0 4rpx;
-    }
-
-    &__actions {
-        display: flex;
-        gap: 20rpx;
-        margin-top: 36rpx;
-    }
-
-    &__action {
-        flex: 1;
-        height: 76rpx;
-        border-radius: 999rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 28rpx;
-        font-weight: 500;
-
-        &--cancel {
-            color: #6b7280;
-            background: #f3f4f6;
-        }
-
-        &--confirm {
-            color: #ffffff;
-        }
-
-        &--hover {
-            opacity: 0.92;
-        }
-    }
+    border-radius: 28rpx;
+    background: #ffffff;
 }
 
-/* 按钮样式 */
-.btn-primary {
-    background: linear-gradient(
-        135deg,
-        var(--color-primary, #7c3aed) 0%,
-        var(--color-primary-dark-2, #6d28d9) 100%
-    );
-    border-radius: 32rpx;
-    height: 72rpx;
-    padding: 0 32rpx;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
-
-    .btn-content {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12rpx;
-    }
-
-    .btn-text {
-        font-size: 30rpx;
-        color: #ffffff;
-        font-weight: 600;
-        letter-spacing: 1rpx;
-        text-align: center;
-        width: 100%;
-    }
-
-    &:active {
-        transform: translateY(2rpx);
-        box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.22);
-    }
+.agreement-popup__title {
+    font-size: 34rpx;
+    font-weight: 700;
+    text-align: center;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.btn-hover {
-    opacity: 0.9;
+.agreement-popup__content {
+    margin-top: 24rpx;
+    font-size: 28rpx;
+    line-height: 1.7;
+    text-align: center;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.btn-login {
-    margin-top: 16rpx;
+.agreement-popup__actions {
+    display: flex;
+    gap: 20rpx;
+    margin-top: 36rpx;
+}
+
+.agreement-popup__action {
+    flex: 1;
+    height: 76rpx;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 999rpx;
+    font-size: 28rpx;
+    font-weight: 600;
 }
 
-.btn-disabled {
-    opacity: 0.5;
-    pointer-events: none;
-    box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.15);
+.agreement-popup__action--cancel {
+    background: var(--wm-color-bg-soft, #fff7f4);
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.login-btn-wrapper {
-    margin-top: 24rpx;
-}
-
-/* 底部操作 */
-.bottom-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 24rpx;
-    font-size: 26rpx;
-
-    .action-item {
-        color: var(--color-content, #666666);
-    }
-
-    .action-link {
-        color: var(--color-primary, #7c3aed);
-        font-weight: 500;
-        cursor: pointer;
-        transition: color 0.2s ease;
-
-        &:active {
-            color: var(--color-primary-dark-2, #6d28d9);
-        }
-    }
-}
-
-/* 弹窗样式 */
-.modal-content {
-    padding: 60rpx 40rpx;
-    text-align: center;
-
-    .modal-title {
-        font-size: 34rpx;
-        font-weight: 600;
-        color: var(--color-primary, #7c3aed);
-        margin-bottom: 32rpx;
-    }
-
-    .modal-text {
-        font-size: 28rpx;
-        color: var(--color-content, #666666);
-        line-height: 1.6;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        align-items: center;
-
-        .modal-link {
-            color: var(--color-primary, #7c3aed);
-            font-weight: 500;
-            margin: 0 4rpx;
-        }
-    }
-}
-
-/* 响应式优化 */
-@media (max-width: 375px) {
-    .login-content {
-        padding: 48rpx 28rpx 32rpx;
-    }
-
-    .form-card {
-        padding: 36rpx 28rpx;
-    }
-
-    .logo-section .welcome-text {
-        font-size: 42rpx;
-    }
+.agreement-popup__action--confirm {
+    color: #ffffff;
 }
 </style>

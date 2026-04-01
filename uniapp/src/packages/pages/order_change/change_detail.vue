@@ -241,7 +241,7 @@ const getTypeClass = (type: number) => {
         1: 'bg-blue-100 text-blue-600',
         2: 'bg-orange-100 text-orange-600',
         3: 'bg-green-100 text-green-600',
-        4: 'bg-purple-100 text-purple-600'
+        4: 'bg-amber-100 text-amber-700'
     }
     return classes[type] || 'bg-gray-100 text-gray-600'
 }
@@ -461,8 +461,8 @@ onLoad((options: any) => {
     padding: 8rpx 18rpx;
     border-radius: 999rpx;
     font-size: 24rpx;
-    color: #7c3aed;
-    background: rgba(124, 58, 237, 0.1);
+    color: var(--wm-color-primary, #e85a4f);
+    background: rgba(232, 90, 79, 0.1);
     margin-bottom: 20rpx;
 }
 

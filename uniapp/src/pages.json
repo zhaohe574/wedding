@@ -355,6 +355,15 @@
                 }
             },
             {
+                "path": "pages/aftersale/complaint_detail",
+                "style": {
+                    "navigationBarTitleText": "投诉详情"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
                 "path": "pages/aftersale/complaint",
                 "style": {
                     "navigationBarTitleText": "我的投诉"
@@ -373,6 +382,15 @@
                 }
             },
             {
+                "path": "pages/aftersale/reshoot_detail",
+                "style": {
+                    "navigationBarTitleText": "补拍详情"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
                 "path": "pages/aftersale/apply_reshoot",
                 "style": {
                     "navigationBarTitleText": "申请补拍"
@@ -385,6 +403,15 @@
                 "path": "pages/aftersale/callback",
                 "style": {
                     "navigationBarTitleText": "回访问卷"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/aftersale/callback_detail",
+                "style": {
+                    "navigationBarTitleText": "回访问卷详情"
                 },
                 "meta": {
                     "auth": true
@@ -592,7 +619,6 @@
         "navigationBarTitleText": "商城",
         "navigationBarBackgroundColor": "#FFFFFF",
         "navigationStyle": "custom",
-        "backgroundColor": "#F8F8F8",
         "h5": {
             "navigationStyle": "custom"
         }

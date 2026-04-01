@@ -1,0 +1,165 @@
+# 本地变更日志（2026-04-01）
+
+## 基本信息
+
+- 分支：`dev`
+- 远端：`origin (https://github.com/zhaohe574/wedding.git)`
+- 统计：`134 files changed, 26219 insertions(+), 17566 deletions(-)`
+- 目录分布：`uniapp(88)`、`server(35)`、`admin(10)`、`wedding.pen(1)`
+
+## 变更清单（按 `git status --short -uall`）
+
+```text
+ M admin/src/api/order.ts
+ M admin/src/api/staff-center.ts
+ M admin/src/api/staff.ts
+ M admin/src/views/order/lists/index.vue
+ M admin/src/views/setting/feature_switch/index.vue
+ M admin/src/views/staff/lists/edit.vue
+ M admin/src/views/staff_center/order/index.vue
+ M admin/src/views/staff_center/profile/index.vue
+ M admin/src/views/workbench/index.vue
+ M admin/tsconfig.tsbuildinfo
+ M server/app/adminapi/controller/order/OrderController.php
+ M server/app/adminapi/controller/staff/StaffController.php
+ M server/app/adminapi/lists/order/OrderLists.php
+ M server/app/adminapi/lists/order/OrderLogLists.php
+ M server/app/adminapi/logic/ConfigLogic.php
+ M server/app/adminapi/logic/WorkbenchLogic.php
+ M server/app/adminapi/logic/order/OrderLogic.php
+ M server/app/adminapi/logic/setting/FeatureSwitchLogic.php
+ M server/app/adminapi/logic/staff/StaffLogic.php
+ M server/app/adminapi/validate/order/OrderValidate.php
+ M server/app/adminapi/validate/setting/FeatureSwitchValidate.php
+ M server/app/adminapi/validate/staff/StaffValidate.php
+ M server/app/api/controller/NotificationController.php
+ M server/app/api/controller/StaffCenterController.php
+ M server/app/api/controller/StaffController.php
+ M server/app/api/logic/IndexLogic.php
+ M server/app/api/logic/NotificationLogic.php
+ M server/app/api/logic/OrderLogic.php
+ M server/app/api/logic/PcLogic.php
+ M server/app/api/logic/StaffCenterLogic.php
+ M server/app/api/logic/StaffLogic.php
+ M server/app/api/validate/OrderValidate.php
+ M server/app/api/validate/StaffCenterValidate.php
+ M server/app/common/model/order/Order.php
+ M server/app/common/model/order/OrderLog.php
+ M server/app/common/service/BookingFlowService.php
+ D server/public/mobile/assets/_plugin-vue_export-helper.1b428a4d.js
+ D server/public/mobile/assets/collection-00d40f02.css
+ D server/public/mobile/assets/empty-ff9484b3.css
+ D server/public/mobile/assets/error.a3858cc2.js
+ D server/public/mobile/assets/tabs-814bc322.css
+ D server/public/mobile/assets/u-icon-a56081bd.css
+ M server/public/mobile/index.html
+ M server/sql/2.0.0.20260201/update.sql
+ M server/sql/wedding/051_booking_flow.sql
+ M uniapp/src/App.vue
+ M uniapp/src/api/staffCenter.ts
+ M uniapp/src/components/base/ActionArea.vue
+ M uniapp/src/components/base/BaseCard.vue
+ M uniapp/src/components/base/BaseDatePicker.vue
+ M uniapp/src/components/base/BaseInput.vue
+ M uniapp/src/components/base/BaseNavbar.vue
+ M uniapp/src/components/base/BasePicker.vue
+ M uniapp/src/components/base/PageSection.vue
+ M uniapp/src/components/base/PageShell.vue
+ M uniapp/src/components/business/DynamicCard.vue
+ M uniapp/src/components/business/FavoriteButton.vue
+ M uniapp/src/components/business/OrderCard.vue
+ M uniapp/src/components/business/StaffCard.vue
+ M uniapp/src/components/news-card/news-card.vue
+ M uniapp/src/components/page-status/page-status.vue
+ M uniapp/src/components/payment/payment.vue
+ M uniapp/src/components/tab/tab.vue
+ M uniapp/src/components/tabbar/tabbar.vue
+ M uniapp/src/components/widgets/quick-entry/quick-entry.vue
+ M uniapp/src/components/widgets/user-banner/user-banner.vue
+ M uniapp/src/components/widgets/user-info/user-info.vue
+ M uniapp/src/components/widgets/wedding-countdown/wedding-countdown.vue
+ M uniapp/src/design/theme.ts
+ M uniapp/src/packages/pages/404/404.vue
+ M uniapp/src/packages/pages/admin_dashboard/admin_dashboard.vue
+ M uniapp/src/packages/pages/aftersale/apply_reshoot.vue
+ M uniapp/src/packages/pages/aftersale/callback.vue
+ M uniapp/src/packages/pages/aftersale/complaint.vue
+ M uniapp/src/packages/pages/aftersale/index.vue
+ M uniapp/src/packages/pages/aftersale/reshoot.vue
+ M uniapp/src/packages/pages/aftersale/ticket.vue
+ M uniapp/src/packages/pages/aftersale/ticket_detail.vue
+ M uniapp/src/packages/pages/agreement/agreement.vue
+ M uniapp/src/packages/pages/collection/collection.vue
+ M uniapp/src/packages/pages/news_detail/news_detail.vue
+ M uniapp/src/packages/pages/notification/index.vue
+ M uniapp/src/packages/pages/order_change/change_detail.vue
+ M uniapp/src/packages/pages/order_change/list.vue
+ M uniapp/src/packages/pages/order_confirm/order_confirm.vue
+ M uniapp/src/packages/pages/recharge/recharge.vue
+ M uniapp/src/packages/pages/recharge_record/recharge_record.vue
+ M uniapp/src/packages/pages/review/detail.vue
+ M uniapp/src/packages/pages/review/list.vue
+ M uniapp/src/packages/pages/review/publish.vue
+ M uniapp/src/packages/pages/staff_addon_edit/staff_addon_edit.vue
+ M uniapp/src/packages/pages/staff_addon_list/staff_addon_list.vue
+ M uniapp/src/packages/pages/staff_booking/staff_booking.vue
+ M uniapp/src/packages/pages/staff_center/staff_center.vue
+ M uniapp/src/packages/pages/staff_detail/staff_detail.vue
+ M uniapp/src/packages/pages/staff_dynamic_list/staff_dynamic_list.vue
+ M uniapp/src/packages/pages/staff_order_detail/staff_order_detail.vue
+ M uniapp/src/packages/pages/staff_order_list/staff_order_list.vue
+ M uniapp/src/packages/pages/staff_package_list/staff_package_list.vue
+ M uniapp/src/packages/pages/staff_profile/staff_profile.vue
+ M uniapp/src/packages/pages/staff_schedule/staff_schedule.vue
+ M uniapp/src/packages/pages/staff_work_list/staff_work_list.vue
+ M uniapp/src/packages/pages/user_wallet/user_wallet.vue
+ M uniapp/src/packages/pages/waitlist/waitlist.vue
+ M uniapp/src/pages.json
+ M uniapp/src/pages/as_us/as_us.vue
+ M uniapp/src/pages/bind_mobile/bind_mobile.vue
+ M uniapp/src/pages/change_password/change_password.vue
+ M uniapp/src/pages/dynamic/dynamic.vue
+ M uniapp/src/pages/dynamic_detail/dynamic_detail.vue
+ M uniapp/src/pages/empty/empty.vue
+ M uniapp/src/pages/forget_pwd/forget_pwd.vue
+ M uniapp/src/pages/index/index.vue
+ M uniapp/src/pages/login/login.vue
+ M uniapp/src/pages/news/news.vue
+ M uniapp/src/pages/order/order.vue
+ M uniapp/src/pages/order_detail/order_detail.vue
+ M uniapp/src/pages/payment_result/payment_result.vue
+ M uniapp/src/pages/register/register.vue
+ M uniapp/src/pages/schedule_query/schedule_query.vue
+ M uniapp/src/pages/search/search.vue
+ M uniapp/src/pages/staff_list/staff_list.vue
+ M uniapp/src/pages/user/user.vue
+ M uniapp/src/pages/user_data/user_data.vue
+ M uniapp/src/pages/user_set/user_set.vue
+ M uniapp/src/pages/webview/webview.vue
+ M uniapp/src/styles/dynamic.scss
+ M uniapp/src/styles/public.scss
+ M uniapp/src/styles/tokens.scss
+ M uniapp/src/styles/utilities.scss
+ M uniapp/src/utils/staff-booking.ts
+ M uniapp/src/utils/util.ts
+ M uniapp/tailwind.config.js
+ M wedding.pen
+?? admin/src/api/staff-tag-review.ts
+?? admin/src/views/staff/tag_review/index.vue
+?? server/app/adminapi/controller/ops/StaffTagReviewController.php
+?? server/app/adminapi/controller/staff/StaffTagReviewController.php
+?? server/app/adminapi/lists/staff/StaffTagReviewLists.php
+?? server/app/adminapi/logic/staff/StaffTagReviewLogic.php
+?? server/app/adminapi/validate/staff/StaffTagReviewValidate.php
+?? server/app/common/model/staff/StaffTagApply.php
+?? server/app/common/service/StaffTagReviewService.php
+?? server/sql/wedding/049_add_staff_tag_review.sql
+?? server/sql/wedding/052_migrate_staff_booking_options_to_service_addon.sql
+?? server/sql/wedding/053_add_order_user_deleted_status.sql
+?? uniapp/src/components/business/AuthPageShell.vue
+?? uniapp/src/hooks/useFixedNavbarPagingStyle.ts
+?? uniapp/src/packages/pages/aftersale/callback_detail.vue
+?? uniapp/src/packages/pages/aftersale/complaint_detail.vue
+?? uniapp/src/packages/pages/aftersale/reshoot_detail.vue
+?? uniapp/src/styles/aftersale.scss
+```

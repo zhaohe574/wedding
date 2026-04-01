@@ -3,213 +3,229 @@
     <PageShell scene="staff" hasSafeBottom>
         <BaseNavbar title="服务人员中心" />
 
-        <PageSection variant="hero">
-            <BaseCard
-                variant="hero"
-                scene="staff"
-                interactive
-                borderRadius="24rpx"
-                padding="24rpx"
-                @click="goPage('/packages/pages/staff_profile/staff_profile')"
-            >
-                <view class="info-card">
-                    <view class="info-card__top">
-                        <text class="info-card__eyebrow">今日工作台</text>
-                        <StatusBadge :tone="auditBadgeTone" size="sm">
-                            {{ auditBadgeText }}
-                        </StatusBadge>
+        <view class="staff-center-page">
+            <view class="staff-center-page__content">
+                <view class="staff-hero-card" @click="goPage('/packages/pages/staff_profile/staff_profile')">
+                    <view class="staff-hero-card__top">
+                        <view class="hero-pill hero-pill--primary">
+                            <text class="hero-pill__text">今日工作台</text>
+                        </view>
+                        <view :class="['hero-pill', `hero-pill--${auditBadge.modifier}`]">
+                            <text class="hero-pill__text">{{ auditBadge.text }}</text>
+                        </view>
                     </view>
 
-                    <view class="info-card__profile">
+                    <view class="staff-hero-card__profile">
                         <image
-                            class="info-card__avatar"
+                            class="staff-hero-card__avatar"
                             :src="displayProfile.avatar || defaultAvatar"
                             mode="aspectFill"
                         />
-                        <view class="info-card__profile-main">
-                            <view class="info-card__title-row">
-                                <text class="info-card__title">{{ profileTitle }}</text>
-                                <text class="info-card__link">查看资料</text>
-                            </view>
-                            <text class="info-card__meta">{{ profileMetaText }}</text>
+                        <view class="staff-hero-card__copy">
+                            <text class="staff-hero-card__title">{{ profileTitle }}</text>
+                            <text class="staff-hero-card__meta">{{ profileMetaText }}</text>
                         </view>
                     </view>
 
-                    <text class="info-card__summary">{{ headerSummaryText }}</text>
-
-                    <view class="info-card__chips">
+                    <view class="staff-hero-card__metrics">
                         <view
-                            v-for="item in headerChips"
+                            v-for="item in heroMetrics"
                             :key="item.label"
-                            class="info-chip"
+                            :class="['hero-metric', { 'hero-metric--accent': item.accent }]"
                         >
-                            <text class="info-chip__label">{{ item.label }}</text>
-                            <text class="info-chip__value">{{ item.value }}</text>
+                            <text class="hero-metric__label">{{ item.label }}</text>
+                            <text class="hero-metric__value">{{ item.value }}</text>
                         </view>
                     </view>
                 </view>
-            </BaseCard>
-        </PageSection>
 
-        <PageSection variant="dashboard">
-            <BaseCard
-                variant="surface"
-                scene="staff"
-                borderRadius="24rpx"
-                padding="20rpx 24rpx"
-                :hoverable="false"
-            >
-                <view class="section-head">
-                    <view>
-                        <text class="section-head__title">待办看板</text>
-                        <text class="section-head__subtitle">优先处理时效最高的事项</text>
-                    </view>
-                    <text class="section-head__meta">今日优先</text>
-                </view>
-
-                <view class="todo-list">
-                    <view
-                        v-for="item in todoRows"
-                        :key="item.key"
-                        class="todo-row"
-                        @click="handleTodo(item)"
-                    >
-                        <view class="todo-row__main">
-                            <text class="todo-row__title">{{ item.label }}</text>
-                            <text class="todo-row__desc">{{ item.desc }}</text>
+                <view class="staff-section-card">
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">今日焦点</text>
                         </view>
-                        <view class="todo-row__side">
-                            <text class="todo-row__value">{{ item.value }}</text>
-                            <tn-icon name="right" size="20" color="#B4ACA8" />
-                        </view>
+                        <text class="section-head__meta">先处理</text>
                     </view>
-                </view>
-            </BaseCard>
-        </PageSection>
 
-        <PageSection variant="dashboard">
-            <BaseCard
-                variant="surface"
-                scene="staff"
-                borderRadius="24rpx"
-                padding="20rpx 24rpx"
-                :hoverable="false"
-            >
-                <view class="section-head">
-                    <view>
-                        <text class="section-head__title">经营概览</text>
-                        <text class="section-head__subtitle">围绕订单、档期与内容更新管理</text>
-                    </view>
-                    <text class="section-head__meta">排期与订单</text>
-                </view>
-
-                <view class="overview-grid">
-                    <view
-                        v-for="item in overviewCards"
-                        :key="item.label"
-                        :class="['overview-card', { 'overview-card--accent': item.highlight }]"
-                    >
-                        <text class="overview-card__label">{{ item.label }}</text>
-                        <view class="overview-card__value-row">
-                            <text class="overview-card__value">{{ item.value }}</text>
-                            <text class="overview-card__unit">{{ item.unit }}</text>
-                        </view>
-                        <text class="overview-card__hint">{{ item.hint }}</text>
-                    </view>
-                </view>
-            </BaseCard>
-        </PageSection>
-
-        <PageSection variant="dashboard">
-            <BaseCard
-                variant="surface"
-                scene="staff"
-                borderRadius="24rpx"
-                padding="20rpx 24rpx"
-                :hoverable="false"
-            >
-                <view class="section-head">
-                    <view>
-                        <text class="section-head__title">最近订单</text>
-                        <text class="section-head__subtitle">首页直接浏览最新进入的订单摘要</text>
-                    </view>
-                    <text class="section-head__meta">{{ recentOrderCountText }}</text>
-                </view>
-
-                <LoadingState
-                    v-if="loading && !recentOrderRows.length"
-                    text="正在同步工作台..."
-                />
-
-                <view v-else-if="recentOrderRows.length" class="recent-order-list">
-                    <view
-                        v-for="item in recentOrderRows"
-                        :key="item.id"
-                        class="recent-order"
-                        @click="goOrderDetail(item.id)"
-                    >
-                        <view class="recent-order__head">
-                            <view class="recent-order__copy">
-                                <text class="recent-order__title">{{ item.title }}</text>
-                                <text class="recent-order__subtitle">{{ item.subtitle }}</text>
+                    <view class="focus-card focus-card--primary" @click="handleFocusCard(primaryFocusCard)">
+                        <view class="focus-card__row">
+                            <view class="focus-card__copy">
+                                <text class="focus-card__title">{{ primaryFocusCard.label }}</text>
                             </view>
-                            <StatusBadge :tone="getOrderStatusTone(item.orderStatus)" size="sm">
-                                {{ item.statusLabel }}
-                            </StatusBadge>
+                            <view class="focus-badge focus-badge--primary">
+                                <text class="focus-badge__text">{{ primaryFocusCard.valueText }}</text>
+                            </view>
                         </view>
+                        <view class="focus-card__arrow">
+                            <tn-icon name="right" size="22" color="#E85A4F" />
+                        </view>
+                    </view>
 
-                        <view class="recent-order__meta">
-                            <text class="recent-order__sn">{{ item.orderSn }}</text>
-                            <text
-                                v-if="item.pendingConfirmCount > 0"
-                                class="recent-order__pending"
-                            >
-                                待确认 {{ item.pendingConfirmCount }}
-                            </text>
+                    <view class="focus-grid">
+                        <view
+                            v-for="item in secondaryFocusCards"
+                            :key="item.key"
+                            class="focus-card focus-card--secondary"
+                            @click="handleFocusCard(item)"
+                        >
+                            <view class="focus-card__row">
+                                <text class="focus-card__title">{{ item.label }}</text>
+                                <view :class="['focus-badge', `focus-badge--${item.badgeModifier}`]">
+                                    <text class="focus-badge__text">{{ item.valueText }}</text>
+                                </view>
+                            </view>
                         </view>
                     </view>
                 </view>
 
-                <EmptyState
-                    v-else
-                    title="最近还没有订单动态"
-                    description="新订单与客户确认事项会优先显示在这里"
-                />
-            </BaseCard>
-        </PageSection>
-
-        <PageSection variant="dashboard">
-            <BaseCard
-                variant="surface"
-                scene="staff"
-                borderRadius="24rpx"
-                padding="20rpx 24rpx"
-                :hoverable="false"
-            >
-                <view class="section-head">
-                    <view>
-                        <text class="section-head__title">快捷操作</text>
-                        <text class="section-head__subtitle">常用模块直达，减少反复切页</text>
-                    </view>
-                    <text class="section-head__meta">常用入口</text>
-                </view>
-
-                <view class="quick-grid">
-                    <view
-                        v-for="item in quickMenus"
-                        :key="item.path"
-                        :class="['quick-card', { 'quick-card--accent': item.highlight }]"
-                        @click="goPage(item.path)"
-                    >
-                        <view v-if="item.badge > 0" class="quick-card__badge">
-                            {{ formatBadge(item.badge) }}
+                <view class="staff-section-card">
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">订单与档期</text>
                         </view>
-                        <text class="quick-card__name">{{ item.name }}</text>
-                        <text class="quick-card__desc">{{ item.desc }}</text>
+                        <text class="section-head__meta">{{ recentOrderMetaText }}</text>
+                    </view>
+
+                    <view class="stats-grid">
+                        <view
+                            v-for="item in overviewStats"
+                            :key="item.label"
+                            :class="['stats-card', { 'stats-card--accent': item.accent }]"
+                        >
+                            <text class="stats-card__label">{{ item.label }}</text>
+                            <view class="stats-card__value-row">
+                                <text class="stats-card__value">{{ item.value }}</text>
+                                <text class="stats-card__unit">{{ item.unit }}</text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <LoadingState
+                        v-if="loading && !hasLoaded && !recentOrderCards.length"
+                        text="正在同步工作台..."
+                    />
+
+                    <view v-else-if="recentOrderCards.length" class="order-list">
+                        <view
+                            v-for="item in recentOrderCards"
+                            :key="item.id"
+                            class="order-card"
+                            @click="goOrderDetail(item.id)"
+                        >
+                            <view class="order-card__row order-card__row--start">
+                                <view class="order-card__copy">
+                                    <text class="order-card__title">{{ item.title }}</text>
+                                    <text class="order-card__subtitle">{{ item.subtitle }}</text>
+                                </view>
+                                <view :class="['status-pill', `status-pill--${item.statusModifier}`]">
+                                    <text class="status-pill__text">{{ item.statusLabel }}</text>
+                                </view>
+                            </view>
+
+                            <view class="order-card__row order-card__row--center">
+                                <text class="order-card__sn">订单号 {{ item.orderSn }}</text>
+                                <view
+                                    v-if="item.pendingConfirmCount > 0"
+                                    class="status-pill status-pill--primary"
+                                >
+                                    <text class="status-pill__text">
+                                        待确认 {{ item.pendingConfirmCount }}
+                                    </text>
+                                </view>
+                            </view>
+                        </view>
+                    </view>
+
+                    <EmptyState
+                        v-else
+                        title="最近还没有订单动态"
+                        description="新订单与客户确认事项会优先显示在这里"
+                    />
+                </view>
+
+                <view class="staff-section-card">
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">经营管理</text>
+                        </view>
+                        <text class="section-head__meta">后台维护</text>
+                    </view>
+
+                    <view class="stats-grid stats-grid--compact">
+                        <view v-for="item in businessStats" :key="item.label" class="stats-card">
+                            <text class="stats-card__label">{{ item.label }}</text>
+                            <view class="stats-card__value-row">
+                                <text class="stats-card__value">{{ item.value }}</text>
+                                <text class="stats-card__unit">{{ item.unit }}</text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <view class="manage-grid">
+                        <view
+                            v-for="item in businessMenus"
+                            :key="item.path"
+                            class="manage-card"
+                            @click="goPage(item.path)"
+                        >
+                            <text class="manage-card__title">{{ item.name }}</text>
+                        </view>
                     </view>
                 </view>
-            </BaseCard>
-        </PageSection>
+
+                <view class="staff-section-card">
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">常用入口</text>
+                        </view>
+                        <text class="section-head__meta">快速直达</text>
+                    </view>
+
+                    <view class="quick-grid">
+                        <view
+                            v-for="item in quickMenus"
+                            :key="item.path"
+                            :class="[
+                                'quick-card',
+                                `quick-card--${item.tone}`,
+                                {
+                                    'quick-card--accent': item.accent,
+                                    'quick-card--single': item.singleRow
+                                }
+                            ]"
+                            @click="goPage(item.path)"
+                        >
+                            <view class="quick-card__main">
+                                <view :class="['quick-card__icon', `quick-card__icon--${item.tone}`]">
+                                    <tn-icon :name="item.icon" size="18" :color="item.iconColor" />
+                                </view>
+
+                                <view class="quick-card__copy">
+                                    <view class="quick-card__title-row">
+                                        <text class="quick-card__title">{{ item.name }}</text>
+                                        <view
+                                            v-if="item.badge > 0"
+                                            class="status-pill status-pill--ghost"
+                                        >
+                                            <text class="status-pill__text">
+                                                {{ formatBadge(item.badge) }}
+                                            </text>
+                                        </view>
+                                    </view>
+                                </view>
+                            </view>
+
+                            <tn-icon
+                                v-if="item.singleRow"
+                                name="right"
+                                size="20"
+                                color="#B4ACA8"
+                            />
+                        </view>
+                    </view>
+                </view>
+            </view>
+        </view>
     </PageShell>
 </template>
 
@@ -217,23 +233,23 @@
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
-import PageSection from '@/components/base/PageSection.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
-import BaseCard from '@/components/base/BaseCard.vue'
-import StatusBadge from '@/components/base/StatusBadge.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import { staffCenterDashboard, staffCenterProfile } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 
-type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
+type BadgeModifier = 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'ghost'
+type QuickTone = 'primary' | 'warning' | 'info' | 'neutral'
 
 interface DashboardProfile {
     name: string
     avatar: string
     status: number
+    status_desc: string
     audit_status: number
+    audit_status_desc: string
     mobile: string
     price_text: string
     has_price: boolean
@@ -244,6 +260,7 @@ interface DashboardOverview {
     order_count: number
     work_count: number
     package_count: number
+    addon_count: number
     schedule_count: number
 }
 
@@ -284,7 +301,9 @@ interface StaffProfileDetail {
     mobile?: string
     mobile_full?: string
     status?: number
+    status_desc?: string
     audit_status?: number
+    audit_status_desc?: string
     rating?: number | string
     experience_years?: number | string
     orderCount?: number
@@ -298,54 +317,60 @@ interface DisplayProfile {
     category_name: string
     mobile: string
     status: number
+    status_desc: string
     audit_status: number
+    audit_status_desc: string
     rating: number | string
     experience_years: number | string
     order_count: number
 }
 
-interface HeaderChipItem {
+interface HeroMetricItem {
     label: string
-    value: number
+    value: string
+    accent: boolean
 }
 
-interface TodoRowItem {
+interface FocusCardItem {
     key: string
     label: string
-    desc: string
-    value: number
+    valueText: string
+    badgeModifier: BadgeModifier
     action: () => void
 }
 
-interface OverviewCardItem {
+interface StatsCardItem {
     label: string
     value: number
     unit: string
-    hint: string
-    highlight: boolean
+    accent: boolean
 }
 
-interface RecentOrderRowItem {
+interface RecentOrderCardItem {
     id: number
     title: string
     subtitle: string
     orderSn: string
     statusLabel: string
-    orderStatus: number
+    statusModifier: BadgeModifier
     pendingConfirmCount: number
 }
 
 interface QuickMenuItem {
     name: string
-    desc: string
     path: string
     badge: number
-    highlight: boolean
+    accent: boolean
+    icon: string
+    iconColor: string
+    tone: QuickTone
+    singleRow: boolean
 }
 
 const $theme = useThemeStore()
 const defaultAvatar = '/static/images/user/default_avatar.png'
 const loading = ref(false)
+const hasLoaded = ref(false)
 const profileDetail = ref<StaffProfileDetail>({})
 
 const createEmptyDashboard = (): DashboardState => ({
@@ -353,7 +378,9 @@ const createEmptyDashboard = (): DashboardState => ({
         name: '',
         avatar: '',
         status: 0,
+        status_desc: '',
         audit_status: 0,
+        audit_status_desc: '',
         mobile: '',
         price_text: '',
         has_price: false,
@@ -363,6 +390,7 @@ const createEmptyDashboard = (): DashboardState => ({
         order_count: 0,
         work_count: 0,
         package_count: 0,
+        addon_count: 0,
         schedule_count: 0
     },
     todo: {
@@ -402,6 +430,8 @@ const formatCompactDate = (value: string) => {
     return text ? text.replace(/-/g, '.') : '待安排服务日期'
 }
 
+const formatCountText = (value: number, unit: string) => `${toNumber(value)} ${unit}`
+
 const buildOrderTitle = (order: DashboardRecentOrder) => {
     const packageNames = Array.isArray(order.package_names)
         ? order.package_names.filter(Boolean)
@@ -432,38 +462,35 @@ const buildOrderSubtitle = (order: DashboardRecentOrder) => {
     return parts.join(' · ')
 }
 
-const resolveAuditTagText = (status: unknown, auditStatus: unknown) => {
-    const normalizedStatus = toNumber(status)
-    const normalizedAuditStatus = toNumber(auditStatus)
-
-    if (normalizedStatus !== 1 && normalizedAuditStatus === 1) {
-        return '已停用'
-    }
-
+const getAuditBadgeFallback = (status: number) => {
     const map: Record<number, string> = {
         0: '待审核',
-        1: '已认证',
+        1: '已通过',
         2: '已拒绝'
     }
-
-    return map[normalizedAuditStatus] || '待完善'
+    return map[status] || '审核中'
 }
 
-const resolveAuditTone = (status: unknown, auditStatus: unknown): BadgeTone => {
-    const normalizedStatus = toNumber(status)
-    const normalizedAuditStatus = toNumber(auditStatus)
+const getAuditBadgeModifier = (status: number): BadgeModifier => {
+    if (status === 1) return 'success'
+    if (status === 2) return 'danger'
+    return 'warning'
+}
 
-    if (normalizedStatus !== 1 && normalizedAuditStatus === 1) {
-        return 'neutral'
-    }
-
-    const map: Record<number, BadgeTone> = {
+const getOrderStatusModifier = (status: number): BadgeModifier => {
+    const map: Record<number, BadgeModifier> = {
         0: 'warning',
-        1: 'success',
-        2: 'danger'
+        1: 'info',
+        2: 'success',
+        3: 'neutral',
+        4: 'neutral',
+        5: 'warning',
+        6: 'danger',
+        7: 'warning',
+        8: 'danger'
     }
 
-    return map[normalizedAuditStatus] || 'info'
+    return map[status] || 'neutral'
 }
 
 const displayProfile = computed<DisplayProfile>(() => {
@@ -476,20 +503,14 @@ const displayProfile = computed<DisplayProfile>(() => {
         category_name: detail.category_name || summary.category_name || '',
         mobile: String(detail.mobile_full || detail.mobile || summary.mobile || ''),
         status: detail.status ?? summary.status ?? 0,
+        status_desc: detail.status_desc || summary.status_desc || '',
         audit_status: detail.audit_status ?? summary.audit_status ?? 0,
+        audit_status_desc: detail.audit_status_desc || summary.audit_status_desc || '',
         rating: detail.rating ?? 0,
         experience_years: detail.experience_years ?? 0,
         order_count: detail.orderCount ?? dashboard.value.overview.order_count
     }
 })
-
-const auditBadgeText = computed(() =>
-    resolveAuditTagText(displayProfile.value.status, displayProfile.value.audit_status)
-)
-
-const auditBadgeTone = computed<BadgeTone>(() =>
-    resolveAuditTone(displayProfile.value.status, displayProfile.value.audit_status)
-)
 
 const profileTitle = computed(() => {
     const name = displayProfile.value.name || '未填写姓名'
@@ -516,153 +537,190 @@ const profileMetaText = computed(() => {
     return parts.join(' · ') || '完善资料后可提升客户信任感'
 })
 
-const headerSummaryText = computed(
+const visibleTodoTotal = computed(
     () =>
-        `今日待办 ${toNumber(dashboard.value.todo.total)} 项，待确认订单 ${toNumber(
-            dashboard.value.todo.pending_confirm_orders
-        )} 笔。`
+        toNumber(dashboard.value.todo.pending_confirm_orders) +
+        toNumber(dashboard.value.todo.today_service_count) +
+        toNumber(dashboard.value.todo.upcoming_7d_schedule_count)
 )
 
-const headerChips = computed<HeaderChipItem[]>(() => [
+const auditBadge = computed(() => ({
+    text:
+        displayProfile.value.audit_status_desc ||
+        getAuditBadgeFallback(displayProfile.value.audit_status),
+    modifier: getAuditBadgeModifier(displayProfile.value.audit_status)
+}))
+
+const heroMetrics = computed<HeroMetricItem[]>(() => [
     {
         label: '今日待办',
-        value: toNumber(dashboard.value.todo.total)
+        value: formatCountText(visibleTodoTotal.value, '项'),
+        accent: true
     },
     {
         label: '本周档期',
-        value: toNumber(dashboard.value.todo.upcoming_7d_schedule_count)
+        value: formatCountText(toNumber(dashboard.value.todo.upcoming_7d_schedule_count), '场'),
+        accent: false
     },
     {
         label: '待确认',
-        value: toNumber(dashboard.value.todo.pending_confirm_orders)
+        value: formatCountText(toNumber(dashboard.value.todo.pending_confirm_orders), '笔'),
+        accent: false
     }
 ])
 
-const todoRows = computed<TodoRowItem[]>(() => [
-    {
-        key: 'pending_confirm_orders',
-        label: '待确认订单',
-        desc: '优先处理客户新下单与确认动作',
-        value: toNumber(dashboard.value.todo.pending_confirm_orders),
-        action: () => goOrders(0)
-    },
+const primaryFocusCard = computed<FocusCardItem>(() => ({
+    key: 'pending_confirm_orders',
+    label: '待确认订单',
+    valueText: formatCountText(toNumber(dashboard.value.todo.pending_confirm_orders), '笔'),
+    badgeModifier: 'primary',
+    action: () => goOrders(0)
+}))
+
+const secondaryFocusCards = computed<FocusCardItem[]>(() => [
     {
         key: 'today_service_count',
         label: '今日服务',
-        desc: '确认当日行程与服务准备',
-        value: toNumber(dashboard.value.todo.today_service_count),
+        valueText: formatCountText(toNumber(dashboard.value.todo.today_service_count), '项'),
+        badgeModifier: 'warning',
         action: () => goOrders()
     },
     {
         key: 'upcoming_7d_schedule_count',
-        label: '未来 7 日安排',
-        desc: '提前检查档期冲突与服务准备',
-        value: toNumber(dashboard.value.todo.upcoming_7d_schedule_count),
+        label: '7日安排',
+        valueText: formatCountText(toNumber(dashboard.value.todo.upcoming_7d_schedule_count), '场'),
+        badgeModifier: 'info',
         action: () => goPage('/packages/pages/staff_schedule/staff_schedule')
-    },
-    {
-        key: 'unread_message_count',
-        label: '未读消息',
-        desc: '查看通知、系统提醒与客户留言',
-        value: toNumber(dashboard.value.todo.unread_message_count),
-        action: () => goPage('/packages/pages/notification/index')
     }
 ])
 
-const overviewCards = computed<OverviewCardItem[]>(() => [
+const overviewStats = computed<StatsCardItem[]>(() => [
     {
         label: '总订单',
         value: toNumber(dashboard.value.overview.order_count),
         unit: '单',
-        hint: '持续跟进客户订单',
-        highlight: true
+        accent: true
     },
     {
         label: '档期条目',
         value: toNumber(dashboard.value.overview.schedule_count),
         unit: '条',
-        hint: '维护未来服务安排',
-        highlight: false
-    },
+        accent: false
+    }
+])
+
+const businessStats = computed<StatsCardItem[]>(() => [
     {
         label: '作品数量',
         value: toNumber(dashboard.value.overview.work_count),
         unit: '条',
-        hint: '展示案例与内容更新',
-        highlight: false
+        accent: false
     },
     {
         label: '服务套餐',
         value: toNumber(dashboard.value.overview.package_count),
         unit: '个',
-        hint: '统一管理价格与组合',
-        highlight: false
+        accent: false
     }
 ])
 
-const recentOrderRows = computed<RecentOrderRowItem[]>(() =>
+const recentOrderCards = computed<RecentOrderCardItem[]>(() =>
     dashboard.value.recent_orders.slice(0, 2).map((order) => ({
         id: order.id,
         title: buildOrderTitle(order),
         subtitle: buildOrderSubtitle(order),
         orderSn: order.order_sn,
-        statusLabel: order.order_status_desc,
-        orderStatus: toNumber(order.order_status),
+        statusLabel: order.order_status_desc || '处理中',
+        statusModifier: getOrderStatusModifier(toNumber(order.order_status)),
         pendingConfirmCount: toNumber(order.pending_confirm_count)
     }))
 )
 
-const recentOrderCountText = computed(() => `近 ${recentOrderRows.value.length} 笔`)
+const recentOrderMetaText = computed(() =>
+    recentOrderCards.value.length ? `近 ${recentOrderCards.value.length} 笔` : '最近更新'
+)
+
+const businessMenus = computed(() => [
+    {
+        name: '附加项管理',
+        path: '/packages/pages/staff_addon_list/staff_addon_list'
+    },
+    {
+        name: '动态管理',
+        path: '/packages/pages/staff_dynamic_list/staff_dynamic_list'
+    }
+])
 
 const quickMenus = computed<QuickMenuItem[]>(() => [
     {
         name: '档期管理',
-        desc: '查看日程',
         path: '/packages/pages/staff_schedule/staff_schedule',
         badge: 0,
-        highlight: true
+        accent: false,
+        icon: 'calendar',
+        iconColor: '#E85A4F',
+        tone: 'primary',
+        singleRow: false
     },
     {
         name: '订单跟进',
-        desc: '处理确认',
         path: '/packages/pages/staff_order_list/staff_order_list',
         badge: toNumber(dashboard.value.todo.pending_confirm_orders),
-        highlight: false
-    },
-    {
-        name: '客户消息',
-        desc: '查看消息',
-        path: '/packages/pages/notification/index',
-        badge: toNumber(dashboard.value.todo.unread_message_count),
-        highlight: false
+        accent: true,
+        icon: 'order',
+        iconColor: '#E85A4F',
+        tone: 'primary',
+        singleRow: false
     },
     {
         name: '资料编辑',
-        desc: '更新信息',
         path: '/packages/pages/staff_profile/staff_profile',
         badge: 0,
-        highlight: false
+        accent: false,
+        icon: 'my',
+        iconColor: '#C99B73',
+        tone: 'warning',
+        singleRow: false
     },
     {
         name: '作品管理',
-        desc: '展示案例',
         path: '/packages/pages/staff_work_list/staff_work_list',
         badge: 0,
-        highlight: false
+        accent: false,
+        icon: 'image',
+        iconColor: '#4D7AD9',
+        tone: 'info',
+        singleRow: false
     },
     {
         name: '套餐管理',
-        desc: '维护价格',
         path: '/packages/pages/staff_package_list/staff_package_list',
         badge: 0,
-        highlight: false
+        accent: false,
+        icon: 'service',
+        iconColor: '#C99B73',
+        tone: 'warning',
+        singleRow: false
+    },
+    {
+        name: '附加项管理',
+        path: '/packages/pages/staff_addon_list/staff_addon_list',
+        badge: 0,
+        accent: false,
+        icon: 'add',
+        iconColor: '#7F7B78',
+        tone: 'neutral',
+        singleRow: false
     },
     {
         name: '动态管理',
-        desc: '发布动态',
         path: '/packages/pages/staff_dynamic_list/staff_dynamic_list',
         badge: 0,
-        highlight: false
+        accent: false,
+        icon: 'edit',
+        iconColor: '#7F7B78',
+        tone: 'neutral',
+        singleRow: true
     }
 ])
 
@@ -707,6 +765,7 @@ const loadPageData = async () => {
         uni.showToast({ title: errorMessage, icon: 'none' })
     }
 
+    hasLoaded.value = true
     loading.value = false
 }
 
@@ -723,24 +782,8 @@ const goOrderDetail = (id: number) => {
     uni.navigateTo({ url: `/packages/pages/staff_order_detail/staff_order_detail?id=${id}` })
 }
 
-const handleTodo = (item: TodoRowItem) => {
+const handleFocusCard = (item: FocusCardItem) => {
     item.action()
-}
-
-const getOrderStatusTone = (status: number): BadgeTone => {
-    const styles: Record<number, BadgeTone> = {
-        0: 'warning',
-        1: 'info',
-        2: 'success',
-        3: 'neutral',
-        4: 'neutral',
-        5: 'warning',
-        6: 'danger',
-        7: 'warning',
-        8: 'danger'
-    }
-
-    return styles[status] || 'neutral'
 }
 
 const formatBadge = (value: number) => {
@@ -756,61 +799,72 @@ onShow(async () => {
 </script>
 
 <style lang="scss" scoped>
-.info-card {
+.staff-center-page {
+    width: 100%;
+    padding: 12rpx 0 calc(32rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+
+    &__content {
+        display: flex;
+        flex-direction: column;
+        gap: 15rpx;
+        padding: 0 var(--wm-space-page-x, 37rpx);
+    }
+}
+
+.staff-hero-card,
+.staff-section-card {
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.staff-hero-card {
     display: flex;
     flex-direction: column;
-    gap: 16rpx;
+    gap: 20rpx;
+    padding: 30rpx 30rpx 34rpx;
+    border-radius: 49rpx;
+    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+    background: linear-gradient(135deg, #fff6f2 0%, #fde8e1 100%);
+    box-shadow: 0 20rpx 44rpx rgba(192, 130, 115, 0.16);
+
+    &__top,
+    &__profile,
+    &__metrics {
+        display: flex;
+    }
 
     &__top {
-        display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 16rpx;
-    }
-
-    &__eyebrow {
-        display: inline-flex;
-        align-self: flex-start;
-        padding: 8rpx 14rpx;
-        border-radius: 999rpx;
-        background: rgba(255, 255, 255, 0.72);
-        color: var(--wm-color-primary, #e85a4f);
-        font-size: 20rpx;
-        font-weight: 700;
-        letter-spacing: 0.08em;
     }
 
     &__profile {
-        display: flex;
         align-items: center;
-        gap: 16rpx;
+        gap: 22rpx;
     }
 
     &__avatar {
-        width: 76rpx;
-        height: 76rpx;
+        width: 108rpx;
+        height: 108rpx;
         flex-shrink: 0;
-        border-radius: 24rpx;
+        border-radius: 999rpx;
+        background: #efcbc0;
         border: 2rpx solid rgba(255, 255, 255, 0.88);
-        background: rgba(255, 255, 255, 0.74);
     }
 
-    &__profile-main {
+    &__copy {
         flex: 1;
         min-width: 0;
-    }
-
-    &__title-row {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12rpx;
+        flex-direction: column;
+        gap: 7rpx;
     }
 
     &__title {
-        flex: 1;
-        min-width: 0;
-        font-size: 32rpx;
+        font-size: 40rpx;
         font-weight: 700;
         line-height: 1.3;
         color: var(--wm-text-primary, #1e2432);
@@ -819,172 +873,328 @@ onShow(async () => {
         text-overflow: ellipsis;
     }
 
-    &__link {
-        flex-shrink: 0;
+    &__meta {
+        font-size: 24rpx;
+        font-weight: 600;
+        line-height: 1.5;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+
+    &__metrics {
+        gap: 12rpx;
+    }
+}
+
+.hero-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42rpx;
+    padding: 11rpx 18rpx;
+    border-radius: 999rpx;
+    box-sizing: border-box;
+
+    &__text {
         font-size: 22rpx;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    &--primary {
+        background: #fff1ee;
+
+        .hero-pill__text {
+            color: var(--wm-color-primary, #e85a4f);
+        }
+    }
+
+    &--success,
+    &--warning,
+    &--danger {
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        background: rgba(255, 255, 255, 0.8);
+    }
+
+    &--success .hero-pill__text {
+        color: #2f7d58;
+    }
+
+    &--warning .hero-pill__text {
+        color: #c98524;
+    }
+
+    &--danger .hero-pill__text {
+        color: #b44a3a;
+    }
+}
+
+.hero-metric {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+    padding: 15rpx 18rpx;
+    border-radius: 30rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.78);
+    box-sizing: border-box;
+
+    &--accent {
+        background: #fff1ee;
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+    }
+
+    &__label {
+        font-size: 21rpx;
+        font-weight: 700;
+        line-height: 1.35;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+
+    &--accent .hero-metric__label {
         color: var(--wm-color-primary, #e85a4f);
     }
 
-    &__meta {
-        display: block;
-        margin-top: 6rpx;
-        font-size: 20rpx;
-        font-weight: 600;
-        line-height: 1.45;
-        color: var(--wm-text-secondary, #7f7b78);
+    &__value {
+        font-size: 38rpx;
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--wm-text-primary, #1e2432);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
-
-    &__summary {
-        font-size: 22rpx;
-        line-height: 1.55;
-        color: var(--wm-text-secondary, #7f7b78);
-    }
-
-    &__chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10rpx;
-    }
 }
 
-.info-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8rpx;
-    padding: 8rpx 12rpx;
-    border-radius: 999rpx;
-    background: rgba(252, 251, 249, 0.82);
-    border: 1rpx solid rgba(239, 230, 225, 0.92);
-
-    &__label {
-        font-size: 18rpx;
-        font-weight: 600;
-        color: var(--wm-text-secondary, #7f7b78);
-    }
-
-    &__value {
-        font-size: 18rpx;
-        font-weight: 700;
-        color: var(--wm-text-primary, #1e2432);
-    }
+.staff-section-card {
+    display: flex;
+    flex-direction: column;
+    gap: 15rpx;
+    padding: 26rpx 30rpx;
+    border-radius: 45rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
+    backdrop-filter: blur(24rpx);
+    -webkit-backdrop-filter: blur(24rpx);
 }
 
 .section-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16rpx;
+    gap: 18rpx;
+
+    &__copy {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4rpx;
+    }
 
     &__title {
-        display: block;
-        font-size: 30rpx;
+        font-size: 32rpx;
         font-weight: 700;
+        line-height: 1.35;
         color: var(--wm-text-primary, #1e2432);
     }
 
-    &__subtitle {
-        display: block;
-        margin-top: 6rpx;
-        font-size: 22rpx;
-        line-height: 1.55;
+    &__desc {
+        font-size: 20rpx;
+        font-weight: 600;
+        line-height: 1.45;
         color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__meta {
         flex-shrink: 0;
         padding-top: 4rpx;
-        font-size: 20rpx;
-        font-weight: 600;
-        color: var(--wm-text-tertiary, #b4aca8);
-        white-space: nowrap;
+        font-size: 22rpx;
+        font-weight: 700;
+        line-height: 1.35;
+        color: var(--wm-text-secondary, #7f7b78);
     }
 }
 
-.todo-list,
-.recent-order-list {
+.focus-grid,
+.stats-grid,
+.manage-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12rpx;
+}
+
+.focus-card,
+.stats-card,
+.manage-card,
+.order-card {
+    border-radius: 30rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #fcfbf9;
+    box-sizing: border-box;
+}
+
+.focus-card {
     display: flex;
     flex-direction: column;
     gap: 12rpx;
-    margin-top: 18rpx;
-}
+    padding: 19rpx 22rpx;
 
-.todo-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16rpx;
-    padding: 18rpx 16rpx;
-    border-radius: 20rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    &--primary {
+        background: #fff1ee;
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+    }
 
-    &__main {
+    &__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12rpx;
+    }
+
+    &__copy {
         flex: 1;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
     }
 
     &__title {
-        display: block;
-        font-size: 24rpx;
-        font-weight: 600;
+        font-size: 28rpx;
+        font-weight: 700;
+        line-height: 1.35;
         color: var(--wm-text-primary, #1e2432);
     }
 
-    &__desc {
-        display: block;
-        margin-top: 6rpx;
+    &__desc,
+    &__hint {
         font-size: 20rpx;
+        font-weight: 600;
         line-height: 1.45;
         color: var(--wm-text-secondary, #7f7b78);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
-    &__side {
-        display: inline-flex;
+    &__footer {
+        display: flex;
         align-items: center;
-        gap: 8rpx;
-        flex-shrink: 0;
+        justify-content: space-between;
+        gap: 12rpx;
     }
 
-    &__value {
-        font-size: 30rpx;
+    &__arrow {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    &--primary .focus-card__hint {
+        color: var(--wm-color-primary, #e85a4f);
+    }
+}
+
+.focus-badge,
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38rpx;
+    padding: 8rpx 14rpx;
+    border-radius: 999rpx;
+    box-sizing: border-box;
+
+    &__text {
+        font-size: 20rpx;
         font-weight: 700;
         line-height: 1;
-        color: var(--wm-text-primary, #1e2432);
+        white-space: nowrap;
+    }
+
+    &--primary {
+        background: #fff1ee;
+
+        .focus-badge__text,
+        .status-pill__text {
+            color: var(--wm-color-primary, #e85a4f);
+        }
+    }
+
+    &--warning {
+        background: #fff8ed;
+
+        .focus-badge__text,
+        .status-pill__text {
+            color: #c99b73;
+        }
+    }
+
+    &--info {
+        background: #eef5ff;
+
+        .focus-badge__text,
+        .status-pill__text {
+            color: #4d7ad9;
+        }
+    }
+
+    &--success {
+        background: rgba(47, 125, 88, 0.12);
+
+        .status-pill__text {
+            color: #2f7d58;
+        }
+    }
+
+    &--danger {
+        background: rgba(180, 74, 58, 0.12);
+
+        .status-pill__text {
+            color: #b44a3a;
+        }
+    }
+
+    &--neutral {
+        background: rgba(96, 112, 134, 0.12);
+
+        .status-pill__text {
+            color: #607086;
+        }
+    }
+
+    &--ghost {
+        background: rgba(255, 255, 255, 0.86);
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
+
+        .status-pill__text {
+            color: var(--wm-text-secondary, #7f7b78);
+        }
     }
 }
 
-.overview-grid,
-.quick-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14rpx;
-    margin-top: 18rpx;
+.stats-grid--compact .stats-card {
+    min-height: 148rpx;
 }
 
-.overview-card {
+.stats-card {
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
-    padding: 18rpx 16rpx;
-    border-radius: 20rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    gap: 6rpx;
+    padding: 19rpx 22rpx;
 
     &--accent {
-        background: var(--wm-color-primary-soft, #fff1ee);
+        background: #fff1ee;
         border-color: var(--wm-color-border-strong, #f4c7bf);
     }
 
     &__label {
-        font-size: 20rpx;
-        font-weight: 600;
+        font-size: 21rpx;
+        font-weight: 700;
+        line-height: 1.35;
         color: var(--wm-text-secondary, #7f7b78);
+    }
+
+    &--accent .stats-card__label {
+        color: var(--wm-color-primary, #e85a4f);
     }
 
     &__value-row {
@@ -994,137 +1204,201 @@ onShow(async () => {
     }
 
     &__value {
-        font-size: 40rpx;
+        font-size: 46rpx;
         font-weight: 700;
-        line-height: 1;
+        line-height: 1.1;
         color: var(--wm-text-primary, #1e2432);
     }
 
-    &__unit {
-        padding-bottom: 4rpx;
-        font-size: 20rpx;
+    &__unit,
+    &__hint {
+        font-size: 21rpx;
         font-weight: 600;
+        line-height: 1.35;
         color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__hint {
-        font-size: 20rpx;
         line-height: 1.45;
-        color: var(--wm-text-tertiary, #b4aca8);
     }
 }
 
-.recent-order {
+.order-list {
     display: flex;
     flex-direction: column;
-    gap: 10rpx;
-    padding: 18rpx 16rpx;
-    border-radius: 20rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    gap: 12rpx;
+}
 
-    &__head {
+.order-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    padding: 19rpx 22rpx;
+
+    &__row {
         display: flex;
-        align-items: flex-start;
         justify-content: space-between;
-        gap: 14rpx;
+        gap: 12rpx;
+
+        &--start {
+            align-items: flex-start;
+        }
+
+        &--center {
+            align-items: center;
+        }
     }
 
     &__copy {
         flex: 1;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 5rpx;
     }
 
     &__title {
-        display: block;
-        font-size: 24rpx;
+        font-size: 28rpx;
         font-weight: 700;
+        line-height: 1.35;
         color: var(--wm-text-primary, #1e2432);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
-    &__subtitle {
-        display: block;
-        margin-top: 6rpx;
-        font-size: 20rpx;
+    &__subtitle,
+    &__hint {
+        font-size: 22rpx;
+        font-weight: 600;
         line-height: 1.45;
         color: var(--wm-text-secondary, #7f7b78);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
-    &__meta {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12rpx;
-    }
-
-    &__sn {
-        flex: 1;
-        min-width: 0;
-        font-size: 18rpx;
+    &__sn,
+    &__pending-placeholder {
+        font-size: 20rpx;
+        font-weight: 600;
+        line-height: 1.35;
         color: var(--wm-text-tertiary, #b4aca8);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
-    &__pending {
+    &__pending-placeholder {
         flex-shrink: 0;
-        font-size: 18rpx;
-        font-weight: 700;
-        color: var(--wm-color-warning, #c98524);
     }
 }
 
-.quick-card {
-    position: relative;
+.manage-card {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
     gap: 8rpx;
-    min-height: 126rpx;
-    padding: 18rpx 16rpx;
-    border-radius: 20rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    min-height: 128rpx;
+    padding: 19rpx 22rpx;
 
-    &--accent {
-        background: var(--wm-color-primary-soft, #fff1ee);
-        border-color: var(--wm-color-border-strong, #f4c7bf);
-    }
-
-    &__badge {
-        position: absolute;
-        top: 14rpx;
-        right: 14rpx;
-        min-width: 34rpx;
-        height: 34rpx;
-        padding: 0 8rpx;
-        border-radius: 999rpx;
-        background: var(--wm-color-primary, #e85a4f);
-        color: #ffffff;
-        font-size: 20rpx;
+    &__title {
+        font-size: 28rpx;
         font-weight: 700;
-        line-height: 34rpx;
-        text-align: center;
-    }
-
-    &__name {
-        display: block;
-        padding-right: 38rpx;
-        font-size: 24rpx;
-        font-weight: 700;
+        line-height: 1.35;
         color: var(--wm-text-primary, #1e2432);
     }
 
     &__desc {
-        display: block;
         font-size: 20rpx;
+        font-weight: 600;
+        line-height: 1.45;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+}
+
+.quick-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12rpx;
+}
+
+.quick-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14rpx;
+    min-height: 136rpx;
+    padding: 19rpx 22rpx;
+    border-radius: 30rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #fcfbf9;
+    box-sizing: border-box;
+
+    &--accent {
+        background: #fff1ee;
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+    }
+
+    &--single {
+        grid-column: 1 / -1;
+        min-height: 102rpx;
+    }
+
+    &__main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 14rpx;
+    }
+
+    &__icon {
+        width: 52rpx;
+        height: 52rpx;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 18rpx;
+
+        &--primary {
+            background: #fff1ee;
+        }
+
+        &--warning {
+            background: #fff8ed;
+        }
+
+        &--info {
+            background: #eef5ff;
+        }
+
+        &--neutral {
+            background: #f3efea;
+        }
+    }
+
+    &__copy {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 5rpx;
+    }
+
+    &__title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10rpx;
+    }
+
+    &__title {
+        flex: 1;
+        min-width: 0;
+        font-size: 28rpx;
+        font-weight: 700;
+        line-height: 1.35;
+        color: var(--wm-text-primary, #1e2432);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__desc {
+        font-size: 20rpx;
+        font-weight: 600;
         line-height: 1.45;
         color: var(--wm-text-secondary, #7f7b78);
     }

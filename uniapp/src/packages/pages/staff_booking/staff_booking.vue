@@ -1,16 +1,11 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" hasSafeBottom>
-        <BaseNavbar
-            :title="currentPageTitle"
-            bgColor="rgba(252, 251, 249, 0.96)"
-            textColor="#1E2432"
-            @back="handleBackToDetail"
-        />
+    <PageShell scene="consumer">
+        <BaseNavbar :title="currentPageTitle" @back="handleBackToDetail" />
 
-        <view class="staff-booking-page">
+        <view class="staff-booking-page" :style="pageStageStyle">
             <view class="staff-booking-page__hero">
-                <image class="staff-booking-page__hero-image" :src="heroImage" mode="aspectFill" />
+                <view class="staff-booking-page__hero-image" :style="heroImageStyle" />
                 <view class="staff-booking-page__base-mask" />
                 <view class="staff-booking-page__focus-mask" />
 
@@ -63,18 +58,18 @@
                                     </view>
                                 </template>
 
-                                <template v-else-if="currentStep.type === 'custom'">
+                                <template v-else-if="currentStep.type === 'addon'">
                                     <view
                                         class="choice-card"
                                         :class="{
                                             'choice-card--selected':
-                                                !booking.custom_option_keys.includes(
-                                                    currentStep.option.key
+                                                !booking.addon_ids.includes(
+                                                    resolveAddonId(currentStep.addon)
                                                 )
                                         }"
                                         @click="
-                                            handleCustomOptionSelect(
-                                                currentStep.option.key,
+                                            handleAddonSelect(
+                                                resolveAddonId(currentStep.addon),
                                                 false
                                             )
                                         "
@@ -82,17 +77,14 @@
                                         <view class="choice-card__body">
                                             <view class="choice-card__copy">
                                                 <text class="choice-card__title">
-                                                    {{
-                                                        currentStep.option.skip_label ||
-                                                        '否，暂不需要'
-                                                    }}
+                                                    暂不增加
                                                 </text>
                                                 <text class="choice-card__subline">费用不变</text>
                                             </view>
                                             <text
                                                 v-if="
-                                                    !booking.custom_option_keys.includes(
-                                                        currentStep.option.key
+                                                    !booking.addon_ids.includes(
+                                                        resolveAddonId(currentStep.addon)
                                                     )
                                                 "
                                                 class="choice-card__check"
@@ -105,14 +97,13 @@
                                     <view
                                         class="choice-card"
                                         :class="{
-                                            'choice-card--selected':
-                                                booking.custom_option_keys.includes(
-                                                    currentStep.option.key
-                                                )
+                                            'choice-card--selected': booking.addon_ids.includes(
+                                                resolveAddonId(currentStep.addon)
+                                            )
                                         }"
                                         @click="
-                                            handleCustomOptionSelect(
-                                                currentStep.option.key,
+                                            handleAddonSelect(
+                                                resolveAddonId(currentStep.addon),
                                                 true
                                             )
                                         "
@@ -120,19 +111,16 @@
                                         <view class="choice-card__body">
                                             <view class="choice-card__copy">
                                                 <text class="choice-card__title">
-                                                    {{
-                                                        currentStep.option.selected_label ||
-                                                        `是，增加${currentStep.option.name}`
-                                                    }}
+                                                    {{ `增加${currentStep.addon.name}` }}
                                                 </text>
                                                 <text class="choice-card__subline">
-                                                    +¥{{ formatPrice(currentStep.option.price) }}
+                                                    +¥{{ formatPrice(currentStep.addon.price) }}
                                                 </text>
                                             </view>
                                             <text
                                                 v-if="
-                                                    booking.custom_option_keys.includes(
-                                                        currentStep.option.key
+                                                    booking.addon_ids.includes(
+                                                        resolveAddonId(currentStep.addon)
                                                     )
                                                 "
                                                 class="choice-card__check"
@@ -220,7 +208,7 @@
                 </view>
             </view>
 
-            <ActionArea sticky safeBottom>
+            <ActionArea safeBottom>
                 <view class="booking-action-bar">
                     <view class="booking-action-bar__shell">
                         <view class="total-pill" @click="openSummaryPopup">
@@ -300,11 +288,11 @@ import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
+import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
 import { getStaffBookingRoleCandidates, getStaffDetail } from '@/api/staff'
 import { useThemeStore } from '@/stores/theme'
 import {
     BOOKING_ROLE_KEYS,
-    type BookingOptionKey,
     type BookingRoleKey,
     getOrderConfirmPageUrl,
     getStaffDetailPageUrl,
@@ -322,20 +310,22 @@ type StaffPackage = {
     name?: string
     price?: number | string
     description?: string
+    image?: string
     package?: {
         id?: number
         name?: string
         price?: number | string
         description?: string
+        image?: string
     }
 }
 
-type BookingOption = {
-    key: BookingOptionKey
+type StaffAddon = {
+    id?: number | string
     name: string
     price: number
-    selected_label?: string
-    skip_label?: string
+    description?: string
+    image?: string
 }
 
 type RoleConfig = {
@@ -368,9 +358,9 @@ type BookingStep =
           key: 'package'
       }
     | {
-          type: 'custom'
-          key: BookingOptionKey
-          option: BookingOption
+          type: 'addon'
+          key: number
+          addon: StaffAddon
       }
     | {
           type: 'role'
@@ -389,6 +379,7 @@ const DEFAULT_HERO_IMAGE =
     'https://images.unsplash.com/photo-1739047597919-5a047d0d736a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixlib=rb-4.1.0&q=80&w=1080'
 
 const $theme = useThemeStore()
+const navBarMetrics = useNavBarMetrics()
 
 const loading = ref(true)
 const staffDetail = ref<Record<string, any> | null>(null)
@@ -406,8 +397,8 @@ const displayPackages = computed<StaffPackage[]>(() =>
     Array.isArray(staffDetail.value?.packages) ? staffDetail.value?.packages : []
 )
 
-const customOptions = computed<BookingOption[]>(() =>
-    Array.isArray(staffDetail.value?.booking_options) ? staffDetail.value?.booking_options : []
+const displayAddons = computed<StaffAddon[]>(() =>
+    Array.isArray(staffDetail.value?.addons) ? staffDetail.value?.addons : []
 )
 
 const roleConfigs = computed<RoleConfig[]>(() =>
@@ -424,11 +415,11 @@ const bookingSteps = computed<BookingStep[]>(() => {
         }
     ]
 
-    customOptions.value.forEach((option) => {
+    displayAddons.value.forEach((addon) => {
         steps.push({
-            type: 'custom',
-            key: option.key,
-            option
+            type: 'addon',
+            key: resolveAddonId(addon),
+            addon
         })
     })
 
@@ -442,6 +433,8 @@ const bookingSteps = computed<BookingStep[]>(() => {
 
     return steps
 })
+
+const flowTotalSteps = computed(() => bookingSteps.value.length + 1)
 
 const currentStep = computed(() => bookingSteps.value[currentStepIndex.value] || null)
 
@@ -482,15 +475,16 @@ const summaryItems = computed<SummaryItem[]>(() => {
         })
     }
 
-    customOptions.value.forEach((option) => {
-        if (!booking.custom_option_keys.includes(option.key)) {
+    displayAddons.value.forEach((addon) => {
+        const addonId = resolveAddonId(addon)
+        if (!booking.addon_ids.includes(addonId)) {
             return
         }
 
         items.push({
-            key: `custom-${option.key}`,
-            label: option.name,
-            price: Number(option.price || 0),
+            key: `addon-${addonId}`,
+            label: addon.name,
+            price: Number(addon.price || 0),
             kind: 'addon'
         })
     })
@@ -523,20 +517,21 @@ const currentPageTitle = computed(() => {
     }
 
     if (step.type === 'package') {
-        return '选择基础套餐'
+        return '套餐'
     }
 
-    if (step.type === 'custom') {
-        return `是否附加${step.option.name}`
+    if (step.type === 'addon') {
+        return `${step.addon.name}`
     }
 
-    return `是否需要${step.config.role_label}`
+    return `${step.config.role_label}`
 })
 
 const currentStepTag = computed(() => {
     const step = currentStep.value
     const stepNumber = currentStepIndex.value + 1
-    const total = bookingSteps.value.length || 1
+    const total = flowTotalSteps.value || 1
+    const isLastSelectionStep = currentStepIndex.value >= bookingSteps.value.length - 1
 
     if (!step) {
         return `步骤 ${stepNumber}/${total}`
@@ -546,11 +541,11 @@ const currentStepTag = computed(() => {
         return `步骤 ${stepNumber}/${total}｜先确定一个基础套餐`
     }
 
-    if (step.type === 'custom') {
-        return `步骤 ${stepNumber}/${total}｜确认是否增加${step.option.name}`
+    if (step.type === 'addon') {
+        return `步骤 ${stepNumber}/${total}｜确认是否增加${step.addon.name}`
     }
 
-    if (stepNumber === total) {
+    if (isLastSelectionStep) {
         return `步骤 ${stepNumber}/${total}｜确认最后一个附加项`
     }
 
@@ -571,18 +566,34 @@ const currentIntroText = computed(() => {
         )
     }
 
-    if (step.type === 'custom') {
-        return `如果当前场次需要“${step.option.name}”，可以在这里一并加入预约，费用会同步计入总价。`
+    if (step.type === 'addon') {
+        return (
+            step.addon.description ||
+            `如果当前场次需要“${step.addon.name}”，可以在这里一并加入预约，费用会同步计入总价。`
+        )
     }
 
     return `可为当前档期补充${step.config.role_label}服务，如暂时未确定，也可以先跳过，后续再自行预约。`
 })
 
+const pageStageStyle = computed(() => ({
+    height: `calc(100vh - ${navBarMetrics.navBarHeight}px)`
+}))
+
 const heroImage = computed(() => {
+    const step = currentStep.value
     return String(
-        staffDetail.value?.banners?.[0]?.image || staffDetail.value?.avatar || DEFAULT_HERO_IMAGE
+        (step?.type === 'addon' ? step.addon.image : '') ||
+            resolvePackageImage(selectedPackage.value || displayPackages.value[0]) ||
+            staffDetail.value?.banners?.[0]?.image ||
+            staffDetail.value?.avatar ||
+            DEFAULT_HERO_IMAGE
     )
 })
+
+const heroImageStyle = computed(() => ({
+    backgroundImage: heroImage.value ? `url("${heroImage.value}")` : 'none'
+}))
 
 const canGoNext = computed(() => {
     const step = currentStep.value
@@ -601,7 +612,7 @@ const choiceListClass = computed(() => {
     const step = currentStep.value
     return {
         'choice-list--package': step?.type === 'package',
-        'choice-list--compact': step?.type === 'custom',
+        'choice-list--compact': step?.type === 'addon',
         'choice-list--role': step?.type === 'role'
     }
 })
@@ -633,6 +644,14 @@ const resolvePackageName = (item: StaffPackage | null | undefined) => {
 
 const resolvePackageDescription = (item: StaffPackage | null | undefined) => {
     return String(item?.package?.description || item?.description || '')
+}
+
+const resolvePackageImage = (item: StaffPackage | null | undefined) => {
+    return String(item?.package?.image || item?.image || '')
+}
+
+const resolveAddonId = (item: StaffAddon | null | undefined) => {
+    return Number(item?.id || 0)
 }
 
 const resolvePackagePrice = (item: StaffPackage | null | undefined) => {
@@ -702,9 +721,9 @@ const handlePackageSelect = (item: StaffPackage) => {
     booking.package_id = resolvePackageId(item)
 }
 
-const handleCustomOptionSelect = (key: BookingOptionKey, selected: boolean) => {
-    const nextKeys = booking.custom_option_keys.filter((item) => item !== key)
-    booking.custom_option_keys = selected ? [...nextKeys, key] : nextKeys
+const handleAddonSelect = (addonId: number, selected: boolean) => {
+    const nextIds = booking.addon_ids.filter((item) => item !== addonId)
+    booking.addon_ids = selected ? [...nextIds, addonId] : nextIds
 }
 
 const handleRoleCandidateSelect = (
@@ -740,7 +759,10 @@ const goOrderConfirm = () => {
     }
 
     uni.navigateTo({
-        url: getOrderConfirmPageUrl(booking)
+        url: getOrderConfirmPageUrl({
+            ...booking,
+            flow_total_steps: flowTotalSteps.value
+        })
     })
 }
 
@@ -805,9 +827,9 @@ const syncPackageSelection = () => {
     }
 }
 
-const syncCustomSelections = () => {
-    const validKeys = new Set(customOptions.value.map((item) => item.key))
-    booking.custom_option_keys = booking.custom_option_keys.filter((key) => validKeys.has(key))
+const syncAddonSelections = () => {
+    const validIds = new Set(displayAddons.value.map((item) => Number(item.id || 0)))
+    booking.addon_ids = booking.addon_ids.filter((id) => validIds.has(id))
 }
 
 const syncRoleSelections = () => {
@@ -861,11 +883,12 @@ const applyBookingQuery = (value: Record<string, any>) => {
     booking.city_name = normalized.city_name
     booking.district_code = normalized.district_code
     booking.district_name = normalized.district_name
-    booking.custom_option_keys = normalized.custom_option_keys
+    booking.addon_ids = normalized.addon_ids
     booking.butler_staff_id = normalized.butler_staff_id
     booking.butler_package_id = normalized.butler_package_id
     booking.director_staff_id = normalized.director_staff_id
     booking.director_package_id = normalized.director_package_id
+    booking.flow_total_steps = normalized.flow_total_steps
 }
 
 const handleLoadError = (message: string) => {
@@ -909,7 +932,7 @@ const initPage = async () => {
 
         staffDetail.value = detail
         syncPackageSelection()
-        syncCustomSelections()
+        syncAddonSelections()
 
         await Promise.all(roleConfigs.value.map((config) => loadRoleCandidates(config.role_key)))
         syncRoleSelections()
@@ -944,13 +967,18 @@ onLoad((options) => {
 
 <style lang="scss" scoped>
 .staff-booking-page {
-    min-height: 100vh;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     background: #fcfbf9;
 }
 
 .staff-booking-page__hero {
     position: relative;
-    min-height: calc(100vh - 120rpx);
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
     background: #fcfbf9;
 }
@@ -966,6 +994,10 @@ onLoad((options) => {
 
 .staff-booking-page__hero-image {
     z-index: 0;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    transform: scale(1.02);
 }
 
 .staff-booking-page__base-mask {
@@ -992,28 +1024,29 @@ onLoad((options) => {
 .staff-booking-page__content {
     position: relative;
     z-index: 2;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .staff-booking-page__loading {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: calc(100vh - 220rpx);
-    padding: 48rpx 24rpx 220rpx;
+    padding: 45rpx 37rpx 30rpx;
 }
 
 .staff-booking-page__content {
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 120rpx);
-    padding: 12rpx 20rpx 220rpx;
+    padding: 22rpx 37rpx 30rpx;
+    overflow: hidden;
 }
 
 .staff-booking-page__main {
     margin-top: auto;
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
+    gap: 11rpx;
 }
 
 .staff-booking-page__desc {
@@ -1027,7 +1060,7 @@ onLoad((options) => {
 
 .step-badge {
     align-self: flex-start;
-    padding: 7rpx 12rpx;
+    padding: 13rpx 22rpx;
     border-radius: 999rpx;
     background: #fff1ee;
     border: 1rpx solid #f4c7bf;
@@ -1048,7 +1081,7 @@ onLoad((options) => {
 
 .choice-list {
     display: inline-flex;
-    gap: 10rpx;
+    gap: 22rpx;
     padding-right: 120rpx;
     min-width: 100%;
     box-sizing: border-box;
@@ -1065,8 +1098,8 @@ onLoad((options) => {
 .choice-card {
     width: 292rpx;
     height: 112rpx;
-    padding: 18rpx 22rpx;
-    border-radius: 20rpx;
+    padding: 30rpx;
+    border-radius: 37rpx;
     background: rgba(255, 255, 255, 0.92);
     border: 1rpx solid rgba(239, 230, 225, 0.96);
     box-sizing: border-box;
@@ -1142,8 +1175,8 @@ onLoad((options) => {
 }
 
 .empty-state {
-    padding: 24rpx;
-    border-radius: 24rpx;
+    padding: 30rpx;
+    border-radius: 45rpx;
     background: rgba(255, 255, 255, 0.88);
     border: 1rpx solid rgba(239, 230, 225, 0.96);
     backdrop-filter: blur(18rpx);
@@ -1159,8 +1192,9 @@ onLoad((options) => {
 .staff-booking-page :deep(.wm-action-area) {
     align-items: stretch;
     gap: 0;
-    padding: 0 12rpx 20rpx;
-    background: transparent;
+    flex-shrink: 0;
+    padding: 22rpx 22rpx calc(39rpx + env(safe-area-inset-bottom));
+    background: #fcfbf9;
     border-top: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -1174,9 +1208,9 @@ onLoad((options) => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12rpx;
-    padding: 12rpx;
-    border-radius: 24rpx;
+    gap: 22rpx;
+    padding: 22rpx;
+    border-radius: 45rpx;
     background: rgba(255, 255, 255, 0.91);
     border: 1rpx solid rgba(239, 230, 225, 0.96);
     backdrop-filter: blur(20rpx);
@@ -1188,9 +1222,9 @@ onLoad((options) => {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    min-height: 44rpx;
-    padding: 10rpx 14rpx;
-    border-radius: 18rpx;
+    min-height: 82rpx;
+    padding: 19rpx 26rpx;
+    border-radius: 37rpx;
     background: #fff1ee;
     border: 1rpx solid #f4c7bf;
 }
@@ -1204,7 +1238,7 @@ onLoad((options) => {
 
 .booking-action-bar__buttons {
     display: flex;
-    gap: 8rpx;
+    gap: 19rpx;
     flex-shrink: 0;
 }
 
@@ -1212,8 +1246,8 @@ onLoad((options) => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    height: 88rpx;
-    border-radius: 18rpx;
+    height: 90rpx;
+    border-radius: 37rpx;
     box-sizing: border-box;
     flex-shrink: 0;
 
@@ -1269,7 +1303,7 @@ onLoad((options) => {
     align-items: center;
     justify-content: center;
     min-height: 100%;
-    padding: 48rpx 28rpx calc(48rpx + env(safe-area-inset-bottom));
+    padding: 45rpx 37rpx calc(45rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
 }
 
@@ -1279,8 +1313,8 @@ onLoad((options) => {
     width: 640rpx;
     max-width: 100%;
     max-height: calc(100vh - 96rpx - env(safe-area-inset-bottom));
-    padding: 18rpx 18rpx 20rpx;
-    border-radius: 28rpx;
+    padding: 30rpx 30rpx 34rpx;
+    border-radius: 52rpx;
     background: rgba(255, 255, 255, 0.94);
     border: 1rpx solid rgba(239, 230, 225, 0.96);
     backdrop-filter: blur(24rpx);
@@ -1293,7 +1327,7 @@ onLoad((options) => {
 .summary-popup__tag {
     align-self: flex-start;
     display: inline-flex;
-    padding: 7rpx 12rpx;
+    padding: 13rpx 22rpx;
     border-radius: 999rpx;
     background: #fff1ee;
     border: 1rpx solid #f4c7bf;
@@ -1319,7 +1353,7 @@ onLoad((options) => {
     margin-top: 18rpx;
     display: flex;
     flex-direction: column;
-    gap: 10rpx;
+    gap: 12rpx;
     min-height: 0;
     overflow-y: auto;
     padding-right: 4rpx;
@@ -1365,8 +1399,8 @@ onLoad((options) => {
     justify-content: space-between;
     gap: 16rpx;
     margin-top: 14rpx;
-    padding: 14rpx 16rpx;
-    border-radius: 22rpx;
+    padding: 26rpx 30rpx;
+    border-radius: 37rpx;
     background: #fff1ee;
     border: 1rpx solid #f4c7bf;
 }
@@ -1389,9 +1423,9 @@ onLoad((options) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 88rpx;
-    margin-top: 16rpx;
-    border-radius: 18rpx;
+    height: 90rpx;
+    margin-top: 20rpx;
+    border-radius: 37rpx;
     background: #fcfbf9;
     border: 1rpx solid #efe6e1;
 

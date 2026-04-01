@@ -23,6 +23,7 @@ use app\common\service\ConfigService;
 use app\common\service\FileService;
 use app\common\service\StaffPriceService;
 use app\common\service\StaffService;
+use app\common\service\StaffTagReviewService;
 use app\adminapi\logic\service\PackageLogic;
 use think\facade\Db;
 use think\facade\Config;
@@ -69,6 +70,8 @@ class StaffLogic extends BaseLogic
                 $data['admin_disable'] = (int)$admin->disable;
             }
         }
+
+        $data = array_merge($data, StaffTagReviewService::getProfileTagState((int) $staff->id));
 
         return $data;
     }
@@ -118,10 +121,6 @@ class StaffLogic extends BaseLogic
                 'experience_years' => $params['experience_years'] ?? 0,
                 'profile' => $params['profile'] ?? '',
                 'service_desc' => $params['service_desc'] ?? '',
-                'booking_option_1_name' => trim((string)($params['booking_option_1_name'] ?? '')),
-                'booking_option_1_price' => round((float)($params['booking_option_1_price'] ?? 0), 2),
-                'booking_option_2_name' => trim((string)($params['booking_option_2_name'] ?? '')),
-                'booking_option_2_price' => round((float)($params['booking_option_2_price'] ?? 0), 2),
                 'sort' => $params['sort'] ?? 0,
                 'is_recommend' => $params['is_recommend'] ?? 0,
                 'status' => $params['status'] ?? 1,
@@ -144,7 +143,7 @@ class StaffLogic extends BaseLogic
 
             // 设置标签
             if (!empty($params['tag_ids'])) {
-                StaffTag::setTags($staff->id, $params['tag_ids']);
+                StaffTagReviewService::syncEffectiveTags((int) $staff->id, (int) ($params['category_id'] ?? 0), $params['tag_ids']);
             }
 
             Db::commit();
@@ -209,10 +208,6 @@ class StaffLogic extends BaseLogic
                 'experience_years' => $params['experience_years'] ?? $staff->experience_years,
                 'profile' => $params['profile'] ?? $staff->profile,
                 'service_desc' => $params['service_desc'] ?? $staff->service_desc,
-                'booking_option_1_name' => trim((string)($params['booking_option_1_name'] ?? $staff->getData('booking_option_1_name') ?? '')),
-                'booking_option_1_price' => round((float)($params['booking_option_1_price'] ?? $staff->getData('booking_option_1_price') ?? 0), 2),
-                'booking_option_2_name' => trim((string)($params['booking_option_2_name'] ?? $staff->getData('booking_option_2_name') ?? '')),
-                'booking_option_2_price' => round((float)($params['booking_option_2_price'] ?? $staff->getData('booking_option_2_price') ?? 0), 2),
                 'sort' => $params['sort'] ?? $staff->sort,
                 'is_recommend' => $params['is_recommend'] ?? $staff->is_recommend,
                 'status' => $params['status'] ?? $staff->status,
@@ -249,7 +244,7 @@ class StaffLogic extends BaseLogic
             // 更新标签（setTags/setPackages 要求 int，POST 的 id 为字符串）
             $staffId = (int) $params['id'];
             if (isset($params['tag_ids'])) {
-                StaffTag::setTags($staffId, $params['tag_ids']);
+                StaffTagReviewService::syncEffectiveTags($staffId, $newCategoryId, $params['tag_ids']);
             }
 
             Db::commit();
@@ -269,6 +264,64 @@ class StaffLogic extends BaseLogic
     public static function delete(array $params): bool
     {
         return Staff::destroy($params['id']);
+    }
+
+    /**
+     * @notes 更新我的资料
+     */
+    public static function updateSelfProfile(int $staffId, array $params): array|bool
+    {
+        Db::startTrans();
+        try {
+            $staff = Staff::find($staffId);
+            if (!$staff) {
+                throw new \RuntimeException('服务人员不存在');
+            }
+
+            if (!empty($params['mobile'])) {
+                $params['mobile_full'] = $params['mobile'];
+            }
+            $rawMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
+            $categoryId = (int) $staff->category_id;
+
+            $staff->save([
+                'name' => $params['name'] ?? $staff->name,
+                'avatar' => $params['avatar'] ?? $staff->avatar,
+                'mobile' => $params['mobile'] ?? $rawMobile,
+                'mobile_full' => $params['mobile_full'] ?? $rawMobile,
+                'experience_years' => $params['experience_years'] ?? $staff->experience_years,
+                'profile' => $params['profile'] ?? $staff->profile,
+                'service_desc' => $params['service_desc'] ?? $staff->service_desc,
+                'update_time' => time(),
+            ]);
+
+            $tagResult = [
+                'action' => 'applied',
+                'message' => '标签未变化',
+            ];
+            if (array_key_exists('tag_ids', $params)) {
+                $tagResult = StaffTagReviewService::handleSelfTagUpdate(
+                    $staffId,
+                    $categoryId,
+                    is_array($params['tag_ids']) ? $params['tag_ids'] : [],
+                    [
+                        'source' => \app\common\model\staff\StaffTagApply::SOURCE_STAFF_ADMIN,
+                        'submit_admin_id' => (int) ($staff->admin_id ?? 0),
+                    ]
+                );
+            }
+
+            Db::commit();
+
+            return [
+                'tag_action' => $tagResult['action'] ?? 'applied',
+                'tag_message' => $tagResult['message'] ?? '',
+            ];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            self::setError($e->getMessage());
+            return false;
+        }
     }
 
     /**

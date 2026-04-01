@@ -125,7 +125,17 @@ class StaffController extends BaseApiController
      */
     public function addons()
     {
-        return $this->data([]);
+        $staffId = $this->request->get('staff_id/d');
+        if (!$staffId) {
+            return $this->fail('参数错误');
+        }
+
+        try {
+            $result = StaffLogic::addons($staffId, $this->request->get('package_id/d', 0));
+            return $this->data($result);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage() ?: '获取附加项失败');
+        }
     }
 
     /**

@@ -112,7 +112,6 @@
                         shape="round"
                         type="primary"
                         plain
-                        size="md"
                         hover-class="none"
                         :border-color="$theme.primaryColor"
                         :text-color="$theme.primaryColor"
@@ -127,7 +126,6 @@
                     <tn-button
                         shape="round"
                         type="primary"
-                        size="md"
                         bold
                         hover-class="none"
                         :bg-color="$theme.primaryColor"
@@ -509,7 +507,7 @@ onUnmounted(() => {
 })
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .payway-lists {
     .payway-item {
         border-bottom: 1px solid;
@@ -521,30 +519,30 @@ onUnmounted(() => {
     margin-top: 20rpx;
     padding: 12rpx 24rpx;
     border-radius: 999rpx;
-    background: rgba(216, 92, 97, 0.1);
+    background: var(--wm-color-primary-soft, #fff1ee);
 }
 
 .countdown-tip__label {
     font-size: 22rpx;
-    color: #d85c61;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .countdown-tip__value {
     margin-left: 12rpx;
     font-size: 28rpx;
     font-weight: 600;
-    color: #d85c61;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .check-popup__countdown {
     margin-top: 20rpx;
     font-size: 24rpx;
-    color: #d85c61;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .check-popup__timeout {
     margin-top: 20rpx;
     font-size: 24rpx;
-    color: #dc2626;
+    color: var(--wm-color-danger, #b44a3a);
 }
 </style>

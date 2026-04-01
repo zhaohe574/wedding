@@ -39,6 +39,7 @@
                             <el-option label="已取消" :value="6" />
                             <el-option label="已暂停" :value="7" />
                             <el-option label="已退款" :value="8" />
+                            <el-option label="用户已删除" :value="9" />
                         </el-select>
                     </el-form-item>
                     <el-form-item class="w-[320px]" label="创建时间">
@@ -60,7 +61,7 @@
         </template>
 
         <!-- 统计卡片 -->
-        <div class="mt-4 grid grid-cols-6 gap-4">
+        <div class="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
             <el-card class="!border-none" shadow="never">
                 <div class="text-center">
                     <div class="text-gray-500 text-sm">待确认</div>
@@ -115,6 +116,12 @@
                     <div class="text-2xl font-bold mt-2 text-red-500">{{ getStatusCount(8) }}</div>
                 </div>
             </el-card>
+            <el-card class="!border-none" shadow="never">
+                <div class="text-center">
+                    <div class="text-gray-500 text-sm">用户已删除</div>
+                    <div class="text-2xl font-bold mt-2 text-rose-500">{{ getStatusCount(9) }}</div>
+                </div>
+            </el-card>
         </div>
 
         <div class="admin-page-section mt-4">
@@ -164,7 +171,7 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="创建时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="200" fixed="right">
+                <el-table-column label="操作" width="240" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
                         <el-button 
@@ -191,6 +198,12 @@
                             link 
                             @click="handleCancel(row)"
                         >取消</el-button>
+                        <el-button
+                            v-if="row.order_status === 9"
+                            type="danger"
+                            link
+                            @click="handleDelete(row)"
+                        >删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -358,7 +371,8 @@ import {
     orderCancel, 
     orderStartService, 
     orderComplete,
-    orderAuditVoucher
+    orderAuditVoucher,
+    orderDelete
 } from '@/api/order'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
@@ -418,7 +432,8 @@ const getStatusType = (
         5: 'success',
         6: 'info',
         7: 'warning',
-        8: 'danger'
+        8: 'danger',
+        9: 'danger'
     }
     return types[status] || 'info'
 }
@@ -523,6 +538,14 @@ const submitCancel = async () => {
     await orderCancel(cancelForm)
     feedback.msgSuccess('订单已取消')
     cancelVisible.value = false
+    getLists()
+    getStatistics()
+}
+
+const handleDelete = async (row: any) => {
+    await feedback.confirm('确认彻底删除该订单吗？此操作仅用于用户已删除订单。')
+    await orderDelete({ id: row.id })
+    feedback.msgSuccess('订单已删除')
     getLists()
     getStatistics()
 }

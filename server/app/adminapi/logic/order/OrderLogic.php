@@ -388,7 +388,7 @@ class OrderLogic extends BaseLogic
             }
 
             // 只能编辑未完成的订单
-            if (in_array($order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED, Order::STATUS_CANCELLED, Order::STATUS_PAUSED, Order::STATUS_REFUNDED])) {
+            if (in_array($order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED, Order::STATUS_CANCELLED, Order::STATUS_PAUSED, Order::STATUS_REFUNDED, Order::STATUS_USER_DELETED], true)) {
                 self::setError('当前订单状态不允许编辑');
                 return false;
             }
@@ -524,6 +524,54 @@ class OrderLogic extends BaseLogic
             return false;
         }
         return true;
+    }
+
+    /**
+     * @notes 删除订单（后台软删除）
+     * @param int $orderId
+     * @param int $adminId
+     * @return bool
+     */
+    public static function delete(int $orderId, int $adminId): bool
+    {
+        Db::startTrans();
+        try {
+            $order = Order::where('id', $orderId)
+                ->lock(true)
+                ->find();
+            if (!$order) {
+                self::setError('订单不存在');
+                Db::rollback();
+                return false;
+            }
+
+            if ((int)$order->order_status !== Order::STATUS_USER_DELETED) {
+                self::setError('仅支持删除用户已删除的订单');
+                Db::rollback();
+                return false;
+            }
+
+            $beforeStatus = (int)$order->order_status;
+            $targetOrderId = (int)$order->id;
+            $order->delete();
+
+            OrderLog::addLog(
+                $targetOrderId,
+                OrderLog::OPERATOR_ADMIN,
+                $adminId,
+                'admin_delete',
+                $beforeStatus,
+                $beforeStatus,
+                '后台彻底删除订单'
+            );
+
+            Db::commit();
+            return true;
+        } catch (\Throwable $e) {
+            Db::rollback();
+            self::setError($e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -687,6 +735,7 @@ class OrderLogic extends BaseLogic
             Order::STATUS_CANCELLED => '已取消',
             Order::STATUS_PAUSED => '已暂停',
             Order::STATUS_REFUNDED => '已退款',
+            Order::STATUS_USER_DELETED => '用户已删除',
         ] as $status => $label) {
             $statusCounts[] = [
                 'status' => $status,

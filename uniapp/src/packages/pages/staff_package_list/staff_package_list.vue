@@ -1,109 +1,147 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="套餐管理" />
+    <PageShell scene="staff">
+        <BaseNavbar title="套餐管理" />
 
-    <view class="page-container">
-        <view
-            class="hero-card"
-            :style="{
-                background: `linear-gradient(145deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || $theme.primaryColor} 78%)`
-            }"
-        >
-            <view class="hero-top">
-                <view>
-                    <text class="hero-title">套餐工作区</text>
-                    <text class="hero-desc">集中维护服务组合、价格展示和推荐策略</text>
-                </view>
-                <view class="hero-add-btn" @click="goCreate">
-                    <tn-icon name="add" size="28" color="#FFFFFF" />
-                    <text>新增套餐</text>
-                </view>
+        <view class="staff-resource-page">
+            <view class="page-section page-section--top">
+                <BaseCard variant="hero" scene="staff" class="hero-card">
+                    <view class="hero-card__head">
+                        <view class="hero-card__copy">
+                            <text class="hero-card__eyebrow">服务人员中心</text>
+                            <text class="hero-card__title">套餐管理</text>
+                            <text class="hero-card__meta">维护售卖组合</text>
+                        </view>
+
+                        <BaseButton
+                            variant="secondary"
+                            size="sm"
+                            class="hero-card__action"
+                            @click="goCreate"
+                        >
+                            新增套餐
+                        </BaseButton>
+                    </view>
+
+                    <view class="hero-metrics">
+                        <view
+                            v-for="item in heroMetrics"
+                            :key="item.label"
+                            :class="['hero-metric', { 'hero-metric--accent': item.accent }]"
+                        >
+                            <text class="hero-metric__label">{{ item.label }}</text>
+                            <text class="hero-metric__value">{{ item.value }}</text>
+                        </view>
+                    </view>
+                </BaseCard>
             </view>
 
-            <view class="hero-stats">
-                <view class="hero-stat">
-                    <text class="hero-stat-label">总套餐</text>
-                    <text class="hero-stat-value">{{ packages.length }}</text>
-                </view>
-                <view class="hero-stat">
-                    <text class="hero-stat-label">上架中</text>
-                    <text class="hero-stat-value">{{ activeCount }}</text>
-                </view>
-                <view class="hero-stat">
-                    <text class="hero-stat-label">推荐款</text>
-                    <text class="hero-stat-value">{{ recommendCount }}</text>
-                </view>
+            <view class="page-section page-section--list">
+                <template v-if="packages.length">
+                    <BaseCard
+                        v-for="item in packages"
+                        :key="item.id"
+                        variant="glass"
+                        scene="staff"
+                        class="package-card"
+                    >
+                        <view class="package-card__head">
+                            <view class="package-card__copy">
+                                <text class="package-card__title">
+                                    {{ item.name || '未命名套餐' }}
+                                </text>
+                                <text class="package-card__category">
+                                    {{ item.category_name || '服务分类自动同步' }}
+                                </text>
+                            </view>
+
+                            <StatusBadge
+                                :tone="Number(item.is_show) === 1 ? 'success' : 'neutral'"
+                                size="sm"
+                            >
+                                {{ Number(item.is_show) === 1 ? '上架中' : '已下架' }}
+                            </StatusBadge>
+                        </view>
+
+                        <view class="price-row">
+                            <text class="price-row__prefix">¥</text>
+                            <text class="price-row__value">{{ formatPrice(item.price) }}</text>
+                            <text
+                                v-if="Number(item.original_price || 0) > 0"
+                                class="price-row__origin"
+                            >
+                                ¥{{ formatPrice(item.original_price) }}
+                            </text>
+                        </view>
+
+                        <view class="chip-row">
+                            <view class="info-chip">
+                                排序 {{ Number(item.sort || 0) }}
+                            </view>
+                            <view v-if="Number(item.is_recommend) === 1" class="info-chip info-chip--accent">
+                                推荐套餐
+                            </view>
+                        </view>
+
+                        <text v-if="item.description" class="package-card__desc">
+                            {{ item.description }}
+                        </text>
+
+                        <view class="action-row">
+                            <view class="action-btn action-btn--ghost" @click="handleEdit(item)">
+                                编辑
+                            </view>
+                            <view class="action-btn action-btn--danger" @click="handleRemove(item)">
+                                删除
+                            </view>
+                        </view>
+                    </BaseCard>
+                </template>
+
+                <EmptyState
+                    v-else
+                    title="还没有套餐"
+                    action-text="新增套餐"
+                    @action="goCreate"
+                />
             </view>
         </view>
-
-        <view v-if="packages.length" class="package-list">
-            <view v-for="item in packages" :key="item.id" class="package-card">
-                <view class="package-head">
-                    <view class="package-title-wrap">
-                        <text class="package-title">{{ item.name || '未命名套餐' }}</text>
-                        <text class="package-category">{{ item.category_name || '服务分类自动同步' }}</text>
-                    </view>
-                    <view class="package-status" :class="{ off: !item.is_show }">
-                        {{ item.is_show ? '上架中' : '已下架' }}
-                    </view>
-                </view>
-
-                <view class="price-row">
-                    <text class="price-main">¥{{ formatPrice(item.price) }}</text>
-                    <text v-if="Number(item.original_price || 0) > 0" class="price-origin">
-                        ¥{{ formatPrice(item.original_price) }}
-                    </text>
-                </view>
-
-                <view class="meta-row">
-                    <view class="meta-chip">
-                        排序 {{ item.sort || 0 }}
-                    </view>
-                    <view class="meta-chip" :class="{ recommend: !!item.is_recommend }">
-                        {{ item.is_recommend ? '推荐套餐' : '普通套餐' }}
-                    </view>
-                </view>
-
-                <text v-if="item.description" class="package-desc">{{ item.description }}</text>
-
-                <view class="action-row">
-                    <view class="action-btn action-btn--ghost" @click="handleEdit(item)">
-                        <tn-icon name="edit" size="26" :color="$theme.primaryColor" />
-                        <text>编辑</text>
-                    </view>
-                    <view class="action-btn action-btn--danger" @click="handleRemove(item)">
-                        <tn-icon name="delete" size="26" color="#FF2C3C" />
-                        <text>删除</text>
-                    </view>
-                </view>
-            </view>
-        </view>
-
-        <view v-else class="empty-state">
-            <tn-icon name="gift" size="120" color="#D1D5DB" />
-            <text class="empty-title">还没有套餐内容</text>
-            <text class="empty-desc">先创建一个可售套餐，让客户能快速下单</text>
-            <view class="empty-btn" :style="{ background: $theme.primaryColor }" @click="goCreate">
-                立即新增
-            </view>
-        </view>
-    </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { staffCenterPackageLists, staffCenterPackageRemove } from '@/api/staffCenter'
-import { ensureStaffCenterAccess } from '@/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
+import { ensureStaffCenterAccess } from '@/utils/staff-center'
+
+interface HeroMetric {
+    label: string
+    value: number
+    accent: boolean
+}
 
 const $theme = useThemeStore()
 const packages = ref<any[]>([])
 
-const activeCount = computed(() => packages.value.filter((item) => Number(item.is_show) === 1).length)
+const activeCount = computed(() =>
+    packages.value.filter((item) => Number(item.is_show) === 1).length
+)
 const recommendCount = computed(() =>
     packages.value.filter((item) => Number(item.is_recommend) === 1).length
 )
+const heroMetrics = computed<HeroMetric[]>(() => [
+    { label: '总套餐', value: packages.value.length, accent: false },
+    { label: '上架中', value: activeCount.value, accent: true },
+    { label: '推荐款', value: recommendCount.value, accent: false }
+])
 
 const fetchPackages = async () => {
     try {
@@ -160,241 +198,256 @@ onShow(async () => {
 </script>
 
 <style lang="scss" scoped>
-.page-container {
+.staff-resource-page {
     min-height: 100vh;
-    padding: 24rpx;
+    padding-top: 20rpx;
+    box-sizing: border-box;
     background:
-        radial-gradient(circle at top left, rgba(191, 219, 254, 0.72) 0, rgba(246, 248, 252, 0) 36%),
-        linear-gradient(180deg, #F6F8FC 0%, #F4F6FB 100%);
+        radial-gradient(circle at top left, rgba(232, 90, 79, 0.1) 0, rgba(252, 251, 249, 0) 36%),
+        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
+}
+
+.page-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    padding: 0 var(--wm-space-page-x, 37rpx);
+    box-sizing: border-box;
+
+    &--list {
+        padding-top: 18rpx;
+        padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+    }
 }
 
 .hero-card {
-    padding: 28rpx;
-    border-radius: 30rpx;
-    box-shadow: 0 18rpx 36rpx rgba(37, 99, 235, 0.18);
+    overflow: hidden;
 }
 
-.hero-top {
+.hero-card__head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 20rpx;
 }
 
-.hero-title {
-    display: block;
-    font-size: 36rpx;
-    font-weight: 700;
-    color: #FFFFFF;
+.hero-card__copy {
+    flex: 1;
+    min-width: 0;
 }
 
-.hero-desc {
+.hero-card__eyebrow {
+    font-size: 20rpx;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.hero-card__title {
     display: block;
     margin-top: 10rpx;
-    font-size: 22rpx;
-    line-height: 1.55;
-    color: rgba(255, 255, 255, 0.8);
+    font-size: 40rpx;
+    font-weight: 700;
+    line-height: 1.28;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.hero-add-btn {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    gap: 8rpx;
-    padding: 16rpx 22rpx;
-    border-radius: 999rpx;
-    background: rgba(255, 255, 255, 0.16);
+.hero-card__meta {
+    display: block;
+    margin-top: 8rpx;
     font-size: 24rpx;
     font-weight: 600;
-    color: #FFFFFF;
+    line-height: 1.45;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.hero-stats {
+.hero-card__action {
+    flex-shrink: 0;
+}
+
+.hero-card__action :deep(.tn-button) {
+    background: rgba(255, 255, 255, 0.84);
+    border-color: rgba(255, 255, 255, 0.72);
+}
+
+.hero-metrics {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14rpx;
-    margin-top: 26rpx;
-}
-
-.hero-stat {
-    padding: 20rpx;
-    border-radius: 22rpx;
-    background: rgba(255, 255, 255, 0.14);
-}
-
-.hero-stat-label {
-    display: block;
-    font-size: 22rpx;
-    color: rgba(255, 255, 255, 0.75);
-}
-
-.hero-stat-value {
-    display: block;
-    margin-top: 12rpx;
-    font-size: 38rpx;
-    font-weight: 800;
-    color: #FFFFFF;
-}
-
-.package-list {
+    gap: 12rpx;
     margin-top: 22rpx;
+}
+
+.hero-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+    min-width: 0;
+    padding: 18rpx 20rpx;
+    border-radius: 30rpx;
+    background: rgba(255, 255, 255, 0.76);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+
+    &--accent {
+        background: var(--wm-color-primary-soft, #fff1ee);
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+    }
+}
+
+.hero-metric__label {
+    font-size: 21rpx;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.hero-metric--accent .hero-metric__label {
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.hero-metric__value {
+    font-size: 40rpx;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .package-card + .package-card {
     margin-top: 18rpx;
 }
 
-.package-card {
-    padding: 28rpx;
-    border-radius: 28rpx;
-    background: rgba(255, 255, 255, 0.92);
-    border: 1rpx solid rgba(255, 255, 255, 0.72);
-    box-shadow: 0 18rpx 30rpx rgba(15, 23, 42, 0.05);
-}
-
-.package-head {
+.package-card__head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 18rpx;
 }
 
-.package-title-wrap {
+.package-card__copy {
     flex: 1;
     min-width: 0;
 }
 
-.package-title {
+.package-card__title {
     display: block;
     font-size: 32rpx;
     font-weight: 700;
-    color: #0F172A;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #1e2432);
+    word-break: break-all;
 }
 
-.package-category {
+.package-card__category {
     display: block;
     margin-top: 10rpx;
     font-size: 22rpx;
-    color: #94A3B8;
-}
-
-.package-status {
-    flex-shrink: 0;
-    padding: 10rpx 18rpx;
-    border-radius: 999rpx;
-    font-size: 22rpx;
     font-weight: 600;
-    color: #059669;
-    background: rgba(16, 185, 129, 0.12);
-}
-
-.package-status.off {
-    color: #64748B;
-    background: rgba(148, 163, 184, 0.16);
+    line-height: 1.45;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .price-row {
     display: flex;
     align-items: baseline;
-    gap: 12rpx;
-    margin-top: 22rpx;
+    gap: 6rpx;
+    margin-top: 24rpx;
 }
 
-.price-main {
-    font-size: 42rpx;
-    font-weight: 800;
-    color: #F97316;
+.price-row__prefix,
+.price-row__value {
+    color: var(--wm-color-primary, #e85a4f);
+    line-height: 1;
 }
 
-.price-origin {
+.price-row__prefix {
+    font-size: 28rpx;
+    font-weight: 700;
+}
+
+.price-row__value {
+    font-size: 48rpx;
+    font-weight: 700;
+}
+
+.price-row__origin {
+    margin-left: 6rpx;
     font-size: 24rpx;
-    color: #94A3B8;
+    font-weight: 600;
+    color: var(--wm-text-tertiary, #b4aca8);
     text-decoration: line-through;
 }
 
-.meta-row {
+.chip-row {
     display: flex;
     flex-wrap: wrap;
     gap: 12rpx;
     margin-top: 18rpx;
 }
 
-.meta-chip {
-    padding: 10rpx 16rpx;
-    border-radius: 999rpx;
-    background: #F8FAFC;
+.info-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48rpx;
+    padding: 0 16rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(255, 255, 255, 0.74);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
     font-size: 22rpx;
-    color: #64748B;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #7f7b78);
+
+    &--accent {
+        background: var(--wm-color-primary-soft, #fff1ee);
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+        color: var(--wm-color-primary, #e85a4f);
+    }
 }
 
-.meta-chip.recommend {
-    color: #D97706;
-    background: rgba(245, 158, 11, 0.12);
-}
-
-.package-desc {
-    display: block;
+.package-card__desc {
+    display: -webkit-box;
     margin-top: 18rpx;
+    overflow: hidden;
     font-size: 24rpx;
-    line-height: 1.7;
-    color: #475569;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--wm-text-secondary, #7f7b78);
+    text-overflow: ellipsis;
+    word-break: break-all;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 .action-row {
     display: flex;
-    gap: 16rpx;
-    margin-top: 24rpx;
+    gap: 14rpx;
+    margin-top: 22rpx;
 }
 
 .action-btn {
     flex: 1;
-    height: 72rpx;
-    border-radius: 999rpx;
+    min-height: 72rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
     font-size: 26rpx;
     font-weight: 600;
-}
+    transition: all var(--wm-motion-base, 220ms) ease;
 
-.action-btn--ghost {
-    color: var(--color-primary);
-    border: 2rpx solid currentColor;
-}
+    &:active {
+        transform: translateY(2rpx);
+        opacity: 0.92;
+    }
 
-.action-btn--danger {
-    color: #FF2C3C;
-    border: 2rpx solid currentColor;
-}
+    &--ghost {
+        color: var(--wm-color-primary, #e85a4f);
+        background: rgba(255, 255, 255, 0.7);
+        border: 1rpx solid rgba(232, 90, 79, 0.18);
+    }
 
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 180rpx 0;
-}
-
-.empty-title {
-    margin-top: 24rpx;
-    font-size: 30rpx;
-    font-weight: 600;
-    color: #475569;
-}
-
-.empty-desc {
-    margin-top: 10rpx;
-    font-size: 22rpx;
-    color: #94A3B8;
-}
-
-.empty-btn {
-    margin-top: 24rpx;
-    padding: 18rpx 42rpx;
-    border-radius: 999rpx;
-    font-size: 26rpx;
-    font-weight: 600;
-    color: #FFFFFF;
+    &--danger {
+        color: var(--wm-color-danger, #b44a3a);
+        background: rgba(180, 74, 58, 0.08);
+        border: 1rpx solid rgba(180, 74, 58, 0.12);
+    }
 }
 </style>

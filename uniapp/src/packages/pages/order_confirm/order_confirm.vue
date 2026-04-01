@@ -4,227 +4,199 @@
         <BaseNavbar title="订单确认" />
 
         <view class="order-confirm-page">
-        <view class="order-confirm-page__hero">
-            <text class="order-confirm-page__hero-label">确认订单</text>
-            <text class="order-confirm-page__hero-title">确认本次婚礼服务档期与联系信息</text>
-            <text class="order-confirm-page__hero-desc">
-                提交前把预约日期、服务地区、联系人和费用统一确认，避免后续改期与重复沟通。
-            </text>
-            <view class="order-confirm-page__hero-summary">
-                <view class="order-confirm-page__hero-item">
-                    <text class="order-confirm-page__hero-item-label">预约日期</text>
-                    <text class="order-confirm-page__hero-item-value">{{ bookingDateText || '-' }}</text>
-                </view>
-                <view class="order-confirm-page__hero-divider" />
-                <view class="order-confirm-page__hero-item">
-                    <text class="order-confirm-page__hero-item-label">服务地区</text>
-                    <text class="order-confirm-page__hero-item-value order-confirm-page__hero-item-value--small">
-                        {{ serviceRegionText || '未选择区县' }}
-                    </text>
-                </view>
-                <view class="order-confirm-page__hero-divider" />
-                <view class="order-confirm-page__hero-item">
-                    <text class="order-confirm-page__hero-item-label">预计支付</text>
-                    <text class="order-confirm-page__hero-item-value">¥{{ formatPrice(preview.pay_amount) }}</text>
+            <view class="order-confirm-page__step">
+                <view class="order-confirm-page__step-chip">
+                    <text>{{ orderConfirmStepTag }}</text>
                 </view>
             </view>
-        </view>
 
-        <view class="order-confirm-page__surface">
-            <BaseCard v-if="loading" variant="surface" scene="consumer" class="loading-state">
-                <LoadingState text="加载中..." />
-            </BaseCard>
-
-            <view v-else class="order-confirm-page__content">
-                <BaseCard variant="surface" scene="consumer" class="section">
-                    <view class="section-header section-header--stack">
-                        <view>
-                            <text class="section-title">预约信息</text>
-                            <text class="section-desc">当前档期和服务地区会直接写入订单，提交前请再次确认。</text>
-                        </view>
-                    </view>
-                    <view class="booking-info-card">
-                        <view class="booking-info-item">
-                            <text class="booking-info-item__label">预约日期</text>
-                            <text class="booking-info-item__value">{{ bookingDateText || '-' }}</text>
-                        </view>
-                        <view class="booking-info-item">
-                            <text class="booking-info-item__label">服务地区</text>
-                            <text class="booking-info-item__value">
-                                {{ serviceRegionText || '未选择区县' }}
-                            </text>
-                        </view>
-                    </view>
+            <view class="order-confirm-page__surface">
+                <BaseCard
+                    v-if="loading"
+                    variant="glass"
+                    scene="consumer"
+                    :hoverable="false"
+                    class="loading-state"
+                >
+                    <LoadingState text="加载中..." />
                 </BaseCard>
 
-                <BaseCard variant="surface" scene="consumer" class="section">
-                    <view class="section-header section-header--stack">
-                        <view>
-                            <text class="section-title">联系人信息</text>
-                            <text class="section-desc">用于订单沟通、档期确认和上门服务，请尽量填写准确。</text>
-                        </view>
-                    </view>
-                    <view class="form-item">
-                        <text class="form-label">联系人</text>
-                        <view class="form-shell">
-                            <tn-input
-                                v-model="form.contact_name"
-                                placeholder="请输入联系人姓名"
-                                :border="true"
-                                height="80"
-                            />
-                        </view>
-                    </view>
-                    <view class="form-item">
-                        <text class="form-label">手机号码</text>
-                        <view class="form-shell">
-                            <tn-input
-                                v-model="form.contact_mobile"
-                                placeholder="请输入手机号码"
-                                type="number"
-                                :border="true"
-                                height="80"
-                            />
-                        </view>
-                    </view>
-                    <view class="form-item">
-                        <text class="form-label">详细地址</text>
-                        <view class="form-shell">
-                            <tn-input
-                                v-model="form.service_address"
-                                placeholder="请输入详细地址"
-                                :border="true"
-                                height="80"
-                            />
-                        </view>
-                    </view>
-                    <view class="form-item">
-                        <text class="form-label">备注</text>
-                        <view class="form-shell">
-                            <tn-input
-                                v-model="form.remark"
-                                type="textarea"
-                                placeholder="请输入备注（选填）"
-                                :border="true"
-                                height="120"
-                            />
-                        </view>
-                    </view>
-                </BaseCard>
-
-                <BaseCard variant="surface" scene="consumer" class="section" v-if="mainItem">
-                    <view class="section-header">
-                        <view>
-                            <text class="section-title">服务项目</text>
-                            <text class="section-desc">先确认主服务，再统一核对附加项与关联服务人员。</text>
-                        </view>
-                        <text class="section-action" @click="handleReselect">重新选择</text>
-                    </view>
-                    <view class="service-card">
-                        <view class="service-header">
-                            <view class="staff-section">
-                                <image
-                                    :src="
-                                        mainItem.staff?.avatar || '/static/images/user/default_avatar.png'
-                                    "
-                                    class="staff-avatar"
-                                    mode="aspectFill"
-                                />
-                                <view class="staff-info">
-                                    <text class="staff-title">
-                                        {{ mainItem.staff?.name || '服务人员' }}
-                                    </text>
-                                    <text class="staff-subtitle">已为当前档期锁定服务人员</text>
-                                    <text class="package-name">
-                                        {{ mainItem.package?.name || '服务套餐' }}
-                                    </text>
-                                </view>
+                <view v-else class="order-confirm-page__content">
+                    <BaseCard
+                        variant="glass"
+                        scene="consumer"
+                        :hoverable="false"
+                        class="section-card section-card--reserve"
+                    >
+                        <view class="section-header section-header--stack">
+                            <view>
+                                <text class="section-title">预约信息</text>
+                                <text class="section-desc">当前档期和服务地区会直接写入订单，提交前请再次确认。</text>
                             </view>
-                            <view class="package-price-wrap">
-                                <text class="package-price-label">套餐金额</text>
-                                <text class="package-price" :style="{ color: $theme.ctaColor }">
-                                    ¥{{ formatPrice(mainItem.price) }}
+                        </view>
+                        <view class="booking-grid">
+                            <view class="booking-box">
+                                <text class="booking-box__label">预约日期</text>
+                                <text class="booking-box__value">{{ bookingDateText || '-' }}</text>
+                            </view>
+                            <view class="booking-box">
+                                <text class="booking-box__label">服务地区</text>
+                                <text class="booking-box__value booking-box__value--region">
+                                    {{ serviceRegionText || '未选择区县' }}
                                 </text>
                             </view>
                         </view>
-                        <text v-if="mainItem.package?.description" class="package-desc">
-                            {{ mainItem.package?.description }}
-                        </text>
+                    </BaseCard>
 
-                        <view v-if="extraItems.length" class="selected-addon-section">
-                            <view class="selected-addon-section__header">
-                                <text class="selected-addon-section__title">附加内容</text>
-                                <text class="selected-addon-section__meta">{{ extraItems.length }} 项</text>
+                    <BaseCard
+                        variant="glass"
+                        scene="consumer"
+                        :hoverable="false"
+                        class="section-card section-card--contact"
+                    >
+                        <view class="section-header section-header--stack">
+                            <view>
+                                <text class="section-title">联系人信息</text>
+                                <text class="section-desc">用于订单沟通、档期确认和上门服务，请尽量填写准确信息。</text>
                             </view>
-                            <view class="selected-addon-list">
+                        </view>
+
+                        <view class="field-item field-item--compact">
+                            <text class="field-label field-label--required">联系人</text>
+                            <view class="field-shell">
+                                <tn-input
+                                    v-model="form.contact_name"
+                                    placeholder="请输入联系人姓名"
+                                    :border="true"
+                                    height="84"
+                                />
+                            </view>
+                        </view>
+
+                        <view class="field-item field-item--compact">
+                            <text class="field-label field-label--required">手机号码</text>
+                            <view class="field-shell">
+                                <tn-input
+                                    v-model="form.contact_mobile"
+                                    placeholder="请输入手机号码"
+                                    type="number"
+                                    :border="true"
+                                    height="84"
+                                />
+                            </view>
+                        </view>
+
+                        <view class="field-item field-item--address">
+                            <text class="field-label field-label--required">详细地址</text>
+                            <view class="field-shell">
+                                <tn-input
+                                    v-model="form.service_address"
+                                    placeholder="请输入详细地址"
+                                    :border="true"
+                                    height="92"
+                                />
+                            </view>
+                        </view>
+
+                        <view class="field-item field-item--note">
+                            <text class="field-label">备注</text>
+                            <view class="field-shell field-shell--textarea">
+                                <textarea
+                                    v-model="form.remark"
+                                    class="remark-textarea"
+                                    maxlength="200"
+                                    placeholder="请输入备注（选填）"
+                                    placeholder-style="color: #b4aca8;"
+                                />
+                            </view>
+                        </view>
+                    </BaseCard>
+
+                    <BaseCard
+                        v-if="mainItem"
+                        variant="glass"
+                        scene="consumer"
+                        :hoverable="false"
+                        class="section-card section-card--service"
+                    >
+                        <view class="section-header">
+                            <view class="section-header__text">
+                                <text class="section-title">服务项目</text>
+                                <text class="section-desc">先确认主服务，再统一核对附加项与关联服务人员。</text>
+                            </view>
+                            <view class="section-action" @click="handleReselect">
+                                <text>重新选择</text>
+                            </view>
+                        </view>
+
+                        <view class="service-main">
+                            <view class="service-main__avatar">
+                                <image
+                                    v-if="mainItem.staff?.avatar"
+                                    :src="mainItem.staff?.avatar"
+                                    class="service-main__avatar-image"
+                                    mode="aspectFill"
+                                />
+                                <text v-else class="service-main__avatar-text">{{ staffInitial }}</text>
+                            </view>
+
+                            <view class="service-main__info">
+                                <text class="service-main__name">{{ mainItem.staff?.name || '服务人员' }}</text>
+                                <text class="service-main__meta">已为当前档期锁定服务人员</text>
+                                <view class="service-main__tag">
+                                    <text>主套餐</text>
+                                </view>
+                            </view>
+
+                            <view class="service-main__price">
+                                <text class="service-main__price-label">套餐金额</text>
+                                <text class="service-main__price-value">¥{{ formatPrice(mainItem.price) }}</text>
+                            </view>
+                        </view>
+
+                        <text class="service-package-summary">{{ mainPackageSummary }}</text>
+
+                        <view v-if="extraItems.length" class="service-addon">
+                            <view class="service-addon__header">
+                                <text class="service-addon__title">附加内容</text>
+                                <text class="service-addon__meta">{{ extraItems.length }} 项</text>
+                            </view>
+
+                            <view class="service-addon__list">
                                 <view
                                     v-for="item in extraItems"
                                     :key="`${item.item_type}-${item.staff_id}-${item.package_id}-${item.price}`"
-                                    class="selected-addon-card"
+                                    class="service-addon__card"
                                 >
-                                    <view class="selected-addon-card__main">
-                                        <text class="selected-addon-card__title">{{ getExtraItemTitle(item) }}</text>
-                                        <text class="selected-addon-card__desc">{{ getExtraItemDesc(item) }}</text>
+                                    <view class="service-addon__top">
+                                        <text class="service-addon__name">{{ getExtraItemTitle(item) }}</text>
+                                        <text class="service-addon__price">¥{{ formatPrice(item.price) }}</text>
                                     </view>
-                                    <text class="selected-addon-card__price">¥{{ formatPrice(item.price) }}</text>
+                                    <text class="service-addon__desc">{{ getExtraItemDesc(item) }}</text>
                                 </view>
                             </view>
                         </view>
-                    </view>
-                </BaseCard>
+                    </BaseCard>
 
-                <BaseCard variant="surface" scene="consumer" class="section" v-if="hasItems">
-                    <view class="section-header section-header--stack">
-                        <view>
-                            <text class="section-title">费用明细</text>
-                            <text class="section-desc">展示主服务与最终应付金额，便于下单前确认。</text>
-                        </view>
-                    </view>
-                    <view class="price-list">
-                        <view class="price-row">
-                            <text>主服务金额</text>
-                            <text>¥{{ formatPrice(serviceAmount) }}</text>
-                        </view>
-                        <view class="price-row" v-if="Number(preview.addon_amount || 0) > 0">
-                            <text>附加内容金额</text>
-                            <text>¥{{ formatPrice(preview.addon_amount) }}</text>
-                        </view>
-                        <view class="price-row" v-if="preview.deposit_amount > 0">
-                            <text>定金</text>
-                            <text>¥{{ formatPrice(preview.deposit_amount) }}</text>
-                        </view>
-                        <view class="price-row" v-if="preview.balance_amount > 0">
-                            <text>尾款</text>
-                            <text>¥{{ formatPrice(preview.balance_amount) }}</text>
-                        </view>
-                        <view class="price-row total">
-                            <text>应付金额</text>
-                            <text class="text-total">¥{{ formatPrice(preview.pay_amount) }}</text>
-                        </view>
-                    </view>
-                </BaseCard>
+                </view>
             </view>
-        </view>
 
-        <ActionArea sticky safeBottom layout="split">
-            <view class="submit-price">
-                <text class="label">合计</text>
-                <text class="symbol" :style="{ color: $theme.ctaColor }">¥</text>
-                <text class="value" :style="{ color: $theme.ctaColor }">
-                    {{ formatPrice(preview.pay_amount) }}
-                </text>
+            <view class="order-confirm-page__submit-bar">
+                <view class="submit-summary">
+                    <text class="submit-summary__label">合计</text>
+                    <text class="submit-summary__amount">¥{{ formatPrice(preview.pay_amount) }}</text>
+                </view>
+                <view
+                    class="submit-button"
+                    :class="{
+                        'submit-button--disabled': !canSubmit,
+                        'submit-button--loading': submitting
+                    }"
+                    @click="handleSubmit"
+                >
+                    <text class="submit-button__text">{{ submitting ? '提交中...' : '提交订单' }}</text>
+                </view>
             </view>
-            <BaseButton
-                class="submit-btn"
-                variant="primary"
-                size="lg"
-                :disabled="!canSubmit"
-                :loading="submitting"
-                @click="handleSubmit"
-            >
-                提交订单
-            </BaseButton>
-        </ActionArea>
         </view>
     </PageShell>
 </template>
@@ -235,8 +207,6 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
-import BaseButton from '@/components/base/BaseButton.vue'
-import ActionArea from '@/components/base/ActionArea.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import { previewOrder, createOrder } from '@/api/order'
 import { BACK_URL } from '@/enums/constantEnums'
@@ -274,11 +244,12 @@ const selection = reactive({
     city_name: '',
     district_code: '',
     district_name: '',
-    custom_option_keys: [] as string[],
+    addon_ids: [] as number[],
     butler_staff_id: 0,
     butler_package_id: 0,
     director_staff_id: 0,
-    director_package_id: 0
+    director_package_id: 0,
+    flow_total_steps: 0
 })
 
 const preview = ref<any>({
@@ -316,14 +287,41 @@ const extraItems = computed(() =>
         : []
 )
 const bookingDateText = computed(() => mainItem.value?.schedule_date || selection.date || '')
-const serviceRegionText = computed(() => formatServiceRegionText(selection, ' / '))
+const serviceRegionText = computed(() => {
+    const city = String(selection.city_name || '').trim()
+    const district = String(selection.district_name || '').trim()
+    const brief = [city, district].filter(Boolean).join(' / ')
+    return brief || formatServiceRegionText(selection, ' / ')
+})
 const canSubmit = computed(() => hasItems.value && !loading.value && !submitting.value)
-const serviceAmount = computed(() => {
-    const amount = Number(preview.value.service_amount ?? -1)
-    if (amount >= 0) {
-        return amount
+const orderFlowTotalSteps = computed(() => {
+    const total = Number(selection.flow_total_steps || 0)
+    return Number.isInteger(total) && total > 0 ? total : 0
+})
+const orderConfirmStepTag = computed(() => {
+    if (!orderFlowTotalSteps.value) {
+        return '订单确认｜提交前确认订单信息'
     }
-    return Math.max(0, Number(preview.value.total_amount || 0))
+
+    return `步骤 ${orderFlowTotalSteps.value}/${orderFlowTotalSteps.value}｜提交前确认订单信息`
+})
+const staffInitial = computed(() => {
+    const name = String(mainItem.value?.staff?.name || '').trim()
+    return name ? name.slice(0, 1) : '婚'
+})
+const mainPackageSummary = computed(() => {
+    if (!mainItem.value) {
+        return '主套餐'
+    }
+
+    const packageName = mainItem.value?.package?.name || mainItem.value?.package_name || ''
+    const packageDesc =
+        mainItem.value?.package?.description || mainItem.value?.package_description || ''
+    const summary = [packageName, packageDesc]
+        .filter((item, index, list) => item && list.indexOf(item) === index)
+        .join('，')
+
+    return summary || '主套餐'
 })
 
 const formatPrice = (value: any) => Number(value || 0).toFixed(2)
@@ -491,7 +489,7 @@ const getExtraItemTitle = (item: any) => {
 
 const getExtraItemDesc = (item: any) => {
     if (Number(item?.item_type || 1) === 2) {
-        return '服务人员自定义预约附加项'
+        return item?.package?.description || item?.package_description || '服务人员预约附加项'
     }
     if (Number(item?.item_type || 1) === 3) {
         return item?.package?.name || item?.package_name || '已锁定推荐套餐'
@@ -507,11 +505,12 @@ onLoad((options: any) => {
     selection.staff_id = normalized.staff_id
     selection.package_id = normalized.package_id
     selection.date = normalized.date
-    selection.custom_option_keys = normalized.custom_option_keys
+    selection.addon_ids = normalized.addon_ids
     selection.butler_staff_id = normalized.butler_staff_id
     selection.butler_package_id = normalized.butler_package_id
     selection.director_staff_id = normalized.director_staff_id
     selection.director_package_id = normalized.director_package_id
+    selection.flow_total_steps = normalized.flow_total_steps
     const region = normalizeServiceRegion(normalized)
     selection.province_code = region.province_code
     selection.province_name = region.province_name
@@ -541,144 +540,86 @@ onShow(() => {
 
 <style lang="scss" scoped>
 .order-confirm-page {
-    min-height: 100vh;
-    padding-bottom: 168rpx;
+    padding: 20rpx 0 calc(236rpx + constant(safe-area-inset-bottom));
+    padding: 20rpx 0 calc(236rpx + env(safe-area-inset-bottom));
     background: transparent;
 
-    &__hero {
-        position: relative;
-        margin: 24rpx 24rpx 0;
-        padding: 28rpx 28rpx 180rpx;
-        border-radius: 32rpx;
-        background:
-            radial-gradient(circle at top right, rgba(255, 255, 255, 0.48) 0, transparent 34%),
-            linear-gradient(
-                180deg,
-                var(--wm-color-primary-soft, #fff1ee) 0%,
-                rgba(255, 255, 255, 0.96) 58%,
-                var(--wm-color-bg-page, #fcfbf9) 100%
-            );
+    &__step {
+        padding: 0 37rpx;
+    }
+
+    &__step-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 13rpx 22rpx;
+        border-radius: 999rpx;
+        background: var(--wm-color-primary-soft, #fff1ee);
         border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
-        box-shadow: var(--wm-shadow-hero, 0 24rpx 56rpx rgba(177, 108, 95, 0.18));
-        overflow: hidden;
-    }
 
-    &__hero::after {
-        content: '';
-        position: absolute;
-        right: -48rpx;
-        top: 40rpx;
-        width: 280rpx;
-        height: 280rpx;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(201, 155, 115, 0.18) 0, transparent 72%);
-        pointer-events: none;
-    }
-
-    &__hero-label {
-        display: block;
-        font-size: 22rpx;
-        font-weight: 600;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: var(--wm-color-primary, #e85a4f);
-    }
-
-    &__hero-title {
-        display: block;
-        margin-top: 22rpx;
-        font-size: 48rpx;
-        font-weight: 700;
-        line-height: 1.22;
-        color: var(--wm-text-primary, #1e2432);
-    }
-
-    &__hero-desc {
-        display: block;
-        margin-top: 18rpx;
-        max-width: 640rpx;
-        font-size: 25rpx;
-        line-height: 1.7;
-        color: var(--wm-text-secondary, #7f7b78);
-    }
-
-    &__hero-summary {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        align-items: stretch;
-        gap: 16rpx;
-        margin-top: 30rpx;
-        padding: 22rpx 24rpx;
-        background: rgba(255, 255, 255, 0.86);
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
-        border-radius: 26rpx;
-        box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
-    }
-
-    &__hero-item {
-        flex: 1;
-        min-width: 0;
-    }
-
-    &__hero-item-label {
-        display: block;
-        font-size: 20rpx;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--wm-text-secondary, #7f7b78);
-    }
-
-    &__hero-item-value {
-        display: block;
-        margin-top: 10rpx;
-        font-size: 30rpx;
-        font-weight: 700;
-        line-height: 1.36;
-        color: var(--wm-text-primary, #1e2432);
-    }
-
-    &__hero-item-value--small {
-        font-size: 25rpx;
-    }
-
-    &__hero-divider {
-        width: 1rpx;
-        background: var(--wm-color-border, #efe6e1);
+        text {
+            font-size: 22rpx;
+            font-weight: 600;
+            color: var(--wm-color-primary, #e85a4f);
+        }
     }
 
     &__surface {
-        position: relative;
-        margin-top: -132rpx;
-        padding: 0 24rpx 24rpx;
+        padding: 30rpx 37rpx 0;
     }
 
     &__content {
         display: flex;
         flex-direction: column;
-        gap: 24rpx;
+        gap: 22rpx;
+    }
+
+    &__submit-bar {
+        position: fixed;
+        left: 22rpx;
+        right: 22rpx;
+        bottom: calc(22rpx + env(safe-area-inset-bottom));
+        z-index: 90;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 22rpx;
+        padding: 22rpx;
+        border-radius: 45rpx;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        backdrop-filter: blur(18rpx);
+        -webkit-backdrop-filter: blur(18rpx);
     }
 }
 
 .loading-state {
     min-height: 56vh;
-    margin-bottom: 24rpx;
 }
 
-.section {
-    margin-bottom: 24rpx;
-    padding: 26rpx 24rpx !important;
+.section-card {
+    border-radius: 49rpx !important;
+    padding: 30rpx 34rpx !important;
+}
+
+.section-card--service {
+    padding: 34rpx 34rpx !important;
 }
 
 .section-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 16rpx;
-    margin-bottom: 20rpx;
+    margin-bottom: 12rpx;
+}
+
+.section-header__text {
+    min-width: 0;
+    flex: 1;
 }
 
 .section-header--stack {
+    align-items: flex-start;
     justify-content: flex-start;
 }
 
@@ -691,45 +632,52 @@ onShow(() => {
 
 .section-desc {
     display: block;
-    margin-top: 8rpx;
-    font-size: 22rpx;
+    margin-top: 12rpx;
+    font-size: 24rpx;
     line-height: 1.6;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
 .section-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
     padding: 12rpx 20rpx;
     border-radius: 999rpx;
     background: var(--wm-color-primary-soft, #fff1ee);
     border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
-    font-size: 22rpx;
-    font-weight: 600;
-    color: var(--wm-color-primary, #e85a4f);
+
+    text {
+        font-size: 22rpx;
+        font-weight: 600;
+        color: var(--wm-color-primary, #e85a4f);
+    }
 }
 
-.booking-info-card {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.booking-grid {
+    display: flex;
     gap: 16rpx;
 }
 
-.booking-info-item {
-    padding: 24rpx;
-    border-radius: 20rpx;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 244, 0.96));
+.booking-box {
+    flex: 1;
+    min-width: 0;
+    padding: 30rpx 30rpx;
+    border-radius: 37rpx;
+    background: #fcfbf9;
     border: 1rpx solid var(--wm-color-border, #efe6e1);
 }
 
-.booking-info-item__label {
+.booking-box__label {
     display: block;
     font-size: 22rpx;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-tertiary, #b4aca8);
 }
 
-.booking-info-item__value {
+.booking-box__value {
     display: block;
     margin-top: 10rpx;
     font-size: 30rpx;
@@ -738,164 +686,223 @@ onShow(() => {
     color: var(--wm-text-primary, #1e2432);
 }
 
-.form-item + .form-item {
-    margin-top: 18rpx;
+.booking-box__value--region {
+    font-size: 28rpx;
 }
 
-.form-label {
+.field-item + .field-item {
+    margin-top: 20rpx;
+}
+
+.field-label {
     display: block;
-    color: var(--wm-text-primary, #1e2432);
-    font-size: 26rpx;
-    font-weight: 600;
-    margin-bottom: 12rpx;
-}
-
-.form-shell {
-    padding: 4rpx;
-    border-radius: 20rpx;
-    background: rgba(255, 255, 255, 0.92);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-}
-
-.form-shell :deep(.tn-input) {
-    border-radius: 18rpx !important;
-}
-
-.service-card {
-    padding: 24rpx;
-    border-radius: 24rpx;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 244, 0.96));
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-}
-
-.service-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20rpx;
-}
-
-.staff-section {
-    display: flex;
-    align-items: center;
-    gap: 18rpx;
-    min-width: 0;
-    flex: 1;
-}
-
-.staff-avatar {
-    width: 92rpx;
-    height: 92rpx;
-    border-radius: 24rpx;
-    border: 2rpx solid rgba(255, 255, 255, 0.92);
-    box-shadow: 0 10rpx 24rpx rgba(214, 185, 167, 0.16);
-}
-
-.staff-info {
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-    min-width: 0;
-}
-
-.staff-title {
-    font-size: 30rpx;
+    margin-bottom: 8rpx;
+    font-size: 28rpx;
     font-weight: 700;
     color: var(--wm-text-primary, #1e2432);
 }
 
-.staff-subtitle {
-    font-size: 22rpx;
+.field-label--required::before {
+    content: '*';
+    margin-right: 6rpx;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.field-shell {
+    padding: 0;
+    border-radius: 37rpx;
+    background: #fcfbf9;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+}
+
+.field-shell--textarea {
+    padding: 30rpx;
+    border-radius: 37rpx;
+}
+
+.field-shell :deep(.tn-input) {
+    min-height: 84rpx !important;
+    padding: 0 30rpx !important;
+    border-radius: 37rpx !important;
+    background: #fcfbf9 !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-size: 28rpx !important;
+    color: var(--wm-text-primary, #1e2432) !important;
+}
+
+.field-item--address .field-shell :deep(.tn-input) {
+    min-height: 92rpx !important;
+}
+
+.field-shell :deep(.input-placeholder) {
+    color: var(--wm-text-tertiary, #b4aca8) !important;
+}
+
+.remark-textarea {
+    width: 100%;
+    min-height: 100rpx;
+    font-size: 28rpx;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.service-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 18rpx;
+}
+
+.service-main__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 96rpx;
+    height: 96rpx;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 37rpx;
+    background: var(--wm-color-primary-soft, #fff1ee);
+    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+}
+
+.service-main__avatar-image {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.service-main__avatar-text {
+    font-size: 36rpx;
+    font-weight: 700;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.service-main__info {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.service-main__name {
+    display: block;
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.service-main__meta {
+    display: block;
+    font-size: 24rpx;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-.package-name {
-    font-size: 26rpx;
-    color: var(--wm-color-secondary, #c99b73);
-    font-weight: 600;
+.service-main__tag {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    padding: 8rpx 18rpx;
+    border-radius: 999rpx;
+    background: var(--wm-color-primary-soft, #fff1ee);
+
+    text {
+        font-size: 22rpx;
+        font-weight: 700;
+        color: var(--wm-color-primary, #e85a4f);
+    }
 }
 
-.package-price-wrap {
+.service-main__price {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 8rpx;
+    gap: 6rpx;
     flex-shrink: 0;
 }
 
-.package-price-label {
-    font-size: 22rpx;
-    color: var(--wm-text-secondary, #7f7b78);
-}
-
-.package-price {
-    font-size: 34rpx;
-    font-weight: 700;
-}
-
-.package-desc {
-    display: block;
-    margin-top: 22rpx;
+.service-main__price-label {
     font-size: 24rpx;
-    line-height: 1.7;
+    font-weight: 600;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-.selected-addon-section {
-    margin-top: 22rpx;
-    padding-top: 20rpx;
-    border-top: 1rpx solid var(--wm-color-border, #efe6e1);
+.service-main__price-value {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
-.selected-addon-section__header {
+.service-package-summary {
+    display: block;
+    margin-top: 18rpx;
+    font-size: 26rpx;
+    line-height: 1.55;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.service-addon {
+    margin-top: 18rpx;
+    padding-top: 18rpx;
+    border-top: 1rpx solid #f7f1ed;
+}
+
+.service-addon__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16rpx;
-    margin-bottom: 16rpx;
+    margin-bottom: 14rpx;
 }
 
-.selected-addon-section__title {
-    font-size: 26rpx;
+.service-addon__title {
+    font-size: 28rpx;
     font-weight: 700;
     color: var(--wm-text-primary, #1e2432);
 }
 
-.selected-addon-section__meta {
-    font-size: 22rpx;
+.service-addon__meta {
+    font-size: 24rpx;
+    font-weight: 600;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-.selected-addon-list {
+.service-addon__list {
     display: flex;
     flex-direction: column;
-    gap: 14rpx;
+    gap: 12rpx;
 }
 
-.selected-addon-card {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16rpx;
-    padding: 20rpx;
-    border-radius: 18rpx;
-    background: rgba(255, 255, 255, 0.88);
+.service-addon__card {
+    padding: 30rpx 30rpx;
+    border-radius: 37rpx;
+    background: #fcfbf9;
     border: 1rpx solid var(--wm-color-border, #efe6e1);
 }
 
-.selected-addon-card__main {
-    flex: 1;
-    min-width: 0;
+.service-addon__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
 }
 
-.selected-addon-card__title {
-    display: block;
-    font-size: 26rpx;
-    font-weight: 600;
+.service-addon__name {
+    min-width: 0;
+    flex: 1;
+    font-size: 28rpx;
+    font-weight: 700;
     color: var(--wm-text-primary, #1e2432);
 }
 
-.selected-addon-card__desc {
+.service-addon__price {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: var(--wm-color-secondary, #c99b73);
+}
+
+.service-addon__desc {
     display: block;
     margin-top: 8rpx;
     font-size: 24rpx;
@@ -903,63 +910,76 @@ onShow(() => {
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-.selected-addon-card__price {
-    font-size: 26rpx;
-    font-weight: 700;
-    color: var(--wm-color-secondary, #c99b73);
-}
-
-.price-list {
+.submit-summary {
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
-}
-
-.price-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 18rpx;
-    font-size: 26rpx;
-    color: var(--wm-text-secondary, #7f7b78);
-    padding: 10rpx 0;
-}
-
-.price-row.total {
-    margin-top: 8rpx;
-    padding-top: 20rpx;
-    border-top: 1rpx solid var(--wm-color-border, #efe6e1);
-    font-size: 30rpx;
-    color: var(--wm-text-primary, #1e2432);
-    font-weight: 700;
-}
-
-.text-total {
-    color: var(--wm-color-primary, #e85a4f);
-    font-weight: 700;
-}
-
-.submit-price {
-    display: flex;
-    align-items: baseline;
-    gap: 8rpx;
+    align-items: flex-start;
+    gap: 4rpx;
     min-width: 0;
     flex: 1;
 }
 
-.submit-price .label {
-    color: var(--wm-text-secondary, #7f7b78);
+.submit-summary__label {
     font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.submit-price .symbol,
-.submit-price .value {
-    font-size: 34rpx;
+.submit-summary__amount {
+    font-size: 44rpx;
     font-weight: 700;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
-.submit-btn {
-    min-width: 232rpx;
+.submit-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 242rpx;
+    min-height: 90rpx;
     flex-shrink: 0;
+    border-radius: 37rpx;
+    background: var(--wm-color-primary, #e85a4f);
+    box-shadow: 0 20rpx 36rpx rgba(232, 90, 79, 0.16);
+}
+
+.submit-button__text {
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+}
+
+.submit-button--disabled {
+    opacity: 0.5;
+}
+
+.submit-button--loading {
+    opacity: 0.86;
+}
+
+@media screen and (max-width: 380px) {
+    .booking-grid {
+        flex-direction: column;
+    }
+
+    .service-main {
+        flex-wrap: wrap;
+    }
+
+    .service-main__price {
+        width: 100%;
+        align-items: flex-start;
+        padding-left: 114rpx;
+    }
+
+    .order-confirm-page__submit-bar {
+        left: 22rpx;
+        right: 22rpx;
+    }
+
+    .submit-button {
+        width: 220rpx;
+    }
 }
 </style>

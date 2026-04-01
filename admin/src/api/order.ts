@@ -37,6 +37,11 @@ export function orderComplete(params: any) {
     return request.post({ url: '/ops.order/complete', params })
 }
 
+// 删除订单
+export function orderDelete(params: any) {
+    return request.post({ url: '/ops.order/delete', params })
+}
+
 // 确认线下支付
 export function orderConfirmOfflinePay(params: any) {
     return request.post({ url: '/ops.order/confirmOfflinePay', params })

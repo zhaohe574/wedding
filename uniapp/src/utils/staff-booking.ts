@@ -4,15 +4,13 @@ import {
     toServiceRegionParams
 } from '@/utils/service-region'
 
-export const BOOKING_OPTION_KEYS = ['booking_option_1', 'booking_option_2'] as const
 export const BOOKING_ROLE_KEYS = ['butler', 'director'] as const
 
-export type BookingOptionKey = (typeof BOOKING_OPTION_KEYS)[number]
 export type BookingRoleKey = (typeof BOOKING_ROLE_KEYS)[number]
 
 export type BookingQuery = ReturnType<typeof normalizeBookingQuery>
 
-export const normalizeCustomOptionKeys = (value: any): BookingOptionKey[] => {
+export const normalizeAddonIds = (value: any): number[] => {
     const rawList = Array.isArray(value)
         ? value
         : typeof value === 'string'
@@ -20,25 +18,26 @@ export const normalizeCustomOptionKeys = (value: any): BookingOptionKey[] => {
             : []
 
     return rawList
-        .map((item) => String(item || '').trim())
-        .filter((item): item is BookingOptionKey =>
-            (BOOKING_OPTION_KEYS as readonly string[]).includes(item)
-        )
+        .map((item) => Number(item))
+        .filter((item) => Number.isInteger(item) && item > 0)
         .filter((item, index, list) => list.indexOf(item) === index)
 }
 
 export const normalizeBookingQuery = (value: Record<string, any> | null | undefined) => {
     const region = normalizeServiceRegion(value)
+    const flowTotalSteps = Number(value?.flow_total_steps || 0)
     return {
         staff_id: Number(value?.staff_id || 0),
         package_id: Number(value?.package_id || 0),
         date: String(value?.date || ''),
         ...region,
-        custom_option_keys: normalizeCustomOptionKeys(value?.custom_option_keys),
+        addon_ids: normalizeAddonIds(value?.addon_ids),
         butler_staff_id: Number(value?.butler_staff_id || 0),
         butler_package_id: Number(value?.butler_package_id || 0),
         director_staff_id: Number(value?.director_staff_id || 0),
-        director_package_id: Number(value?.director_package_id || 0)
+        director_package_id: Number(value?.director_package_id || 0),
+        flow_total_steps:
+            Number.isInteger(flowTotalSteps) && flowTotalSteps > 0 ? flowTotalSteps : 0
     }
 }
 
@@ -55,8 +54,8 @@ export const buildBookingQuery = (value: Record<string, any> | null | undefined)
         params.push(regionQuery)
     }
 
-    if (booking.custom_option_keys.length) {
-        params.push(`custom_option_keys=${encodeURIComponent(booking.custom_option_keys.join(','))}`)
+    if (booking.addon_ids.length) {
+        params.push(`addon_ids=${encodeURIComponent(booking.addon_ids.join(','))}`)
     }
 
     ;[
@@ -70,6 +69,10 @@ export const buildBookingQuery = (value: Record<string, any> | null | undefined)
             params.push(`${key}=${currentValue}`)
         }
     })
+
+    if (booking.flow_total_steps > 0) {
+        params.push(`flow_total_steps=${booking.flow_total_steps}`)
+    }
 
     return params.join('&')
 }
@@ -111,8 +114,8 @@ export const toBookingOrderParams = (value: Record<string, any> | null | undefin
         ...toServiceRegionParams(booking)
     }
 
-    if (booking.custom_option_keys.length) {
-        params.custom_option_keys = booking.custom_option_keys
+    if (booking.addon_ids.length) {
+        params.addon_ids = booking.addon_ids
     }
 
     if (booking.butler_staff_id > 0 && booking.butler_package_id > 0) {

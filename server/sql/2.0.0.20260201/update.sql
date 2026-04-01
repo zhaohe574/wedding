@@ -436,7 +436,7 @@ CREATE TABLE IF NOT EXISTS `la_order` (
     `order_sn` VARCHAR(32) NOT NULL COMMENT '订单编号',
     `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
     `order_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '订单类型：1=普通订单,2=套餐订单,3=组合订单',
-    `order_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单状态：0=待确认,1=待支付,2=已支付,3=服务中,4=已完成,5=已评价,6=已取消,7=已暂停,8=已退款',
+    `order_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单状态：0=待确认,1=待支付,2=已支付,3=服务中,4=已完成,5=已评价,6=已取消,7=已暂停,8=已退款,9=用户已删除',
     `pay_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付状态：0=未支付,1=已支付,2=部分退款,3=全额退款',
     -- 金额
     `total_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '订单总额',
@@ -2337,6 +2337,10 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (245, 240, 'A', '编辑', '', 0, 'ops.region/edit', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
 (246, 240, 'A', '删除', '', 0, 'ops.region/delete', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
 (247, 240, 'A', '状态切换', '', 0, 'ops.region/changeStatus', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
+(255, 179, 'C', '标签审核', '', 195, 'ops.staffTagReview/lists', 'staff-tag-review', 'staff/tag_review/index', '', '', 0, 1, 0, 1775001600, 1775001600),
+(256, 255, 'A', '详情', '', 10, 'ops.staffTagReview/detail', '', '', '', '', 0, 0, 0, 1775001600, 1775001600),
+(257, 255, 'A', '审核通过', '', 20, 'ops.staffTagReview/approve', '', '', '', '', 0, 0, 0, 1775001600, 1775001600),
+(258, 255, 'A', '审核拒绝', '', 30, 'ops.staffTagReview/reject', '', '', '', '', 0, 0, 0, 1775001600, 1775001600),
 (248, 179, 'C', '附加服务', '', 75, 'ops.addon/lists', 'addon', 'service/addon/index', '', '', 0, 0, 1, 1773650000, 1773650000),
 (249, 248, 'A', '详情', '', 0, 'ops.addon/detail', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
 (250, 248, 'A', '新增', '', 0, 'ops.addon/add', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
@@ -2499,6 +2503,10 @@ INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (2, 245),
 (2, 246),
 (2, 247),
+(2, 255),
+(2, 256),
+(2, 257),
+(2, 258),
 (2, 238),
 (2, 239);
 
@@ -2509,7 +2517,8 @@ INSERT INTO `la_config` (`id`, `type`, `name`, `value`, `create_time`, `update_t
 (35, 'feature_switch', 'admin_dashboard_user_ids', '1', 1773556898, 1773556898),
 (2, 'feature_switch', 'staff_admin', '1', 1773413108, 1773413108),
 (1, 'feature_switch', 'staff_center', '1', 1773413108, 1773413108),
-(36, 'feature_switch', 'staff_detail_style', 'classic', 1773556898, 1773556898);
+(36, 'feature_switch', 'staff_detail_style', 'classic', 1773556898, 1773556898),
+(37, 'feature_switch', 'staff_tag_review_enabled', '0', 1775001600, 1775001600);
 
 -- =============================================================================
 -- Part 4: 定时任务

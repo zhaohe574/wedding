@@ -1,7 +1,8 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="我的评价" />
-    <view class="my-reviews-page">
+    <PageShell scene="consumer">
+        <BaseNavbar title="我的评价" />
+        <view class="my-reviews-page">
         <!-- 标签页 -->
         <view class="tabs">
             <view
@@ -111,13 +112,15 @@
             <tn-icon name="loading" size="36rpx" color="#999"></tn-icon>
             <text>加载中...</text>
         </view>
-    </view>
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import type { CSSProperties } from 'vue'
 import { onReachBottom } from '@dcloudio/uni-app'
+import PageShell from '@/components/base/PageShell.vue'
 import { getMyReviews, getPendingOrders } from '@/api/review'
 import { useThemeStore } from '@/stores/theme'
 
@@ -249,8 +252,7 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .my-reviews-page {
-    min-height: 100vh;
-    background-color: #f5f5f5;
+    background-color: transparent;
 }
 
 .tabs {

@@ -30,10 +30,7 @@ class StaffValidate extends BaseValidate
         'mobile' => 'mobile',
         'wecom_userid' => 'max:64',
         'experience_years' => 'integer|egt:0',
-        'booking_option_1_name' => 'max:100',
-        'booking_option_1_price' => 'float|egt:0',
-        'booking_option_2_name' => 'max:100',
-        'booking_option_2_price' => 'float|egt:0',
+        'tag_ids' => 'array',
         'sort' => 'integer|egt:0',
         'status' => 'require|in:0,1',
         'is_recommend' => 'in:0,1',
@@ -57,12 +54,7 @@ class StaffValidate extends BaseValidate
         'mobile.mobile' => '手机号格式不正确',
         'experience_years.integer' => '从业年限格式不正确',
         'experience_years.egt' => '从业年限不能小于0',
-        'booking_option_1_name.max' => '预约附加项1名称最多100个字符',
-        'booking_option_1_price.float' => '预约附加项1价格格式错误',
-        'booking_option_1_price.egt' => '预约附加项1价格不能小于0',
-        'booking_option_2_name.max' => '预约附加项2名称最多100个字符',
-        'booking_option_2_price.float' => '预约附加项2价格格式错误',
-        'booking_option_2_price.egt' => '预约附加项2价格不能小于0',
+        'tag_ids.array' => '标签格式错误',
         'sort.integer' => '排序格式不正确',
         'sort.egt' => '排序不能小于0',
         'status.require' => '请选择状态',
@@ -76,7 +68,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneAdd(): StaffValidate
     {
-        return $this->only(['user_id', 'name', 'category_id', 'mobile', 'wecom_userid', 'experience_years', 'booking_option_1_name', 'booking_option_1_price', 'booking_option_2_name', 'booking_option_2_price', 'sort', 'status', 'is_recommend'])
+        return $this->only(['user_id', 'name', 'category_id', 'mobile', 'wecom_userid', 'experience_years', 'tag_ids', 'sort', 'status', 'is_recommend'])
             ->append('user_id', 'require|gt:0');
     }
 
@@ -86,7 +78,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneEdit(): StaffValidate
     {
-        return $this->only(['id', 'user_id', 'name', 'category_id', 'mobile', 'wecom_userid', 'experience_years', 'booking_option_1_name', 'booking_option_1_price', 'booking_option_2_name', 'booking_option_2_price', 'sort', 'status', 'is_recommend']);
+        return $this->only(['id', 'user_id', 'name', 'category_id', 'mobile', 'wecom_userid', 'experience_years', 'tag_ids', 'sort', 'status', 'is_recommend']);
     }
 
     /**
@@ -95,7 +87,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneMyProfile(): StaffValidate
     {
-        return $this->only(['id', 'name', 'mobile', 'experience_years']);
+        return $this->only(['id', 'name', 'mobile', 'experience_years', 'avatar', 'profile', 'service_desc', 'tag_ids']);
     }
 
     /**

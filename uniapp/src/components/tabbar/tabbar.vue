@@ -23,7 +23,6 @@
 </template>
 
 <script lang="ts" setup>
-import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { loadUserBadgeData } from '@/utils/user-badge'
 import { normalizeAppPath } from '@/utils/util'
@@ -43,9 +42,8 @@ const props = defineProps({
     }
 })
 
-const appStore = useAppStore()
 const userStore = useUserStore()
-const { userInfo, isLogin } = storeToRefs(userStore)
+const { isLogin } = storeToRefs(userStore)
 
 const myBadgeCount = ref(0)
 const badgeRequestToken = ref(0)
@@ -77,11 +75,7 @@ const activeIndex = computed(() => {
 })
 
 const showTabbar = computed(() => activeIndex.value >= 0)
-const featureSwitch = computed(() => appStore.config?.feature_switch || {})
 const shouldLoadBadge = computed(() => showTabbar.value)
-const shouldLoadStaffTodo = computed(() => {
-    return featureSwitch.value.staff_center === 1 && !!userInfo.value?.is_staff
-})
 
 const loadMyBadgeCount = async () => {
     const requestToken = ++badgeRequestToken.value
@@ -93,8 +87,7 @@ const loadMyBadgeCount = async () => {
     }
 
     const result = await loadUserBadgeData({
-        loadMessage: true,
-        loadStaffTodo: shouldLoadStaffTodo.value
+        loadMessage: true
     })
 
     if (requestToken !== badgeRequestToken.value) {
@@ -102,7 +95,7 @@ const loadMyBadgeCount = async () => {
         return
     }
 
-    myBadgeCount.value = result.messageCount + result.staffTodoCount
+    myBadgeCount.value = result.messageCount
     hasInitializedBadgeLoad.value = true
 }
 
@@ -121,7 +114,7 @@ const handleChange = (index: number) => {
     })
 }
 
-watch([isLogin, shouldLoadBadge, shouldLoadStaffTodo], loadMyBadgeCount, {
+watch([isLogin, shouldLoadBadge], loadMyBadgeCount, {
     immediate: true
 })
 
@@ -143,33 +136,38 @@ watch(
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 12rpx 21rpx 6rpx;
-    padding-bottom: calc(8rpx + constant(safe-area-inset-bottom));
-    padding-bottom: calc(8rpx + env(safe-area-inset-bottom));
+    padding-top: var(--wm-tabbar-padding-top, 22rpx);
+    padding-left: var(--wm-tabbar-padding-x, 42rpx);
+    padding-right: var(--wm-tabbar-padding-x, 42rpx);
+    padding-bottom: calc(var(--wm-tabbar-padding-bottom, 39rpx) + constant(safe-area-inset-bottom));
+    padding-bottom: calc(var(--wm-tabbar-padding-bottom, 39rpx) + env(safe-area-inset-bottom));
     z-index: 998;
+    box-sizing: border-box;
 }
 
 .custom-tabbar__pill {
     display: flex;
     align-items: center;
-    padding: 4rpx;
-    min-height: 108rpx;
-    border-radius: 32rpx;
+    gap: var(--wm-tabbar-pill-gap, 8rpx);
+    padding: var(--wm-tabbar-pill-padding, 8rpx);
+    min-height: var(--wm-tabbar-pill-height, 116rpx);
+    border-radius: var(--wm-tabbar-pill-radius, var(--wm-radius-tabbar-shell, 64rpx));
     background: rgba(255, 255, 255, 0.84);
     backdrop-filter: blur(24rpx);
     -webkit-backdrop-filter: blur(24rpx);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: var(--wm-tabbar-border-width, 2rpx) solid var(--wm-color-border, #efe6e1);
     box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+    box-sizing: border-box;
 }
 
 .custom-tabbar__item {
     position: relative;
     flex: 1;
-    min-height: 96rpx;
+    min-height: var(--wm-tabbar-item-height, 108rpx);
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 24rpx;
+    border-radius: var(--wm-tabbar-item-radius, var(--wm-radius-tabbar-item, 56rpx));
     transition: all var(--wm-motion-base, 220ms) ease;
 }
 
@@ -179,9 +177,9 @@ watch(
 }
 
 .custom-tabbar__text {
-    font-size: 22rpx;
+    font-size: var(--wm-tabbar-text-size, 22rpx);
     line-height: 1;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
@@ -191,11 +189,11 @@ watch(
 
 .custom-tabbar__badge {
     position: absolute;
-    top: 14rpx;
-    right: 20rpx;
-    min-width: 34rpx;
-    height: 34rpx;
-    padding: 0 8rpx;
+    top: 15rpx;
+    right: 22rpx;
+    min-width: 41rpx;
+    height: 41rpx;
+    padding: 0 11rpx;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -205,7 +203,7 @@ watch(
 }
 
 .custom-tabbar__badge-text {
-    font-size: 18rpx;
+    font-size: 19rpx;
     line-height: 1;
     font-weight: 700;
     color: #ffffff;

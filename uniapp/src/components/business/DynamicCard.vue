@@ -303,7 +303,7 @@ const primaryShadowColor = computed(() =>
 
 const cardStyle = computed(() => ({
     boxShadow: isEditorial.value
-        ? '0 16rpx 34rpx rgba(214, 185, 167, 0.22)'
+        ? 'var(--dynamic-editorial-card-shadow, 0 12rpx 24rpx rgba(214, 185, 167, 0.16))'
         : isPlazaUnified.value
           ? '0 8rpx 22rpx rgba(15, 23, 42, 0.08)'
           : `0 10rpx 28rpx ${alphaColor(primaryColor.value, 0.08)}`,
@@ -405,10 +405,11 @@ export default {
 
 .dynamic-card {
     background: #ffffff;
-    border-radius: 24rpx;
-    border: 1rpx solid #edf0f4;
+    border-radius: var(--wm-radius-card-glass, 26rpx);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
     overflow: hidden;
-    transition: all 0.2s ease;
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+    transition: all var(--wm-motion-base, 220ms) ease;
 
     &:active {
         transform: translateY(-2rpx);
@@ -418,8 +419,8 @@ export default {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 16rpx;
-        padding: 24rpx 24rpx 0;
+        gap: var(--wm-space-section-gap-lg, 16rpx);
+        padding: var(--wm-space-card-padding-lg, 24rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
     }
 
     &__author {
@@ -427,7 +428,7 @@ export default {
         min-width: 0;
         display: flex;
         align-items: center;
-        gap: 18rpx;
+        gap: var(--wm-space-section-gap-lg, 16rpx);
     }
 
     &__avatar {
@@ -451,7 +452,7 @@ export default {
     &__name-row {
         display: flex;
         align-items: center;
-        gap: 10rpx;
+        gap: 8rpx;
     }
 
     &__name {
@@ -469,16 +470,16 @@ export default {
         flex-shrink: 0;
         padding: 6rpx 14rpx;
         border-radius: 999rpx;
-        background: var(--color-primary-light-9, #faf5ff);
-        border: 1rpx solid var(--color-primary-light-7, #ddd6fe);
+        background: rgba(232, 90, 79, 0.08);
+        border: 1rpx solid rgba(232, 90, 79, 0.16);
         font-size: 22rpx;
         font-weight: 600;
-        color: var(--color-primary, #7c3aed);
+        color: var(--wm-color-primary, #e85a4f);
 
         &--staff {
-            color: #8b5cf6;
-            background: rgba(139, 92, 246, 0.12);
-            border-color: rgba(139, 92, 246, 0.08);
+            color: #bb6b44;
+            background: rgba(232, 90, 79, 0.1);
+            border-color: rgba(232, 90, 79, 0.08);
         }
 
         &--official {
@@ -524,19 +525,19 @@ export default {
     &__tag-row {
         display: flex;
         flex-wrap: wrap;
-        gap: 10rpx;
-        padding: 18rpx 24rpx 0;
+        gap: var(--wm-space-section-gap-sm, 12rpx);
+        padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
     }
 
     &__tag {
         max-width: 100%;
         padding: 8rpx 16rpx;
         border-radius: 999rpx;
-        background: var(--color-primary-light-9, #faf5ff);
-        border: 1rpx solid var(--color-primary-light-7, #ddd6fe);
+        background: rgba(232, 90, 79, 0.08);
+        border: 1rpx solid rgba(232, 90, 79, 0.16);
         font-size: 24rpx;
         font-weight: 500;
-        color: var(--color-primary, #7c3aed);
+        color: var(--wm-color-primary, #e85a4f);
         line-height: 1.2;
         white-space: nowrap;
         overflow: hidden;
@@ -552,7 +553,7 @@ export default {
 
     &__content {
         display: block;
-        padding: 18rpx 24rpx 0;
+        padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
         font-size: 28rpx;
         line-height: 1.7;
         color: #475467;
@@ -561,8 +562,8 @@ export default {
 
     &__media {
         display: grid;
-        gap: 12rpx;
-        padding: 20rpx 24rpx 0;
+        gap: var(--wm-space-section-gap-sm, 12rpx);
+        padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
 
         &--1 {
             grid-template-columns: 1fr;
@@ -599,7 +600,7 @@ export default {
     &__media-item {
         position: relative;
         overflow: hidden;
-        border-radius: 20rpx;
+        border-radius: var(--wm-radius-card-soft, 20rpx);
         background: #f3f4f6;
     }
 
@@ -620,8 +621,8 @@ export default {
         border-radius: 999rpx;
         background: linear-gradient(
             135deg,
-            var(--color-primary, #7c3aed) 0%,
-            var(--color-primary-dark-2, #6d28d9) 100%
+            var(--wm-color-primary, #e85a4f) 0%,
+            var(--wm-color-secondary, #c99b73) 100%
         );
         color: #ffffff;
         font-size: 22rpx;
@@ -644,10 +645,10 @@ export default {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16rpx;
+        gap: var(--wm-space-section-gap-lg, 16rpx);
         flex-wrap: wrap;
-        margin-top: 24rpx;
-        padding: 22rpx 24rpx;
+        margin-top: var(--wm-space-card-padding-lg, 24rpx);
+        padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx);
         background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
         border-top: 1rpx solid #eef1f5;
     }
@@ -657,7 +658,7 @@ export default {
         min-width: 0;
         display: flex;
         align-items: center;
-        gap: 18rpx;
+        gap: var(--wm-space-section-gap-lg, 16rpx);
         flex-wrap: wrap;
     }
 
@@ -669,7 +670,7 @@ export default {
         color: #98a2b3;
 
         &.is-active {
-            color: var(--color-primary, #7c3aed);
+            color: var(--wm-color-primary, #e85a4f);
             font-weight: 600;
         }
     }
@@ -677,7 +678,7 @@ export default {
     &__actions {
         display: inline-flex;
         align-items: center;
-        gap: 12rpx;
+        gap: var(--wm-space-section-gap-sm, 12rpx);
         margin-left: auto;
     }
 
@@ -708,16 +709,16 @@ export default {
             border-color: transparent;
             background: linear-gradient(
                 135deg,
-                var(--color-primary, #7c3aed) 0%,
-                var(--color-primary-dark-2, #6d28d9) 100%
+                var(--wm-color-primary, #e85a4f) 0%,
+                var(--wm-color-secondary, #c99b73) 100%
             );
             color: var(--color-btn-text, #ffffff);
         }
 
         &--active {
-            border-color: var(--color-primary-light-7, #ddd6fe);
-            background: var(--color-primary-light-9, #faf5ff);
-            color: var(--color-primary, #7c3aed);
+            border-color: rgba(232, 90, 79, 0.16);
+            background: rgba(232, 90, 79, 0.08);
+            color: var(--wm-color-primary, #e85a4f);
         }
     }
 
@@ -740,20 +741,20 @@ export default {
 }
 
 .dynamic-card--editorial {
-    border-radius: $dynamic-radius-card;
+    border-radius: var(--dynamic-editorial-card-radius, 26rpx);
     border-color: $dynamic-border;
-    background: $dynamic-surface;
-    box-shadow: $dynamic-shadow-card;
-    backdrop-filter: blur(18rpx);
+    background: var(--dynamic-editorial-card-bg, rgba(255, 255, 255, 0.84));
+    backdrop-filter: blur(var(--dynamic-editorial-card-blur, 14rpx));
+    -webkit-backdrop-filter: blur(var(--dynamic-editorial-card-blur, 14rpx));
 
     .dynamic-card__editorial-head {
-        padding: 22rpx 22rpx 0;
+        padding: var(--dynamic-editorial-head-padding, 12rpx 12rpx 0);
     }
 
     .dynamic-card__editorial-author {
         display: flex;
         align-items: center;
-        gap: 18rpx;
+        gap: var(--dynamic-editorial-author-gap, 10rpx);
     }
 
     .dynamic-card__editorial-author-main {
@@ -762,29 +763,29 @@ export default {
     }
 
     .dynamic-card__avatar {
-        width: 56rpx;
-        height: 56rpx;
+        width: var(--dynamic-editorial-avatar-size, 42rpx);
+        height: var(--dynamic-editorial-avatar-size, 42rpx);
         border: 2rpx solid rgba(255, 255, 255, 0.92);
-        box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.18);
+        box-shadow: 0 6rpx 14rpx rgba(214, 185, 167, 0.14);
     }
 
     .dynamic-card__name {
-        font-size: 24rpx;
+        font-size: var(--dynamic-editorial-name-size, 24rpx);
         color: $dynamic-text;
     }
 
     .dynamic-card__role-badge {
-        padding: 6rpx 12rpx;
+        padding: 4rpx 10rpx;
         font-size: 18rpx;
-        color: $dynamic-accent;
-        background: $dynamic-accent-soft;
-        border-color: rgba(232, 90, 79, 0.14);
+        color: #bb6b44;
+        background: rgba(232, 90, 79, 0.08);
+        border-color: rgba(232, 90, 79, 0.12);
     }
 
     .dynamic-card__role-badge--staff {
-        color: #8b5cf6;
-        background: rgba(139, 92, 246, 0.12);
-        border-color: rgba(139, 92, 246, 0.08);
+        color: #bb6b44;
+        background: rgba(232, 90, 79, 0.08);
+        border-color: rgba(232, 90, 79, 0.12);
     }
 
     .dynamic-card__role-badge--official {
@@ -795,8 +796,8 @@ export default {
 
     .dynamic-card__editorial-meta {
         display: block;
-        margin-top: 6rpx;
-        font-size: 20rpx;
+        margin-top: var(--dynamic-editorial-meta-margin-top, 4rpx);
+        font-size: var(--dynamic-editorial-meta-size, 20rpx);
         line-height: 1.4;
         color: $dynamic-text-muted;
         white-space: nowrap;
@@ -806,29 +807,30 @@ export default {
 
     .dynamic-card__editorial-cover-wrap {
         position: relative;
-        margin: 16rpx 22rpx 0;
-        border-radius: $dynamic-radius-media;
+        margin: var(--dynamic-editorial-cover-margin, 10rpx 12rpx 0);
+        border-radius: var(--dynamic-editorial-cover-radius, 20rpx);
         overflow: hidden;
         background: $dynamic-soft;
     }
 
     .dynamic-card__editorial-cover {
         width: 100%;
-        height: 288rpx;
+        height: var(--dynamic-editorial-cover-height, 304rpx);
         display: block;
     }
 
     .dynamic-card__video-badge--editorial {
-        left: 18rpx;
-        bottom: 18rpx;
-        padding: 8rpx 14rpx;
+        left: var(--dynamic-editorial-video-badge-offset, 12rpx);
+        bottom: var(--dynamic-editorial-video-badge-offset, 12rpx);
+        gap: 4rpx;
+        padding: var(--dynamic-editorial-video-badge-padding, 6rpx 12rpx);
         border-radius: $dynamic-radius-pill;
         background: rgba(30, 36, 50, 0.44);
         box-shadow: none;
 
         text {
             color: #ffffff;
-            font-size: 22rpx;
+            font-size: 18rpx;
             font-weight: 600;
             line-height: 1;
         }
@@ -836,20 +838,23 @@ export default {
 
     .dynamic-card__editorial-content {
         display: block;
-        padding: 16rpx 22rpx 0;
-        font-size: 30rpx;
-        line-height: 1.6;
+        padding: var(--dynamic-editorial-content-padding, 10rpx 12rpx 0);
+        font-size: var(--dynamic-editorial-content-size, 28rpx);
+        line-height: var(--dynamic-editorial-content-line-height, 1.45);
         font-weight: 600;
         color: $dynamic-text;
         word-break: break-word;
-        @include dynamic-line-clamp(2);
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: var(--dynamic-editorial-content-clamp, 2);
     }
 
     .dynamic-card__editorial-stats {
         display: flex;
         align-items: center;
-        gap: 14rpx;
-        padding: 14rpx 22rpx 22rpx;
+        gap: var(--dynamic-editorial-stats-gap, 8rpx);
+        padding: var(--dynamic-editorial-stats-padding, 2rpx 12rpx 12rpx);
         flex-wrap: wrap;
     }
 
@@ -867,17 +872,17 @@ export default {
 
         &.is-active {
             color: $dynamic-accent;
-            font-weight: 700;
+            font-weight: 600;
         }
     }
 
     .dynamic-card__editorial-stat--like {
-        color: $dynamic-accent;
+        color: inherit;
     }
 
     .dynamic-card__editorial-stat-text {
-        font-size: 22rpx;
-        font-weight: 600;
+        font-size: var(--dynamic-editorial-stat-size, 20rpx);
+        font-weight: 500;
         line-height: 1;
         white-space: nowrap;
     }
@@ -885,11 +890,11 @@ export default {
 
 .dynamic-card--plaza-unified {
     .dynamic-card__header {
-        padding: 24rpx 24rpx 0;
+        padding: var(--wm-space-card-padding-lg, 24rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
     }
 
     .dynamic-card__author {
-        gap: 20rpx;
+        gap: var(--wm-space-section-gap-lg, 16rpx);
     }
 
     .dynamic-card__name {
@@ -901,13 +906,13 @@ export default {
     }
 
     .dynamic-card__tag-row {
-        padding: 16rpx 24rpx 0;
+        padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
     }
 
     .dynamic-card__tag {
         background: var(--dynamic-card-primary-soft);
         border-color: var(--dynamic-card-primary-soft-border);
-        color: var(--color-primary, #7c3aed);
+        color: var(--wm-color-primary, #e85a4f);
         font-weight: 500;
 
         &--type {
@@ -919,30 +924,30 @@ export default {
     }
 
     .dynamic-card__content {
-        padding: 16rpx 24rpx 0;
+        padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
         font-size: 26rpx;
         line-height: 1.62;
         color: #667085;
     }
 
     .dynamic-card__media {
-        padding: 20rpx 24rpx 0;
+        padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
     }
 
     .dynamic-card__footer {
-        gap: 18rpx;
-        padding: 22rpx 24rpx;
+        gap: var(--wm-space-section-gap-lg, 16rpx);
+        padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx);
         background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
         border-top: 1rpx solid #eef1f5;
     }
 
     .dynamic-card__stats {
-        gap: 20rpx;
+        gap: var(--wm-space-section-gap-lg, 16rpx);
     }
 
     .dynamic-card__action {
         height: 80rpx;
-        padding: 0 26rpx;
+        padding: 0 var(--wm-space-card-padding-lg, 24rpx);
     }
 
     .dynamic-card__action--active {

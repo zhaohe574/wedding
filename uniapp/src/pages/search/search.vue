@@ -1,7 +1,8 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="搜索" />
-    <view class="search-page">
+    <PageShell scene="consumer">
+        <BaseNavbar title="搜索" />
+        <view class="search-page">
         <!-- 搜索框区域 -->
         <view class="search-header">
             <tn-search-box
@@ -107,7 +108,8 @@
                 </z-paging>
             </view>
         </view>
-    </view>
+        </view>
+    </PageShell>
 </template>
 
 <script lang="ts" setup>
@@ -115,6 +117,7 @@ import { ref, reactive, shallowRef, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import Suggest from './component/suggest.vue'
 import DynamicCard from '@/components/business/DynamicCard.vue'
+import PageShell from '@/components/base/PageShell.vue'
 import StaffCard from '@/components/business/StaffCard.vue'
 import { HISTORY } from '@/enums/constantEnums'
 import { getHotSearch } from '@/api/shop'
@@ -358,8 +361,7 @@ onLoad((options: any) => {
 
 <style lang="scss" scoped>
 .search-page {
-    min-height: 100vh;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.03) 0%, #ffffff 100%);
+    background: transparent;
 }
 
 // 搜索头部

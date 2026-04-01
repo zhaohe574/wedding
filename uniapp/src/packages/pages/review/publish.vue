@@ -428,8 +428,7 @@ onLoad((options: any) => {
 
 <style lang="scss" scoped>
 .publish-page {
-    min-height: 100vh;
-    background-color: #f5f5f5;
+    background-color: transparent;
     padding-bottom: 180rpx;
     position: relative;
 }

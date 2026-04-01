@@ -30,19 +30,19 @@ const sectionStyle = computed(() => ({
 .wm-section {
     display: flex;
     flex-direction: column;
-    gap: var(--wm-space-4, 16rpx);
-    padding: 0 var(--wm-space-5, 20rpx);
+    gap: var(--wm-space-section-gap-lg, 30rpx);
+    padding: 0 var(--wm-space-page-x, 37rpx);
 
     &--hero {
-        gap: var(--wm-space-6, 24rpx);
-        padding-top: var(--wm-space-4, 16rpx);
+        gap: var(--wm-space-card-padding-lg, 34rpx);
+        padding-top: var(--wm-space-4, 30rpx);
     }
 
     &--panel,
     &--dashboard,
     &--form,
     &--list {
-        padding-top: var(--wm-space-4, 16rpx);
+        padding-top: var(--wm-space-4, 30rpx);
     }
 }
 </style>

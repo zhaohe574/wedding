@@ -1,83 +1,63 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
+    <PageShell scene="consumer">
+        <BaseNavbar title="动态详情" @back="handleBack" />
 
-    <view v-if="detail" class="dynamic-detail">
-        <view class="dynamic-detail__header">
-            <view
-                class="dynamic-detail__header-status"
-                :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
-            ></view>
-            <view
-                class="dynamic-detail__header-bar"
-                :style="{ height: `${navBarMetrics.contentHeight}px` }"
-            >
-                <view class="dynamic-detail__header-side" :style="headerSideStyle">
-                    <view class="dynamic-detail__back" @click="handleBack">
-                        <text class="dynamic-detail__back-text">‹ 返回</text>
-                    </view>
-                </view>
-                <view class="dynamic-detail__header-title">动态详情</view>
-                <view
-                    class="dynamic-detail__header-side dynamic-detail__header-side--placeholder"
-                    :style="headerSideStyle"
-                >
-                    <text class="dynamic-detail__header-placeholder">‹ 返回</text>
-                </view>
-            </view>
-        </view>
-
-        <scroll-view scroll-y class="dynamic-detail__scroll" :style="scrollStyle">
-            <view class="dynamic-detail__content">
-                <view class="dynamic-detail__author-card">
-                    <view class="dynamic-detail__author-main">
-                        <image
-                            :src="detail.user_avatar || '/static/images/user/default_avatar.png'"
-                            class="dynamic-detail__avatar"
-                            mode="aspectFill"
-                        />
-                        <view class="dynamic-detail__author-copy">
-                            <view class="dynamic-detail__author-row">
-                                <text class="dynamic-detail__author-name">
-                                    {{ detail.user_nickname }}
+        <view v-if="detail" class="dynamic-detail">
+            <scroll-view scroll-y class="dynamic-detail__scroll" :style="scrollStyle">
+                <view class="dynamic-detail__content">
+                    <view class="dynamic-detail__author-card">
+                        <view class="dynamic-detail__author-main">
+                            <image
+                                :src="detail.user_avatar || '/static/images/user/default_avatar.png'"
+                                class="dynamic-detail__avatar"
+                                mode="aspectFill"
+                            />
+                            <view class="dynamic-detail__author-copy">
+                                <view class="dynamic-detail__author-row">
+                                    <text class="dynamic-detail__author-name">
+                                        {{ detail.user_nickname }}
+                                    </text>
+                                    <view
+                                        v-if="detail.user_type === 2"
+                                        class="dynamic-detail__author-badge dynamic-detail__author-badge--staff"
+                                    >
+                                        服务人员
+                                    </view>
+                                    <view
+                                        v-if="detail.user_type === 3"
+                                        class="dynamic-detail__author-badge dynamic-detail__author-badge--official"
+                                    >
+                                        官方
+                                    </view>
+                                    <view
+                                        v-if="detail.is_top === 1"
+                                        class="dynamic-detail__author-badge dynamic-detail__author-badge--top"
+                                    >
+                                        置顶
+                                    </view>
+                                    <view
+                                        v-if="detail.is_hot === 1"
+                                        class="dynamic-detail__author-badge dynamic-detail__author-badge--hot"
+                                    >
+                                        热门
+                                    </view>
+                                </view>
+                                <text class="dynamic-detail__author-meta">
+                                    {{ authorMetaText }}
                                 </text>
-                                <view
-                                    v-if="detail.user_type === 2"
-                                    class="dynamic-detail__author-badge dynamic-detail__author-badge--staff"
-                                >
-                                    服务人员
-                                </view>
-                                <view
-                                    v-if="detail.user_type === 3"
-                                    class="dynamic-detail__author-badge dynamic-detail__author-badge--official"
-                                >
-                                    官方
-                                </view>
-                                <view
-                                    v-if="detail.is_top === 1"
-                                    class="dynamic-detail__author-badge dynamic-detail__author-badge--top"
-                                >
-                                    置顶
-                                </view>
-                                <view
-                                    v-if="detail.is_hot === 1"
-                                    class="dynamic-detail__author-badge dynamic-detail__author-badge--hot"
-                                >
-                                    热门
-                                </view>
                             </view>
-                            <text class="dynamic-detail__author-meta">{{ authorMetaText }}</text>
+                        </view>
+
+                        <view
+                            v-if="detail.can_favorite"
+                            class="dynamic-detail__favorite-btn"
+                            :class="{ 'is-active': detail.is_favorite }"
+                            @click="handleFavorite"
+                        >
+                            {{ detail.is_favorite ? '已收藏' : '收藏' }}
                         </view>
                     </view>
-
-                    <view
-                        v-if="detail.can_favorite"
-                        class="dynamic-detail__favorite-btn"
-                        :class="{ 'is-active': detail.is_favorite }"
-                        @click="handleFavorite"
-                    >
-                        {{ detail.is_favorite ? '已收藏' : '收藏' }}
-                    </view>
-                </view>
 
                 <view class="dynamic-detail__detail-actions">
                     <view
@@ -316,8 +296,8 @@
                         <text v-else @click="loadMoreComments">点击加载更多</text>
                     </view>
                 </view>
-            </view>
-        </scroll-view>
+                </view>
+            </scroll-view>
 
         <view
             v-if="showComment"
@@ -410,11 +390,12 @@
                 </view>
             </view>
         </TnPopup>
-    </view>
+        </view>
 
-    <view v-else class="dynamic-detail__loading-view">
-        <text class="dynamic-detail__loading-text">加载中...</text>
-    </view>
+        <view v-else class="dynamic-detail__loading-view">
+            <text class="dynamic-detail__loading-text">加载中...</text>
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
@@ -422,6 +403,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
+import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
@@ -442,9 +424,6 @@ const userStore = useUserStore()
 const navBarMetrics = useNavBarMetrics()
 const commentPopupMaskZIndex = 20118
 const commentPopupZIndex = 20120
-const headerSideStyle = {
-    width: `${navBarMetrics.safeInset}px`
-}
 const userId = computed(() => userStore.userInfo?.id)
 
 type DynamicReplyItem = {
@@ -1152,88 +1131,19 @@ watch(showComment, (visible) => {
 @import '../../styles/dynamic.scss';
 
 .dynamic-detail {
-    min-height: 100vh;
-    background: $dynamic-bg;
-
-    &__header {
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        background: rgba(252, 251, 249, 0.96);
-        backdrop-filter: blur(20rpx);
-        border-bottom: 1rpx solid rgba(232, 222, 216, 0.65);
-    }
-
-    &__header-status {
-        width: 100%;
-    }
-
-    &__header-bar {
-        display: flex;
-        align-items: center;
-        width: 100%;
-        padding: 0 40rpx;
-        box-sizing: border-box;
-    }
-
-    &__header-side {
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        height: 100%;
-
-        &--placeholder {
-            justify-content: flex-end;
-        }
-    }
-
-    &__header-title {
-        flex: 1;
-        min-width: 0;
-        padding: 0 16rpx;
-        text-align: center;
-        font-size: 36rpx;
-        font-weight: 700;
-        line-height: 1.2;
-        color: $dynamic-text;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    &__header-placeholder {
-        font-size: 28rpx;
-        font-weight: 600;
-        color: transparent;
-        line-height: 1;
-    }
-
-    &__back {
-        min-height: 60rpx;
-        display: inline-flex;
-        align-items: center;
-        padding: 0 12rpx 0 2rpx;
-    }
-
-    &__back-text {
-        font-size: 28rpx;
-        font-weight: 600;
-        color: $dynamic-accent;
-        line-height: 1;
-    }
+    background: transparent;
 
     &__scroll {
         width: 100%;
     }
 
     &__content {
-        padding: 12rpx 40rpx calc(28rpx + env(safe-area-inset-bottom));
+        padding: 22rpx 37rpx calc(37rpx + env(safe-area-inset-bottom));
     }
 
     &__author-card {
-        @include dynamic-glass-card(28rpx, 44rpx);
-        padding: 28rpx 32rpx;
+        @include dynamic-glass-card(34rpx, 49rpx);
+        padding: 34rpx 34rpx;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -1358,9 +1268,9 @@ watch(showComment, (visible) => {
         @include dynamic-pill(rgba(255, 255, 255, 0.84), $dynamic-text);
         flex: 1;
         min-width: 0;
-        min-height: 88rpx;
-        gap: 12rpx;
-        border-radius: 36rpx;
+        min-height: 90rpx;
+        gap: 22rpx;
+        border-radius: 37rpx;
         backdrop-filter: blur(24rpx);
         box-shadow:
             inset 0 1rpx 0 rgba(255, 255, 255, 0.62),
@@ -1389,7 +1299,7 @@ watch(showComment, (visible) => {
 
     &__hero {
         margin-top: 14rpx;
-        border-radius: 48rpx;
+        border-radius: 52rpx;
         overflow: hidden;
         background: $dynamic-soft;
         box-shadow: $dynamic-shadow-soft;
@@ -1492,9 +1402,9 @@ watch(showComment, (visible) => {
     &__stat-pill {
         @include dynamic-pill(rgba(255, 255, 255, 0.92), $dynamic-text-muted);
         flex: 1;
-        min-height: 72rpx;
-        padding: 0 28rpx;
-        border-radius: 36rpx;
+        min-height: 82rpx;
+        padding: 0 30rpx;
+        border-radius: 37rpx;
         box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.65);
 
         &.is-active {
@@ -1896,7 +1806,7 @@ watch(showComment, (visible) => {
 
     &__loading-view {
         min-height: 100vh;
-        background: $dynamic-bg;
+        background: transparent;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1908,11 +1818,11 @@ watch(showComment, (visible) => {
     }
 }
 
-:deep(.tn-popup) {
+.dynamic-detail :deep(.tn-popup) {
     pointer-events: none;
 }
 
-:deep(.tn-popup__content) {
+.dynamic-detail :deep(.tn-popup__content) {
     pointer-events: auto;
 }
 </style>

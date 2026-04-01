@@ -23,6 +23,7 @@
                 </el-form-item>
                 <el-form-item class="w-[150px]" label="订单状态">
                     <el-select v-model="queryParams.order_status" placeholder="选择状态" clearable>
+                        <el-option label="全部" value="" />
                         <el-option label="待确认" :value="0" />
                         <el-option label="待支付" :value="1" />
                         <el-option label="已支付" :value="2" />
@@ -32,6 +33,7 @@
                         <el-option label="已取消" :value="6" />
                         <el-option label="已暂停" :value="7" />
                         <el-option label="已退款" :value="8" />
+                        <el-option label="用户已删除" :value="9" />
                     </el-select>
                 </el-form-item>
                 <el-form-item class="w-[320px]" label="创建时间">
@@ -273,7 +275,8 @@ const getStatusType = (
         5: 'success',
         6: 'info',
         7: 'warning',
-        8: 'danger'
+        8: 'danger',
+        9: 'danger'
     }
     return types[status] || 'info'
 }

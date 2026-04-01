@@ -1,8 +1,9 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="关于我们" />
+    <PageShell scene="consumer">
+        <BaseNavbar title="关于我们" />
 
-    <view class="as-us-page">
+        <view class="as-us-page">
         <!-- 顶部装饰背景 -->
         <view class="header-decoration" :style="headerStyle"></view>
 
@@ -113,12 +114,14 @@
             <text class="copyright">© {{ currentYear }} {{ brandName || '婚庆服务平台' }}</text>
             <text class="copyright-sub">All Rights Reserved</text>
         </view>
-    </view>
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import PageShell from '@/components/base/PageShell.vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 
@@ -191,7 +194,7 @@ const getFeatureIconStyle = (index: number) => {
 <style lang="scss" scoped>
 .as-us-page {
     min-height: 100vh;
-    background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
+    background: transparent;
     padding-bottom: 48rpx;
     position: relative;
 }

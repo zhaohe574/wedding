@@ -1,120 +1,99 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar :title="type == 'set' ? '设置登录密码' : '修改登录密码'" />
+    <AuthPageShell :navbarTitle="pageTitle">
+        <template #hero>
+            <view class="password-hero">
+                <view class="password-hero__icon">
+                    <tn-icon name="lock" size="52" color="#E85A4F" />
+                </view>
+                <text class="password-hero__eyebrow">Account Security</text>
+                <text class="password-hero__title">{{ pageTitle }}</text>
+                <text class="password-hero__desc">{{ pageDesc }}</text>
+            </view>
+        </template>
 
-    <view class="change-password-page">
-        <!-- 顶部图标区域 -->
-        <view class="header-section">
-            <view class="icon-wrapper" :style="{ background: getIconBg() }">
-                <tn-icon name="lock" :size="64" color="#FFFFFF"></tn-icon>
+        <view class="password-form">
+            <view v-if="type !== 'set'" class="password-form__group">
+                <text class="password-form__label">原密码</text>
+                <BaseInput v-model="formData.old_password" type="password" placeholder="请输入当前密码">
+                    <template #prefix>
+                        <tn-icon name="lock" size="30" color="#B4ACA8" />
+                    </template>
+                </BaseInput>
             </view>
-            <view class="header-title">
-                {{ type == 'set' ? '设置登录密码' : '修改登录密码' }}
+
+            <view class="password-form__group">
+                <text class="password-form__label">新密码</text>
+                <BaseInput
+                    v-model="formData.password"
+                    type="password"
+                    placeholder="6-20位数字+字母或符号组合"
+                >
+                    <template #prefix>
+                        <tn-icon name="key" size="30" color="#B4ACA8" />
+                    </template>
+                </BaseInput>
             </view>
-            <view class="header-subtitle">
-                {{ type == 'set' ? '为了您的账号安全，请设置登录密码' : '请输入原密码和新密码' }}
+
+            <view class="password-form__group">
+                <text class="password-form__label">确认密码</text>
+                <BaseInput
+                    v-model="formData.password_confirm"
+                    type="password"
+                    placeholder="请再次输入新密码"
+                >
+                    <template #prefix>
+                        <tn-icon name="check-circle" size="30" color="#B4ACA8" />
+                    </template>
+                </BaseInput>
             </view>
+
+            <view v-if="formData.password" class="password-tips">
+                <view class="password-tips__item" :class="{ 'is-active': formData.password.length >= 6 }">
+                    <view class="password-tips__dot" />
+                    <text>长度保持在 6 到 20 位之间</text>
+                </view>
+                <view
+                    class="password-tips__item"
+                    :class="{ 'is-active': hasMixedPassword }"
+                >
+                    <view class="password-tips__dot" />
+                    <text>建议同时包含字母与数字</text>
+                </view>
+            </view>
+
+            <BaseButton block size="lg" @click="handleConfirm">
+                确认{{ type === 'set' ? '设置' : '修改' }}
+            </BaseButton>
         </view>
-
-        <!-- 表单卡片 -->
-        <view class="form-card">
-            <!-- 原密码 -->
-            <view v-if="type != 'set'" class="form-item">
-                <view class="form-label">
-                    <tn-icon name="lock" :size="28" :color="$theme.primaryColor"></tn-icon>
-                    <text class="label-text">原密码</text>
-                </view>
-                <view class="input-wrapper">
-                    <tn-input
-                        v-model="formData.old_password"
-                        type="password"
-                        placeholder="请输入原来的密码"
-                        :border="false"
-                        :custom-style="inputStyle"
-                    />
-                </view>
-            </view>
-
-            <!-- 新密码 -->
-            <view class="form-item">
-                <view class="form-label">
-                    <tn-icon name="key" :size="28" :color="$theme.primaryColor"></tn-icon>
-                    <text class="label-text">新密码</text>
-                </view>
-                <view class="input-wrapper">
-                    <tn-input
-                        v-model="formData.password"
-                        type="password"
-                        placeholder="6-20位数字+字母或符号组合"
-                        :border="false"
-                        :custom-style="inputStyle"
-                    />
-                </view>
-            </view>
-
-            <!-- 确认密码 -->
-            <view class="form-item">
-                <view class="form-label">
-                    <tn-icon name="check-circle" :size="28" :color="$theme.primaryColor"></tn-icon>
-                    <text class="label-text">确认密码</text>
-                </view>
-                <view class="input-wrapper">
-                    <tn-input
-                        v-model="formData.password_confirm"
-                        type="password"
-                        placeholder="再次输入新密码"
-                        :border="false"
-                        :custom-style="inputStyle"
-                    />
-                </view>
-            </view>
-        </view>
-
-        <!-- 确认按钮 -->
-        <view class="submit-section">
-            <view
-                class="submit-btn"
-                :style="{
-                    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                    color: $theme.btnColor
-                }"
-                hover-class="submit-btn-hover"
-                @click="handleConfirm"
-            >
-                <tn-icon name="check" :size="32" :color="$theme.btnColor"></tn-icon>
-                <text class="submit-text">确认{{ type == 'set' ? '设置' : '修改' }}</text>
-            </view>
-        </view>
-    </view>
+    </AuthPageShell>
 </template>
 
 <script setup lang="ts">
 import { userChangePwd } from '@/api/user'
-import { useThemeStore } from '@/stores/theme'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
+import AuthPageShell from '@/components/business/AuthPageShell.vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, reactive, ref } from 'vue'
 
-const $theme = useThemeStore()
 const type = ref('')
 const formData = reactive<any>({
     password: '',
     password_confirm: ''
 })
 
-// 获取图标背景渐变
-const getIconBg = () => {
-    return `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
-}
+const pageTitle = computed(() => (type.value === 'set' ? '设置登录密码' : '修改登录密码'))
+const pageDesc = computed(() =>
+    type.value === 'set'
+        ? '为了账号安全，请先设置一个稳定可靠的登录密码。'
+        : '请输入当前密码并设置新的登录密码，修改后会立即生效。'
+)
+const hasMixedPassword = computed(
+    () => /[a-zA-Z]/.test(formData.password) && /[0-9]/.test(formData.password)
+)
 
-// 输入框样式
-const inputStyle = computed(() => ({
-    fontSize: '30rpx',
-    color: '#333333'
-}))
-
-// 表单验证（简化版，主要校验由后端完成）
 const validateForm = () => {
-    if (type.value != 'set' && !formData.old_password) {
+    if (type.value !== 'set' && !formData.old_password) {
         uni.$u.toast('请输入原密码')
         return false
     }
@@ -124,7 +103,6 @@ const validateForm = () => {
         return false
     }
 
-    // 只做基本长度校验
     if (formData.password.length < 6 || formData.password.length > 20) {
         uni.$u.toast('密码长度应为6-20位')
         return false
@@ -135,7 +113,7 @@ const validateForm = () => {
         return false
     }
 
-    if (formData.password != formData.password_confirm) {
+    if (formData.password !== formData.password_confirm) {
         uni.$u.toast('两次输入的密码不一致')
         return false
     }
@@ -143,7 +121,6 @@ const validateForm = () => {
     return true
 }
 
-// 确认修改
 const handleConfirm = async () => {
     if (!validateForm()) return
 
@@ -177,125 +154,91 @@ onLoad((options) => {
 </script>
 
 <style lang="scss" scoped>
-.change-password-page {
-    min-height: 100vh;
-    background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
-    padding: 24rpx;
-}
-
-/* 顶部区域 */
-.header-section {
+.password-hero {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    margin-bottom: 28rpx;
+    align-items: flex-start;
+    gap: 14rpx;
 }
 
-.icon-wrapper {
-    width: 96rpx;
-    height: 96rpx;
-    border-radius: 48rpx;
+.password-hero__icon {
+    width: 108rpx;
+    height: 108rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20rpx;
-    box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1rpx solid rgba(244, 199, 191, 0.52);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
 }
 
-.header-title {
-    font-size: 36rpx;
+.password-hero__eyebrow {
+    font-size: 22rpx;
     font-weight: 600;
-    color: #333333;
-    margin-bottom: 12rpx;
-    text-align: center;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
-.header-subtitle {
-    font-size: 24rpx;
-    color: #999999;
-    text-align: center;
-    line-height: 1.5;
+.password-hero__title {
+    font-size: 52rpx;
+    font-weight: 700;
+    line-height: 1.18;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-/* 表单卡片 */
-.form-card {
-    background: #ffffff;
-    border-radius: 14rpx;
-    padding: 20rpx;
-    margin-bottom: 20rpx;
-    box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.06);
+.password-hero__desc {
+    font-size: 26rpx;
+    line-height: 1.65;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.form-item {
-    margin-bottom: 20rpx;
-
-    &:last-child {
-        margin-bottom: 0;
-    }
-}
-
-.form-label {
+.password-form {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 20rpx;
+}
+
+.password-form__group {
+    display: flex;
+    flex-direction: column;
     gap: 10rpx;
-    margin-bottom: 10rpx;
 }
 
-.label-text {
-    font-size: 28rpx;
-    font-weight: 500;
-    color: #333333;
+.password-form__label {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.input-wrapper {
-    background: #f9fafb;
-    border-radius: 14rpx;
-    padding: 16rpx;
-    border: 2rpx solid #e5e7eb;
-    transition: all 0.2s ease;
-
-    &:focus-within {
-        background: #ffffff;
-        border-color: var(--tn-color-primary, #7c3aed);
-        box-shadow: 0 0 0 6rpx rgba(124, 58, 237, 0.1);
-    }
+.password-tips {
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+    padding: 20rpx 22rpx;
+    border-radius: var(--wm-radius-card-soft, 20rpx);
+    background: var(--wm-color-bg-soft, #fff7f4);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
 }
 
-/* 提交按钮 */
-.submit-section {
-    margin-top: 24rpx;
-}
-
-.submit-btn {
+.password-tips__item {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 12rpx;
-    height: 72rpx;
-    border-radius: 32rpx;
-    font-size: 30rpx;
-    font-weight: 600;
-    box-shadow: 0 6rpx 16rpx rgba(124, 58, 237, 0.22);
-    transition: all 0.3s ease;
-}
+    font-size: 24rpx;
+    color: var(--wm-text-secondary, #7f7b78);
 
-.submit-btn-hover {
-    transform: translateY(2rpx);
-    box-shadow: 0 3rpx 10rpx rgba(124, 58, 237, 0.22);
-    opacity: 0.9;
-}
-
-.submit-text {
-    font-size: 30rpx;
-    font-weight: 600;
-}
-
-/* 响应式适配 */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+    &.is-active {
+        color: var(--wm-color-primary, #e85a4f);
+        font-weight: 600;
     }
+}
+
+.password-tips__dot {
+    width: 14rpx;
+    height: 14rpx;
+    border-radius: 999rpx;
+    background: currentColor;
 }
 </style>

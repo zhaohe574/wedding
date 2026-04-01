@@ -56,14 +56,14 @@ const showList = computed(() => {
 .user-banner {
     .banner-swiper {
         height: 200rpx;
-        border-radius: 16rpx;
+        border-radius: 20rpx;
         overflow: hidden;
     }
 
     .banner-item {
         width: 100%;
         height: 100%;
-        border-radius: 16rpx;
+        border-radius: 20rpx;
         overflow: hidden;
         transition: all 0.2s ease;
 
@@ -75,7 +75,7 @@ const showList = computed(() => {
     .banner-image {
         width: 100%;
         height: 100%;
-        border-radius: 16rpx;
+        border-radius: 20rpx;
     }
 }
 </style>

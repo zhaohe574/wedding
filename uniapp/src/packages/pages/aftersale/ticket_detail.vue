@@ -1,126 +1,150 @@
 <template>
-    <BaseNavbar title="工单详情" />
-    <view class="ticket-detail-page">
-        <view class="detail-card" v-if="detail">
-            <!-- 工单状态 -->
-            <view class="status-section">
-                <view class="status-icon" :class="getStatusClass(detail.status)">
-                    <tn-icon :name="getStatusIcon(detail.status)" size="60" color="#fff"></tn-icon>
+    <page-meta :page-style="$theme.pageStyle" />
+    <PageShell scene="consumer" hasSafeBottom>
+        <BaseNavbar title="工单详情" />
+
+        <view class="ticket-detail" v-if="detail">
+            <view class="ticket-detail__status-card">
+                <view class="ticket-detail__status-icon" :class="getStatusClass(detail.status)">
+                    <tn-icon :name="getStatusIcon(detail.status)" size="36" color="#FFFFFF" />
                 </view>
-                <view class="status-info">
-                    <text class="status-text">{{
-                        detail.status_desc || getStatusText(detail.status)
-                    }}</text>
-                    <text class="status-time">{{ detail.update_time || detail.create_time }}</text>
+                <view class="ticket-detail__status-copy">
+                    <text class="ticket-detail__status-text">
+                        {{ detail.status_desc || getStatusText(detail.status) }}
+                    </text>
+                    <text class="ticket-detail__status-time">
+                        更新时间：{{ detail.update_time || detail.create_time }}
+                    </text>
                 </view>
             </view>
 
-            <!-- 工单信息 -->
-            <view class="info-section">
-                <view class="info-item">
-                    <text class="info-label">工单编号</text>
-                    <text class="info-value">{{ detail.ticket_sn }}</text>
+            <view class="ticket-detail__section">
+                <text class="ticket-detail__section-title">基础信息</text>
+                <view class="ticket-detail__kv">
+                    <text class="ticket-detail__kv-label">工单编号</text>
+                    <text class="ticket-detail__kv-value">{{ detail.ticket_sn }}</text>
                 </view>
-                <view class="info-item">
-                    <text class="info-label">工单类型</text>
-                    <text class="info-value">{{
-                        detail.type_desc || getTypeText(detail.type)
-                    }}</text>
+                <view class="ticket-detail__kv">
+                    <text class="ticket-detail__kv-label">工单类型</text>
+                    <text class="ticket-detail__kv-value">
+                        {{ detail.type_desc || getTypeText(detail.type) }}
+                    </text>
                 </view>
-                <view class="info-item">
-                    <text class="info-label">创建时间</text>
-                    <text class="info-value">{{ detail.create_time }}</text>
+                <view class="ticket-detail__kv">
+                    <text class="ticket-detail__kv-label">创建时间</text>
+                    <text class="ticket-detail__kv-value">{{ detail.create_time }}</text>
+                </view>
+                <view v-if="detail.order?.order_sn" class="ticket-detail__kv">
+                    <text class="ticket-detail__kv-label">关联订单</text>
+                    <text class="ticket-detail__kv-value">{{ detail.order.order_sn }}</text>
                 </view>
             </view>
 
-            <!-- 工单内容 -->
-            <view class="content-section">
-                <view class="section-title">工单内容</view>
-                <view class="content-title">{{ detail.title }}</view>
-                <view class="content-text" v-if="detail.content">{{ detail.content }}</view>
-                <view class="content-images" v-if="detail.images && detail.images.length">
+            <view class="ticket-detail__section">
+                <text class="ticket-detail__section-title">问题内容</text>
+                <text class="ticket-detail__content-title">{{ detail.title }}</text>
+                <text v-if="detail.content" class="ticket-detail__content-text">{{ detail.content }}</text>
+                <view
+                    v-if="Array.isArray(detail.images) && detail.images.length"
+                    class="ticket-detail__gallery"
+                >
                     <image
                         v-for="(img, index) in detail.images"
-                        :key="index"
+                        :key="`${img}-${index}`"
                         :src="img"
                         mode="aspectFill"
+                        class="ticket-detail__gallery-image"
                         @click="previewImage(detail.images, index)"
-                    ></image>
+                    />
                 </view>
             </view>
 
-            <!-- 处理进度 -->
-            <view class="progress-section" v-if="detail.logs && detail.logs.length">
-                <view class="section-title">处理进度</view>
-                <view class="progress-list">
-                    <view class="progress-item" v-for="(log, index) in detail.logs" :key="index">
-                        <view class="progress-dot" :class="{ active: index === 0 }"></view>
-                        <view class="progress-content">
-                            <text class="progress-text">{{ log.content }}</text>
-                            <text class="progress-time">{{ log.create_time }}</text>
+            <view v-if="detail.logs?.length" class="ticket-detail__section">
+                <text class="ticket-detail__section-title">处理进度</text>
+                <view class="ticket-detail__timeline">
+                    <view
+                        v-for="(log, index) in detail.logs"
+                        :key="index"
+                        class="ticket-detail__timeline-item"
+                    >
+                        <view class="ticket-detail__timeline-dot" :class="{ 'is-active': index === 0 }" />
+                        <view class="ticket-detail__timeline-main">
+                            <text class="ticket-detail__timeline-text">{{ log.content }}</text>
+                            <text class="ticket-detail__timeline-time">{{ log.create_time }}</text>
                         </view>
                     </view>
                 </view>
             </view>
 
-            <!-- 处理结果 -->
-            <view class="result-section" v-if="detail.result">
-                <view class="section-title">处理结果</view>
-                <view class="result-content">{{ detail.result }}</view>
+            <view v-if="detail.handle_result" class="ticket-detail__section">
+                <text class="ticket-detail__section-title">处理结果</text>
+                <text class="ticket-detail__content-text">{{ detail.handle_result }}</text>
             </view>
         </view>
 
-        <!-- 操作按钮 -->
-        <view class="action-bar" v-if="detail">
-            <template v-if="detail.status === 0">
-                <tn-button type="default" @click="handleCancel">取消工单</tn-button>
-            </template>
-            <template v-else-if="detail.status === 1">
-                <tn-button type="primary" @click="showConfirmPopup = true">确认完成</tn-button>
-            </template>
+        <view v-if="detail" class="ticket-detail__action-bar">
+            <BaseButton
+                v-if="detail.status === 0"
+                type="ghost"
+                block
+                size="lg"
+                @click="handleCancel"
+            >
+                取消工单
+            </BaseButton>
+            <BaseButton
+                v-if="detail.status === 2"
+                block
+                size="lg"
+                @click="showConfirmPopup = true"
+            >
+                确认完成
+            </BaseButton>
         </view>
 
-        <!-- 确认完成弹窗 -->
         <tn-popup
             v-model="showConfirmPopup"
             open-direction="bottom"
-            :radius="24"
+            :radius="28"
             safe-area-inset-bottom
         >
-            <view class="confirm-popup">
-                <view class="popup-header">
-                    <text class="popup-title">确认完成</text>
+            <view class="confirm-panel">
+                <view class="confirm-panel__head">
+                    <text class="confirm-panel__title">确认完成</text>
+                    <tn-icon name="close" size="28" color="#978B83" @click="showConfirmPopup = false" />
                 </view>
-                <view class="popup-body">
-                    <view class="form-item">
-                        <text class="form-label">满意度评价</text>
-                        <view class="rating-wrap">
-                            <u-rate v-model="confirmForm.satisfaction" :min-count="1"></u-rate>
-                        </view>
+                <view class="confirm-panel__body">
+                    <view class="confirm-panel__field">
+                        <text class="confirm-panel__label">满意度</text>
+                        <u-rate v-model="confirmForm.satisfaction" :min-count="1" />
                     </view>
-                    <view class="form-item">
-                        <text class="form-label">备注</text>
+                    <view class="confirm-panel__field">
+                        <text class="confirm-panel__label">补充备注</text>
                         <textarea
-                            class="form-textarea"
                             v-model="confirmForm.remark"
-                            placeholder="请输入备注（选填）"
-                        ></textarea>
+                            class="confirm-panel__textarea"
+                            placeholder="可选，补充本次处理结果体验"
+                        />
                     </view>
                 </view>
-                <view class="popup-footer">
-                    <tn-button type="default" @click="showConfirmPopup = false">取消</tn-button>
-                    <tn-button type="primary" @click="handleConfirm">确认</tn-button>
+                <view class="confirm-panel__footer">
+                    <BaseButton block size="lg" @click="handleConfirm">确认提交</BaseButton>
                 </view>
             </view>
         </tn-popup>
-    </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { reactive, ref } from 'vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import PageShell from '@/components/base/PageShell.vue'
 import { getTicketDetail, cancelTicket, confirmComplete } from '@/api/aftersale'
+import { useThemeStore } from '@/stores/theme'
 import { onLoad } from '@dcloudio/uni-app'
 
+const $theme = useThemeStore()
 const ticketId = ref<number>(0)
 const detail = ref<any>(null)
 const showConfirmPopup = ref(false)
@@ -133,7 +157,7 @@ const getDetail = async () => {
     try {
         const res = await getTicketDetail(ticketId.value)
         detail.value = res?.data || res
-    } catch (e) {
+    } catch (error) {
         uni.showToast({ title: '获取详情失败', icon: 'none' })
     }
 }
@@ -142,8 +166,10 @@ const getStatusClass = (status: number) => {
     const map: Record<number, string> = {
         0: 'status-pending',
         1: 'status-processing',
-        2: 'status-completed',
-        3: 'status-closed'
+        2: 'status-confirming',
+        3: 'status-completed',
+        4: 'status-closed',
+        5: 'status-cancelled'
     }
     return map[status] || ''
 }
@@ -151,29 +177,33 @@ const getStatusClass = (status: number) => {
 const getStatusIcon = (status: number) => {
     const map: Record<number, string> = {
         0: 'clock',
-        1: 'setting',
-        2: 'checkmark-circle',
-        3: 'close-circle'
+        1: 'loading',
+        2: 'shield-check',
+        3: 'check-circle',
+        4: 'close-circle',
+        5: 'close-circle'
     }
-    return map[status] || 'info-circle'
+    return map[status] || 'help'
 }
 
 const getStatusText = (status: number) => {
     const map: Record<number, string> = {
         0: '待处理',
         1: '处理中',
-        2: '已完成',
-        3: '已关闭'
+        2: '待确认',
+        3: '已完成',
+        4: '已关闭',
+        5: '已取消'
     }
     return map[status] || '未知'
 }
 
 const getTypeText = (type: number) => {
     const map: Record<number, string> = {
-        1: '服务咨询',
-        2: '订单问题',
-        3: '技术问题',
-        4: '投诉建议',
+        1: '投诉',
+        2: '咨询',
+        3: '售后',
+        4: '建议',
         5: '其他'
     }
     return map[type] || '其他'
@@ -189,16 +219,16 @@ const previewImage = (images: string[], index: number) => {
 const handleCancel = async () => {
     uni.showModal({
         title: '确认取消',
-        content: '确定要取消此工单吗？',
+        content: '确定要取消这条工单吗？',
         success: async (res) => {
-            if (res.confirm) {
-                try {
-                    await cancelTicket(ticketId.value)
-                    uni.showToast({ title: '取消成功' })
-                    getDetail()
-                } catch (e) {
-                    uni.showToast({ title: '取消失败', icon: 'none' })
-                }
+            if (!res.confirm) return
+
+            try {
+                await cancelTicket(ticketId.value)
+                uni.showToast({ title: '取消成功', icon: 'none' })
+                getDetail()
+            } catch (error: any) {
+                uni.showToast({ title: error?.message || '取消失败', icon: 'none' })
             }
         }
     })
@@ -212,261 +242,239 @@ const handleConfirm = async () => {
             remark: confirmForm.remark
         })
         showConfirmPopup.value = false
-        uni.showToast({ title: '确认成功' })
+        uni.showToast({ title: '确认成功', icon: 'none' })
         getDetail()
-    } catch (e) {
-        uni.showToast({ title: '操作失败', icon: 'none' })
+    } catch (error: any) {
+        uni.showToast({ title: error?.message || '操作失败', icon: 'none' })
     }
 }
 
 onLoad((options: any) => {
-    if (options?.id) {
-        ticketId.value = parseInt(options.id)
+    ticketId.value = Number(options?.id || 0)
+    if (ticketId.value) {
         getDetail()
     }
 })
 </script>
 
 <style lang="scss" scoped>
-.ticket-detail-page {
-    min-height: 100vh;
-    background: #f5f5f5;
-    padding-bottom: 150rpx;
+@import '../../../styles/aftersale.scss';
+
+.ticket-detail {
+    @include aftersale-page-base;
+    padding: 0 20rpx 160rpx;
 }
 
-.detail-card {
-    background: #fff;
-    margin: 20rpx;
-    border-radius: 16rpx;
-    overflow: hidden;
+.ticket-detail__status-card,
+.ticket-detail__section {
+    @include aftersale-section-card;
+    margin-bottom: 16rpx;
 }
 
-.status-section {
+.ticket-detail__status-card {
     display: flex;
     align-items: center;
-    padding: 40rpx 30rpx;
-    background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
+    gap: 20rpx;
 }
 
-.status-icon {
-    width: 100rpx;
-    height: 100rpx;
-    border-radius: 50%;
+.ticket-detail__status-icon {
+    width: 84rpx;
+    height: 84rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.2);
-
-    &.status-pending {
-        background: rgba(250, 173, 20, 0.3);
-    }
-    &.status-processing {
-        background: rgba(24, 144, 255, 0.3);
-    }
-    &.status-completed {
-        background: rgba(82, 196, 26, 0.3);
-    }
-    &.status-closed {
-        background: rgba(153, 153, 153, 0.3);
-    }
+    border-radius: 999rpx;
+    flex-shrink: 0;
 }
 
-.status-info {
-    margin-left: 24rpx;
-}
-
-.status-text {
-    font-size: 36rpx;
-    font-weight: 600;
-    color: #fff;
-    display: block;
-}
-
-.status-time {
-    font-size: 24rpx;
-    color: rgba(255, 255, 255, 0.8);
-    margin-top: 8rpx;
-    display: block;
-}
-
-.info-section {
-    padding: 30rpx;
-    border-bottom: 1rpx solid #f5f5f5;
-}
-
-.info-item {
+.ticket-detail__status-copy {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16rpx 0;
+    flex-direction: column;
+    gap: 8rpx;
 }
 
-.info-label {
-    font-size: 28rpx;
-    color: #999;
+.ticket-detail__status-text {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.info-value {
-    font-size: 28rpx;
-    color: #333;
+.ticket-detail__status-time {
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
 }
 
-.content-section,
-.progress-section,
-.result-section {
-    padding: 30rpx;
-    border-bottom: 1rpx solid #f5f5f5;
-}
-
-.section-title {
+.ticket-detail__section-title {
+    display: block;
+    margin-bottom: 18rpx;
     font-size: 30rpx;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 20rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.content-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 16rpx;
+.ticket-detail__kv {
+    @include aftersale-kv-row;
 }
 
-.content-text {
-    font-size: 28rpx;
-    color: #666;
-    line-height: 1.6;
+.ticket-detail__kv + .ticket-detail__kv {
+    margin-top: 14rpx;
 }
 
-.content-images {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16rpx;
-    margin-top: 20rpx;
-
-    image {
-        width: 200rpx;
-        height: 200rpx;
-        border-radius: 8rpx;
-    }
+.ticket-detail__kv-label {
+    @include aftersale-kv-label;
 }
 
-.progress-list {
-    padding-left: 20rpx;
+.ticket-detail__kv-value {
+    @include aftersale-kv-value;
 }
 
-.progress-item {
-    display: flex;
-    position: relative;
-    padding-bottom: 30rpx;
-
-    &:not(:last-child)::before {
-        content: '';
-        position: absolute;
-        left: 10rpx;
-        top: 30rpx;
-        bottom: 0;
-        width: 2rpx;
-        background: #eee;
-    }
-}
-
-.progress-dot {
-    width: 20rpx;
-    height: 20rpx;
-    border-radius: 50%;
-    background: #eee;
-    margin-right: 20rpx;
-    margin-top: 8rpx;
-
-    &.active {
-        background: #ff758c;
-    }
-}
-
-.progress-content {
-    flex: 1;
-}
-
-.progress-text {
-    font-size: 28rpx;
-    color: #333;
+.ticket-detail__content-title {
     display: block;
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.progress-time {
-    font-size: 24rpx;
-    color: #999;
-    margin-top: 8rpx;
+.ticket-detail__content-text {
     display: block;
+    margin-top: 14rpx;
+    font-size: 26rpx;
+    line-height: 1.7;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.result-content {
-    font-size: 28rpx;
-    color: #666;
-    line-height: 1.6;
+.ticket-detail__gallery {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10rpx;
+    margin-top: 18rpx;
 }
 
-.action-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 20rpx 30rpx;
-    background: #fff;
-    display: flex;
-    gap: 20rpx;
-    box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
-    padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-}
-
-.confirm-popup {
-    padding: 30rpx;
-}
-
-.popup-header {
-    text-align: center;
-    padding-bottom: 30rpx;
-    border-bottom: 1rpx solid #f5f5f5;
-}
-
-.popup-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333;
-}
-
-.popup-body {
-    padding: 30rpx 0;
-}
-
-.form-item {
-    margin-bottom: 30rpx;
-}
-
-.form-label {
-    font-size: 28rpx;
-    color: #333;
-    margin-bottom: 16rpx;
-    display: block;
-}
-
-.rating-wrap {
-    padding: 16rpx 0;
-}
-
-.form-textarea {
+.ticket-detail__gallery-image {
     width: 100%;
-    height: 200rpx;
-    background: #f5f5f5;
-    border-radius: 12rpx;
+    height: 180rpx;
+    border-radius: 16rpx;
+}
+
+.ticket-detail__timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 18rpx;
+}
+
+.ticket-detail__timeline-item {
+    display: flex;
+    gap: 16rpx;
+}
+
+.ticket-detail__timeline-dot {
+    width: 18rpx;
+    height: 18rpx;
+    margin-top: 10rpx;
+    border-radius: 999rpx;
+    background: rgba(180, 172, 168, 0.56);
+    flex-shrink: 0;
+}
+
+.ticket-detail__timeline-dot.is-active {
+    background: var(--wm-color-primary, #e85a4f);
+}
+
+.ticket-detail__timeline-main {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.ticket-detail__timeline-text {
+    font-size: 26rpx;
+    line-height: 1.7;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.ticket-detail__timeline-time {
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.ticket-detail__action-bar {
+    position: fixed;
+    left: 20rpx;
+    right: 20rpx;
+    bottom: calc(20rpx + env(safe-area-inset-bottom));
+}
+
+.confirm-panel {
+    padding: 24rpx 20rpx 28rpx;
+    background: var(--wm-color-bg-page, #fcfbf9);
+}
+
+.confirm-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.confirm-panel__title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.confirm-panel__body {
+    display: flex;
+    flex-direction: column;
+    gap: 18rpx;
+    margin-top: 20rpx;
+}
+
+.confirm-panel__field {
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+}
+
+.confirm-panel__label {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.confirm-panel__textarea {
+    min-height: 180rpx;
     padding: 20rpx;
-    font-size: 28rpx;
+    border-radius: 18rpx;
+    border: 1rpx solid $aftersale-border;
+    background: rgba(255, 255, 255, 0.82);
+    font-size: 26rpx;
+    line-height: 1.7;
+    color: var(--wm-text-primary, #1e2432);
     box-sizing: border-box;
 }
 
-.popup-footer {
-    display: flex;
-    gap: 20rpx;
+.confirm-panel__footer {
+    margin-top: 24rpx;
+}
+
+.status-pending {
+    background: #c98524;
+}
+
+.status-processing {
+    background: #607086;
+}
+
+.status-confirming {
+    background: #8f6ab5;
+}
+
+.status-completed {
+    background: #2f7d58;
+}
+
+.status-closed,
+.status-cancelled {
+    background: #978b83;
 }
 </style>
