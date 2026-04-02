@@ -95,8 +95,7 @@ export default {
 .base-card {
     width: 100%;
     border-radius: var(--wm-radius-card, 45rpx);
-    transition:
-        transform var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
+    transition: transform var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
         box-shadow var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
         border-color var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
         background var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
@@ -129,7 +128,10 @@ export default {
     &--hero {
         padding: var(--wm-space-card-padding-lg, 34rpx);
         border-radius: var(--wm-radius-card-lg, 52rpx);
-        background: var(--wm-hero-gradient, linear-gradient(180deg, #fff5f1 0%, #fcfbf9 68%, #f7f1ed 100%));
+        background: var(
+            --wm-hero-gradient,
+            linear-gradient(180deg, #fff5f1 0%, #fcfbf9 68%, #f7f1ed 100%)
+        );
         border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
         box-shadow: var(--wm-shadow-hero, 0 24rpx 56rpx rgba(177, 108, 95, 0.18));
     }

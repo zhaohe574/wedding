@@ -9,10 +9,7 @@
                 @click="handleChange(index)"
             >
                 <text class="custom-tabbar__text">{{ item.text }}</text>
-                <view
-                    v-if="item.badgeCount && item.badgeCount > 0"
-                    class="custom-tabbar__badge"
-                >
+                <view v-if="item.badgeCount && item.badgeCount > 0" class="custom-tabbar__badge">
                     <text class="custom-tabbar__badge-text">
                         {{ item.badgeCount > 99 ? '99+' : item.badgeCount }}
                     </text>

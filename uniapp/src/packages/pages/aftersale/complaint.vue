@@ -39,7 +39,10 @@
                     >
                         <view class="complaint-card__head">
                             <view class="complaint-card__badges">
-                                <view class="complaint-card__level" :class="getLevelClass(item.level)">
+                                <view
+                                    class="complaint-card__level"
+                                    :class="getLevelClass(item.level)"
+                                >
                                     {{ item.level_desc || getLevelText(item.level) }}
                                 </view>
                                 <view
@@ -53,7 +56,9 @@
                         </view>
 
                         <text class="complaint-card__title">{{ item.title }}</text>
-                        <text v-if="item.content" class="complaint-card__content">{{ item.content }}</text>
+                        <text v-if="item.content" class="complaint-card__content">{{
+                            item.content
+                        }}</text>
 
                         <view class="complaint-card__footer">
                             <text class="complaint-card__chip">

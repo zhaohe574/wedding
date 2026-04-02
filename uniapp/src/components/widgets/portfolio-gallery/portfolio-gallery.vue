@@ -2,7 +2,10 @@
     <view class="portfolio-gallery mx-[20rpx] mt-[20rpx]" v-if="content.enabled && showList.length">
         <!-- 标题 -->
         <view v-if="content.title" class="flex items-center mb-[24rpx]">
-            <view class="title-bar w-[8rpx] h-[34rpx] rounded-full mr-[16rpx]" :style="$theme.titleBar.value"></view>
+            <view
+                class="title-bar w-[8rpx] h-[34rpx] rounded-full mr-[16rpx]"
+                :style="$theme.titleBar.value"
+            ></view>
             <text class="text-lg font-medium text-gray-900">{{ content.title }}</text>
             <view class="flex-1"></view>
             <view

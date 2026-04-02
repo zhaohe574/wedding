@@ -4,116 +4,128 @@
         <BaseNavbar title="关于我们" />
 
         <view class="as-us-page">
-        <!-- 顶部装饰背景 -->
-        <view class="header-decoration" :style="headerStyle"></view>
+            <!-- 顶部装饰背景 -->
+            <view class="header-decoration" :style="headerStyle"></view>
 
-        <!-- Logo 区域 -->
-        <view class="logo-section">
-            <view class="logo-wrapper" :style="logoWrapperStyle">
-                <image
-                    :src="appStore.getWebsiteConfig.shop_logo"
-                    mode="aspectFill"
-                    class="logo-image"
-                />
-            </view>
-            <text class="brand-name">{{ brandName }}</text>
-            <text v-if="brandSlogan" class="brand-slogan">{{ brandSlogan }}</text>
-        </view>
-
-        <!-- 信息卡片区域 -->
-        <view class="info-cards">
-            <!-- 版本信息卡片 -->
-            <view class="info-card glass-card">
-                <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                    <tn-icon name="tip" size="40" :color="$theme.primaryColor" />
+            <!-- Logo 区域 -->
+            <view class="logo-section">
+                <view class="logo-wrapper" :style="logoWrapperStyle">
+                    <image
+                        :src="appStore.getWebsiteConfig.shop_logo"
+                        mode="aspectFill"
+                        class="logo-image"
+                    />
                 </view>
-                <view class="card-content">
-                    <text class="card-label">当前版本</text>
-                    <text class="card-value" :style="{ color: $theme.primaryColor }">
-                        v{{ appStore.config.version }}
-                    </text>
-                </view>
+                <text class="brand-name">{{ brandName }}</text>
+                <text v-if="brandSlogan" class="brand-slogan">{{ brandSlogan }}</text>
             </view>
 
-            <!-- 联系方式卡片 -->
-            <view class="info-card glass-card" v-if="appStore.getWebsiteConfig.contact_phone">
-                <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                    <tn-icon name="phone" size="40" :color="$theme.primaryColor" />
-                </view>
-                <view class="card-content">
-                    <text class="card-label">联系电话</text>
-                    <text class="card-value" :style="{ color: $theme.primaryColor }">
-                        {{ appStore.getWebsiteConfig.contact_phone }}
-                    </text>
-                </view>
-            </view>
-
-            <!-- 邮箱卡片 -->
-            <view class="info-card glass-card" v-if="appStore.getWebsiteConfig.contact_email">
-                <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                    <tn-icon name="mail" size="40" :color="$theme.primaryColor" />
-                </view>
-                <view class="card-content">
-                    <text class="card-label">联系邮箱</text>
-                    <text class="card-value" :style="{ color: $theme.primaryColor }">
-                        {{ appStore.getWebsiteConfig.contact_email }}
-                    </text>
-                </view>
-            </view>
-
-            <!-- 地址卡片 -->
-            <view class="info-card glass-card" v-if="appStore.getWebsiteConfig.company_address">
-                <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                    <tn-icon name="location" size="40" :color="$theme.primaryColor" />
-                </view>
-                <view class="card-content">
-                    <text class="card-label">公司地址</text>
-                    <text class="card-value" :style="{ color: $theme.primaryColor }">
-                        {{ appStore.getWebsiteConfig.company_address }}
-                    </text>
-                </view>
-            </view>
-        </view>
-
-        <!-- 关于我们描述 -->
-        <view class="about-section glass-card">
-            <view class="section-header">
-                <view class="header-line" :style="{ backgroundColor: $theme.primaryColor }"></view>
-                <text class="section-title">关于我们</text>
-                <view class="header-line" :style="{ backgroundColor: $theme.primaryColor }"></view>
-            </view>
-            <text class="about-text">
-                {{
-                    appStore.getWebsiteConfig.shop_intro ||
-                    '专注于为新人提供专业、贴心的婚庆服务，让每一场婚礼都成为独一无二的美好回忆。我们拥有经验丰富的团队，致力于打造完美的婚礼体验。'
-                }}
-            </text>
-        </view>
-
-        <!-- 服务特色 -->
-        <view class="features-section">
-            <view class="section-header">
-                <view class="header-line" :style="{ backgroundColor: $theme.primaryColor }"></view>
-                <text class="section-title">服务特色</text>
-                <view class="header-line" :style="{ backgroundColor: $theme.primaryColor }"></view>
-            </view>
-
-            <view class="features-grid">
-                <view class="feature-item" v-for="(feature, index) in features" :key="index">
-                    <view class="feature-icon-wrapper" :style="getFeatureIconStyle(index)">
-                        <tn-icon :name="feature.icon" size="48" color="#FFFFFF" />
+            <!-- 信息卡片区域 -->
+            <view class="info-cards">
+                <!-- 版本信息卡片 -->
+                <view class="info-card glass-card">
+                    <view class="card-icon-wrapper" :style="iconWrapperStyle">
+                        <tn-icon name="tip" size="40" :color="$theme.primaryColor" />
                     </view>
-                    <text class="feature-title">{{ feature.title }}</text>
-                    <text class="feature-desc">{{ feature.desc }}</text>
+                    <view class="card-content">
+                        <text class="card-label">当前版本</text>
+                        <text class="card-value" :style="{ color: $theme.primaryColor }">
+                            v{{ appStore.config.version }}
+                        </text>
+                    </view>
+                </view>
+
+                <!-- 联系方式卡片 -->
+                <view class="info-card glass-card" v-if="appStore.getWebsiteConfig.contact_phone">
+                    <view class="card-icon-wrapper" :style="iconWrapperStyle">
+                        <tn-icon name="phone" size="40" :color="$theme.primaryColor" />
+                    </view>
+                    <view class="card-content">
+                        <text class="card-label">联系电话</text>
+                        <text class="card-value" :style="{ color: $theme.primaryColor }">
+                            {{ appStore.getWebsiteConfig.contact_phone }}
+                        </text>
+                    </view>
+                </view>
+
+                <!-- 邮箱卡片 -->
+                <view class="info-card glass-card" v-if="appStore.getWebsiteConfig.contact_email">
+                    <view class="card-icon-wrapper" :style="iconWrapperStyle">
+                        <tn-icon name="mail" size="40" :color="$theme.primaryColor" />
+                    </view>
+                    <view class="card-content">
+                        <text class="card-label">联系邮箱</text>
+                        <text class="card-value" :style="{ color: $theme.primaryColor }">
+                            {{ appStore.getWebsiteConfig.contact_email }}
+                        </text>
+                    </view>
+                </view>
+
+                <!-- 地址卡片 -->
+                <view class="info-card glass-card" v-if="appStore.getWebsiteConfig.company_address">
+                    <view class="card-icon-wrapper" :style="iconWrapperStyle">
+                        <tn-icon name="location" size="40" :color="$theme.primaryColor" />
+                    </view>
+                    <view class="card-content">
+                        <text class="card-label">公司地址</text>
+                        <text class="card-value" :style="{ color: $theme.primaryColor }">
+                            {{ appStore.getWebsiteConfig.company_address }}
+                        </text>
+                    </view>
                 </view>
             </view>
-        </view>
 
-        <!-- 底部版权信息 -->
-        <view class="footer">
-            <text class="copyright">© {{ currentYear }} {{ brandName || '婚庆服务平台' }}</text>
-            <text class="copyright-sub">All Rights Reserved</text>
-        </view>
+            <!-- 关于我们描述 -->
+            <view class="about-section glass-card">
+                <view class="section-header">
+                    <view
+                        class="header-line"
+                        :style="{ backgroundColor: $theme.primaryColor }"
+                    ></view>
+                    <text class="section-title">关于我们</text>
+                    <view
+                        class="header-line"
+                        :style="{ backgroundColor: $theme.primaryColor }"
+                    ></view>
+                </view>
+                <text class="about-text">
+                    {{
+                        appStore.getWebsiteConfig.shop_intro ||
+                        '专注于为新人提供专业、贴心的婚庆服务，让每一场婚礼都成为独一无二的美好回忆。我们拥有经验丰富的团队，致力于打造完美的婚礼体验。'
+                    }}
+                </text>
+            </view>
+
+            <!-- 服务特色 -->
+            <view class="features-section">
+                <view class="section-header">
+                    <view
+                        class="header-line"
+                        :style="{ backgroundColor: $theme.primaryColor }"
+                    ></view>
+                    <text class="section-title">服务特色</text>
+                    <view
+                        class="header-line"
+                        :style="{ backgroundColor: $theme.primaryColor }"
+                    ></view>
+                </view>
+
+                <view class="features-grid">
+                    <view class="feature-item" v-for="(feature, index) in features" :key="index">
+                        <view class="feature-icon-wrapper" :style="getFeatureIconStyle(index)">
+                            <tn-icon :name="feature.icon" size="48" color="#FFFFFF" />
+                        </view>
+                        <text class="feature-title">{{ feature.title }}</text>
+                        <text class="feature-desc">{{ feature.desc }}</text>
+                    </view>
+                </view>
+            </view>
+
+            <!-- 底部版权信息 -->
+            <view class="footer">
+                <text class="copyright">© {{ currentYear }} {{ brandName || '婚庆服务平台' }}</text>
+                <text class="copyright-sub">All Rights Reserved</text>
+            </view>
         </view>
     </PageShell>
 </template>

@@ -2,7 +2,10 @@
     <view v-if="content.enabled && showList.length" class="store-map mx-[20rpx] mt-[20rpx]">
         <!-- 标题 -->
         <view v-if="content.title" class="flex items-center mb-[20rpx]">
-            <view class="w-[6rpx] h-[32rpx] rounded-full mr-[12rpx]" :style="$theme.titleBar.value"></view>
+            <view
+                class="w-[6rpx] h-[32rpx] rounded-full mr-[12rpx]"
+                :style="$theme.titleBar.value"
+            ></view>
             <text class="text-lg font-medium text-gray-900">{{ content.title }}</text>
         </view>
 

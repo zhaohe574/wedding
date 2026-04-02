@@ -21,12 +21,7 @@
                     <view class="staff-booking-page__main">
                         <text class="staff-booking-page__desc">{{ currentIntroText }}</text>
 
-                        <scroll-view
-                            scroll-x
-                            class="choice-scroll"
-                            show-scrollbar="false"
-                            enhanced
-                        >
+                        <scroll-view scroll-x class="choice-scroll" show-scrollbar="false" enhanced>
                             <view class="choice-list" :class="choiceListClass">
                                 <template v-if="currentStep.type === 'package'">
                                     <view
@@ -46,6 +41,9 @@
                                                 </text>
                                                 <text class="choice-card__subline">
                                                     ¥{{ formatPrice(resolvePackagePrice(item)) }}
+                                                    <text v-if="resolvePackageDurationText(item)">
+                                                        ｜{{ resolvePackageDurationText(item) }}
+                                                    </text>
                                                 </text>
                                             </view>
                                             <text
@@ -62,10 +60,9 @@
                                     <view
                                         class="choice-card"
                                         :class="{
-                                            'choice-card--selected':
-                                                !booking.addon_ids.includes(
-                                                    resolveAddonId(currentStep.addon)
-                                                )
+                                            'choice-card--selected': !booking.addon_ids.includes(
+                                                resolveAddonId(currentStep.addon)
+                                            )
                                         }"
                                         @click="
                                             handleAddonSelect(
@@ -76,9 +73,7 @@
                                     >
                                         <view class="choice-card__body">
                                             <view class="choice-card__copy">
-                                                <text class="choice-card__title">
-                                                    暂不增加
-                                                </text>
+                                                <text class="choice-card__title"> 暂不增加 </text>
                                                 <text class="choice-card__subline">费用不变</text>
                                             </view>
                                             <text
@@ -165,10 +160,10 @@
                                         class="choice-card"
                                         :class="{
                                             'choice-card--selected':
-                                                selectedRoleCandidates[currentStep.key]?.staff_id ===
-                                                    candidate.staff_id &&
-                                                selectedRoleCandidates[currentStep.key]?.package_id ===
-                                                    candidate.package_id
+                                                selectedRoleCandidates[currentStep.key]
+                                                    ?.staff_id === candidate.staff_id &&
+                                                selectedRoleCandidates[currentStep.key]
+                                                    ?.package_id === candidate.package_id
                                         }"
                                         @click="
                                             handleRoleCandidateSelect(currentStep.key, candidate)
@@ -176,15 +171,17 @@
                                     >
                                         <view class="choice-card__body">
                                             <view class="choice-card__copy">
-                                                <text class="choice-card__title">{{ candidate.name }}</text>
+                                                <text class="choice-card__title">{{
+                                                    candidate.name
+                                                }}</text>
                                                 <text class="choice-card__subline">
                                                     +¥{{ formatPrice(candidate.price) }}
                                                 </text>
                                             </view>
                                             <text
                                                 v-if="
-                                                    selectedRoleCandidates[currentStep.key]?.staff_id ===
-                                                        candidate.staff_id &&
+                                                    selectedRoleCandidates[currentStep.key]
+                                                        ?.staff_id === candidate.staff_id &&
                                                     selectedRoleCandidates[currentStep.key]
                                                         ?.package_id === candidate.package_id
                                                 "
@@ -218,7 +215,10 @@
                         </view>
 
                         <view class="booking-action-bar__buttons">
-                            <view class="booking-action-btn booking-action-btn--prev" @click="handlePrevious">
+                            <view
+                                class="booking-action-btn booking-action-btn--prev"
+                                @click="handlePrevious"
+                            >
                                 <text class="booking-action-btn__text">上一步</text>
                             </view>
                             <view
@@ -311,12 +311,16 @@ type StaffPackage = {
     price?: number | string
     description?: string
     image?: string
+    duration?: number | string
+    duration_desc?: string
     package?: {
         id?: number
         name?: string
         price?: number | string
         description?: string
         image?: string
+        duration?: number | string
+        duration_desc?: string
     }
 }
 
@@ -454,13 +458,10 @@ const selectedPackage = computed<StaffPackage | null>(() => {
 })
 
 const selectedRoleCandidates = computed<Record<string, RoleCandidate | null>>(() => {
-    return BOOKING_ROLE_KEYS.reduce(
-        (result, roleKey) => {
-            result[roleKey] = findSelectedRoleCandidate(roleKey)
-            return result
-        },
-        {} as Record<string, RoleCandidate | null>
-    )
+    return BOOKING_ROLE_KEYS.reduce((result, roleKey) => {
+        result[roleKey] = findSelectedRoleCandidate(roleKey)
+        return result
+    }, {} as Record<string, RoleCandidate | null>)
 })
 
 const summaryItems = computed<SummaryItem[]>(() => {
@@ -559,7 +560,9 @@ const currentIntroText = computed(() => {
     }
 
     if (step.type === 'package') {
-        const description = resolvePackageDescription(selectedPackage.value || displayPackages.value[0])
+        const description = resolvePackageDescription(
+            selectedPackage.value || displayPackages.value[0]
+        )
         return (
             description ||
             '先为当前婚礼档期确定一个基础套餐，后续附加项会在这个套餐基础上继续叠加。'
@@ -658,6 +661,15 @@ const resolvePackagePrice = (item: StaffPackage | null | undefined) => {
     return Number(item?.price ?? item?.package?.price ?? 0)
 }
 
+const resolvePackageDurationText = (item: StaffPackage | null | undefined) => {
+    const durationDesc = String(item?.duration_desc || item?.package?.duration_desc || '').trim()
+    if (durationDesc) {
+        return durationDesc
+    }
+    const duration = Number(item?.duration ?? item?.package?.duration ?? 0)
+    return duration > 0 ? `${duration}小时` : ''
+}
+
 const formatPrice = (value: number | string) => {
     const amount = Number(value || 0)
     if (!Number.isFinite(amount)) {
@@ -726,10 +738,7 @@ const handleAddonSelect = (addonId: number, selected: boolean) => {
     booking.addon_ids = selected ? [...nextIds, addonId] : nextIds
 }
 
-const handleRoleCandidateSelect = (
-    roleKey: BookingRoleKey,
-    candidate: RoleCandidate | null
-) => {
+const handleRoleCandidateSelect = (roleKey: BookingRoleKey, candidate: RoleCandidate | null) => {
     setRoleSelection(roleKey, candidate)
 }
 
@@ -821,7 +830,9 @@ const syncPackageSelection = () => {
         return
     }
 
-    const matched = displayPackages.value.some((item) => resolvePackageId(item) === booking.package_id)
+    const matched = displayPackages.value.some(
+        (item) => resolvePackageId(item) === booking.package_id
+    )
     if (!matched) {
         booking.package_id = 0
     }
@@ -867,8 +878,15 @@ const loadRoleCandidates = async (roleKey: BookingRoleKey) => {
         roleCandidatesMap[roleKey] = Array.isArray(result)
             ? result.filter((item) => item?.schedule_available !== false)
             : []
-    } catch (error) {
+    } catch (error: any) {
         roleCandidatesMap[roleKey] = []
+        const roleLabel =
+            roleConfigs.value.find((item) => item.role_key === roleKey)?.role_label || '关联人员'
+        const message =
+            typeof error === 'string'
+                ? error
+                : error?.msg || error?.message || `加载${roleLabel}候选人失败`
+        uni.showToast({ title: message, icon: 'none' })
     }
 }
 

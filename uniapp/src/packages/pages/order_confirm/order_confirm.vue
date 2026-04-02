@@ -31,7 +31,9 @@
                         <view class="section-header section-header--stack">
                             <view>
                                 <text class="section-title">预约信息</text>
-                                <text class="section-desc">当前档期和服务地区会直接写入订单，提交前请再次确认。</text>
+                                <text class="section-desc"
+                                    >当前档期和服务地区会直接写入订单，提交前请再次确认。</text
+                                >
                             </view>
                         </view>
                         <view class="booking-grid">
@@ -57,7 +59,9 @@
                         <view class="section-header section-header--stack">
                             <view>
                                 <text class="section-title">联系人信息</text>
-                                <text class="section-desc">用于订单沟通、档期确认和上门服务，请尽量填写准确信息。</text>
+                                <text class="section-desc"
+                                    >用于订单沟通、档期确认和上门服务，请尽量填写准确信息。</text
+                                >
                             </view>
                         </view>
 
@@ -122,7 +126,9 @@
                         <view class="section-header">
                             <view class="section-header__text">
                                 <text class="section-title">服务项目</text>
-                                <text class="section-desc">先确认主服务，再统一核对附加项与关联服务人员。</text>
+                                <text class="section-desc"
+                                    >先确认主服务，再统一核对附加项与关联服务人员。</text
+                                >
                             </view>
                             <view class="section-action" @click="handleReselect">
                                 <text>重新选择</text>
@@ -137,11 +143,15 @@
                                     class="service-main__avatar-image"
                                     mode="aspectFill"
                                 />
-                                <text v-else class="service-main__avatar-text">{{ staffInitial }}</text>
+                                <text v-else class="service-main__avatar-text">{{
+                                    staffInitial
+                                }}</text>
                             </view>
 
                             <view class="service-main__info">
-                                <text class="service-main__name">{{ mainItem.staff?.name || '服务人员' }}</text>
+                                <text class="service-main__name">{{
+                                    mainItem.staff?.name || '服务人员'
+                                }}</text>
                                 <text class="service-main__meta">已为当前档期锁定服务人员</text>
                                 <view class="service-main__tag">
                                     <text>主套餐</text>
@@ -150,7 +160,9 @@
 
                             <view class="service-main__price">
                                 <text class="service-main__price-label">套餐金额</text>
-                                <text class="service-main__price-value">¥{{ formatPrice(mainItem.price) }}</text>
+                                <text class="service-main__price-value"
+                                    >¥{{ formatPrice(mainItem.price) }}</text
+                                >
                             </view>
                         </view>
 
@@ -169,22 +181,90 @@
                                     class="service-addon__card"
                                 >
                                     <view class="service-addon__top">
-                                        <text class="service-addon__name">{{ getExtraItemTitle(item) }}</text>
-                                        <text class="service-addon__price">¥{{ formatPrice(item.price) }}</text>
+                                        <text class="service-addon__name">{{
+                                            getExtraItemTitle(item)
+                                        }}</text>
+                                        <text class="service-addon__price"
+                                            >¥{{ formatPrice(item.price) }}</text
+                                        >
                                     </view>
-                                    <text class="service-addon__desc">{{ getExtraItemDesc(item) }}</text>
+                                    <text class="service-addon__desc">{{
+                                        getExtraItemDesc(item)
+                                    }}</text>
                                 </view>
                             </view>
                         </view>
                     </BaseCard>
 
+                    <BaseCard
+                        variant="glass"
+                        scene="consumer"
+                        :hoverable="false"
+                        class="section-card section-card--payment"
+                    >
+                        <view class="section-header section-header--stack">
+                            <view>
+                                <text class="section-title">支付安排</text>
+                                <text class="section-desc"
+                                    >提交后会按当前规则进入全款或定金支付。</text
+                                >
+                            </view>
+                        </view>
+                        <view class="booking-grid">
+                            <view class="booking-box">
+                                <text class="booking-box__label">支付模式</text>
+                                <text class="booking-box__value">{{
+                                    preview.payment_mode === 'deposit' ? '定金 + 尾款' : '全款支付'
+                                }}</text>
+                            </view>
+                            <view class="booking-box">
+                                <text class="booking-box__label">当前应付</text>
+                                <text class="booking-box__value"
+                                    >¥{{
+                                        formatPrice(preview.deposit_amount || preview.pay_amount)
+                                    }}</text
+                                >
+                            </view>
+                        </view>
+                        <view class="sub-panel">
+                            <view class="sub-panel__row">
+                                <text class="sub-panel__label">订单总额</text>
+                                <text class="sub-panel__value"
+                                    >¥{{ formatPrice(preview.pay_amount) }}</text
+                                >
+                            </view>
+                            <view
+                                v-if="Number(preview.deposit_amount || 0) > 0"
+                                class="sub-panel__row"
+                            >
+                                <text class="sub-panel__label">定金</text>
+                                <text class="sub-panel__value"
+                                    >¥{{ formatPrice(preview.deposit_amount) }}</text
+                                >
+                            </view>
+                            <view
+                                v-if="Number(preview.balance_amount || 0) > 0"
+                                class="sub-panel__row"
+                            >
+                                <text class="sub-panel__label">尾款</text>
+                                <text class="sub-panel__value"
+                                    >¥{{ formatPrice(preview.balance_amount) }}</text
+                                >
+                            </view>
+                        </view>
+                        <text v-if="preview.deposit_remark" class="section-desc">{{
+                            preview.deposit_remark
+                        }}</text>
+                    </BaseCard>
                 </view>
             </view>
 
             <view class="order-confirm-page__submit-bar">
                 <view class="submit-summary">
                     <text class="submit-summary__label">合计</text>
-                    <text class="submit-summary__amount">¥{{ formatPrice(preview.pay_amount) }}</text>
+                    <text class="submit-summary__amount"
+                        >¥{{ formatPrice(preview.pay_amount) }}</text
+                    >
                 </view>
                 <view
                     class="submit-button"
@@ -194,7 +274,9 @@
                     }"
                     @click="handleSubmit"
                 >
-                    <text class="submit-button__text">{{ submitting ? '提交中...' : '提交订单' }}</text>
+                    <text class="submit-button__text">{{
+                        submitting ? '提交中...' : '提交订单'
+                    }}</text>
                 </view>
             </view>
         </view>
@@ -523,7 +605,12 @@ onLoad((options: any) => {
         saveServiceRegionSelection(region)
     }
 
-    if (!selection.staff_id || !selection.package_id || !selection.date || !hasServiceRegion(selection)) {
+    if (
+        !selection.staff_id ||
+        !selection.package_id ||
+        !selection.date ||
+        !hasServiceRegion(selection)
+    ) {
         handlePreviewError('预约信息不完整，请重新选择服务地区和日期')
         return
     }

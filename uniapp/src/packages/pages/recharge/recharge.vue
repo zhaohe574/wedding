@@ -9,7 +9,9 @@
                     <text class="recharge-page__title">为婚礼预算账户补充余额</text>
                     <text class="recharge-page__desc">
                         当前可用余额
-                        <text class="recharge-page__balance">¥ {{ wallet.user_money || '0.00' }}</text>
+                        <text class="recharge-page__balance"
+                            >¥ {{ wallet.user_money || '0.00' }}</text
+                        >
                     </text>
                 </BaseCard>
 
@@ -25,17 +27,31 @@
                         />
                     </view>
                     <text class="recharge-page__hint">
-                        {{ wallet.min_amount ? `最低充值金额 ¥${wallet.min_amount}` : '请输入需要充值的金额' }}
+                        {{
+                            wallet.min_amount
+                                ? `最低充值金额 ¥${wallet.min_amount}`
+                                : '请输入需要充值的金额'
+                        }}
                     </text>
                 </BaseCard>
 
                 <view class="wm-page-actions-bar">
-                    <BaseButton variant="primary" size="lg" block :loading="isLock" @click="rechargeLock">
+                    <BaseButton
+                        variant="primary"
+                        size="lg"
+                        block
+                        :loading="isLock"
+                        @click="rechargeLock"
+                    >
                         立即充值
                     </BaseButton>
                 </view>
 
-                <navigator class="recharge-page__record-link" url="/packages/pages/recharge_record/recharge_record" hover-class="none">
+                <navigator
+                    class="recharge-page__record-link"
+                    url="/packages/pages/recharge_record/recharge_record"
+                    hover-class="none"
+                >
                     查看充值记录
                 </navigator>
             </view>
@@ -65,7 +81,7 @@ import { reactive, ref } from 'vue'
 const money = ref('')
 
 const payState = reactive({
-    orderId: '',
+    orderId: 0,
     from: '',
     showPay: false,
     showCheck: false,

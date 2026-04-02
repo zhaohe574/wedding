@@ -108,7 +108,7 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $params = $this->request->get();
+        $params = (new StaffCenterValidate())->get()->goCheck('workLists');
         $result = StaffCenterLogic::workLists($this->userId, $params);
         if (empty($result) && StaffCenterLogic::getError()) {
             return $this->fail(StaffCenterLogic::getError());
@@ -125,7 +125,7 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $params = (new StaffCenterValidate())->goCheck('workDelete');
+        $params = (new StaffCenterValidate())->goCheck('workDetail');
         $result = StaffCenterLogic::workDetail($this->userId, (int) $params['id']);
         if (empty($result)) {
             return $this->fail(StaffCenterLogic::getError());
@@ -193,7 +193,25 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $result = StaffCenterLogic::packageLists($this->userId);
+        $params = (new StaffCenterValidate())->get()->goCheck('packageLists');
+        $result = StaffCenterLogic::packageLists($this->userId, $params);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 套餐详情
+     */
+    public function packageDetail()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->goCheck('packageDetail');
+        $result = StaffCenterLogic::packageDetail($this->userId, (int) $params['package_id']);
         if (empty($result) && StaffCenterLogic::getError()) {
             return $this->fail(StaffCenterLogic::getError());
         }
@@ -260,7 +278,25 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $result = StaffCenterLogic::addonLists($this->userId);
+        $params = (new StaffCenterValidate())->get()->goCheck('addonLists');
+        $result = StaffCenterLogic::addonLists($this->userId, $params);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 附加服务详情
+     */
+    public function addonDetail()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->get()->goCheck('addonDetail');
+        $result = StaffCenterLogic::addonDetail($this->userId, (int) $params['addon_id']);
         if (empty($result) && StaffCenterLogic::getError()) {
             return $this->fail(StaffCenterLogic::getError());
         }
@@ -362,7 +398,7 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $params = $this->request->get();
+        $params = (new StaffCenterValidate())->get()->goCheck('orderLists');
         $result = StaffCenterLogic::orderLists($this->userId, $params);
         if (empty($result) && StaffCenterLogic::getError()) {
             return $this->fail(StaffCenterLogic::getError());
@@ -413,8 +449,25 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $params = $this->request->get();
+        $params = (new StaffCenterValidate())->get()->goCheck('dynamicLists');
         $result = StaffCenterLogic::dynamicLists($this->userId, $params);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 动态详情
+     */
+    public function dynamicDetail()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->goCheck('dynamicDetail');
+        $result = StaffCenterLogic::dynamicDetail($this->userId, (int) $params['id']);
         if (empty($result) && StaffCenterLogic::getError()) {
             return $this->fail(StaffCenterLogic::getError());
         }

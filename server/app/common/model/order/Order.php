@@ -231,6 +231,137 @@ class Order extends BaseModel
     }
 
     /**
+     * @notes 获取定金配置
+     * @return array
+     */
+    public static function getDepositConfig(): array
+    {
+        $enabled = (int) ConfigService::get('order_payment', 'enable_deposit_mode', 0) === 1;
+        $type = (string) ConfigService::get('order_payment', 'deposit_type', 'ratio');
+        $value = round((float) ConfigService::get('order_payment', 'deposit_value', 30), 2);
+
+        if (!in_array($type, ['fixed', 'ratio'], true)) {
+            $type = 'ratio';
+        }
+
+        if ($value < 0) {
+            $value = 0;
+        }
+
+        return [
+            'enabled' => $enabled,
+            'deposit_type' => $type,
+            'deposit_value' => $value,
+            'deposit_remark' => (string) ConfigService::get('order_payment', 'deposit_remark', ''),
+        ];
+    }
+
+    /**
+     * @notes 计算订单定金与尾款金额
+     * @param float $payAmount
+     * @return array
+     */
+    public static function calculatePaymentSplit(float $payAmount): array
+    {
+        $normalizedPayAmount = round(max($payAmount, 0), 2);
+        $config = self::getDepositConfig();
+
+        $depositAmount = 0.0;
+        if ($config['enabled'] && $normalizedPayAmount > 0) {
+            if ($config['deposit_type'] === 'fixed') {
+                $depositAmount = min($config['deposit_value'], $normalizedPayAmount);
+            } else {
+                $ratio = min(max($config['deposit_value'], 0), 99.99);
+                $depositAmount = round($normalizedPayAmount * $ratio / 100, 2);
+            }
+        }
+
+        $depositAmount = round(max($depositAmount, 0), 2);
+        $balanceAmount = round(max($normalizedPayAmount - $depositAmount, 0), 2);
+
+        if ($depositAmount >= $normalizedPayAmount) {
+            $depositAmount = $normalizedPayAmount;
+            $balanceAmount = 0.0;
+        }
+
+        return [
+            'deposit_amount' => $depositAmount,
+            'balance_amount' => $balanceAmount,
+            'deposit_mode_enabled' => $depositAmount > 0 ? 1 : 0,
+            'deposit_type' => $config['deposit_type'],
+            'deposit_value' => $config['deposit_value'],
+            'deposit_remark' => $config['deposit_remark'],
+        ];
+    }
+
+    /**
+     * @notes 获取订单支付摘要
+     * @param Order $order
+     * @return array
+     */
+    public static function getPaymentSummary(self $order): array
+    {
+        $payAmount = round((float) ($order->pay_amount ?? 0), 2);
+        $depositAmount = round((float) ($order->deposit_amount ?? 0), 2);
+        $balanceAmount = round((float) ($order->balance_amount ?? 0), 2);
+        $paidAmount = round((float) ($order->paid_amount ?? 0), 2);
+        $unpaidAmount = round(max($payAmount - $paidAmount, 0), 2);
+
+        $paymentMode = $depositAmount > 0 ? 'deposit' : 'full';
+        $needPay = 'none';
+        $needPayAmount = 0.0;
+        $currentPayStage = 'paid';
+
+        if ($depositAmount > 0) {
+            if (!(int) ($order->deposit_paid ?? 0)) {
+                $needPay = 'deposit';
+                $needPayAmount = $depositAmount;
+                $currentPayStage = 'deposit';
+            } elseif (!(int) ($order->balance_paid ?? 0)) {
+                $needPay = 'balance';
+                $needPayAmount = $balanceAmount;
+                $currentPayStage = 'balance';
+            }
+        } elseif ((int) ($order->pay_status ?? self::PAY_STATUS_UNPAID) !== self::PAY_STATUS_PAID && $payAmount > 0) {
+            $needPay = 'full';
+            $needPayAmount = $unpaidAmount > 0 ? $unpaidAmount : $payAmount;
+            $currentPayStage = 'full';
+        }
+
+        $labelMap = [
+            'deposit' => '支付定金',
+            'balance' => '支付尾款',
+            'full' => '立即支付',
+            'none' => '无需支付',
+        ];
+        $descMap = [
+            'deposit' => '待支付定金',
+            'balance' => '待支付尾款',
+            'full' => '待全额支付',
+            'paid' => '已完成支付',
+        ];
+
+        return [
+            'payment_mode' => $paymentMode,
+            'payment_mode_desc' => $paymentMode === 'deposit' ? '定金支付' : '全款支付',
+            'total_amount' => round((float) ($order->total_amount ?? $payAmount), 2),
+            'pay_amount' => $payAmount,
+            'paid_amount' => $paidAmount,
+            'unpaid_amount' => $unpaidAmount,
+            'deposit_amount' => $depositAmount,
+            'balance_amount' => $balanceAmount,
+            'deposit_paid' => (int) ($order->deposit_paid ?? 0),
+            'balance_paid' => (int) ($order->balance_paid ?? 0),
+            'need_pay' => $needPay,
+            'need_pay_amount' => round($needPayAmount, 2),
+            'need_pay_label' => $labelMap[$needPay] ?? '立即支付',
+            'current_pay_stage' => $currentPayStage,
+            'current_pay_stage_desc' => $descMap[$currentPayStage] ?? '待支付',
+            'deposit_remark' => (string) ($order->deposit_remark_snapshot ?? ConfigService::get('order_payment', 'deposit_remark', '')),
+        ];
+    }
+
+    /**
      * @notes 是否为线下凭证待审核
      * @return bool
      */
@@ -465,14 +596,10 @@ class Order extends BaseModel
             // 计算优惠
             $discountAmount = $orderInfo['discount_amount'] ?? 0;
             $payAmount = $totalAmount - $discountAmount;
-            
-            // 定金/尾款模式
-            $depositAmount = 0;
-            $balanceAmount = 0;
-            if (!empty($orderInfo['deposit_ratio'])) {
-                $depositAmount = round($payAmount * $orderInfo['deposit_ratio'] / 100, 2);
-                $balanceAmount = $payAmount - $depositAmount;
-            }
+
+            $paymentSplit = self::calculatePaymentSplit((float) $payAmount);
+            $depositAmount = (float) $paymentSplit['deposit_amount'];
+            $balanceAmount = (float) $paymentSplit['balance_amount'];
 
             $confirmLockDuration = 3600;
             $createdLegacyAddonSnapshots = false;
@@ -491,6 +618,10 @@ class Order extends BaseModel
                 'pay_amount' => $payAmount,
                 'deposit_amount' => $depositAmount,
                 'balance_amount' => $balanceAmount,
+                'deposit_mode_enabled' => (int) $paymentSplit['deposit_mode_enabled'],
+                'deposit_type_snapshot' => (string) $paymentSplit['deposit_type'],
+                'deposit_value_snapshot' => (float) $paymentSplit['deposit_value'],
+                'deposit_remark_snapshot' => (string) $paymentSplit['deposit_remark'],
                 'service_date' => $orderInfo['date'] ?? $orderInfo['service_date'] ?? ($selectedItems[0]['schedule_date'] ?? null),
                 'service_time_slot' => 0,
                 'service_address' => $orderInfo['service_address'] ?? '',

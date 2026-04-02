@@ -8,7 +8,9 @@
         <view v-if="content.subtitle" class="entry-subtitle">{{ content.subtitle }}</view>
         <view class="entry-footer">
             <view v-if="content.tips" class="entry-tips">{{ content.tips }}</view>
-            <view class="entry-btn" :style="buttonStyle">{{ content.buttonText || '联系顾问' }}</view>
+            <view class="entry-btn" :style="buttonStyle">{{
+                content.buttonText || '联系顾问'
+            }}</view>
         </view>
     </view>
 </template>

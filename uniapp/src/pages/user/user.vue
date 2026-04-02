@@ -244,7 +244,9 @@ const mergeUserInfoContent = (content: Record<string, any>) => {
     const weddingDateText = String(weddingInfo.value?.wedding_date || '').trim()
     return {
         ...content,
-        profile_subtitle: weddingDateText ? `婚礼主档期：${weddingDateText}` : '点击完善资料，更新主档期'
+        profile_subtitle: weddingDateText
+            ? `婚礼主档期：${weddingDateText}`
+            : '点击完善资料，更新主档期'
     }
 }
 
@@ -366,8 +368,7 @@ onShow(async () => {
     flex-direction: column;
     gap: var(--wm-user-page-section-gap);
     padding: var(--wm-user-page-content-top) var(--wm-user-page-content-side)
-        var(--wm-user-page-content-bottom)
-        var(--wm-user-page-content-side);
+        var(--wm-user-page-content-bottom) var(--wm-user-page-content-side);
     box-sizing: border-box;
 }
 </style>

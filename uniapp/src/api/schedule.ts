@@ -1,5 +1,13 @@
 import request from '@/utils/request'
 
+export interface ScheduleAvailabilityResult {
+    is_available: boolean
+    status: number
+    status_desc: string
+    price: number | null
+    message: string
+}
+
 // 获取工作人员档期
 export function getStaffSchedule(params: any) {
     return request.get({ url: '/schedule/staffSchedule', params })
@@ -17,7 +25,7 @@ export function getLuckyDays(params?: any) {
 
 // 检查档期是否可预约
 export function checkScheduleAvailable(params: any) {
-    return request.get({ url: '/schedule/checkAvailable', params })
+    return request.get({ url: '/schedule/checkAvailable', params }) as Promise<ScheduleAvailabilityResult>
 }
 
 // 锁定档期
@@ -32,7 +40,7 @@ export function releaseScheduleLock(params: any) {
 
 // 加入候补
 export function joinWaitlist(params: any) {
-    return request.post({ url: '/schedule/joinWaitlist', params })
+    return request.post({ url: '/schedule/joinWaitlist', params }, { isAuth: true })
 }
 
 // 我的候补列表

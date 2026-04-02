@@ -67,6 +67,11 @@ export function orderStatistics(params?: any) {
     return request.get({ url: '/ops.order/statistics', params })
 }
 
+// 后台建单支付预估
+export function orderEstimatePayment(params: any) {
+    return request.post({ url: '/ops.order/estimatePayment', params })
+}
+
 // 订单状态选项
 export function orderStatusOptions() {
     return request.get({ url: '/ops.order/statusOptions' })

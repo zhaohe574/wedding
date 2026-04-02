@@ -30,7 +30,9 @@
 
                         <view class="profile-hero-card__info">
                             <text class="profile-hero-card__name">{{ displayName }}</text>
-                            <text class="profile-hero-card__category">{{ currentCategoryName }}</text>
+                            <text class="profile-hero-card__category">{{
+                                currentCategoryName
+                            }}</text>
 
                             <view class="profile-chip-list">
                                 <view class="profile-chip">
@@ -85,7 +87,10 @@
                                 <text
                                     :class="[
                                         'field-card__value',
-                                        { 'is-placeholder': !form.category_id && !profileMeta.category_name }
+                                        {
+                                            'is-placeholder':
+                                                !form.category_id && !profileMeta.category_name
+                                        }
                                     ]"
                                 >
                                     {{ currentCategoryName }}
@@ -154,18 +159,28 @@
                         </view>
                     </view>
 
-                    <view v-if="tagStatusTip" :class="['status-tip', `status-tip--${tagStatusTip.tone}`]">
+                    <view
+                        v-if="tagStatusTip"
+                        :class="['status-tip', `status-tip--${tagStatusTip.tone}`]"
+                    >
                         <text class="status-tip__text">{{ tagStatusTip.text }}</text>
                     </view>
 
                     <view v-if="Object.keys(groupedTags).length" class="tag-group-list">
-                        <view v-for="(tags, groupName) in groupedTags" :key="groupName" class="tag-group-card">
+                        <view
+                            v-for="(tags, groupName) in groupedTags"
+                            :key="groupName"
+                            class="tag-group-card"
+                        >
                             <text class="tag-group-card__title">{{ groupName }}</text>
                             <view class="tag-chip-list">
                                 <view
                                     v-for="tag in tags"
                                     :key="tag.id"
-                                    :class="['tag-chip', { 'tag-chip--active': isTagSelected(tag.id) }]"
+                                    :class="[
+                                        'tag-chip',
+                                        { 'tag-chip--active': isTagSelected(tag.id) }
+                                    ]"
                                     @click="toggleTag(tag.id)"
                                 >
                                     <text class="tag-chip__text">{{ tag.name }}</text>
@@ -295,7 +310,7 @@ const tagStatusTip = computed(() => {
     if (profileMeta.tag_apply_status === 0) {
         return {
             tone: 'warning',
-            text: '当前存在待审核标签申请，新的保存会覆盖原待审内容。',
+            text: '当前存在待审核标签申请，新的保存会覆盖原待审内容。'
         }
     }
     if (profileMeta.tag_apply_status === 2) {
@@ -304,12 +319,12 @@ const tagStatusTip = computed(() => {
             : '请调整后重新提交。'
         return {
             tone: 'danger',
-            text: `上次标签申请未通过审核。${reason}`,
+            text: `上次标签申请未通过审核。${reason}`
         }
     }
     return {
         tone: 'info',
-        text: '当前标签保存后需管理员审核通过才会生效。',
+        text: '当前标签保存后需管理员审核通过才会生效。'
     }
 })
 
@@ -374,7 +389,7 @@ const loadTags = async () => {
     }
     const data = await getStyleTags({
         grouped: 1,
-        category_id: Number(form.category_id),
+        category_id: Number(form.category_id)
     })
     groupedTags.value = (data || {}) as Record<string, Array<{ id: number; name: string }>>
 
@@ -401,7 +416,9 @@ const loadProfile = async () => {
     profileMeta.pending_tag_ids = Array.isArray(data?.pending_tag_ids)
         ? data.pending_tag_ids.map((item: any) => Number(item))
         : []
-    profileMeta.pending_tag_names = Array.isArray(data?.pending_tag_names) ? data.pending_tag_names : []
+    profileMeta.pending_tag_names = Array.isArray(data?.pending_tag_names)
+        ? data.pending_tag_names
+        : []
     profileMeta.tag_apply_status =
         data?.tag_apply_status === null || data?.tag_apply_status === undefined
             ? null
@@ -409,8 +426,12 @@ const loadProfile = async () => {
     profileMeta.tag_apply_status_desc = data?.tag_apply_status_desc || ''
     profileMeta.tag_apply_reject_reason = data?.tag_apply_reject_reason || ''
     profileMeta.staff_tag_review_enabled = Number(data?.staff_tag_review_enabled ?? 0)
-    const effectiveTagIds = Array.isArray(data?.tag_ids) ? data.tag_ids.map((item: any) => Number(item)) : []
-    form.tag_ids = profileMeta.pending_tag_ids.length ? [...profileMeta.pending_tag_ids] : effectiveTagIds
+    const effectiveTagIds = Array.isArray(data?.tag_ids)
+        ? data.tag_ids.map((item: any) => Number(item))
+        : []
+    form.tag_ids = profileMeta.pending_tag_ids.length
+        ? [...profileMeta.pending_tag_ids]
+        : effectiveTagIds
 
     profileMeta.category_name = data?.category_name || ''
     profileMeta.status = Number(data?.status || 0)
@@ -454,7 +475,7 @@ const handleSave = async () => {
         const res = await staffCenterUpdateProfile(payload)
         uni.showToast({
             title: res?.tag_action === 'pending' ? '标签已提交审核' : '保存成功',
-            icon: 'success',
+            icon: 'success'
         })
         await loadProfile()
         await loadTags()
@@ -534,7 +555,11 @@ onShow(async () => {
 
 .tag-chip--active {
     border-color: rgba(200, 124, 93, 0.9);
-    background: linear-gradient(135deg, rgba(255, 237, 228, 0.96) 0%, rgba(255, 224, 210, 0.96) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 237, 228, 0.96) 0%,
+        rgba(255, 224, 210, 0.96) 100%
+    );
     box-shadow: 0 12rpx 24rpx rgba(200, 124, 93, 0.16);
 }
 

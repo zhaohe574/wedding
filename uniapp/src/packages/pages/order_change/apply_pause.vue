@@ -128,7 +128,12 @@
 
         <!-- 提交按钮 -->
         <view class="bottom-actions">
-            <button class="btn-submit" :style="{ background: $theme.primaryColor }" :disabled="submitting" @click="handleSubmit">
+            <button
+                class="btn-submit"
+                :style="{ background: $theme.primaryColor }"
+                :disabled="submitting"
+                @click="handleSubmit"
+            >
                 {{ submitting ? '提交中...' : '提交暂停申请' }}
             </button>
         </view>
@@ -318,7 +323,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--color-primary, #E85A4F);
+    border-left: 6rpx solid var(--color-primary, #e85a4f);
 }
 
 .order-card {
@@ -343,7 +348,7 @@ onLoad((options: any) => {
     border-radius: 12rpx;
 
     &.active {
-        border-color: var(--color-primary, #E85A4F);
+        border-color: var(--color-primary, #e85a4f);
         background: rgba(124, 58, 237, 0.05);
     }
 
@@ -354,7 +359,7 @@ onLoad((options: any) => {
     }
 
     &.active .type-label {
-        color: var(--color-primary, #E85A4F);
+        color: var(--color-primary, #e85a4f);
     }
 }
 
@@ -461,7 +466,7 @@ onLoad((options: any) => {
     width: 100%;
     height: 72rpx;
     line-height: 72rpx;
-    background: var(--color-primary, #E85A4F);
+    background: var(--color-primary, #e85a4f);
     color: #fff;
     border-radius: 44rpx;
     font-size: 30rpx;

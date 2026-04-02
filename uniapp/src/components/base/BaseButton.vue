@@ -196,7 +196,11 @@ export default {
     &--primary,
     &--danger {
         :deep(.tn-button) {
-            background: linear-gradient(135deg, var(--button-bg-start) 0%, var(--button-bg-end) 100%);
+            background: linear-gradient(
+                135deg,
+                var(--button-bg-start) 0%,
+                var(--button-bg-end) 100%
+            );
             box-shadow: var(--button-shadow);
             border: none;
 

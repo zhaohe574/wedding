@@ -38,10 +38,7 @@
                                 <view
                                     v-for="item in summaryCards"
                                     :key="item.key"
-                                    :class="[
-                                        'hero-metric',
-                                        { 'hero-metric--accent': item.accent }
-                                    ]"
+                                    :class="['hero-metric', { 'hero-metric--accent': item.accent }]"
                                     @click="switchStatusByValue(item.status)"
                                 >
                                     <text class="hero-metric__label">{{ item.label }}</text>
@@ -51,15 +48,9 @@
                                     </view>
                                 </view>
                             </view>
-                        </BaseCard>
 
-                        <BaseCard variant="glass" scene="staff" class="filter-panel">
-                            <view class="section-head">
-                                <text class="section-head__title">订单状态</text>
-                            </view>
-
-                            <scroll-view scroll-x class="status-scroll" show-scrollbar="false">
-                                <view class="status-row">
+                            <scroll-view scroll-x class="hero-status-scroll" show-scrollbar="false">
+                                <view class="hero-status-row">
                                     <FilterChip
                                         v-for="tab in statusTabs"
                                         :key="String(tab.value)"
@@ -76,10 +67,7 @@
                 </template>
 
                 <view class="page-section page-section--list">
-                    <LoadingState
-                        v-if="loading && !hasLoaded"
-                        text="正在同步订单工作台..."
-                    />
+                    <LoadingState v-if="loading && !hasLoaded" text="正在同步订单工作台..." />
 
                     <template v-else-if="orderList.length">
                         <BaseCard
@@ -204,10 +192,7 @@
                         </BaseCard>
                     </template>
 
-                    <EmptyState
-                        v-else-if="hasLoaded"
-                        title="当前筛选下暂无订单"
-                    />
+                    <EmptyState v-else-if="hasLoaded" title="当前筛选下暂无订单" />
                 </view>
             </z-paging>
         </view>
@@ -335,9 +320,7 @@ const hasLoaded = ref(false)
 const heroCardStyle = computed(() => ({
     '--wm-hero-gradient': `linear-gradient(135deg, ${
         $theme.primaryColor || '#E85A4F'
-    }12 0%, var(--wm-color-bg-page, #FCFBF9) 52%, ${
-        $theme.secondaryColor || '#C99B73'
-    }14 100%)`,
+    }12 0%, var(--wm-color-bg-page, #FCFBF9) 52%, ${$theme.secondaryColor || '#C99B73'}14 100%)`,
     borderColor: 'var(--wm-color-border-strong, #F4C7BF)'
 }))
 
@@ -397,8 +380,11 @@ const loadOrderStats = async () => {
             ...DEFAULT_ORDER_STATS,
             ...(data || {})
         }
-    } catch {
+    } catch (error: any) {
         resetOrderStats()
+        const msg =
+            typeof error === 'string' ? error : error?.msg || error?.message || '加载订单统计失败'
+        uni.showToast({ title: msg, icon: 'none' })
     }
 }
 
@@ -443,7 +429,10 @@ const queryList = async (pageNo: number, pageSize: number) => {
     loading.value = true
 
     try {
-        const params: any = { page: pageNo, page_size: pageSize }
+        const params: any = { page_size: pageSize }
+        if (pageNo > 1) {
+            params.page_no = pageNo
+        }
         if (currentStatus.value !== '') {
             params.status = currentStatus.value
         }
@@ -451,7 +440,9 @@ const queryList = async (pageNo: number, pageSize: number) => {
         const res: any = await staffCenterOrderLists(params)
         const list = Array.isArray(res?.data) ? res.data : []
         pagingRef.value.complete(list.map(formatOrder))
-    } catch {
+    } catch (e: any) {
+        const msg = typeof e === 'string' ? e : e?.msg || e?.message || '加载失败'
+        uni.showToast({ title: msg, icon: 'none' })
         pagingRef.value.complete(false)
     } finally {
         loading.value = false
@@ -546,8 +537,11 @@ onShow(async () => {
     min-height: 100vh;
     padding-top: 20rpx;
     box-sizing: border-box;
-    background:
-        radial-gradient(circle at top left, rgba(232, 90, 79, 0.1) 0, rgba(252, 251, 249, 0) 36%),
+    background: radial-gradient(
+            circle at top left,
+            rgba(232, 90, 79, 0.1) 0,
+            rgba(252, 251, 249, 0) 36%
+        ),
         linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
 }
 
@@ -559,7 +553,7 @@ onShow(async () => {
     box-sizing: border-box;
 
     &--top {
-        padding-top: 0;
+        padding-top: 20rpx;
     }
 
     &--list {
@@ -634,6 +628,17 @@ onShow(async () => {
     margin-top: 20rpx;
 }
 
+.hero-status-scroll {
+    margin-top: 18rpx;
+    white-space: nowrap;
+}
+
+.hero-status-row {
+    display: inline-flex;
+    gap: 12rpx;
+    padding-bottom: 2rpx;
+}
+
 .hero-metric {
     display: flex;
     flex-direction: column;
@@ -680,29 +685,6 @@ onShow(async () => {
     font-weight: 600;
     line-height: 1.35;
     color: var(--wm-text-secondary, #7f7b78);
-}
-
-.section-head {
-    display: flex;
-    align-items: center;
-}
-
-.section-head__title {
-    font-size: 30rpx;
-    font-weight: 700;
-    line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
-}
-
-.status-scroll {
-    margin-top: 16rpx;
-    white-space: nowrap;
-}
-
-.status-row {
-    display: inline-flex;
-    gap: 12rpx;
-    padding-bottom: 2rpx;
 }
 
 .order-card + .order-card {
@@ -802,7 +784,11 @@ onShow(async () => {
     gap: 10rpx;
     padding: 20rpx;
     border-radius: 28rpx;
-    background: linear-gradient(180deg, rgba(255, 241, 238, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 241, 238, 0.95) 0%,
+        rgba(255, 255, 255, 0.9) 100%
+    );
     border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
     box-sizing: border-box;
 }

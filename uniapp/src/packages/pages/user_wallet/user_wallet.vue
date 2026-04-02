@@ -15,9 +15,15 @@
                     <BaseCard variant="hero" scene="consumer" class="user-wallet-top__hero">
                         <view>
                             <text class="user-wallet-top__label">钱包余额</text>
-                            <text class="user-wallet-top__amount">¥ {{ wallet.user_money || '0.00' }}</text>
+                            <text class="user-wallet-top__amount"
+                                >¥ {{ wallet.user_money || '0.00' }}</text
+                            >
                         </view>
-                        <navigator v-if="wallet.status" url="/packages/pages/recharge/recharge" hover-class="none">
+                        <navigator
+                            v-if="wallet.status"
+                            url="/packages/pages/recharge/recharge"
+                            hover-class="none"
+                        >
                             <view class="user-wallet-top__cta">去充值</view>
                         </navigator>
                     </BaseCard>
@@ -38,10 +44,17 @@
 
             <view class="user-wallet-list wm-page-content">
                 <view v-if="dataList.length" class="wm-page-stack">
-                    <view v-for="item in dataList" :key="item.id" class="wm-page-card user-wallet-list__item">
+                    <view
+                        v-for="item in dataList"
+                        :key="item.id"
+                        class="wm-page-card user-wallet-list__item"
+                    >
                         <view class="wm-toolbar-row">
                             <text class="user-wallet-list__title">{{ item.type_desc }}</text>
-                            <text class="user-wallet-list__amount" :class="{ 'is-expense': item.action != 1 }">
+                            <text
+                                class="user-wallet-list__amount"
+                                :class="{ 'is-expense': item.action != 1 }"
+                            >
                                 {{ item.change_amount_desc }}
                             </text>
                         </view>
@@ -50,7 +63,10 @@
                 </view>
 
                 <view v-else class="wm-empty-shell">
-                    <EmptyState title="暂无钱包流水" description="充值、消费或退款记录都会显示在这里。" />
+                    <EmptyState
+                        title="暂无钱包流水"
+                        description="充值、消费或退款记录都会显示在这里。"
+                    />
                 </view>
             </view>
         </z-paging>

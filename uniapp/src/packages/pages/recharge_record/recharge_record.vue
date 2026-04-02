@@ -12,7 +12,11 @@
         >
             <view class="recharge-record wm-page-content">
                 <view v-if="dataList.length" class="wm-page-stack">
-                    <view v-for="item in dataList" :key="item.id" class="wm-page-card recharge-record__item">
+                    <view
+                        v-for="item in dataList"
+                        :key="item.id"
+                        class="wm-page-card recharge-record__item"
+                    >
                         <view class="wm-toolbar-row">
                             <text class="recharge-record__title">{{ item.tips }}</text>
                             <text class="recharge-record__amount">+{{ item.order_amount }}</text>

@@ -1,5 +1,4 @@
 import { isObject } from '@vue/shared'
-import { getToken } from './auth'
 import { parseQuery } from 'uniapp-router-next'
 
 /**
@@ -90,11 +89,7 @@ const LEGACY_LINK_MAP: Record<string, string> = {
     '/pages/recharge_record/recharge_record': '/packages/pages/recharge_record/recharge_record'
 }
 
-const TABBAR_PATHS = new Set([
-    '/pages/index/index',
-    '/pages/dynamic/dynamic',
-    '/pages/user/user'
-])
+const TABBAR_PATHS = new Set(['/pages/index/index', '/pages/dynamic/dynamic', '/pages/user/user'])
 
 export const normalizeAppPath = (path = '') => {
     let nextPath = path.trim()
@@ -147,7 +142,8 @@ export function navigateTo(
         return
     }
 
-    const shouldSwitchTab = TABBAR_PATHS.has(path) && (navigateType === 'switchTab' || !!link.canTab)
+    const shouldSwitchTab =
+        TABBAR_PATHS.has(path) && (navigateType === 'switchTab' || !!link.canTab)
     const url = buildUrl(path, link.query)
 
     if (shouldSwitchTab) {
@@ -263,7 +259,9 @@ export const addUnit = (value: string | number, unit = 'rpx') => {
  * @param  { string } prec 小数位补
  */
 export function formatPrice({ price, take = 'all', prec = undefined }: any) {
-    let [integer, decimals = ''] = (price + '').split('.')
+    const parts = (price + '').split('.')
+    const integer = parts[0]
+    let decimals = parts[1] || ''
 
     // 小数位补
     if (prec !== undefined) {

@@ -280,7 +280,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--color-primary, #E85A4F);
+    border-left: 6rpx solid var(--color-primary, #e85a4f);
 }
 
 .info-row {
@@ -332,7 +332,7 @@ onLoad((options: any) => {
 .time-value {
     font-size: 30rpx;
     font-weight: bold;
-    color: var(--color-primary, #E85A4F);
+    color: var(--color-primary, #e85a4f);
     margin-top: 8rpx;
 }
 

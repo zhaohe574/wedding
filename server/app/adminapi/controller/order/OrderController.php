@@ -244,6 +244,17 @@ class OrderController extends BaseAdminController
     }
 
     /**
+     * @notes 后台建单支付预估
+     * @return \think\response\Json
+     */
+    public function estimatePayment()
+    {
+        $params = (new OrderValidate())->post()->goCheck('addEstimate');
+        $result = OrderLogic::estimatePayment($params);
+        return $this->data($result);
+    }
+
+    /**
      * @notes 获取订单状态选项
      * @return \think\response\Json
      */

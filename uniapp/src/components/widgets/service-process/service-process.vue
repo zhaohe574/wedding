@@ -35,9 +35,7 @@
                         v-if="index < showList.length - 1"
                         class="timeline-connector"
                         :style="{
-                            background:
-                                content.line_color ||
-                                $theme.lineGradientV.value
+                            background: content.line_color || $theme.lineGradientV.value
                         }"
                     ></view>
                 </view>
@@ -58,7 +56,10 @@
                 <view class="card-progress-bar">
                     <view
                         class="progress-fill"
-                        :style="{ width: ((index + 1) / showList.length) * 100 + '%', background: $theme.progressGradient.value }"
+                        :style="{
+                            width: ((index + 1) / showList.length) * 100 + '%',
+                            background: $theme.progressGradient.value
+                        }"
                     ></view>
                 </view>
 
@@ -92,7 +93,9 @@
                     <view v-for="(item, index) in showList" :key="index" class="horizontal-step">
                         <!-- 步骤内容 -->
                         <view class="step-box">
-                            <view class="step-number-badge" :style="$theme.badge.value">{{ index + 1 }}</view>
+                            <view class="step-number-badge" :style="$theme.badge.value">{{
+                                index + 1
+                            }}</view>
                             <view
                                 class="step-icon-wrapper"
                                 :style="$theme.iconBg.value"
@@ -116,9 +119,7 @@
                             <view
                                 class="arrow-line"
                                 :style="{
-                                    background:
-                                        content.line_color ||
-                                        $theme.progressGradient.value
+                                    background: content.line_color || $theme.progressGradient.value
                                 }"
                             ></view>
                             <view
@@ -156,21 +157,38 @@ const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
 // 主题内联样式（兼容小程序，不使用CSS变量）
 const $theme = {
     titleBar: computed(() => ({
-        background: `linear-gradient(180deg, ${primaryColor.value} 0%, ${tintColor(primaryColor.value, 0.3)} 100%)`
+        background: `linear-gradient(180deg, ${primaryColor.value} 0%, ${tintColor(
+            primaryColor.value,
+            0.3
+        )} 100%)`
     })),
     iconBg: computed(() => ({
-        background: `linear-gradient(135deg, ${tintColor(primaryColor.value, 0.85)} 0%, ${tintColor(primaryColor.value, 0.7)} 100%)`,
+        background: `linear-gradient(135deg, ${tintColor(primaryColor.value, 0.85)} 0%, ${tintColor(
+            primaryColor.value,
+            0.7
+        )} 100%)`,
         boxShadow: `0 6rpx 20rpx ${alphaColor(primaryColor.value, 0.15)}`
     })),
     badge: computed(() => ({
-        background: `linear-gradient(135deg, ${primaryColor.value} 0%, ${tintColor(primaryColor.value, 0.3)} 100%)`,
+        background: `linear-gradient(135deg, ${primaryColor.value} 0%, ${tintColor(
+            primaryColor.value,
+            0.3
+        )} 100%)`,
         boxShadow: `0 4rpx 16rpx ${alphaColor(primaryColor.value, 0.3)}`
     })),
-    lineGradientV: computed(() =>
-        `linear-gradient(180deg, ${primaryColor.value} 0%, ${tintColor(primaryColor.value, 0.7)} 100%)`
+    lineGradientV: computed(
+        () =>
+            `linear-gradient(180deg, ${primaryColor.value} 0%, ${tintColor(
+                primaryColor.value,
+                0.7
+            )} 100%)`
     ),
-    progressGradient: computed(() =>
-        `linear-gradient(90deg, ${primaryColor.value} 0%, ${tintColor(primaryColor.value, 0.3)} 100%)`
+    progressGradient: computed(
+        () =>
+            `linear-gradient(90deg, ${primaryColor.value} 0%, ${tintColor(
+                primaryColor.value,
+                0.3
+            )} 100%)`
     )
 }
 

@@ -448,6 +448,10 @@ CREATE TABLE IF NOT EXISTS `la_order` (
     `deposit_paid` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '定金是否支付：0=否,1=是',
     `balance_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '尾款金额',
     `balance_paid` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '尾款是否支付：0=否,1=是',
+    `deposit_mode_enabled` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否开启定金模式快照',
+    `deposit_type_snapshot` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '定金类型快照',
+    `deposit_value_snapshot` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '定金值快照',
+    `deposit_remark_snapshot` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '定金说明快照',
     -- 支付
     `pay_type` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付方式：0=未支付,1=微信,2=支付宝,3=余额,4=线下,5=组合支付',
     `pay_voucher` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '线下支付凭证',
@@ -2108,7 +2112,8 @@ INSERT INTO `la_subscribe_message_scene` (`id`, `scene`, `name`, `description`, 
 (8, 'ticket_update', '工单进度通知', '售后工单状态更新通知', '', 'TicketUpdated', NULL, 'pages/aftersale/ticket_detail', 1, 0, 1, 103, 1773413107, 1773413107),
 (9, 'change_result', '变更审核通知', '订单变更申请审核结果通知', '', 'ChangeProcessed', NULL, 'pages/order_change/change_detail', 1, 0, 1, 102, 1773413107, 1773413107),
 (10, 'schedule_change', '档期变更通知', '人员档期发生变更时通知', '', 'ScheduleChanged', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 101, 1773413107, 1773413107),
-(11, 'waitlist_release', '候补释放通知', '档期释放后通知候补用户', '', 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"remark"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 100, 1773413107, 1773413107);
+(11, 'waitlist_release', '候补释放通知', '档期释放后通知候补用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"remark"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 100, 1773413107, 1773413107),
+(12, 'waitlist_expired', '候补失效通知', '候补超过预约日期后通知用户', 'TEMPLATE_ID_WAITLIST_EXPIRED', 'WaitlistExpired', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"remark"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 99, 1773413107, 1773413107);
 
 -- la_subscribe_message_template
 DELETE FROM `la_subscribe_message_template`;
@@ -2119,7 +2124,8 @@ INSERT INTO `la_subscribe_message_template` (`id`, `template_id`, `name`, `title
 (4, 'TEMPLATE_ID_SERVICE_REMIND', '服务提醒通知', '服务提醒', 'schedule_remind', '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}', NULL, '服务内容,服务时间,服务地点,服务人员', '', 1, 97, '服务前1天/3天提醒，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
 (5, 'TEMPLATE_ID_REFUND_RESULT', '退款结果通知', '退款通知', 'refund_result', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}', NULL, '订单编号,退款金额,退款状态,退款原因', '', 1, 96, '退款审核后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
 (6, 'TEMPLATE_ID_TICKET_UPDATE', '工单进度通知', '工单状态更新', 'ticket_update', '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}', NULL, '工单编号,工单状态,处理说明,更新时间', '', 1, 95, '工单状态变更时发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
-(7, 'TEMPLATE_ID_WAITLIST_RELEASE', '候补释放通知', '候补释放', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"备注","value":""}}', NULL, '服务人员,档期日期,套餐名称,备注', '', 1, 94, '候补释放后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL);
+(7, 'TEMPLATE_ID_WAITLIST_RELEASE', '候补释放通知', '候补释放', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"备注","value":""}}', NULL, '服务人员,档期日期,套餐名称,备注', '', 1, 95, '候补释放后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
+(8, 'TEMPLATE_ID_WAITLIST_EXPIRED', '候补失效通知', '候补失效', 'waitlist_expired', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"失效说明","value":""}}', NULL, '服务人员,档期日期,套餐名称,失效说明', '', 1, 94, '候补失效后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL);
 
 -- la_system_role
 DELETE FROM `la_system_role`;
@@ -2512,20 +2518,20 @@ INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 
 -- la_config feature_switch
 DELETE FROM `la_config` WHERE `type` = 'feature_switch';
-INSERT INTO `la_config` (`id`, `type`, `name`, `value`, `create_time`, `update_time`) VALUES
-(3, 'feature_switch', 'admin_dashboard', '1', 1773413108, 1773413108),
-(35, 'feature_switch', 'admin_dashboard_user_ids', '1', 1773556898, 1773556898),
-(2, 'feature_switch', 'staff_admin', '1', 1773413108, 1773413108),
-(1, 'feature_switch', 'staff_center', '1', 1773413108, 1773413108),
-(36, 'feature_switch', 'staff_detail_style', 'classic', 1773556898, 1773556898),
-(37, 'feature_switch', 'staff_tag_review_enabled', '0', 1775001600, 1775001600);
+INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) VALUES
+('feature_switch', 'admin_dashboard', '1', 1773413108, 1773413108),
+('feature_switch', 'admin_dashboard_user_ids', '1', 1773556898, 1773556898),
+('feature_switch', 'staff_admin', '1', 1773413108, 1773413108),
+('feature_switch', 'staff_center', '1', 1773413108, 1773413108),
+('feature_switch', 'staff_detail_style', 'classic', 1773556898, 1773556898),
+('feature_switch', 'staff_tag_review_enabled', '0', 1775001600, 1775001600);
 
 -- =============================================================================
 -- Part 4: 定时任务
 -- =============================================================================
 
 DELETE FROM `la_dev_crontab`
-WHERE `command` IN ('cancel_unpaid_orders', 'send_station_reminders');
+WHERE `command` IN ('cancel_unpaid_orders', 'send_station_reminders', 'expire_waitlists');
 
 INSERT INTO `la_dev_crontab` (
     `name`,
@@ -2541,6 +2547,7 @@ INSERT INTO `la_dev_crontab` (
     `delete_time`
 ) VALUES
 ('超时未支付订单自动取消', 1, 1, '每分钟扫描待支付首笔订单并自动取消超时单', 'cancel_unpaid_orders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-('站内提醒发送', 1, 1, '每分钟扫描服务前一天提醒与暂停到期提醒的站内消息', 'send_station_reminders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL);
+('站内提醒发送', 1, 1, '每分钟扫描服务前一天提醒与暂停到期提醒的站内消息', 'send_station_reminders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+('候补超期自动失效', 1, 1, '每天扫描预约日期已过的候补并自动标记为已过期', 'expire_waitlists', '', 1, '10 0 * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;

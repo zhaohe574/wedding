@@ -1,5 +1,8 @@
 <template>
-    <navigator :url="`/packages/pages/news_detail/news_detail?id=${newsId}`" class="news-card-wrapper">
+    <navigator
+        :url="`/packages/pages/news_detail/news_detail?id=${newsId}`"
+        class="news-card-wrapper"
+    >
         <view class="news-card">
             <view class="news-cover-wrap">
                 <image
@@ -19,7 +22,10 @@
                 <view class="news-title-row">
                     <text class="news-title">{{ item.title }}</text>
                 </view>
-                <text class="news-desc">{{ item.desc || '查看案例拆解、流程攻略与婚礼趋势，快速获得更适合当前阶段的决策信息。' }}</text>
+                <text class="news-desc">{{
+                    item.desc ||
+                    '查看案例拆解、流程攻略与婚礼趋势，快速获得更适合当前阶段的决策信息。'
+                }}</text>
                 <view class="news-meta">
                     <view class="meta-item">
                         <tn-icon name="clock" size="24" :color="$theme.primaryColor" />
@@ -70,7 +76,11 @@ const $theme = useThemeStore()
     gap: var(--wm-space-section-gap-lg, 16rpx);
     padding: var(--wm-space-card-padding, 20rpx);
     border-radius: var(--wm-radius-card-lg, 28rpx);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 247, 244, 0.98) 100%);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.96) 0%,
+        rgba(255, 247, 244, 0.98) 100%
+    );
     border: 1rpx solid var(--wm-color-border, #efe6e1);
     box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
     overflow: hidden;

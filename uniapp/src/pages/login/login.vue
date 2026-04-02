@@ -74,10 +74,7 @@
                 >
                     <view class="auth-form__group">
                         <text class="auth-form__label">账号</text>
-                        <BaseInput
-                            v-model="formData.account"
-                            placeholder="请输入账号或手机号"
-                        >
+                        <BaseInput v-model="formData.account" placeholder="请输入账号或手机号">
                             <template #prefix>
                                 <tn-icon name="user" size="30" color="#B4ACA8" />
                             </template>
@@ -212,7 +209,11 @@
         <template #footer>
             <view v-if="showRegisterEntry" class="auth-footer">
                 <text class="auth-footer__text">还没有账号？</text>
-                <navigator url="/pages/register/register" hover-class="none" class="auth-footer__link">
+                <navigator
+                    url="/pages/register/register"
+                    hover-class="none"
+                    class="auth-footer__link"
+                >
                     注册账号
                 </navigator>
             </view>
@@ -328,7 +329,10 @@ const loginData = ref()
 
 const primaryColor = computed(() => themeStore.primaryColor)
 const wechatEntryStyle = computed(() => ({
-    background: `linear-gradient(135deg, ${primaryColor.value} 0%, ${shadeColor(primaryColor.value, 0.1)} 100%)`,
+    background: `linear-gradient(135deg, ${primaryColor.value} 0%, ${shadeColor(
+        primaryColor.value,
+        0.1
+    )} 100%)`,
     boxShadow: `0 14rpx 28rpx ${alphaColor(primaryColor.value, 0.22)}`,
     border: `1rpx solid ${alphaColor(primaryColor.value, 0.12)}`
 }))
@@ -394,7 +398,9 @@ const isOpenAgreement = computed(() => appStore.getLoginConfig.login_agreement =
 
 const isOpenOtherAuth = computed(() => appStore.getLoginConfig.third_auth == 1)
 const isForceBindMobile = computed(() => appStore.getLoginConfig.coerce_mobile == 1)
-const showWechatLoginEntry = computed(() => isOpenOtherAuth.value && isWeixin.value && inWxAuth.value)
+const showWechatLoginEntry = computed(
+    () => isOpenOtherAuth.value && isWeixin.value && inWxAuth.value
+)
 const isMpWechatOnlyMode = computed(() => isMpWeixinPlatform.value && showWechatLoginEntry.value)
 const showLocalLoginEntry = computed(() => !isMpWechatOnlyMode.value)
 const showLocalLoginForm = computed(() => phoneLogin.value && showLocalLoginEntry.value)

@@ -9,7 +9,9 @@
                     <view class="dynamic-detail__author-card">
                         <view class="dynamic-detail__author-main">
                             <image
-                                :src="detail.user_avatar || '/static/images/user/default_avatar.png'"
+                                :src="
+                                    detail.user_avatar || '/static/images/user/default_avatar.png'
+                                "
                                 class="dynamic-detail__avatar"
                                 mode="aspectFill"
                             />
@@ -59,337 +61,359 @@
                         </view>
                     </view>
 
-                <view class="dynamic-detail__detail-actions">
-                    <view
-                        class="dynamic-detail__detail-action"
-                        :class="{ 'is-active': detail.is_collected }"
-                        @click="handleCollect"
-                    >
-                        <tn-icon :name="detail.is_collected ? 'star-fill' : 'star'" size="28" />
-                        <text>{{ detail.is_collected ? '已收藏动态' : '收藏动态' }}</text>
-                    </view>
-                    <button
-                        class="dynamic-detail__detail-action dynamic-detail__detail-action--share"
-                        open-type="share"
-                    >
-                        <tn-icon name="share" size="28" />
-                        <text>分享动态</text>
-                    </button>
-                </view>
-
-                <view v-if="detail.video" class="dynamic-detail__hero dynamic-detail__hero--video">
-                    <video
-                        :src="detail.video"
-                        class="dynamic-detail__hero-video"
-                        :poster="detail.video_cover"
-                        controls
-                        object-fit="cover"
-                    />
-                </view>
-                <view v-else-if="heroImage" class="dynamic-detail__hero">
-                    <image
-                        :src="heroImage"
-                        class="dynamic-detail__hero-image"
-                        mode="aspectFill"
-                        @click="previewImage(detail.images, 0)"
-                    />
-                </view>
-
-                <view v-if="galleryImages.length > 0" class="dynamic-detail__gallery">
-                    <view
-                        v-for="(img, idx) in galleryImages"
-                        :key="`${img}-${idx}`"
-                        class="dynamic-detail__gallery-item"
-                        @click="previewImage(detail.images, idx + 1)"
-                    >
-                        <image class="dynamic-detail__gallery-image" :src="img" mode="aspectFill" />
-                    </view>
-                </view>
-
-                <view class="dynamic-detail__copy">
-                    <view v-if="showMetaTags" class="dynamic-detail__tag-row">
-                        <text
-                            v-if="detail.dynamic_type && detail.dynamic_type !== 1"
-                            class="dynamic-detail__type-tag"
-                            :class="getTypeClass(detail.dynamic_type)"
-                        >
-                            {{ getTypeText(detail.dynamic_type) }}
-                        </text>
+                    <view class="dynamic-detail__detail-actions">
                         <view
-                            v-for="(tag, tagIdx) in detailTags"
-                            :key="`${tag}-${tagIdx}`"
-                            class="dynamic-detail__topic-tag"
+                            class="dynamic-detail__detail-action"
+                            :class="{ 'is-active': detail.is_collected }"
+                            @click="handleCollect"
                         >
-                            <text>#{{ tag }}</text>
+                            <tn-icon :name="detail.is_collected ? 'star-fill' : 'star'" size="28" />
+                            <text>{{ detail.is_collected ? '已收藏动态' : '收藏动态' }}</text>
                         </view>
+                        <button
+                            class="dynamic-detail__detail-action dynamic-detail__detail-action--share"
+                            open-type="share"
+                        >
+                            <tn-icon name="share" size="28" />
+                            <text>分享动态</text>
+                        </button>
                     </view>
 
-                    <text class="dynamic-detail__content-text">{{ detail.content }}</text>
-                </view>
-
-                <view class="dynamic-detail__stats">
                     <view
-                        class="dynamic-detail__stat-pill"
-                        :class="{ 'is-active': detail.is_liked }"
-                        @click="handleLike"
+                        v-if="detail.video"
+                        class="dynamic-detail__hero dynamic-detail__hero--video"
                     >
-                        <text class="dynamic-detail__stat-text">
-                            点赞 {{ formatCount(detail.like_count) }}
-                        </text>
+                        <video
+                            :src="detail.video"
+                            class="dynamic-detail__hero-video"
+                            :poster="detail.video_cover"
+                            controls
+                            object-fit="cover"
+                        />
                     </view>
-                    <view class="dynamic-detail__stat-pill" @click="showCommentInput">
-                        <text class="dynamic-detail__stat-text">
-                            评论 {{ formatCount(detail.comment_count) }}
-                        </text>
+                    <view v-else-if="heroImage" class="dynamic-detail__hero">
+                        <image
+                            :src="heroImage"
+                            class="dynamic-detail__hero-image"
+                            mode="aspectFill"
+                            @click="previewImage(detail.images, 0)"
+                        />
                     </view>
-                    <view class="dynamic-detail__stat-pill">
-                        <text class="dynamic-detail__stat-text">
-                            浏览 {{ formatCount(detail.view_count) }}
-                        </text>
-                    </view>
-                </view>
 
-                <view v-if="detail.location" class="dynamic-detail__location-row">
-                    <tn-icon name="location" size="22" color="#978B83" />
-                    <text class="dynamic-detail__location-text">{{ detail.location }}</text>
-                </view>
+                    <view v-if="galleryImages.length > 0" class="dynamic-detail__gallery">
+                        <view
+                            v-for="(img, idx) in galleryImages"
+                            :key="`${img}-${idx}`"
+                            class="dynamic-detail__gallery-item"
+                            @click="previewImage(detail.images, idx + 1)"
+                        >
+                            <image
+                                class="dynamic-detail__gallery-image"
+                                :src="img"
+                                mode="aspectFill"
+                            />
+                        </view>
+                    </view>
 
-                <view class="dynamic-detail__comments">
-                    <view class="dynamic-detail__comments-head">
-                        <text class="dynamic-detail__comments-title">评论区</text>
-                        <view class="dynamic-detail__comments-sort">
+                    <view class="dynamic-detail__copy">
+                        <view v-if="showMetaTags" class="dynamic-detail__tag-row">
                             <text
-                                class="dynamic-detail__sort-item"
-                                :class="{ 'is-active': commentSort === 'hot' }"
-                                @click="changeCommentSort('hot')"
+                                v-if="detail.dynamic_type && detail.dynamic_type !== 1"
+                                class="dynamic-detail__type-tag"
+                                :class="getTypeClass(detail.dynamic_type)"
                             >
-                                最热
+                                {{ getTypeText(detail.dynamic_type) }}
                             </text>
-                            <text class="dynamic-detail__sort-divider">|</text>
-                            <text
-                                class="dynamic-detail__sort-item"
-                                :class="{ 'is-active': commentSort === 'new' }"
-                                @click="changeCommentSort('new')"
+                            <view
+                                v-for="(tag, tagIdx) in detailTags"
+                                :key="`${tag}-${tagIdx}`"
+                                class="dynamic-detail__topic-tag"
                             >
-                                最新
+                                <text>#{{ tag }}</text>
+                            </view>
+                        </view>
+
+                        <text class="dynamic-detail__content-text">{{ detail.content }}</text>
+                    </view>
+
+                    <view class="dynamic-detail__stats">
+                        <view
+                            class="dynamic-detail__stat-pill"
+                            :class="{ 'is-active': detail.is_liked }"
+                            @click="handleLike"
+                        >
+                            <text class="dynamic-detail__stat-text">
+                                点赞 {{ formatCount(detail.like_count) }}
+                            </text>
+                        </view>
+                        <view class="dynamic-detail__stat-pill" @click="showCommentInput">
+                            <text class="dynamic-detail__stat-text">
+                                评论 {{ formatCount(detail.comment_count) }}
+                            </text>
+                        </view>
+                        <view class="dynamic-detail__stat-pill">
+                            <text class="dynamic-detail__stat-text">
+                                浏览 {{ formatCount(detail.view_count) }}
                             </text>
                         </view>
                     </view>
 
-                    <view v-if="comments.length === 0" class="dynamic-detail__comment-empty">
-                        暂无评论，快来抢沙发吧～
+                    <view v-if="detail.location" class="dynamic-detail__location-row">
+                        <tn-icon name="location" size="22" color="#978B83" />
+                        <text class="dynamic-detail__location-text">{{ detail.location }}</text>
                     </view>
-                    <view v-else class="dynamic-detail__comment-list">
-                        <view class="dynamic-detail__comment-stack">
-                            <view
-                                v-for="item in comments"
-                                :key="`comment-${item.id}`"
-                                class="dynamic-detail__comment-item"
-                            >
-                                <view class="dynamic-detail__comment-main">
-                                    <view class="dynamic-detail__comment-meta">
-                                        <text class="dynamic-detail__comment-author">
-                                            {{ getCommentAuthorText(item) }}
-                                        </text>
-                                        <view class="dynamic-detail__comment-meta-right">
-                                            <text class="dynamic-detail__comment-time">
-                                                {{ formatCommentTime(item.date) }}
+
+                    <view class="dynamic-detail__comments">
+                        <view class="dynamic-detail__comments-head">
+                            <text class="dynamic-detail__comments-title">评论区</text>
+                            <view class="dynamic-detail__comments-sort">
+                                <text
+                                    class="dynamic-detail__sort-item"
+                                    :class="{ 'is-active': commentSort === 'hot' }"
+                                    @click="changeCommentSort('hot')"
+                                >
+                                    最热
+                                </text>
+                                <text class="dynamic-detail__sort-divider">|</text>
+                                <text
+                                    class="dynamic-detail__sort-item"
+                                    :class="{ 'is-active': commentSort === 'new' }"
+                                    @click="changeCommentSort('new')"
+                                >
+                                    最新
+                                </text>
+                            </view>
+                        </view>
+
+                        <view v-if="comments.length === 0" class="dynamic-detail__comment-empty">
+                            暂无评论，快来抢沙发吧～
+                        </view>
+                        <view v-else class="dynamic-detail__comment-list">
+                            <view class="dynamic-detail__comment-stack">
+                                <view
+                                    v-for="item in comments"
+                                    :key="`comment-${item.id}`"
+                                    class="dynamic-detail__comment-item"
+                                >
+                                    <view class="dynamic-detail__comment-main">
+                                        <view class="dynamic-detail__comment-meta">
+                                            <text class="dynamic-detail__comment-author">
+                                                {{ getCommentAuthorText(item) }}
                                             </text>
-                                            <text class="dynamic-detail__comment-meta-dot">·</text>
+                                            <view class="dynamic-detail__comment-meta-right">
+                                                <text class="dynamic-detail__comment-time">
+                                                    {{ formatCommentTime(item.date) }}
+                                                </text>
+                                                <text class="dynamic-detail__comment-meta-dot"
+                                                    >·</text
+                                                >
+                                                <text
+                                                    class="dynamic-detail__comment-like-meta"
+                                                    :class="{ 'is-active': item.likeActive }"
+                                                    @tap.stop="handleLikeComment(item.id)"
+                                                >
+                                                    赞 {{ formatCommentLikeCount(item.likeCount) }}
+                                                </text>
+                                            </view>
+                                        </view>
+                                        <text class="dynamic-detail__comment-content">
+                                            {{ item.content }}
+                                        </text>
+                                        <view class="dynamic-detail__comment-actions">
                                             <text
-                                                class="dynamic-detail__comment-like-meta"
-                                                :class="{ 'is-active': item.likeActive }"
-                                                @tap.stop="handleLikeComment(item.id)"
+                                                class="dynamic-detail__comment-action"
+                                                @tap.stop="replyComment(item)"
                                             >
-                                                赞 {{ formatCommentLikeCount(item.likeCount) }}
+                                                回复
+                                            </text>
+                                            <text
+                                                v-if="item.allowDelete"
+                                                class="dynamic-detail__comment-action is-danger"
+                                                @tap.stop="deleteCommentItem(item.id)"
+                                            >
+                                                删除
                                             </text>
                                         </view>
                                     </view>
-                                    <text class="dynamic-detail__comment-content">
-                                        {{ item.content }}
-                                    </text>
-                                    <view class="dynamic-detail__comment-actions">
-                                        <text
-                                            class="dynamic-detail__comment-action"
-                                            @tap.stop="replyComment(item)"
-                                        >
-                                            回复
-                                        </text>
-                                        <text
-                                            v-if="item.allowDelete"
-                                            class="dynamic-detail__comment-action is-danger"
-                                            @tap.stop="deleteCommentItem(item.id)"
-                                        >
-                                            删除
-                                        </text>
-                                    </view>
-                                </view>
 
-                                <view
-                                    v-if="item.replyExpanded && item.comment.length > 0"
-                                    class="dynamic-detail__reply-list"
-                                >
                                     <view
-                                        v-for="reply in item.comment"
-                                        :key="`reply-${reply.id}`"
-                                        class="dynamic-detail__reply-item"
+                                        v-if="item.replyExpanded && item.comment.length > 0"
+                                        class="dynamic-detail__reply-list"
                                     >
-                                        <view class="dynamic-detail__comment-main">
-                                            <view class="dynamic-detail__comment-meta">
-                                                <text class="dynamic-detail__comment-author">
-                                                    {{ getCommentAuthorText(reply) }}
-                                                </text>
-                                                <view class="dynamic-detail__comment-meta-right">
-                                                    <text class="dynamic-detail__comment-time">
-                                                        {{ formatCommentTime(reply.date) }}
+                                        <view
+                                            v-for="reply in item.comment"
+                                            :key="`reply-${reply.id}`"
+                                            class="dynamic-detail__reply-item"
+                                        >
+                                            <view class="dynamic-detail__comment-main">
+                                                <view class="dynamic-detail__comment-meta">
+                                                    <text class="dynamic-detail__comment-author">
+                                                        {{ getCommentAuthorText(reply) }}
                                                     </text>
-                                                    <text class="dynamic-detail__comment-meta-dot">
-                                                        ·
+                                                    <view
+                                                        class="dynamic-detail__comment-meta-right"
+                                                    >
+                                                        <text class="dynamic-detail__comment-time">
+                                                            {{ formatCommentTime(reply.date) }}
+                                                        </text>
+                                                        <text
+                                                            class="dynamic-detail__comment-meta-dot"
+                                                        >
+                                                            ·
+                                                        </text>
+                                                        <text
+                                                            class="dynamic-detail__comment-like-meta"
+                                                            :class="{
+                                                                'is-active': reply.likeActive
+                                                            }"
+                                                            @tap.stop="handleLikeComment(reply.id)"
+                                                        >
+                                                            赞
+                                                            {{
+                                                                formatCommentLikeCount(
+                                                                    reply.likeCount
+                                                                )
+                                                            }}
+                                                        </text>
+                                                    </view>
+                                                </view>
+                                                <text class="dynamic-detail__comment-content">
+                                                    {{ reply.content }}
+                                                </text>
+                                                <view class="dynamic-detail__comment-actions">
+                                                    <text
+                                                        class="dynamic-detail__comment-action"
+                                                        @tap.stop="replyComment(reply)"
+                                                    >
+                                                        回复
                                                     </text>
                                                     <text
-                                                        class="dynamic-detail__comment-like-meta"
-                                                        :class="{ 'is-active': reply.likeActive }"
-                                                        @tap.stop="handleLikeComment(reply.id)"
+                                                        v-if="reply.allowDelete"
+                                                        class="dynamic-detail__comment-action is-danger"
+                                                        @tap.stop="deleteCommentItem(reply.id)"
                                                     >
-                                                        赞 {{ formatCommentLikeCount(reply.likeCount) }}
+                                                        删除
                                                     </text>
                                                 </view>
                                             </view>
-                                            <text class="dynamic-detail__comment-content">
-                                                {{ reply.content }}
-                                            </text>
-                                            <view class="dynamic-detail__comment-actions">
-                                                <text
-                                                    class="dynamic-detail__comment-action"
-                                                    @tap.stop="replyComment(reply)"
-                                                >
-                                                    回复
-                                                </text>
-                                                <text
-                                                    v-if="reply.allowDelete"
-                                                    class="dynamic-detail__comment-action is-danger"
-                                                    @tap.stop="deleteCommentItem(reply.id)"
-                                                >
-                                                    删除
-                                                </text>
-                                            </view>
                                         </view>
                                     </view>
-                                </view>
 
-                                <view
-                                    v-if="item.commentCount > 0"
-                                    class="dynamic-detail__reply-toggle"
-                                    @tap.stop="toggleReplies(item)"
-                                >
-                                    {{ getReplyToggleText(item) }}
+                                    <view
+                                        v-if="item.commentCount > 0"
+                                        class="dynamic-detail__reply-toggle"
+                                        @tap.stop="toggleReplies(item)"
+                                    >
+                                        {{ getReplyToggleText(item) }}
+                                    </view>
                                 </view>
                             </view>
                         </view>
-                    </view>
 
-                    <view
-                        v-if="commentHasMore && comments.length > 0"
-                        class="dynamic-detail__comment-more"
-                    >
-                        <text v-if="commentLoading">加载中...</text>
-                        <text v-else @click="loadMoreComments">点击加载更多</text>
+                        <view
+                            v-if="commentHasMore && comments.length > 0"
+                            class="dynamic-detail__comment-more"
+                        >
+                            <text v-if="commentLoading">加载中...</text>
+                            <text v-else @click="loadMoreComments">点击加载更多</text>
+                        </view>
                     </view>
-                </view>
                 </view>
             </scroll-view>
 
-        <view
-            v-if="showComment"
-            class="dynamic-detail__popup-mask"
-            :style="{
-                zIndex: commentPopupMaskZIndex,
-                background: $theme.maskColor || 'rgba(8, 10, 16, 0.58)'
-            }"
-            @tap="closeCommentPopup"
-            @touchmove.stop.prevent="() => {}"
-        ></view>
+            <view
+                v-if="showComment"
+                class="dynamic-detail__popup-mask"
+                :style="{
+                    zIndex: commentPopupMaskZIndex,
+                    background: $theme.maskColor || 'rgba(8, 10, 16, 0.58)'
+                }"
+                @tap="closeCommentPopup"
+                @touchmove.stop.prevent="() => {}"
+            ></view>
 
-        <TnPopup
-            v-model="showComment"
-            open-direction="bottom"
-            :overlay="false"
-            :safe-area-inset-bottom="true"
-            :radius="28"
-            height="68%"
-            :z-index="commentPopupZIndex"
-        >
-            <view class="dynamic-detail__popup">
-                <view class="dynamic-detail__popup-head">
-                    <text class="dynamic-detail__popup-title">
-                        {{ replyTo ? `回复 @${replyTo.user_nickname}` : '发表评论' }}
-                    </text>
-                    <view class="dynamic-detail__popup-close" @click="closeCommentPopup">
-                        <tn-icon name="close" size="30" color="#978B83" />
-                    </view>
-                </view>
-                <view class="dynamic-detail__popup-body">
-                    <view class="dynamic-detail__textarea-panel">
-                        <textarea
-                            v-model="commentContent"
-                            class="dynamic-detail__textarea"
-                            :placeholder="replyTo ? `回复 @${replyTo.user_nickname}` : '说点什么...'"
-                            :maxlength="commentMaxLength"
-                            :focus="commentFocused && showComment"
-                            :selection-start="commentSelectionStart"
-                            :selection-end="commentSelectionEnd"
-                            cursor-spacing="120"
-                            fixed
-                            placeholder-class="dynamic-detail__textarea-placeholder"
-                            @focus="handleCommentFocus"
-                            @blur="handleCommentBlur"
-                            @input="handleCommentInput"
-                        />
-                    </view>
-                </view>
-                <view
-                    class="dynamic-detail__popup-footer"
-                    :class="{ 'is-emoji-open': showEmojiPanel }"
-                >
-                    <view class="dynamic-detail__popup-actions">
-                        <text class="dynamic-detail__char-count">
-                            {{ commentDisplayLength }}/{{ commentMaxLength }}
+            <TnPopup
+                v-model="showComment"
+                open-direction="bottom"
+                :overlay="false"
+                :safe-area-inset-bottom="true"
+                :radius="28"
+                height="68%"
+                :z-index="commentPopupZIndex"
+            >
+                <view class="dynamic-detail__popup">
+                    <view class="dynamic-detail__popup-head">
+                        <text class="dynamic-detail__popup-title">
+                            {{ replyTo ? `回复 @${replyTo.user_nickname}` : '发表评论' }}
                         </text>
-                        <view class="dynamic-detail__composer-actions">
-                            <button
-                                class="dynamic-detail__emoji-btn"
-                                :class="{ 'is-active': showEmojiPanel }"
-                                @click="toggleEmojiPanel"
-                            >
-                                表情
-                            </button>
-                            <button
-                                class="dynamic-detail__submit-btn"
-                                :class="{ 'is-disabled': !canSubmitComment }"
-                                :disabled="!canSubmitComment"
-                                @click="submitComment"
-                            >
-                                发送
-                            </button>
+                        <view class="dynamic-detail__popup-close" @click="closeCommentPopup">
+                            <tn-icon name="close" size="30" color="#978B83" />
+                        </view>
+                    </view>
+                    <view class="dynamic-detail__popup-body">
+                        <view class="dynamic-detail__textarea-panel">
+                            <textarea
+                                v-model="commentContent"
+                                class="dynamic-detail__textarea"
+                                :placeholder="
+                                    replyTo ? `回复 @${replyTo.user_nickname}` : '说点什么...'
+                                "
+                                :maxlength="commentMaxLength"
+                                :focus="commentFocused && showComment"
+                                :selection-start="commentSelectionStart"
+                                :selection-end="commentSelectionEnd"
+                                cursor-spacing="120"
+                                fixed
+                                placeholder-class="dynamic-detail__textarea-placeholder"
+                                @focus="handleCommentFocus"
+                                @blur="handleCommentBlur"
+                                @input="handleCommentInput"
+                            />
                         </view>
                     </view>
                     <view
-                        v-if="showEmojiPanel"
-                        class="dynamic-detail__emoji-panel"
-                        @tap.stop="() => {}"
+                        class="dynamic-detail__popup-footer"
+                        :class="{ 'is-emoji-open': showEmojiPanel }"
                     >
+                        <view class="dynamic-detail__popup-actions">
+                            <text class="dynamic-detail__char-count">
+                                {{ commentDisplayLength }}/{{ commentMaxLength }}
+                            </text>
+                            <view class="dynamic-detail__composer-actions">
+                                <button
+                                    class="dynamic-detail__emoji-btn"
+                                    :class="{ 'is-active': showEmojiPanel }"
+                                    @click="toggleEmojiPanel"
+                                >
+                                    表情
+                                </button>
+                                <button
+                                    class="dynamic-detail__submit-btn"
+                                    :class="{ 'is-disabled': !canSubmitComment }"
+                                    :disabled="!canSubmitComment"
+                                    @click="submitComment"
+                                >
+                                    发送
+                                </button>
+                            </view>
+                        </view>
                         <view
-                            v-for="emoji in emojiList"
-                            :key="emoji"
-                            class="dynamic-detail__emoji-item"
-                            @tap.stop="insertEmoji(emoji)"
+                            v-if="showEmojiPanel"
+                            class="dynamic-detail__emoji-panel"
+                            @tap.stop="() => {}"
                         >
-                            <text class="dynamic-detail__emoji-char">{{ emoji }}</text>
+                            <view
+                                v-for="emoji in emojiList"
+                                :key="emoji"
+                                class="dynamic-detail__emoji-item"
+                                @tap.stop="insertEmoji(emoji)"
+                            >
+                                <text class="dynamic-detail__emoji-char">{{ emoji }}</text>
+                            </view>
                         </view>
                     </view>
                 </view>
-            </view>
-        </TnPopup>
+            </TnPopup>
         </view>
 
         <view v-else class="dynamic-detail__loading-view">
@@ -463,7 +487,32 @@ const replyTo = ref<any>(null)
 const parentComment = ref<any>(null)
 const commentMaxLength = 500
 // 常用表情面板，避免引入额外资源依赖。
-const emojiList = ['😀', '😄', '😊', '😍', '😘', '🤗', '🤔', '😅', '😭', '😡', '😎', '🥳', '😴', '👍', '👏', '🙏', '😇', '🤍', '💖', '🔥', '✨', '🎉', '💐', '🌹']
+const emojiList = [
+    '😀',
+    '😄',
+    '😊',
+    '😍',
+    '😘',
+    '🤗',
+    '🤔',
+    '😅',
+    '😭',
+    '😡',
+    '😎',
+    '🥳',
+    '😴',
+    '👍',
+    '👏',
+    '🙏',
+    '😇',
+    '🤍',
+    '💖',
+    '🔥',
+    '✨',
+    '🎉',
+    '💐',
+    '🌹'
+]
 
 const scrollStyle = computed(() => ({
     height: `calc(100vh - ${navBarMetrics.navBarHeight}px)`
@@ -567,7 +616,9 @@ const formatCommentTime = (time: string) => {
     if (diff < 7 * day) return `${Math.floor(diff / day)}天前`
 
     const date = new Date(timestamp)
-    return `${padTimeUnit(date.getMonth() + 1)}-${padTimeUnit(date.getDate())} ${padTimeUnit(date.getHours())}:${padTimeUnit(date.getMinutes())}`
+    return `${padTimeUnit(date.getMonth() + 1)}-${padTimeUnit(date.getDate())} ${padTimeUnit(
+        date.getHours()
+    )}:${padTimeUnit(date.getMinutes())}`
 }
 
 const formatCommentLikeCount = (count: number) => `${Number(count || 0)}`
@@ -911,7 +962,9 @@ const toggleEmojiPanel = () => {
 const insertEmoji = (emoji: string) => {
     const start = Math.max(0, Math.min(commentSelectionStart.value, commentContent.value.length))
     const end = Math.max(start, Math.min(commentSelectionEnd.value, commentContent.value.length))
-    const nextValue = `${commentContent.value.slice(0, start)}${emoji}${commentContent.value.slice(end)}`
+    const nextValue = `${commentContent.value.slice(0, start)}${emoji}${commentContent.value.slice(
+        end
+    )}`
 
     if (Array.from(nextValue).length > commentMaxLength) {
         uni.showToast({
@@ -1272,8 +1325,7 @@ watch(showComment, (visible) => {
         gap: 22rpx;
         border-radius: 37rpx;
         backdrop-filter: blur(24rpx);
-        box-shadow:
-            inset 0 1rpx 0 rgba(255, 255, 255, 0.62),
+        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.62),
             0 12rpx 28rpx rgba(214, 185, 167, 0.14);
         font-size: 26rpx;
         font-weight: 600;
@@ -1652,9 +1704,7 @@ watch(showComment, (visible) => {
         border-radius: 24rpx;
         border: 1rpx solid rgba(232, 222, 216, 0.86);
         background: rgba(255, 255, 255, 0.9);
-        box-shadow:
-            inset 0 1rpx 0 rgba(255, 255, 255, 0.6),
-            0 12rpx 30rpx rgba(214, 185, 167, 0.08);
+        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.6), 0 12rpx 30rpx rgba(214, 185, 167, 0.08);
         overflow: hidden;
     }
 
@@ -1719,9 +1769,7 @@ watch(showComment, (visible) => {
         border-radius: $dynamic-radius-pill;
         border: 1rpx solid rgba(232, 222, 216, 0.86);
         background: rgba(255, 255, 255, 0.92);
-        box-shadow:
-            inset 0 1rpx 0 rgba(255, 255, 255, 0.56),
-            0 10rpx 22rpx rgba(214, 185, 167, 0.1);
+        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.56), 0 10rpx 22rpx rgba(214, 185, 167, 0.1);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -1777,8 +1825,7 @@ watch(showComment, (visible) => {
         border-radius: 28rpx;
         border: 1rpx solid rgba(232, 222, 216, 0.8);
         background: rgba(255, 255, 255, 0.9);
-        box-shadow:
-            inset 0 1rpx 0 rgba(255, 255, 255, 0.56),
+        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.56),
             0 12rpx 28rpx rgba(214, 185, 167, 0.12);
         display: grid;
         grid-template-columns: repeat(6, minmax(0, 1fr));

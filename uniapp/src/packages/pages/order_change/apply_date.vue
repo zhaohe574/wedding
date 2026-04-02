@@ -90,7 +90,12 @@
 
         <!-- 提交按钮 -->
         <view class="bottom-actions">
-            <button class="btn-submit" :disabled="submitting" :style="{ background: $theme.primaryColor }" @click="handleSubmit">
+            <button
+                class="btn-submit"
+                :disabled="submitting"
+                :style="{ background: $theme.primaryColor }"
+                @click="handleSubmit"
+            >
                 {{ submitting ? '提交中...' : '提交申请' }}
             </button>
         </view>
@@ -275,7 +280,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--color-primary, #E85A4F);
+    border-left: 6rpx solid var(--color-primary, #e85a4f);
 }
 
 .order-card {
@@ -373,7 +378,7 @@ onLoad((options: any) => {
     width: 100%;
     height: 72rpx;
     line-height: 72rpx;
-    background: var(--color-primary, #E85A4F);
+    background: var(--color-primary, #e85a4f);
     color: #fff;
     border-radius: 44rpx;
     font-size: 30rpx;
@@ -405,7 +410,7 @@ onLoad((options: any) => {
         font-weight: bold;
     }
     .confirm {
-        color: var(--color-primary, #E85A4F);
+        color: var(--color-primary, #e85a4f);
         font-size: 28rpx;
     }
 }
@@ -420,5 +425,4 @@ onLoad((options: any) => {
     justify-content: center;
     font-size: 30rpx;
 }
-
 </style>

@@ -4,38 +4,37 @@
         <BaseNavbar title="详情" />
         <view class="news-detail-page cinema-page">
             <view class="news-detail-page__shell">
-            <view class="news-detail-page__header cinema-panel">
-                <text class="news-detail-page__title">{{ newsData.title }}</text>
-                <view class="news-detail-page__meta">
-                    <view class="news-detail-page__meta-item" v-if="newsData.author">
-                        作者：{{ newsData.author }}
+                <view class="news-detail-page__header cinema-panel">
+                    <text class="news-detail-page__title">{{ newsData.title }}</text>
+                    <view class="news-detail-page__meta">
+                        <view class="news-detail-page__meta-item" v-if="newsData.author">
+                            作者：{{ newsData.author }}
+                        </view>
+                        <view class="news-detail-page__meta-item news-detail-page__meta-item--time">
+                            {{ newsData.create_time }}
+                        </view>
+                        <view
+                            class="news-detail-page__meta-item news-detail-page__meta-item--views"
+                        >
+                            <image
+                                src="/static/images/icon/icon_visit.png"
+                                class="news-detail-page__meta-icon"
+                            ></image>
+                            <text>{{ newsData.click }}</text>
+                        </view>
                     </view>
-                    <view class="news-detail-page__meta-item news-detail-page__meta-item--time">
-                        {{ newsData.create_time }}
-                    </view>
-                    <view class="news-detail-page__meta-item news-detail-page__meta-item--views">
-                        <image
-                            src="/static/images/icon/icon_visit.png"
-                            class="news-detail-page__meta-icon"
-                        ></image>
-                        <text>{{ newsData.click }}</text>
-                    </view>
-                </view>
-            </view>
-
-            <view class="news-detail-page__content wm-panel">
-                <view
-                    class="news-detail-page__summary"
-                    v-if="newsData.abstract"
-                >
-                    <text class="news-detail-page__summary-label">摘要：</text>
-                    <text class="news-detail-page__summary-text">{{ newsData.abstract }}</text>
                 </view>
 
-                <view class="news-detail-page__article">
-                    <u-parse :html="newsData.content"></u-parse>
+                <view class="news-detail-page__content wm-panel">
+                    <view class="news-detail-page__summary" v-if="newsData.abstract">
+                        <text class="news-detail-page__summary-label">摘要：</text>
+                        <text class="news-detail-page__summary-text">{{ newsData.abstract }}</text>
+                    </view>
+
+                    <view class="news-detail-page__article">
+                        <u-parse :html="newsData.content"></u-parse>
+                    </view>
                 </view>
-            </view>
             </view>
 
             <view class="news-detail-page__action" @click="handleAddCollect(newsData.id)">

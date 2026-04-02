@@ -1,110 +1,109 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-    </page-meta>
+    <page-meta :page-style="$theme.pageStyle"> </page-meta>
     <PageShell scene="consumer" hasTabbar>
         <view class="home-page">
             <view class="home-page__content">
-            <view class="home-page__hero" :style="heroStyle">
-                <swiper
-                    v-if="bannerList.length"
-                    class="home-page__hero-swiper"
-                    circular
-                    autoplay
-                    interval="5000"
-                    duration="500"
-                    @change="handleBannerChange"
-                >
-                    <swiper-item v-for="item in bannerList" :key="item.key">
-                        <view class="home-page__hero-slide" @tap="handleBannerTap(item)">
-                            <image
-                                class="home-page__hero-image"
-                                :src="item.image"
-                                mode="aspectFill"
-                            />
-                        </view>
-                    </swiper-item>
-                </swiper>
-                <view v-else class="home-page__hero-swiper home-page__hero-swiper--fallback">
-                    <view class="home-page__hero-placeholder"></view>
-                </view>
-
-                <view
-                    v-if="currentBannerSloganLines.length"
-                    class="home-page__hero-copy"
-                    :style="heroCopyStyle"
-                >
-                    <view class="home-page__hero-accent"></view>
-                    <text
-                        v-for="(line, index) in currentBannerSloganLines"
-                        :key="`${safeBannerIndex}-${index}-${line}`"
-                        class="home-page__hero-title"
-                        :style="{ color: currentBannerSloganColor }"
+                <view class="home-page__hero" :style="heroStyle">
+                    <swiper
+                        v-if="bannerList.length"
+                        class="home-page__hero-swiper"
+                        circular
+                        autoplay
+                        interval="5000"
+                        duration="500"
+                        @change="handleBannerChange"
                     >
-                        {{ line }}
-                    </text>
-                </view>
-                <view v-if="bannerList.length > 1" class="home-page__hero-dots">
-                    <view
-                        v-for="(_, index) in bannerList"
-                        :key="index"
-                        class="home-page__hero-dot"
-                        :class="{
-                            'home-page__hero-dot--active': index === safeBannerIndex
-                        }"
-                    />
-                </view>
-            </view>
-
-            <view class="home-page__body">
-                <view class="home-page__cta" @tap="goToScheduleQuery">
-                    <text class="home-page__cta-text">查询档期</text>
-                </view>
-
-                <view class="home-page__section">
-                    <view class="home-page__section-head">
-                        <text class="home-page__section-title">热门团队</text>
-                        <view class="home-page__section-link" @tap="goToStaffList">
-                            <text class="home-page__section-link-text">查看更多</text>
-                        </view>
+                        <swiper-item v-for="item in bannerList" :key="item.key">
+                            <view class="home-page__hero-slide" @tap="handleBannerTap(item)">
+                                <image
+                                    class="home-page__hero-image"
+                                    :src="item.image"
+                                    mode="aspectFill"
+                                />
+                            </view>
+                        </swiper-item>
+                    </swiper>
+                    <view v-else class="home-page__hero-swiper home-page__hero-swiper--fallback">
+                        <view class="home-page__hero-placeholder"></view>
                     </view>
 
-                    <view class="home-page__team-grid">
-                        <view
-                            v-for="(item, index) in displayStaffList"
-                            :key="item ? item.id : `placeholder-${index}`"
-                            class="home-page__team-card"
-                            :class="{ 'home-page__team-card--placeholder': !item }"
-                            @tap="handleStaffTap(item)"
+                    <view
+                        v-if="currentBannerSloganLines.length"
+                        class="home-page__hero-copy"
+                        :style="heroCopyStyle"
+                    >
+                        <view class="home-page__hero-accent"></view>
+                        <text
+                            v-for="(line, index) in currentBannerSloganLines"
+                            :key="`${safeBannerIndex}-${index}-${line}`"
+                            class="home-page__hero-title"
+                            :style="{ color: currentBannerSloganColor }"
                         >
-                            <image
-                                v-if="item"
-                                class="home-page__team-image"
-                                :src="item.avatar"
-                                mode="aspectFill"
-                                lazy-load
-                            />
-                            <view
-                                v-else
-                                class="home-page__team-image home-page__team-image--placeholder"
-                            />
+                            {{ line }}
+                        </text>
+                    </view>
+                    <view v-if="bannerList.length > 1" class="home-page__hero-dots">
+                        <view
+                            v-for="(_, index) in bannerList"
+                            :key="index"
+                            class="home-page__hero-dot"
+                            :class="{
+                                'home-page__hero-dot--active': index === safeBannerIndex
+                            }"
+                        />
+                    </view>
+                </view>
 
-                            <view class="home-page__team-body">
-                                <text class="home-page__team-name">
-                                    {{ item ? item.name : '更多团队即将上线' }}
-                                </text>
-                                <text class="home-page__team-role">
-                                    {{ item ? getStaffSubtitle(item) : '敬请期待' }}
-                                </text>
+                <view class="home-page__body">
+                    <view class="home-page__cta" @tap="goToScheduleQuery">
+                        <text class="home-page__cta-text">查询档期</text>
+                    </view>
+
+                    <view class="home-page__section">
+                        <view class="home-page__section-head">
+                            <text class="home-page__section-title">热门团队</text>
+                            <view class="home-page__section-link" @tap="goToStaffList">
+                                <text class="home-page__section-link-text">查看更多</text>
+                            </view>
+                        </view>
+
+                        <view class="home-page__team-grid">
+                            <view
+                                v-for="(item, index) in displayStaffList"
+                                :key="item ? item.id : `placeholder-${index}`"
+                                class="home-page__team-card"
+                                :class="{ 'home-page__team-card--placeholder': !item }"
+                                @tap="handleStaffTap(item)"
+                            >
+                                <image
+                                    v-if="item"
+                                    class="home-page__team-image"
+                                    :src="item.avatar"
+                                    mode="aspectFill"
+                                    lazy-load
+                                />
+                                <view
+                                    v-else
+                                    class="home-page__team-image home-page__team-image--placeholder"
+                                />
+
+                                <view class="home-page__team-body">
+                                    <text class="home-page__team-name">
+                                        {{ item ? item.name : '更多团队即将上线' }}
+                                    </text>
+                                    <text class="home-page__team-role">
+                                        {{ item ? getStaffSubtitle(item) : '敬请期待' }}
+                                    </text>
+                                </view>
                             </view>
                         </view>
                     </view>
                 </view>
             </view>
-        </view>
 
-        <!--  #ifdef MP  -->
-        <MpPrivacyPopup></MpPrivacyPopup>
-        <!--  #endif  -->
+            <!--  #ifdef MP  -->
+            <MpPrivacyPopup></MpPrivacyPopup>
+            <!--  #endif  -->
 
             <tabbar :badge-refresh-key="tabbarRefreshKey" />
         </view>
@@ -270,13 +269,16 @@ const currentBannerSloganLines = computed(() => {
 })
 
 const currentBannerSloganTop = computed(() => {
-    return currentBannerItem.value?.sloganTop ?? getDefaultBannerSloganTop(bannerContent.value.style)
+    return (
+        currentBannerItem.value?.sloganTop ?? getDefaultBannerSloganTop(bannerContent.value.style)
+    )
 })
 
 const currentBannerSloganColor = computed(() => {
-    const sloganColor = typeof currentBannerItem.value?.sloganColor === 'string'
-        ? currentBannerItem.value.sloganColor.trim()
-        : ''
+    const sloganColor =
+        typeof currentBannerItem.value?.sloganColor === 'string'
+            ? currentBannerItem.value.sloganColor.trim()
+            : ''
 
     return sloganColor || '#FFFFFF'
 })
@@ -319,9 +321,7 @@ const getStaffSubtitle = (item: RecommendStaffItem) => {
         item.profile
     ]
 
-    const subtitle = candidates.find(
-        (value) => typeof value === 'string' && value.trim().length
-    )
+    const subtitle = candidates.find((value) => typeof value === 'string' && value.trim().length)
 
     return subtitle ? subtitle.trim() : '婚礼服务团队'
 }
@@ -423,8 +423,11 @@ onShow(() => {
 }
 
 .home-page__hero-swiper--fallback {
-    background:
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.35) 0, rgba(255, 255, 255, 0) 28%),
+    background: radial-gradient(
+            circle at top,
+            rgba(255, 255, 255, 0.35) 0,
+            rgba(255, 255, 255, 0) 28%
+        ),
         linear-gradient(180deg, rgba(109, 62, 52, 0.4) 0%, rgba(74, 43, 36, 0.76) 100%);
 }
 
@@ -435,8 +438,12 @@ onShow(() => {
 .home-page__hero-placeholder {
     position: absolute;
     inset: 0;
-    background:
-        linear-gradient(180deg, rgba(27, 19, 16, 0.06) 0%, rgba(27, 19, 16, 0.16) 42%, rgba(27, 19, 16, 0.58) 100%),
+    background: linear-gradient(
+            180deg,
+            rgba(27, 19, 16, 0.06) 0%,
+            rgba(27, 19, 16, 0.16) 42%,
+            rgba(27, 19, 16, 0.58) 100%
+        ),
         linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 38%);
 }
 
@@ -466,9 +473,7 @@ onShow(() => {
     font-size: 44rpx;
     line-height: 1.32;
     font-weight: 700;
-    text-shadow:
-        0 4rpx 10rpx rgba(47, 28, 24, 0.52),
-        0 12rpx 28rpx rgba(47, 28, 24, 0.72);
+    text-shadow: 0 4rpx 10rpx rgba(47, 28, 24, 0.52), 0 12rpx 28rpx rgba(47, 28, 24, 0.72);
 }
 
 .home-page__hero-dots {
@@ -563,8 +568,7 @@ onShow(() => {
 }
 
 .home-page__team-image--placeholder {
-    background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(230, 221, 215, 0.9) 100%),
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(230, 221, 215, 0.9) 100%),
         linear-gradient(180deg, rgba(239, 91, 76, 0.1) 0%, rgba(239, 91, 76, 0) 100%);
 }
 

@@ -50,6 +50,46 @@
                         <span class="text-gray-500 text-xs">控制移动端服务人员详情页展示风格</span>
                     </div>
                 </el-form-item>
+                <el-divider content-position="left">订单支付设置</el-divider>
+                <el-form-item label="开启定金模式">
+                    <div class="flex items-center gap-3">
+                        <el-switch v-model="formData.enable_deposit_mode" :active-value="1" :inactive-value="0" />
+                        <span class="text-gray-500 text-xs">开启后，新订单按定金+尾款方式支付</span>
+                    </div>
+                </el-form-item>
+                <el-form-item v-if="formData.enable_deposit_mode === 1" label="定金计算方式">
+                    <div class="flex flex-col gap-2">
+                        <el-radio-group v-model="formData.deposit_type">
+                            <el-radio label="ratio">按比例</el-radio>
+                            <el-radio label="fixed">固定金额</el-radio>
+                        </el-radio-group>
+                        <span class="text-gray-500 text-xs">比例模式用于按订单应付金额拆分定金；固定金额模式用于统一收取定金。</span>
+                    </div>
+                </el-form-item>
+                <el-form-item v-if="formData.enable_deposit_mode === 1" :label="formData.deposit_type === 'fixed' ? '定金金额' : '定金比例'">
+                    <div class="w-[320px] flex flex-col gap-2">
+                        <el-input-number
+                            v-model="formData.deposit_value"
+                            :min="0.01"
+                            :max="formData.deposit_type === 'fixed' ? 999999 : 99.99"
+                            :precision="2"
+                            controls-position="right"
+                        />
+                        <span class="text-gray-500 text-xs">
+                            {{ formData.deposit_type === 'fixed' ? '固定金额将直接作为新订单定金。' : '比例需大于0且小于100，按应付金额计算定金。' }}
+                        </span>
+                    </div>
+                </el-form-item>
+                <el-form-item label="定金说明">
+                    <div class="w-[420px] flex flex-col gap-2">
+                        <el-input
+                            v-model="formData.deposit_remark"
+                            type="textarea"
+                            :rows="3"
+                            placeholder="请输入定金/尾款说明，将展示在用户端支付说明中"
+                        />
+                    </div>
+                </el-form-item>
             </el-form>
         </el-card>
 
@@ -68,7 +108,11 @@ const formData = reactive({
     staff_tag_review_enabled: 0,
     admin_dashboard: 1,
     admin_dashboard_user_ids: '',
-    staff_detail_style: 'classic'
+    staff_detail_style: 'classic',
+    enable_deposit_mode: 0,
+    deposit_type: 'ratio',
+    deposit_value: 30,
+    deposit_remark: ''
 })
 
 const getData = async () => {

@@ -95,8 +95,16 @@ const decimals = computed(() => {
     let decimals = String(rawDecimals || '')
     // 小数余十不能是 .10||.20||.30以此类推，
     decimals =
-        decimals && Number(decimals) % 10 === 0 ? decimals.substring(0, decimals.length - 1) : decimals
-    return props.autoPrec ? (Number(decimals) ? `.${decimals}` : '') : props.prec ? `.${decimals}` : ''
+        decimals && Number(decimals) % 10 === 0
+            ? decimals.substring(0, decimals.length - 1)
+            : decimals
+    return props.autoPrec
+        ? Number(decimals)
+            ? `.${decimals}`
+            : ''
+        : props.prec
+        ? `.${decimals}`
+        : ''
 })
 /** Computed End **/
 </script>

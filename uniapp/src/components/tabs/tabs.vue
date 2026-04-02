@@ -53,15 +53,7 @@
 
 <script lang="ts" setup>
 import { getRect } from '@/utils/util'
-import {
-    ref,
-    computed,
-    watch,
-    provide,
-    nextTick,
-    onMounted,
-    getCurrentInstance
-} from 'vue'
+import { ref, computed, watch, provide, nextTick, onMounted, getCurrentInstance } from 'vue'
 import type { CSSProperties } from 'vue'
 import { useTouch } from './hooks/useTouch'
 

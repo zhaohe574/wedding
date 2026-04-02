@@ -70,7 +70,9 @@ class OrderPayLogic extends BaseLogic
         string $payStatus,
         string $payTime = ''
     ): array {
-        return [
+        $paymentSummary = Order::getPaymentSummary($order);
+
+        return array_merge($paymentSummary, [
             'order_id' => (int)$order->id,
             'order_sn' => (string)$order->order_sn,
             'order_amount' => round($orderAmount, 2),
@@ -81,7 +83,7 @@ class OrderPayLogic extends BaseLogic
             'order_status_desc' => $order->order_status_desc,
             'pay_deadline_time' => (int)($order->pay_deadline_time ?? 0),
             'pay_remain_seconds' => $order->getPayRemainSeconds(),
-        ];
+        ]);
     }
 
     /**
@@ -201,6 +203,22 @@ class OrderPayLogic extends BaseLogic
             'order_amount' => (float)$payContext['pay_amount'],
             'pay_type' => (int)$payContext['pay_type'],
             'need_pay' => (string)$payContext['need_pay'],
+            'need_pay_amount' => (float)$payContext['pay_amount'],
+            'need_pay_label' => match ((string) $payContext['need_pay']) {
+                'deposit' => '支付定金',
+                'balance' => '支付尾款',
+                default => '立即支付',
+            },
+            'payment_mode' => (float)($order->deposit_amount ?? 0) > 0 ? 'deposit' : 'full',
+            'total_amount' => round((float)($order->total_amount ?? $order->pay_amount), 2),
+            'pay_amount' => round((float)($order->pay_amount ?? 0), 2),
+            'paid_amount' => round((float)($order->paid_amount ?? 0), 2),
+            'unpaid_amount' => round(max((float)($order->pay_amount ?? 0) - (float)($order->paid_amount ?? 0), 0), 2),
+            'deposit_amount' => round((float)($order->deposit_amount ?? 0), 2),
+            'balance_amount' => round((float)($order->balance_amount ?? 0), 2),
+            'deposit_paid' => (int)($order->deposit_paid ?? 0),
+            'balance_paid' => (int)($order->balance_paid ?? 0),
+            'deposit_remark' => (string) Order::getDepositConfig()['deposit_remark'],
             'pay_deadline_time' => (int)($order->pay_deadline_time ?? 0),
             'pay_remain_seconds' => $order->getPayRemainSeconds(),
         ];

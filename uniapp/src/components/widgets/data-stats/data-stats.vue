@@ -184,7 +184,6 @@ const loadStats = async () => {
             statsData.value.view_count = userInfo.view_count || 0
             statsData.value.points = userInfo.user_points || 0
         }
-
     } catch (error) {
         console.error('加载统计数据失败:', error)
     }

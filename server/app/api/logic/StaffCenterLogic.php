@@ -17,9 +17,11 @@ use app\common\model\schedule\Schedule;
 use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
 use app\common\model\service\ServicePackageAddon;
+use app\common\model\service\ServicePackageRegionPrice;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffWork;
 use app\common\service\OrderNotificationService;
+use app\common\service\PackageRegionPriceService;
 use app\common\service\StaffPriceService;
 use app\common\service\StaffService;
 use app\common\service\StaffTagReviewService;
@@ -458,7 +460,17 @@ class StaffCenterLogic extends BaseLogic
             ->order('sort', 'desc')
             ->order('id', 'desc');
 
-        $summaryQuery = StaffWork::where('staff_id', $staffId);
+        if (isset($params['is_show']) && $params['is_show'] !== '') {
+            $query->where('is_show', (int) $params['is_show']);
+        }
+
+        if (isset($params['audit_status']) && $params['audit_status'] !== '') {
+            $query->where('audit_status', (int) $params['audit_status']);
+        } elseif (isset($params['is_show']) && $params['is_show'] !== '') {
+            $query->where('audit_status', StaffWork::AUDIT_PASS);
+        } else {
+            $query->where('audit_status', '<>', StaffWork::AUDIT_REJECT);
+        }
 
         $pageSize = (int) ($params['page_size'] ?? 10);
         if ($pageSize <= 0) {
@@ -467,9 +479,19 @@ class StaffCenterLogic extends BaseLogic
 
         $result = $query->paginate($pageSize)->toArray();
         $result['summary'] = [
-            'total' => (int) $summaryQuery->count(),
-            'visible_count' => (int) StaffWork::where('staff_id', $staffId)->where('is_show', 1)->count(),
+            'total' => (int) StaffWork::where('staff_id', $staffId)
+                ->where('audit_status', '<>', StaffWork::AUDIT_REJECT)
+                ->count(),
+            'visible_count' => (int) StaffWork::where('staff_id', $staffId)
+                ->where('audit_status', StaffWork::AUDIT_PASS)
+                ->where('is_show', 1)
+                ->count(),
+            'hidden_count' => (int) StaffWork::where('staff_id', $staffId)
+                ->where('audit_status', StaffWork::AUDIT_PASS)
+                ->where('is_show', 0)
+                ->count(),
             'pending_audit_count' => (int) StaffWork::where('staff_id', $staffId)->where('audit_status', StaffWork::AUDIT_PENDING)->count(),
+            'rejected_count' => (int) StaffWork::where('staff_id', $staffId)->where('audit_status', StaffWork::AUDIT_REJECT)->count(),
         ];
 
         return $result;
@@ -506,6 +528,8 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
+        $shootDate = self::normalizeNullableField($params, 'shoot_date');
+
         StaffWork::create([
             'staff_id' => $staffId,
             'title' => $params['title'],
@@ -513,7 +537,7 @@ class StaffCenterLogic extends BaseLogic
             'images' => $params['images'] ?? [],
             'video' => $params['video'] ?? '',
             'description' => $params['description'] ?? '',
-            'shoot_date' => $params['shoot_date'] ?? null,
+            'shoot_date' => $shootDate['value'],
             'location' => $params['location'] ?? '',
             'sort' => $params['sort'] ?? 0,
             'is_show' => $params['is_show'] ?? 1,
@@ -542,21 +566,49 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
-        $work->save([
+        $shootDate = self::normalizeNullableField($params, 'shoot_date');
+
+        $saveData = [
             'title' => $params['title'] ?? $work->title,
             'cover' => $params['cover'] ?? $work->cover,
             'images' => $params['images'] ?? $work->images,
             'video' => $params['video'] ?? $work->video,
             'description' => $params['description'] ?? $work->description,
-            'shoot_date' => $params['shoot_date'] ?? $work->shoot_date,
             'location' => $params['location'] ?? $work->location,
             'sort' => $params['sort'] ?? $work->sort,
             'is_show' => $params['is_show'] ?? $work->is_show,
             'audit_status' => StaffWork::AUDIT_PENDING,
             'update_time' => time(),
-        ]);
+        ];
+
+        if ($shootDate['exists']) {
+            $saveData['shoot_date'] = $shootDate['value'];
+        }
+
+        $work->save($saveData);
 
         return true;
+    }
+
+    /**
+     * @notes 将可选字段中的空字符串统一归一化为null
+     */
+    private static function normalizeNullableField(array $params, string $field): array
+    {
+        if (!array_key_exists($field, $params)) {
+            return ['exists' => false, 'value' => null];
+        }
+
+        $value = $params[$field];
+        if ($value === null) {
+            return ['exists' => true, 'value' => null];
+        }
+
+        if (is_string($value) && trim($value) === '') {
+            return ['exists' => true, 'value' => null];
+        }
+
+        return ['exists' => true, 'value' => $value];
     }
 
     /**
@@ -583,7 +635,7 @@ class StaffCenterLogic extends BaseLogic
     /**
      * @notes 套餐列表
      */
-    public static function packageLists(int $userId): array
+    public static function packageLists(int $userId, array $params = []): array
     {
         $staffId = self::getStaffId($userId);
         if ($staffId <= 0) {
@@ -591,16 +643,52 @@ class StaffCenterLogic extends BaseLogic
             return [];
         }
 
-        $list = ServicePackage::where('staff_id', $staffId)
+        $query = ServicePackage::where('staff_id', $staffId)
             ->where('delete_time', null)
-            ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show, is_recommend')
+            ->field('id, staff_id, category_id, name, price, original_price, description, image, duration, sort, is_show, is_recommend')
             ->append(['category_name'])
             ->order('sort', 'desc')
-            ->order('id', 'desc')
-            ->select()
-            ->toArray();
+            ->order('id', 'desc');
 
-        return $list;
+        if (isset($params['is_show']) && $params['is_show'] !== '') {
+            $query->where('is_show', (int) $params['is_show']);
+        }
+        if (isset($params['is_recommend']) && $params['is_recommend'] !== '') {
+            $query->where('is_recommend', (int) $params['is_recommend']);
+        }
+
+        $pageSize = (int) ($params['page_size'] ?? 10);
+        if ($pageSize <= 0) {
+            $pageSize = 10;
+        }
+
+        return $query->paginate($pageSize)->toArray();
+    }
+
+    /**
+     * @notes 套餐详情
+     */
+    public static function packageDetail(int $userId, int $packageId): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $package = ServicePackage::where('id', $packageId)
+            ->where('staff_id', $staffId)
+            ->whereNull('delete_time')
+            ->append(['category_name'])
+            ->find();
+        if (!$package) {
+            self::setError('套餐不存在');
+            return [];
+        }
+
+        $data = $package->toArray();
+        $list = PackageRegionPriceService::attachRegionPrices([$data]);
+        return $list[0] ?? $data;
     }
 
     /**
@@ -616,7 +704,12 @@ class StaffCenterLogic extends BaseLogic
 
         try {
             Db::transaction(function () use ($staffId, $params) {
-                ServicePackage::create(self::buildPackagePayload($staffId, $params));
+                $package = ServicePackage::create(self::buildPackagePayload($staffId, $params));
+                PackageRegionPriceService::syncPackageRegionPrices(
+                    (int) $package->id,
+                    $staffId,
+                    is_array($params['region_prices'] ?? null) ? $params['region_prices'] : []
+                );
             });
             return true;
         } catch (\Throwable $e) {
@@ -647,6 +740,11 @@ class StaffCenterLogic extends BaseLogic
         try {
             Db::transaction(function () use ($package, $staffId, $params) {
                 $package->save(self::buildPackagePayload($staffId, $params, false));
+                PackageRegionPriceService::syncPackageRegionPrices(
+                    (int) $package->id,
+                    $staffId,
+                    is_array($params['region_prices'] ?? null) ? $params['region_prices'] : []
+                );
             });
             return true;
         } catch (\Throwable $e) {
@@ -675,6 +773,7 @@ class StaffCenterLogic extends BaseLogic
         }
 
         ServicePackageAddon::clearByPackageId($packageId);
+        ServicePackageRegionPrice::where('package_id', $packageId)->delete();
         $package->delete();
         return true;
     }
@@ -682,7 +781,7 @@ class StaffCenterLogic extends BaseLogic
     /**
      * @notes 附加服务列表
      */
-    public static function addonLists(int $userId): array
+    public static function addonLists(int $userId, array $params = []): array
     {
         $staffId = self::getStaffId($userId);
         if ($staffId <= 0) {
@@ -690,14 +789,47 @@ class StaffCenterLogic extends BaseLogic
             return [];
         }
 
-        return ServiceAddon::where('staff_id', $staffId)
+        $query = ServiceAddon::where('staff_id', $staffId)
             ->whereNull('delete_time')
             ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show')
             ->append(['category_name'])
             ->order('sort', 'desc')
-            ->order('id', 'desc')
-            ->select()
-            ->toArray();
+            ->order('id', 'desc');
+
+        if (isset($params['is_show']) && $params['is_show'] !== '') {
+            $query->where('is_show', (int) $params['is_show']);
+        }
+
+        $pageSize = (int) ($params['page_size'] ?? 10);
+        if ($pageSize <= 0) {
+            $pageSize = 10;
+        }
+
+        return $query->paginate($pageSize)->toArray();
+    }
+
+    /**
+     * @notes 附加服务详情
+     */
+    public static function addonDetail(int $userId, int $addonId): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $addon = ServiceAddon::where('id', $addonId)
+            ->where('staff_id', $staffId)
+            ->whereNull('delete_time')
+            ->append(['category_name'])
+            ->find();
+        if (!$addon) {
+            self::setError('附加服务不存在');
+            return [];
+        }
+
+        return $addon->toArray();
     }
 
     /**
@@ -853,6 +985,10 @@ class StaffCenterLogic extends BaseLogic
         $status = isset($params['status']) && $params['status'] !== ''
             ? (int) $params['status']
             : null;
+        $pageSize = (int) ($params['page_size'] ?? 10);
+        if ($pageSize <= 0) {
+            $pageSize = 10;
+        }
 
         if ($status === Order::STATUS_PENDING_CONFIRM) {
             $query = Order::where('order_status', Order::STATUS_PENDING_CONFIRM)
@@ -883,7 +1019,7 @@ class StaffCenterLogic extends BaseLogic
                 },
             ])
             ->order('id', 'desc')
-            ->paginate((int) ($params['page_size'] ?? 10))
+            ->paginate($pageSize)
             ->toArray();
 
         foreach ($list['data'] as &$item) {
@@ -1066,6 +1202,16 @@ class StaffCenterLogic extends BaseLogic
             $query->where('dynamic_type', $dynamicType);
         }
 
+        $status = $params['status'] ?? null;
+        if ($status !== null && $status !== '' && in_array((int) $status, [
+            Dynamic::STATUS_PENDING,
+            Dynamic::STATUS_PUBLISHED,
+            Dynamic::STATUS_OFFLINE,
+            Dynamic::STATUS_REJECTED,
+        ], true)) {
+            $query->where('status', (int) $status);
+        }
+
         $pageSize = (int) ($params['page_size'] ?? 10);
         if ($pageSize <= 0) {
             $pageSize = 10;
@@ -1082,9 +1228,41 @@ class StaffCenterLogic extends BaseLogic
                 ->where('staff_id', $staffId)
                 ->where('status', Dynamic::STATUS_PENDING)
                 ->count(),
+            'offline_count' => (int) Dynamic::where('user_type', Dynamic::USER_TYPE_STAFF)
+                ->where('staff_id', $staffId)
+                ->where('status', Dynamic::STATUS_OFFLINE)
+                ->count(),
+            'rejected_count' => (int) Dynamic::where('user_type', Dynamic::USER_TYPE_STAFF)
+                ->where('staff_id', $staffId)
+                ->where('status', Dynamic::STATUS_REJECTED)
+                ->count(),
         ];
 
         return $result;
+    }
+
+    /**
+     * @notes 动态详情
+     */
+    public static function dynamicDetail(int $userId, int $id): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $dynamic = Dynamic::where('id', $id)
+            ->where('staff_id', $staffId)
+            ->where('user_type', Dynamic::USER_TYPE_STAFF)
+            ->append(['tags_arr', 'dynamic_type_desc', 'status_desc', 'allow_comment_desc'])
+            ->find();
+        if (!$dynamic) {
+            self::setError('动态不存在');
+            return [];
+        }
+
+        return $dynamic->toArray();
     }
 
     /**

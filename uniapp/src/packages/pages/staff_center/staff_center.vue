@@ -5,7 +5,10 @@
 
         <view class="staff-center-page">
             <view class="staff-center-page__content">
-                <view class="staff-hero-card" @click="goPage('/packages/pages/staff_profile/staff_profile')">
+                <view
+                    class="staff-hero-card"
+                    @click="goPage('/packages/pages/staff_profile/staff_profile')"
+                >
                     <view class="staff-hero-card__top">
                         <view class="hero-pill hero-pill--primary">
                             <text class="hero-pill__text">今日工作台</text>
@@ -47,13 +50,18 @@
                         <text class="section-head__meta">先处理</text>
                     </view>
 
-                    <view class="focus-card focus-card--primary" @click="handleFocusCard(primaryFocusCard)">
+                    <view
+                        class="focus-card focus-card--primary"
+                        @click="handleFocusCard(primaryFocusCard)"
+                    >
                         <view class="focus-card__row">
                             <view class="focus-card__copy">
                                 <text class="focus-card__title">{{ primaryFocusCard.label }}</text>
                             </view>
                             <view class="focus-badge focus-badge--primary">
-                                <text class="focus-badge__text">{{ primaryFocusCard.valueText }}</text>
+                                <text class="focus-badge__text">{{
+                                    primaryFocusCard.valueText
+                                }}</text>
                             </view>
                         </view>
                         <view class="focus-card__arrow">
@@ -70,7 +78,9 @@
                         >
                             <view class="focus-card__row">
                                 <text class="focus-card__title">{{ item.label }}</text>
-                                <view :class="['focus-badge', `focus-badge--${item.badgeModifier}`]">
+                                <view
+                                    :class="['focus-badge', `focus-badge--${item.badgeModifier}`]"
+                                >
                                     <text class="focus-badge__text">{{ item.valueText }}</text>
                                 </view>
                             </view>
@@ -117,7 +127,9 @@
                                     <text class="order-card__title">{{ item.title }}</text>
                                     <text class="order-card__subtitle">{{ item.subtitle }}</text>
                                 </view>
-                                <view :class="['status-pill', `status-pill--${item.statusModifier}`]">
+                                <view
+                                    :class="['status-pill', `status-pill--${item.statusModifier}`]"
+                                >
                                     <text class="status-pill__text">{{ item.statusLabel }}</text>
                                 </view>
                             </view>
@@ -196,8 +208,14 @@
                             @click="goPage(item.path)"
                         >
                             <view class="quick-card__main">
-                                <view :class="['quick-card__icon', `quick-card__icon--${item.tone}`]">
-                                    <tn-icon :name="item.icon" size="18" :color="item.iconColor" />
+                                <view
+                                    :class="['quick-card__icon', `quick-card__icon--${item.tone}`]"
+                                >
+                                    <tn-icon
+                                        :name="item.icon"
+                                        size="36rpx"
+                                        :color="item.iconColor"
+                                    />
                                 </view>
 
                                 <view class="quick-card__copy">
@@ -218,7 +236,7 @@
                             <tn-icon
                                 v-if="item.singleRow"
                                 name="right"
-                                size="20"
+                                size="36rpx"
                                 color="#B4ACA8"
                             />
                         </view>
@@ -687,7 +705,7 @@ const quickMenus = computed<QuickMenuItem[]>(() => [
         path: '/packages/pages/staff_work_list/staff_work_list',
         badge: 0,
         accent: false,
-        icon: 'image',
+        icon: 'folder',
         iconColor: '#4D7AD9',
         tone: 'info',
         singleRow: false
@@ -697,7 +715,7 @@ const quickMenus = computed<QuickMenuItem[]>(() => [
         path: '/packages/pages/staff_package_list/staff_package_list',
         badge: 0,
         accent: false,
-        icon: 'service',
+        icon: 'set',
         iconColor: '#C99B73',
         tone: 'warning',
         singleRow: false
@@ -717,7 +735,7 @@ const quickMenus = computed<QuickMenuItem[]>(() => [
         path: '/packages/pages/staff_dynamic_list/staff_dynamic_list',
         badge: 0,
         accent: false,
-        icon: 'edit',
+        icon: 'notice',
         iconColor: '#7F7B78',
         tone: 'neutral',
         singleRow: true
@@ -1332,7 +1350,7 @@ onShow(async () => {
 
     &--single {
         grid-column: 1 / -1;
-        min-height: 102rpx;
+        min-height: 108rpx;
     }
 
     &__main {
@@ -1344,13 +1362,13 @@ onShow(async () => {
     }
 
     &__icon {
-        width: 52rpx;
-        height: 52rpx;
+        width: 68rpx;
+        height: 68rpx;
         flex-shrink: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 18rpx;
+        border-radius: 24rpx;
 
         &--primary {
             background: #fff1ee;
@@ -1387,7 +1405,7 @@ onShow(async () => {
     &__title {
         flex: 1;
         min-width: 0;
-        font-size: 28rpx;
+        font-size: 24rpx;
         font-weight: 700;
         line-height: 1.35;
         color: var(--wm-text-primary, #1e2432);

@@ -219,6 +219,52 @@ class Waitlist extends BaseModel
     }
 
     /**
+     * @notes 发送候补失效站内消息
+     * @param Waitlist $waitlist
+     * @return void
+     */
+    private static function sendWaitlistExpiredStationNotification(Waitlist $waitlist): void
+    {
+        $staffName = $waitlist->staff->name ?? '服务人员';
+        $scheduleDate = $waitlist->schedule_date ?? '';
+        $packageName = $waitlist->package->name ?? '';
+        $packageText = $packageName ? "，套餐：{$packageName}" : '';
+
+        StationNotificationService::sendUnique(
+            (int)$waitlist->user_id,
+            Notification::TYPE_ORDER,
+            '候补已失效',
+            "您候补的{$staffName}档期（{$scheduleDate}{$packageText}）因已失效，系统已自动取消。",
+            StationNotificationService::TARGET_WAITLIST,
+            (int)$waitlist->id
+        );
+    }
+
+    /**
+     * @notes 发送候补失效订阅消息
+     * @param Waitlist $waitlist
+     * @return void
+     */
+    private static function sendWaitlistExpiredSubscribeMessage(Waitlist $waitlist): void
+    {
+        $data = [
+            'staff_name' => $waitlist->staff->name ?? '服务人员',
+            'schedule_date' => $waitlist->schedule_date ?? '',
+            'package_name' => $waitlist->package->name ?? '',
+            'remark' => '已超过预约日期，系统已自动取消',
+            'waitlist_id' => (string)$waitlist->id,
+        ];
+
+        SubscribeMessageService::send(
+            (int)$waitlist->user_id,
+            SubscribeMessageTemplate::SCENE_WAITLIST_EXPIRED,
+            $data,
+            'waitlist',
+            (int)$waitlist->id
+        );
+    }
+
+    /**
      * @notes 标记为已下单
      * @param int $waitlistId
      * @return bool
@@ -237,12 +283,76 @@ class Waitlist extends BaseModel
      */
     public static function processExpiredWaitlists(): int
     {
-        return self::where('notify_status', 'in', [self::NOTIFY_STATUS_PENDING, self::NOTIFY_STATUS_NOTIFIED])
+        $waitlists = self::where('notify_status', 'in', [self::NOTIFY_STATUS_PENDING, self::NOTIFY_STATUS_NOTIFIED])
             ->where('expire_time', '<', time())
-            ->update([
-                'notify_status' => self::NOTIFY_STATUS_EXPIRED,
-                'update_time' => time(),
-            ]);
+            ->with([
+                'staff' => function ($q) {
+                    $q->field('id, name');
+                },
+                'package' => function ($q) {
+                    $q->field('id, name');
+                },
+            ])
+            ->limit(100)
+            ->select();
+
+        if ($waitlists->isEmpty()) {
+            return 0;
+        }
+
+        $handled = 0;
+        $now = time();
+        foreach ($waitlists as $waitlist) {
+            $waitlist->notify_status = self::NOTIFY_STATUS_EXPIRED;
+            $waitlist->update_time = $now;
+            if ($waitlist->save()) {
+                self::sendWaitlistExpiredStationNotification($waitlist);
+                self::sendWaitlistExpiredSubscribeMessage($waitlist);
+                $handled++;
+            }
+        }
+
+        return $handled;
+    }
+
+    /**
+     * @notes 处理预约日期已过的候补
+     * @param int $limit
+     * @return int
+     */
+    public static function processPastDateWaitlists(int $limit = 100): int
+    {
+        $today = date('Y-m-d');
+        $waitlists = self::where('notify_status', 'in', [self::NOTIFY_STATUS_PENDING, self::NOTIFY_STATUS_NOTIFIED])
+            ->where('schedule_date', '<', $today)
+            ->limit($limit)
+            ->with([
+                'staff' => function ($q) {
+                    $q->field('id, name');
+                },
+                'package' => function ($q) {
+                    $q->field('id, name');
+                },
+            ])
+            ->select();
+
+        if ($waitlists->isEmpty()) {
+            return 0;
+        }
+
+        $handled = 0;
+        $now = time();
+        foreach ($waitlists as $waitlist) {
+            $waitlist->notify_status = self::NOTIFY_STATUS_EXPIRED;
+            $waitlist->update_time = $now;
+            if ($waitlist->save()) {
+                self::sendWaitlistExpiredStationNotification($waitlist);
+                self::sendWaitlistExpiredSubscribeMessage($waitlist);
+                $handled++;
+            }
+        }
+
+        return $handled;
     }
 
     /**

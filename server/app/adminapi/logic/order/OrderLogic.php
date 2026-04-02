@@ -162,6 +162,7 @@ class OrderLogic extends BaseLogic
         $data['pay_type_desc'] = $order->pay_type_desc;
         $data['pay_voucher_status_desc'] = $order->pay_voucher_status_desc ?? '';
         $data['service_region_text'] = $order->service_region_text;
+        $data = array_merge($data, Order::getPaymentSummary($order));
 
         return $data;
     }
@@ -240,6 +241,41 @@ class OrderLogic extends BaseLogic
     }
 
     /**
+     * @notes 后台建单支付预估
+     * @param array $params
+     * @return array
+     */
+    public static function estimatePayment(array $params): array
+    {
+        $items = $params['items'] ?? [];
+        $totalAmount = 0.0;
+
+        foreach ($items as $item) {
+            $price = (float) ($item['price'] ?? 0);
+            $quantity = max((int) ($item['quantity'] ?? 1), 1);
+            $totalAmount += $price * $quantity;
+        }
+
+        $totalAmount = round($totalAmount, 2);
+        $discountAmount = round(max((float) ($params['discount_amount'] ?? 0), 0), 2);
+        $payAmount = round(max($totalAmount - $discountAmount, 0), 2);
+        $paymentSplit = Order::calculatePaymentSplit($payAmount);
+
+        return [
+            'total_amount' => $totalAmount,
+            'discount_amount' => $discountAmount,
+            'pay_amount' => $payAmount,
+            'deposit_amount' => round((float) $paymentSplit['deposit_amount'], 2),
+            'balance_amount' => round((float) $paymentSplit['balance_amount'], 2),
+            'payment_mode' => (int) $paymentSplit['deposit_mode_enabled'] === 1 ? 'deposit' : 'full',
+            'payment_mode_desc' => (int) $paymentSplit['deposit_mode_enabled'] === 1 ? '定金支付' : '全款支付',
+            'deposit_type' => (string) $paymentSplit['deposit_type'],
+            'deposit_value' => round((float) $paymentSplit['deposit_value'], 2),
+            'deposit_remark' => (string) $paymentSplit['deposit_remark'],
+        ];
+    }
+
+    /**
      * @notes 后台创建订单
      * @param array $params
      * @return bool
@@ -271,13 +307,9 @@ class OrderLogic extends BaseLogic
             $discountAmount = $params['discount_amount'] ?? 0;
             $payAmount = $totalAmount - $discountAmount;
 
-            // 定金/尾款模式
-            $depositAmount = 0;
-            $balanceAmount = 0;
-            if (!empty($params['deposit_ratio'])) {
-                $depositAmount = round($payAmount * $params['deposit_ratio'] / 100, 2);
-                $balanceAmount = $payAmount - $depositAmount;
-            }
+            $paymentSplit = Order::calculatePaymentSplit((float) $payAmount);
+            $depositAmount = (float) $paymentSplit['deposit_amount'];
+            $balanceAmount = (float) $paymentSplit['balance_amount'];
 
             // 创建订单
             $order = Order::create([
@@ -292,6 +324,10 @@ class OrderLogic extends BaseLogic
                 'pay_amount' => $payAmount,
                 'deposit_amount' => $depositAmount,
                 'balance_amount' => $balanceAmount,
+                'deposit_mode_enabled' => (int) $paymentSplit['deposit_mode_enabled'],
+                'deposit_type_snapshot' => (string) $paymentSplit['deposit_type'],
+                'deposit_value_snapshot' => (float) $paymentSplit['deposit_value'],
+                'deposit_remark_snapshot' => (string) $paymentSplit['deposit_remark'],
                 'service_date' => $params['service_date'] ?? null,
                 'service_time_slot' => 0,
                 'service_address' => $params['service_address'] ?? '',

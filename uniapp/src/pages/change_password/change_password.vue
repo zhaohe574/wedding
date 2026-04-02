@@ -14,7 +14,11 @@
         <view class="password-form">
             <view v-if="type !== 'set'" class="password-form__group">
                 <text class="password-form__label">原密码</text>
-                <BaseInput v-model="formData.old_password" type="password" placeholder="请输入当前密码">
+                <BaseInput
+                    v-model="formData.old_password"
+                    type="password"
+                    placeholder="请输入当前密码"
+                >
                     <template #prefix>
                         <tn-icon name="lock" size="30" color="#B4ACA8" />
                     </template>
@@ -48,14 +52,14 @@
             </view>
 
             <view v-if="formData.password" class="password-tips">
-                <view class="password-tips__item" :class="{ 'is-active': formData.password.length >= 6 }">
+                <view
+                    class="password-tips__item"
+                    :class="{ 'is-active': formData.password.length >= 6 }"
+                >
                     <view class="password-tips__dot" />
                     <text>长度保持在 6 到 20 位之间</text>
                 </view>
-                <view
-                    class="password-tips__item"
-                    :class="{ 'is-active': hasMixedPassword }"
-                >
+                <view class="password-tips__item" :class="{ 'is-active': hasMixedPassword }">
                     <view class="password-tips__dot" />
                     <text>建议同时包含字母与数字</text>
                 </view>

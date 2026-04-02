@@ -269,10 +269,7 @@ const loadBadgeData = async () => {
 }
 
 watch(
-    [
-        isLogin,
-        showList
-    ],
+    [isLogin, showList],
     () => {
         loadBadgeData()
     },
@@ -292,7 +289,11 @@ watch(
 .my-service {
     .service-grid,
     .service-list {
-        background: linear-gradient(180deg, var(--cinema-surface-elevated, #fffdf8) 0%, var(--cinema-surface, #f6f2ea) 100%);
+        background: linear-gradient(
+            180deg,
+            var(--cinema-surface-elevated, #fffdf8) 0%,
+            var(--cinema-surface, #f6f2ea) 100%
+        );
         border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
         border-radius: 28rpx;
         box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));

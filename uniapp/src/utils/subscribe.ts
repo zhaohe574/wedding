@@ -21,6 +21,7 @@ export type SubscribeScene =
     | 'change_result' // 变更审核
     | 'schedule_change' // 档期变更
     | 'waitlist_release' // 候补释放
+    | 'waitlist_expired' // 候补失效
 
 interface SubscribeResult {
     success: boolean

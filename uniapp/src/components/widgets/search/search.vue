@@ -6,12 +6,15 @@
         h5-nav-height="0"
         bg-color="transparent"
     >
-        <view
-            class="search-navbar"
-            :style="navbarWrapperStyle"
-        >
-            <view class="search-navbar__status" :style="{ height: `${navBarMetrics.statusBarHeight}px` }"></view>
-            <view class="search-navbar__body" :style="{ height: `${navBarMetrics.contentHeight}px` }">
+        <view class="search-navbar" :style="navbarWrapperStyle">
+            <view
+                class="search-navbar__status"
+                :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
+            ></view>
+            <view
+                class="search-navbar__body"
+                :style="{ height: `${navBarMetrics.contentHeight}px` }"
+            >
                 <view class="search-navbar__side" :style="sideSlotStyle">
                     <view class="mini-search" :style="miniSearchStyle" @tap="handleSearchClick">
                         <tn-icon name="search" size="28" color="#64748B" />
@@ -24,11 +27,18 @@
                         :src="metaData.title_img"
                         mode="widthFix"
                     ></image>
-                    <text v-else class="search-navbar__title-text" :style="{ color: navbarTitleColor }">
+                    <text
+                        v-else
+                        class="search-navbar__title-text"
+                        :style="{ color: navbarTitleColor }"
+                    >
                         {{ metaData.title }}
                     </text>
                 </view>
-                <view class="search-navbar__side search-navbar__side--placeholder" :style="sideSlotStyle"></view>
+                <view
+                    class="search-navbar__side search-navbar__side--placeholder"
+                    :style="sideSlotStyle"
+                ></view>
             </view>
         </view>
     </tn-sticky>

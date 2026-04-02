@@ -40,7 +40,6 @@ class OrderValidate extends BaseValidate
         'director_staff_id' => 'integer|egt:0',
         'director_package_id' => 'integer|egt:0',
         'reason' => 'max:255',
-        'deposit_ratio' => 'integer|between:0,100',
         'pay_way' => 'require|integer|in:1,2,3,4,5',
         'pay_type' => 'integer|in:1,2,3',
         'amount' => 'require|float|gt:0',
@@ -75,7 +74,6 @@ class OrderValidate extends BaseValidate
         'remark.max' => '备注最多500个字符',
         'addon_ids.array' => '预约附加项参数错误',
         'reason.max' => '原因最多255个字符',
-        'deposit_ratio.between' => '定金比例应在0-100之间',
         'pay_way.require' => '请选择支付方式',
         'pay_way.in' => '支付方式参数错误',
         'pay_type.in' => '支付类型参数错误',
@@ -120,8 +118,7 @@ class OrderValidate extends BaseValidate
             'butler_staff_id',
             'butler_package_id',
             'director_staff_id',
-            'director_package_id',
-            'deposit_ratio',
+            'director_package_id'
         ]);
     }
 
@@ -145,8 +142,7 @@ class OrderValidate extends BaseValidate
             'butler_staff_id',
             'butler_package_id',
             'director_staff_id',
-            'director_package_id',
-            'deposit_ratio'
+            'director_package_id'
         ]);
     }
 

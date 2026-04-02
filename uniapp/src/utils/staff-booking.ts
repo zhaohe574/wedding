@@ -6,16 +6,12 @@ import {
 
 export const BOOKING_ROLE_KEYS = ['butler', 'director'] as const
 
-export type BookingRoleKey = (typeof BOOKING_ROLE_KEYS)[number]
+export type BookingRoleKey = typeof BOOKING_ROLE_KEYS[number]
 
 export type BookingQuery = ReturnType<typeof normalizeBookingQuery>
 
 export const normalizeAddonIds = (value: any): number[] => {
-    const rawList = Array.isArray(value)
-        ? value
-        : typeof value === 'string'
-            ? value.split(',')
-            : []
+    const rawList = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : []
 
     return rawList
         .map((item) => Number(item))
@@ -58,17 +54,14 @@ export const buildBookingQuery = (value: Record<string, any> | null | undefined)
         params.push(`addon_ids=${encodeURIComponent(booking.addon_ids.join(','))}`)
     }
 
-    ;[
-        'butler_staff_id',
-        'butler_package_id',
-        'director_staff_id',
-        'director_package_id'
-    ].forEach((key) => {
-        const currentValue = Number((booking as any)[key] || 0)
-        if (currentValue > 0) {
-            params.push(`${key}=${currentValue}`)
+    ;['butler_staff_id', 'butler_package_id', 'director_staff_id', 'director_package_id'].forEach(
+        (key) => {
+            const currentValue = Number((booking as any)[key] || 0)
+            if (currentValue > 0) {
+                params.push(`${key}=${currentValue}`)
+            }
         }
-    })
+    )
 
     if (booking.flow_total_steps > 0) {
         params.push(`flow_total_steps=${booking.flow_total_steps}`)

@@ -438,8 +438,7 @@ onShareAppMessage(() => ({
         padding: 0 22rpx;
         border-radius: var(--dynamic-page-chip-radius, 36rpx);
         flex-shrink: 0;
-        box-shadow:
-            inset 0 1rpx 0 rgba(255, 255, 255, 0.72),
+        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.72),
             0 10rpx 22rpx rgba(214, 185, 167, 0.08);
         backdrop-filter: blur(12rpx);
         -webkit-backdrop-filter: blur(12rpx);
@@ -466,8 +465,7 @@ onShareAppMessage(() => ({
         padding: 0 22rpx;
         border-radius: var(--dynamic-page-chip-radius, 36rpx);
         flex-shrink: 0;
-        box-shadow:
-            inset 0 1rpx 0 rgba(255, 255, 255, 0.72),
+        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.72),
             0 10rpx 22rpx rgba(214, 185, 167, 0.08);
         backdrop-filter: blur(12rpx);
         -webkit-backdrop-filter: blur(12rpx);
@@ -491,8 +489,7 @@ onShareAppMessage(() => ({
         padding: 0 22rpx;
         border-radius: var(--dynamic-page-chip-radius, 36rpx);
         flex-shrink: 0;
-        box-shadow:
-            inset 0 1rpx 0 rgba(255, 255, 255, 0.72),
+        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.72),
             0 10rpx 22rpx rgba(214, 185, 167, 0.08);
         backdrop-filter: blur(12rpx);
         -webkit-backdrop-filter: blur(12rpx);
@@ -514,10 +511,7 @@ onShareAppMessage(() => ({
     }
 
     &__body {
-        padding:
-            0
-            var(--wm-space-page-x, 37rpx)
-            var(--dynamic-page-body-bottom, 37rpx);
+        padding: 0 var(--wm-space-page-x, 37rpx) var(--dynamic-page-body-bottom, 37rpx);
     }
 
     &__picker-mask {

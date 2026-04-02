@@ -43,7 +43,9 @@
             <view class="ticket-detail__section">
                 <text class="ticket-detail__section-title">问题内容</text>
                 <text class="ticket-detail__content-title">{{ detail.title }}</text>
-                <text v-if="detail.content" class="ticket-detail__content-text">{{ detail.content }}</text>
+                <text v-if="detail.content" class="ticket-detail__content-text">{{
+                    detail.content
+                }}</text>
                 <view
                     v-if="Array.isArray(detail.images) && detail.images.length"
                     class="ticket-detail__gallery"
@@ -67,7 +69,10 @@
                         :key="index"
                         class="ticket-detail__timeline-item"
                     >
-                        <view class="ticket-detail__timeline-dot" :class="{ 'is-active': index === 0 }" />
+                        <view
+                            class="ticket-detail__timeline-dot"
+                            :class="{ 'is-active': index === 0 }"
+                        />
                         <view class="ticket-detail__timeline-main">
                             <text class="ticket-detail__timeline-text">{{ log.content }}</text>
                             <text class="ticket-detail__timeline-time">{{ log.create_time }}</text>
@@ -92,12 +97,7 @@
             >
                 取消工单
             </BaseButton>
-            <BaseButton
-                v-if="detail.status === 2"
-                block
-                size="lg"
-                @click="showConfirmPopup = true"
-            >
+            <BaseButton v-if="detail.status === 2" block size="lg" @click="showConfirmPopup = true">
                 确认完成
             </BaseButton>
         </view>
@@ -111,7 +111,12 @@
             <view class="confirm-panel">
                 <view class="confirm-panel__head">
                     <text class="confirm-panel__title">确认完成</text>
-                    <tn-icon name="close" size="28" color="#978B83" @click="showConfirmPopup = false" />
+                    <tn-icon
+                        name="close"
+                        size="28"
+                        color="#978B83"
+                        @click="showConfirmPopup = false"
+                    />
                 </view>
                 <view class="confirm-panel__body">
                     <view class="confirm-panel__field">

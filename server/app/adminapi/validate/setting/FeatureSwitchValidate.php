@@ -23,6 +23,10 @@ class FeatureSwitchValidate extends BaseValidate
         'admin_dashboard' => 'require|in:0,1',
         'admin_dashboard_user_ids' => 'checkAdminDashboardUserIds',
         'staff_detail_style' => 'in:classic,immersive,conversion',
+        'enable_deposit_mode' => 'require|in:0,1',
+        'deposit_type' => 'requireIf:enable_deposit_mode,1|in:fixed,ratio',
+        'deposit_value' => 'requireIf:enable_deposit_mode,1|float|gt:0|checkDepositValue',
+        'deposit_remark' => 'max:255',
     ];
 
     protected $message = [
@@ -36,6 +40,15 @@ class FeatureSwitchValidate extends BaseValidate
         'admin_dashboard.in' => '管理员看板开关值错误',
         'admin_dashboard_user_ids.checkAdminDashboardUserIds' => '管理员可访问用户ID格式错误',
         'staff_detail_style.in' => '服务人员详情页风格值错误',
+        'enable_deposit_mode.require' => '请选择是否开启定金模式',
+        'enable_deposit_mode.in' => '定金模式开关值错误',
+        'deposit_type.requireIf' => '请选择定金计算方式',
+        'deposit_type.in' => '定金计算方式错误',
+        'deposit_value.requireIf' => '请填写定金值',
+        'deposit_value.float' => '定金值格式错误',
+        'deposit_value.gt' => '定金值必须大于0',
+        'deposit_value.checkDepositValue' => '定金比例必须大于0且小于100',
+        'deposit_remark.max' => '定金说明最多255个字符',
     ];
 
     public function sceneSetConfig(): FeatureSwitchValidate
@@ -47,6 +60,10 @@ class FeatureSwitchValidate extends BaseValidate
             'admin_dashboard',
             'admin_dashboard_user_ids',
             'staff_detail_style',
+            'enable_deposit_mode',
+            'deposit_type',
+            'deposit_value',
+            'deposit_remark',
         ]);
     }
 
@@ -69,6 +86,24 @@ class FeatureSwitchValidate extends BaseValidate
             if (!preg_match('/^[1-9]\d*$/', $id)) {
                 return false;
             }
+        }
+
+        return true;
+    }
+
+    /**
+     * @notes 校验定金值
+     */
+    public function checkDepositValue($value, $rule, array $data = []): bool
+    {
+        if ((int) ($data['enable_deposit_mode'] ?? 0) !== 1) {
+            return true;
+        }
+
+        $type = (string) ($data['deposit_type'] ?? '');
+        $depositValue = (float) $value;
+        if ($type === 'ratio' && ($depositValue <= 0 || $depositValue >= 100)) {
+            return false;
         }
 
         return true;

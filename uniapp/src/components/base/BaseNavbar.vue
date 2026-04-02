@@ -22,10 +22,7 @@
 
                 <text class="base-navbar__title" :style="titleStyle">{{ title }}</text>
 
-                <view
-                    class="base-navbar__side base-navbar__side--placeholder"
-                    :style="sideStyle"
-                >
+                <view class="base-navbar__side base-navbar__side--placeholder" :style="sideStyle">
                     <slot v-if="hasRightSlot" name="right" />
                     <text v-else-if="resolvedBack" class="base-navbar__placeholder">‹ 返回</text>
                 </view>

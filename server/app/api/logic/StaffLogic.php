@@ -145,9 +145,20 @@ class StaffLogic extends BaseLogic
      */
     public static function works(int $staffId): array
     {
+        $staff = Staff::where('id', $staffId)
+            ->where('delete_time', null)
+            ->where('status', Staff::STATUS_ENABLE)
+            ->where('audit_status', Staff::AUDIT_PASS)
+            ->find();
+
+        if (!$staff) {
+            return [];
+        }
+
         return StaffWork::where('staff_id', $staffId)
             ->where('delete_time', null)
             ->where('is_show', 1)
+            ->where('audit_status', StaffWork::AUDIT_PASS)
             ->order('sort desc, id desc')
             ->select()
             ->toArray();
@@ -365,9 +376,14 @@ class StaffLogic extends BaseLogic
 
         $result = [];
         foreach ($packages as $package) {
-            $result[] = array_merge($package, [
+            $duration = (int) ($package['duration'] ?? 0);
+            $packageWithMeta = array_merge($package, [
+                'duration' => $duration,
+                'duration_desc' => $duration > 0 ? $duration . '小时' : '',
+            ]);
+            $result[] = array_merge($packageWithMeta, [
                 'package_id' => (int)($package['id'] ?? 0),
-                'package' => $package,
+                'package' => $packageWithMeta,
                 'status' => 1,
             ]);
         }

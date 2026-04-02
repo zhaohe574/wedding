@@ -56,12 +56,8 @@ onLaunch(async () => {
 
 page {
     background-color: transparent;
-    font-family:
-        var(--wm-font-family-body, 'PingFang SC'),
-        'Hiragino Sans GB',
-        'Microsoft YaHei',
-        'Noto Sans SC',
-        sans-serif;
+    font-family: var(--wm-font-family-body, 'PingFang SC'), 'Hiragino Sans GB', 'Microsoft YaHei',
+        'Noto Sans SC', sans-serif;
     font-size: 28rpx;
     line-height: 1.6;
     color: var(--wm-text-primary, #1e2432);

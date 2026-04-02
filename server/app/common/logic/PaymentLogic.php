@@ -103,6 +103,19 @@ class PaymentLogic extends BaseLogic
                 'order_amount' => $order['order_amount'],
                 'pay_deadline_time' => (int)($order['pay_deadline_time'] ?? 0),
                 'pay_remain_seconds' => (int)($order['pay_remain_seconds'] ?? 0),
+                'total_amount' => round((float)($order['total_amount'] ?? $order['order_amount']), 2),
+                'pay_amount' => round((float)($order['pay_amount'] ?? $order['order_amount']), 2),
+                'paid_amount' => round((float)($order['paid_amount'] ?? 0), 2),
+                'unpaid_amount' => round((float)($order['unpaid_amount'] ?? 0), 2),
+                'deposit_amount' => round((float)($order['deposit_amount'] ?? 0), 2),
+                'balance_amount' => round((float)($order['balance_amount'] ?? 0), 2),
+                'deposit_paid' => (int)($order['deposit_paid'] ?? 0),
+                'balance_paid' => (int)($order['balance_paid'] ?? 0),
+                'need_pay' => (string)($order['need_pay'] ?? ''),
+                'need_pay_amount' => round((float)($order['need_pay_amount'] ?? $order['order_amount']), 2),
+                'need_pay_label' => (string)($order['need_pay_label'] ?? '立即支付'),
+                'payment_mode' => (string)($order['payment_mode'] ?? 'full'),
+                'deposit_remark' => (string)($order['deposit_remark'] ?? ''),
             ];
 
         } catch (\Exception $e) {

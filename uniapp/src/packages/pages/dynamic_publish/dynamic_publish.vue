@@ -25,7 +25,7 @@
             </view>
 
             <!-- 图片上传 -->
-            <view v-if="!form.video" class="flex flex-wrap gap-2">
+            <view v-if="!form.video_url" class="flex flex-wrap gap-2">
                 <view
                     v-for="(img, idx) in form.images"
                     :key="idx"
@@ -52,10 +52,10 @@
             <!-- 视频上传 -->
             <view v-if="form.images.length === 0" class="mt-3">
                 <view
-                    v-if="form.video"
+                    v-if="form.video_url"
                     class="relative w-full aspect-video rounded overflow-hidden"
                 >
-                    <video :src="form.video" class="w-full h-full" object-fit="cover" />
+                    <video :src="form.video_url" class="w-full h-full" object-fit="cover" />
                     <view
                         class="absolute top-2 right-2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center"
                         @click="removeVideo"
@@ -175,11 +175,7 @@
         </view>
 
         <!-- 添加话题弹窗 -->
-        <tn-popup
-            v-model="showTagInput"
-            open-direction="bottom"
-            :safe-area-inset-bottom="true"
-        >
+        <tn-popup v-model="showTagInput" open-direction="bottom" :safe-area-inset-bottom="true">
             <view class="p-4">
                 <view class="text-center font-medium mb-4">添加话题</view>
                 <view class="flex items-center bg-gray-100 rounded-lg px-3">
@@ -222,7 +218,7 @@
 import { ref, reactive, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { publishDynamic, getHotTags } from '@/api/dynamic'
-import { uploadImage } from '@/api/app'
+import { uploadImage, uploadVideo } from '@/api/app'
 import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
 import cache from '@/utils/cache'
 
@@ -242,7 +238,7 @@ const visibleOptions = [
 const form = reactive({
     content: '',
     images: [] as string[],
-    video: '',
+    video_url: '',
     video_cover: '',
     dynamic_type: 1,
     tags: [] as string[],
@@ -259,7 +255,7 @@ const showVisiblePicker = ref(false)
 const publishing = ref(false)
 
 const canPublish = computed(() => {
-    return form.content.trim().length > 0 || form.images.length > 0 || form.video
+    return form.content.trim().length > 0 || form.images.length > 0 || Boolean(form.video_url)
 })
 
 const getVisibleText = () => {
@@ -287,8 +283,8 @@ const chooseImage = () => {
             try {
                 for (const path of res.tempFilePaths) {
                     const uploadRes: any = await uploadImage(path)
-                    if (uploadRes.url) {
-                        form.images.push(uploadRes.url)
+                    if (uploadRes?.uri) {
+                        form.images.push(uploadRes.uri)
                     }
                 }
                 // 选择了图片，自动切换为图文类型
@@ -316,10 +312,10 @@ const chooseVideo = () => {
         success: async (res) => {
             uni.showLoading({ title: '上传中...' })
             try {
-                const uploadRes: any = await uploadImage(res.tempFilePath)
-                if (uploadRes.url) {
-                    form.video = uploadRes.url
-                    form.video_cover = res.tempFilePath || ''
+                const uploadRes: any = await uploadVideo(res.tempFilePath)
+                if (uploadRes?.uri) {
+                    form.video_url = uploadRes.uri
+                    form.video_cover = ''
                     // 选择了视频，自动切换为视频类型
                     form.dynamic_type = 2
                 }
@@ -333,7 +329,7 @@ const chooseVideo = () => {
 }
 
 const removeVideo = () => {
-    form.video = ''
+    form.video_url = ''
     form.video_cover = ''
     form.dynamic_type = 1
 }
@@ -404,9 +400,11 @@ const handlePublish = async () => {
         if (form.images.length > 0) {
             params.images = form.images
         }
-        if (form.video) {
-            params.video = form.video
-            params.video_cover = form.video_cover
+        if (form.video_url) {
+            params.video_url = form.video_url
+            if (form.video_cover) {
+                params.video_cover = form.video_cover
+            }
         }
         if (form.tags.length > 0) {
             params.tags = form.tags

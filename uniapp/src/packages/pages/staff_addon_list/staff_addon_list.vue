@@ -3,118 +3,150 @@
     <PageShell scene="staff">
         <BaseNavbar title="附加项管理" />
 
-        <view class="staff-resource-page">
-            <view class="page-section page-section--top">
-                <BaseCard variant="hero" scene="staff" class="hero-card">
-                    <view class="hero-card__head">
-                        <view class="hero-card__copy">
-                            <text class="hero-card__eyebrow">服务人员中心</text>
-                            <text class="hero-card__title">附加项管理</text>
-                            <text class="hero-card__meta">维护加价服务</text>
-                        </view>
+        <view class="page-container">
+            <z-paging
+                ref="pagingRef"
+                v-model="addonList"
+                :auto="false"
+                :hide-empty-view="true"
+                :paging-style="pagingStyle"
+                @query="queryList"
+            >
+                <template #top>
+                    <view class="page-section page-section--top">
+                        <BaseCard variant="hero" scene="staff" class="hero-card">
+                            <view class="hero-card__head">
+                                <view class="hero-card__copy">
+                                    <text class="hero-card__eyebrow">服务人员中心</text>
+                                    <text class="hero-card__title">附加项管理</text>
+                                </view>
 
-                        <BaseButton
-                            variant="secondary"
-                            size="sm"
-                            class="hero-card__action"
-                            @click="goCreate"
-                        >
-                            新增附加项
-                        </BaseButton>
-                    </view>
-
-                    <view class="hero-metrics">
-                        <view
-                            v-for="item in heroMetrics"
-                            :key="item.label"
-                            :class="['hero-metric', { 'hero-metric--accent': item.accent }]"
-                        >
-                            <text class="hero-metric__label">{{ item.label }}</text>
-                            <text class="hero-metric__value">{{ item.value }}</text>
-                        </view>
-                    </view>
-                </BaseCard>
-            </view>
-
-            <view class="page-section page-section--list">
-                <template v-if="addonList.length">
-                    <BaseCard
-                        v-for="item in addonList"
-                        :key="item.id"
-                        variant="glass"
-                        scene="staff"
-                        class="addon-card"
-                    >
-                        <view class="addon-card__head">
-                            <view class="addon-card__thumb">
-                                <image
-                                    v-if="item.image"
-                                    :src="item.image"
-                                    class="addon-card__image"
-                                    mode="aspectFill"
-                                />
-                                <view v-else class="addon-card__image addon-card__image--placeholder">
-                                    <tn-icon name="image" size="42" color="#D8CEC8" />
+                                <view class="hero-card__action" @click="goCreate">
+                                    <text class="hero-card__action-text">新增附加项</text>
                                 </view>
                             </view>
 
-                            <view class="addon-card__main">
-                                <view class="addon-card__title-row">
+                            <view class="hero-metrics">
+                                <view
+                                    v-for="item in heroMetrics"
+                                    :key="item.key"
+                                    :class="[
+                                        'hero-metric',
+                                        {
+                                            'hero-metric--selected':
+                                                currentMetricFilter === item.key
+                                        }
+                                    ]"
+                                    @click="switchMetricFilter(item.key)"
+                                >
+                                    <text class="hero-metric__label">{{ item.label }}</text>
+                                    <text class="hero-metric__value">{{ item.value }}</text>
+                                </view>
+                            </view>
+                        </BaseCard>
+                    </view>
+                </template>
+
+                <view class="page-section page-section--list">
+                    <LoadingState v-if="loading && !hasLoaded" text="加载附加项中..." />
+
+                    <template v-else-if="addonList.length">
+                        <BaseCard
+                            v-for="item in addonList"
+                            :key="item.id"
+                            variant="glass"
+                            scene="staff"
+                            class="addon-card"
+                            interactive
+                            @click="handleEdit(item)"
+                        >
+                            <view class="addon-card__media">
+                                <image
+                                    v-if="item.image"
+                                    class="addon-card__image"
+                                    :src="item.image"
+                                    mode="aspectFill"
+                                />
+                                <view
+                                    v-else
+                                    class="addon-card__image addon-card__image--placeholder"
+                                >
+                                    <view class="addon-card__placeholder-mark">
+                                        <tn-icon name="image" size="42" color="#D8CEC8" />
+                                    </view>
+                                </view>
+
+                                <StatusBadge
+                                    class="addon-card__status"
+                                    :tone="Number(item.is_show) === 1 ? 'success' : 'neutral'"
+                                    size="sm"
+                                >
+                                    {{ Number(item.is_show) === 1 ? '上架中' : '已下架' }}
+                                </StatusBadge>
+                            </view>
+
+                            <view class="addon-card__body">
+                                <view class="addon-card__head">
                                     <view class="addon-card__copy">
                                         <text class="addon-card__title">
                                             {{ item.name || '未命名附加项' }}
                                         </text>
-                                        <text class="addon-card__category">
-                                            {{ item.category_name || '服务分类自动同步' }}
-                                        </text>
                                     </view>
-
-                                    <StatusBadge
-                                        :tone="Number(item.is_show) === 1 ? 'success' : 'neutral'"
-                                        size="sm"
-                                    >
-                                        {{ Number(item.is_show) === 1 ? '上架中' : '已下架' }}
-                                    </StatusBadge>
                                 </view>
 
                                 <view class="price-row">
                                     <text class="price-row__prefix">+¥</text>
-                                    <text class="price-row__value">{{ formatPrice(item.price) }}</text>
+                                    <text class="price-row__value">{{
+                                        formatPrice(item.price)
+                                    }}</text>
+                                    <text
+                                        v-if="Number(item.original_price || 0) > 0"
+                                        class="price-row__origin"
+                                    >
+                                        ¥{{ formatPrice(item.original_price) }}
+                                    </text>
                                 </view>
 
                                 <view class="chip-row">
                                     <view class="info-chip">
-                                        排序 {{ Number(item.sort || 0) }}
+                                        {{ item.category_name || '未分类' }}
                                     </view>
-                                    <view v-if="item.image" class="info-chip info-chip--accent">
-                                        含图片
+                                    <view class="info-chip">排序 {{ Number(item.sort || 0) }}</view>
+                                </view>
+
+                                <text v-if="item.description" class="addon-card__desc">
+                                    {{ item.description }}
+                                </text>
+
+                                <view class="action-row">
+                                    <view
+                                        class="action-btn action-btn--ghost"
+                                        @click.stop="handleEdit(item)"
+                                    >
+                                        编辑
+                                    </view>
+                                    <view
+                                        class="action-btn action-btn--danger"
+                                        @click.stop="handleRemove(item)"
+                                    >
+                                        删除
                                     </view>
                                 </view>
                             </view>
+                        </BaseCard>
+                    </template>
+
+                    <view v-else-if="hasLoaded" class="addon-empty-state">
+                        <view class="addon-empty-state__icon">
+                            <tn-icon name="service" size="82" color="#D8CEC8" />
                         </view>
-
-                        <text v-if="item.description" class="addon-card__desc">
-                            {{ item.description }}
-                        </text>
-
-                        <view class="action-row">
-                            <view class="action-btn action-btn--ghost" @click="handleEdit(item)">
-                                编辑
-                            </view>
-                            <view class="action-btn action-btn--danger" @click="handleRemove(item)">
-                                删除
-                            </view>
+                        <text class="addon-empty-state__title">{{ emptyStateTitle }}</text>
+                        <view class="addon-empty-state__action" @click="goCreate">
+                            <text class="addon-empty-state__action-text">新增附加项</text>
                         </view>
-                    </BaseCard>
-                </template>
-
-                <EmptyState
-                    v-else
-                    title="还没有附加项"
-                    action-text="新增附加项"
-                    @action="goCreate"
-                />
-            </view>
+                    </view>
+                </view>
+            </z-paging>
         </view>
     </PageShell>
 </template>
@@ -122,45 +154,110 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
-import EmptyState from '@/components/base/EmptyState.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { staffCenterAddonLists, staffCenterAddonRemove } from '@/api/staffCenter'
+import { useFixedNavbarPagingStyle } from '@/hooks/useFixedNavbarPagingStyle'
 import { useThemeStore } from '@/stores/theme'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
 
+type AddonMetricFilter = 'all' | 'visible' | 'hidden'
+
 interface HeroMetric {
+    key: AddonMetricFilter
     label: string
     value: number
-    accent: boolean
 }
 
 const $theme = useThemeStore()
+const pagingStyle = useFixedNavbarPagingStyle()
+const pagingRef = ref<any>(null)
 const addonList = ref<any[]>([])
+const loading = ref(false)
+const hasLoaded = ref(false)
+const currentMetricFilter = ref<AddonMetricFilter>('all')
+const metricCounts = ref<Record<AddonMetricFilter, number>>({
+    all: 0,
+    visible: 0,
+    hidden: 0
+})
 
-const visibleCount = computed(() =>
-    addonList.value.filter((item) => Number(item.is_show) === 1).length
-)
-const imageCount = computed(() =>
-    addonList.value.filter((item) => String(item.image || '').trim()).length
-)
 const heroMetrics = computed<HeroMetric[]>(() => [
-    { label: '总数量', value: addonList.value.length, accent: false },
-    { label: '上架中', value: visibleCount.value, accent: true },
-    { label: '带图片', value: imageCount.value, accent: false }
+    { key: 'all', label: '全部', value: metricCounts.value.all },
+    { key: 'visible', label: '上架中', value: metricCounts.value.visible },
+    { key: 'hidden', label: '已下架', value: metricCounts.value.hidden }
 ])
 
-const fetchAddonList = async () => {
+const emptyStateTitle = computed(() => {
+    const titleMap: Record<AddonMetricFilter, string> = {
+        all: '还没有附加项',
+        visible: '当前筛选下暂无上架附加项',
+        hidden: '当前筛选下暂无已下架附加项'
+    }
+    return titleMap[currentMetricFilter.value]
+})
+
+const getListParams = (pageNo: number, pageSize: number) => {
+    const params: Record<string, number> = {
+        page_size: pageSize
+    }
+    if (pageNo > 1) {
+        params.page_no = pageNo
+    }
+    if (currentMetricFilter.value === 'visible') {
+        params.is_show = 1
+    } else if (currentMetricFilter.value === 'hidden') {
+        params.is_show = 0
+    }
+    return params
+}
+
+const refreshMetricCounts = async () => {
+    const [allRes, visibleRes, hiddenRes] = await Promise.all([
+        staffCenterAddonLists({ page_size: 1 }),
+        staffCenterAddonLists({ is_show: 1, page_size: 1 }),
+        staffCenterAddonLists({ is_show: 0, page_size: 1 })
+    ])
+    metricCounts.value = {
+        all: Number(allRes?.total || 0),
+        visible: Number(visibleRes?.total || 0),
+        hidden: Number(hiddenRes?.total || 0)
+    }
+}
+
+const queryList = async (pageNo: number, pageSize: number) => {
+    if (pageNo === 1) {
+        loading.value = true
+    }
+
     try {
-        const data = await staffCenterAddonLists()
-        addonList.value = Array.isArray(data) ? data : []
+        const data = await staffCenterAddonLists(getListParams(pageNo, pageSize))
+        if (pageNo === 1) {
+            await refreshMetricCounts()
+        }
+        pagingRef.value?.complete(Array.isArray(data?.data) ? data.data : [])
     } catch (e: any) {
         const msg = typeof e === 'string' ? e : e?.msg || e?.message || '加载失败'
         uni.showToast({ title: msg, icon: 'none' })
+        pagingRef.value?.complete(false)
+    } finally {
+        if (pageNo === 1) {
+            loading.value = false
+        }
+        hasLoaded.value = true
     }
+}
+
+const switchMetricFilter = (filter: AddonMetricFilter) => {
+    if (currentMetricFilter.value === filter) {
+        return
+    }
+    currentMetricFilter.value = filter
+    hasLoaded.value = false
+    pagingRef.value?.reload()
 }
 
 const goCreate = () => {
@@ -187,7 +284,8 @@ const handleRemove = (item: any) => {
             try {
                 await staffCenterAddonRemove({ addon_id: item.id })
                 uni.showToast({ title: '删除成功', icon: 'success' })
-                fetchAddonList()
+                hasLoaded.value = false
+                pagingRef.value?.reload()
             } catch (e: any) {
                 const msg = typeof e === 'string' ? e : e?.msg || e?.message || '删除失败'
                 uni.showToast({ title: msg, icon: 'none' })
@@ -203,18 +301,17 @@ const formatPrice = (value: number | string) => {
 
 onShow(async () => {
     if (!(await ensureStaffCenterAccess())) return
-    fetchAddonList()
+    hasLoaded.value = false
+    pagingRef.value?.reload()
 })
 </script>
 
 <style lang="scss" scoped>
-.staff-resource-page {
+.page-container {
     min-height: 100vh;
     padding-top: 20rpx;
     box-sizing: border-box;
-    background:
-        radial-gradient(circle at top left, rgba(232, 90, 79, 0.1) 0, rgba(252, 251, 249, 0) 36%),
-        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
+    background: transparent;
 }
 
 .page-section {
@@ -223,6 +320,10 @@ onShow(async () => {
     gap: 16rpx;
     padding: 0 var(--wm-space-page-x, 37rpx);
     box-sizing: border-box;
+
+    &--top {
+        padding-top: 20rpx;
+    }
 
     &--list {
         padding-top: 18rpx;
@@ -262,22 +363,33 @@ onShow(async () => {
     color: var(--wm-text-primary, #1e2432);
 }
 
-.hero-card__meta {
-    display: block;
-    margin-top: 8rpx;
-    font-size: 24rpx;
-    font-weight: 600;
-    line-height: 1.45;
-    color: var(--wm-text-secondary, #7f7b78);
-}
-
 .hero-card__action {
     flex-shrink: 0;
+    min-height: 56rpx;
+    padding: 0 20rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(255, 255, 255, 0.92);
+    border: 1rpx solid rgba(244, 199, 191, 0.88);
+    box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.7), 0 8rpx 18rpx rgba(177, 108, 95, 0.08);
+    backdrop-filter: blur(14rpx);
+    -webkit-backdrop-filter: blur(14rpx);
+    transition: all var(--wm-motion-base, 220ms) ease;
+
+    &:active {
+        transform: translateY(2rpx);
+        opacity: 0.92;
+    }
 }
 
-.hero-card__action :deep(.tn-button) {
-    background: rgba(255, 255, 255, 0.84);
-    border-color: rgba(255, 255, 255, 0.72);
+.hero-card__action-text {
+    font-size: 22rpx;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: 0.2rpx;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .hero-metrics {
@@ -296,10 +408,18 @@ onShow(async () => {
     border-radius: 30rpx;
     background: rgba(255, 255, 255, 0.76);
     border: 1rpx solid var(--wm-color-border, #efe6e1);
+    transition: all var(--wm-motion-base, 220ms) ease;
+    cursor: pointer;
 
-    &--accent {
+    &:active {
+        transform: translateY(2rpx);
+        opacity: 0.92;
+    }
+
+    &--selected {
         background: var(--wm-color-primary-soft, #fff1ee);
         border-color: var(--wm-color-border-strong, #f4c7bf);
+        box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.12);
     }
 }
 
@@ -310,7 +430,7 @@ onShow(async () => {
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-.hero-metric--accent .hero-metric__label {
+.hero-metric--selected .hero-metric__label {
     color: var(--wm-color-primary, #e85a4f);
 }
 
@@ -321,45 +441,66 @@ onShow(async () => {
     color: var(--wm-text-primary, #1e2432);
 }
 
+.hero-metric--selected .hero-metric__value {
+    color: var(--wm-color-primary, #e85a4f);
+}
+
 .addon-card + .addon-card {
     margin-top: 18rpx;
 }
 
-.addon-card__head {
-    display: flex;
-    gap: 18rpx;
-}
-
-.addon-card__thumb {
-    flex-shrink: 0;
+.addon-card__media {
+    position: relative;
+    overflow: hidden;
+    border-radius: 32rpx;
+    background: rgba(255, 255, 255, 0.72);
 }
 
 .addon-card__image {
-    width: 144rpx;
-    height: 144rpx;
+    width: 100%;
+    height: 248rpx;
     display: block;
-    border-radius: 30rpx;
     background: #f7f1ed;
+
+    &--placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(
+                135deg,
+                rgba(255, 241, 238, 0.92) 0%,
+                rgba(248, 239, 231, 0.88) 100%
+            ),
+            #f7f1ed;
+    }
 }
 
-.addon-card__image--placeholder {
+.addon-card__placeholder-mark {
+    width: 112rpx;
+    height: 112rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1rpx dashed var(--wm-color-border-strong, #f4c7bf);
-    background: rgba(255, 241, 238, 0.64);
+    border-radius: 36rpx;
+    background: rgba(255, 255, 255, 0.56);
+    border: 1rpx solid rgba(244, 199, 191, 0.72);
 }
 
-.addon-card__main {
-    flex: 1;
-    min-width: 0;
+.addon-card__status {
+    position: absolute;
+    top: 16rpx;
+    right: 16rpx;
 }
 
-.addon-card__title-row {
+.addon-card__body {
+    margin-top: 20rpx;
+}
+
+.addon-card__head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16rpx;
+    gap: 18rpx;
 }
 
 .addon-card__copy {
@@ -374,15 +515,6 @@ onShow(async () => {
     line-height: 1.35;
     color: var(--wm-text-primary, #1e2432);
     word-break: break-all;
-}
-
-.addon-card__category {
-    display: block;
-    margin-top: 10rpx;
-    font-size: 22rpx;
-    font-weight: 600;
-    line-height: 1.45;
-    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .price-row {
@@ -404,15 +536,23 @@ onShow(async () => {
 }
 
 .price-row__value {
-    font-size: 42rpx;
+    font-size: 48rpx;
     font-weight: 700;
+}
+
+.price-row__origin {
+    margin-left: 8rpx;
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-text-tertiary, #b4aca8);
+    text-decoration: line-through;
 }
 
 .chip-row {
     display: flex;
     flex-wrap: wrap;
     gap: 12rpx;
-    margin-top: 16rpx;
+    margin-top: 18rpx;
 }
 
 .info-chip {
@@ -426,12 +566,6 @@ onShow(async () => {
     font-size: 22rpx;
     font-weight: 600;
     color: var(--wm-text-secondary, #7f7b78);
-
-    &--accent {
-        background: var(--wm-color-primary-soft, #fff1ee);
-        border-color: var(--wm-color-border-strong, #f4c7bf);
-        color: var(--wm-color-primary, #e85a4f);
-    }
 }
 
 .addon-card__desc {
@@ -440,18 +574,80 @@ onShow(async () => {
     overflow: hidden;
     font-size: 24rpx;
     font-weight: 600;
-    line-height: 1.6;
+    line-height: 1.5;
     color: var(--wm-text-secondary, #7f7b78);
     text-overflow: ellipsis;
     word-break: break-all;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
 }
 
 .action-row {
     display: flex;
     gap: 14rpx;
     margin-top: 22rpx;
+}
+
+.addon-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18rpx;
+    padding: 56rpx 40rpx 72rpx;
+    border-radius: var(--wm-radius-card-glass, 49rpx);
+    background: rgba(255, 255, 255, 0.88);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
+    backdrop-filter: blur(24rpx);
+    -webkit-backdrop-filter: blur(24rpx);
+}
+
+.addon-empty-state__icon {
+    width: 132rpx;
+    height: 132rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 40rpx;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 245, 241, 0.96) 0%,
+        rgba(255, 241, 238, 0.82) 100%
+    );
+    border: 1rpx solid rgba(244, 199, 191, 0.72);
+}
+
+.addon-empty-state__title {
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.addon-empty-state__action {
+    min-width: 220rpx;
+    min-height: 72rpx;
+    padding: 0 32rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, #d86a5f 100%);
+    box-shadow: 0 16rpx 30rpx rgba(232, 90, 79, 0.2);
+    transition: all var(--wm-motion-base, 220ms) ease;
+
+    &:active {
+        transform: translateY(2rpx);
+        opacity: 0.92;
+    }
+}
+
+.addon-empty-state__action-text {
+    font-size: 26rpx;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: 0.4rpx;
+    color: #ffffff;
 }
 
 .action-btn {

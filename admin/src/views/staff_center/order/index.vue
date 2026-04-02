@@ -179,6 +179,10 @@
                     <el-descriptions-item label="已付金额">
                         <span class="text-red-500 font-bold">¥{{ getDisplayPaidAmount(currentOrder) }}</span>
                     </el-descriptions-item>
+                    <el-descriptions-item label="支付模式">{{ currentOrder.payment_mode_desc || '全款支付' }}</el-descriptions-item>
+                    <el-descriptions-item label="当前待支付">{{ currentOrder.need_pay_label || '无需支付' }}</el-descriptions-item>
+                    <el-descriptions-item v-if="Number(currentOrder.deposit_amount || 0) > 0" label="定金金额">¥{{ formatAmount(currentOrder.deposit_amount) }}</el-descriptions-item>
+                    <el-descriptions-item v-if="Number(currentOrder.balance_amount || 0) > 0" label="尾款金额">¥{{ formatAmount(currentOrder.balance_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="支付方式">{{ currentOrder.pay_type_desc || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="支付状态">{{ currentOrder.pay_status_desc || '-' }}</el-descriptions-item>
                 </el-descriptions>

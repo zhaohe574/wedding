@@ -3,115 +3,132 @@
     <PageShell scene="consumer">
         <BaseNavbar title="我的评价" />
         <view class="my-reviews-page">
-        <!-- 标签页 -->
-        <view class="tabs">
-            <view
-                class="tab-item"
-                :class="{ active: currentTab === 'pending' }"
-                :style="currentTab === 'pending' ? $theme.activeTab.value : {}"
-                @click="switchTab('pending')"
-            >
-                待评价
-                <view v-if="currentTab === 'pending'" class="tab-indicator" :style="$theme.tabIndicator.value"></view>
-            </view>
-            <view
-                class="tab-item"
-                :class="{ active: currentTab === 'reviewed' }"
-                :style="currentTab === 'reviewed' ? $theme.activeTab.value : {}"
-                @click="switchTab('reviewed')"
-            >
-                已评价
-                <view v-if="currentTab === 'reviewed'" class="tab-indicator" :style="$theme.tabIndicator.value"></view>
-            </view>
-        </view>
-
-        <!-- 待评价列表 -->
-        <view v-if="currentTab === 'pending'">
-            <view v-if="pendingList.length" class="list-wrap">
-                <view v-for="item in pendingList" :key="item.id" class="pending-card">
-                    <view class="card-header">
-                        <text class="order-sn">订单号: {{ item.order?.order_sn }}</text>
-                        <text class="service-date">{{ item.order?.service_date }}</text>
-                    </view>
-                    <view class="card-body">
-                        <image
-                            :src="item.staff?.avatar || '/static/images/user/default_avatar.png'"
-                            class="staff-avatar"
-                            mode="aspectFill"
-                        />
-                        <view class="staff-info">
-                            <view class="staff-name">{{ item.staff_name }}</view>
-                            <view class="package-name">{{ item.package_name }}</view>
-                        </view>
-                        <button class="btn-review" :style="$theme.btnReview.value" @click="goReview(item)">去评价</button>
-                    </view>
+            <!-- 标签页 -->
+            <view class="tabs">
+                <view
+                    class="tab-item"
+                    :class="{ active: currentTab === 'pending' }"
+                    :style="currentTab === 'pending' ? $theme.activeTab.value : {}"
+                    @click="switchTab('pending')"
+                >
+                    待评价
+                    <view
+                        v-if="currentTab === 'pending'"
+                        class="tab-indicator"
+                        :style="$theme.tabIndicator.value"
+                    ></view>
+                </view>
+                <view
+                    class="tab-item"
+                    :class="{ active: currentTab === 'reviewed' }"
+                    :style="currentTab === 'reviewed' ? $theme.activeTab.value : {}"
+                    @click="switchTab('reviewed')"
+                >
+                    已评价
+                    <view
+                        v-if="currentTab === 'reviewed'"
+                        class="tab-indicator"
+                        :style="$theme.tabIndicator.value"
+                    ></view>
                 </view>
             </view>
-            <view v-else class="empty-tip">
-                <image src="/static/images/empty.png" class="empty-icon" mode="aspectFit" />
-                <text>暂无待评价订单</text>
-            </view>
-        </view>
 
-        <!-- 已评价列表 -->
-        <view v-if="currentTab === 'reviewed'">
-            <view v-if="reviewedList.length" class="list-wrap">
-                <view
-                    v-for="item in reviewedList"
-                    :key="item.id"
-                    class="review-card"
-                    @click="goDetail(item)"
-                >
-                    <view class="card-header">
-                        <view class="staff-info">
+            <!-- 待评价列表 -->
+            <view v-if="currentTab === 'pending'">
+                <view v-if="pendingList.length" class="list-wrap">
+                    <view v-for="item in pendingList" :key="item.id" class="pending-card">
+                        <view class="card-header">
+                            <text class="order-sn">订单号: {{ item.order?.order_sn }}</text>
+                            <text class="service-date">{{ item.order?.service_date }}</text>
+                        </view>
+                        <view class="card-body">
                             <image
                                 :src="
                                     item.staff?.avatar || '/static/images/user/default_avatar.png'
                                 "
-                                class="staff-avatar-small"
+                                class="staff-avatar"
                                 mode="aspectFill"
                             />
-                            <text class="staff-name">{{ item.staff?.name }}</text>
-                        </view>
-                        <view class="score">
-                            <tn-icon name="star-fill" size="28rpx" color="#ff9800"></tn-icon>
-                            <text>{{ item.score }}</text>
-                        </view>
-                    </view>
-                    <view class="card-body">
-                        <view class="content" v-if="item.content">{{ item.content }}</view>
-                        <view class="images" v-if="item.images?.length">
-                            <image
-                                v-for="(img, index) in item.images.slice(0, 3)"
-                                :key="index"
-                                :src="img"
-                                class="review-image"
-                                mode="aspectFill"
-                            />
-                            <view v-if="item.images.length > 3" class="more-count">
-                                +{{ item.images.length - 3 }}
+                            <view class="staff-info">
+                                <view class="staff-name">{{ item.staff_name }}</view>
+                                <view class="package-name">{{ item.package_name }}</view>
                             </view>
-                        </view>
-                    </view>
-                    <view class="card-footer">
-                        <view class="time">{{ item.create_time_text }}</view>
-                        <view class="status" :class="getStatusClass(item.status)">
-                            {{ item.status_text }}
+                            <button
+                                class="btn-review"
+                                :style="$theme.btnReview.value"
+                                @click="goReview(item)"
+                            >
+                                去评价
+                            </button>
                         </view>
                     </view>
                 </view>
+                <view v-else class="empty-tip">
+                    <image src="/static/images/empty.png" class="empty-icon" mode="aspectFit" />
+                    <text>暂无待评价订单</text>
+                </view>
             </view>
-            <view v-else class="empty-tip">
-                <image src="/static/images/empty.png" class="empty-icon" mode="aspectFit" />
-                <text>暂无评价记录</text>
-            </view>
-        </view>
 
-        <!-- 加载更多 -->
-        <view v-if="loading" class="loading-tip">
-            <tn-icon name="loading" size="36rpx" color="#999"></tn-icon>
-            <text>加载中...</text>
-        </view>
+            <!-- 已评价列表 -->
+            <view v-if="currentTab === 'reviewed'">
+                <view v-if="reviewedList.length" class="list-wrap">
+                    <view
+                        v-for="item in reviewedList"
+                        :key="item.id"
+                        class="review-card"
+                        @click="goDetail(item)"
+                    >
+                        <view class="card-header">
+                            <view class="staff-info">
+                                <image
+                                    :src="
+                                        item.staff?.avatar ||
+                                        '/static/images/user/default_avatar.png'
+                                    "
+                                    class="staff-avatar-small"
+                                    mode="aspectFill"
+                                />
+                                <text class="staff-name">{{ item.staff?.name }}</text>
+                            </view>
+                            <view class="score">
+                                <tn-icon name="star-fill" size="28rpx" color="#ff9800"></tn-icon>
+                                <text>{{ item.score }}</text>
+                            </view>
+                        </view>
+                        <view class="card-body">
+                            <view class="content" v-if="item.content">{{ item.content }}</view>
+                            <view class="images" v-if="item.images?.length">
+                                <image
+                                    v-for="(img, index) in item.images.slice(0, 3)"
+                                    :key="index"
+                                    :src="img"
+                                    class="review-image"
+                                    mode="aspectFill"
+                                />
+                                <view v-if="item.images.length > 3" class="more-count">
+                                    +{{ item.images.length - 3 }}
+                                </view>
+                            </view>
+                        </view>
+                        <view class="card-footer">
+                            <view class="time">{{ item.create_time_text }}</view>
+                            <view class="status" :class="getStatusClass(item.status)">
+                                {{ item.status_text }}
+                            </view>
+                        </view>
+                    </view>
+                </view>
+                <view v-else class="empty-tip">
+                    <image src="/static/images/empty.png" class="empty-icon" mode="aspectFit" />
+                    <text>暂无评价记录</text>
+                </view>
+            </view>
+
+            <!-- 加载更多 -->
+            <view v-if="loading" class="loading-tip">
+                <tn-icon name="loading" size="36rpx" color="#999"></tn-icon>
+                <text>加载中...</text>
+            </view>
         </view>
     </PageShell>
 </template>

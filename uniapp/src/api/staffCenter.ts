@@ -40,8 +40,12 @@ export function staffCenterWorkDelete(data: any) {
 }
 
 // 套餐
-export function staffCenterPackageLists() {
-    return request.get({ url: '/staff_center/packageLists' }, { isAuth: true })
+export function staffCenterPackageLists(data?: any) {
+    return request.get({ url: '/staff_center/packageLists', data }, { isAuth: true })
+}
+
+export function staffCenterPackageDetail(data: any) {
+    return request.get({ url: '/staff_center/packageDetail', data }, { isAuth: true })
 }
 
 export function staffCenterPackageAdd(data: any) {
@@ -57,8 +61,12 @@ export function staffCenterPackageRemove(data: any) {
 }
 
 // 附加项
-export function staffCenterAddonLists() {
-    return request.get({ url: '/staff_center/addonLists' }, { isAuth: true })
+export function staffCenterAddonLists(data?: any) {
+    return request.get({ url: '/staff_center/addonLists', data }, { isAuth: true })
+}
+
+export function staffCenterAddonDetail(data: any) {
+    return request.get({ url: '/staff_center/addonDetail', data }, { isAuth: true })
 }
 
 export function staffCenterAddonAdd(data: any) {
@@ -98,6 +106,10 @@ export function staffCenterOrderConfirm(data: any) {
 // 动态
 export function staffCenterDynamicLists(data?: any) {
     return request.get({ url: '/staff_center/dynamicLists', data }, { isAuth: true })
+}
+
+export function staffCenterDynamicDetail(data: any) {
+    return request.get({ url: '/staff_center/dynamicDetail', data }, { isAuth: true })
 }
 
 export function staffCenterDynamicAdd(data: any) {

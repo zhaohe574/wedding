@@ -202,12 +202,54 @@
                         </view>
                     </view>
 
+                    <view class="remark-card">
+                        <view class="remark-card__head">
+                            <text class="remark-card__title">档期备注</text>
+                            <text class="remark-card__action" @click="openRemarkEditor"
+                                >编辑备注</text
+                            >
+                        </view>
+                        <text class="remark-card__content">{{ selectedDayRemark }}</text>
+                    </view>
+
                     <view class="focus-note">
                         <text class="focus-note__text">{{ selectedDayLimitText }}</text>
                     </view>
                 </view>
             </view>
         </view>
+
+        <tn-popup
+            v-model="showRemarkPopup"
+            open-direction="bottom"
+            :overlay-closeable="true"
+            safe-area-inset-bottom
+            :radius="24"
+        >
+            <view class="remark-popup">
+                <view class="remark-popup__head">
+                    <text class="remark-popup__action" @click="closeRemarkEditor">取消</text>
+                    <text class="remark-popup__title">编辑档期备注</text>
+                    <text
+                        class="remark-popup__action remark-popup__action--primary"
+                        @click="submitRemark"
+                    >
+                        保存
+                    </text>
+                </view>
+                <view class="remark-popup__body">
+                    <textarea
+                        v-model="remarkDraft"
+                        class="remark-popup__textarea"
+                        maxlength="255"
+                        placeholder="可填写当天安排说明、注意事项等"
+                        :show-confirm-bar="false"
+                        :auto-height="true"
+                    />
+                    <text class="remark-popup__count">{{ remarkDraft.length }}/255</text>
+                </view>
+            </view>
+        </tn-popup>
     </PageShell>
 </template>
 
@@ -248,6 +290,8 @@ const selectedDate = ref(formatDateStr(today))
 const schedules = ref<Record<string, any>>({})
 const loadingMonth = ref(false)
 const submitting = ref(false)
+const showRemarkPopup = ref(false)
+const remarkDraft = ref('')
 
 const weekLabels = ['日', '一', '二', '三', '四', '五', '六']
 const legendItems = [
@@ -463,6 +507,11 @@ function getStatusView(status: number): DayViewModel {
 
 const selectedDayView = computed(() => getStatusView(displayDayStatus.value))
 
+const selectedDayRemark = computed(() => {
+    const remark = String(schedules.value[selectedDate.value]?.[0]?.remark || '').trim()
+    return remark || '暂无备注'
+})
+
 const selectedDayLimitText = computed(() => {
     if (isSelectedPast.value) return '历史日期不可调整'
     if (isLockedStatus.value) return '业务占用，不可覆盖'
@@ -479,6 +528,11 @@ const infoCards = computed(() => [
         label: '修改权限',
         value: selectedDayLimitText.value,
         accent: false
+    },
+    {
+        label: '备注',
+        value: selectedDayRemark.value,
+        accent: false
     }
 ])
 
@@ -493,6 +547,16 @@ const isUnavailableActionDisabled = computed(
 function selectDate(cell: CalendarCell) {
     if (!cell.currentMonth || cell.isPast) return
     selectedDate.value = cell.dateStr
+}
+
+function openRemarkEditor() {
+    if (!selectedDate.value) return
+    remarkDraft.value = String(schedules.value[selectedDate.value]?.[0]?.remark || '').trim()
+    showRemarkPopup.value = true
+}
+
+function closeRemarkEditor() {
+    showRemarkPopup.value = false
 }
 
 async function changeMonth(delta: number) {
@@ -522,10 +586,10 @@ async function changeMonth(delta: number) {
     await fetchMonth()
 }
 
-async function setStatus(status: number) {
+async function setStatus(status: number, remark?: string) {
     if (submitting.value) return
-    if (status === 1 && isAvailableActionDisabled.value) return
-    if (status === 0 && isUnavailableActionDisabled.value) return
+    if (status === 1 && isAvailableActionDisabled.value && remark === undefined) return
+    if (status === 0 && isUnavailableActionDisabled.value && remark === undefined) return
 
     if (!isEditableDate.value) {
         uni.showToast({ title: '该日期不可调整', icon: 'none' })
@@ -534,21 +598,38 @@ async function setStatus(status: number) {
 
     try {
         submitting.value = true
+        const nextRemark =
+            remark !== undefined
+                ? remark.trim()
+                : String(schedules.value[selectedDate.value]?.[0]?.remark || '')
         await staffCenterScheduleSetStatus({
             date: selectedDate.value,
-            status
+            status,
+            remark: nextRemark
         })
 
         if (!schedules.value[selectedDate.value]) {
             schedules.value[selectedDate.value] = {}
         }
-        schedules.value[selectedDate.value][0] = { status }
+        schedules.value[selectedDate.value][0] = {
+            ...schedules.value[selectedDate.value][0],
+            status,
+            remark: nextRemark
+        }
         uni.showToast({ title: '设置成功', icon: 'success' })
     } catch (error: any) {
         const msg = typeof error === 'string' ? error : error?.msg || error?.message || '设置失败'
         uni.showToast({ title: msg, icon: 'none' })
     } finally {
         submitting.value = false
+    }
+}
+
+async function submitRemark() {
+    if (!selectedDate.value) return
+    await setStatus(displayDayStatus.value, remarkDraft.value)
+    if (!submitting.value) {
+        showRemarkPopup.value = false
     }
 }
 
@@ -559,8 +640,11 @@ async function fetchMonth() {
         loadingMonth.value = true
         const response = await staffCenterScheduleMonth({ year: year.value, month: month.value })
         schedules.value = response?.schedules || {}
-    } catch {
+    } catch (error: any) {
         schedules.value = {}
+        const msg =
+            typeof error === 'string' ? error : error?.msg || error?.message || '加载档期失败'
+        uni.showToast({ title: msg, icon: 'none' })
     } finally {
         loadingMonth.value = false
     }

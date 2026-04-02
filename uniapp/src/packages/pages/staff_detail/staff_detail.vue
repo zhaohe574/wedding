@@ -10,7 +10,9 @@
                         class="hero-card__banner"
                         :banner-list="bannerList"
                         :config="bannerConfig"
-                        :default-image="staffInfo.avatar || '/static/images/user/default_avatar.png'"
+                        :default-image="
+                            staffInfo.avatar || '/static/images/user/default_avatar.png'
+                        "
                     />
                 </view>
 
@@ -50,15 +52,21 @@
 
                     <view class="info-card__metric-row">
                         <view class="info-card__metric">
-                            <text class="info-card__metric-value">{{ staffInfo.rating ?? '0.0' }}</text>
+                            <text class="info-card__metric-value">{{
+                                staffInfo.rating ?? '0.0'
+                            }}</text>
                             <text class="info-card__metric-label">综合评分</text>
                         </view>
                         <view class="info-card__metric">
-                            <text class="info-card__metric-value">{{ staffInfo.order_count || 0 }}</text>
+                            <text class="info-card__metric-value">{{
+                                staffInfo.order_count || 0
+                            }}</text>
                             <text class="info-card__metric-label">服务场次</text>
                         </view>
                         <view class="info-card__metric">
-                            <text class="info-card__metric-value">{{ staffInfo.view_count || 0 }}</text>
+                            <text class="info-card__metric-value">{{
+                                staffInfo.view_count || 0
+                            }}</text>
                             <text class="info-card__metric-label">浏览次数</text>
                         </view>
                     </view>
@@ -92,6 +100,7 @@
                             </text>
                         </view>
                     </view>
+
                 </view>
 
                 <!-- 标签页切换 -->
@@ -116,7 +125,10 @@
 
                 <!-- 标签页内容 -->
                 <view class="tab-content">
-                    <view v-if="currentTab === 'intro'" class="content-section content-section--stack">
+                    <view
+                        v-if="currentTab === 'intro'"
+                        class="content-section content-section--stack"
+                    >
                         <view class="soft-card">
                             <text class="soft-card__title">人员简介</text>
                             <text class="soft-card__content">{{ staffProfileText }}</text>
@@ -372,132 +384,279 @@
                 </ActionArea>
             </view>
 
-        <u-popup
-            v-model="showRegionPopup"
-            mode="bottom"
-            :mask="true"
-            :mask-close-able="true"
-            :safe-area-inset-bottom="true"
-            :border-radius="24"
-        >
-            <view class="picker-container region-picker-container">
-                <view class="picker-header">
-                    <text class="picker-action" @click="closeRegionPicker">取消</text>
-                    <text class="picker-title">选择服务地区</text>
-                    <text class="picker-action picker-action-primary" @click="confirmRegionPicker">
-                        确定
-                    </text>
+            <tn-popup
+                v-model="showRegionPopup"
+                open-direction="bottom"
+                :overlay-closeable="true"
+                safe-area-inset-bottom
+                :radius="24"
+            >
+                <view class="picker-container region-picker-container">
+                    <view class="picker-header">
+                        <text class="picker-action" @click="closeRegionPicker">取消</text>
+                        <text class="picker-title">选择服务地区</text>
+                        <text
+                            class="picker-action picker-action-primary"
+                            @click="confirmRegionPicker"
+                        >
+                            确定
+                        </text>
+                    </view>
+                    <view class="region-picker-content">
+                        <view class="region-picker-col">
+                            <view class="region-picker-col__title">省份</view>
+                            <scroll-view scroll-y class="region-picker-scroll">
+                                <view
+                                    v-for="province in regionProvinces"
+                                    :key="province.province_code"
+                                    class="region-picker-item"
+                                    :class="{
+                                        active: tempRegion.province_code === province.province_code
+                                    }"
+                                    @click="handleProvinceSelect(province)"
+                                >
+                                    {{ province.province_name }}
+                                </view>
+                            </scroll-view>
+                        </view>
+                        <view class="region-picker-col">
+                            <view class="region-picker-col__title">城市</view>
+                            <scroll-view scroll-y class="region-picker-scroll">
+                                <view
+                                    v-for="city in regionCities"
+                                    :key="city.city_code"
+                                    class="region-picker-item"
+                                    :class="{ active: tempRegion.city_code === city.city_code }"
+                                    @click="handleCitySelect(city)"
+                                >
+                                    {{ city.city_name }}
+                                </view>
+                            </scroll-view>
+                        </view>
+                        <view class="region-picker-col">
+                            <view class="region-picker-col__title">区县</view>
+                            <scroll-view scroll-y class="region-picker-scroll">
+                                <view
+                                    v-for="district in regionDistricts"
+                                    :key="district.district_code"
+                                    class="region-picker-item"
+                                    :class="{
+                                        active: tempRegion.district_code === district.district_code
+                                    }"
+                                    @click="handleDistrictSelect(district)"
+                                >
+                                    {{ district.district_name }}
+                                </view>
+                            </scroll-view>
+                        </view>
+                    </view>
+                    <view class="picker-footer">
+                        <view class="picker-btn" @click="resetRegionSelection">清空</view>
+                        <view
+                            class="picker-btn picker-btn-primary"
+                            :style="{ background: $theme.primaryColor }"
+                            @click="confirmRegionPicker"
+                        >
+                            确定
+                        </view>
+                    </view>
                 </view>
-                <view class="region-picker-content">
-                    <view class="region-picker-col">
-                        <view class="region-picker-col__title">省份</view>
-                        <scroll-view scroll-y class="region-picker-scroll">
-                            <view
-                                v-for="province in regionProvinces"
-                                :key="province.province_code"
-                                class="region-picker-item"
-                                :class="{ active: tempRegion.province_code === province.province_code }"
-                                @click="handleProvinceSelect(province)"
-                            >
-                                {{ province.province_name }}
-                            </view>
-                        </scroll-view>
-                    </view>
-                    <view class="region-picker-col">
-                        <view class="region-picker-col__title">城市</view>
-                        <scroll-view scroll-y class="region-picker-scroll">
-                            <view
-                                v-for="city in regionCities"
-                                :key="city.city_code"
-                                class="region-picker-item"
-                                :class="{ active: tempRegion.city_code === city.city_code }"
-                                @click="handleCitySelect(city)"
-                            >
-                                {{ city.city_name }}
-                            </view>
-                        </scroll-view>
-                    </view>
-                    <view class="region-picker-col">
-                        <view class="region-picker-col__title">区县</view>
-                        <scroll-view scroll-y class="region-picker-scroll">
-                            <view
-                                v-for="district in regionDistricts"
-                                :key="district.district_code"
-                                class="region-picker-item"
-                                :class="{ active: tempRegion.district_code === district.district_code }"
-                                @click="handleDistrictSelect(district)"
-                            >
-                                {{ district.district_name }}
-                            </view>
-                        </scroll-view>
-                    </view>
-                </view>
-                <view class="picker-footer">
-                    <view class="picker-btn" @click="resetRegionSelection">清空</view>
-                    <view
-                        class="picker-btn picker-btn-primary"
-                        :style="{ background: $theme.primaryColor }"
-                        @click="confirmRegionPicker"
-                    >
-                        确定
-                    </view>
-                </view>
-            </view>
-        </u-popup>
+            </tn-popup>
 
-        <u-popup
-            v-model="showDatePopup"
-            mode="bottom"
-            :mask="true"
-            :mask-close-able="true"
-            :safe-area-inset-bottom="true"
-            :border-radius="24"
-        >
-            <view class="picker-container">
-                <view class="picker-header">
-                    <text class="picker-action" @click="closeDatePicker">取消</text>
-                    <text class="picker-title">选择预约日期</text>
-                    <text class="picker-action picker-action-primary" @click="confirmDatePicker">
-                        确定
-                    </text>
+            <tn-popup
+                v-model="showDatePopup"
+                open-direction="bottom"
+                :overlay-closeable="true"
+                safe-area-inset-bottom
+                :radius="24"
+            >
+                <view class="picker-container">
+                    <view class="picker-header">
+                        <text class="picker-action" @click="closeDatePicker">取消</text>
+                        <text class="picker-title">选择预约日期</text>
+                        <text
+                            class="picker-action picker-action-primary"
+                            @click="confirmDatePicker"
+                        >
+                            确定
+                        </text>
+                    </view>
+                    <view class="date-picker-content">
+                        <picker-view
+                            class="date-picker-view"
+                            :value="datePickerValue"
+                            @change="handleDatePickerChange"
+                        >
+                            <picker-view-column>
+                                <view
+                                    v-for="year in datePickerYears"
+                                    :key="`year-${year}`"
+                                    class="picker-item"
+                                >
+                                    {{ year }}年
+                                </view>
+                            </picker-view-column>
+                            <picker-view-column>
+                                <view
+                                    v-for="month in datePickerMonths"
+                                    :key="`month-${month}`"
+                                    class="picker-item"
+                                >
+                                    {{ month }}月
+                                </view>
+                            </picker-view-column>
+                            <picker-view-column>
+                                <view
+                                    v-for="day in datePickerDays"
+                                    :key="`day-${day}`"
+                                    class="picker-item"
+                                >
+                                    {{ day }}日
+                                </view>
+                            </picker-view-column>
+                        </picker-view>
+                    </view>
                 </view>
-                <view class="date-picker-content">
-                    <picker-view
-                        class="date-picker-view"
-                        :value="datePickerValue"
-                        @change="handleDatePickerChange"
+            </tn-popup>
+
+            <tn-popup
+                v-model="showAlternativeStaffPopup"
+                open-direction="bottom"
+                :overlay-closeable="!alternativeStaffQuerying"
+                safe-area-inset-bottom
+                :radius="28"
+            >
+                <view class="alternative-popup">
+                    <view class="alternative-popup__header">
+                        <view class="alternative-popup__badge">
+                            <text class="alternative-popup__badge-text">档期提醒</text>
+                        </view>
+                        <text class="alternative-popup__title">该日期暂不可预约</text>
+                        <text class="alternative-popup__desc">
+                            {{
+                                alternativeStaffReason ||
+                                '当前档期暂不可预约，已为你推荐同类可预约人员'
+                            }}
+                        </text>
+                    </view>
+
+                    <view v-if="alternativeStaffLoading" class="alternative-popup__loading">
+                        <tn-loading mode="circle" />
+                    </view>
+
+                    <scroll-view
+                        v-else-if="alternativeStaffList.length"
+                        scroll-y
+                        class="alternative-popup__scroll"
                     >
-                        <picker-view-column>
+                        <view class="alternative-popup__list">
                             <view
-                                v-for="year in datePickerYears"
-                                :key="`year-${year}`"
-                                class="picker-item"
+                                v-for="item in alternativeStaffList"
+                                :key="item.id"
+                                class="alternative-card"
+                                @click="handleAlternativeStaffSelect(item)"
                             >
-                                {{ year }}年
+                                <image
+                                    class="alternative-card__avatar"
+                                    :src="item.avatar || '/static/images/user/default_avatar.png'"
+                                    mode="aspectFill"
+                                    lazy-load
+                                />
+                                <view class="alternative-card__content">
+                                    <view class="alternative-card__head">
+                                        <view class="alternative-card__name-group">
+                                            <text class="alternative-card__name">
+                                                {{ item.name || '未命名人员' }}
+                                            </text>
+                                            <text
+                                                v-if="item.is_recommend"
+                                                class="alternative-card__badge"
+                                            >
+                                                推荐
+                                            </text>
+                                        </view>
+                                        <text class="alternative-card__price">
+                                            {{ formatAlternativePrice(item) }}
+                                        </text>
+                                    </view>
+                                    <text class="alternative-card__role">
+                                        {{ formatAlternativeRoleLine(item) }}
+                                    </text>
+                                    <view
+                                        v-if="getAlternativeStaffTags(item).length"
+                                        class="alternative-card__tags"
+                                    >
+                                        <text
+                                            v-for="tag in getAlternativeStaffTags(item)"
+                                            :key="`${item.id}-${tag}`"
+                                            class="alternative-card__tag"
+                                        >
+                                            {{ tag }}
+                                        </text>
+                                    </view>
+                                    <text
+                                        v-else-if="item.profile"
+                                        class="alternative-card__desc"
+                                    >
+                                        {{ item.profile }}
+                                    </text>
+                                    <view class="alternative-card__footer">
+                                        <view class="alternative-card__score">
+                                            <tn-icon name="star-fill" size="20" color="#C99B73" />
+                                            <text class="alternative-card__score-text">
+                                                {{ formatAlternativeRating(item) }}
+                                            </text>
+                                        </view>
+                                        <text class="alternative-card__orders">
+                                            已服务{{ item.order_count || 0 }}单
+                                        </text>
+                                    </view>
+                                </view>
                             </view>
-                        </picker-view-column>
-                        <picker-view-column>
-                            <view
-                                v-for="month in datePickerMonths"
-                                :key="`month-${month}`"
-                                class="picker-item"
+                        </view>
+                    </scroll-view>
+
+                    <view v-else class="alternative-popup__empty">
+                        <text class="alternative-popup__empty-title">暂无可替代人员</text>
+                        <text class="alternative-popup__empty-desc">
+                            当前日期下暂无同类可预约服务人员，你可以先加入候补，或重新选择日期。
+                        </text>
+                    </view>
+
+                    <view class="alternative-popup__actions">
+                        <view
+                            class="alternative-popup__btn alternative-popup__btn--ghost"
+                            @click="handleAlternativePickDate"
+                        >
+                            <text class="alternative-popup__btn-text">重新选日期</text>
+                        </view>
+                        <view
+                            v-if="alternativeStaffList.length"
+                            class="alternative-popup__btn alternative-popup__btn--primary"
+                            :style="{ background: $theme.primaryColor }"
+                            @click="closeAlternativeStaffPopup"
+                        >
+                            <text
+                                class="alternative-popup__btn-text alternative-popup__btn-text--primary"
                             >
-                                {{ month }}月
-                            </view>
-                        </picker-view-column>
-                        <picker-view-column>
-                            <view
-                                v-for="day in datePickerDays"
-                                :key="`day-${day}`"
-                                class="picker-item"
+                                关闭
+                            </text>
+                        </view>
+                        <view
+                            v-else
+                            class="alternative-popup__btn alternative-popup__btn--primary"
+                            :style="{ background: $theme.primaryColor }"
+                            @click="handleAlternativeJoinWaitlist"
+                        >
+                            <text
+                                class="alternative-popup__btn-text alternative-popup__btn-text--primary"
                             >
-                                {{ day }}日
-                            </view>
-                        </picker-view-column>
-                    </picker-view>
+                                {{ alternativeStaffQuerying ? '处理中...' : '加入候补' }}
+                            </text>
+                        </view>
+                    </view>
                 </view>
-            </view>
-        </u-popup>
+            </tn-popup>
         </view>
 
         <!-- 加载状态 -->
@@ -513,15 +672,15 @@ import { onLoad, onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/un
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
-import { getStaffDetail, toggleStaffFavorite, getStaffWorks } from '@/api/staff'
+import { getStaffDetail, getStaffList, toggleStaffFavorite, getStaffWorks } from '@/api/staff'
 import { getStaffReviews, getStaffReviewStats } from '@/api/review'
+import { checkScheduleAvailable, joinWaitlist } from '@/api/schedule'
 import { getServiceRegionTree } from '@/api/service'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import StaffBanner from '@/packages/components/staff-banner/staff-banner.vue'
 import {
     buildServiceRegionQuery,
-    formatServiceRegionText,
     hasServiceRegion,
     loadServiceRegionSelection,
     normalizeServiceRegion,
@@ -529,6 +688,23 @@ import {
     toServiceRegionParams
 } from '@/utils/service-region'
 import { getStaffBookingPageUrl } from '@/utils/staff-booking'
+
+type AlternativeStaffItem = {
+    id: number
+    name?: string
+    avatar?: string
+    category_name?: string
+    experience_years?: number
+    rating?: number | string
+    order_count?: number
+    is_recommend?: number
+    price?: number | string | null
+    price_text?: number | string
+    has_price?: boolean
+    profile?: string
+    tags?: string[]
+    [key: string]: any
+}
 
 const staffId = ref<number>(0)
 const staffInfo = ref<any>(null)
@@ -542,6 +718,11 @@ const openDatePickerRequested = ref(false)
 const openBookingPopupRequested = ref(false)
 const pendingDatePickerAfterRegion = ref(false)
 const selectedPackageId = ref<number>(0)
+const showAlternativeStaffPopup = ref(false)
+const alternativeStaffLoading = ref(false)
+const alternativeStaffReason = ref('')
+const alternativeStaffList = ref<AlternativeStaffItem[]>([])
+const alternativeStaffQuerying = ref(false)
 const regionTree = ref<any[]>([])
 const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
 const tempRegion = ref(normalizeServiceRegion(selectedRegion.value))
@@ -717,19 +898,19 @@ const selectedRegionText = computed(() => {
 const regionProvinces = computed(() => regionTree.value || [])
 const regionCities = computed(() => {
     return (
-        regionTree.value.find((item: any) => item.province_code === tempRegion.value.province_code)?.cities || []
+        regionTree.value.find((item: any) => item.province_code === tempRegion.value.province_code)
+            ?.cities || []
     )
 })
 const regionDistricts = computed(() => {
     return (
-        regionCities.value.find((item: any) => item.city_code === tempRegion.value.city_code)?.districts || []
+        regionCities.value.find((item: any) => item.city_code === tempRegion.value.city_code)
+            ?.districts || []
     )
 })
 const displayTagList = computed(() => {
     const tags = Array.isArray(staffInfo.value?.tags) ? staffInfo.value.tags : []
-    return tags
-        .map((item: any) => String(item || '').trim())
-        .filter((item: string) => item)
+    return tags.map((item: any) => String(item || '').trim()).filter((item: string) => item)
 })
 const statusBadgeList = computed(() => {
     const badges: string[] = []
@@ -786,10 +967,52 @@ const staffPrice = computed(() => {
         value: String(staffInfo.value?.price_text || staffInfo.value?.price || '')
     }
 })
+const currentCategoryId = computed(() =>
+    Number(staffInfo.value?.category_id || staffInfo.value?.category?.id || 0)
+)
 
 const getPackageId = (pkg: any) => Number(pkg?.package_id || pkg?.id || 0)
 const isRecommendedPackage = (pkg: any) =>
     Number(pkg?.is_recommend ?? pkg?.package?.is_recommend ?? 0) === 1
+
+const getAlternativeStaffTags = (item: AlternativeStaffItem, limit = 2) => {
+    const tags = Array.isArray(item?.tags) ? item.tags : []
+    return tags
+        .map((tag) => String(tag || '').trim())
+        .filter(Boolean)
+        .slice(0, limit)
+}
+
+const formatAlternativeRoleLine = (item: AlternativeStaffItem) => {
+    const parts = [String(item?.category_name || staffInfo.value?.category?.name || '服务人员').trim()]
+    const experienceYears = Number(item?.experience_years || 0)
+    if (experienceYears > 0) {
+        parts.push(`${experienceYears}年经验`)
+    }
+    return parts.filter(Boolean).join(' · ')
+}
+
+const formatAlternativeRating = (item: AlternativeStaffItem) => {
+    const rating = Number(item?.rating || 0)
+    return Number.isFinite(rating) ? rating.toFixed(1) : '0.0'
+}
+
+const hasAlternativeStaffPrice = (item: AlternativeStaffItem) =>
+    !(item?.has_price === false || item?.price === null || item?.price === undefined)
+
+const formatAlternativePrice = (item: AlternativeStaffItem) => {
+    if (!hasAlternativeStaffPrice(item)) {
+        return '面议'
+    }
+    return `¥${item.price_text || item.price}/次`
+}
+
+const resetAlternativeStaffState = () => {
+    showAlternativeStaffPopup.value = false
+    alternativeStaffLoading.value = false
+    alternativeStaffReason.value = ''
+    alternativeStaffList.value = []
+}
 
 const syncSelectedPackage = () => {
     const packages = Array.isArray(staffInfo.value?.packages) ? staffInfo.value.packages : []
@@ -821,6 +1044,21 @@ const handleInlineDateEdit = () => {
     }
     pendingDatePickerAfterRegion.value = false
     openDatePicker()
+}
+
+const closeAlternativeStaffPopup = () => {
+    if (alternativeStaffQuerying.value) {
+        return
+    }
+    showAlternativeStaffPopup.value = false
+}
+
+const handleAlternativePickDate = () => {
+    if (alternativeStaffQuerying.value) {
+        return
+    }
+    showAlternativeStaffPopup.value = false
+    setTimeout(() => handleInlineDateEdit(), 0)
 }
 
 // 标签页配置
@@ -894,8 +1132,10 @@ const getRegionTree = async () => {
         const data = await getServiceRegionTree()
         regionTree.value = Array.isArray(data) ? data : []
         syncTempRegion(selectedRegion.value)
-    } catch (error) {
-        console.error(error)
+    } catch (error: any) {
+        const errorMsg =
+            typeof error === 'string' ? error : error?.msg || error?.message || '加载服务地区失败'
+        uni.showToast({ title: errorMsg, icon: 'none' })
     }
 }
 
@@ -1099,6 +1339,7 @@ const confirmRegionPicker = async () => {
     selectedRegion.value = normalizeServiceRegion(tempRegion.value)
     saveServiceRegionSelection(selectedRegion.value)
     hideRegionPicker()
+    resetAlternativeStaffState()
 
     await getDetail()
 
@@ -1153,6 +1394,7 @@ const confirmDatePicker = async () => {
 
     presetDate.value = nextDate
     hideDatePicker()
+    resetAlternativeStaffState()
     await getDetail()
     pendingDatePickerAfterRegion.value = false
 }
@@ -1180,8 +1422,132 @@ const buildStaffDetailQuery = (extra: Record<string, any> = {}) => {
     return params.join('&')
 }
 
+const buildTargetStaffDetailQuery = (targetStaffId: number, extra: Record<string, any> = {}) => {
+    const params = [`id=${targetStaffId}`]
+    const regionQuery = buildServiceRegionQuery(selectedRegion.value)
+    if (regionQuery) {
+        params.push(regionQuery)
+    }
+    if (presetDate.value) {
+        params.push(`date=${encodeURIComponent(presetDate.value)}`)
+    }
+    if (selectedPackageId.value) {
+        params.push(`package_id=${selectedPackageId.value}`)
+    }
+
+    Object.entries(extra).forEach(([key, value]) => {
+        if (value === '' || value === undefined || value === null) {
+            return
+        }
+        params.push(`${key}=${encodeURIComponent(String(value))}`)
+    })
+
+    return params.join('&')
+}
+
+const navigateToBookingPage = () => {
+    uni.navigateTo({
+        url: getStaffBookingPageUrl({
+            staff_id: staffId.value,
+            package_id: selectedPackageId.value,
+            date: presetDate.value,
+            ...selectedRegion.value
+        })
+    })
+}
+
+const fetchAlternativeStaffList = async () => {
+    if (!currentCategoryId.value || !presetDate.value || !hasSelectedRegion.value) {
+        alternativeStaffList.value = []
+        return
+    }
+
+    const result = await getStaffList({
+        page_no: 1,
+        page_size: 6,
+        category_id: currentCategoryId.value,
+        date: presetDate.value,
+        sort: 'default',
+        ...toServiceRegionParams(selectedRegion.value)
+    })
+
+    const list = Array.isArray(result?.lists) ? result.lists : []
+    alternativeStaffList.value = list
+        .filter((item: AlternativeStaffItem) => Number(item?.id || 0) !== staffId.value)
+        .slice(0, 6)
+}
+
+const openAlternativeStaffPopup = async (reason = '') => {
+    alternativeStaffReason.value = reason || '当前档期暂不可预约，已为你推荐同类可预约人员'
+    alternativeStaffLoading.value = true
+    alternativeStaffList.value = []
+    showAlternativeStaffPopup.value = true
+
+    try {
+        await fetchAlternativeStaffList()
+    } catch (error: any) {
+        const errorMsg =
+            typeof error === 'string'
+                ? error
+                : error?.msg || error?.message || '加载同类服务人员失败'
+        uni.showToast({ title: errorMsg, icon: 'none' })
+        alternativeStaffList.value = []
+    } finally {
+        alternativeStaffLoading.value = false
+    }
+}
+
+const handleAlternativeStaffSelect = (item: AlternativeStaffItem) => {
+    if (alternativeStaffQuerying.value) {
+        return
+    }
+    const targetStaffId = Number(item?.id || 0)
+    if (!targetStaffId) {
+        uni.showToast({ title: '服务人员信息错误', icon: 'none' })
+        return
+    }
+
+    showAlternativeStaffPopup.value = false
+    uni.navigateTo({
+        url: `/packages/pages/staff_detail/staff_detail?${buildTargetStaffDetailQuery(
+            targetStaffId,
+            {
+                open_booking_popup: 1
+            }
+        )}`
+    })
+}
+
+const handleAlternativeJoinWaitlist = async () => {
+    if (alternativeStaffQuerying.value) {
+        return
+    }
+
+    if (selectedPackageId.value <= 0) {
+        uni.showToast({ title: '当前人员暂无可候补套餐，请重新选择日期', icon: 'none' })
+        return
+    }
+
+    alternativeStaffQuerying.value = true
+    try {
+        await joinWaitlist({
+            staff_id: staffId.value,
+            date: presetDate.value,
+            package_id: selectedPackageId.value
+        })
+        showAlternativeStaffPopup.value = false
+        uni.showToast({ title: '已加入候补', icon: 'success' })
+    } catch (error: any) {
+        const errorMsg =
+            typeof error === 'string' ? error : error?.msg || error?.message || '加入候补失败'
+        uni.showToast({ title: errorMsg, icon: 'none' })
+    } finally {
+        alternativeStaffQuerying.value = false
+    }
+}
+
 // 立即预约
-const handleBook = () => {
+const handleBook = async () => {
     if (!staffId.value || staffId.value === 0) {
         uni.showToast({ title: '服务人员信息错误', icon: 'none' })
         return
@@ -1197,14 +1563,34 @@ const handleBook = () => {
         return
     }
 
-    uni.navigateTo({
-        url: getStaffBookingPageUrl({
+    if (alternativeStaffQuerying.value) {
+        return
+    }
+
+    alternativeStaffQuerying.value = true
+    try {
+        const result = await checkScheduleAvailable({
             staff_id: staffId.value,
-            package_id: selectedPackageId.value,
             date: presetDate.value,
-            ...selectedRegion.value
+            ...toServiceRegionParams(selectedRegion.value)
         })
-    })
+
+        if (result?.is_available !== false) {
+            navigateToBookingPage()
+            return
+        }
+
+        await openAlternativeStaffPopup(
+            String(result?.message || result?.status_desc || '').trim() ||
+                '当前档期暂不可预约，已为你推荐同类可预约人员'
+        )
+    } catch (error: any) {
+        const errorMsg =
+            typeof error === 'string' ? error : error?.msg || error?.message || '预约校验失败'
+        uni.showToast({ title: errorMsg, icon: 'none' })
+    } finally {
+        alternativeStaffQuerying.value = false
+    }
 }
 
 // 预览作品图片
@@ -1225,10 +1611,7 @@ const previewCert = (url: string) => {
     })
 }
 
-const previewReviewImages = (
-    images: Array<string | number>,
-    index: number | string = 0
-) => {
+const previewReviewImages = (images: Array<string | number>, index: number | string = 0) => {
     const urls = (images || []).map((item) => String(item)).filter(Boolean)
     if (!urls.length) return
     const currentIndex = Number(index || 0)
@@ -1280,7 +1663,9 @@ const buildSharePayload = () => {
         imageUrl?: string
     } = {
         title: getShareTitle(),
-        path: `/packages/pages/staff_detail/staff_detail?${buildStaffDetailQuery({ from_share: 1 })}`
+        path: `/packages/pages/staff_detail/staff_detail?${buildStaffDetailQuery({
+            from_share: 1
+        })}`
     }
 
     const avatar = String(staffInfo.value?.avatar || '').trim()
@@ -1333,7 +1718,7 @@ onShow(async () => {
     }
     // #endif
 
-        await getRegionTree()
+    await getRegionTree()
     if (staffId.value) {
         await getDetail()
         if (openBookingPopupRequested.value || openDatePickerRequested.value) {
@@ -1440,7 +1825,7 @@ onShareTimeline(() => {
     justify-content: center;
     height: 100%;
     font-size: 30rpx;
-    color: #1E2432;
+    color: #1e2432;
 }
 
 .picker-footer {
@@ -1522,8 +1907,6 @@ onShareTimeline(() => {
         background: var(--color-primary-light-9);
     }
 }
-
-
 </style>
 
 <style lang="scss" scoped>
@@ -1766,6 +2149,258 @@ onShareTimeline(() => {
     color: #1e2432;
 }
 
+.alternative-popup {
+    max-height: 78vh;
+    padding: 32rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, #fffdfc 0%, #fff7f3 100%);
+}
+
+.alternative-popup__header {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+}
+
+.alternative-popup__badge {
+    align-self: flex-start;
+    padding: 8rpx 18rpx;
+    border-radius: 999rpx;
+    background: rgba(232, 90, 79, 0.1);
+    border: 1rpx solid rgba(232, 90, 79, 0.16);
+}
+
+.alternative-popup__badge-text {
+    font-size: 22rpx;
+    line-height: 1.2;
+    font-weight: 600;
+    color: #c66d5d;
+}
+
+.alternative-popup__title {
+    font-size: 34rpx;
+    line-height: 1.25;
+    font-weight: 700;
+    color: #1e2432;
+}
+
+.alternative-popup__desc {
+    font-size: 24rpx;
+    line-height: 1.7;
+    color: #7f7b78;
+}
+
+.alternative-popup__loading,
+.alternative-popup__empty {
+    min-height: 280rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alternative-popup__loading {
+    padding: 40rpx 0 24rpx;
+}
+
+.alternative-popup__scroll {
+    max-height: 620rpx;
+    margin-top: 24rpx;
+}
+
+.alternative-popup__list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    padding-bottom: 8rpx;
+}
+
+.alternative-card {
+    display: flex;
+    gap: 18rpx;
+    padding: 20rpx;
+    border-radius: 30rpx;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    box-shadow: 0 14rpx 28rpx rgba(214, 185, 167, 0.1);
+}
+
+.alternative-card__avatar {
+    width: 148rpx;
+    height: 148rpx;
+    flex-shrink: 0;
+    border-radius: 24rpx;
+    background: linear-gradient(135deg, #fce7e1 0%, #ddb4a6 100%);
+}
+
+.alternative-card__content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.alternative-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12rpx;
+}
+
+.alternative-card__name-group {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+}
+
+.alternative-card__name {
+    min-width: 0;
+    font-size: 30rpx;
+    line-height: 1.35;
+    font-weight: 700;
+    color: #1e2432;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.alternative-card__badge {
+    flex-shrink: 0;
+    padding: 4rpx 12rpx;
+    border-radius: 999rpx;
+    font-size: 20rpx;
+    line-height: 1.2;
+    font-weight: 600;
+    color: #ffffff;
+    background: linear-gradient(135deg, #e85a4f 0%, #c99b73 100%);
+}
+
+.alternative-card__price {
+    flex-shrink: 0;
+    font-size: 26rpx;
+    line-height: 1.2;
+    font-weight: 700;
+    color: #e85a4f;
+}
+
+.alternative-card__role {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    line-height: 1.45;
+    color: #8d837d;
+}
+
+.alternative-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8rpx;
+    margin-top: 10rpx;
+}
+
+.alternative-card__tag {
+    padding: 6rpx 12rpx;
+    border-radius: 999rpx;
+    font-size: 20rpx;
+    line-height: 1.2;
+    color: #e85a4f;
+    background: rgba(232, 90, 79, 0.08);
+    border: 1rpx solid rgba(232, 90, 79, 0.16);
+}
+
+.alternative-card__desc {
+    display: -webkit-box;
+    margin-top: 10rpx;
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: #4b5563;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.alternative-card__footer {
+    margin-top: auto;
+    padding-top: 14rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12rpx;
+}
+
+.alternative-card__score {
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
+}
+
+.alternative-card__score-text {
+    font-size: 22rpx;
+    line-height: 1.2;
+    font-weight: 700;
+    color: #9a6d48;
+}
+
+.alternative-card__orders {
+    font-size: 20rpx;
+    line-height: 1.2;
+    color: #8d837d;
+}
+
+.alternative-popup__empty {
+    flex-direction: column;
+    gap: 12rpx;
+    padding: 40rpx 10rpx 16rpx;
+    text-align: center;
+}
+
+.alternative-popup__empty-title {
+    font-size: 30rpx;
+    line-height: 1.3;
+    font-weight: 700;
+    color: #1e2432;
+}
+
+.alternative-popup__empty-desc {
+    font-size: 24rpx;
+    line-height: 1.7;
+    color: #7f7b78;
+}
+
+.alternative-popup__actions {
+    display: flex;
+    gap: 16rpx;
+    margin-top: 28rpx;
+}
+
+.alternative-popup__btn {
+    flex: 1;
+    min-height: 88rpx;
+    border-radius: 999rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alternative-popup__btn--ghost {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1rpx solid rgba(239, 230, 225, 0.96);
+}
+
+.alternative-popup__btn--primary {
+    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.18);
+}
+
+.alternative-popup__btn-text {
+    font-size: 28rpx;
+    line-height: 1.2;
+    font-weight: 600;
+    color: #5f5a57;
+}
+
+.alternative-popup__btn-text--primary {
+    color: #ffffff;
+}
+
 .tabs-section {
     padding: 4rpx;
     border-radius: 37rpx;
@@ -1892,11 +2527,7 @@ onShareTimeline(() => {
     position: absolute;
     inset: auto 0 0 0;
     padding: 16rpx;
-    background: linear-gradient(
-        180deg,
-        rgba(30, 36, 50, 0) 0%,
-        rgba(30, 36, 50, 0.6) 100%
-    );
+    background: linear-gradient(180deg, rgba(30, 36, 50, 0) 0%, rgba(30, 36, 50, 0.6) 100%);
 }
 
 .work-title {

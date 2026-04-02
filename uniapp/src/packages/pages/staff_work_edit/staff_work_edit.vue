@@ -1,275 +1,287 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar :title="pageTitle" />
+    <PageShell scene="staff">
+        <BaseNavbar :title="pageTitle" />
 
-    <view class="page-container">
-        <!-- 顶部提示卡片 -->
-        <view class="tip-card" :style="{ borderColor: $theme.primaryColor }">
-            <view class="flex items-center">
-                <tn-icon name="info-circle" size="32" :color="$theme.primaryColor" />
-                <text class="tip-text">展示您的专业作品，吸引更多客户</text>
-            </view>
-        </view>
+        <view class="page-container">
+            <view class="page-section page-section--content">
+                <BaseCard variant="glass" scene="staff" class="form-card">
+                    <view class="card-head">
+                        <text class="card-head__title">作品封面与素材</text>
+                    </view>
 
-        <!-- 作品标题 -->
-        <view class="form-section">
-            <view class="section-header">
-                <view class="section-title">
-                    <text class="required-mark" :style="{ color: $theme.ctaColor }">*</text>
-                    <text>作品标题</text>
-                </view>
-                <text class="section-desc">给作品起个吸引人的名字</text>
-            </view>
-            <view class="input-wrapper">
-                <tn-input
-                    v-model="form.title"
-                    placeholder="例如：浪漫海边婚纱照"
-                    :maxlength="50"
-                    class="custom-input"
-                />
-                <text class="char-count">{{ form.title.length }}/50</text>
-            </view>
-        </view>
-
-        <!-- 封面图 -->
-        <view class="form-section">
-            <view class="section-header">
-                <view class="section-title">
-                    <text class="required-mark" :style="{ color: $theme.ctaColor }">*</text>
-                    <text>封面图</text>
-                </view>
-                <text class="section-desc">建议尺寸：750x750px</text>
-            </view>
-            <view class="cover-upload-area">
-                <view v-if="form.cover" class="cover-preview">
-                    <image :src="form.cover" class="cover-image" mode="aspectFill" @click="previewCover" />
-                    <view class="cover-actions-bar">
-                        <view class="cover-action-btn" @click="chooseCover">
-                            <tn-icon name="refresh" size="28" color="#fff" />
-                            <text class="cover-action-text">更换</text>
+                    <view class="field-block">
+                        <view class="field-label-row">
+                            <view class="field-label-group">
+                                <text class="field-label field-label--required">封面图</text>
+                            </view>
+                            <text class="field-side-text">{{
+                                form.cover ? '已上传' : '必填'
+                            }}</text>
                         </view>
-                        <view class="cover-action-divider" />
-                        <view class="cover-action-btn" @click="removeCover">
-                            <tn-icon name="delete" size="28" color="#fff" />
-                            <text class="cover-action-text">删除</text>
+
+                        <view v-if="form.cover" class="cover-preview">
+                            <image
+                                :src="form.cover"
+                                class="cover-preview__image"
+                                mode="aspectFill"
+                                @click="previewCover"
+                            />
+                            <view class="cover-preview__toolbar">
+                                <view class="cover-preview__action" @click="chooseCover">
+                                    <tn-icon name="refresh" size="26" color="#ffffff" />
+                                    <text class="cover-preview__action-text">更换</text>
+                                </view>
+                                <view class="cover-preview__divider" />
+                                <view class="cover-preview__action" @click="removeCover">
+                                    <tn-icon name="delete" size="26" color="#ffffff" />
+                                    <text class="cover-preview__action-text">删除</text>
+                                </view>
+                            </view>
+                        </view>
+
+                        <view v-else class="upload-panel upload-panel--cover" @click="chooseCover">
+                            <view class="upload-panel__icon-wrap">
+                                <tn-icon
+                                    name="image"
+                                    size="50"
+                                    color="var(--wm-color-primary, #E85A4F)"
+                                />
+                            </view>
+                            <text class="upload-panel__title">上传封面</text>
                         </view>
                     </view>
-                </view>
-                <view v-else class="cover-upload-btn" @click="chooseCover">
-                    <view class="upload-icon-wrapper" :style="{ borderColor: $theme.primaryColor }">
-                        <tn-icon name="image" size="48" :color="$theme.primaryColor" />
-                    </view>
-                    <text class="upload-text">点击上传封面</text>
-                    <text class="upload-hint">支持jpg、png格式</text>
-                </view>
-            </view>
-        </view>
 
-        <!-- 作品图片 -->
-        <view class="form-section">
-            <view class="section-header">
-                <view class="section-title">
-                    <text>作品图片</text>
-                    <view class="count-badge" :style="{ backgroundColor: $theme.primaryColor }">
-                        {{ form.images.length }}/9
-                    </view>
-                </view>
-                <text class="section-desc">最多上传9张，展示作品细节</text>
-            </view>
-            <view class="images-grid">
-                <view
-                    v-for="(img, idx) in form.images"
-                    :key="idx"
-                    class="image-item"
-                    @longpress="handleImageLongPress(idx)"
-                >
-                    <image
-                        :src="img"
-                        class="image-content"
-                        mode="aspectFill"
-                        @click="previewImages(idx)"
-                    />
-                    <view class="image-delete" @click.stop="removeImage(idx)">
-                        <tn-icon name="close" size="24" color="#fff" />
-                    </view>
-                    <view class="image-index" :style="{ backgroundColor: $theme.primaryColor }">
-                        {{ idx + 1 }}
-                    </view>
-                </view>
-                <view v-if="form.images.length < 9" class="image-upload-btn" @click="chooseImages">
-                    <tn-icon name="plus" size="48" :color="$theme.primaryColor" />
-                    <text class="upload-btn-text">添加图片</text>
-                </view>
-            </view>
-        </view>
+                    <view class="field-block">
+                        <view class="field-label-row">
+                            <view class="field-label-group">
+                                <text class="field-label">作品图片</text>
+                            </view>
+                            <text class="field-side-text">{{ form.images.length }}/9</text>
+                        </view>
 
-        <!-- 作品视频 -->
-        <view class="form-section">
-            <view class="section-header">
-                <view class="section-title">
-                    <text>作品视频</text>
+                        <view class="images-grid">
+                            <view
+                                v-for="(img, idx) in form.images"
+                                :key="idx"
+                                class="image-card"
+                                @longpress="handleImageLongPress(idx)"
+                            >
+                                <image
+                                    :src="img"
+                                    class="image-card__image"
+                                    mode="aspectFill"
+                                    @click="previewImages(idx)"
+                                />
+                                <view class="image-card__delete" @click.stop="removeImage(idx)">
+                                    <tn-icon name="close" size="20" color="#ffffff" />
+                                </view>
+                                <view class="image-card__index">
+                                    <text class="image-card__index-text">{{ idx + 1 }}</text>
+                                </view>
+                            </view>
+
+                            <view
+                                v-if="form.images.length < 9"
+                                class="upload-tile"
+                                @click="chooseImages"
+                            >
+                                <tn-icon
+                                    name="plus"
+                                    size="42"
+                                    color="var(--wm-color-primary, #E85A4F)"
+                                />
+                                <text class="upload-tile__text">添加图片</text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <view class="field-block field-block--compact">
+                        <view class="field-label-row">
+                            <view class="field-label-group">
+                                <text class="field-label">作品视频</text>
+                            </view>
+                            <text class="field-side-text">{{
+                                form.video ? '已上传' : '选填'
+                            }}</text>
+                        </view>
+
+                        <view v-if="form.video" class="video-preview">
+                            <video
+                                :src="form.video"
+                                class="video-preview__player"
+                                object-fit="cover"
+                                :show-center-play-btn="true"
+                                :controls="true"
+                            />
+                            <view class="video-preview__action" @click="removeVideo">
+                                <tn-icon name="delete" size="24" color="#ffffff" />
+                                <text class="video-preview__action-text">删除视频</text>
+                            </view>
+                        </view>
+
+                        <view v-else class="upload-panel upload-panel--video" @click="chooseVideo">
+                            <view class="upload-panel__icon-wrap">
+                                <tn-icon
+                                    name="video"
+                                    size="50"
+                                    color="var(--wm-color-primary, #E85A4F)"
+                                />
+                            </view>
+                            <text class="upload-panel__title">上传视频</text>
+                        </view>
+                    </view>
+                </BaseCard>
+
+                <BaseCard variant="glass" scene="staff" class="form-card">
+                    <view class="card-head">
+                        <text class="card-head__title">作品内容</text>
+                    </view>
+
+                    <view class="field-block">
+                        <view class="field-label-row">
+                            <view class="field-label-group">
+                                <text class="field-label field-label--required">作品标题</text>
+                            </view>
+                            <text class="field-side-text">{{ form.title.length }}/50</text>
+                        </view>
+                        <view class="field-input-shell">
+                            <tn-input
+                                v-model="form.title"
+                                placeholder="例如：浪漫海边婚礼纪实"
+                                :maxlength="50"
+                                :border="false"
+                                class="field-input"
+                            />
+                        </view>
+                    </view>
+
+                    <view class="field-block field-block--compact">
+                        <view class="field-label-row">
+                            <view class="field-label-group">
+                                <text class="field-label">作品说明</text>
+                            </view>
+                            <text class="field-side-text">{{ form.description.length }}/500</text>
+                        </view>
+                        <view class="textarea-shell">
+                            <textarea
+                                v-model="form.description"
+                                class="field-textarea"
+                                placeholder="写一句作品亮点或拍摄氛围"
+                                :maxlength="500"
+                                :auto-height="true"
+                                :show-confirm-bar="false"
+                            />
+                        </view>
+                    </view>
+                </BaseCard>
+
+                <BaseCard variant="glass" scene="staff" class="form-card">
+                    <view class="card-head">
+                        <text class="card-head__title">展示设置</text>
+                    </view>
+
+                    <view class="setting-list">
+                        <picker mode="date" :value="form.shoot_date" @change="handleDateChange">
+                            <view class="setting-item">
+                                <text class="setting-item__label">拍摄日期</text>
+                                <view class="setting-item__value">
+                                    <text
+                                        :class="[
+                                            'setting-item__value-text',
+                                            {
+                                                'setting-item__value-text--placeholder':
+                                                    !form.shoot_date
+                                            }
+                                        ]"
+                                    >
+                                        {{ form.shoot_date || '请选择' }}
+                                    </text>
+                                    <tn-icon name="arrow-right" size="24" color="#B4ACA8" />
+                                </view>
+                            </view>
+                        </picker>
+
+                        <view class="setting-item">
+                            <text class="setting-item__label">拍摄地点</text>
+                            <view class="setting-item__input">
+                                <tn-input
+                                    v-model="form.location"
+                                    placeholder="例如：三亚海棠湾"
+                                    :border="false"
+                                    class="setting-input setting-input--right"
+                                />
+                            </view>
+                        </view>
+
+                        <view class="setting-item">
+                            <text class="setting-item__label">排序值</text>
+                            <view class="setting-item__input setting-item__input--sm">
+                                <tn-input
+                                    v-model="form.sort"
+                                    type="number"
+                                    placeholder="默认 0"
+                                    :border="false"
+                                    class="setting-input setting-input--right"
+                                />
+                            </view>
+                        </view>
+
+                        <view class="setting-item setting-item--switch">
+                            <text class="setting-item__label">是否展示</text>
+                            <switch
+                                :checked="isShowSwitch"
+                                :color="$theme.primaryColor"
+                                style="transform: scale(0.9)"
+                                @change="isShowSwitch = $event.detail.value"
+                            />
+                        </view>
+                    </view>
+                </BaseCard>
+            </view>
+
+            <view class="bottom-bar">
+                <view class="bottom-bar__inner">
                     <view
-                        v-if="form.video"
-                        class="video-badge"
-                        :style="{ backgroundColor: $theme.accentColor }"
+                        class="bottom-bar__action bottom-bar__action--ghost"
+                        @click="handleCancel"
                     >
-                        <tn-icon name="video" size="24" color="#fff" />
-                    </view>
-                </view>
-                <text class="section-desc">时长不超过60秒，大小不超过50MB</text>
-            </view>
-            <view v-if="form.video" class="video-preview">
-                <video
-                    :src="form.video"
-                    class="video-player"
-                    object-fit="cover"
-                    :show-center-play-btn="true"
-                    :controls="true"
-                />
-                <view class="video-delete" @click="removeVideo">
-                    <tn-icon name="delete" size="32" color="#fff" />
-                    <text class="delete-text">删除视频</text>
-                </view>
-            </view>
-            <view v-else class="video-upload-btn" @click="chooseVideo">
-                <view class="upload-icon-wrapper" :style="{ borderColor: $theme.secondaryColor }">
-                    <tn-icon name="video" size="48" :color="$theme.secondaryColor" />
-                </view>
-                <text class="upload-text">点击上传视频</text>
-                <text class="upload-hint">支持mp4格式</text>
-            </view>
-        </view>
-
-        <!-- 作品说明 -->
-        <view class="form-section">
-            <view class="section-header">
-                <view class="section-title">
-                    <text>作品说明</text>
-                </view>
-                <text class="section-desc">介绍作品的创作理念、拍摄技巧等</text>
-            </view>
-            <view class="textarea-wrapper">
-                <textarea
-                    v-model="form.description"
-                    class="custom-textarea"
-                    placeholder="例如：这组作品采用自然光拍摄，捕捉了新人最真实的情感瞬间..."
-                    :maxlength="500"
-                    :auto-height="true"
-                    :show-confirm-bar="false"
-                />
-                <text class="char-count">{{ form.description.length }}/500</text>
-            </view>
-        </view>
-
-        <!-- 作品信息 -->
-        <view class="form-section">
-            <view class="section-header">
-                <view class="section-title">
-                    <text>作品信息</text>
-                </view>
-            </view>
-            <view class="info-list">
-                <picker mode="date" :value="form.shoot_date" @change="handleDateChange">
-                    <view class="info-item">
-                        <view class="info-label">
-                            <tn-icon name="calendar" size="32" :color="$theme.primaryColor" />
-                            <text class="label-text">拍摄日期</text>
-                        </view>
-                        <view class="info-value">
-                            <text :class="form.shoot_date ? 'value-text' : 'placeholder-text'">
-                                {{ form.shoot_date || '请选择日期' }}
-                            </text>
-                            <tn-icon name="arrow-right" size="28" color="#999" />
-                        </view>
-                    </view>
-                </picker>
-
-                <view class="info-item">
-                    <view class="info-label">
-                        <tn-icon name="map-pin" size="32" :color="$theme.primaryColor" />
-                        <text class="label-text">拍摄地点</text>
-                    </view>
-                    <view class="info-value flex-1">
-                        <tn-input
-                            v-model="form.location"
-                            placeholder="例如：三亚海棠湾"
-                            class="location-input"
-                        />
-                    </view>
-                </view>
-
-                <view class="info-item">
-                    <view class="info-label">
-                        <tn-icon name="sort" size="32" :color="$theme.primaryColor" />
-                        <text class="label-text">排序值</text>
-                    </view>
-                    <view class="info-value flex-1">
-                        <tn-input
-                            v-model="form.sort"
-                            type="number"
-                            placeholder="数值越大越靠前"
-                            class="sort-input"
-                        />
-                    </view>
-                </view>
-
-                <view class="info-item">
-                    <view class="info-label">
-                        <tn-icon name="eye" size="32" :color="$theme.primaryColor" />
-                        <text class="label-text">是否展示</text>
-                    </view>
-                    <view class="info-value">
-                        <u-switch
-                            v-model="isShowSwitch"
-                            :active-color="$theme.primaryColor"
-                            inactive-color="#e5e7eb"
-                            size="24"
-                        />
-                    </view>
-                </view>
-            </view>
-        </view>
-
-        <!-- 底部操作栏 -->
-        <view class="bottom-bar">
-            <view class="bottom-content">
-                <view class="btn-group">
-                    <view class="cancel-btn" @click="handleCancel">
-                        <text class="cancel-text">取消</text>
+                        <text class="bottom-bar__action-text bottom-bar__action-text--ghost">
+                            取消
+                        </text>
                     </view>
                     <view
-                        class="submit-btn"
-                        :style="{
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                            opacity: submitting ? 0.6 : 1
-                        }"
+                        class="bottom-bar__action bottom-bar__action--primary"
+                        :style="{ opacity: submitting ? 0.66 : 1 }"
                         @click="handleSubmit"
                     >
                         <tn-icon
                             v-if="submitting"
                             name="loading"
-                            size="32"
-                            color="#fff"
-                            class="loading-icon"
+                            size="26"
+                            color="#ffffff"
+                            class="bottom-bar__loading"
                         />
-                        <text class="submit-text">{{
-                            submitting ? '提交中...' : isEdit ? '保存修改' : '提交审核'
-                        }}</text>
+                        <text class="bottom-bar__action-text">
+                            {{ submitButtonText }}
+                        </text>
                     </view>
                 </view>
             </view>
         </view>
-    </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { uploadImage, uploadVideo } from '@/api/app'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import PageShell from '@/components/base/PageShell.vue'
 import { staffCenterWorkAdd, staffCenterWorkDetail, staffCenterWorkEdit } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
-
 const $theme = useThemeStore()
 const submitting = ref(false)
 
@@ -288,6 +300,12 @@ const form = reactive({
 
 const isEdit = computed(() => form.id > 0)
 const pageTitle = computed(() => (isEdit.value ? '编辑作品' : '新增作品'))
+const submitButtonText = computed(() => {
+    if (submitting.value) {
+        return isEdit.value ? '保存中...' : '提交中...'
+    }
+    return isEdit.value ? '保存修改' : '提交审核'
+})
 const isShowSwitch = computed({
     get: () => form.is_show === 1,
     set: (val: boolean) => {
@@ -326,8 +344,8 @@ const chooseCover = () => {
             uni.showLoading({ title: '上传中...' })
             try {
                 const uploadRes: any = await uploadImage(res.tempFilePaths[0])
-                if (uploadRes?.url) {
-                    form.cover = uploadRes.url
+                if (uploadRes?.uri) {
+                    form.cover = uploadRes.uri
                 }
             } catch (e: any) {
                 uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
@@ -350,8 +368,8 @@ const chooseImages = () => {
             try {
                 for (const path of res.tempFilePaths) {
                     const uploadRes: any = await uploadImage(path)
-                    if (uploadRes?.url) {
-                        form.images.push(uploadRes.url)
+                    if (uploadRes?.uri) {
+                        form.images.push(uploadRes.uri)
                     }
                 }
             } catch (e: any) {
@@ -401,8 +419,8 @@ const chooseVideo = () => {
             uni.showLoading({ title: '上传中...' })
             try {
                 const uploadRes: any = await uploadVideo(res.tempFilePath)
-                if (uploadRes?.url) {
-                    form.video = uploadRes.url
+                if (uploadRes?.uri) {
+                    form.video = uploadRes.uri
                 }
             } catch (e: any) {
                 uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
@@ -456,7 +474,12 @@ const loadDetail = async (id: number) => {
     form.shoot_date = data.shoot_date || ''
     form.location = data.location || ''
     form.sort = data.sort !== undefined && data.sort !== null ? String(data.sort) : ''
-    form.is_show = data.is_show ? 1 : 0
+    form.is_show = Number(data.is_show ?? 1) === 1 ? 1 : 0
+}
+
+const normalizeOptionalDate = (value: string) => {
+    const trimmedValue = value.trim()
+    return trimmedValue === '' ? '' : trimmedValue
 }
 
 // 提交
@@ -476,11 +499,12 @@ const handleSubmit = async () => {
         images: form.images,
         video: form.video,
         description: form.description,
-        shoot_date: form.shoot_date,
         location: form.location,
         sort: form.sort === '' ? 0 : Number(form.sort),
         is_show: form.is_show
     }
+    const shootDate = normalizeOptionalDate(form.shoot_date)
+    payload.shoot_date = shootDate
 
     submitting.value = true
     try {
@@ -512,519 +536,478 @@ onLoad(async (options: any) => {
 <style lang="scss" scoped>
 .page-container {
     min-height: 100vh;
-    background: #F4F5F7;
-    padding-bottom: 180rpx;
+    padding-top: 20rpx;
+    padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    background: radial-gradient(
+            circle at top left,
+            rgba(232, 90, 79, 0.1) 0,
+            rgba(252, 251, 249, 0) 36%
+        ),
+        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
 }
 
-/* 顶部提示卡片 */
-.tip-card {
-    margin: 24rpx;
-    padding: 24rpx;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 16rpx;
-    border-left: 6rpx solid;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
-
-    .tip-text {
-        margin-left: 16rpx;
-        font-size: 28rpx;
-        color: #666;
-        line-height: 1.5;
-    }
-}
-
-/* 表单区块 */
-.form-section {
-    margin: 0 24rpx 20rpx;
-    padding: 28rpx;
-    background: #FFFFFF;
-    border-radius: 24rpx;
-    box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.05);
-}
-
-/* 区块标题 */
-.section-header {
-    margin-bottom: 24rpx;
-
-    .section-title {
-        display: flex;
-        align-items: center;
-        font-size: 32rpx;
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 8rpx;
-
-        .required-mark {
-            font-size: 32rpx;
-            font-weight: 700;
-            margin-right: 6rpx;
-        }
-
-        .count-badge {
-            margin-left: 12rpx;
-            padding: 4rpx 12rpx;
-            border-radius: 20rpx;
-            font-size: 24rpx;
-            font-weight: 500;
-            color: #ffffff;
-        }
-
-        .video-badge {
-            margin-left: 12rpx;
-            padding: 6rpx 12rpx;
-            border-radius: 20rpx;
-            display: flex;
-            align-items: center;
-        }
-    }
-
-    .section-desc {
-        font-size: 26rpx;
-        color: #999;
-        line-height: 1.5;
-    }
-}
-
-/* 输入框包装 */
-.input-wrapper {
-    position: relative;
-
-    .custom-input {
-        width: 100%;
-        padding: 24rpx;
-        background: #f9fafb;
-        border-radius: 16rpx;
-        border: 2rpx solid #e5e7eb;
-        font-size: 28rpx;
-        transition: all 0.2s ease;
-
-        &:focus {
-            background: #ffffff;
-            border-color: var(--color-primary);
-        }
-    }
-
-    .char-count {
-        position: absolute;
-        right: 24rpx;
-        bottom: 24rpx;
-        font-size: 24rpx;
-        color: #999;
-    }
-}
-
-/* 封面上传区域 */
-.cover-upload-area {
-    width: 100%;
-}
-
-.cover-preview {
-    position: relative;
-    width: 100%;
-    height: 400rpx;
-    border-radius: 16rpx;
-    overflow: hidden;
-
-    .cover-image {
-        width: 100%;
-        height: 100%;
-    }
-
-    .cover-actions-bar {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 80rpx;
-        background: rgba(0, 0, 0, 0.55);
-        backdrop-filter: blur(10rpx);
-    }
-
-    .cover-action-btn {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8rpx;
-        height: 100%;
-
-        &:active {
-            background: rgba(255, 255, 255, 0.1);
-        }
-    }
-
-    .cover-action-text {
-        font-size: 26rpx;
-        color: #ffffff;
-        font-weight: 500;
-    }
-
-    .cover-action-divider {
-        width: 1rpx;
-        height: 36rpx;
-        background: rgba(255, 255, 255, 0.3);
-    }
-}
-
-.cover-upload-btn {
+.page-section {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 400rpx;
-    background: #f9fafb;
-    border-radius: 16rpx;
-    border: 2rpx dashed #e5e7eb;
-    transition: all 0.2s ease;
-
-    &:active {
-        background: #f3f4f6;
-        border-color: var(--color-primary);
-    }
-
-    .upload-icon-wrapper {
-        width: 120rpx;
-        height: 120rpx;
-        border-radius: 50%;
-        border: 3rpx dashed;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 16rpx;
-    }
-
-    .upload-text {
-        font-size: 28rpx;
-        color: #333;
-        font-weight: 500;
-        margin-bottom: 8rpx;
-    }
-
-    .upload-hint {
-        font-size: 24rpx;
-        color: #999;
-    }
-}
-
-/* 图片网格 */
-.images-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
     gap: 16rpx;
+    padding: 0 var(--wm-space-page-x, 37rpx);
+    box-sizing: border-box;
 }
 
-.image-item {
-    position: relative;
-    width: 100%;
-    padding-bottom: 100%;
-    border-radius: 16rpx;
-    overflow: hidden;
-
-    .image-content {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-    }
-
-    .image-delete {
-        position: absolute;
-        top: 8rpx;
-        right: 8rpx;
-        width: 48rpx;
-        height: 48rpx;
-        background: rgba(0, 0, 0, 0.6);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2;
-    }
-
-    .image-index {
-        position: absolute;
-        bottom: 8rpx;
-        left: 8rpx;
-        width: 40rpx;
-        height: 40rpx;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24rpx;
-        font-weight: 600;
-        color: #ffffff;
-        z-index: 1;
-    }
+.page-section--content {
+    padding-top: 20rpx;
 }
 
-.image-upload-btn {
-    position: relative;
-    width: 100%;
-    padding-bottom: 100%;
-    background: #f9fafb;
-    border-radius: 16rpx;
-    border: 2rpx dashed #e5e7eb;
+.form-card + .form-card {
+    margin-top: 18rpx;
+}
+
+.card-head {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:active {
-        background: #f3f4f6;
-        border-color: var(--color-primary);
-    }
-
-    .upload-btn-text {
-        position: absolute;
-        bottom: 20rpx;
-        left: 0;
-        right: 0;
-        text-align: center;
-        font-size: 24rpx;
-        color: #666;
-    }
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-bottom: 22rpx;
 }
 
-/* 视频预览 */
+.card-head__title {
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.field-block + .field-block {
+    margin-top: 22rpx;
+}
+
+.field-block--compact {
+    margin-top: 20rpx;
+}
+
+.field-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-bottom: 16rpx;
+}
+
+.field-label-group {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+    min-width: 0;
+}
+
+.field-label {
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.field-label--required::before {
+    content: '*';
+    margin-right: 6rpx;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.field-side-text {
+    flex-shrink: 0;
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--wm-text-tertiary, #948f8b);
+}
+
+.field-input-shell,
+.textarea-shell {
+    border-radius: 28rpx;
+    background: #fcfbf9;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    overflow: hidden;
+}
+
+.field-input-shell {
+    min-height: 94rpx;
+    padding: 0 24rpx;
+    display: flex;
+    align-items: center;
+}
+
+.textarea-shell {
+    padding: 22rpx 24rpx;
+}
+
+.field-input,
+.setting-input {
+    width: 100%;
+}
+
+.field-input :deep(.tn-input),
+.setting-input :deep(.tn-input) {
+    background: transparent !important;
+}
+
+.field-input :deep(.input-placeholder),
+.setting-input :deep(.input-placeholder) {
+    color: #b4aca8 !important;
+}
+
+.field-input :deep(.input-text),
+.setting-input :deep(.input-text) {
+    font-size: 28rpx !important;
+    color: #1e2432 !important;
+}
+
+.field-textarea {
+    width: 100%;
+    min-height: 220rpx;
+    font-size: 28rpx;
+    line-height: 1.65;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.cover-preview,
+.upload-panel--cover {
+    height: 392rpx;
+}
+
+.cover-preview,
 .video-preview {
     position: relative;
     width: 100%;
-    border-radius: 16rpx;
     overflow: hidden;
-
-    .video-player {
-        width: 100%;
-        height: 400rpx;
-    }
-
-    .video-delete {
-        position: absolute;
-        bottom: 16rpx;
-        right: 16rpx;
-        padding: 12rpx 24rpx;
-        background: rgba(0, 0, 0, 0.7);
-        border-radius: 48rpx;
-        display: flex;
-        align-items: center;
-        gap: 8rpx;
-
-        .delete-text {
-            font-size: 26rpx;
-            color: #ffffff;
-        }
-    }
+    border-radius: 32rpx;
+    background: #f7f1ed;
 }
 
-.video-upload-btn {
+.cover-preview__image,
+.video-preview__player {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.cover-preview__toolbar {
+    position: absolute;
+    left: 16rpx;
+    right: 16rpx;
+    bottom: 16rpx;
+    min-height: 68rpx;
+    display: flex;
+    align-items: center;
+    border-radius: 999rpx;
+    background: rgba(19, 24, 35, 0.48);
+    backdrop-filter: blur(14rpx);
+    -webkit-backdrop-filter: blur(14rpx);
+}
+
+.cover-preview__action {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+}
+
+.cover-preview__action-text {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.cover-preview__divider {
+    width: 1rpx;
+    height: 30rpx;
+    background: rgba(255, 255, 255, 0.24);
+}
+
+.upload-panel {
+    width: 100%;
+    border-radius: 32rpx;
+    border: 1rpx dashed rgba(244, 199, 191, 0.88);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 245, 241, 0.9) 0%,
+        rgba(255, 255, 255, 0.72) 100%
+    );
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    height: 300rpx;
-    background: #f9fafb;
-    border-radius: 16rpx;
-    border: 2rpx dashed #e5e7eb;
-    transition: all 0.2s ease;
-
-    &:active {
-        background: #f3f4f6;
-        border-color: var(--color-secondary);
-    }
-
-    .upload-icon-wrapper {
-        width: 120rpx;
-        height: 120rpx;
-        border-radius: 50%;
-        border: 3rpx dashed;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 16rpx;
-    }
-
-    .upload-text {
-        font-size: 28rpx;
-        color: #333;
-        font-weight: 500;
-        margin-bottom: 8rpx;
-    }
-
-    .upload-hint {
-        font-size: 24rpx;
-        color: #999;
-    }
+    gap: 14rpx;
 }
 
-/* 文本域包装 */
-.textarea-wrapper {
+.upload-panel--video {
+    height: 272rpx;
+}
+
+.upload-panel__icon-wrap {
+    width: 108rpx;
+    height: 108rpx;
+    border-radius: 999rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1rpx solid rgba(244, 199, 191, 0.72);
+}
+
+.upload-panel__title {
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.images-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14rpx;
+}
+
+.image-card,
+.upload-tile {
     position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    border-radius: 26rpx;
+    overflow: hidden;
+}
 
-    .custom-textarea {
-        width: 100%;
-        min-height: 200rpx;
-        padding: 24rpx;
-        background: #f9fafb;
-        border-radius: 16rpx;
-        border: 2rpx solid #e5e7eb;
-        font-size: 28rpx;
-        line-height: 1.6;
-        color: #333;
-        transition: all 0.2s ease;
+.image-card {
+    background: #f7f1ed;
+}
 
-        &:focus {
-            background: #ffffff;
-            border-color: var(--color-primary);
-        }
-    }
+.image-card__image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
 
-    .char-count {
-        position: absolute;
-        right: 24rpx;
-        bottom: 24rpx;
-        font-size: 24rpx;
-        color: #999;
+.image-card__delete,
+.image-card__index {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-card__delete {
+    top: 10rpx;
+    right: 10rpx;
+    width: 44rpx;
+    height: 44rpx;
+    border-radius: 999rpx;
+    background: rgba(19, 24, 35, 0.54);
+}
+
+.image-card__index {
+    left: 10rpx;
+    bottom: 10rpx;
+    min-width: 40rpx;
+    height: 40rpx;
+    padding: 0 10rpx;
+    border-radius: 999rpx;
+    background: rgba(232, 90, 79, 0.9);
+}
+
+.image-card__index-text {
+    font-size: 20rpx;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+}
+
+.upload-tile {
+    border: 1rpx dashed rgba(244, 199, 191, 0.88);
+    background: rgba(255, 245, 241, 0.82);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10rpx;
+}
+
+.upload-tile__text {
+    font-size: 22rpx;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.video-preview__player {
+    height: 272rpx;
+}
+
+.video-preview__action {
+    position: absolute;
+    right: 14rpx;
+    bottom: 14rpx;
+    min-height: 56rpx;
+    padding: 0 20rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    border-radius: 999rpx;
+    background: rgba(19, 24, 35, 0.54);
+    backdrop-filter: blur(12rpx);
+    -webkit-backdrop-filter: blur(12rpx);
+}
+
+.video-preview__action-text {
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1;
+    color: #ffffff;
+}
+
+.setting-list {
+    border-radius: 30rpx;
+    background: #fcfbf9;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    overflow: hidden;
+}
+
+.setting-item {
+    min-height: 98rpx;
+    padding: 0 22rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    border-bottom: 1rpx solid rgba(239, 230, 225, 0.9);
+    box-sizing: border-box;
+
+    &:last-child {
+        border-bottom: none;
     }
 }
 
-/* 信息列表 */
-.info-list {
-    .info-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 28rpx 0;
-        border-bottom: 1rpx solid #f3f4f6;
-
-        &:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            display: flex;
-            align-items: center;
-            gap: 12rpx;
-
-            .label-text {
-                font-size: 28rpx;
-                color: #333;
-                font-weight: 500;
-            }
-        }
-
-        .info-value {
-            display: flex;
-            align-items: center;
-            gap: 12rpx;
-
-            .value-text {
-                font-size: 28rpx;
-                color: #333;
-            }
-
-            .placeholder-text {
-                font-size: 28rpx;
-                color: #999;
-            }
-        }
-
-        .location-input,
-        .sort-input {
-            text-align: right;
-            font-size: 28rpx;
-        }
-    }
+.setting-item__label {
+    flex-shrink: 0;
+    font-size: 28rpx;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-/* 底部操作栏 */
+.setting-item__value {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+    min-width: 0;
+}
+
+.setting-item__value-text {
+    font-size: 26rpx;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.setting-item__value-text--placeholder {
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.setting-item__input {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.setting-item__input--sm {
+    max-width: 200rpx;
+}
+
+.setting-input--right :deep(.tn-input) {
+    justify-content: flex-end !important;
+}
+
+.setting-input--right :deep(.input-text),
+.setting-input--right :deep(.input-placeholder) {
+    text-align: right !important;
+}
+
 .bottom-bar {
     position: fixed;
-    bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20rpx);
-    border-top: 1rpx solid #f3f4f6;
-    padding-bottom: constant(safe-area-inset-bottom);
-    padding-bottom: env(safe-area-inset-bottom);
-    z-index: 100;
+    bottom: 0;
+    z-index: 40;
+    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
+    background: rgba(252, 251, 249, 0.88);
+    border-top: 1rpx solid rgba(239, 230, 225, 0.9);
+    backdrop-filter: blur(24rpx);
+    -webkit-backdrop-filter: blur(24rpx);
+    box-sizing: border-box;
 }
 
-.bottom-content {
-    padding: 24rpx;
-}
-
-.btn-group {
+.bottom-bar__inner {
     display: flex;
-    gap: 24rpx;
-}
-
-.cancel-btn {
-    flex: 1;
-    height: 72rpx;
-    background: #f3f4f6;
-    border-radius: 32rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-
-    &:active {
-        background: #e5e7eb;
-        transform: scale(0.98);
-    }
-
-    .cancel-text {
-        font-size: 32rpx;
-        font-weight: 600;
-        color: #666;
-    }
-}
-
-.submit-btn {
-    flex: 2;
-    height: 72rpx;
-    border-radius: 32rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     gap: 12rpx;
-    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
-    transition: all 0.2s ease;
+}
+
+.bottom-bar__action {
+    min-height: 88rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10rpx;
+    border-radius: 36rpx;
+    transition: all var(--wm-motion-base, 220ms) ease;
 
     &:active {
         transform: translateY(2rpx);
-        box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
+        opacity: 0.92;
     }
+}
 
-    .loading-icon {
-        animation: rotate 1s linear infinite;
-    }
+.bottom-bar__action--ghost {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+}
 
-    .submit-text {
-        font-size: 32rpx;
-        font-weight: 700;
-        color: #ffffff;
-    }
+.bottom-bar__action--primary {
+    flex: 1.35;
+    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, #d96a60 100%);
+    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.18);
+}
+
+.bottom-bar__action-text {
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+}
+
+.bottom-bar__action-text--ghost {
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.bottom-bar__loading {
+    animation: rotate 1s linear infinite;
 }
 
 @keyframes rotate {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
 }
 
-/* 无障碍动画 */
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.01ms !important;

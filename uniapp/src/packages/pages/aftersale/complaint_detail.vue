@@ -61,7 +61,10 @@
                 </view>
             </view>
 
-            <view v-if="detail.handle_result || detail.expect_result" class="complaint-detail__section">
+            <view
+                v-if="detail.handle_result || detail.expect_result"
+                class="complaint-detail__section"
+            >
                 <text class="complaint-detail__section-title">处理说明</text>
                 <text v-if="detail.handle_result" class="complaint-detail__content-text">
                     平台处理结果：{{ detail.handle_result }}
@@ -88,7 +91,12 @@
             <view class="rate-panel">
                 <view class="rate-panel__head">
                     <text class="rate-panel__title">处理满意度</text>
-                    <tn-icon name="close" size="28" color="#978B83" @click="showRatePopup = false" />
+                    <tn-icon
+                        name="close"
+                        size="28"
+                        color="#978B83"
+                        @click="showRatePopup = false"
+                    />
                 </view>
                 <view class="rate-panel__body">
                     <u-rate v-model="satisfaction" :min-count="1" />

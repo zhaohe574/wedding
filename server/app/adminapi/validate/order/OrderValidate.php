@@ -34,7 +34,8 @@ class OrderValidate extends BaseValidate
         'wedding_date' => 'date',
         'wedding_venue' => 'max:255',
         'discount_amount' => 'float|egt:0',
-        'deposit_ratio' => 'integer|between:0,100',
+        'contact_name' => 'require|max:50',
+        'contact_mobile' => 'require|mobile',
         'admin_remark' => 'max:500',
         'reason' => 'max:255',
         'remark' => 'max:500',
@@ -61,7 +62,6 @@ class OrderValidate extends BaseValidate
         'wedding_date.date' => '婚礼日期格式错误',
         'wedding_venue.max' => '婚礼地点最多255个字符',
         'discount_amount.egt' => '优惠金额不能为负数',
-        'deposit_ratio.between' => '定金比例应在0-100之间',
         'admin_remark.max' => '备注最多500个字符',
         'reason.max' => '原因最多255个字符',
         'remark.max' => '备注最多500个字符',
@@ -105,9 +105,16 @@ class OrderValidate extends BaseValidate
             'wedding_date',
             'wedding_venue',
             'discount_amount',
-            'deposit_ratio',
             'admin_remark'
         ]);
+    }
+
+    public function sceneAddEstimate()
+    {
+        return $this->only([
+            'items',
+            'discount_amount',
+        ])->remove('items', 'require');
     }
 
     /**

@@ -2,7 +2,10 @@
     <view class="customer-reviews mx-[20rpx] mt-[20rpx]" v-if="content.enabled && showList.length">
         <!-- 标题 -->
         <view v-if="content.title" class="flex items-center mb-[24rpx]">
-            <view class="title-bar w-[8rpx] h-[34rpx] rounded-full mr-[16rpx]" :style="$theme.titleBar.value"></view>
+            <view
+                class="title-bar w-[8rpx] h-[34rpx] rounded-full mr-[16rpx]"
+                :style="$theme.titleBar.value"
+            ></view>
             <text class="text-lg font-medium text-gray-900">{{ content.title }}</text>
             <!-- 统计信息 -->
             <view v-if="content.show_stats" class="ml-auto flex items-center">
@@ -48,7 +51,11 @@
                         </view>
                     </view>
                     <!-- 标签 -->
-                    <view v-if="item.tag" class="px-[16rpx] py-[6rpx] rounded-full" :style="$theme.tagBg.value">
+                    <view
+                        v-if="item.tag"
+                        class="px-[16rpx] py-[6rpx] rounded-full"
+                        :style="$theme.tagBg.value"
+                    >
                         <text class="text-xs" :style="$theme.tagText.value">{{ item.tag }}</text>
                     </view>
                 </view>

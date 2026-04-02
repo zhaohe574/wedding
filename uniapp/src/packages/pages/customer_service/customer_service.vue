@@ -3,12 +3,16 @@
     <BaseNavbar title="联系顾问" />
 
     <view class="consult-page">
-            <view class="consult-shell">
-                <view class="consult-hero">
-                    <view class="consult-badge">{{ state.entryType === 'advisor' ? '专属顾问' : '统一客服' }}</view>
-                <view class="consult-title">{{ state.entryType === 'advisor' ? '联系顾问' : '联系客服' }}</view>
+        <view class="consult-shell">
+            <view class="consult-hero">
+                <view class="consult-badge">{{
+                    state.entryType === 'advisor' ? '专属顾问' : '统一客服'
+                }}</view>
+                <view class="consult-title">{{
+                    state.entryType === 'advisor' ? '联系顾问' : '联系客服'
+                }}</view>
                 <view class="consult-subtitle">{{ sceneTitle }}</view>
-                </view>
+            </view>
 
             <view v-if="state.loading" class="loading-card">
                 <tn-icon name="loading" size="40" :color="$theme.primaryColor" />
@@ -79,11 +83,7 @@
                     >
                         复制企微号
                     </view>
-                    <view
-                        v-if="contact.mobile"
-                        class="action-btn secondary"
-                        @click="handleCall"
-                    >
+                    <view v-if="contact.mobile" class="action-btn secondary" @click="handleCall">
                         拨打电话
                     </view>
                     <view
@@ -199,15 +199,16 @@ const openContactLink = () => {
     if (!contact.value.contact_link) return
     // #ifdef H5
     window.open(contact.value.contact_link, '_blank')
-    return
     // #endif
 
+    // #ifndef H5
     uni.setClipboardData({
         data: contact.value.contact_link,
         success: () => {
             uni.showToast({ title: '联系链接已复制', icon: 'none' })
         }
     })
+    // #endif
 }
 
 onLoad((options: Record<string, string>) => {
@@ -222,8 +223,7 @@ onLoad((options: Record<string, string>) => {
 <style lang="scss" scoped>
 .consult-page {
     min-height: 100vh;
-    background:
-        radial-gradient(circle at top, rgba(229, 107, 111, 0.16), transparent 38%),
+    background: radial-gradient(circle at top, rgba(229, 107, 111, 0.16), transparent 38%),
         linear-gradient(180deg, #fffaf8 0%, #f5f7fb 100%);
     padding: 24rpx;
     box-sizing: border-box;

@@ -138,7 +138,7 @@ class ScheduleLogic extends BaseLogic
         $staffId = (int)$params['staff_id'];
         $date = (string)$params['date'];
 
-        $isAvailable = Schedule::isAvailable($staffId, $date, 0);
+        [$isAvailable, $message] = Schedule::checkAvailabilityWithReason($staffId, $date, 0);
         $schedule = Schedule::where('staff_id', $staffId)
             ->where('schedule_date', $date)
             ->where('time_slot', 0)
@@ -149,6 +149,7 @@ class ScheduleLogic extends BaseLogic
             'status' => $schedule ? $schedule->status : Schedule::STATUS_AVAILABLE,
             'status_desc' => $schedule ? $schedule->status_desc : '可预约',
             'price' => $schedule && (float)$schedule->price > 0 ? (float)$schedule->price : null,
+            'message' => $message,
         ];
     }
 

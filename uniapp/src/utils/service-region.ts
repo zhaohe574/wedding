@@ -18,7 +18,9 @@ const createEmptyRegion = (): ServiceRegionSelection => ({
     district_name: ''
 })
 
-export const normalizeServiceRegion = (value: Record<string, any> | null | undefined): ServiceRegionSelection => {
+export const normalizeServiceRegion = (
+    value: Record<string, any> | null | undefined
+): ServiceRegionSelection => {
     return {
         province_code: String(value?.province_code || ''),
         province_name: String(value?.province_name || ''),
@@ -39,7 +41,9 @@ export const formatServiceRegionText = (
     separator = ' / '
 ) => {
     const region = normalizeServiceRegion(value)
-    return [region.province_name, region.city_name, region.district_name].filter(Boolean).join(separator)
+    return [region.province_name, region.city_name, region.district_name]
+        .filter(Boolean)
+        .join(separator)
 }
 
 export const saveServiceRegionSelection = (value: Record<string, any> | null | undefined) => {

@@ -16,19 +16,15 @@
                     :color="content.text_color || '#EA580C'"
                     size="28"
                 />
-                <u-notice-bar
+                <tn-notice-bar
                     class="notice-h5__bar"
-                    :list="horizontalList"
-                    mode="horizontal"
-                    :speed="content.scroll_speed || 50"
-                    :color="content.text_color || '#EA580C'"
+                    :key="`${noticeKey}-horizontal-h5`"
+                    :data="horizontalList"
+                    :text-color="content.text_color || '#EA580C'"
                     :bg-color="'transparent'"
-                    type="none"
-                    :volume-icon="false"
-                    :more-icon="false"
-                    :close-icon="false"
-                    :autoplay="true"
-                    padding="0"
+                    :speed="content.scroll_speed || 50"
+                    direction="horizontal"
+                    :loop="true"
                     @click="handleClick(displayList[0])"
                 />
             </view>
@@ -65,19 +61,14 @@
                     :color="content.text_color || '#EA580C'"
                     size="28"
                 />
-                <u-notice-bar
+                <tn-notice-bar
                     class="notice-h5__bar"
-                    :list="verticalList"
-                    mode="vertical"
-                    :duration="3000"
-                    :color="content.text_color || '#EA580C'"
+                    :key="`${noticeKey}-vertical-h5`"
+                    :data="verticalList"
+                    :text-color="content.text_color || '#EA580C'"
                     :bg-color="'transparent'"
-                    type="none"
-                    :volume-icon="false"
-                    :more-icon="false"
-                    :close-icon="false"
-                    :autoplay="true"
-                    padding="0"
+                    direction="vertical"
+                    :speed="3000"
                     @click="handleVerticalClick"
                 />
             </view>

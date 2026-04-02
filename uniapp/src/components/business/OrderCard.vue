@@ -32,8 +32,8 @@
                     <view class="order-card__info-icon-wrapper">
                         <tn-icon name="calendar" size="28" :color="$theme.primaryColor" />
                     </view>
-                        <view class="order-card__info-content">
-                            <text class="order-card__info-label">预约档期</text>
+                    <view class="order-card__info-content">
+                        <text class="order-card__info-label">预约档期</text>
                         <view class="order-card__schedule-list">
                             <view
                                 v-for="(group, index) in groupedSchedules"
@@ -154,7 +154,11 @@ const $theme = useThemeStore()
 
 const emit = defineEmits<{
     (event: 'click', orderId: number): void
-    (event: 'action', action: { text: string; type: string; action: string }, order: OrderData): void
+    (
+        event: 'action',
+        action: { text: string; type: string; action: string },
+        order: OrderData
+    ): void
 }>()
 
 // 状态配置（使用设计规范中的状态色）
@@ -243,7 +247,9 @@ const statusStyle = computed(() => {
 const getActionButtonStyle = (type: string) => {
     if (type === 'primary') {
         return {
-            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || $theme.primaryColor} 100%)`,
+            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${
+                $theme.secondaryColor || $theme.primaryColor
+            } 100%)`,
             borderColor: $theme.primaryColor,
             boxShadow: `0 14rpx 28rpx rgba(8, 10, 16, 0.12)`
         }
@@ -289,7 +295,11 @@ export default {
 <style lang="scss" scoped>
 .order-card {
     position: relative;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 247, 244, 0.96) 100%);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.96) 0%,
+        rgba(255, 247, 244, 0.96) 100%
+    );
     border-radius: var(--wm-radius-card-glass, 26rpx);
     padding: var(--wm-space-card-padding-lg, 24rpx);
     border: 1rpx solid var(--wm-color-border, #efe6e1);
@@ -368,7 +378,11 @@ export default {
         align-items: center;
         gap: var(--wm-space-section-gap-lg, 16rpx);
         padding: var(--wm-space-card-padding, 20rpx);
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 247, 244, 0.98) 100%);
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.94) 0%,
+            rgba(255, 247, 244, 0.98) 100%
+        );
         border: 1rpx solid var(--wm-color-border, #efe6e1);
         border-radius: var(--wm-radius-card-soft, 20rpx);
     }

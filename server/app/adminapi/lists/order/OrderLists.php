@@ -66,6 +66,23 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
             $where[] = ['pay_amount', '<=', $this->params['max_amount']];
         }
 
+        if (($this->params['payment_mode'] ?? '') !== '') {
+            if ($this->params['payment_mode'] === 'deposit') {
+                $where[] = ['deposit_amount', '>', 0];
+            }
+            if ($this->params['payment_mode'] === 'full') {
+                $where[] = ['deposit_amount', '=', 0];
+            }
+        }
+
+        if (($this->params['deposit_paid'] ?? '') !== '') {
+            $where[] = ['deposit_paid', '=', (int) $this->params['deposit_paid']];
+        }
+
+        if (($this->params['balance_paid'] ?? '') !== '') {
+            $where[] = ['balance_paid', '=', (int) $this->params['balance_paid']];
+        }
+
         return $where;
     }
 
@@ -128,6 +145,24 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
             $item['pay_status_desc'] = $this->getPayStatusDesc($item['pay_status']);
             $item['pay_type_desc'] = $this->getPayTypeDesc($item['pay_type']);
             $item['source_desc'] = $this->getSourceDesc($item['source']);
+            $item['payment_mode'] = (float)($item['deposit_amount'] ?? 0) > 0 ? 'deposit' : 'full';
+            $item['payment_mode_desc'] = $item['payment_mode'] === 'deposit' ? '定金支付' : '全款支付';
+            $item['unpaid_amount'] = round(max((float)($item['pay_amount'] ?? 0) - (float)($item['paid_amount'] ?? 0), 0), 2);
+            $item['need_pay_amount'] = $item['unpaid_amount'];
+            if ($item['payment_mode'] === 'deposit') {
+                if (!(int)($item['deposit_paid'] ?? 0)) {
+                    $item['need_pay_amount'] = round((float)($item['deposit_amount'] ?? 0), 2);
+                    $item['need_pay_label'] = '支付定金';
+                } elseif (!(int)($item['balance_paid'] ?? 0)) {
+                    $item['need_pay_amount'] = round((float)($item['balance_amount'] ?? 0), 2);
+                    $item['need_pay_label'] = '支付尾款';
+                } else {
+                    $item['need_pay_amount'] = 0;
+                    $item['need_pay_label'] = '无需支付';
+                }
+            } else {
+                $item['need_pay_label'] = $item['unpaid_amount'] > 0 ? '立即支付' : '无需支付';
+            }
             $item['pending_confirm_count'] = (int)($pendingCounts[$item['id']] ?? 0);
             $item['has_pending_confirm'] = $item['pending_confirm_count'] > 0 ? 1 : 0;
         }
@@ -169,9 +204,14 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
             'order_status_desc' => '订单状态',
             'pay_status_desc' => '支付状态',
             'pay_type_desc' => '支付方式',
+            'payment_mode_desc' => '支付模式',
             'total_amount' => '订单总额',
             'discount_amount' => '优惠金额',
-            'pay_amount' => '实付金额',
+            'pay_amount' => '应付金额',
+            'paid_amount' => '已付金额',
+            'unpaid_amount' => '待付金额',
+            'deposit_amount' => '定金金额',
+            'balance_amount' => '尾款金额',
             'contact_name' => '联系人',
             'contact_mobile' => '联系电话',
             'service_date' => '服务日期',

@@ -96,8 +96,7 @@ onLoad(() => {
     &__hero {
         position: relative;
         padding: 24rpx 24rpx 196rpx;
-        background:
-            radial-gradient(circle at top right, rgba(232, 90, 79, 0.12) 0, transparent 34%),
+        background: radial-gradient(circle at top right, rgba(232, 90, 79, 0.12) 0, transparent 34%),
             linear-gradient(180deg, #fff5f1 0%, #fcfbf9 72%, #f7f1ed 100%);
         overflow: hidden;
     }
@@ -285,7 +284,11 @@ onLoad(() => {
 }
 
 .news-page :deep(.tabs__line) {
-    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, var(--wm-color-secondary, #c99b73) 100%) !important;
+    background: linear-gradient(
+        135deg,
+        var(--wm-color-primary, #e85a4f) 0%,
+        var(--wm-color-secondary, #c99b73) 100%
+    ) !important;
     border-radius: 999rpx;
 }
 </style>

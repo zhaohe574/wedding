@@ -135,9 +135,7 @@
                 <!-- 附加服务变更 -->
                 <template v-else-if="detail.change_type === 4">
                     <view class="addon-change-content">
-                        <view class="addon-action-badge">
-                            附加服务变更已下线
-                        </view>
+                        <view class="addon-action-badge"> 附加服务变更已下线 </view>
                         <view class="text-sm text-gray-500 text-center mt-4">
                             旧版附加服务内容不再在用户端展示，当前页面仅保留状态与基础申请信息。
                         </view>
@@ -327,7 +325,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--color-primary, #E85A4F);
+    border-left: 6rpx solid var(--color-primary, #e85a4f);
 }
 
 .info-row {
@@ -385,7 +383,7 @@ onLoad((options: any) => {
         color: #999;
     }
     &.new {
-        color: var(--color-primary, #E85A4F);
+        color: var(--color-primary, #e85a4f);
     }
 }
 

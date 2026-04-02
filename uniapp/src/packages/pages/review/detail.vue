@@ -47,9 +47,7 @@
                     <text class="meta-label">服务项目</text>
                     <text class="meta-value">
                         {{
-                            review.order_item?.package_name ||
-                            review.orderItem?.package_name ||
-                            '-'
+                            review.order_item?.package_name || review.orderItem?.package_name || '-'
                         }}
                     </text>
                 </view>
@@ -158,7 +156,9 @@
                     <view class="share-reward-header">
                         <view>
                             <text class="share-platform">{{ record.platform_text }}</text>
-                            <text class="share-points">预计奖励 {{ record.reward_points }} 积分</text>
+                            <text class="share-points"
+                                >预计奖励 {{ record.reward_points }} 积分</text
+                            >
                         </view>
                         <view class="share-status" :class="`share-status-${record.status}`">
                             {{ record.status_text }}
@@ -174,7 +174,9 @@
                             @click="previewImages([record.verify_image], 0)"
                         />
                         <view class="share-meta">
-                            <text class="share-meta-text">申请平台：{{ record.platform_text }}</text>
+                            <text class="share-meta-text"
+                                >申请平台：{{ record.platform_text }}</text
+                            >
                             <text class="share-meta-text">
                                 {{
                                     record.audit_time
@@ -424,8 +426,8 @@ const chooseVerifyImage = () => {
             try {
                 shareForm.uploading = true
                 const uploadRes: any = await uploadImage(path)
-                if (uploadRes?.url) {
-                    shareForm.verify_image = uploadRes.url
+                if (uploadRes?.uri) {
+                    shareForm.verify_image = uploadRes.uri
                     return
                 }
                 uni.showToast({ title: '上传失败，请重试', icon: 'none' })

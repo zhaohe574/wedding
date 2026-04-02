@@ -13,10 +13,7 @@
                         @click="currentTabIndex = index"
                     >
                         <text class="order-page__filter-chip-text">{{ tab.label }}</text>
-                        <view
-                            v-if="statistics[tab.key] > 0"
-                            class="order-page__filter-chip-count"
-                        >
+                        <view v-if="statistics[tab.key] > 0" class="order-page__filter-chip-count">
                             <text class="order-page__filter-chip-count-text">
                                 {{ statistics[tab.key] }}
                             </text>
@@ -44,7 +41,9 @@
                     <view
                         class="empty-action-btn"
                         :style="{
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || $theme.primaryColor} 100%)`
+                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${
+                                $theme.secondaryColor || $theme.primaryColor
+                            } 100%)`
                         }"
                         @click="goHome"
                     >
@@ -148,7 +147,13 @@ import { computed, reactive, ref, watch } from 'vue'
 import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
-import { cancelOrder, confirmOrder, deleteOrder, getOrderList, getOrderStatistics } from '@/api/order'
+import {
+    cancelOrder,
+    confirmOrder,
+    deleteOrder,
+    getOrderList,
+    getOrderStatistics
+} from '@/api/order'
 
 const $theme = useThemeStore()
 
@@ -184,14 +189,15 @@ const statistics = reactive<any>({
     refund: 0
 })
 
-const buildActions = (status: number) => {
+const buildActions = (status: number, order: any) => {
     if (status === 0) {
         return [{ text: '取消', type: 'secondary', action: 'cancel' }]
     }
     if (status === 1) {
+        const payLabel = order?.need_pay_label || '支付'
         return [
             { text: '取消', type: 'secondary', action: 'cancel' },
-            { text: '支付', type: 'primary', action: 'pay' }
+            { text: payLabel, type: 'primary', action: 'pay' }
         ]
     }
     if (status === 3) {
@@ -245,10 +251,12 @@ const getStatusText = (status: number) => {
 }
 
 const buildDisplaySummary = (serviceDateText: string, serviceMeta: string) => {
-    return [serviceDateText, serviceMeta]
-        .map((item) => String(item || '').trim())
-        .filter(Boolean)
-        .join(' · ') || '待安排服务信息'
+    return (
+        [serviceDateText, serviceMeta]
+            .map((item) => String(item || '').trim())
+            .filter(Boolean)
+            .join(' · ') || '待安排服务信息'
+    )
 }
 
 const fetchOrders = async (refresh = false) => {
@@ -290,17 +298,22 @@ const fetchOrders = async (refresh = false) => {
                 id: order.id,
                 orderNo: order.order_sn,
                 statusValue: Number(order.order_status || 0),
-                statusText: order.order_status_desc || getStatusText(Number(order.order_status || 0)),
-                actualPrice: Number(order.pay_amount || 0),
+                statusText:
+                    order.order_status_desc || getStatusText(Number(order.order_status || 0)),
+                actualPrice: Number(order.need_pay_amount || order.pay_amount || 0),
+                totalPrice: Number(order.pay_amount || 0),
+                paymentModeDesc: order.payment_mode_desc || '全款支付',
                 serviceTitle: getOrderPrimaryTitle(items),
                 serviceMeta: getOrderMetaText(locationText, items),
                 serviceDateText: serviceDateList[0] || '待安排服务日期',
                 displaySummary: buildDisplaySummary(
                     serviceDateList[0] || '待安排服务日期',
-                    getOrderMetaText(locationText, items)
+                    [order.payment_mode_desc || '', getOrderMetaText(locationText, items)]
+                        .filter(Boolean)
+                        .join(' · ')
                 ),
                 items,
-                actions: buildActions(Number(order.order_status || 0))
+                actions: buildActions(Number(order.order_status || 0), order)
             }
         })
 
@@ -420,15 +433,51 @@ const handleDelete = async (orderId: number) => {
 
 const getStatusStyle = (status: number) => {
     const styles: Record<number, Record<string, string>> = {
-        0: { color: '#E85A4F', background: 'rgba(232, 90, 79, 0.12)', border: '1rpx solid rgba(232, 90, 79, 0.14)' },
-        1: { color: '#C98524', background: 'rgba(201, 133, 36, 0.12)', border: '1rpx solid rgba(201, 133, 36, 0.14)' },
-        2: { color: '#2F7D58', background: 'rgba(47, 125, 88, 0.12)', border: '1rpx solid rgba(47, 125, 88, 0.14)' },
-        3: { color: '#6A92E6', background: 'rgba(106, 146, 230, 0.12)', border: '1rpx solid rgba(106, 146, 230, 0.16)' },
-        4: { color: '#7F7B78', background: 'rgba(127, 123, 120, 0.12)', border: '1rpx solid rgba(127, 123, 120, 0.14)' },
-        5: { color: '#2F7D58', background: 'rgba(47, 125, 88, 0.12)', border: '1rpx solid rgba(47, 125, 88, 0.14)' },
-        6: { color: '#B4ACA8', background: 'rgba(180, 172, 168, 0.14)', border: '1rpx solid rgba(180, 172, 168, 0.16)' },
-        7: { color: '#C98524', background: 'rgba(201, 133, 36, 0.12)', border: '1rpx solid rgba(201, 133, 36, 0.14)' },
-        8: { color: '#B44A3A', background: 'rgba(180, 74, 58, 0.12)', border: '1rpx solid rgba(180, 74, 58, 0.14)' }
+        0: {
+            color: '#E85A4F',
+            background: 'rgba(232, 90, 79, 0.12)',
+            border: '1rpx solid rgba(232, 90, 79, 0.14)'
+        },
+        1: {
+            color: '#C98524',
+            background: 'rgba(201, 133, 36, 0.12)',
+            border: '1rpx solid rgba(201, 133, 36, 0.14)'
+        },
+        2: {
+            color: '#2F7D58',
+            background: 'rgba(47, 125, 88, 0.12)',
+            border: '1rpx solid rgba(47, 125, 88, 0.14)'
+        },
+        3: {
+            color: '#6A92E6',
+            background: 'rgba(106, 146, 230, 0.12)',
+            border: '1rpx solid rgba(106, 146, 230, 0.16)'
+        },
+        4: {
+            color: '#7F7B78',
+            background: 'rgba(127, 123, 120, 0.12)',
+            border: '1rpx solid rgba(127, 123, 120, 0.14)'
+        },
+        5: {
+            color: '#2F7D58',
+            background: 'rgba(47, 125, 88, 0.12)',
+            border: '1rpx solid rgba(47, 125, 88, 0.14)'
+        },
+        6: {
+            color: '#B4ACA8',
+            background: 'rgba(180, 172, 168, 0.14)',
+            border: '1rpx solid rgba(180, 172, 168, 0.16)'
+        },
+        7: {
+            color: '#C98524',
+            background: 'rgba(201, 133, 36, 0.12)',
+            border: '1rpx solid rgba(201, 133, 36, 0.14)'
+        },
+        8: {
+            color: '#B44A3A',
+            background: 'rgba(180, 74, 58, 0.12)',
+            border: '1rpx solid rgba(180, 74, 58, 0.14)'
+        }
     }
 
     return styles[status] || styles[0]

@@ -11,7 +11,11 @@
 
             <z-paging ref="paging" v-model="dataList" use-page-scroll @query="queryList">
                 <template #top>
-                    <scroll-view scroll-x class="ticket-page__filter-scroll" :show-scrollbar="false">
+                    <scroll-view
+                        scroll-x
+                        class="ticket-page__filter-scroll"
+                        :show-scrollbar="false"
+                    >
                         <view class="ticket-page__filters">
                             <view
                                 v-for="item in statusTabs"
@@ -43,7 +47,9 @@
                             </view>
                         </view>
 
-                        <text v-if="item.content" class="ticket-card__content">{{ item.content }}</text>
+                        <text v-if="item.content" class="ticket-card__content">{{
+                            item.content
+                        }}</text>
 
                         <view class="ticket-card__meta">
                             <text class="ticket-card__chip">
@@ -302,7 +308,11 @@ onLoad((options: any) => {
 
 .ticket-page__fab {
     @include aftersale-fab;
-    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, var(--wm-color-secondary, #c99b73) 100%);
+    background: linear-gradient(
+        135deg,
+        var(--wm-color-primary, #e85a4f) 0%,
+        var(--wm-color-secondary, #c99b73) 100%
+    );
 }
 
 .status-pending {

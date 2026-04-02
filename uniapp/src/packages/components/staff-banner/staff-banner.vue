@@ -99,10 +99,7 @@
             </view>
 
             <!-- 长条形指示器 -->
-            <view
-                v-if="showCapsuleIndicator"
-                class="capsule-indicator"
-            >
+            <view v-if="showCapsuleIndicator" class="capsule-indicator">
                 <view
                     v-for="(_, index) in bannerList"
                     :key="`capsule-${index}`"

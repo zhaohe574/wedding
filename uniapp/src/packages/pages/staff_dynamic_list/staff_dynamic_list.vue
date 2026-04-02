@@ -3,7 +3,7 @@
     <PageShell scene="staff">
         <BaseNavbar title="动态管理" />
 
-        <view class="staff-resource-page">
+        <view class="page-container">
             <z-paging
                 ref="pagingRef"
                 v-model="dynamicList"
@@ -14,53 +14,61 @@
             >
                 <template #top>
                     <view class="page-section page-section--top">
-                        <view class="page-head">
-                            <view class="page-head__main">
-                                <view class="page-head__copy">
-                                    <text class="page-head__title">动态管理</text>
-                                    <text class="page-head__meta">发布近期内容</text>
+                        <BaseCard variant="hero" scene="staff" class="hero-card">
+                            <view class="hero-card__head">
+                                <view class="hero-card__copy">
+                                    <text class="hero-card__eyebrow">服务人员中心</text>
+                                    <text class="hero-card__title">动态管理</text>
                                 </view>
 
-                                <BaseButton
-                                    variant="secondary"
-                                    size="sm"
-                                    class="page-head__action"
-                                    @click="handleAdd"
-                                >
-                                    发布动态
-                                </BaseButton>
+                                <view class="hero-card__action" @click="handleAdd">
+                                    <text class="hero-card__action-text">发布动态</text>
+                                </view>
                             </view>
 
-                            <view class="summary-row">
+                            <view class="hero-metrics">
                                 <view
-                                    v-for="item in summaryPills"
-                                    :key="item.label"
-                                    :class="['summary-pill', { 'summary-pill--accent': item.accent }]"
+                                    v-for="item in heroMetrics"
+                                    :key="item.key"
+                                    :class="[
+                                        'hero-metric',
+                                        {
+                                            'hero-metric--selected':
+                                                currentStatusFilter === item.key
+                                        }
+                                    ]"
+                                    @click="switchStatusFilter(item.key)"
                                 >
-                                    <text class="summary-pill__label">{{ item.label }}</text>
-                                    <text class="summary-pill__value">{{ item.value }}</text>
+                                    <text class="hero-metric__label">{{ item.label }}</text>
+                                    <text class="hero-metric__value">{{ item.value }}</text>
                                 </view>
+                            </view>
+                        </BaseCard>
+
+                        <BaseCard variant="glass" scene="staff" class="filter-panel">
+                            <view class="section-head">
+                                <text class="section-head__title">内容类型</text>
                             </view>
 
                             <scroll-view scroll-x class="filter-scroll" show-scrollbar="false">
                                 <view class="filter-row">
                                     <FilterChip
-                                        v-for="item in filterOptions"
+                                        v-for="item in typeFilterOptions"
                                         :key="item.key"
                                         scene="staff"
-                                        :selected="currentFilter === item.key"
-                                        @click="switchFilter(item.key)"
+                                        :selected="currentTypeFilter === item.key"
+                                        @click="switchTypeFilter(item.key)"
                                     >
                                         {{ item.label }}
                                     </FilterChip>
                                 </view>
                             </scroll-view>
-                        </view>
+                        </BaseCard>
                     </view>
                 </template>
 
                 <view class="page-section page-section--list">
-                    <LoadingState v-if="loading && !hasLoaded" text="正在同步动态列表..." />
+                    <LoadingState v-if="loading && !hasLoaded" text="加载动态中..." />
 
                     <template v-else-if="dynamicList.length">
                         <BaseCard
@@ -72,8 +80,62 @@
                             interactive
                             @click="handleEdit(item)"
                         >
-                            <view class="dynamic-card__head">
-                                <view class="dynamic-card__meta">
+                            <view v-if="shouldShowMedia(item)" class="dynamic-card__media">
+                                <image
+                                    :src="getCardCover(item)"
+                                    class="dynamic-card__image"
+                                    mode="aspectFill"
+                                />
+                                <view
+                                    :class="[
+                                        'type-pill',
+                                        'type-pill--overlay',
+                                        `type-pill--${getTypeModifier(getDynamicType(item))}`
+                                    ]"
+                                >
+                                    <tn-icon
+                                        :name="getTypeIcon(getDynamicType(item))"
+                                        size="18"
+                                        :color="getTypeColor(getDynamicType(item))"
+                                    />
+                                    <text>{{ typeText(getDynamicType(item)) }}</text>
+                                </view>
+                                <StatusBadge
+                                    class="dynamic-card__status"
+                                    :tone="getStatusTone(Number(item.status))"
+                                    size="sm"
+                                >
+                                    {{ statusText(Number(item.status)) }}
+                                </StatusBadge>
+                                <view v-if="getDynamicType(item) === 2" class="dynamic-card__play">
+                                    <text class="dynamic-card__play-icon">▶</text>
+                                </view>
+                                <view
+                                    v-else-if="getImageList(item).length > 1"
+                                    class="dynamic-card__media-count"
+                                >
+                                    {{ getImageList(item).length }} 图
+                                </view>
+                            </view>
+
+                            <view class="dynamic-card__body">
+                                <view class="dynamic-card__head">
+                                    <view class="dynamic-card__copy">
+                                        <text class="dynamic-card__title">
+                                            {{ getCardTitle(item) }}
+                                        </text>
+                                    </view>
+
+                                    <StatusBadge
+                                        v-if="!shouldShowMedia(item)"
+                                        :tone="getStatusTone(Number(item.status))"
+                                        size="sm"
+                                    >
+                                        {{ statusText(Number(item.status)) }}
+                                    </StatusBadge>
+                                </view>
+
+                                <view v-if="!shouldShowMedia(item)" class="chip-row">
                                     <view
                                         :class="[
                                             'type-pill',
@@ -87,55 +149,21 @@
                                         />
                                         <text>{{ typeText(getDynamicType(item)) }}</text>
                                     </view>
-
-                                    <StatusBadge
-                                        :tone="getStatusTone(Number(item.status))"
-                                        size="sm"
-                                    >
-                                        {{ statusText(Number(item.status)) }}
-                                    </StatusBadge>
+                                    <view class="info-chip">
+                                        {{ formatTime(item.create_time) || '刚刚' }}
+                                    </view>
                                 </view>
 
-                                <text class="dynamic-card__time">
-                                    {{ formatTime(item.create_time) || '刚刚' }}
+                                <view v-else class="chip-row">
+                                    <view class="info-chip">
+                                        {{ formatTime(item.create_time) || '刚刚' }}
+                                    </view>
+                                </view>
+
+                                <text v-if="getCardDescription(item)" class="dynamic-card__desc">
+                                    {{ getCardDescription(item) }}
                                 </text>
-                            </view>
 
-                            <text class="dynamic-card__content">
-                                {{ item.content || '未填写动态内容' }}
-                            </text>
-
-                            <view v-if="shouldShowMedia(item)" class="dynamic-card__media">
-                                <image
-                                    :src="appStore.getImageUrl(getCardCover(item))"
-                                    class="dynamic-card__image"
-                                    mode="aspectFill"
-                                />
-                                <view
-                                    v-if="getDynamicType(item) === 2"
-                                    class="dynamic-card__play"
-                                >
-                                    <text class="dynamic-card__play-icon">▶</text>
-                                </view>
-                                <view
-                                    v-else-if="getImageList(item).length > 1"
-                                    class="dynamic-card__media-count"
-                                >
-                                    {{ getImageList(item).length }} 图
-                                </view>
-                            </view>
-
-                            <view v-if="getTagsList(item).length" class="tag-row">
-                                <text
-                                    v-for="(tag, index) in getTagsList(item).slice(0, 2)"
-                                    :key="`${item.id}-${index}`"
-                                    class="tag-chip"
-                                >
-                                    #{{ tag }}
-                                </text>
-                            </view>
-
-                            <view class="card-footer">
                                 <view class="stats-row">
                                     <view class="metric-chip">
                                         <tn-icon
@@ -145,11 +173,11 @@
                                         />
                                         <text>浏览 {{ Number(item.view_count || 0) }}</text>
                                     </view>
-                                    <view class="metric-chip">
+                                    <view class="metric-chip metric-chip--accent">
                                         <tn-icon
                                             name="like"
                                             size="18"
-                                            color="var(--wm-color-secondary, #C99B73)"
+                                            color="var(--wm-color-primary, #E85A4F)"
                                         />
                                         <text>点赞 {{ Number(item.like_count || 0) }}</text>
                                     </view>
@@ -173,12 +201,15 @@
                         </BaseCard>
                     </template>
 
-                    <EmptyState
-                        v-else-if="hasLoaded"
-                        :title="currentFilter === 'all' ? '还没有动态' : '当前类型暂无动态'"
-                        action-text="发布动态"
-                        @action="handleAdd"
-                    />
+                    <view v-else-if="hasLoaded" class="dynamic-empty-state">
+                        <view class="dynamic-empty-state__icon">
+                            <tn-icon name="edit" size="82" color="#D8CEC8" />
+                        </view>
+                        <text class="dynamic-empty-state__title">{{ emptyStateTitle }}</text>
+                        <view class="dynamic-empty-state__action" @click="handleAdd">
+                            <text class="dynamic-empty-state__action-text">发布动态</text>
+                        </view>
+                    </view>
                 </view>
             </z-paging>
         </view>
@@ -188,31 +219,29 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
-import EmptyState from '@/components/base/EmptyState.vue'
 import FilterChip from '@/components/base/FilterChip.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { staffCenterDynamicDelete, staffCenterDynamicLists } from '@/api/staffCenter'
 import { useFixedNavbarPagingStyle } from '@/hooks/useFixedNavbarPagingStyle'
-import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
 
-type FilterKey = 'all' | 'image' | 'video' | 'activity'
+type DynamicStatusFilter = 'published' | 'pending' | 'offline' | 'rejected'
+type DynamicTypeFilter = 'all' | 'image' | 'video'
 type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 
 interface HeroMetric {
+    key: DynamicStatusFilter
     label: string
     value: number
-    accent: boolean
 }
 
-interface FilterOption {
-    key: FilterKey
+interface TypeFilterOption {
+    key: DynamicTypeFilter
     label: string
 }
 
@@ -220,49 +249,84 @@ interface DynamicListSummary {
     total: number
     published_count: number
     pending_count: number
+    offline_count: number
+    rejected_count: number
 }
 
 const $theme = useThemeStore()
-const appStore = useAppStore()
 const pagingStyle = useFixedNavbarPagingStyle()
 const pagingRef = ref<any>(null)
 const dynamicList = ref<any[]>([])
 const loading = ref(false)
 const hasLoaded = ref(false)
-const currentFilter = ref<FilterKey>('all')
+const currentStatusFilter = ref<DynamicStatusFilter>('published')
+const currentTypeFilter = ref<DynamicTypeFilter>('all')
 const summary = ref<DynamicListSummary>({
     total: 0,
     published_count: 0,
-    pending_count: 0
+    pending_count: 0,
+    offline_count: 0,
+    rejected_count: 0
 })
 
-const summaryPills = computed<HeroMetric[]>(() => [
-    { label: '总动态', value: summary.value.total, accent: false },
-    { label: '已发布', value: summary.value.published_count, accent: true },
-    { label: '待审核', value: summary.value.pending_count, accent: false }
+const heroMetrics = computed<HeroMetric[]>(() => [
+    { key: 'published', label: '已发布', value: summary.value.published_count },
+    { key: 'pending', label: '待审核', value: summary.value.pending_count },
+    { key: 'offline', label: '已下架', value: summary.value.offline_count },
+    { key: 'rejected', label: '已拒绝', value: summary.value.rejected_count }
 ])
 
-const filterOptions = computed<FilterOption[]>(() => [
+const typeFilterOptions = computed<TypeFilterOption[]>(() => [
     { key: 'all', label: '全部' },
     { key: 'image', label: '图文' },
-    { key: 'video', label: '视频' },
-    { key: 'activity', label: '活动' }
+    { key: 'video', label: '视频' }
 ])
+
+const emptyStateTitle = computed(() => {
+    if (currentStatusFilter.value === 'published') {
+        return '暂无已发布动态'
+    }
+    if (currentStatusFilter.value === 'pending') {
+        return '暂无待审核动态'
+    }
+    if (currentStatusFilter.value === 'offline') {
+        return '暂无已下架动态'
+    }
+    if (currentStatusFilter.value === 'rejected') {
+        return '暂无已拒绝动态'
+    }
+    if (currentTypeFilter.value !== 'all') {
+        return '暂无该类型动态'
+    }
+    return '暂无动态'
+})
 
 const getDynamicType = (item: any) => Number(item?.dynamic_type || 0)
 
 const typeText = (type: number) => {
-    const map: Record<number, string> = { 1: '图文', 2: '视频', 4: '活动' }
+    const map: Record<number, string> = {
+        1: '图文',
+        2: '视频',
+        4: '活动'
+    }
     return map[type] || '动态'
 }
 
 const getTypeIcon = (type: number) => {
-    const map: Record<number, string> = { 1: 'image', 2: 'video', 4: 'gift' }
+    const map: Record<number, string> = {
+        1: 'image',
+        2: 'video',
+        4: 'gift'
+    }
     return map[type] || 'edit'
 }
 
 const getTypeModifier = (type: number) => {
-    const map: Record<number, string> = { 1: 'image', 2: 'video', 4: 'activity' }
+    const map: Record<number, string> = {
+        1: 'image',
+        2: 'video',
+        4: 'activity'
+    }
     return map[type] || 'default'
 }
 
@@ -276,7 +340,12 @@ const getTypeColor = (type: number) => {
 }
 
 const statusText = (status: number) => {
-    const map: Record<number, string> = { 0: '待审核', 1: '已发布', 2: '已下架', 3: '已拒绝' }
+    const map: Record<number, string> = {
+        0: '待审核',
+        1: '已发布',
+        2: '已下架',
+        3: '已拒绝'
+    }
     return map[status] || '未知'
 }
 
@@ -292,7 +361,7 @@ const getStatusTone = (status: number): BadgeTone => {
 
 const getImageList = (item: any): string[] => {
     if (Array.isArray(item?.images) && item.images.length > 0) {
-        return item.images
+        return item.images.filter(Boolean)
     }
     return []
 }
@@ -318,14 +387,25 @@ const shouldShowMedia = (item: any) => {
     return getImageList(item).length > 0
 }
 
-const getTagsList = (item: any): string[] => {
-    if (Array.isArray(item?.tags_arr) && item.tags_arr.length > 0) {
-        return item.tags_arr
+const normalizeTextValue = (value: unknown) => String(value ?? '').trim()
+
+const getCardTitle = (item: any) => {
+    const title = normalizeTextValue(item?.title)
+    if (title) return title
+
+    const content = normalizeTextValue(item?.content)
+    if (content) {
+        return content.length > 24 ? `${content.slice(0, 24)}...` : content
     }
-    if (typeof item?.tags === 'string') {
-        return item.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
-    }
-    return []
+
+    return '未命名动态'
+}
+
+const getCardDescription = (item: any) => {
+    const title = normalizeTextValue(item?.title)
+    const content = normalizeTextValue(item?.content)
+    if (title && content) return content
+    return ''
 }
 
 const formatTime = (time: any): string => {
@@ -358,17 +438,27 @@ const formatTime = (time: any): string => {
 }
 
 const getQueryDynamicType = () => {
-    const map: Record<Exclude<FilterKey, 'all'>, number> = {
+    const map: Record<Exclude<DynamicTypeFilter, 'all'>, number> = {
         image: 1,
-        video: 2,
-        activity: 4
+        video: 2
     }
 
-    if (currentFilter.value === 'all') {
+    if (currentTypeFilter.value === 'all') {
         return undefined
     }
 
-    return map[currentFilter.value]
+    return map[currentTypeFilter.value]
+}
+
+const getQueryStatus = () => {
+    const map: Record<DynamicStatusFilter, number> = {
+        published: 1,
+        pending: 0,
+        offline: 2,
+        rejected: 3
+    }
+
+    return map[currentStatusFilter.value]
 }
 
 const queryList = async (pageNo: number, pageSize: number) => {
@@ -377,19 +467,26 @@ const queryList = async (pageNo: number, pageSize: number) => {
     }
     try {
         const dynamicType = getQueryDynamicType()
+        const status = getQueryStatus()
         const res: any = await staffCenterDynamicLists({
-            page: pageNo,
+            ...(pageNo > 1 ? { page_no: pageNo } : {}),
             page_size: pageSize,
-            ...(dynamicType ? { dynamic_type: dynamicType } : {})
+            ...(dynamicType ? { dynamic_type: dynamicType } : {}),
+            ...(status !== undefined ? { status } : {})
         })
+
         summary.value = {
             total: Number(res?.summary?.total || 0),
             published_count: Number(res?.summary?.published_count || 0),
-            pending_count: Number(res?.summary?.pending_count || 0)
+            pending_count: Number(res?.summary?.pending_count || 0),
+            offline_count: Number(res?.summary?.offline_count || 0),
+            rejected_count: Number(res?.summary?.rejected_count || 0)
         }
         hasLoaded.value = true
         pagingRef.value.complete(Array.isArray(res?.data) ? res.data : [])
-    } catch (e) {
+    } catch (e: any) {
+        const msg = typeof e === 'string' ? e : e?.msg || e?.message || '加载失败'
+        uni.showToast({ title: msg, icon: 'none' })
         hasLoaded.value = true
         pagingRef.value.complete(false)
     } finally {
@@ -399,12 +496,22 @@ const queryList = async (pageNo: number, pageSize: number) => {
     }
 }
 
-const switchFilter = (filterKey: FilterKey) => {
-    if (currentFilter.value === filterKey) return
-    currentFilter.value = filterKey
+const reloadList = () => {
     hasLoaded.value = false
     loading.value = true
     pagingRef.value?.reload()
+}
+
+const switchStatusFilter = (filterKey: DynamicStatusFilter) => {
+    if (currentStatusFilter.value === filterKey) return
+    currentStatusFilter.value = filterKey
+    reloadList()
+}
+
+const switchTypeFilter = (filterKey: DynamicTypeFilter) => {
+    if (currentTypeFilter.value === filterKey) return
+    currentTypeFilter.value = filterKey
+    reloadList()
 }
 
 const handleAdd = () => {
@@ -440,120 +547,170 @@ const handleDelete = (item: any) => {
 
 onShow(async () => {
     if (!(await ensureStaffCenterAccess())) return
-    hasLoaded.value = false
-    loading.value = true
-    pagingRef.value?.reload()
+    reloadList()
 })
 </script>
 
 <style lang="scss" scoped>
-.staff-resource-page {
+.page-container {
     min-height: 100vh;
     padding-top: 20rpx;
     box-sizing: border-box;
-    background:
-        radial-gradient(circle at top left, rgba(232, 90, 79, 0.1) 0, rgba(252, 251, 249, 0) 36%),
+    background: radial-gradient(
+            circle at top left,
+            rgba(232, 90, 79, 0.1) 0,
+            rgba(252, 251, 249, 0) 36%
+        ),
         linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
 }
 
 .page-section {
     display: flex;
     flex-direction: column;
-    gap: 14rpx;
+    gap: 16rpx;
     padding: 0 var(--wm-space-page-x, 37rpx);
     box-sizing: border-box;
 
+    &--top {
+        padding-top: 20rpx;
+    }
+
     &--list {
-        padding-top: 12rpx;
+        padding-top: 18rpx;
         padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
     }
 }
 
-.page-head {
-    display: flex;
-    flex-direction: column;
-    gap: 16rpx;
+.hero-card {
+    overflow: hidden;
 }
 
-.page-head__main {
+.hero-card__head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 20rpx;
 }
 
-.page-head__copy {
+.hero-card__copy {
     flex: 1;
     min-width: 0;
 }
 
-.page-head__title {
-    display: block;
-    font-size: 40rpx;
+.hero-card__eyebrow {
+    font-size: 20rpx;
     font-weight: 700;
-    line-height: 1.24;
-    color: var(--wm-text-primary, #1e2432);
-}
-
-.page-head__meta {
-    display: block;
-    margin-top: 6rpx;
-    font-size: 24rpx;
-    font-weight: 600;
-    line-height: 1.4;
-    color: var(--wm-text-secondary, #7f7b78);
-}
-
-.page-head__action {
-    flex-shrink: 0;
-}
-
-.page-head__action :deep(.tn-button) {
-    background: rgba(255, 255, 255, 0.78);
-    border-color: rgba(232, 90, 79, 0.12);
-}
-
-.summary-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12rpx;
-}
-
-.summary-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 12rpx;
-    min-height: 54rpx;
-    padding: 0 18rpx;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    background: rgba(255, 255, 255, 0.76);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-
-    &--accent {
-        background: var(--wm-color-primary-soft, #fff1ee);
-        border-color: var(--wm-color-border-strong, #f4c7bf);
-    }
-}
-
-.summary-pill__label {
-    font-size: 22rpx;
-    font-weight: 600;
-    line-height: 1;
-    color: var(--wm-text-secondary, #7f7b78);
-}
-
-.summary-pill--accent .summary-pill__label {
+    line-height: 1.2;
     color: var(--wm-color-primary, #e85a4f);
 }
 
-.summary-pill__value {
-    font-size: 28rpx;
+.hero-card__title {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 40rpx;
+    font-weight: 700;
+    line-height: 1.28;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.hero-card__action {
+    flex-shrink: 0;
+    min-height: 56rpx;
+    padding: 0 20rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(255, 255, 255, 0.92);
+    border: 1rpx solid rgba(244, 199, 191, 0.88);
+    box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.7), 0 8rpx 18rpx rgba(177, 108, 95, 0.08);
+    backdrop-filter: blur(14rpx);
+    -webkit-backdrop-filter: blur(14rpx);
+    transition: all var(--wm-motion-base, 220ms) ease;
+
+    &:active {
+        transform: translateY(2rpx);
+        opacity: 0.92;
+    }
+}
+
+.hero-card__action-text {
+    font-size: 22rpx;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: 0.2rpx;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.hero-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10rpx;
+    margin-top: 22rpx;
+}
+
+.hero-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+    min-width: 0;
+    padding: 16rpx 14rpx;
+    border-radius: 30rpx;
+    background: rgba(255, 255, 255, 0.76);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    transition: all var(--wm-motion-base, 220ms) ease;
+    cursor: pointer;
+
+    &:active {
+        transform: translateY(2rpx);
+        opacity: 0.92;
+    }
+
+    &--selected {
+        background: var(--wm-color-primary-soft, #fff1ee);
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+        box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.12);
+    }
+}
+
+.hero-metric__label {
+    font-size: 20rpx;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--wm-text-secondary, #7f7b78);
+    text-align: center;
+}
+
+.hero-metric--selected .hero-metric__label {
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.hero-metric__value {
+    font-size: 34rpx;
     font-weight: 700;
     line-height: 1;
+    color: var(--wm-text-primary, #1e2432);
+    text-align: center;
+}
+
+.hero-metric--selected .hero-metric__value {
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.section-head {
+    display: flex;
+    align-items: center;
+}
+
+.section-head__title {
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.3;
     color: var(--wm-text-primary, #1e2432);
 }
 
 .filter-scroll {
+    margin-top: 16rpx;
     white-space: nowrap;
 }
 
@@ -564,79 +721,27 @@ onShow(async () => {
 }
 
 .dynamic-card + .dynamic-card {
-    margin-top: 16rpx;
-}
-
-.dynamic-card__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16rpx;
-}
-
-.dynamic-card__meta {
-    display: inline-flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10rpx;
-}
-
-.dynamic-card__time {
-    flex-shrink: 0;
-    font-size: 22rpx;
-    font-weight: 600;
-    line-height: 1.2;
-    color: var(--wm-text-tertiary, #948f8b);
-}
-
-.type-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8rpx;
-    min-height: 44rpx;
-    padding: 0 14rpx;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    border: 1rpx solid transparent;
-    font-size: 21rpx;
-    font-weight: 700;
-
-    &--image {
-        color: var(--wm-color-primary, #e85a4f);
-        background: var(--wm-color-primary-soft, #fff1ee);
-        border-color: var(--wm-color-border-strong, #f4c7bf);
-    }
-
-    &--video {
-        color: var(--wm-color-info, #607086);
-        background: rgba(96, 112, 134, 0.1);
-        border-color: rgba(96, 112, 134, 0.16);
-    }
-
-    &--activity {
-        color: var(--wm-color-warning, #c98524);
-        background: rgba(201, 133, 36, 0.1);
-        border-color: rgba(201, 133, 36, 0.16);
-    }
-
-    &--default {
-        color: var(--wm-text-secondary, #7f7b78);
-        background: rgba(255, 255, 255, 0.72);
-        border-color: var(--wm-color-border, #efe6e1);
-    }
+    margin-top: 18rpx;
 }
 
 .dynamic-card__media {
     position: relative;
-    margin-top: 16rpx;
     overflow: hidden;
-    border-radius: 28rpx;
-    background: #f7f1ed;
+    border-radius: 32rpx;
+    background: rgba(255, 255, 255, 0.72);
 }
 
 .dynamic-card__image {
     width: 100%;
-    height: 228rpx;
+    height: 248rpx;
     display: block;
+    background: #f7f1ed;
+}
+
+.dynamic-card__status {
+    position: absolute;
+    top: 16rpx;
+    right: 16rpx;
 }
 
 .dynamic-card__play {
@@ -677,83 +782,209 @@ onShow(async () => {
     color: #ffffff;
 }
 
-.dynamic-card__content {
-    display: -webkit-box;
-    margin-top: 16rpx;
-    overflow: hidden;
-    font-size: 28rpx;
-    font-weight: 600;
-    line-height: 1.52;
+.dynamic-card__body {
+    margin-top: 20rpx;
+}
+
+.dynamic-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18rpx;
+}
+
+.dynamic-card__copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.dynamic-card__title {
+    display: block;
+    font-size: 32rpx;
+    font-weight: 700;
+    line-height: 1.35;
     color: var(--wm-text-primary, #1e2432);
+    word-break: break-all;
+}
+
+.dynamic-card__desc {
+    display: -webkit-box;
+    margin-top: 18rpx;
+    overflow: hidden;
+    font-size: 24rpx;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
     text-overflow: ellipsis;
     word-break: break-all;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
 }
 
-.tag-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10rpx;
-    margin-top: 14rpx;
-}
-
-.tag-chip {
-    display: inline-flex;
-    align-items: center;
-    min-height: 40rpx;
-    padding: 0 12rpx;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    background: rgba(255, 241, 238, 0.72);
-    border: 1rpx solid rgba(232, 90, 79, 0.12);
-    font-size: 20rpx;
-    font-weight: 600;
-    color: var(--wm-color-primary, #e85a4f);
-}
-
-.card-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16rpx;
-    margin-top: 18rpx;
-}
-
-.stats-row {
+.chip-row {
     display: flex;
     flex-wrap: wrap;
     gap: 12rpx;
+    margin-top: 18rpx;
 }
 
-.metric-chip {
+.type-pill,
+.info-chip {
     display: inline-flex;
     align-items: center;
     gap: 8rpx;
     min-height: 46rpx;
     padding: 0 14rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
+    border: 1rpx solid transparent;
+    font-size: 21rpx;
+    font-weight: 700;
+}
+
+.type-pill {
+    &--overlay {
+        position: absolute;
+        left: 16rpx;
+        top: 16rpx;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(10rpx);
+        -webkit-backdrop-filter: blur(10rpx);
+    }
+
+    &--image {
+        color: var(--wm-color-primary, #e85a4f);
+        background: var(--wm-color-primary-soft, #fff1ee);
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+    }
+
+    &--video {
+        color: var(--wm-color-info, #607086);
+        background: rgba(96, 112, 134, 0.1);
+        border-color: rgba(96, 112, 134, 0.16);
+    }
+
+    &--activity {
+        color: var(--wm-color-warning, #c98524);
+        background: rgba(201, 133, 36, 0.1);
+        border-color: rgba(201, 133, 36, 0.16);
+    }
+
+    &--default {
+        color: var(--wm-text-secondary, #7f7b78);
+        background: rgba(255, 255, 255, 0.72);
+        border-color: var(--wm-color-border, #efe6e1);
+    }
+}
+
+.info-chip {
+    background: rgba(255, 255, 255, 0.74);
+    border-color: var(--wm-color-border, #efe6e1);
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
+
+.metric-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    min-height: 48rpx;
+    padding: 0 16rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
     background: rgba(255, 255, 255, 0.74);
     border: 1rpx solid var(--wm-color-border, #efe6e1);
     font-size: 21rpx;
     font-weight: 600;
     color: var(--wm-text-secondary, #7f7b78);
+
+    &--accent {
+        background: var(--wm-color-primary-soft, #fff1ee);
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+        color: var(--wm-color-primary, #e85a4f);
+    }
 }
 
 .action-row {
     display: flex;
-    flex-shrink: 0;
-    gap: 12rpx;
+    gap: 14rpx;
+    margin-top: 22rpx;
 }
 
-.action-btn {
-    min-width: 108rpx;
-    min-height: 56rpx;
+.dynamic-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18rpx;
+    padding: 56rpx 40rpx 72rpx;
+    border-radius: var(--wm-radius-card-glass, 49rpx);
+    background: rgba(255, 255, 255, 0.88);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
+    backdrop-filter: blur(24rpx);
+    -webkit-backdrop-filter: blur(24rpx);
+}
+
+.dynamic-empty-state__icon {
+    width: 132rpx;
+    height: 132rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 24rpx;
+    border-radius: 40rpx;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 245, 241, 0.96) 0%,
+        rgba(255, 241, 238, 0.82) 100%
+    );
+    border: 1rpx solid rgba(244, 199, 191, 0.72);
+}
+
+.dynamic-empty-state__title {
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.dynamic-empty-state__action {
+    min-width: 220rpx;
+    min-height: 72rpx;
+    padding: 0 32rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border-radius: var(--wm-radius-pill, 999rpx);
-    font-size: 22rpx;
+    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, #d86a5f 100%);
+    box-shadow: 0 16rpx 30rpx rgba(232, 90, 79, 0.2);
+    transition: all var(--wm-motion-base, 220ms) ease;
+
+    &:active {
+        transform: translateY(2rpx);
+        opacity: 0.92;
+    }
+}
+
+.dynamic-empty-state__action-text {
+    font-size: 26rpx;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: 0.4rpx;
+    color: #ffffff;
+}
+
+.action-btn {
+    flex: 1;
+    min-height: 72rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    font-size: 26rpx;
     font-weight: 600;
     transition: all var(--wm-motion-base, 220ms) ease;
 

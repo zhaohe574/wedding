@@ -1,11 +1,8 @@
 <template>
-    <view
-        class="banner mx-[20rpx] mt-[20rpx]"
-        v-if="showList.length && content.enabled"
-    >
+    <view class="banner mx-[20rpx] mt-[20rpx]" v-if="showList.length && content.enabled">
         <swiper
             class="swiper"
-            style="height: 260rpx;"
+            style="height: 260rpx"
             :indicator-dots="showList.length > 1"
             :indicator-color="indicatorColor"
             :indicator-active-color="indicatorActiveColor"
@@ -16,11 +13,7 @@
                 :key="index"
                 @click="handleClick(item.link)"
             >
-                <image
-                    class="banner-image"
-                    mode="aspectFill"
-                    :src="getImageUrl(item.image)"
-                />
+                <image class="banner-image" mode="aspectFill" :src="getImageUrl(item.image)" />
             </swiper-item>
         </swiper>
     </view>

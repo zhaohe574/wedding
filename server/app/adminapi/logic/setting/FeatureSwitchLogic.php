@@ -38,6 +38,10 @@ class FeatureSwitchLogic extends BaseLogic
             'staff_detail_style' => self::normalizeStyleMode(
                 (string) ConfigService::get('feature_switch', 'staff_detail_style', 'classic')
             ),
+            'enable_deposit_mode' => (int) ConfigService::get('order_payment', 'enable_deposit_mode', 0),
+            'deposit_type' => self::normalizeDepositType((string) ConfigService::get('order_payment', 'deposit_type', 'ratio')),
+            'deposit_value' => round((float) ConfigService::get('order_payment', 'deposit_value', 30), 2),
+            'deposit_remark' => (string) ConfigService::get('order_payment', 'deposit_remark', ''),
         ];
     }
 
@@ -60,6 +64,10 @@ class FeatureSwitchLogic extends BaseLogic
             'staff_detail_style',
             self::normalizeStyleMode((string) ($params['staff_detail_style'] ?? 'classic'))
         );
+        ConfigService::set('order_payment', 'enable_deposit_mode', (int) ($params['enable_deposit_mode'] ?? 0));
+        ConfigService::set('order_payment', 'deposit_type', self::normalizeDepositType((string) ($params['deposit_type'] ?? 'ratio')));
+        ConfigService::set('order_payment', 'deposit_value', round((float) ($params['deposit_value'] ?? 0), 2));
+        ConfigService::set('order_payment', 'deposit_remark', trim((string) ($params['deposit_remark'] ?? '')));
     }
 
     /**
@@ -70,6 +78,16 @@ class FeatureSwitchLogic extends BaseLogic
         return in_array($styleMode, self::STAFF_DETAIL_STYLE_MODES, true)
             ? $styleMode
             : 'classic';
+    }
+
+    /**
+     * @notes 规范化定金类型
+     */
+    private static function normalizeDepositType(string $depositType): string
+    {
+        return in_array($depositType, ['fixed', 'ratio'], true)
+            ? $depositType
+            : 'ratio';
     }
 
     /**

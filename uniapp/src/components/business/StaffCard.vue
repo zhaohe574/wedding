@@ -22,10 +22,14 @@
                                 staff.price !== undefined
                             "
                         >
-                            <text class="staff-card__price">¥{{ staff.price_text ?? staff.price }}</text>
+                            <text class="staff-card__price"
+                                >¥{{ staff.price_text ?? staff.price }}</text
+                            >
                             <text class="staff-card__price-unit">起</text>
                         </template>
-                        <text v-else class="staff-card__price staff-card__price--negotiable">面议</text>
+                        <text v-else class="staff-card__price staff-card__price--negotiable"
+                            >面议</text
+                        >
                     </view>
                 </view>
             </view>

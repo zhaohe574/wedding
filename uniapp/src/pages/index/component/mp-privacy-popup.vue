@@ -54,14 +54,13 @@ if (wx.getPrivacySetting) {
 
 const openContract = () => {
     wx.openPrivacyContract({
-        success: () => {},
-        fail: () => {}
+        success: () => {
+            /* 隐私合同打开成功 */
+        },
+        fail: () => {
+            /* 隐私合同打开失败 */
+        }
     })
-}
-
-const disagreeHandle = () => {
-    // 用户点击拒绝后
-    show.value = false
 }
 
 const disagreePrivacy = () => {

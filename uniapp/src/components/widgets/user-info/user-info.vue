@@ -1,7 +1,10 @@
 <template>
     <view class="user-info-wrapper">
         <view class="user-header-shell">
-            <view class="user-header-status" :style="{ height: `${navBarMetrics.statusBarHeight}px` }"></view>
+            <view
+                class="user-header-status"
+                :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
+            ></view>
             <view class="user-header-nav" :style="{ height: `${navBarMetrics.contentHeight}px` }">
                 <text class="user-header-title">我的</text>
             </view>
@@ -10,7 +13,7 @@
         <view class="user-card" @click="handleProfileClick">
             <view class="profile-row">
                 <view class="avatar-shell">
-                    <tn-avatar :url="avatarUrl" :size="112" shape="circle" />
+                    <tn-avatar :url="avatarUrl" :size="112" shape="round" />
                 </view>
                 <view class="profile-main">
                     <text class="profile-name">{{ profileName }}</text>

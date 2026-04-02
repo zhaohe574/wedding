@@ -235,7 +235,12 @@
 
         <!-- 提交按钮 -->
         <view class="bottom-actions">
-            <button class="btn-submit" :disabled="submitting || !canSubmit" :style="{ background: $theme.primaryColor }" @click="handleSubmit">
+            <button
+                class="btn-submit"
+                :disabled="submitting || !canSubmit"
+                :style="{ background: $theme.primaryColor }"
+                @click="handleSubmit"
+            >
                 {{ submitting ? '提交中...' : '提交申请' }}
             </button>
         </view>
@@ -467,11 +472,7 @@ const canSubmit = computed(() => {
     if (addType.value === 'package') {
         return selectedPackage.value && formData.service_date && currentOrderStaffId.value > 0
     } else {
-        return (
-            selectedStaff.value &&
-            selectedStaffPackage.value &&
-            formData.service_date
-        )
+        return selectedStaff.value && selectedStaffPackage.value && formData.service_date
     }
 })
 
@@ -694,7 +695,7 @@ onLoad((options: any) => {
     color: #333;
     margin-bottom: 20rpx;
     padding-left: 16rpx;
-    border-left: 6rpx solid var(--color-primary, #E85A4F);
+    border-left: 6rpx solid var(--color-primary, #e85a4f);
 }
 
 .order-card {
@@ -726,11 +727,11 @@ onLoad((options: any) => {
     }
 
     &.active {
-        border-color: var(--color-primary, #E85A4F);
+        border-color: var(--color-primary, #e85a4f);
         background: rgba(124, 58, 237, 0.05);
 
         text {
-            color: var(--color-primary, #E85A4F);
+            color: var(--color-primary, #e85a4f);
         }
     }
 }
@@ -857,7 +858,7 @@ onLoad((options: any) => {
     width: 100%;
     height: 72rpx;
     line-height: 72rpx;
-    background: var(--color-primary, #E85A4F);
+    background: var(--color-primary, #e85a4f);
     color: #fff;
     border-radius: 44rpx;
     font-size: 30rpx;
@@ -889,7 +890,7 @@ onLoad((options: any) => {
         font-weight: bold;
     }
     .confirm {
-        color: var(--color-primary, #E85A4F);
+        color: var(--color-primary, #e85a4f);
         font-size: 28rpx;
     }
     .placeholder-btn {
@@ -912,7 +913,7 @@ onLoad((options: any) => {
     border: 2rpx solid transparent;
 
     &.active {
-        border-color: var(--color-primary, #E85A4F);
+        border-color: var(--color-primary, #e85a4f);
         background: rgba(124, 58, 237, 0.05);
     }
 }
@@ -949,7 +950,7 @@ onLoad((options: any) => {
 
 .item-price {
     font-size: 28rpx;
-    color: var(--color-primary, #E85A4F);
+    color: var(--color-primary, #e85a4f);
     font-weight: bold;
     margin-top: 8rpx;
 }
@@ -971,5 +972,4 @@ onLoad((options: any) => {
     justify-content: center;
     font-size: 30rpx;
 }
-
 </style>

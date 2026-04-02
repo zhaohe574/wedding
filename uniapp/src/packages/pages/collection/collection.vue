@@ -52,13 +52,17 @@ const options = reactive([
 ])
 const collectData: any = ref([])
 
-const queryList = async () => {
-    const { lists } = await getCollect()
-    lists.forEach((item: any) => {
-        item.show = false
+const queryList = async (pageNo: number, pageSize: number) => {
+    const { lists } = await getCollect({
+        page_no: pageNo,
+        page_size: pageSize
     })
-    collectData.value = lists
-    paging.value.complete(lists)
+    const normalizedLists = (lists || []).map((item: any) => ({
+        ...item,
+        show: false
+    }))
+    collectData.value = normalizedLists
+    paging.value.complete(normalizedLists)
 }
 
 const handleCollect = async (index: number): Promise<void> => {

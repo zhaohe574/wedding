@@ -4,177 +4,201 @@
         <BaseNavbar title="资料编辑" @back="handleBack" />
 
         <view class="user-data-page">
-        <view class="page-content">
-            <view class="sync-card">
-                <view class="sync-tag">资料同步</view>
-                <view class="sync-profile">
-                    <view class="sync-avatar">
-                        <avatar-upload
-                            :modelValue="form.avatar"
-                            file-key="url"
-                            :round="true"
-                            @update:modelValue="handleAvatarChange"
+            <view class="page-content">
+                <view class="sync-card">
+                    <view class="sync-tag">资料同步</view>
+                    <view class="sync-profile">
+                        <view class="sync-avatar">
+                            <avatar-upload
+                                :modelValue="form.avatar"
+                                file-key="url"
+                                :round="true"
+                                @update:modelValue="handleAvatarChange"
+                            />
+                        </view>
+                        <view class="sync-profile__main">
+                            <text class="sync-name">{{ displayName }}</text>
+                            <text class="sync-subtitle">{{ weddingMainDateText }}</text>
+                        </view>
+                    </view>
+                    <text class="sync-tip"
+                        >保存后会同步给主持、摄影与策划团队，避免服务信息不一致。</text
+                    >
+                </view>
+
+                <view class="section-card">
+                    <text class="section-title">基本信息</text>
+                    <view class="field-card">
+                        <text class="field-label">新人称呼</text>
+                        <input
+                            v-model="form.real_name"
+                            class="field-input"
+                            placeholder="请输入新人称呼"
+                            placeholder-class="field-placeholder"
                         />
                     </view>
-                    <view class="sync-profile__main">
-                        <text class="sync-name">{{ displayName }}</text>
-                        <text class="sync-subtitle">{{ weddingMainDateText }}</text>
-                    </view>
-                </view>
-                <text class="sync-tip">保存后会同步给主持、摄影与策划团队，避免服务信息不一致。</text>
-            </view>
 
-            <view class="section-card">
-                <text class="section-title">基本信息</text>
-                <view class="field-card">
-                    <text class="field-label">新人称呼</text>
-                    <input
-                        v-model="form.real_name"
-                        class="field-input"
-                        placeholder="请输入新人称呼"
-                        placeholder-class="field-placeholder"
-                    />
-                </view>
-
-                <view class="field-card">
-                    <text class="field-label">联系方式</text>
-                    <view class="contact-value">{{ contactText }}</view>
-                    <view class="contact-actions">
-                        <view class="contact-action" @click="handleAccountClick">修改账号</view>
-                        <!-- #ifdef MP-WEIXIN -->
-                        <button
-                            class="contact-action contact-action--button"
-                            open-type="getPhoneNumber"
-                            @getphonenumber="getPhoneNumber"
-                        >
-                            {{ userInfo.mobile ? '更换手机号' : '绑定手机号' }}
-                        </button>
-                        <!-- #endif -->
-                        <!-- #ifndef MP-WEIXIN -->
-                        <view class="contact-action" @click="showMobilePop = true">
-                            {{ userInfo.mobile ? '更换手机号' : '绑定手机号' }}
+                    <view class="field-card">
+                        <text class="field-label">联系方式</text>
+                        <view class="contact-value">{{ contactText }}</view>
+                        <view class="contact-actions">
+                            <view class="contact-action" @click="handleAccountClick">修改账号</view>
+                            <!-- #ifdef MP-WEIXIN -->
+                            <button
+                                class="contact-action contact-action--button"
+                                open-type="getPhoneNumber"
+                                @getphonenumber="getPhoneNumber"
+                            >
+                                {{ userInfo.mobile ? '更换手机号' : '绑定手机号' }}
+                            </button>
+                            <!-- #endif -->
+                            <!-- #ifndef MP-WEIXIN -->
+                            <view class="contact-action" @click="handleMobileClick">
+                                {{ userInfo.mobile ? '更换手机号' : '绑定手机号' }}
+                            </view>
+                            <!-- #endif -->
                         </view>
-                        <!-- #endif -->
+                    </view>
+
+                    <view class="field-card">
+                        <text class="field-label">昵称</text>
+                        <input
+                            v-model="form.nickname"
+                            class="field-input"
+                            placeholder="请输入昵称"
+                            placeholder-class="field-placeholder"
+                        />
+                    </view>
+
+                    <view class="field-card field-card--click" @click="handleSexClick">
+                        <text class="field-label">性别</text>
+                        <view class="field-click-value">
+                            <text>{{ getSexText(form.sex) }}</text>
+                            <tn-icon name="right" size="26" color="#B6B0AB" />
+                        </view>
                     </view>
                 </view>
 
-                <view class="field-card">
-                    <text class="field-label">昵称</text>
-                    <input
-                        v-model="form.nickname"
-                        class="field-input"
-                        placeholder="请输入昵称"
-                        placeholder-class="field-placeholder"
-                    />
-                </view>
-
-                <view class="field-card field-card--click" @click="handleSexClick">
-                    <text class="field-label">性别</text>
-                    <view class="field-click-value">
-                        <text>{{ getSexText(form.sex) }}</text>
-                        <tn-icon name="right" size="26" color="#B6B0AB" />
+                <view class="section-card">
+                    <text class="section-title">婚礼信息与偏好</text>
+                    <view class="field-card">
+                        <text class="field-label">婚礼日期</text>
+                        <text class="field-readonly">{{ weddingDateText }}</text>
+                    </view>
+                    <view class="field-card">
+                        <text class="field-label">婚礼城市 / 场地</text>
+                        <text class="field-readonly field-readonly--wrap">{{
+                            weddingVenueText
+                        }}</text>
                     </view>
                 </view>
             </view>
 
-            <view class="section-card">
-                <text class="section-title">婚礼信息与偏好</text>
-                <view class="field-card">
-                    <text class="field-label">婚礼日期</text>
-                    <text class="field-readonly">{{ weddingDateText }}</text>
-                </view>
-                <view class="field-card">
-                    <text class="field-label">婚礼城市 / 场地</text>
-                    <text class="field-readonly field-readonly--wrap">{{ weddingVenueText }}</text>
+            <view class="page-actions">
+                <view class="action-btn action-btn--ghost" @click="handleCancelEdit">取消编辑</view>
+                <view class="action-btn action-btn--primary" @click="handleSaveProfile">
+                    {{ saving ? '保存中...' : '保存资料' }}
                 </view>
             </view>
-        </view>
 
-        <view class="page-actions">
-            <view class="action-btn action-btn--ghost" @click="handleCancelEdit">取消编辑</view>
-            <view class="action-btn action-btn--primary" @click="handleSaveProfile">
-                {{ saving ? '保存中...' : '保存资料' }}
-            </view>
-        </view>
-
-        <tn-popup
-            v-model="showUserName"
-            :close-btn="true"
-            open-direction="center"
-            :radius="24"
-            :overlay-closeable="false"
-        >
-            <view class="edit-popup">
-                <view class="popup-title">修改账号</view>
-                <view class="popup-input-wrapper">
-                    <input
-                        class="popup-input"
-                        v-model="newUsername"
-                        placeholder="请输入账号"
-                        placeholder-class="input-placeholder"
-                    />
-                </view>
-                <view class="popup-actions">
-                    <button class="popup-btn popup-btn-primary" @click="changeUserNameConfirm" hover-class="none">
-                        确定
-                    </button>
-                </view>
-            </view>
-        </tn-popup>
-
-        <tn-popup
-            v-model="showMobilePop"
-            :close-btn="true"
-            open-direction="center"
-            :radius="24"
-            :overlay-closeable="false"
-        >
-            <view class="edit-popup">
-                <view class="popup-title">
-                    {{ userInfo.mobile ? '更换手机号' : '绑定手机号' }}
-                </view>
-                <view class="popup-input-wrapper">
-                    <input
-                        class="popup-input"
-                        v-model="newMobile"
-                        type="number"
-                        placeholder="请输入新的手机号码"
-                        placeholder-class="input-placeholder"
-                    />
-                </view>
-                <view class="popup-input-wrapper code-input-wrapper">
-                    <input
-                        class="flex-1 popup-input"
-                        v-model="mobileCode"
-                        type="number"
-                        placeholder="请输入验证码"
-                        placeholder-class="input-placeholder"
-                    />
-                    <view class="code-btn" :class="{ 'code-btn-disabled': !canGetCode }" @click="sendSms">
-                        {{ codeTips }}
+            <tn-popup
+                v-model="showUserName"
+                :close-btn="true"
+                open-direction="center"
+                :radius="24"
+                :overlay-closeable="false"
+            >
+                <view class="edit-popup">
+                    <view class="popup-title">修改账号</view>
+                    <view class="popup-input-wrapper">
+                        <input
+                            class="popup-input"
+                            v-model="newUsername"
+                            placeholder="请输入账号"
+                            placeholder-class="input-placeholder"
+                        />
+                    </view>
+                    <view class="popup-actions">
+                        <button
+                            class="popup-btn popup-btn-primary"
+                            :disabled="accountSaving"
+                            @click="changeUserNameConfirm"
+                            hover-class="none"
+                        >
+                            {{ accountSaving ? '保存中...' : '确定' }}
+                        </button>
                     </view>
                 </view>
-                <view class="popup-actions">
-                    <button class="popup-btn popup-btn-primary" @click="changeCodeMobile" hover-class="none">
-                        确定
-                    </button>
-                </view>
-            </view>
-        </tn-popup>
+            </tn-popup>
 
-        <tn-picker
-            v-model="selectedSex"
-            v-model:open="showSexPicker"
-            :data="sexPickerData"
-            @confirm="handleSexConfirm"
-        />
+            <tn-popup
+                v-model="showMobilePop"
+                :close-btn="true"
+                open-direction="center"
+                :radius="24"
+                :overlay-closeable="false"
+            >
+                <view class="edit-popup">
+                    <view class="popup-title">
+                        {{ userInfo.mobile ? '更换手机号' : '绑定手机号' }}
+                    </view>
+                    <view class="popup-input-wrapper">
+                        <input
+                            class="popup-input"
+                            v-model="newMobile"
+                            type="number"
+                            placeholder="请输入新的手机号码"
+                            placeholder-class="input-placeholder"
+                        />
+                    </view>
+                    <view class="popup-input-wrapper code-input-wrapper">
+                        <input
+                            class="flex-1 popup-input"
+                            v-model="mobileCode"
+                            type="number"
+                            placeholder="请输入验证码"
+                            placeholder-class="input-placeholder"
+                        />
+                        <view
+                            class="code-btn"
+                            :class="{ 'code-btn-disabled': !canGetCode || smsSending }"
+                            @click="sendSms"
+                        >
+                            {{ codeTips }}
+                        </view>
+                    </view>
+                    <view class="popup-actions">
+                        <button
+                            class="popup-btn popup-btn-primary"
+                            :disabled="mobileSaving"
+                            @click="changeCodeMobile"
+                            hover-class="none"
+                        >
+                            {{ mobileSaving ? '保存中...' : '确定' }}
+                        </button>
+                    </view>
+                </view>
+            </tn-popup>
+
+            <tn-picker
+                v-model="selectedSex"
+                v-model:open="showSexPicker"
+                :data="sexPickerData"
+                @confirm="handleSexConfirm"
+            />
         </view>
     </PageShell>
 </template>
 
 <script lang="ts" setup>
 import { smsSend } from '@/api/app'
-import { getUserWeddingDate, getUserInfo, userBindMobile, userEdit, userMnpMobile } from '@/api/user'
+import {
+    getUserWeddingDate,
+    getUserInfo,
+    userBindMobile,
+    userEdit,
+    userMnpMobile
+} from '@/api/user'
 import { FieldType, SMSEnum } from '@/enums/appEnums'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
@@ -186,6 +210,10 @@ const $theme = useThemeStore()
 const userStore = useUserStore()
 
 const saving = ref(false)
+const accountSaving = ref(false)
+const mobileSaving = ref(false)
+const smsSending = ref(false)
+const mobileReg = /^1\d{10}$/
 
 const userInfo = reactive<any>({})
 const weddingInfo = reactive<any>({})
@@ -272,7 +300,10 @@ const resetFormByUserInfo = (info: any) => {
 }
 
 const loadPageData = async () => {
-    const [info, wedding] = await Promise.all([getUserInfo(), getUserWeddingDate().catch(() => ({}))])
+    const [info, wedding] = await Promise.all([
+        getUserInfo(),
+        getUserWeddingDate().catch(() => ({}))
+    ])
 
     Object.keys(userInfo).forEach((key) => delete userInfo[key])
     Object.assign(userInfo, info || {})
@@ -297,8 +328,16 @@ const handleAvatarChange = (value: string) => {
 }
 
 const handleAccountClick = () => {
+    if (accountSaving.value) return
     showUserName.value = true
     newUsername.value = String(userInfo.account || '')
+}
+
+const handleMobileClick = () => {
+    if (mobileSaving.value || smsSending.value) return
+    showMobilePop.value = true
+    newMobile.value = String(userInfo.mobile || '')
+    mobileCode.value = ''
 }
 
 const handleSexClick = () => {
@@ -332,24 +371,45 @@ const startCodeCountdown = () => {
     }, 1000)
 }
 
+const getErrorMessage = (error: any, fallback: string) => {
+    return typeof error === 'string' ? error : error?.msg || error?.message || fallback
+}
+
 const sendSms = async () => {
     if (!newMobile.value) {
         uni.$u.toast('请输入新的手机号码')
         return
     }
-    if (!canGetCode.value) return
+    if (!mobileReg.test(String(newMobile.value).trim())) {
+        uni.$u.toast('请输入正确的手机号')
+        return
+    }
+    if (!canGetCode.value || smsSending.value) return
 
-    await smsSend({
-        scene: userInfo.mobile ? SMSEnum.CHANGE_MOBILE : SMSEnum.BIND_MOBILE,
-        mobile: newMobile.value
-    })
-    uni.$u.toast('发送成功')
-    startCodeCountdown()
+    try {
+        smsSending.value = true
+        await smsSend({
+            scene: userInfo.mobile ? SMSEnum.CHANGE_MOBILE : SMSEnum.BIND_MOBILE,
+            mobile: String(newMobile.value).trim()
+        })
+        uni.$u.toast('发送成功')
+        startCodeCountdown()
+    } catch (error) {
+        uni.$u.toast(getErrorMessage(error, '发送失败'))
+    } finally {
+        smsSending.value = false
+    }
 }
 
 const changeCodeMobile = async () => {
-    if (!newMobile.value) {
+    if (mobileSaving.value) return
+    const mobile = String(newMobile.value || '').trim()
+    if (!mobile) {
         uni.$u.toast('请输入新的手机号码')
+        return
+    }
+    if (!mobileReg.test(mobile)) {
+        uni.$u.toast('请输入正确的手机号')
         return
     }
     if (!mobileCode.value) {
@@ -357,20 +417,28 @@ const changeCodeMobile = async () => {
         return
     }
 
-    await userBindMobile({
-        type: userInfo.mobile ? 'change' : 'bind',
-        mobile: newMobile.value,
-        code: mobileCode.value
-    })
-    uni.$u.toast('操作成功')
-    showMobilePop.value = false
-    newMobile.value = ''
-    mobileCode.value = ''
-    await loadPageData()
-    await userStore.getUser()
+    try {
+        mobileSaving.value = true
+        await userBindMobile({
+            type: userInfo.mobile ? 'change' : 'bind',
+            mobile,
+            code: String(mobileCode.value).trim()
+        })
+        uni.$u.toast('操作成功')
+        showMobilePop.value = false
+        newMobile.value = ''
+        mobileCode.value = ''
+        await loadPageData()
+        await userStore.getUser()
+    } catch (error) {
+        uni.$u.toast(getErrorMessage(error, '操作失败'))
+    } finally {
+        mobileSaving.value = false
+    }
 }
 
 const changeUserNameConfirm = async () => {
+    if (accountSaving.value) return
     const value = String(newUsername.value || '').trim()
     if (!value) {
         uni.$u.toast('账号不能为空')
@@ -381,28 +449,42 @@ const changeUserNameConfirm = async () => {
         return
     }
 
-    await userEdit({
-        field: FieldType.USERNAME,
-        value
-    })
-    uni.$u.toast('操作成功')
-    showUserName.value = false
-    await loadPageData()
-    await userStore.getUser()
+    try {
+        accountSaving.value = true
+        await userEdit({
+            field: FieldType.USERNAME,
+            value
+        })
+        uni.$u.toast('操作成功')
+        showUserName.value = false
+        await loadPageData()
+        await userStore.getUser()
+    } catch (error) {
+        uni.$u.toast(getErrorMessage(error, '操作失败'))
+    } finally {
+        accountSaving.value = false
+    }
 }
 
 const getPhoneNumber = async (e: any): Promise<void> => {
     const { encryptedData, iv, code } = e.detail || {}
     if (!encryptedData) return
 
-    await userMnpMobile({
-        code,
-        encrypted_data: encryptedData,
-        iv
-    })
-    uni.$u.toast('操作成功')
-    await loadPageData()
-    await userStore.getUser()
+    try {
+        mobileSaving.value = true
+        await userMnpMobile({
+            code,
+            encrypted_data: encryptedData,
+            iv
+        })
+        uni.$u.toast('操作成功')
+        await loadPageData()
+        await userStore.getUser()
+    } catch (error) {
+        uni.$u.toast(getErrorMessage(error, '操作失败'))
+    } finally {
+        mobileSaving.value = false
+    }
 }
 
 const getDirtyFields = () => {
@@ -461,12 +543,15 @@ const handleSaveProfile = async () => {
         uni.$u.toast('保存成功')
         await loadPageData()
         await userStore.getUser()
+    } catch (error) {
+        uni.$u.toast(getErrorMessage(error, '保存失败'))
     } finally {
         saving.value = false
     }
 }
 
 const handleCancelEdit = () => {
+    if (saving.value) return
     form.avatar = originalForm.avatar
     form.real_name = originalForm.real_name
     form.nickname = originalForm.nickname

@@ -40,13 +40,20 @@
                         <view class="callback-card__head">
                             <view>
                                 <text class="callback-card__sn">
-                                    {{ item.callback_sn || item.order?.order_sn || `回访 #${item.id}` }}
+                                    {{
+                                        item.callback_sn ||
+                                        item.order?.order_sn ||
+                                        `回访 #${item.id}`
+                                    }}
                                 </text>
                                 <text class="callback-card__title">
                                     {{ item.type_desc || '服务回访问卷' }}
                                 </text>
                             </view>
-                            <view class="callback-card__status" :class="getStatusClass(item.status)">
+                            <view
+                                class="callback-card__status"
+                                :class="getStatusClass(item.status)"
+                            >
                                 {{ item.status_desc || getStatusText(item.status) }}
                             </view>
                         </view>
@@ -58,7 +65,10 @@
                                     {{ item.plan_time || item.create_time }}
                                 </text>
                             </view>
-                            <view v-if="item.staff?.name || item.staff_name" class="callback-card__meta-item">
+                            <view
+                                v-if="item.staff?.name || item.staff_name"
+                                class="callback-card__meta-item"
+                            >
                                 <text class="callback-card__meta-label">服务人员</text>
                                 <text class="callback-card__meta-value">
                                     {{ item.staff?.name || item.staff_name }}

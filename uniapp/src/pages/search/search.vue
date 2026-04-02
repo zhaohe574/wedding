@@ -3,111 +3,113 @@
     <PageShell scene="consumer">
         <BaseNavbar title="搜索" />
         <view class="search-page">
-        <!-- 搜索框区域 -->
-        <view class="search-header">
-            <tn-search-box
-                v-model="keyword"
-                placeholder="搜索人员/服务/作品"
-                :search-button-bg-color="$theme.primaryColor"
-                :search-button-text-color="$theme.btnColor"
-                @search="handleSearch"
-                @clear="handleSearchClear"
-            ></tn-search-box>
-        </view>
+            <!-- 搜索框区域 -->
+            <view class="search-header">
+                <tn-search-box
+                    v-model="keyword"
+                    placeholder="搜索人员/服务/作品"
+                    :search-button-bg-color="$theme.primaryColor"
+                    :search-button-text-color="$theme.btnColor"
+                    @search="handleSearch"
+                    @clear="handleSearchClear"
+                ></tn-search-box>
+            </view>
 
-        <!-- 分类标签 -->
-        <view class="search-tabs">
-            <tn-tabs
-                v-model="currentTypeIndex"
-                :scroll="false"
-                height="88rpx"
-                :active-color="$theme.primaryColor"
-                :bar-color="$theme.primaryColor"
-            >
-                <tn-tabs-item v-for="tab in searchTypes" :key="tab.value" :title="tab.label" />
-            </tn-tabs>
-        </view>
-
-        <!-- 内容区域 -->
-        <view class="search-content">
-            <!-- 搜索建议（未搜索时） -->
-            <suggest
-                v-show="!search.searching"
-                @search="handleSearch"
-                @clear="handleClear"
-                :hot_search="search.hot_search"
-                :his_search="search.his_search"
-            ></suggest>
-
-            <!-- 搜索结果 -->
-            <view class="search-results" v-show="search.searching">
-                <z-paging
-                    ref="paging"
-                    v-model="search.result"
-                    @query="queryList"
-                    :fixed="false"
-                    height="100%"
-                    empty-view-text="暂无搜索结果"
+            <!-- 分类标签 -->
+            <view class="search-tabs">
+                <tn-tabs
+                    v-model="currentTypeIndex"
+                    :scroll="false"
+                    height="88rpx"
+                    :active-color="$theme.primaryColor"
+                    :bar-color="$theme.primaryColor"
                 >
-                    <block v-for="item in search.result" :key="item.id">
-                        <!-- 文章卡片 -->
-                        <news-card
-                            v-if="currentType === 'article'"
-                            :item="item"
-                            :newsId="item.id"
-                        ></news-card>
+                    <tn-tabs-item v-for="tab in searchTypes" :key="tab.value" :title="tab.label" />
+                </tn-tabs>
+            </view>
 
-                        <!-- 动态卡片 -->
-                        <view v-else-if="currentType === 'dynamic'" class="dynamic-result-card">
-                            <dynamic-card
-                                :dynamic="item"
-                                variant="default"
-                                :show-share="false"
-                                @click="handleDynamicDetail"
-                                @comment="handleDynamicDetail"
-                                @like="handleDynamicLike"
-                                @favorite="handleDynamicFavorite"
+            <!-- 内容区域 -->
+            <view class="search-content">
+                <!-- 搜索建议（未搜索时） -->
+                <suggest
+                    v-show="!search.searching"
+                    @search="handleSearch"
+                    @clear="handleClear"
+                    :hot_search="search.hot_search"
+                    :his_search="search.his_search"
+                ></suggest>
+
+                <!-- 搜索结果 -->
+                <view class="search-results" v-show="search.searching">
+                    <z-paging
+                        ref="paging"
+                        v-model="search.result"
+                        @query="queryList"
+                        :fixed="false"
+                        height="100%"
+                        empty-view-text="暂无搜索结果"
+                    >
+                        <block v-for="item in search.result" :key="item.id">
+                            <!-- 文章卡片 -->
+                            <news-card
+                                v-if="currentType === 'article'"
+                                :item="item"
+                                :newsId="item.id"
+                            ></news-card>
+
+                            <!-- 动态卡片 -->
+                            <view v-else-if="currentType === 'dynamic'" class="dynamic-result-card">
+                                <dynamic-card
+                                    :dynamic="item"
+                                    variant="default"
+                                    :show-share="false"
+                                    @click="handleDynamicDetail"
+                                    @comment="handleDynamicDetail"
+                                    @like="handleDynamicLike"
+                                    @favorite="handleDynamicFavorite"
+                                />
+                            </view>
+
+                            <!-- 人员卡片 -->
+                            <staff-card
+                                v-else-if="currentType === 'staff'"
+                                :staff="item"
+                                :show-favorite="false"
+                                @click="handleStaffDetail"
                             />
-                        </view>
 
-                        <!-- 人员卡片 -->
-                        <staff-card
-                            v-else-if="currentType === 'staff'"
-                            :staff="item"
-                            :show-favorite="false"
-                            @click="handleStaffDetail"
-                        />
-
-                        <!-- 作品卡片 -->
-                        <view
-                            v-else-if="currentType === 'work'"
-                            class="result-card"
-                            @click="handleWorkDetail(item)"
-                        >
-                            <image
-                                class="result-cover"
-                                :src="
-                                    item.cover ||
-                                    item.images?.[0] ||
-                                    '/static/images/user/default_avatar.png'
-                                "
-                                mode="aspectFill"
-                                lazy-load
-                            />
-                            <view class="result-info">
-                                <text class="result-title">{{ item.title || '未命名作品' }}</text>
-                                <view class="result-meta">
-                                    <tn-icon name="user" size="24" color="#999999" />
-                                    <text class="result-staff">{{
-                                        item.staff_name || '未知人员'
+                            <!-- 作品卡片 -->
+                            <view
+                                v-else-if="currentType === 'work'"
+                                class="result-card"
+                                @click="handleWorkDetail(item)"
+                            >
+                                <image
+                                    class="result-cover"
+                                    :src="
+                                        item.cover ||
+                                        item.images?.[0] ||
+                                        '/static/images/user/default_avatar.png'
+                                    "
+                                    mode="aspectFill"
+                                    lazy-load
+                                />
+                                <view class="result-info">
+                                    <text class="result-title">{{
+                                        item.title || '未命名作品'
                                     }}</text>
+                                    <view class="result-meta">
+                                        <tn-icon name="user" size="24" color="#999999" />
+                                        <text class="result-staff">{{
+                                            item.staff_name || '未知人员'
+                                        }}</text>
+                                    </view>
                                 </view>
                             </view>
-                        </view>
-                    </block>
-                </z-paging>
+                        </block>
+                    </z-paging>
+                </view>
             </view>
-        </view>
         </view>
     </PageShell>
 </template>

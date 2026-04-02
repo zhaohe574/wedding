@@ -38,12 +38,7 @@
                 </BaseInput>
             </view>
 
-            <BaseButton
-                block
-                size="lg"
-                :disabled="!isFormValid"
-                @click="handleConfirm"
-            >
+            <BaseButton block size="lg" :disabled="!isFormValid" @click="handleConfirm">
                 确认绑定
             </BaseButton>
         </view>

@@ -34,6 +34,7 @@ class SubscribeMessageTemplate extends BaseModel
     const SCENE_CHANGE_RESULT = 'change_result';     // 变更审核
     const SCENE_SCHEDULE_CHANGE = 'schedule_change'; // 档期变更
     const SCENE_WAITLIST_RELEASE = 'waitlist_release'; // 候补释放
+    const SCENE_WAITLIST_EXPIRED = 'waitlist_expired'; // 候补失效
 
     /**
      * @notes 内容JSON自动转换
@@ -85,6 +86,7 @@ class SubscribeMessageTemplate extends BaseModel
             self::SCENE_CHANGE_RESULT => '变更审核通知',
             self::SCENE_SCHEDULE_CHANGE => '档期变更通知',
             self::SCENE_WAITLIST_RELEASE => '候补释放通知',
+            self::SCENE_WAITLIST_EXPIRED => '候补失效通知',
         ];
         return $map[$scene] ?? '未知场景';
     }
@@ -107,6 +109,7 @@ class SubscribeMessageTemplate extends BaseModel
             ['value' => self::SCENE_CHANGE_RESULT, 'label' => '变更审核通知'],
             ['value' => self::SCENE_SCHEDULE_CHANGE, 'label' => '档期变更通知'],
             ['value' => self::SCENE_WAITLIST_RELEASE, 'label' => '候补释放通知'],
+            ['value' => self::SCENE_WAITLIST_EXPIRED, 'label' => '候补失效通知'],
         ];
     }
 

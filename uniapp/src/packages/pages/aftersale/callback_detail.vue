@@ -34,7 +34,9 @@
                 </view>
                 <view class="callback-detail__kv">
                     <text class="callback-detail__kv-label">回访类型</text>
-                    <text class="callback-detail__kv-value">{{ detail.type_desc || '服务回访' }}</text>
+                    <text class="callback-detail__kv-value">{{
+                        detail.type_desc || '服务回访'
+                    }}</text>
                 </view>
             </view>
 
@@ -66,7 +68,10 @@
                             :placeholder="question.placeholder || '请输入您的反馈'"
                         />
 
-                        <view v-else-if="question.type === 'multiple'" class="callback-detail__options">
+                        <view
+                            v-else-if="question.type === 'multiple'"
+                            class="callback-detail__options"
+                        >
                             <view
                                 v-for="option in question.options"
                                 :key="option"
@@ -167,14 +172,20 @@ const normalizedQuestions = computed<NormalizedQuestion[]>(() => {
         const rawType = String(question?.type || question?.question_type || '').toLowerCase()
         const options = Array.isArray(question?.options)
             ? question.options.map((item: any) =>
-                  typeof item === 'string' ? item : item?.label || item?.text || String(item?.value || '')
+                  typeof item === 'string'
+                      ? item
+                      : item?.label || item?.text || String(item?.value || '')
               )
             : []
 
         let type: QuestionType = 'single'
         if (rawType.includes('multi') || rawType.includes('checkbox')) {
             type = 'multiple'
-        } else if (rawType.includes('text') || rawType.includes('textarea') || options.length === 0) {
+        } else if (
+            rawType.includes('text') ||
+            rawType.includes('textarea') ||
+            options.length === 0
+        ) {
             type = 'textarea'
         }
 

@@ -4,10 +4,7 @@
             class="mp-page-header__status"
             :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
         ></view>
-        <view
-            class="mp-page-header__body"
-            :style="{ height: `${navBarMetrics.contentHeight}px` }"
-        >
+        <view class="mp-page-header__body" :style="{ height: `${navBarMetrics.contentHeight}px` }">
             <view class="mp-page-header__side" :style="sideSlotStyle">
                 <view v-if="$slots.left" class="mp-page-header__side-content">
                     <slot name="left" />
@@ -116,7 +113,7 @@ const sideSlotStyle = computed(() => ({
         font-size: 32rpx;
         font-weight: 400;
         line-height: 1.2;
-        color: #1E2432;
+        color: #1e2432;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;

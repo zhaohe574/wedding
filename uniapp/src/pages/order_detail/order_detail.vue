@@ -24,11 +24,15 @@
                             <text class="status-card__meta-value">审核中</text>
                         </view>
                         <view
-                            v-if="Number(needPayAmount) > 0 && [1, 2, 3].includes(order.order_status)"
+                            v-if="
+                                Number(needPayAmount) > 0 && [1, 2, 3].includes(order.order_status)
+                            "
                             class="status-card__meta-item"
                         >
                             <text class="status-card__meta-label">当前待支付</text>
-                            <text class="status-card__meta-value">¥{{ formatAmount(needPayAmount) }}</text>
+                            <text class="status-card__meta-value"
+                                >¥{{ formatAmount(needPayAmount) }}</text
+                            >
                         </view>
                     </view>
                 </view>
@@ -39,20 +43,21 @@
                         <text class="service-summary__label">主套餐</text>
                         <view class="service-summary__headline">
                             <text class="service-summary__title">{{ serviceCardTitle }}</text>
-                            <text class="service-summary__price">¥{{ formatAmount(primaryServiceAmount) }}</text>
+                            <text class="service-summary__price"
+                                >¥{{ formatAmount(primaryServiceAmount) }}</text
+                            >
                         </view>
                         <text class="service-summary__meta">{{ serviceCardMeta }}</text>
-                        <text
-                            v-if="primaryPackageDescription"
-                            class="service-summary__desc"
-                        >
+                        <text v-if="primaryPackageDescription" class="service-summary__desc">
                             {{ primaryPackageDescription }}
                         </text>
                     </view>
                     <view v-if="serviceAddonRows.length" class="service-addon-section">
                         <view class="service-addon-section__header">
                             <text class="service-addon-section__title">附加服务明细</text>
-                            <text class="service-addon-section__meta">{{ serviceAddonSummaryText }}</text>
+                            <text class="service-addon-section__meta">{{
+                                serviceAddonSummaryText
+                            }}</text>
                         </view>
                         <view class="service-addon-list">
                             <view
@@ -62,13 +67,14 @@
                             >
                                 <view class="service-addon-item__copy">
                                     <view class="service-addon-item__title-row">
-                                        <text class="service-addon-item__title">{{ item.title }}</text>
-                                        <text class="service-addon-item__type">{{ item.typeText }}</text>
+                                        <text class="service-addon-item__title">{{
+                                            item.title
+                                        }}</text>
+                                        <text class="service-addon-item__type">{{
+                                            item.typeText
+                                        }}</text>
                                     </view>
-                                    <text
-                                        v-if="item.description"
-                                        class="service-addon-item__desc"
-                                    >
+                                    <text v-if="item.description" class="service-addon-item__desc">
                                         {{ item.description }}
                                     </text>
                                 </view>
@@ -95,16 +101,17 @@
                     <view v-if="showFinancialDetails" class="sub-panel">
                         <view class="sub-panel__row">
                             <text class="sub-panel__label">主服务金额</text>
-                            <text class="sub-panel__value">¥{{ formatAmount(orderServiceAmount) }}</text>
+                            <text class="sub-panel__value"
+                                >¥{{ formatAmount(orderServiceAmount) }}</text
+                            >
                         </view>
                         <view v-if="Number(order.addon_amount || 0) > 0" class="sub-panel__row">
                             <text class="sub-panel__label">附加内容金额</text>
-                            <text class="sub-panel__value">¥{{ formatAmount(order.addon_amount) }}</text>
+                            <text class="sub-panel__value"
+                                >¥{{ formatAmount(order.addon_amount) }}</text
+                            >
                         </view>
-                        <view
-                            v-if="Number(order.discount_amount || 0) > 0"
-                            class="sub-panel__row"
-                        >
+                        <view v-if="Number(order.discount_amount || 0) > 0" class="sub-panel__row">
                             <text class="sub-panel__label">优惠金额</text>
                             <text class="sub-panel__value sub-panel__value--danger">
                                 -¥{{ formatAmount(order.discount_amount) }}
@@ -112,11 +119,15 @@
                         </view>
                         <view v-if="Number(order.deposit_amount || 0) > 0" class="sub-panel__row">
                             <text class="sub-panel__label">定金</text>
-                            <text class="sub-panel__value">¥{{ formatAmount(order.deposit_amount) }}</text>
+                            <text class="sub-panel__value"
+                                >¥{{ formatAmount(order.deposit_amount) }}</text
+                            >
                         </view>
                         <view v-if="Number(order.balance_amount || 0) > 0" class="sub-panel__row">
                             <text class="sub-panel__label">尾款</text>
-                            <text class="sub-panel__value">¥{{ formatAmount(order.balance_amount) }}</text>
+                            <text class="sub-panel__value"
+                                >¥{{ formatAmount(order.balance_amount) }}</text
+                            >
                         </view>
                     </view>
                 </view>
@@ -178,7 +189,9 @@
                     <view class="sub-panel">
                         <view class="sub-panel__row">
                             <text class="sub-panel__label">凭证状态</text>
-                            <text class="sub-panel__value">{{ order.pay_voucher_status_desc || '未上传' }}</text>
+                            <text class="sub-panel__value">{{
+                                order.pay_voucher_status_desc || '未上传'
+                            }}</text>
                         </view>
                         <view
                             v-if="order.pay_voucher_audit_remark"
@@ -205,7 +218,9 @@
                                 class="refund-status"
                                 :style="{
                                     color: getRefundStatusStyle(order.refund.refund_status).color,
-                                    backgroundColor: getRefundStatusStyle(order.refund.refund_status).bg
+                                    backgroundColor: getRefundStatusStyle(
+                                        order.refund.refund_status
+                                    ).bg
                                 }"
                             >
                                 {{ order.refund.refund_status_desc }}
@@ -257,51 +272,139 @@
                 </view>
             </ActionArea>
 
-        <tn-popup v-model="showRefundPopup" open-direction="bottom" :radius="32" safe-area-inset-bottom>
-            <view class="popup">
-                <view class="popup__header"><text class="popup__title">申请退款</text><tn-icon name="close" size="40" color="#999999" @click="showRefundPopup = false" /></view>
-                <view class="popup__content">
-                    <view class="form-item"><text class="form-item__label">退款金额</text><tn-input v-model="refundForm.amount" type="number" :placeholder="`最多可退 ¥${formatAmount(order.pay_amount)}`" border /></view>
-                    <view class="form-item"><text class="form-item__label">退款原因</text><tn-input v-model="refundForm.reason" type="textarea" placeholder="请输入退款原因" :maxlength="200" border height="200" /></view>
-                </view>
-                <view class="popup__actions">
-                    <view class="popup__btn popup__btn--secondary" :style="{ borderColor: $theme.primaryColor, color: $theme.primaryColor }" @click="showRefundPopup = false"><text>取消</text></view>
-                    <view class="popup__btn popup__btn--primary" :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`, color: $theme.btnColor }" @click="submitRefund"><text>提交申请</text></view>
-                </view>
-            </view>
-        </tn-popup>
-
-        <tn-popup v-model="showVoucherPopup" open-direction="bottom" :radius="32" safe-area-inset-bottom>
-            <view class="popup">
-                <view class="popup__header"><text class="popup__title">上传支付凭证</text><tn-icon name="close" size="40" color="#999999" @click="showVoucherPopup = false" /></view>
-                <view class="popup__content">
-                    <view class="form-item"><text class="form-item__label">凭证图片</text><text class="form-item__tip">请上传转账截图或付款凭证</text></view>
-                    <view class="voucher-upload">
-                        <view v-if="voucherForm.image" class="voucher-upload__preview">
-                            <image :src="voucherForm.image" mode="aspectFill" />
-                            <view class="voucher-upload__remove" @click="voucherForm.image = ''"><tn-icon name="close" size="32" color="#FFFFFF" /></view>
-                        </view>
-                        <view v-else class="voucher-upload__add" @click="chooseVoucherImage">
-                            <tn-icon name="add" size="64" color="#CBD5E1" />
-                            <text class="voucher-upload__text">选择图片</text>
-                            <text class="voucher-upload__tip">支持 jpg、png 格式</text>
-                        </view>
+            <tn-popup
+                v-model="showRefundPopup"
+                open-direction="bottom"
+                :radius="32"
+                safe-area-inset-bottom
+            >
+                <view class="popup">
+                    <view class="popup__header"
+                        ><text class="popup__title">申请退款</text
+                        ><tn-icon
+                            name="close"
+                            size="40"
+                            color="#999999"
+                            @click="showRefundPopup = false"
+                    /></view>
+                    <view class="popup__content">
+                        <view class="form-item"
+                            ><text class="form-item__label">退款金额</text
+                            ><tn-input
+                                v-model="refundForm.amount"
+                                type="number"
+                                :placeholder="`最多可退 ¥${formatAmount(order.pay_amount)}`"
+                                border
+                        /></view>
+                        <view class="form-item"
+                            ><text class="form-item__label">退款原因</text
+                            ><tn-input
+                                v-model="refundForm.reason"
+                                type="textarea"
+                                placeholder="请输入退款原因"
+                                :maxlength="200"
+                                border
+                                height="200"
+                        /></view>
+                    </view>
+                    <view class="popup__actions">
+                        <view
+                            class="popup__btn popup__btn--secondary"
+                            :style="{
+                                borderColor: $theme.primaryColor,
+                                color: $theme.primaryColor
+                            }"
+                            @click="showRefundPopup = false"
+                            ><text>取消</text></view
+                        >
+                        <view
+                            class="popup__btn popup__btn--primary"
+                            :style="{
+                                background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+                                color: $theme.btnColor
+                            }"
+                            @click="submitRefund"
+                            ><text>提交申请</text></view
+                        >
                     </view>
                 </view>
-                <view class="popup__actions">
-                    <view class="popup__btn popup__btn--secondary" :style="{ borderColor: $theme.primaryColor, color: $theme.primaryColor }" @click="showVoucherPopup = false"><text>取消</text></view>
-                    <view class="popup__btn popup__btn--primary" :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`, color: $theme.btnColor }" @click="submitVoucher"><text>{{ voucherForm.uploading ? '上传中...' : '提交审核' }}</text></view>
+            </tn-popup>
+
+            <tn-popup
+                v-model="showVoucherPopup"
+                open-direction="bottom"
+                :radius="32"
+                safe-area-inset-bottom
+            >
+                <view class="popup">
+                    <view class="popup__header"
+                        ><text class="popup__title">上传支付凭证</text
+                        ><tn-icon
+                            name="close"
+                            size="40"
+                            color="#999999"
+                            @click="showVoucherPopup = false"
+                    /></view>
+                    <view class="popup__content">
+                        <view class="form-item"
+                            ><text class="form-item__label">凭证图片</text
+                            ><text class="form-item__tip">请上传转账截图或付款凭证</text></view
+                        >
+                        <view class="voucher-upload">
+                            <view v-if="voucherForm.image" class="voucher-upload__preview">
+                                <image :src="voucherForm.image" mode="aspectFill" />
+                                <view class="voucher-upload__remove" @click="voucherForm.image = ''"
+                                    ><tn-icon name="close" size="32" color="#FFFFFF"
+                                /></view>
+                            </view>
+                            <view v-else class="voucher-upload__add" @click="chooseVoucherImage">
+                                <tn-icon name="add" size="64" color="#CBD5E1" />
+                                <text class="voucher-upload__text">选择图片</text>
+                                <text class="voucher-upload__tip">支持 jpg、png 格式</text>
+                            </view>
+                        </view>
+                    </view>
+                    <view class="popup__actions">
+                        <view
+                            class="popup__btn popup__btn--secondary"
+                            :style="{
+                                borderColor: $theme.primaryColor,
+                                color: $theme.primaryColor
+                            }"
+                            @click="showVoucherPopup = false"
+                            ><text>取消</text></view
+                        >
+                        <view
+                            class="popup__btn popup__btn--primary"
+                            :style="{
+                                background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+                                color: $theme.btnColor
+                            }"
+                            @click="submitVoucher"
+                            ><text>{{
+                                voucherForm.uploading ? '上传中...' : '提交审核'
+                            }}</text></view
+                        >
+                    </view>
                 </view>
-            </view>
-        </tn-popup>
+            </tn-popup>
 
-        <payment v-model:show="payState.showPay" v-model:show-check="payState.showCheck" :order-id="orderId" :from="payState.from" :redirect="payState.redirect" :payment-sn="payState.paymentSn" @success="handlePaySuccess" @fail="handlePayFail" />
-        <view class="safe-bottom"></view>
-    </view>
+            <payment
+                v-model:show="payState.showPay"
+                v-model:show-check="payState.showCheck"
+                :order-id="orderId"
+                :from="payState.from"
+                :redirect="payState.redirect"
+                :payment-sn="payState.paymentSn"
+                @success="handlePaySuccess"
+                @fail="handlePayFail"
+            />
+            <view class="safe-bottom"></view>
+        </view>
 
-    <view v-else class="loading-container">
-        <tn-loading mode="circle" />
-        <text class="loading-text">加载中...</text>
+        <view v-else class="loading-container">
+            <tn-loading mode="circle" />
+            <text class="loading-text">加载中...</text>
         </view>
     </PageShell>
 </template>
@@ -313,14 +416,27 @@ import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
 import { useThemeStore } from '@/stores/theme'
-import { applyRefund, cancelOrder, confirmOrder, deleteOrder, getOrderDetail, uploadPayVoucher } from '@/api/order'
+import {
+    applyRefund,
+    cancelOrder,
+    confirmOrder,
+    deleteOrder,
+    getOrderDetail,
+    uploadPayVoucher
+} from '@/api/order'
 import { uploadImage } from '@/api/app'
 const $theme = useThemeStore()
 const orderId = ref(0)
 const order = ref<any>(null)
 const showRefundPopup = ref(false)
 const showVoucherPopup = ref(false)
-const payState = reactive({ showPay: false, showCheck: false, from: 'order', redirect: '/pages/order_detail/order_detail', paymentSn: '' })
+const payState = reactive({
+    showPay: false,
+    showCheck: false,
+    from: 'order',
+    redirect: '/pages/order_detail/order_detail',
+    paymentSn: ''
+})
 const refundForm = reactive({ amount: '', reason: '' })
 const voucherForm = reactive({ image: '', uploading: false })
 const showFinancialDetails = ref(false)
@@ -337,26 +453,60 @@ const formatCountdown = (seconds: number) => {
     return [hours, minutes, remainSeconds].map((item) => String(item).padStart(2, '0')).join(':')
 }
 const getStatusTheme = (status: number) =>
-    ({
-        0: { background: 'linear-gradient(180deg, #FFF5E8 0%, #FFFFFF 100%)', iconBg: '#C98524' },
-        1: { background: 'linear-gradient(180deg, #FFF1EE 0%, #FFFFFF 100%)', iconBg: '#E85A4F' },
-        2: { background: 'linear-gradient(180deg, #FFF5F1 0%, #FFFFFF 100%)', iconBg: '#E85A4F' },
-        3: { background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)', iconBg: '#2F7D58' },
-        4: { background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)', iconBg: '#2F7D58' },
-        5: { background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)', iconBg: '#2F7D58' },
-        6: { background: 'linear-gradient(180deg, #F7F3F1 0%, #FFFFFF 100%)', iconBg: '#7F7B78' },
-        7: { background: 'linear-gradient(180deg, #FFF5E8 0%, #FFFFFF 100%)', iconBg: '#C98524' },
-        8: { background: 'linear-gradient(180deg, #FDEEEE 0%, #FFFFFF 100%)', iconBg: '#B44A3A' }
-    } as Record<number, { background: string; iconBg: string }>)[status] || { background: 'linear-gradient(180deg, #F7F3F1 0%, #FFFFFF 100%)', iconBg: '#7F7B78' }
+    ((
+        {
+            0: {
+                background: 'linear-gradient(180deg, #FFF5E8 0%, #FFFFFF 100%)',
+                iconBg: '#C98524'
+            },
+            1: {
+                background: 'linear-gradient(180deg, #FFF1EE 0%, #FFFFFF 100%)',
+                iconBg: '#E85A4F'
+            },
+            2: {
+                background: 'linear-gradient(180deg, #FFF5F1 0%, #FFFFFF 100%)',
+                iconBg: '#E85A4F'
+            },
+            3: {
+                background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)',
+                iconBg: '#2F7D58'
+            },
+            4: {
+                background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)',
+                iconBg: '#2F7D58'
+            },
+            5: {
+                background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)',
+                iconBg: '#2F7D58'
+            },
+            6: {
+                background: 'linear-gradient(180deg, #F7F3F1 0%, #FFFFFF 100%)',
+                iconBg: '#7F7B78'
+            },
+            7: {
+                background: 'linear-gradient(180deg, #FFF5E8 0%, #FFFFFF 100%)',
+                iconBg: '#C98524'
+            },
+            8: {
+                background: 'linear-gradient(180deg, #FDEEEE 0%, #FFFFFF 100%)',
+                iconBg: '#B44A3A'
+            }
+        } as Record<number, { background: string; iconBg: string }>
+    )[status] || {
+        background: 'linear-gradient(180deg, #F7F3F1 0%, #FFFFFF 100%)',
+        iconBg: '#7F7B78'
+    })
 
 const getRefundStatusStyle = (status: number) =>
-    ({
-        0: { color: '#D97706', bg: 'rgba(217,119,6,0.1)' },
-        1: { color: '#C99B73', bg: 'rgba(201,155,115,0.12)' },
-        2: { color: '#0F766E', bg: 'rgba(15,118,110,0.1)' },
-        3: { color: '#16A34A', bg: 'rgba(22,163,74,0.1)' },
-        4: { color: '#DC2626', bg: 'rgba(220,38,38,0.1)' }
-    } as Record<number, { color: string; bg: string }>)[status] || { color: '#64748B', bg: 'rgba(100,116,139,0.1)' }
+    ((
+        {
+            0: { color: '#D97706', bg: 'rgba(217,119,6,0.1)' },
+            1: { color: '#C99B73', bg: 'rgba(201,155,115,0.12)' },
+            2: { color: '#0F766E', bg: 'rgba(15,118,110,0.1)' },
+            3: { color: '#16A34A', bg: 'rgba(22,163,74,0.1)' },
+            4: { color: '#DC2626', bg: 'rgba(220,38,38,0.1)' }
+        } as Record<number, { color: string; bg: string }>
+    )[status] || { color: '#64748B', bg: 'rgba(100,116,139,0.1)' })
 
 const primaryItem = computed(() => {
     const items = Array.isArray(order.value?.items) ? order.value.items : []
@@ -366,12 +516,22 @@ const extraItems = computed(() => {
     const items = Array.isArray(order.value?.items) ? order.value.items : []
     return items.filter((item: any) => Number(item?.item_type || 1) !== 1)
 })
-const primaryStaffName = computed(() => primaryItem.value?.staff?.name || primaryItem.value?.staff_name || '待分配服务人员')
-const primaryPackageName = computed(() => primaryItem.value?.package?.name || primaryItem.value?.package_name || '待确认主套餐')
+const primaryStaffName = computed(
+    () => primaryItem.value?.staff?.name || primaryItem.value?.staff_name || '待分配服务人员'
+)
+const primaryPackageName = computed(
+    () => primaryItem.value?.package?.name || primaryItem.value?.package_name || '待确认主套餐'
+)
 const primaryPackageDescription = computed(() =>
     String(primaryItem.value?.package_description || '').trim()
 )
-const primaryServiceDate = computed(() => primaryItem.value?.service_date || primaryItem.value?.schedule_date || order.value?.service_date || '待确认服务日期')
+const primaryServiceDate = computed(
+    () =>
+        primaryItem.value?.service_date ||
+        primaryItem.value?.schedule_date ||
+        order.value?.service_date ||
+        '待确认服务日期'
+)
 const getItemQuantity = (item: any) => Math.max(Number(item?.quantity || 1), 1)
 const getItemDisplayAmount = (item: any) => {
     const subtotal = Number(item?.subtotal)
@@ -393,7 +553,9 @@ const orderServiceAmount = computed(() => {
     const serviceAmount = Number(order.value?.service_amount ?? -1)
     return serviceAmount >= 0 ? serviceAmount : Math.max(0, Number(order.value?.total_amount || 0))
 })
-const primaryServiceAmount = computed(() => primaryItem.value ? getItemDisplayAmount(primaryItem.value) : orderServiceAmount.value)
+const primaryServiceAmount = computed(() =>
+    primaryItem.value ? getItemDisplayAmount(primaryItem.value) : orderServiceAmount.value
+)
 const getExtraItemTitle = (item: any) => {
     if (Number(item?.item_type || 1) === 2) {
         return item?.item_meta?.label || item?.package_name || '预约附加项'
@@ -425,13 +587,26 @@ const getExtraItemDescription = (item: any) => {
 
     return parts.join(' · ')
 }
-const buildAddonRowKey = (kind: string, title: string, amount: number) => `${kind}:${title.trim()}:${formatAmount(amount)}`
+const buildAddonRowKey = (kind: string, title: string, amount: number) =>
+    `${kind}:${title.trim()}:${formatAmount(amount)}`
 const serviceAddonRows = computed(() => {
     const items = Array.isArray(order.value?.items) ? order.value.items : []
-    const rows: Array<{ key: string; title: string; typeText: string; description: string; priceText: string }> = []
+    const rows: Array<{
+        key: string
+        title: string
+        typeText: string
+        description: string
+        priceText: string
+    }> = []
     const seen = new Set<string>()
 
-    const pushRow = (kind: string, title: string, amount: number, typeText: string, description = '') => {
+    const pushRow = (
+        kind: string,
+        title: string,
+        amount: number,
+        typeText: string,
+        description = ''
+    ) => {
         const normalizedTitle = String(title || '').trim()
         if (!normalizedTitle) return
 
@@ -482,7 +657,11 @@ const serviceCardTitle = computed(() => {
     return packageName || staffName || '婚礼服务订单'
 })
 const serviceCardMeta = computed(() => {
-    const locationText = [order.value?.service_region_text, order.value?.wedding_venue, order.value?.service_address]
+    const locationText = [
+        order.value?.service_region_text,
+        order.value?.wedding_venue,
+        order.value?.service_address
+    ]
         .map((item: any) => String(item || '').trim())
         .filter(Boolean)[0]
 
@@ -490,33 +669,50 @@ const serviceCardMeta = computed(() => {
 })
 const needPayAmount = computed(() => {
     if (!order.value) return 0
-    if (Number(order.value.deposit_amount || 0) > 0) {
-        if (!order.value.deposit_paid) return Number(order.value.deposit_amount || 0)
-        if (!order.value.balance_paid) return Number(order.value.balance_amount || 0)
-    }
-    return Number(order.value.pay_amount || 0)
+    return Number(order.value.need_pay_amount || 0)
 })
-const showVoucherPending = computed(() => !!order.value && Number(order.value.pay_type) === 4 && Number(order.value.pay_voucher_status) === 0)
+const showVoucherPending = computed(
+    () =>
+        !!order.value &&
+        Number(order.value.pay_type) === 4 &&
+        Number(order.value.pay_voucher_status) === 0
+)
 const showPayCountdown = computed(() => !!order.value && payCountdownSeconds.value > 0)
 const payCountdownText = computed(() => formatCountdown(payCountdownSeconds.value))
-const canPayOnline = computed(() => !!order.value && Number(order.value.order_status) === 1 && !(Number(order.value.pay_type) === 4 && Number(order.value.pay_voucher_status) === 0))
-const canUploadVoucher = computed(() => !!order.value && Number(order.value.order_status) === 1 && Number(order.value.pay_voucher_status) !== 0)
+const canPayOnline = computed(
+    () =>
+        !!order.value &&
+        Number(order.value.order_status) === 1 &&
+        Number(order.value.need_pay_amount || 0) > 0 &&
+        !(Number(order.value.pay_type) === 4 && Number(order.value.pay_voucher_status) === 0)
+)
+const canUploadVoucher = computed(
+    () =>
+        !!order.value &&
+        Number(order.value.order_status) === 1 &&
+        Number(order.value.pay_voucher_status) !== 0
+)
 const statusTheme = computed(() => getStatusTheme(Number(order.value?.order_status ?? 6)))
-const statusDescription = computed(() => ({
-    0: '工作人员确认后，订单会进入支付流程。',
-    1: showVoucherPending.value
-        ? '线下支付凭证审核中，审核结果会及时同步到订单状态。'
-        : showPayCountdown.value
-            ? `请在 ${payCountdownText.value} 内完成支付，超时订单将自动取消。`
-            : '请尽快完成支付，系统会自动计算当前应付金额。',
-    2: '订单已支付成功，服务准备中。',
-    3: '服务进行中，完成后可在这里确认完成。',
-    4: '本次服务已完成，感谢你的信任。',
-    5: '订单已评价，服务流程已闭环。',
-    6: '订单已取消，如需继续预约可重新下单。',
-    7: '订单当前处于暂停状态，恢复后会继续履约。',
-    8: '订单已进入退款完成状态。'
-} as Record<number, string>)[Number(order.value?.order_status ?? -1)] || '订单状态已更新，请留意后续进度。')
+const statusDescription = computed(
+    () =>
+        ((
+            {
+                0: '工作人员确认后，订单会进入支付流程。',
+                1: showVoucherPending.value
+                    ? '线下支付凭证审核中，审核结果会及时同步到订单状态。'
+                    : showPayCountdown.value
+                    ? `请在 ${payCountdownText.value} 内完成支付，超时订单将自动取消。`
+                    : '请尽快完成支付，系统会自动计算当前应付金额。',
+                2: '订单已支付成功，服务准备中。',
+                3: '服务进行中，完成后可在这里确认完成。',
+                4: '本次服务已完成，感谢你的信任。',
+                5: '订单已评价，服务流程已闭环。',
+                6: '订单已取消，如需继续预约可重新下单。',
+                7: '订单当前处于暂停状态，恢复后会继续履约。',
+                8: '订单已进入退款完成状态。'
+            } as Record<number, string>
+        )[Number(order.value?.order_status ?? -1)] || '订单状态已更新，请留意后续进度。')
+)
 const statusHeadline = computed(() => {
     const orderStatus = Number(order.value?.order_status ?? -1)
     const serviceName = String(primaryPackageName.value || '服务').trim()
@@ -535,7 +731,9 @@ const statusHeadline = computed(() => {
 
     return headlines[orderStatus] || `${serviceName}订单状态已更新`
 })
-const statusCardText = computed(() => `订单编号：${order.value?.order_sn || '-'}\n${statusDescription.value}`)
+const statusCardText = computed(
+    () => `订单编号：${order.value?.order_sn || '-'}\n${statusDescription.value}`
+)
 const totalOrderAmount = computed(() =>
     Math.max(Number(order.value?.total_amount || 0), Number(order.value?.pay_amount || 0))
 )
@@ -546,7 +744,10 @@ const paidAmount = computed(() => {
     const balanceAmount = Number(order.value.balance_amount || 0)
 
     if (depositAmount > 0 || balanceAmount > 0) {
-        return (order.value.deposit_paid ? depositAmount : 0) + (order.value.balance_paid ? balanceAmount : 0)
+        return (
+            (order.value.deposit_paid ? depositAmount : 0) +
+            (order.value.balance_paid ? balanceAmount : 0)
+        )
     }
 
     return [2, 3, 4, 5, 8].includes(Number(order.value.order_status || 0))
@@ -562,17 +763,26 @@ const pendingAmount = computed(() => {
 })
 const paidAmountText = computed(() => `¥${formatAmount(paidAmount.value)}`)
 const pendingAmountText = computed(() => `¥${formatAmount(pendingAmount.value)}`)
-const hasFinancialDetails = computed(() =>
-    Number(order.value?.addon_amount || 0) > 0 ||
-    Number(order.value?.discount_amount || 0) > 0 ||
-    Number(order.value?.deposit_amount || 0) > 0 ||
-    Number(order.value?.balance_amount || 0) > 0
+const hasFinancialDetails = computed(
+    () =>
+        Number(order.value?.addon_amount || 0) > 0 ||
+        Number(order.value?.discount_amount || 0) > 0 ||
+        Number(order.value?.deposit_amount || 0) > 0 ||
+        Number(order.value?.balance_amount || 0) > 0
 )
 const paymentProgressText = computed(() => {
     if (!order.value) return '待开始'
     if (showVoucherPending.value) return '凭证审核中'
-    if (canPayOnline.value) return '待支付'
-    if (Number(order.value.deposit_amount || 0) > 0 || Number(order.value.balance_amount || 0) > 0) {
+    if (canPayOnline.value)
+        return order.value.need_pay === 'balance'
+            ? '待支付尾款'
+            : order.value.need_pay === 'deposit'
+            ? '待支付定金'
+            : '待支付'
+    if (
+        Number(order.value.deposit_amount || 0) > 0 ||
+        Number(order.value.balance_amount || 0) > 0
+    ) {
         if (order.value.deposit_paid && order.value.balance_paid) return '已完成'
         if (order.value.deposit_paid) return '定金已付'
     }
@@ -626,7 +836,7 @@ const primaryVisibleAction = computed(() => {
     if (canPayOnline.value) {
         return {
             key: 'pay',
-            label: '立即支付',
+            label: order.value?.need_pay_label || '立即支付',
             style: baseStyle,
             onClick: handlePay
         }
@@ -758,10 +968,16 @@ const fetchDetail = async () => {
 
 const copyOrderSn = () => {
     if (!order.value?.order_sn) return
-    uni.setClipboardData({ data: order.value.order_sn, success: () => uni.showToast({ title: '已复制订单编号', icon: 'success' }) })
+    uni.setClipboardData({
+        data: order.value.order_sn,
+        success: () => uni.showToast({ title: '已复制订单编号', icon: 'success' })
+    })
 }
 
-const handleContactAdvisor = () => uni.navigateTo({ url: `/packages/pages/customer_service/customer_service?scene=order_detail&order_id=${orderId.value}` })
+const handleContactAdvisor = () =>
+    uni.navigateTo({
+        url: `/packages/pages/customer_service/customer_service?scene=order_detail&order_id=${orderId.value}`
+    })
 const openChangeActions = () =>
     uni.showActionSheet({
         itemList: ['申请改期', '申请暂停', '我的申请'],
@@ -789,9 +1005,13 @@ const handlePay = () => {
 const handlePaySuccess = async () => {
     payState.showPay = false
     payState.showCheck = false
+    const paymentSn = payState.paymentSn
     payState.paymentSn = ''
-    uni.showToast({ title: '支付成功', icon: 'success' })
-    await fetchDetail()
+    uni.navigateTo({
+        url: `/pages/payment_result/payment_result?id=${orderId.value}&from=${payState.from}${
+            paymentSn ? `&payment_sn=${paymentSn}` : ''
+        }`
+    })
 }
 
 const handlePayFail = async (payload?: { reason?: string; message?: string }) => {
@@ -839,11 +1059,17 @@ const handleDelete = async () => {
 }
 
 const submitRefund = async () => {
-    if (!refundForm.amount || Number(refundForm.amount) <= 0) return uni.showToast({ title: '请输入退款金额', icon: 'none' })
-    if (Number(refundForm.amount) > Number(order.value?.pay_amount || 0)) return uni.showToast({ title: '退款金额不能超过实付金额', icon: 'none' })
+    if (!refundForm.amount || Number(refundForm.amount) <= 0)
+        return uni.showToast({ title: '请输入退款金额', icon: 'none' })
+    if (Number(refundForm.amount) > Number(order.value?.pay_amount || 0))
+        return uni.showToast({ title: '退款金额不能超过实付金额', icon: 'none' })
     if (!refundForm.reason.trim()) return uni.showToast({ title: '请输入退款原因', icon: 'none' })
     try {
-        await applyRefund({ id: orderId.value, amount: Number(refundForm.amount), reason: refundForm.reason })
+        await applyRefund({
+            id: orderId.value,
+            amount: Number(refundForm.amount),
+            reason: refundForm.reason
+        })
         uni.showToast({ title: '申请已提交', icon: 'success' })
         showRefundPopup.value = false
         refundForm.amount = ''
@@ -866,7 +1092,7 @@ const chooseVoucherImage = () => {
             try {
                 voucherForm.uploading = true
                 const uploadRes: any = await uploadImage(path)
-                if (uploadRes?.url) voucherForm.image = uploadRes.url
+                if (uploadRes?.uri) voucherForm.image = uploadRes.uri
                 else uni.showToast({ title: '上传失败，请重试', icon: 'none' })
             } catch (e: any) {
                 uni.showToast({ title: e?.message || '上传失败', icon: 'none' })

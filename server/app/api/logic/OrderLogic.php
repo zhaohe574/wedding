@@ -354,6 +354,30 @@ class OrderLogic extends BaseLogic
                 trim((string)($item['service_city'] ?? '')),
                 trim((string)($item['service_district'] ?? '')),
             ]));
+
+            $item['payment_mode'] = (float)($item['deposit_amount'] ?? 0) > 0 ? 'deposit' : 'full';
+            $item['payment_mode_desc'] = $item['payment_mode'] === 'deposit' ? '定金支付' : '全款支付';
+            $item['paid_amount'] = round((float)($item['paid_amount'] ?? 0), 2);
+            $item['unpaid_amount'] = round(max((float)($item['pay_amount'] ?? 0) - (float)($item['paid_amount'] ?? 0), 0), 2);
+            $item['need_pay'] = 'none';
+            $item['need_pay_amount'] = 0.0;
+            $item['need_pay_label'] = '无需支付';
+
+            if ((float)($item['deposit_amount'] ?? 0) > 0) {
+                if (!(int)($item['deposit_paid'] ?? 0)) {
+                    $item['need_pay'] = 'deposit';
+                    $item['need_pay_amount'] = round((float)($item['deposit_amount'] ?? 0), 2);
+                    $item['need_pay_label'] = '支付定金';
+                } elseif (!(int)($item['balance_paid'] ?? 0)) {
+                    $item['need_pay'] = 'balance';
+                    $item['need_pay_amount'] = round((float)($item['balance_amount'] ?? 0), 2);
+                    $item['need_pay_label'] = '支付尾款';
+                }
+            } elseif ((int)($item['pay_status'] ?? 0) === Order::PAY_STATUS_UNPAID && (float)($item['pay_amount'] ?? 0) > 0) {
+                $item['need_pay'] = 'full';
+                $item['need_pay_amount'] = round((float)($item['pay_amount'] ?? 0), 2);
+                $item['need_pay_label'] = '立即支付';
+            }
         }
 
         return $list;
@@ -420,6 +444,7 @@ class OrderLogic extends BaseLogic
         $data['service_region_text'] = $order->service_region_text;
         $data['pay_deadline_time'] = (int)($order->pay_deadline_time ?? 0);
         $data['pay_remain_seconds'] = $order->getPayRemainSeconds();
+        $data = array_merge($data, Order::getPaymentSummary($order));
         $data['service_amount'] = round(
             max(0, (float)($data['total_amount'] ?? 0) - (float)($data['addon_amount'] ?? 0)),
             2
@@ -460,14 +485,7 @@ class OrderLogic extends BaseLogic
         $totalAmount = (float)$summary['total_amount'];
         $payAmount = max(0, $totalAmount);
 
-        // 定金计算
-        $depositRatio = $params['deposit_ratio'] ?? 0;
-        $depositAmount = 0;
-        $balanceAmount = 0;
-        if ($depositRatio > 0) {
-            $depositAmount = round($payAmount * $depositRatio / 100, 2);
-            $balanceAmount = $payAmount - $depositAmount;
-        }
+        $paymentSplit = Order::calculatePaymentSplit((float) $payAmount);
 
         return [
             'success' => true,
@@ -477,8 +495,12 @@ class OrderLogic extends BaseLogic
                 'addon_amount' => round((float)$summary['addon_amount'], 2),
                 'total_amount' => round($totalAmount, 2),
                 'pay_amount' => round($payAmount, 2),
-                'deposit_amount' => round($depositAmount, 2),
-                'balance_amount' => round($balanceAmount, 2),
+                'deposit_amount' => round((float) $paymentSplit['deposit_amount'], 2),
+                'balance_amount' => round((float) $paymentSplit['balance_amount'], 2),
+                'payment_mode' => (string) $paymentSplit['deposit_mode_enabled'] === '1' || (int) $paymentSplit['deposit_mode_enabled'] === 1 ? 'deposit' : 'full',
+                'deposit_type' => (string) $paymentSplit['deposit_type'],
+                'deposit_value' => round((float) $paymentSplit['deposit_value'], 2),
+                'deposit_remark' => (string) $paymentSplit['deposit_remark'],
             ]
         ];
     }
@@ -695,24 +717,7 @@ class OrderLogic extends BaseLogic
             'pay_remain_seconds' => $order->getPayRemainSeconds(),
         ];
 
-        // 需要支付的金额
-        if ($order->deposit_amount > 0) {
-            if (!$order->deposit_paid) {
-                $info['need_pay'] = 'deposit';
-                $info['need_pay_amount'] = $order->deposit_amount;
-            } elseif (!$order->balance_paid) {
-                $info['need_pay'] = 'balance';
-                $info['need_pay_amount'] = $order->balance_amount;
-            } else {
-                $info['need_pay'] = 'none';
-                $info['need_pay_amount'] = 0;
-            }
-        } else {
-            $info['need_pay'] = $order->pay_status == Order::PAY_STATUS_UNPAID ? 'full' : 'none';
-            $info['need_pay_amount'] = $order->pay_status == Order::PAY_STATUS_UNPAID ? $order->pay_amount : 0;
-        }
-
-        return $info;
+        return array_merge($info, Order::getPaymentSummary($order));
     }
 
     /**

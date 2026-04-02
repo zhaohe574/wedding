@@ -16,6 +16,9 @@
                 <template #default>
                     <view class="payment h-full w-full flex flex-col">
                         <view class="header py-[50rpx] flex flex-col items-center">
+                            <text v-if="payData.need_pay_label" class="payment-stage-label">
+                                {{ payData.need_pay_label }}
+                            </text>
                             <price
                                 :content="payData.order_amount"
                                 mainSize="44rpx"
@@ -23,6 +26,21 @@
                                 fontWeight="500"
                                 color="#333"
                             ></price>
+                            <view
+                                v-if="Number(payData.total_amount || 0) > 0"
+                                class="payment-summary"
+                            >
+                                <text
+                                    >总额 ¥{{ Number(payData.total_amount || 0).toFixed(2) }}</text
+                                >
+                                <text>已付 ¥{{ Number(payData.paid_amount || 0).toFixed(2) }}</text>
+                                <text
+                                    >待付 ¥{{ Number(payData.unpaid_amount || 0).toFixed(2) }}</text
+                                >
+                            </view>
+                            <view v-if="payData.deposit_remark" class="payment-remark">
+                                {{ payData.deposit_remark }}
+                            </view>
                             <view v-if="showPayCountdown" class="countdown-tip">
                                 <text class="countdown-tip__label">剩余支付时间</text>
                                 <text class="countdown-tip__value">{{ payRemainText }}</text>
@@ -79,7 +97,11 @@
                                 :loading="isLock"
                                 :disabled="isPayDisabled"
                             >
-                                {{ isTimeoutLocked ? '支付已超时' : '立即支付' }}
+                                {{
+                                    isTimeoutLocked
+                                        ? '支付已超时'
+                                        : payData.need_pay_label || '立即支付'
+                                }}
                             </tn-button>
                         </view>
                     </view>
@@ -194,7 +216,12 @@ const payData = ref<any>({
     order_amount: '',
     lists: [],
     pay_deadline_time: 0,
-    pay_remain_seconds: 0
+    pay_remain_seconds: 0,
+    need_pay_label: '',
+    total_amount: 0,
+    paid_amount: 0,
+    unpaid_amount: 0,
+    deposit_remark: ''
 })
 const payCountdownSeconds = ref(0)
 let payCountdownTimer: ReturnType<typeof setInterval> | null = null
@@ -325,9 +352,7 @@ const formatPayRemain = (seconds: number) => {
     const minutes = Math.floor((total % 3600) / 60)
     const remainSeconds = total % 60
 
-    return [hours, minutes, remainSeconds]
-        .map((item) => String(item).padStart(2, '0'))
-        .join(':')
+    return [hours, minutes, remainSeconds].map((item) => String(item).padStart(2, '0')).join(':')
 }
 
 const emitTimeoutResult = (message = '订单支付超时，已自动取消') => {
@@ -346,7 +371,10 @@ const getPayData = async () => {
             from: props.from
         })
         syncPayCountdown(payData.value.pay_remain_seconds || 0)
-        if (Number(payData.value.pay_deadline_time || 0) > 0 && Number(payData.value.pay_remain_seconds || 0) <= 0) {
+        if (
+            Number(payData.value.pay_deadline_time || 0) > 0 &&
+            Number(payData.value.pay_remain_seconds || 0) <= 0
+        ) {
             emitTimeoutResult()
             return
         }
@@ -513,6 +541,36 @@ onUnmounted(() => {
         border-bottom: 1px solid;
         @apply border-page;
     }
+}
+
+.payment-stage-label {
+    margin-bottom: 16rpx;
+    padding: 8rpx 22rpx;
+    border-radius: 999rpx;
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-color-primary, #e85a4f);
+    background: var(--wm-color-primary-soft, #fff1ee);
+}
+
+.payment-summary {
+    display: flex;
+    gap: 16rpx;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 16rpx;
+    font-size: 22rpx;
+    color: #7f7b78;
+}
+
+.payment-remark {
+    margin-top: 16rpx;
+    padding: 16rpx 20rpx;
+    border-radius: 20rpx;
+    background: #f8f5f2;
+    color: #7f7b78;
+    font-size: 22rpx;
+    line-height: 1.6;
 }
 
 .countdown-tip {

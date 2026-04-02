@@ -6,7 +6,9 @@
         <view class="offline-card">
             <tn-icon name="warning-circle" size="112rpx" :color="$theme.primaryColor" />
             <text class="offline-title">附加服务变更已下线</text>
-            <text class="offline-desc">旧版附加服务变更申请能力已关闭，当前页面仅保留占位，后续会按新版方案重新设计。</text>
+            <text class="offline-desc"
+                >旧版附加服务变更申请能力已关闭，当前页面仅保留占位，后续会按新版方案重新设计。</text
+            >
             <view
                 class="offline-btn"
                 :style="{ backgroundColor: $theme.primaryColor, color: $theme.btnColor }"

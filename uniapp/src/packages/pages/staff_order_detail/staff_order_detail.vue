@@ -66,11 +66,7 @@
                     </view>
 
                     <view v-if="serviceCards.length" class="service-list">
-                        <view
-                            v-for="item in serviceCards"
-                            :key="item.id"
-                            class="service-card"
-                        >
+                        <view v-for="item in serviceCards" :key="item.id" class="service-card">
                             <view class="service-card__row service-card__row--start">
                                 <view class="service-card__copy">
                                     <view class="service-card__title-row">
@@ -171,10 +167,7 @@
                         <view
                             v-for="item in contactRows"
                             :key="item.label"
-                            :class="[
-                                'sub-panel__row',
-                                { 'sub-panel__row--stack': item.multiline }
-                            ]"
+                            :class="['sub-panel__row', { 'sub-panel__row--stack': item.multiline }]"
                         >
                             <text class="sub-panel__label">{{ item.label }}</text>
                             <text
@@ -408,8 +401,10 @@ const serviceDateSummary = computed(() => {
     return `${uniqueServiceDates.value[0]} 起，共 ${uniqueServiceDates.value.length} 天`
 })
 
-const pendingConfirmCount = computed(() =>
-    (order.value?.items || []).filter((item: any) => Number(item?.confirm_status ?? 0) === 0).length
+const pendingConfirmCount = computed(
+    () =>
+        (order.value?.items || []).filter((item: any) => Number(item?.confirm_status ?? 0) === 0)
+            .length
 )
 
 const packageNames = computed(() => {
@@ -443,7 +438,9 @@ const serviceSummaryDescription = computed(() => {
 
 const statusInfo = computed<StatusDescriptor>(() => {
     const badgeText = String(order.value?.order_status_desc || '处理中')
-    const config = statusConfig[getStatusKey(Number(order.value?.order_status ?? 1))] || statusConfig.pending_pay
+    const config =
+        statusConfig[getStatusKey(Number(order.value?.order_status ?? 1))] ||
+        statusConfig.pending_pay
 
     return {
         badgeText,
@@ -463,7 +460,9 @@ const heroChips = computed<HeroChip[]>(() => {
         }
     ]
 
-    const contactText = String(order.value?.contact_mobile || order.value?.contact_name || '').trim()
+    const contactText = String(
+        order.value?.contact_mobile || order.value?.contact_name || ''
+    ).trim()
     if (contactText) {
         chips.push({
             label: '联系信息',
@@ -700,9 +699,7 @@ const fetchDetail = async (id: number) => {
         order.value = res || null
     } catch (error: any) {
         const msg =
-            typeof error === 'string'
-                ? error
-                : error?.msg || error?.message || '获取订单失败'
+            typeof error === 'string' ? error : error?.msg || error?.message || '获取订单失败'
         uni.showToast({ title: msg, icon: 'none' })
     }
 }
@@ -749,9 +746,7 @@ const handleConfirm = () => {
                 await fetchDetail(order.value.id)
             } catch (error: any) {
                 const msg =
-                    typeof error === 'string'
-                        ? error
-                        : error?.msg || error?.message || '确认失败'
+                    typeof error === 'string' ? error : error?.msg || error?.message || '确认失败'
                 uni.showToast({ title: msg, icon: 'none' })
             }
         }

@@ -32,7 +32,11 @@
                 class="dynamic-card__editorial-cover-wrap"
                 @click.stop="handleMediaClick(0)"
             >
-                <image class="dynamic-card__editorial-cover" :src="editorialCover" mode="aspectFill" />
+                <image
+                    class="dynamic-card__editorial-cover"
+                    :src="editorialCover"
+                    mode="aspectFill"
+                />
                 <view
                     v-if="dynamic.dynamicType === 2"
                     class="dynamic-card__video-badge dynamic-card__video-badge--editorial"
@@ -282,7 +286,9 @@ const truncatedContent = computed(() => {
 })
 
 const displayedImages = computed(() =>
-    isEditorial.value ? props.dynamic.images?.slice(0, 1) || [] : props.dynamic.images?.slice(0, 4) || []
+    isEditorial.value
+        ? props.dynamic.images?.slice(0, 1) || []
+        : props.dynamic.images?.slice(0, 4) || []
 )
 
 const editorialCover = computed(() => displayedImages.value[0] || '')
@@ -305,8 +311,8 @@ const cardStyle = computed(() => ({
     boxShadow: isEditorial.value
         ? 'var(--dynamic-editorial-card-shadow, 0 12rpx 24rpx rgba(214, 185, 167, 0.16))'
         : isPlazaUnified.value
-          ? '0 8rpx 22rpx rgba(15, 23, 42, 0.08)'
-          : `0 10rpx 28rpx ${alphaColor(primaryColor.value, 0.08)}`,
+        ? '0 8rpx 22rpx rgba(15, 23, 42, 0.08)'
+        : `0 10rpx 28rpx ${alphaColor(primaryColor.value, 0.08)}`,
     '--dynamic-card-primary-soft': primarySoftColor.value,
     '--dynamic-card-primary-soft-border': primarySoftBorderColor.value,
     '--dynamic-card-primary-shadow': primaryShadowColor.value

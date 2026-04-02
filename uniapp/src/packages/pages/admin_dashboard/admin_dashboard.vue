@@ -4,246 +4,251 @@
         <BaseNavbar title="经营驾驶舱" />
 
         <view class="dashboard-page" :style="pageBgStyle">
-        <view class="hero-card mx-[24rpx] mt-[24rpx]" :style="heroCardStyle">
-            <view class="hero-top">
-                <view class="hero-main">
-                    <text class="hero-eyebrow">经营驾驶舱</text>
-                    <text class="hero-title">先看结果，再看团队执行与风险</text>
-                    <text class="hero-period">{{ periodLabel }}</text>
+            <view class="hero-card mx-[24rpx] mt-[24rpx]" :style="heroCardStyle">
+                <view class="hero-top">
+                    <view class="hero-main">
+                        <text class="hero-eyebrow">经营驾驶舱</text>
+                        <text class="hero-title">先看结果，再看团队执行与风险</text>
+                        <text class="hero-period">{{ periodLabel }}</text>
+                    </view>
+                    <view class="hero-refresh" :style="heroRefreshStyle" @click="loadData">
+                        <text class="hero-refresh-text">{{ loading ? '更新中' : '刷新数据' }}</text>
+                    </view>
                 </view>
-                <view class="hero-refresh" :style="heroRefreshStyle" @click="loadData">
-                    <text class="hero-refresh-text">{{ loading ? '更新中' : '刷新数据' }}</text>
+
+                <view class="hero-meta">
+                    <text class="hero-meta-text">更新时间：{{ lastUpdated || '--' }}</text>
+                    <text class="hero-meta-text">范围：{{ activeRangeLabel }}</text>
+                </view>
+
+                <view class="hero-chip-list">
+                    <view
+                        v-for="item in summaryChips"
+                        :key="item.label"
+                        class="hero-chip"
+                        :style="heroChipStyle"
+                    >
+                        <text class="hero-chip-label">{{ item.label }}</text>
+                        <text class="hero-chip-value">{{ item.value }}</text>
+                    </view>
                 </view>
             </view>
 
-            <view class="hero-meta">
-                <text class="hero-meta-text">更新时间：{{ lastUpdated || '--' }}</text>
-                <text class="hero-meta-text">范围：{{ activeRangeLabel }}</text>
-            </view>
-
-            <view class="hero-chip-list">
+            <view class="range-tabs mx-[24rpx] mt-[16rpx]">
                 <view
-                    v-for="item in summaryChips"
-                    :key="item.label"
-                    class="hero-chip"
-                    :style="heroChipStyle"
+                    v-for="tab in rangeTabs"
+                    :key="tab.key"
+                    class="range-tab-item"
+                    :style="tab.key === rangeKey ? activeTabStyle : defaultTabStyle"
+                    @click="changeRange(tab.key)"
                 >
-                    <text class="hero-chip-label">{{ item.label }}</text>
-                    <text class="hero-chip-value">{{ item.value }}</text>
-                </view>
-            </view>
-        </view>
-
-        <view class="range-tabs mx-[24rpx] mt-[16rpx]">
-            <view
-                v-for="tab in rangeTabs"
-                :key="tab.key"
-                class="range-tab-item"
-                :style="tab.key === rangeKey ? activeTabStyle : defaultTabStyle"
-                @click="changeRange(tab.key)"
-            >
-                {{ tab.label }}
-            </view>
-        </view>
-
-        <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
-            <view class="section-header">
-                <view>
-                    <text class="section-title">经营核心</text>
+                    {{ tab.label }}
                 </view>
             </view>
 
-            <view class="metric-grid">
-                <view
-                    v-for="item in coreMetrics"
-                    :key="item.label"
-                    class="metric-card"
-                    :style="getMetricCardStyle(item.color)"
-                >
-                    <text class="metric-label">{{ item.label }}</text>
-                    <text class="metric-value">{{ item.value }}</text>
-                    <text class="metric-hint">{{ item.hint }}</text>
+            <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
+                <view class="section-header">
+                    <view>
+                        <text class="section-title">经营核心</text>
+                    </view>
+                </view>
+
+                <view class="metric-grid">
+                    <view
+                        v-for="item in coreMetrics"
+                        :key="item.label"
+                        class="metric-card"
+                        :style="getMetricCardStyle(item.color)"
+                    >
+                        <text class="metric-label">{{ item.label }}</text>
+                        <text class="metric-value">{{ item.value }}</text>
+                        <text class="metric-hint">{{ item.hint }}</text>
+                    </view>
+                </view>
+
+                <view class="snapshot-row">
+                    <view v-for="item in todaySnapshots" :key="item.label" class="snapshot-item">
+                        <text class="snapshot-label">{{ item.label }}</text>
+                        <text class="snapshot-value">{{ item.value }}</text>
+                    </view>
                 </view>
             </view>
 
-            <view class="snapshot-row">
-                <view v-for="item in todaySnapshots" :key="item.label" class="snapshot-item">
-                    <text class="snapshot-label">{{ item.label }}</text>
-                    <text class="snapshot-value">{{ item.value }}</text>
+            <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
+                <view class="section-header">
+                    <view>
+                        <text class="section-title">团队总览</text>
+                        <text class="section-subtitle">
+                            本月档期占用 {{ formatPercent(capacityStats.booking_rate) }}，已占
+                            {{ capacityStats.month_occupied_slots }} /
+                            {{ capacityStats.month_total_slots }}
+                        </text>
+                    </view>
                 </view>
-            </view>
-        </view>
 
-        <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
-            <view class="section-header">
-                <view>
-                    <text class="section-title">团队总览</text>
-                    <text class="section-subtitle">
-                        本月档期占用 {{ formatPercent(capacityStats.booking_rate) }}，已占
-                        {{ capacityStats.month_occupied_slots }} /
-                        {{ capacityStats.month_total_slots }}
-                    </text>
-                </view>
-            </view>
-
-            <view class="team-grid">
-                <view
-                    v-for="item in teamStatsCards"
-                    :key="item.label"
-                    class="team-stat-item"
-                    :style="teamStatStyle"
-                >
-                    <text class="team-stat-label">{{ item.label }}</text>
-                    <text class="team-stat-value">{{ item.value }}</text>
-                </view>
-            </view>
-        </view>
-
-        <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
-            <view class="section-header">
-                <view>
-                    <text class="section-title">成员负载</text>
+                <view class="team-grid">
+                    <view
+                        v-for="item in teamStatsCards"
+                        :key="item.label"
+                        class="team-stat-item"
+                        :style="teamStatStyle"
+                    >
+                        <text class="team-stat-label">{{ item.label }}</text>
+                        <text class="team-stat-value">{{ item.value }}</text>
+                    </view>
                 </view>
             </view>
 
-            <view v-if="memberCards.length === 0" class="panel-empty">暂无成员负载数据</view>
-            <scroll-view v-else class="member-scroll" scroll-x show-scrollbar="false">
-                <view class="member-list">
-                    <view v-for="item in memberCards" :key="item.id" class="member-card">
-                        <view class="member-top">
-                            <image class="member-avatar" :src="item.avatar" mode="aspectFill" />
-                            <view class="member-main">
-                                <view class="member-name-row">
-                                    <text class="member-name">{{ item.name }}</text>
-                                    <view
-                                        v-if="item.isRecommend"
-                                        class="member-recommend"
-                                        :style="memberRecommendStyle"
-                                    >
-                                        推荐
+            <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
+                <view class="section-header">
+                    <view>
+                        <text class="section-title">成员负载</text>
+                    </view>
+                </view>
+
+                <view v-if="memberCards.length === 0" class="panel-empty">暂无成员负载数据</view>
+                <scroll-view v-else class="member-scroll" scroll-x show-scrollbar="false">
+                    <view class="member-list">
+                        <view v-for="item in memberCards" :key="item.id" class="member-card">
+                            <view class="member-top">
+                                <image class="member-avatar" :src="item.avatar" mode="aspectFill" />
+                                <view class="member-main">
+                                    <view class="member-name-row">
+                                        <text class="member-name">{{ item.name }}</text>
+                                        <view
+                                            v-if="item.isRecommend"
+                                            class="member-recommend"
+                                            :style="memberRecommendStyle"
+                                        >
+                                            推荐
+                                        </view>
                                     </view>
+                                    <text class="member-role">{{
+                                        item.categoryName || '服务人员'
+                                    }}</text>
                                 </view>
-                                <text class="member-role">{{
-                                    item.categoryName || '服务人员'
-                                }}</text>
+                                <view
+                                    class="member-load-tag"
+                                    :style="getLoadTagStyle(item.loadLevel)"
+                                >
+                                    {{ item.loadLevel }}
+                                </view>
                             </view>
-                            <view class="member-load-tag" :style="getLoadTagStyle(item.loadLevel)">
-                                {{ item.loadLevel }}
-                            </view>
-                        </view>
 
-                        <view class="member-data-grid">
-                            <view class="member-data-item">
-                                <text class="member-data-label">近30天订单</text>
-                                <text class="member-data-value">{{ item.recentOrderCount }}</text>
-                            </view>
-                            <view class="member-data-item">
-                                <text class="member-data-label">未来30天占用</text>
-                                <text class="member-data-value">{{
-                                    item.upcomingBookedSlots
-                                }}</text>
-                            </view>
-                            <view class="member-data-item">
-                                <text class="member-data-label">待跟进</text>
-                                <text class="member-data-value">{{ item.followUpCount }}</text>
+                            <view class="member-data-grid">
+                                <view class="member-data-item">
+                                    <text class="member-data-label">近30天订单</text>
+                                    <text class="member-data-value">{{
+                                        item.recentOrderCount
+                                    }}</text>
+                                </view>
+                                <view class="member-data-item">
+                                    <text class="member-data-label">未来30天占用</text>
+                                    <text class="member-data-value">{{
+                                        item.upcomingBookedSlots
+                                    }}</text>
+                                </view>
+                                <view class="member-data-item">
+                                    <text class="member-data-label">待跟进</text>
+                                    <text class="member-data-value">{{ item.followUpCount }}</text>
+                                </view>
                             </view>
                         </view>
                     </view>
-                </view>
-            </scroll-view>
-        </view>
-
-        <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
-            <view class="section-header">
-                <view>
-                    <text class="section-title">业务推进</text>
-                    <text class="section-subtitle">
-                        总订单 {{ totalOrders }} 单，支付推进率
-                        {{ formatPercent(paidProgressRate) }}
-                    </text>
-                </view>
+                </scroll-view>
             </view>
 
-            <view class="todo-grid">
-                <view
-                    v-for="item in todoCards"
-                    :key="item.label"
-                    class="todo-card"
-                    :style="getTodoCardStyle(item.color)"
-                >
-                    <text class="todo-label">{{ item.label }}</text>
-                    <text class="todo-value">{{ item.value }}</text>
-                    <text v-if="item.hint" class="todo-hint">{{ item.hint }}</text>
+            <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
+                <view class="section-header">
+                    <view>
+                        <text class="section-title">业务推进</text>
+                        <text class="section-subtitle">
+                            总订单 {{ totalOrders }} 单，支付推进率
+                            {{ formatPercent(paidProgressRate) }}
+                        </text>
+                    </view>
                 </view>
-            </view>
 
-            <view v-if="statusItems.length === 0" class="panel-empty">暂无订单统计</view>
-            <view v-else class="status-list">
-                <view v-for="item in statusItems" :key="item.status" class="status-item">
-                    <view class="status-title">
-                        <view class="status-label-wrap">
-                            <view class="status-dot" :style="{ backgroundColor: item.color }" />
-                            <text class="status-label">{{ item.label }}</text>
+                <view class="todo-grid">
+                    <view
+                        v-for="item in todoCards"
+                        :key="item.label"
+                        class="todo-card"
+                        :style="getTodoCardStyle(item.color)"
+                    >
+                        <text class="todo-label">{{ item.label }}</text>
+                        <text class="todo-value">{{ item.value }}</text>
+                        <text v-if="item.hint" class="todo-hint">{{ item.hint }}</text>
+                    </view>
+                </view>
+
+                <view v-if="statusItems.length === 0" class="panel-empty">暂无订单统计</view>
+                <view v-else class="status-list">
+                    <view v-for="item in statusItems" :key="item.status" class="status-item">
+                        <view class="status-title">
+                            <view class="status-label-wrap">
+                                <view class="status-dot" :style="{ backgroundColor: item.color }" />
+                                <text class="status-label">{{ item.label }}</text>
+                            </view>
+                            <text class="status-meta"
+                                >{{ item.count }} 单 · {{ formatPercent(item.percent) }}</text
+                            >
                         </view>
-                        <text class="status-meta"
-                            >{{ item.count }} 单 · {{ formatPercent(item.percent) }}</text
-                        >
-                    </view>
-                    <view class="status-track">
-                        <view
-                            class="status-fill"
-                            :style="getStatusFillStyle(item.color, item.percent)"
-                        />
-                    </view>
-                </view>
-            </view>
-        </view>
-
-        <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
-            <view class="section-header">
-                <view>
-                    <text class="section-title">收入趋势</text>
-                    <text class="section-subtitle">
-                        峰值 ¥{{ formatMoney(trendSummary.peak) }}，日均 ¥{{
-                            formatMoney(trendSummary.avg)
-                        }}
-                    </text>
-                </view>
-            </view>
-
-            <view v-if="trendList.length === 0" class="panel-empty">暂无趋势数据</view>
-            <view v-else class="trend-chart">
-                <view class="trend-bars">
-                    <view v-for="item in trendList" :key="item.date" class="trend-column">
-                        <view class="trend-track">
-                            <view class="trend-fill" :style="getTrendFillStyle(item.height)" />
+                        <view class="status-track">
+                            <view
+                                class="status-fill"
+                                :style="getStatusFillStyle(item.color, item.percent)"
+                            />
                         </view>
-                        <text class="trend-amount">{{ formatMoney(item.value) }}</text>
-                        <text class="trend-label">{{ item.label }}</text>
                     </view>
                 </view>
             </view>
-        </view>
 
-        <view class="section-card mx-[24rpx] mt-[16rpx] mb-[32rpx]" :style="panelStyle">
-            <view class="section-header">
-                <view>
-                    <text class="section-title">经营提醒</text>
+            <view class="section-card mx-[24rpx] mt-[16rpx]" :style="panelStyle">
+                <view class="section-header">
+                    <view>
+                        <text class="section-title">收入趋势</text>
+                        <text class="section-subtitle">
+                            峰值 ¥{{ formatMoney(trendSummary.peak) }}，日均 ¥{{
+                                formatMoney(trendSummary.avg)
+                            }}
+                        </text>
+                    </view>
+                </view>
+
+                <view v-if="trendList.length === 0" class="panel-empty">暂无趋势数据</view>
+                <view v-else class="trend-chart">
+                    <view class="trend-bars">
+                        <view v-for="item in trendList" :key="item.date" class="trend-column">
+                            <view class="trend-track">
+                                <view class="trend-fill" :style="getTrendFillStyle(item.height)" />
+                            </view>
+                            <text class="trend-amount">{{ formatMoney(item.value) }}</text>
+                            <text class="trend-label">{{ item.label }}</text>
+                        </view>
+                    </view>
                 </view>
             </view>
 
-            <view class="insight-list">
-                <view
-                    v-for="item in insights"
-                    :key="item.text"
-                    class="insight-item"
-                    :style="item.style"
-                >
-                    <view class="insight-tag" :style="item.tagStyle">{{ item.levelText }}</view>
-                    <text class="insight-text">{{ item.text }}</text>
+            <view class="section-card mx-[24rpx] mt-[16rpx] mb-[32rpx]" :style="panelStyle">
+                <view class="section-header">
+                    <view>
+                        <text class="section-title">经营提醒</text>
+                    </view>
+                </view>
+
+                <view class="insight-list">
+                    <view
+                        v-for="item in insights"
+                        :key="item.text"
+                        class="insight-item"
+                        :style="item.style"
+                    >
+                        <view class="insight-tag" :style="item.tagStyle">{{ item.levelText }}</view>
+                        <text class="insight-text">{{ item.text }}</text>
+                    </view>
                 </view>
             </view>
-        </view>
         </view>
     </PageShell>
 </template>

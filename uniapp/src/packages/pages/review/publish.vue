@@ -3,7 +3,12 @@
     <BaseNavbar title="发表评价" />
     <view class="publish-page">
         <!-- 顶部渐变背景 -->
-        <view class="top-bg" :style="{ background: `linear-gradient(135deg, ${$theme.primaryColor}, ${$theme.primaryColor}88)` }"></view>
+        <view
+            class="top-bg"
+            :style="{
+                background: `linear-gradient(135deg, ${$theme.primaryColor}, ${$theme.primaryColor}88)`
+            }"
+        ></view>
 
         <!-- 顶部标题区域 -->
         <view class="top-header">
@@ -20,7 +25,9 @@
                     mode="aspectFill"
                 />
                 <view class="flex-1 ml-3">
-                    <view class="text-base font-bold text-gray-800">{{ orderItem.staff_name }}</view>
+                    <view class="text-base font-bold text-gray-800">{{
+                        orderItem.staff_name
+                    }}</view>
                     <view class="text-sm text-gray-400 mt-1">{{ orderItem.package_name }}</view>
                     <view class="text-xs text-gray-400 mt-1">
                         服务日期: {{ orderItem.order?.service_date }}
@@ -39,12 +46,7 @@
             <view class="main-score">
                 <text class="main-score-label">综合评分</text>
                 <view class="main-score-stars">
-                    <view
-                        v-for="i in 5"
-                        :key="i"
-                        class="star-touch"
-                        @click="formData.score = i"
-                    >
+                    <view v-for="i in 5" :key="i" class="star-touch" @click="formData.score = i">
                         <tn-icon
                             :name="i <= formData.score ? 'star-fill' : 'star'"
                             size="64rpx"
@@ -86,7 +88,11 @@
                 <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
                 <text class="section-title">选择标签</text>
                 <view class="tag-header-right">
-                    <text class="tag-count-num" :style="{ color: selectedTags.length > 0 ? $theme.primaryColor : '#999' }">{{ selectedTags.length }}</text>
+                    <text
+                        class="tag-count-num"
+                        :style="{ color: selectedTags.length > 0 ? $theme.primaryColor : '#999' }"
+                        >{{ selectedTags.length }}</text
+                    >
                     <text class="tag-count-sep">/5</text>
                 </view>
             </view>
@@ -104,11 +110,15 @@
                     :key="tag.id"
                     class="tag-chip"
                     :class="{ 'tag-chip--active': selectedTags.includes(tag.id) }"
-                    :style="selectedTags.includes(tag.id) ? {
-                        color: '#fff',
-                        borderColor: $theme.primaryColor,
-                        background: $theme.primaryColor
-                    } : {}"
+                    :style="
+                        selectedTags.includes(tag.id)
+                            ? {
+                                  color: '#fff',
+                                  borderColor: $theme.primaryColor,
+                                  background: $theme.primaryColor
+                              }
+                            : {}
+                    "
                     @click="toggleTag(tag.id)"
                 >
                     <tn-icon
@@ -128,7 +138,10 @@
                         v-for="tagId in selectedTags"
                         :key="tagId"
                         class="tag-mini"
-                        :style="{ background: $theme.primaryColor + '15', color: $theme.primaryColor }"
+                        :style="{
+                            background: $theme.primaryColor + '15',
+                            color: $theme.primaryColor
+                        }"
                         @click="toggleTag(tagId)"
                     >
                         <text>{{ getTagName(tagId) }}</text>
@@ -151,7 +164,9 @@
                 maxlength="500"
                 :cursor-spacing="120"
             />
-            <view class="text-right text-xs text-gray-400 mt-1">{{ formData.content.length }}/500</view>
+            <view class="text-right text-xs text-gray-400 mt-1"
+                >{{ formData.content.length }}/500</view
+            >
         </view>
 
         <!-- 上传图片/视频 -->
@@ -191,13 +206,22 @@
         </view>
 
         <!-- 奖励提示 -->
-        <view class="reward-card" v-if="rewardPoints > 0" :style="{ background: $theme.primaryColor + '10', borderColor: $theme.primaryColor + '30' }">
+        <view
+            class="reward-card"
+            v-if="rewardPoints > 0"
+            :style="{
+                background: $theme.primaryColor + '10',
+                borderColor: $theme.primaryColor + '30'
+            }"
+        >
             <view class="reward-icon-wrap" :style="{ background: $theme.primaryColor + '20' }">
                 <tn-icon name="gift" size="40rpx" :color="$theme.primaryColor"></tn-icon>
             </view>
             <view class="reward-info">
                 <text class="reward-text">评价审核通过后发放积分奖励</text>
-                <text class="reward-points" :style="{ color: $theme.primaryColor }">预计 +{{ rewardPoints }} 积分</text>
+                <text class="reward-points" :style="{ color: $theme.primaryColor }"
+                    >预计 +{{ rewardPoints }} 积分</text
+                >
             </view>
         </view>
 
@@ -240,11 +264,7 @@ const formData = reactive({
 })
 
 const scoreTexts = ['非常差', '较差', '一般', '满意', '非常满意']
-type DetailScoreKey =
-    | 'score_service'
-    | 'score_professional'
-    | 'score_punctual'
-    | 'score_effect'
+type DetailScoreKey = 'score_service' | 'score_professional' | 'score_punctual' | 'score_effect'
 
 // 评分感知提示
 const scoreHintText = computed(() => {

@@ -31,14 +31,20 @@
                 :key="index"
                 class="accordion-item"
                 :class="{ 'is-active': activeIndex === index }"
-                :style="activeIndex === index ? $theme.activeBorder.value : $theme.normalBorder.value"
+                :style="
+                    activeIndex === index ? $theme.activeBorder.value : $theme.normalBorder.value
+                "
             >
                 <view class="accordion-header" @click="toggleAccordion(index)">
                     <view class="question-wrapper">
                         <view class="question-icon" :style="$theme.qBadge.value">Q</view>
                         <text class="question-text">{{ item.question }}</text>
                     </view>
-                    <view class="expand-icon" :style="$theme.expandBg.value" :class="{ 'is-expanded': activeIndex === index }">
+                    <view
+                        class="expand-icon"
+                        :style="$theme.expandBg.value"
+                        :class="{ 'is-expanded': activeIndex === index }"
+                    >
                         <text class="icon-text" :style="$theme.expandIcon.value">›</text>
                     </view>
                 </view>
@@ -50,7 +56,9 @@
                         </view>
                     </view>
                     <view v-if="item.category" class="category-tag" :style="$theme.tagBg.value">
-                        <text class="tag-text" :style="$theme.tagText.value">{{ item.category }}</text>
+                        <text class="tag-text" :style="$theme.tagText.value">{{
+                            item.category
+                        }}</text>
                     </view>
                 </view>
             </view>
@@ -70,7 +78,9 @@
                     <view class="q-content">
                         <text class="q-text">{{ item.question }}</text>
                         <view v-if="item.category" class="q-category" :style="$theme.tagBg.value">
-                            <text class="category-text" :style="$theme.tagText.value">{{ item.category }}</text>
+                            <text class="category-text" :style="$theme.tagText.value">{{
+                                item.category
+                            }}</text>
                         </view>
                     </view>
                 </view>
@@ -116,7 +126,10 @@ const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
 // 主题内联样式（兼容小程序，不使用CSS变量）
 const $theme = {
     titleBar: computed(() => ({
-        background: `linear-gradient(180deg, ${primaryColor.value} 0%, ${tintColor(primaryColor.value, 0.3)} 100%)`
+        background: `linear-gradient(180deg, ${primaryColor.value} 0%, ${tintColor(
+            primaryColor.value,
+            0.3
+        )} 100%)`
     })),
     searchBorder: computed(() => ({
         border: `2rpx solid ${alphaColor(primaryColor.value, 0.1)}`,
@@ -132,7 +145,10 @@ const $theme = {
         boxShadow: `0 8rpx 32rpx ${alphaColor(primaryColor.value, 0.12)}`
     })),
     qBadge: computed(() => ({
-        background: `linear-gradient(135deg, ${primaryColor.value} 0%, ${tintColor(primaryColor.value, 0.3)} 100%)`,
+        background: `linear-gradient(135deg, ${primaryColor.value} 0%, ${tintColor(
+            primaryColor.value,
+            0.3
+        )} 100%)`,
         boxShadow: `0 4rpx 16rpx ${alphaColor(primaryColor.value, 0.3)}`
     })),
     expandBg: computed(() => ({
@@ -142,7 +158,10 @@ const $theme = {
         color: primaryColor.value
     })),
     tagBg: computed(() => ({
-        background: `linear-gradient(135deg, ${alphaColor(primaryColor.value, 0.1)} 0%, ${alphaColor(primaryColor.value, 0.1)} 100%)`
+        background: `linear-gradient(135deg, ${alphaColor(
+            primaryColor.value,
+            0.1
+        )} 0%, ${alphaColor(primaryColor.value, 0.1)} 100%)`
     })),
     tagText: computed(() => ({
         color: primaryColor.value

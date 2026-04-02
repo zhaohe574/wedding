@@ -65,7 +65,10 @@
                                 lazy-load
                             />
                             <text v-if="item.is_recommend" class="poster-card__badge">推荐</text>
-                            <view class="poster-card__favorite" @tap.stop="handleToggleFavorite(item)">
+                            <view
+                                class="poster-card__favorite"
+                                @tap.stop="handleToggleFavorite(item)"
+                            >
                                 <tn-icon
                                     :name="item.is_favorite ? 'like-fill' : 'like'"
                                     size="34"
@@ -76,13 +79,22 @@
 
                         <view class="poster-card__content">
                             <view class="poster-card__head">
-                                <text class="poster-card__name">{{ item.name || '未命名人员' }}</text>
+                                <text class="poster-card__name">{{
+                                    item.name || '未命名人员'
+                                }}</text>
                                 <view
                                     class="poster-card__price"
-                                    :class="{ 'poster-card__price--negotiable': !hasStaffPrice(item) }"
+                                    :class="{
+                                        'poster-card__price--negotiable': !hasStaffPrice(item)
+                                    }"
                                 >
-                                    <text class="poster-card__price-value">{{ getStaffPriceValue(item) }}</text>
-                                    <text v-if="getStaffPriceSuffix(item)" class="poster-card__price-unit">
+                                    <text class="poster-card__price-value">{{
+                                        getStaffPriceValue(item)
+                                    }}</text>
+                                    <text
+                                        v-if="getStaffPriceSuffix(item)"
+                                        class="poster-card__price-unit"
+                                    >
                                         {{ getStaffPriceSuffix(item) }}
                                     </text>
                                 </view>
@@ -105,9 +117,13 @@
                             <view class="poster-card__footer">
                                 <view class="poster-card__score">
                                     <tn-icon name="star-fill" size="20" color="#C99B73" />
-                                    <text class="poster-card__score-text">{{ formatRatingText(item) }}</text>
+                                    <text class="poster-card__score-text">{{
+                                        formatRatingText(item)
+                                    }}</text>
                                 </view>
-                                <text class="poster-card__orders">已服务{{ item.order_count || 0 }}单</text>
+                                <text class="poster-card__orders"
+                                    >已服务{{ item.order_count || 0 }}单</text
+                                >
                             </view>
                         </view>
                     </view>
@@ -130,10 +146,17 @@
                         <view class="line-card__content">
                             <view class="line-card__head">
                                 <view class="line-card__name-group">
-                                    <text class="line-card__name">{{ item.name || '未命名人员' }}</text>
-                                    <text v-if="item.is_recommend" class="line-card__badge">推荐</text>
+                                    <text class="line-card__name">{{
+                                        item.name || '未命名人员'
+                                    }}</text>
+                                    <text v-if="item.is_recommend" class="line-card__badge"
+                                        >推荐</text
+                                    >
                                 </view>
-                                <view class="line-card__favorite" @tap.stop="handleToggleFavorite(item)">
+                                <view
+                                    class="line-card__favorite"
+                                    @tap.stop="handleToggleFavorite(item)"
+                                >
                                     <tn-icon
                                         :name="item.is_favorite ? 'like-fill' : 'like'"
                                         size="30"
@@ -161,9 +184,13 @@
                                 <view class="line-card__metrics">
                                     <view class="line-card__score">
                                         <tn-icon name="star-fill" size="20" color="#C99B73" />
-                                        <text class="line-card__score-text">{{ formatRatingText(item) }}</text>
+                                        <text class="line-card__score-text">{{
+                                            formatRatingText(item)
+                                        }}</text>
                                     </view>
-                                    <text class="line-card__orders">{{ item.order_count || 0 }}单</text>
+                                    <text class="line-card__orders"
+                                        >{{ item.order_count || 0 }}单</text
+                                    >
                                 </view>
                                 <text class="line-card__price">{{ formatPriceText(item) }}</text>
                             </view>
@@ -179,8 +206,14 @@
             >
                 <view v-if="staffViewMode === 'poster'" class="switch-icon-list">
                     <view v-for="row in 3" :key="row" class="switch-icon-list__row">
-                        <view class="switch-icon-list__dot" :style="{ background: $theme.primaryColor }" />
-                        <view class="switch-icon-list__line" :style="{ background: $theme.primaryColor }" />
+                        <view
+                            class="switch-icon-list__dot"
+                            :style="{ background: $theme.primaryColor }"
+                        />
+                        <view
+                            class="switch-icon-list__line"
+                            :style="{ background: $theme.primaryColor }"
+                        />
                     </view>
                 </view>
                 <view v-else class="switch-icon-grid">
@@ -260,8 +293,10 @@ const parseTextList = (value: unknown) =>
         .filter(Boolean)
 
 const pagingRefresherEnabled = computed(() => import.meta.env.UNI_PLATFORM !== 'h5')
-const hasValidQuery = computed(
-    () => Boolean(selectedDate.value && hasServiceRegion(selectedRegion.value) && currentCategoryId.value > 0)
+const hasValidQuery = computed(() =>
+    Boolean(
+        selectedDate.value && hasServiceRegion(selectedRegion.value) && currentCategoryId.value > 0
+    )
 )
 const selectedRegionText = computed(() => {
     const cityName = selectedRegion.value.city_name || selectedRegion.value.province_name
@@ -281,7 +316,9 @@ const normalizeSelectedDateText = (value = '') => {
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
-const selectedDateText = computed(() => normalizeSelectedDateText(selectedDate.value) || '未选择日期')
+const selectedDateText = computed(
+    () => normalizeSelectedDateText(selectedDate.value) || '未选择日期'
+)
 const currentSortName = computed(
     () => sortOptions.find((item) => item.value === currentSort.value)?.label || '综合排序'
 )
@@ -310,13 +347,15 @@ const buildScheduleQueryUrl = () => {
     const queryParts: string[] = []
     if (selectedDate.value) queryParts.push(`date=${encodeURIComponent(selectedDate.value)}`)
     if (currentCategoryId.value > 0) queryParts.push(`category_id=${currentCategoryId.value}`)
-    if (currentCategoryName.value) queryParts.push(`category_name=${encodeURIComponent(currentCategoryName.value)}`)
+    if (currentCategoryName.value)
+        queryParts.push(`category_name=${encodeURIComponent(currentCategoryName.value)}`)
     if (keyword.value) queryParts.push(`keyword=${encodeURIComponent(keyword.value)}`)
     if (selectedTagIds.value.length) queryParts.push(`tag_ids=${selectedTagIds.value.join(',')}`)
     if (selectedTagNames.value.length) {
         queryParts.push(`tag_names=${encodeURIComponent(selectedTagNames.value.join('、'))}`)
     }
-    if (currentSort.value !== 'default') queryParts.push(`sort=${encodeURIComponent(currentSort.value)}`)
+    if (currentSort.value !== 'default')
+        queryParts.push(`sort=${encodeURIComponent(currentSort.value)}`)
     const regionQuery = buildServiceRegionQuery(selectedRegion.value)
     if (regionQuery) queryParts.push(regionQuery)
     queryParts.push('source=staff_list')
@@ -335,9 +374,7 @@ const buildStaffDescription = (item: any) => {
 
 const normalizeTagList = (tags: unknown) => {
     if (Array.isArray(tags)) {
-        return tags
-            .map((tag: any) => String(tag || '').trim())
-            .filter(Boolean)
+        return tags.map((tag: any) => String(tag || '').trim()).filter(Boolean)
     }
     if (typeof tags === 'string') {
         return parseTextList(tags)
@@ -456,14 +493,17 @@ onLoad((options) => {
     }
 
     if (typeof options?.keyword === 'string') keyword.value = options.keyword.trim()
-    if (typeof options?.date === 'string') selectedDate.value = normalizeSelectedDateText(options.date)
+    if (typeof options?.date === 'string')
+        selectedDate.value = normalizeSelectedDateText(options.date)
     if (options?.category_id) {
         const categoryId = Number(options.category_id)
         if (!Number.isNaN(categoryId) && categoryId > 0) currentCategoryId.value = categoryId
     }
-    if (typeof options?.category_name === 'string') currentCategoryName.value = options.category_name.trim()
+    if (typeof options?.category_name === 'string')
+        currentCategoryName.value = options.category_name.trim()
     if (options?.tag_ids) selectedTagIds.value = parseIdList(options.tag_ids)
-    if (typeof options?.tag_names === 'string') selectedTagNames.value = parseTextList(options.tag_names)
+    if (typeof options?.tag_names === 'string')
+        selectedTagNames.value = parseTextList(options.tag_names)
     if (isValidSortValue(options?.sort)) currentSort.value = String(options?.sort)
 
     if (!hasValidQuery.value) {

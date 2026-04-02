@@ -22,7 +22,9 @@
                 </view>
                 <view class="aftersale-stat" @click="navigateToList('complaint')">
                     <text class="aftersale-stat__label">我的投诉</text>
-                    <text class="aftersale-stat__value">{{ statistics.complaint?.total || 0 }}</text>
+                    <text class="aftersale-stat__value">{{
+                        statistics.complaint?.total || 0
+                    }}</text>
                     <text class="aftersale-stat__meta">
                         待处理 {{ statistics.complaint?.pending || 0 }}
                     </text>
@@ -93,7 +95,9 @@
                             </view>
                         </view>
                         <text class="ticket-item__title">{{ item.title }}</text>
-                        <text v-if="item.content" class="ticket-item__content">{{ item.content }}</text>
+                        <text v-if="item.content" class="ticket-item__content">{{
+                            item.content
+                        }}</text>
                     </view>
                 </view>
             </view>
@@ -133,7 +137,12 @@
             <view class="popup-panel">
                 <view class="popup-panel__head">
                     <text class="popup-panel__title">提交工单</text>
-                    <tn-icon name="close" size="28" color="#978B83" @click="showTicketPopup = false" />
+                    <tn-icon
+                        name="close"
+                        size="28"
+                        color="#978B83"
+                        @click="showTicketPopup = false"
+                    />
                 </view>
 
                 <view class="popup-panel__body">

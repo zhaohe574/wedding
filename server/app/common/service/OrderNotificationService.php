@@ -1550,7 +1550,7 @@ class OrderNotificationService
         if ($payType === OrderPayment::TYPE_DEPOSIT) {
             return [
                 'user_title' => '定金支付成功，订单已生效',
-                'user_content' => '订单%s定金支付成功，服务已生效。请按约定时间享受%s服务。',
+                'user_content' => '订单%s定金支付成功，服务已生效。剩余尾款请按约定时间完成支付后继续享受%s服务。',
                 'staff_title' => '订单定金已支付',
                 'staff_content' => '订单%s定金已支付，服务日期为%s，请提前做好准备。',
             ];

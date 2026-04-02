@@ -4,163 +4,139 @@
         <BaseNavbar title="我的候补" />
 
         <view class="waitlist-page">
-        <!-- 筛选标签 -->
-        <view class="filter-tabs">
-            <view
-                class="tab-item"
-                v-for="tab in statusTabs"
-                :key="tab.value"
-                :class="{ active: currentStatus === tab.value }"
-                @click="
-                    () => {
-                        currentStatus = tab.value
-                        fetchList()
-                    }
-                "
-            >
-                <text
-                    class="tab-label"
-                    :style="currentStatus === tab.value ? { color: $theme.primaryColor } : {}"
-                >
-                    {{ tab.label }}
-                </text>
-                <view
-                    v-if="currentStatus === tab.value"
-                    class="tab-indicator"
-                    :style="{ background: $theme.primaryColor }"
-                />
-            </view>
-        </view>
+            <scroll-view scroll-x class="waitlist-page__filter-scroll" :show-scrollbar="false">
+                <view class="waitlist-page__filter-row">
+                    <view
+                        v-for="tab in statusTabs"
+                        :key="tab.value"
+                        class="waitlist-page__filter-chip"
+                        :class="{
+                            'waitlist-page__filter-chip--active': currentStatus === tab.value
+                        }"
+                        @click="handleStatusChange(tab.value)"
+                    >
+                        <text class="waitlist-page__filter-chip-text">{{ tab.label }}</text>
+                    </view>
+                </view>
+            </scroll-view>
 
-        <!-- 空状态 -->
-        <view class="empty-state" v-if="!loading && waitlist.length === 0">
-            <tn-icon name="inbox" size="120" color="#CCCCCC" />
-            <text class="empty-text">暂无候补记录</text>
-            <text class="empty-hint">档期满时可加入候补，有空位时会通知您</text>
-        </view>
-
-        <!-- 候补列表 -->
-        <view class="waitlist-list">
-            <view class="waitlist-card" v-for="item in waitlist" :key="item.id">
-                <!-- 状态标签（顶部） -->
-                <view class="status-ribbon" :class="getStatusClass(item.notify_status)">
-                    <tn-icon
-                        :name="getStatusIcon(item.notify_status)"
-                        size="28"
-                        :color="getStatusColor(item.notify_status)"
-                    />
-                    <text>{{ item.notify_status_desc }}</text>
+            <view class="waitlist-page__content">
+                <view v-if="loading && waitlistItems.length === 0" class="loading-state">
+                    <view class="loading-content">
+                        <tn-loading size="72" mode="flower" :color="$theme.primaryColor" />
+                        <text class="loading-text">加载中...</text>
+                    </view>
                 </view>
 
-                <!-- 卡片头部：人员信息 -->
-                <view class="card-header">
-                    <view class="staff-section">
-                        <view class="avatar-wrapper">
-                            <image
-                                :src="item.staff?.avatar"
-                                class="staff-avatar"
-                                mode="aspectFill"
-                            />
+                <view v-else-if="waitlistItems.length === 0" class="empty-state">
+                    <view class="empty-icon-wrapper">
+                        <tn-icon name="inbox" size="156" color="#D9CDC7" />
+                    </view>
+                    <text class="empty-title">暂无候补记录</text>
+                    <view
+                        class="empty-action-btn"
+                        :style="{
+                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${
+                                $theme.secondaryColor || $theme.primaryColor
+                            } 100%)`
+                        }"
+                        @click="goSchedule"
+                    >
+                        <text class="empty-action-text" :style="{ color: $theme.btnColor }">
+                            去预约
+                        </text>
+                    </view>
+                </view>
+
+                <view v-else class="waitlist-list">
+                    <view v-for="item in waitlistItems" :key="item.id" class="waitlist-card">
+                        <view class="waitlist-card__head">
+                            <text class="waitlist-card__title">{{ item.title }}</text>
                             <view
-                                class="avatar-border"
-                                :style="{ borderColor: $theme.primaryColor }"
-                            />
-                        </view>
-                        <view class="staff-info">
-                            <text class="staff-name">{{ item.staff?.name || '未知人员' }}</text>
-                            <view
-                                class="staff-tag"
-                                :style="{
-                                    background: getColorWithOpacity($theme.primaryColor, 0.1),
-                                    borderColor: getColorWithOpacity($theme.primaryColor, 0.2)
-                                }"
+                                class="waitlist-card__status"
+                                :class="item.statusClass"
                             >
-                                <tn-icon
-                                    name="shield-check"
-                                    size="24"
-                                    :color="$theme.primaryColor"
-                                />
-                                <text
-                                    class="staff-category"
-                                    :style="{ color: $theme.primaryColor }"
-                                >
-                                    {{ item.staff?.category_name || '服务人员' }}
+                                <text class="waitlist-card__status-text">
+                                    {{ item.statusText }}
                                 </text>
+                            </view>
+                        </view>
+
+                        <view class="waitlist-card__body">
+                            <text class="waitlist-card__schedule">{{ item.scheduleText }}</text>
+                            <text class="waitlist-card__detail">{{ item.detailText }}</text>
+                        </view>
+
+                        <view class="waitlist-card__foot">
+                            <text class="waitlist-card__created-at">
+                                创建于 {{ item.createdAtText }}
+                            </text>
+
+                            <view
+                                v-if="item.showBookAction || item.showCancelAction"
+                                class="waitlist-card__actions"
+                            >
+                                <view
+                                    v-if="item.showCancelAction"
+                                    class="waitlist-card__action"
+                                    @click.stop="handleCancel(item)"
+                                >
+                                    <text class="waitlist-card__action-text">取消候补</text>
+                                </view>
+                                <view
+                                    v-if="item.showBookAction"
+                                    class="waitlist-card__action waitlist-card__action--primary"
+                                    @click.stop="handleBook(item)"
+                                >
+                                    <text
+                                        class="waitlist-card__action-text waitlist-card__action-text--primary"
+                                    >
+                                        立即预约
+                                    </text>
+                                </view>
                             </view>
                         </view>
                     </view>
                 </view>
-
-                <!-- 预约信息区域 -->
-                <view class="info-section">
-                    <view class="info-item">
-                        <view
-                            class="icon-wrapper"
-                            :style="{ background: getColorWithOpacity($theme.primaryColor, 0.1) }"
-                        >
-                            <tn-icon name="calendar" size="36" :color="$theme.primaryColor" />
-                        </view>
-                        <view class="info-content">
-                            <text class="info-label">预约日期</text>
-                            <text class="info-value">{{ item.schedule_date }}</text>
-                        </view>
-                    </view>
-
-                    <view class="info-item" v-if="item.package || item.package_id">
-                        <view
-                            class="icon-wrapper"
-                            :style="{ background: getColorWithOpacity($theme.secondaryColor, 0.1) }"
-                        >
-                            <tn-icon name="gift" size="36" :color="$theme.secondaryColor" />
-                        </view>
-                        <view class="info-content">
-                            <text class="info-label">套餐</text>
-                            <text class="info-value">{{ item.package?.name || '套餐已删除' }}</text>
-                        </view>
-                    </view>
-                </view>
-
-                <!-- 底部：时间 + 操作按钮 -->
-                <view class="card-footer">
-                    <view class="time-info">
-                        <tn-icon name="clock" size="28" color="#999999" />
-                        <text class="time-text">{{ formatTime(item.create_time) }}</text>
-                    </view>
-                    <view class="action-buttons">
-                        <view
-                            v-if="item.notify_status === 1"
-                            class="btn btn-book"
-                            :style="{
-                                background: `linear-gradient(135deg, ${$theme.ctaColor} 0%, ${$theme.ctaColor} 100%)`,
-                                color: $theme.btnColor
-                            }"
-                            @click.stop="handleBook(item)"
-                        >
-                            <tn-icon name="check-circle" size="28" :color="$theme.btnColor" />
-                            <text>立即预约</text>
-                        </view>
-                        <view
-                            v-if="item.notify_status === 0 || item.notify_status === 1"
-                            class="btn btn-cancel"
-                            @click.stop="handleCancel(item)"
-                        >
-                            <tn-icon name="close-circle" size="28" color="#666666" />
-                            <text>取消候补</text>
-                        </view>
-                    </view>
-                </view>
             </view>
-        </view>
         </view>
     </PageShell>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import { getMyWaitlist, cancelWaitlist } from '@/api/schedule'
 import { useThemeStore } from '@/stores/theme'
+
+interface WaitlistRecord {
+    id: number | string
+    staff_id?: number
+    schedule_date?: string
+    package_id?: number
+    package?: {
+        name?: string
+    }
+    staff?: {
+        name?: string
+        category_name?: string
+    }
+    notify_status: number
+    notify_status_desc?: string
+    create_time?: string | number
+}
+
+interface WaitlistViewItem extends WaitlistRecord {
+    title: string
+    scheduleText: string
+    detailText: string
+    createdAtText: string
+    statusText: string
+    statusClass: string
+    showBookAction: boolean
+    showCancelAction: boolean
+}
 
 const $theme = useThemeStore()
 
@@ -174,93 +150,97 @@ const statusTabs = [
 
 const loading = ref(false)
 const currentStatus = ref(-1)
-const waitlist = ref<any[]>([])
+const waitlist = ref<WaitlistRecord[]>([])
 
-// 获取列表
+const getStatusClass = (status: number) => {
+    const map: Record<number, string> = {
+        0: 'waitlist-card__status--waiting',
+        1: 'waitlist-card__status--notified',
+        2: 'waitlist-card__status--ordered',
+        3: 'waitlist-card__status--expired'
+    }
+
+    return map[status] || 'waitlist-card__status--waiting'
+}
+
+const getStatusText = (status: number) => {
+    const map: Record<number, string> = {
+        0: '等待中',
+        1: '已通知',
+        2: '已下单',
+        3: '已过期'
+    }
+
+    return map[status] || '等待中'
+}
+
+const buildTitle = (item: WaitlistRecord) => {
+    return String(item.staff?.name || '').trim() || '待确认服务人员'
+}
+
+const buildScheduleText = (item: WaitlistRecord) => {
+    return String(item.schedule_date || '').trim() || '待选择预约日期'
+}
+
+const buildDetailText = (item: WaitlistRecord) => {
+    return (
+        [item.package?.name, item.staff?.category_name]
+            .map((value) => String(value || '').trim())
+            .filter(Boolean)
+            .join(' · ') || '候补已提交'
+    )
+}
+
+const waitlistItems = computed<WaitlistViewItem[]>(() => {
+    return waitlist.value.map((item) => ({
+        ...item,
+        title: buildTitle(item),
+        scheduleText: buildScheduleText(item),
+        detailText: buildDetailText(item),
+        createdAtText: formatTime(item.create_time),
+        statusText: item.notify_status_desc || getStatusText(Number(item.notify_status || 0)),
+        statusClass: getStatusClass(Number(item.notify_status || 0)),
+        showBookAction: Number(item.notify_status) === 1,
+        showCancelAction: [0, 1].includes(Number(item.notify_status))
+    }))
+})
+
 const fetchList = async () => {
     loading.value = true
     try {
-        const params: any = {}
+        const params: Record<string, number> = {}
         if (currentStatus.value >= 0) {
             params.status = currentStatus.value
         }
         const res = await getMyWaitlist(params)
-        waitlist.value = res || []
+        waitlist.value = Array.isArray(res) ? res : []
     } finally {
         loading.value = false
     }
 }
 
-// 获取状态样式类
-const getStatusClass = (status: number) => {
-    const map: Record<number, string> = {
-        0: 'status-waiting',
-        1: 'status-notified',
-        2: 'status-ordered',
-        3: 'status-expired'
+const handleStatusChange = (status: number) => {
+    if (currentStatus.value === status) {
+        return
     }
-    return map[status] || ''
+
+    currentStatus.value = status
+    fetchList()
 }
 
-// 获取状态图标
-const getStatusIcon = (status: number) => {
-    const map: Record<number, string> = {
-        0: 'clock',
-        1: 'notification-fill',
-        2: 'check-circle-fill',
-        3: 'close-circle-fill'
-    }
-    return map[status] || 'clock'
-}
-
-// 获取状态颜色
-const getStatusColor = (status: number) => {
-    const map: Record<number, string> = {
-        0: '#1890FF',
-        1: '#FA8C16',
-        2: '#52C41A',
-        3: '#999999'
-    }
-    return map[status] || '#999999'
-}
-
-// 获取带透明度的颜色
-const getColorWithOpacity = (color: string, opacity: number) => {
-    // 如果是十六进制颜色
-    if (color.startsWith('#')) {
-        const hex = color.replace('#', '')
-        const r = parseInt(hex.substring(0, 2), 16)
-        const g = parseInt(hex.substring(2, 4), 16)
-        const b = parseInt(hex.substring(4, 6), 16)
-        return `rgba(${r}, ${g}, ${b}, ${opacity})`
-    }
-    // 如果已经是 rgba 格式，直接返回
-    return color
-}
-
-// 格式化时间
-const formatTime = (timestamp: any) => {
+const formatTime = (timestamp: WaitlistRecord['create_time']) => {
     if (!timestamp) return '未知时间'
 
     let date: Date
 
-    // 处理不同的时间格式
     if (typeof timestamp === 'string') {
-        // 如果是字符串，直接解析
         date = new Date(timestamp)
     } else if (typeof timestamp === 'number') {
-        // 如果是数字，判断是秒还是毫秒
-        // 如果小于 10000000000，认为是秒级时间戳
-        if (timestamp < 10000000000) {
-            date = new Date(timestamp * 1000)
-        } else {
-            date = new Date(timestamp)
-        }
+        date = timestamp < 10000000000 ? new Date(timestamp * 1000) : new Date(timestamp)
     } else {
         return '未知时间'
     }
 
-    // 检查日期是否有效
     if (isNaN(date.getTime())) {
         return '未知时间'
     }
@@ -274,13 +254,11 @@ const formatTime = (timestamp: any) => {
     return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
-// 点击卡片
-const handleItemClick = (item: any) => {
-    // 可以跳转到详情页或其他操作
+const goSchedule = () => {
+    uni.navigateTo({ url: '/pages/schedule_query/schedule_query' })
 }
 
-// 立即预约
-const handleBook = (item: any) => {
+const handleBook = (item: WaitlistRecord) => {
     if (!item.staff_id) {
         uni.showToast({ title: '服务人员信息错误', icon: 'none' })
         return
@@ -296,13 +274,13 @@ const handleBook = (item: any) => {
     if (!item.schedule_date) {
         params.push('open_date_picker=1')
     }
+
     uni.navigateTo({
         url: `/packages/pages/staff_detail/staff_detail?${params.join('&')}`
     })
 }
 
-// 取消候补
-const handleCancel = (item: any) => {
+const handleCancel = (item: WaitlistRecord) => {
     uni.showModal({
         title: '取消候补',
         content: '确定要取消该候补吗？取消后需要重新加入候补队列。',
@@ -310,12 +288,11 @@ const handleCancel = (item: any) => {
         success: async (res) => {
             if (res.confirm) {
                 try {
-                    // 确保 id 是数字类型
                     await cancelWaitlist({ id: Number(item.id) })
                     uni.showToast({ title: '取消成功', icon: 'success' })
                     fetchList()
-                } catch (e: any) {
-                    uni.showToast({ title: e.message || '操作失败', icon: 'none' })
+                } catch (error: any) {
+                    uni.showToast({ title: error.message || '操作失败', icon: 'none' })
                 }
             }
         }
@@ -323,297 +300,268 @@ const handleCancel = (item: any) => {
 }
 
 onShow(() => {
+    $theme.setScene('consumer')
     fetchList()
 })
 </script>
 
 <style lang="scss" scoped>
 .waitlist-page {
-    background: transparent;
-    padding-bottom: 24rpx;
-}
+    min-height: 100%;
+    background: var(--wm-color-page, #fcfbf9);
 
-/* 筛选标签 */
-.filter-tabs {
-    display: flex;
-    background: #ffffff;
-    padding: 0;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+    &__filter-scroll {
+        margin-top: var(--wm-space-section-gap-sm, 22rpx);
+        padding: 0 var(--wm-space-page-x, 37rpx);
+        white-space: nowrap;
+    }
 
-    .tab-item {
-        flex: 1;
-        text-align: center;
-        padding: 28rpx 0;
-        position: relative;
-        transition: all 0.2s ease;
+    &__filter-row {
+        display: inline-flex;
+        gap: var(--wm-space-section-gap-sm, 22rpx);
+        padding-bottom: 15rpx;
+    }
 
-        .tab-label {
-            font-size: 28rpx;
-            color: #666666;
-            font-weight: 400;
-            transition: all 0.2s ease;
+    &__filter-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 82rpx;
+        padding: 0 30rpx;
+        border-radius: 999rpx;
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        background: rgba(255, 255, 255, 0.84);
+        color: var(--wm-text-secondary, #7f7b78);
+        box-sizing: border-box;
+
+        &--active {
+            border-color: var(--wm-color-primary, #e85a4f);
+            background: var(--wm-color-primary, #e85a4f);
+            color: #ffffff;
+            box-shadow: 0 8rpx 18rpx rgba(232, 90, 79, 0.14);
         }
+    }
 
-        .tab-indicator {
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 48rpx;
-            height: 6rpx;
-            border-radius: 3rpx;
-            transition: all 0.3s ease;
-        }
+    &__filter-chip-text {
+        font-size: 28rpx;
+        font-weight: 600;
+        line-height: 1;
+    }
 
-        &.active {
-            .tab-label {
-                font-weight: 700;
-            }
-        }
+    &__content {
+        padding: var(--wm-space-section-gap-sm, 22rpx) var(--wm-space-page-x, 37rpx)
+            var(--wm-space-6, 45rpx);
     }
 }
 
-/* 空状态 */
+.loading-state {
+    min-height: 56vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+}
+
+.loading-text {
+    font-size: 26rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
 .empty-state {
+    min-height: 56vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding-top: 200rpx;
-
-    .empty-text {
-        font-size: 30rpx;
-        color: #333333;
-        font-weight: 600;
-        margin-top: 32rpx;
-    }
-
-    .empty-hint {
-        font-size: 26rpx;
-        color: #999999;
-        margin-top: 16rpx;
-        text-align: center;
-        padding: 0 48rpx;
-        line-height: 1.6;
-    }
+    padding: var(--wm-space-8, 60rpx) 24rpx 96rpx;
 }
 
-/* 候补列表 */
-.waitlist-list {
-    padding: 24rpx;
+.empty-icon-wrapper {
+    width: 220rpx;
+    height: 220rpx;
+    margin-bottom: var(--wm-space-3, 22rpx);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* 候补卡片 */
-.waitlist-card {
-    position: relative;
-    background: #ffffff;
-    border-radius: 24rpx;
-    padding: 0;
-    margin-bottom: 24rpx;
-    box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-    transition: all 0.3s ease;
+.empty-title {
+    font-size: 34rpx;
+    font-weight: 600;
+    color: var(--wm-text-primary, #1e2432);
+    margin-bottom: var(--wm-space-5, 37rpx);
+    text-align: center;
+}
+
+.empty-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 280rpx;
+    min-height: 88rpx;
+    padding: 0 36rpx;
+    border-radius: 999rpx;
+    box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.16);
 
     &:active {
-        transform: translateY(-2rpx);
-        box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);
+        transform: translateY(1rpx);
     }
+}
 
-    /* 状态标签（顶部彩带） */
-    .status-ribbon {
-        display: flex;
-        align-items: center;
-        gap: 8rpx;
-        padding: 16rpx 32rpx;
-        font-size: 24rpx;
-        font-weight: 600;
+.empty-action-text {
+    font-size: 30rpx;
+    font-weight: 700;
+}
 
-        &.status-waiting {
-            background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
-            color: #1890ff;
-        }
+.waitlist-list {
+    display: flex;
+    flex-direction: column;
+    gap: 30rpx;
+}
 
-        &.status-notified {
-            background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%);
-            color: #fa8c16;
-        }
+.waitlist-card {
+    padding: var(--wm-space-card-padding-lg, 34rpx) var(--wm-space-page-x, 37rpx);
+    border-radius: var(--wm-radius-card, 45rpx);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.08);
+}
 
-        &.status-ordered {
-            background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
-            color: #52c41a;
-        }
+.waitlist-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+}
 
-        &.status-expired {
-            background: linear-gradient(135deg, #f5f5f5 0%, #e5e5e5 100%);
-            color: #999999;
-        }
+.waitlist-card__title {
+    flex: 1;
+    min-width: 0;
+    display: block;
+    font-size: 30rpx;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.waitlist-card__status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48rpx;
+    padding: 0 24rpx;
+    border-radius: 999rpx;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.waitlist-card__status--waiting {
+    color: var(--wm-color-info, #607086);
+    background: rgba(96, 112, 134, 0.1);
+    border: 1rpx solid rgba(96, 112, 134, 0.14);
+}
+
+.waitlist-card__status--notified {
+    color: var(--wm-color-warning, #c98524);
+    background: rgba(201, 133, 36, 0.12);
+    border: 1rpx solid rgba(201, 133, 36, 0.14);
+}
+
+.waitlist-card__status--ordered {
+    color: var(--wm-color-success, #2f7d58);
+    background: rgba(47, 125, 88, 0.12);
+    border: 1rpx solid rgba(47, 125, 88, 0.14);
+}
+
+.waitlist-card__status--expired {
+    color: var(--wm-text-tertiary, #b4aca8);
+    background: rgba(180, 172, 168, 0.14);
+    border: 1rpx solid rgba(180, 172, 168, 0.16);
+}
+
+.waitlist-card__status-text {
+    font-size: 24rpx;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.waitlist-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    margin-top: 20rpx;
+}
+
+.waitlist-card__schedule {
+    display: block;
+    font-size: 28rpx;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.waitlist-card__detail {
+    display: block;
+    font-size: 24rpx;
+    line-height: 1.7;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.waitlist-card__foot {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24rpx;
+    margin-top: var(--wm-space-4, 30rpx);
+}
+
+.waitlist-card__created-at {
+    flex: 1;
+    min-width: 0;
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.waitlist-card__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 16rpx;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.waitlist-card__action {
+    min-width: 128rpx;
+    height: 82rpx;
+    padding: 0 30rpx;
+    border-radius: 999rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.82);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+
+    &--primary {
+        border-color: var(--wm-color-primary, #e85a4f);
+        background: var(--wm-color-primary, #e85a4f);
     }
+}
 
-    /* 卡片头部 */
-    .card-header {
-        padding: 32rpx 32rpx 24rpx;
+.waitlist-card__action-text {
+    font-size: 24rpx;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--wm-text-primary, #1e2432);
 
-        .staff-section {
-            display: flex;
-            align-items: center;
-
-            .avatar-wrapper {
-                position: relative;
-                margin-right: 24rpx;
-
-                .staff-avatar {
-                    width: 96rpx;
-                    height: 96rpx;
-                    border-radius: 50%;
-                    display: block;
-                }
-
-                .avatar-border {
-                    position: absolute;
-                    top: -4rpx;
-                    left: -4rpx;
-                    right: -4rpx;
-                    bottom: -4rpx;
-                    border: 3rpx solid;
-                    border-radius: 50%;
-                    opacity: 0.3;
-                }
-            }
-
-            .staff-info {
-                flex: 1;
-
-                .staff-name {
-                    font-size: 34rpx;
-                    font-weight: 700;
-                    color: #333333;
-                    display: block;
-                    margin-bottom: 12rpx;
-                    line-height: 1.3;
-                }
-
-                .staff-tag {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8rpx;
-                    padding: 8rpx 16rpx;
-                    border: 2rpx solid;
-                    border-radius: 24rpx;
-
-                    .staff-category {
-                        font-size: 24rpx;
-                        font-weight: 500;
-                    }
-                }
-            }
-        }
-    }
-
-    /* 预约信息区域 */
-    .info-section {
-        padding: 0 32rpx 24rpx;
-
-        .info-item {
-            display: flex;
-            align-items: center;
-            gap: 20rpx;
-            padding: 20rpx 0;
-            border-bottom: 1rpx solid #f0f0f0;
-
-            &:last-child {
-                border-bottom: none;
-            }
-
-            .icon-wrapper {
-                width: 72rpx;
-                height: 72rpx;
-                border-radius: 16rpx;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-            }
-
-            .info-content {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 8rpx;
-
-                .info-label {
-                    font-size: 24rpx;
-                    color: #999999;
-                    line-height: 1.4;
-                }
-
-                .info-value {
-                    font-size: 30rpx;
-                    color: #333333;
-                    font-weight: 600;
-                    line-height: 1.4;
-                }
-            }
-        }
-    }
-
-    /* 底部操作 */
-    .card-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 24rpx 32rpx 32rpx;
-        border-top: 1rpx solid #f0f0f0;
-
-        .time-info {
-            display: flex;
-            align-items: center;
-            gap: 8rpx;
-
-            .time-text {
-                font-size: 24rpx;
-                color: #999999;
-            }
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 16rpx;
-
-            .btn {
-                display: flex;
-                align-items: center;
-                gap: 8rpx;
-                padding: 18rpx 32rpx;
-                border-radius: 56rpx;
-                font-size: 26rpx;
-                font-weight: 600;
-                transition: all 0.2s ease;
-                white-space: nowrap;
-
-                &.btn-book {
-                    box-shadow: 0 8rpx 24rpx rgba(249, 115, 22, 0.3);
-
-                    &:active {
-                        transform: scale(0.96);
-                        box-shadow: 0 4rpx 12rpx rgba(249, 115, 22, 0.3);
-                    }
-                }
-
-                &.btn-cancel {
-                    background: #ffffff;
-                    border: 2rpx solid #e5e5e5;
-                    color: #666666;
-
-                    &:active {
-                        background: #f5f5f5;
-                        border-color: #d9d9d9;
-                    }
-                }
-            }
-        }
+    &--primary {
+        color: #ffffff;
     }
 }
 </style>

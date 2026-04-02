@@ -245,14 +245,13 @@ const inferPresetKeyByColor = (color?: string): ThemePresetKey => {
 }
 
 export const normalizeThemeConfig = (rawData: any): NormalizedThemeConfig => {
-    const source =
-        rawData && typeof rawData === 'object' && !Array.isArray(rawData) ? rawData : {}
+    const source = rawData && typeof rawData === 'object' && !Array.isArray(rawData) ? rawData : {}
     const presetKey =
         typeof source.presetKey === 'string'
             ? (source.presetKey as ThemePresetKey)
             : source.themeColorId
-              ? inferPresetKeyByLegacyId(source.themeColorId)
-              : inferPresetKeyByColor(source.themeColor1)
+            ? inferPresetKeyByLegacyId(source.themeColorId)
+            : inferPresetKeyByColor(source.themeColor1)
     const preset = getThemePreset(presetKey)
 
     return {

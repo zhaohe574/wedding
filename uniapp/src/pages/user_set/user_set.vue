@@ -4,228 +4,228 @@
         <BaseNavbar title="设置" />
 
         <view class="user-set-page">
-        <!-- 用户信息卡片 -->
-        <navigator :url="`/pages/user_data/user_data`" hover-class="none">
-            <view class="user-info-card">
-                <view class="card-content">
-                    <tn-avatar
-                        :url="userInfo.avatar || '/static/images/user/default_avatar.png'"
-                        shape="square"
-                        :size="120"
-                        :border-radius="20"
-                    ></tn-avatar>
-                    <view class="user-details">
-                        <view class="user-name">{{ userInfo.nickname }}</view>
-                        <view class="user-account">账号：{{ userInfo.account }}</view>
-                    </view>
-                    <view class="arrow-icon">
-                        <tn-icon name="right" :size="32" color="#999"></tn-icon>
-                    </view>
-                </view>
-            </view>
-        </navigator>
-
-        <!-- 账号安全区域 -->
-        <view class="section-card">
-            <view class="section-title">账号安全</view>
-
-            <view class="menu-item" hover-class="menu-item-hover" @click="handlePwd">
-                <view class="menu-left">
-                    <view class="menu-icon" :style="{ background: getIconBg('primary') }">
-                        <tn-icon name="lock" :size="36" color="#FFFFFF"></tn-icon>
-                    </view>
-                    <text class="menu-text">登录密码</text>
-                </view>
-                <view class="menu-right">
-                    <text class="menu-value">{{
-                        userInfo.has_password ? '已设置' : '未设置'
-                    }}</text>
-                    <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
-                </view>
-            </view>
-
-            <!--  #ifdef H5 || MP-WEIXIN -->
-            <view
-                v-if="isWeixin"
-                class="menu-item"
-                hover-class="menu-item-hover"
-                @click="bindWechatLock"
-            >
-                <view class="menu-left">
-                    <view class="menu-icon" :style="{ background: getIconBg('secondary') }">
-                        <tn-icon name="wechat-fill" :size="36" color="#FFFFFF"></tn-icon>
-                    </view>
-                    <text class="menu-text">绑定微信</text>
-                </view>
-                <view class="menu-right">
-                    <view
-                        class="status-badge"
-                        :style="{
-                            background: userInfo.is_auth
-                                ? getStatusBg('success')
-                                : getStatusBg('warning'),
-                            color: userInfo.is_auth ? '#19BE6B' : '#FF9900'
-                        }"
-                    >
-                        {{ userInfo.is_auth ? '已绑定' : '未绑定' }}
-                    </view>
-                    <tn-icon
-                        v-if="!userInfo.is_auth"
-                        name="right"
-                        :size="32"
-                        color="#C8C9CC"
-                    ></tn-icon>
-                </view>
-            </view>
-            <!-- #endif -->
-        </view>
-
-        <!-- 协议与关于 -->
-        <view class="section-card">
-            <view class="section-title">协议与关于</view>
-
-            <navigator
-                :url="`/packages/pages/agreement/agreement?type=${AgreementEnum.PRIVACY}`"
-                hover-class="none"
-            >
-                <view class="menu-item" hover-class="menu-item-hover">
-                    <view class="menu-left">
-                        <view class="menu-icon" :style="{ background: getIconBg('accent') }">
-                            <tn-icon name="honor" :size="36" color="#FFFFFF"></tn-icon>
+            <!-- 用户信息卡片 -->
+            <navigator :url="`/pages/user_data/user_data`" hover-class="none">
+                <view class="user-info-card">
+                    <view class="card-content">
+                        <tn-avatar
+                            :url="userInfo.avatar || '/static/images/user/default_avatar.png'"
+                            shape="square"
+                            :size="120"
+                            :border-radius="20"
+                        ></tn-avatar>
+                        <view class="user-details">
+                            <view class="user-name">{{ userInfo.nickname }}</view>
+                            <view class="user-account">账号：{{ userInfo.account }}</view>
                         </view>
-                        <text class="menu-text">隐私政策</text>
-                    </view>
-                    <view class="menu-right">
-                        <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
+                        <view class="arrow-icon">
+                            <tn-icon name="right" :size="32" color="#999"></tn-icon>
+                        </view>
                     </view>
                 </view>
             </navigator>
 
-            <navigator
-                :url="`/packages/pages/agreement/agreement?type=${AgreementEnum.SERVICE}`"
-                hover-class="none"
-            >
-                <view class="menu-item" hover-class="menu-item-hover">
+            <!-- 账号安全区域 -->
+            <view class="section-card">
+                <view class="section-title">账号安全</view>
+
+                <view class="menu-item" hover-class="menu-item-hover" @click="handlePwd">
                     <view class="menu-left">
-                        <view class="menu-icon" :style="{ background: getIconBg('cta') }">
-                            <tn-icon name="honor" :size="36" color="#FFFFFF"></tn-icon>
+                        <view class="menu-icon" :style="{ background: getIconBg('primary') }">
+                            <tn-icon name="lock" :size="36" color="#FFFFFF"></tn-icon>
                         </view>
-                        <text class="menu-text">服务协议</text>
+                        <text class="menu-text">登录密码</text>
                     </view>
                     <view class="menu-right">
+                        <text class="menu-value">{{
+                            userInfo.has_password ? '已设置' : '未设置'
+                        }}</text>
                         <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
                     </view>
                 </view>
-            </navigator>
 
-            <navigator url="/pages/as_us/as_us" hover-class="none">
-                <view class="menu-item menu-item-last" hover-class="menu-item-hover">
+                <!--  #ifdef H5 || MP-WEIXIN -->
+                <view
+                    v-if="isWeixin"
+                    class="menu-item"
+                    hover-class="menu-item-hover"
+                    @click="bindWechatLock"
+                >
                     <view class="menu-left">
-                        <view class="menu-icon" :style="{ background: getIconBg('info') }">
-                            <tn-icon name="building" :size="36" color="#FFFFFF"></tn-icon>
+                        <view class="menu-icon" :style="{ background: getIconBg('secondary') }">
+                            <tn-icon name="wechat-fill" :size="36" color="#FFFFFF"></tn-icon>
                         </view>
-                        <text class="menu-text">关于我们</text>
+                        <text class="menu-text">绑定微信</text>
                     </view>
                     <view class="menu-right">
-                        <text class="menu-value">{{ appStore.config.version }}</text>
-                        <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
+                        <view
+                            class="status-badge"
+                            :style="{
+                                background: userInfo.is_auth
+                                    ? getStatusBg('success')
+                                    : getStatusBg('warning'),
+                                color: userInfo.is_auth ? '#19BE6B' : '#FF9900'
+                            }"
+                        >
+                            {{ userInfo.is_auth ? '已绑定' : '未绑定' }}
+                        </view>
+                        <tn-icon
+                            v-if="!userInfo.is_auth"
+                            name="right"
+                            :size="32"
+                            color="#C8C9CC"
+                        ></tn-icon>
                     </view>
                 </view>
-            </navigator>
-        </view>
+                <!-- #endif -->
+            </view>
 
-        <!-- 退出登录按钮 -->
-        <view class="logout-container">
-            <view
-                class="logout-btn"
-                :style="{
-                    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                    color: $theme.btnColor
-                }"
-                hover-class="logout-btn-hover"
-                @click="showLogout = true"
+            <!-- 协议与关于 -->
+            <view class="section-card">
+                <view class="section-title">协议与关于</view>
+
+                <navigator
+                    :url="`/packages/pages/agreement/agreement?type=${AgreementEnum.PRIVACY}`"
+                    hover-class="none"
+                >
+                    <view class="menu-item" hover-class="menu-item-hover">
+                        <view class="menu-left">
+                            <view class="menu-icon" :style="{ background: getIconBg('accent') }">
+                                <tn-icon name="honor" :size="36" color="#FFFFFF"></tn-icon>
+                            </view>
+                            <text class="menu-text">隐私政策</text>
+                        </view>
+                        <view class="menu-right">
+                            <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
+                        </view>
+                    </view>
+                </navigator>
+
+                <navigator
+                    :url="`/packages/pages/agreement/agreement?type=${AgreementEnum.SERVICE}`"
+                    hover-class="none"
+                >
+                    <view class="menu-item" hover-class="menu-item-hover">
+                        <view class="menu-left">
+                            <view class="menu-icon" :style="{ background: getIconBg('cta') }">
+                                <tn-icon name="honor" :size="36" color="#FFFFFF"></tn-icon>
+                            </view>
+                            <text class="menu-text">服务协议</text>
+                        </view>
+                        <view class="menu-right">
+                            <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
+                        </view>
+                    </view>
+                </navigator>
+
+                <navigator url="/pages/as_us/as_us" hover-class="none">
+                    <view class="menu-item menu-item-last" hover-class="menu-item-hover">
+                        <view class="menu-left">
+                            <view class="menu-icon" :style="{ background: getIconBg('info') }">
+                                <tn-icon name="building" :size="36" color="#FFFFFF"></tn-icon>
+                            </view>
+                            <text class="menu-text">关于我们</text>
+                        </view>
+                        <view class="menu-right">
+                            <text class="menu-value">{{ appStore.config.version }}</text>
+                            <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
+                        </view>
+                    </view>
+                </navigator>
+            </view>
+
+            <!-- 退出登录按钮 -->
+            <view class="logout-container">
+                <view
+                    class="logout-btn"
+                    :style="{
+                        background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+                        color: $theme.btnColor
+                    }"
+                    hover-class="logout-btn-hover"
+                    @click="showLogout = true"
+                >
+                    <tn-icon name="logout" :size="36" :color="$theme.btnColor"></tn-icon>
+                    <text class="logout-text">退出登录</text>
+                </view>
+            </view>
+
+            <!-- 密码操作选择弹窗 -->
+            <tn-popup
+                v-model="show"
+                open-direction="bottom"
+                :radius="32"
+                :safe-area-inset-bottom="true"
             >
-                <tn-icon name="logout" :size="36" :color="$theme.btnColor"></tn-icon>
-                <text class="logout-text">退出登录</text>
-            </view>
-        </view>
-
-        <!-- 密码操作选择弹窗 -->
-        <tn-popup
-            v-model="show"
-            open-direction="bottom"
-            :radius="32"
-            :safe-area-inset-bottom="true"
-        >
-            <view class="password-action-popup">
-                <view class="action-header">
-                    <text class="action-title">密码管理</text>
-                    <view class="close-btn" @click="show = false">
-                        <tn-icon name="close" :size="32" color="#999"></tn-icon>
-                    </view>
-                </view>
-                <view class="action-list">
-                    <view
-                        class="action-item"
-                        hover-class="action-item-hover"
-                        @click="handlePasswordAction(0)"
-                    >
-                        <view class="action-icon" :style="{ background: getIconBg('primary') }">
-                            <tn-icon name="edit" :size="36" color="#FFFFFF"></tn-icon>
+                <view class="password-action-popup">
+                    <view class="action-header">
+                        <text class="action-title">密码管理</text>
+                        <view class="close-btn" @click="show = false">
+                            <tn-icon name="close" :size="32" color="#999"></tn-icon>
                         </view>
-                        <text class="action-text">修改密码</text>
-                        <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
                     </view>
-                    <view
-                        class="action-item"
-                        hover-class="action-item-hover"
-                        @click="handlePasswordAction(1)"
-                    >
-                        <view class="action-icon" :style="{ background: getIconBg('warning') }">
-                            <tn-icon name="help" :size="36" color="#FFFFFF"></tn-icon>
+                    <view class="action-list">
+                        <view
+                            class="action-item"
+                            hover-class="action-item-hover"
+                            @click="handlePasswordAction(0)"
+                        >
+                            <view class="action-icon" :style="{ background: getIconBg('primary') }">
+                                <tn-icon name="edit" :size="36" color="#FFFFFF"></tn-icon>
+                            </view>
+                            <text class="action-text">修改密码</text>
+                            <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
                         </view>
-                        <text class="action-text">忘记密码</text>
-                        <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
+                        <view
+                            class="action-item"
+                            hover-class="action-item-hover"
+                            @click="handlePasswordAction(1)"
+                        >
+                            <view class="action-icon" :style="{ background: getIconBg('warning') }">
+                                <tn-icon name="help" :size="36" color="#FFFFFF"></tn-icon>
+                            </view>
+                            <text class="action-text">忘记密码</text>
+                            <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
+                        </view>
                     </view>
                 </view>
-            </view>
-        </tn-popup>
+            </tn-popup>
 
-        <!-- 退出登录确认弹窗 -->
-        <tn-popup
-            v-model="showLogout"
-            open-direction="center"
-            :radius="32"
-            :overlay-closeable="false"
-        >
-            <view class="logout-popup">
-                <view class="popup-icon" :style="{ background: getIconBg('warning') }">
-                    <tn-icon name="warning" :size="64" color="#FFFFFF"></tn-icon>
-                </view>
-                <view class="popup-title">温馨提示</view>
-                <view class="popup-content"> 是否清除当前登录信息，退出登录？ </view>
-                <view class="popup-actions">
-                    <view
-                        class="action-btn action-btn-cancel"
-                        hover-class="action-btn-hover"
-                        @click="showLogout = false"
-                    >
-                        取消
+            <!-- 退出登录确认弹窗 -->
+            <tn-popup
+                v-model="showLogout"
+                open-direction="center"
+                :radius="32"
+                :overlay-closeable="false"
+            >
+                <view class="logout-popup">
+                    <view class="popup-icon" :style="{ background: getIconBg('warning') }">
+                        <tn-icon name="warning" :size="64" color="#FFFFFF"></tn-icon>
                     </view>
-                    <view
-                        class="action-btn action-btn-confirm"
-                        :style="{
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                            color: $theme.btnColor
-                        }"
-                        hover-class="action-btn-hover"
-                        @click="logoutHandle"
-                    >
-                        确认退出
+                    <view class="popup-title">温馨提示</view>
+                    <view class="popup-content"> 是否清除当前登录信息，退出登录？ </view>
+                    <view class="popup-actions">
+                        <view
+                            class="action-btn action-btn-cancel"
+                            hover-class="action-btn-hover"
+                            @click="showLogout = false"
+                        >
+                            取消
+                        </view>
+                        <view
+                            class="action-btn action-btn-confirm"
+                            :style="{
+                                background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
+                                color: $theme.btnColor
+                            }"
+                            hover-class="action-btn-hover"
+                            @click="logoutHandle"
+                        >
+                            确认退出
+                        </view>
                     </view>
                 </view>
-            </view>
-        </tn-popup>
+            </tn-popup>
         </view>
     </PageShell>
 </template>
@@ -352,7 +352,9 @@ onLoad(async (options) => {
         try {
             await oaAuthBind({ code })
             await userStore.getUser()
-        } catch (error) {}
+        } catch (_error) {
+            /* 绑定失败静默处理，后续重定向清空 code */
+        }
         //用于清空code
         router.redirectTo('/pages/user_set/user_set')
     }

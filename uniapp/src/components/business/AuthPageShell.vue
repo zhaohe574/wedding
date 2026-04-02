@@ -45,17 +45,17 @@ const props = defineProps<Props>()
 const themeStore = useThemeStore()
 
 const primaryOrb = computed(() => ({
-    background: `radial-gradient(circle, ${alphaColor(themeStore.primaryColor, 0.18)} 0%, ${alphaColor(
+    background: `radial-gradient(circle, ${alphaColor(
         themeStore.primaryColor,
-        0
-    )} 72%)`
+        0.18
+    )} 0%, ${alphaColor(themeStore.primaryColor, 0)} 72%)`
 }))
 
 const secondaryOrb = computed(() => ({
-    background: `radial-gradient(circle, ${alphaColor(themeStore.secondaryColor, 0.18)} 0%, ${alphaColor(
+    background: `radial-gradient(circle, ${alphaColor(
         themeStore.secondaryColor,
-        0
-    )} 72%)`
+        0.18
+    )} 0%, ${alphaColor(themeStore.secondaryColor, 0)} 72%)`
 }))
 </script>
 
@@ -64,8 +64,12 @@ const secondaryOrb = computed(() => ({
     position: relative;
     min-height: 100vh;
     overflow: hidden;
-    background:
-        linear-gradient(180deg, rgba(255, 245, 241, 0.96) 0%, rgba(252, 251, 249, 1) 56%, rgba(247, 241, 237, 0.92) 100%),
+    background: linear-gradient(
+            180deg,
+            rgba(255, 245, 241, 0.96) 0%,
+            rgba(252, 251, 249, 1) 56%,
+            rgba(247, 241, 237, 0.92) 100%
+        ),
         var(--wm-color-bg-page, #fcfbf9);
 }
 

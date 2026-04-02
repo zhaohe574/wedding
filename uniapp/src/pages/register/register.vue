@@ -84,12 +84,7 @@
                 </tn-checkbox>
             </view>
 
-            <BaseButton
-                block
-                size="lg"
-                :disabled="!isFormValid"
-                @click="accountRegister"
-            >
+            <BaseButton block size="lg" :disabled="!isFormValid" @click="accountRegister">
                 立即注册
             </BaseButton>
         </view>

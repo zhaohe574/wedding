@@ -7,12 +7,7 @@
         </view>
         <text class="empty-state-block__title">{{ title }}</text>
         <text v-if="description" class="empty-state-block__description">{{ description }}</text>
-        <BaseButton
-            v-if="actionText"
-            variant="primary"
-            size="md"
-            @click="emit('action')"
-        >
+        <BaseButton v-if="actionText" variant="primary" size="md" @click="emit('action')">
             {{ actionText }}
         </BaseButton>
     </view>
