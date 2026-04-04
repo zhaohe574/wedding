@@ -28,7 +28,8 @@ class PayValidate extends BaseValidate
     protected $rule = [
         'from'      => 'require',
         'pay_way'   => 'require|in:' . PayEnum::BALANCE_PAY . ',' . PayEnum::WECHAT_PAY . ',' . PayEnum::ALI_PAY,
-        'order_id'  => 'require'
+        'order_id'  => 'require',
+        'payment_sn'=> 'max:32',
     ];
 
 
@@ -36,7 +37,8 @@ class PayValidate extends BaseValidate
         'from.require'      => '参数缺失',
         'pay_way.require'   => '支付方式参数缺失',
         'pay_way.in'        => '支付方式参数错误',
-        'order_id.require'  => '订单参数缺失'
+        'order_id.require'  => '订单参数缺失',
+        'payment_sn.max'    => '支付流水号长度错误',
     ];
 
 
@@ -60,7 +62,7 @@ class PayValidate extends BaseValidate
      */
     public function sceneStatus()
     {
-        return $this->only(['from', 'order_id']);
+        return $this->only(['from', 'order_id', 'payment_sn']);
     }
 
 

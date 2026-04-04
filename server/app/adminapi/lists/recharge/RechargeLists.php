@@ -119,6 +119,9 @@ class RechargeLists extends BaseAdminDataLists implements ListsSearchInterface, 
             ->toArray();
 
         foreach ($lists as &$item) {
+            // PHP 8 类型转换
+            $item['pay_time'] = (int)$item['pay_time'];
+            
             $item['avatar'] = FileService::getFileUrl($item['avatar']);
             $item['pay_time'] = empty($item['pay_time']) ? '' : date('Y-m-d H:i:s', $item['pay_time']);
         }

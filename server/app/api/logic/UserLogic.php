@@ -16,11 +16,13 @@ namespace app\api\logic;
 
 
 use app\common\{enum\notice\NoticeEnum,
+    model\crm\Customer,
     enum\user\UserTerminalEnum,
     enum\YesNoEnum,
     logic\BaseLogic,
     model\user\User,
     model\user\UserAuth,
+    model\order\Order,
     service\FileService,
     service\sms\SmsDriver,
     service\wechat\WeChatMnpService};
@@ -47,7 +49,7 @@ class UserLogic extends BaseLogic
     public static function center(array $userInfo): array
     {
         $user = User::where(['id' => $userInfo['user_id']])
-            ->field('id,sn,sex,account,nickname,real_name,avatar,mobile,create_time,is_new_user,user_money,password')
+            ->field('id,sn,sex,account,nickname,real_name,avatar,mobile,create_time,is_new_user,user_money,user_points,password')
             ->findOrEmpty();
 
         if (in_array($userInfo['terminal'], [UserTerminalEnum::WECHAT_MMP, UserTerminalEnum::WECHAT_OA])) {
@@ -56,6 +58,9 @@ class UserLogic extends BaseLogic
         }
 
         $user['has_password'] = !empty($user['password']);
+        $staffId = \app\common\service\StaffService::getStaffIdByUserId((int) $userInfo['user_id']);
+        $user['staff_id'] = $staffId;
+        $user['is_staff'] = $staffId > 0 ? 1 : 0;
         $user->hidden(['password']);
         return $user->toArray();
     }
@@ -71,7 +76,7 @@ class UserLogic extends BaseLogic
     public static function info(int $userId)
     {
         $user = User::where(['id' => $userId])
-            ->field('id,sn,sex,account,password,nickname,real_name,avatar,mobile,create_time,user_money')
+            ->field('id,sn,sex,account,password,nickname,real_name,avatar,mobile,create_time,user_money,user_points')
             ->findOrEmpty();
         $user['has_password'] = !empty($user['password']);
         $user['has_auth'] = self::hasWechatAuth($userId);
@@ -285,6 +290,72 @@ class UserLogic extends BaseLogic
         } catch (\Exception $e) {
             self::setError($e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * @notes 获取用户婚期信息
+     * @param int $userId 用户ID
+     * @return array 婚期信息
+     * @author AI
+     * @date 2026/01/22
+     */
+    public static function weddingDate(int $userId): array
+    {
+        try {
+            $customer = Customer::findByUserId($userId);
+            $weddingDate = trim((string) ($customer->wedding_date ?? ''));
+            $weddingVenue = trim((string) ($customer->wedding_venue ?? ''));
+
+            // 查询用户最近的已支付订单
+            $order = Order::where('user_id', $userId)
+                ->where('pay_status', 1) // 已支付
+                ->order('service_date', 'asc')
+                ->field('id, order_sn, service_date, contact_name')
+                ->findOrEmpty();
+
+            // 如果客户资料中没有婚期
+            if ($weddingDate === '') {
+                return [
+                    'has_order' => false,
+                    'wedding_date' => '',
+                    'wedding_date_text' => '',
+                    'days_remaining' => 0,
+                    'service_date' => '',
+                    'order_sn' => '',
+                    'wedding_venue' => '',
+                ];
+            }
+
+            // 计算剩余天数
+            $weddingTimestamp = strtotime($weddingDate);
+            $currentTimestamp = strtotime(date('Y-m-d'));
+            $daysRemaining = (int)ceil(($weddingTimestamp - $currentTimestamp) / 86400);
+
+            // 格式化日期文本
+            $weddingDateText = date('Y年m月d日', $weddingTimestamp);
+
+            return [
+                'has_order' => true,
+                'wedding_date' => $weddingDate,
+                'wedding_date_text' => $weddingDateText,
+                'days_remaining' => $daysRemaining,
+                'service_date' => $order->service_date ?? '',
+                'order_sn' => $order->order_sn ?? '',
+                'contact_name' => $order->contact_name ?? '',
+                'wedding_venue' => $weddingVenue,
+            ];
+        } catch (\Exception $e) {
+            self::setError($e->getMessage());
+            return [
+                'has_order' => false,
+                'wedding_date' => '',
+                'wedding_date_text' => '',
+                'days_remaining' => 0,
+                'service_date' => '',
+                'order_sn' => '',
+                'wedding_venue' => '',
+            ];
         }
     }
 

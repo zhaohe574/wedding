@@ -34,6 +34,12 @@ class SmsDriver
     protected $error = null;
 
     /**
+     * 发送结果
+     * @var mixed|null
+     */
+    protected $result = null;
+
+    /**
      * 默认短信引擎
      * @var
      */
@@ -105,6 +111,16 @@ class SmsDriver
 
 
     /**
+     * @notes 获取发送结果
+     * @return mixed|null
+     */
+    public function getResult()
+    {
+        return $this->result;
+    }
+
+
+    /**
      * @notes 发送短信
      * @param $mobile
      * @param $data
@@ -124,8 +140,10 @@ class SmsDriver
                 ->setTemplateParams($data['params'])
                 ->send();
             if(false === $result) {
+                $this->result = method_exists($this->engine, 'getResult') ? $this->engine->getResult() : $this->engine->getError();
                 throw new \Exception($this->engine->getError());
             }
+            $this->result = $result;
             return $result;
         } catch(\Exception $e) {
             $this->error = $e->getMessage();

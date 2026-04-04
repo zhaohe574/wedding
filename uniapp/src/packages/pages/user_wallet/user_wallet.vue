@@ -1,75 +1,88 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-        <!-- #endif -->
-    </page-meta>
-    <z-paging
-        ref="paging"
-        v-model="dataList"
-        @query="queryList"
-        :show-loading-more-when-reload="true"
-    >
-        <view class="user-wallet">
-            <view class="p-[20rpx]">
-                <view
-                    class="bg-primary rounded-[14rpx] flex items-center justify-between pl-[44rpx] py-[54rpx] text-white"
-                >
-                    <view>
-                        <view class="text-sm">钱包余额</view>
-                        <view class="text-[60rpx]">{{ wallet.user_money }}</view>
-                    </view>
-                    <navigator
-                        v-if="wallet.status"
-                        url="/packages/pages/recharge/recharge"
-                        hover-class="none"
-                    >
-                        <view class="text-primary px-[30rpx] py-[15rpx] bg-white rounded-l-full">
-                            去充值
+    <page-meta :page-style="$theme.pageStyle" />
+    <PageShell scene="consumer">
+        <BaseNavbar title="我的钱包" />
+        <z-paging
+            ref="paging"
+            v-model="dataList"
+            @query="queryList"
+            :show-loading-more-when-reload="true"
+            :hide-empty-view="true"
+            :paging-style="pagingStyle"
+        >
+            <template #top>
+                <view class="user-wallet-top wm-page-content">
+                    <BaseCard variant="hero" scene="consumer" class="user-wallet-top__hero">
+                        <view>
+                            <text class="user-wallet-top__label">钱包余额</text>
+                            <text class="user-wallet-top__amount"
+                                >¥ {{ wallet.user_money || '0.00' }}</text
+                            >
                         </view>
-                    </navigator>
-                </view>
-            </view>
-            <u-tabs
-                :list="tabList"
-                :is-scroll="false"
-                v-model="current"
-                activeColor="var(--color-primary)"
-                @change="changeType"
-            ></u-tabs>
-
-            <view class="pt-2.5">
-                <view
-                    v-for="item in dataList"
-                    :key="item.id"
-                    class="bg-white border-solid border-b border-0 border-light px-[26rpx] py-[24rpx]"
-                >
-                    <view class="flex justify-between">
-                        <view class="mr-2">{{ item.type_desc }}</view>
-                        <view
-                            class="text-lg"
-                            :class="{
-                                'text-primary': item.action == 1
-                            }"
+                        <navigator
+                            v-if="wallet.status"
+                            url="/packages/pages/recharge/recharge"
+                            hover-class="none"
                         >
-                            {{ item.change_amount_desc }}
+                            <view class="user-wallet-top__cta">去充值</view>
+                        </navigator>
+                    </BaseCard>
+
+                    <view class="wm-pill-tabs user-wallet-top__tabs">
+                        <view
+                            v-for="(tab, index) in tabList"
+                            :key="tab.type"
+                            class="wm-pill-tab"
+                            :class="{ 'wm-pill-tab--active': current === index }"
+                            @click="changeType(index)"
+                        >
+                            {{ tab.name }}
                         </view>
                     </view>
-                    <view class="text-sm text-muted mr-1">{{ item.create_time }}</view>
+                </view>
+            </template>
+
+            <view class="user-wallet-list wm-page-content">
+                <view v-if="dataList.length" class="wm-page-stack">
+                    <view
+                        v-for="item in dataList"
+                        :key="item.id"
+                        class="wm-page-card user-wallet-list__item"
+                    >
+                        <view class="wm-toolbar-row">
+                            <text class="user-wallet-list__title">{{ item.type_desc }}</text>
+                            <text
+                                class="user-wallet-list__amount"
+                                :class="{ 'is-expense': item.action != 1 }"
+                            >
+                                {{ item.change_amount_desc }}
+                            </text>
+                        </view>
+                        <text class="user-wallet-list__time">{{ item.create_time }}</text>
+                    </view>
+                </view>
+
+                <view v-else class="wm-empty-shell">
+                    <EmptyState
+                        title="暂无钱包流水"
+                        description="充值、消费或退款记录都会显示在这里。"
+                    />
                 </view>
             </view>
-        </view>
-    </z-paging>
+        </z-paging>
+    </PageShell>
 </template>
 
 <script lang="ts" setup>
+import BaseCard from '@/components/base/BaseCard.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import PageShell from '@/components/base/PageShell.vue'
 import { ref, shallowRef } from 'vue'
 import { accountLog } from '@/api/user'
 import { rechargeConfig } from '@/api/recharge'
 import { onShow } from '@dcloudio/uni-app'
+import { useFixedNavbarPagingStyle } from '@/hooks/useFixedNavbarPagingStyle'
+
 const tabList = ref([
     {
         name: '全部',
@@ -87,15 +100,17 @@ const tabList = ref([
 const paging = shallowRef()
 const dataList = ref<any[]>([])
 const current = ref(0)
+const pagingStyle = useFixedNavbarPagingStyle()
 
-const changeType = (index: number) => {
-    current.value = index
-    paging.value.reload()
+const changeType = (index: number | string) => {
+    const nextIndex = Number(index)
+    current.value = Number.isNaN(nextIndex) ? 0 : nextIndex
+    paging.value?.reload()
 }
 
 const queryList = async (pageNo: number, pageSize: number) => {
     try {
-        const action = tabList.value[current.value].type
+        const action = tabList.value[current.value]?.type ?? ''
         const data = await accountLog({
             action,
             type: 'um',
@@ -117,4 +132,76 @@ onShow(() => {
 })
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.user-wallet-top {
+    padding-top: 20rpx;
+}
+
+.user-wallet-top__hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24rpx;
+}
+
+.user-wallet-top__label {
+    display: block;
+    font-size: 24rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.user-wallet-top__amount {
+    display: block;
+    margin-top: 12rpx;
+    font-size: 54rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.user-wallet-top__cta {
+    min-height: 68rpx;
+    padding: 0 26rpx;
+    border-radius: 999rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    color: var(--wm-color-primary, #e85a4f);
+    font-size: 24rpx;
+    font-weight: 700;
+}
+
+.user-wallet-top__tabs {
+    margin-top: 20rpx;
+}
+
+.user-wallet-list {
+    padding-bottom: 24rpx;
+}
+
+.user-wallet-list__item {
+    gap: 10rpx;
+}
+
+.user-wallet-list__title {
+    flex: 1;
+    min-width: 0;
+    font-size: 28rpx;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.user-wallet-list__amount {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--wm-color-primary, #e85a4f);
+
+    &.is-expense {
+        color: var(--wm-text-primary, #1e2432);
+    }
+}
+
+.user-wallet-list__time {
+    font-size: 22rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+</style>

@@ -10,7 +10,7 @@
             </view>
 
             <!-- Content -->
-            <view :style="{ 'font-weight': fontWeight }">
+            <view :style="{ fontWeight }">
                 <!-- Integer -->
                 <text :style="{ fontSize: mainSize }">{{ integer }}</text>
                 <!-- Decimals -->
@@ -41,6 +41,7 @@
  * @example <price content="100" suffix="\/元" />
  */
 import { computed } from 'vue'
+import type { CSSProperties } from 'vue'
 import { formatPrice } from '@/utils/util'
 
 /** Props Start **/
@@ -53,7 +54,7 @@ const props = withDefaults(
         mainSize?: string // 主要内容字体大小
         minorSize?: string // 次要内容字体大小
         lineThrough?: boolean // 贯穿线
-        fontWeight?: string // 字重
+        fontWeight?: CSSProperties['fontWeight'] // 字重
         prefix?: string // 前缀
         suffix?: string // 后缀
     }>(),
@@ -86,14 +87,24 @@ const integer = computed(() => {
  * @description 金额小数部分
  */
 const decimals = computed(() => {
-    let decimals = formatPrice({
+    const rawDecimals = formatPrice({
         price: props.content,
         take: 'dec',
         prec: props.prec
     })
+    let decimals = String(rawDecimals || '')
     // 小数余十不能是 .10||.20||.30以此类推，
-    decimals = decimals % 10 == 0 ? decimals.substr(0, decimals.length - 1) : decimals
-    return props.autoPrec ? (decimals * 1 ? '.' + decimals : '') : props.prec ? '.' + decimals : ''
+    decimals =
+        decimals && Number(decimals) % 10 === 0
+            ? decimals.substring(0, decimals.length - 1)
+            : decimals
+    return props.autoPrec
+        ? Number(decimals)
+            ? `.${decimals}`
+            : ''
+        : props.prec
+        ? `.${decimals}`
+        : ''
 })
 /** Computed End **/
 </script>

@@ -40,6 +40,8 @@ class CustomerServiceLogic extends BaseLogic
             'wechat' => ConfigService::get('customer_service', 'wechat', ''),
             'phone' => ConfigService::get('customer_service', 'phone', ''),
             'service_time' => ConfigService::get('customer_service', 'service_time', ''),
+            'contact_link' => ConfigService::get('customer_service', 'contact_link', ''),
+            'tips' => ConfigService::get('customer_service', 'tips', ''),
         ];
         return $config;
     }
@@ -52,7 +54,7 @@ class CustomerServiceLogic extends BaseLogic
      */
     public static function setConfig($params)
     {
-        $allowField = ['qr_code','wechat','phone','service_time'];
+        $allowField = ['qr_code','wechat','phone','service_time','contact_link','tips'];
         foreach($params as $key => $value) {
             if(in_array($key, $allowField)) {
                 if ($key == 'qr_code') {

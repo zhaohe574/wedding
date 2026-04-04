@@ -27,6 +27,205 @@ use app\common\model\auth\SystemRoleMenu;
  */
 class AuthLogic
 {
+    /**
+     * @notes 套餐区域定价依赖的地区只读权限集合
+     * @return string[]
+     */
+    private static function regionReadPermissionAliases(): array
+    {
+        return [
+            'service.region/enabledCityOptions',
+            'service.region/districtOptions',
+            'ops.region/enabledCityOptions',
+            'ops.region/districtOptions',
+        ];
+    }
+
+    /**
+     * @notes 服务人员中心地区选项权限集合
+     * @return string[]
+     */
+    private static function myProfileRegionOptionPermissions(): array
+    {
+        return [
+            'staff.staff/myProfileRegionEnabledCityOptions',
+            'staff.staff/myProfileRegionDistrictOptions',
+            'ops.staff/myProfileRegionEnabledCityOptions',
+            'ops.staff/myProfileRegionDistrictOptions',
+        ];
+    }
+
+    /**
+     * @notes 服务人员中心“我的资料”权限兼容映射
+     * @return array<string, string[]>
+     */
+    private static function exactPermissionAliasMap(): array
+    {
+        return [
+            'staff.staff/lists' => [
+                'staff.staff/myProfile',
+                'staff.staff/myProfileUpdate',
+                'staff.staff/myProfilePackageConfig',
+                'staff.staff/myProfileUpdatePackageConfig',
+                'staff.staff/myProfileCreatePackage',
+                'staff.staff/myProfileUpdateStaffPackage',
+                'staff.staff/myProfileDeletePackage',
+                'staff.staff/myProfileBannerList',
+                'staff.staff/myProfileBannerAdd',
+                'staff.staff/myProfileBannerEdit',
+                'staff.staff/myProfileBannerDelete',
+                'staff.staff/myProfileBannerSort',
+                'staff.staff/myProfileBannerConfig',
+                'ops.staff/myProfile',
+                'ops.staff/myProfileUpdate',
+                'ops.staff/myProfilePackageConfig',
+                'ops.staff/myProfileUpdatePackageConfig',
+                'ops.staff/myProfileCreatePackage',
+                'ops.staff/myProfileUpdateStaffPackage',
+                'ops.staff/myProfileDeletePackage',
+                'ops.staff/myProfileBannerList',
+                'ops.staff/myProfileBannerAdd',
+                'ops.staff/myProfileBannerEdit',
+                'ops.staff/myProfileBannerDelete',
+                'ops.staff/myProfileBannerSort',
+                'ops.staff/myProfileBannerConfig',
+                ...self::myProfileRegionOptionPermissions(),
+            ],
+            'ops.staff/lists' => [
+                'staff.staff/myProfile',
+                'staff.staff/myProfileUpdate',
+                'staff.staff/myProfilePackageConfig',
+                'staff.staff/myProfileUpdatePackageConfig',
+                'staff.staff/myProfileCreatePackage',
+                'staff.staff/myProfileUpdateStaffPackage',
+                'staff.staff/myProfileDeletePackage',
+                'staff.staff/myProfileBannerList',
+                'staff.staff/myProfileBannerAdd',
+                'staff.staff/myProfileBannerEdit',
+                'staff.staff/myProfileBannerDelete',
+                'staff.staff/myProfileBannerSort',
+                'staff.staff/myProfileBannerConfig',
+                'ops.staff/myProfile',
+                'ops.staff/myProfileUpdate',
+                'ops.staff/myProfilePackageConfig',
+                'ops.staff/myProfileUpdatePackageConfig',
+                'ops.staff/myProfileCreatePackage',
+                'ops.staff/myProfileUpdateStaffPackage',
+                'ops.staff/myProfileDeletePackage',
+                'ops.staff/myProfileBannerList',
+                'ops.staff/myProfileBannerAdd',
+                'ops.staff/myProfileBannerEdit',
+                'ops.staff/myProfileBannerDelete',
+                'ops.staff/myProfileBannerSort',
+                'ops.staff/myProfileBannerConfig',
+                ...self::myProfileRegionOptionPermissions(),
+            ],
+            'service.package/add' => self::regionReadPermissionAliases(),
+            'service.package/edit' => self::regionReadPermissionAliases(),
+            'ops.package/add' => self::regionReadPermissionAliases(),
+            'ops.package/edit' => self::regionReadPermissionAliases(),
+            'staff.staff/edit' => self::regionReadPermissionAliases(),
+            'ops.staff/edit' => self::regionReadPermissionAliases(),
+            'staff.staff/createStaffPackage' => self::regionReadPermissionAliases(),
+            'staff.staff/updateStaffPackage' => self::regionReadPermissionAliases(),
+            'ops.staff/createStaffPackage' => self::regionReadPermissionAliases(),
+            'ops.staff/updateStaffPackage' => self::regionReadPermissionAliases(),
+        ];
+    }
+
+    /**
+     * @notes 权限前缀迁移映射（旧 => 新）
+     * @return array<string, string>
+     */
+    private static function permissionAliasMap(): array
+    {
+        return [
+            'staff.staff/' => 'ops.staff/',
+            'staff.staffWork/' => 'ops.staffWork/',
+            'staff.staffCertificate/' => 'ops.staffCertificate/',
+            'staff.work/' => 'ops.work/',
+            'service.category/' => 'ops.category/',
+            'service.package/' => 'ops.package/',
+            'service.region/' => 'ops.region/',
+            'service.service_category/' => 'ops.category/',
+            'service.service_package/' => 'ops.package/',
+            'service.styleTag/' => 'ops.styleTag/',
+            'service.style_tag/' => 'ops.styleTag/',
+            'schedule.schedule/' => 'ops.schedule/',
+            'schedule.scheduleRule/' => 'ops.scheduleRule/',
+            'schedule.booking/' => 'ops.booking/',
+            'schedule.waitlist/' => 'ops.waitlist/',
+            'order.order/' => 'ops.order/',
+            'order.orderChange/' => 'ops.orderChange/',
+            'order.order_change/' => 'ops.orderChange/',
+            'order.orderPause/' => 'ops.orderPause/',
+            'order.order_pause/' => 'ops.orderPause/',
+            'order.refund/' => 'ops.refund/',
+            'order.payment/' => 'ops.payment/',
+            'aftersale.aftersale/' => 'ops.aftersaleTicket/',
+            'aftersale.complaint/' => 'ops.complaint/',
+            'aftersale.reshoot/' => 'ops.reshoot/',
+            'aftersale.callback/' => 'ops.callback/',
+            'dynamic.dynamic/' => 'growth.dynamic/',
+            'dynamic.dynamicComment/' => 'growth.dynamicComment/',
+            'review.review/' => 'growth.review/',
+            'review.reviewAppeal/' => 'growth.reviewAppeal/',
+            'review.review_appeal/' => 'growth.reviewAppeal/',
+            'review.reviewTag/' => 'growth.reviewTag/',
+            'review.review_tag/' => 'growth.reviewTag/',
+            'review.sensitiveWord/' => 'growth.sensitiveWord/',
+            'review.sensitive_word/' => 'growth.sensitiveWord/',
+            'notification.notification/' => 'growth.notification/',
+            'subscribe.subscribe/' => 'growth.subscribe/',
+            'financial.' => 'finance.',
+            'finance.account_log/' => 'finance.accountLog/',
+            'recharge.recharge/' => 'finance.recharge/',
+            'user.user/' => 'content.user/',
+            'article.article/' => 'content.article/',
+            'article.article_cate/' => 'content.articleCategory/',
+            'article.articleCate/' => 'content.articleCategory/',
+            'file/listCate' => 'content.material/listCate',
+            'channel.' => 'experience.channel.',
+            'decorate.' => 'experience.decorate.',
+        ];
+    }
+
+    /**
+     * @notes 兼容新旧权限前缀，返回双轨权限集合
+     * @param array $permissions
+     * @return array
+     */
+    private static function expandPermissionAliases(array $permissions): array
+    {
+        $results = [];
+        $map = self::permissionAliasMap();
+        $exactMap = self::exactPermissionAliasMap();
+
+        foreach ($permissions as $permission) {
+            if (empty($permission) || !is_string($permission)) {
+                continue;
+            }
+            $results[$permission] = true;
+
+            foreach (($exactMap[$permission] ?? []) as $aliasPermission) {
+                $results[$aliasPermission] = true;
+            }
+
+            foreach ($map as $oldPrefix => $newPrefix) {
+                if (str_starts_with($permission, $oldPrefix)) {
+                    $alias = $newPrefix . substr($permission, strlen($oldPrefix));
+                    $results[$alias] = true;
+                }
+                if (str_starts_with($permission, $newPrefix)) {
+                    $alias = $oldPrefix . substr($permission, strlen($newPrefix));
+                    $results[$alias] = true;
+                }
+            }
+        }
+
+        return array_values(array_keys($results));
+    }
+
 
     /**
      * @notes 获取全部权限
@@ -36,12 +235,14 @@ class AuthLogic
      */
     public static function getAllAuth()
     {
-        return SystemMenu::distinct(true)
+        $permissions = SystemMenu::distinct(true)
             ->where([
                 ['is_disable', '=', 0],
                 ['perms', '<>', '']
             ])
             ->column('perms');
+
+        return self::expandPermissionAliases($permissions);
     }
 
 
@@ -73,6 +274,9 @@ class AuthLogic
             ->where($where)
             ->column('perms');
 
+        $roleAuth = self::expandPermissionAliases($roleAuth);
+        $allAuth = self::expandPermissionAliases($allAuth);
+
         $hasAllAuth = array_diff($allAuth, $roleAuth);
         if (empty($hasAllAuth)) {
             return ['*'];
@@ -94,12 +298,14 @@ class AuthLogic
         $roleIds = AdminRole::where('admin_id', $adminId)->column('role_id');
         $menuId = SystemRoleMenu::whereIn('role_id', $roleIds)->column('menu_id');
 
-        return SystemMenu::distinct(true)
+        $permissions = SystemMenu::distinct(true)
             ->where([
                 ['is_disable', '=', 0],
                 ['perms', '<>', ''],
                 ['id', 'in', array_unique($menuId)],
             ])
             ->column('perms');
+
+        return self::expandPermissionAliases($permissions);
     }
 }

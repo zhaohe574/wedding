@@ -20,6 +20,66 @@ const darkConfig = {
 
 const themeId = 'theme-vars'
 
+const whiteHex = '#ffffff'
+
+const normalizeHex = (value: string): string => {
+    const color = value.trim().toLowerCase()
+    if (!color.startsWith('#')) {
+        return '#4a5dff'
+    }
+    if (color.length === 4) {
+        return `#${color[1]}${color[1]}${color[2]}${color[2]}${color[3]}${color[3]}`
+    }
+    if (color.length === 7) {
+        return color
+    }
+    return '#4a5dff'
+}
+
+const toRgb = (hex: string) => {
+    const normalized = normalizeHex(hex).replace('#', '')
+    return {
+        r: parseInt(normalized.slice(0, 2), 16),
+        g: parseInt(normalized.slice(2, 4), 16),
+        b: parseInt(normalized.slice(4, 6), 16)
+    }
+}
+
+const getLuminance = (hex: string): number => {
+    const { r, g, b } = toRgb(hex)
+    const channels = [r, g, b].map((channel) => {
+        const v = channel / 255
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+    })
+    return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722
+}
+
+const getContrastRatio = (foreground: string, background: string): number => {
+    const l1 = getLuminance(foreground)
+    const l2 = getLuminance(background)
+    const [maxL, minL] = l1 >= l2 ? [l1, l2] : [l2, l1]
+    return (maxL + 0.05) / (minL + 0.05)
+}
+
+const darkenColor = (hex: string, percent = 12): string => {
+    const { r, g, b } = toRgb(hex)
+    const factor = Math.max(0, 1 - percent / 100)
+    const nr = Math.round(r * factor)
+    const ng = Math.round(g * factor)
+    const nb = Math.round(b * factor)
+    return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`
+}
+
+const ensureAccessibleColor = (input: string, minimumRatio = 4.5): string => {
+    let color = normalizeHex(input)
+    let guard = 0
+    while (getContrastRatio(color, whiteHex) < minimumRatio && guard < 8) {
+        color = darkenColor(color, 10)
+        guard++
+    }
+    return color
+}
+
 /**
  * @author Jason
  * @description 用于生成elementui主题的行为变量
@@ -54,7 +114,7 @@ export const setCssVar = (key: string, value: string, dom = document.documentEle
  */
 export const setTheme = (options: Record<string, string>, isDark = false) => {
     const varsMap: Record<string, string> = Object.keys(options).reduce((prev, key) => {
-        return Object.assign(prev, generateVars(options[key], key, isDark))
+        return Object.assign(prev, generateVars(ensureAccessibleColor(options[key]), key, isDark))
     }, {})
 
     let theme = Object.keys(varsMap).reduce((prev, key) => {

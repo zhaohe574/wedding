@@ -37,9 +37,9 @@
         <el-card class="!border-none mt-4" shadow="never">
             <div>
                 <router-link
-                    v-perms="['article.article/add', 'article.article/add:edit']"
+                    v-perms="['content.article/add', 'content.article/add:edit']"
                     :to="{
-                        path: getRoutePath('article.article/add:edit')
+                        path: getRoutePath('content.article/add:edit')
                     }"
                 >
                     <el-button type="primary" class="mb-4">
@@ -77,7 +77,7 @@
                 <el-table-column label="状态" min-width="100">
                     <template #default="{ row }">
                         <el-switch
-                            v-perms="['article.article/updateStatus']"
+                            v-perms="['content.article/updateStatus']"
                             v-model="row.is_show"
                             :active-value="1"
                             :inactive-value="0"
@@ -90,13 +90,13 @@
                 <el-table-column label="操作" width="120" fixed="right">
                     <template #default="{ row }">
                         <el-button
-                            v-perms="['article.article/edit', 'article.article/add:edit']"
+                            v-perms="['content.article/edit', 'content.article/add:edit']"
                             type="primary"
                             link
                         >
                             <router-link
                                 :to="{
-                                    path: getRoutePath('article.article/add:edit'),
+                                    path: getRoutePath('content.article/add:edit'),
                                     query: {
                                         id: row.id
                                     }
@@ -106,7 +106,7 @@
                             </router-link>
                         </el-button>
                         <el-button
-                            v-perms="['article.article/delete']"
+                            v-perms="['content.article/delete']"
                             type="danger"
                             link
                             @click="handleDelete(row.id)"

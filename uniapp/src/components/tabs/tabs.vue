@@ -1,6 +1,6 @@
 <template>
     <view class="tabs">
-        <u-sticky :enable="isFixed" :bg-color="stickyBgColor" :offset-top="top" :h5-nav-height="0">
+        <tn-sticky :enable="isFixed" :bg-color="stickyBgColor" :offset-top="top" :h5-nav-height="0">
             <view
                 :id="id"
                 :style="{
@@ -21,20 +21,20 @@
                             :id="'tab-item-' + index"
                             :key="index"
                             @tap="clickTab(index)"
-                            :style="[tabItemStyle(index)]"
+                            :style="tabItemStyle(index)"
                         >
-                            <u-badge
+                            <tn-badge
                                 :count="item[count] || item['dot'] || 0"
                                 :offset="offset"
-                                size="mini"
-                            ></u-badge>
+                                size="sm"
+                            ></tn-badge>
                             {{ item[name] || item['name'] }}
                         </view>
-                        <view v-if="showBar" class="tab-bar" :style="[tabBarStyle]"></view>
+                        <view v-if="showBar" class="tab-bar" :style="tabBarStyle"></view>
                     </view>
                 </scroll-view>
             </view>
-        </u-sticky>
+        </tn-sticky>
         <view
             class="tab-content"
             @touchstart="onTouchStart"
@@ -53,17 +53,28 @@
 
 <script lang="ts" setup>
 import { getRect } from '@/utils/util'
-import {
-    ref,
-    reactive,
-    computed,
-    watch,
-    provide,
-    nextTick,
-    onMounted,
-    getCurrentInstance
-} from 'vue'
+import { ref, computed, watch, provide, nextTick, onMounted, getCurrentInstance } from 'vue'
+import type { CSSProperties } from 'vue'
 import { useTouch } from './hooks/useTouch'
+
+type TabChildEvent = {
+    name?: boolean | string
+    dot?: boolean | string
+    active?: boolean
+    inited?: boolean
+}
+
+type TabChild = {
+    event: TabChildEvent
+    updateRender: (value: boolean) => void
+}
+
+type TabListItem = Record<string, any> & TabChildEvent
+
+type TabRect = {
+    left: number
+    width: number
+}
 
 // Touch 钩子
 const { touch, resetTouchStatus, touchStart, touchMove } = useTouch()
@@ -89,10 +100,10 @@ const props = withDefaults(
         count?: string // 读取传入的数组对象的属性(徽标数)
         offset?: number[] // 徽标数位置偏移
         bold?: boolean // 活动tab字体是否加粗
-        activeItemStyle?: any // 当前活动tab item的样式
+        activeItemStyle?: CSSProperties // 当前活动tab item的样式
         showBar?: boolean // 是否显示底部的滑块
-        barStyle?: any // 底部滑块的自定义样式
-        itemWidth?: string // 标签的宽度
+        barStyle?: CSSProperties // 底部滑块的自定义样式
+        itemWidth?: string | number // 标签的宽度
         isFixed?: boolean // 吸顶是否固定
         top?: number | string // 吸顶顶部距离
         stickyBgColor?: string // 吸顶颜色
@@ -114,11 +125,11 @@ const props = withDefaults(
         bgColor: '#FFFFFF',
         name: 'name',
         count: 'count',
-        offset: [5, 20],
+        offset: () => [5, 20],
         bold: true,
-        activeItemStyle: {},
+        activeItemStyle: () => ({}),
         showBar: true,
-        barStyle: {},
+        barStyle: () => ({}),
         itemWidth: 'auto',
         isFixed: false,
         top: 0,
@@ -129,15 +140,15 @@ const props = withDefaults(
     }
 )
 
-const list = ref<any>([])
-const childrens = ref<any>([])
+const list = ref<TabListItem[]>([])
+const childrens = ref<TabChild[]>([])
 const scrollLeft = ref<number>(0) // 滚动scroll-view的左边滚动距离
-const tabQueryInfo = ref<any>([]) // 存放对tab菜单查询后的节点信息
+const tabQueryInfo = ref<TabRect[]>([]) // 存放对tab菜单查询后的节点信息
 const componentWidth = ref<number>(0) // 屏幕宽度，单位为px
 const scrollBarLeft = ref<number>(0) // 移动bar需要通过translateX()移动的距离
 const parentLeft = ref<number>(0) // 父元素(tabs组件)到屏幕左边的距离
 const id = ref<string>('cu-tab') // id值
-const currentIndex = ref<any>(props.current)
+const currentIndex = ref<number>(Number(props.current ?? 0))
 const barFirstTimeMove = ref<boolean>(true) // 滑块第一次移动时(页面刚生成时)，无需动画，否则给人怪异的感觉
 const swiping = ref<boolean>(false)
 
@@ -160,10 +171,10 @@ watch(
 )
 watch(
     () => props.current,
-    (nVal, oVal) => {
+    (nVal) => {
         // 视图更新后再执行移动操作、
         nextTick(() => {
-            currentIndex.value = nVal
+            currentIndex.value = Number(nVal ?? 0)
             scrollByIndex()
         })
     },
@@ -171,44 +182,41 @@ watch(
 )
 
 // 移动bar的样式
-const tabBarStyle = computed(() => {
-    const style = {
-        width: props.barWidth + 'rpx',
+const tabBarStyle = computed<CSSProperties>(() => {
+    const barHeight = Number(props.barHeight ?? 0)
+    const style: CSSProperties = {
+        width: `${props.barWidth}rpx`,
         transform: `translate(${scrollBarLeft.value}px, -100%)`,
         // 滑块在页面渲染后第一次滑动时，无需动画效果
-        'transition-duration': `${barFirstTimeMove.value ? 0 : props.duration}s`,
-        'background-color': props.activeColor,
-        height: props.barHeight + 'rpx',
+        transitionDuration: `${barFirstTimeMove.value ? 0 : props.duration}s`,
+        backgroundColor: String(props.activeColor ?? ''),
+        height: `${barHeight}rpx`,
         opacity: barFirstTimeMove.value ? 0 : 1,
         // 设置一个很大的值，它会自动取能用的最大值，不用高度的一半，是因为高度可能是单数，会有小数出现
-        'border-radius': `${props.barHeight / 2}px`
+        borderRadius: `${barHeight / 2}px`
     }
-    Object.assign(style, props.barStyle)
-    return style
+    return Object.assign(style, props.barStyle || {})
 })
 // tab的样式
-const tabItemStyle = computed(() => {
-    return (index) => {
-        let style: any = {
-            height: props.height + 'rpx',
-            'line-height': props.height + 'rpx',
-            'font-size': props.fontSize + 'rpx',
-            padding: props.isScroll ? `0 ${props.gutter}rpx` : '',
-            flex: props.isScroll ? 'auto' : '1',
-            width: `${props.itemWidth}rpx`
-        }
-        // 字体加粗
-        if (index == currentIndex.value && props.bold) style.fontWeight = 'bold'
-        if (index == currentIndex.value) {
-            style.color = props.activeColor
-            // 给选中的tab item添加外部自定义的样式
-            style = Object.assign(style, props.activeItemStyle)
-        } else {
-            style.color = props.inactiveColor
-        }
-        return style
+const tabItemStyle = (index: number): CSSProperties => {
+    const style: CSSProperties = {
+        height: `${props.height}rpx`,
+        lineHeight: `${props.height}rpx`,
+        fontSize: `${props.fontSize}rpx`,
+        padding: props.isScroll ? `0 ${props.gutter}rpx` : undefined,
+        flex: props.isScroll ? 'auto' : '1',
+        width: props.itemWidth === 'auto' ? 'auto' : `${props.itemWidth}rpx`
     }
-})
+    // 字体加粗
+    if (index === currentIndex.value && props.bold) style.fontWeight = 700
+    if (index === currentIndex.value) {
+        style.color = String(props.activeColor ?? '')
+        // 给选中的tab item添加外部自定义的样式
+        return Object.assign(style, props.activeItemStyle || {})
+    }
+    style.color = String(props.inactiveColor ?? '')
+    return style
+}
 
 // const trackStyle = computed(() => {
 //     if (!props.animated) return ''
@@ -220,7 +228,7 @@ const tabItemStyle = computed(() => {
 // })
 
 const updateTabs = () => {
-    list.value = childrens.value.map((item) => {
+    list.value = childrens.value.map((item: TabChild) => {
         const { name, dot, active, inited } = item.event
         const { updateRender } = item
         return {
@@ -239,7 +247,7 @@ const updateTabs = () => {
 // 设置一个init方法，方便多处调用
 const init = async () => {
     // 获取tabs组件的尺寸信息
-    const tabRect = await getRect('#' + id.value, false, ctx)
+    const tabRect = await getRect<TabRect>('#' + id.value, false, ctx)
     // tabs组件距离屏幕左边的宽度
     parentLeft.value = tabRect.left
     // tabs组件的宽度
@@ -248,7 +256,7 @@ const init = async () => {
 }
 
 // 点击某一个tab菜单
-const clickTab = (index) => {
+const clickTab = (index: number) => {
     // 点击当前活动tab，不触发事件
     if (index == currentIndex.value) return
     nextTick(() => {
@@ -272,8 +280,12 @@ const getTabRect = () => {
         })
     }
     // 执行查询，一次性获取多个结果
-    query.exec((res) => {
-        tabQueryInfo.value = res
+    query.exec((res: Array<TabRect | null>) => {
+        tabQueryInfo.value = Array.isArray(res)
+            ? res.filter((item): item is TabRect => {
+                  return !!item && typeof item.left === 'number' && typeof item.width === 'number'
+              })
+            : []
         // 初始化滚动条和移动bar的位置
         scrollByIndex()
     })
@@ -294,7 +306,7 @@ const scrollByIndex = () => {
     // 当前活动item的中点点到左边的距离减去滑块宽度的一半，即可得到滑块所需的移动距离
     const left = tabInfo.left + tabInfo.width / 2 - parentLeft.value
     // 计算当前活跃item到组件左边的距离
-    scrollBarLeft.value = left - uni.upx2px(props.barWidth) / 2
+    scrollBarLeft.value = left - uni.upx2px(Number(props.barWidth ?? 0)) / 2
     // 第一次移动滑块的时候，barFirstTimeMove为true，放到延时中将其设置false
     // 延时是因为scrollBarLeft作用于computed计算时，需要一个过程需，否则导致出错
     if (barFirstTimeMove.value == true) {
@@ -304,7 +316,7 @@ const scrollByIndex = () => {
     }
 
     // 更新子组件的显示
-    childrens.value.forEach((item, ind) => {
+    childrens.value.forEach((item: TabChild, ind: number) => {
         const active = ind === currentIndex.value
         if (active !== item.event.active || !item.event.inited) {
             item.updateRender(active)
@@ -312,17 +324,17 @@ const scrollByIndex = () => {
     })
 }
 // 子组件调用此函数而产生的事件通信
-const handleChange = (event, updateRender) => {
-    childrens.value.push({ event: event, updateRender })
+const handleChange = (event: TabChildEvent, updateRender: (value: boolean) => void) => {
+    childrens.value.push({ event, updateRender })
 }
 // 手指触摸
-const onTouchStart = (event) => {
+const onTouchStart = (event: any) => {
     if (!props.swipeable) return
     swiping.value = true
     touchStart(event)
 }
 // 手指滑动
-const onTouchMove = (event) => {
+const onTouchMove = (event: any) => {
     if (!props.swipeable || !swiping.value) return
     touchMove(event)
 }
@@ -331,9 +343,9 @@ const onTouchEnd = () => {
     if (!props.swipeable || !swiping.value) return
     const minSwipeDistance = 50
     if (touch.direction === 'horizontal' && touch.offsetX >= minSwipeDistance) {
-        let index,
-            len = list.value.length,
-            curIndex = currentIndex.value
+        let index = currentIndex.value
+        const len = list.value.length
+        const curIndex = currentIndex.value
         if (touch.deltaX <= 0) {
             curIndex >= len - 1 ? (index = 0) : (index = curIndex + 1)
         } else {

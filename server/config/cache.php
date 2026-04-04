@@ -24,6 +24,21 @@ return [
             // 序列化机制 例如 ['serialize', 'unserialize']
             'serialize'  => [],
         ],
+        // 配置缓存（跨应用共享，避免多应用模式下配置缓存不一致）
+        'config' => [
+            // 驱动方式
+            'type'       => 'File',
+            // 使用根目录 runtime/cache，确保 adminapi/api 共享同一缓存空间
+            'path'       => root_path() . 'runtime/cache/',
+            // 缓存前缀
+            'prefix'     => 'la',
+            // 缓存有效期 0表示永久缓存
+            'expire'     => 0,
+            // 缓存标签前缀
+            'tag_prefix' => 'tag:',
+            // 序列化机制 例如 ['serialize', 'unserialize']
+            'serialize'  => [],
+        ],
         // redis缓存
         'redis'  =>  [
             // 驱动方式

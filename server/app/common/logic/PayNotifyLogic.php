@@ -15,9 +15,11 @@
 namespace app\common\logic;
 
 use app\common\enum\PayEnum;
+use app\common\model\order\Payment as OrderPayment;
 use app\common\enum\user\AccountLogEnum;
 use app\common\model\recharge\RechargeOrder;
 use app\common\model\user\User;
+use app\common\service\OrderNotificationService;
 use think\facade\Db;
 use think\facade\Log;
 
@@ -33,8 +35,9 @@ class PayNotifyLogic extends BaseLogic
     {
         Db::startTrans();
         try {
-            self::$action($orderSn, $extra);
+            $result = self::$action($orderSn, $extra);
             Db::commit();
+            self::dispatchAfterCommit($action, $result);
             return true;
         } catch (\Exception $e) {
             Db::rollback();
@@ -82,6 +85,53 @@ class PayNotifyLogic extends BaseLogic
         $order->pay_status = PayEnum::ISPAID;
         $order->pay_time = time();
         $order->save();
+    }
+
+    /**
+     * @notes 订单支付回调
+     * @param string $paymentSn
+     * @param array $extra
+     * @return array
+     */
+    public static function order(string $paymentSn, array $extra = []): array
+    {
+        [$success, $message, $context] = OrderPayment::paySuccess(
+            $paymentSn,
+            $extra['transaction_id'] ?? '',
+            $extra['callback_data'] ?? []
+        );
+
+        if (!$success) {
+            throw new \Exception($message ?: '订单支付回调处理失败');
+        }
+
+        return $context;
+    }
+
+    /**
+     * @notes 事务提交后补发站内消息
+     * @param string $action
+     * @param mixed $result
+     * @return void
+     */
+    private static function dispatchAfterCommit(string $action, $result): void
+    {
+        if ($action !== 'order' || !is_array($result)) {
+            return;
+        }
+
+        if (empty($result['should_notify']) || empty($result['order_id']) || empty($result['pay_type'])) {
+            return;
+        }
+
+        OrderNotificationService::notifyUserAndStaffOnPaymentSuccess(
+            (int)$result['order_id'],
+            (int)$result['pay_type']
+        );
+
+        if (!empty($result['should_notify_completed'])) {
+            OrderNotificationService::notifyOnOrderCompleted((int)$result['order_id']);
+        }
     }
 
 

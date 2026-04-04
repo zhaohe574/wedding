@@ -1,5 +1,5 @@
 <template>
-    <div class="app-tabs pl-4 flex bg-body">
+    <div class="app-tabs pl-3 flex bg-body">
         <div class="flex-1 min-w-0">
             <el-tabs
                 :model-value="currentTab"
@@ -13,7 +13,7 @@
             </el-tabs>
         </div>
         <el-dropdown @command="handleCommand">
-            <span class="flex items-center px-3">
+            <span class="flex items-center px-2">
                 <icon :size="16" name="el-icon-arrow-down" />
             </span>
             <template #dropdown>
@@ -60,7 +60,8 @@ const handleCommand = (command: any) => {
 </script>
 <style lang="scss" scoped>
 .app-tabs {
-    @apply border-t border-br;
+    @apply border-t border-br px-2;
+    border-color: var(--admin-color-border);
     :deep(.el-tabs) {
         height: 40px;
         .el-tabs {
@@ -80,8 +81,9 @@ const handleCommand = (command: any) => {
             }
             &__item {
                 font-weight: normal;
-                padding: 0 15px !important;
+                padding: 0 12px !important;
                 box-sizing: border-box;
+                border-radius: 8px 8px 0 0;
                 &.is-active {
                     background-color: var(--el-color-primary-light-9);
                     &::before {

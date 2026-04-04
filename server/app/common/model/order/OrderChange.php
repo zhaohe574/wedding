@@ -1,0 +1,1372 @@
+<?php
+// +----------------------------------------------------------------------
+// | 婚庆服务预约系统 - 订单变更模型
+// +----------------------------------------------------------------------
+
+declare(strict_types=1);
+
+namespace app\common\model\order;
+
+use app\common\model\BaseModel;
+use app\common\model\package\PackageBooking;
+use app\common\model\schedule\Schedule;
+use app\common\model\service\ServiceAddon;
+use app\common\model\service\ServicePackage;
+use app\common\model\staff\Staff;
+use app\common\model\user\User;
+use think\model\concern\SoftDelete;
+use think\facade\Db;
+
+/**
+ * 订单变更模型
+ * 支持改期、换人、加项、附加服务变更四种类型
+ * Class OrderChange
+ * @package app\common\model\order
+ */
+class OrderChange extends BaseModel
+{
+    use SoftDelete;
+
+    protected $name = 'order_change';
+    protected $deleteTime = 'delete_time';
+
+    // 变更类型
+    const TYPE_DATE = 1;        // 改期
+    const TYPE_STAFF = 2;       // 换人
+    const TYPE_ADD_ITEM = 3;    // 加项
+    const TYPE_ADDON = 4;       // 附加服务变更
+
+    // 附加服务动作
+    const ADDON_ACTION_ADD = 1;      // 新增
+    const ADDON_ACTION_REMOVE = 2;   // 移除
+
+    // 变更状态
+    const STATUS_PENDING = 0;       // 待审核
+    const STATUS_APPROVED = 1;      // 审核通过
+    const STATUS_REJECTED = 2;      // 审核拒绝
+    const STATUS_EXECUTED = 3;      // 已执行
+    const STATUS_CANCELLED = 4;     // 已取消
+
+    // 时间段
+    const TIME_SLOT_ALL = 0;        // 全天
+    const TIME_SLOT_MORNING = 1;    // 早礼
+    const TIME_SLOT_AFTERNOON = 2;  // 午宴
+    const TIME_SLOT_EVENING = 3;    // 晚宴
+
+    /**
+     * @notes 关联订单
+     * @return \think\model\relation\BelongsTo
+     */
+    public function order()
+    {
+        return $this->belongsTo(Order::class, 'order_id', 'id');
+    }
+
+    /**
+     * @notes 关联用户
+     * @return \think\model\relation\BelongsTo
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    /**
+     * @notes 关联订单项
+     * @return \think\model\relation\BelongsTo
+     */
+    public function orderItem()
+    {
+        return $this->belongsTo(OrderItem::class, 'order_item_id', 'id');
+    }
+
+    /**
+     * @notes 关联原工作人员
+     * @return \think\model\relation\BelongsTo
+     */
+    public function oldStaff()
+    {
+        return $this->belongsTo(Staff::class, 'old_staff_id', 'id');
+    }
+
+    /**
+     * @notes 关联新工作人员
+     * @return \think\model\relation\BelongsTo
+     */
+    public function newStaff()
+    {
+        return $this->belongsTo(Staff::class, 'new_staff_id', 'id');
+    }
+
+    /**
+     * @notes 关联新增工作人员
+     * @return \think\model\relation\BelongsTo
+     */
+    public function addStaff()
+    {
+        return $this->belongsTo(Staff::class, 'add_staff_id', 'id');
+    }
+
+    /**
+     * @notes 关联附加服务变更明细
+     * @return \think\model\relation\HasMany
+     */
+    public function addonItems()
+    {
+        return $this->hasMany(OrderChangeAddon::class, 'change_id', 'id')
+            ->order('id', 'asc');
+    }
+
+    /**
+     * @notes 变更类型描述获取器
+     * @param $value
+     * @param $data
+     * @return string
+     */
+    public function getChangeTypeDescAttr($value, $data): string
+    {
+        $map = [
+            self::TYPE_DATE => '改期',
+            self::TYPE_STAFF => '换人',
+            self::TYPE_ADD_ITEM => '加项',
+            self::TYPE_ADDON => '附加服务变更',
+        ];
+        return $map[$data['change_type']] ?? '未知';
+    }
+
+    /**
+     * @notes 变更状态描述获取器
+     * @param $value
+     * @param $data
+     * @return string
+     */
+    public function getChangeStatusDescAttr($value, $data): string
+    {
+        $map = [
+            self::STATUS_PENDING => '待审核',
+            self::STATUS_APPROVED => '审核通过',
+            self::STATUS_REJECTED => '审核拒绝',
+            self::STATUS_EXECUTED => '已执行',
+            self::STATUS_CANCELLED => '已取消',
+        ];
+        return $map[$data['change_status']] ?? '未知';
+    }
+
+    /**
+     * @notes 附加服务动作描述获取器
+     * @param mixed $value
+     * @param array $data
+     * @return string
+     */
+    public function getAddonActionDescAttr($value, $data): string
+    {
+        $map = [
+            self::ADDON_ACTION_ADD => '新增附加服务',
+            self::ADDON_ACTION_REMOVE => '移除附加服务',
+        ];
+
+        return $map[(int)($data['addon_action'] ?? 0)] ?? '';
+    }
+
+    /**
+     * @notes 时间段描述获取器
+     * @param $value
+     * @param $data
+     * @return string
+     */
+    public function getTimeSlotDescAttr($value, $data): string
+    {
+        return '全天';
+    }
+
+    /**
+     * @notes 附件图片获取器
+     * @param $value
+     * @return array
+     */
+    public function getAttachImagesAttr($value): array
+    {
+        return $value ? json_decode($value, true) : [];
+    }
+
+    /**
+     * @notes 附件图片设置器
+     * @param $value
+     * @return string
+     */
+    public function setAttachImagesAttr($value): string
+    {
+        return is_array($value) ? json_encode($value) : $value;
+    }
+
+    /**
+     * @notes 生成变更单号
+     * @return string
+     */
+    public static function generateChangeSn(): string
+    {
+        return 'CHG' . date('YmdHis') . str_pad((string)mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * @notes 检查订单是否可变更
+     * @param int $orderId
+     * @return array [bool $canChange, string $message]
+     */
+    public static function checkCanChange(int $orderId): array
+    {
+        $order = Order::find($orderId);
+        if (!$order) {
+            return [false, '订单不存在'];
+        }
+
+        // 只有已支付或服务中的订单可以变更
+        if (!in_array($order->order_status, [Order::STATUS_PAID, Order::STATUS_IN_SERVICE])) {
+            return [false, '当前订单状态不支持变更'];
+        }
+
+        // 检查是否有未处理的变更申请
+        $pendingChange = self::where('order_id', $orderId)
+            ->whereIn('change_status', [self::STATUS_PENDING, self::STATUS_APPROVED])
+            ->find();
+        if ($pendingChange) {
+            return [false, '存在未处理的变更申请，请等待处理完成后再申请'];
+        }
+
+        // 检查是否暂停中
+        if ($order->is_paused) {
+            return [false, '订单已暂停，请先恢复订单'];
+        }
+
+        return [true, '可以变更'];
+    }
+
+    /**
+     * @notes 申请改期
+     * @param int $userId
+     * @param int $orderId
+     * @param string $newDate 新服务日期
+     * @param int $newTimeSlot 新时间段
+     * @param string $reason 申请原因
+     * @param array $attachImages 附件图片
+     * @return array [bool $success, string $message, OrderChange|null $change]
+     */
+    public static function applyDateChange(
+        int $userId,
+        int $orderId,
+        string $newDate,
+        int $newTimeSlot,
+        string $reason = '',
+        array $attachImages = []
+    ): array {
+        // 检查是否可变更
+        [$canChange, $message] = self::checkCanChange($orderId);
+        if (!$canChange) {
+            return [false, $message, null];
+        }
+
+        $order = Order::with(['items'])->find($orderId);
+        
+        // 检查订单所有者
+        if ($order->user_id != $userId) {
+            return [false, '无权操作此订单', null];
+        }
+
+        // 验证新日期
+        if (strtotime($newDate) <= strtotime(date('Y-m-d'))) {
+            return [false, '新服务日期必须大于今天', null];
+        }
+
+        Db::startTrans();
+        try {
+            $newTimeSlot = self::normalizeTimeSlot($newTimeSlot);
+            // 获取原服务日期（取第一个订单项的日期）
+            $firstItem = $order->items[0] ?? null;
+            if (!$firstItem) {
+                return [false, '订单项不存在', null];
+            }
+
+            // 检查所有订单项的新档期是否可用
+            foreach ($order->items as $item) {
+                $available = Schedule::checkAvailable((int)$item->staff_id, $newDate, 0);
+                if (!$available) {
+                    $staffName = $item->staff_name ?: "人员ID:{$item->staff_id}";
+                    return [false, "{$staffName}在{$newDate}档期不可用", null];
+                }
+            }
+
+            // 创建变更记录
+            $change = self::create([
+                'change_sn' => self::generateChangeSn(),
+                'order_id' => $orderId,
+                'order_sn' => $order->order_sn,
+                'user_id' => $userId,
+                'change_type' => self::TYPE_DATE,
+                'change_status' => self::STATUS_PENDING,
+                'old_service_date' => $firstItem->service_date,
+                'new_service_date' => $newDate,
+                'old_time_slot' => 0,
+                'new_time_slot' => 0,
+                'apply_reason' => $reason,
+                'attach_images' => $attachImages,
+                'create_time' => time(),
+                'update_time' => time(),
+            ]);
+
+            // 记录变更日志
+            OrderChangeLog::addLog(
+                $orderId,
+                OrderChangeLog::RELATED_TYPE_CHANGE,
+                $change->id,
+                OrderChangeLog::OPERATOR_USER,
+                $userId,
+                'apply',
+                0,
+                self::STATUS_PENDING,
+                "申请改期：{$firstItem->service_date} → {$newDate}"
+            );
+
+            // 更新订单变更标记
+            Order::where('id', $orderId)->update([
+                'has_changed' => 1,
+                'update_time' => time(),
+            ]);
+
+            Db::commit();
+            return [true, '改期申请已提交，请等待审核', $change];
+        } catch (\Exception $e) {
+            Db::rollback();
+            return [false, '申请失败：' . $e->getMessage(), null];
+        }
+    }
+
+    /**
+     * @notes 申请换人
+     * @param int $userId
+     * @param int $orderId
+     * @param int $orderItemId 订单项ID
+     * @param int $newStaffId 新工作人员ID
+     * @param string $reason 申请原因
+     * @param array $attachImages 附件图片
+     * @return array [bool $success, string $message, OrderChange|null $change]
+     */
+    public static function applyStaffChange(
+        int $userId,
+        int $orderId,
+        int $orderItemId,
+        int $newStaffId,
+        string $reason = '',
+        array $attachImages = []
+    ): array {
+        // 检查是否可变更
+        [$canChange, $message] = self::checkCanChange($orderId);
+        if (!$canChange) {
+            return [false, $message, null];
+        }
+
+        $order = Order::find($orderId);
+        if ($order->user_id != $userId) {
+            return [false, '无权操作此订单', null];
+        }
+
+        // 获取订单项
+        $orderItem = OrderItem::find($orderItemId);
+        if (!$orderItem || $orderItem->order_id != $orderId) {
+            return [false, '订单项不存在', null];
+        }
+
+        // 检查新人员是否存在
+        $newStaff = Staff::find($newStaffId);
+        if (!$newStaff || $newStaff->status != 1) {
+            return [false, '新工作人员不存在或已停用', null];
+        }
+
+        // 检查是否同一人
+        if ($orderItem->staff_id == $newStaffId) {
+            return [false, '新人员与原人员相同', null];
+        }
+
+        // 检查新人员档期是否可用
+        $available = Schedule::checkAvailable($newStaffId, (string)$orderItem->service_date, 0);
+        if (!$available) {
+            return [false, '新工作人员在该日期档期不可用', null];
+        }
+
+        Db::startTrans();
+        try {
+            // 获取原人员信息
+            $oldStaff = Staff::find($orderItem->staff_id);
+            $oldPrice = round((float)$orderItem->price, 2);
+            $newPrice = self::resolveOrderItemPrice(
+                (int)$newStaffId,
+                (int)$orderItem->package_id,
+                0,
+                $oldPrice
+            );
+            $priceDiff = round($newPrice - $oldPrice, 2); // 正数需补付，负数需退款
+
+            // 临时锁定新人员档期（15分钟）
+            $lockResult = Schedule::temporaryLock(
+                $newStaffId,
+                (string)$orderItem->service_date,
+                0,
+                $orderId,
+                15 * 60 // 15分钟
+            );
+            if (!$lockResult['success']) {
+                return [false, '锁定新人员档期失败：' . $lockResult['message'], null];
+            }
+
+            // 创建变更记录
+            $change = self::create([
+                'change_sn' => self::generateChangeSn(),
+                'order_id' => $orderId,
+                'order_sn' => $order->order_sn,
+                'user_id' => $userId,
+                'change_type' => self::TYPE_STAFF,
+                'change_status' => self::STATUS_PENDING,
+                'order_item_id' => $orderItemId,
+                'old_staff_id' => $orderItem->staff_id,
+                'new_staff_id' => $newStaffId,
+                'old_staff_name' => $oldStaff->name ?? '',
+                'new_staff_name' => $newStaff->name,
+                'old_schedule_id' => $orderItem->schedule_id,
+                'new_schedule_id' => $lockResult['schedule_id'] ?? 0,
+                'old_price' => $oldPrice,
+                'new_price' => $newPrice,
+                'price_diff' => $priceDiff,
+                'apply_reason' => $reason,
+                'attach_images' => $attachImages,
+                'create_time' => time(),
+                'update_time' => time(),
+            ]);
+
+            // 记录日志
+            $diffDesc = $priceDiff > 0 ? "需补付{$priceDiff}元" : ($priceDiff < 0 ? "需退款" . abs($priceDiff) . "元" : "无差价");
+            OrderChangeLog::addLog(
+                $orderId,
+                OrderChangeLog::RELATED_TYPE_CHANGE,
+                $change->id,
+                OrderChangeLog::OPERATOR_USER,
+                $userId,
+                'apply',
+                0,
+                self::STATUS_PENDING,
+                "申请换人：{$oldStaff->name} → {$newStaff->name}，{$diffDesc}"
+            );
+
+            // 更新订单变更标记
+            Order::where('id', $orderId)->update([
+                'has_changed' => 1,
+                'update_time' => time(),
+            ]);
+
+            Db::commit();
+            return [true, '换人申请已提交，请等待审核', $change];
+        } catch (\Exception $e) {
+            Db::rollback();
+            return [false, '申请失败：' . $e->getMessage(), null];
+        }
+    }
+
+    /**
+     * @notes 申请加项
+     * @param int $userId
+     * @param int $orderId
+     * @param int $staffId 新增工作人员ID
+     * @param int $packageId 新增套餐ID
+     * @param string $serviceDate 服务日期
+     * @param int $timeSlot 时间段
+     * @param string $reason 申请原因
+     * @return array [bool $success, string $message, OrderChange|null $change]
+     */
+    public static function applyAddItem(
+        int $userId,
+        int $orderId,
+        int $staffId,
+        int $packageId,
+        string $serviceDate,
+        int $timeSlot,
+        string $reason = ''
+    ): array {
+        $timeSlot = self::normalizeTimeSlot($timeSlot);
+        // 检查是否可变更
+        [$canChange, $message] = self::checkCanChange($orderId);
+        if (!$canChange) {
+            return [false, $message, null];
+        }
+
+        $order = Order::find($orderId);
+        if ($order->user_id != $userId) {
+            return [false, '无权操作此订单', null];
+        }
+
+        // 检查人员
+        $staff = Staff::find($staffId);
+        if (!$staff || $staff->status != 1) {
+            return [false, '工作人员不存在或已停用', null];
+        }
+
+        // 检查套餐
+        $package = \app\common\model\service\ServicePackage::find($packageId);
+        if (!$package) {
+            return [false, '服务套餐不存在', null];
+        }
+
+        // 验证日期
+        if (strtotime($serviceDate) <= strtotime(date('Y-m-d'))) {
+            return [false, '服务日期必须大于今天', null];
+        }
+
+        // 检查档期
+        $available = Schedule::checkAvailable($staffId, $serviceDate, 0);
+        if (!$available) {
+            return [false, '该人员在指定日期档期不可用', null];
+        }
+
+        Db::startTrans();
+        try {
+            // 获取价格
+            $price = self::resolveOrderItemPrice($staffId, $packageId, 0);
+            if ($price <= 0) {
+                return [false, '当前套餐未配置有效价格', null];
+            }
+
+            // 临时锁定档期
+            $lockResult = Schedule::temporaryLock($staffId, $serviceDate, 0, $orderId, 15 * 60);
+            if (!$lockResult['success']) {
+                return [false, '锁定档期失败：' . $lockResult['message'], null];
+            }
+
+            // 创建变更记录
+            $change = self::create([
+                'change_sn' => self::generateChangeSn(),
+                'order_id' => $orderId,
+                'order_sn' => $order->order_sn,
+                'user_id' => $userId,
+                'change_type' => self::TYPE_ADD_ITEM,
+                'change_status' => self::STATUS_PENDING,
+                'add_staff_id' => $staffId,
+                'add_package_id' => $packageId,
+                'add_staff_name' => $staff->name,
+                'add_package_name' => $package->name,
+                'add_service_date' => $serviceDate,
+                'add_time_slot' => 0,
+                'add_price' => $price,
+                'add_schedule_id' => $lockResult['schedule_id'] ?? 0,
+                'apply_reason' => $reason,
+                'create_time' => time(),
+                'update_time' => time(),
+            ]);
+
+            // 记录日志
+            OrderChangeLog::addLog(
+                $orderId,
+                OrderChangeLog::RELATED_TYPE_CHANGE,
+                $change->id,
+                OrderChangeLog::OPERATOR_USER,
+                $userId,
+                'apply',
+                0,
+                self::STATUS_PENDING,
+                "申请加项：新增{$staff->name}（{$package->name}），价格{$price}元"
+            );
+
+            // 更新订单变更标记
+            Order::where('id', $orderId)->update([
+                'has_changed' => 1,
+                'update_time' => time(),
+            ]);
+
+            Db::commit();
+            return [true, '加项申请已提交，请等待审核', $change];
+        } catch (\Exception $e) {
+            Db::rollback();
+            return [false, '申请失败：' . $e->getMessage(), null];
+        }
+    }
+
+    /**
+     * @notes 申请附加服务变更
+     * @param int $userId
+     * @param int $orderId
+     * @param int $orderItemId
+     * @param int $addonAction
+     * @param array $addonIds
+     * @param string $reason
+     * @param array $attachImages
+     * @return array [bool $success, string $message, OrderChange|null $change]
+     */
+    public static function applyAddonChange(
+        int $userId,
+        int $orderId,
+        int $orderItemId,
+        int $addonAction,
+        array $addonIds,
+        string $reason = '',
+        array $attachImages = []
+    ): array {
+        [$canChange, $message] = self::checkCanChange($orderId);
+        if (!$canChange) {
+            return [false, $message, null];
+        }
+
+        $order = Order::find($orderId);
+        if (!$order || (int)$order->user_id !== $userId) {
+            return [false, '无权操作此订单', null];
+        }
+
+        $orderItem = OrderItem::where('id', $orderItemId)
+            ->where('order_id', $orderId)
+            ->find();
+        if (!$orderItem) {
+            return [false, '订单项不存在', null];
+        }
+
+        $addonAction = self::normalizeAddonAction($addonAction);
+        if ($addonAction <= 0) {
+            return [false, '附加服务动作参数错误', null];
+        }
+
+        $addonIds = self::normalizeAddonIds($addonIds);
+        if (empty($addonIds)) {
+            return [false, '请选择附加服务', null];
+        }
+
+        Db::startTrans();
+        try {
+            $priceDiff = 0.0;
+            $detailItems = [];
+            $addonNames = [];
+
+            if ($addonAction === self::ADDON_ACTION_ADD) {
+                $packageId = (int)($orderItem->package_id ?? 0);
+                if ($packageId <= 0) {
+                    throw new \RuntimeException('当前主服务项未配置可新增的附加服务');
+                }
+
+                $package = ServicePackage::where('id', $packageId)
+                    ->where('staff_id', (int)$orderItem->staff_id)
+                    ->whereNull('delete_time')
+                    ->find();
+                if (!$package) {
+                    throw new \RuntimeException('当前主服务项套餐不存在');
+                }
+
+                $addons = ServiceAddon::alias('addon')
+                    ->join(
+                        'service_package_addon relation',
+                        'relation.addon_id = addon.id AND relation.package_id = ' . $packageId
+                    )
+                    ->whereIn('addon.id', $addonIds)
+                    ->where('addon.staff_id', (int)$orderItem->staff_id)
+                    ->where('addon.is_show', 1)
+                    ->whereNull('addon.delete_time')
+                    ->field('addon.id, addon.name, addon.price')
+                    ->select()
+                    ->toArray();
+
+                if (count($addons) !== count($addonIds)) {
+                    throw new \RuntimeException('所选附加服务不存在、已下架或不属于当前套餐');
+                }
+
+                $activeAddonIds = OrderItemAddon::getActiveAddonIds($orderItemId);
+                if (!empty(array_intersect($addonIds, $activeAddonIds))) {
+                    throw new \RuntimeException('所选附加服务已存在，请勿重复新增');
+                }
+
+                $addonMap = [];
+                foreach ($addons as $addon) {
+                    $addonMap[(int)$addon['id']] = $addon;
+                }
+
+                foreach ($addonIds as $addonId) {
+                    $addon = $addonMap[$addonId] ?? null;
+                    if (!$addon) {
+                        continue;
+                    }
+                    $price = round((float)($addon['price'] ?? 0), 2);
+                    $detailItems[] = [
+                        'order_item_addon_id' => 0,
+                        'addon_id' => $addonId,
+                        'addon_name' => (string)($addon['name'] ?? ''),
+                        'price' => $price,
+                        'quantity' => 1,
+                        'subtotal' => $price,
+                    ];
+                    $addonNames[] = (string)($addon['name'] ?? '');
+                    $priceDiff += $price;
+                }
+            } else {
+                $addonSnapshots = OrderItemAddon::where('order_item_id', $orderItemId)
+                    ->whereIn('addon_id', $addonIds)
+                    ->where('status', OrderItemAddon::STATUS_ACTIVE)
+                    ->select()
+                    ->toArray();
+
+                if (count($addonSnapshots) !== count($addonIds)) {
+                    throw new \RuntimeException('所选附加服务不存在或已移除，无法重复移除');
+                }
+
+                $snapshotMap = [];
+                foreach ($addonSnapshots as $snapshot) {
+                    $snapshotMap[(int)$snapshot['addon_id']] = $snapshot;
+                }
+
+                foreach ($addonIds as $addonId) {
+                    $snapshot = $snapshotMap[$addonId] ?? null;
+                    if (!$snapshot) {
+                        continue;
+                    }
+                    $subtotal = round((float)($snapshot['subtotal'] ?? $snapshot['price'] ?? 0), 2);
+                    $detailItems[] = [
+                        'order_item_addon_id' => (int)($snapshot['id'] ?? 0),
+                        'addon_id' => $addonId,
+                        'addon_name' => (string)($snapshot['addon_name'] ?? ''),
+                        'price' => round((float)($snapshot['price'] ?? 0), 2),
+                        'quantity' => 1,
+                        'subtotal' => $subtotal,
+                    ];
+                    $addonNames[] = (string)($snapshot['addon_name'] ?? '');
+                    $priceDiff -= $subtotal;
+                }
+            }
+
+            if (empty($detailItems)) {
+                throw new \RuntimeException('附加服务明细不存在');
+            }
+
+            $priceDiff = round($priceDiff, 2);
+            $change = self::create([
+                'change_sn' => self::generateChangeSn(),
+                'order_id' => $orderId,
+                'order_sn' => $order->order_sn,
+                'user_id' => $userId,
+                'change_type' => self::TYPE_ADDON,
+                'addon_action' => $addonAction,
+                'change_status' => self::STATUS_PENDING,
+                'order_item_id' => $orderItemId,
+                'price_diff' => $priceDiff,
+                'apply_reason' => $reason,
+                'attach_images' => $attachImages,
+                'create_time' => time(),
+                'update_time' => time(),
+            ]);
+
+            $now = time();
+            foreach ($detailItems as $detailItem) {
+                OrderChangeAddon::create([
+                    'change_id' => (int)$change->id,
+                    'order_item_addon_id' => (int)$detailItem['order_item_addon_id'],
+                    'addon_id' => (int)$detailItem['addon_id'],
+                    'addon_name' => (string)$detailItem['addon_name'],
+                    'price' => (float)$detailItem['price'],
+                    'quantity' => 1,
+                    'subtotal' => (float)$detailItem['subtotal'],
+                    'create_time' => $now,
+                    'update_time' => $now,
+                ]);
+            }
+
+            $actionText = $addonAction === self::ADDON_ACTION_ADD ? '新增附加服务' : '移除附加服务';
+            $priceDiffText = $priceDiff > 0 ? '，净差额+' . $priceDiff . '元' : ($priceDiff < 0 ? '，净差额' . $priceDiff . '元' : '');
+            OrderChangeLog::addLog(
+                $orderId,
+                OrderChangeLog::RELATED_TYPE_CHANGE,
+                (int)$change->id,
+                OrderChangeLog::OPERATOR_USER,
+                $userId,
+                'apply',
+                0,
+                self::STATUS_PENDING,
+                '申请' . $actionText . '：' . implode('、', $addonNames) . $priceDiffText
+            );
+
+            Order::where('id', $orderId)->update([
+                'has_changed' => 1,
+                'update_time' => time(),
+            ]);
+
+            Db::commit();
+            return [
+                true,
+                $addonAction === self::ADDON_ACTION_ADD ? '附加服务新增申请已提交，请等待审核' : '附加服务移除申请已提交，请等待审核',
+                $change,
+            ];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return [false, '申请失败：' . $e->getMessage(), null];
+        }
+    }
+
+    /**
+     * @notes 解析订单项价格（使用统一价格服务）
+     * @param int $staffId
+     * @param int $packageId
+     * @param int $timeSlot
+     * @param float $fallbackPrice
+     * @return float
+     */
+    protected static function resolveOrderItemPrice(
+        int $staffId,
+        int $packageId,
+        int $timeSlot = 0,
+        float $fallbackPrice = 0.0
+    ): float {
+        $price = \app\common\service\StaffPriceService::calculateOrderItemPrice($staffId, $packageId, 0);
+        return $price > 0 ? $price : round($fallbackPrice, 2);
+    }
+
+    /**
+     * @notes 审核变更申请
+     * @param int $changeId
+     * @param int $adminId
+     * @param bool $approved 是否通过
+     * @param string $remark 审核备注
+     * @param string $rejectReason 拒绝原因
+     * @return array [bool $success, string $message]
+     */
+    public static function auditChange(
+        int $changeId,
+        int $adminId,
+        bool $approved,
+        string $remark = '',
+        string $rejectReason = ''
+    ): array {
+        $change = self::find($changeId);
+        if (!$change) {
+            return [false, '变更记录不存在'];
+        }
+
+        if ($change->change_status != self::STATUS_PENDING) {
+            return [false, '该变更申请已处理'];
+        }
+
+        Db::startTrans();
+        try {
+            $beforeStatus = $change->change_status;
+
+            if ($approved) {
+                $change->change_status = self::STATUS_APPROVED;
+                $change->audit_remark = $remark;
+                $logContent = '审核通过' . ($remark ? "：{$remark}" : '');
+            } else {
+                $change->change_status = self::STATUS_REJECTED;
+                $change->reject_reason = $rejectReason;
+                $change->audit_remark = $remark;
+                $logContent = '审核拒绝：' . $rejectReason;
+
+                // 释放临时锁定的档期
+                if ($change->change_type == self::TYPE_STAFF && $change->new_schedule_id > 0) {
+                    Schedule::releaseLock($change->new_schedule_id);
+                }
+                if ($change->change_type == self::TYPE_ADD_ITEM && $change->add_schedule_id > 0) {
+                    Schedule::releaseLock($change->add_schedule_id);
+                }
+            }
+
+            $change->audit_admin_id = $adminId;
+            $change->audit_time = time();
+            $change->update_time = time();
+            $change->save();
+
+            // 记录日志
+            OrderChangeLog::addLog(
+                $change->order_id,
+                OrderChangeLog::RELATED_TYPE_CHANGE,
+                $changeId,
+                OrderChangeLog::OPERATOR_ADMIN,
+                $adminId,
+                'audit',
+                $beforeStatus,
+                $change->change_status,
+                $logContent
+            );
+
+            Db::commit();
+            return [true, $approved ? '审核通过' : '已拒绝'];
+        } catch (\Exception $e) {
+            Db::rollback();
+            return [false, '审核失败：' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * @notes 执行变更
+     * @param int $changeId
+     * @param int $adminId
+     * @return array [bool $success, string $message]
+     */
+    public static function executeChange(int $changeId, int $adminId): array
+    {
+        $change = self::find($changeId);
+        if (!$change) {
+            return [false, '变更记录不存在'];
+        }
+
+        if ($change->change_status != self::STATUS_APPROVED) {
+            return [false, '该变更申请未审核通过或已执行'];
+        }
+
+        Db::startTrans();
+        try {
+            $order = Order::find($change->order_id);
+            $beforeStatus = $change->change_status;
+
+            // 根据变更类型执行不同的操作
+            switch ($change->change_type) {
+                case self::TYPE_DATE:
+                    // 改期：更新所有订单项的服务日期
+                    $result = self::executeDateChange($change, $order);
+                    break;
+                case self::TYPE_STAFF:
+                    // 换人：更新订单项的工作人员
+                    $result = self::executeStaffChange($change);
+                    break;
+                case self::TYPE_ADD_ITEM:
+                    // 加项：创建新的订单项
+                    $result = self::executeAddItem($change, $order);
+                    break;
+                case self::TYPE_ADDON:
+                    // 附加服务变更：新增或移除订单项附加服务
+                    $result = self::executeAddonChange($change, $order);
+                    break;
+                default:
+                    return [false, '未知的变更类型'];
+            }
+
+            if (!$result['success']) {
+                Db::rollback();
+                return $result;
+            }
+
+            // 更新变更状态
+            $change->change_status = self::STATUS_EXECUTED;
+            $change->execute_time = time();
+            $change->execute_admin_id = $adminId;
+            $change->update_time = time();
+            $change->save();
+
+            // 更新订单变更次数
+            Order::where('id', $change->order_id)->inc('change_count')->update([
+                'update_time' => time(),
+            ]);
+
+            // 记录日志
+            OrderChangeLog::addLog(
+                $change->order_id,
+                OrderChangeLog::RELATED_TYPE_CHANGE,
+                $changeId,
+                OrderChangeLog::OPERATOR_ADMIN,
+                $adminId,
+                'execute',
+                $beforeStatus,
+                self::STATUS_EXECUTED,
+                '执行变更完成'
+            );
+
+            Db::commit();
+            return [true, '变更执行成功'];
+        } catch (\Exception $e) {
+            Db::rollback();
+            return [false, '执行失败：' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * @notes 执行改期变更
+     */
+    private static function executeDateChange(OrderChange $change, Order $order): array
+    {
+        $items = OrderItem::where('order_id', $order->id)->select();
+
+        // 二次验证所有订单项的新档期可用性
+        foreach ($items as $item) {
+            $available = Schedule::checkAvailable((int)$item->staff_id, (string)$change->new_service_date, 0);
+            if (!$available) {
+                $staffName = $item->staff_name ?: "人员ID:{$item->staff_id}";
+                return ['success' => false, 'message' => "{$staffName}在新日期档期已被占用，无法执行改期"];
+            }
+
+            // 如果有套餐，验证套餐可用性
+            if ($item->package_id > 0) {
+                $bookingCheck = PackageBooking::checkAvailability(
+                    (int)$item->package_id,
+                    (string)$change->new_service_date,
+                    (int)$item->staff_id,
+                    0
+                );
+                if (!$bookingCheck['available']) {
+                    return ['success' => false, 'message' => $bookingCheck['message']];
+                }
+            }
+        }
+
+        foreach ($items as $item) {
+            // 释放原档期
+            if ($item->schedule_id > 0) {
+                Schedule::releaseLock($item->schedule_id);
+            }
+
+            // 锁定新档期
+            $lockResult = Schedule::confirmBooking(
+                (int)$item->staff_id,
+                (string)$change->new_service_date,
+                0,
+                (int)$order->id,
+                (int)$order->user_id
+            );
+            if (!($lockResult[0] ?? false)) {
+                return ['success' => false, 'message' => (string)($lockResult[1] ?? '锁定新档期失败')];
+            }
+
+            // 更新订单项
+            $item->service_date = $change->new_service_date;
+            $item->time_slot = 0;
+            $item->schedule_id = $lockResult['schedule_id'] ?? 0;
+            $item->update_time = time();
+            $item->save();
+
+            if ((int)$item->package_id > 0) {
+                $confirmed = PackageBooking::confirmSelection(
+                    (int)$order->user_id,
+                    (int)$item->package_id,
+                    (int)$item->staff_id,
+                    (string)$change->new_service_date,
+                    0,
+                    (int)$order->id,
+                    (int)$item->id
+                );
+                if (!$confirmed) {
+                    return ['success' => false, 'message' => '套餐改期锁定失败'];
+                }
+            }
+        }
+
+        // 更新订单服务日期
+        $order->service_date = $change->new_service_date;
+        $order->service_time_slot = 0;
+        $order->update_time = time();
+        $order->save();
+
+        return ['success' => true];
+    }
+
+    /**
+     * @notes 执行换人变更
+     */
+    private static function executeStaffChange(OrderChange $change): array
+    {
+        $orderItem = OrderItem::find($change->order_item_id);
+        if (!$orderItem) {
+            return ['success' => false, 'message' => '订单项不存在'];
+        }
+
+        // 二次验证新档期可用性
+        if ($change->new_schedule_id > 0) {
+            $schedule = Schedule::find($change->new_schedule_id);
+            if (!$schedule) {
+                return ['success' => false, 'message' => '新档期不存在'];
+            }
+            if ($schedule->status != Schedule::STATUS_LOCKED && $schedule->status != Schedule::STATUS_AVAILABLE) {
+                return ['success' => false, 'message' => '新档期已被占用，无法执行换人'];
+            }
+        }
+
+        // 释放原档期
+        if ($orderItem->schedule_id > 0) {
+            Schedule::releaseLock($orderItem->schedule_id);
+        }
+
+        // 确认新档期（从临时锁定转为正式预约）
+        if ($change->new_schedule_id > 0) {
+            Schedule::where('id', $change->new_schedule_id)->update([
+                'status' => Schedule::STATUS_BOOKED,
+                'update_time' => time(),
+            ]);
+        }
+
+        // 更新订单项
+        $orderItem->original_staff_id = $orderItem->staff_id;
+        $orderItem->original_price = $orderItem->price;
+        $orderItem->staff_id = $change->new_staff_id;
+        $orderItem->staff_name = $change->new_staff_name;
+        $orderItem->price = $change->new_price;
+        $orderItem->subtotal = $change->new_price * ($orderItem->quantity ?: 1);
+        $orderItem->schedule_id = $change->new_schedule_id;
+        $orderItem->time_slot = 0;
+        $orderItem->is_changed = 1;
+        $orderItem->change_id = $change->id;
+        $orderItem->update_time = time();
+        $orderItem->save();
+
+        $order = Order::find($change->order_id);
+        if ($order && (int)$orderItem->package_id > 0) {
+            $confirmed = PackageBooking::confirmSelection(
+                (int)$order->user_id,
+                (int)$orderItem->package_id,
+                (int)$change->new_staff_id,
+                (string)$orderItem->service_date,
+                0,
+                (int)$change->order_id,
+                (int)$orderItem->id
+            );
+            if (!$confirmed) {
+                return ['success' => false, 'message' => '换人后套餐锁定失败'];
+            }
+        }
+
+        // 更新订单总金额
+        if (!$order) {
+            return ['success' => false, 'message' => '订单不存在'];
+        }
+        OrderItemAddon::refreshOrderAmounts((int)$order->id);
+
+        return ['success' => true];
+    }
+
+    /**
+     * @notes 执行加项变更
+     */
+    private static function executeAddItem(OrderChange $change, Order $order): array
+    {
+        // 确认档期
+        if ($change->add_schedule_id > 0) {
+            Schedule::where('id', $change->add_schedule_id)->update([
+                'status' => Schedule::STATUS_BOOKED,
+                'update_time' => time(),
+            ]);
+        }
+
+        // 创建新订单项
+        $newItem = OrderItem::create([
+            'order_id' => $order->id,
+            'staff_id' => $change->add_staff_id,
+            'package_id' => $change->add_package_id,
+            'schedule_id' => $change->add_schedule_id,
+            'service_date' => $change->add_service_date,
+            'time_slot' => 0,
+            'staff_name' => $change->add_staff_name,
+            'package_name' => $change->add_package_name,
+            'package_description' => OrderItem::resolvePackageDescription((int)$change->add_package_id),
+            'price' => $change->add_price,
+            'quantity' => 1,
+            'subtotal' => $change->add_price,
+            'is_changed' => 1,
+            'change_id' => $change->id,
+            'create_time' => time(),
+            'update_time' => time(),
+        ]);
+
+        // 更新变更记录
+        $change->add_order_item_id = $newItem->id;
+        $change->save();
+
+        if ((int)$change->add_package_id > 0) {
+            $confirmed = PackageBooking::confirmSelection(
+                (int)$order->user_id,
+                (int)$change->add_package_id,
+                (int)$change->add_staff_id,
+                (string)$change->add_service_date,
+                0,
+                (int)$order->id,
+                (int)$newItem->id
+            );
+            if (!$confirmed) {
+                return ['success' => false, 'message' => '加项套餐锁定失败'];
+            }
+        }
+
+        OrderItemAddon::refreshOrderAmounts((int)$order->id);
+
+        return ['success' => true];
+    }
+
+    /**
+     * @notes 执行附加服务变更
+     * @param OrderChange $change
+     * @param Order $order
+     * @return array
+     */
+    private static function executeAddonChange(OrderChange $change, Order $order): array
+    {
+        $changeAddonItems = OrderChangeAddon::where('change_id', (int)$change->id)
+            ->order('id', 'asc')
+            ->select()
+            ->toArray();
+
+        if (empty($changeAddonItems)) {
+            return ['success' => false, 'message' => '附加服务变更明细不存在'];
+        }
+
+        if ((int)$change->addon_action === self::ADDON_ACTION_ADD) {
+            $pendingAddonIds = array_values(array_unique(array_map('intval', array_column($changeAddonItems, 'addon_id'))));
+            $activeAddonIds = OrderItemAddon::getActiveAddonIds((int)$change->order_item_id);
+            if (!empty(array_intersect($pendingAddonIds, $activeAddonIds))) {
+                return ['success' => false, 'message' => '部分附加服务已存在，无法重复执行'];
+            }
+
+            $createdItems = OrderItemAddon::createSnapshots(
+                (int)$order->id,
+                (int)$change->order_item_id,
+                array_map(static function (array $item) {
+                    return [
+                        'id' => (int)($item['addon_id'] ?? 0),
+                        'name' => (string)($item['addon_name'] ?? ''),
+                        'price' => (float)($item['price'] ?? 0),
+                        'quantity' => 1,
+                    ];
+                }, $changeAddonItems),
+                OrderItemAddon::SOURCE_CHANGE,
+                (int)$change->id
+            );
+
+            $createdMap = [];
+            foreach ($createdItems as $createdItem) {
+                $createdMap[(int)$createdItem->addon_id] = (int)$createdItem->id;
+            }
+
+            foreach ($changeAddonItems as $item) {
+                $addonId = (int)($item['addon_id'] ?? 0);
+                if (isset($createdMap[$addonId])) {
+                    OrderChangeAddon::where('id', (int)$item['id'])->update([
+                        'order_item_addon_id' => $createdMap[$addonId],
+                        'update_time' => time(),
+                    ]);
+                }
+            }
+        } else {
+            $addonIds = array_column($changeAddonItems, 'addon_id');
+            $affected = OrderItemAddon::markRemoved(
+                (int)$change->order_item_id,
+                $addonIds,
+                (int)$change->id
+            );
+            if ($affected !== count(array_unique(array_map('intval', $addonIds)))) {
+                return ['success' => false, 'message' => '部分附加服务已被移除，无法重复执行'];
+            }
+        }
+
+        OrderItemAddon::refreshOrderAmounts((int)$order->id);
+        return ['success' => true];
+    }
+
+    /**
+     * @notes 取消变更申请
+     * @param int $changeId
+     * @param int $userId
+     * @return array [bool $success, string $message]
+     */
+    public static function cancelChange(int $changeId, int $userId): array
+    {
+        $change = self::find($changeId);
+        if (!$change) {
+            return [false, '变更记录不存在'];
+        }
+
+        if ($change->user_id != $userId) {
+            return [false, '无权操作此变更申请'];
+        }
+
+        if ($change->change_status != self::STATUS_PENDING) {
+            return [false, '只能取消待审核的申请'];
+        }
+
+        Db::startTrans();
+        try {
+            $beforeStatus = $change->change_status;
+            $change->change_status = self::STATUS_CANCELLED;
+            $change->update_time = time();
+            $change->save();
+
+            // 释放临时锁定的档期
+            if ($change->change_type == self::TYPE_STAFF && $change->new_schedule_id > 0) {
+                Schedule::releaseLock($change->new_schedule_id);
+            }
+            if ($change->change_type == self::TYPE_ADD_ITEM && $change->add_schedule_id > 0) {
+                Schedule::releaseLock($change->add_schedule_id);
+            }
+
+            // 记录日志
+            OrderChangeLog::addLog(
+                $change->order_id,
+                OrderChangeLog::RELATED_TYPE_CHANGE,
+                $changeId,
+                OrderChangeLog::OPERATOR_USER,
+                $userId,
+                'cancel',
+                $beforeStatus,
+                self::STATUS_CANCELLED,
+                '用户取消变更申请'
+            );
+
+            Db::commit();
+            return [true, '已取消'];
+        } catch (\Exception $e) {
+            Db::rollback();
+            return [false, '取消失败：' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * @notes 获取变更类型选项
+     * @return array
+     */
+    public static function getTypeOptions(): array
+    {
+        return [
+            ['value' => self::TYPE_DATE, 'label' => '改期'],
+            ['value' => self::TYPE_ADD_ITEM, 'label' => '加项'],
+            ['value' => self::TYPE_ADDON, 'label' => '附加服务变更'],
+        ];
+    }
+
+    /**
+     * @notes 获取变更状态选项
+     * @return array
+     */
+    public static function getStatusOptions(): array
+    {
+        return [
+            ['value' => self::STATUS_PENDING, 'label' => '待审核'],
+            ['value' => self::STATUS_APPROVED, 'label' => '审核通过'],
+            ['value' => self::STATUS_REJECTED, 'label' => '审核拒绝'],
+            ['value' => self::STATUS_EXECUTED, 'label' => '已执行'],
+            ['value' => self::STATUS_CANCELLED, 'label' => '已取消'],
+        ];
+    }
+
+    /**
+     * @notes 全量归一到全天
+     * @param int $timeSlot
+     * @return int
+     */
+    protected static function normalizeTimeSlot(int $timeSlot): int
+    {
+        return 0;
+    }
+
+    /**
+     * @notes 归一化附加服务动作
+     * @param int $addonAction
+     * @return int
+     */
+    protected static function normalizeAddonAction(int $addonAction): int
+    {
+        return in_array($addonAction, [self::ADDON_ACTION_ADD, self::ADDON_ACTION_REMOVE], true)
+            ? $addonAction
+            : 0;
+    }
+
+    /**
+     * @notes 归一化附加服务ID列表
+     * @param array $addonIds
+     * @return array
+     */
+    protected static function normalizeAddonIds(array $addonIds): array
+    {
+        $addonIds = array_map('intval', $addonIds);
+        $addonIds = array_filter($addonIds, static fn (int $addonId) => $addonId > 0);
+        return array_values(array_unique($addonIds));
+    }
+}

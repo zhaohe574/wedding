@@ -61,7 +61,7 @@
     </div>
 </template>
 <script lang="ts" setup>
-import type { FormInstance } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 
 import Popup from '@/components/popup/index.vue'
 import feedback from '@/utils/feedback'
@@ -89,12 +89,12 @@ const formData = reactive({
     file_name: ''
 })
 
-const formRules = {
+const formRules: FormRules = {
     page_start: [
         { required: true, message: '请输入起始页码' },
         { type: 'number', message: '页码必须是整数' },
         {
-            validator: (rule: any, value: any, callback: any) => {
+            validator: (_rule, value: number, callback: (error?: Error) => void) => {
                 if (value <= 0) return callback(new Error('页码必须大于0'))
                 callback()
             }
@@ -104,7 +104,7 @@ const formRules = {
         { required: true, message: '请输入结束页码' },
         { type: 'number', message: '页码必须是整数' },
         {
-            validator: (rule: any, value: any, callback: any) => {
+            validator: (_rule, value: number, callback: (error?: Error) => void) => {
                 if (value <= 0) return callback(new Error('页码必须大于0'))
                 callback()
             }

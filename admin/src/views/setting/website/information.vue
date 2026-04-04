@@ -52,6 +52,16 @@
                         ></el-input>
                     </div>
                 </el-form-item>
+                <el-form-item label="前台Slogan" prop="shop_slogan">
+                    <div class="w-80">
+                        <el-input
+                            v-model.trim="formData.shop_slogan"
+                            placeholder="请输入前台Slogan"
+                            maxlength="60"
+                            show-word-limit
+                        ></el-input>
+                    </div>
+                </el-form-item>
                 <el-form-item label="网站图标" prop="web_favicon" required>
                     <div>
                         <material-picker v-model="formData.h5_favicon" :limit="1" />
@@ -130,6 +140,7 @@ const formData = reactive({
     login_image: '', // 登录页广告图
     h5_favicon: '',
     shop_name: '',
+    shop_slogan: '',
     shop_logo: '',
     pc_logo: '',
     pc_title: '',
@@ -172,6 +183,13 @@ const rules = {
         {
             required: true,
             message: '请输入店铺/商城名称',
+            trigger: ['blur']
+        }
+    ],
+    shop_slogan: [
+        {
+            max: 60,
+            message: '前台Slogan最多60个字符',
             trigger: ['blur']
         }
     ],

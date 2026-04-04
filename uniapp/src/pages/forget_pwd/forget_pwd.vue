@@ -1,82 +1,85 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle">
-        <!-- #ifndef H5 -->
-        <navigation-bar
-            :front-color="$theme.navColor"
-            :background-color="$theme.navBgColor"
-        />
-        <!-- #endif -->
-    </page-meta>
-    <view
-        class="register bg-white min-h-full flex flex-col items-center px-[40rpx] pt-[100rpx] box-border"
-    >
-        <view class="w-full">
-            <view class="text-2xl font-medium mb-[60rpx]">忘记登录密码</view>
-            <u-form borderBottom :label-width="150">
-                <u-form-item label="手机号" borderBottom>
-                    <u-input
-                        class="flex-1"
-                        v-model="formData.mobile"
-                        :border="false"
-                        placeholder="请输入手机号码"
-                    />
-                </u-form-item>
-                <u-form-item label="验证码" borderBottom>
-                    <u-input
-                        class="flex-1"
-                        v-model="formData.code"
-                        placeholder="请输入验证码"
-                        :border="false"
-                    />
-                    <view
-                        class="border-l border-solid border-0 border-light pl-3 text-muted leading-4 ml-3 w-[180rpx]"
-                        @click="sendSms"
-                    >
-                        <u-verification-code
-                            ref="uCodeRef"
-                            :seconds="60"
-                            @change="codeChange"
-                            change-text="x秒"
-                        />
-                        <text :class="formData.mobile ? 'text-primary' : 'text-muted'">
+    <AuthPageShell navbarTitle="忘记密码">
+        <template #hero>
+            <view class="auth-hero">
+                <text class="auth-hero__eyebrow">Recover Access</text>
+                <text class="auth-hero__title">重置登录密码</text>
+                <text class="auth-hero__desc"
+                    >通过手机号验证码验证身份后，重新设置新的登录密码。</text
+                >
+            </view>
+        </template>
+
+        <view class="auth-form">
+            <view class="auth-form__group">
+                <text class="auth-form__label">手机号</text>
+                <BaseInput v-model="formData.mobile" type="tel" placeholder="请输入手机号码">
+                    <template #prefix>
+                        <tn-icon name="phone" size="30" color="#B4ACA8" />
+                    </template>
+                </BaseInput>
+            </view>
+
+            <view class="auth-form__group">
+                <text class="auth-form__label">验证码</text>
+                <BaseInput v-model="formData.code" placeholder="请输入验证码">
+                    <template #prefix>
+                        <tn-icon name="shield-check" size="30" color="#B4ACA8" />
+                    </template>
+                    <template #suffix>
+                        <text
+                            class="auth-code-btn"
+                            :class="{ 'auth-code-btn--active': canGetCode && formData.mobile }"
+                            @click="sendSms"
+                        >
                             {{ codeTips }}
                         </text>
-                    </view>
-                </u-form-item>
-                <u-form-item label="新密码" borderBottom>
-                    <u-input
-                        class="flex-1"
-                        type="password"
-                        v-model="formData.password"
-                        placeholder="6-20位数字+字母或符号组合"
-                        :border="false"
-                    />
-                </u-form-item>
-                <u-form-item label="确认密码" borderBottom>
-                    <u-input
-                        class="flex-1"
-                        type="password"
-                        v-model="formData.password_confirm"
-                        placeholder="再次输入新密码"
-                        :border="false"
-                    />
-                </u-form-item>
-            </u-form>
-            <view class="mt-[100rpx]">
-                <u-button type="primary" shape="circle" @click="handleConfirm"> 确定 </u-button>
+                    </template>
+                </BaseInput>
             </view>
+
+            <view class="auth-form__group">
+                <text class="auth-form__label">新密码</text>
+                <BaseInput
+                    v-model="formData.password"
+                    type="password"
+                    placeholder="请输入新密码，至少 6 位"
+                >
+                    <template #prefix>
+                        <tn-icon name="lock" size="30" color="#B4ACA8" />
+                    </template>
+                </BaseInput>
+            </view>
+
+            <view class="auth-form__group">
+                <text class="auth-form__label">确认密码</text>
+                <BaseInput
+                    v-model="formData.password_confirm"
+                    type="password"
+                    placeholder="请再次输入新密码"
+                >
+                    <template #prefix>
+                        <tn-icon name="shield-check" size="30" color="#B4ACA8" />
+                    </template>
+                </BaseInput>
+            </view>
+
+            <BaseButton block size="lg" :disabled="!isFormValid" @click="handleConfirm">
+                确认重置
+            </BaseButton>
         </view>
-    </view>
+    </AuthPageShell>
 </template>
 
 <script setup lang="ts">
 import { smsSend } from '@/api/app'
 import { forgotPassword } from '@/api/user'
 import { SMSEnum } from '@/enums/appEnums'
-import { reactive, ref, shallowRef } from 'vue'
+import AuthPageShell from '@/components/business/AuthPageShell.vue'
+import { computed, reactive, ref } from 'vue'
 
-const uCodeRef = shallowRef()
-const codeTips = ref('')
+const codeTips = ref('获取验证码')
+const canGetCode = ref(true)
 const formData = reactive({
     mobile: '',
     code: '',
@@ -84,36 +87,116 @@ const formData = reactive({
     password_confirm: ''
 })
 
-const codeChange = (text: string) => {
-    codeTips.value = text
+const isFormValid = computed(() => {
+    return formData.mobile && formData.code && formData.password && formData.password_confirm
+})
+
+const startCodeCountdown = () => {
+    let seconds = 60
+    canGetCode.value = false
+    codeTips.value = `${seconds}秒`
+
+    const timer = setInterval(() => {
+        seconds--
+        if (seconds > 0) {
+            codeTips.value = `${seconds}秒`
+        } else {
+            clearInterval(timer)
+            codeTips.value = '获取验证码'
+            canGetCode.value = true
+        }
+    }, 1000)
 }
 
 const sendSms = async () => {
-    if (!formData.mobile) return
-    if (uCodeRef.value?.canGetCode) {
-        await smsSend({
-            scene: SMSEnum.FIND_PASSWORD,
-            mobile: formData.mobile
-        })
-        uni.$u.toast('发送成功')
-        uCodeRef.value?.start()
-    }
+    if (!formData.mobile) return uni.$u.toast('请输入手机号码')
+    if (!canGetCode.value) return
+
+    await smsSend({
+        scene: SMSEnum.FIND_PASSWORD,
+        mobile: formData.mobile
+    })
+    uni.$u.toast('发送成功')
+    startCodeCountdown()
 }
 
 const handleConfirm = async () => {
     if (!formData.mobile) return uni.$u.toast('请输入手机号码')
+    if (!formData.code) return uni.$u.toast('请输入验证码')
     if (!formData.password) return uni.$u.toast('请输入密码')
+    if (formData.password.length < 6) return uni.$u.toast('密码至少 6 位字符')
     if (!formData.password_confirm) return uni.$u.toast('请输入确认密码')
-    if (formData.password != formData.password_confirm) return uni.$u.toast('两次输入的密码不一致')
-    await forgotPassword(formData)
-    setTimeout(() => {
-        uni.navigateBack()
-    }, 1500)
+    if (formData.password != formData.password_confirm) {
+        return uni.$u.toast('两次输入的密码不一致')
+    }
+
+    try {
+        await forgotPassword(formData)
+        uni.$u.toast('密码重置成功')
+        setTimeout(() => {
+            uni.navigateBack()
+        }, 1500)
+    } catch (error: any) {
+        uni.$u.toast(error || '重置失败')
+    }
 }
 </script>
 
-<style lang="scss">
-page {
-    height: 100%;
+<style lang="scss" scoped>
+.auth-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+}
+
+.auth-hero__eyebrow {
+    font-size: 22rpx;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.auth-hero__title {
+    font-size: 52rpx;
+    font-weight: 700;
+    line-height: 1.18;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.auth-hero__desc {
+    font-size: 26rpx;
+    line-height: 1.65;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+}
+
+.auth-form__group {
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+}
+
+.auth-form__label {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.auth-code-btn {
+    padding-left: 20rpx;
+    font-size: 24rpx;
+    font-weight: 500;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.auth-code-btn--active {
+    color: var(--wm-color-primary, #e85a4f);
+    font-weight: 700;
 }
 </style>

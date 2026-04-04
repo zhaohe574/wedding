@@ -15,7 +15,7 @@ export function fileCateDelete(params: Record<string, any>) {
 
 // 文件分类列表
 export function fileCateLists(params: Record<string, any>) {
-    return request.get({ url: '/file/listCate', params })
+    return request.get({ url: '/content.material/listCate', params })
 }
 
 // 文件列表

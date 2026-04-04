@@ -49,11 +49,11 @@ class SmsMessageService
 
             $result =  $smsDriver->send($params['params']['mobile'], [
                 'template_id' => $noticeSetting['sms_notice']['template_id'],
-                'params' => $this->setSmsParams($noticeSetting, $params)
+                'params' => $this->setSmsParams($noticeSetting, $params, $content)
             ]);
             if ($result === false) {
                 // 发送失败更新短信记录
-                $this->updateSmsLog($this->smsLog['id'], SmsEnum::SEND_FAIL, $smsDriver->getError());
+                $this->updateSmsLog($this->smsLog['id'], SmsEnum::SEND_FAIL, $smsDriver->getResult() ?? $smsDriver->getError());
                 throw new \Exception($smsDriver->getError());
             }
             // 发送成功更新短信记录
@@ -107,16 +107,21 @@ class SmsMessageService
 
 
     /**
-     * @notes 处理腾讯云短信参数
+     * @notes 处理短信渠道参数
      * @param $noticeSetting
      * @param $params
+     * @param string $content
      * @return array|mixed
      * @author 段誉
      * @date 2022/9/15 16:25
      */
-    public function setSmsParams($noticeSetting, $params)
+    public function setSmsParams($noticeSetting, $params, string $content = '')
     {
         $defaultEngine = ConfigService::get('sms', 'engine', false);
+        if ($defaultEngine == 'SMSBAO') {
+            return ['content' => $content];
+        }
+
         // 阿里云 且是 验证码类型
         if($defaultEngine != 'TENCENT' && in_array($params['scene_id'], NoticeEnum::SMS_SCENE)) {
             return ['code' => $params['params']['code']];

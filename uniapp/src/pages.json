@@ -35,6 +35,20 @@
             }
         },
         {
+            "path": "pages/staff_list/staff_list",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "人员列表"
+            }
+        },
+        {
+            "path": "pages/schedule_query/schedule_query",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "档期查询"
+            }
+        },
+        {
             "path": "pages/login/login",
             "style": {
                 "navigationBarTitleText": "登录"
@@ -62,21 +76,6 @@
             }
         },
         {
-            "path": "pages/customer_service/customer_service",
-            "style": {
-                "navigationBarTitleText": "联系客服"
-            },
-            "meta": {
-                "white": true
-            }
-        },
-        {
-            "path": "pages/news_detail/news_detail",
-            "style": {
-                "navigationBarTitleText": "详情"
-            }
-        },
-        {
             "path": "pages/user_set/user_set",
             "style": {
                 "navigationBarTitleText": "个人设置"
@@ -86,24 +85,9 @@
             }
         },
         {
-            "path": "pages/collection/collection",
-            "style": {
-                "navigationBarTitleText": "我的收藏"
-            },
-            "meta": {
-                "auth": true
-            }
-        },
-        {
             "path": "pages/as_us/as_us",
             "style": {
                 "navigationBarTitleText": "关于我们"
-            }
-        },
-        {
-            "path": "pages/agreement/agreement",
-            "style": {
-                "navigationBarTitleText": "协议"
             }
         },
         {
@@ -118,6 +102,7 @@
         {
             "path": "pages/user_data/user_data",
             "style": {
+                "navigationStyle": "custom",
                 "navigationBarTitleText": "个人资料"
             },
             "meta": {
@@ -131,7 +116,10 @@
             }
         },
         {
-            "path": "pages/webview/webview"
+            "path": "pages/webview/webview",
+            "style": {
+                "navigationStyle": "default"
+            }
         },
         {
             "path": "pages/bind_mobile/bind_mobile",
@@ -155,10 +143,39 @@
             }
         },
         {
-            "path": "uni_modules/vk-uview-ui/components/u-avatar-cropper/u-avatar-cropper",
+            "path": "pages/order/order",
             "style": {
-                "navigationBarTitleText": "头像裁剪",
-                "navigationBarBackgroundColor": "#000000"
+                "navigationBarTitleText": "我的订单",
+                "enablePullDownRefresh": false
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/order_detail/order_detail",
+            "style": {
+                "navigationBarTitleText": "订单详情",
+                "enablePullDownRefresh": false
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/dynamic/dynamic",
+            "style": {
+                "navigationBarTitleText": "动态广场",
+                "navigationStyle": "custom",
+                "enablePullDownRefresh": false
+            }
+        },
+        {
+            "path": "pages/dynamic_detail/dynamic_detail",
+            "style": {
+                "navigationBarTitleText": "动态详情",
+                "navigationStyle": "custom",
+                "enablePullDownRefresh": false
             }
         }
     ],
@@ -173,6 +190,231 @@
                 "name": "404",
                 "meta": {
                     "white": true
+                }
+            },
+            {
+                "path": "pages/customer_service/customer_service",
+                "style": {
+                    "navigationBarTitleText": "联系顾问"
+                }
+            },
+            {
+                "path": "pages/news_detail/news_detail",
+                "style": {
+                    "navigationBarTitleText": "详情"
+                }
+            },
+            {
+                "path": "pages/collection/collection",
+                "style": {
+                    "navigationBarTitleText": "我的收藏"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/agreement/agreement",
+                "style": {
+                    "navigationBarTitleText": "协议"
+                }
+            },
+            {
+                "path": "pages/dynamic_publish/dynamic_publish",
+                "style": {
+                    "navigationBarTitleText": "发布动态"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/order_change/list",
+                "style": {
+                    "navigationBarTitleText": "我的申请"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/order_change/change_detail",
+                "style": {
+                    "navigationBarTitleText": "变更详情"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/order_change/apply_date",
+                "style": {
+                    "navigationBarTitleText": "申请改期"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/order_change/apply_pause",
+                "style": {
+                    "navigationBarTitleText": "申请暂停"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/order_change/pause_detail",
+                "style": {
+                    "navigationBarTitleText": "暂停详情"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/order_change/apply_add_item",
+                "style": {
+                    "navigationBarTitleText": "加项申请"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/order_change/apply_addon",
+                "style": {
+                    "navigationBarTitleText": "功能下线"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/review/list",
+                "style": {
+                    "navigationBarTitleText": "我的评价"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/review/publish",
+                "style": {
+                    "navigationBarTitleText": "发表评价"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/review/detail",
+                "style": {
+                    "navigationBarTitleText": "评价详情"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/notification/index",
+                "style": {
+                    "navigationBarTitleText": "消息中心"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/aftersale/index",
+                "style": {
+                    "navigationBarTitleText": "售后服务"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/aftersale/ticket",
+                "style": {
+                    "navigationBarTitleText": "我的工单"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/aftersale/ticket_detail",
+                "style": {
+                    "navigationBarTitleText": "工单详情"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/aftersale/complaint_detail",
+                "style": {
+                    "navigationBarTitleText": "投诉详情"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/aftersale/complaint",
+                "style": {
+                    "navigationBarTitleText": "我的投诉"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/aftersale/reshoot",
+                "style": {
+                    "navigationBarTitleText": "补拍申请"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/aftersale/reshoot_detail",
+                "style": {
+                    "navigationBarTitleText": "补拍详情"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/aftersale/apply_reshoot",
+                "style": {
+                    "navigationBarTitleText": "申请补拍"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/aftersale/callback",
+                "style": {
+                    "navigationBarTitleText": "回访问卷"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/aftersale/callback_detail",
+                "style": {
+                    "navigationBarTitleText": "回访问卷详情"
+                },
+                "meta": {
+                    "auth": true
                 }
             },
 			{
@@ -201,14 +443,182 @@
 				"meta": {
                     "auth": true
                 }
-			}
+			},
+            {
+                "path": "pages/staff_detail/staff_detail",
+                "style": {
+                    "navigationBarTitleText": "人员详情"
+                }
+            },
+            {
+                "path": "pages/staff_booking/staff_booking",
+                "style": {
+                    "navigationBarTitleText": "预约服务"
+                }
+            },
+            {
+                "path": "pages/staff_work_detail/staff_work_detail",
+                "style": {
+                    "navigationBarTitleText": "作品详情"
+                }
+            },
+            {
+                "path": "pages/staff_favorite/staff_favorite",
+                "style": {
+                    "navigationBarTitleText": "我的收藏"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/order_confirm/order_confirm",
+                "style": {
+                    "navigationBarTitleText": "订单确认"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/waitlist/waitlist",
+                "style": {
+                    "navigationBarTitleText": "我的候补"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_center/staff_center",
+                "style": {
+                    "navigationBarTitleText": "服务人员中心"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_order_list/staff_order_list",
+                "style": {
+                    "navigationBarTitleText": "订单管理"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_order_detail/staff_order_detail",
+                "style": {
+                    "navigationBarTitleText": "订单详情"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_profile/staff_profile",
+                "style": {
+                    "navigationBarTitleText": "个人资料"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_work_list/staff_work_list",
+                "style": {
+                    "navigationBarTitleText": "作品管理"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_work_edit/staff_work_edit",
+                "style": {
+                    "navigationBarTitleText": "作品编辑"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_package_list/staff_package_list",
+                "style": {
+                    "navigationBarTitleText": "套餐管理"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_package_edit/staff_package_edit",
+                "style": {
+                    "navigationBarTitleText": "套餐编辑"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_addon_list/staff_addon_list",
+                "style": {
+                    "navigationBarTitleText": "功能下线"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_addon_edit/staff_addon_edit",
+                "style": {
+                    "navigationBarTitleText": "功能下线"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_schedule/staff_schedule",
+                "style": {
+                    "navigationBarTitleText": "档期管理"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_dynamic_list/staff_dynamic_list",
+                "style": {
+                    "navigationBarTitleText": "动态管理"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_dynamic_edit/staff_dynamic_edit",
+                "style": {
+                    "navigationBarTitleText": "动态编辑"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/admin_dashboard/admin_dashboard",
+                "style": {
+                    "navigationBarTitleText": "管理员看板"
+                }
+            }
 		]
 	}],
     "globalStyle": {
         "navigationBarTextStyle": "black",
         "navigationBarTitleText": "商城",
         "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#F8F8F8",
+        "navigationStyle": "custom",
         "h5": {
             "navigationStyle": "custom"
         }
@@ -226,8 +636,8 @@
             {
                 "iconPath": "static/images/tabbar/news.png",
                 "selectedIconPath": "static/images/tabbar/news_s.png",
-                "pagePath": "pages/news/news",
-                "text": "资讯"
+                "pagePath": "pages/dynamic/dynamic",
+                "text": "动态"
             },
             {
                 "iconPath": "static/images/tabbar/user.png",
@@ -239,9 +649,12 @@
     },
     "easycom": {
         "custom": {
-            "router-navigate": "uniapp-router-next/components/router-navigate/router-navigate.vue",
+            "^Base(.*)": "@/components/base/Base$1.vue",
+            "router-navigate": "@/components/router-navigate/router-navigate.vue",
             "^(?!z-paging-refresh|z-paging-load-more)z-paging(.*)": "z-paging/components/z-paging$1/z-paging$1.vue",
-            "^w-(.*)": "@/components/widgets/$1/$1.vue"
+            "^w-(.*)": "@/components/widgets/$1/$1.vue",
+            "^tn-(.*)-(item|group)$": "@tuniao/tnui-vue3-uniapp/components/$1/src/$1-$2.vue",
+            "^tn-(.*)": "@tuniao/tnui-vue3-uniapp/components/$1/src/$1.vue"
         }
     }
 }

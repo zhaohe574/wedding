@@ -73,11 +73,21 @@ const { isFullscreen } = useFullscreen()
 </script>
 
 <style lang="scss">
+.header {
+    border: 1px solid var(--admin-color-border);
+    border-radius: var(--admin-radius-lg);
+    background: color-mix(in srgb, var(--admin-surface-card) 95%, #ffffff 5%);
+    box-shadow: var(--admin-shadow-soft);
+}
+
 .navbar {
     height: var(--navbar-height);
-    @apply flex px-2 bg-body;
+    @apply flex px-3 bg-body;
+
     .navbar-item {
-        @apply h-full  flex justify-center items-center  hover:bg-page;
+        @apply h-full flex justify-center items-center hover:bg-page;
+        border-radius: 10px;
+        padding: 0 6px;
     }
 }
 </style>

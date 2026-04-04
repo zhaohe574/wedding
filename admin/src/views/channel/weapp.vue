@@ -138,7 +138,7 @@
                 </el-form-item>
             </el-card>
         </el-form>
-        <footer-btns v-perms="['channel.mnp_settings/setConfig']">
+        <footer-btns v-perms="['experience.channel.mnp_settings/setConfig']">
             <el-button type="primary" @click="handelSave">保存</el-button>
         </footer-btns>
     </div>

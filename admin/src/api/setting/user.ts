@@ -26,7 +26,7 @@ export function getLogin() {
 }
 
 export interface LoginSetup {
-    login_way: number[] | any // 登录方式, 逗号隔开
+    login_way: string[] // 登录方式
     coerce_mobile: number // 强制绑定手机 0/1
     login_agreement: number // 是否开启协议 0/1
     third_auth: number // 第三方登录 0/1

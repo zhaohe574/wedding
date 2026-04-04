@@ -39,7 +39,6 @@ const axiosHooks: AxiosHooks = {
     },
     requestInterceptorsCatchHook(err) {
         NProgress.done()
-        return err
     },
     async responseInterceptorsHook(response) {
         NProgress.done()
@@ -84,7 +83,6 @@ const axiosHooks: AxiosHooks = {
         if (error.code !== AxiosError.ERR_CANCELED) {
             error.message && feedback.msgError(error.message)
         }
-        return Promise.reject(error)
     }
 }
 

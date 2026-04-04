@@ -1,10 +1,16 @@
 page {
-    background-color: $u-bg-color;
+    background-color: var(--wm-color-bg-page, #fcfbf9);
+    color: var(--wm-text-primary, #1e2432);
     font-size: 28rpx;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-family: theme('fontFamily.sans')
-    //font-family: PingFang SC;
+    font-family: var(
+        --wm-font-family-body,
+        PingFang SC,
+        Hiragino Sans GB,
+        Microsoft YaHei,
+        sans-serif
+    );
 }
 
 uni-modal {

@@ -28,7 +28,7 @@
                 </el-form-item>
             </el-form>
         </el-card>
-        <footer-btns v-perms="['recharge.recharge/setConfig']">
+        <footer-btns v-perms="['finance.recharge/setConfig']">
             <el-button type="primary" @click="handleSubmit">保存</el-button>
         </footer-btns>
     </div>

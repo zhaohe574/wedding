@@ -1,13 +1,31 @@
 import { merge } from 'lodash-es'
 import { isFunction } from '@vue/shared'
-import { HttpRequestOptions, RequestConfig, RequestOptions, UploadFileOption } from './type'
+import {
+    HttpRequestOptions,
+    RequestConfig,
+    RequestInput,
+    RequestOptions,
+    RequestTask,
+    UploadFileOption
+} from './type'
 import { RequestErrMsgEnum, RequestMethodsEnum } from '@/enums/requestEnums'
-import requestCancel from './cancel'
+import requestCancel, { createRequestKey } from './cancel'
 
 export default class HttpRequest {
     private readonly options: HttpRequestOptions
     constructor(options: HttpRequestOptions) {
         this.options = options
+    }
+
+    private normalizeRequestOptions(
+        options: RequestInput,
+        method?: RequestMethodsEnum
+    ): RequestOptions {
+        const normalized = typeof options === 'string' ? { url: options } : { ...options }
+        if (method) {
+            normalized.method = method
+        }
+        return normalized
     }
     /**
      * @description 重新请求
@@ -31,15 +49,15 @@ export default class HttpRequest {
     /**
      * @description get请求
      */
-    get<T = any>(options: RequestOptions, config?: Partial<RequestConfig>): Promise<T> {
-        return this.request({ ...options, method: RequestMethodsEnum.GET }, config)
+    get<T = any>(options: RequestInput, config?: Partial<RequestConfig>): Promise<T> {
+        return this.request(this.normalizeRequestOptions(options, RequestMethodsEnum.GET), config)
     }
 
     /**
      * @description post请求
      */
-    post<T = any>(options: RequestOptions, config?: Partial<RequestConfig>): Promise<T> {
-        return this.request({ ...options, method: RequestMethodsEnum.POST }, config)
+    post<T = any>(options: RequestInput, config?: Partial<RequestConfig>): Promise<T> {
+        return this.request(this.normalizeRequestOptions(options, RequestMethodsEnum.POST), config)
     }
 
     /**
@@ -95,8 +113,24 @@ export default class HttpRequest {
         if (requestInterceptorsHook && isFunction(requestInterceptorsHook)) {
             mergeOptions = requestInterceptorsHook(mergeOptions, mergeConfig)
         }
-        return new Promise((resolve, reject) => {
-            const requestTask = uni.request({
+
+        const { ignoreCancel, duplicateStrategy } = mergeConfig
+        const shouldTrackRequest = !ignoreCancel && duplicateStrategy !== 'allow'
+        const requestKey = shouldTrackRequest ? createRequestKey(mergeOptions) : ''
+
+        if (shouldTrackRequest) {
+            const pendingRequest = requestCancel.get(requestKey)
+            if (pendingRequest) {
+                if (duplicateStrategy === 'join') {
+                    return pendingRequest.promise
+                }
+                requestCancel.cancel(requestKey)
+            }
+        }
+
+        let requestTask: RequestTask | undefined
+        const requestPromise = new Promise((resolve, reject) => {
+            requestTask = uni.request({
                 ...mergeOptions,
                 async success(response) {
                     if (responseInterceptorsHook && isFunction(responseInterceptorsHook)) {
@@ -127,14 +161,18 @@ export default class HttpRequest {
                     }
                     reject(err)
                 },
-                complete(err) {
-                    if (err.errMsg !== RequestErrMsgEnum.ABORT) {
-                        requestCancel.remove(options.url)
+                complete() {
+                    if (shouldTrackRequest && requestTask) {
+                        requestCancel.remove(requestKey, requestTask)
                     }
                 }
             })
-            const { ignoreCancel } = mergeConfig
-            !ignoreCancel && requestCancel.add(options.url, requestTask)
         })
+
+        if (shouldTrackRequest && requestTask) {
+            requestCancel.add(requestKey, requestTask, requestPromise)
+        }
+
+        return requestPromise
     }
 }

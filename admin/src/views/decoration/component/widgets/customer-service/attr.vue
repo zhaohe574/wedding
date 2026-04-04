@@ -2,12 +2,29 @@
     <div>
         <el-form label-width="90px" size="large" label-position="top">
             <el-card shadow="never" class="!border-none flex mt-2">
-                <el-form-item label="平台名称">
+                <div class="text-base text-[#101010] font-medium mb-4">文案设置</div>
+                <el-form-item label="主标题">
                     <el-input
                         class="w-[400px]"
                         show-word-limit
                         maxlength="20"
                         v-model="contentData.title"
+                    />
+                </el-form-item>
+                <el-form-item label="副标题">
+                    <el-input
+                        class="w-[400px]"
+                        show-word-limit
+                        maxlength="40"
+                        v-model="contentData.subtitle"
+                    />
+                </el-form-item>
+                <el-form-item label="二维码标题">
+                    <el-input
+                        class="w-[400px]"
+                        show-word-limit
+                        maxlength="20"
+                        v-model="contentData.qrTitle"
                     />
                 </el-form-item>
 
@@ -17,23 +34,53 @@
                     </div>
                 </el-form-item>
 
-                <el-form-item label="备注">
+                <el-form-item label="二维码说明">
                     <el-input
                         class="w-[400px]"
                         show-word-limit
-                        maxlength="20"
+                        maxlength="40"
                         v-model="contentData.remark"
                     />
                 </el-form-item>
                 <el-form-item label="联系电话">
                     <el-input class="w-[400px]" v-model="contentData.mobile" />
                 </el-form-item>
+                <el-form-item label="企微号">
+                    <el-input class="w-[400px]" v-model="contentData.wechat" />
+                </el-form-item>
+                <el-form-item label="联系链接">
+                    <el-input class="w-[400px]" v-model="contentData.contactLink" />
+                </el-form-item>
+                <el-form-item label="电话按钮文案">
+                    <el-input
+                        class="w-[400px]"
+                        show-word-limit
+                        maxlength="16"
+                        v-model="contentData.phoneText"
+                    />
+                </el-form-item>
+                <el-form-item label="主按钮文案">
+                    <el-input
+                        class="w-[400px]"
+                        show-word-limit
+                        maxlength="16"
+                        v-model="contentData.buttonText"
+                    />
+                </el-form-item>
                 <el-form-item label="服务时间">
                     <el-input
                         class="w-[400px]"
                         show-word-limit
-                        maxlength="20"
+                        maxlength="30"
                         v-model="contentData.time"
+                    />
+                </el-form-item>
+                <el-form-item label="底部提示">
+                    <el-input
+                        class="w-[400px]"
+                        show-word-limit
+                        maxlength="40"
+                        v-model="contentData.tips"
                     />
                 </el-form-item>
             </el-card>

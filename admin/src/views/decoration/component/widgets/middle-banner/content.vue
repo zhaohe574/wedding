@@ -23,7 +23,7 @@ const props = defineProps({
         default: () => ({})
     },
     styles: {
-        type: Object as PropType<OptionsType['styles']>,
+        type: Object as PropType<OptionsType['styles'] & { height?: string }>,
         default: () => ({})
     },
     height: {

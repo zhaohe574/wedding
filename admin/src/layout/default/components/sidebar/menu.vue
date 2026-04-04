@@ -2,7 +2,7 @@
     <div
         class="menu flex-1 min-h-0"
         :class="themeClass"
-        :style="isCollapsed ? '' : `--aside-width: ${width}px`"
+        :style="menuStyle"
     >
         <el-scrollbar>
             <el-menu
@@ -60,10 +60,16 @@ defineEmits(['select'])
 const route = useRoute()
 const activeMenu = computed<string>(() => route.meta?.activeMenu || route.path)
 const themeClass = computed(() => `theme-${props.theme}`)
+const collapsedWidth = 64
+const menuStyle = computed(() => ({
+    '--aside-width': `${props.isCollapsed ? collapsedWidth : props.width}px`
+}))
 </script>
 
 <style lang="scss" scoped>
 .menu {
+    padding-bottom: 10px;
+
     &.theme-dark {
         .el-menu {
             :deep(.el-menu-item) {
@@ -94,6 +100,8 @@ const themeClass = computed(() => `theme-${props.theme}`)
     }
     .el-menu {
         border-right: none;
+        background: transparent;
+        transition: width 0.3s ease;
         &:not(.el-menu--collapse) {
             width: var(--aside-width);
         }

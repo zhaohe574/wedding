@@ -93,7 +93,7 @@
                     <template #default="{ row }">
                         <el-button
                             v-if="row.pay_status == 1"
-                            v-perms="['recharge.recharge/refund']"
+                            v-perms="['finance.recharge/refund']"
                             type="primary"
                             link
                             :disabled="row.refund_status == 1"

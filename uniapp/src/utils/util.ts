@@ -1,6 +1,5 @@
-import {isObject} from '@vue/shared'
-import {getToken} from './auth'
-import {parseQuery} from "uniapp-router-next";
+import { isObject } from '@vue/shared'
+import { parseQuery } from 'uniapp-router-next'
 
 /**
  * @description 获取元素节点信息（在组件中的元素必须要传ctx）
@@ -8,8 +7,8 @@ import {parseQuery} from "uniapp-router-next";
  * @param  { Boolean } all 是否多选
  * @param  { ctx } context 当前组件实例
  */
-export const getRect = (selector: string, all = false, context?: any) => {
-    return new Promise((resolve, reject) => {
+export const getRect = <T = any>(selector: string, all = false, context?: any) => {
+    return new Promise<T>((resolve, reject) => {
         let qurey = uni.createSelectorQuery()
         if (context) {
             qurey = uni.createSelectorQuery().in(context)
@@ -17,10 +16,10 @@ export const getRect = (selector: string, all = false, context?: any) => {
         qurey[all ? 'selectAll' : 'select'](selector)
             .boundingClientRect(function (rect) {
                 if (all && Array.isArray(rect) && rect.length) {
-                    return resolve(rect)
+                    return resolve(rect as T)
                 }
                 if (!all && rect) {
-                    return resolve(rect)
+                    return resolve(rect as T)
                 }
                 reject('找不到元素')
             })
@@ -43,8 +42,8 @@ export function currentPage() {
 interface Link {
     path: string
     name?: string
-    type: string
-    canTab: boolean
+    type?: string
+    canTab?: boolean
     query?: Record<string, any>
 }
 
@@ -54,18 +53,119 @@ export enum LinkTypeEnum {
     'MINI_PROGRAM' = 'mini_program'
 }
 
-export function navigateTo(link: Link, navigateType: 'navigateTo' | 'switchTab' | 'reLaunch' = 'navigateTo') {
-    // 如果是小程序跳转
-    if (link.type === LinkTypeEnum.MINI_PROGRAM) {
-        navigateToMiniProgram(link)
+const LEGACY_LINK_MAP: Record<string, string> = {
+    '/pages/service/index': '/pages/schedule_query/schedule_query',
+    '/pages/staff/list': '/pages/schedule_query/schedule_query',
+    '/packages/pages/staff_list/staff_list': '/pages/schedule_query/schedule_query',
+    '/pages/order/list': '/pages/order/order',
+    '/pages/customer-service/index': '/packages/pages/customer_service/customer_service',
+    '/pages/customer_service/customer_service': '/packages/pages/customer_service/customer_service',
+    '/pages/news_detail/news_detail': '/packages/pages/news_detail/news_detail',
+    '/pages/collection/collection': '/packages/pages/collection/collection',
+    '/pages/agreement/agreement': '/packages/pages/agreement/agreement',
+    '/pages/dynamic_publish/dynamic_publish': '/packages/pages/dynamic_publish/dynamic_publish',
+    '/pages/notification/index': '/packages/pages/notification/index',
+    '/pages/review/list': '/packages/pages/review/list',
+    '/pages/review/publish': '/packages/pages/review/publish',
+    '/pages/review/detail': '/packages/pages/review/detail',
+    '/pages/order_change/list': '/packages/pages/order_change/list',
+    '/pages/order_change/change_detail': '/packages/pages/order_change/change_detail',
+    '/pages/order_change/apply_date': '/packages/pages/order_change/apply_date',
+    '/pages/order_change/apply_pause': '/packages/pages/order_change/apply_pause',
+    '/pages/order_change/pause_detail': '/packages/pages/order_change/pause_detail',
+    '/pages/order_change/apply_add_item': '/packages/pages/order_change/apply_add_item',
+    '/pages/order_change/apply_addon': '/packages/pages/order_change/apply_addon',
+    '/pages/aftersale/index': '/packages/pages/aftersale/index',
+    '/pages/aftersale/ticket': '/packages/pages/aftersale/ticket',
+    '/pages/aftersale/ticket_detail': '/packages/pages/aftersale/ticket_detail',
+    '/pages/aftersale/complaint': '/packages/pages/aftersale/complaint',
+    '/pages/aftersale/complaint_detail': '/packages/pages/aftersale/complaint_detail',
+    '/pages/aftersale/reshoot': '/packages/pages/aftersale/reshoot',
+    '/pages/aftersale/reshoot_detail': '/packages/pages/aftersale/reshoot_detail',
+    '/pages/aftersale/apply_reshoot': '/packages/pages/aftersale/apply_reshoot',
+    '/pages/aftersale/callback': '/packages/pages/aftersale/callback',
+    '/pages/aftersale/callback_detail': '/packages/pages/aftersale/callback_detail',
+    '/pages/user_wallet/user_wallet': '/packages/pages/user_wallet/user_wallet',
+    '/pages/recharge_record/recharge_record': '/packages/pages/recharge_record/recharge_record'
+}
+
+const TABBAR_PATHS = new Set(['/pages/index/index', '/pages/dynamic/dynamic', '/pages/user/user'])
+
+export const normalizeAppPath = (path = '') => {
+    let nextPath = path.trim()
+    if (!nextPath) return ''
+
+    if (nextPath.startsWith('/mobile/')) {
+        nextPath = nextPath.replace(/^\/mobile/, '')
+    }
+
+    if (!nextPath.startsWith('/')) {
+        nextPath = `/${nextPath}`
+    }
+
+    return LEGACY_LINK_MAP[nextPath] || nextPath
+}
+
+const buildUrl = (path: string, query?: Record<string, any>) => {
+    if (!query || !Object.keys(query).length) {
+        return path
+    }
+    return `${path}?${objectToQuery(query)}`
+}
+
+const handleNavigateFail = (error: any) => {
+    console.error('页面跳转失败:', error)
+    uni.showToast({
+        title: '页面跳转失败，请稍后重试',
+        icon: 'none'
+    })
+}
+
+export function navigateTo(
+    link: Partial<Link> = {},
+    navigateType: 'navigateTo' | 'switchTab' | 'reLaunch' = 'navigateTo'
+) {
+    if (!link || typeof link !== 'object') {
+        uni.showToast({ title: '页面暂未配置', icon: 'none' })
         return
     }
 
-    const url = link?.query ? `${link.path}?${objectToQuery(link?.query)}` : link.path;
+    // 如果是小程序跳转
+    if (link.type === LinkTypeEnum.MINI_PROGRAM) {
+        navigateToMiniProgram(link as Link)
+        return
+    }
 
-    (navigateType == 'switchTab' || link.canTab) && uni.switchTab({url})
-    navigateType == 'navigateTo' && uni.navigateTo({url})
-    navigateType == 'reLaunch' && uni.reLaunch({url})
+    const path = normalizeAppPath(link.path || '')
+    if (!path) {
+        uni.showToast({ title: '页面暂未配置', icon: 'none' })
+        return
+    }
+
+    const shouldSwitchTab =
+        TABBAR_PATHS.has(path) && (navigateType === 'switchTab' || !!link.canTab)
+    const url = buildUrl(path, link.query)
+
+    if (shouldSwitchTab) {
+        uni.switchTab({
+            url: path,
+            fail: handleNavigateFail
+        })
+        return
+    }
+
+    if (navigateType === 'reLaunch') {
+        uni.reLaunch({
+            url,
+            fail: handleNavigateFail
+        })
+        return
+    }
+
+    uni.navigateTo({
+        url,
+        fail: handleNavigateFail
+    })
 }
 
 /**
@@ -73,10 +173,12 @@ export function navigateTo(link: Link, navigateType: 'navigateTo' | 'switchTab' 
  * @param link 跳转信息，由装修数据进行输入
  */
 export function navigateToMiniProgram(link: Link) {
-    const query = link.query;
+    const query = link.query
     // #ifdef H5
     window.open(
-        `weixin://dl/business/?appid=${query?.appId}&path=${query?.path}&env_version=${query?.env_version}&query=${encodeURIComponent(query?.query)}`
+        `weixin://dl/business/?appid=${query?.appId}&path=${query?.path}&env_version=${
+            query?.env_version
+        }&query=${encodeURIComponent(query?.query)}`
     )
     // #endif
     // #ifdef MP
@@ -84,7 +186,7 @@ export function navigateToMiniProgram(link: Link) {
         appId: query?.appId,
         path: query?.path,
         extraData: parseQuery(query?.query),
-        envVersion: query?.env_version,
+        envVersion: query?.env_version
     })
     // #endif
 }
@@ -156,8 +258,10 @@ export const addUnit = (value: string | number, unit = 'rpx') => {
  * @param  { string } take 小数点操作
  * @param  { string } prec 小数位补
  */
-export function formatPrice({price, take = 'all', prec = undefined}: any) {
-    let [integer, decimals = ''] = (price + '').split('.')
+export function formatPrice({ price, take = 'all', prec = undefined }: any) {
+    const parts = (price + '').split('.')
+    const integer = parts[0]
+    let decimals = parts[1] || ''
 
     // 小数位补
     if (prec !== undefined) {

@@ -1,0 +1,55 @@
+$dynamic-bg: var(--wm-color-bg-page, #fcfbf9);
+$dynamic-surface: var(--wm-color-bg-card, rgba(255, 255, 255, 0.88));
+$dynamic-surface-strong: rgba(255, 255, 255, 0.94);
+$dynamic-surface-solid: #ffffff;
+$dynamic-border: var(--wm-color-border, #efe6e1);
+$dynamic-border-strong: var(--wm-color-border-strong, #f4c7bf);
+$dynamic-divider: #f3ebe6;
+$dynamic-soft: var(--wm-color-bg-soft, #fff7f4);
+$dynamic-accent: var(--wm-color-primary, #e85a4f);
+$dynamic-accent-strong: var(--wm-color-primary-strong, #d84d43);
+$dynamic-accent-soft: var(--wm-color-primary-soft, #fff1ee);
+$dynamic-accent-softer: rgba(232, 90, 79, 0.1);
+$dynamic-text: var(--wm-text-primary, #1e2432);
+$dynamic-text-secondary: #5f534b;
+$dynamic-text-muted: #978b83;
+$dynamic-text-placeholder: var(--wm-text-tertiary, #b4aca8);
+$dynamic-shadow-soft: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+$dynamic-shadow-card: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
+$dynamic-shadow-accent: 0 14rpx 30rpx rgba(232, 90, 79, 0.2);
+$dynamic-radius-page: var(--wm-radius-shell, 36rpx);
+$dynamic-radius-card: var(--wm-radius-card-glass, 26rpx);
+$dynamic-radius-media: var(--wm-radius-card-soft, 20rpx);
+$dynamic-radius-pill: var(--wm-radius-pill, 999rpx);
+
+@mixin dynamic-glass-card($padding: var(--wm-space-card-padding-lg, 24rpx), $radius: $dynamic-radius-card) {
+    padding: $padding;
+    border-radius: $radius;
+    border: 1rpx solid $dynamic-border;
+    background: $dynamic-surface;
+    box-shadow: $dynamic-shadow-soft;
+    backdrop-filter: blur(18rpx);
+    -webkit-backdrop-filter: blur(18rpx);
+}
+
+@mixin dynamic-pill($bg: $dynamic-surface-strong, $color: $dynamic-text-secondary) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 64rpx;
+    padding: 0 24rpx;
+    border-radius: $dynamic-radius-pill;
+    border: 1rpx solid $dynamic-border;
+    background: $bg;
+    color: $color;
+    font-size: 24rpx;
+    font-weight: 500;
+    line-height: 1;
+}
+
+@mixin dynamic-line-clamp($lines: 2) {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: $lines;
+}

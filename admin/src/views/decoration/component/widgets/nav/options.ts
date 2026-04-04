@@ -1,6 +1,7 @@
 export default () => ({
     title: '导航菜单',
     name: 'nav',
+    pageScope: ['home'], // 仅在首页显示
     content: {
         enabled: 1,
         style: 1, // 展示样式1=固定显示，2=分页显示

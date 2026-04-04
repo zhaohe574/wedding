@@ -14,7 +14,7 @@
             flex: none;
             display: flex;
             flex-direction: column;
-            border-radius: 5px;
+            border-radius: var(--admin-radius-lg);
 
             &.body-padding .el-dialog__body {
                 padding: 0;
@@ -32,6 +32,13 @@
 
     .el-menu {
         user-select: none;
+        border-right: none;
+
+        .el-menu-item,
+        .el-sub-menu__title {
+            border-radius: 10px;
+            margin: 4px 8px;
+        }
     }
 
     .el-drawer {
@@ -50,6 +57,8 @@
         --el-table-header-text-color: var(--el-text-color-primary);
         --el-table-header-bg-color: var(--table-header-bg-color);
         font-size: var(--el-font-size-base);
+        border-radius: var(--admin-radius-md);
+        overflow: hidden;
 
         thead {
             th {
@@ -93,6 +102,7 @@
 
     .el-message-box {
         --el-messagebox-width: 350px;
+        border-radius: var(--admin-radius-md);
     }
     .el-date-editor {
         --el-date-editor-datetimerange-width: 380px;
@@ -126,6 +136,11 @@
         &__breadcrumb {
             margin-bottom: 0;
         }
+    }
+
+    .el-card {
+        border-radius: var(--admin-radius-md);
+        border-color: var(--admin-color-border);
     }
 
     .el-input,

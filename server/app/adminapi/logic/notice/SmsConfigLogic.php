@@ -26,6 +26,21 @@ use app\common\service\ConfigService;
 class SmsConfigLogic extends BaseLogic
 {
     /**
+     * @notes 获取渠道默认状态
+     * @param string $type
+     * @param string|bool $defaultEngine
+     * @return int
+     */
+    protected static function getDefaultStatus(string $type, $defaultEngine): int
+    {
+        if ($defaultEngine === false) {
+            return $type === 'ali' ? 1 : 0;
+        }
+
+        return strtoupper($type) === $defaultEngine ? 1 : 0;
+    }
+
+    /**
      * @notes 获取短信配置
      * @return array
      * @author 段誉
@@ -33,9 +48,11 @@ class SmsConfigLogic extends BaseLogic
      */
     public static function getConfig()
     {
+        $defaultEngine = ConfigService::get('sms', 'engine', false);
         $config = [
-            ConfigService::get('sms', 'ali', ['type' => 'ali', 'name' => '阿里云短信', 'status' => 1]),
-            ConfigService::get('sms', 'tencent', ['type' => 'tencent', 'name' => '腾讯云短信', 'status' => 0]),
+            ConfigService::get('sms', 'ali', ['type' => 'ali', 'name' => '阿里云短信', 'status' => self::getDefaultStatus('ali', $defaultEngine)]),
+            ConfigService::get('sms', 'tencent', ['type' => 'tencent', 'name' => '腾讯云短信', 'status' => self::getDefaultStatus('tencent', $defaultEngine)]),
+            ConfigService::get('sms', 'smsbao', ['type' => 'smsbao', 'name' => '短信宝短信', 'status' => self::getDefaultStatus('smsbao', $defaultEngine)]),
         ];
         return $config;
     }
@@ -81,6 +98,7 @@ class SmsConfigLogic extends BaseLogic
      */
     public static function detail($params)
     {
+        $defaultEngine = ConfigService::get('sms', 'engine', false);
         $default = [];
         switch ($params['type']) {
             case 'ali':
@@ -88,7 +106,7 @@ class SmsConfigLogic extends BaseLogic
                     'sign' => '',
                     'app_key' => '',
                     'secret_key' => '',
-                    'status' => 1,
+                    'status' => self::getDefaultStatus('ali', $defaultEngine),
                     'name' => '阿里云短信',
                 ];
                 break;
@@ -97,9 +115,18 @@ class SmsConfigLogic extends BaseLogic
                     'sign' => '',
                     'app_id' => '',
                     'secret_key' => '',
-                    'status' => 0,
+                    'status' => self::getDefaultStatus('tencent', $defaultEngine),
                     'secret_id' => '',
                     'name' => '腾讯云短信',
+                ];
+                break;
+            case 'smsbao':
+                $default = [
+                    'sign' => '',
+                    'username' => '',
+                    'api_key' => '',
+                    'status' => self::getDefaultStatus('smsbao', $defaultEngine),
+                    'name' => '短信宝短信',
                 ];
                 break;
         }
@@ -121,6 +148,7 @@ class SmsConfigLogic extends BaseLogic
         $desc = [
             'ALI' => '阿里云短信',
             'TENCENT' => '腾讯云短信',
+            'SMSBAO' => '短信宝短信',
         ];
         return $desc[$value] ?? '';
     }

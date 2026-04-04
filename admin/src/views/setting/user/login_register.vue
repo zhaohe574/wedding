@@ -11,7 +11,9 @@
                             <el-checkbox value="1">账号密码登录</el-checkbox>
                             <el-checkbox value="2">手机验证码登录</el-checkbox>
                         </el-checkbox-group>
-                        <div class="form-tips">系统通用登录方式，至少选择一项</div>
+                        <div class="form-tips">
+                            H5/PC 端本地登录方式，至少选择一项；小程序端可仅展示微信登录
+                        </div>
                     </div>
                 </el-form-item>
 
@@ -109,8 +111,7 @@ import { getLogin, setLogin } from '@/api/setting/user'
 
 const formRef = ref<FormInstance>()
 
-// 表单数据
-const formData = reactive<LoginSetup>({
+const createDefaultLoginSetup = (): LoginSetup => ({
     login_way: [],
     coerce_mobile: 0,
     login_agreement: 0,
@@ -119,39 +120,82 @@ const formData = reactive<LoginSetup>({
     qq_auth: 0
 })
 
+const normalizeLoginWay = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+        return value.map((item) => String(item)).filter((item) => item !== '')
+    }
+
+    if (typeof value === 'string') {
+        if (!value.trim()) {
+            return []
+        }
+
+        try {
+            const parsedValue = JSON.parse(value)
+            if (Array.isArray(parsedValue)) {
+                return parsedValue.map((item) => String(item)).filter((item) => item !== '')
+            }
+        } catch (error) {
+            return value
+                .split(',')
+                .map((item) => item.trim())
+                .filter((item) => item !== '')
+        }
+    }
+
+    if (value === null || value === undefined || value === '') {
+        return []
+    }
+
+    return [String(value)]
+}
+
+const normalizeToggleValue = (value: unknown): number => (Number(value) === 1 ? 1 : 0)
+
+const normalizeLoginSetup = (value?: Partial<LoginSetup>): LoginSetup => {
+    const defaultValue = createDefaultLoginSetup()
+
+    return {
+        login_way: normalizeLoginWay(value?.login_way ?? defaultValue.login_way),
+        coerce_mobile: normalizeToggleValue(value?.coerce_mobile ?? defaultValue.coerce_mobile),
+        login_agreement: normalizeToggleValue(
+            value?.login_agreement ?? defaultValue.login_agreement
+        ),
+        third_auth: normalizeToggleValue(value?.third_auth ?? defaultValue.third_auth),
+        wechat_auth: normalizeToggleValue(value?.wechat_auth ?? defaultValue.wechat_auth),
+        qq_auth: normalizeToggleValue(value?.qq_auth ?? defaultValue.qq_auth)
+    }
+}
+
+// 表单数据
+const formData = reactive<LoginSetup>(createDefaultLoginSetup())
+
 // 表单验证
-const rules = reactive<FormRules>({
-    loginWay: [
+const rules = reactive<FormRules<LoginSetup>>({
+    login_way: [
         {
             required: true,
-            validator: (rule: any, value: any, callback: any) => {
-                const loginWay = formData.login_way.join('').length
-                if (loginWay === 0) {
+            validator: (_rule, value, callback) => {
+                if (!Array.isArray(value) || value.length === 0) {
                     callback(new Error('登录方式至少选择一项！'))
-                } else {
-                    if (formData.login_way !== '') {
-                        if (!formRef.value) return
-                        formRef.value.validateField('checkPass')
-                    }
-                    callback()
+                    return
                 }
+
+                callback()
             },
             trigger: 'change'
         }
     ],
-    coerce_mobile: [{ required: true, trigger: 'blur' }],
-    login_agreement: [{ required: true, trigger: 'blur' }],
-    third_auth: [{ required: true, trigger: 'blur' }]
+    coerce_mobile: [{ required: true, trigger: 'change' }],
+    login_agreement: [{ required: true, trigger: 'change' }],
+    third_auth: [{ required: true, trigger: 'change' }]
 })
 
 // 获取登录注册数据
 const getData = async () => {
     try {
-        const data = await getLogin()
-        for (const key in formData) {
-            //@ts-ignore
-            formData[key] = data[key]
-        }
+        const data = normalizeLoginSetup(await getLogin())
+        Object.assign(formData, data)
     } catch (error) {
         console.log('获取=>', error)
     }
@@ -161,8 +205,8 @@ const getData = async () => {
 const handleSubmit = async () => {
     await formRef.value?.validate()
     try {
-        await setLogin(formData)
-        getData()
+        await setLogin(normalizeLoginSetup(formData))
+        await getData()
     } catch (error) {
         console.log('保存=>', error)
     }

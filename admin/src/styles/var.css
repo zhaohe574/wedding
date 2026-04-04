@@ -1,24 +1,43 @@
 :root {
     --el-font-family: theme(fontFamily.sans);
     --el-font-weight-primary: 400;
-    --el-menu-item-height: 46px;
+    --el-menu-item-height: 44px;
     --el-menu-sub-item-height: var(--el-menu-item-height);
     --el-menu-icon-width: 18px;
-    --aside-width: 200px;
-    --navbar-height: 50px;
+    --aside-width: 236px;
+    --navbar-height: 58px;
     --color-white: #ffffff;
-    --table-header-bg-color: #f8f8f8;
+    --table-header-bg-color: #f5f7fb;
     --el-font-size-extra-large: 18px;
     --el-menu-base-level-padding: 16px;
-    --el-menu-level-padding: 26px;
+    --el-menu-level-padding: 20px;
     --el-font-size-large: 16px;
     --el-font-size-medium: 15px;
     --el-font-size-base: 14px;
     --el-font-size-small: 13px;
     --el-font-size-extra-small: 12px;
 
+    /* Admin Design Tokens */
+    --admin-radius-sm: 10px;
+    --admin-radius-md: 14px;
+    --admin-radius-lg: 18px;
+    --admin-space-xs: 8px;
+    --admin-space-sm: 12px;
+    --admin-space-md: 16px;
+    --admin-space-lg: 20px;
+    --admin-space-xl: 24px;
+    --admin-shadow-soft: 0 8px 24px rgba(16, 24, 40, 0.06);
+    --admin-shadow-medium: 0 12px 30px rgba(16, 24, 40, 0.1);
+    --admin-color-title: #1f2937;
+    --admin-color-muted: #667085;
+    --admin-color-border: #e6ebf2;
+    --admin-surface-card: #ffffff;
+    --admin-surface-soft: #f8fafc;
+    --admin-layout-grad-start: #f6f8fc;
+    --admin-layout-grad-end: #eef2f8;
+
     --el-bg-color: var(--color-white);
-    --el-bg-color-page: #f6f6f6;
+    --el-bg-color-page: #f2f5fa;
     --el-bg-color-overlay: #ffffff;
     --el-text-color-primary: #333333;
     --el-text-color-regular: #666666;
@@ -40,7 +59,7 @@
     --el-fill-color-blank: #ffffff;
     --el-mask-color: rgba(255, 255, 255, 0.9);
     --el-mask-color-extra-light: rgba(255, 255, 255, 0.3);
-    -el-box-shadow: 0px 12px 32px 4px rgba(0, 0, 0, 0.04), 0px 8px 20px rgba(0, 0, 0, 0.08);
+    --el-box-shadow: 0px 12px 32px 4px rgba(0, 0, 0, 0.04), 0px 8px 20px rgba(0, 0, 0, 0.08);
     --el-box-shadow-light: 0px 0px 12px rgba(0, 0, 0, 0.12);
     --el-box-shadow-lighter: 0px 0px 6px rgba(0, 0, 0, 0.12);
     --el-box-shadow-dark: 0px 16px 48px 16px rgba(0, 0, 0, 0.08), 0px 12px 32px rgba(0, 0, 0, 0.12),

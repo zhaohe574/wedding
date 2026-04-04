@@ -44,9 +44,20 @@ class PaymentLogic extends BaseLogic
     public static function getPayWay($userId, $terminal, $params)
     {
         try {
-            if ($params['from'] == 'recharge') {
-                // 充值
-                $order = RechargeOrder::findOrEmpty($params['order_id'])->toArray();
+            $order = [];
+            switch ($params['from']) {
+                case 'recharge':
+                    $order = RechargeOrder::findOrEmpty($params['order_id'])->toArray();
+                    break;
+                case 'order':
+                    $order = OrderPayLogic::getPayOrderInfo([
+                        'user_id' => (int)$userId,
+                        'order_id' => (int)$params['order_id'],
+                    ]);
+                    if ($order === false) {
+                        throw new \Exception(OrderPayLogic::getError());
+                    }
+                    break;
             }
 
             if (empty($order)) {
@@ -79,9 +90,32 @@ class PaymentLogic extends BaseLogic
                 }
             }
 
+            if ($params['from'] == 'order') {
+                $pay_way = OrderPayLogic::filterPayWays($pay_way);
+            }
+
+            if (empty($pay_way)) {
+                throw new \Exception('当前终端暂未开启可用支付方式');
+            }
+
             return [
                 'lists' => array_values($pay_way),
                 'order_amount' => $order['order_amount'],
+                'pay_deadline_time' => (int)($order['pay_deadline_time'] ?? 0),
+                'pay_remain_seconds' => (int)($order['pay_remain_seconds'] ?? 0),
+                'total_amount' => round((float)($order['total_amount'] ?? $order['order_amount']), 2),
+                'pay_amount' => round((float)($order['pay_amount'] ?? $order['order_amount']), 2),
+                'paid_amount' => round((float)($order['paid_amount'] ?? 0), 2),
+                'unpaid_amount' => round((float)($order['unpaid_amount'] ?? 0), 2),
+                'deposit_amount' => round((float)($order['deposit_amount'] ?? 0), 2),
+                'balance_amount' => round((float)($order['balance_amount'] ?? 0), 2),
+                'deposit_paid' => (int)($order['deposit_paid'] ?? 0),
+                'balance_paid' => (int)($order['balance_paid'] ?? 0),
+                'need_pay' => (string)($order['need_pay'] ?? ''),
+                'need_pay_amount' => round((float)($order['need_pay_amount'] ?? $order['order_amount']), 2),
+                'need_pay_label' => (string)($order['need_pay_label'] ?? '立即支付'),
+                'payment_mode' => (string)($order['payment_mode'] ?? 'full'),
+                'deposit_remark' => (string)($order['deposit_remark'] ?? ''),
             ];
 
         } catch (\Exception $e) {
@@ -117,6 +151,12 @@ class PaymentLogic extends BaseLogic
                         'pay_time' => $payTime,
                     ];
                     break;
+                case 'order':
+                    $result = OrderPayLogic::getPayStatus($params);
+                    if ($result === false) {
+                        self::setError(OrderPayLogic::getError());
+                    }
+                    return $result;
             }
 
             if (empty($order)) {
@@ -152,6 +192,12 @@ class PaymentLogic extends BaseLogic
                         throw new \Exception('充值订单不存在');
                     }
                     break;
+                case 'order':
+                    $order = OrderPayLogic::getPayOrderInfo($params);
+                    if ($order === false) {
+                        throw new \Exception(OrderPayLogic::getError());
+                    }
+                    return $order;
             }
 
             if ($order['pay_status'] == PayEnum::ISPAID) {
@@ -178,6 +224,14 @@ class PaymentLogic extends BaseLogic
      */
     public static function pay($payWay, $from, $order, $terminal, $redirectUrl)
     {
+        if ($from == 'order') {
+            $result = OrderPayLogic::pay((int)$payWay, (array)$order, (int)$terminal, (string)$redirectUrl);
+            if ($result === false) {
+                self::setError(OrderPayLogic::getError());
+            }
+            return $result;
+        }
+
         // 支付编号-仅为微信支付预置(同一商户号下不同客户端支付需使用唯一订单号)
         $paySn = $order['sn'];
         if ($payWay == PayEnum::WECHAT_PAY) {

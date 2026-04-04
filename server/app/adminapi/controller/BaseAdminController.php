@@ -18,6 +18,7 @@ namespace app\adminapi\controller;
 
 use think\App;
 use app\common\controller\BaseLikeAdminController;
+use app\common\service\StaffService;
 
 /**
  * 管理元控制器基类
@@ -35,6 +36,52 @@ class BaseAdminController extends BaseLikeAdminController
             $this->adminInfo = $this->request->adminInfo;
             $this->adminId = $this->request->adminInfo['admin_id'];
         }
+    }
+
+    /**
+     * @notes 获取服务人员中心缺少 staff scope 时的提示
+     */
+    protected function getRequiredStaffScopeDeniedMessage(): string
+    {
+        return StaffService::getStaffScopeAccessDeniedMessage($this->adminInfo);
+    }
+
+    /**
+     * @notes 返回服务人员中心 staff scope 缺失响应
+     */
+    protected function failRequiredStaffScope()
+    {
+        return $this->fail($this->getRequiredStaffScopeDeniedMessage());
+    }
+
+    /**
+     * @notes 旧版附加服务已下线提示
+     */
+    protected function getLegacyAddonOfflineMessage(): string
+    {
+        return '附加服务功能已下线，后续将重新设计';
+    }
+
+    /**
+     * @notes 返回旧版附加服务已下线响应
+     */
+    protected function failLegacyAddonOffline()
+    {
+        return $this->fail($this->getLegacyAddonOfflineMessage());
+    }
+
+    /**
+     * @notes 返回空列表结构，兼容旧页面直接访问
+     */
+    protected function dataEmptyLists()
+    {
+        return $this->data([
+            'lists' => [],
+            'count' => 0,
+            'page_no' => (int)$this->request->get('page_no/d', 1),
+            'page_size' => (int)$this->request->get('page_size/d', 0),
+            'extend' => [],
+        ]);
     }
 
 }

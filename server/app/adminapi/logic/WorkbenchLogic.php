@@ -1,24 +1,20 @@
 <?php
 // +----------------------------------------------------------------------
-// | likeadmin快速开发前后端分离管理后台（PHP版）
-// +----------------------------------------------------------------------
-// | 欢迎阅读学习系统程序代码，建议反馈是我们前进的动力
-// | 开源版本可自由商用，可去除界面版权logo
-// | gitee下载：https://gitee.com/likeshop_gitee/likeadmin
-// | github下载：https://github.com/likeshop-github/likeadmin
-// | 访问官网：https://www.likeadmin.cn
-// | likeadmin团队 版权所有 拥有最终解释权
-// +----------------------------------------------------------------------
-// | author: likeadminTeam
+// | 婚庆服务预约系统 - 工作台逻辑
 // +----------------------------------------------------------------------
 
 namespace app\adminapi\logic;
 
-
 use app\common\logic\BaseLogic;
+use app\common\model\order\Order;
+use app\common\model\order\Refund;
+use app\common\model\order\Payment;
+use app\common\model\user\User;
+use app\common\model\staff\Staff;
+use app\common\model\service\ServicePackage;
+use app\common\model\order\OrderItem;
 use app\common\service\ConfigService;
-use app\common\service\FileService;
-
+use think\facade\Db;
 
 /**
  * 工作台
@@ -28,207 +24,249 @@ use app\common\service\FileService;
 class WorkbenchLogic extends BaseLogic
 {
     /**
-     * @notes 工作套
-     * @param $adminInfo
+     * @notes 工作台首页数据
      * @return array
-     * @author 段誉
-     * @date 2021/12/29 15:58
      */
-    public static function index()
+    public static function index(): array
     {
         return [
-            // 版本信息
-            'version' => self::versionInfo(),
-            // 今日数据
-            'today' => self::today(),
-            // 常用功能
-            'menu' => self::menu(),
-            // 近15日访客数
-            'visitor' => self::visitor(),
-            // 服务支持
-            'support' => self::support(),
-            // 销售数据
-            'sale' => self::sale()
+            // 今日核心数据
+            'today' => self::todayData(),
+            // 待办事项
+            'todo' => self::todoData(),
+            // 营收趋势（近15天）
+            'revenue_trend' => self::revenueTrend(),
+            // 订单状态分布
+            'order_status' => self::orderStatusDistribution(),
+            // 热门服务TOP5
+            'hot_services' => self::hotServices(),
+            // 近期订单
+            'recent_orders' => self::recentOrders(),
         ];
     }
 
-
     /**
-     * @notes 常用功能
-     * @return array[]
-     * @author 段誉
-     * @date 2021/12/29 16:40
-     */
-    public static function menu(): array
-    {
-        return [
-            [
-                'name' => '管理员',
-                'image' => FileService::getFileUrl(config('project.default_image.menu_admin')),
-                'url' => '/permission/admin'
-            ],
-            [
-                'name' => '角色管理',
-                'image' => FileService::getFileUrl(config('project.default_image.menu_role')),
-                'url' => '/permission/role'
-            ],
-            [
-                'name' => '部门管理',
-                'image' => FileService::getFileUrl(config('project.default_image.menu_dept')),
-                'url' => '/organization/department'
-            ],
-            [
-                'name' => '字典管理',
-                'image' => FileService::getFileUrl(config('project.default_image.menu_dict')),
-                'url' => '/setting/dev_tools/dict'
-            ],
-            [
-                'name' => '代码生成器',
-                'image' => FileService::getFileUrl(config('project.default_image.menu_generator')),
-                'url' => '/dev_tools/code'
-            ],
-            [
-                'name' => '素材中心',
-                'image' => FileService::getFileUrl(config('project.default_image.menu_file')),
-                'url' => '/app/material/index'
-            ],
-            [
-                'name' => '菜单权限',
-                'image' => FileService::getFileUrl(config('project.default_image.menu_auth')),
-                'url' => '/permission/menu'
-            ],
-            [
-                'name' => '网站信息',
-                'image' => FileService::getFileUrl(config('project.default_image.menu_web')),
-                'url' => '/setting/website/information'
-            ],
-        ];
-    }
-
-
-    /**
-     * @notes 版本信息
+     * @notes 今日核心数据（含环比）
      * @return array
-     * @author 段誉
-     * @date 2021/12/29 16:08
      */
-    public static function versionInfo(): array
+    private static function todayData(): array
     {
-        return [
-            'version' => config('project.version'),
-            'website' => config('project.website.url'),
-            'name' => ConfigService::get('website', 'name'),
-            'based' => 'vue3.x、ElementUI、MySQL',
-            'channel' => [
-                'website' => 'https://www.likeadmin.cn',
-                'gitee' => 'https://gitee.com/likeadmin/likeadmin_php',
-            ]
-        ];
-    }
+        $todayStart = strtotime('today');
+        $todayEnd = time();
+        $yesterdayStart = strtotime('yesterday');
+        $yesterdayEnd = $todayStart - 1;
 
+        // 今日营收
+        $todayRevenue = (float)Payment::where('pay_status', Payment::STATUS_PAID)
+            ->whereBetweenTime('pay_time', $todayStart, $todayEnd)
+            ->sum('pay_amount');
 
-    /**
-     * @notes 今日数据
-     * @return int[]
-     * @author 段誉
-     * @date 2021/12/29 16:15
-     */
-    public static function today(): array
-    {
+        // 昨日营收
+        $yesterdayRevenue = (float)Payment::where('pay_status', Payment::STATUS_PAID)
+            ->whereBetweenTime('pay_time', $yesterdayStart, $yesterdayEnd)
+            ->sum('pay_amount');
+
+        // 今日订单数
+        $todayOrders = (int)Order::whereBetweenTime('create_time', $todayStart, $todayEnd)
+            ->count();
+
+        // 昨日订单数
+        $yesterdayOrders = (int)Order::whereBetweenTime('create_time', $yesterdayStart, $yesterdayEnd)
+            ->count();
+
+        // 今日新增用户
+        $todayUsers = (int)User::whereBetweenTime('create_time', $todayStart, $todayEnd)
+            ->count();
+
+        // 昨日新增用户
+        $yesterdayUsers = (int)User::whereBetweenTime('create_time', $yesterdayStart, $yesterdayEnd)
+            ->count();
+
+        // 总营收
+        $totalRevenue = (float)Payment::where('pay_status', Payment::STATUS_PAID)
+            ->sum('pay_amount');
+
+        // 总订单数
+        $totalOrders = (int)Order::count();
+
+        // 总用户数
+        $totalUsers = (int)User::count();
+
         return [
             'time' => date('Y-m-d H:i:s'),
-            // 今日销售额
-            'today_sales' => 100,
-            // 总销售额
-            'total_sales' => 1000,
-
-            // 今日访问量
-            'today_visitor' => 10,
-            // 总访问量
-            'total_visitor' => 100,
-
-            // 今日新增用户量
-            'today_new_user' => 30,
-            // 总用户量
-            'total_new_user' => 3000,
-
-            // 订单量 (笔)
-            'order_num' => 12,
-            // 总订单量
-            'order_sum' => 255
+            'revenue' => round($todayRevenue, 2),
+            'revenue_yesterday' => round($yesterdayRevenue, 2),
+            'revenue_compare' => self::calcCompare($todayRevenue, $yesterdayRevenue),
+            'total_revenue' => round($totalRevenue, 2),
+            'order_count' => $todayOrders,
+            'order_yesterday' => $yesterdayOrders,
+            'order_compare' => self::calcCompare($todayOrders, $yesterdayOrders),
+            'total_orders' => $totalOrders,
+            'new_user' => $todayUsers,
+            'user_yesterday' => $yesterdayUsers,
+            'user_compare' => self::calcCompare($todayUsers, $yesterdayUsers),
+            'total_users' => $totalUsers,
         ];
     }
 
+    /**
+     * @notes 待办事项统计
+     * @return array
+     */
+    private static function todoData(): array
+    {
+        return [
+            // 待确认订单
+            'pending_confirm' => (int)Order::where('order_status', Order::STATUS_PENDING_CONFIRM)->count(),
+            // 待支付订单
+            'pending_pay' => (int)Order::where('order_status', Order::STATUS_PENDING_PAY)->count(),
+            // 服务中订单
+            'in_service' => (int)Order::where('order_status', Order::STATUS_IN_SERVICE)->count(),
+            // 待审核退款
+            'pending_refund' => (int)Refund::where('refund_status', Refund::STATUS_PENDING)->count(),
+            // 待审核员工
+            'pending_staff' => (int)Staff::where('audit_status', Staff::AUDIT_PENDING)->count(),
+        ];
+    }
 
     /**
-     * @notes 访问数
+     * @notes 营收趋势（近15天）
      * @return array
-     * @author 段誉
-     * @date 2021/12/29 16:57
      */
-    public static function visitor(): array
+    private static function revenueTrend(): array
     {
-        $num = [];
-        $date = [];
-        for ($i = 0; $i < 15; $i++) {
-            $where_start = strtotime("- " . $i . "day");
-            $date[] = date('m/d', $where_start);
-            $num[$i] = rand(0, 100);
+        $dates = [];
+        $revenues = [];
+        $orders = [];
+
+        for ($i = 14; $i >= 0; $i--) {
+            $dayStart = strtotime("-{$i} days", strtotime('today'));
+            $dayEnd = $dayStart + 86399;
+            $dates[] = date('m/d', $dayStart);
+
+            $dayRevenue = (float)Payment::where('pay_status', Payment::STATUS_PAID)
+                ->whereBetweenTime('pay_time', $dayStart, $dayEnd)
+                ->sum('pay_amount');
+            $revenues[] = round($dayRevenue, 2);
+
+            $dayOrders = (int)Order::whereBetweenTime('create_time', $dayStart, $dayEnd)
+                ->count();
+            $orders[] = $dayOrders;
         }
 
         return [
-            'date' => $date,
-            'list' => [
-                ['name' => '访客数', 'data' => $num]
-            ]
+            'date' => $dates,
+            'revenue' => $revenues,
+            'orders' => $orders,
         ];
     }
 
     /**
-     * @notes 访问数
+     * @notes 订单状态分布
      * @return array
-     * @author 段誉
-     * @date 2021/12/29 16:57
      */
-    public static function sale(): array
+    private static function orderStatusDistribution(): array
     {
-        $num = [];
-        $date = [];
-        for ($i = 0; $i < 7; $i++) {
-            $where_start = strtotime("- " . $i . "day");
-            $date[] = date('m/d', $where_start);
-            $num[$i] = rand(30, 200);
+        $statusMap = [
+            Order::STATUS_PENDING_CONFIRM => '待确认',
+            Order::STATUS_PENDING_PAY => '待支付',
+            Order::STATUS_PENDING_SERVICE => '待服务',
+            Order::STATUS_IN_SERVICE => '服务中',
+            Order::STATUS_COMPLETED => '已完成',
+            Order::STATUS_CANCELLED => '已取消',
+            Order::STATUS_REFUNDING => '退款中',
+            Order::STATUS_REFUNDED => '已退款',
+            Order::STATUS_USER_DELETED => '用户已删除',
+        ];
+
+        $result = [];
+        foreach ($statusMap as $status => $name) {
+            $count = (int)Order::where('order_status', $status)->count();
+            if ($count > 0) {
+                $result[] = [
+                    'name' => $name,
+                    'value' => $count,
+                    'status' => $status,
+                ];
+            }
         }
 
-        return [
-            'date' => $date,
-            'list' => [
-                ['name' => '销售量', 'data' => $num]
-            ]
-        ];
+        return $result;
     }
-
 
     /**
-     * @notes 服务支持
-     * @return array[]
-     * @author 段誉
-     * @date 2022/7/18 11:18
+     * @notes 热门服务TOP5（按订单项数量统计）
+     * @return array
      */
-    public static function support()
+    private static function hotServices(): array
     {
-        return [
-            [
-                'image' => FileService::getFileUrl(config('project.default_image.qq_group')),
-                'title' => '官方公众号',
-                'desc' => '关注官方公众号',
-            ],
-            [
-                'image' => FileService::getFileUrl(config('project.default_image.customer_service')),
-                'title' => '添加企业客服微信',
-                'desc' => '想了解更多请添加客服',
-            ]
-        ];
+        $list = OrderItem::field('package_id, package_name, COUNT(*) as order_count, SUM(subtotal) as total_amount')
+            ->where('package_id', '>', 0)
+            ->group('package_id, package_name')
+            ->order('order_count', 'desc')
+            ->limit(5)
+            ->select()
+            ->toArray();
+
+        return array_map(function ($item) {
+            return [
+                'package_id' => $item['package_id'],
+                'name' => $item['package_name'] ?: '未知套餐',
+                'order_count' => (int)$item['order_count'],
+                'total_amount' => round((float)$item['total_amount'], 2),
+            ];
+        }, $list);
     }
 
+    /**
+     * @notes 近期订单（最新10条）
+     * @return array
+     */
+    private static function recentOrders(): array
+    {
+        $orders = Order::field('id, order_sn, order_status, pay_amount, contact_name, contact_mobile, service_date, create_time')
+            ->order('id', 'desc')
+            ->limit(10)
+            ->select()
+            ->toArray();
+
+        return array_map(function ($order) {
+            return [
+                'id' => $order['id'],
+                'order_sn' => $order['order_sn'],
+                'order_status' => $order['order_status'],
+                'order_status_desc' => self::getStatusDesc($order['order_status']),
+                'pay_amount' => round((float)$order['pay_amount'], 2),
+                'contact_name' => $order['contact_name'] ?? '',
+                'service_date' => $order['service_date'] ?? '',
+                'create_time' => is_numeric($order['create_time'])
+                    ? date('Y-m-d H:i', (int)$order['create_time'])
+                    : ($order['create_time'] ?? ''),
+            ];
+        }, $orders);
+    }
+
+    /**
+     * @notes 计算环比增长率
+     * @param float|int $current
+     * @param float|int $previous
+     * @return float
+     */
+    private static function calcCompare($current, $previous): float
+    {
+        if ($previous == 0) {
+            return $current > 0 ? 100.0 : 0.0;
+        }
+        return round(($current - $previous) / $previous * 100, 1);
+    }
+
+    /**
+     * @notes 获取订单状态描述
+     * @param int $status
+     * @return string
+     */
+    private static function getStatusDesc(int $status): string
+    {
+        return Order::getStatusText($status);
+    }
 }

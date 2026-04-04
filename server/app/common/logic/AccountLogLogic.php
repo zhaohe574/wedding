@@ -56,6 +56,10 @@ class AccountLogLogic extends BaseLogic
             case AccountLogEnum::UM:
                 $left_amount = $user->user_money;
                 break;
+            // 用户积分
+            case AccountLogEnum::UP:
+                $left_amount = $user->user_points ?? 0;
+                break;
             // 其他
         }
 

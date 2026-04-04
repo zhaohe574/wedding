@@ -1,0 +1,188 @@
+$transition-fast: var(--cinema-motion-fast, 150ms);
+$transition-standard: var(--cinema-motion-base, 220ms);
+$transition-slow: var(--cinema-motion-slow, 260ms);
+
+$ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+$ease-out: cubic-bezier(0, 0, 0.2, 1);
+$ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+/* 通用过渡类 */
+.transition-fast {
+  transition: all $transition-fast $ease-in-out;
+}
+
+.transition-standard {
+  transition: all $transition-standard $ease-in-out;
+}
+
+.transition-slow {
+  transition: all $transition-slow $ease-in-out;
+}
+
+.transition-colors {
+  transition: color $transition-fast $ease-in-out,
+              background-color $transition-fast $ease-in-out,
+              border-color $transition-fast $ease-in-out;
+}
+
+.transition-transform {
+  transition: transform $transition-standard $ease-out;
+}
+
+.transition-opacity {
+  transition: opacity $transition-fast $ease-in-out;
+}
+
+.card-hover {
+  transition: all $transition-slow $ease-out;
+  
+  &:hover {
+    transform: translateY(-4rpx);
+    box-shadow: var(--cinema-shadow-medium, 0 20rpx 52rpx rgba(8, 10, 16, 0.12));
+  }
+  
+  &:active {
+    transform: translateY(-2rpx) scale(0.99);
+  }
+}
+
+.button-feedback {
+  transition: all $transition-standard $ease-in-out;
+  
+  &:active {
+    transform: translateY(2rpx) scale(0.985);
+    opacity: 0.92;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn $transition-standard $ease-in-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(28rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in-up {
+  animation: slideInUp $transition-slow $ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-24rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in-down {
+  animation: slideInDown $transition-slow $ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.scale-in {
+  animation: scaleIn $transition-standard $ease-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.74;
+  }
+}
+
+.pulse {
+  animation: pulse 2s $ease-in-out infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rotate {
+  animation: rotate 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .card-hover:hover {
+    transform: none;
+  }
+  
+  .button-feedback:active {
+    transform: none;
+  }
+}
+
+.touch-feedback {
+  position: relative;
+  overflow: hidden;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    transform: translate(-50%, -50%);
+    transition: width $transition-standard $ease-out,
+                height $transition-standard $ease-out,
+                opacity $transition-standard $ease-out;
+    opacity: 0;
+  }
+  
+  &:active::after {
+    width: 200%;
+    height: 200%;
+    opacity: 0.92;
+  }
+}

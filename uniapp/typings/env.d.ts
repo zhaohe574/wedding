@@ -16,3 +16,9 @@ declare module 'uview-plus'
 declare module 'weixin-js-sdk'
 
 declare module 'css-color-function'
+
+declare const wx: any
+
+declare const process: {
+    env: Record<string, string | undefined>
+}

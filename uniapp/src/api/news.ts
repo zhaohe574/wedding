@@ -47,6 +47,6 @@ export function cancelCollect(data: { id: number }) {
  * @description 获取收藏列表
  * @return { Promise }
  */
-export function getCollect() {
-    return request.get({ url: '/article/collect' })
+export function getCollect(data?: { page_no?: number; page_size?: number }) {
+    return request.get({ url: '/article/collect', data }, { isAuth: true })
 }

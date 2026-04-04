@@ -24,14 +24,16 @@ class AccountLogEnum
     /**
      * 变动类型命名规则：对象_动作_简洁描述
      * 动作 DEC-减少 INC-增加
-     * 对象 UM-用户余额
+     * 对象 UM-用户余额 UP-用户积分
      */
 
     /**
      * 变动对象
      * UM 用户余额(user_money)
+     * UP 用户积分(user_points)
      */
     const UM = 1;
+    const UP = 2;
 
     /**
      * 动作
@@ -53,6 +55,13 @@ class AccountLogEnum
      */
     const UM_INC_ADMIN = 200;
     const UM_INC_RECHARGE = 201;
+    const UM_INC_ORDER_REFUND = 202;
+
+    /**
+     * 用户积分增加类型
+     */
+    const UP_INC_REVIEW_REWARD = 300;
+    const UP_INC_SHARE_REWARD = 301;
 
 
     /**
@@ -70,6 +79,15 @@ class AccountLogEnum
     const UM_INC = [
         self::UM_INC_ADMIN,
         self::UM_INC_RECHARGE,
+        self::UM_INC_ORDER_REFUND,
+    ];
+
+    /**
+     * 用户积分（增加类型汇总）
+     */
+    const UP_INC = [
+        self::UP_INC_REVIEW_REWARD,
+        self::UP_INC_SHARE_REWARD,
     ];
 
 
@@ -108,7 +126,10 @@ class AccountLogEnum
             self::UM_DEC_ADMIN => '平台减少余额',
             self::UM_INC_ADMIN => '平台增加余额',
             self::UM_INC_RECHARGE => '充值增加余额',
+            self::UM_INC_ORDER_REFUND => '订单退款退回余额',
             self::UM_DEC_RECHARGE_REFUND => '充值订单退款减少余额',
+            self::UP_INC_REVIEW_REWARD => '评价奖励积分',
+            self::UP_INC_SHARE_REWARD => '晒单奖励积分',
         ];
         if ($flag) {
             return $desc;
@@ -146,6 +167,30 @@ class AccountLogEnum
 
 
     /**
+     * @notes 获取用户积分类型描述
+     * @return string|string[]
+     */
+    public static function getUserPointChangeTypeDesc()
+    {
+        $changeTypes = self::getUserPointChangeType();
+        $changeTypeDesc = self::getChangeTypeDesc('', true);
+        return array_filter($changeTypeDesc, function ($key) use ($changeTypes) {
+            return in_array($key, $changeTypes);
+        }, ARRAY_FILTER_USE_KEY);
+    }
+
+
+    /**
+     * @notes 获取用户积分变动类型
+     * @return int[]
+     */
+    public static function getUserPointChangeType() : array
+    {
+        return self::UP_INC;
+    }
+
+
+    /**
      * @notes 获取变动对象
      * @param $changeType
      * @return false
@@ -158,6 +203,11 @@ class AccountLogEnum
         $um = self::getUserMoneyChangeType();
         if (in_array($changeType, $um)) {
             return self::UM;
+        }
+
+        $up = self::getUserPointChangeType();
+        if (in_array($changeType, $up)) {
+            return self::UP;
         }
 
         // 其他...

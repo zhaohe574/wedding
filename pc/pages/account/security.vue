@@ -12,7 +12,7 @@
                         type="primary"
                         @click="showMobilePopup = true"
                     >
-                        {{ userInfo.has_password ? '点击修改' : '点击设置' }}
+                        {{ userInfo.has_password ? '修改' : '设置' }}
                         <Icon name="el-icon-ArrowRight" />
                     </ElButton>
                 </div>

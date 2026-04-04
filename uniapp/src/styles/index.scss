@@ -1,3 +1,6 @@
+@import './tokens.scss';
 @import './tailwind.css';
 @import './public.scss';
-@import '../uni_modules/vk-uview-ui/index.scss';
+@import './uview-compat.scss';
+@import './animations.scss';
+@import './utilities.scss';

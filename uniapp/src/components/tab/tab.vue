@@ -1,6 +1,12 @@
 <template>
     <view
-        :class="{ active, inactive: !active, tab: true }"
+        :class="[
+            'wm-tab-panel',
+            {
+                'wm-tab-panel--active': active,
+                'wm-tab-panel--inactive': !active
+            }
+        ]"
         :style="shouldShow ? '' : 'display: none;'"
     >
         <slot v-if="shouldRender"></slot>
@@ -25,12 +31,12 @@ const props = withDefaults(
 const active = ref<boolean>(false)
 const shouldShow = ref<boolean>(false)
 const shouldRender = ref<boolean>(false)
-const inited = ref(undefined)
+const inited = ref(false)
 
 const updateTabs: any = inject('updateTabs')
 const handleChange: any = inject('handleChange')
 
-const updateRender = (value) => {
+const updateRender = (value: boolean) => {
     inited.value = inited.value || value
     active.value = value
     shouldRender.value = inited.value!
@@ -43,7 +49,6 @@ const update = () => {
 }
 
 const instance = getCurrentInstance()
-console.log(instance)
 handleChange(instance?.props, updateRender)
 
 onMounted(() => {
@@ -72,12 +77,12 @@ watch(
 )
 </script>
 
-<style>
-.tab.active {
+<style scoped>
+.wm-tab-panel--active {
     height: auto;
 }
 
-.tab.inactive {
+.wm-tab-panel--inactive {
     height: 0;
     overflow: visible;
 }

@@ -26,14 +26,10 @@ const wechatOa = {
         }
         return isAndroid() ? location.href.split('#')[0] : window.signLink
     },
-    getUrl(
-        scene: UrlScene,
-        scope = 'snsapi_userinfo',
-        extra = {}
-    ): Promise<void> {
-        const currentUrl = `${location.href}${
-            location.search ? '&' : '?'
-        }scene=${scene || ''}&${objectToQuery(extra)}`
+    getUrl(scene: UrlScene, scope = 'snsapi_userinfo', extra = {}): Promise<void> {
+        const currentUrl = `${location.href}${location.search ? '&' : '?'}scene=${
+            scene || ''
+        }&${objectToQuery(extra)}`
         return new Promise((resolve, reject) => {
             getWxCodeUrl({
                 url: currentUrl,
@@ -107,10 +103,7 @@ const wechatOa = {
             this.ready()
                 .then(() => {
                     const { title, link, imgUrl, desc } = options
-                    const shareApi = [
-                        'updateTimelineShareData',
-                        'updateAppMessageShareData'
-                    ]
+                    const shareApi = ['updateTimelineShareData', 'updateAppMessageShareData']
                     for (const api of shareApi) {
                         wx[api]({
                             title: title,

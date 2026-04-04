@@ -13,43 +13,6 @@ import { INDEX_ROUTE, INDEX_ROUTE_NAME } from './router/routes'
 import useTabsStore from './stores/modules/multipleTabs'
 import useUserStore from './stores/modules/user'
 import { clearAuthInfo } from './utils/auth'
-import { isExternal } from './utils/validate'
-
-// 动态添加路由-使用递归进行调整-（fix: 修复之前超过3级菜单导致使用keep-alive功能无效问题
-const addRoutesRecursively = (routes: any, parentPath = '') => {
-    try {
-        routes.forEach((route: any) => {
-            // 如果路由是外部链接，则不添加
-            if (isExternal(route.path)) {
-                return
-            }
-
-            // 拼接父路由路径和当前路由路径
-            const fullPath = parentPath + route.path
-
-            // 创建路由对象，确保每个路由都有唯一的名称
-            const routerEntry = {
-                ...route,
-                path: fullPath,
-                name: route.name || fullPath.replace(/\//g, '_').replace('_', '') // 替换斜杠为下划线，生成唯一名称
-            }
-
-            // 添加路由
-            if (!route.children) {
-                router.addRoute(INDEX_ROUTE_NAME, routerEntry)
-            } else {
-                router.addRoute(routerEntry)
-            }
-
-            // 递归处理子路由
-            if (route.children && route.children.length > 0) {
-                addRoutesRecursively(route.children, fullPath + '/')
-            }
-        })
-    } catch (e) {
-        console.error('Error adding routes:', e)
-    }
-}
 
 // NProgress配置
 NProgress.configure({ showSpinner: false })
@@ -91,10 +54,14 @@ router.beforeEach(async (to, from, next) => {
                 tabsStore.setRouteName(routeName!)
                 INDEX_ROUTE.redirect = { name: routeName }
 
-                // 动态添加index路由
+                // 动态添��index路由
                 router.addRoute(INDEX_ROUTE)
-                // 动态添加其余路由
-                addRoutesRecursively(routes)
+
+                // 直接添加已转换好的路由，所有路由都作为 INDEX_ROUTE_NAME 的子路由
+                routes.forEach((route) => {
+                    router.addRoute(INDEX_ROUTE_NAME, route)
+                })
+
                 next({ ...to, replace: true })
             } catch (err) {
                 clearAuthInfo()

@@ -21,6 +21,8 @@ use app\common\model\decorate\DecoratePage;
 use app\common\model\decorate\DecorateTabbar;
 use app\common\service\ConfigService;
 use app\common\service\FileService;
+use app\common\service\DecorateDataService;
+use app\common\service\LoginConfigService;
 
 
 /**
@@ -43,7 +45,13 @@ class IndexLogic extends BaseLogic
     public static function getIndexData()
     {
         // 装修配置
-        $decoratePage = DecoratePage::findOrEmpty(1);
+        $decoratePage = DecoratePage::findOrEmpty(1)->toArray();
+        
+        // 动态填充装修数据
+        if (!empty($decoratePage)) {
+            $decoratePage = DecorateDataService::parsePageData($decoratePage);
+            $decoratePage = self::normalizeHomeBannerPageData($decoratePage, 1);
+        }
 
         // 首页文章
         $field = [
@@ -90,8 +98,17 @@ class IndexLogic extends BaseLogic
      */
     public static function getDecorate($id)
     {
-        return DecoratePage::field(['type', 'name', 'data', 'meta'])
+        $pageData = DecoratePage::field(['type', 'name', 'data', 'meta'])
             ->findOrEmpty($id)->toArray();
+        
+        if (empty($pageData)) {
+            return [];
+        }
+        
+        // 动态填充业务数据
+        $pageData = DecorateDataService::parsePageData($pageData);
+
+        return self::normalizeHomeBannerPageData($pageData, (int)$id);
     }
 
 
@@ -111,24 +128,12 @@ class IndexLogic extends BaseLogic
         // 导航颜色
         $style = ConfigService::get('tabbar', 'style', config('project.decorate.tabbar_style'));
         // 登录配置
-        $loginConfig = [
-            // 登录方式
-            'login_way' => ConfigService::get('login', 'login_way', config('project.login.login_way')),
-            // 注册强制绑定手机
-            'coerce_mobile' => ConfigService::get('login', 'coerce_mobile', config('project.login.coerce_mobile')),
-            // 政策协议
-            'login_agreement' => ConfigService::get('login', 'login_agreement', config('project.login.login_agreement')),
-            // 第三方登录 开关
-            'third_auth' => ConfigService::get('login', 'third_auth', config('project.login.third_auth')),
-            // 微信授权登录
-            'wechat_auth' => ConfigService::get('login', 'wechat_auth', config('project.login.wechat_auth')),
-            // qq授权登录
-            'qq_auth' => ConfigService::get('login', 'qq_auth', config('project.login.qq_auth')),
-        ];
+        $loginConfig = LoginConfigService::getConfig();
         // 网址信息
         $website = [
             'h5_favicon' => FileService::getFileUrl(ConfigService::get('website', 'h5_favicon')),
             'shop_name' => ConfigService::get('website', 'shop_name'),
+            'shop_slogan' => ConfigService::get('website', 'shop_slogan') ?: '',
             'shop_logo' => FileService::getFileUrl(ConfigService::get('website', 'shop_logo')),
         ];
         // H5配置
@@ -144,6 +149,15 @@ class IndexLogic extends BaseLogic
 
         // 备案信息
         $copyright = ConfigService::get('copyright', 'config', []);
+        // 功能开关
+        $featureSwitch = [
+            'staff_center' => (int) ConfigService::get('feature_switch', 'staff_center', 1),
+            'staff_admin' => (int) ConfigService::get('feature_switch', 'staff_admin', 1),
+            'staff_tag_review_enabled' => (int) ConfigService::get('feature_switch', 'staff_tag_review_enabled', 0),
+            'admin_dashboard' => (int) ConfigService::get('feature_switch', 'admin_dashboard', 1),
+            'admin_dashboard_user_ids' => (string) ConfigService::get('feature_switch', 'admin_dashboard_user_ids', ''),
+            'staff_detail_style' => ConfigService::get('feature_switch', 'staff_detail_style', 'classic'),
+        ];
 
         return [
             'domain' => FileService::getFileUrl(),
@@ -154,7 +168,50 @@ class IndexLogic extends BaseLogic
             'webPage' => $webPage,
             'version'=> config('project.version'),
             'copyright' => $copyright,
+            'feature_switch' => $featureSwitch,
         ];
+    }
+
+    /**
+     * @notes 首页轮播图固定常规模式
+     * @param array $pageData
+     * @param int $pageId
+     * @return array
+     */
+    private static function normalizeHomeBannerPageData(array $pageData, int $pageId): array
+    {
+        if ($pageId !== 1 || empty($pageData['data'])) {
+            return $pageData;
+        }
+
+        $data = $pageData['data'];
+        $isJsonString = is_string($data);
+
+        if ($isJsonString) {
+            $decodedData = json_decode($data, true);
+            $data = is_array($decodedData) ? $decodedData : [];
+        }
+
+        if (!is_array($data)) {
+            return $pageData;
+        }
+
+        foreach ($data as &$widget) {
+            if (!is_array($widget) || (string)($widget['name'] ?? '') !== 'banner') {
+                continue;
+            }
+
+            $content = isset($widget['content']) && is_array($widget['content']) ? $widget['content'] : [];
+            $content['style'] = 1;
+            $widget['content'] = $content;
+        }
+        unset($widget);
+
+        $pageData['data'] = $isJsonString
+            ? json_encode($data, JSON_UNESCAPED_UNICODE)
+            : $data;
+
+        return $pageData;
     }
 
 }

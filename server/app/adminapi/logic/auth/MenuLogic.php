@@ -20,6 +20,7 @@ use app\common\logic\BaseLogic;
 use app\common\model\auth\Admin;
 use app\common\model\auth\SystemMenu;
 use app\common\model\auth\SystemRoleMenu;
+use app\common\service\StaffService;
 
 
 /**
@@ -56,9 +57,177 @@ class MenuLogic extends BaseLogic
 
         $menu = SystemMenu::where($where)
             ->order(['sort' => 'desc', 'id' => 'asc'])
-            ->select();
+            ->select()
+            ->toArray();
+
+        $menu = self::filterUnavailableMenus($menu);
+        $menu = self::normalizeStaffCenterProfileMenu($menu);
+
+        // 服务人员中心仅对服务人员角色可见（管理员默认不展示该入口）
+        if (!self::hasStaffRole((int)$adminId)) {
+            $staffCenterIds = array_column(array_filter($menu, function ($item) {
+                return $item['pid'] == 0
+                    && $item['type'] == 'M'
+                    && in_array($item['paths'], ['staff_center', 'staff-center']);
+            }), 'id');
+
+            if (!empty($staffCenterIds)) {
+                $menu = array_values(array_filter($menu, function ($item) use ($staffCenterIds) {
+                    return !in_array($item['id'], $staffCenterIds)
+                        && !in_array($item['pid'], $staffCenterIds);
+                }));
+            }
+        }
 
         return linear_to_tree($menu, 'children');
+    }
+
+
+    /**
+     * @notes 修正服务人员中心“我的资料”菜单为详情页
+     */
+    private static function normalizeStaffCenterProfileMenu(array $menu): array
+    {
+        $staffCenterIds = array_column(array_filter($menu, function ($item) {
+            return ($item['pid'] ?? 0) == 0
+                && ($item['type'] ?? '') === 'M'
+                && in_array(($item['paths'] ?? ''), ['staff_center', 'staff-center'], true);
+        }), 'id');
+
+        if (empty($staffCenterIds)) {
+            return $menu;
+        }
+
+        foreach ($menu as &$item) {
+            if (!in_array((int)($item['pid'] ?? 0), $staffCenterIds, true)) {
+                continue;
+            }
+
+            $isProfileMenu = ($item['type'] ?? '') === 'C'
+                && (
+                    ($item['paths'] ?? '') === 'profile'
+                    || ($item['perms'] ?? '') === 'staff.staff/lists'
+                    || ($item['perms'] ?? '') === 'staff.staff/myProfile'
+                );
+
+            if (!$isProfileMenu) {
+                continue;
+            }
+
+            $item['name'] = '我的资料';
+            $item['paths'] = 'profile';
+            $item['component'] = 'staff_center/profile/index';
+            $item['perms'] = 'staff.staff/myProfile';
+        }
+        unset($item);
+
+        return $menu;
+    }
+
+
+    /**
+     * @notes 是否包含服务人员角色
+     * @param int $adminId
+     * @return bool
+     */
+    private static function hasStaffRole(int $adminId): bool
+    {
+        return StaffService::hasStaffRoleByAdminId($adminId);
+    }
+
+
+    /**
+     * @notes 过滤已下线和空壳菜单
+     */
+    private static function filterUnavailableMenus(array $menu): array
+    {
+        $blockedPaths = ['timeline', 'aftersale', 'marketing'];
+        $blockedComponents = [
+            'coupon/lists/index',
+            'aftersale/ticket/index',
+            'order/transfer/index',
+            'timeline/lists/index',
+            'financial/cost/index',
+            'financial/invoice/index',
+            'schedule/booking/index',
+            'schedule/event/index',
+            'crm/customer/index',
+            'crm/advisor/index',
+            'crm/warning/index',
+        ];
+        $blockedPermPrefixes = [
+            'coupon.coupon/',
+            'growth.campaign/',
+            'timeline.timeline/',
+            'growth.timeline/',
+            'aftersale.aftersale/',
+            'ops.aftersaleTicket/',
+            'financial.cost/',
+            'finance.cost/',
+            'financial.invoice/',
+            'finance.invoice/',
+            'schedule.calendarEvent/',
+            'ops.calendarEvent/',
+            'schedule.booking/',
+            'ops.booking/',
+            'crm.customer/',
+            'growth.customer/',
+            'crm.sales_advisor/',
+            'crm.salesAdvisor/',
+            'growth.advisor/',
+            'crm.customer_loss_warning/',
+            'crm.customerLossWarning/',
+            'growth.lossWarning/',
+            'crm.followRecord/',
+            'growth.followRecord/',
+            'order.order_transfer/',
+            'ops.orderTransfer/',
+        ];
+
+        return array_values(array_filter($menu, function ($item) use (
+            $blockedPaths,
+            $blockedComponents,
+            $blockedPermPrefixes
+        ) {
+            $path = (string)($item['paths'] ?? '');
+            $component = (string)($item['component'] ?? '');
+            $perms = (string)($item['perms'] ?? '');
+
+            if (in_array($path, $blockedPaths, true)) {
+                return false;
+            }
+
+            if (in_array($component, $blockedComponents, true)) {
+                return false;
+            }
+
+            foreach ($blockedPermPrefixes as $prefix) {
+                if (self::isBlockedPermission($perms, $prefix)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
+    }
+
+
+    /**
+     * @notes 判断权限是否属于已下线模块
+     */
+    private static function isBlockedPermission(string $permission, string $prefix): bool
+    {
+        if ($permission === '' || !str_starts_with($permission, $prefix)) {
+            return false;
+        }
+
+        // 服务人员中心的预约能力仍在线，不能被后台预约壳模块误伤
+        if (in_array($prefix, ['schedule.booking/', 'ops.booking/'], true)) {
+            return !str_starts_with($permission, 'schedule.booking/my')
+                && !str_starts_with($permission, 'ops.booking/my');
+        }
+
+        return true;
     }
 
 

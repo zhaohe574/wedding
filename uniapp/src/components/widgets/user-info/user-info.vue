@@ -1,63 +1,34 @@
 <template>
-    <view class="user-info mb-[0rpx]">
-        <!-- #ifndef H5 -->
-        <u-sticky
-            h5-nav-height="0"
-            bg-color="transparent"
-        >
-            <u-navbar
-                :is-back="false"
-                :is-fixed="false"
-                :title="metaData.title"
-                :custom-title="metaData.title_type == 2"
-                :border-bottom="false"
-                :title-bold="true"
-                :background="{ background: 'rgba(256,256, 256, 0)' }"
-                :title-color="$theme.navColor"
-            >
-                <template #title>
-                    <image
-                        class="!h-[54rpx]"
-                        :src="metaData.title_img"
-                        mode="widthFix"
-                    ></image>
-                </template>
-            </u-navbar>
-        </u-sticky>
-        <!-- #endif -->
-        <view class="flex items-center justify-between px-[50rpx] pb-[50rpx] pt-[40rpx]">
+    <view class="user-info-wrapper">
+        <view class="user-header-shell">
             <view
-                v-if="isLogin"
-                class="flex items-center"
-                @click="navigateTo('/pages/user_data/user_data')"
-            >
-                <u-avatar :src="user.avatar" :size="120"></u-avatar>
-                <view class="text-white ml-[20rpx]">
-                    <view class="text-2xl">{{ user.nickname }}</view>
-                    <view class="text-xs mt-[18rpx]" @click.stop="copy(user.account)">
-                        账号：{{ user.account }}
-                    </view>
+                class="user-header-status"
+                :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
+            ></view>
+            <view class="user-header-nav" :style="{ height: `${navBarMetrics.contentHeight}px` }">
+                <text class="user-header-title">我的</text>
+            </view>
+        </view>
+
+        <view class="user-card" @click="handleProfileClick">
+            <view class="profile-row">
+                <view class="avatar-shell">
+                    <tn-avatar :url="avatarUrl" :size="112" shape="round" />
+                </view>
+                <view class="profile-main">
+                    <text class="profile-name">{{ profileName }}</text>
+                    <text class="profile-subtitle">{{ profileSubtitle }}</text>
                 </view>
             </view>
-            <navigator v-else class="flex items-center" hover-class="none" url="/pages/login/login">
-                <u-avatar src="/static/images/user/default_avatar.png" :size="120"></u-avatar>
-                <view class="text-white text-3xl ml-[20rpx]">未登录</view>
-            </navigator>
-            <navigator v-if="isLogin" hover-class="none" url="/pages/user_set/user_set">
-                <u-icon name="setting" color="#fff" :size="48"></u-icon>
-            </navigator>
         </view>
     </view>
 </template>
+
 <script lang="ts" setup>
-import { useCopy } from '@/hooks/useCopy'
-import {computed} from "vue";
+import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
+import { computed } from 'vue'
 
 const props = defineProps({
-    pageMeta: {
-        type: Object,
-        default: () => []
-    },
     content: {
         type: Object,
         default: () => ({})
@@ -74,25 +45,136 @@ const props = defineProps({
         type: Boolean
     }
 })
-const { copy } = useCopy()
 
-const metaData: any = computed(() => {
-    return props.pageMeta[0].content
+const navBarMetrics = useNavBarMetrics()
+
+const avatarUrl = computed(() => {
+    return String(props.user?.avatar || '').trim() || '/static/images/user/default_avatar.png'
 })
 
-const navigateTo = (url: string) => {
-    uni.navigateTo({
-        url
-    })
+const displayName = computed(() => {
+    const realName = String(props.user?.real_name || '').trim()
+    if (realName) return realName
+    const nickname = String(props.user?.nickname || '').trim()
+    return nickname || '未填写称呼'
+})
+
+const profileName = computed(() => {
+    return props.isLogin ? displayName.value : '未登录'
+})
+
+const profileSubtitle = computed(() => {
+    if (!props.isLogin) {
+        return '点击登录后完善资料'
+    }
+    const contentSubtitle = String(props.content?.profile_subtitle || '').trim()
+    if (contentSubtitle) return contentSubtitle
+    return '点击完善资料，更新主档期'
+})
+
+const handleProfileClick = () => {
+    if (!props.isLogin) {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
+    uni.navigateTo({ url: '/pages/user_data/user_data' })
 }
 </script>
 
 <style lang="scss" scoped>
-.user-info {
-    background: url(../../../static/images/user/my_topbg.png),
-        linear-gradient(90deg, $u-type-primary, $u-minor-color);
-    background-repeat: no-repeat;
-    background-position: bottom;
-    background-size: 100%;
+.user-info-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wm-user-page-section-gap, 32rpx);
+}
+
+.user-header-shell {
+    position: relative;
+}
+
+.user-header-status {
+    width: 100%;
+}
+
+.user-header-nav {
+    display: flex;
+    align-items: flex-end;
+    padding: 0 var(--wm-space-page-x, 37rpx);
+    box-sizing: border-box;
+}
+
+.user-header-title {
+    max-width: 100%;
+    font-size: 52rpx;
+    font-weight: 700;
+    line-height: 1.05;
+    color: #1e2432;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-card {
+    position: relative;
+    z-index: 1;
+    border-radius: var(--wm-user-profile-radius, 52rpx);
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.84);
+    border: 2rpx solid var(--wm-color-border, #efe6e1);
+    box-shadow: 0 24rpx 48rpx rgba(214, 185, 167, 0.1);
+    backdrop-filter: blur(28rpx);
+    -webkit-backdrop-filter: blur(28rpx);
+
+    &:active {
+        transform: translateY(1rpx);
+        opacity: 0.94;
+    }
+}
+
+.profile-row {
+    display: flex;
+    align-items: center;
+    min-height: var(--wm-user-profile-min-height, 176rpx);
+    padding: var(--wm-user-profile-padding, 32rpx);
+    box-sizing: border-box;
+}
+
+.avatar-shell {
+    width: var(--wm-user-profile-avatar-size, 112rpx);
+    height: var(--wm-user-profile-avatar-size, 112rpx);
+    border-radius: var(--wm-user-profile-avatar-radius, 56rpx);
+    margin-right: var(--wm-user-profile-gap, 24rpx);
+    flex-shrink: 0;
+    background: #f2d8d0;
+    overflow: hidden;
+}
+
+.profile-main {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 11rpx;
+}
+
+.profile-name {
+    font-size: 34rpx;
+    line-height: 1.42;
+    font-weight: 600;
+    color: #1e2432;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.profile-subtitle {
+    font-size: 24rpx;
+    line-height: 1.55;
+    font-weight: 600;
+    color: #7f7b78;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 </style>

@@ -10,8 +10,9 @@ const appStore = useAppStore()
 const settingStore = useSettingStore()
 const elConfig = {
     zIndex: 3000,
-    locale: zhCn
-}
+    locale: zhCn,
+    size: 'small' as const
+} as const
 const isDark = useDark()
 onMounted(async () => {
     //设置主题色
@@ -40,7 +41,7 @@ watch(
 </script>
 
 <template>
-    <el-config-provider :locale="elConfig.locale" :z-index="elConfig.zIndex">
+    <el-config-provider :locale="elConfig.locale" :z-index="elConfig.zIndex" :size="elConfig.size">
         <router-view />
     </el-config-provider>
 </template>

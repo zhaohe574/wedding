@@ -1,0 +1,58 @@
+/* 仅保留小程序端残留 uView 组件的最小标签兼容样式，避免整库样式进入主包 */
+
+/* #ifdef MP-WEIXIN || MP-QQ */
+u-td,
+u-th {
+    flex: 1;
+    align-self: stretch;
+}
+
+.u-td {
+    height: 100%;
+}
+
+u-icon {
+    display: inline-flex;
+    align-items: center;
+}
+
+u-grid {
+    width: 100%;
+    flex: 0 0 100%;
+}
+
+u-line {
+    flex: 1;
+}
+
+u-switch {
+    display: inline-flex;
+    align-items: center;
+}
+
+u-dropdown {
+    flex: 1;
+}
+/* #endif */
+
+/* #ifdef MP-QQ || MP-TOUTIAO */
+u-icon {
+    line-height: 0;
+}
+/* #endif */
+
+/* #ifdef MP-TOUTIAO */
+.u-td,
+.u-th,
+.u-tr,
+.u-row,
+.u-col {
+    flex: 1;
+    align-self: stretch;
+}
+
+.u-line,
+.u-dropdown {
+    flex: 1;
+}
+/* #endif */

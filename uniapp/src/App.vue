@@ -51,5 +51,49 @@ onLaunch(async () => {
 })
 </script>
 <style lang="scss">
-//
+@import '@tuniao/tn-style/dist/uniapp/index.css';
+@import '@tuniao/tn-icon/dist/index.css';
+
+page {
+    background-color: transparent;
+    font-family: var(--wm-font-family-body, 'PingFang SC'), 'Hiragino Sans GB', 'Microsoft YaHei',
+        'Noto Sans SC', sans-serif;
+    font-size: 28rpx;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #1e2432);
+    letter-spacing: 0.3rpx;
+}
+
+page,
+view,
+text,
+button,
+input,
+textarea,
+navigator,
+scroll-view,
+swiper,
+swiper-item,
+image {
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+::-webkit-scrollbar {
+    width: 8rpx;
+    height: 8rpx;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(232, 90, 79, 0.16);
+    border-radius: 4rpx;
+
+    &:hover {
+        background: rgba(232, 90, 79, 0.22);
+    }
+}
 </style>

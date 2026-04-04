@@ -16,6 +16,7 @@ namespace app\adminapi\logic\setting;
 
 use app\common\logic\BaseLogic;
 use app\common\service\ConfigService;
+use think\facade\Db;
 
 /**
  * 交易设置逻辑
@@ -33,10 +34,13 @@ class TransactionSettingsLogic extends BaseLogic
     public static function getConfig()
     {
         $config = [
-            'cancel_unpaid_orders' => ConfigService::get('transaction', 'cancel_unpaid_orders', 1),
-            'cancel_unpaid_orders_times' => ConfigService::get('transaction', 'cancel_unpaid_orders_times', 30),
-            'verification_orders' => ConfigService::get('transaction', 'verification_orders', 1),
-            'verification_orders_times' => ConfigService::get('transaction', 'verification_orders_times', 24),
+            'cancel_unpaid_orders' => (int) ConfigService::get('transaction', 'cancel_unpaid_orders', 1),
+            'cancel_unpaid_orders_times' => (int) ConfigService::get('transaction', 'cancel_unpaid_orders_times', 30),
+            'staff_confirm_timeout_enabled' => (int) ConfigService::get('transaction', 'staff_confirm_timeout_enabled', 0),
+            'staff_confirm_timeout_action' => ConfigService::get('transaction', 'staff_confirm_timeout_action', 'cancel'),
+            'staff_confirm_timeout_minutes' => (int) ConfigService::get('transaction', 'staff_confirm_timeout_minutes', 60),
+            'verification_orders' => (int) ConfigService::get('transaction', 'verification_orders', 1),
+            'verification_orders_times' => (int) ConfigService::get('transaction', 'verification_orders_times', 24),
         ];
 
         return $config;
@@ -50,15 +54,36 @@ class TransactionSettingsLogic extends BaseLogic
      */
     public static function setConfig($params)
     {
-        ConfigService::set('transaction', 'cancel_unpaid_orders', $params['cancel_unpaid_orders']);
-        ConfigService::set('transaction', 'verification_orders', $params['verification_orders']);
+        $oldStaffConfirmEnabled = (int) ConfigService::get('transaction', 'staff_confirm_timeout_enabled', 0);
+
+        ConfigService::set('transaction', 'cancel_unpaid_orders', (int) ($params['cancel_unpaid_orders'] ?? 1));
+        ConfigService::set('transaction', 'staff_confirm_timeout_enabled', (int) ($params['staff_confirm_timeout_enabled'] ?? 0));
+        ConfigService::set('transaction', 'staff_confirm_timeout_action', (string) ($params['staff_confirm_timeout_action'] ?? 'cancel'));
+        ConfigService::set('transaction', 'verification_orders', (int) ($params['verification_orders'] ?? 1));
 
         if (isset($params['cancel_unpaid_orders_times'])) {
             ConfigService::set('transaction', 'cancel_unpaid_orders_times', $params['cancel_unpaid_orders_times']);
         }
 
+        if (isset($params['staff_confirm_timeout_minutes'])) {
+            ConfigService::set('transaction', 'staff_confirm_timeout_minutes', $params['staff_confirm_timeout_minutes']);
+        }
+
         if (isset($params['verification_orders_times'])) {
             ConfigService::set('transaction', 'verification_orders_times', $params['verification_orders_times']);
+        }
+
+        if (
+            $oldStaffConfirmEnabled !== 1
+            && (int) $params['staff_confirm_timeout_enabled'] === 1
+            && isset($params['staff_confirm_timeout_minutes'])
+        ) {
+            \app\common\model\order\Order::where('order_status', \app\common\model\order\Order::STATUS_PENDING_CONFIRM)
+                ->where('confirm_deadline_time', 0)
+                ->update([
+                    'confirm_deadline_time' => Db::raw('create_time + ' . ((int) $params['staff_confirm_timeout_minutes'] * 60)),
+                    'update_time' => time(),
+                ]);
         }
     }
 }
