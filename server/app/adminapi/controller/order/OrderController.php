@@ -120,6 +120,28 @@ class OrderController extends BaseAdminController
     }
 
     /**
+     * @notes 确认订单
+     * @return \think\response\Json
+     */
+    public function confirm()
+    {
+        $params = (new OrderValidate())->post()->goCheck('detail');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        $result = $staffScopeId > 0
+            ? OrderLogic::confirmByStaff((int)$params['id'], $staffScopeId, $this->adminId)
+            : OrderLogic::confirmByAdmin((int)$params['id'], $this->adminId);
+
+        if (true === $result) {
+            return $this->success('确认成功');
+        }
+        return $this->fail(OrderLogic::getError());
+    }
+
+    /**
      * @notes 开始服务
      * @return \think\response\Json
      */
@@ -255,6 +277,82 @@ class OrderController extends BaseAdminController
     }
 
     /**
+     * @notes 获取线下建单主套餐
+     * @return \think\response\Json
+     */
+    public function offlineMainPackages()
+    {
+        try {
+            $params = (new OrderValidate())->goCheck('offlineMainPackages');
+            $params['main_staff_id'] = $this->applyOfflineMainStaffScope((int) ($params['main_staff_id'] ?? 0));
+            if ((int) $params['main_staff_id'] <= 0) {
+                return $this->fail('无权限操作');
+            }
+            $result = OrderLogic::getOfflineMainPackages($params);
+            return $this->data($result);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * @notes 获取线下建单协作角色候选人
+     * @return \think\response\Json
+     */
+    public function offlineRoleCandidates()
+    {
+        try {
+            $params = (new OrderValidate())->goCheck('offlineRoleCandidates');
+            $params['main_staff_id'] = $this->applyOfflineMainStaffScope((int) ($params['main_staff_id'] ?? 0));
+            if ((int) $params['main_staff_id'] <= 0) {
+                return $this->fail('无权限操作');
+            }
+            $result = OrderLogic::getOfflineRoleCandidates($params);
+            return $this->data($result);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * @notes 线下建单金额预估
+     * @return \think\response\Json
+     */
+    public function estimateOffline()
+    {
+        try {
+            $params = (new OrderValidate())->post()->goCheck('estimateOffline');
+            $params['main_staff_id'] = $this->applyOfflineMainStaffScope((int) ($params['main_staff_id'] ?? 0));
+            if ((int) $params['main_staff_id'] <= 0) {
+                return $this->fail('无权限操作');
+            }
+            $result = OrderLogic::estimateOffline($params);
+            return $this->data($result);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * @notes 新增线下订单
+     * @return \think\response\Json
+     */
+    public function addOffline()
+    {
+        $params = (new OrderValidate())->post()->goCheck('addOffline');
+        $params['main_staff_id'] = $this->applyOfflineMainStaffScope((int) ($params['main_staff_id'] ?? 0));
+        if ((int) $params['main_staff_id'] <= 0) {
+            return $this->fail('无权限操作');
+        }
+        $params['admin_id'] = $this->adminId;
+        $result = OrderLogic::addOffline($params);
+        if (true === $result) {
+            return $this->success('创建成功');
+        }
+        return $this->fail(OrderLogic::getError());
+    }
+
+    /**
      * @notes 获取订单状态选项
      * @return \think\response\Json
      */
@@ -301,6 +399,25 @@ class OrderController extends BaseAdminController
             return $this->fail('无权限操作');
         }
         return null;
+    }
+
+    /**
+     * @notes 应用线下建单主服务人员数据范围
+     * @param int $mainStaffId
+     * @return int
+     */
+    protected function applyOfflineMainStaffScope(int $mainStaffId): int
+    {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId <= 0) {
+            return $mainStaffId;
+        }
+
+        if ($mainStaffId > 0 && $mainStaffId !== $staffScopeId) {
+            return 0;
+        }
+
+        return $staffScopeId;
     }
 
     /**

@@ -256,6 +256,11 @@ class StaffCenterValidate extends BaseValidate
         return $this->only(['id']);
     }
 
+    public function sceneOrderComplete(): StaffCenterValidate
+    {
+        return $this->only(['id']);
+    }
+
     /**
      * @notes 兼容动态正文
      * @param mixed $value

@@ -223,7 +223,7 @@
                             class="action-btn action-btn--primary"
                             @click="handleConfirm"
                         >
-                            <text>确认订单</text>
+                            <text>{{ primaryActionText }}</text>
                         </view>
                     </view>
                 </view>
@@ -239,11 +239,15 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
-import { staffCenterOrderDetail, staffCenterOrderConfirm } from '@/api/staffCenter'
+import {
+    staffCenterOrderComplete,
+    staffCenterOrderDetail,
+    staffCenterOrderConfirm
+} from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 
@@ -296,6 +300,12 @@ interface StatusDescriptor {
 
 const $theme = useThemeStore()
 const order = ref<any>(null)
+const confirmCountdownSeconds = ref(0)
+const payCountdownSeconds = ref(0)
+let confirmCountdownTimer: ReturnType<typeof setInterval> | null = null
+let payCountdownTimer: ReturnType<typeof setInterval> | null = null
+let confirmCountdownRefreshing = false
+let payCountdownRefreshing = false
 
 const statusConfig: Record<string, Omit<StatusDescriptor, 'badgeText'>> = {
     pending_confirm: {
@@ -313,8 +323,8 @@ const statusConfig: Record<string, Omit<StatusDescriptor, 'badgeText'>> = {
     paid: {
         badgeModifier: 'success',
         tone: 'success',
-        title: '客户已支付，请开始履约准备',
-        description: '请根据服务日期、地址和套餐内容，提前确认现场安排与执行细节。'
+        title: '订单待服务，等待后台开始履约',
+        description: '客户已完成首笔支付或全款支付，订单已进入待服务阶段，请提前确认现场安排与执行细节。'
     },
     in_service: {
         badgeModifier: 'success',
@@ -346,6 +356,12 @@ const statusConfig: Record<string, Omit<StatusDescriptor, 'badgeText'>> = {
         title: '订单已暂停',
         description: '请等待客户或平台的进一步安排，再决定后续服务动作。'
     },
+    refunding: {
+        badgeModifier: 'warning',
+        tone: 'warning',
+        title: '订单退款处理中',
+        description: '该订单正在走退款链路，请暂停履约安排，并关注平台后续确认结果。'
+    },
     refunded: {
         badgeModifier: 'danger',
         tone: 'danger',
@@ -370,6 +386,7 @@ const getStatusKey = (status: number) => {
         5: 'reviewed',
         6: 'cancelled',
         7: 'paused',
+        10: 'refunding',
         8: 'refunded',
         9: 'user_deleted'
     }
@@ -378,6 +395,33 @@ const getStatusKey = (status: number) => {
 }
 
 const formatAmount = (amount: number | string) => Number(amount || 0).toFixed(2)
+const formatCountdown = (seconds: number | string | undefined) => {
+    const total = Math.max(Number(seconds || 0), 0)
+    if (total <= 0) return '已超时，等待系统处理'
+    const hours = Math.floor(total / 3600)
+    const minutes = Math.floor((total % 3600) / 60)
+    const remainSeconds = total % 60
+
+    return [hours, minutes, remainSeconds].map((item) => String(item).padStart(2, '0')).join(':')
+}
+const confirmRemainText = computed(() => {
+    if (Number(order.value?.order_status ?? -1) !== 0) return ''
+    if (Number(order.value?.confirm_deadline_time || 0) <= 0) return ''
+    return formatCountdown(confirmCountdownSeconds.value)
+})
+const confirmTimeoutActionText = computed(() => {
+    if (Number(order.value?.order_status ?? -1) !== 0) return ''
+    return String(order.value?.confirm_timeout_action_desc || '').trim()
+})
+const payRemainText = computed(() => {
+    if (Number(order.value?.order_status ?? -1) !== 1) return ''
+    if (Number(order.value?.pay_deadline_time || 0) <= 0) return ''
+    return formatCountdown(payCountdownSeconds.value)
+})
+const payTimeoutActionText = computed(() => {
+    if (Number(order.value?.order_status ?? -1) !== 1) return ''
+    return String(order.value?.pay_timeout_action_desc || '').trim()
+})
 
 const uniqueServiceDates = computed(() => {
     const values = (order.value?.items || [])
@@ -460,6 +504,34 @@ const heroChips = computed<HeroChip[]>(() => {
         }
     ]
 
+    if (confirmRemainText.value) {
+        chips.push({
+            label: '确认时限',
+            value: confirmRemainText.value
+        })
+    }
+
+    if (confirmTimeoutActionText.value) {
+        chips.push({
+            label: '超时处理',
+            value: confirmTimeoutActionText.value
+        })
+    }
+
+    if (payRemainText.value) {
+        chips.push({
+            label: '支付时限',
+            value: payRemainText.value
+        })
+    }
+
+    if (payTimeoutActionText.value) {
+        chips.push({
+            label: '支付超时',
+            value: payTimeoutActionText.value
+        })
+    }
+
     const contactText = String(
         order.value?.contact_mobile || order.value?.contact_name || ''
     ).trim()
@@ -480,16 +552,40 @@ const executionRows = computed<InfoRow[]>(() => {
         {
             label: '服务时间',
             value: serviceDateSummary.value
-        },
-        {
-            label: '下一步',
-            value: statusInfo.value.description
         }
     ]
 
+    if (confirmRemainText.value) {
+        rows.push({
+            label: '剩余确认时间',
+            value: confirmRemainText.value
+        })
+    }
+
+    if (confirmTimeoutActionText.value) {
+        rows.push({
+            label: '超时处理',
+            value: confirmTimeoutActionText.value
+        })
+    }
+
+    if (payRemainText.value) {
+        rows.push({
+            label: '剩余支付时间',
+            value: payRemainText.value
+        })
+    }
+
+    if (payTimeoutActionText.value) {
+        rows.push({
+            label: '支付超时处理',
+            value: payTimeoutActionText.value
+        })
+    }
+
     const region = String(order.value?.service_region_text || '').trim()
     if (region) {
-        rows.splice(1, 0, {
+        rows.push({
             label: '服务地区',
             value: region
         })
@@ -497,11 +593,16 @@ const executionRows = computed<InfoRow[]>(() => {
 
     const address = String(order.value?.service_address || '').trim()
     if (address) {
-        rows.splice(region ? 2 : 1, 0, {
+        rows.push({
             label: '详细地址',
             value: address
         })
     }
+
+    rows.push({
+        label: '下一步',
+        value: statusInfo.value.description
+    })
 
     return rows
 })
@@ -524,6 +625,10 @@ const getServiceStatusModifier = (item: any) => {
 
     if ([2, 3, 4, 5].includes(Number(order.value?.order_status ?? -1))) {
         return 'success'
+    }
+
+    if (Number(order.value?.order_status ?? -1) === 10) {
+        return 'warning'
     }
 
     if ([6, 8].includes(Number(order.value?.order_status ?? -1))) {
@@ -673,6 +778,34 @@ const orderInfoRows = computed<InfoRow[]>(() => {
         }
     ]
 
+    if (confirmRemainText.value) {
+        rows.splice(3, 0, {
+            label: '剩余确认时间',
+            value: confirmRemainText.value
+        })
+    }
+
+    if (confirmTimeoutActionText.value) {
+        rows.splice(confirmRemainText.value ? 4 : 3, 0, {
+            label: '超时处理',
+            value: confirmTimeoutActionText.value
+        })
+    }
+
+    if (payRemainText.value) {
+        rows.push({
+            label: '剩余支付时间',
+            value: payRemainText.value
+        })
+    }
+
+    if (payTimeoutActionText.value) {
+        rows.push({
+            label: '支付超时处理',
+            value: payTimeoutActionText.value
+        })
+    }
+
     if (order.value?.pay_time) {
         rows.splice(2, 0, {
             label: '支付时间',
@@ -688,16 +821,91 @@ const primaryActionVisible = computed(() => {
         (item: any) => Number(item?.confirm_status ?? 0) === 0
     )
 
-    return Number(order.value?.order_status ?? -1) === 0 && hasPending
+    if (Number(order.value?.order_status ?? -1) === 0 && hasPending) {
+        return true
+    }
+
+    return Number(order.value?.order_status ?? -1) === 3 && Number(order.value?.can_staff_complete || 0) === 1
 })
 
 const secondaryActionVisible = computed(() => Boolean(order.value))
+const primaryActionText = computed(() =>
+    Number(order.value?.order_status ?? -1) === 3 ? '完成服务' : '确认订单'
+)
+
+const clearConfirmCountdown = () => {
+    if (confirmCountdownTimer) {
+        clearInterval(confirmCountdownTimer)
+        confirmCountdownTimer = null
+    }
+}
+
+const clearPayCountdown = () => {
+    if (payCountdownTimer) {
+        clearInterval(payCountdownTimer)
+        payCountdownTimer = null
+    }
+}
+
+const syncConfirmCountdown = (seconds: number | string) => {
+    clearConfirmCountdown()
+    confirmCountdownSeconds.value = Math.max(Number(seconds || 0), 0)
+    if (Number(order.value?.order_status ?? -1) !== 0 || Number(order.value?.confirm_deadline_time || 0) <= 0) {
+        return
+    }
+
+    confirmCountdownTimer = setInterval(async () => {
+        if (confirmCountdownSeconds.value > 0) {
+            confirmCountdownSeconds.value -= 1
+        }
+
+        if (confirmCountdownSeconds.value <= 0) {
+            clearConfirmCountdown()
+            if (confirmCountdownRefreshing) return
+            confirmCountdownRefreshing = true
+            try {
+                await fetchDetail(Number(order.value?.id || 0))
+            } finally {
+                confirmCountdownRefreshing = false
+            }
+        }
+    }, 1000)
+}
+
+const syncPayCountdown = (seconds: number | string) => {
+    clearPayCountdown()
+    payCountdownSeconds.value = Math.max(Number(seconds || 0), 0)
+    if (Number(order.value?.order_status ?? -1) !== 1 || Number(order.value?.pay_deadline_time || 0) <= 0) {
+        return
+    }
+
+    payCountdownTimer = setInterval(async () => {
+        if (payCountdownSeconds.value > 0) {
+            payCountdownSeconds.value -= 1
+        }
+
+        if (payCountdownSeconds.value <= 0) {
+            clearPayCountdown()
+            if (payCountdownRefreshing) return
+            payCountdownRefreshing = true
+            try {
+                await fetchDetail(Number(order.value?.id || 0))
+            } finally {
+                payCountdownRefreshing = false
+            }
+        }
+    }, 1000)
+}
 
 const fetchDetail = async (id: number) => {
     try {
         const res: any = await staffCenterOrderDetail({ id })
         order.value = res || null
+        syncConfirmCountdown(order.value?.confirm_remain_seconds || 0)
+        syncPayCountdown(order.value?.pay_remain_seconds || 0)
     } catch (error: any) {
+        clearConfirmCountdown()
+        clearPayCountdown()
         const msg =
             typeof error === 'string' ? error : error?.msg || error?.message || '获取订单失败'
         uni.showToast({ title: msg, icon: 'none' })
@@ -734,6 +942,31 @@ const handleContactCustomer = () => {
 const handleConfirm = () => {
     if (!order.value?.id) return
 
+    if (Number(order.value?.order_status ?? -1) === 3) {
+        uni.showModal({
+            title: '完成服务',
+            content: '确认本单服务已完成吗？',
+            success: async (res) => {
+                if (!res.confirm) return
+
+                try {
+                    await staffCenterOrderComplete({ id: order.value.id })
+                    await fetchDetail(order.value.id)
+                    const successText =
+                        Number(order.value?.order_status || 0) === 1
+                            ? '服务已完成，待支付尾款'
+                            : '订单已完成'
+                    uni.showToast({ title: successText, icon: 'success' })
+                } catch (error: any) {
+                    const msg =
+                        typeof error === 'string' ? error : error?.msg || error?.message || '操作失败'
+                    uni.showToast({ title: msg, icon: 'none' })
+                }
+            }
+        })
+        return
+    }
+
     uni.showModal({
         title: '确认订单',
         content: '确认后客户可进行支付，是否继续？',
@@ -767,6 +1000,22 @@ onLoad(async (options: any) => {
     }
 
     fetchDetail(id)
+})
+
+onShow(() => {
+    if (Number(order.value?.id || 0) > 0) {
+        fetchDetail(Number(order.value.id))
+    }
+})
+
+onHide(() => {
+    clearConfirmCountdown()
+    clearPayCountdown()
+})
+
+onUnload(() => {
+    clearConfirmCountdown()
+    clearPayCountdown()
 })
 </script>
 

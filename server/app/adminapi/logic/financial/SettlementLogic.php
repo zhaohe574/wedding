@@ -192,7 +192,11 @@ class SettlementLogic extends BaseLogic
                 return false;
             }
             
-            $totalAmount = $pendingSettlements->sum('actual_amount');
+            $totalAmount = 0.0;
+            foreach ($pendingSettlements as $settlement) {
+                $totalAmount += (float)($settlement->actual_amount ?? 0);
+            }
+            $totalAmount = round($totalAmount, 2);
             
             // 创建批次
             $batch = SettlementBatch::createBatch([

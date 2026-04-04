@@ -239,12 +239,13 @@ const getStatusColor = (status: string | number | undefined) => {
     const colors: Record<number, string> = {
         0: $theme.primaryColor, // 待确认 - 主色
         1: $theme.ctaColor, // 待付款 - CTA色
-        2: $theme.primaryColor, // 已支付 - 主色
+        2: $theme.primaryColor, // 待服务 - 主色
         3: $theme.secondaryColor, // 服务中 - 辅助色
         4: '#22C55E', // 已完成 - 绿色
         5: '#22C55E', // 已评价 - 绿色
         6: '#94A3B8', // 已取消 - 灰色
         7: '#EF4444', // 已暂停 - 红色
+        10: '#0F766E', // 退款中 - 青绿色
         8: '#EF4444' // 已退款 - 红色
     }
     return colors[statusNum] || $theme.primaryColor
@@ -259,12 +260,13 @@ const getStatusIconName = (status: string | number | undefined) => {
     const icons: Record<number, string> = {
         0: 'time', // 待确认
         1: 'ticket', // 待付款
-        2: 'money', // 已支付
+        2: 'money', // 待服务
         3: 'loading', // 服务中
         4: 'success-circle', // 已完成
         5: 'keyboard-circle', // 已评价
         6: 'close-circle', // 已取消
         7: 'reduce-circle', // 已暂停
+        10: 'loading', // 退款中
         8: 'brand' // 已退款
     }
     return icons[statusNum] || 'order'
@@ -279,12 +281,13 @@ const getStatusText = (status: string | number | undefined) => {
     const texts: Record<number, string> = {
         0: '待确认',
         1: '待付款',
-        2: '已支付',
+        2: '待服务',
         3: '服务中',
         4: '已完成',
         5: '已评价',
         6: '已取消',
         7: '已暂停',
+        10: '退款中',
         8: '已退款'
     }
     return texts[statusNum] || '未知'

@@ -107,11 +107,13 @@ const { isLock, lockFn: rechargeLock } = useLockFn(async () => {
     payState.showPay = true
 })
 
-const handlePaySuccess = async () => {
+const handlePaySuccess = async (payload?: { paymentSn?: string }) => {
     payState.showPay = false
     payState.showCheck = false
     uni.navigateTo({
-        url: `/pages/payment_result/payment_result?id=${payState.orderId}&from=${payState.from}`
+        url: `/pages/payment_result/payment_result?id=${payState.orderId}&from=${payState.from}${
+            payload?.paymentSn ? `&payment_sn=${payload.paymentSn}` : ''
+        }`
     })
 }
 

@@ -119,6 +119,7 @@ class BookingLists extends BaseAdminDataLists implements ListsExtendInterface
                 'o.order_status',
                 'o.pay_status',
                 'o.pay_type',
+                'o.confirm_deadline_time',
                 'o.total_amount',
                 'o.discount_amount',
                 'o.pay_amount',
@@ -141,6 +142,13 @@ class BookingLists extends BaseAdminDataLists implements ListsExtendInterface
             $item['confirm_status_desc'] = (int)$item['confirm_status'] === 1 ? '已确认' : '待确认';
             $item['order_status_desc'] = $this->getOrderStatusDesc((int)$item['order_status']);
             $item['create_time'] = $this->formatTimeValue($item['create_time'] ?? null);
+            $item = array_merge(
+                $item,
+                Order::buildConfirmTimeoutSummaryFromState(
+                    (int)($item['order_status'] ?? Order::STATUS_PENDING_CONFIRM),
+                    (int)($item['confirm_deadline_time'] ?? 0)
+                )
+            );
         }
 
         return $lists;
@@ -221,18 +229,7 @@ class BookingLists extends BaseAdminDataLists implements ListsExtendInterface
      */
     private function getOrderStatusDesc(int $status): string
     {
-        $map = [
-            Order::STATUS_PENDING_CONFIRM => '待确认',
-            Order::STATUS_PENDING_PAY => '待支付',
-            Order::STATUS_PAID => '已支付',
-            Order::STATUS_IN_SERVICE => '服务中',
-            Order::STATUS_COMPLETED => '已完成',
-            Order::STATUS_REVIEWED => '已评价',
-            Order::STATUS_CANCELLED => '已取消',
-            Order::STATUS_PAUSED => '已暂停',
-            Order::STATUS_REFUNDED => '已退款',
-        ];
-        return $map[$status] ?? '未知';
+        return Order::getStatusText($status);
     }
 
     /**

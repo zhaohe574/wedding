@@ -124,6 +124,7 @@ interface OrderData {
         | 'reviewed'
         | 'cancelled'
         | 'paused'
+        | 'refunding'
         | 'refunded'
     location: string
     originalPrice: number
@@ -165,12 +166,13 @@ const emit = defineEmits<{
 const statusConfig = {
     pending_confirm: { text: '待确认', color: '#C98524', bgColor: 'rgba(201, 133, 36, 0.12)' },
     pending_pay: { text: '待支付', color: '#E85A4F', bgColor: 'rgba(232, 90, 79, 0.12)' },
-    paid: { text: '已支付', color: '#2F7D58', bgColor: 'rgba(47, 125, 88, 0.12)' },
+    paid: { text: '待服务', color: '#2F7D58', bgColor: 'rgba(47, 125, 88, 0.12)' },
     in_service: { text: '服务中', color: '#607086', bgColor: 'rgba(96, 112, 134, 0.12)' },
     completed: { text: '已完成', color: '#2F7D58', bgColor: 'rgba(47, 125, 88, 0.12)' },
     reviewed: { text: '已评价', color: '#2F7D58', bgColor: 'rgba(47, 125, 88, 0.12)' },
     cancelled: { text: '已取消', color: '#B4ACA8', bgColor: 'rgba(180, 172, 168, 0.14)' },
     paused: { text: '已暂停', color: '#C98524', bgColor: 'rgba(201, 133, 36, 0.12)' },
+    refunding: { text: '退款中', color: '#0F766E', bgColor: 'rgba(15, 118, 110, 0.12)' },
     refunded: { text: '已退款', color: '#B44A3A', bgColor: 'rgba(180, 74, 58, 0.12)' }
 }
 

@@ -26,7 +26,7 @@
                         <el-option label="全部" value="" />
                         <el-option label="待确认" :value="0" />
                         <el-option label="待支付" :value="1" />
-                        <el-option label="已支付" :value="2" />
+                        <el-option label="待服务" :value="2" />
                         <el-option label="服务中" :value="3" />
                         <el-option label="已完成" :value="4" />
                         <el-option label="已评价" :value="5" />
@@ -67,7 +67,7 @@
             </el-card>
             <el-card class="!border-none" shadow="never">
                 <div class="text-center">
-                    <div class="text-gray-500 text-sm">已支付</div>
+                    <div class="text-gray-500 text-sm">待服务</div>
                     <div class="text-2xl font-bold mt-2 text-blue-500">{{ getStatusCount(2) }}</div>
                 </div>
             </el-card>
@@ -124,6 +124,26 @@
                         </el-tag>
                     </template>
                 </el-table-column>
+                <el-table-column label="剩余确认时间" width="160">
+                    <template #default="{ row }">
+                        <span>{{ getConfirmRemainText(row) }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="超时处理" width="110">
+                    <template #default="{ row }">
+                        <span>{{ row.confirm_timeout_action_desc || '-' }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="剩余支付时间" width="160">
+                    <template #default="{ row }">
+                        <span>{{ getPayRemainText(row) }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="支付超时处理" width="110">
+                    <template #default="{ row }">
+                        <span>{{ row.pay_timeout_action_desc || '-' }}</span>
+                    </template>
+                </el-table-column>
                 <el-table-column label="支付状态" width="100">
                     <template #default="{ row }">
                         <el-tag :type="row.pay_status === 1 ? 'success' : 'info'" size="small">
@@ -167,10 +187,12 @@
                             {{ currentOrder.order_status_desc }}
                         </el-tag>
                     </el-descriptions-item>
+                    <el-descriptions-item label="剩余确认时间">{{ getConfirmRemainText(currentOrder) }}</el-descriptions-item>
+                    <el-descriptions-item label="超时处理">{{ currentOrder.confirm_timeout_action_desc || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="联系人">{{ getDisplayContactName(currentOrder) }}</el-descriptions-item>
                     <el-descriptions-item label="联系电话">{{ getDisplayContactMobile(currentOrder) }}</el-descriptions-item>
                     <el-descriptions-item label="服务日期">{{ getDisplayServiceDate(currentOrder) }}</el-descriptions-item>
-                    <el-descriptions-item label="婚礼日期">{{ currentOrder.wedding_date || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="服务地区">{{ currentOrder.service_region_text || currentOrder.service_address || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="主服务金额">¥{{ formatAmount(currentOrder.service_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="附加服务金额">¥{{ formatAmount(currentOrder.addon_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="订单总额（本人）">¥{{ formatAmount(currentOrder.total_amount) }}</el-descriptions-item>
@@ -181,44 +203,126 @@
                     </el-descriptions-item>
                     <el-descriptions-item label="支付模式">{{ currentOrder.payment_mode_desc || '全款支付' }}</el-descriptions-item>
                     <el-descriptions-item label="当前待支付">{{ currentOrder.need_pay_label || '无需支付' }}</el-descriptions-item>
+                    <el-descriptions-item label="剩余支付时间">{{ getPayRemainText(currentOrder) }}</el-descriptions-item>
+                    <el-descriptions-item label="支付超时处理">{{ currentOrder.pay_timeout_action_desc || '-' }}</el-descriptions-item>
                     <el-descriptions-item v-if="Number(currentOrder.deposit_amount || 0) > 0" label="定金金额">¥{{ formatAmount(currentOrder.deposit_amount) }}</el-descriptions-item>
                     <el-descriptions-item v-if="Number(currentOrder.balance_amount || 0) > 0" label="尾款金额">¥{{ formatAmount(currentOrder.balance_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="支付方式">{{ currentOrder.pay_type_desc || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="支付状态">{{ currentOrder.pay_status_desc || '-' }}</el-descriptions-item>
                 </el-descriptions>
 
-                <div class="mt-4" v-if="currentOrder.items?.length">
-                    <h4 class="font-bold mb-2">服务项目</h4>
-                    <el-table :data="currentOrder.items" border size="small">
-                        <el-table-column label="工作人员" prop="staff_name" />
-                        <el-table-column label="套餐" prop="package_name" />
-                        <el-table-column label="服务日期" prop="service_date" />
-                        <el-table-column label="状态" prop="item_status">
-                            <template #default="{ row }">
-                                <el-tag :type="getItemStatusType(row.item_status)">{{ getItemStatusText(row.item_status) }}</el-tag>
-                            </template>
-                        </el-table-column>
-                        <el-table-column label="附加服务" min-width="220">
-                            <template #default="{ row }">
-                                <div v-if="isMaskedItem(row)" class="text-gray-400">已脱敏</div>
-                                <div v-else-if="row.addons?.length" class="flex flex-col gap-1">
-                                    <div v-for="addon in row.addons" :key="addon.id" class="text-xs text-gray-600">
-                                        {{ addon.addon_name }} +¥{{ formatAmount(addon.subtotal || addon.price) }}
+                <div class="service-project-panel mt-4">
+                    <div class="service-project-panel__header">
+                        <div>
+                            <h4 class="service-project-panel__title">服务项目</h4>
+                            <div class="service-project-panel__summary">{{ currentServiceSummaryText }}</div>
+                        </div>
+                    </div>
+
+                    <div v-if="currentPrimaryItem" class="service-project-main">
+                        <div class="service-project-main__header">
+                            <div class="service-project-main__copy">
+                                <div class="service-project-main__label">主套餐</div>
+                                <div class="service-project-main__title">{{ currentPrimaryTitle }}</div>
+                            </div>
+                            <div class="service-project-main__aside">
+                                <div class="service-project-main__price">{{ currentPrimaryPriceText }}</div>
+                                <el-tag
+                                    size="small"
+                                    :type="getItemStatusType(Number(currentPrimaryItem?.item_status || 0))"
+                                >
+                                    {{ getItemStatusText(Number(currentPrimaryItem?.item_status || 0)) }}
+                                </el-tag>
+                            </div>
+                        </div>
+
+                        <div class="service-project-main__meta-grid">
+                            <div
+                                v-for="meta in currentPrimaryMetaList"
+                                :key="meta.label"
+                                class="service-project-main__meta-card"
+                            >
+                                <span class="service-project-main__meta-label">{{ meta.label }}</span>
+                                <strong class="service-project-main__meta-value">{{ meta.value }}</strong>
+                            </div>
+                        </div>
+
+                        <div v-if="currentPrimaryDescription" class="service-project-main__desc">
+                            {{ currentPrimaryDescription }}
+                        </div>
+
+                        <div class="service-project-main__address">
+                            <span>服务地址</span>
+                            <strong>{{ currentPrimaryAddress }}</strong>
+                        </div>
+                    </div>
+                    <div v-else class="service-project-empty">当前订单暂无主套餐信息</div>
+
+                    <div class="service-project-group">
+                        <div class="service-project-group__header">
+                            <span class="service-project-group__title">附加套餐</span>
+                            <span class="service-project-group__count">{{ currentAddonRows.length }} 项</span>
+                        </div>
+                        <div v-if="currentAddonRows.length" class="service-project-grid">
+                            <div
+                                v-for="row in currentAddonRows"
+                                :key="row.key"
+                                class="service-sub-card"
+                            >
+                                <div class="service-sub-card__header">
+                                    <div class="service-sub-card__title-row">
+                                        <span class="service-sub-card__title">{{ row.title }}</span>
+                                        <el-tag size="small" :type="row.typeTagType">{{ row.typeText }}</el-tag>
+                                        <el-tag
+                                            v-if="row.statusText"
+                                            size="small"
+                                            :type="row.statusType || 'info'"
+                                        >
+                                            {{ row.statusText }}
+                                        </el-tag>
                                     </div>
+                                    <span class="service-sub-card__price">{{ row.priceText }}</span>
                                 </div>
-                                <span v-else class="text-gray-400">无附加服务</span>
-                            </template>
-                        </el-table-column>
-                        <el-table-column label="单价" prop="price" />
-                        <el-table-column label="数量" prop="quantity" />
-                        <el-table-column label="附加服务金额" width="120">
-                            <template #default="{ row }">
-                                <span v-if="isMaskedItem(row)">--</span>
-                                <span v-else>¥{{ formatAmount(row.addon_amount) }}</span>
-                            </template>
-                        </el-table-column>
-                        <el-table-column label="小计" prop="subtotal" />
-                    </el-table>
+                                <div v-if="row.metaText" class="service-sub-card__meta">{{ row.metaText }}</div>
+                                <div v-if="row.description" class="service-sub-card__desc">{{ row.description }}</div>
+                            </div>
+                        </div>
+                        <div v-else class="service-project-empty service-project-empty--sub">
+                            当前订单未配置附加套餐
+                        </div>
+                    </div>
+
+                    <div v-if="currentRelatedRows.length" class="service-project-group">
+                        <div class="service-project-group__header">
+                            <span class="service-project-group__title">协作服务</span>
+                            <span class="service-project-group__count">{{ currentRelatedRows.length }} 项</span>
+                        </div>
+                        <div class="service-project-grid">
+                            <div
+                                v-for="row in currentRelatedRows"
+                                :key="row.key"
+                                class="service-sub-card service-sub-card--related"
+                            >
+                                <div class="service-sub-card__header">
+                                    <div class="service-sub-card__title-row">
+                                        <span class="service-sub-card__title">{{ row.title }}</span>
+                                        <el-tag size="small" :type="row.typeTagType">{{ row.typeText }}</el-tag>
+                                        <el-tag
+                                            v-if="row.statusText"
+                                            size="small"
+                                            :type="row.statusType || 'info'"
+                                        >
+                                            {{ row.statusText }}
+                                        </el-tag>
+                                    </div>
+                                    <span class="service-sub-card__price">{{ row.priceText }}</span>
+                                </div>
+                                <div v-if="row.metaText" class="service-sub-card__meta">{{ row.metaText }}</div>
+                                <div v-if="row.description" class="service-sub-card__desc">{{ row.description }}</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="text-xs text-gray-400 mt-2">
                         注：订单金额已按当前工作人员视角重算；非本人订单项仅保留服务人员、日期和状态，附加服务同步脱敏。
                     </div>
@@ -229,7 +333,7 @@
 </template>
 
 <script setup lang="ts" name="staffCenterOrder">
-import { onActivated, reactive, ref } from 'vue'
+import { computed, onActivated, onDeactivated, onUnmounted, reactive, ref, watch } from 'vue'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
 import {
@@ -252,6 +356,9 @@ const queryParams = reactive({
 const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentOrder = ref<any>(null)
+const countdownNowTs = ref(Date.now())
+let countdownTimer: ReturnType<typeof setInterval> | null = null
+let countdownRefreshing = false
 
 const { pager, getLists, resetPage, resetParams } = usePaging({
     fetchFun: myOrders,
@@ -309,6 +416,139 @@ const formatAmount = (amount: number | string | undefined) => {
     return Number(amount ?? 0).toFixed(2)
 }
 
+const getItemQuantity = (item: any) => Math.max(Number(item?.quantity || 1), 1)
+
+const getItemDisplayAmount = (item: any) => {
+    const subtotal = Number(item?.subtotal)
+    if (Number.isFinite(subtotal) && subtotal >= 0) {
+        return subtotal
+    }
+
+    return Math.max(Number(item?.price || 0) * getItemQuantity(item), 0)
+}
+
+const getAddonDisplayAmount = (addon: any) => {
+    const subtotal = Number(addon?.subtotal)
+    if (Number.isFinite(subtotal) && subtotal >= 0) {
+        return subtotal
+    }
+
+    return Math.max(Number(addon?.price || 0) * Math.max(Number(addon?.quantity || 1), 1), 0)
+}
+
+const formatCountdown = (seconds: number | string | undefined) => {
+    const total = Math.max(Number(seconds || 0), 0)
+    if (total <= 0) return '已超时，等待系统处理'
+    const hours = Math.floor(total / 3600)
+    const minutes = Math.floor((total % 3600) / 60)
+    const remainSeconds = total % 60
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainSeconds).padStart(2, '0')}`
+}
+
+const buildExpireAt = (deadlineTime: number | string | undefined, remainSeconds: number | string | undefined) => {
+    if (Number(deadlineTime || 0) <= 0) return 0
+    return Date.now() + Math.max(Number(remainSeconds || 0), 0) * 1000
+}
+
+const syncRowCountdownTargets = (row: any) => {
+    if (!row) return
+    row.__confirmExpireAt = buildExpireAt(row.confirm_deadline_time, row.confirm_remain_seconds)
+    row.__payExpireAt = buildExpireAt(row.pay_deadline_time, row.pay_remain_seconds)
+}
+
+const ensureRowCountdownTargets = (row: any) => {
+    if (!row) return
+    if (Number(row?.confirm_deadline_time || 0) > 0 && typeof row.__confirmExpireAt !== 'number') {
+        row.__confirmExpireAt = buildExpireAt(row.confirm_deadline_time, row.confirm_remain_seconds)
+    }
+    if (Number(row?.pay_deadline_time || 0) > 0 && typeof row.__payExpireAt !== 'number') {
+        row.__payExpireAt = buildExpireAt(row.pay_deadline_time, row.pay_remain_seconds)
+    }
+}
+
+const getLiveRemainSeconds = (row: any, deadlineField: 'confirm_deadline_time' | 'pay_deadline_time', expireField: '__confirmExpireAt' | '__payExpireAt') => {
+    countdownNowTs.value
+    ensureRowCountdownTargets(row)
+    if (Number(row?.[deadlineField] || 0) <= 0) return 0
+    const expireAt = Number(row?.[expireField] || 0)
+    if (expireAt <= 0) return 0
+    return Math.max(Math.ceil((expireAt - countdownNowTs.value) / 1000), 0)
+}
+
+const hasActiveCountdown = (row: any) =>
+    getLiveRemainSeconds(row, 'confirm_deadline_time', '__confirmExpireAt') > 0 ||
+    getLiveRemainSeconds(row, 'pay_deadline_time', '__payExpireAt') > 0
+
+const hasExpiredCountdown = (row: any) =>
+    (Number(row?.confirm_deadline_time || 0) > 0 &&
+        getLiveRemainSeconds(row, 'confirm_deadline_time', '__confirmExpireAt') <= 0) ||
+    (Number(row?.pay_deadline_time || 0) > 0 &&
+        getLiveRemainSeconds(row, 'pay_deadline_time', '__payExpireAt') <= 0)
+
+const clearCountdownTimer = () => {
+    if (countdownTimer) {
+        clearInterval(countdownTimer)
+        countdownTimer = null
+    }
+}
+
+const refreshCountdownDrivenData = async () => {
+    if (countdownRefreshing) return
+    countdownRefreshing = true
+    try {
+        await Promise.all([getLists(), getStatistics()])
+        if (detailVisible.value && Number(currentOrder.value?.id || 0) > 0) {
+            currentOrder.value = await myOrderDetail({ id: currentOrder.value.id })
+        }
+    } finally {
+        countdownRefreshing = false
+    }
+}
+
+const hasAnyActiveCountdown = () =>
+    (pager.lists || []).some((row: any) => hasActiveCountdown(row)) || hasActiveCountdown(currentOrder.value)
+
+const hasAnyExpiredCountdown = () =>
+    (pager.lists || []).some((row: any) => hasExpiredCountdown(row)) || hasExpiredCountdown(currentOrder.value)
+
+const startCountdownTimer = () => {
+    clearCountdownTimer()
+    countdownNowTs.value = Date.now()
+
+    if (hasAnyExpiredCountdown()) {
+        refreshCountdownDrivenData()
+        return
+    }
+
+    if (!hasAnyActiveCountdown()) {
+        return
+    }
+
+    countdownTimer = setInterval(() => {
+        countdownNowTs.value = Date.now()
+
+        if (hasAnyExpiredCountdown()) {
+            clearCountdownTimer()
+            refreshCountdownDrivenData()
+            return
+        }
+
+        if (!hasAnyActiveCountdown()) {
+            clearCountdownTimer()
+        }
+    }, 1000)
+}
+
+const getConfirmRemainText = (row: any) => {
+    if (Number(row?.confirm_deadline_time || 0) <= 0) return '-'
+    return formatCountdown(getLiveRemainSeconds(row, 'confirm_deadline_time', '__confirmExpireAt'))
+}
+
+const getPayRemainText = (row: any) => {
+    if (Number(row?.pay_deadline_time || 0) <= 0) return '-'
+    return formatCountdown(getLiveRemainSeconds(row, 'pay_deadline_time', '__payExpireAt'))
+}
+
 const isMaskedItem = (item: any) => {
     return item?.package_name === '--'
 }
@@ -327,6 +567,205 @@ const getItemStatusType = (status: number): 'warning' | 'primary' | 'success' | 
     }
     return map[status] || 'info'
 }
+
+type ServiceDetailRow = {
+    key: string
+    title: string
+    typeText: string
+    typeTagType: 'warning' | 'success' | 'primary' | 'info'
+    description: string
+    metaText: string
+    priceText: string
+    statusText?: string
+    statusType?: 'warning' | 'primary' | 'success' | 'info' | 'danger'
+}
+
+const currentOrderItems = computed(() => {
+    const items = currentOrder.value?.items
+    return Array.isArray(items) ? items : []
+})
+
+const currentPrimaryItem = computed(() =>
+    currentOrderItems.value.find((item: any) => Number(item?.item_type || 1) === 1) ||
+    currentOrderItems.value[0] ||
+    null
+)
+
+const currentPrimaryMasked = computed(() => isMaskedItem(currentPrimaryItem.value))
+
+const currentPrimaryTitle = computed(() => {
+    if (currentPrimaryMasked.value) return '已脱敏服务项'
+    return (
+        String(
+            currentPrimaryItem.value?.package_name || currentPrimaryItem.value?.package?.name || '待确认主套餐'
+        ).trim() || '待确认主套餐'
+    )
+})
+
+const currentPrimaryPriceText = computed(() =>
+    currentPrimaryMasked.value ? '--' : `¥${formatAmount(getItemDisplayAmount(currentPrimaryItem.value))}`
+)
+
+const currentPrimaryDescription = computed(() => {
+    if (currentPrimaryMasked.value) {
+        return '仅展示履约结构，具体服务内容已脱敏。'
+    }
+
+    return String(
+        currentPrimaryItem.value?.package_description || currentPrimaryItem.value?.package?.description || ''
+    ).trim()
+})
+
+const currentPrimaryMetaList = computed(() => [
+    {
+        label: '服务人员',
+        value: String(currentPrimaryItem.value?.staff_name || currentPrimaryItem.value?.staff?.name || '待分配服务人员').trim() || '待分配服务人员'
+    },
+    {
+        label: '服务日期',
+        value: currentPrimaryItem.value?.service_date || currentOrder.value?.service_date || '-'
+    },
+    {
+        label: '服务地区',
+        value: currentOrder.value?.service_region_text || currentOrder.value?.service_address || '-'
+    },
+    {
+        label: '数量',
+        value: currentPrimaryMasked.value ? '--' : `x${getItemQuantity(currentPrimaryItem.value)}`
+    }
+])
+
+const currentPrimaryAddress = computed(() =>
+    currentPrimaryMasked.value ? '--' : currentOrder.value?.service_address || currentOrder.value?.service_region_text || '-'
+)
+
+const getDetailItemDescription = (item: any, masked = false) => {
+    if (masked) {
+        return '仅展示履约结构，具体明细已脱敏。'
+    }
+
+    const parts: string[] = []
+    const description = String(item?.package_description || item?.package?.description || '').trim()
+    if (description) {
+        parts.push(description)
+    }
+
+    const quantity = getItemQuantity(item)
+    if (quantity > 1) {
+        parts.push(`数量 x${quantity}`)
+    }
+
+    return parts.join(' · ')
+}
+
+const buildServiceRowKey = (
+    kind: string,
+    title: string,
+    amount: number,
+    quantity: number,
+    extra = ''
+) => `${kind}:${String(title || '').trim()}:${formatAmount(amount)}:${quantity}:${extra}`
+
+const currentAddonRows = computed<ServiceDetailRow[]>(() => {
+    const rows: ServiceDetailRow[] = []
+    const seen = new Set<string>()
+
+    const pushRow = (row: ServiceDetailRow, amount: number, quantity: number, extra = '') => {
+        const key = buildServiceRowKey(row.typeText, row.title, amount, quantity, extra)
+        if (seen.has(key)) return
+        seen.add(key)
+        rows.push({ ...row, key })
+    }
+
+    currentOrderItems.value.forEach((item: any) => {
+        const masked = isMaskedItem(item)
+        ;(item?.addons || []).forEach((addon: any) => {
+            const quantity = Math.max(Number(addon?.quantity || 1), 1)
+            const amount = getAddonDisplayAmount(addon)
+            pushRow(
+                {
+                    key: '',
+                    title: masked ? '已脱敏附加项' : addon?.addon_name || addon?.name || '附加套餐',
+                    typeText: '附加套餐',
+                    typeTagType: 'warning',
+                    description: masked ? '仅展示履约结构，具体附加明细已脱敏。' : '',
+                    metaText: masked ? '已脱敏' : `数量 x${quantity}`,
+                    priceText: masked ? '--' : `¥${formatAmount(amount)}`,
+                    statusText: getItemStatusText(Number(item?.item_status || 0)),
+                    statusType: getItemStatusType(Number(item?.item_status || 0))
+                },
+                amount,
+                quantity
+            )
+        })
+    })
+
+    currentOrderItems.value
+        .filter((item: any) => Number(item?.item_type || 1) === 2)
+        .forEach((item: any) => {
+            const masked = isMaskedItem(item)
+            const amount = getItemDisplayAmount(item)
+            const quantity = getItemQuantity(item)
+            pushRow(
+                {
+                    key: '',
+                    title: masked
+                        ? '已脱敏附加项'
+                        : item?.item_meta?.label || item?.package_name || '附加套餐',
+                    typeText: '附加套餐',
+                    typeTagType: 'warning',
+                    description: getDetailItemDescription(item, masked),
+                    metaText: masked
+                        ? '已脱敏'
+                        : [item?.service_date, `数量 x${quantity}`].filter(Boolean).join(' · '),
+                    priceText: masked ? '--' : `¥${formatAmount(amount)}`,
+                    statusText: getItemStatusText(Number(item?.item_status || 0)),
+                    statusType: getItemStatusType(Number(item?.item_status || 0))
+                },
+                amount,
+                quantity,
+                item?.service_date || ''
+            )
+        })
+
+    return rows
+})
+
+const currentRelatedRows = computed<ServiceDetailRow[]>(() =>
+    currentOrderItems.value
+        .filter((item: any) => Number(item?.item_type || 1) === 3)
+        .map((item: any) => {
+            const masked = isMaskedItem(item)
+            const amount = getItemDisplayAmount(item)
+            const quantity = getItemQuantity(item)
+            const staffName = String(item?.staff_name || item?.staff?.name || '').trim()
+            const roleLabel = String(item?.item_meta?.role_label || '').trim() || '协作服务'
+            return {
+                key: buildServiceRowKey('related', `${roleLabel}:${staffName}`, amount, quantity, item?.service_date || ''),
+                title: masked ? '已脱敏协作服务' : staffName ? `${roleLabel} · ${staffName}` : roleLabel,
+                typeText: '协作服务',
+                typeTagType: 'success',
+                description: getDetailItemDescription(item, masked),
+                metaText: masked ? '已脱敏' : [item?.service_date, `数量 x${quantity}`].filter(Boolean).join(' · '),
+                priceText: masked ? '--' : `¥${formatAmount(amount)}`,
+                statusText: getItemStatusText(Number(item?.item_status || 0)),
+                statusType: getItemStatusType(Number(item?.item_status || 0))
+            }
+        })
+)
+
+const currentServiceSummaryText = computed(() => {
+    const parts = [
+        currentPrimaryItem.value ? '1 个主套餐' : '0 个主套餐',
+        `${currentAddonRows.value.length} 个附加套餐`
+    ]
+
+    if (currentRelatedRows.value.length) {
+        parts.push(`${currentRelatedRows.value.length} 个协作服务`)
+    }
+
+    return parts.join(' · ')
+})
 
 const handleDetail = async (row: any) => {
     currentOrder.value = await myOrderDetail({ id: row.id })
@@ -360,7 +799,34 @@ const handleComplete = async (row: any) => {
 onActivated(() => {
     getLists()
     getStatistics()
+    startCountdownTimer()
 })
+
+onDeactivated(() => {
+    clearCountdownTimer()
+})
+
+onUnmounted(() => {
+    clearCountdownTimer()
+})
+
+watch(
+    () => pager.lists,
+    (lists) => {
+        ;(lists || []).forEach((row: any) => syncRowCountdownTargets(row))
+        startCountdownTimer()
+    },
+    { deep: false }
+)
+
+watch(
+    currentOrder,
+    (value) => {
+        syncRowCountdownTargets(value)
+        startCountdownTimer()
+    },
+    { deep: false }
+)
 
 getLists()
 getStatistics()
@@ -369,5 +835,243 @@ getStatistics()
 <style scoped>
 .order-detail :deep(.el-descriptions__label) {
     width: 100px;
+}
+
+.service-project-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.service-project-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.service-project-panel__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.service-project-panel__summary {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.service-project-main {
+    border: 1px solid #dbeafe;
+    border-radius: 18px;
+    padding: 18px;
+    background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.service-project-main__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.service-project-main__copy {
+    min-width: 0;
+    flex: 1;
+}
+
+.service-project-main__label {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: #e0f2fe;
+    color: #1d4ed8;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.service-project-main__title {
+    margin-top: 10px;
+    font-size: 20px;
+    line-height: 1.5;
+    font-weight: 700;
+    color: #111827;
+}
+
+.service-project-main__aside {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.service-project-main__price {
+    font-size: 24px;
+    line-height: 1.2;
+    font-weight: 700;
+    color: #2563eb;
+}
+
+.service-project-main__meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.service-project-main__meta-card {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid #e5edf9;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.service-project-main__meta-label {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.service-project-main__meta-value {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1f2937;
+    word-break: break-word;
+}
+
+.service-project-main__desc {
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px dashed #d9e7fb;
+    font-size: 13px;
+    line-height: 1.8;
+    color: #6b7280;
+    white-space: pre-wrap;
+}
+
+.service-project-main__address {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.8;
+    color: #6b7280;
+}
+
+.service-project-main__address strong {
+    color: #374151;
+    font-weight: 600;
+}
+
+.service-project-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.service-project-group__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.service-project-group__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.service-project-group__count {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.service-project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.service-sub-card {
+    border: 1px solid #e7edf5;
+    border-radius: 16px;
+    padding: 16px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.service-sub-card--related {
+    border-color: #d7f0e2;
+    background: linear-gradient(180deg, #f6fffa 0%, #ffffff 100%);
+}
+
+.service-sub-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.service-sub-card__title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.service-sub-card__title {
+    font-size: 15px;
+    line-height: 1.5;
+    font-weight: 600;
+    color: #111827;
+    word-break: break-word;
+}
+
+.service-sub-card__price {
+    flex-shrink: 0;
+    font-size: 18px;
+    line-height: 1.4;
+    font-weight: 700;
+    color: #2563eb;
+}
+
+.service-sub-card__meta {
+    font-size: 12px;
+    line-height: 1.7;
+    color: #6b7280;
+}
+
+.service-sub-card__desc {
+    font-size: 13px;
+    line-height: 1.8;
+    color: #4b5563;
+    white-space: pre-wrap;
+}
+
+.service-project-empty {
+    border-radius: 14px;
+    padding: 18px 20px;
+    background: #f9fafb;
+    border: 1px dashed #e5e7eb;
+    font-size: 13px;
+    color: #9ca3af;
+}
+
+.service-project-empty--sub {
+    padding: 14px 16px;
 }
 </style>

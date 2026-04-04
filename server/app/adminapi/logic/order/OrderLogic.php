@@ -10,11 +10,16 @@ namespace app\adminapi\logic\order;
 use app\common\logic\BaseLogic;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
+use app\common\model\order\OrderItemAddon;
 use app\common\model\order\OrderLog;
 use app\common\model\order\Payment;
+use app\common\model\service\ServicePackage;
 use app\common\model\schedule\Schedule;
+use app\common\model\staff\Staff;
 use app\common\model\user\User;
+use app\common\service\BookingFlowService;
 use app\common\service\OrderNotificationService;
+use app\common\service\PackageRegionPriceService;
 use think\facade\Db;
 
 /**
@@ -24,6 +29,10 @@ use think\facade\Db;
  */
 class OrderLogic extends BaseLogic
 {
+    private const PAYMENT_ENTRY_MODE_ONLINE_PENDING = 'online_pending';
+    private const PAYMENT_ENTRY_MODE_OFFLINE_VOUCHER = 'offline_voucher';
+    private const PAYMENT_ENTRY_MODE_OFFLINE_PAID = 'offline_paid';
+
     /**
      * @notes 服务人员确认订单（确认本人名下全部待确认项）
      * @param int $orderId
@@ -90,6 +99,7 @@ class OrderLogic extends BaseLogic
                 if ($remain === 0) {
                     $beforeStatus = (int)$order->order_status;
                     $order->order_status = Order::STATUS_PENDING_PAY;
+                    $order->confirm_deadline_time = 0;
                     $order->update_time = time();
                     $order->save();
                     Order::syncPendingPayDeadline($order);
@@ -113,6 +123,111 @@ class OrderLogic extends BaseLogic
                         (int)$order->order_status,
                         (int)$order->order_status,
                         '服务人员确认订单中的本人待确认项目'
+                    );
+                }
+
+                return true;
+            });
+
+            if ($result && $shouldNotifyUser) {
+                OrderNotificationService::notifyUserOnOrderConfirmed($orderId);
+            }
+
+            return $result;
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 管理员确认订单（确认整单全部待确认项）
+     * @param int $orderId
+     * @param int $adminId
+     * @return bool
+     */
+    public static function confirmByAdmin(int $orderId, int $adminId): bool
+    {
+        $shouldNotifyUser = false;
+        try {
+            $result = Db::transaction(function () use ($orderId, $adminId, &$shouldNotifyUser) {
+                /** @var Order|null $order */
+                $order = Order::where('id', $orderId)
+                    ->lock(true)
+                    ->find();
+
+                if (!$order) {
+                    self::setError('订单不存在');
+                    return false;
+                }
+
+                if ((int)$order->order_status !== Order::STATUS_PENDING_CONFIRM) {
+                    self::setError('当前订单状态不可确认');
+                    return false;
+                }
+
+                $pendingItems = OrderItem::where('order_id', $orderId)
+                    ->where('confirm_status', 0)
+                    ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                    ->lock(true)
+                    ->select();
+
+                if ($pendingItems->isEmpty()) {
+                    self::setError('已确认或无可确认项');
+                    return false;
+                }
+
+                foreach ($pendingItems as $item) {
+                    if ((int)$item->schedule_id > 0) {
+                        [$ok, $msg] = Schedule::confirmBooking(
+                            (int)$item->staff_id,
+                            (string)$item->service_date,
+                            0,
+                            (int)$order->id,
+                            (int)$order->user_id
+                        );
+                        if (!$ok) {
+                            throw new \RuntimeException($msg);
+                        }
+                    }
+
+                    $item->confirm_status = 1;
+                    $item->update_time = time();
+                    $item->save();
+                }
+
+                $remain = OrderItem::where('order_id', $orderId)
+                    ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                    ->where('confirm_status', 0)
+                    ->count();
+
+                if ($remain === 0) {
+                    $beforeStatus = (int)$order->order_status;
+                    $order->order_status = Order::STATUS_PENDING_PAY;
+                    $order->confirm_deadline_time = 0;
+                    $order->update_time = time();
+                    $order->save();
+                    Order::syncPendingPayDeadline($order);
+                    $shouldNotifyUser = true;
+
+                    OrderLog::addLog(
+                        $orderId,
+                        OrderLog::OPERATOR_ADMIN,
+                        $adminId,
+                        'confirm',
+                        $beforeStatus,
+                        Order::STATUS_PENDING_PAY,
+                        '管理员确认整单全部待确认项目，订单进入待支付'
+                    );
+                } else {
+                    OrderLog::addLog(
+                        $orderId,
+                        OrderLog::OPERATOR_ADMIN,
+                        $adminId,
+                        'confirm_item',
+                        (int)$order->order_status,
+                        (int)$order->order_status,
+                        '管理员确认订单中的部分待确认项目'
                     );
                 }
 
@@ -160,9 +275,12 @@ class OrderLogic extends BaseLogic
         $data['order_status_desc'] = $order->order_status_desc;
         $data['pay_status_desc'] = $order->pay_status_desc;
         $data['pay_type_desc'] = $order->pay_type_desc;
+        $data['payment_channel_desc'] = $order->payment_channel_desc;
         $data['pay_voucher_status_desc'] = $order->pay_voucher_status_desc ?? '';
         $data['service_region_text'] = $order->service_region_text;
         $data = array_merge($data, Order::getPaymentSummary($order));
+        $data = array_merge($data, Order::getPayTimeoutSummary($order));
+        $data = array_merge($data, Order::getConfirmTimeoutSummary($order));
 
         return $data;
     }
@@ -276,6 +394,380 @@ class OrderLogic extends BaseLogic
     }
 
     /**
+     * @notes 解析后台建单付款录入模式
+     * @param array $params
+     * @return string
+     */
+    private static function resolveOfflinePaymentEntryMode(array $params): string
+    {
+        $mode = trim((string)($params['payment_entry_mode'] ?? ''));
+        return match ($mode) {
+            self::PAYMENT_ENTRY_MODE_ONLINE_PENDING,
+            self::PAYMENT_ENTRY_MODE_OFFLINE_VOUCHER => $mode,
+            default => self::PAYMENT_ENTRY_MODE_OFFLINE_PAID,
+        };
+    }
+
+    /**
+     * @notes 获取后台建单付款录入模式文案
+     * @param string $entryMode
+     * @return string
+     */
+    private static function getOfflinePaymentEntryModeDesc(string $entryMode): string
+    {
+        return match ($entryMode) {
+            self::PAYMENT_ENTRY_MODE_ONLINE_PENDING => '待线上支付',
+            self::PAYMENT_ENTRY_MODE_OFFLINE_VOUCHER => '待上传线下凭证',
+            default => '线下已支付',
+        };
+    }
+
+    /**
+     * @notes 构造后台建单金额预估
+     * @param array $summary
+     * @param float $discountAmount
+     * @param string $entryMode
+     * @return array
+     */
+    private static function buildOfflineEstimatePayload(array $summary, float $discountAmount, string $entryMode): array
+    {
+        $payAmount = round(max((float)$summary['total_amount'] - $discountAmount, 0), 2);
+        $isOfflinePaid = $entryMode === self::PAYMENT_ENTRY_MODE_OFFLINE_PAID;
+        $paymentSplit = Order::calculatePaymentSplit($payAmount);
+        $paymentChannel = $entryMode === self::PAYMENT_ENTRY_MODE_ONLINE_PENDING
+            ? Order::PAYMENT_CHANNEL_ONLINE
+            : Order::PAYMENT_CHANNEL_OFFLINE;
+
+        return [
+            'main_amount' => round((float)$summary['main_amount'], 2),
+            'related_amount' => round((float)$summary['related_amount'], 2),
+            'addon_amount' => round((float)$summary['addon_amount'], 2),
+            'total_amount' => round((float)$summary['total_amount'], 2),
+            'discount_amount' => round($discountAmount, 2),
+            'pay_amount' => $payAmount,
+            'payment_entry_mode' => $entryMode,
+            'payment_entry_mode_desc' => self::getOfflinePaymentEntryModeDesc($entryMode),
+            'payment_channel' => $paymentChannel,
+            'payment_channel_desc' => Order::getPaymentChannelText($paymentChannel),
+            'payment_mode' => (int)$paymentSplit['deposit_mode_enabled'] === 1 ? 'deposit' : 'full',
+            'payment_mode_desc' => $isOfflinePaid
+                ? '线下已支付'
+                : ((int)$paymentSplit['deposit_mode_enabled'] === 1 ? '定金支付' : '全款支付'),
+            'deposit_amount' => $isOfflinePaid ? 0 : round((float)$paymentSplit['deposit_amount'], 2),
+            'balance_amount' => $isOfflinePaid ? 0 : round((float)$paymentSplit['balance_amount'], 2),
+            'deposit_remark' => $isOfflinePaid
+                ? '后台直接登记为线下已收款'
+                : (string)$paymentSplit['deposit_remark'],
+        ];
+    }
+
+    /**
+     * @notes 获取线下建单主套餐
+     * @param array $params
+     * @return array
+     */
+    public static function getOfflineMainPackages(array $params): array
+    {
+        $staffId = (int) ($params['main_staff_id'] ?? 0);
+        if ($staffId <= 0) {
+            return [];
+        }
+
+        $regionContext = self::resolveOfflineRegionContext($params);
+        $packages = self::getOfflinePackagesByStaff($staffId, $regionContext);
+        $serviceDate = trim((string) ($params['service_date'] ?? ''));
+        if ($serviceDate === '') {
+            return $packages;
+        }
+
+        $result = [];
+        foreach ($packages as $package) {
+            $availability = \app\common\model\package\PackageBooking::checkAvailability(
+                (int) ($package['id'] ?? 0),
+                $serviceDate,
+                $staffId,
+                0
+            );
+            $package['package_available'] = (bool) ($availability['available'] ?? false);
+            $package['package_message'] = (string) ($availability['message'] ?? '');
+            if ($package['package_available']) {
+                $result[] = $package;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @notes 获取线下建单协作角色候选人
+     * @param array $params
+     * @return array
+     */
+    public static function getOfflineRoleCandidates(array $params): array
+    {
+        $mainStaffId = (int) ($params['main_staff_id'] ?? 0);
+        $roleKey = trim((string) ($params['role_key'] ?? ''));
+        if ($mainStaffId <= 0 || $roleKey === '') {
+            return [];
+        }
+
+        $regionContext = self::resolveOfflineRegionContext($params);
+        $serviceDate = (string) ($params['service_date'] ?? '');
+        $candidates = BookingFlowService::getRoleCandidates(
+            $mainStaffId,
+            $roleKey,
+            $regionContext,
+            $serviceDate
+        );
+
+        $result = [];
+        foreach ($candidates as $candidate) {
+            $availability = \app\common\model\package\PackageBooking::checkAvailability(
+                (int) ($candidate['package_id'] ?? 0),
+                $serviceDate,
+                (int) ($candidate['staff_id'] ?? 0),
+                0
+            );
+            $candidate['package_available'] = (bool) ($availability['available'] ?? false);
+            $candidate['package_message'] = (string) ($availability['message'] ?? '');
+            if (($candidate['schedule_available'] ?? false) && $candidate['package_available']) {
+                $result[] = $candidate;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @notes 线下建单金额预估
+     * @param array $params
+     * @return array
+     */
+    public static function estimateOffline(array $params): array
+    {
+        $selection = self::buildOfflineSelection($params);
+        $discountAmount = round(max((float) ($params['discount_amount'] ?? 0), 0), 2);
+        $entryMode = self::resolveOfflinePaymentEntryMode($params);
+
+        return self::buildOfflineEstimatePayload($selection['summary'], $discountAmount, $entryMode);
+    }
+
+    /**
+     * @notes 新增线下订单
+     * @param array $params
+     * @return bool
+     */
+    public static function addOffline(array $params): bool
+    {
+        $transactionStarted = false;
+        $notifyOrderId = 0;
+        $notifyPayType = Payment::TYPE_FULL;
+        $notifyStatusText = '';
+        $notifyContentTemplate = '';
+        $notifyTitle = '';
+        try {
+            $selection = self::buildOfflineSelection($params);
+            $userId = self::resolveOfflineOrderUserId($params);
+            $summary = $selection['summary'];
+            $discountAmount = round(max((float) ($params['discount_amount'] ?? 0), 0), 2);
+            $payAmount = round(max((float) $summary['total_amount'] - $discountAmount, 0), 2);
+            $entryMode = self::resolveOfflinePaymentEntryMode($params);
+            $isOfflinePaid = $entryMode === self::PAYMENT_ENTRY_MODE_OFFLINE_PAID;
+            $paymentChannel = $entryMode === self::PAYMENT_ENTRY_MODE_ONLINE_PENDING
+                ? Order::PAYMENT_CHANNEL_ONLINE
+                : Order::PAYMENT_CHANNEL_OFFLINE;
+            $paymentSplit = Order::calculatePaymentSplit($payAmount);
+            $now = time();
+
+            Db::startTrans();
+            $transactionStarted = true;
+            $order = Order::create([
+                'order_sn' => Order::generateOrderSn(),
+                'user_id' => $userId,
+                'order_type' => Order::TYPE_NORMAL,
+                'order_status' => $isOfflinePaid ? Order::STATUS_PENDING_SERVICE : Order::STATUS_PENDING_PAY,
+                'pay_status' => $isOfflinePaid ? Order::PAY_STATUS_PAID : Order::PAY_STATUS_UNPAID,
+                'paid_amount' => $isOfflinePaid ? $payAmount : 0,
+                'total_amount' => round((float) $summary['total_amount'], 2),
+                'addon_amount' => round((float) $summary['addon_amount'], 2),
+                'discount_amount' => $discountAmount,
+                'pay_amount' => $payAmount,
+                'deposit_amount' => $isOfflinePaid ? 0 : round((float) $paymentSplit['deposit_amount'], 2),
+                'balance_amount' => $isOfflinePaid ? 0 : round((float) $paymentSplit['balance_amount'], 2),
+                'deposit_mode_enabled' => $isOfflinePaid ? 0 : (int) $paymentSplit['deposit_mode_enabled'],
+                'deposit_type_snapshot' => $isOfflinePaid ? '' : (string) $paymentSplit['deposit_type'],
+                'deposit_value_snapshot' => $isOfflinePaid ? 0 : (float) $paymentSplit['deposit_value'],
+                'deposit_remark_snapshot' => $isOfflinePaid ? '' : (string) $paymentSplit['deposit_remark'],
+                'deposit_paid' => 0,
+                'balance_paid' => 0,
+                'service_date' => $params['service_date'] ?? null,
+                'service_time_slot' => 0,
+                'service_address' => $params['service_address'] ?? '',
+                'service_province_code' => $selection['region_context']['province_code'] ?? '',
+                'service_province' => $selection['region_context']['province_name'] ?? '',
+                'service_city_code' => $selection['region_context']['city_code'] ?? '',
+                'service_city' => $selection['region_context']['city_name'] ?? '',
+                'service_district_code' => $selection['region_context']['district_code'] ?? '',
+                'service_district' => $selection['region_context']['district_name'] ?? '',
+                'contact_name' => $params['contact_name'] ?? '',
+                'contact_mobile' => $params['contact_mobile'] ?? '',
+                'admin_remark' => $params['admin_remark'] ?? '',
+                'source' => Order::SOURCE_ADMIN,
+                'pay_type' => $isOfflinePaid ? Order::PAY_WAY_OFFLINE : Order::PAY_WAY_NONE,
+                'payment_channel' => $paymentChannel,
+                'pay_time' => $isOfflinePaid ? $now : 0,
+                'confirm_deadline_time' => 0,
+                'pay_deadline_time' => 0,
+                'create_time' => $now,
+                'update_time' => $now,
+            ]);
+
+            $mainOrderItemId = 0;
+            foreach ($selection['selected_items'] as $item) {
+                $orderItem = OrderItem::create([
+                    'order_id' => (int) $order->id,
+                    'staff_id' => (int) ($item['staff_id'] ?? 0),
+                    'package_id' => (int) ($item['package_id'] ?? 0),
+                    'schedule_id' => 0,
+                    'service_date' => (string) ($item['service_date'] ?? ''),
+                    'time_slot' => 0,
+                    'staff_name' => (string) ($item['staff_name'] ?? ''),
+                    'package_name' => (string) ($item['package_name'] ?? ''),
+                    'package_description' => OrderItem::resolvePackageDescription(
+                        (int) ($item['package_id'] ?? 0),
+                        (string) ($item['package_description'] ?? '')
+                    ),
+                    'price' => round((float) ($item['price'] ?? 0), 2),
+                    'quantity' => 1,
+                    'subtotal' => round((float) ($item['price'] ?? 0), 2),
+                    'item_type' => (int) ($item['item_type'] ?? OrderItem::TYPE_SERVICE),
+                    'item_meta' => $item['item_meta'] ?? [],
+                    'confirm_status' => 1,
+                    'remark' => (string) ($item['remark'] ?? ''),
+                    'create_time' => $now,
+                    'update_time' => $now,
+                ]);
+
+                if ((int) ($item['item_type'] ?? OrderItem::TYPE_SERVICE) === OrderItem::TYPE_SERVICE) {
+                    $mainOrderItemId = (int) $orderItem->id;
+                }
+
+                $scheduleResult = Schedule::confirmBooking(
+                    (int) ($item['staff_id'] ?? 0),
+                    (string) ($item['service_date'] ?? ''),
+                    0,
+                    (int) $order->id,
+                    $userId
+                );
+                if (!($scheduleResult[0] ?? false)) {
+                    throw new \RuntimeException((string) ($scheduleResult[1] ?? '档期占用失败'));
+                }
+
+                $scheduleId = (int) ($scheduleResult['schedule_id'] ?? 0);
+                if ($scheduleId > 0) {
+                    $orderItem->schedule_id = $scheduleId;
+                    $orderItem->time_slot = 0;
+                    $orderItem->save();
+                }
+
+                $confirmed = \app\common\model\package\PackageBooking::confirmSelection(
+                    $userId,
+                    (int) ($item['package_id'] ?? 0),
+                    (int) ($item['staff_id'] ?? 0),
+                    (string) ($item['service_date'] ?? ''),
+                    0,
+                    (int) $order->id,
+                    (int) $orderItem->id
+                );
+                if (!$confirmed) {
+                    throw new \RuntimeException('套餐占用失败，请刷新后重试');
+                }
+            }
+
+            if ($mainOrderItemId > 0 && !empty($selection['addons'])) {
+                OrderItemAddon::createSnapshots(
+                    (int) $order->id,
+                    $mainOrderItemId,
+                    $selection['addons'],
+                    OrderItemAddon::SOURCE_ORDER
+                );
+            }
+
+            if ($isOfflinePaid) {
+                Payment::create([
+                    'payment_sn' => Payment::generatePaymentSn(),
+                    'order_id' => (int) $order->id,
+                    'order_sn' => (string) $order->order_sn,
+                    'user_id' => $userId,
+                    'pay_type' => Payment::TYPE_FULL,
+                    'pay_way' => Payment::WAY_OFFLINE,
+                    'pay_amount' => $payAmount,
+                    'pay_status' => Payment::STATUS_PAID,
+                    'pay_time' => $now,
+                    'create_time' => $now,
+                    'update_time' => $now,
+                ]);
+            } else {
+                Order::syncPendingPayDeadline($order, $now);
+            }
+
+            $logAction = 'create_offline';
+            $logContent = '后台创建线下订单并登记为待服务';
+            $afterStatus = Order::STATUS_PENDING_SERVICE;
+            if ($entryMode === self::PAYMENT_ENTRY_MODE_ONLINE_PENDING) {
+                $logAction = 'create_online_pending';
+                $logContent = '后台创建订单，待用户线上支付';
+                $afterStatus = Order::STATUS_PENDING_PAY;
+                $notifyStatusText = '后台已创建订单，待线上支付';
+                $notifyContentTemplate = '订单%s已创建，请尽快完成线上支付。';
+                $notifyTitle = '后台已为您创建订单';
+            } elseif ($entryMode === self::PAYMENT_ENTRY_MODE_OFFLINE_VOUCHER) {
+                $logAction = 'create_offline_voucher';
+                $logContent = '后台创建订单，待用户上传线下支付凭证';
+                $afterStatus = Order::STATUS_PENDING_PAY;
+                $notifyStatusText = '后台已创建订单，待上传线下凭证';
+                $notifyContentTemplate = '订单%s已创建，请线下付款后上传支付凭证。';
+                $notifyTitle = '后台已为您创建订单';
+            }
+
+            OrderLog::addLog(
+                (int) $order->id,
+                OrderLog::OPERATOR_ADMIN,
+                (int) ($params['admin_id'] ?? 0),
+                $logAction,
+                0,
+                $afterStatus,
+                $logContent
+            );
+
+            $notifyOrderId = (int)$order->id;
+
+            Db::commit();
+
+            if ($isOfflinePaid && $notifyOrderId > 0) {
+                OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($notifyOrderId, $notifyPayType);
+            }
+
+            if (!$isOfflinePaid && $notifyOrderId > 0) {
+                OrderNotificationService::notifyUserOnOrderConfirmed(
+                    $notifyOrderId,
+                    $notifyStatusText,
+                    $notifyContentTemplate,
+                    $notifyTitle
+                );
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            if ($transactionStarted) {
+                Db::rollback();
+            }
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * @notes 后台创建订单
      * @param array $params
      * @return bool
@@ -339,11 +831,11 @@ class OrderLogic extends BaseLogic
                 'service_district' => $params['district_name'] ?? '',
                 'contact_name' => $params['contact_name'] ?? '',
                 'contact_mobile' => $params['contact_mobile'] ?? '',
-                'wedding_date' => $params['wedding_date'] ?? null,
-                'wedding_venue' => $params['wedding_venue'] ?? '',
                 'admin_remark' => $params['admin_remark'] ?? '',
                 'source' => Order::SOURCE_ADMIN,
                 'pay_type' => Order::PAY_WAY_NONE,
+                'payment_channel' => Order::PAYMENT_CHANNEL_ONLINE,
+                'confirm_deadline_time' => 0,
                 'create_time' => time(),
                 'update_time' => time(),
             ]);
@@ -442,8 +934,6 @@ class OrderLogic extends BaseLogic
                 'service_district',
                 'contact_name',
                 'contact_mobile',
-                'wedding_date',
-                'wedding_venue',
                 'admin_remark'
             ];
 
@@ -519,8 +1009,8 @@ class OrderLogic extends BaseLogic
                 return false;
             }
 
-            if ($order->order_status != Order::STATUS_PAID) {
-                self::setError('只有已支付的订单才能开始服务');
+            if (!$order->canStartService()) {
+                self::setError('只有待服务的订单才能开始服务');
                 return false;
             }
 
@@ -619,6 +1109,7 @@ class OrderLogic extends BaseLogic
     {
         $notifyOrderId = 0;
         $notifyPayType = Payment::TYPE_FULL;
+        $notifyCompleted = false;
 
         Db::startTrans();
         try {
@@ -630,6 +1121,16 @@ class OrderLogic extends BaseLogic
 
             if ($order->order_status != Order::STATUS_PENDING_PAY) {
                 self::setError('当前订单状态不允许此操作');
+                return false;
+            }
+
+            if ($order->getResolvedPaymentChannel() !== Order::PAYMENT_CHANNEL_OFFLINE) {
+                self::setError('当前订单不是线下付款订单');
+                return false;
+            }
+
+            if ($order->isOfflineVoucherPending()) {
+                self::setError('当前订单已提交支付凭证，请先完成凭证审核');
                 return false;
             }
 
@@ -661,24 +1162,10 @@ class OrderLogic extends BaseLogic
                 'update_time' => time(),
             ]);
 
-            // 更新订单状态
-            if ($payType == Payment::TYPE_DEPOSIT) {
-                $order->deposit_paid = 1;
-                $order->pay_time = time();
-                // 定金模式下，支付定金后仍为待支付状态
-            } else {
-                // 全款或尾款
-                if ($payType == Payment::TYPE_BALANCE) {
-                    $order->balance_paid = 1;
-                }
-                $order->order_status = Order::STATUS_PAID;
-                $order->pay_status = Order::PAY_STATUS_PAID;
-                $order->pay_time = time();
-            }
-
+            Order::applyPaidStateAfterPayment($order, (int)$payType, (int)$payment->pay_time);
             $order->pay_type = Order::PAY_WAY_OFFLINE;
+            $order->payment_channel = Order::PAYMENT_CHANNEL_OFFLINE;
             $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payAmount, 2);
-            $order->pay_deadline_time = 0;
             $order->update_time = time();
             $order->save();
 
@@ -688,11 +1175,15 @@ class OrderLogic extends BaseLogic
 
             $notifyOrderId = (int)$order->id;
             $notifyPayType = (int)$payType;
+            $notifyCompleted = (int)$order->order_status === Order::STATUS_COMPLETED;
 
             Db::commit();
 
             if ($notifyOrderId > 0) {
                 OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($notifyOrderId, $notifyPayType);
+                if ($notifyCompleted) {
+                    OrderNotificationService::notifyOnOrderCompleted($notifyOrderId);
+                }
             }
             return true;
         } catch (\Exception $e) {
@@ -764,12 +1255,13 @@ class OrderLogic extends BaseLogic
         foreach ([
             Order::STATUS_PENDING_CONFIRM => '待确认',
             Order::STATUS_PENDING_PAY => '待支付',
-            Order::STATUS_PAID => '已支付',
+            Order::STATUS_PENDING_SERVICE => '待服务',
             Order::STATUS_IN_SERVICE => '服务中',
             Order::STATUS_COMPLETED => '已完成',
             Order::STATUS_REVIEWED => '已评价',
             Order::STATUS_CANCELLED => '已取消',
             Order::STATUS_PAUSED => '已暂停',
+            Order::STATUS_REFUNDING => '退款中',
             Order::STATUS_REFUNDED => '已退款',
             Order::STATUS_USER_DELETED => '用户已删除',
         ] as $status => $label) {
@@ -840,6 +1332,7 @@ class OrderLogic extends BaseLogic
         $notifyOrderId = 0;
         $notifyPayType = Payment::TYPE_FULL;
         $notifyVoucherRejected = false;
+        $notifyCompleted = false;
 
         Db::startTrans();
         try {
@@ -854,7 +1347,12 @@ class OrderLogic extends BaseLogic
                 return false;
             }
 
-            if ($order->pay_type != Order::PAY_WAY_OFFLINE || empty($order->pay_voucher)) {
+            if ($order->getResolvedPaymentChannel() !== Order::PAYMENT_CHANNEL_OFFLINE) {
+                self::setError('当前订单不是线下付款订单');
+                return false;
+            }
+
+            if (empty($order->pay_voucher)) {
                 self::setError('订单未提交线下支付凭证');
                 return false;
             }
@@ -867,6 +1365,7 @@ class OrderLogic extends BaseLogic
             $approved = (int)($params['approved'] ?? 0) === 1;
             $remark = $params['remark'] ?? '';
 
+            $order->payment_channel = Order::PAYMENT_CHANNEL_OFFLINE;
             $order->pay_voucher_status = $approved ? Order::VOUCHER_STATUS_APPROVED : Order::VOUCHER_STATUS_REJECTED;
             $order->pay_voucher_audit_admin_id = $params['admin_id'];
             $order->pay_voucher_audit_time = time();
@@ -880,28 +1379,16 @@ class OrderLogic extends BaseLogic
                     if (!$order->deposit_paid) {
                         $payType = Payment::TYPE_DEPOSIT;
                         $payAmount = $order->deposit_amount;
-                        $order->deposit_paid = 1;
-                        $order->pay_time = time();
-                        $order->pay_deadline_time = 0;
                     } elseif (!$order->balance_paid) {
                         $payType = Payment::TYPE_BALANCE;
                         $payAmount = $order->balance_amount;
-                        $order->balance_paid = 1;
-                        $order->order_status = Order::STATUS_PAID;
-                        $order->pay_status = Order::PAY_STATUS_PAID;
-                        $order->pay_time = time();
-                        $order->pay_deadline_time = 0;
                     } else {
                         self::setError('订单已完成支付');
                         return false;
                     }
-                } else {
-                    $order->order_status = Order::STATUS_PAID;
-                    $order->pay_status = Order::PAY_STATUS_PAID;
-                    $order->pay_time = time();
-                    $order->pay_deadline_time = 0;
                 }
 
+                $order->pay_type = Order::PAY_WAY_OFFLINE;
                 $payment = Payment::create([
                     'payment_sn' => Payment::generatePaymentSn(),
                     'order_id' => $order->id,
@@ -916,6 +1403,7 @@ class OrderLogic extends BaseLogic
                     'update_time' => time(),
                 ]);
 
+                Order::applyPaidStateAfterPayment($order, (int)$payType, (int)$payment->pay_time);
                 $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payAmount, 2);
                 $order->update_time = time();
                 $order->save();
@@ -933,7 +1421,11 @@ class OrderLogic extends BaseLogic
 
                 $notifyOrderId = (int)$order->id;
                 $notifyPayType = (int)$payType;
+                $notifyCompleted = (int)$order->order_status === Order::STATUS_COMPLETED;
             } else {
+                if ($order->isInFirstPendingPaymentStage()) {
+                    Order::syncPendingPayDeadline($order, time(), false);
+                }
                 $order->update_time = time();
                 $order->save();
 
@@ -959,6 +1451,9 @@ class OrderLogic extends BaseLogic
 
             if (!$notifyVoucherRejected && $notifyOrderId > 0) {
                 OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($notifyOrderId, $notifyPayType);
+                if ($notifyCompleted) {
+                    OrderNotificationService::notifyOnOrderCompleted($notifyOrderId);
+                }
             }
             return true;
         } catch (\Exception $e) {
@@ -966,5 +1461,220 @@ class OrderLogic extends BaseLogic
             self::setError($e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * @notes 构造线下建单选择结果
+     * @param array $params
+     * @return array
+     */
+    protected static function buildOfflineSelection(array $params): array
+    {
+        $serviceDate = trim((string) ($params['service_date'] ?? ''));
+        $mainStaffId = (int) ($params['main_staff_id'] ?? 0);
+        $mainPackageId = (int) ($params['main_package_id'] ?? 0);
+        if ($serviceDate === '') {
+            throw new \InvalidArgumentException('请选择服务日期');
+        }
+        if ($mainStaffId <= 0) {
+            throw new \InvalidArgumentException('请选择主服务人员');
+        }
+        if ($mainPackageId <= 0) {
+            throw new \InvalidArgumentException('请选择主套餐');
+        }
+
+        [$available, $message] = Schedule::checkAvailabilityWithReason($mainStaffId, $serviceDate, 0);
+        if (!$available) {
+            throw new \InvalidArgumentException($message ?: '主服务档期不可用');
+        }
+
+        $regionContext = self::resolveOfflineRegionContext($params);
+        $packages = self::getOfflinePackagesByStaff($mainStaffId, $regionContext);
+        $packageMap = [];
+        foreach ($packages as $package) {
+            $packageMap[(int) ($package['id'] ?? 0)] = $package;
+        }
+
+        $mainPackage = $packageMap[$mainPackageId] ?? null;
+        if (!$mainPackage) {
+            throw new \InvalidArgumentException('主套餐不存在、已下架或当前地区不可用');
+        }
+
+        $mainPackageAvailability = \app\common\model\package\PackageBooking::checkAvailability(
+            $mainPackageId,
+            $serviceDate,
+            $mainStaffId,
+            0
+        );
+        if (!($mainPackageAvailability['available'] ?? false)) {
+            throw new \InvalidArgumentException((string) ($mainPackageAvailability['message'] ?? '主套餐已被占用'));
+        }
+
+        $selectedItems = [[
+            'staff_id' => $mainStaffId,
+            'package_id' => $mainPackageId,
+            'service_date' => $serviceDate,
+            'staff_name' => (string) ($mainPackage['staff_name'] ?? ''),
+            'package_name' => (string) ($mainPackage['name'] ?? ''),
+            'package_description' => (string) ($mainPackage['description'] ?? ''),
+            'price' => round((float) ($mainPackage['price'] ?? 0), 2),
+            'item_type' => OrderItem::TYPE_SERVICE,
+            'item_meta' => [
+                'role_key' => '',
+                'role_label' => '',
+            ],
+            'remark' => '',
+        ]];
+
+        $addons = BookingFlowService::resolveSelectedAddons(
+            $mainStaffId,
+            BookingFlowService::normalizeAddonIds($params['addon_ids'] ?? [])
+        );
+
+        $relatedItems = [];
+        foreach ([
+            BookingFlowService::ROLE_BUTLER => [
+                'staff_id' => (int) ($params['butler_staff_id'] ?? 0),
+                'package_id' => (int) ($params['butler_package_id'] ?? 0),
+            ],
+            BookingFlowService::ROLE_DIRECTOR => [
+                'staff_id' => (int) ($params['director_staff_id'] ?? 0),
+                'package_id' => (int) ($params['director_package_id'] ?? 0),
+            ],
+        ] as $roleKey => $selection) {
+            $selectedStaffId = (int) ($selection['staff_id'] ?? 0);
+            $selectedPackageId = (int) ($selection['package_id'] ?? 0);
+            if (($selectedStaffId > 0 && $selectedPackageId <= 0) || ($selectedStaffId <= 0 && $selectedPackageId > 0)) {
+                throw new \InvalidArgumentException('协作角色请选择完整的人员与套餐');
+            }
+            if ($selectedStaffId <= 0) {
+                continue;
+            }
+
+            $candidate = BookingFlowService::resolveSelectedRoleCandidate(
+                $mainStaffId,
+                $roleKey,
+                $selectedStaffId,
+                $selectedPackageId,
+                $regionContext,
+                $serviceDate
+            );
+
+            $candidatePackageAvailability = \app\common\model\package\PackageBooking::checkAvailability(
+                (int) ($candidate['package_id'] ?? 0),
+                $serviceDate,
+                (int) ($candidate['staff_id'] ?? 0),
+                0
+            );
+            if (!($candidatePackageAvailability['available'] ?? false)) {
+                throw new \InvalidArgumentException((string) ($candidatePackageAvailability['message'] ?? '协作角色套餐已被占用'));
+            }
+
+            $relatedItems[] = [
+                'staff_id' => (int) ($candidate['staff_id'] ?? 0),
+                'package_id' => (int) ($candidate['package_id'] ?? 0),
+                'service_date' => $serviceDate,
+                'staff_name' => (string) ($candidate['name'] ?? ''),
+                'package_name' => (string) ($candidate['package_name'] ?? ''),
+                'package_description' => (string) ($candidate['package_description'] ?? ''),
+                'price' => round((float) ($candidate['price'] ?? 0), 2),
+                'item_type' => OrderItem::TYPE_RELATED_STAFF,
+                'item_meta' => [
+                    'role_key' => $roleKey,
+                    'role_label' => (string) ($candidate['role_label'] ?? BookingFlowService::getRoleLabel($roleKey)),
+                ],
+                'remark' => '',
+            ];
+        }
+
+        $selectedItems = array_merge($selectedItems, $relatedItems);
+
+        $mainAmount = round((float) ($selectedItems[0]['price'] ?? 0), 2);
+        $relatedAmount = round(array_reduce($relatedItems, static function (float $carry, array $item): float {
+            return $carry + round((float) ($item['price'] ?? 0), 2);
+        }, 0.0), 2);
+        $addonAmount = round(array_reduce($addons, static function (float $carry, array $addon): float {
+            return $carry + round((float) ($addon['price'] ?? 0), 2);
+        }, 0.0), 2);
+
+        return [
+            'region_context' => $regionContext,
+            'main_package' => $mainPackage,
+            'addons' => $addons,
+            'selected_items' => $selectedItems,
+            'summary' => [
+                'main_amount' => $mainAmount,
+                'related_amount' => $relatedAmount,
+                'addon_amount' => $addonAmount,
+                'total_amount' => round($mainAmount + $relatedAmount + $addonAmount, 2),
+            ],
+        ];
+    }
+
+    /**
+     * @notes 解析线下建单用户
+     * @param array $params
+     * @return int
+     */
+    protected static function resolveOfflineOrderUserId(array $params): int
+    {
+        $bindMode = trim((string) ($params['bind_mode'] ?? ''));
+        if ($bindMode === 'temp') {
+            return 0;
+        }
+
+        $userId = (int) ($params['user_id'] ?? 0);
+        if ($userId <= 0) {
+            throw new \InvalidArgumentException('请选择用户');
+        }
+
+        $user = User::find($userId);
+        if (!$user) {
+            throw new \InvalidArgumentException('用户不存在');
+        }
+
+        return $userId;
+    }
+
+    /**
+     * @notes 获取线下建单可选套餐
+     * @param int $staffId
+     * @param array $regionContext
+     * @return array
+     */
+    protected static function getOfflinePackagesByStaff(int $staffId, array $regionContext): array
+    {
+        $staffName = (string) Staff::where('id', $staffId)->value('name');
+        $packages = ServicePackage::where('staff_id', $staffId)
+            ->whereNull('delete_time')
+            ->where('is_show', 1)
+            ->order('sort desc, id desc')
+            ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show, is_recommend')
+            ->select()
+            ->toArray();
+
+        $packages = PackageRegionPriceService::applyResolvedPrices($packages, $regionContext, true);
+        foreach ($packages as &$package) {
+            $package['staff_name'] = $staffName;
+        }
+
+        return $packages;
+    }
+
+    /**
+     * @notes 解析线下建单地区上下文
+     * @param array $params
+     * @return array
+     */
+    protected static function resolveOfflineRegionContext(array $params): array
+    {
+        return PackageRegionPriceService::validateEnabledRegion([
+            'province_code' => (string) ($params['province_code'] ?? ''),
+            'province_name' => (string) ($params['province_name'] ?? ''),
+            'city_code' => (string) ($params['city_code'] ?? ''),
+            'city_name' => (string) ($params['city_name'] ?? ''),
+            'district_code' => (string) ($params['district_code'] ?? ''),
+            'district_name' => (string) ($params['district_name'] ?? ''),
+        ]);
     }
 }

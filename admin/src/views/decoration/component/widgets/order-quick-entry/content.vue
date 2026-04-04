@@ -148,7 +148,7 @@ const getStatusColor = (status: string | number) => {
     const colors: Record<number, string> = {
         0: '#3B82F6',    // 待确认 - 蓝色
         1: '#F97316',    // 待付款 - 橙色
-        2: '#3B82F6',    // 已支付 - 蓝色
+        2: '#3B82F6',    // 待服务 - 蓝色
         3: '#8B5CF6',    // 服务中 - 紫色
         4: '#22C55E',    // 已完成 - 绿色
         5: '#22C55E',    // 已评价 - 绿色
@@ -166,7 +166,7 @@ const getStatusIcon = (status: string | number) => {
     const icons: Record<number, string> = {
         0: '⏰',    // 待确认
         1: '💰',    // 待付款
-        2: '✓',     // 已支付
+        2: '✓',     // 待服务
         3: '⚙',     // 服务中
         4: '✓',     // 已完成
         5: '⭐',    // 已评价

@@ -73,6 +73,52 @@
                                     </text>
                                 </view>
                             </view>
+                            <view
+                                v-if="shouldShowConfirmSection(order)"
+                                class="order-card__confirm"
+                            >
+                                <view
+                                    v-if="getConfirmRemainText(order)"
+                                    class="order-card__confirm-item"
+                                >
+                                    <text class="order-card__confirm-label">剩余确认时间</text>
+                                    <text class="order-card__confirm-value">
+                                        {{ getConfirmRemainText(order) }}
+                                    </text>
+                                </view>
+                                <view
+                                    v-if="order.confirmTimeoutActionDesc"
+                                    class="order-card__confirm-item"
+                                >
+                                    <text class="order-card__confirm-label">超时处理</text>
+                                    <text class="order-card__confirm-value">
+                                        {{ order.confirmTimeoutActionDesc }}
+                                    </text>
+                                </view>
+                            </view>
+                            <view
+                                v-if="shouldShowPaySection(order)"
+                                class="order-card__confirm"
+                            >
+                                <view
+                                    v-if="getPayRemainText(order)"
+                                    class="order-card__confirm-item"
+                                >
+                                    <text class="order-card__confirm-label">剩余支付时间</text>
+                                    <text class="order-card__confirm-value">
+                                        {{ getPayRemainText(order) }}
+                                    </text>
+                                </view>
+                                <view
+                                    v-if="order.payTimeoutActionDesc"
+                                    class="order-card__confirm-item"
+                                >
+                                    <text class="order-card__confirm-label">支付超时处理</text>
+                                    <text class="order-card__confirm-value">
+                                        {{ order.payTimeoutActionDesc }}
+                                    </text>
+                                </view>
+                            </view>
                         </view>
 
                         <view class="order-card__foot">
@@ -144,7 +190,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { onHide, onLoad, onReachBottom, onShow, onUnload } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import {
@@ -161,12 +207,13 @@ const statusTabs = [
     { label: '全部', value: '', key: 'all' },
     { label: '待确认', value: 0, key: 'pending_confirm' },
     { label: '待支付', value: 1, key: 'pending_pay' },
-    { label: '已支付', value: 2, key: 'paid' },
+    { label: '待服务', value: 2, key: 'paid' },
     { label: '服务中', value: 3, key: 'in_service' },
     { label: '已完成', value: 4, key: 'completed' },
     { label: '已评价', value: 5, key: 'reviewed' },
     { label: '已取消', value: 6, key: 'cancelled' },
     { label: '已暂停', value: 7, key: 'paused' },
+    { label: '退款中', value: 10, key: 'refunding' },
     { label: '已退款', value: 8, key: 'refund' }
 ]
 
@@ -176,6 +223,9 @@ const orders = ref<any[]>([])
 const loading = ref(false)
 const page = ref(1)
 const hasMore = ref(true)
+const orderCountdownNowTs = ref(Date.now())
+let orderCountdownTimer: ReturnType<typeof setInterval> | null = null
+let orderCountdownRefreshing = false
 const statistics = reactive<any>({
     all: 0,
     pending_confirm: 0,
@@ -186,21 +236,41 @@ const statistics = reactive<any>({
     reviewed: 0,
     cancelled: 0,
     paused: 0,
+    refunding: 0,
     refund: 0
 })
+
+const resolvePaymentChannel = (order: any) => {
+    const paymentChannel = Number(order?.payment_channel || 0)
+    if ([1, 2].includes(paymentChannel)) {
+        return paymentChannel
+    }
+    return Number(order?.pay_type) === 4 || !!order?.pay_voucher ? 2 : 1
+}
 
 const buildActions = (status: number, order: any) => {
     if (status === 0) {
         return [{ text: '取消', type: 'secondary', action: 'cancel' }]
     }
     if (status === 1) {
+        const paymentChannel = resolvePaymentChannel(order)
+        if (paymentChannel === 2) {
+            return [
+                { text: '取消', type: 'secondary', action: 'cancel' },
+                {
+                    text: Number(order?.pay_voucher_status) === 0 ? '凭证审核中' : '上传凭证',
+                    type: 'primary',
+                    action: 'voucher'
+                }
+            ]
+        }
         const payLabel = order?.need_pay_label || '支付'
         return [
             { text: '取消', type: 'secondary', action: 'cancel' },
             { text: payLabel, type: 'primary', action: 'pay' }
         ]
     }
-    if (status === 3) {
+    if (status === 3 && Number(order?.can_user_complete || 0) === 1) {
         return [{ text: '确认完成', type: 'primary', action: 'confirm' }]
     }
     if ([4, 5, 6, 8].includes(status)) {
@@ -238,12 +308,13 @@ const getStatusText = (status: number) => {
     const texts: Record<number, string> = {
         0: '待确认',
         1: '待支付',
-        2: '已支付',
+        2: '待服务',
         3: '服务中',
         4: '已完成',
         5: '已评价',
         6: '已取消',
         7: '已暂停',
+        10: '退款中',
         8: '已退款'
     }
 
@@ -259,9 +330,126 @@ const buildDisplaySummary = (serviceDateText: string, serviceMeta: string) => {
     )
 }
 
+const formatCountdown = (seconds: number | string | undefined) => {
+    const total = Math.max(Number(seconds || 0), 0)
+    if (total <= 0) return '已超时，等待系统处理'
+    const hours = Math.floor(total / 3600)
+    const minutes = Math.floor((total % 3600) / 60)
+    const remainSeconds = total % 60
+
+    return [hours, minutes, remainSeconds].map((item) => String(item).padStart(2, '0')).join(':')
+}
+
+const shouldShowConfirmCountdown = (order: any) =>
+    Number(order?.statusValue ?? order?.order_status ?? -1) === 0 &&
+    Number(order?.confirmDeadlineTime ?? order?.confirm_deadline_time ?? 0) > 0
+
+const buildExpireAt = (
+    deadlineTime: number | string | undefined,
+    remainSeconds: number | string | undefined
+) => {
+    if (Number(deadlineTime || 0) <= 0) return 0
+    return Date.now() + Math.max(Number(remainSeconds || 0), 0) * 1000
+}
+
+const getLiveRemainSeconds = (
+    order: any,
+    deadlineField: 'confirmDeadlineTime' | 'payDeadlineTime',
+    expireField: 'confirmExpireAt' | 'payExpireAt'
+) => {
+    orderCountdownNowTs.value
+    if (!order) return 0
+    const deadlineTime = Number(order?.[deadlineField] || 0)
+    if (deadlineTime <= 0) return 0
+    const expireAt = Number(order?.[expireField] || 0)
+    if (expireAt <= 0) return 0
+    return Math.max(Math.ceil((expireAt - orderCountdownNowTs.value) / 1000), 0)
+}
+
+const getConfirmRemainText = (order: any) => {
+    if (!shouldShowConfirmCountdown(order)) return ''
+    return formatCountdown(getLiveRemainSeconds(order, 'confirmDeadlineTime', 'confirmExpireAt'))
+}
+
+const shouldShowConfirmSection = (order: any) =>
+    !!getConfirmRemainText(order) ||
+    (Number(order?.statusValue ?? order?.order_status ?? -1) === 0 &&
+        !!String(order?.confirmTimeoutActionDesc || order?.confirm_timeout_action_desc || '').trim())
+
+const shouldShowPayCountdown = (order: any) =>
+    Number(order?.statusValue ?? order?.order_status ?? -1) === 1 &&
+    Number(order?.payDeadlineTime ?? order?.pay_deadline_time ?? 0) > 0
+
+const getPayRemainText = (order: any) => {
+    if (!shouldShowPayCountdown(order)) return ''
+    return formatCountdown(getLiveRemainSeconds(order, 'payDeadlineTime', 'payExpireAt'))
+}
+
+const shouldShowPaySection = (order: any) =>
+    !!getPayRemainText(order) ||
+    (Number(order?.statusValue ?? order?.order_status ?? -1) === 1 &&
+        !!String(order?.payTimeoutActionDesc || order?.pay_timeout_action_desc || '').trim())
+
+const clearOrderCountdown = () => {
+    if (orderCountdownTimer) {
+        clearInterval(orderCountdownTimer)
+        orderCountdownTimer = null
+    }
+}
+
+const hasActiveOrderCountdown = (order: any) =>
+    getLiveRemainSeconds(order, 'confirmDeadlineTime', 'confirmExpireAt') > 0 ||
+    getLiveRemainSeconds(order, 'payDeadlineTime', 'payExpireAt') > 0
+
+const hasExpiredOrderCountdown = (order: any) =>
+    (shouldShowConfirmCountdown(order) &&
+        getLiveRemainSeconds(order, 'confirmDeadlineTime', 'confirmExpireAt') <= 0) ||
+    (shouldShowPayCountdown(order) &&
+        getLiveRemainSeconds(order, 'payDeadlineTime', 'payExpireAt') <= 0)
+
+const refreshOrderCountdownData = async () => {
+    if (orderCountdownRefreshing) return
+    orderCountdownRefreshing = true
+    try {
+        await fetchOrders(true)
+        await fetchStatistics()
+    } finally {
+        orderCountdownRefreshing = false
+    }
+}
+
+const startOrderCountdown = () => {
+    clearOrderCountdown()
+    orderCountdownNowTs.value = Date.now()
+
+    if (orders.value.some(hasExpiredOrderCountdown)) {
+        refreshOrderCountdownData()
+        return
+    }
+
+    if (!orders.value.some(hasActiveOrderCountdown)) {
+        return
+    }
+
+    orderCountdownTimer = setInterval(() => {
+        orderCountdownNowTs.value = Date.now()
+
+        if (orders.value.some(hasExpiredOrderCountdown)) {
+            clearOrderCountdown()
+            refreshOrderCountdownData()
+            return
+        }
+
+        if (!orders.value.some(hasActiveOrderCountdown)) {
+            clearOrderCountdown()
+        }
+    }, 1000)
+}
+
 const fetchOrders = async (refresh = false) => {
     if (loading.value) return
     loading.value = true
+    clearOrderCountdown()
 
     try {
         if (refresh) {
@@ -302,13 +490,38 @@ const fetchOrders = async (refresh = false) => {
                     order.order_status_desc || getStatusText(Number(order.order_status || 0)),
                 actualPrice: Number(order.need_pay_amount || order.pay_amount || 0),
                 totalPrice: Number(order.pay_amount || 0),
+                paymentChannel: resolvePaymentChannel(order),
+                paymentChannelDesc:
+                    order.payment_channel_desc ||
+                    (resolvePaymentChannel(order) === 2 ? '线下支付' : '线上支付'),
+                payVoucherStatus: Number(order.pay_voucher_status ?? -1),
+                payVoucher: order.pay_voucher || '',
                 paymentModeDesc: order.payment_mode_desc || '全款支付',
                 serviceTitle: getOrderPrimaryTitle(items),
                 serviceMeta: getOrderMetaText(locationText, items),
                 serviceDateText: serviceDateList[0] || '待安排服务日期',
+                confirmDeadlineTime: Number(order.confirm_deadline_time || 0),
+                confirmRemainSeconds: Number(order.confirm_remain_seconds || 0),
+                confirmExpireAt: buildExpireAt(
+                    Number(order.confirm_deadline_time || 0),
+                    Number(order.confirm_remain_seconds || 0)
+                ),
+                confirmTimeoutActionDesc: String(order.confirm_timeout_action_desc || '').trim(),
+                payDeadlineTime: Number(order.pay_deadline_time || 0),
+                payRemainSeconds: Number(order.pay_remain_seconds || 0),
+                payExpireAt: buildExpireAt(
+                    Number(order.pay_deadline_time || 0),
+                    Number(order.pay_remain_seconds || 0)
+                ),
+                payTimeoutActionDesc: String(order.pay_timeout_action_desc || '').trim(),
                 displaySummary: buildDisplaySummary(
                     serviceDateList[0] || '待安排服务日期',
-                    [order.payment_mode_desc || '', getOrderMetaText(locationText, items)]
+                    [
+                        order.payment_channel_desc ||
+                            (resolvePaymentChannel(order) === 2 ? '线下支付' : '线上支付'),
+                        order.payment_mode_desc || '',
+                        getOrderMetaText(locationText, items)
+                    ]
                         .filter(Boolean)
                         .join(' · ')
                 ),
@@ -329,6 +542,7 @@ const fetchOrders = async (refresh = false) => {
         console.error(error)
     } finally {
         loading.value = false
+        startOrderCountdown()
     }
 }
 
@@ -366,6 +580,9 @@ const handleCardAction = (action: { action: string }, order: any) => {
             break
         case 'confirm':
             handleConfirm(order.id)
+            break
+        case 'voucher':
+            goDetail(order.id)
             break
         case 'delete':
             handleDelete(order.id)
@@ -405,7 +622,7 @@ const handleConfirm = async (orderId: number) => {
     if (res.confirm) {
         try {
             await confirmOrder({ id: orderId })
-            uni.showToast({ title: '订单已完成' })
+            uni.showToast({ title: '操作成功' })
             fetchOrders(true)
             fetchStatistics()
         } catch (error: any) {
@@ -473,6 +690,11 @@ const getStatusStyle = (status: number) => {
             background: 'rgba(201, 133, 36, 0.12)',
             border: '1rpx solid rgba(201, 133, 36, 0.14)'
         },
+        10: {
+            color: '#0F766E',
+            background: 'rgba(15, 118, 110, 0.12)',
+            border: '1rpx solid rgba(15, 118, 110, 0.14)'
+        },
         8: {
             color: '#B44A3A',
             background: 'rgba(180, 74, 58, 0.12)',
@@ -499,6 +721,7 @@ onLoad((options: any) => {
             reviewed: 5,
             cancelled: 6,
             paused: 7,
+            refunding: 10,
             refund: 8
         }
 
@@ -520,6 +743,14 @@ onShow(() => {
     $theme.setScene('consumer')
     fetchOrders(true)
     fetchStatistics()
+})
+
+onHide(() => {
+    clearOrderCountdown()
+})
+
+onUnload(() => {
+    clearOrderCountdown()
 })
 
 onReachBottom(() => {
@@ -708,6 +939,37 @@ onReachBottom(() => {
 .order-card__status-row {
     display: flex;
     align-items: center;
+}
+
+.order-card__confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    padding: 18rpx 22rpx;
+    border-radius: 28rpx;
+    background: rgba(255, 241, 238, 0.72);
+    border: 1rpx solid rgba(244, 199, 191, 0.88);
+}
+
+.order-card__confirm-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.order-card__confirm-label {
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.order-card__confirm-value {
+    font-size: 24rpx;
+    font-weight: 700;
+    line-height: 1.5;
+    text-align: right;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .order-card__status {

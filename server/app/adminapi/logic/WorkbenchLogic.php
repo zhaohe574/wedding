@@ -170,10 +170,11 @@ class WorkbenchLogic extends BaseLogic
         $statusMap = [
             Order::STATUS_PENDING_CONFIRM => '待确认',
             Order::STATUS_PENDING_PAY => '待支付',
-            Order::STATUS_PAID => '已支付',
+            Order::STATUS_PENDING_SERVICE => '待服务',
             Order::STATUS_IN_SERVICE => '服务中',
             Order::STATUS_COMPLETED => '已完成',
             Order::STATUS_CANCELLED => '已取消',
+            Order::STATUS_REFUNDING => '退款中',
             Order::STATUS_REFUNDED => '已退款',
             Order::STATUS_USER_DELETED => '用户已删除',
         ];
@@ -266,18 +267,6 @@ class WorkbenchLogic extends BaseLogic
      */
     private static function getStatusDesc(int $status): string
     {
-        $map = [
-            Order::STATUS_PENDING_CONFIRM => '待确认',
-            Order::STATUS_PENDING_PAY => '待支付',
-            Order::STATUS_PAID => '已支付',
-            Order::STATUS_IN_SERVICE => '服务中',
-            Order::STATUS_COMPLETED => '已完成',
-            Order::STATUS_REVIEWED => '已评价',
-            Order::STATUS_CANCELLED => '已取消',
-            Order::STATUS_PAUSED => '已暂停',
-            Order::STATUS_REFUNDED => '已退款',
-            Order::STATUS_USER_DELETED => '用户已删除',
-        ];
-        return $map[$status] ?? '未知';
+        return Order::getStatusText($status);
     }
 }

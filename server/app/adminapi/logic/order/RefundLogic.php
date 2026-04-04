@@ -11,7 +11,9 @@ use app\common\logic\BaseLogic;
 use app\common\model\order\Order;
 use app\common\model\order\OrderLog;
 use app\common\model\order\Refund;
+use app\common\model\order\RefundItem;
 use app\common\service\OrderNotificationService;
+use app\common\service\OrderRefundService;
 use think\facade\Db;
 
 /**
@@ -28,20 +30,33 @@ class RefundLogic extends BaseLogic
      */
     public static function detail(int $id): ?array
     {
-        $refund = Refund::with([
+        $refundQuery = Refund::with([
             'order' => function ($query) {
                 $query->with(['user' => function ($q) {
                     $q->field('id, nickname, avatar, mobile');
                 }]);
             }
-        ])->find($id);
+        ]);
+
+        if (RefundItem::isTableReady()) {
+            $refundQuery = $refundQuery->with([
+                'refundItems' => function ($query) {
+                    $query->with(['payment']);
+                }
+            ]);
+        }
+
+        $refund = $refundQuery->find($id);
 
         if (!$refund) {
             return null;
         }
 
         $data = $refund->toArray();
+        $data['refund_items'] = $data['refund_items'] ?? [];
         $data['refund_status_desc'] = $refund->refund_status_desc;
+        $data['refund_type_desc'] = $refund->refund_type_desc;
+        $data['can_confirm_offline'] = (int)$refund->can_confirm_offline;
 
         return $data;
     }
@@ -57,17 +72,35 @@ class RefundLogic extends BaseLogic
     public static function audit(int $refundId, int $adminId, bool $approved, string $remark = ''): bool
     {
         [$success, $message] = Refund::auditRefund($refundId, $adminId, $approved, $remark);
+        $refund = Refund::find($refundId);
+
+        if ($refund) {
+            if (!$approved) {
+                OrderNotificationService::notifyUserOnRefundRejected($refundId);
+            } else {
+                switch ((int)$refund->refund_status) {
+                    case Refund::STATUS_PROCESSING:
+                        OrderNotificationService::notifyUserOnRefundApproved($refundId);
+                        OrderNotificationService::notifyUserOnRefundProcessing($refundId);
+                        break;
+                    case Refund::STATUS_COMPLETED:
+                        OrderNotificationService::notifyUserAndStaffOnRefundCompleted($refundId);
+                        break;
+                    case Refund::STATUS_FAILED:
+                        OrderNotificationService::notifyUserOnRefundFailed($refundId);
+                        break;
+                    default:
+                        OrderNotificationService::notifyUserOnRefundApproved($refundId);
+                        break;
+                }
+            }
+        }
+
         if (!$success) {
             self::setError($message);
             return false;
         }
 
-        if ($approved) {
-            OrderNotificationService::notifyUserOnRefundApproved($refundId);
-            OrderNotificationService::notifyUserOnRefundProcessing($refundId);
-        } else {
-            OrderNotificationService::notifyUserOnRefundRejected($refundId);
-        }
         return true;
     }
 
@@ -82,53 +115,50 @@ class RefundLogic extends BaseLogic
     {
         Db::startTrans();
         try {
-            $refund = Refund::find($refundId);
+            $refund = Refund::where('id', $refundId)->lock(true)->find();
             if (!$refund) {
                 self::setError('退款记录不存在');
+                Db::rollback();
                 return false;
             }
 
-            if (!in_array($refund->refund_status, [Refund::STATUS_APPROVED, Refund::STATUS_PROCESSING])) {
+            if (!in_array((int)$refund->refund_status, [Refund::STATUS_APPROVED, Refund::STATUS_PROCESSING], true)) {
                 self::setError('当前状态不允许此操作');
+                Db::rollback();
                 return false;
             }
 
-            // 更新退款记录
-            $refund->refund_status = Refund::STATUS_COMPLETED;
-            $refund->refund_transaction_id = $transactionId;
-            $refund->refund_time = time();
-            $refund->update_time = time();
-            $refund->save();
-
-            // 更新订单状态
-            $order = Order::find($refund->order_id);
-            if ($order) {
-                if ($refund->refund_amount >= $order->pay_amount) {
-                    $order->order_status = Order::STATUS_REFUNDED;
-                    $order->pay_status = Order::PAY_STATUS_FULL_REFUND;
-                } else {
-                    $order->pay_status = Order::PAY_STATUS_PARTIAL_REFUND;
-                }
-                $order->update_time = time();
-                $order->save();
+            if (!(int)$refund->can_confirm_offline) {
+                self::setError('当前退款单不是线下人工退款单');
+                Db::rollback();
+                return false;
             }
 
-            // 记录日志
+            $beforeOrderStatus = (int)Order::where('id', (int)$refund->order_id)->value('order_status');
+            [$success, $message] = OrderRefundService::confirmOfflineRefund($refund, $transactionId);
+            if (!$success) {
+                self::setError($message);
+                Db::rollback();
+                return false;
+            }
+
+            $refund = Refund::find($refundId);
+            $order = Order::find((int)$refund->order_id);
             OrderLog::addLog(
-                $refund->order_id,
+                (int)$refund->order_id,
                 OrderLog::OPERATOR_ADMIN,
                 $adminId,
                 'refund_success',
-                0,
-                0,
-                '确认退款完成，金额：' . $refund->refund_amount
+                $beforeOrderStatus,
+                (int)($order->order_status ?? $beforeOrderStatus),
+                '确认线下退款完成，金额：' . (float)($refund->actual_refund_amount ?: $refund->refund_amount)
             );
 
             Db::commit();
 
             OrderNotificationService::notifyUserAndStaffOnRefundCompleted($refundId);
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
             self::setError($e->getMessage());
             return false;
@@ -143,72 +173,108 @@ class RefundLogic extends BaseLogic
     public static function adminApply(array $params): bool
     {
         $notifyRefundId = 0;
+        $notifyCompleted = false;
+        $notifyFailed = false;
 
         Db::startTrans();
         try {
-            $order = Order::find($params['order_id']);
+            $order = Order::where('id', (int)$params['order_id'])->lock(true)->find();
             if (!$order) {
                 self::setError('订单不存在');
+                Db::rollback();
                 return false;
             }
 
-            if (!in_array($order->order_status, [Order::STATUS_PAID, Order::STATUS_IN_SERVICE])) {
+            if (!in_array((int)$order->order_status, [Order::STATUS_PAID, Order::STATUS_IN_SERVICE], true)) {
                 self::setError('当前订单状态不可退款');
+                Db::rollback();
                 return false;
             }
 
-            // 检查是否有未处理的退款申请
-            $existsRefund = Refund::where('order_id', $params['order_id'])
-                ->whereIn('refund_status', [Refund::STATUS_PENDING, Refund::STATUS_APPROVED, Refund::STATUS_PROCESSING])
+            $refundableAmount = OrderRefundService::getRefundableAmount((int)$order->id);
+            if ($refundableAmount <= 0) {
+                self::setError('当前订单暂无可退金额');
+                Db::rollback();
+                return false;
+            }
+
+            $existsRefund = Refund::where('order_id', (int)$params['order_id'])
+                ->whereIn('refund_status', Refund::getPendingStatuses())
+                ->lock(true)
                 ->find();
-            
             if ($existsRefund) {
                 self::setError('存在未处理的退款申请');
+                Db::rollback();
                 return false;
             }
 
-            $refundAmount = $params['refund_amount'] ?? $order->pay_amount;
-            if ($refundAmount <= 0 || $refundAmount > $order->pay_amount) {
-                self::setError('退款金额不合法');
+            $refundAmount = round((float)($params['refund_amount'] ?? $refundableAmount), 2);
+            if ($refundAmount <= 0 || $refundAmount > $refundableAmount) {
+                self::setError('退款金额不能超过当前可退金额');
+                Db::rollback();
                 return false;
             }
 
-            // 创建退款记录（管理员发起的退款直接审核通过）
+            $beforeStatus = (int)$order->order_status;
             $refund = Refund::create([
                 'refund_sn' => Refund::generateRefundSn(),
-                'order_id' => $params['order_id'],
-                'user_id' => $order->user_id,
+                'order_id' => (int)$params['order_id'],
+                'payment_id' => 0,
+                'user_id' => (int)$order->user_id,
                 'refund_type' => Refund::TYPE_ADMIN,
                 'refund_amount' => $refundAmount,
+                'actual_refund_amount' => 0,
                 'refund_reason' => $params['reason'] ?? '管理员操作退款',
                 'refund_status' => Refund::STATUS_APPROVED,
-                'audit_admin_id' => $params['admin_id'],
+                'source_order_status' => $beforeStatus,
+                'source_pay_status' => (int)$order->pay_status,
+                'audit_admin_id' => (int)$params['admin_id'],
                 'audit_time' => time(),
                 'create_time' => time(),
                 'update_time' => time(),
             ]);
 
-            // 记录日志
+            OrderRefundService::moveOrderToRefunding($order);
+            [$success, $message] = OrderRefundService::executeApprovedRefund($refund);
+            $refund = Refund::find((int)$refund->id);
+            $order = Order::find((int)$params['order_id']);
+
             OrderLog::addLog(
-                $params['order_id'],
+                (int)$params['order_id'],
                 OrderLog::OPERATOR_ADMIN,
-                $params['admin_id'],
+                (int)$params['admin_id'],
                 'refund_apply',
-                $order->order_status,
-                $order->order_status,
+                $beforeStatus,
+                (int)($order->order_status ?? Order::STATUS_REFUNDING),
                 '管理员发起退款：' . ($params['reason'] ?? '管理员操作')
+                . (!$success && $message !== '' ? '，执行结果：' . $message : '')
             );
 
             $notifyRefundId = (int)$refund->id;
+            $notifyCompleted = (int)$refund->refund_status === Refund::STATUS_COMPLETED;
+            $notifyFailed = (int)$refund->refund_status === Refund::STATUS_FAILED;
 
             Db::commit();
 
             if ($notifyRefundId > 0) {
                 OrderNotificationService::notifyUserAndStaffOnRefundApplied($notifyRefundId);
-                OrderNotificationService::notifyUserOnRefundApproved($notifyRefundId);
+                if ($notifyCompleted) {
+                    OrderNotificationService::notifyUserAndStaffOnRefundCompleted($notifyRefundId);
+                } elseif ($notifyFailed) {
+                    OrderNotificationService::notifyUserOnRefundFailed($notifyRefundId);
+                } else {
+                    OrderNotificationService::notifyUserOnRefundApproved($notifyRefundId);
+                    OrderNotificationService::notifyUserOnRefundProcessing($notifyRefundId);
+                }
             }
+
+            if (!$success) {
+                self::setError($message);
+                return false;
+            }
+
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
             self::setError($e->getMessage());
             return false;
@@ -224,23 +290,21 @@ class RefundLogic extends BaseLogic
     {
         $startDate = $params['start_date'] ?? date('Y-m-01');
         $endDate = $params['end_date'] ?? date('Y-m-d');
-        
+
         $startTime = strtotime($startDate);
         $endTime = strtotime($endDate . ' 23:59:59');
 
         $query = Refund::whereBetween('create_time', [$startTime, $endTime]);
-
-        // 总申请数
         $totalRefunds = (clone $query)->count();
 
-        // 各状态统计
         $statusCounts = [];
         foreach ([
-            Refund::STATUS_PENDING => '待审核',
-            Refund::STATUS_APPROVED => '审核通过',
-            Refund::STATUS_PROCESSING => '退款中',
-            Refund::STATUS_COMPLETED => '已退款',
-            Refund::STATUS_REJECTED => '已拒绝',
+            Refund::STATUS_PENDING => Refund::getStatusText(Refund::STATUS_PENDING),
+            Refund::STATUS_APPROVED => Refund::getStatusText(Refund::STATUS_APPROVED),
+            Refund::STATUS_PROCESSING => Refund::getStatusText(Refund::STATUS_PROCESSING),
+            Refund::STATUS_COMPLETED => Refund::getStatusText(Refund::STATUS_COMPLETED),
+            Refund::STATUS_REJECTED => Refund::getStatusText(Refund::STATUS_REJECTED),
+            Refund::STATUS_FAILED => Refund::getStatusText(Refund::STATUS_FAILED),
         ] as $status => $label) {
             $statusCounts[] = [
                 'status' => $status,
@@ -249,15 +313,14 @@ class RefundLogic extends BaseLogic
             ];
         }
 
-        // 退款金额
         $totalAmount = (clone $query)->sum('refund_amount');
-        $completedAmount = (clone $query)->where('refund_status', Refund::STATUS_COMPLETED)->sum('refund_amount');
+        $completedAmount = (clone $query)->sum('actual_refund_amount');
 
         return [
             'total_refunds' => $totalRefunds,
             'status_counts' => $statusCounts,
-            'total_amount' => round($totalAmount, 2),
-            'completed_amount' => round($completedAmount, 2),
+            'total_amount' => round((float)$totalAmount, 2),
+            'completed_amount' => round((float)$completedAmount, 2),
         ];
     }
 
@@ -268,11 +331,12 @@ class RefundLogic extends BaseLogic
     public static function getStatusOptions(): array
     {
         return [
-            ['value' => Refund::STATUS_PENDING, 'label' => '待审核'],
-            ['value' => Refund::STATUS_APPROVED, 'label' => '审核通过'],
-            ['value' => Refund::STATUS_PROCESSING, 'label' => '退款中'],
-            ['value' => Refund::STATUS_COMPLETED, 'label' => '已退款'],
-            ['value' => Refund::STATUS_REJECTED, 'label' => '已拒绝'],
+            ['value' => Refund::STATUS_PENDING, 'label' => Refund::getStatusText(Refund::STATUS_PENDING)],
+            ['value' => Refund::STATUS_APPROVED, 'label' => Refund::getStatusText(Refund::STATUS_APPROVED)],
+            ['value' => Refund::STATUS_PROCESSING, 'label' => Refund::getStatusText(Refund::STATUS_PROCESSING)],
+            ['value' => Refund::STATUS_COMPLETED, 'label' => Refund::getStatusText(Refund::STATUS_COMPLETED)],
+            ['value' => Refund::STATUS_REJECTED, 'label' => Refund::getStatusText(Refund::STATUS_REJECTED)],
+            ['value' => Refund::STATUS_FAILED, 'label' => Refund::getStatusText(Refund::STATUS_FAILED)],
         ];
     }
 }

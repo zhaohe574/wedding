@@ -27,6 +27,11 @@ export function orderCancel(params: any) {
     return request.post({ url: '/ops.order/cancel', params })
 }
 
+// 确认订单
+export function orderConfirm(params: any) {
+    return request.post({ url: '/ops.order/confirm', params })
+}
+
 // 开始服务
 export function orderStartService(params: any) {
     return request.post({ url: '/ops.order/startService', params })
@@ -70,6 +75,26 @@ export function orderStatistics(params?: any) {
 // 后台建单支付预估
 export function orderEstimatePayment(params: any) {
     return request.post({ url: '/ops.order/estimatePayment', params })
+}
+
+// 线下建单主套餐
+export function orderOfflineMainPackages(params: any) {
+    return request.get({ url: '/ops.order/offlineMainPackages', params })
+}
+
+// 线下建单协作角色候选
+export function orderOfflineRoleCandidates(params: any) {
+    return request.get({ url: '/ops.order/offlineRoleCandidates', params })
+}
+
+// 线下建单金额预估
+export function orderEstimateOffline(params: any) {
+    return request.post({ url: '/ops.order/estimateOffline', params })
+}
+
+// 新增线下订单
+export function orderAddOffline(params: any) {
+    return request.post({ url: '/ops.order/addOffline', params })
 }
 
 // 订单状态选项

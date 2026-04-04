@@ -249,14 +249,7 @@ class CustomerServiceLogic extends BaseLogic
             $context['order'] = $order;
 
             if ($context['area'] === '') {
-                $context['area'] = self::extractCityFromText((string) ($order->service_address ?? ''))
-                    ?: self::extractCityFromText((string) ($order->wedding_venue ?? ''));
-            }
-            if ($context['wedding_date'] === '') {
-                $context['wedding_date'] = trim((string) ($order->wedding_date ?? ''));
-            }
-            if ($context['wedding_venue'] === '') {
-                $context['wedding_venue'] = trim((string) ($order->wedding_venue ?? ''));
+                $context['area'] = self::extractCityFromText((string) ($order->service_address ?? ''));
             }
             if ($context['specialty'] === '') {
                 $context['specialty'] = self::resolveOrderSpecialty($order);

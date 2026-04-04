@@ -5,15 +5,88 @@
  */
 const fallbackColor = '#E85A4F'
 
+const presetColorMap: Record<string, string> = {
+    white: '#FFFFFF',
+    black: '#000000'
+}
+
 const parseHex = (color: string): { r: number; g: number; b: number } => {
-    const hex = /^#?([a-fA-F0-9]{6})$/.exec(color)
-    const value = hex ? hex[1] : fallbackColor.replace('#', '')
+    const normalized = normalizeHexColor(color) || fallbackColor
+    const value = normalized.replace('#', '')
     const num = parseInt(value, 16)
     return {
         r: (num >> 16) & 0xff,
         g: (num >> 8) & 0xff,
         b: num & 0xff
     }
+}
+
+export const normalizeHexColor = (color?: string): string => {
+    if (!color) return ''
+
+    const value = presetColorMap[color.trim().toLowerCase()] || color.trim()
+
+    if (/^#?([a-fA-F0-9]{6})$/.test(value)) {
+        return value.startsWith('#') ? value.toUpperCase() : `#${value.toUpperCase()}`
+    }
+
+    if (/^#?([a-fA-F0-9]{3})$/.test(value)) {
+        const compact = value.replace('#', '')
+        const [r, g, b] = compact
+        return `#${r}${r}${g}${g}${b}${b}`.toUpperCase()
+    }
+
+    return ''
+}
+
+const getRelativeLuminance = (hexColor: string) => {
+    const normalized = normalizeHexColor(hexColor)
+    if (!normalized) return 0
+
+    const channels = [0, 2, 4].map(
+        (start) => parseInt(normalized.slice(start + 1, start + 3), 16) / 255
+    )
+    const [red, green, blue] = channels.map((channel) =>
+        channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+    )
+
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+}
+
+export const getContrastRatio = (foregroundColor: string, backgroundColor: string) => {
+    const foregroundLuminance = getRelativeLuminance(foregroundColor)
+    const backgroundLuminance = getRelativeLuminance(backgroundColor)
+    const lighter = Math.max(foregroundLuminance, backgroundLuminance)
+    const darker = Math.min(foregroundLuminance, backgroundLuminance)
+
+    return (lighter + 0.05) / (darker + 0.05)
+}
+
+export const resolveReadableTextColor = (
+    backgroundColor: string,
+    preferredColor: string,
+    contrastThreshold = 4.5
+) => {
+    const normalizedBackgroundColor = normalizeHexColor(backgroundColor)
+    const normalizedPreferredColor = normalizeHexColor(preferredColor)
+    const fallbackLightTextColor = '#FFFFFF'
+    const fallbackDarkTextColor = '#1E2432'
+
+    if (!normalizedBackgroundColor) {
+        return normalizedPreferredColor || fallbackLightTextColor
+    }
+
+    if (
+        normalizedPreferredColor &&
+        getContrastRatio(normalizedPreferredColor, normalizedBackgroundColor) >= contrastThreshold
+    ) {
+        return normalizedPreferredColor
+    }
+
+    const lightTextContrast = getContrastRatio(fallbackLightTextColor, normalizedBackgroundColor)
+    const darkTextContrast = getContrastRatio(fallbackDarkTextColor, normalizedBackgroundColor)
+
+    return lightTextContrast >= darkTextContrast ? fallbackLightTextColor : fallbackDarkTextColor
 }
 
 /**

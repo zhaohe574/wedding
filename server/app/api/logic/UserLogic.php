@@ -16,6 +16,7 @@ namespace app\api\logic;
 
 
 use app\common\{enum\notice\NoticeEnum,
+    model\crm\Customer,
     enum\user\UserTerminalEnum,
     enum\YesNoEnum,
     logic\BaseLogic,
@@ -302,17 +303,19 @@ class UserLogic extends BaseLogic
     public static function weddingDate(int $userId): array
     {
         try {
+            $customer = Customer::findByUserId($userId);
+            $weddingDate = trim((string) ($customer->wedding_date ?? ''));
+            $weddingVenue = trim((string) ($customer->wedding_venue ?? ''));
+
             // 查询用户最近的已支付订单
             $order = Order::where('user_id', $userId)
                 ->where('pay_status', 1) // 已支付
-                ->whereNotNull('wedding_date')
-                ->where('wedding_date', '<>', '')
-                ->order('wedding_date', 'asc')
-                ->field('id, order_sn, wedding_date, wedding_venue, service_date, contact_name')
+                ->order('service_date', 'asc')
+                ->field('id, order_sn, service_date, contact_name')
                 ->findOrEmpty();
 
-            // 如果没有订单或没有婚期
-            if ($order->isEmpty()) {
+            // 如果客户资料中没有婚期
+            if ($weddingDate === '') {
                 return [
                     'has_order' => false,
                     'wedding_date' => '',
@@ -325,7 +328,7 @@ class UserLogic extends BaseLogic
             }
 
             // 计算剩余天数
-            $weddingTimestamp = strtotime($order->wedding_date);
+            $weddingTimestamp = strtotime($weddingDate);
             $currentTimestamp = strtotime(date('Y-m-d'));
             $daysRemaining = (int)ceil(($weddingTimestamp - $currentTimestamp) / 86400);
 
@@ -334,13 +337,13 @@ class UserLogic extends BaseLogic
 
             return [
                 'has_order' => true,
-                'wedding_date' => $order->wedding_date,
+                'wedding_date' => $weddingDate,
                 'wedding_date_text' => $weddingDateText,
                 'days_remaining' => $daysRemaining,
                 'service_date' => $order->service_date ?? '',
-                'order_sn' => $order->order_sn,
+                'order_sn' => $order->order_sn ?? '',
                 'contact_name' => $order->contact_name ?? '',
-                'wedding_venue' => $order->wedding_venue ?? '',
+                'wedding_venue' => $weddingVenue,
             ];
         } catch (\Exception $e) {
             self::setError($e->getMessage());

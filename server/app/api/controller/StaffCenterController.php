@@ -441,6 +441,23 @@ class StaffCenterController extends BaseApiController
     }
 
     /**
+     * @notes 完成服务
+     */
+    public function orderComplete()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('orderComplete');
+        $result = StaffCenterLogic::orderComplete($this->userId, (int) $params['id']);
+        if (true === $result) {
+            return $this->success('操作成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
      * @notes 动态列表
      */
     public function dynamicLists()

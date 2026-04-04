@@ -15,6 +15,7 @@ use app\common\model\order\OrderItem;
 use app\common\model\order\OrderLog;
 use app\common\model\order\OrderPause;
 use app\common\model\order\Refund;
+use app\common\model\order\RefundItem;
 use app\common\model\aftersale\AfterSaleTicket;
 use app\common\model\review\Review;
 use app\common\model\staff\Staff;
@@ -649,6 +650,35 @@ class OrderNotificationService
     }
 
     /**
+     * 服务完成但仍需支付尾款时通知用户与服务人员。
+     */
+    public static function notifyOnOrderServiceCompleted(int $orderId): void
+    {
+        $order = Order::find($orderId);
+        if (!$order) {
+            return;
+        }
+
+        if ((int)$order->user_id > 0) {
+            StationNotificationService::send(
+                (int)$order->user_id,
+                Notification::TYPE_ORDER,
+                '服务已完成，请支付尾款',
+                sprintf('订单%s服务已完成，请尽快支付尾款以完成订单闭环。', (string)$order->order_sn),
+                StationNotificationService::TARGET_ORDER_DETAIL,
+                $orderId
+            );
+        }
+
+        self::sendStaffOrderNotice(
+            $orderId,
+            '订单服务已完成，等待尾款',
+            sprintf('订单%s服务已完成，当前等待客户支付尾款。', (string)$order->order_sn),
+            '等待尾款支付'
+        );
+    }
+
+    /**
      * 评价审核结果通知用户。
      */
     public static function notifyUserOnReviewAudited(int $reviewId): void
@@ -1136,6 +1166,38 @@ class OrderNotificationService
     }
 
     /**
+     * 退款失败通知用户。
+     */
+    public static function notifyUserOnRefundFailed(int $refundId): void
+    {
+        $refund = Refund::find($refundId);
+        if (!$refund || (int)$refund->user_id <= 0) {
+            return;
+        }
+
+        $failedMessages = [];
+        if (RefundItem::isTableReady()) {
+            $failedMessages = RefundItem::where('refund_id', $refundId)
+                ->where('refund_status', RefundItem::STATUS_FAILED)
+                ->column('refund_msg');
+        }
+        $message = trim((string)implode('；', array_filter($failedMessages)));
+
+        StationNotificationService::send(
+            (int)$refund->user_id,
+            Notification::TYPE_ORDER,
+            '退款处理失败',
+            sprintf(
+                '退款单%s处理失败%s',
+                (string)$refund->refund_sn,
+                $message !== '' ? '，原因：' . $message . '。' : '。'
+            ),
+            StationNotificationService::TARGET_ORDER_DETAIL,
+            (int)$refund->order_id
+        );
+    }
+
+    /**
      * 退款完成通知用户与服务人员。
      */
     public static function notifyUserAndStaffOnRefundCompleted(int $refundId): void
@@ -1145,7 +1207,11 @@ class OrderNotificationService
             return;
         }
 
-        $content = sprintf('退款单%s已完成，退款金额%.2f元。', (string)$refund->refund_sn, (float)$refund->refund_amount);
+        $content = sprintf(
+            '退款单%s已完成，退款金额%.2f元。',
+            (string)$refund->refund_sn,
+            (float)($refund->actual_refund_amount ?: $refund->refund_amount)
+        );
         if ((int)$refund->user_id > 0) {
             StationNotificationService::send(
                 (int)$refund->user_id,
@@ -1549,10 +1615,10 @@ class OrderNotificationService
     {
         if ($payType === OrderPayment::TYPE_DEPOSIT) {
             return [
-                'user_title' => '定金支付成功，订单已生效',
-                'user_content' => '订单%s定金支付成功，服务已生效。剩余尾款请按约定时间完成支付后继续享受%s服务。',
+                'user_title' => '定金支付成功，订单进入待服务',
+                'user_content' => '订单%s定金支付成功，订单已进入待服务。剩余尾款请在服务完成后按约定支付，以完成%s服务。',
                 'staff_title' => '订单定金已支付',
-                'staff_content' => '订单%s定金已支付，服务日期为%s，请提前做好准备。',
+                'staff_content' => '订单%s定金已支付，订单已进入待服务，服务日期为%s，请提前做好准备。',
             ];
         }
 
@@ -1566,10 +1632,10 @@ class OrderNotificationService
         }
 
         return [
-            'user_title' => '支付成功，订单已生效',
-            'user_content' => '订单%s支付成功，服务已生效。请按约定时间享受%s服务。',
-            'staff_title' => '订单已支付，可准备服务',
-            'staff_content' => '订单%s已支付成功，服务日期为%s，请提前做好准备。',
+            'user_title' => '支付成功，订单进入待服务',
+            'user_content' => '订单%s支付成功，订单已进入待服务。请按约定时间享受%s服务。',
+            'staff_title' => '订单已支付，可进入待服务',
+            'staff_content' => '订单%s已支付成功，订单已进入待服务，服务日期为%s，请提前做好准备。',
         ];
     }
 

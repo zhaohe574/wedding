@@ -79,7 +79,7 @@
                                 <el-select v-model="element.status" placeholder="请选择状态">
                                     <el-option label="待确认" :value="0" />
                                     <el-option label="待付款" :value="1" />
-                                    <el-option label="已支付" :value="2" />
+                                    <el-option label="待服务" :value="2" />
                                     <el-option label="服务中" :value="3" />
                                     <el-option label="已完成" :value="4" />
                                     <el-option label="已评价" :value="5" />

@@ -206,55 +206,75 @@
                             <view>
                                 <text class="section-title">支付安排</text>
                                 <text class="section-desc"
-                                    >提交后会按当前规则进入全款或定金支付。</text
+                                    >提交后将根据当前支付规则进入对应支付阶段。</text
                                 >
                             </view>
                         </view>
-                        <view class="booking-grid">
-                            <view class="booking-box">
-                                <text class="booking-box__label">支付模式</text>
-                                <text class="booking-box__value">{{
-                                    preview.payment_mode === 'deposit' ? '定金 + 尾款' : '全款支付'
+                        <view class="payment-arrangement">
+                            <view class="payment-arrangement__grid">
+                                <view class="payment-arrangement__summary-card">
+                                    <text class="payment-arrangement__summary-label">支付模式</text>
+                                    <text class="payment-arrangement__summary-value">{{
+                                        paymentModeText
+                                    }}</text>
+                                </view>
+                                <view
+                                    class="payment-arrangement__summary-card payment-arrangement__summary-card--accent"
+                                >
+                                    <text class="payment-arrangement__summary-label">当前应付</text>
+                                    <text
+                                        class="payment-arrangement__summary-value payment-arrangement__summary-value--amount"
+                                        >¥{{ currentPayAmountText }}</text
+                                    >
+                                </view>
+                            </view>
+
+                            <view class="payment-arrangement__stage">
+                                <text class="payment-arrangement__stage-label">当前阶段</text>
+                                <text class="payment-arrangement__stage-value">{{
+                                    currentPayStageText
                                 }}</text>
                             </view>
-                            <view class="booking-box">
-                                <text class="booking-box__label">当前应付</text>
-                                <text class="booking-box__value"
-                                    >¥{{
-                                        formatPrice(preview.deposit_amount || preview.pay_amount)
-                                    }}</text
+
+                            <view class="payment-arrangement__detail">
+                                <view class="payment-arrangement__detail-row">
+                                    <text class="payment-arrangement__detail-label">订单总额</text>
+                                    <text class="payment-arrangement__detail-value"
+                                        >¥{{ totalAmountText }}</text
+                                    >
+                                </view>
+                                <view
+                                    v-if="Number(preview.deposit_amount || 0) > 0"
+                                    class="payment-arrangement__detail-row"
                                 >
+                                    <text class="payment-arrangement__detail-label">定金</text>
+                                    <text class="payment-arrangement__detail-value"
+                                        >¥{{ formatPrice(preview.deposit_amount) }}</text
+                                    >
+                                </view>
+                                <view
+                                    v-if="Number(preview.balance_amount || 0) > 0"
+                                    class="payment-arrangement__detail-row"
+                                >
+                                    <text class="payment-arrangement__detail-label">尾款</text>
+                                    <text class="payment-arrangement__detail-value"
+                                        >¥{{ formatPrice(preview.balance_amount) }}</text
+                                    >
+                                </view>
+                            </view>
+
+                            <view
+                                v-if="preview.deposit_remark"
+                                class="payment-arrangement__remark"
+                            >
+                                <text class="payment-arrangement__remark-label">{{
+                                    paymentRemarkLabel
+                                }}</text>
+                                <text class="payment-arrangement__remark-text">{{
+                                    preview.deposit_remark
+                                }}</text>
                             </view>
                         </view>
-                        <view class="sub-panel">
-                            <view class="sub-panel__row">
-                                <text class="sub-panel__label">订单总额</text>
-                                <text class="sub-panel__value"
-                                    >¥{{ formatPrice(preview.pay_amount) }}</text
-                                >
-                            </view>
-                            <view
-                                v-if="Number(preview.deposit_amount || 0) > 0"
-                                class="sub-panel__row"
-                            >
-                                <text class="sub-panel__label">定金</text>
-                                <text class="sub-panel__value"
-                                    >¥{{ formatPrice(preview.deposit_amount) }}</text
-                                >
-                            </view>
-                            <view
-                                v-if="Number(preview.balance_amount || 0) > 0"
-                                class="sub-panel__row"
-                            >
-                                <text class="sub-panel__label">尾款</text>
-                                <text class="sub-panel__value"
-                                    >¥{{ formatPrice(preview.balance_amount) }}</text
-                                >
-                            </view>
-                        </view>
-                        <text v-if="preview.deposit_remark" class="section-desc">{{
-                            preview.deposit_remark
-                        }}</text>
                     </BaseCard>
                 </view>
             </view>
@@ -340,7 +360,15 @@ const preview = ref<any>({
     total_amount: 0,
     pay_amount: 0,
     deposit_amount: 0,
-    balance_amount: 0
+    balance_amount: 0,
+    payment_mode: 'full',
+    payment_mode_desc: '全款支付',
+    need_pay: 'full',
+    need_pay_amount: 0,
+    need_pay_label: '立即支付',
+    current_pay_stage: 'full',
+    current_pay_stage_desc: '待全额支付',
+    deposit_remark: ''
 })
 
 const form = reactive({
@@ -391,6 +419,17 @@ const staffInitial = computed(() => {
     const name = String(mainItem.value?.staff?.name || '').trim()
     return name ? name.slice(0, 1) : '婚'
 })
+const paymentModeText = computed(() => String(preview.value.payment_mode_desc || '').trim() || '全款支付')
+const currentPayStageText = computed(
+    () => String(preview.value.current_pay_stage_desc || '').trim() || '待支付'
+)
+const currentPayAmountText = computed(() =>
+    formatPrice(preview.value.need_pay_amount ?? preview.value.pay_amount)
+)
+const totalAmountText = computed(() => formatPrice(preview.value.total_amount ?? preview.value.pay_amount))
+const paymentRemarkLabel = computed(() =>
+    Number(preview.value.deposit_amount || 0) > 0 ? '定金说明' : '支付说明'
+)
 const mainPackageSummary = computed(() => {
     if (!mainItem.value) {
         return '主套餐'
@@ -468,12 +507,22 @@ const fetchPreview = async () => {
     try {
         const data = await previewOrder(buildSelectionParams())
         preview.value = {
+            ...preview.value,
+            ...data,
             items: data?.items || [],
             service_amount: data?.service_amount || 0,
             total_amount: data?.total_amount || 0,
             pay_amount: data?.pay_amount || 0,
             deposit_amount: data?.deposit_amount || 0,
-            balance_amount: data?.balance_amount || 0
+            balance_amount: data?.balance_amount || 0,
+            payment_mode: data?.payment_mode || 'full',
+            payment_mode_desc: data?.payment_mode_desc || '全款支付',
+            need_pay: data?.need_pay || 'full',
+            need_pay_amount: data?.need_pay_amount ?? data?.pay_amount ?? 0,
+            need_pay_label: data?.need_pay_label || '立即支付',
+            current_pay_stage: data?.current_pay_stage || 'full',
+            current_pay_stage_desc: data?.current_pay_stage_desc || '待全额支付',
+            deposit_remark: data?.deposit_remark || ''
         }
         if (!preview.value.items.length) {
             handlePreviewError('暂无可结算的服务')
@@ -539,9 +588,9 @@ const handleSubmit = async () => {
         const orderId = Number(res?.order_id || res?.id || 0)
         uni.showToast({ title: '订单已提交', icon: 'success' })
         if (orderId) {
-            uni.redirectTo({ url: `/pages/order_detail/order_detail?id=${orderId}` })
+            uni.reLaunch({ url: `/pages/order_detail/order_detail?id=${orderId}` })
         } else {
-            uni.redirectTo({ url: '/pages/order/order' })
+            uni.reLaunch({ url: '/pages/order/order' })
         }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '提交失败'
@@ -775,6 +824,134 @@ onShow(() => {
 
 .booking-box__value--region {
     font-size: 28rpx;
+}
+
+.payment-arrangement {
+    display: flex;
+    flex-direction: column;
+    gap: 18rpx;
+}
+
+.payment-arrangement__grid {
+    display: flex;
+    gap: 16rpx;
+}
+
+.payment-arrangement__summary-card {
+    flex: 1;
+    min-width: 0;
+    padding: 30rpx 30rpx 28rpx;
+    border-radius: 37rpx;
+    background: #fcfbf9;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+}
+
+.payment-arrangement__summary-card--accent {
+    background: linear-gradient(180deg, rgba(255, 244, 240, 0.96) 0%, #fffaf7 100%);
+    border-color: var(--wm-color-border-strong, #f4c7bf);
+}
+
+.payment-arrangement__summary-label {
+    display: block;
+    font-size: 22rpx;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.payment-arrangement__summary-value {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.45;
+    color: var(--wm-text-primary, #1e2432);
+    word-break: break-word;
+}
+
+.payment-arrangement__summary-value--amount {
+    font-size: 38rpx;
+    line-height: 1.25;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.payment-arrangement__stage {
+    padding: 24rpx 28rpx;
+    border-radius: 32rpx;
+    background: linear-gradient(180deg, rgba(255, 250, 247, 0.96) 0%, #ffffff 100%);
+    border: 1rpx solid rgba(244, 199, 191, 0.92);
+}
+
+.payment-arrangement__stage-label {
+    display: block;
+    font-size: 22rpx;
+    letter-spacing: 0.06em;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.payment-arrangement__stage-value {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1.55;
+    color: var(--wm-text-primary, #1e2432);
+    word-break: break-word;
+}
+
+.payment-arrangement__detail {
+    padding: 10rpx 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.payment-arrangement__detail-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24rpx;
+    padding: 10rpx 2rpx;
+}
+
+.payment-arrangement__detail-label {
+    min-width: 0;
+    font-size: 24rpx;
+    line-height: 1.6;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.payment-arrangement__detail-value {
+    flex-shrink: 0;
+    text-align: right;
+    font-size: 26rpx;
+    font-weight: 700;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.payment-arrangement__remark {
+    padding: 24rpx 26rpx;
+    border-radius: 30rpx;
+    background: rgba(252, 251, 249, 0.96);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+}
+
+.payment-arrangement__remark-label {
+    display: block;
+    font-size: 22rpx;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.payment-arrangement__remark-text {
+    display: block;
+    margin-top: 10rpx;
+    font-size: 24rpx;
+    line-height: 1.65;
+    color: var(--wm-text-secondary, #7f7b78);
+    word-break: break-word;
 }
 
 .field-item + .field-item {
@@ -1047,6 +1224,10 @@ onShow(() => {
 
 @media screen and (max-width: 380px) {
     .booking-grid {
+        flex-direction: column;
+    }
+
+    .payment-arrangement__grid {
         flex-direction: column;
     }
 

@@ -35,7 +35,7 @@ class RefundController extends BaseAdminController
     public function detail()
     {
         $params = (new RefundValidate())->goCheck('detail');
-        $result = RefundLogic::detail($params['id']);
+        $result = RefundLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('退款记录不存在');
         }
@@ -49,7 +49,8 @@ class RefundController extends BaseAdminController
     public function audit()
     {
         $params = (new RefundValidate())->post()->goCheck('audit');
-        $result = RefundLogic::audit($params['id'], $this->adminId, $params['approved'], $params['remark'] ?? '');
+        $approved = filter_var($params['approved'], FILTER_VALIDATE_BOOLEAN);
+        $result = RefundLogic::audit((int)$params['id'], $this->adminId, $approved, $params['remark'] ?? '');
         if (true === $result) {
             return $this->success('审核成功');
         }
@@ -63,7 +64,7 @@ class RefundController extends BaseAdminController
     public function confirmRefund()
     {
         $params = (new RefundValidate())->post()->goCheck('confirm');
-        $result = RefundLogic::confirmRefund($params['id'], $this->adminId, $params['transaction_id'] ?? '');
+        $result = RefundLogic::confirmRefund((int)$params['id'], $this->adminId, $params['transaction_id'] ?? '');
         if (true === $result) {
             return $this->success('确认成功');
         }

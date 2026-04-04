@@ -51,6 +51,7 @@ class BookingLogic extends BaseLogic
                 'o.order_status',
                 'o.pay_status',
                 'o.pay_type',
+                'o.confirm_deadline_time',
                 'o.total_amount',
                 'o.discount_amount',
                 'o.pay_amount',
@@ -74,6 +75,13 @@ class BookingLogic extends BaseLogic
         $data['customer_phone'] = $data['contact_mobile'] ?: ($data['user_mobile'] ?? '');
         $data['item_status_desc'] = self::getItemStatusDesc((int)$data['item_status']);
         $data['confirm_status_desc'] = (int)$data['confirm_status'] === 1 ? '已确认' : '待确认';
+        $data = array_merge(
+            $data,
+            Order::buildConfirmTimeoutSummaryFromState(
+                (int)($data['order_status'] ?? Order::STATUS_PENDING_CONFIRM),
+                (int)($data['confirm_deadline_time'] ?? 0)
+            )
+        );
 
         return $data;
     }
@@ -150,6 +158,7 @@ class BookingLogic extends BaseLogic
                 if ($remain === 0 && (int)$order->order_status === Order::STATUS_PENDING_CONFIRM) {
                     $beforeStatus = (int)$order->order_status;
                     $order->order_status = Order::STATUS_PENDING_PAY;
+                    $order->confirm_deadline_time = 0;
                     $order->update_time = time();
                     $order->save();
                     Order::syncPendingPayDeadline($order);
@@ -230,7 +239,7 @@ class BookingLogic extends BaseLogic
                 }
 
                 if ((int)$order->pay_status !== Order::PAY_STATUS_UNPAID) {
-                    self::setError('已支付链路不允许取消预约项');
+                    self::setError('待服务链路不允许取消预约项');
                     return false;
                 }
 
@@ -268,6 +277,8 @@ class BookingLogic extends BaseLogic
                     $order->order_status = Order::STATUS_CANCELLED;
                     $order->cancel_reason = $reason ?: '服务人员取消全部预约项';
                     $order->cancel_time = time();
+                    $order->confirm_deadline_time = 0;
+                    $order->pay_deadline_time = 0;
                     $notifyOrderId = (int)$order->id;
                     $notifyCancelled = true;
                     $notifyCancelReason = (string)$order->cancel_reason;
@@ -277,6 +288,9 @@ class BookingLogic extends BaseLogic
                         ->where('confirm_status', 0)
                         ->count();
                     $order->order_status = $remainUnConfirm > 0 ? Order::STATUS_PENDING_CONFIRM : Order::STATUS_PENDING_PAY;
+                    if ((int)$order->order_status === Order::STATUS_PENDING_PAY) {
+                        $order->confirm_deadline_time = 0;
+                    }
                     if ((int)$order->order_status === Order::STATUS_PENDING_PAY) {
                         $notifyOrderId = (int)$order->id;
                     }

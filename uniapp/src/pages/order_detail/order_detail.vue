@@ -12,12 +12,35 @@
                     <text class="status-card__title">{{ statusHeadline }}</text>
                     <text class="status-card__desc">{{ statusCardText }}</text>
                     <view
-                        v-if="showPayCountdown || showVoucherPending || Number(needPayAmount) > 0"
+                        v-if="
+                            showConfirmCountdown ||
+                            showConfirmTimeoutAction ||
+                            showPayCountdown ||
+                            showPayTimeoutAction ||
+                            showVoucherPending ||
+                            Number(needPayAmount) > 0
+                        "
                         class="status-card__meta"
                     >
+                        <view v-if="showConfirmCountdown" class="status-card__meta-item">
+                            <text class="status-card__meta-label">剩余确认时间</text>
+                            <text class="status-card__meta-value">{{ confirmCountdownText }}</text>
+                        </view>
+                        <view v-if="showConfirmTimeoutAction" class="status-card__meta-item">
+                            <text class="status-card__meta-label">超时处理</text>
+                            <text class="status-card__meta-value">
+                                {{ confirmTimeoutActionText }}
+                            </text>
+                        </view>
                         <view v-if="showPayCountdown" class="status-card__meta-item">
                             <text class="status-card__meta-label">剩余支付时间</text>
                             <text class="status-card__meta-value">{{ payCountdownText }}</text>
+                        </view>
+                        <view v-if="showPayTimeoutAction" class="status-card__meta-item">
+                            <text class="status-card__meta-label">支付超时处理</text>
+                            <text class="status-card__meta-value">
+                                {{ payTimeoutActionText }}
+                            </text>
                         </view>
                         <view v-else-if="showVoucherPending" class="status-card__meta-item">
                             <text class="status-card__meta-label">线下凭证</text>
@@ -40,26 +63,36 @@
                 <view class="card card--core">
                     <text class="card__title">服务信息</text>
                     <view class="service-summary">
-                        <text class="service-summary__label">主套餐</text>
-                        <view class="service-summary__headline">
-                            <text class="service-summary__title">{{ serviceCardTitle }}</text>
+                        <view class="service-summary__topbar">
+                            <text class="service-summary__label">主套餐</text>
                             <text class="service-summary__price"
                                 >¥{{ formatAmount(primaryServiceAmount) }}</text
                             >
                         </view>
-                        <text class="service-summary__meta">{{ serviceCardMeta }}</text>
+                        <text class="service-summary__title">{{ serviceCardTitle }}</text>
+                        <view class="service-summary__meta-grid">
+                            <view
+                                v-for="meta in primaryServiceMetaRows"
+                                :key="meta.label"
+                                class="service-summary__meta-card"
+                            >
+                                <text class="service-summary__meta-label">{{ meta.label }}</text>
+                                <text class="service-summary__meta-value">{{ meta.value }}</text>
+                            </view>
+                        </view>
                         <text v-if="primaryPackageDescription" class="service-summary__desc">
                             {{ primaryPackageDescription }}
                         </text>
                     </view>
-                    <view v-if="serviceAddonRows.length" class="service-addon-section">
+
+                    <view class="service-addon-section">
                         <view class="service-addon-section__header">
-                            <text class="service-addon-section__title">附加服务明细</text>
+                            <text class="service-addon-section__title">附加套餐</text>
                             <text class="service-addon-section__meta">{{
                                 serviceAddonSummaryText
                             }}</text>
                         </view>
-                        <view class="service-addon-list">
+                        <view v-if="serviceAddonRows.length" class="service-addon-list">
                             <view
                                 v-for="item in serviceAddonRows"
                                 :key="item.key"
@@ -74,6 +107,44 @@
                                             item.typeText
                                         }}</text>
                                     </view>
+                                    <text v-if="item.metaText" class="service-addon-item__meta">
+                                        {{ item.metaText }}
+                                    </text>
+                                    <text v-if="item.description" class="service-addon-item__desc">
+                                        {{ item.description }}
+                                    </text>
+                                </view>
+                                <text class="service-addon-item__price">{{ item.priceText }}</text>
+                            </view>
+                        </view>
+                        <view v-else class="service-addon-empty">
+                            <text>当前订单未配置附加套餐</text>
+                        </view>
+                    </view>
+
+                    <view v-if="serviceRelatedRows.length" class="service-addon-section">
+                        <view class="service-addon-section__header">
+                            <text class="service-addon-section__title">协作服务</text>
+                            <text class="service-addon-section__meta">共 {{ serviceRelatedRows.length }} 项</text>
+                        </view>
+                        <view class="service-addon-list">
+                            <view
+                                v-for="item in serviceRelatedRows"
+                                :key="item.key"
+                                class="service-addon-item service-addon-item--related"
+                            >
+                                <view class="service-addon-item__copy">
+                                    <view class="service-addon-item__title-row">
+                                        <text class="service-addon-item__title">{{
+                                            item.title
+                                        }}</text>
+                                        <text class="service-addon-item__type service-addon-item__type--related">{{
+                                            item.typeText
+                                        }}</text>
+                                    </view>
+                                    <text v-if="item.metaText" class="service-addon-item__meta">
+                                        {{ item.metaText }}
+                                    </text>
                                     <text v-if="item.description" class="service-addon-item__desc">
                                         {{ item.description }}
                                     </text>
@@ -177,6 +248,10 @@
                             <text class="sub-panel__label">下单时间</text>
                             <text class="sub-panel__value">{{ order.create_time || '-' }}</text>
                         </view>
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">付款渠道</text>
+                            <text class="sub-panel__value">{{ paymentChannelDesc }}</text>
+                        </view>
                         <view v-if="order.pay_time" class="sub-panel__row">
                             <text class="sub-panel__label">支付时间</text>
                             <text class="sub-panel__value">{{ order.pay_time }}</text>
@@ -184,9 +259,13 @@
                     </view>
                 </view>
 
-                <view v-if="order.pay_type === 4 || order.pay_voucher" class="card card--secondary">
+                <view v-if="showOfflineVoucherCard" class="card card--secondary">
                     <text class="card__title">线下支付凭证</text>
                     <view class="sub-panel">
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">付款渠道</text>
+                            <text class="sub-panel__value">{{ paymentChannelDesc }}</text>
+                        </view>
                         <view class="sub-panel__row">
                             <text class="sub-panel__label">凭证状态</text>
                             <text class="sub-panel__value">{{
@@ -232,11 +311,52 @@
                                 ¥{{ formatAmount(order.refund.refund_amount) }}
                             </text>
                         </view>
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">实际退款金额</text>
+                            <text class="sub-panel__value">
+                                ¥{{ formatAmount(order.refund.actual_refund_amount || 0) }}
+                            </text>
+                        </view>
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">退款类型</text>
+                            <text class="sub-panel__value">
+                                {{ order.refund.refund_type_desc || '退款申请' }}
+                            </text>
+                        </view>
                         <view class="sub-panel__row sub-panel__row--stack">
                             <text class="sub-panel__label">退款原因</text>
                             <text class="sub-panel__value sub-panel__value--left">
                                 {{ order.refund.refund_reason }}
                             </text>
+                        </view>
+                        <view
+                            v-if="order.refund.refund_items && order.refund.refund_items.length"
+                            class="sub-panel__row sub-panel__row--stack"
+                        >
+                            <text class="sub-panel__label">退款明细</text>
+                            <view class="refund-item-list">
+                                <view
+                                    v-for="item in order.refund.refund_items"
+                                    :key="item.id || item.out_refund_no"
+                                    class="refund-item"
+                                >
+                                    <view class="refund-item__head">
+                                        <text class="refund-item__title">
+                                            {{ getPayWayText(Number(item.pay_way || 0)) }}
+                                        </text>
+                                        <text class="refund-item__amount">
+                                            ¥{{ formatAmount(item.refund_amount || 0) }}
+                                        </text>
+                                    </view>
+                                    <view class="refund-item__meta">
+                                        <text>{{ getRefundItemStatusText(Number(item.refund_status || 0)) }}</text>
+                                        <text v-if="item.out_refund_no">单号：{{ item.out_refund_no }}</text>
+                                    </view>
+                                    <text v-if="item.refund_msg" class="refund-item__desc">
+                                        {{ item.refund_msg }}
+                                    </text>
+                                </view>
+                            </view>
                         </view>
                     </view>
                 </view>
@@ -441,12 +561,23 @@ const refundForm = reactive({ amount: '', reason: '' })
 const voucherForm = reactive({ image: '', uploading: false })
 const showFinancialDetails = ref(false)
 const payCountdownSeconds = ref(0)
+const confirmCountdownSeconds = ref(0)
 let payCountdownTimer: ReturnType<typeof setInterval> | null = null
+let confirmCountdownTimer: ReturnType<typeof setInterval> | null = null
 let payCountdownRefreshing = false
+let confirmCountdownRefreshing = false
 
 const formatAmount = (value: any) => Number(value || 0).toFixed(2)
-const formatCountdown = (seconds: number) => {
-    const total = Math.max(seconds, 0)
+const resolvePaymentChannel = (target: any) => {
+    const paymentChannel = Number(target?.payment_channel || 0)
+    if ([1, 2].includes(paymentChannel)) {
+        return paymentChannel
+    }
+    return Number(target?.pay_type) === 4 || !!target?.pay_voucher ? 2 : 1
+}
+const formatCountdown = (seconds: number | string | undefined) => {
+    const total = Math.max(Number(seconds || 0), 0)
+    if (total <= 0) return '已超时，等待系统处理'
     const hours = Math.floor(total / 3600)
     const minutes = Math.floor((total % 3600) / 60)
     const remainSeconds = total % 60
@@ -487,6 +618,10 @@ const getStatusTheme = (status: number) =>
                 background: 'linear-gradient(180deg, #FFF5E8 0%, #FFFFFF 100%)',
                 iconBg: '#C98524'
             },
+            10: {
+                background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)',
+                iconBg: '#0F766E'
+            },
             8: {
                 background: 'linear-gradient(180deg, #FDEEEE 0%, #FFFFFF 100%)',
                 iconBg: '#B44A3A'
@@ -504,9 +639,32 @@ const getRefundStatusStyle = (status: number) =>
             1: { color: '#C99B73', bg: 'rgba(201,155,115,0.12)' },
             2: { color: '#0F766E', bg: 'rgba(15,118,110,0.1)' },
             3: { color: '#16A34A', bg: 'rgba(22,163,74,0.1)' },
-            4: { color: '#DC2626', bg: 'rgba(220,38,38,0.1)' }
+            4: { color: '#DC2626', bg: 'rgba(220,38,38,0.1)' },
+            5: { color: '#DC2626', bg: 'rgba(220,38,38,0.1)' }
         } as Record<number, { color: string; bg: string }>
     )[status] || { color: '#64748B', bg: 'rgba(100,116,139,0.1)' })
+
+const getPayWayText = (payWay: number) => {
+    const texts: Record<number, string> = {
+        1: '微信支付',
+        2: '支付宝',
+        3: '余额支付',
+        4: '线下支付'
+    }
+
+    return texts[payWay] || '未知方式'
+}
+
+const getRefundItemStatusText = (status: number) => {
+    const texts: Record<number, string> = {
+        0: '待执行',
+        1: '处理中',
+        2: '已完成',
+        3: '失败'
+    }
+
+    return texts[status] || '未知状态'
+}
 
 const primaryItem = computed(() => {
     const items = Array.isArray(order.value?.items) ? order.value.items : []
@@ -532,6 +690,20 @@ const primaryServiceDate = computed(
         order.value?.service_date ||
         '待确认服务日期'
 )
+const primaryServiceMetaRows = computed(() =>
+    [
+        { label: '服务人员', value: primaryStaffName.value || '待分配服务人员' },
+        { label: '服务日期', value: primaryServiceDate.value || '待确认服务日期' },
+        {
+            label: '服务地点',
+            value:
+                [order.value?.service_region_text, order.value?.service_address]
+                    .map((item: any) => String(item || '').trim())
+                    .filter(Boolean)
+                    .join(' · ') || '待确认服务地点'
+        }
+    ].filter((item) => String(item.value || '').trim() !== '')
+)
 const getItemQuantity = (item: any) => Math.max(Number(item?.quantity || 1), 1)
 const getItemDisplayAmount = (item: any) => {
     const subtotal = Number(item?.subtotal)
@@ -556,12 +728,14 @@ const orderServiceAmount = computed(() => {
 const primaryServiceAmount = computed(() =>
     primaryItem.value ? getItemDisplayAmount(primaryItem.value) : orderServiceAmount.value
 )
+const buildAddonRowKey = (kind: string, title: string, amount: number, quantity = 1, extra = '') =>
+    `${kind}:${title.trim()}:${formatAmount(amount)}:${quantity}:${extra}`
 const getExtraItemTitle = (item: any) => {
     if (Number(item?.item_type || 1) === 2) {
-        return item?.item_meta?.label || item?.package_name || '预约附加项'
+        return item?.item_meta?.label || item?.package_name || '附加套餐'
     }
     if (Number(item?.item_type || 1) === 3) {
-        const roleLabel = item?.item_meta?.role_label || '关联服务'
+        const roleLabel = item?.item_meta?.role_label || '协作服务'
         const staffName = item?.staff?.name || item?.staff_name || ''
         return staffName ? `${roleLabel} · ${staffName}` : roleLabel
     }
@@ -569,8 +743,8 @@ const getExtraItemTitle = (item: any) => {
 }
 const getExtraItemTypeText = (item: any) => {
     const itemType = Number(item?.item_type || 1)
-    if (itemType === 2) return '预约附加项'
-    if (itemType === 3) return '关联服务人员'
+    if (itemType === 2) return '附加套餐'
+    if (itemType === 3) return '协作服务'
     return item?.item_type_desc || '服务项目'
 }
 const getExtraItemDescription = (item: any) => {
@@ -587,15 +761,13 @@ const getExtraItemDescription = (item: any) => {
 
     return parts.join(' · ')
 }
-const buildAddonRowKey = (kind: string, title: string, amount: number) =>
-    `${kind}:${title.trim()}:${formatAmount(amount)}`
 const serviceAddonRows = computed(() => {
-    const items = Array.isArray(order.value?.items) ? order.value.items : []
     const rows: Array<{
         key: string
         title: string
         typeText: string
         description: string
+        metaText: string
         priceText: string
     }> = []
     const seen = new Set<string>()
@@ -604,13 +776,16 @@ const serviceAddonRows = computed(() => {
         kind: string,
         title: string,
         amount: number,
+        quantity: number,
         typeText: string,
-        description = ''
+        description = '',
+        metaText = '',
+        extra = ''
     ) => {
         const normalizedTitle = String(title || '').trim()
         if (!normalizedTitle) return
 
-        const key = buildAddonRowKey(kind, normalizedTitle, amount)
+        const key = buildAddonRowKey(kind, normalizedTitle, amount, quantity, extra)
         if (seen.has(key)) return
         seen.add(key)
         rows.push({
@@ -618,78 +793,126 @@ const serviceAddonRows = computed(() => {
             title: normalizedTitle,
             typeText,
             description: String(description || '').trim(),
+            metaText: String(metaText || '').trim(),
             priceText: `¥${formatAmount(amount)}`
         })
     }
 
-    extraItems.value.forEach((item: any) => {
-        pushRow(
-            Number(item?.item_type || 1) === 3 ? 'related' : 'addon',
-            getExtraItemTitle(item),
-            getItemDisplayAmount(item),
-            getExtraItemTypeText(item),
-            getExtraItemDescription(item)
-        )
-    })
-
-    items.forEach((item: any) => {
+    ;(Array.isArray(order.value?.items) ? order.value.items : []).forEach((item: any) => {
         ;(item?.addons || []).forEach((addon: any) => {
+            const quantity = Math.max(Number(addon?.quantity || 1), 1)
             pushRow(
                 'addon',
-                addon?.addon_name || addon?.name || '附加服务',
+                addon?.addon_name || addon?.name || '附加套餐',
                 getAddonDisplayAmount(addon),
-                '附加服务'
+                quantity,
+                '附加套餐',
+                '',
+                `数量 x${quantity}`
             )
         })
     })
 
+    extraItems.value
+        .filter((item: any) => Number(item?.item_type || 1) === 2)
+        .forEach((item: any) => {
+            const quantity = getItemQuantity(item)
+            pushRow(
+                'addon',
+                getExtraItemTitle(item),
+                getItemDisplayAmount(item),
+                quantity,
+                getExtraItemTypeText(item),
+                getExtraItemDescription(item),
+                [item?.service_date, `数量 x${quantity}`].filter(Boolean).join(' · '),
+                item?.service_date || ''
+            )
+        })
+
     return rows
 })
 const serviceAddonSummaryText = computed(() => `共 ${serviceAddonRows.value.length} 项`)
+const serviceRelatedRows = computed(() =>
+    extraItems.value
+        .filter((item: any) => Number(item?.item_type || 1) === 3)
+        .map((item: any) => {
+            const quantity = getItemQuantity(item)
+            return {
+                key: buildAddonRowKey(
+                    'related',
+                    getExtraItemTitle(item),
+                    getItemDisplayAmount(item),
+                    quantity,
+                    item?.service_date || ''
+                ),
+                title: getExtraItemTitle(item),
+                typeText: getExtraItemTypeText(item),
+                description: getExtraItemDescription(item),
+                metaText: [item?.service_date, `数量 x${quantity}`].filter(Boolean).join(' · '),
+                priceText: `¥${formatAmount(getItemDisplayAmount(item))}`
+            }
+        })
+)
 const serviceCardTitle = computed(() => {
-    const packageName = String(primaryPackageName.value || '').trim()
-    const staffName = String(primaryStaffName.value || '').trim()
-
-    if (packageName && staffName && staffName !== '待分配服务人员') {
-        return `${packageName}｜${staffName}`
-    }
-
-    return packageName || staffName || '婚礼服务订单'
+    return String(primaryPackageName.value || '').trim() || '婚礼服务订单'
 })
-const serviceCardMeta = computed(() => {
-    const locationText = [
-        order.value?.service_region_text,
-        order.value?.wedding_venue,
-        order.value?.service_address
-    ]
-        .map((item: any) => String(item || '').trim())
-        .filter(Boolean)[0]
-
-    return [primaryServiceDate.value, locationText].filter(Boolean).join(' · ') || '待确认服务信息'
-})
+const paymentChannel = computed(() => resolvePaymentChannel(order.value))
+const paymentChannelDesc = computed(() =>
+    String(order.value?.payment_channel_desc || '').trim() ||
+    (paymentChannel.value === 2 ? '线下支付' : '线上支付')
+)
 const needPayAmount = computed(() => {
     if (!order.value) return 0
     return Number(order.value.need_pay_amount || 0)
 })
+const showOfflineVoucherCard = computed(
+    () => !!order.value && (paymentChannel.value === 2 || !!order.value?.pay_voucher)
+)
 const showVoucherPending = computed(
     () =>
         !!order.value &&
-        Number(order.value.pay_type) === 4 &&
+        paymentChannel.value === 2 &&
         Number(order.value.pay_voucher_status) === 0
+)
+const showConfirmCountdown = computed(
+    () =>
+        !!order.value &&
+        Number(order.value.order_status) === 0 &&
+        Number(order.value.confirm_deadline_time || 0) > 0
+)
+const confirmCountdownText = computed(() =>
+    showConfirmCountdown.value ? formatCountdown(confirmCountdownSeconds.value) : '-'
+)
+const confirmTimeoutActionText = computed(() =>
+    String(order.value?.confirm_timeout_action_desc || '').trim()
+)
+const showConfirmTimeoutAction = computed(
+    () =>
+        !!order.value &&
+        Number(order.value.order_status) === 0 &&
+        !!confirmTimeoutActionText.value
 )
 const showPayCountdown = computed(() => !!order.value && payCountdownSeconds.value > 0)
 const payCountdownText = computed(() => formatCountdown(payCountdownSeconds.value))
+const payTimeoutActionText = computed(() => String(order.value?.pay_timeout_action_desc || '').trim())
+const showPayTimeoutAction = computed(
+    () =>
+        !!order.value &&
+        Number(order.value.order_status) === 1 &&
+        !!payTimeoutActionText.value
+)
 const canPayOnline = computed(
     () =>
         !!order.value &&
         Number(order.value.order_status) === 1 &&
         Number(order.value.need_pay_amount || 0) > 0 &&
-        !(Number(order.value.pay_type) === 4 && Number(order.value.pay_voucher_status) === 0)
+        paymentChannel.value === 1
 )
 const canUploadVoucher = computed(
     () =>
         !!order.value &&
         Number(order.value.order_status) === 1 &&
+        paymentChannel.value === 2 &&
         Number(order.value.pay_voucher_status) !== 0
 )
 const statusTheme = computed(() => getStatusTheme(Number(order.value?.order_status ?? 6)))
@@ -697,18 +920,35 @@ const statusDescription = computed(
     () =>
         ((
             {
-                0: '工作人员确认后，订单会进入支付流程。',
+                0: showConfirmCountdown.value
+                    ? `请在 ${confirmCountdownText.value} 内等待服务人员确认。${
+                          confirmTimeoutActionText.value
+                              ? `超时后将${confirmTimeoutActionText.value}。`
+                              : ''
+                      }`
+                    : '工作人员确认后，订单会进入支付流程。',
                 1: showVoucherPending.value
                     ? '线下支付凭证审核中，审核结果会及时同步到订单状态。'
+                    : paymentChannel.value === 2
+                    ? showPayCountdown.value
+                        ? `请在 ${payCountdownText.value} 内完成线下付款并上传支付凭证。${
+                              payTimeoutActionText.value ? `超时后将${payTimeoutActionText.value}。` : ''
+                          }`
+                        : '该订单需线下付款，请完成付款后上传支付凭证，等待后台审核。'
                     : showPayCountdown.value
-                    ? `请在 ${payCountdownText.value} 内完成支付，超时订单将自动取消。`
+                    ? `请在 ${payCountdownText.value} 内完成支付。${
+                          payTimeoutActionText.value ? `超时后将${payTimeoutActionText.value}。` : ''
+                      }`
                     : '请尽快完成支付，系统会自动计算当前应付金额。',
-                2: '订单已支付成功，服务准备中。',
-                3: '服务进行中，完成后可在这里确认完成。',
+                2: '订单已进入待服务，后台开始服务后将进入执行阶段。',
+                3: Number(order.value?.can_user_complete || 0) === 1
+                    ? '服务进行中，完成后可在这里确认完成。'
+                    : '服务进行中，请等待后台或服务人员推进后续状态。',
                 4: '本次服务已完成，感谢你的信任。',
                 5: '订单已评价，服务流程已闭环。',
                 6: '订单已取消，如需继续预约可重新下单。',
                 7: '订单当前处于暂停状态，恢复后会继续履约。',
+                10: '退款申请已进入处理阶段。余额支付会原路退回余额，线下退款需等待人工确认，线上退款请留意到账通知。',
                 8: '订单已进入退款完成状态。'
             } as Record<number, string>
         )[Number(order.value?.order_status ?? -1)] || '订单状态已更新，请留意后续进度。')
@@ -720,12 +960,13 @@ const statusHeadline = computed(() => {
     const headlines: Record<number, string> = {
         0: `${serviceName}订单待确认`,
         1: `${serviceName}订单待支付`,
-        2: `${serviceName}订单已锁定`,
+        2: `${serviceName}订单待服务`,
         3: `${serviceName}服务进行中`,
         4: `${serviceName}订单已完成`,
         5: `${serviceName}订单已评价`,
         6: `${serviceName}订单已取消`,
         7: `${serviceName}订单已暂停`,
+        10: `${serviceName}退款处理中`,
         8: `${serviceName}订单已退款`
     }
 
@@ -750,7 +991,7 @@ const paidAmount = computed(() => {
         )
     }
 
-    return [2, 3, 4, 5, 8].includes(Number(order.value.order_status || 0))
+    return [2, 3, 4, 5, 8, 10].includes(Number(order.value.order_status || 0))
         ? Number(order.value.pay_amount || 0)
         : 0
 })
@@ -773,6 +1014,13 @@ const hasFinancialDetails = computed(
 const paymentProgressText = computed(() => {
     if (!order.value) return '待开始'
     if (showVoucherPending.value) return '凭证审核中'
+    if (paymentChannel.value === 2 && Number(order.value.order_status || 0) === 1) {
+        return order.value.need_pay === 'balance'
+            ? '待上传尾款凭证'
+            : order.value.need_pay === 'deposit'
+            ? '待上传首笔凭证'
+            : '待上传线下凭证'
+    }
     if (canPayOnline.value)
         return order.value.need_pay === 'balance'
             ? '待支付尾款'
@@ -786,26 +1034,48 @@ const paymentProgressText = computed(() => {
         if (order.value.deposit_paid && order.value.balance_paid) return '已完成'
         if (order.value.deposit_paid) return '定金已付'
     }
-    if ([2, 3, 4, 5, 8].includes(Number(order.value.order_status || 0))) return '已完成'
+    if (Number(order.value.order_status || 0) === 10) return '退款处理中'
+    if ([2, 3, 4, 5, 8].includes(Number(order.value.order_status || 0))) return '已完成支付'
     return '待开始'
 })
 const progressItems = computed(() => [
     {
         label: '1. 档期确认',
-        value: Number(order.value?.order_status || 0) >= 1 ? '已完成' : '待确认'
+        value:
+            Number(order.value?.order_status || 0) >= 1
+                ? '已完成'
+                : showConfirmCountdown.value
+                ? `${confirmCountdownText.value}${
+                      confirmTimeoutActionText.value ? `，超时后${confirmTimeoutActionText.value}` : ''
+                  }`
+                : '待确认'
     },
     {
         label: '2. 支付进度',
-        value: paymentProgressText.value
+        value:
+            showPayCountdown.value && payTimeoutActionText.value
+                ? `${paymentProgressText.value}，剩余 ${payCountdownText.value}，超时后${payTimeoutActionText.value}`
+                : showPayCountdown.value
+                ? `${paymentProgressText.value}，剩余 ${payCountdownText.value}`
+                : paymentProgressText.value
     },
     {
         label: '3. 婚礼执行',
-        value: primaryServiceDate.value || '待安排'
+        value:
+            Number(order.value?.order_status || 0) === 10
+                ? '退款处理中'
+                : Number(order.value?.order_status || 0) === 8
+                ? '已结束'
+                : primaryServiceDate.value || '待安排'
     },
     {
         label: '4. 尾款结清',
         value:
-            Number(order.value?.balance_amount || 0) > 0
+            Number(order.value?.order_status || 0) === 10
+                ? '退款处理中'
+                : Number(order.value?.order_status || 0) === 8
+                ? '已退款'
+                : Number(order.value?.balance_amount || 0) > 0
                 ? order.value?.balance_paid
                     ? '已完成'
                     : '婚礼结束后结清'
@@ -842,7 +1112,7 @@ const primaryVisibleAction = computed(() => {
         }
     }
 
-    if (Number(order.value.order_status) === 3) {
+    if (Number(order.value.order_status) === 3 && Number(order.value?.can_user_complete || 0) === 1) {
         return {
             key: 'confirm',
             label: '确认完成',
@@ -864,6 +1134,19 @@ const primaryVisibleAction = computed(() => {
 
     return null
 })
+
+const canApplyRefund = computed(() => {
+    if (!order.value) return false
+
+    const orderStatus = Number(order.value.order_status || -1)
+    if (![2, 3].includes(orderStatus)) {
+        return false
+    }
+
+    const refundStatus = Number(order.value?.refund?.refund_status ?? -1)
+    return ![0, 1, 2, 3].includes(refundStatus)
+})
+
 const secondaryVisibleAction = computed(() => {
     if (!order.value) return null
 
@@ -900,7 +1183,7 @@ const moreActionItems = computed(() => {
         })
     }
 
-    if ([2, 3].includes(status) && !order.value.refund) {
+    if (canApplyRefund.value) {
         items.push({
             label: '申请退款',
             onClick: () => {
@@ -933,6 +1216,13 @@ const clearPayCountdown = () => {
     }
 }
 
+const clearConfirmCountdown = () => {
+    if (confirmCountdownTimer) {
+        clearInterval(confirmCountdownTimer)
+        confirmCountdownTimer = null
+    }
+}
+
 const syncPayCountdown = (seconds: number | string) => {
     clearPayCountdown()
     payCountdownSeconds.value = Math.max(Number(seconds || 0), 0)
@@ -956,12 +1246,37 @@ const syncPayCountdown = (seconds: number | string) => {
     }, 1000)
 }
 
+const syncConfirmCountdown = (seconds: number | string) => {
+    clearConfirmCountdown()
+    confirmCountdownSeconds.value = Math.max(Number(seconds || 0), 0)
+    if (!showConfirmCountdown.value) return
+
+    confirmCountdownTimer = setInterval(async () => {
+        if (confirmCountdownSeconds.value > 0) {
+            confirmCountdownSeconds.value -= 1
+        }
+
+        if (confirmCountdownSeconds.value <= 0) {
+            clearConfirmCountdown()
+            if (confirmCountdownRefreshing) return
+            confirmCountdownRefreshing = true
+            try {
+                await fetchDetail()
+            } finally {
+                confirmCountdownRefreshing = false
+            }
+        }
+    }, 1000)
+}
+
 const fetchDetail = async () => {
     try {
         order.value = await getOrderDetail({ id: orderId.value })
         syncPayCountdown(order.value?.pay_remain_seconds || 0)
+        syncConfirmCountdown(order.value?.confirm_remain_seconds || 0)
     } catch (e: any) {
         clearPayCountdown()
+        clearConfirmCountdown()
         uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
     }
 }
@@ -993,6 +1308,10 @@ const openChangeActions = () =>
     })
 
 const handlePay = () => {
+    if (paymentChannel.value !== 1) {
+        uni.showToast({ title: '该订单需线下付款，请上传支付凭证', icon: 'none' })
+        return
+    }
     if (Number(order.value?.pay_deadline_time || 0) > 0 && payCountdownSeconds.value <= 0) {
         uni.showToast({ title: '支付时间已到，正在刷新订单', icon: 'none' })
         fetchDetail()
@@ -1002,10 +1321,10 @@ const handlePay = () => {
     payState.showPay = true
 }
 
-const handlePaySuccess = async () => {
+const handlePaySuccess = async (payload?: { paymentSn?: string }) => {
     payState.showPay = false
     payState.showCheck = false
-    const paymentSn = payState.paymentSn
+    const paymentSn = String(payload?.paymentSn || payState.paymentSn || '')
     payState.paymentSn = ''
     uni.navigateTo({
         url: `/pages/payment_result/payment_result?id=${orderId.value}&from=${payState.from}${
@@ -1039,8 +1358,10 @@ const handleConfirm = async () => {
     if (!res.confirm) return
     try {
         await confirmOrder({ id: orderId.value })
-        uni.showToast({ title: '订单已完成', icon: 'success' })
         await fetchDetail()
+        const successText =
+            Number(order.value?.order_status || 0) === 1 ? '服务已完成，待支付尾款' : '订单已完成'
+        uni.showToast({ title: successText, icon: 'success' })
     } catch (e: any) {
         uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
     }
@@ -1105,6 +1426,10 @@ const chooseVoucherImage = () => {
 
 const submitVoucher = async () => {
     if (voucherForm.uploading) return
+    if (paymentChannel.value !== 2 || !canUploadVoucher.value) {
+        uni.showToast({ title: '当前订单暂不支持上传凭证', icon: 'none' })
+        return
+    }
     if (!voucherForm.image) return uni.showToast({ title: '请先选择凭证图片', icon: 'none' })
     try {
         await uploadPayVoucher({ id: orderId.value, voucher: voucherForm.image })
@@ -1134,10 +1459,12 @@ onShow(() => {
 
 onHide(() => {
     clearPayCountdown()
+    clearConfirmCountdown()
 })
 
 onUnload(() => {
     clearPayCountdown()
+    clearConfirmCountdown()
 })
 </script>
 
@@ -1275,7 +1602,18 @@ onUnload(() => {
 .service-summary {
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
+    gap: 18rpx;
+    padding: 28rpx;
+    border-radius: 34rpx;
+    background: linear-gradient(180deg, rgba(255, 247, 244, 0.96) 0%, #ffffff 100%);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+}
+
+.service-summary__topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20rpx;
 }
 
 .service-summary__label {
@@ -1284,16 +1622,7 @@ onUnload(() => {
     color: var(--wm-text-tertiary, #b4aca8);
 }
 
-.service-summary__headline {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20rpx;
-}
-
 .service-summary__title {
-    flex: 1;
-    min-width: 0;
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.5;
@@ -1308,10 +1637,31 @@ onUnload(() => {
     color: var(--wm-color-primary, #e85a4f);
 }
 
-.service-summary__meta {
+.service-summary__meta-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+}
+
+.service-summary__meta-card {
+    padding: 20rpx 22rpx;
+    border-radius: 26rpx;
+    border: 1rpx solid rgba(239, 230, 225, 0.92);
+    background: rgba(255, 255, 255, 0.94);
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.service-summary__meta-label {
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.service-summary__meta-value {
     font-size: 24rpx;
     line-height: 1.6;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .service-summary__desc {
@@ -1407,12 +1757,42 @@ onUnload(() => {
     color: var(--wm-text-secondary, #7f7b78);
 }
 
+.service-addon-item__meta {
+    font-size: 22rpx;
+    line-height: 1.6;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
 .service-addon-item__price {
     flex-shrink: 0;
     font-size: 28rpx;
     font-weight: 700;
     line-height: 1.5;
     color: var(--wm-color-primary, #e85a4f);
+}
+
+.service-addon-item--related {
+    background: linear-gradient(180deg, #f5fbf8 0%, #ffffff 100%);
+    border-color: rgba(198, 234, 215, 0.96);
+}
+
+.service-addon-item__type--related {
+    color: #14804a;
+    background: rgba(230, 248, 238, 0.96);
+    border-color: rgba(198, 234, 215, 0.96);
+}
+
+.service-addon-empty {
+    padding: 28rpx 30rpx;
+    border-radius: 28rpx;
+    border: 1rpx dashed var(--wm-color-border, #efe6e1);
+    background: #fcfbf9;
+}
+
+.service-addon-empty text {
+    font-size: 24rpx;
+    line-height: 1.6;
+    color: var(--wm-text-tertiary, #b4aca8);
 }
 
 .inline-link {
@@ -1556,6 +1936,56 @@ onUnload(() => {
     border-radius: 999rpx;
     font-size: 22rpx;
     font-weight: 600;
+}
+
+.refund-item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    width: 100%;
+}
+
+.refund-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+    padding: 20rpx 22rpx;
+    border-radius: 24rpx;
+    background: rgba(248, 250, 252, 0.88);
+    border: 1rpx solid rgba(226, 232, 240, 0.9);
+}
+
+.refund-item__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.refund-item__title {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.refund-item__amount {
+    font-size: 24rpx;
+    font-weight: 700;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.refund-item__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx 18rpx;
+    font-size: 22rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.refund-item__desc {
+    font-size: 22rpx;
+    line-height: 1.6;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .action-bar {

@@ -39,8 +39,8 @@ export default () => ({
             {
                 is_show: '1',
                 icon: '',
-                name: '已支付',
-                status: 2, // 订单状态：2-已支付
+                name: '待服务',
+                status: 2, // 订单状态：2-待服务
                 count: 0,
                 link: {
                     path: '/pages/order/order',

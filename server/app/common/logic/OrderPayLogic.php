@@ -115,12 +115,13 @@ class OrderPayLogic extends BaseLogic
             return false;
         }
 
-        if (
-            (int)$order->pay_type === Order::PAY_WAY_OFFLINE
-            && !empty($order->pay_voucher)
-            && (int)($order->pay_voucher_status ?? -1) === Order::VOUCHER_STATUS_PENDING
-        ) {
+        if ($order->isOfflineVoucherPending()) {
             self::setError('线下支付凭证审核中，请等待审核结果');
+            return false;
+        }
+
+        if ($order->getResolvedPaymentChannel() === Order::PAYMENT_CHANNEL_OFFLINE) {
+            self::setError('该订单需线下付款，请上传支付凭证或联系管理员确认收款');
             return false;
         }
 
@@ -219,6 +220,8 @@ class OrderPayLogic extends BaseLogic
             'deposit_paid' => (int)($order->deposit_paid ?? 0),
             'balance_paid' => (int)($order->balance_paid ?? 0),
             'deposit_remark' => (string) Order::getDepositConfig()['deposit_remark'],
+            'payment_channel' => $order->getResolvedPaymentChannel(),
+            'payment_channel_desc' => Order::getPaymentChannelText($order->getResolvedPaymentChannel()),
             'pay_deadline_time' => (int)($order->pay_deadline_time ?? 0),
             'pay_remain_seconds' => $order->getPayRemainSeconds(),
         ];
@@ -280,6 +283,17 @@ class OrderPayLogic extends BaseLogic
                 return [
                     'pay_status' => (int)$payment->pay_status === OrderPayment::STATUS_PAID ? PayEnum::ISPAID : PayEnum::UNPAID,
                     'pay_way' => self::toCommonPayWay((int)$payment->pay_way),
+                    'payment' => [
+                        'payment_sn' => (string)$payment->payment_sn,
+                        'pay_type' => (int)$payment->pay_type,
+                        'pay_type_desc' => (string)$payment->pay_type_desc,
+                        'pay_status' => (int)$payment->pay_status,
+                        'pay_status_desc' => (string)$payment->pay_status_desc,
+                        'pay_amount' => round((float)$payment->pay_amount, 2),
+                        'pay_way' => self::toCommonPayWay((int)$payment->pay_way),
+                        'pay_way_desc' => (string)$payment->pay_way_desc,
+                        'pay_time' => empty($payment->pay_time) ? '' : date('Y-m-d H:i:s', (int)$payment->pay_time),
+                    ],
                     'order' => self::buildOrderStatusPayload(
                         $order,
                         (float)$payment->pay_amount,
@@ -545,6 +559,10 @@ class OrderPayLogic extends BaseLogic
                     (int)$notifyContext['order_id'],
                     (int)$notifyContext['pay_type']
                 );
+            }
+
+            if (!empty($notifyContext['should_notify_completed'])) {
+                OrderNotificationService::notifyOnOrderCompleted((int)$notifyContext['order_id']);
             }
 
             return [

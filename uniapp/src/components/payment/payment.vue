@@ -174,6 +174,7 @@ import { ClientEnum, PageStatusEnum, PayStatusEnum } from '@/enums/appEnums'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { client } from '@/utils/client'
+import { resolveReadableTextColor } from '@/utils/color'
 /*
 页面参数 orderId：订单id，from：订单来源
 */
@@ -224,6 +225,7 @@ const payData = ref<any>({
     deposit_remark: ''
 })
 const payCountdownSeconds = ref(0)
+const currentPaymentSn = ref('')
 let payCountdownTimer: ReturnType<typeof setInterval> | null = null
 
 const showCheckPay = computed({
@@ -243,69 +245,6 @@ const showPay = computed({
         emit('update:show', value)
     }
 })
-
-const contrastThreshold = 4.5
-const fallbackLightTextColor = '#FFFFFF'
-const fallbackDarkTextColor = '#1E2432'
-const presetColorMap: Record<string, string> = {
-    white: fallbackLightTextColor,
-    black: '#000000'
-}
-
-const normalizeColor = (color?: string) => {
-    if (!color) return ''
-    const normalized = presetColorMap[color.trim().toLowerCase()] || color.trim()
-    if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(normalized)) return ''
-    if (normalized.length === 4) {
-        const [r, g, b] = normalized.slice(1)
-        return `#${r}${r}${g}${g}${b}${b}`.toUpperCase()
-    }
-    return normalized.toUpperCase()
-}
-
-const getRelativeLuminance = (hexColor: string) => {
-    const normalized = normalizeColor(hexColor)
-    if (!normalized) return 0
-
-    const channels = [0, 2, 4].map(
-        (start) => parseInt(normalized.slice(start + 1, start + 3), 16) / 255
-    )
-    const [red, green, blue] = channels.map((channel) =>
-        channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
-    )
-
-    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
-}
-
-const getContrastRatio = (foregroundColor: string, backgroundColor: string) => {
-    const foregroundLuminance = getRelativeLuminance(foregroundColor)
-    const backgroundLuminance = getRelativeLuminance(backgroundColor)
-    const lighter = Math.max(foregroundLuminance, backgroundLuminance)
-    const darker = Math.min(foregroundLuminance, backgroundLuminance)
-
-    return (lighter + 0.05) / (darker + 0.05)
-}
-
-const resolveReadableTextColor = (backgroundColor: string, preferredColor: string) => {
-    const normalizedBackgroundColor = normalizeColor(backgroundColor)
-    const normalizedPreferredColor = normalizeColor(preferredColor)
-
-    if (!normalizedBackgroundColor) {
-        return normalizedPreferredColor || fallbackLightTextColor
-    }
-
-    if (
-        normalizedPreferredColor &&
-        getContrastRatio(normalizedPreferredColor, normalizedBackgroundColor) >= contrastThreshold
-    ) {
-        return normalizedPreferredColor
-    }
-
-    const lightTextContrast = getContrastRatio(fallbackLightTextColor, normalizedBackgroundColor)
-    const darkTextContrast = getContrastRatio(fallbackDarkTextColor, normalizedBackgroundColor)
-
-    return lightTextContrast >= darkTextContrast ? fallbackLightTextColor : fallbackDarkTextColor
-}
 
 const payPrimaryTextColor = computed(() =>
     resolveReadableTextColor($theme.primaryColor, $theme.btnColor)
@@ -431,6 +370,7 @@ const payment = (() => {
             pay_way: payWay.value,
             redirect: props.redirect
         })
+        currentPaymentSn.value = String(data?.payment_sn || data?.pay_sn || data?.sn || '')
 
         return data
     }
@@ -464,7 +404,9 @@ const { isLock, lockFn: handlePay } = useLockFn(async () => {
 const handlePayResult = (status: PayStatusEnum) => {
     switch (status) {
         case PayStatusEnum.SUCCESS:
-            emit('success')
+            emit('success', {
+                paymentSn: currentPaymentSn.value || props.paymentSn || ''
+            })
             break
         case PayStatusEnum.FAIL:
             emit('fail')
@@ -477,7 +419,7 @@ const queryPayResult = async (confirm = true) => {
         const res = await getPayResult({
             order_id: props.orderId,
             from: props.from,
-            payment_sn: props.paymentSn
+            payment_sn: currentPaymentSn.value || props.paymentSn
         })
 
         payData.value.pay_deadline_time = Number(res?.order?.pay_deadline_time || 0)
@@ -524,6 +466,16 @@ watch(
         } else {
             clearPayCountdown()
         }
+    },
+    {
+        immediate: true
+    }
+)
+
+watch(
+    () => props.paymentSn,
+    (value) => {
+        currentPaymentSn.value = String(value || '')
     },
     {
         immediate: true

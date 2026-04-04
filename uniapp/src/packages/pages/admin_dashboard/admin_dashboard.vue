@@ -490,7 +490,7 @@ const memberRecommendStyle = computed(() => ({
 const totalOrders = computed(() => Number(orderStats.value?.total_orders || 0))
 
 const paidProgressOrders = computed(() => {
-    const paidLabels = ['已支付', '服务中', '已完成', '已评价']
+    const paidLabels = ['待服务', '服务中', '已完成', '已评价']
     return (orderStats.value?.status_counts || []).reduce((total: number, item: any) => {
         return paidLabels.includes(item.label) ? total + Number(item.count || 0) : total
     }, 0)
@@ -642,7 +642,7 @@ const todoCards = computed(() => [
 const statusColorMap: Record<string, string> = {
     待确认: '#C99B73',
     待支付: '#F59E0B',
-    已支付: '#10B981',
+    待服务: '#10B981',
     服务中: '#14B8A6',
     已完成: '#64748B',
     已评价: '#C99B73',

@@ -13,6 +13,7 @@ use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\order\OrderLog;
 use app\common\model\order\Payment;
+use app\common\model\order\RefundItem;
 use app\common\model\package\PackageBooking;
 use app\common\model\order\Refund;
 use app\common\model\schedule\Schedule;
@@ -349,34 +350,39 @@ class OrderLogic extends BaseLogic
         foreach ($list['data'] as &$item) {
             $item['order_status_desc'] = self::getStatusDesc($item['order_status']);
             $item['pay_status_desc'] = self::getPayStatusDesc($item['pay_status']);
+            $item['payment_channel'] = Order::resolvePaymentChannel(
+                $item['payment_channel'] ?? null,
+                $item['pay_type'] ?? null,
+                $item['pay_voucher'] ?? ''
+            );
+            $item['payment_channel_desc'] = Order::getPaymentChannelText((int)$item['payment_channel']);
             $item['service_region_text'] = implode(' ', array_filter([
                 trim((string)($item['service_province'] ?? '')),
                 trim((string)($item['service_city'] ?? '')),
                 trim((string)($item['service_district'] ?? '')),
             ]));
 
-            $item['payment_mode'] = (float)($item['deposit_amount'] ?? 0) > 0 ? 'deposit' : 'full';
-            $item['payment_mode_desc'] = $item['payment_mode'] === 'deposit' ? '定金支付' : '全款支付';
-            $item['paid_amount'] = round((float)($item['paid_amount'] ?? 0), 2);
-            $item['unpaid_amount'] = round(max((float)($item['pay_amount'] ?? 0) - (float)($item['paid_amount'] ?? 0), 0), 2);
-            $item['need_pay'] = 'none';
-            $item['need_pay_amount'] = 0.0;
-            $item['need_pay_label'] = '无需支付';
+            $item = array_merge($item, Order::buildPaymentSummaryFromState($item));
 
-            if ((float)($item['deposit_amount'] ?? 0) > 0) {
-                if (!(int)($item['deposit_paid'] ?? 0)) {
-                    $item['need_pay'] = 'deposit';
-                    $item['need_pay_amount'] = round((float)($item['deposit_amount'] ?? 0), 2);
-                    $item['need_pay_label'] = '支付定金';
-                } elseif (!(int)($item['balance_paid'] ?? 0)) {
-                    $item['need_pay'] = 'balance';
-                    $item['need_pay_amount'] = round((float)($item['balance_amount'] ?? 0), 2);
-                    $item['need_pay_label'] = '支付尾款';
-                }
-            } elseif ((int)($item['pay_status'] ?? 0) === Order::PAY_STATUS_UNPAID && (float)($item['pay_amount'] ?? 0) > 0) {
-                $item['need_pay'] = 'full';
-                $item['need_pay_amount'] = round((float)($item['pay_amount'] ?? 0), 2);
-                $item['need_pay_label'] = '立即支付';
+            $item = array_merge($item, Order::buildConfirmTimeoutSummaryFromState(
+                (int)($item['order_status'] ?? Order::STATUS_PENDING_CONFIRM),
+                (int)($item['confirm_deadline_time'] ?? 0)
+            ));
+            $item = array_merge($item, Order::buildPayTimeoutSummaryFromState(
+                (int)($item['order_status'] ?? Order::STATUS_PENDING_PAY),
+                (int)($item['pay_deadline_time'] ?? 0)
+            ));
+            $item['can_user_complete'] = (int)($item['order_status'] ?? -1) === Order::STATUS_IN_SERVICE
+                && Order::canUserCompleteService();
+
+            if (
+                (int)($item['payment_channel'] ?? Order::PAYMENT_CHANNEL_ONLINE) === Order::PAYMENT_CHANNEL_OFFLINE
+                && !empty($item['pay_voucher'])
+                && (int)($item['pay_voucher_status'] ?? -1) === Order::VOUCHER_STATUS_PENDING
+            ) {
+                $item['pay_deadline_time'] = 0;
+                $item['pay_remain_seconds'] = 0;
+                $item['pay_timeout_action_desc'] = '';
             }
         }
 
@@ -437,22 +443,45 @@ class OrderLogic extends BaseLogic
         }
 
         $data = $order->toArray();
-        $data['order_status_desc'] = self::getStatusDesc($order->order_status);
-        $data['pay_status_desc'] = self::getPayStatusDesc($order->pay_status);
-        $data['pay_type_desc'] = self::getPayTypeDesc($order->pay_type);
+        $data['order_status_desc'] = self::getStatusDesc((int)$order->order_status);
+        $data['pay_status_desc'] = self::getPayStatusDesc((int)$order->pay_status);
+        $data['pay_type_desc'] = self::getPayTypeDesc((int)$order->pay_type);
+        $data['payment_channel_desc'] = $order->payment_channel_desc;
         $data['pay_voucher_status_desc'] = $order->pay_voucher_status_desc ?? '';
         $data['service_region_text'] = $order->service_region_text;
-        $data['pay_deadline_time'] = (int)($order->pay_deadline_time ?? 0);
-        $data['pay_remain_seconds'] = $order->getPayRemainSeconds();
         $data = array_merge($data, Order::getPaymentSummary($order));
+        $data = array_merge($data, Order::getPayTimeoutSummary($order));
+        $data = array_merge($data, Order::getConfirmTimeoutSummary($order));
+        $data['can_user_complete'] = (int)$order->order_status === Order::STATUS_IN_SERVICE
+            && Order::canUserCompleteService();
         $data['service_amount'] = round(
             max(0, (float)($data['total_amount'] ?? 0) - (float)($data['addon_amount'] ?? 0)),
             2
         );
 
         // 获取退款信息
-        $refund = Refund::where('order_id', $orderId)->order('id', 'desc')->find();
-        $data['refund'] = $refund ? $refund->toArray() : null;
+        $refundQuery = Refund::where('order_id', $orderId);
+        if (RefundItem::isTableReady()) {
+            $refundQuery = $refundQuery->with([
+                'refundItems' => function ($query) {
+                    $query->with(['payment']);
+                },
+            ]);
+        }
+
+        $refund = $refundQuery
+            ->order('id', 'desc')
+            ->find();
+        if ($refund) {
+            $refundData = $refund->toArray();
+            $refundData['refund_items'] = $refundData['refund_items'] ?? [];
+            $refundData['refund_status_desc'] = $refund->refund_status_desc;
+            $refundData['refund_type_desc'] = $refund->refund_type_desc;
+            $refundData['can_confirm_offline'] = (int)$refund->can_confirm_offline;
+            $data['refund'] = $refundData;
+        } else {
+            $data['refund'] = null;
+        }
 
         return $data;
     }
@@ -486,22 +515,30 @@ class OrderLogic extends BaseLogic
         $payAmount = max(0, $totalAmount);
 
         $paymentSplit = Order::calculatePaymentSplit((float) $payAmount);
+        $paymentSummary = Order::buildPaymentSummaryFromState([
+            'total_amount' => round($totalAmount, 2),
+            'pay_amount' => round($payAmount, 2),
+            'deposit_amount' => round((float) $paymentSplit['deposit_amount'], 2),
+            'balance_amount' => round((float) $paymentSplit['balance_amount'], 2),
+            'paid_amount' => 0,
+            'order_status' => Order::STATUS_PENDING_CONFIRM,
+            'pay_status' => Order::PAY_STATUS_UNPAID,
+            'deposit_paid' => 0,
+            'balance_paid' => 0,
+            'payment_channel' => Order::PAYMENT_CHANNEL_ONLINE,
+            'deposit_remark_snapshot' => (string) $paymentSplit['deposit_remark'],
+        ]);
 
         return [
             'success' => true,
-            'data' => [
+            'data' => array_merge([
                 'items' => $selectedItems,
                 'service_amount' => round((float)$summary['service_amount'], 2),
                 'addon_amount' => round((float)$summary['addon_amount'], 2),
-                'total_amount' => round($totalAmount, 2),
-                'pay_amount' => round($payAmount, 2),
-                'deposit_amount' => round((float) $paymentSplit['deposit_amount'], 2),
-                'balance_amount' => round((float) $paymentSplit['balance_amount'], 2),
-                'payment_mode' => (string) $paymentSplit['deposit_mode_enabled'] === '1' || (int) $paymentSplit['deposit_mode_enabled'] === 1 ? 'deposit' : 'full',
                 'deposit_type' => (string) $paymentSplit['deposit_type'],
                 'deposit_value' => round((float) $paymentSplit['deposit_value'], 2),
                 'deposit_remark' => (string) $paymentSplit['deposit_remark'],
-            ]
+            ], $paymentSummary)
         ];
     }
 
@@ -621,7 +658,7 @@ class OrderLogic extends BaseLogic
             return ['success' => false, 'message' => '订单不存在'];
         }
 
-        [$success, $message] = Order::completeOrder($orderId, $userId, OrderLog::OPERATOR_USER);
+        [$success, $message] = Order::completeOrder($orderId, $userId, OrderLog::OPERATOR_USER, 'user');
         return ['success' => $success, 'message' => $message];
     }
 
@@ -717,7 +754,7 @@ class OrderLogic extends BaseLogic
             'pay_remain_seconds' => $order->getPayRemainSeconds(),
         ];
 
-        return array_merge($info, Order::getPaymentSummary($order));
+        return array_merge($info, Order::getPaymentSummary($order), Order::getConfirmTimeoutSummary($order));
     }
 
     /**
@@ -742,7 +779,16 @@ class OrderLogic extends BaseLogic
             return ['success' => false, 'message' => '当前订单状态不允许上传凭证'];
         }
 
+        if ($order->isOfflineVoucherPending()) {
+            return ['success' => false, 'message' => '线下支付凭证审核中，请等待审核结果'];
+        }
+
+        if ($order->getResolvedPaymentChannel() !== Order::PAYMENT_CHANNEL_OFFLINE) {
+            return ['success' => false, 'message' => '该订单需线上支付，暂不支持上传线下凭证'];
+        }
+
         $order->pay_type = Order::PAY_WAY_OFFLINE;
+        $order->payment_channel = Order::PAYMENT_CHANNEL_OFFLINE;
         $order->pay_voucher = $voucher;
         $order->pay_voucher_status = Order::VOUCHER_STATUS_PENDING;
         $order->pay_voucher_audit_admin_id = 0;
@@ -784,6 +830,7 @@ class OrderLogic extends BaseLogic
      */
     public static function applyRefund(int $orderId, int $userId, float $amount, string $reason): array
     {
+        $amount = round((float)$amount, 2);
         [$success, $message, $refund] = Refund::applyRefund($orderId, $userId, $amount, $reason);
         if ($success && $refund) {
             OrderNotificationService::notifyUserAndStaffOnRefundApplied((int)$refund->id);
@@ -799,7 +846,16 @@ class OrderLogic extends BaseLogic
      */
     public static function getRefundDetail(int $orderId, int $userId): ?array
     {
-        $refund = Refund::where('order_id', $orderId)
+        $refundQuery = Refund::where('order_id', $orderId);
+        if (RefundItem::isTableReady()) {
+            $refundQuery = $refundQuery->with([
+                'refundItems' => function ($query) {
+                    $query->with(['payment']);
+                },
+            ]);
+        }
+
+        $refund = $refundQuery
             ->where('user_id', $userId)
             ->order('id', 'desc')
             ->find();
@@ -809,7 +865,10 @@ class OrderLogic extends BaseLogic
         }
 
         $data = $refund->toArray();
+        $data['refund_items'] = $data['refund_items'] ?? [];
         $data['refund_status_desc'] = $refund->refund_status_desc;
+        $data['refund_type_desc'] = $refund->refund_type_desc;
+        $data['can_confirm_offline'] = (int)$refund->can_confirm_offline;
         return $data;
     }
 
@@ -830,6 +889,7 @@ class OrderLogic extends BaseLogic
             'reviewed' => Order::STATUS_REVIEWED,
             'cancelled' => Order::STATUS_CANCELLED,
             'paused' => Order::STATUS_PAUSED,
+            'refunding' => Order::STATUS_REFUNDING,
             'refund' => Order::STATUS_REFUNDED,
         ] as $key => $status) {
             $counts[$key] = Order::where('user_id', $userId)
@@ -849,42 +909,16 @@ class OrderLogic extends BaseLogic
      */
     protected static function getStatusDesc(int $status): string
     {
-        $map = [
-            Order::STATUS_PENDING_CONFIRM => '待确认',
-            Order::STATUS_PENDING_PAY => '待支付',
-            Order::STATUS_PAID => '已支付',
-            Order::STATUS_IN_SERVICE => '服务中',
-            Order::STATUS_COMPLETED => '已完成',
-            Order::STATUS_REVIEWED => '已评价',
-            Order::STATUS_CANCELLED => '已取消',
-            Order::STATUS_PAUSED => '已暂停',
-            Order::STATUS_REFUNDED => '已退款',
-            Order::STATUS_USER_DELETED => '用户已删除',
-        ];
-        return $map[$status] ?? '未知';
+        return Order::getStatusText($status);
     }
 
     protected static function getPayStatusDesc(int $status): string
     {
-        $map = [
-            Order::PAY_STATUS_UNPAID => '未支付',
-            Order::PAY_STATUS_PAID => '已支付',
-            Order::PAY_STATUS_PARTIAL_REFUND => '部分退款',
-            Order::PAY_STATUS_FULL_REFUND => '全额退款',
-        ];
-        return $map[$status] ?? '未知';
+        return Order::getPayStatusText($status);
     }
 
     protected static function getPayTypeDesc(int $type): string
     {
-        $map = [
-            Order::PAY_WAY_NONE => '未支付',
-            Order::PAY_WAY_WECHAT => '微信支付',
-            Order::PAY_WAY_ALIPAY => '支付宝',
-            Order::PAY_WAY_BALANCE => '余额支付',
-            Order::PAY_WAY_OFFLINE => '线下支付',
-            Order::PAY_WAY_COMBINATION => '组合支付',
-        ];
-        return $map[$type] ?? '未知';
+        return Order::getPayWayText($type);
     }
 }

@@ -45,6 +45,15 @@ class Payment extends BaseModel
     }
 
     /**
+     * @notes 关联退款子项
+     * @return \think\model\relation\HasMany
+     */
+    public function refundItems()
+    {
+        return $this->hasMany(RefundItem::class, 'payment_id', 'id');
+    }
+
+    /**
      * @notes 支付类型描述获取器
      * @param $value
      * @param $data
@@ -68,13 +77,7 @@ class Payment extends BaseModel
      */
     public function getPayWayDescAttr($value, $data): string
     {
-        $map = [
-            self::WAY_WECHAT => '微信支付',
-            self::WAY_ALIPAY => '支付宝',
-            self::WAY_BALANCE => '余额支付',
-            self::WAY_OFFLINE => '线下支付',
-        ];
-        return $map[$data['pay_way']] ?? '未知';
+        return self::getPayWayText((int)($data['pay_way'] ?? -1));
     }
 
     /**
@@ -85,13 +88,50 @@ class Payment extends BaseModel
      */
     public function getPayStatusDescAttr($value, $data): string
     {
+        return self::getPayStatusText((int)($data['pay_status'] ?? -1));
+    }
+
+    /**
+     * @notes 获取支付方式文案
+     * @param int $payWay
+     * @return string
+     */
+    public static function getPayWayText(int $payWay): string
+    {
+        $map = [
+            self::WAY_WECHAT => '微信支付',
+            self::WAY_ALIPAY => '支付宝',
+            self::WAY_BALANCE => '余额支付',
+            self::WAY_OFFLINE => '线下支付',
+        ];
+
+        return $map[$payWay] ?? '未知';
+    }
+
+    /**
+     * @notes 获取支付状态文案
+     * @param int $status
+     * @return string
+     */
+    public static function getPayStatusText(int $status): string
+    {
         $map = [
             self::STATUS_PENDING => '待支付',
             self::STATUS_PAID => '已支付',
             self::STATUS_REFUNDED => '已退款',
             self::STATUS_FAILED => '支付失败',
         ];
-        return $map[$data['pay_status']] ?? '未知';
+
+        return $map[$status] ?? '未知';
+    }
+
+    /**
+     * @notes 获取支付流水剩余可退金额
+     * @return float
+     */
+    public function getRefundableAmount(): float
+    {
+        return round(max((float)$this->pay_amount - (float)($this->refund_amount ?? 0), 0), 2);
     }
 
     /**
@@ -179,6 +219,7 @@ class Payment extends BaseModel
                 'order_id' => (int)$payment->order_id,
                 'pay_type' => (int)$payment->pay_type,
                 'should_notify' => false,
+                'should_notify_completed' => false,
             ]];
         }
 
@@ -207,31 +248,9 @@ class Payment extends BaseModel
         $payment->update_time = time();
         $payment->save();
 
-        if ($payment->pay_type == self::TYPE_DEPOSIT) {
-            $order->deposit_paid = 1;
-            $order->pay_time = time();
-            $order->pay_deadline_time = 0;
-        } elseif ($payment->pay_type == self::TYPE_BALANCE) {
-            $order->balance_paid = 1;
-        }
-
         // 累计已支付金额
         $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payment->pay_amount, 2);
-
-        // 检查是否全额支付
-        if ($order->deposit_amount > 0) {
-            if ($order->deposit_paid && $order->balance_paid) {
-                $order->order_status = Order::STATUS_PAID;
-                $order->pay_status = Order::PAY_STATUS_PAID;
-                $order->pay_deadline_time = 0;
-            }
-        } else {
-            if ($order->paid_amount >= $order->pay_amount) {
-                $order->order_status = Order::STATUS_PAID;
-                $order->pay_status = Order::PAY_STATUS_PAID;
-                $order->pay_deadline_time = 0;
-            }
-        }
+        Order::applyPaidStateAfterPayment($order, (int)$payment->pay_type, (int)$payment->pay_time);
 
         if ($order->pay_type != Order::PAY_WAY_COMBINATION) {
             $order->pay_type = $payment->pay_way;
@@ -254,6 +273,7 @@ class Payment extends BaseModel
             'order_id' => (int)$order->id,
             'pay_type' => (int)$payment->pay_type,
             'should_notify' => true,
+            'should_notify_completed' => (int)$order->order_status === Order::STATUS_COMPLETED,
         ]];
     }
 

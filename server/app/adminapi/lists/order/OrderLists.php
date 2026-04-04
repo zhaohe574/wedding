@@ -124,12 +124,15 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
             ->toArray();
 
         $pendingCounts = [];
-        if ($staffScopeId > 0 && !empty($lists)) {
+        if (!empty($lists)) {
             $orderIds = array_column($lists, 'id');
-            $pendingRows = OrderItem::whereIn('order_id', $orderIds)
-                ->where('staff_id', $staffScopeId)
+            $pendingQuery = OrderItem::whereIn('order_id', $orderIds)
                 ->where('confirm_status', 0)
-                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED);
+            if ($staffScopeId > 0) {
+                $pendingQuery->where('staff_id', $staffScopeId);
+            }
+            $pendingRows = $pendingQuery
                 ->field('order_id, COUNT(*) as pending_confirm_count')
                 ->group('order_id')
                 ->select()
@@ -144,27 +147,37 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
             $item['order_status_desc'] = $this->getStatusDesc($item['order_status']);
             $item['pay_status_desc'] = $this->getPayStatusDesc($item['pay_status']);
             $item['pay_type_desc'] = $this->getPayTypeDesc($item['pay_type']);
+            $item['payment_channel'] = Order::resolvePaymentChannel(
+                $item['payment_channel'] ?? null,
+                $item['pay_type'] ?? null,
+                $item['pay_voucher'] ?? ''
+            );
+            $item['payment_channel_desc'] = Order::getPaymentChannelText((int)$item['payment_channel']);
             $item['source_desc'] = $this->getSourceDesc($item['source']);
-            $item['payment_mode'] = (float)($item['deposit_amount'] ?? 0) > 0 ? 'deposit' : 'full';
-            $item['payment_mode_desc'] = $item['payment_mode'] === 'deposit' ? '定金支付' : '全款支付';
-            $item['unpaid_amount'] = round(max((float)($item['pay_amount'] ?? 0) - (float)($item['paid_amount'] ?? 0), 0), 2);
-            $item['need_pay_amount'] = $item['unpaid_amount'];
-            if ($item['payment_mode'] === 'deposit') {
-                if (!(int)($item['deposit_paid'] ?? 0)) {
-                    $item['need_pay_amount'] = round((float)($item['deposit_amount'] ?? 0), 2);
-                    $item['need_pay_label'] = '支付定金';
-                } elseif (!(int)($item['balance_paid'] ?? 0)) {
-                    $item['need_pay_amount'] = round((float)($item['balance_amount'] ?? 0), 2);
-                    $item['need_pay_label'] = '支付尾款';
-                } else {
-                    $item['need_pay_amount'] = 0;
-                    $item['need_pay_label'] = '无需支付';
-                }
-            } else {
-                $item['need_pay_label'] = $item['unpaid_amount'] > 0 ? '立即支付' : '无需支付';
-            }
+            $item = array_merge($item, Order::buildPaymentSummaryFromState($item));
             $item['pending_confirm_count'] = (int)($pendingCounts[$item['id']] ?? 0);
             $item['has_pending_confirm'] = $item['pending_confirm_count'] > 0 ? 1 : 0;
+            $item = array_merge(
+                $item,
+                Order::buildPayTimeoutSummaryFromState(
+                    (int)($item['order_status'] ?? Order::STATUS_PENDING_PAY),
+                    (int)($item['pay_deadline_time'] ?? 0)
+                ),
+                Order::buildConfirmTimeoutSummaryFromState(
+                    (int)($item['order_status'] ?? Order::STATUS_PENDING_CONFIRM),
+                    (int)($item['confirm_deadline_time'] ?? 0)
+                )
+            );
+
+            if (
+                (int)($item['payment_channel'] ?? Order::PAYMENT_CHANNEL_ONLINE) === Order::PAYMENT_CHANNEL_OFFLINE
+                && !empty($item['pay_voucher'])
+                && (int)($item['pay_voucher_status'] ?? -1) === Order::VOUCHER_STATUS_PENDING
+            ) {
+                $item['pay_deadline_time'] = 0;
+                $item['pay_remain_seconds'] = 0;
+                $item['pay_timeout_action_desc'] = '';
+            }
         }
 
         return $lists;
@@ -204,6 +217,7 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
             'order_status_desc' => '订单状态',
             'pay_status_desc' => '支付状态',
             'pay_type_desc' => '支付方式',
+            'payment_channel_desc' => '付款渠道',
             'payment_mode_desc' => '支付模式',
             'total_amount' => '订单总额',
             'discount_amount' => '优惠金额',
@@ -215,7 +229,6 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
             'contact_name' => '联系人',
             'contact_mobile' => '联系电话',
             'service_date' => '服务日期',
-            'wedding_date' => '婚礼日期',
             'create_time' => '创建时间',
         ];
     }
@@ -236,19 +249,7 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
      */
     protected function getStatusDesc(int $status): string
     {
-        $map = [
-            Order::STATUS_PENDING_CONFIRM => '待确认',
-            Order::STATUS_PENDING_PAY => '待支付',
-            Order::STATUS_PAID => '已支付',
-            Order::STATUS_IN_SERVICE => '服务中',
-            Order::STATUS_COMPLETED => '已完成',
-            Order::STATUS_REVIEWED => '已评价',
-            Order::STATUS_CANCELLED => '已取消',
-            Order::STATUS_PAUSED => '已暂停',
-            Order::STATUS_REFUNDED => '已退款',
-            Order::STATUS_USER_DELETED => '用户已删除',
-        ];
-        return $map[$status] ?? '未知';
+        return Order::getStatusText($status);
     }
 
     /**

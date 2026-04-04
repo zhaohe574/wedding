@@ -19,6 +19,7 @@
                         <el-option label="退款中" :value="2" />
                         <el-option label="已退款" :value="3" />
                         <el-option label="已拒绝" :value="4" />
+                        <el-option label="退款失败" :value="5" />
                     </el-select>
                 </el-form-item>
                 <el-form-item class="w-[320px]" label="申请时间">
@@ -40,7 +41,7 @@
         </template>
 
         <template #stats>
-            <stat-panel :items="refundStatItems" :columns="5" />
+            <stat-panel :items="refundStatItems" :columns="6" />
         </template>
 
         <div class="admin-page-section">
@@ -94,7 +95,7 @@
                             @click="handleAudit(row, false)"
                         >拒绝</el-button>
                         <el-button 
-                            v-if="row.refund_status === 1 || row.refund_status === 2" 
+                            v-if="row.can_confirm_offline && (row.refund_status === 1 || row.refund_status === 2)" 
                             type="warning" 
                             link 
                             @click="handleConfirm(row)"
@@ -109,7 +110,7 @@
         </div>
 
         <!-- 退款详情弹窗 -->
-        <el-dialog v-model="detailVisible" title="退款详情" width="600px">
+        <el-dialog v-model="detailVisible" title="退款详情" width="820px">
             <div v-if="currentRefund">
                 <el-descriptions :column="2" border>
                     <el-descriptions-item label="退款编号">{{ currentRefund.refund_sn }}</el-descriptions-item>
@@ -124,13 +125,58 @@
                     <el-descriptions-item label="退款金额">
                         <span class="text-red-500 font-bold">¥{{ currentRefund.refund_amount }}</span>
                     </el-descriptions-item>
+                    <el-descriptions-item label="实际退款金额">
+                        <span class="text-red-500 font-bold">¥{{ formatAmount(currentRefund.actual_refund_amount || 0) }}</span>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="退款方式">
+                        {{ currentRefund.can_confirm_offline ? '线下人工确认' : '系统自动退款' }}
+                    </el-descriptions-item>
                     <el-descriptions-item label="退款类型">{{ currentRefund.refund_type_desc }}</el-descriptions-item>
                     <el-descriptions-item label="申请时间">{{ currentRefund.create_time }}</el-descriptions-item>
                     <el-descriptions-item label="退款原因" :span="2">{{ currentRefund.refund_reason }}</el-descriptions-item>
                     <el-descriptions-item label="审核时间">{{ currentRefund.audit_time || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="退款时间">{{ currentRefund.refund_time || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="退款流水号" :span="2">{{ currentRefund.refund_transaction_id || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="审核备注" :span="2">{{ currentRefund.audit_remark || '-' }}</el-descriptions-item>
                 </el-descriptions>
+                <div class="mt-4">
+                    <div class="mb-3 text-base font-medium text-tx-primary">退款拆分明细</div>
+                    <el-table :data="currentRefund.refund_items || []" size="small" border>
+                        <el-table-column label="支付流水号" min-width="160">
+                            <template #default="{ row }">
+                                {{ row.payment?.payment_sn || row.payment?.order_sn || '-' }}
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="支付方式" min-width="100">
+                            <template #default="{ row }">
+                                {{ getPayWayText(Number(row.pay_way || 0)) }}
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="退款金额" min-width="100">
+                            <template #default="{ row }">
+                                ¥{{ formatAmount(row.refund_amount || 0) }}
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="子项状态" min-width="100">
+                            <template #default="{ row }">
+                                <el-tag :type="getRefundItemStatusType(Number(row.refund_status || 0))" size="small">
+                                    {{ getRefundItemStatusText(Number(row.refund_status || 0)) }}
+                                </el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="退款单号" prop="out_refund_no" min-width="180" />
+                        <el-table-column label="第三方退款单号" min-width="180">
+                            <template #default="{ row }">
+                                {{ row.third_refund_no || '-' }}
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="处理说明" min-width="200" show-overflow-tooltip>
+                            <template #default="{ row }">
+                                {{ row.refund_msg || '-' }}
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </div>
             </div>
         </el-dialog>
 
@@ -227,6 +273,11 @@ const refundStatItems = computed<RefundStatItem[]>(() => [
         label: '已拒绝',
         value: getStatusCount(4),
         accent: 'danger'
+    },
+    {
+        label: '退款失败',
+        value: getStatusCount(5),
+        accent: 'danger'
     }
 ])
 
@@ -236,10 +287,43 @@ const getStatusType = (status: number): StatusTagType => {
         1: 'primary',
         2: 'info',
         3: 'success',
-        4: 'danger'
+        4: 'danger',
+        5: 'danger'
     }
     return types[status] || 'info'
 }
+
+const getRefundItemStatusType = (status: number): StatusTagType => {
+    const types: Record<number, StatusTagType> = {
+        0: 'warning',
+        1: 'info',
+        2: 'success',
+        3: 'danger'
+    }
+    return types[status] || 'info'
+}
+
+const getRefundItemStatusText = (status: number) => {
+    const texts: Record<number, string> = {
+        0: '待执行',
+        1: '处理中',
+        2: '已完成',
+        3: '失败'
+    }
+    return texts[status] || '未知'
+}
+
+const getPayWayText = (payWay: number) => {
+    const texts: Record<number, string> = {
+        1: '微信支付',
+        2: '支付宝',
+        3: '余额支付',
+        4: '线下支付'
+    }
+    return texts[payWay] || '未知'
+}
+
+const formatAmount = (value: number | string) => Number(value || 0).toFixed(2)
 
 const handleDetail = async (row: any) => {
     const res = await refundDetail({ id: row.id })
@@ -263,7 +347,7 @@ const submitAudit = async () => {
 }
 
 const handleConfirm = async (row: any) => {
-    await feedback.confirm('确定退款已完成吗？')
+    await feedback.confirm('确定该线下退款已经完成吗？')
     await refundConfirm({ id: row.id })
     feedback.msgSuccess('操作成功')
     getLists()

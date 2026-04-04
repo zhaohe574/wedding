@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
-import { alphaColor } from '@/utils/color'
+import { alphaColor, resolveReadableTextColor } from '@/utils/color'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type LegacyButtonType = 'primary' | 'secondary' | 'cta' | 'ghost' | 'danger'
@@ -30,6 +30,7 @@ interface Props {
     block?: boolean
     disabled?: boolean
     loading?: boolean
+    textColor?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -93,11 +94,19 @@ const bgColor = computed(() => {
 })
 
 const textColor = computed(() => {
+    if (props.textColor) {
+        return props.textColor
+    }
+
     if (resolvedVariant.value === 'secondary' || resolvedVariant.value === 'ghost') {
         return themeStore.primaryColor
     }
 
-    return themeStore.btnColor
+    if (resolvedVariant.value === 'danger') {
+        return resolveReadableTextColor('#B44A3A', themeStore.btnColor)
+    }
+
+    return resolveReadableTextColor(themeStore.primaryColor, themeStore.btnColor)
 })
 
 const borderColor = computed(() => {

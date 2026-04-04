@@ -152,6 +152,7 @@ class StaffCenterLogic extends BaseLogic
             'reviewed' => Order::STATUS_REVIEWED,
             'cancelled' => Order::STATUS_CANCELLED,
             'paused' => Order::STATUS_PAUSED,
+            'refunding' => Order::STATUS_REFUNDING,
             'refunded' => Order::STATUS_REFUNDED,
         ];
 
@@ -233,6 +234,7 @@ class StaffCenterLogic extends BaseLogic
                 $orderTable . '.order_sn',
                 $orderTable . '.order_status',
                 $orderTable . '.pay_status',
+                $orderTable . '.confirm_deadline_time',
                 $orderTable . '.pay_amount',
                 $orderTable . '.service_address',
                 $orderTable . '.contact_name',
@@ -272,7 +274,7 @@ class StaffCenterLogic extends BaseLogic
                 && (int) ($item['item_status'] ?? OrderItem::STATUS_PENDING) !== OrderItem::STATUS_CANCELLED;
         }));
 
-        return [
+        return array_merge([
             'id' => (int) ($order['id'] ?? 0),
             'order_sn' => $order['order_sn'] ?? '',
             'service_date' => $serviceDates[0] ?? '',
@@ -285,7 +287,13 @@ class StaffCenterLogic extends BaseLogic
             'item_count' => count($displayItems),
             'package_names' => $packageNames,
             'pending_confirm_count' => $pendingConfirmCount,
-        ];
+        ], Order::buildPayTimeoutSummaryFromState(
+            (int) ($order['order_status'] ?? Order::STATUS_PENDING_PAY),
+            (int) ($order['pay_deadline_time'] ?? 0)
+        ), Order::buildConfirmTimeoutSummaryFromState(
+            (int) ($order['order_status'] ?? Order::STATUS_PENDING_CONFIRM),
+            (int) ($order['confirm_deadline_time'] ?? 0)
+        ));
     }
 
     /**
@@ -1026,6 +1034,16 @@ class StaffCenterLogic extends BaseLogic
             $item = self::applyStaffOrderAmounts($item);
             $item['order_status_desc'] = self::getStatusDesc((int) $item['order_status']);
             $item['pay_status_desc'] = self::getPayStatusDesc((int) $item['pay_status']);
+            $item['can_staff_complete'] = (int)($item['order_status'] ?? -1) === Order::STATUS_IN_SERVICE
+                && Order::canStaffCompleteService();
+            $item = array_merge($item, Order::buildPayTimeoutSummaryFromState(
+                (int) ($item['order_status'] ?? Order::STATUS_PENDING_PAY),
+                (int) ($item['pay_deadline_time'] ?? 0)
+            ));
+            $item = array_merge($item, Order::buildConfirmTimeoutSummaryFromState(
+                (int) ($item['order_status'] ?? Order::STATUS_PENDING_CONFIRM),
+                (int) ($item['confirm_deadline_time'] ?? 0)
+            ));
         }
         unset($item);
 
@@ -1067,6 +1085,11 @@ class StaffCenterLogic extends BaseLogic
         $data['order_status_desc'] = self::getStatusDesc((int) $order->order_status);
         $data['pay_status_desc'] = self::getPayStatusDesc((int) $order->pay_status);
         $data['pay_type_desc'] = self::getPayTypeDesc((int) $order->pay_type);
+        $data = array_merge($data, Order::getPaymentSummary($order));
+        $data = array_merge($data, Order::getPayTimeoutSummary($order));
+        $data = array_merge($data, Order::getConfirmTimeoutSummary($order));
+        $data['can_staff_complete'] = (int)$order->order_status === Order::STATUS_IN_SERVICE
+            && Order::canStaffCompleteService();
 
         return $data;
     }
@@ -1153,6 +1176,7 @@ class StaffCenterLogic extends BaseLogic
             if ($remain === 0) {
                 $beforeStatus = (int) $order->order_status;
                 $order->order_status = Order::STATUS_PENDING_PAY;
+                $order->confirm_deadline_time = 0;
                 $order->update_time = time();
                 $order->save();
                 Order::syncPendingPayDeadline($order);
@@ -1177,6 +1201,44 @@ class StaffCenterLogic extends BaseLogic
         }
 
         return $result;
+    }
+
+    /**
+     * @notes 完成服务
+     */
+    public static function orderComplete(int $userId, int $orderId): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $order = Order::with(['items'])->find($orderId);
+        if (!$order) {
+            self::setError('订单不存在');
+            return false;
+        }
+
+        $staffItems = is_array($order->items ?? null)
+            ? $order->items
+            : ((is_object($order->items ?? null) && method_exists($order->items, 'toArray')) ? $order->items->toArray() : []);
+        $matchedItems = array_values(array_filter($staffItems, function ($item) use ($staffId) {
+            return (int)($item['staff_id'] ?? 0) === $staffId;
+        }));
+
+        if (empty($matchedItems)) {
+            self::setError('无权操作该订单');
+            return false;
+        }
+
+        [$success, $message] = Order::completeOrder($orderId, $userId, OrderLog::OPERATOR_USER, 'staff');
+        if (!$success) {
+            self::setError($message);
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -1423,19 +1485,7 @@ class StaffCenterLogic extends BaseLogic
      */
     protected static function getStatusDesc(int $status): string
     {
-        $map = [
-            Order::STATUS_PENDING_CONFIRM => '待确认',
-            Order::STATUS_PENDING_PAY => '待支付',
-            Order::STATUS_PAID => '已支付',
-            Order::STATUS_IN_SERVICE => '服务中',
-            Order::STATUS_COMPLETED => '已完成',
-            Order::STATUS_REVIEWED => '已评价',
-            Order::STATUS_CANCELLED => '已取消',
-            Order::STATUS_PAUSED => '已暂停',
-            Order::STATUS_REFUNDED => '已退款',
-            Order::STATUS_USER_DELETED => '用户已删除',
-        ];
-        return $map[$status] ?? '未知';
+        return Order::getStatusText($status);
     }
 
     /**
@@ -1443,13 +1493,7 @@ class StaffCenterLogic extends BaseLogic
      */
     protected static function getPayStatusDesc(int $status): string
     {
-        $map = [
-            Order::PAY_STATUS_UNPAID => '未支付',
-            Order::PAY_STATUS_PAID => '已支付',
-            Order::PAY_STATUS_PARTIAL_REFUND => '部分退款',
-            Order::PAY_STATUS_FULL_REFUND => '全额退款',
-        ];
-        return $map[$status] ?? '未知';
+        return Order::getPayStatusText($status);
     }
 
     /**
@@ -1457,15 +1501,7 @@ class StaffCenterLogic extends BaseLogic
      */
     protected static function getPayTypeDesc(int $type): string
     {
-        $map = [
-            Order::PAY_WAY_NONE => '未支付',
-            Order::PAY_WAY_WECHAT => '微信支付',
-            Order::PAY_WAY_ALIPAY => '支付宝',
-            Order::PAY_WAY_BALANCE => '余额支付',
-            Order::PAY_WAY_OFFLINE => '线下支付',
-            Order::PAY_WAY_COMBINATION => '组合支付',
-        ];
-        return $map[$type] ?? '未知';
+        return Order::getPayWayText($type);
     }
 
     /**

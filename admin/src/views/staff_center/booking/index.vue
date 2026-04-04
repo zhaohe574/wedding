@@ -108,6 +108,16 @@
                         </el-tag>
                     </template>
                 </el-table-column>
+                <el-table-column label="剩余确认时间" width="160">
+                    <template #default="{ row }">
+                        <span>{{ getConfirmRemainText(row) }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="超时处理" width="110">
+                    <template #default="{ row }">
+                        <span>{{ row.confirm_timeout_action_desc || '-' }}</span>
+                    </template>
+                </el-table-column>
                 <el-table-column label="项状态" width="100">
                     <template #default="{ row }">
                         <el-tag :type="getItemStatusType(row.item_status)">
@@ -158,6 +168,8 @@
                     <el-descriptions-item label="服务日期">{{ currentDetail.service_date }}</el-descriptions-item>
                     <el-descriptions-item label="套餐">{{ currentDetail.package_name || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="确认状态">{{ currentDetail.confirm_status_desc }}</el-descriptions-item>
+                    <el-descriptions-item label="剩余确认时间">{{ getConfirmRemainText(currentDetail) }}</el-descriptions-item>
+                    <el-descriptions-item label="超时处理">{{ currentDetail.confirm_timeout_action_desc || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="订单项状态">{{ currentDetail.item_status_desc }}</el-descriptions-item>
                     <el-descriptions-item label="订单状态">{{ currentDetail.order_status }}</el-descriptions-item>
                     <el-descriptions-item label="订单总额">¥{{ currentDetail.total_amount }}</el-descriptions-item>
@@ -262,6 +274,20 @@ const getItemStatusType = (status: number): 'warning' | 'primary' | 'success' | 
         3: 'info'
     }
     return map[status] || 'info'
+}
+
+const formatCountdown = (seconds: number | string | undefined) => {
+    const total = Math.max(Number(seconds || 0), 0)
+    if (total <= 0) return '已超时，等待系统处理'
+    const hours = Math.floor(total / 3600)
+    const minutes = Math.floor((total % 3600) / 60)
+    const remainSeconds = total % 60
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainSeconds).padStart(2, '0')}`
+}
+
+const getConfirmRemainText = (row: any) => {
+    if (Number(row?.confirm_deadline_time || 0) <= 0) return '-'
+    return formatCountdown(row?.confirm_remain_seconds || 0)
 }
 
 watch(

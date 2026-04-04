@@ -103,6 +103,10 @@ export function staffCenterOrderConfirm(data: any) {
     return request.post({ url: '/staff_center/orderConfirm', data }, { isAuth: true })
 }
 
+export function staffCenterOrderComplete(data: any) {
+    return request.post({ url: '/staff_center/orderComplete', data }, { isAuth: true })
+}
+
 // 动态
 export function staffCenterDynamicLists(data?: any) {
     return request.get({ url: '/staff_center/dynamicLists', data }, { isAuth: true })

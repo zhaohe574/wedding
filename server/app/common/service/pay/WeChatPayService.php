@@ -21,6 +21,7 @@ use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\PayNotifyLogic;
 use app\common\model\order\Payment as OrderPayment;
 use app\common\model\recharge\RechargeOrder;
+use app\common\service\OrderRefundService;
 use app\common\model\user\UserAuth;
 use app\common\service\wechat\WeChatConfigService;
 use EasyWeChat\Pay\Application;
@@ -448,6 +449,7 @@ class WeChatPayService extends BasePayService
 
         // 退款通知
         $server->handleRefunded(function (Message $message) {
+            OrderRefundService::handleWechatRefundCallback((array)$message);
             return true;
         });
         return $server->serve();

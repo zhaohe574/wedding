@@ -135,6 +135,50 @@
                                         />
                                         <text>{{ order.location }}</text>
                                     </view>
+                                    <view
+                                        v-if="getConfirmRemainText(order)"
+                                        class="order-card__line order-card__line--accent"
+                                    >
+                                        <tn-icon
+                                            name="clock"
+                                            size="22"
+                                            color="var(--wm-color-primary, #E85A4F)"
+                                        />
+                                        <text>剩余确认时间：{{ getConfirmRemainText(order) }}</text>
+                                    </view>
+                                    <view
+                                        v-if="order.confirmTimeoutActionDesc"
+                                        class="order-card__line order-card__line--accent"
+                                    >
+                                        <tn-icon
+                                            name="clock"
+                                            size="22"
+                                            color="var(--wm-color-primary, #E85A4F)"
+                                        />
+                                        <text>超时处理：{{ order.confirmTimeoutActionDesc }}</text>
+                                    </view>
+                                    <view
+                                        v-if="getPayRemainText(order)"
+                                        class="order-card__line order-card__line--accent"
+                                    >
+                                        <tn-icon
+                                            name="clock"
+                                            size="22"
+                                            color="var(--wm-color-primary, #E85A4F)"
+                                        />
+                                        <text>剩余支付时间：{{ getPayRemainText(order) }}</text>
+                                    </view>
+                                    <view
+                                        v-if="order.payTimeoutActionDesc"
+                                        class="order-card__line order-card__line--accent"
+                                    >
+                                        <tn-icon
+                                            name="clock"
+                                            size="22"
+                                            color="var(--wm-color-primary, #E85A4F)"
+                                        />
+                                        <text>支付超时处理：{{ order.payTimeoutActionDesc }}</text>
+                                    </view>
                                 </view>
 
                                 <view class="order-card__amount-box">
@@ -187,6 +231,14 @@
                                     >
                                         确认订单
                                     </view>
+                                    <view
+                                        v-if="order.canComplete"
+                                        class="action-btn action-btn--primary"
+                                        :style="primaryActionStyle"
+                                        @click.stop="completeOrder(order)"
+                                    >
+                                        完成服务
+                                    </view>
                                 </view>
                             </view>
                         </BaseCard>
@@ -200,8 +252,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { computed, nextTick, ref } from 'vue'
+import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
@@ -210,6 +262,7 @@ import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import {
+    staffCenterOrderComplete,
     staffCenterOrderConfirm,
     staffCenterOrderLists,
     staffCenterOrderStats
@@ -251,7 +304,14 @@ interface FormattedOrder {
     contactName: string
     contactMobile: string
     pendingConfirmCount: number
+    confirmRemainSeconds: number
+    confirmExpireAt: number
+    confirmTimeoutActionDesc: string
+    payRemainSeconds: number
+    payExpireAt: number
+    payTimeoutActionDesc: string
     canConfirm: boolean
+    canComplete: boolean
 }
 
 const DEFAULT_ORDER_STATS = {
@@ -264,6 +324,7 @@ const DEFAULT_ORDER_STATS = {
     reviewed: 0,
     cancelled: 0,
     paused: 0,
+    refunding: 0,
     refunded: 0
 } as const
 
@@ -271,24 +332,26 @@ const STATUS_TAB_CONFIG: StatusTabConfigItem[] = [
     { label: '全部', value: '', key: 'all' },
     { label: '待确认', value: 0, key: 'pending_confirm' },
     { label: '待支付', value: 1, key: 'pending_pay' },
-    { label: '已支付', value: 2, key: 'paid' },
+    { label: '待服务', value: 2, key: 'paid' },
     { label: '服务中', value: 3, key: 'in_service' },
     { label: '已完成', value: 4, key: 'completed' },
     { label: '已评价', value: 5, key: 'reviewed' },
     { label: '已取消', value: 6, key: 'cancelled' },
     { label: '已暂停', value: 7, key: 'paused' },
+    { label: '退款中', value: 10, key: 'refunding' },
     { label: '已退款', value: 8, key: 'refunded' }
 ]
 
 const STATUS_TEXT_MAP: Record<number, string> = {
     0: '待确认',
     1: '待支付',
-    2: '已支付',
+    2: '待服务',
     3: '服务中',
     4: '已完成',
     5: '已评价',
     6: '已取消',
     7: '已暂停',
+    10: '退款中',
     8: '已退款',
     9: '用户已删除'
 }
@@ -302,6 +365,7 @@ const STATUS_TONE_MAP: Record<number, StatusTone> = {
     5: 'info',
     6: 'danger',
     7: 'warning',
+    10: 'warning',
     8: 'danger',
     9: 'danger'
 }
@@ -316,6 +380,9 @@ const orderStats = ref<Record<string, number>>({ ...DEFAULT_ORDER_STATS })
 const currentStatus = ref<StatusValue>('')
 const loading = ref(false)
 const hasLoaded = ref(false)
+const orderCountdownNowTs = ref(Date.now())
+let orderCountdownTimer: ReturnType<typeof setInterval> | null = null
+let orderCountdownRefreshing = false
 
 const heroCardStyle = computed(() => ({
     '--wm-hero-gradient': `linear-gradient(135deg, ${
@@ -373,6 +440,104 @@ const getStatusText = (status: number) => STATUS_TEXT_MAP[status] || '未知'
 
 const getStatusTone = (status: number): StatusTone => STATUS_TONE_MAP[status] || 'neutral'
 
+const formatCountdown = (seconds: number | string | undefined) => {
+    const total = Math.max(Number(seconds || 0), 0)
+    if (total <= 0) return '已超时，等待系统处理'
+    const hours = Math.floor(total / 3600)
+    const minutes = Math.floor((total % 3600) / 60)
+    const remainSeconds = total % 60
+
+    return [hours, minutes, remainSeconds].map((item) => String(item).padStart(2, '0')).join(':')
+}
+
+const buildExpireAt = (
+    deadlineTime: number | string | undefined,
+    remainSeconds: number | string | undefined
+) => {
+    if (Number(deadlineTime || 0) <= 0) return 0
+    return Date.now() + Math.max(Number(remainSeconds || 0), 0) * 1000
+}
+
+const getLiveRemainSeconds = (
+    order: FormattedOrder | null | undefined,
+    deadlineField: 'confirmExpireAt' | 'payExpireAt',
+    status: number
+) => {
+    orderCountdownNowTs.value
+    if (!order) return 0
+    if (order.statusValue !== status) return 0
+    const expireAt = Number(order?.[deadlineField] || 0)
+    if (expireAt <= 0) return 0
+    return Math.max(Math.ceil((expireAt - orderCountdownNowTs.value) / 1000), 0)
+}
+
+const getConfirmRemainText = (order: FormattedOrder | null | undefined) => {
+    if (!order || order.statusValue !== 0 || Number(order.confirmExpireAt || 0) <= 0) return ''
+    return formatCountdown(getLiveRemainSeconds(order, 'confirmExpireAt', 0))
+}
+
+const getPayRemainText = (order: FormattedOrder | null | undefined) => {
+    if (!order || order.statusValue !== 1 || Number(order.payExpireAt || 0) <= 0) return ''
+    return formatCountdown(getLiveRemainSeconds(order, 'payExpireAt', 1))
+}
+
+const clearOrderCountdown = () => {
+    if (orderCountdownTimer) {
+        clearInterval(orderCountdownTimer)
+        orderCountdownTimer = null
+    }
+}
+
+const hasActiveOrderCountdown = (order: FormattedOrder) =>
+    getLiveRemainSeconds(order, 'confirmExpireAt', 0) > 0 ||
+    getLiveRemainSeconds(order, 'payExpireAt', 1) > 0
+
+const hasExpiredOrderCountdown = (order: FormattedOrder) =>
+    (order.statusValue === 0 && Number(order.confirmExpireAt || 0) > 0 &&
+        getLiveRemainSeconds(order, 'confirmExpireAt', 0) <= 0) ||
+    (order.statusValue === 1 && Number(order.payExpireAt || 0) > 0 &&
+        getLiveRemainSeconds(order, 'payExpireAt', 1) <= 0)
+
+const refreshOrderCountdownData = async () => {
+    if (orderCountdownRefreshing) return
+    orderCountdownRefreshing = true
+    try {
+        await loadOrderStats()
+        hasLoaded.value = false
+        pagingRef.value?.reload()
+    } finally {
+        orderCountdownRefreshing = false
+    }
+}
+
+const startOrderCountdown = () => {
+    clearOrderCountdown()
+    orderCountdownNowTs.value = Date.now()
+
+    if (orderList.value.some(hasExpiredOrderCountdown)) {
+        refreshOrderCountdownData()
+        return
+    }
+
+    if (!orderList.value.some(hasActiveOrderCountdown)) {
+        return
+    }
+
+    orderCountdownTimer = setInterval(() => {
+        orderCountdownNowTs.value = Date.now()
+
+        if (orderList.value.some(hasExpiredOrderCountdown)) {
+            clearOrderCountdown()
+            refreshOrderCountdownData()
+            return
+        }
+
+        if (!orderList.value.some(hasActiveOrderCountdown)) {
+            clearOrderCountdown()
+        }
+    }, 1000)
+}
+
 const loadOrderStats = async () => {
     try {
         const data = await staffCenterOrderStats()
@@ -405,7 +570,6 @@ const formatOrder = (order: any): FormattedOrder => {
         (item: any) => Number(item.confirm_status ?? 0) === 0 && Number(item.item_status ?? 0) !== 3
     ).length
     const serviceCount = displayItems.length
-
     return {
         id: Number(order.id || 0),
         orderNo: order.order_sn || '',
@@ -421,12 +585,28 @@ const formatOrder = (order: any): FormattedOrder => {
         contactName: order.contact_name || '',
         contactMobile: order.contact_mobile || '',
         pendingConfirmCount,
-        canConfirm: orderStatus === 0 && pendingConfirmCount > 0
+        confirmRemainSeconds: Number(order.confirm_remain_seconds || 0),
+        confirmExpireAt: buildExpireAt(
+            Number(order.confirm_deadline_time || 0),
+            Number(order.confirm_remain_seconds || 0)
+        ),
+        confirmTimeoutActionDesc:
+            orderStatus === 0 ? String(order.confirm_timeout_action_desc || '').trim() : '',
+        payRemainSeconds: Number(order.pay_remain_seconds || 0),
+        payExpireAt: buildExpireAt(
+            Number(order.pay_deadline_time || 0),
+            Number(order.pay_remain_seconds || 0)
+        ),
+        payTimeoutActionDesc:
+            orderStatus === 1 ? String(order.pay_timeout_action_desc || '').trim() : '',
+        canConfirm: orderStatus === 0 && pendingConfirmCount > 0,
+        canComplete: orderStatus === 3 && Number(order?.can_staff_complete || 0) === 1
     }
 }
 
 const queryList = async (pageNo: number, pageSize: number) => {
     loading.value = true
+    clearOrderCountdown()
 
     try {
         const params: any = { page_size: pageSize }
@@ -440,10 +620,13 @@ const queryList = async (pageNo: number, pageSize: number) => {
         const res: any = await staffCenterOrderLists(params)
         const list = Array.isArray(res?.data) ? res.data : []
         pagingRef.value.complete(list.map(formatOrder))
+        await nextTick()
+        startOrderCountdown()
     } catch (e: any) {
         const msg = typeof e === 'string' ? e : e?.msg || e?.message || '加载失败'
         uni.showToast({ title: msg, icon: 'none' })
         pagingRef.value.complete(false)
+        clearOrderCountdown()
     } finally {
         loading.value = false
         hasLoaded.value = true
@@ -476,6 +659,27 @@ const confirmOrder = (order: FormattedOrder) => {
                 pagingRef.value?.reload()
             } catch (e: any) {
                 const msg = typeof e === 'string' ? e : e?.msg || e?.message || '确认失败'
+                uni.showToast({ title: msg, icon: 'none' })
+            }
+        }
+    })
+}
+
+const completeOrder = (order: FormattedOrder) => {
+    uni.showModal({
+        title: '完成服务',
+        content: '确认本单服务已完成吗？',
+        success: async (res) => {
+            if (!res.confirm) return
+
+            try {
+                await staffCenterOrderComplete({ id: order.id })
+                uni.showToast({ title: '操作成功', icon: 'success' })
+                await loadOrderStats()
+                hasLoaded.value = false
+                pagingRef.value?.reload()
+            } catch (e: any) {
+                const msg = typeof e === 'string' ? e : e?.msg || e?.message || '操作失败'
                 uni.showToast({ title: msg, icon: 'none' })
             }
         }
@@ -529,6 +733,14 @@ onShow(async () => {
     await loadOrderStats()
     hasLoaded.value = false
     pagingRef.value?.reload()
+})
+
+onHide(() => {
+    clearOrderCountdown()
+})
+
+onUnload(() => {
+    clearOrderCountdown()
 })
 </script>
 
@@ -765,6 +977,10 @@ onShow(async () => {
     font-weight: 600;
     line-height: 1.55;
     color: var(--wm-text-secondary, #7f7b78);
+}
+
+.order-card__line--accent {
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .order-card__line + .order-card__line {

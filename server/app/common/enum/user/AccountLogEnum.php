@@ -55,6 +55,7 @@ class AccountLogEnum
      */
     const UM_INC_ADMIN = 200;
     const UM_INC_RECHARGE = 201;
+    const UM_INC_ORDER_REFUND = 202;
 
     /**
      * 用户积分增加类型
@@ -78,6 +79,7 @@ class AccountLogEnum
     const UM_INC = [
         self::UM_INC_ADMIN,
         self::UM_INC_RECHARGE,
+        self::UM_INC_ORDER_REFUND,
     ];
 
     /**
@@ -124,6 +126,7 @@ class AccountLogEnum
             self::UM_DEC_ADMIN => '平台减少余额',
             self::UM_INC_ADMIN => '平台增加余额',
             self::UM_INC_RECHARGE => '充值增加余额',
+            self::UM_INC_ORDER_REFUND => '订单退款退回余额',
             self::UM_DEC_RECHARGE_REFUND => '充值订单退款减少余额',
             self::UP_INC_REVIEW_REWARD => '评价奖励积分',
             self::UP_INC_SHARE_REWARD => '晒单奖励积分',

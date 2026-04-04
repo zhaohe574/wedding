@@ -380,7 +380,7 @@ const statusTagType = (status: number) => {
     const map = {
         0: 'warning',   // 待确认
         1: 'danger',    // 待支付
-        2: 'info',      // 已支付
+        2: 'info',      // 待服务
         3: 'primary',   // 服务中
         4: 'success',   // 已完成
         5: 'success',   // 已评价

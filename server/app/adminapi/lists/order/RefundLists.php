@@ -10,6 +10,7 @@ namespace app\adminapi\lists\order;
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsExcelInterface;
 use app\common\model\order\Refund;
+use app\common\model\order\RefundItem;
 
 /**
  * 退款列表
@@ -37,14 +38,24 @@ class RefundLists extends BaseAdminDataLists implements ListsExcelInterface
      */
     public function lists(): array
     {
-        $lists = Refund::with([
+        $query = Refund::with([
             'order' => function ($query) {
                 $query->field('id, order_sn, user_id, total_amount, pay_amount')
                     ->with(['user' => function ($q) {
                         $q->field('id, nickname, avatar, mobile');
                     }]);
             }
-        ])
+        ]);
+
+        if (RefundItem::isTableReady()) {
+            $query = $query->with([
+                'refundItems' => function ($query) {
+                    $query->with(['payment']);
+                },
+            ]);
+        }
+
+        $lists = $query
             ->where($this->searchWhere)
             ->order($this->sortOrder ?: ['id' => 'desc'])
             ->limit($this->limitOffset, $this->limitLength)
@@ -52,8 +63,10 @@ class RefundLists extends BaseAdminDataLists implements ListsExcelInterface
             ->toArray();
 
         foreach ($lists as &$item) {
-            $item['refund_status_desc'] = $this->getStatusDesc($item['refund_status']);
-            $item['refund_type_desc'] = $this->getTypeDesc($item['refund_type']);
+            $item['refund_items'] = $item['refund_items'] ?? [];
+            $item['refund_status_desc'] = Refund::getStatusText((int)$item['refund_status']);
+            $item['refund_type_desc'] = Refund::getTypeText((int)$item['refund_type']);
+            $item['can_confirm_offline'] = $this->canConfirmOffline($item['refund_items'] ?? []);
         }
 
         return $lists;
@@ -110,6 +123,7 @@ class RefundLists extends BaseAdminDataLists implements ListsExcelInterface
             Refund::STATUS_PROCESSING => '退款中',
             Refund::STATUS_COMPLETED => '已退款',
             Refund::STATUS_REJECTED => '已拒绝',
+            Refund::STATUS_FAILED => '退款失败',
         ];
         return $map[$status] ?? '未知';
     }
@@ -127,5 +141,25 @@ class RefundLists extends BaseAdminDataLists implements ListsExcelInterface
             Refund::TYPE_SYSTEM => '系统自动',
         ];
         return $map[$type] ?? '未知';
+    }
+
+    /**
+     * @notes 是否允许线下确认退款
+     * @param array $refundItems
+     * @return int
+     */
+    protected function canConfirmOffline(array $refundItems): int
+    {
+        if (empty($refundItems)) {
+            return 0;
+        }
+
+        foreach ($refundItems as $item) {
+            if ((int)($item['pay_way'] ?? 0) !== \app\common\model\order\Payment::WAY_OFFLINE) {
+                return 0;
+            }
+        }
+
+        return 1;
     }
 }

@@ -505,6 +505,7 @@ const getOrderStatusModifier = (status: number): BadgeModifier => {
         5: 'warning',
         6: 'danger',
         7: 'warning',
+        10: 'warning',
         8: 'danger'
     }
 

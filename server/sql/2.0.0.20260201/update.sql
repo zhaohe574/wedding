@@ -436,7 +436,7 @@ CREATE TABLE IF NOT EXISTS `la_order` (
     `order_sn` VARCHAR(32) NOT NULL COMMENT '订单编号',
     `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
     `order_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '订单类型：1=普通订单,2=套餐订单,3=组合订单',
-    `order_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单状态：0=待确认,1=待支付,2=已支付,3=服务中,4=已完成,5=已评价,6=已取消,7=已暂停,8=已退款,9=用户已删除',
+    `order_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单状态：0=待确认,1=待支付,2=待服务,3=服务中,4=已完成,5=已评价,6=已取消,7=已暂停,8=已退款,9=用户已删除',
     `pay_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付状态：0=未支付,1=已支付,2=部分退款,3=全额退款',
     -- 金额
     `total_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '订单总额',
@@ -473,8 +473,6 @@ CREATE TABLE IF NOT EXISTS `la_order` (
     `service_district` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '服务区县',
     `contact_name` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '联系人姓名',
     `contact_mobile` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '联系人电话',
-    `wedding_date` DATE DEFAULT NULL COMMENT '婚礼日期',
-    `wedding_venue` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '婚礼场地',
     -- 备注
     `user_remark` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '用户备注',
     `admin_remark` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '管理员备注',
@@ -616,8 +614,11 @@ CREATE TABLE IF NOT EXISTS `la_refund` (
     `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
     `refund_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '退款类型：1=用户申请,2=管理员操作,3=系统自动',
     `refund_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '退款金额',
+    `actual_refund_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '实际退款金额',
     `refund_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '退款原因',
-    `refund_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '退款状态：0=待审核,1=审核通过,2=退款中,3=已退款,4=已拒绝',
+    `refund_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '退款状态：0=待审核,1=审核通过,2=退款中,3=已退款,4=已拒绝,5=退款失败',
+    `source_order_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发起退款前订单状态',
+    `source_pay_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发起退款前支付状态',
     `audit_admin_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核管理员ID',
     `audit_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核时间',
     `audit_remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '审核备注',
@@ -631,6 +632,29 @@ CREATE TABLE IF NOT EXISTS `la_refund` (
     KEY `idx_user_id` (`user_id`),
     KEY `idx_refund_status` (`refund_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='退款记录表';
+
+CREATE TABLE IF NOT EXISTS `la_refund_item` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `refund_id` INT UNSIGNED NOT NULL COMMENT '退款单ID',
+    `order_id` INT UNSIGNED NOT NULL COMMENT '订单ID',
+    `payment_id` INT UNSIGNED NOT NULL COMMENT '支付记录ID',
+    `pay_way` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付方式：1=微信,2=支付宝,3=余额,4=线下',
+    `pay_terminal` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付终端',
+    `refund_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '子项退款金额',
+    `refund_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '退款状态：0=待执行,1=处理中,2=已完成,3=失败',
+    `out_refund_no` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '商户退款单号',
+    `third_refund_no` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '第三方退款单号',
+    `refund_msg` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '退款处理说明',
+    `refund_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '退款完成时间',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_out_refund_no` (`out_refund_no`),
+    KEY `idx_refund_id` (`refund_id`),
+    KEY `idx_order_id` (`order_id`),
+    KEY `idx_payment_id` (`payment_id`),
+    KEY `idx_refund_status` (`refund_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='退款子项表';
 
 -- la_order_change
 CREATE TABLE IF NOT EXISTS `la_order_change` (
@@ -2549,5 +2573,35 @@ INSERT INTO `la_dev_crontab` (
 ('超时未支付订单自动取消', 1, 1, '每分钟扫描待支付首笔订单并自动取消超时单', 'cancel_unpaid_orders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
 ('站内提醒发送', 1, 1, '每分钟扫描服务前一天提醒与暂停到期提醒的站内消息', 'send_station_reminders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
 ('候补超期自动失效', 1, 1, '每天扫描预约日期已过的候补并自动标记为已过期', 'expire_waitlists', '', 1, '10 0 * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL);
+
+-- =============================================================================
+-- Part 5: 订单付款渠道
+-- =============================================================================
+
+SET @schema_name = DATABASE();
+SET @payment_channel_exists = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = @schema_name
+      AND TABLE_NAME = 'la_order'
+      AND COLUMN_NAME = 'payment_channel'
+);
+
+SET @payment_channel_sql = IF(
+    @payment_channel_exists = 0,
+    'ALTER TABLE `la_order` ADD COLUMN `payment_channel` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT ''付款渠道：1=线上支付,2=线下支付'' AFTER `pay_type`',
+    'SELECT 1'
+);
+
+PREPARE payment_channel_stmt FROM @payment_channel_sql;
+EXECUTE payment_channel_stmt;
+DEALLOCATE PREPARE payment_channel_stmt;
+
+UPDATE `la_order`
+SET `payment_channel` = CASE
+    WHEN `pay_type` = 4 OR COALESCE(`pay_voucher`, '') <> '' THEN 2
+    ELSE 1
+END
+WHERE `payment_channel` NOT IN (1, 2) OR `payment_channel` IS NULL;
 
 SET FOREIGN_KEY_CHECKS = 1;

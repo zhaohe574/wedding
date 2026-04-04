@@ -128,6 +128,10 @@ class PayNotifyLogic extends BaseLogic
             (int)$result['order_id'],
             (int)$result['pay_type']
         );
+
+        if (!empty($result['should_notify_completed'])) {
+            OrderNotificationService::notifyOnOrderCompleted((int)$result['order_id']);
+        }
     }
 
 

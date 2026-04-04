@@ -1276,8 +1276,11 @@ CREATE TABLE `la_refund` (
     `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
     `refund_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '退款类型：1=用户申请,2=管理员操作,3=系统自动',
     `refund_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '退款金额',
+    `actual_refund_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '实际退款金额',
     `refund_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '退款原因',
-    `refund_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '退款状态：0=待审核,1=审核通过,2=退款中,3=已退款,4=已拒绝',
+    `refund_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '退款状态：0=待审核,1=审核通过,2=退款中,3=已退款,4=已拒绝,5=退款失败',
+    `source_order_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发起退款前订单状态',
+    `source_pay_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发起退款前支付状态',
     `audit_admin_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核管理员ID',
     `audit_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核时间',
     `audit_remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '审核备注',
@@ -1291,6 +1294,30 @@ CREATE TABLE `la_refund` (
     KEY `idx_user_id` (`user_id`),
     KEY `idx_refund_status` (`refund_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='退款记录表';
+
+DROP TABLE IF EXISTS `la_refund_item`;
+CREATE TABLE `la_refund_item` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `refund_id` INT UNSIGNED NOT NULL COMMENT '退款单ID',
+    `order_id` INT UNSIGNED NOT NULL COMMENT '订单ID',
+    `payment_id` INT UNSIGNED NOT NULL COMMENT '支付记录ID',
+    `pay_way` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付方式：1=微信,2=支付宝,3=余额,4=线下',
+    `pay_terminal` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付终端',
+    `refund_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '子项退款金额',
+    `refund_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '退款状态：0=待执行,1=处理中,2=已完成,3=失败',
+    `out_refund_no` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '商户退款单号',
+    `third_refund_no` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '第三方退款单号',
+    `refund_msg` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '退款处理说明',
+    `refund_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '退款完成时间',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_out_refund_no` (`out_refund_no`),
+    KEY `idx_refund_id` (`refund_id`),
+    KEY `idx_order_id` (`order_id`),
+    KEY `idx_payment_id` (`payment_id`),
+    KEY `idx_refund_status` (`refund_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='退款子项表';
 
 DROP TABLE IF EXISTS `la_dynamic`;
 CREATE TABLE `la_dynamic` (
