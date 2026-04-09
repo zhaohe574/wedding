@@ -28,10 +28,6 @@ class AfterSaleValidate extends BaseValidate
         'result' => 'require|max:5000',
         'reason' => 'require|max:500',
         'remark' => 'max:500',
-        'approved' => 'require|in:0,1',
-        'is_free' => 'in:0,1',
-        'fee' => 'float|egt:0',
-        'schedule_date' => 'require|date',
         'score' => 'integer|between:0,5',
         'score_service' => 'integer|between:0,5',
         'score_professional' => 'integer|between:0,5',
@@ -46,7 +42,6 @@ class AfterSaleValidate extends BaseValidate
         'action' => 'in:0,1,2,3,4',
         'amount' => 'float|egt:0',
         'level' => 'in:1,2,3',
-        'reason_type' => 'in:1,2,3,4,5',
         'images' => 'array',
         'videos' => 'array',
     ];
@@ -67,10 +62,6 @@ class AfterSaleValidate extends BaseValidate
         'result.max' => '处理结果最多5000个字符',
         'reason.require' => '原因不能为空',
         'reason.max' => '原因最多500个字符',
-        'approved.require' => '审核结果不能为空',
-        'approved.in' => '审核结果值不正确',
-        'schedule_date.require' => '安排日期不能为空',
-        'schedule_date.date' => '日期格式不正确',
         'score.between' => '评分必须在0-5之间',
     ];
 
@@ -85,12 +76,6 @@ class AfterSaleValidate extends BaseValidate
         // 投诉相关
         'complaintDetail' => ['id'],
         'handleComplaint' => ['id', 'result', 'action'],
-
-        // 补拍相关
-        'reshootDetail' => ['id'],
-        'auditReshoot' => ['id', 'approved'],
-        'scheduleReshoot' => ['id', 'schedule_date'],
-        'completeReshoot' => ['id'],
 
         // 回访相关
         'callbackDetail' => ['id'],

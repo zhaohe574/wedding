@@ -34,6 +34,9 @@ export function createTicket(data: {
     content?: string
     images?: string[]
     order_id?: number
+    priority?: number
+    contact_name?: string
+    contact_phone?: string
 }) {
     return request.post('/aftersale/createTicket', data)
 }
@@ -81,6 +84,8 @@ export function submitComplaint(data: {
     order_id?: number
     staff_id?: number
     expect_result?: string
+    contact_name: string
+    contact_mobile: string
 }) {
     return request.post('/aftersale/submitComplaint', data)
 }
@@ -90,45 +95,6 @@ export function submitComplaint(data: {
  */
 export function rateComplaint(data: { id: number; satisfaction: number }) {
     return request.post('/aftersale/rateComplaint', data)
-}
-
-// ==================== 补拍申请 ====================
-
-/**
- * 我的补拍申请列表
- */
-export function getReshootLists(params: { page?: number; limit?: number; status?: number }) {
-    return request.get('/aftersale/reshootLists', params)
-}
-
-/**
- * 补拍申请详情
- */
-export function getReshootDetail(id: number) {
-    return request.get('/aftersale/reshootDetail', { id })
-}
-
-/**
- * 提交补拍申请
- */
-export function applyReshoot(data: {
-    order_id: number
-    type: number
-    reason_type: number
-    reason?: string
-    images?: string[]
-    expect_date?: string
-    staff_id?: number
-    order_item_id?: number
-}) {
-    return request.post('/aftersale/applyReshoot', data)
-}
-
-/**
- * 取消补拍申请
- */
-export function cancelReshoot(id: number) {
-    return request.post('/aftersale/cancelReshoot', { id })
 }
 
 // ==================== 回访问卷 ====================

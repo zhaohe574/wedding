@@ -136,8 +136,10 @@ watch(
     padding-top: var(--wm-tabbar-padding-top, 22rpx);
     padding-left: var(--wm-tabbar-padding-x, 42rpx);
     padding-right: var(--wm-tabbar-padding-x, 42rpx);
-    padding-bottom: calc(var(--wm-tabbar-padding-bottom, 39rpx) + constant(safe-area-inset-bottom));
-    padding-bottom: calc(var(--wm-tabbar-padding-bottom, 39rpx) + env(safe-area-inset-bottom));
+    padding-bottom: calc(
+        var(--wm-safe-bottom-tabbar, calc(177rpx + env(safe-area-inset-bottom))) -
+            var(--wm-tabbar-pill-height, 116rpx) - var(--wm-tabbar-padding-top, 22rpx)
+    );
     z-index: 998;
     box-sizing: border-box;
 }

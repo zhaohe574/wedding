@@ -10,15 +10,17 @@ namespace app\adminapi\lists\order;
 use app\adminapi\lists\BaseAdminDataLists;
 use app\adminapi\logic\order\OrderLogic;
 use app\common\lists\ListsExcelInterface;
+use app\common\lists\ListsSearchInterface;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
+use app\common\service\OrderRefundService;
 
 /**
  * 订单列表
  * Class OrderLists
  * @package app\adminapi\lists\order
  */
-class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
+class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, ListsSearchInterface
 {
     /**
      * @notes 搜索条件
@@ -41,6 +43,13 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
     public function queryWhere(): array
     {
         $where = [];
+        $orderStatus = $this->params['order_status'] ?? '';
+
+        // 未主动筛选状态时，默认排除已取消和用户已删除订单
+        if ($orderStatus === '' || $orderStatus === null) {
+            $where[] = ['order_status', '<>', Order::STATUS_CANCELLED];
+            $where[] = ['order_status', '<>', Order::STATUS_USER_DELETED];
+        }
 
         // 用户ID搜索
         if (!empty($this->params['user_id'])) {
@@ -168,6 +177,9 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface
                     (int)($item['confirm_deadline_time'] ?? 0)
                 )
             );
+            $item['refundable_amount'] = OrderRefundService::getRefundableAmount((int)$item['id']);
+            $item['can_admin_refund'] = $item['refundable_amount'] > 0
+                && !OrderRefundService::hasPendingRefund((int)$item['id']);
 
             if (
                 (int)($item['payment_channel'] ?? Order::PAYMENT_CHANNEL_ONLINE) === Order::PAYMENT_CHANNEL_OFFLINE

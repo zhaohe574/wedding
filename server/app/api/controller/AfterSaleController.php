@@ -149,63 +149,6 @@ class AfterSaleController extends BaseApiController
         return $this->fail($result);
     }
 
-    // ==================== 补拍申请 ====================
-
-    /**
-     * @notes 我的补拍申请列表
-     * @return \think\response\Json
-     */
-    public function reshootLists()
-    {
-        $params = $this->request->get();
-        $params['user_id'] = $this->userId;
-        $result = AfterSaleLogic::getReshootLists($params);
-        return $this->data($result);
-    }
-
-    /**
-     * @notes 补拍申请详情
-     * @return \think\response\Json
-     */
-    public function reshootDetail()
-    {
-        $params = (new AfterSaleValidate())->goCheck('detail');
-        $result = AfterSaleLogic::getReshootDetail($params['id'], $this->userId);
-        if (empty($result)) {
-            return $this->fail('申请记录不存在');
-        }
-        return $this->data($result);
-    }
-
-    /**
-     * @notes 提交补拍申请
-     * @return \think\response\Json
-     */
-    public function applyReshoot()
-    {
-        $params = (new AfterSaleValidate())->post()->goCheck('applyReshoot');
-        $params['user_id'] = $this->userId;
-        $result = AfterSaleLogic::applyReshoot($params);
-        if ($result === true) {
-            return $this->success('申请提交成功');
-        }
-        return $this->fail($result);
-    }
-
-    /**
-     * @notes 取消补拍申请
-     * @return \think\response\Json
-     */
-    public function cancelReshoot()
-    {
-        $params = (new AfterSaleValidate())->post()->goCheck('detail');
-        $result = AfterSaleLogic::cancelReshoot($params['id'], $this->userId);
-        if ($result === true) {
-            return $this->success('取消成功');
-        }
-        return $this->fail($result);
-    }
-
     // ==================== 回访问卷 ====================
 
     /**

@@ -18,82 +18,98 @@
                     <view class="payment-result__body wm-page-content">
                         <view class="wm-page-stack payment-result__stack">
                             <BaseCard
-                                variant="hero"
+                                variant="surface"
                                 scene="consumer"
-                                class="payment-result__hero-card"
+                                class="payment-result__status-card"
                             >
-                                <view
-                                    class="payment-result__chip"
-                                    :style="{ background: presentation.chipBackground }"
-                                >
-                                    <text
-                                        class="payment-result__chip-text"
-                                        :style="{ color: presentation.chipTextColor }"
+                                <view class="payment-result__status-top">
+                                    <view
+                                        class="payment-result__status-icon"
+                                        :class="statusToneClass"
                                     >
-                                        {{ presentation.badge }}
-                                    </text>
+                                        <text class="payment-result__status-icon-text">
+                                            {{ statusMark }}
+                                        </text>
+                                    </view>
+                                    <view class="payment-result__status-copy">
+                                        <text class="payment-result__title">
+                                            {{ presentation.title }}
+                                        </text>
+                                        <text class="payment-result__desc">
+                                            {{ presentation.description }}
+                                        </text>
+                                    </view>
+                                    <view
+                                        class="payment-result__status-badge"
+                                        :class="statusToneClass"
+                                    >
+                                        <text class="payment-result__status-badge-text">
+                                            {{ presentation.badge }}
+                                        </text>
+                                    </view>
                                 </view>
-                                <view class="payment-result__hero-main">
-                                    <text class="payment-result__title">
-                                        {{ presentation.title }}
-                                    </text>
+                                <view class="payment-result__amount-block">
                                     <text class="payment-result__amount-label">
                                         {{ presentation.amountLabel }}
                                     </text>
                                     <text
                                         class="payment-result__amount"
-                                        :style="{ color: presentation.amountColor }"
+                                        :class="statusToneClass"
                                     >
                                         ¥{{ displayAmount }}
                                     </text>
-                                    <text class="payment-result__desc">
-                                        {{ presentation.description }}
-                                    </text>
                                 </view>
-                                <view v-if="heroMetaItems.length" class="payment-result__meta">
+                                <view
+                                    v-if="statusMetaItems.length"
+                                    class="payment-result__status-meta"
+                                >
                                     <view
-                                        v-for="item in heroMetaItems"
+                                        v-for="item in statusMetaItems"
                                         :key="`${item.label}-${item.value}`"
-                                        class="payment-result__meta-item"
+                                        class="payment-result__status-meta-item"
                                     >
-                                        <text class="payment-result__meta-label">
+                                        <text class="payment-result__status-meta-label">
                                             {{ item.label }}
                                         </text>
-                                        <text class="payment-result__meta-value">
+                                        <text class="payment-result__status-meta-value">
                                             {{ item.value }}
                                         </text>
                                     </view>
                                 </view>
                             </BaseCard>
 
-                            <BaseCard variant="glass" scene="consumer" class="payment-result__card">
+                            <BaseCard
+                                variant="surface"
+                                scene="consumer"
+                                class="payment-result__card"
+                            >
                                 <view class="payment-result__section-head">
-                                    <text class="payment-result__section-title">金额概览</text>
+                                    <text class="payment-result__section-title">支付概览</text>
                                     <text class="payment-result__section-tag">
                                         {{ paymentModeText }}
                                     </text>
                                 </view>
-                                <view class="payment-result__amount-grid">
+                                <view class="payment-result__summary-grid">
                                     <view
-                                        v-for="item in amountOverviewItems"
+                                        v-for="item in summaryItems"
                                         :key="item.label"
-                                        class="payment-result__amount-item"
-                                        :class="{
-                                            'payment-result__amount-item--featured': item.featured,
-                                            'payment-result__amount-item--accent': item.accent
-                                        }"
+                                        class="payment-result__summary-item"
                                     >
-                                        <text class="payment-result__amount-item-label">
+                                        <text class="payment-result__summary-label">
                                             {{ item.label }}
                                         </text>
-                                        <text class="payment-result__amount-item-value">
+                                        <text class="payment-result__summary-value">
                                             {{ item.value }}
                                         </text>
                                     </view>
                                 </view>
                             </BaseCard>
 
-                            <BaseCard variant="glass" scene="consumer" class="payment-result__card">
+                            <BaseCard
+                                variant="surface"
+                                scene="consumer"
+                                class="payment-result__card"
+                            >
                                 <view class="payment-result__section-head">
                                     <text class="payment-result__section-title">订单信息</text>
                                     <text
@@ -116,31 +132,34 @@
                                         </text>
                                     </view>
                                 </view>
+                                <view class="payment-result__notice">
+                                    <text class="payment-result__notice-label">说明</text>
+                                    <text class="payment-result__notice-text">
+                                        {{ resultHintText }}
+                                    </text>
+                                </view>
                             </BaseCard>
                         </view>
                     </view>
-                    <ActionArea sticky safeBottom>
-                        <view class="wm-page-actions-bar payment-result__actions-bar">
+                    <ActionArea class="payment-result__action-bar" sticky safeBottom>
+                        <view v-if="secondaryActionLabel" class="payment-result__action-slot">
                             <BaseButton
-                                v-if="secondaryActionLabel"
-                                class="payment-result__action-btn"
-                                variant="secondary"
-                                size="lg"
                                 block
+                                size="lg"
+                                variant="secondary"
                                 @click="handleSecondaryAction"
                             >
                                 {{ secondaryActionLabel }}
                             </BaseButton>
+                        </view>
+                        <view class="payment-result__action-slot">
                             <BaseButton
-                                class="payment-result__action-btn"
-                                variant="primary"
-                                size="lg"
                                 block
-                                text-color="#FFFFFF"
+                                size="lg"
                                 :loading="primaryActionLoading"
-                                @click="handlePrimaryAction"
+                                @click="handlePrimaryActionClick"
                             >
-                                {{ primaryActionLabel }}
+                                {{ primaryActionLoading ? '刷新中...' : primaryActionLabel }}
                             </BaseButton>
                         </view>
                     </ActionArea>
@@ -153,8 +172,8 @@
 <script lang="ts" setup>
 import { getPayResult } from '@/api/pay'
 import ActionArea from '@/components/base/ActionArea.vue'
-import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { PageStatusEnum } from '@/enums/appEnums'
@@ -175,9 +194,6 @@ interface ResultPresentation {
     title: string
     description: string
     amountLabel: string
-    chipBackground: string
-    chipTextColor: string
-    amountColor: string
 }
 
 interface PaymentResultMetaItem {
@@ -185,11 +201,9 @@ interface PaymentResultMetaItem {
     value: string
 }
 
-interface PaymentResultAmountItem {
+interface PaymentResultLineItem {
     label: string
     value: string
-    featured?: boolean
-    accent?: boolean
 }
 
 const router = useRouter()
@@ -295,6 +309,28 @@ const resultState = computed<PaymentResultState>(() => {
 
 const isPendingResult = computed(() => resultState.value === 'pending')
 const canAutoPoll = computed(() => isPendingResult.value && !!pageOptions.value.payment_sn)
+const statusToneClass = computed(() => {
+    const toneMap: Record<PaymentResultState, string> = {
+        paid: 'is-success',
+        pending: 'is-warning',
+        failed: 'is-danger',
+        partial_refund: 'is-warning',
+        full_refund: 'is-info'
+    }
+
+    return toneMap[resultState.value]
+})
+const statusMark = computed(() => {
+    const markMap: Record<PaymentResultState, string> = {
+        paid: '成',
+        pending: '待',
+        failed: '败',
+        partial_refund: '退',
+        full_refund: '退'
+    }
+
+    return markMap[resultState.value]
+})
 
 const presentation = computed<ResultPresentation>(() => {
     const presentationMap: Record<PaymentResultState, ResultPresentation> = {
@@ -304,19 +340,13 @@ const presentation = computed<ResultPresentation>(() => {
                 : '款项已入账',
             title: `${paymentSubjectText.value}成功`,
             description: isRechargeResult.value ? '余额已到账' : '当前款项已确认',
-            amountLabel: currentAmountLabel.value,
-            chipBackground: 'rgba(47, 125, 88, 0.12)',
-            chipTextColor: 'var(--wm-color-success, #2F7D58)',
-            amountColor: 'var(--wm-color-primary, #E85A4F)'
+            amountLabel: currentAmountLabel.value
         },
         pending: {
             badge: '结果确认中',
             title: `${paymentSubjectText.value}确认中`,
             description: canAutoPoll.value ? '正在同步当前结果' : '请手动刷新当前结果',
-            amountLabel: currentAmountLabel.value,
-            chipBackground: 'rgba(201, 133, 36, 0.12)',
-            chipTextColor: 'var(--wm-color-warning, #C98524)',
-            amountColor: 'var(--wm-color-primary, #E85A4F)'
+            amountLabel: currentAmountLabel.value
         },
         failed: {
             badge: orderStatus.value === 6 ? '支付已关闭' : '支付未完成',
@@ -325,28 +355,19 @@ const presentation = computed<ResultPresentation>(() => {
                     ? `${paymentSubjectText.value}已关闭`
                     : `${paymentSubjectText.value}失败`,
             description: orderStatus.value === 6 ? '订单已自动关闭' : '可返回订单重新支付',
-            amountLabel: currentAmountLabel.value,
-            chipBackground: 'rgba(180, 74, 58, 0.12)',
-            chipTextColor: 'var(--wm-color-danger, #B44A3A)',
-            amountColor: 'var(--wm-color-danger, #B44A3A)'
+            amountLabel: currentAmountLabel.value
         },
         partial_refund: {
             badge: '部分退款',
             title: `${paymentSubjectText.value}已部分退款`,
             description: '退款进度以到账通知为准',
-            amountLabel: currentAmountLabel.value,
-            chipBackground: 'rgba(201, 133, 36, 0.12)',
-            chipTextColor: 'var(--wm-color-warning, #C98524)',
-            amountColor: 'var(--wm-color-warning, #C98524)'
+            amountLabel: currentAmountLabel.value
         },
         full_refund: {
             badge: '退款完成',
             title: `${paymentSubjectText.value}已退款`,
             description: '请留意原支付渠道到账',
-            amountLabel: currentAmountLabel.value,
-            chipBackground: 'rgba(74, 118, 180, 0.12)',
-            chipTextColor: '#4A76B4',
-            amountColor: '#4A76B4'
+            amountLabel: currentAmountLabel.value
         }
     }
 
@@ -433,7 +454,7 @@ const resolveDisplayAmount = () => {
     )
 }
 
-const heroMetaItems = computed<PaymentResultMetaItem[]>(() => {
+const statusMetaItems = computed<PaymentResultMetaItem[]>(() => {
     const items: PaymentResultMetaItem[] = []
 
     if (resultState.value === 'pending') {
@@ -472,40 +493,58 @@ const heroMetaItems = computed<PaymentResultMetaItem[]>(() => {
     return items.slice(0, 2)
 })
 
-const amountOverviewItems = computed<PaymentResultAmountItem[]>(() => {
-    const items: PaymentResultAmountItem[] = [
+const summaryItems = computed<PaymentResultLineItem[]>(() => {
+    const items: PaymentResultLineItem[] = [
         {
-            label: presentation.value.amountLabel,
-            value: `¥${displayAmount.value}`,
-            featured: true,
-            accent: true
+            label: '支付方式',
+            value: payWayText.value
+        },
+        {
+            label: isPendingResult.value ? '同步状态' : '当前状态',
+            value: isPendingResult.value
+                ? canAutoPoll.value
+                    ? '系统确认中'
+                    : '等待手动刷新'
+                : currentPayStageText.value
         }
     ]
 
-    if (isRechargeResult.value) {
-        return items
+    if (!isRechargeResult.value) {
+        items.unshift(
+            {
+                label: '订单总额',
+                value: `¥${totalAmountText.value}`
+            },
+            {
+                label: '已付金额',
+                value: `¥${paidAmountText.value}`
+            }
+        )
+
+        if (
+            Number(unpaidAmountText.value) > 0 ||
+            isPendingResult.value ||
+            resultState.value === 'failed'
+        ) {
+            items.push({
+                label: '待付金额',
+                value: `¥${unpaidAmountText.value}`
+            })
+        }
     }
 
-    items.push(
-        {
-            label: '订单总额',
-            value: `¥${totalAmountText.value}`
-        },
-        {
-            label: '已付金额',
-            value: `¥${paidAmountText.value}`
-        },
-        {
-            label: '待付金额',
-            value: `¥${unpaidAmountText.value}`
-        }
-    )
+    if (payTimeText.value !== '-') {
+        items.push({
+            label: resultState.value === 'pending' ? '最近更新时间' : '支付时间',
+            value: payTimeText.value
+        })
+    }
 
-    return items
+    return items.slice(0, isRechargeResult.value ? 3 : 5)
 })
 
-const orderInfoItems = computed(() => {
-    const items = [
+const orderInfoItems = computed<PaymentResultLineItem[]>(() => {
+    const items: PaymentResultLineItem[] = [
         {
             label: '订单编号',
             value: String(normalizedOrder.value?.order_sn || '-')
@@ -539,6 +578,24 @@ const orderInfoItems = computed(() => {
     )
 
     return items
+})
+const resultHintText = computed(() => {
+    const hintMap: Record<PaymentResultState, string> = {
+        paid: isRechargeResult.value
+            ? '充值金额已计入账户余额，可返回原页面继续使用。'
+            : '如需继续查看服务安排或付款进度，可进入订单详情页。',
+        pending: canAutoPoll.value
+            ? '系统正在同步支付结果，如已扣款请稍候刷新。'
+            : '若支付已成功但页面未更新，请稍后重新进入或手动刷新。',
+        failed:
+            orderStatus.value === 6
+                ? '当前订单已关闭，如需继续请重新下单或联系商家处理。'
+                : '如支付渠道已扣款但状态失败，请保留凭证并联系商家核实。',
+        partial_refund: '退款金额将按原支付渠道退回，具体到账时间以渠道通知为准。',
+        full_refund: '退款完成后会原路退回，请留意支付渠道的到账消息。'
+    }
+
+    return hintMap[resultState.value]
 })
 
 const primaryActionLabel = computed(() => (isPendingResult.value ? '刷新结果' : '返回首页'))
@@ -659,6 +716,11 @@ const handleSecondaryAction = () => {
     goSourcePage()
 }
 
+const handlePrimaryActionClick = () => {
+    if (primaryActionLoading.value) return
+    handlePrimaryAction()
+}
+
 onLoad(async (options: Record<string, string>) => {
     pageOptions.value = {
         id: String(options?.id || ''),
@@ -697,102 +759,198 @@ onUnload(() => {
 <style lang="scss" scoped>
 .payment-result {
     min-height: 100vh;
-    background: var(--wm-color-page, #fcfbf9);
 }
 
 .payment-result__body {
-    padding-top: 20rpx;
-    padding-bottom: calc(env(safe-area-inset-bottom) + 248rpx);
+    padding-top: 16rpx;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 224rpx);
 }
 
 .payment-result__stack {
+    gap: 18rpx;
+}
+
+.payment-result__status-card,
+.payment-result__card {
+    padding: 30rpx;
+    border-radius: 40rpx;
+    background: #ffffff;
+    border-color: rgba(239, 230, 225, 0.96);
+    box-shadow: 0 14rpx 28rpx rgba(214, 185, 167, 0.1);
+}
+
+.payment-result__status-card {
+    display: flex;
+    flex-direction: column;
     gap: 22rpx;
 }
 
-.payment-result__hero-card {
+.payment-result__status-top {
     display: flex;
-    flex-direction: column;
-    gap: 20rpx;
-    align-items: center;
-    text-align: center;
+    align-items: flex-start;
+    gap: 18rpx;
 }
 
-.payment-result__chip {
-    align-self: center;
-    min-height: 48rpx;
-    padding: 0 24rpx;
+.payment-result__status-icon {
+    flex-shrink: 0;
+    width: 76rpx;
+    height: 76rpx;
+    border-radius: 24rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(232, 90, 79, 0.1);
+}
+
+.payment-result__status-icon.is-success {
+    background: rgba(47, 125, 88, 0.12);
+    color: var(--wm-color-success, #2f7d58);
+}
+
+.payment-result__status-icon.is-warning {
+    background: rgba(201, 133, 36, 0.12);
+    color: var(--wm-color-warning, #c98524);
+}
+
+.payment-result__status-icon.is-danger {
+    background: rgba(180, 74, 58, 0.12);
+    color: var(--wm-color-danger, #b44a3a);
+}
+
+.payment-result__status-icon.is-info {
+    background: rgba(74, 118, 180, 0.12);
+    color: #4a76b4;
+}
+
+.payment-result__status-icon-text {
+    font-size: 28rpx;
+    font-weight: 700;
+}
+
+.payment-result__status-copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.payment-result__status-badge {
+    flex-shrink: 0;
+    min-height: 52rpx;
+    padding: 0 20rpx;
     border-radius: 999rpx;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    border: 1rpx solid transparent;
+    box-sizing: border-box;
 }
 
-.payment-result__chip-text {
-    font-size: 24rpx;
+.payment-result__status-badge.is-success {
+    background: rgba(47, 125, 88, 0.1);
+    border-color: rgba(47, 125, 88, 0.18);
+    color: var(--wm-color-success, #2f7d58);
+}
+
+.payment-result__status-badge.is-warning {
+    background: rgba(201, 133, 36, 0.1);
+    border-color: rgba(201, 133, 36, 0.18);
+    color: var(--wm-color-warning, #c98524);
+}
+
+.payment-result__status-badge.is-danger {
+    background: rgba(180, 74, 58, 0.1);
+    border-color: rgba(180, 74, 58, 0.18);
+    color: var(--wm-color-danger, #b44a3a);
+}
+
+.payment-result__status-badge.is-info {
+    background: rgba(74, 118, 180, 0.1);
+    border-color: rgba(74, 118, 180, 0.18);
+    color: #4a76b4;
+}
+
+.payment-result__status-badge-text {
+    font-size: 22rpx;
     font-weight: 700;
     line-height: 1;
 }
 
-.payment-result__hero-main {
-    width: 100%;
+.payment-result__amount-block {
     display: flex;
     flex-direction: column;
     gap: 10rpx;
-    align-items: center;
+    padding: 26rpx 28rpx;
+    border-radius: 32rpx;
+    background: rgba(255, 248, 245, 0.86);
 }
 
 .payment-result__title {
-    font-size: 44rpx;
+    font-size: 38rpx;
     font-weight: 700;
-    line-height: 1.28;
+    line-height: 1.32;
     color: var(--wm-text-primary, #1e2432);
 }
 
 .payment-result__amount-label {
     font-size: 22rpx;
     font-weight: 600;
-    letter-spacing: 0.08em;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
 .payment-result__amount {
-    font-size: 58rpx;
+    font-size: 56rpx;
     font-weight: 700;
     line-height: 1.15;
 }
 
+.payment-result__amount.is-success {
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.payment-result__amount.is-warning {
+    color: var(--wm-color-warning, #c98524);
+}
+
+.payment-result__amount.is-danger {
+    color: var(--wm-color-danger, #b44a3a);
+}
+
+.payment-result__amount.is-info {
+    color: #4a76b4;
+}
+
 .payment-result__desc {
     font-size: 24rpx;
-    font-weight: 500;
     line-height: 1.55;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-.payment-result__meta {
+.payment-result__status-meta {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
-    gap: 14rpx;
+    gap: 12rpx;
 }
 
-.payment-result__meta-item {
-    min-height: 52rpx;
-    padding: 0 24rpx;
+.payment-result__status-meta-item {
+    min-height: 58rpx;
+    padding: 0 22rpx;
     border-radius: 999rpx;
     display: inline-flex;
     align-items: center;
     gap: 10rpx;
-    background: rgba(255, 255, 255, 0.76);
-    border: 1rpx solid rgba(244, 199, 191, 0.88);
+    background: rgba(255, 248, 245, 0.92);
+    border: 1rpx solid rgba(239, 230, 225, 0.96);
     box-sizing: border-box;
 }
 
-.payment-result__meta-label {
+.payment-result__status-meta-label {
     font-size: 22rpx;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-.payment-result__meta-value {
+.payment-result__status-meta-value {
     font-size: 24rpx;
     font-weight: 700;
     color: var(--wm-color-primary, #e85a4f);
@@ -821,16 +979,20 @@ onUnload(() => {
 .payment-result__section-tag {
     flex-shrink: 0;
     max-width: 62%;
-    padding: 8rpx 18rpx;
+    min-height: 48rpx;
+    padding: 0 18rpx;
     border-radius: 999rpx;
     font-size: 22rpx;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1;
     text-align: right;
     color: var(--wm-color-primary, #e85a4f);
     background: var(--wm-color-primary-soft, #fff1ee);
     border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
     box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .payment-result__section-tag--soft {
@@ -839,48 +1001,35 @@ onUnload(() => {
     border-color: var(--wm-color-border, #efe6e1);
 }
 
-.payment-result__amount-grid {
+.payment-result__summary-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16rpx;
+    gap: 14rpx;
 }
 
-.payment-result__amount-item {
+.payment-result__summary-item {
+    min-height: 124rpx;
     padding: 22rpx 20rpx;
-    border-radius: 34rpx;
-    background: linear-gradient(180deg, rgba(255, 250, 247, 0.96) 0%, #ffffff 100%);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border-radius: 30rpx;
+    background: rgba(255, 248, 245, 0.82);
+    border: 1rpx solid rgba(239, 230, 225, 0.96);
     display: flex;
     flex-direction: column;
-    gap: 10rpx;
+    gap: 12rpx;
+    justify-content: space-between;
 }
 
-.payment-result__amount-item--featured {
-    grid-column: 1 / -1;
-    padding: 28rpx 26rpx;
-}
-
-.payment-result__amount-item--accent {
-    background: linear-gradient(180deg, rgba(255, 244, 240, 0.98) 0%, #fffaf7 100%);
-    border-color: var(--wm-color-border-strong, #f4c7bf);
-}
-
-.payment-result__amount-item-label {
+.payment-result__summary-label {
     font-size: 22rpx;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-.payment-result__amount-item-value {
-    font-size: 30rpx;
+.payment-result__summary-value {
+    font-size: 28rpx;
     font-weight: 700;
-    line-height: 1.35;
+    line-height: 1.45;
     color: var(--wm-text-primary, #1e2432);
-}
-
-.payment-result__amount-item--featured .payment-result__amount-item-value {
-    font-size: 48rpx;
-    line-height: 1.16;
-    color: var(--wm-color-primary, #e85a4f);
+    word-break: break-all;
 }
 
 .payment-result__info-list {
@@ -918,24 +1067,50 @@ onUnload(() => {
     word-break: break-all;
 }
 
-.payment-result__actions-bar {
-    width: 100%;
+.payment-result__notice {
+    padding: 22rpx 24rpx;
+    border-radius: 28rpx;
+    background: rgba(255, 248, 245, 0.8);
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
 }
 
-.payment-result__action-btn {
-    width: 100%;
+.payment-result__notice-label {
+    font-size: 22rpx;
+    font-weight: 700;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.payment-result__notice-text {
+    font-size: 24rpx;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.payment-result__action-bar {
+    z-index: 80;
+}
+
+.payment-result__action-slot {
+    flex: 1;
+    min-width: 0;
 }
 
 @media screen and (max-width: 380px) {
-    .payment-result__amount-grid {
+    .payment-result__status-top {
+        flex-wrap: wrap;
+    }
+
+    .payment-result__status-badge {
+        margin-left: 94rpx;
+    }
+
+    .payment-result__summary-grid {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .payment-result__amount-item--featured {
-        grid-column: auto;
-    }
-
-    .payment-result__actions-bar {
+    .payment-result__action-bar {
         flex-direction: column;
     }
 }

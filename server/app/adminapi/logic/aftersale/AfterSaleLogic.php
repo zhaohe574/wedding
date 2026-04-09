@@ -11,7 +11,6 @@ use app\common\logic\BaseLogic;
 use app\common\model\aftersale\AfterSaleTicket;
 use app\common\model\aftersale\AfterSaleTicketLog;
 use app\common\model\aftersale\Complaint;
-use app\common\model\aftersale\Reshoot;
 use app\common\model\aftersale\ServiceCallback;
 use app\common\service\OrderNotificationService;
 use think\facade\Db;
@@ -190,77 +189,6 @@ class AfterSaleLogic extends BaseLogic
         return true;
     }
 
-    // ==================== 补拍申请管理 ====================
-
-    /**
-     * @notes 获取补拍申请详情
-     * @param int $id
-     * @return array
-     */
-    public static function getReshootDetail(int $id): array
-    {
-        $reshoot = Reshoot::with(['user', 'staff', 'newStaff', 'order'])->find($id);
-        if (!$reshoot) {
-            return [];
-        }
-
-        $data = $reshoot->toArray();
-        $data['type_desc'] = $reshoot->type_desc;
-        $data['reason_type_desc'] = $reshoot->reason_type_desc;
-        $data['status_desc'] = $reshoot->status_desc;
-
-        return $data;
-    }
-
-    /**
-     * @notes 审核补拍申请
-     * @param int $reshootId
-     * @param int $adminId
-     * @param bool $approved
-     * @param array $auditData
-     * @return bool|string
-     */
-    public static function auditReshoot(int $reshootId, int $adminId, bool $approved, array $auditData = [])
-    {
-        $result = Reshoot::auditReshoot($reshootId, $adminId, $approved, $auditData);
-        if (!$result[0]) {
-            return $result[1];
-        }
-        return true;
-    }
-
-    /**
-     * @notes 安排补拍
-     * @param int $reshootId
-     * @param int $adminId
-     * @param array $scheduleData
-     * @return bool|string
-     */
-    public static function scheduleReshoot(int $reshootId, int $adminId, array $scheduleData)
-    {
-        $result = Reshoot::scheduleReshoot($reshootId, $adminId, $scheduleData);
-        if (!$result[0]) {
-            return $result[1];
-        }
-        return true;
-    }
-
-    /**
-     * @notes 完成补拍
-     * @param int $reshootId
-     * @param int $adminId
-     * @param string $remark
-     * @return bool|string
-     */
-    public static function completeReshoot(int $reshootId, int $adminId, string $remark = '')
-    {
-        $result = Reshoot::completeReshoot($reshootId, $adminId, $remark);
-        if (!$result[0]) {
-            return $result[1];
-        }
-        return true;
-    }
-
     // ==================== 回访管理 ====================
 
     /**
@@ -354,7 +282,6 @@ class AfterSaleLogic extends BaseLogic
         return [
             'ticket' => AfterSaleTicket::getStatistics(),
             'complaint' => Complaint::getStatistics(),
-            'reshoot' => Reshoot::getStatistics(),
             'callback' => ServiceCallback::getStatistics(),
         ];
     }
@@ -384,9 +311,6 @@ class AfterSaleLogic extends BaseLogic
                     ->where('update_time', '<', $dayEnd)
                     ->count(),
                 'complaint_new' => Complaint::where('create_time', '>=', $dayStart)
-                    ->where('create_time', '<', $dayEnd)
-                    ->count(),
-                'reshoot_new' => Reshoot::where('create_time', '>=', $dayStart)
                     ->where('create_time', '<', $dayEnd)
                     ->count(),
                 'callback_completed' => ServiceCallback::where('status', ServiceCallback::STATUS_COMPLETED)

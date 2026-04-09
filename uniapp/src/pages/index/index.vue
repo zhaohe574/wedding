@@ -401,17 +401,18 @@ onShow(() => {
 .home-page__content {
     display: flex;
     flex-direction: column;
+    gap: 30rpx;
 }
 
 .home-page__body {
-    padding: 30rpx var(--wm-space-page-x, 37rpx) 37rpx;
+    padding: 0 var(--wm-space-page-x, 37rpx) 37rpx;
 }
 
 .home-page__hero {
     position: relative;
     overflow: hidden;
     border-radius: 0 0 56rpx 56rpx;
-    box-shadow: 0 24rpx 56rpx rgba(177, 108, 95, 0.18);
+    box-shadow: var(--wm-shadow-hero, 0 24rpx 56rpx rgba(177, 108, 95, 0.18));
 }
 
 .home-page__hero-swiper,
@@ -466,7 +467,7 @@ onShow(() => {
     width: 52rpx;
     height: 6rpx;
     border-radius: 999rpx;
-    background: #ef5b4c;
+    background: var(--wm-color-primary, #e85a4f);
 }
 
 .home-page__hero-title {
@@ -497,17 +498,17 @@ onShow(() => {
 
 .home-page__hero-dot--active {
     width: 28rpx;
-    background: #ef5b4c;
+    background: var(--wm-color-primary, #e85a4f);
 }
 
 .home-page__cta {
     height: 101rpx;
     border-radius: 37rpx;
-    background: #ef5b4c;
+    background: var(--wm-color-primary, #e85a4f);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 18rpx 36rpx rgba(239, 91, 76, 0.2);
+    box-shadow: 0 18rpx 36rpx rgba(232, 90, 79, 0.2);
 }
 
 .home-page__cta-text {
@@ -531,7 +532,7 @@ onShow(() => {
 .home-page__section-title {
     font-size: 36rpx;
     font-weight: 700;
-    color: #2b221f;
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .home-page__section-link {
@@ -540,7 +541,7 @@ onShow(() => {
 
 .home-page__section-link-text {
     font-size: 22rpx;
-    color: #d86c5b;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .home-page__team-grid {
@@ -551,10 +552,10 @@ onShow(() => {
 
 .home-page__team-card {
     overflow: hidden;
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card, 45rpx);
     background: rgba(255, 251, 248, 0.92);
-    border: 1rpx solid rgba(226, 214, 207, 0.92);
-    box-shadow: 0 16rpx 36rpx rgba(94, 64, 54, 0.08);
+    border: 1rpx solid var(--wm-color-border, rgba(226, 214, 207, 0.92));
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(94, 64, 54, 0.08));
 }
 
 .home-page__team-card--placeholder {

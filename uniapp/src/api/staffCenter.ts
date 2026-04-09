@@ -103,6 +103,10 @@ export function staffCenterOrderConfirm(data: any) {
     return request.post({ url: '/staff_center/orderConfirm', data }, { isAuth: true })
 }
 
+export function staffCenterOrderStartService(data: any) {
+    return request.post({ url: '/staff_center/orderStartService', data }, { isAuth: true })
+}
+
 export function staffCenterOrderComplete(data: any) {
     return request.post({ url: '/staff_center/orderComplete', data }, { isAuth: true })
 }

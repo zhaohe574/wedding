@@ -1,7 +1,8 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="发表评价" />
-    <view class="publish-page">
+    <PageShell scene="consumer" hasSafeBottom>
+        <BaseNavbar title="发表评价" />
+        <view class="publish-page">
         <!-- 顶部渐变背景 -->
         <view
             class="top-bg"
@@ -225,24 +226,22 @@
             </view>
         </view>
 
-        <!-- 提交按钮 -->
-        <view class="bottom-actions">
-            <button
-                class="btn-submit"
-                :style="{ background: submitting ? '#ccc' : $theme.primaryColor }"
-                :disabled="submitting"
-                @click="handleSubmit"
-            >
+        <ActionArea class="publish-page__action" sticky safeBottom>
+            <BaseButton block size="lg" :disabled="submitting" :loading="submitting" @click="handleSubmit">
                 {{ submitting ? '提交中...' : '发布评价' }}
-            </button>
+            </BaseButton>
+        </ActionArea>
         </view>
-    </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getPendingOrders, publishReview, getReviewTags, getRewardRules } from '@/api/review'
+import { useThemeStore } from '@/stores/theme'
+
+const $theme = useThemeStore()
 
 const orderItemId = ref(0)
 const orderItem = ref<any>(null)
@@ -449,7 +448,7 @@ onLoad((options: any) => {
 <style lang="scss" scoped>
 .publish-page {
     background-color: transparent;
-    padding-bottom: 180rpx;
+    padding-bottom: calc(var(--wm-safe-bottom-action, 160rpx) + 120rpx);
     position: relative;
 }
 
@@ -794,31 +793,4 @@ onLoad((options: any) => {
     font-weight: bold;
 }
 
-/* 底部按钮 */
-.bottom-actions {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 16rpx 24rpx;
-    padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-    background: #fff;
-    box-shadow: 0 -2rpx 16rpx rgba(0, 0, 0, 0.06);
-}
-
-.btn-submit {
-    width: 100%;
-    height: 88rpx;
-    line-height: 88rpx;
-    color: #fff;
-    border-radius: 44rpx;
-    font-size: 32rpx;
-    font-weight: 500;
-    border: none;
-    letter-spacing: 2rpx;
-
-    &[disabled] {
-        opacity: 0.6;
-    }
-}
 </style>

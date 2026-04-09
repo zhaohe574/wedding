@@ -3,7 +3,7 @@
     <PageShell scene="admin" hasSafeBottom>
         <BaseNavbar title="经营驾驶舱" />
 
-        <view class="dashboard-page" :style="pageBgStyle">
+        <view class="dashboard-page">
             <view class="hero-card mx-[24rpx] mt-[24rpx]" :style="heroCardStyle">
                 <view class="hero-top">
                     <view class="hero-main">
@@ -430,11 +430,6 @@ const periodLabel = computed(() => {
     if (!dateRange.value.startDate || !dateRange.value.endDate) return '--'
     return `${dateRange.value.startDate} 至 ${dateRange.value.endDate}`
 })
-
-const pageBgStyle = computed(() => ({
-    background:
-        'linear-gradient(180deg, rgba(255,247,244,0.72) 0%, var(--wm-color-bg-page, #FCFBF9) 100%)'
-}))
 
 const heroCardStyle = computed(() => ({
     background: `linear-gradient(180deg, ${mixColor(

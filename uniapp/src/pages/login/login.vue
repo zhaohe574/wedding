@@ -220,10 +220,12 @@
         </template>
 
         <template #overlay>
+            <BaseOverlayMask :show="showAgreementPopup" :closeable="false" />
             <tn-popup
                 v-model="showAgreementPopup"
                 open-direction="center"
                 :radius="24"
+                :overlay="false"
                 :overlay-closeable="false"
             >
                 <view class="agreement-popup">

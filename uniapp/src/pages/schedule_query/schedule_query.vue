@@ -113,9 +113,11 @@
             </view>
         </ActionArea>
 
+        <BaseOverlayMask :show="showRegionPopup" @close="closeRegionPicker" />
         <tn-popup
             v-model="showRegionPopup"
             open-direction="bottom"
+            :overlay="false"
             :overlay-closeable="true"
             safe-area-inset-bottom
             :radius="popupBorderRadius"
@@ -190,9 +192,11 @@
             </view>
         </tn-popup>
 
+        <BaseOverlayMask :show="showDatePopup" @close="closeDatePicker" />
         <tn-popup
             v-model="showDatePopup"
             open-direction="bottom"
+            :overlay="false"
             :overlay-closeable="true"
             safe-area-inset-bottom
             :radius="popupBorderRadius"
@@ -238,9 +242,11 @@
             </view>
         </tn-popup>
 
+        <BaseOverlayMask :show="showTagPopup" @close="handleTagPopupClose" />
         <tn-popup
             v-model="showTagPopup"
             open-direction="bottom"
+            :overlay="false"
             :overlay-closeable="true"
             safe-area-inset-bottom
             :radius="popupBorderRadius"

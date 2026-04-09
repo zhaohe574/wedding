@@ -384,9 +384,11 @@
                 </ActionArea>
             </view>
 
+            <BaseOverlayMask :show="showRegionPopup" @close="closeRegionPicker" />
             <tn-popup
                 v-model="showRegionPopup"
                 open-direction="bottom"
+                :overlay="false"
                 :overlay-closeable="true"
                 safe-area-inset-bottom
                 :radius="24"
@@ -463,9 +465,11 @@
                 </view>
             </tn-popup>
 
+            <BaseOverlayMask :show="showDatePopup" @close="closeDatePicker" />
             <tn-popup
                 v-model="showDatePopup"
                 open-direction="bottom"
+                :overlay="false"
                 :overlay-closeable="true"
                 safe-area-inset-bottom
                 :radius="24"
@@ -519,9 +523,15 @@
                 </view>
             </tn-popup>
 
+            <BaseOverlayMask
+                :show="showAlternativeStaffPopup"
+                :closeable="!alternativeStaffQuerying"
+                @close="closeAlternativeStaffPopup"
+            />
             <tn-popup
                 v-model="showAlternativeStaffPopup"
                 open-direction="bottom"
+                :overlay="false"
                 :overlay-closeable="!alternativeStaffQuerying"
                 safe-area-inset-bottom
                 :radius="28"
@@ -1766,6 +1776,7 @@ onShareTimeline(() => {
     align-items: center;
     justify-content: center;
     min-height: 100vh;
+    background: var(--wm-color-bg-page, #fff7f4);
 }
 
 .picker-container {
@@ -2151,7 +2162,7 @@ onShareTimeline(() => {
 
 .alternative-popup {
     max-height: 78vh;
-    padding: 32rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));
+    padding: 32rpx 28rpx 28rpx;
     background: linear-gradient(180deg, #fffdfc 0%, #fff7f3 100%);
 }
 
@@ -2805,7 +2816,7 @@ onShareTimeline(() => {
 .action-button {
     position: relative;
     flex: 1;
-    height: 90rpx;
+    min-height: 90rpx;
     border-radius: 37rpx;
     display: flex;
     align-items: center;

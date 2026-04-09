@@ -232,6 +232,14 @@
                                         确认订单
                                     </view>
                                     <view
+                                        v-if="order.canStart"
+                                        class="action-btn action-btn--primary"
+                                        :style="primaryActionStyle"
+                                        @click.stop="startService(order)"
+                                    >
+                                        开始履约
+                                    </view>
+                                    <view
                                         v-if="order.canComplete"
                                         class="action-btn action-btn--primary"
                                         :style="primaryActionStyle"
@@ -265,6 +273,7 @@ import {
     staffCenterOrderComplete,
     staffCenterOrderConfirm,
     staffCenterOrderLists,
+    staffCenterOrderStartService,
     staffCenterOrderStats
 } from '@/api/staffCenter'
 import { useFixedNavbarPagingStyle } from '@/hooks/useFixedNavbarPagingStyle'
@@ -311,6 +320,7 @@ interface FormattedOrder {
     payExpireAt: number
     payTimeoutActionDesc: string
     canConfirm: boolean
+    canStart: boolean
     canComplete: boolean
 }
 
@@ -600,6 +610,7 @@ const formatOrder = (order: any): FormattedOrder => {
         payTimeoutActionDesc:
             orderStatus === 1 ? String(order.pay_timeout_action_desc || '').trim() : '',
         canConfirm: orderStatus === 0 && pendingConfirmCount > 0,
+        canStart: orderStatus === 2 && Number(order?.can_staff_start || 0) === 1,
         canComplete: orderStatus === 3 && Number(order?.can_staff_complete || 0) === 1
     }
 }
@@ -675,6 +686,27 @@ const completeOrder = (order: FormattedOrder) => {
             try {
                 await staffCenterOrderComplete({ id: order.id })
                 uni.showToast({ title: '操作成功', icon: 'success' })
+                await loadOrderStats()
+                hasLoaded.value = false
+                pagingRef.value?.reload()
+            } catch (e: any) {
+                const msg = typeof e === 'string' ? e : e?.msg || e?.message || '操作失败'
+                uni.showToast({ title: msg, icon: 'none' })
+            }
+        }
+    })
+}
+
+const startService = (order: FormattedOrder) => {
+    uni.showModal({
+        title: '开始履约',
+        content: '确认本单已开始履约吗？',
+        success: async (res) => {
+            if (!res.confirm) return
+
+            try {
+                await staffCenterOrderStartService({ id: order.id })
+                uni.showToast({ title: '开始履约成功', icon: 'success' })
                 await loadOrderStats()
                 hasLoaded.value = false
                 pagingRef.value?.reload()

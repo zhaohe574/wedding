@@ -927,10 +927,142 @@ class StaffCenterLogic extends BaseLogic
             return [];
         }
 
+        $schedules = Schedule::getMonthSchedule($staffId, $year, $month);
+        $pendingServiceOrders = self::getSchedulePendingServiceOrders($staffId, $year, $month);
+
         return [
             'year' => $year,
             'month' => $month,
-            'schedules' => Schedule::getMonthSchedule($staffId, $year, $month),
+            'schedules' => $schedules,
+            'month_summary' => self::buildScheduleMonthSummary($year, $month, $schedules, $pendingServiceOrders),
+            'pending_service_orders' => $pendingServiceOrders,
+        ];
+    }
+
+    /**
+     * @notes 获取档期页待履约订单摘要
+     * @param int $staffId
+     * @param int $year
+     * @param int $month
+     * @return array
+     */
+    private static function getSchedulePendingServiceOrders(int $staffId, int $year, int $month): array
+    {
+        $startDate = sprintf('%04d-%02d-01', $year, $month);
+        $endDate = date('Y-m-t', strtotime($startDate));
+
+        $rows = OrderItem::alias('oi')
+            ->leftJoin('la_order o', 'o.id = oi.order_id')
+            ->field([
+                'oi.order_id',
+                'oi.package_name',
+                'oi.service_date',
+                'o.order_sn',
+                'o.order_status',
+                'o.contact_name',
+                'o.contact_mobile',
+                'o.service_address',
+            ])
+            ->where('oi.staff_id', $staffId)
+            ->whereIn('oi.item_type', self::getStaffStatItemTypes())
+            ->where('oi.item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->whereBetween('oi.service_date', [$startDate, $endDate])
+            ->where('o.order_status', Order::STATUS_PENDING_SERVICE)
+            ->whereNull('o.delete_time')
+            ->order('oi.service_date', 'asc')
+            ->order('oi.order_id', 'asc')
+            ->select()
+            ->toArray();
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $groupKey = (string)$row['service_date'] . '#' . (int)$row['order_id'];
+            if (!isset($grouped[$groupKey])) {
+                $grouped[$groupKey] = [
+                    'order_id' => (int)$row['order_id'],
+                    'order_sn' => (string)($row['order_sn'] ?? ''),
+                    'service_date' => (string)($row['service_date'] ?? ''),
+                    'contact_name' => (string)($row['contact_name'] ?? ''),
+                    'contact_mobile' => (string)($row['contact_mobile'] ?? ''),
+                    'service_address' => (string)($row['service_address'] ?? ''),
+                    'package_names' => [],
+                    'item_count' => 0,
+                    'order_status' => (int)($row['order_status'] ?? Order::STATUS_PENDING_SERVICE),
+                    'order_status_desc' => self::getStatusDesc((int)($row['order_status'] ?? Order::STATUS_PENDING_SERVICE)),
+                    'can_staff_start' => (int)($row['order_status'] ?? Order::STATUS_PENDING_SERVICE) === Order::STATUS_PENDING_SERVICE ? 1 : 0,
+                ];
+            }
+
+            $packageName = trim((string)($row['package_name'] ?? ''));
+            if ($packageName !== '' && !in_array($packageName, $grouped[$groupKey]['package_names'], true)) {
+                $grouped[$groupKey]['package_names'][] = $packageName;
+            }
+            $grouped[$groupKey]['item_count']++;
+        }
+
+        $result = [];
+        foreach ($grouped as $item) {
+            $packageNames = $item['package_names'];
+            $item['package_summary'] = empty($packageNames)
+                ? '待确认服务内容'
+                : implode('、', array_slice($packageNames, 0, 2))
+                    . (count($packageNames) > 2 ? ' 等 ' . count($packageNames) . ' 项' : '');
+            unset($item['package_names']);
+            $result[] = $item;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @notes 构建档期页月度汇总
+     * @param int $year
+     * @param int $month
+     * @param array $schedules
+     * @param array $pendingServiceOrders
+     * @return array
+     */
+    private static function buildScheduleMonthSummary(
+        int $year,
+        int $month,
+        array $schedules,
+        array $pendingServiceOrders
+    ): array {
+        $today = date('Y-m-d');
+        $startDate = sprintf('%04d-%02d-01', $year, $month);
+        $endDate = date('Y-m-t', strtotime($startDate));
+        $pendingServiceDates = array_flip(array_column($pendingServiceOrders, 'service_date'));
+
+        $availableDays = 0;
+        $occupiedDays = 0;
+        $unavailableDays = 0;
+
+        $currentDate = $startDate;
+        while ($currentDate <= $endDate) {
+            if ($currentDate < $today) {
+                $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 day'));
+                continue;
+            }
+
+            $status = (int)($schedules[$currentDate][Schedule::TIME_SLOT_ALL]['status'] ?? Schedule::STATUS_AVAILABLE);
+            if (isset($pendingServiceDates[$currentDate])) {
+                $occupiedDays++;
+            } elseif ($status === Schedule::STATUS_UNAVAILABLE) {
+                $unavailableDays++;
+            } elseif (in_array($status, [Schedule::STATUS_BOOKED, Schedule::STATUS_LOCKED, Schedule::STATUS_RESERVED], true)) {
+                $occupiedDays++;
+            } else {
+                $availableDays++;
+            }
+
+            $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 day'));
+        }
+
+        return [
+            'available_days' => $availableDays,
+            'occupied_days' => $occupiedDays,
+            'unavailable_days' => $unavailableDays,
+            'pending_service_count' => count($pendingServiceOrders),
         ];
     }
 
@@ -1034,6 +1166,7 @@ class StaffCenterLogic extends BaseLogic
             $item = self::applyStaffOrderAmounts($item);
             $item['order_status_desc'] = self::getStatusDesc((int) $item['order_status']);
             $item['pay_status_desc'] = self::getPayStatusDesc((int) $item['pay_status']);
+            $item['can_staff_start'] = (int)($item['order_status'] ?? -1) === Order::STATUS_PENDING_SERVICE ? 1 : 0;
             $item['can_staff_complete'] = (int)($item['order_status'] ?? -1) === Order::STATUS_IN_SERVICE
                 && Order::canStaffCompleteService();
             $item = array_merge($item, Order::buildPayTimeoutSummaryFromState(
@@ -1088,6 +1221,7 @@ class StaffCenterLogic extends BaseLogic
         $data = array_merge($data, Order::getPaymentSummary($order));
         $data = array_merge($data, Order::getPayTimeoutSummary($order));
         $data = array_merge($data, Order::getConfirmTimeoutSummary($order));
+        $data['can_staff_start'] = (int)$order->order_status === Order::STATUS_PENDING_SERVICE ? 1 : 0;
         $data['can_staff_complete'] = (int)$order->order_status === Order::STATUS_IN_SERVICE
             && Order::canStaffCompleteService();
 
@@ -1233,6 +1367,49 @@ class StaffCenterLogic extends BaseLogic
         }
 
         [$success, $message] = Order::completeOrder($orderId, $userId, OrderLog::OPERATOR_USER, 'staff');
+        if (!$success) {
+            self::setError($message);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @notes 开始履约
+     */
+    public static function orderStartService(int $userId, int $orderId): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $order = Order::with(['items'])->find($orderId);
+        if (!$order) {
+            self::setError('订单不存在');
+            return false;
+        }
+
+        $staffItems = is_array($order->items ?? null)
+            ? $order->items
+            : ((is_object($order->items ?? null) && method_exists($order->items, 'toArray')) ? $order->items->toArray() : []);
+        $matchedItems = array_values(array_filter($staffItems, function ($item) use ($staffId) {
+            return (int)($item['staff_id'] ?? 0) === $staffId;
+        }));
+
+        if (empty($matchedItems)) {
+            self::setError('无权操作该订单');
+            return false;
+        }
+
+        [$success, $message] = Order::startService(
+            $orderId,
+            $userId,
+            OrderLog::OPERATOR_USER,
+            '服务人员开始履约'
+        );
         if (!$success) {
             self::setError($message);
             return false;

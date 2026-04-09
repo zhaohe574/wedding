@@ -24,9 +24,9 @@ class Complaint extends BaseModel
 
     // 投诉类型
     const TYPE_SERVICE = 1;     // 服务态度
-    const TYPE_ABILITY = 2;     // 专业能力
-    const TYPE_PUNCTUAL = 3;    // 迟到早退
-    const TYPE_VIOLATION = 4;   // 违规行为
+    const TYPE_ABILITY = 2;     // 履约偏差
+    const TYPE_PUNCTUAL = 3;    // 沟通问题
+    const TYPE_VIOLATION = 4;   // 执行落差
     const TYPE_OTHER = 5;       // 其他
 
     // 投诉等级
@@ -87,9 +87,9 @@ class Complaint extends BaseModel
     {
         $map = [
             self::TYPE_SERVICE => '服务态度',
-            self::TYPE_ABILITY => '专业能力',
-            self::TYPE_PUNCTUAL => '迟到早退',
-            self::TYPE_VIOLATION => '违规行为',
+            self::TYPE_ABILITY => '履约偏差',
+            self::TYPE_PUNCTUAL => '沟通问题',
+            self::TYPE_VIOLATION => '执行落差',
             self::TYPE_OTHER => '其他',
         ];
         return $map[$data['type']] ?? '未知';
@@ -208,6 +208,8 @@ class Complaint extends BaseModel
                 'images' => $data['images'] ?? [],
                 'videos' => $data['videos'] ?? [],
                 'expect_result' => $data['expect_result'] ?? '',
+                'contact_name' => $data['contact_name'] ?? '',
+                'contact_mobile' => $data['contact_mobile'] ?? '',
                 'status' => self::STATUS_PENDING,
                 'deadline' => $deadline,
                 'create_time' => time(),

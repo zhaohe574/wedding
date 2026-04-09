@@ -1,179 +1,288 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="申请暂停" />
-    <view class="apply-page">
-        <!-- 提示信息 -->
-        <view class="tip-card">
-            <tn-icon name="tip-fill" size="36rpx" color="#ff9500"></tn-icon>
-            <text class="tip-text"
-                >暂停期间订单将处于冻结状态，暂停到期后需主动申请恢复或重新选择服务日期。</text
-            >
-        </view>
+    <page-meta :page-style="pageStyle" />
+    <PageShell scene="consumer" hasSafeBottom>
+        <BaseNavbar title="申请暂停" />
 
-        <!-- 订单信息 -->
-        <view class="bg-white mt-3 p-4" v-if="orderInfo">
-            <view class="section-title">暂停订单</view>
-            <view class="order-card">
-                <view class="text-sm text-gray-500">订单号: {{ orderInfo.order_sn }}</view>
-                <view
-                    class="flex items-center mt-2"
-                    v-if="orderInfo.items && orderInfo.items.length > 0"
+        <view class="order-change-page">
+            <view class="order-change-page__wrapper">
+                <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
+                    <tn-icon name="tip-fill" size="34" color="#C98524" />
+                    <text class="order-change-tip-card__text">
+                        暂停期间订单会进入冻结状态。请准确填写开始和结束日期，审核通过后平台会同步安排恢复时间。
+                    </text>
+                </BaseCard>
+
+                <BaseCard
+                    v-if="orderInfo"
+                    variant="surface"
+                    scene="consumer"
+                    class="order-change-card order-change-form-card"
                 >
-                    <image
-                        :src="
-                            orderInfo.items[0].staff?.avatar ||
-                            '/static/images/user/default_avatar.png'
-                        "
-                        class="w-12 h-12 rounded-lg mr-3"
-                        mode="aspectFill"
-                    />
-                    <view class="flex-1">
-                        <view class="text-sm font-medium">{{ orderInfo.items[0].staff_name }}</view>
-                        <view class="text-xs text-gray-400">{{
-                            orderInfo.items[0].package_name
-                        }}</view>
+                    <text class="order-change-card__title">订单摘要</text>
+                    <view class="order-change-link-card">
+                        <view class="order-change-link-card__top">
+                            <text class="order-change-link-card__main">
+                                {{ getValueText(orderInfo.order_sn, '订单待补充') }}
+                            </text>
+                            <text class="order-change-link-card__meta">
+                                应付：¥{{ formatCurrency(orderInfo.pay_amount) }}
+                            </text>
+                        </view>
+                        <view class="order-change-link-card__bottom">
+                            <text class="order-change-link-card__meta">
+                                服务日期：{{ getValueText(orderInfo.service_date) }}
+                            </text>
+                            <text class="order-change-link-card__meta">
+                                {{ getValueText(orderItem?.staff_name, '待分配服务人员') }}
+                            </text>
+                        </view>
                     </view>
-                    <view class="text-right">
-                        <view class="text-primary font-bold">¥{{ orderInfo.pay_amount }}</view>
-                        <view class="text-xs text-gray-400">{{ orderInfo.service_date }}</view>
-                    </view>
-                </view>
-            </view>
-        </view>
+                </BaseCard>
 
-        <!-- 暂停类型 -->
-        <view class="bg-white mt-3 p-4">
-            <view class="section-title">暂停原因类型</view>
-            <view class="type-options">
-                <view
-                    v-for="type in pauseTypes"
-                    :key="type.value"
-                    class="type-option"
-                    :class="{ active: formData.pause_type === type.value }"
-                    @click="formData.pause_type = type.value"
+                <BaseCard
+                    variant="surface"
+                    scene="consumer"
+                    class="order-change-card order-change-form-card"
                 >
-                    <tn-icon
-                        :name="type.icon"
-                        size="48rpx"
-                        :color="formData.pause_type === type.value ? $theme.primaryColor : '#999'"
-                    ></tn-icon>
-                    <text class="type-label">{{ type.label }}</text>
-                </view>
-            </view>
-        </view>
-
-        <!-- 暂停时间 -->
-        <view class="bg-white mt-3 p-4">
-            <view class="section-title">暂停时间</view>
-            <view class="form-item" @click="showStartPicker = true">
-                <text class="label required">开始日期</text>
-                <view class="value-area">
-                    <text v-if="formData.start_date" class="text-primary">{{
-                        formData.start_date
-                    }}</text>
-                    <text v-else class="placeholder">请选择开始日期</text>
-                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
-                </view>
-            </view>
-            <view class="form-item" @click="showEndPicker = true">
-                <text class="label required">结束日期</text>
-                <view class="value-area">
-                    <text v-if="formData.end_date" class="text-primary">{{
-                        formData.end_date
-                    }}</text>
-                    <text v-else class="placeholder">请选择结束日期</text>
-                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
-                </view>
-            </view>
-            <view class="pause-days" v-if="pauseDays > 0">
-                <text class="text-gray-500">暂停天数: </text>
-                <text class="text-primary font-bold">{{ pauseDays }}天</text>
-            </view>
-        </view>
-
-        <!-- 暂停原因 -->
-        <view class="bg-white mt-3 p-4">
-            <view class="section-title">详细说明</view>
-            <textarea
-                v-model="formData.reason"
-                class="reason-input"
-                placeholder="请详细说明暂停原因（必填）"
-                maxlength="500"
-            />
-            <view class="text-right text-xs text-gray-400">{{ formData.reason.length }}/500</view>
-        </view>
-
-        <!-- 证明材料 -->
-        <view class="bg-white mt-3 p-4">
-            <view class="section-title">证明材料（选填）</view>
-            <view class="text-xs text-gray-400 mb-3">如有相关证明材料，请上传以加快审核</view>
-            <view class="image-uploader">
-                <view v-for="(img, index) in formData.proof_images" :key="index" class="image-item">
-                    <image :src="img" class="upload-image" mode="aspectFill" />
-                    <view class="delete-btn" @click="removeImage(index)">
-                        <tn-icon name="close" size="28rpx" color="#fff"></tn-icon>
+                    <text class="order-change-card__title">暂停原因类型</text>
+                    <view class="order-change-choice-grid">
+                        <view
+                            v-for="type in pauseTypes"
+                            :key="type.value"
+                            class="order-change-choice-card"
+                            :class="{
+                                'order-change-choice-card--active':
+                                    formData.pause_type === type.value
+                            }"
+                            @click="formData.pause_type = type.value"
+                        >
+                            <tn-icon
+                                :name="type.icon"
+                                size="44"
+                                :color="
+                                    formData.pause_type === type.value
+                                        ? $theme.primaryColor
+                                        : '#B4ACA8'
+                                "
+                            />
+                            <text class="order-change-choice-card__title">{{ type.label }}</text>
+                            <text class="order-change-choice-card__desc">
+                                {{ type.description }}
+                            </text>
+                        </view>
                     </view>
-                </view>
-                <view
-                    class="add-image"
-                    @click="chooseImage"
-                    v-if="formData.proof_images.length < 10"
+                </BaseCard>
+
+                <BaseCard
+                    variant="surface"
+                    scene="consumer"
+                    class="order-change-card order-change-form-card"
                 >
-                    <tn-icon name="add" size="80rpx" color="#ccc"></tn-icon>
-                    <text class="text-xs text-gray-400 mt-1">上传图片</text>
-                </view>
+                    <text class="order-change-card__title">暂停时间</text>
+                    <view class="order-change-form-field">
+                        <text class="order-change-form-field__label order-change-form-field__label--required">
+                            开始日期
+                        </text>
+                        <view class="order-change-form-field__shell" @click="openDatePicker('start')">
+                            <view class="order-change-form-field__value-row">
+                                <text
+                                    v-if="formData.start_date"
+                                    class="order-change-form-field__value"
+                                >
+                                    {{ formData.start_date }}
+                                </text>
+                                <text v-else class="order-change-form-field__placeholder">
+                                    请选择开始日期
+                                </text>
+                                <tn-icon name="right" size="30" color="#B4ACA8" />
+                            </view>
+                        </view>
+                    </view>
+                    <view class="order-change-form-field">
+                        <text class="order-change-form-field__label order-change-form-field__label--required">
+                            结束日期
+                        </text>
+                        <view class="order-change-form-field__shell" @click="openDatePicker('end')">
+                            <view class="order-change-form-field__value-row">
+                                <text
+                                    v-if="formData.end_date"
+                                    class="order-change-form-field__value"
+                                >
+                                    {{ formData.end_date }}
+                                </text>
+                                <text v-else class="order-change-form-field__placeholder">
+                                    请选择结束日期
+                                </text>
+                                <tn-icon name="right" size="30" color="#B4ACA8" />
+                            </view>
+                        </view>
+                    </view>
+                    <view v-if="pauseDays > 0" class="order-change-summary-grid">
+                        <view class="order-change-summary-grid__item">
+                            <text class="order-change-summary-grid__label">暂停天数</text>
+                            <text class="order-change-summary-grid__value">{{ pauseDays }} 天</text>
+                        </view>
+                        <view class="order-change-summary-grid__item">
+                            <text class="order-change-summary-grid__label">处理提示</text>
+                            <text class="order-change-summary-grid__value">审核通过后生效</text>
+                        </view>
+                    </view>
+                </BaseCard>
+
+                <BaseCard
+                    variant="surface"
+                    scene="consumer"
+                    class="order-change-card order-change-form-card"
+                >
+                    <text class="order-change-card__title">详细说明</text>
+                    <view class="order-change-form-field">
+                        <text class="order-change-form-field__label order-change-form-field__label--required">
+                            暂停原因
+                        </text>
+                        <view class="order-change-form-field__shell order-change-form-field__shell--textarea">
+                            <textarea
+                                v-model="formData.reason"
+                                class="order-change-form-field__textarea"
+                                maxlength="500"
+                                placeholder="请详细说明暂停原因，至少 10 个字。"
+                                placeholder-style="color:#B4ACA8;"
+                            />
+                        </view>
+                        <text class="order-change-form-field__counter">
+                            {{ formData.reason.length }}/500
+                        </text>
+                    </view>
+                </BaseCard>
+
+                <BaseCard
+                    variant="surface"
+                    scene="consumer"
+                    class="order-change-card order-change-form-card"
+                >
+                    <text class="order-change-card__title">证明材料</text>
+                    <text class="order-change-card__caption">
+                        选填，最多上传 10 张，用于补充说明暂停原因。
+                    </text>
+                    <view class="order-change-upload-grid">
+                        <view
+                            v-for="(image, index) in formData.proof_images"
+                            :key="`${image}-${index}`"
+                            class="order-change-upload-grid__item"
+                        >
+                            <image
+                                :src="image"
+                                mode="aspectFill"
+                                class="order-change-upload-grid__preview"
+                                @click="openImagePreview(formData.proof_images, index)"
+                            />
+                            <view class="order-change-upload-grid__remove" @click.stop="removeImage(index)">
+                                <tn-icon name="close" size="20" color="#FFFFFF" />
+                            </view>
+                        </view>
+                        <view
+                            v-if="formData.proof_images.length < 10"
+                            class="order-change-upload-grid__add"
+                            @click="chooseImage"
+                        >
+                            <tn-icon name="add" size="48" color="#C9B2AA" />
+                            <text class="order-change-upload-grid__add-text">上传图片</text>
+                        </view>
+                    </view>
+                </BaseCard>
+
+                <BaseCard variant="surface" scene="consumer" class="order-change-card">
+                    <text class="order-change-card__title">提交后说明</text>
+                    <text class="order-change-card__paragraph">
+                        暂停申请提交成功后会跳转到暂停详情页。若审核通过，订单会在暂停周期内冻结，恢复时间以平台通知为准。
+                    </text>
+                </BaseCard>
             </view>
-            <view class="text-xs text-gray-400 mt-2">最多上传10张图片</view>
         </view>
 
-        <!-- 提交按钮 -->
-        <view class="bottom-actions">
-            <button
-                class="btn-submit"
-                :style="{ background: $theme.primaryColor }"
-                :disabled="submitting"
-                @click="handleSubmit"
-            >
-                {{ submitting ? '提交中...' : '提交暂停申请' }}
-            </button>
-        </view>
+        <ActionArea sticky safeBottom>
+            <view class="order-change-page__actions">
+                <BaseButton block size="lg" :loading="submitting" @click="handleSubmit">
+                    提交暂停申请
+                </BaseButton>
+            </view>
+        </ActionArea>
 
-        <!-- 日期选择器 -->
-        <uni-datetime-picker
-            type="date"
-            v-model="formData.start_date"
-            :start="today"
-            @change="onStartDateChange"
-        />
-        <uni-datetime-picker
-            type="date"
-            v-model="formData.end_date"
-            :start="formData.start_date || today"
-            @change="onEndDateChange"
-        />
-    </view>
+        <uni-popup
+            ref="datePopup"
+            type="bottom"
+            :safe-area="false"
+            :mask-click="true"
+            @change="handlePopupChange"
+        >
+            <view class="order-change-sheet">
+                <view class="order-change-sheet__header">
+                    <text class="order-change-sheet__cancel" @click="closeDatePicker">取消</text>
+                    <text class="order-change-sheet__title">{{ activeDateTitle }}</text>
+                    <text class="order-change-sheet__confirm" @click="confirmDate">确定</text>
+                </view>
+                <picker-view
+                    class="order-change-sheet__picker"
+                    :value="datePickerValue"
+                    @change="onDateChange"
+                >
+                    <picker-view-column>
+                        <view
+                            v-for="year in years"
+                            :key="year"
+                            class="order-change-sheet__picker-item"
+                        >
+                            {{ year }}年
+                        </view>
+                    </picker-view-column>
+                    <picker-view-column>
+                        <view
+                            v-for="month in months"
+                            :key="month"
+                            class="order-change-sheet__picker-item"
+                        >
+                            {{ month }}月
+                        </view>
+                    </picker-view-column>
+                    <picker-view-column>
+                        <view
+                            v-for="day in days"
+                            :key="day"
+                            class="order-change-sheet__picker-item"
+                        >
+                            {{ day }}日
+                        </view>
+                    </picker-view-column>
+                </picker-view>
+            </view>
+        </uni-popup>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { applyPause, checkCanChange } from '@/api/orderChange'
 import { getOrderDetail } from '@/api/order'
+import { applyPause, checkCanChange } from '@/api/orderChange'
+import ActionArea from '@/components/base/ActionArea.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import PageShell from '@/components/base/PageShell.vue'
+import { useThemeStore } from '@/stores/theme'
+import {
+    formatCurrency,
+    getPageStyleWithPopupLock,
+    getValueText,
+    openImagePreview
+} from './shared'
+
+const $theme = useThemeStore()
 
 const orderId = ref(0)
 const orderInfo = ref<any>(null)
 const submitting = ref(false)
-const showStartPicker = ref(false)
-const showEndPicker = ref(false)
-
-const today = new Date().toISOString().split('T')[0]
-
-const pauseTypes = [
-    { value: 1, label: '疫情原因', icon: 'medal' },
-    { value: 2, label: '突发事件', icon: 'notification' },
-    { value: 3, label: '个人原因', icon: 'person' },
-    { value: 4, label: '其他原因', icon: 'more' }
-]
+const popupVisible = ref(false)
+const activeDateField = ref<'start' | 'end'>('start')
 
 const formData = reactive({
     pause_type: 3,
@@ -183,51 +292,116 @@ const formData = reactive({
     proof_images: [] as string[]
 })
 
+const pauseTypes = [
+    { value: 1, label: '疫情原因', icon: 'warning-circle', description: '因公共事件导致档期调整' },
+    { value: 2, label: '突发事件', icon: 'notification', description: '因紧急事务需暂缓服务' },
+    { value: 3, label: '个人原因', icon: 'my', description: '因个人安排需临时暂停' },
+    { value: 4, label: '其他原因', icon: 'more-circle', description: '其他需要平台审核的原因' }
+]
+
+const datePopup = ref()
+const datePickerValue = ref([0, 0, 0])
+
+const currentYear = new Date().getFullYear()
+const years = Array.from({ length: 3 }, (_, index) => currentYear + index)
+const months = Array.from({ length: 12 }, (_, index) => index + 1)
+const days = computed(() => {
+    const year = years[datePickerValue.value[0]] || years[0]
+    const month = months[datePickerValue.value[1]] || months[0]
+    const daysInMonth = new Date(year, month, 0).getDate()
+    return Array.from({ length: daysInMonth }, (_, index) => index + 1)
+})
+
+const orderItem = computed(() => orderInfo.value?.items?.[0] || null)
+const pageStyle = computed(() =>
+    getPageStyleWithPopupLock($theme.pageStyle, popupVisible.value)
+)
 const pauseDays = computed(() => {
-    if (!formData.start_date || !formData.end_date) return 0
-    const start = new Date(formData.start_date)
-    const end = new Date(formData.end_date)
-    const diff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    if (!formData.start_date || !formData.end_date) {
+        return 0
+    }
+    const start = new Date(formData.start_date.replace(/-/g, '/'))
+    const end = new Date(formData.end_date.replace(/-/g, '/'))
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        return 0
+    }
+    const diff = Math.ceil((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)) + 1
     return diff > 0 ? diff : 0
 })
+const activeDateTitle = computed(() =>
+    activeDateField.value === 'start' ? '选择开始日期' : '选择结束日期'
+)
 
 const fetchOrderInfo = async () => {
     try {
         const res = await getOrderDetail({ id: orderId.value })
-        orderInfo.value = res
-    } catch (e) {
-        console.error(e)
+        orderInfo.value = res?.data || res
+    } catch (error) {
+        console.error('获取订单详情失败', error)
     }
 }
 
 const checkOrder = async () => {
     try {
         const res = await checkCanChange({ order_id: orderId.value })
-        if (!res.can_change) {
+        if (!res?.can_change) {
             uni.showModal({
                 title: '提示',
-                content: res.message,
+                content: res?.message || '当前订单暂不支持暂停申请',
                 showCancel: false,
                 success: () => {
                     uni.navigateBack()
                 }
             })
         }
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '检查失败', icon: 'none' })
+    } catch (error: any) {
+        uni.showToast({ title: error?.message || '校验失败', icon: 'none' })
     }
 }
 
-const onStartDateChange = (e: any) => {
-    formData.start_date = e
-    // 如果结束日期早于开始日期，清空结束日期
-    if (formData.end_date && formData.end_date < formData.start_date) {
-        formData.end_date = ''
-    }
+const syncPickerWithDate = (value?: string) => {
+    const targetDate = value ? new Date(value.replace(/-/g, '/')) : new Date()
+    const safeDate = Number.isNaN(targetDate.getTime()) ? new Date() : targetDate
+    const yearIndex = Math.max(0, years.indexOf(safeDate.getFullYear()))
+    const monthIndex = safeDate.getMonth()
+    const dayIndex = safeDate.getDate() - 1
+    datePickerValue.value = [yearIndex, monthIndex, dayIndex]
 }
 
-const onEndDateChange = (e: any) => {
-    formData.end_date = e
+const openDatePicker = (field: 'start' | 'end') => {
+    activeDateField.value = field
+    syncPickerWithDate(field === 'start' ? formData.start_date : formData.end_date || formData.start_date)
+    datePopup.value?.open()
+}
+
+const closeDatePicker = () => {
+    datePopup.value?.close()
+}
+
+const handlePopupChange = (event: any) => {
+    popupVisible.value = Boolean(event?.show)
+}
+
+const onDateChange = (event: any) => {
+    datePickerValue.value = event?.detail?.value || [0, 0, 0]
+}
+
+const confirmDate = () => {
+    const year = years[datePickerValue.value[0]] || years[0]
+    const month = String(months[datePickerValue.value[1]] || months[0]).padStart(2, '0')
+    const day = String(days.value[datePickerValue.value[2]] || days.value[0]).padStart(2, '0')
+    const dateText = `${year}-${month}-${day}`
+
+    if (activeDateField.value === 'start') {
+        formData.start_date = dateText
+        if (formData.end_date && formData.end_date < formData.start_date) {
+            formData.end_date = ''
+        }
+    } else {
+        formData.end_date = dateText
+    }
+
+    closeDatePicker()
 }
 
 const chooseImage = () => {
@@ -235,8 +409,8 @@ const chooseImage = () => {
         count: 10 - formData.proof_images.length,
         sizeType: ['compressed'],
         sourceType: ['album', 'camera'],
-        success: (res) => {
-            formData.proof_images.push(...res.tempFilePaths)
+        success: (result) => {
+            formData.proof_images.push(...result.tempFilePaths)
         }
     })
 }
@@ -258,8 +432,8 @@ const handleSubmit = async () => {
         uni.showToast({ title: '请填写暂停原因', icon: 'none' })
         return
     }
-    if (formData.reason.length < 10) {
-        uni.showToast({ title: '暂停原因至少10个字', icon: 'none' })
+    if (formData.reason.trim().length < 10) {
+        uni.showToast({ title: '暂停原因至少 10 个字', icon: 'none' })
         return
     }
 
@@ -268,212 +442,33 @@ const handleSubmit = async () => {
         const res = await applyPause({
             order_id: orderId.value,
             pause_type: formData.pause_type,
-            reason: formData.reason,
+            reason: formData.reason.trim(),
             start_date: formData.start_date,
             end_date: formData.end_date,
             proof_images: formData.proof_images
         })
-        uni.showToast({ title: '申请已提交' })
+        uni.showToast({ title: '申请已提交', icon: 'none' })
         setTimeout(() => {
             uni.redirectTo({
                 url: `/packages/pages/order_change/pause_detail?id=${res.pause_id}`
             })
-        }, 1500)
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '提交失败', icon: 'none' })
+        }, 1200)
+    } catch (error: any) {
+        uni.showToast({ title: error?.message || '提交失败', icon: 'none' })
     } finally {
         submitting.value = false
     }
 }
 
 onLoad((options: any) => {
-    if (options.order_id) {
-        orderId.value = Number(options.order_id)
-        fetchOrderInfo()
-        checkOrder()
+    orderId.value = Number(options?.order_id || 0)
+    if (orderId.value) {
+        void fetchOrderInfo()
+        void checkOrder()
     }
 })
 </script>
 
 <style lang="scss" scoped>
-.apply-page {
-    min-height: 100vh;
-    background-color: #f5f5f5;
-    padding-bottom: 140rpx;
-}
-
-.tip-card {
-    display: flex;
-    align-items: flex-start;
-    padding: 24rpx 30rpx;
-    background: #fffbe6;
-    gap: 12rpx;
-
-    .tip-text {
-        flex: 1;
-        font-size: 24rpx;
-        color: #ff9500;
-        line-height: 1.5;
-    }
-}
-
-.section-title {
-    font-size: 28rpx;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 20rpx;
-    padding-left: 16rpx;
-    border-left: 6rpx solid var(--color-primary, #e85a4f);
-}
-
-.order-card {
-    padding: 20rpx;
-    background: #f9f9f9;
-    border-radius: 12rpx;
-}
-
-.type-options {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20rpx;
-}
-
-.type-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 30rpx 20rpx;
-    border: 2rpx solid #eee;
-    border-radius: 12rpx;
-
-    &.active {
-        border-color: var(--color-primary, #e85a4f);
-        background: rgba(124, 58, 237, 0.05);
-    }
-
-    .type-label {
-        font-size: 26rpx;
-        color: #666;
-        margin-top: 12rpx;
-    }
-
-    &.active .type-label {
-        color: var(--color-primary, #e85a4f);
-    }
-}
-
-.form-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 24rpx 0;
-    border-bottom: 1rpx solid #f5f5f5;
-
-    .label {
-        font-size: 28rpx;
-        color: #333;
-
-        &.required::before {
-            content: '*';
-            color: #ff3b30;
-            margin-right: 4rpx;
-        }
-    }
-
-    .value-area {
-        display: flex;
-        align-items: center;
-        gap: 8rpx;
-    }
-
-    .placeholder {
-        color: #ccc;
-        font-size: 28rpx;
-    }
-}
-
-.pause-days {
-    padding: 20rpx;
-    background: #f0f9ff;
-    border-radius: 8rpx;
-    margin-top: 20rpx;
-    text-align: center;
-}
-
-.reason-input {
-    width: 100%;
-    height: 240rpx;
-    padding: 20rpx;
-    background: #f9f9f9;
-    border-radius: 12rpx;
-    font-size: 28rpx;
-}
-
-.image-uploader {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16rpx;
-}
-
-.image-item {
-    position: relative;
-    width: 140rpx;
-    height: 140rpx;
-}
-
-.upload-image {
-    width: 100%;
-    height: 100%;
-    border-radius: 8rpx;
-}
-
-.delete-btn {
-    position: absolute;
-    top: -10rpx;
-    right: -10rpx;
-    width: 36rpx;
-    height: 36rpx;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.add-image {
-    width: 140rpx;
-    height: 140rpx;
-    border: 2rpx dashed #ddd;
-    border-radius: 8rpx;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.bottom-actions {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 20rpx 30rpx;
-    background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
-}
-
-.btn-submit {
-    width: 100%;
-    height: 72rpx;
-    line-height: 72rpx;
-    background: var(--color-primary, #e85a4f);
-    color: #fff;
-    border-radius: 44rpx;
-    font-size: 30rpx;
-    border: none;
-
-    &[disabled] {
-        opacity: 0.6;
-    }
-}
+@import './shared.scss';
 </style>

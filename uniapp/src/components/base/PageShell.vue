@@ -45,6 +45,8 @@ const shellClass = computed(() => [
 <style lang="scss" scoped>
 .wm-page-shell {
     width: 100%;
+    min-height: 100vh;
+    background: var(--wm-color-bg-page, #fff7f4);
 }
 
 .wm-page-shell--safe-bottom {

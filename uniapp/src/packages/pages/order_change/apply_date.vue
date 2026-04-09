@@ -1,145 +1,225 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="申请改期" />
-    <view class="apply-page">
-        <!-- 订单信息 -->
-        <view class="bg-white p-4" v-if="orderInfo">
-            <view class="section-title">订单信息</view>
-            <view class="order-card">
-                <view class="text-sm text-gray-500">订单号: {{ orderInfo.order_sn }}</view>
-                <view
-                    class="flex items-center mt-2"
-                    v-if="orderInfo.items && orderInfo.items.length > 0"
+    <page-meta :page-style="pageStyle" />
+    <PageShell scene="consumer" hasSafeBottom>
+        <BaseNavbar title="申请改期" />
+
+        <view class="order-change-page">
+            <view class="order-change-page__wrapper">
+                <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
+                    <tn-icon name="calendar" size="34" color="#E85A4F" />
+                    <text class="order-change-tip-card__text">
+                        改期申请提交后会进入平台审核，审核通过后会同步更新订单履约日期，请先确认新的服务日期。
+                    </text>
+                </BaseCard>
+
+                <BaseCard
+                    v-if="orderInfo"
+                    variant="surface"
+                    scene="consumer"
+                    class="order-change-card order-change-form-card"
                 >
-                    <image
-                        :src="
-                            orderInfo.items[0].staff?.avatar ||
-                            '/static/images/user/default_avatar.png'
-                        "
-                        class="w-12 h-12 rounded-lg mr-3"
-                        mode="aspectFill"
-                    />
-                    <view class="flex-1">
-                        <view class="text-sm font-medium">{{ orderInfo.items[0].staff_name }}</view>
-                        <view class="text-xs text-gray-400">{{
-                            orderInfo.items[0].package_name
-                        }}</view>
+                    <text class="order-change-card__title">订单摘要</text>
+                    <view class="order-change-link-card">
+                        <view class="order-change-link-card__top">
+                            <text class="order-change-link-card__main">
+                                {{ getValueText(orderInfo.order_sn, '订单待补充') }}
+                            </text>
+                            <text class="order-change-link-card__meta">
+                                应付：¥{{ formatCurrency(orderInfo.pay_amount) }}
+                            </text>
+                        </view>
+                        <view class="order-change-link-card__bottom">
+                            <text class="order-change-link-card__meta">
+                                当前服务日期：{{ getValueText(orderInfo.service_date) }}
+                            </text>
+                            <text class="order-change-link-card__meta">
+                                {{ getValueText(orderItem?.staff_name, '待分配服务人员') }}
+                            </text>
+                        </view>
                     </view>
-                </view>
-                <view class="mt-2 p-3 bg-orange-50 rounded-lg">
-                    <view class="text-sm">
-                        <text class="text-gray-500">当前服务日期: </text>
-                        <text class="text-orange-500 font-bold">{{ orderInfo.service_date }}</text>
-                    </view>
-                </view>
-            </view>
-        </view>
+                </BaseCard>
 
-        <!-- 选择新日期 -->
-        <view class="bg-white mt-3 p-4">
-            <view class="section-title">选择新服务日期</view>
-            <view class="form-item" @click="openDatePicker">
-                <text class="label">新服务日期</text>
-                <view class="value-area">
-                    <text v-if="formData.new_date" class="text-primary">{{
-                        formData.new_date
-                    }}</text>
-                    <text v-else class="placeholder">请选择日期</text>
-                    <tn-icon name="right" size="32rpx" color="#999"></tn-icon>
-                </view>
-            </view>
-        </view>
-
-        <!-- 申请原因 -->
-        <view class="bg-white mt-3 p-4">
-            <view class="section-title">申请原因</view>
-            <textarea
-                v-model="formData.reason"
-                class="reason-input"
-                placeholder="请填写改期原因（选填）"
-                maxlength="200"
-            />
-            <view class="text-right text-xs text-gray-400">{{ formData.reason.length }}/200</view>
-        </view>
-
-        <!-- 附件图片 -->
-        <view class="bg-white mt-3 p-4">
-            <view class="section-title">附件图片（选填）</view>
-            <view class="image-uploader">
-                <view
-                    v-for="(img, index) in formData.attach_images"
-                    :key="index"
-                    class="image-item"
+                <BaseCard
+                    variant="surface"
+                    scene="consumer"
+                    class="order-change-card order-change-form-card"
                 >
-                    <image :src="img" class="upload-image" mode="aspectFill" />
-                    <view class="delete-btn" @click="removeImage(index)">
-                        <tn-icon name="close" size="28rpx" color="#fff"></tn-icon>
+                    <text class="order-change-card__title">改期信息</text>
+                    <view class="order-change-form-field">
+                        <text class="order-change-form-field__label order-change-form-field__label--required">
+                            新服务日期
+                        </text>
+                        <view class="order-change-form-field__shell" @click="openDatePicker">
+                            <view class="order-change-form-field__value-row">
+                                <text
+                                    v-if="formData.new_date"
+                                    class="order-change-form-field__value"
+                                >
+                                    {{ formData.new_date }}
+                                </text>
+                                <text v-else class="order-change-form-field__placeholder">
+                                    请选择新的服务日期
+                                </text>
+                                <tn-icon name="right" size="30" color="#B4ACA8" />
+                            </view>
+                        </view>
+                        <text class="order-change-form-field__helper">
+                            当前订单日期：{{ getValueText(orderInfo?.service_date, '待补充') }}
+                        </text>
                     </view>
-                </view>
-                <view
-                    class="add-image"
-                    @click="chooseImage"
-                    v-if="formData.attach_images.length < 5"
+                </BaseCard>
+
+                <BaseCard
+                    variant="surface"
+                    scene="consumer"
+                    class="order-change-card order-change-form-card"
                 >
-                    <tn-icon name="add" size="80rpx" color="#ccc"></tn-icon>
-                    <text class="text-xs text-gray-400 mt-1">上传图片</text>
-                </view>
-            </view>
-            <view class="text-xs text-gray-400 mt-2">最多上传5张图片，支持jpg、png格式</view>
-        </view>
+                    <text class="order-change-card__title">申请说明</text>
+                    <view class="order-change-form-field">
+                        <text class="order-change-form-field__label">改期原因</text>
+                        <view class="order-change-form-field__shell order-change-form-field__shell--textarea">
+                            <textarea
+                                v-model="formData.reason"
+                                class="order-change-form-field__textarea"
+                                maxlength="200"
+                                placeholder="请补充改期原因，帮助平台更快审核。"
+                                placeholder-style="color:#B4ACA8;"
+                            />
+                        </view>
+                        <text class="order-change-form-field__counter">
+                            {{ formData.reason.length }}/200
+                        </text>
+                    </view>
+                </BaseCard>
 
-        <!-- 提交按钮 -->
-        <view class="bottom-actions">
-            <button
-                class="btn-submit"
-                :disabled="submitting"
-                :style="{ background: $theme.primaryColor }"
-                @click="handleSubmit"
-            >
-                {{ submitting ? '提交中...' : '提交申请' }}
-            </button>
-        </view>
-
-        <!-- 日期选择器 -->
-        <uni-popup ref="datePopup" type="bottom" :safe-area="false">
-            <view class="picker-popup">
-                <view class="picker-header">
-                    <text class="cancel" @click="closeDatePicker">取消</text>
-                    <text class="title">选择日期</text>
-                    <text class="confirm" @click="confirmDate">确定</text>
-                </view>
-                <picker-view :value="datePickerValue" @change="onDateChange" class="picker-view">
-                    <picker-view-column>
-                        <view v-for="year in years" :key="year" class="picker-item"
-                            >{{ year }}年</view
+                <BaseCard
+                    variant="surface"
+                    scene="consumer"
+                    class="order-change-card order-change-form-card"
+                >
+                    <text class="order-change-card__title">附件图片</text>
+                    <text class="order-change-card__caption">
+                        选填，最多上传 5 张，支持拍照或相册选择。
+                    </text>
+                    <view class="order-change-upload-grid">
+                        <view
+                            v-for="(image, index) in formData.attach_images"
+                            :key="`${image}-${index}`"
+                            class="order-change-upload-grid__item"
                         >
+                            <image
+                                :src="image"
+                                mode="aspectFill"
+                                class="order-change-upload-grid__preview"
+                                @click="openImagePreview(formData.attach_images, index)"
+                            />
+                            <view class="order-change-upload-grid__remove" @click.stop="removeImage(index)">
+                                <tn-icon name="close" size="20" color="#FFFFFF" />
+                            </view>
+                        </view>
+                        <view
+                            v-if="formData.attach_images.length < 5"
+                            class="order-change-upload-grid__add"
+                            @click="chooseImage"
+                        >
+                            <tn-icon name="add" size="48" color="#C9B2AA" />
+                            <text class="order-change-upload-grid__add-text">上传图片</text>
+                        </view>
+                    </view>
+                </BaseCard>
+
+                <BaseCard variant="surface" scene="consumer" class="order-change-card">
+                    <text class="order-change-card__title">提交后说明</text>
+                    <text class="order-change-card__paragraph">
+                        提交成功后会自动跳转到变更详情页，后续审核进度与执行结果会在“我的申请”中统一查看。
+                    </text>
+                </BaseCard>
+            </view>
+        </view>
+
+        <ActionArea sticky safeBottom>
+            <view class="order-change-page__actions">
+                <BaseButton block size="lg" :loading="submitting" @click="handleSubmit">
+                    提交申请
+                </BaseButton>
+            </view>
+        </ActionArea>
+
+        <uni-popup
+            ref="datePopup"
+            type="bottom"
+            :safe-area="false"
+            :mask-click="true"
+            @change="handlePopupChange"
+        >
+            <view class="order-change-sheet">
+                <view class="order-change-sheet__header">
+                    <text class="order-change-sheet__cancel" @click="closeDatePicker">取消</text>
+                    <text class="order-change-sheet__title">选择日期</text>
+                    <text class="order-change-sheet__confirm" @click="confirmDate">确定</text>
+                </view>
+                <picker-view
+                    class="order-change-sheet__picker"
+                    :value="datePickerValue"
+                    @change="onDateChange"
+                >
+                    <picker-view-column>
+                        <view
+                            v-for="year in years"
+                            :key="year"
+                            class="order-change-sheet__picker-item"
+                        >
+                            {{ year }}年
+                        </view>
                     </picker-view-column>
                     <picker-view-column>
-                        <view v-for="month in months" :key="month" class="picker-item"
-                            >{{ month }}月</view
+                        <view
+                            v-for="month in months"
+                            :key="month"
+                            class="order-change-sheet__picker-item"
                         >
+                            {{ month }}月
+                        </view>
                     </picker-view-column>
                     <picker-view-column>
-                        <view v-for="day in days" :key="day" class="picker-item">{{ day }}日</view>
+                        <view
+                            v-for="day in days"
+                            :key="day"
+                            class="order-change-sheet__picker-item"
+                        >
+                            {{ day }}日
+                        </view>
                     </picker-view-column>
                 </picker-view>
             </view>
         </uni-popup>
-    </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { applyDateChange, checkCanChange } from '@/api/orderChange'
 import { getOrderDetail } from '@/api/order'
+import { applyDateChange, checkCanChange } from '@/api/orderChange'
+import ActionArea from '@/components/base/ActionArea.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
+import {
+    formatCurrency,
+    getPageStyleWithPopupLock,
+    getValueText,
+    openImagePreview
+} from './shared'
 
 const $theme = useThemeStore()
 
 const orderId = ref(0)
 const orderInfo = ref<any>(null)
 const submitting = ref(false)
+const popupVisible = ref(false)
 
 const formData = reactive({
     new_date: '',
@@ -147,71 +227,83 @@ const formData = reactive({
     attach_images: [] as string[]
 })
 
-// 日期选择器相关
 const datePopup = ref()
 const datePickerValue = ref([0, 0, 0])
 
 const currentYear = new Date().getFullYear()
-const years = Array.from({ length: 3 }, (_, i) => currentYear + i)
-const months = Array.from({ length: 12 }, (_, i) => i + 1)
+const years = Array.from({ length: 3 }, (_, index) => currentYear + index)
+const months = Array.from({ length: 12 }, (_, index) => index + 1)
 const days = computed(() => {
-    const year = years[datePickerValue.value[0]]
-    const month = months[datePickerValue.value[1]]
+    const year = years[datePickerValue.value[0]] || years[0]
+    const month = months[datePickerValue.value[1]] || months[0]
     const daysInMonth = new Date(year, month, 0).getDate()
-    return Array.from({ length: daysInMonth }, (_, i) => i + 1)
+    return Array.from({ length: daysInMonth }, (_, index) => index + 1)
 })
+
+const pageStyle = computed(() =>
+    getPageStyleWithPopupLock($theme.pageStyle, popupVisible.value)
+)
+const orderItem = computed(() => orderInfo.value?.items?.[0] || null)
 
 const fetchOrderInfo = async () => {
     try {
         const res = await getOrderDetail({ id: orderId.value })
-        orderInfo.value = res
-    } catch (e) {
-        console.error(e)
+        orderInfo.value = res?.data || res
+    } catch (error) {
+        console.error('获取订单详情失败', error)
     }
 }
 
 const checkOrder = async () => {
     try {
         const res = await checkCanChange({ order_id: orderId.value })
-        if (!res.can_change) {
+        if (!res?.can_change) {
             uni.showModal({
                 title: '提示',
-                content: res.message,
+                content: res?.message || '当前订单暂不支持改期',
                 showCancel: false,
                 success: () => {
                     uni.navigateBack()
                 }
             })
         }
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '检查失败', icon: 'none' })
+    } catch (error: any) {
+        uni.showToast({ title: error?.message || '校验失败', icon: 'none' })
     }
 }
 
-const onDateChange = (e: any) => {
-    datePickerValue.value = e.detail.value
+const syncPickerWithDate = (value?: string) => {
+    const targetDate = value ? new Date(value.replace(/-/g, '/')) : new Date()
+    const safeDate = Number.isNaN(targetDate.getTime()) ? new Date() : targetDate
+    const yearIndex = Math.max(0, years.indexOf(safeDate.getFullYear()))
+    const monthIndex = safeDate.getMonth()
+    const dayIndex = safeDate.getDate() - 1
+    datePickerValue.value = [yearIndex, monthIndex, dayIndex]
+}
+
+const openDatePicker = () => {
+    syncPickerWithDate(formData.new_date || orderInfo.value?.service_date)
+    datePopup.value?.open()
 }
 
 const closeDatePicker = () => {
     datePopup.value?.close()
 }
 
-const confirmDate = () => {
-    const year = years[datePickerValue.value[0]]
-    const month = String(months[datePickerValue.value[1]]).padStart(2, '0')
-    const day = String(days.value[datePickerValue.value[2]]).padStart(2, '0')
-    formData.new_date = `${year}-${month}-${day}`
-    closeDatePicker()
+const handlePopupChange = (event: any) => {
+    popupVisible.value = Boolean(event?.show)
 }
 
-const openDatePicker = () => {
-    // 设置默认值为今天
-    const today = new Date()
-    const yearIndex = years.indexOf(today.getFullYear())
-    const monthIndex = today.getMonth()
-    const dayIndex = today.getDate() - 1
-    datePickerValue.value = [yearIndex >= 0 ? yearIndex : 0, monthIndex, dayIndex]
-    datePopup.value?.open()
+const onDateChange = (event: any) => {
+    datePickerValue.value = event?.detail?.value || [0, 0, 0]
+}
+
+const confirmDate = () => {
+    const year = years[datePickerValue.value[0]] || years[0]
+    const month = String(months[datePickerValue.value[1]] || months[0]).padStart(2, '0')
+    const day = String(days.value[datePickerValue.value[2]] || days.value[0]).padStart(2, '0')
+    formData.new_date = `${year}-${month}-${day}`
+    closeDatePicker()
 }
 
 const chooseImage = () => {
@@ -219,10 +311,8 @@ const chooseImage = () => {
         count: 5 - formData.attach_images.length,
         sizeType: ['compressed'],
         sourceType: ['album', 'camera'],
-        success: (res) => {
-            // 这里应该先上传到服务器，获取URL后再添加
-            // 简化处理：直接使用本地路径
-            formData.attach_images.push(...res.tempFilePaths)
+        success: (result) => {
+            formData.attach_images.push(...result.tempFilePaths)
         }
     })
 }
@@ -233,7 +323,7 @@ const removeImage = (index: number) => {
 
 const handleSubmit = async () => {
     if (!formData.new_date) {
-        uni.showToast({ title: '请选择新服务日期', icon: 'none' })
+        uni.showToast({ title: '请选择新的服务日期', icon: 'none' })
         return
     }
 
@@ -242,187 +332,31 @@ const handleSubmit = async () => {
         const res = await applyDateChange({
             order_id: orderId.value,
             new_date: formData.new_date,
-            reason: formData.reason,
+            reason: formData.reason.trim(),
             attach_images: formData.attach_images
         })
-        uni.showToast({ title: '申请已提交' })
+        uni.showToast({ title: '申请已提交', icon: 'none' })
         setTimeout(() => {
             uni.redirectTo({
                 url: `/packages/pages/order_change/change_detail?id=${res.change_id}`
             })
-        }, 1500)
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '提交失败', icon: 'none' })
+        }, 1200)
+    } catch (error: any) {
+        uni.showToast({ title: error?.message || '提交失败', icon: 'none' })
     } finally {
         submitting.value = false
     }
 }
 
 onLoad((options: any) => {
-    if (options.order_id) {
-        orderId.value = Number(options.order_id)
-        fetchOrderInfo()
-        checkOrder()
+    orderId.value = Number(options?.order_id || 0)
+    if (orderId.value) {
+        void fetchOrderInfo()
+        void checkOrder()
     }
 })
 </script>
 
 <style lang="scss" scoped>
-.apply-page {
-    min-height: 100vh;
-    background-color: #f5f5f5;
-    padding-bottom: 140rpx;
-}
-
-.section-title {
-    font-size: 28rpx;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 20rpx;
-    padding-left: 16rpx;
-    border-left: 6rpx solid var(--color-primary, #e85a4f);
-}
-
-.order-card {
-    padding: 20rpx;
-    background: #f9f9f9;
-    border-radius: 12rpx;
-}
-
-.form-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 24rpx 0;
-    border-bottom: 1rpx solid #f5f5f5;
-
-    .label {
-        font-size: 28rpx;
-        color: #333;
-    }
-
-    .value-area {
-        display: flex;
-        align-items: center;
-        gap: 8rpx;
-    }
-
-    .placeholder {
-        color: #ccc;
-        font-size: 28rpx;
-    }
-}
-
-.reason-input {
-    width: 100%;
-    height: 200rpx;
-    padding: 20rpx;
-    background: #f9f9f9;
-    border-radius: 12rpx;
-    font-size: 28rpx;
-}
-
-.image-uploader {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16rpx;
-}
-
-.image-item {
-    position: relative;
-    width: 160rpx;
-    height: 160rpx;
-}
-
-.upload-image {
-    width: 100%;
-    height: 100%;
-    border-radius: 8rpx;
-}
-
-.delete-btn {
-    position: absolute;
-    top: -10rpx;
-    right: -10rpx;
-    width: 36rpx;
-    height: 36rpx;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.add-image {
-    width: 160rpx;
-    height: 160rpx;
-    border: 2rpx dashed #ddd;
-    border-radius: 8rpx;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.bottom-actions {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 20rpx 30rpx;
-    background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
-}
-
-.btn-submit {
-    width: 100%;
-    height: 72rpx;
-    line-height: 72rpx;
-    background: var(--color-primary, #e85a4f);
-    color: #fff;
-    border-radius: 44rpx;
-    font-size: 30rpx;
-    border: none;
-
-    &[disabled] {
-        opacity: 0.6;
-    }
-}
-
-.picker-popup {
-    background: #fff;
-    border-radius: 24rpx 24rpx 0 0;
-}
-
-.picker-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 30rpx;
-    border-bottom: 1rpx solid #f5f5f5;
-
-    .cancel {
-        color: #999;
-        font-size: 28rpx;
-    }
-    .title {
-        font-size: 30rpx;
-        font-weight: bold;
-    }
-    .confirm {
-        color: var(--color-primary, #e85a4f);
-        font-size: 28rpx;
-    }
-}
-
-.picker-view {
-    height: 400rpx;
-}
-
-.picker-item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 30rpx;
-}
+@import './shared.scss';
 </style>

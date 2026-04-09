@@ -33,49 +33,50 @@ const badgeClass = computed(() => [
     justify-content: center;
     border-radius: var(--wm-radius-pill, 999rpx);
     border: 1rpx solid transparent;
+    box-sizing: border-box;
 
     &--sm {
-        min-height: 40rpx;
+        min-height: 38rpx;
         padding: 0 12rpx;
     }
 
     &--md {
-        min-height: 48rpx;
-        padding: 0 16rpx;
+        min-height: 44rpx;
+        padding: 0 14rpx;
     }
 
     &__text {
-        font-size: 22rpx;
+        font-size: 21rpx;
         font-weight: 600;
         line-height: 1;
     }
 
     &--neutral {
-        background: rgba(96, 112, 134, 0.1);
+        background: rgba(96, 112, 134, 0.08);
         border-color: rgba(96, 112, 134, 0.16);
         color: var(--wm-color-info, #607086);
     }
 
     &--success {
-        background: rgba(47, 125, 88, 0.1);
+        background: rgba(47, 125, 88, 0.08);
         border-color: rgba(47, 125, 88, 0.16);
         color: var(--wm-color-success, #2f7d58);
     }
 
     &--warning {
-        background: rgba(201, 133, 36, 0.1);
+        background: rgba(201, 133, 36, 0.08);
         border-color: rgba(201, 133, 36, 0.16);
         color: var(--wm-color-warning, #c98524);
     }
 
     &--danger {
-        background: rgba(180, 74, 58, 0.1);
-        border-color: rgba(180, 74, 58, 0.16);
-        color: var(--wm-color-danger, #b44a3a);
+        background: rgba(201, 75, 73, 0.08);
+        border-color: rgba(201, 75, 73, 0.16);
+        color: var(--wm-color-danger, #c94b49);
     }
 
     &--info {
-        background: var(--wm-color-primary-soft, #fff1ee);
+        background: rgba(232, 90, 79, 0.08);
         border-color: var(--wm-color-border-strong, #f4c7bf);
         color: var(--wm-color-primary, #e85a4f);
     }

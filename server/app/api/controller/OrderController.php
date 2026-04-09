@@ -195,7 +195,7 @@ class OrderController extends BaseApiController
     {
         $params = (new OrderValidate())->post()->goCheck('refund');
         $orderId = (int)$params['id'];
-        $result = OrderLogic::applyRefund($orderId, $this->userId, (float)$params['amount'], $params['reason']);
+        $result = OrderLogic::applyRefund($orderId, $this->userId, $params['reason']);
         if ($result['success']) {
             return $this->success($result['message']);
         }

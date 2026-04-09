@@ -246,7 +246,8 @@ import ActionArea from '@/components/base/ActionArea.vue'
 import {
     staffCenterOrderComplete,
     staffCenterOrderDetail,
-    staffCenterOrderConfirm
+    staffCenterOrderConfirm,
+    staffCenterOrderStartService
 } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
@@ -323,8 +324,8 @@ const statusConfig: Record<string, Omit<StatusDescriptor, 'badgeText'>> = {
     paid: {
         badgeModifier: 'success',
         tone: 'success',
-        title: '订单待服务，等待后台开始履约',
-        description: '客户已完成首笔支付或全款支付，订单已进入待服务阶段，请提前确认现场安排与执行细节。'
+        title: '订单待服务，可开始履约',
+        description: '客户已完成首笔支付或全款支付，订单已进入待服务阶段，请确认现场安排后开始履约。'
     },
     in_service: {
         badgeModifier: 'success',
@@ -820,18 +821,26 @@ const primaryActionVisible = computed(() => {
     const hasPending = (order.value?.items || []).some(
         (item: any) => Number(item?.confirm_status ?? 0) === 0
     )
+    const status = Number(order.value?.order_status ?? -1)
 
-    if (Number(order.value?.order_status ?? -1) === 0 && hasPending) {
+    if (status === 0 && hasPending) {
         return true
     }
 
-    return Number(order.value?.order_status ?? -1) === 3 && Number(order.value?.can_staff_complete || 0) === 1
+    if (status === 2) {
+        return Number(order.value?.can_staff_start || 0) === 1
+    }
+
+    return status === 3 && Number(order.value?.can_staff_complete || 0) === 1
 })
 
 const secondaryActionVisible = computed(() => Boolean(order.value))
-const primaryActionText = computed(() =>
-    Number(order.value?.order_status ?? -1) === 3 ? '完成服务' : '确认订单'
-)
+const primaryActionText = computed(() => {
+    const status = Number(order.value?.order_status ?? -1)
+    if (status === 3) return '完成服务'
+    if (status === 2) return '开始履约'
+    return '确认订单'
+})
 
 const clearConfirmCountdown = () => {
     if (confirmCountdownTimer) {
@@ -941,8 +950,9 @@ const handleContactCustomer = () => {
 
 const handleConfirm = () => {
     if (!order.value?.id) return
+    const status = Number(order.value?.order_status ?? -1)
 
-    if (Number(order.value?.order_status ?? -1) === 3) {
+    if (status === 3) {
         uni.showModal({
             title: '完成服务',
             content: '确认本单服务已完成吗？',
@@ -957,6 +967,27 @@ const handleConfirm = () => {
                             ? '服务已完成，待支付尾款'
                             : '订单已完成'
                     uni.showToast({ title: successText, icon: 'success' })
+                } catch (error: any) {
+                    const msg =
+                        typeof error === 'string' ? error : error?.msg || error?.message || '操作失败'
+                    uni.showToast({ title: msg, icon: 'none' })
+                }
+            }
+        })
+        return
+    }
+
+    if (status === 2) {
+        uni.showModal({
+            title: '开始履约',
+            content: '确认本单已开始履约吗？',
+            success: async (res) => {
+                if (!res.confirm) return
+
+                try {
+                    await staffCenterOrderStartService({ id: order.value.id })
+                    await fetchDetail(order.value.id)
+                    uni.showToast({ title: '开始履约成功', icon: 'success' })
                 } catch (error: any) {
                     const msg =
                         typeof error === 'string' ? error : error?.msg || error?.message || '操作失败'

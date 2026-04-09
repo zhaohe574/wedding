@@ -11,9 +11,12 @@ use app\common\enum\user\AccountLogEnum;
 use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\AccountLogLogic;
 use app\common\model\order\Order;
+use app\common\model\order\OrderItem;
 use app\common\model\order\Payment;
 use app\common\model\order\Refund;
 use app\common\model\order\RefundItem;
+use app\common\model\package\PackageBooking;
+use app\common\model\schedule\Schedule;
 use app\common\model\user\User;
 use app\common\service\pay\AliPayService;
 use app\common\service\pay\WeChatPayService;
@@ -35,6 +38,66 @@ class OrderRefundService
     public static function getRefundableAmount(int $orderId): float
     {
         return round(array_sum(array_column(self::getRefundablePayments($orderId), 'left_amount')), 2);
+    }
+
+    /**
+     * @notes 是否存在进行中的退款
+     * @param int $orderId
+     * @return bool
+     */
+    public static function hasPendingRefund(int $orderId): bool
+    {
+        return Refund::where('order_id', $orderId)
+            ->whereIn('refund_status', Refund::getPendingStatuses())
+            ->find() !== null;
+    }
+
+    /**
+     * @notes 订单状态是否已结束
+     * @param int $status
+     * @return bool
+     */
+    public static function isOrderFinishedStatus(int $status): bool
+    {
+        return in_array($status, [
+            Order::STATUS_COMPLETED,
+            Order::STATUS_REVIEWED,
+            Order::STATUS_CANCELLED,
+            Order::STATUS_REFUNDED,
+            Order::STATUS_USER_DELETED,
+        ], true);
+    }
+
+    /**
+     * @notes 用户端是否允许申请退款
+     * @param Order $order
+     * @return bool
+     */
+    public static function canUserApplyRefund(Order $order): bool
+    {
+        if (!in_array((int)$order->order_status, [Order::STATUS_PAID, Order::STATUS_IN_SERVICE], true)) {
+            return false;
+        }
+
+        if (self::hasPendingRefund((int)$order->id)) {
+            return false;
+        }
+
+        return self::getRefundableAmount((int)$order->id) > 0;
+    }
+
+    /**
+     * @notes 管理员是否允许发起退款
+     * @param Order $order
+     * @return bool
+     */
+    public static function canAdminApplyRefund(Order $order): bool
+    {
+        if (self::hasPendingRefund((int)$order->id)) {
+            return false;
+        }
+
+        return self::getRefundableAmount((int)$order->id) > 0;
     }
 
     /**
@@ -611,8 +674,12 @@ class OrderRefundService
             return;
         }
 
-        $totalRefunded = round((float)Payment::where('order_id', (int)$order->id)->sum('refund_amount'), 2);
-        $isFullyRefunded = $totalRefunded >= round((float)$order->pay_amount, 2);
+        $paymentQuery = Payment::where('order_id', (int)$order->id);
+        $totalRefunded = round((float)(clone $paymentQuery)->sum('refund_amount'), 2);
+        $totalPaidAmount = round((float)(clone $paymentQuery)->sum('pay_amount'), 2);
+        $isFullyRefunded = $totalPaidAmount > 0 && $totalRefunded >= $totalPaidAmount;
+        $sourceStatus = self::normalizeSourceOrderStatus((int)($refund->source_order_status ?? Order::STATUS_PAID));
+        $shouldReleaseResources = $isFullyRefunded && !self::isOrderFinishedStatus($sourceStatus);
 
         $refund->refund_status = Refund::STATUS_COMPLETED;
         $refund->actual_refund_amount = $actualRefundAmount;
@@ -627,6 +694,10 @@ class OrderRefundService
         }
         $refund->update_time = time();
         $refund->save();
+
+        if ($shouldReleaseResources) {
+            self::releaseOrderResources($order);
+        }
 
         $order->order_status = self::resolveCompletedOrderStatus($refund, $isFullyRefunded);
         $order->pay_status = $isFullyRefunded ? Order::PAY_STATUS_FULL_REFUND : Order::PAY_STATUS_PARTIAL_REFUND;
@@ -788,17 +859,27 @@ class OrderRefundService
             (int)($refund->source_order_status ?? Order::STATUS_PAID)
         );
 
-        // 未开始服务的订单，退款完成后直接关闭
-        if (in_array($sourceStatus, [
-            Order::STATUS_PENDING_CONFIRM,
-            Order::STATUS_PENDING_PAY,
-            Order::STATUS_PAID,
-            Order::STATUS_PAUSED,
-        ], true)) {
-            return Order::STATUS_REFUNDED;
+        return $sourceStatus;
+    }
+
+    /**
+     * @notes 全额退款成功后释放订单占用资源
+     * @param Order $order
+     * @return void
+     */
+    protected static function releaseOrderResources(Order $order): void
+    {
+        $items = OrderItem::where('order_id', (int)$order->id)
+            ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->select();
+
+        foreach ($items as $item) {
+            if ((int)$item->schedule_id > 0) {
+                Schedule::releaseLock((int)$item->schedule_id);
+            }
         }
 
-        return $sourceStatus;
+        PackageBooking::releaseByOrderId((int)$order->id);
     }
 
     /**

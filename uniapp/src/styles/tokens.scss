@@ -1,6 +1,6 @@
-$wm-color-bg-page: #FCFBF9;
+$wm-color-bg-page: #FFF7F4;
 $wm-color-bg-card: #FFFFFFE8;
-$wm-color-bg-soft: #FFF7F4;
+$wm-color-bg-soft: #FFF1EE;
 $wm-color-primary: #E85A4F;
 $wm-color-primary-strong: #D84D43;
 $wm-color-primary-soft: #FFF1EE;
@@ -46,9 +46,9 @@ $wm-space-tabbar-bottom: 39rpx;
 
 page,
 :root {
-    --wm-color-bg-page: #FCFBF9;
+    --wm-color-bg-page: #FFF7F4;
     --wm-color-bg-card: #FFFFFFE8;
-    --wm-color-bg-soft: #FFF7F4;
+    --wm-color-bg-soft: #FFF1EE;
     --wm-color-bg-mask: rgba(30, 36, 50, 0.46);
     --wm-color-primary: #E85A4F;
     --wm-color-primary-strong: #D84D43;
@@ -59,7 +59,7 @@ page,
     --wm-color-border-strong: #F4C7BF;
     --wm-color-success: #2F7D58;
     --wm-color-warning: #C98524;
-    --wm-color-danger: #B44A3A;
+    --wm-color-danger: #C94B49;
     --wm-color-info: #607086;
     --wm-text-primary: #1E2432;
     --wm-text-secondary: #7F7B78;
@@ -110,7 +110,6 @@ page,
     --wm-tabbar-item-height: 101rpx;
     --wm-tabbar-item-radius: 56rpx;
     --wm-tabbar-text-size: 22rpx;
-    --wm-tabbar-safe-space: calc(177rpx + env(safe-area-inset-bottom));
     --wm-shadow-soft: 0 14rpx 32rpx rgba(214, 185, 167, 0.16);
     --wm-shadow-card: 0 18rpx 36rpx rgba(214, 185, 167, 0.2);
     --wm-shadow-hero: 0 24rpx 56rpx rgba(177, 108, 95, 0.18);

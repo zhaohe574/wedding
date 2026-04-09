@@ -3,225 +3,245 @@
     <PageShell scene="consumer">
         <BaseNavbar title="设置" />
 
-        <view class="user-set-page">
-            <!-- 用户信息卡片 -->
+        <view class="user-set-page wm-page-content">
             <navigator :url="`/pages/user_data/user_data`" hover-class="none">
-                <view class="user-info-card">
-                    <view class="card-content">
+                <BaseCard variant="hero" class="user-profile-card">
+                    <view class="user-profile-card__content">
                         <tn-avatar
                             :url="userInfo.avatar || '/static/images/user/default_avatar.png'"
                             shape="square"
                             :size="120"
                             :border-radius="20"
-                        ></tn-avatar>
-                        <view class="user-details">
-                            <view class="user-name">{{ userInfo.nickname }}</view>
-                            <view class="user-account">账号：{{ userInfo.account }}</view>
+                        />
+                        <view class="user-profile-card__copy">
+                            <text class="user-profile-card__title">{{ userDisplayName }}</text>
+                            <text class="user-profile-card__meta">账号：{{ userAccountText }}</text>
                         </view>
-                        <view class="arrow-icon">
-                            <tn-icon name="right" :size="32" color="#999"></tn-icon>
+                        <view class="user-profile-card__arrow">
+                            <tn-icon name="right" :size="32" color="#B4ACA8" />
                         </view>
                     </view>
-                </view>
+                </BaseCard>
             </navigator>
 
-            <!-- 账号安全区域 -->
-            <view class="section-card">
-                <view class="section-title">账号安全</view>
-
-                <view class="menu-item" hover-class="menu-item-hover" @click="handlePwd">
-                    <view class="menu-left">
-                        <view class="menu-icon" :style="{ background: getIconBg('primary') }">
-                            <tn-icon name="lock" :size="36" color="#FFFFFF"></tn-icon>
-                        </view>
-                        <text class="menu-text">登录密码</text>
-                    </view>
-                    <view class="menu-right">
-                        <text class="menu-value">{{
-                            userInfo.has_password ? '已设置' : '未设置'
-                        }}</text>
-                        <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
-                    </view>
+            <BaseCard variant="surface" class="settings-section">
+                <view class="settings-section__head">
+                    <text class="settings-section__title">账号安全</text>
+                    <text class="settings-section__meta">账户与授权</text>
                 </view>
 
-                <!--  #ifdef H5 || MP-WEIXIN -->
-                <view
-                    v-if="isWeixin"
-                    class="menu-item"
-                    hover-class="menu-item-hover"
-                    @click="bindWechatLock"
-                >
-                    <view class="menu-left">
-                        <view class="menu-icon" :style="{ background: getIconBg('secondary') }">
-                            <tn-icon name="wechat-fill" :size="36" color="#FFFFFF"></tn-icon>
+                <view class="settings-list">
+                    <view class="settings-item" @click="handlePwd">
+                        <view class="settings-item__main">
+                            <view
+                                class="settings-item__icon"
+                                :style="{ background: getIconBg('primary') }"
+                            >
+                                <tn-icon name="lock" :size="34" color="#FFFFFF" />
+                            </view>
+                            <view class="settings-item__copy">
+                                <text class="settings-item__title">登录密码</text>
+                                <text class="settings-item__desc">统一修改或补设登录密码</text>
+                            </view>
                         </view>
-                        <text class="menu-text">绑定微信</text>
-                    </view>
-                    <view class="menu-right">
-                        <view
-                            class="status-badge"
-                            :style="{
-                                background: userInfo.is_auth
-                                    ? getStatusBg('success')
-                                    : getStatusBg('warning'),
-                                color: userInfo.is_auth ? '#19BE6B' : '#FF9900'
-                            }"
-                        >
-                            {{ userInfo.is_auth ? '已绑定' : '未绑定' }}
+                        <view class="settings-item__tail">
+                            <StatusBadge :tone="userInfo.has_password ? 'success' : 'warning'">
+                                {{ userInfo.has_password ? '已设置' : '未设置' }}
+                            </StatusBadge>
+                            <tn-icon name="right" :size="28" color="#C8C9CC" />
                         </view>
-                        <tn-icon
-                            v-if="!userInfo.is_auth"
-                            name="right"
-                            :size="32"
-                            color="#C8C9CC"
-                        ></tn-icon>
                     </view>
+
+                    <!--  #ifdef H5 || MP-WEIXIN -->
+                    <view v-if="isWeixin" class="settings-item" @click="bindWechatLock">
+                        <view class="settings-item__main">
+                            <view
+                                class="settings-item__icon"
+                                :style="{ background: getIconBg('secondary') }"
+                            >
+                                <tn-icon name="wechat-fill" :size="34" color="#FFFFFF" />
+                            </view>
+                            <view class="settings-item__copy">
+                                <text class="settings-item__title">绑定微信</text>
+                                <text class="settings-item__desc">同步微信授权状态与快捷登录</text>
+                            </view>
+                        </view>
+                        <view class="settings-item__tail">
+                            <StatusBadge :tone="userInfo.is_auth ? 'success' : 'warning'">
+                                {{ userInfo.is_auth ? '已绑定' : '未绑定' }}
+                            </StatusBadge>
+                            <tn-icon
+                                v-if="!userInfo.is_auth"
+                                name="right"
+                                :size="28"
+                                color="#C8C9CC"
+                            />
+                        </view>
+                    </view>
+                    <!-- #endif -->
                 </view>
-                <!-- #endif -->
-            </view>
+            </BaseCard>
 
-            <!-- 协议与关于 -->
-            <view class="section-card">
-                <view class="section-title">协议与关于</view>
-
-                <navigator
-                    :url="`/packages/pages/agreement/agreement?type=${AgreementEnum.PRIVACY}`"
-                    hover-class="none"
-                >
-                    <view class="menu-item" hover-class="menu-item-hover">
-                        <view class="menu-left">
-                            <view class="menu-icon" :style="{ background: getIconBg('accent') }">
-                                <tn-icon name="honor" :size="36" color="#FFFFFF"></tn-icon>
-                            </view>
-                            <text class="menu-text">隐私政策</text>
-                        </view>
-                        <view class="menu-right">
-                            <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
-                        </view>
-                    </view>
-                </navigator>
-
-                <navigator
-                    :url="`/packages/pages/agreement/agreement?type=${AgreementEnum.SERVICE}`"
-                    hover-class="none"
-                >
-                    <view class="menu-item" hover-class="menu-item-hover">
-                        <view class="menu-left">
-                            <view class="menu-icon" :style="{ background: getIconBg('cta') }">
-                                <tn-icon name="honor" :size="36" color="#FFFFFF"></tn-icon>
-                            </view>
-                            <text class="menu-text">服务协议</text>
-                        </view>
-                        <view class="menu-right">
-                            <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
-                        </view>
-                    </view>
-                </navigator>
-
-                <navigator url="/pages/as_us/as_us" hover-class="none">
-                    <view class="menu-item menu-item-last" hover-class="menu-item-hover">
-                        <view class="menu-left">
-                            <view class="menu-icon" :style="{ background: getIconBg('info') }">
-                                <tn-icon name="building" :size="36" color="#FFFFFF"></tn-icon>
-                            </view>
-                            <text class="menu-text">关于我们</text>
-                        </view>
-                        <view class="menu-right">
-                            <text class="menu-value">{{ appStore.config.version }}</text>
-                            <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
-                        </view>
-                    </view>
-                </navigator>
-            </view>
-
-            <!-- 退出登录按钮 -->
-            <view class="logout-container">
-                <view
-                    class="logout-btn"
-                    :style="{
-                        background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                        color: $theme.btnColor
-                    }"
-                    hover-class="logout-btn-hover"
-                    @click="showLogout = true"
-                >
-                    <tn-icon name="logout" :size="36" :color="$theme.btnColor"></tn-icon>
-                    <text class="logout-text">退出登录</text>
+            <BaseCard variant="surface" class="settings-section">
+                <view class="settings-section__head">
+                    <text class="settings-section__title">协议与关于</text>
+                    <text class="settings-section__meta">品牌与服务说明</text>
                 </view>
+
+                <view class="settings-list">
+                    <navigator
+                        :url="`/packages/pages/agreement/agreement?type=${AgreementEnum.PRIVACY}`"
+                        hover-class="none"
+                    >
+                        <view class="settings-item">
+                            <view class="settings-item__main">
+                                <view
+                                    class="settings-item__icon"
+                                    :style="{ background: getIconBg('accent') }"
+                                >
+                                    <tn-icon name="honor" :size="34" color="#FFFFFF" />
+                                </view>
+                                <view class="settings-item__copy">
+                                    <text class="settings-item__title">隐私政策</text>
+                                    <text class="settings-item__desc">查看信息收集与使用说明</text>
+                                </view>
+                            </view>
+                            <view class="settings-item__tail">
+                                <tn-icon name="right" :size="28" color="#C8C9CC" />
+                            </view>
+                        </view>
+                    </navigator>
+
+                    <navigator
+                        :url="`/packages/pages/agreement/agreement?type=${AgreementEnum.SERVICE}`"
+                        hover-class="none"
+                    >
+                        <view class="settings-item">
+                            <view class="settings-item__main">
+                                <view
+                                    class="settings-item__icon"
+                                    :style="{ background: getIconBg('cta') }"
+                                >
+                                    <tn-icon name="honor" :size="34" color="#FFFFFF" />
+                                </view>
+                                <view class="settings-item__copy">
+                                    <text class="settings-item__title">服务协议</text>
+                                    <text class="settings-item__desc">查看预约、履约与售后规则</text>
+                                </view>
+                            </view>
+                            <view class="settings-item__tail">
+                                <tn-icon name="right" :size="28" color="#C8C9CC" />
+                            </view>
+                        </view>
+                    </navigator>
+
+                    <navigator url="/pages/as_us/as_us" hover-class="none">
+                        <view class="settings-item settings-item--last">
+                            <view class="settings-item__main">
+                                <view
+                                    class="settings-item__icon"
+                                    :style="{ background: getIconBg('info') }"
+                                >
+                                    <tn-icon name="building" :size="34" color="#FFFFFF" />
+                                </view>
+                                <view class="settings-item__copy">
+                                    <text class="settings-item__title">关于我们</text>
+                                    <text class="settings-item__desc">查看品牌介绍与版本信息</text>
+                                </view>
+                            </view>
+                            <view class="settings-item__tail settings-item__tail--meta">
+                                <text class="settings-item__meta-text">{{ versionText }}</text>
+                                <tn-icon name="right" :size="28" color="#C8C9CC" />
+                            </view>
+                        </view>
+                    </navigator>
+                </view>
+            </BaseCard>
+
+            <view class="user-set-page__logout">
+                <BaseButton block size="lg" variant="danger" @click="showLogout = true">
+                    退出登录
+                </BaseButton>
             </view>
 
-            <!-- 密码操作选择弹窗 -->
+            <BaseOverlayMask :show="show" @close="show = false" />
             <tn-popup
                 v-model="show"
                 open-direction="bottom"
                 :radius="32"
                 :safe-area-inset-bottom="true"
+                :overlay="false"
+                :overlay-closeable="true"
             >
-                <view class="password-action-popup">
-                    <view class="action-header">
-                        <text class="action-title">密码管理</text>
-                        <view class="close-btn" @click="show = false">
-                            <tn-icon name="close" :size="32" color="#999"></tn-icon>
+                <view class="settings-popup">
+                    <view class="settings-popup__head">
+                        <text class="settings-popup__title">密码管理</text>
+                        <view class="settings-popup__close" @click="show = false">
+                            <tn-icon name="close" :size="30" color="#7F7B78" />
                         </view>
                     </view>
-                    <view class="action-list">
-                        <view
-                            class="action-item"
-                            hover-class="action-item-hover"
-                            @click="handlePasswordAction(0)"
-                        >
-                            <view class="action-icon" :style="{ background: getIconBg('primary') }">
-                                <tn-icon name="edit" :size="36" color="#FFFFFF"></tn-icon>
+                    <view class="settings-popup__list">
+                        <view class="settings-popup__item" @click="handlePasswordAction(0)">
+                            <view
+                                class="settings-popup__item-icon"
+                                :style="{ background: getIconBg('primary') }"
+                            >
+                                <tn-icon name="edit" :size="32" color="#FFFFFF" />
                             </view>
-                            <text class="action-text">修改密码</text>
-                            <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
+                            <view class="settings-popup__item-copy">
+                                <text class="settings-popup__item-title">修改密码</text>
+                                <text class="settings-popup__item-desc">适用于当前账号仍记得原密码</text>
+                            </view>
+                            <tn-icon name="right" :size="28" color="#C8C9CC" />
                         </view>
-                        <view
-                            class="action-item"
-                            hover-class="action-item-hover"
-                            @click="handlePasswordAction(1)"
-                        >
-                            <view class="action-icon" :style="{ background: getIconBg('warning') }">
-                                <tn-icon name="help" :size="36" color="#FFFFFF"></tn-icon>
+                        <view class="settings-popup__item" @click="handlePasswordAction(1)">
+                            <view
+                                class="settings-popup__item-icon"
+                                :style="{ background: getIconBg('warning') }"
+                            >
+                                <tn-icon name="help" :size="32" color="#FFFFFF" />
                             </view>
-                            <text class="action-text">忘记密码</text>
-                            <tn-icon name="right" :size="32" color="#C8C9CC"></tn-icon>
+                            <view class="settings-popup__item-copy">
+                                <text class="settings-popup__item-title">忘记密码</text>
+                                <text class="settings-popup__item-desc">通过验证流程重新设置密码</text>
+                            </view>
+                            <tn-icon name="right" :size="28" color="#C8C9CC" />
                         </view>
                     </view>
                 </view>
             </tn-popup>
 
-            <!-- 退出登录确认弹窗 -->
+            <BaseOverlayMask :show="showLogout" @close="showLogout = false" />
             <tn-popup
                 v-model="showLogout"
                 open-direction="center"
                 :radius="32"
-                :overlay-closeable="false"
+                :overlay="false"
+                :overlay-closeable="true"
             >
                 <view class="logout-popup">
-                    <view class="popup-icon" :style="{ background: getIconBg('warning') }">
-                        <tn-icon name="warning" :size="64" color="#FFFFFF"></tn-icon>
+                    <view class="logout-popup__icon" :style="{ background: getIconBg('warning') }">
+                        <tn-icon name="warning" :size="60" color="#FFFFFF" />
                     </view>
-                    <view class="popup-title">温馨提示</view>
-                    <view class="popup-content"> 是否清除当前登录信息，退出登录？ </view>
-                    <view class="popup-actions">
-                        <view
-                            class="action-btn action-btn-cancel"
-                            hover-class="action-btn-hover"
-                            @click="showLogout = false"
-                        >
-                            取消
+                    <text class="logout-popup__title">确认退出登录？</text>
+                    <text class="logout-popup__desc">
+                        退出后将清除当前设备上的登录状态，需要重新登录才能继续使用预约与订单能力。
+                    </text>
+                    <view class="logout-popup__actions">
+                        <view class="logout-popup__action">
+                            <BaseButton
+                                block
+                                variant="secondary"
+                                size="md"
+                                @click="showLogout = false"
+                            >
+                                取消
+                            </BaseButton>
                         </view>
-                        <view
-                            class="action-btn action-btn-confirm"
-                            :style="{
-                                background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                                color: $theme.btnColor
-                            }"
-                            hover-class="action-btn-hover"
-                            @click="logoutHandle"
-                        >
-                            确认退出
+                        <view class="logout-popup__action">
+                            <BaseButton block variant="danger" size="md" @click="logoutHandle">
+                                确认退出
+                            </BaseButton>
                         </view>
                     </view>
                 </view>
@@ -251,6 +271,9 @@ const appStore = useAppStore()
 const userStore = useUserStore()
 const $theme = useThemeStore()
 const userInfo = computed(() => userStore.userInfo)
+const userDisplayName = computed(() => userInfo.value.nickname || '未设置昵称')
+const userAccountText = computed(() => userInfo.value.account || '未设置账号')
+const versionText = computed(() => appStore.config.version || '当前版本')
 
 const isWeixin = ref(true)
 // #ifdef H5
@@ -260,7 +283,6 @@ isWeixin.value = isWeixinClient()
 const show = ref(false)
 const showLogout = ref(false)
 
-// 获取图标背景色
 const getIconBg = (type: string) => {
     const colors: Record<string, string> = {
         primary: $theme.primaryColor,
@@ -268,23 +290,12 @@ const getIconBg = (type: string) => {
         cta: $theme.ctaColor,
         accent: $theme.accentColor,
         info: '#909399',
-        warning: '#FF9900',
-        success: '#19BE6B'
+        warning: '#C98524',
+        success: '#2F7D58'
     }
     return `linear-gradient(135deg, ${colors[type]} 0%, ${colors[type]} 100%)`
 }
 
-// 获取状态徽章背景色
-const getStatusBg = (type: string) => {
-    const colors: Record<string, string> = {
-        success: 'rgba(25, 190, 107, 0.1)',
-        warning: 'rgba(255, 153, 0, 0.1)',
-        error: 'rgba(255, 44, 60, 0.1)'
-    }
-    return colors[type] || 'rgba(0, 0, 0, 0.05)'
-}
-
-// 修改/忘记密码
 const handlePasswordAction = (index: number) => {
     show.value = false
     switch (index) {
@@ -298,12 +309,12 @@ const handlePasswordAction = (index: number) => {
 }
 
 const handlePwd = () => {
-    if (!userInfo.value.has_password)
+    if (!userInfo.value.has_password) {
         return router.navigateTo('/pages/change_password/change_password?type=set')
+    }
     show.value = true
 }
 
-// 退出登录
 const logoutHandle = () => {
     userStore.logout()
     router.redirectTo('/pages/login/login')
@@ -320,9 +331,9 @@ const bindWechat = async () => {
             provider: 'weixin'
         })
         await mnpAuthBind({
-            code: code
+            code
         })
-        //#endif
+        // #endif
         // #ifdef H5
         if (isWeixin.value) {
             wechatOa.getUrl()
@@ -355,319 +366,260 @@ onLoad(async (options) => {
         } catch (_error) {
             /* 绑定失败静默处理，后续重定向清空 code */
         }
-        //用于清空code
         router.redirectTo('/pages/user_set/user_set')
     }
-
     // #endif
 })
 </script>
 
 <style lang="scss" scoped>
 .user-set-page {
-    position: relative;
-    z-index: 1;
-    padding: 24rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+    padding-top: 24rpx;
     padding-bottom: 48rpx;
 }
 
-/* 用户信息卡片 */
-.user-info-card {
-    background: #ffffff;
-    border-radius: 24rpx;
-    padding: 32rpx;
-    margin-bottom: 24rpx;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
-    transition: all 0.3s ease;
-
-    &:active {
-        transform: translateY(-2rpx);
-        box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
-    }
-}
-
-.card-content {
+.user-profile-card__content,
+.settings-item,
+.settings-item__main,
+.settings-item__tail,
+.settings-popup__head,
+.settings-popup__item,
+.settings-popup__item-copy {
     display: flex;
     align-items: center;
+}
+
+.user-profile-card__content {
     gap: 24rpx;
 }
 
-.user-details {
-    flex: 1;
+.user-profile-card__copy,
+.settings-section__head,
+.settings-item__copy {
     display: flex;
     flex-direction: column;
+}
+
+.user-profile-card__copy,
+.settings-item__copy,
+.settings-popup__item-copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-profile-card__title {
+    font-size: 36rpx;
+    line-height: 1.35;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.user-profile-card__meta {
+    margin-top: 10rpx;
+    font-size: 24rpx;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.user-profile-card__arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.68);
+}
+
+.settings-section__head {
+    gap: 6rpx;
+    margin-bottom: 12rpx;
+}
+
+.settings-section__title {
+    font-size: 30rpx;
+    line-height: 1.3;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.settings-section__meta {
+    font-size: 22rpx;
+    line-height: 1.4;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.settings-list {
+    margin-top: 8rpx;
+}
+
+.settings-item {
+    justify-content: space-between;
+    gap: 16rpx;
+    padding: 26rpx 0;
+    border-bottom: 1rpx solid var(--wm-color-border, #efe6e1);
+}
+
+.settings-item--last,
+.settings-list > navigator:last-child .settings-item,
+.settings-list > view:last-child.settings-item {
+    border-bottom: none;
+    padding-bottom: 4rpx;
+}
+
+.settings-item__main {
+    flex: 1;
+    min-width: 0;
+    gap: 20rpx;
+}
+
+.settings-item__icon,
+.settings-popup__item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 24rpx;
+    box-shadow: 0 10rpx 22rpx rgba(232, 90, 79, 0.16);
+}
+
+.settings-item__icon {
+    width: 72rpx;
+    height: 72rpx;
+}
+
+.settings-item__title,
+.settings-popup__item-title {
+    font-size: 28rpx;
+    line-height: 1.35;
+    font-weight: 600;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.settings-item__desc,
+.settings-popup__item-desc {
+    margin-top: 6rpx;
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.settings-item__tail {
+    flex-shrink: 0;
     gap: 12rpx;
 }
 
-.user-name {
-    font-size: 36rpx;
-    font-weight: 600;
-    color: #333333;
-    line-height: 1.4;
+.settings-item__tail--meta {
+    gap: 10rpx;
 }
 
-.user-account {
-    font-size: 26rpx;
-    color: #999999;
-    line-height: 1.5;
-}
-
-.arrow-icon {
-    display: flex;
-    align-items: center;
-}
-
-/* 区域卡片 */
-.section-card {
-    background: #ffffff;
-    border-radius: 24rpx;
-    padding: 24rpx 0;
-    margin-bottom: 24rpx;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
-    overflow: hidden;
-}
-
-.section-title {
-    font-size: 28rpx;
-    font-weight: 600;
-    color: #666666;
-    padding: 0 32rpx 16rpx;
-    letter-spacing: 0.5rpx;
-}
-
-/* 菜单项 */
-.menu-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 28rpx 32rpx;
-    border-bottom: 1rpx solid #f5f5f5;
-    transition: all 0.2s ease;
-
-    &:last-child,
-    &.menu-item-last {
-        border-bottom: none;
-    }
-}
-
-.menu-item-hover {
-    background: #f9fafb;
-}
-
-.menu-left {
-    display: flex;
-    align-items: center;
-    gap: 24rpx;
-}
-
-.menu-icon {
-    width: 72rpx;
-    height: 72rpx;
-    border-radius: 20rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-}
-
-.menu-text {
-    font-size: 30rpx;
-    color: #333333;
-    font-weight: 500;
-}
-
-.menu-right {
-    display: flex;
-    align-items: center;
-    gap: 16rpx;
-}
-
-.menu-value {
-    font-size: 26rpx;
-    color: #999999;
-}
-
-/* 状态徽章 */
-.status-badge {
-    padding: 8rpx 20rpx;
-    border-radius: 20rpx;
+.settings-item__meta-text {
     font-size: 24rpx;
-    font-weight: 500;
-    letter-spacing: 0.5rpx;
+    line-height: 1.3;
+    color: var(--wm-text-tertiary, #b4aca8);
 }
 
-/* 退出登录按钮 */
-.logout-container {
-    margin-top: 48rpx;
+.user-set-page__logout {
+    margin-top: 8rpx;
 }
 
-.logout-btn {
-    display: flex;
+.settings-popup {
+    padding: 24rpx 24rpx 32rpx;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 36rpx 36rpx 0 0;
+}
+
+.settings-popup__head {
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.settings-popup__title {
+    font-size: 32rpx;
+    line-height: 1.3;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.settings-popup__close {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: 999rpx;
+    background: var(--wm-color-bg-soft, #fff1ee);
+}
+
+.settings-popup__list {
+    margin-top: 18rpx;
+}
+
+.settings-popup__item {
     gap: 16rpx;
-    height: 96rpx;
-    border-radius: 20rpx;
-    font-size: 32rpx;
-    font-weight: 600;
-    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
-    transition: all 0.3s ease;
+    padding: 24rpx 0;
 }
 
-.logout-btn-hover {
-    transform: translateY(2rpx);
-    box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
-    opacity: 0.9;
+.settings-popup__item + .settings-popup__item {
+    border-top: 1rpx solid var(--wm-color-border, #efe6e1);
 }
 
-.logout-text {
-    font-size: 32rpx;
-    font-weight: 600;
+.settings-popup__item-icon {
+    width: 68rpx;
+    height: 68rpx;
 }
 
-/* 退出登录弹窗 */
 .logout-popup {
-    background: #ffffff;
-    width: 600rpx;
-    border-radius: 28rpx;
-    padding: 36rpx 24rpx 24rpx;
+    width: 620rpx;
+    padding: 40rpx 28rpx 28rpx;
+    border-radius: 40rpx;
+    background: rgba(255, 255, 255, 0.98);
     display: flex;
     flex-direction: column;
     align-items: center;
+    box-sizing: border-box;
 }
 
-.popup-icon {
+.logout-popup__icon {
     width: 120rpx;
     height: 120rpx;
-    border-radius: 60rpx;
-    display: flex;
+    border-radius: 999rpx;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 32rpx;
-    box-shadow: 0 8rpx 24rpx rgba(255, 153, 0, 0.3);
+    box-shadow: 0 14rpx 28rpx rgba(201, 133, 36, 0.18);
 }
 
-.popup-title {
+.logout-popup__title {
+    margin-top: 28rpx;
     font-size: 36rpx;
-    font-weight: 600;
-    color: #333333;
-    margin-bottom: 24rpx;
+    line-height: 1.3;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.logout-popup__desc {
+    margin-top: 18rpx;
+    font-size: 26rpx;
+    line-height: 1.65;
+    color: var(--wm-text-secondary, #7f7b78);
     text-align: center;
 }
 
-.popup-content {
-    font-size: 28rpx;
-    color: #666666;
-    line-height: 1.6;
-    text-align: center;
-    margin-bottom: 40rpx;
-    padding: 0 20rpx;
-}
-
-.popup-actions {
+.logout-popup__actions {
     display: flex;
-    gap: 12rpx;
+    gap: 16rpx;
     width: 100%;
+    margin-top: 32rpx;
 }
 
-.action-btn {
+.logout-popup__action {
     flex: 1;
-    height: 72rpx;
-    border-radius: 20rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 30rpx;
-    font-weight: 600;
-    transition: all 0.2s ease;
 }
 
-.action-btn-cancel {
-    background: #f5f5f5;
-    color: #666666;
-}
-
-.action-btn-confirm {
-    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.3);
-}
-
-.action-btn-hover {
-    transform: scale(0.98);
-    opacity: 0.9;
-}
-
-/* 密码操作弹窗 */
-.password-action-popup {
-    background: #ffffff;
-    border-radius: 28rpx 28rpx 0 0;
-    padding-bottom: constant(safe-area-inset-bottom);
-    padding-bottom: env(safe-area-inset-bottom);
-}
-
-.action-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 24rpx 24rpx 20rpx;
-    border-bottom: 1rpx solid #f5f5f5;
-}
-
-.action-title {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #333333;
-}
-
-.close-btn {
-    width: 56rpx;
-    height: 56rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 20rpx;
-    background: #f5f5f5;
-    transition: all 0.2s ease;
-
-    &:active {
-        background: #e5e5e5;
-        transform: scale(0.95);
-    }
-}
-
-.action-list {
-    padding: 16rpx 0;
-}
-
-.action-item {
-    display: flex;
-    align-items: center;
-    padding: 24rpx;
-    gap: 24rpx;
-    transition: all 0.2s ease;
-}
-
-.action-item-hover {
-    background: #f9fafb;
-}
-
-.action-icon {
-    width: 72rpx;
-    height: 72rpx;
-    border-radius: 20rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-}
-
-.action-text {
-    flex: 1;
-    font-size: 30rpx;
-    color: #333333;
-    font-weight: 500;
-}
-
-/* 响应式适配 */
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.01ms !important;

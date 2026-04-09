@@ -1,8 +1,9 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="评价详情" />
+    <page-meta :page-style="pageStyle" />
+    <PageShell scene="consumer" hasSafeBottom>
+        <BaseNavbar title="评价详情" />
 
-    <view class="review-detail-page" v-if="review">
+        <view class="review-detail-page" v-if="review">
         <view class="hero-card">
             <view class="hero-header">
                 <view class="hero-user">
@@ -195,7 +196,14 @@
 
         <view class="safe-bottom"></view>
 
-        <tn-popup v-model="showSharePopup" open-direction="bottom" :radius="32">
+        <BaseOverlayMask :show="showSharePopup" @close="closeSharePopup" />
+        <tn-popup
+            v-model="showSharePopup"
+            open-direction="bottom"
+            :radius="32"
+            :overlay="false"
+            :overlay-closeable="true"
+        >
             <view class="share-popup">
                 <view class="popup-header">
                     <text class="popup-title">申请晒单奖励</text>
@@ -265,12 +273,13 @@
                 </view>
             </view>
         </tn-popup>
-    </view>
+        </view>
 
-    <view v-else class="loading-wrap">
-        <tn-loading mode="circle" />
-        <text class="loading-text">评价详情加载中...</text>
-    </view>
+        <view v-else class="loading-wrap">
+            <tn-loading mode="circle" />
+            <text class="loading-text">评价详情加载中...</text>
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
@@ -303,6 +312,11 @@ const platformOptions = [
 const primaryGradient = computed(
     () => `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor} 100%)`
 )
+const pageStyle = computed(() => {
+    const base = String($theme.pageStyle || '').trim()
+    const separator = !base || base.endsWith(';') ? '' : ';'
+    return `${base}${separator}overflow:${showSharePopup.value ? 'hidden' : 'visible'};`
+})
 
 const rewardStatus = computed(() => {
     if (review.value?.reward_grant_time) {

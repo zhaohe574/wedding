@@ -111,23 +111,18 @@
                 </view>
             </view>
 
-            <view
-                v-if="showSortPicker"
-                class="dynamic-page__picker-mask"
-                :style="{
-                    zIndex: sortPopupMaskZIndex,
-                    background: $theme.maskColor || 'rgba(8, 10, 16, 0.58)'
-                }"
-                @tap="showSortPicker = false"
-                @touchmove.stop.prevent="() => {}"
-            ></view>
+            <BaseOverlayMask
+                :show="showSortPicker"
+                :z-index="sortPopupMaskZIndex"
+                :background="$theme.maskColor || 'rgba(8, 10, 16, 0.58)'"
+                @close="showSortPicker = false"
+            />
 
             <TnPopup
                 v-model="showSortPicker"
                 open-direction="bottom"
                 :radius="44"
                 :overlay="false"
-                :overlay-closeable="true"
                 :safe-area-inset-bottom="true"
                 :z-index="sortPopupZIndex"
             >

@@ -1,10 +1,13 @@
 <template>
+    <BaseOverlayMask :show="showPay" :closeable="false" />
     <tn-popup
         v-model="showPay"
         open-direction="bottom"
         safe-area-inset-bottom
+        :overlay="false"
         :overlay-closeable="false"
         :radius="14"
+        :z-index="20075"
         close-btn
         @close="handleClose"
     >
@@ -110,11 +113,14 @@
         </view>
     </tn-popup>
 
+    <BaseOverlayMask :show="showCheckPay" :z-index="20084" :closeable="false" />
     <tn-popup
         class="pay-popup"
         v-model="showCheckPay"
         open-direction="center"
         :radius="10"
+        :overlay="false"
+        :z-index="20085"
         :overlay-closeable="false"
     >
         <view class="content bg-white w-[560rpx] p-[40rpx]">

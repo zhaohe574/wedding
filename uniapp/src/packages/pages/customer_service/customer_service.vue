@@ -1,9 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="联系顾问" />
+    <PageShell scene="consumer">
+        <BaseNavbar title="联系顾问" />
 
-    <view class="consult-page">
-        <view class="consult-shell">
+        <view class="consult-page">
+            <view class="consult-shell">
             <view class="consult-hero">
                 <view class="consult-badge">{{
                     state.entryType === 'advisor' ? '专属顾问' : '统一客服'
@@ -100,8 +101,9 @@
                     <view class="tips-text">{{ contact.tips || defaultTips }}</view>
                 </view>
             </view>
+            </view>
         </view>
-    </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">

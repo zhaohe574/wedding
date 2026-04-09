@@ -1,7 +1,8 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="发布动态" />
-    <view class="publish-page">
+    <page-meta :page-style="pageStyle" />
+    <PageShell scene="consumer" hasSafeBottom>
+        <BaseNavbar title="发布动态" />
+        <view class="publish-page">
         <!-- 内容输入 -->
         <view class="bg-white p-4">
             <textarea
@@ -159,23 +160,27 @@
             </view>
         </view>
 
-        <!-- 底部按钮 -->
-        <view
-            class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4"
-            style="padding-bottom: calc(16rpx + env(safe-area-inset-bottom))"
-        >
-            <button
-                class="w-full py-3 bg-primary text-white text-base font-medium rounded-full"
+        <ActionArea class="publish-page__action" sticky safeBottom>
+            <BaseButton
+                block
+                size="lg"
                 :disabled="!canPublish || publishing"
-                :class="{ 'opacity-50': !canPublish || publishing }"
+                :loading="publishing"
                 @click="handlePublish"
             >
                 {{ publishing ? '发布中...' : '发布' }}
-            </button>
-        </view>
+            </BaseButton>
+        </ActionArea>
 
         <!-- 添加话题弹窗 -->
-        <tn-popup v-model="showTagInput" open-direction="bottom" :safe-area-inset-bottom="true">
+        <BaseOverlayMask :show="showTagInput" @close="showTagInput = false" />
+        <tn-popup
+            v-model="showTagInput"
+            open-direction="bottom"
+            :safe-area-inset-bottom="true"
+            :overlay="false"
+            :overlay-closeable="true"
+        >
             <view class="p-4">
                 <view class="text-center font-medium mb-4">添加话题</view>
                 <view class="flex items-center bg-gray-100 rounded-lg px-3">
@@ -211,7 +216,8 @@
             :data="visibleOptions"
             @click="selectVisible"
         />
-    </view>
+        </view>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
@@ -219,8 +225,11 @@ import { ref, reactive, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { publishDynamic, getHotTags } from '@/api/dynamic'
 import { uploadImage, uploadVideo } from '@/api/app'
+import { useThemeStore } from '@/stores/theme'
 import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
 import cache from '@/utils/cache'
+
+const $theme = useThemeStore()
 
 const dynamicTypes = [
     { label: '图文', value: 1 },
@@ -253,6 +262,12 @@ const showTagInput = ref(false)
 const tagInput = ref('')
 const showVisiblePicker = ref(false)
 const publishing = ref(false)
+const pageStyle = computed(() => {
+    const base = String($theme.pageStyle || '').trim()
+    const separator = !base || base.endsWith(';') ? '' : ';'
+    const locked = showTagInput.value || showVisiblePicker.value
+    return `${base}${separator}overflow:${locked ? 'hidden' : 'visible'};`
+})
 
 const canPublish = computed(() => {
     return form.content.trim().length > 0 || form.images.length > 0 || Boolean(form.video_url)
@@ -439,6 +454,6 @@ onLoad(() => {
 .publish-page {
     min-height: 100vh;
     background-color: #f5f5f5;
-    padding-bottom: calc(140rpx + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--wm-safe-bottom-action, 160rpx) + 120rpx);
 }
 </style>

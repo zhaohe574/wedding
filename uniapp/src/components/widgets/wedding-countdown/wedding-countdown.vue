@@ -141,6 +141,7 @@ onUnmounted(() => {
         background: linear-gradient(135deg, #fff5f1 0%, #fde7e1 100%);
         backdrop-filter: blur(32rpx);
         -webkit-backdrop-filter: blur(32rpx);
+        box-shadow: var(--wm-shadow-soft, 0 18rpx 36rpx rgba(214, 185, 167, 0.14));
     }
 
     .profile-countdown-label {
@@ -148,7 +149,7 @@ onUnmounted(() => {
         font-size: 24rpx;
         line-height: 1.35;
         font-weight: 700;
-        color: #e85a4f;
+        color: var(--wm-color-primary, #e85a4f);
     }
 
     .profile-countdown-value {
@@ -156,14 +157,14 @@ onUnmounted(() => {
         font-size: 67rpx;
         line-height: 1;
         font-weight: 700;
-        color: #1e2432;
+        color: var(--wm-text-primary, #1e2432);
     }
 
     .profile-countdown-desc {
         display: block;
         font-size: 26rpx;
         line-height: 1.6;
-        color: #7f7b78;
+        color: var(--wm-text-secondary, #7f7b78);
     }
 }
 </style>

@@ -136,6 +136,8 @@ const showAgreementModal = () => {
         title: '温馨提示',
         content: '请先阅读并同意《服务协议》和《隐私协议》',
         showCancel: true,
+        mask: true,
+        maskClosable: false,
         confirmText: '同意',
         cancelText: '取消',
         confirmStyle: {

@@ -62,9 +62,9 @@ export interface NormalizedThemeConfig {
 
 const WM_BASE_TOKENS: WmThemeTokens = {
     colors: {
-        'bg-page': '#FCFBF9',
+        'bg-page': '#FFF7F4',
         'bg-card': '#FFFFFFE8',
-        'bg-soft': '#FFF7F4',
+        'bg-soft': '#FFF1EE',
         'bg-mask': 'rgba(30, 36, 50, 0.46)',
         primary: '#E85A4F',
         'primary-strong': '#D84D43',
@@ -75,7 +75,7 @@ const WM_BASE_TOKENS: WmThemeTokens = {
         'border-strong': '#F4C7BF',
         success: '#2F7D58',
         warning: '#C98524',
-        danger: '#B44A3A',
+        danger: '#C94B49',
         info: '#607086'
     },
     text: {
@@ -169,9 +169,9 @@ const createPreset = (
     secondaryColor: '#C99B73',
     ctaColor: '#E85A4F',
     accentColor: '#C99B73',
-    pageBg: '#FCFBF9',
-    pageBgSoft: '#FFF7F4',
-    surface: '#FCFBF9',
+    pageBg: '#FFF7F4',
+    pageBgSoft: '#FFF1EE',
+    surface: '#FFF7F4',
     surfaceElevated: '#FFFFFF',
     surfaceOverlay: 'rgba(255, 255, 255, 0.88)',
     textPrimary: '#1E2432',
@@ -180,7 +180,7 @@ const createPreset = (
     borderColor: '#EFE6E1',
     tabbarActiveColor: '#E85A4F',
     tabbarInactiveColor: '#9D918B',
-    navBgColor: '#FCFBF9',
+    navBgColor: '#FFF7F4',
     navTextColor: 'black',
     buttonColor: 'white',
     maskColor: 'rgba(30, 36, 50, 0.46)',

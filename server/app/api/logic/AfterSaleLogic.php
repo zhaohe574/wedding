@@ -11,7 +11,6 @@ use app\common\logic\BaseLogic;
 use app\common\model\aftersale\AfterSaleTicket;
 use app\common\model\aftersale\AfterSaleTicketLog;
 use app\common\model\aftersale\Complaint;
-use app\common\model\aftersale\Reshoot;
 use app\common\model\aftersale\ServiceCallback;
 use app\common\service\OrderNotificationService;
 use think\facade\Db;
@@ -43,7 +42,8 @@ class AfterSaleLogic extends BaseLogic
         }
 
         $total = $query->count();
-        $lists = $query->order('id', 'desc')
+        $lists = $query->with(['order'])
+            ->order('id', 'desc')
             ->page($page, $limit)
             ->select()
             ->toArray();
@@ -176,7 +176,7 @@ class AfterSaleLogic extends BaseLogic
         }
 
         $total = $query->count();
-        $lists = $query->with(['staff'])
+        $lists = $query->with(['staff', 'order'])
             ->order('id', 'desc')
             ->page($page, $limit)
             ->select()
@@ -244,99 +244,6 @@ class AfterSaleLogic extends BaseLogic
     public static function rateComplaintSatisfaction(int $complaintId, int $userId, int $satisfaction)
     {
         $result = Complaint::rateSatisfaction($complaintId, $userId, $satisfaction);
-        if (!$result[0]) {
-            return $result[1];
-        }
-        return true;
-    }
-
-    // ==================== 补拍申请 ====================
-
-    /**
-     * @notes 获取补拍申请列表
-     * @param array $params
-     * @return array
-     */
-    public static function getReshootLists(array $params): array
-    {
-        $page = (int)($params['page'] ?? 1);
-        $limit = (int)($params['limit'] ?? 10);
-        $status = $params['status'] ?? null;
-
-        $query = Reshoot::where('user_id', $params['user_id']);
-
-        if ($status !== null && $status !== '') {
-            $query->where('status', $status);
-        }
-
-        $total = $query->count();
-        $lists = $query->with(['staff', 'order'])
-            ->order('id', 'desc')
-            ->page($page, $limit)
-            ->select()
-            ->toArray();
-
-        foreach ($lists as &$item) {
-            $reshoot = Reshoot::find($item['id']);
-            $item['type_desc'] = $reshoot->type_desc ?? '';
-            $item['reason_type_desc'] = $reshoot->reason_type_desc ?? '';
-            $item['status_desc'] = $reshoot->status_desc ?? '';
-            $item['create_time'] = date('Y-m-d H:i', $item['create_time']);
-        }
-
-        return [
-            'lists' => $lists,
-            'total' => $total,
-            'page' => $page,
-            'limit' => $limit,
-        ];
-    }
-
-    /**
-     * @notes 获取补拍申请详情
-     * @param int $id
-     * @param int $userId
-     * @return array
-     */
-    public static function getReshootDetail(int $id, int $userId): array
-    {
-        $reshoot = Reshoot::with(['staff', 'newStaff', 'order'])->where('id', $id)->where('user_id', $userId)->find();
-        if (!$reshoot) {
-            return [];
-        }
-
-        $data = $reshoot->toArray();
-        $data['type_desc'] = $reshoot->type_desc;
-        $data['reason_type_desc'] = $reshoot->reason_type_desc;
-        $data['status_desc'] = $reshoot->status_desc;
-        $data['create_time'] = date('Y-m-d H:i:s', $data['create_time']);
-
-        return $data;
-    }
-
-    /**
-     * @notes 提交补拍申请
-     * @param array $params
-     * @return bool|string
-     */
-    public static function applyReshoot(array $params)
-    {
-        $result = Reshoot::applyReshoot($params);
-        if (!$result[0]) {
-            return $result[1];
-        }
-        return true;
-    }
-
-    /**
-     * @notes 取消补拍申请
-     * @param int $reshootId
-     * @param int $userId
-     * @return bool|string
-     */
-    public static function cancelReshoot(int $reshootId, int $userId)
-    {
-        $result = Reshoot::cancelReshoot($reshootId, $userId);
         if (!$result[0]) {
             return $result[1];
         }
@@ -452,19 +359,13 @@ class AfterSaleLogic extends BaseLogic
             'ticket' => [
                 'total' => AfterSaleTicket::where('user_id', $userId)->count(),
                 'pending' => AfterSaleTicket::where('user_id', $userId)
-                    ->whereIn('status', [AfterSaleTicket::STATUS_PENDING, AfterSaleTicket::STATUS_PROCESSING, AfterSaleTicket::STATUS_CONFIRMING])
+                    ->where('status', AfterSaleTicket::STATUS_PROCESSING)
                     ->count(),
             ],
             'complaint' => [
                 'total' => Complaint::where('user_id', $userId)->count(),
                 'pending' => Complaint::where('user_id', $userId)
-                    ->whereIn('status', [Complaint::STATUS_PENDING, Complaint::STATUS_PROCESSING])
-                    ->count(),
-            ],
-            'reshoot' => [
-                'total' => Reshoot::where('user_id', $userId)->count(),
-                'pending' => Reshoot::where('user_id', $userId)
-                    ->whereIn('status', [Reshoot::STATUS_PENDING, Reshoot::STATUS_APPROVED, Reshoot::STATUS_SCHEDULED])
+                    ->where('status', Complaint::STATUS_PENDING)
                     ->count(),
             ],
             'callback' => [

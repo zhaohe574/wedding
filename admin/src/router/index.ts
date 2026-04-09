@@ -34,7 +34,6 @@ const permissionAliasMap = [
     ['order.payment/', 'ops.payment/'],
     ['aftersale.aftersale/', 'ops.aftersaleTicket/'],
     ['aftersale.complaint/', 'ops.complaint/'],
-    ['aftersale.reshoot/', 'ops.reshoot/'],
     ['aftersale.callback/', 'ops.callback/'],
     ['dynamic.dynamic/', 'growth.dynamic/'],
     ['dynamic.dynamicComment/', 'growth.dynamicComment/'],

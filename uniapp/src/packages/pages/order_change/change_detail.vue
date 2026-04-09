@@ -1,266 +1,358 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="变更详情" />
-    <view class="change-detail">
-        <view v-if="loading" class="py-20 text-center text-gray-400"> 加载中... </view>
-        <template v-else-if="detail">
-            <!-- 状态卡片 -->
-            <view class="status-card" :class="getStatusBgClass(detail.change_status)">
-                <view class="text-lg font-bold">{{ detail.change_status_desc }}</view>
-                <view class="text-sm mt-1 opacity-80">{{
-                    getStatusTip(detail.change_status)
-                }}</view>
+    <PageShell scene="consumer" hasSafeBottom>
+        <BaseNavbar title="变更详情" />
+
+        <view class="order-change-page">
+            <view v-if="loading" class="order-change-page__center">
+                <tn-loading size="72" mode="flower" :color="$theme.primaryColor" />
+                <text class="order-change-page__center-text">加载变更详情中...</text>
             </view>
 
-            <!-- 基本信息 -->
-            <view class="bg-white mt-3 p-4">
-                <view class="section-title">变更信息</view>
-                <view class="info-row">
-                    <text class="label">变更单号</text>
-                    <text class="value">{{ detail.change_sn }}</text>
-                </view>
-                <view class="info-row">
-                    <text class="label">变更类型</text>
-                    <view class="tag" :class="getTypeClass(detail.change_type)">
-                        {{ detail.change_type_desc }}
+            <view v-else-if="detail" class="order-change-page__wrapper">
+                <view
+                    class="order-change-status-card"
+                    :class="`order-change-status-card--${changeStatus.tone}`"
+                >
+                    <view class="order-change-status-card__eyebrow">
+                        <text class="order-change-status-card__eyebrow-text">变更状态</text>
+                        <StatusBadge :tone="changeType.tone" size="sm">
+                            {{ changeType.label }}
+                        </StatusBadge>
                     </view>
-                </view>
-                <view class="info-row">
-                    <text class="label">申请时间</text>
-                    <text class="value">{{ detail.create_time }}</text>
-                </view>
-                <view class="info-row" v-if="detail.audit_time">
-                    <text class="label">审核时间</text>
-                    <text class="value">{{ detail.audit_time }}</text>
-                </view>
-                <view class="info-row" v-if="detail.execute_time">
-                    <text class="label">执行时间</text>
-                    <text class="value">{{ detail.execute_time }}</text>
-                </view>
-            </view>
-
-            <!-- 变更内容 -->
-            <view class="bg-white mt-3 p-4">
-                <view class="section-title">变更内容</view>
-
-                <!-- 改期 -->
-                <template v-if="detail.change_type === 1">
-                    <view class="change-content">
-                        <view class="change-item">
-                            <view class="change-label">原服务日期</view>
-                            <view class="change-value old">{{ detail.old_service_date }}</view>
-                        </view>
-                        <view class="change-arrow">
-                            <tn-icon name="right" size="40rpx" color="#999"></tn-icon>
-                        </view>
-                        <view class="change-item">
-                            <view class="change-label">新服务日期</view>
-                            <view class="change-value new">{{ detail.new_service_date }}</view>
-                        </view>
-                    </view>
-                </template>
-
-                <!-- 换人 -->
-                <template v-else-if="detail.change_type === 2">
-                    <view class="change-content">
-                        <view class="change-item">
-                            <view class="change-label">原工作人员</view>
-                            <view class="staff-info" v-if="detail.old_staff">
-                                <image
-                                    :src="detail.old_staff.avatar"
-                                    class="staff-avatar"
-                                    mode="aspectFill"
-                                />
-                                <text class="staff-name">{{ detail.old_staff.name }}</text>
-                            </view>
-                            <view class="change-price">¥{{ detail.old_price }}</view>
-                        </view>
-                        <view class="change-arrow">
-                            <tn-icon name="right" size="40rpx" color="#999"></tn-icon>
-                        </view>
-                        <view class="change-item">
-                            <view class="change-label">新工作人员</view>
-                            <view class="staff-info" v-if="detail.new_staff">
-                                <image
-                                    :src="detail.new_staff.avatar"
-                                    class="staff-avatar"
-                                    mode="aspectFill"
-                                />
-                                <text class="staff-name">{{ detail.new_staff.name }}</text>
-                            </view>
-                            <view class="change-price">¥{{ detail.new_price }}</view>
-                        </view>
-                    </view>
-                    <view class="price-diff mt-4 text-center" v-if="detail.price_diff !== 0">
-                        <text class="text-gray-500">差价: </text>
-                        <text
-                            :class="detail.price_diff > 0 ? 'text-red-500' : 'text-green-500'"
-                            class="text-lg font-bold"
+                    <text class="order-change-status-card__title">
+                        {{ detail.change_status_desc || changeStatus.label }}
+                    </text>
+                    <text class="order-change-status-card__summary">
+                        {{ changeStatus.summary }}
+                    </text>
+                    <view class="order-change-status-card__metrics">
+                        <view
+                            v-for="metric in statusMetrics"
+                            :key="metric.label"
+                            class="order-change-status-card__metric"
                         >
-                            {{ detail.price_diff > 0 ? '+' : '' }}{{ detail.price_diff }}元
+                            <text class="order-change-status-card__metric-label">
+                                {{ metric.label }}
+                            </text>
+                            <text class="order-change-status-card__metric-value">
+                                {{ metric.value }}
+                            </text>
+                        </view>
+                    </view>
+                </view>
+
+                <BaseCard variant="surface" scene="consumer" class="order-change-card">
+                    <text class="order-change-card__title">基础信息</text>
+                    <view class="order-change-card__kv">
+                        <text class="order-change-card__label">变更单号</text>
+                        <text class="order-change-card__value">{{ detail.change_sn }}</text>
+                    </view>
+                    <view class="order-change-card__kv">
+                        <text class="order-change-card__label">变更类型</text>
+                        <view class="order-change-card__value">
+                            <StatusBadge :tone="changeType.tone" size="sm">
+                                {{ detail.change_type_desc || changeType.label }}
+                            </StatusBadge>
+                        </view>
+                    </view>
+                    <view class="order-change-card__kv">
+                        <text class="order-change-card__label">申请时间</text>
+                        <text class="order-change-card__value">
+                            {{ getValueText(detail.create_time) }}
                         </text>
-                        <view class="text-xs text-gray-400 mt-1">
-                            {{ detail.price_diff > 0 ? '需补差价' : '差价将退还' }}
-                        </view>
                     </view>
-                </template>
+                    <view class="order-change-card__kv" v-if="detail.audit_time">
+                        <text class="order-change-card__label">审核时间</text>
+                        <text class="order-change-card__value">
+                            {{ getValueText(detail.audit_time) }}
+                        </text>
+                    </view>
+                    <view class="order-change-card__kv" v-if="detail.execute_time">
+                        <text class="order-change-card__label">执行时间</text>
+                        <text class="order-change-card__value">
+                            {{ getValueText(detail.execute_time) }}
+                        </text>
+                    </view>
+                </BaseCard>
 
-                <!-- 加项 -->
-                <template v-else-if="detail.change_type === 3">
-                    <view class="add-item-content">
-                        <view class="staff-card" v-if="detail.add_staff">
-                            <image
-                                :src="detail.add_staff.avatar"
-                                class="staff-avatar-large"
-                                mode="aspectFill"
-                            />
-                            <view class="staff-info-detail">
-                                <view class="staff-name-large">{{ detail.add_staff.name }}</view>
-                                <view class="text-gray-400 text-sm">{{
-                                    detail.add_package_name
-                                }}</view>
-                                <view class="text-gray-400 text-sm">{{
-                                    detail.add_service_date
-                                }}</view>
+                <BaseCard variant="surface" scene="consumer" class="order-change-card">
+                    <text class="order-change-card__title">变更内容</text>
+
+                    <template v-if="detail.change_type === 1">
+                        <view class="order-change-comparison">
+                            <view class="order-change-comparison__item">
+                                <text class="order-change-comparison__label">原服务日期</text>
+                                <text class="order-change-comparison__value">
+                                    {{ getValueText(detail.old_service_date) }}
+                                </text>
                             </view>
-                            <view class="add-price">
-                                <text class="text-red-500 font-bold text-lg"
-                                    >+¥{{ detail.add_price }}</text
+                            <view class="order-change-comparison__arrow">→</view>
+                            <view
+                                class="order-change-comparison__item order-change-comparison__item--highlight"
+                            >
+                                <text class="order-change-comparison__label">新服务日期</text>
+                                <text class="order-change-comparison__value">
+                                    {{ getValueText(detail.new_service_date) }}
+                                </text>
+                            </view>
+                        </view>
+                        <text class="order-change-card__paragraph">
+                            改期申请会在审核通过后同步更新订单履约日期，请以最终执行结果为准。
+                        </text>
+                    </template>
+
+                    <template v-else-if="detail.change_type === 2">
+                        <view class="order-change-comparison">
+                            <view class="order-change-comparison__item">
+                                <text class="order-change-comparison__label">原服务人员</text>
+                                <text class="order-change-comparison__value">
+                                    {{ getValueText(detail.old_staff?.name || detail.old_staff_name) }}
+                                </text>
+                                <text class="order-change-comparison__meta">
+                                    原价格：¥{{ formatCurrency(detail.old_price) }}
+                                </text>
+                            </view>
+                            <view class="order-change-comparison__arrow">→</view>
+                            <view
+                                class="order-change-comparison__item order-change-comparison__item--highlight"
+                            >
+                                <text class="order-change-comparison__label">新服务人员</text>
+                                <text class="order-change-comparison__value">
+                                    {{ getValueText(detail.new_staff?.name || detail.new_staff_name) }}
+                                </text>
+                                <text class="order-change-comparison__meta">
+                                    新价格：¥{{ formatCurrency(detail.new_price) }}
+                                </text>
+                            </view>
+                        </view>
+
+                        <view v-if="priceDiffText" class="order-change-summary-grid">
+                            <view class="order-change-summary-grid__item">
+                                <text class="order-change-summary-grid__label">差价</text>
+                                <text
+                                    class="order-change-summary-grid__value"
+                                    :class="priceDiffClass"
                                 >
+                                    {{ priceDiffText }}
+                                </text>
+                            </view>
+                            <view class="order-change-summary-grid__item">
+                                <text class="order-change-summary-grid__label">处理提示</text>
+                                <text class="order-change-summary-grid__value">
+                                    {{ priceDiffHint }}
+                                </text>
                             </view>
                         </view>
-                    </view>
-                </template>
+                    </template>
 
-                <!-- 附加服务变更 -->
-                <template v-else-if="detail.change_type === 4">
-                    <view class="addon-change-content">
-                        <view class="addon-action-badge"> 附加服务变更已下线 </view>
-                        <view class="text-sm text-gray-500 text-center mt-4">
-                            旧版附加服务内容不再在用户端展示，当前页面仅保留状态与基础申请信息。
+                    <template v-else-if="detail.change_type === 3">
+                        <text class="order-change-card__headline">
+                            {{ getValueText(detail.add_package_name, '新增服务待确认') }}
+                        </text>
+                        <text class="order-change-card__paragraph">
+                            平台会按新增服务内容、服务人员和服务日期审核本次加项申请。
+                        </text>
+                        <view class="order-change-summary-grid">
+                            <view class="order-change-summary-grid__item">
+                                <text class="order-change-summary-grid__label">服务人员</text>
+                                <text class="order-change-summary-grid__value">
+                                    {{ getValueText(detail.add_staff?.name || detail.add_staff_name) }}
+                                </text>
+                            </view>
+                            <view class="order-change-summary-grid__item">
+                                <text class="order-change-summary-grid__label">服务日期</text>
+                                <text class="order-change-summary-grid__value">
+                                    {{ getValueText(detail.add_service_date) }}
+                                </text>
+                            </view>
+                            <view class="order-change-summary-grid__item">
+                                <text class="order-change-summary-grid__label">预计费用</text>
+                                <text class="order-change-summary-grid__value">
+                                    +¥{{ formatCurrency(detail.add_price) }}
+                                </text>
+                            </view>
+                        </view>
+                    </template>
+
+                    <template v-else>
+                        <view class="order-change-card__badge-row">
+                            <StatusBadge tone="neutral" size="sm">历史下线能力</StatusBadge>
+                        </view>
+                        <text class="order-change-card__paragraph">
+                            旧版附加服务变更不再在用户端提供详细编辑能力，当前页面仅保留状态和基础申请信息。
+                        </text>
+                    </template>
+                </BaseCard>
+
+                <BaseCard
+                    v-if="detail.apply_reason || images.length"
+                    variant="surface"
+                    scene="consumer"
+                    class="order-change-card"
+                >
+                    <text class="order-change-card__title">申请说明</text>
+                    <text v-if="detail.apply_reason" class="order-change-card__paragraph">
+                        {{ detail.apply_reason }}
+                    </text>
+                    <text v-else class="order-change-card__caption">申请人未填写补充说明。</text>
+                    <view v-if="images.length" class="order-change-media-grid">
+                        <image
+                            v-for="(image, index) in images"
+                            :key="`${image}-${index}`"
+                            :src="image"
+                            mode="aspectFill"
+                            class="order-change-media-grid__image"
+                            @click="openImagePreview(images, index)"
+                        />
+                    </view>
+                </BaseCard>
+
+                <BaseCard
+                    v-if="detail.change_status >= 2 || priceDiffText || detail.reject_reason"
+                    variant="surface"
+                    scene="consumer"
+                    class="order-change-card"
+                >
+                    <text class="order-change-card__title">审核与执行</text>
+                    <view v-if="priceDiffText" class="order-change-card__kv">
+                        <text class="order-change-card__label">差价说明</text>
+                        <view class="order-change-card__value">
+                            <text :class="priceDiffClass">{{ priceDiffText }}</text>
+                            <text class="order-change-card__helper">{{ priceDiffHint }}</text>
                         </view>
                     </view>
-                </template>
-            </view>
-
-            <!-- 申请原因 -->
-            <view class="bg-white mt-3 p-4" v-if="detail.apply_reason">
-                <view class="section-title">申请原因</view>
-                <view class="text-gray-600 text-sm">{{ detail.apply_reason }}</view>
-            </view>
-
-            <!-- 附件图片 -->
-            <view
-                class="bg-white mt-3 p-4"
-                v-if="detail.attach_images && detail.attach_images.length > 0"
-            >
-                <view class="section-title">附件图片</view>
-                <view class="image-list">
-                    <image
-                        v-for="(img, index) in detail.attach_images"
-                        :key="index"
-                        :src="img"
-                        class="attach-image"
-                        mode="aspectFill"
-                        @click="previewImage(index)"
-                    />
-                </view>
-            </view>
-
-            <!-- 审核结果 -->
-            <view class="bg-white mt-3 p-4" v-if="detail.change_status >= 2">
-                <view class="section-title">审核结果</view>
-                <view class="info-row" v-if="detail.audit_remark">
-                    <text class="label">审核备注</text>
-                    <text class="value">{{ detail.audit_remark }}</text>
-                </view>
-                <view class="info-row" v-if="detail.reject_reason">
-                    <text class="label">拒绝原因</text>
-                    <text class="value text-red-500">{{ detail.reject_reason }}</text>
-                </view>
-            </view>
-
-            <!-- 关联订单 -->
-            <view class="bg-white mt-3 p-4" v-if="detail.order">
-                <view class="section-title">关联订单</view>
-                <view class="order-card" @click="goOrder(detail.order.id)">
-                    <view class="flex justify-between items-center">
-                        <text class="text-sm text-gray-500">{{ detail.order.order_sn }}</text>
-                        <text class="text-sm text-primary">查看订单 ></text>
+                    <view v-if="detail.audit_remark" class="order-change-card__kv">
+                        <text class="order-change-card__label">审核备注</text>
+                        <text class="order-change-card__value">{{ detail.audit_remark }}</text>
                     </view>
-                    <view class="text-sm text-gray-600 mt-2">
-                        服务日期: {{ detail.order.service_date }}
+                    <view v-if="detail.reject_reason" class="order-change-card__kv">
+                        <text class="order-change-card__label">拒绝原因</text>
+                        <text class="order-change-card__value order-change-card__value--danger">
+                            {{ detail.reject_reason }}
+                        </text>
                     </view>
-                </view>
+                    <text
+                        v-if="detail.change_status === 3 && detail.execute_time"
+                        class="order-change-card__caption"
+                    >
+                        变更已在 {{ detail.execute_time }} 完成执行。
+                    </text>
+                </BaseCard>
+
+                <BaseCard
+                    v-if="detail.order"
+                    variant="surface"
+                    scene="consumer"
+                    :interactive="true"
+                    class="order-change-card"
+                    @click="goOrder(detail.order.id)"
+                >
+                    <text class="order-change-card__title">关联订单</text>
+                    <view class="order-change-link-card">
+                        <view class="order-change-link-card__top">
+                            <text class="order-change-link-card__main">
+                                {{ getValueText(detail.order.order_sn, '订单待补充') }}
+                            </text>
+                            <text class="order-change-link-card__action">查看订单</text>
+                        </view>
+                        <view class="order-change-link-card__bottom">
+                            <text class="order-change-link-card__meta">
+                                服务日期：{{ getValueText(detail.order.service_date) }}
+                            </text>
+                            <text class="order-change-link-card__meta">
+                                应付：¥{{ formatCurrency(detail.order.pay_amount) }}
+                            </text>
+                        </view>
+                    </view>
+                </BaseCard>
             </view>
 
-            <!-- 底部操作 -->
-            <view class="bottom-actions" v-if="detail.change_status === 0">
-                <button class="btn-cancel" @click="handleCancel">取消申请</button>
+            <view v-else class="order-change-page__center">
+                <text class="order-change-page__center-text">未找到对应的变更记录。</text>
             </view>
-        </template>
-        <view v-else class="py-20 text-center text-gray-400"> 数据不存在 </view>
-    </view>
+        </view>
+
+        <ActionArea v-if="detail && detail.change_status === 0" sticky safeBottom>
+            <view class="order-change-page__actions">
+                <BaseButton block size="lg" variant="danger" @click="handleCancel">
+                    取消申请
+                </BaseButton>
+            </view>
+        </ActionArea>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getChangeDetail, cancelChange } from '@/api/orderChange'
+import { cancelChange, getChangeDetail } from '@/api/orderChange'
+import ActionArea from '@/components/base/ActionArea.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
+import { useThemeStore } from '@/stores/theme'
+import {
+    formatCurrency,
+    getChangeStatusMeta,
+    getChangeTypeMeta,
+    getValueText,
+    normalizeImageList,
+    openImagePreview
+} from './shared'
+
+const $theme = useThemeStore()
 
 const loading = ref(true)
 const detail = ref<any>(null)
 const changeId = ref(0)
 
-const getStatusBgClass = (status: number) => {
-    const classes: Record<number, string> = {
-        0: 'bg-orange',
-        1: 'bg-blue',
-        2: 'bg-red',
-        3: 'bg-green',
-        4: 'bg-gray'
+const changeStatus = computed(() => getChangeStatusMeta(Number(detail.value?.change_status || 0)))
+const changeType = computed(() => getChangeTypeMeta(Number(detail.value?.change_type || 0)))
+const images = computed(() => normalizeImageList(detail.value?.attach_images))
+const priceDiffValue = computed(() => Number(detail.value?.price_diff || 0))
+const priceDiffText = computed(() => {
+    if (!priceDiffValue.value) {
+        return ''
     }
-    return classes[status] || 'bg-gray'
-}
-
-const getStatusTip = (status: number) => {
-    const tips: Record<number, string> = {
-        0: '您的申请正在等待审核中',
-        1: '审核已通过，等待执行中',
-        2: '很抱歉，您的申请未通过审核',
-        3: '变更已执行完成',
-        4: '该申请已取消'
+    return `${priceDiffValue.value > 0 ? '+' : ''}${formatCurrency(priceDiffValue.value)} 元`
+})
+const priceDiffHint = computed(() => {
+    if (priceDiffValue.value > 0) {
+        return '需补差价，具体支付节点以审核结果为准。'
     }
-    return tips[status] || ''
-}
-
-const getTypeClass = (type: number) => {
-    const classes: Record<number, string> = {
-        1: 'bg-blue-100 text-blue-600',
-        2: 'bg-orange-100 text-orange-600',
-        3: 'bg-green-100 text-green-600',
-        4: 'bg-amber-100 text-amber-700'
+    if (priceDiffValue.value < 0) {
+        return '产生退款差额，平台将在确认后处理。'
     }
-    return classes[type] || 'bg-gray-100 text-gray-600'
-}
+    return '本次变更不涉及费用差额。'
+})
+const priceDiffClass = computed(() =>
+    priceDiffValue.value > 0
+        ? 'change-detail__price-diff change-detail__price-diff--up'
+        : 'change-detail__price-diff change-detail__price-diff--down'
+)
+const statusMetrics = computed(() => [
+    { label: '申请时间', value: getValueText(detail.value?.create_time, '-') },
+    {
+        label: detail.value?.audit_time ? '审核时间' : '执行时间',
+        value: getValueText(detail.value?.audit_time || detail.value?.execute_time, '-')
+    },
+    { label: '变更类型', value: detail.value?.change_type_desc || changeType.value.label }
+])
 
 const fetchDetail = async () => {
     loading.value = true
     try {
         const res = await getChangeDetail({ id: changeId.value })
-        detail.value = res
-    } catch (e) {
-        console.error(e)
+        detail.value = res?.data || res
+    } catch (error) {
+        console.error('获取变更详情失败', error)
+        detail.value = null
     } finally {
         loading.value = false
     }
-}
-
-const previewImage = (index: number) => {
-    uni.previewImage({
-        current: index,
-        urls: detail.value.attach_images
-    })
 }
 
 const goOrder = (orderId: number) => {
@@ -268,275 +360,50 @@ const goOrder = (orderId: number) => {
 }
 
 const handleCancel = async () => {
-    const res = await uni.showModal({
-        title: '提示',
-        content: '确定要取消该变更申请吗？'
+    const result = await uni.showModal({
+        title: '取消申请',
+        content: '确定要取消当前变更申请吗？'
     })
-    if (res.confirm) {
-        try {
-            await cancelChange({ id: changeId.value })
-            uni.showToast({ title: '已取消' })
-            fetchDetail()
-        } catch (e: any) {
-            uni.showToast({ title: e.message || '操作失败', icon: 'none' })
-        }
+
+    if (!result.confirm) {
+        return
+    }
+
+    try {
+        await cancelChange({ id: changeId.value })
+        uni.showToast({ title: '已取消', icon: 'none' })
+        await fetchDetail()
+    } catch (error: any) {
+        uni.showToast({ title: error?.message || '操作失败', icon: 'none' })
     }
 }
 
 onLoad((options: any) => {
-    if (options.id) {
-        changeId.value = Number(options.id)
-        fetchDetail()
+    changeId.value = Number(options?.id || 0)
+    if (changeId.value) {
+        void fetchDetail()
+    } else {
+        loading.value = false
     }
 })
 </script>
 
 <style lang="scss" scoped>
-.change-detail {
-    min-height: 100vh;
-    background-color: #f5f5f5;
-    padding-bottom: 120rpx;
+@import './shared.scss';
+
+.order-change-card__value--danger {
+    color: var(--wm-color-danger, #c94b49);
 }
 
-.status-card {
-    padding: 40rpx 30rpx;
-    color: #fff;
-
-    &.bg-orange {
-        background: linear-gradient(135deg, #ff9500, #ff6b00);
-    }
-    &.bg-blue {
-        background: linear-gradient(135deg, #007aff, #0056d6);
-    }
-    &.bg-red {
-        background: linear-gradient(135deg, #ff3b30, #d63027);
-    }
-    &.bg-green {
-        background: linear-gradient(135deg, #34c759, #28a745);
-    }
-    &.bg-gray {
-        background: linear-gradient(135deg, #8e8e93, #636366);
-    }
-}
-
-.section-title {
-    font-size: 28rpx;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 20rpx;
-    padding-left: 16rpx;
-    border-left: 6rpx solid var(--color-primary, #e85a4f);
-}
-
-.info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16rpx 0;
-    border-bottom: 1rpx solid #f5f5f5;
-
-    &:last-child {
-        border-bottom: none;
-    }
-
-    .label {
-        color: #999;
-        font-size: 26rpx;
-    }
-
-    .value {
-        color: #333;
-        font-size: 26rpx;
-    }
-}
-
-.tag {
-    display: inline-block;
-    padding: 4rpx 16rpx;
-    font-size: 22rpx;
-    border-radius: 6rpx;
-}
-
-.change-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20rpx 0;
-}
-
-.change-item {
-    flex: 1;
-    text-align: center;
-}
-
-.change-label {
-    font-size: 24rpx;
-    color: #999;
-    margin-bottom: 10rpx;
-}
-
-.change-value {
-    font-size: 28rpx;
-    font-weight: bold;
-
-    &.old {
-        color: #999;
-    }
-    &.new {
-        color: var(--color-primary, #e85a4f);
-    }
-}
-
-.change-arrow {
-    padding: 0 20rpx;
-}
-
-.staff-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.staff-avatar {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: 50%;
-    margin-bottom: 10rpx;
-}
-
-.staff-name {
-    font-size: 26rpx;
-    color: #333;
-}
-
-.change-price {
-    font-size: 24rpx;
-    color: #999;
-    margin-top: 10rpx;
-}
-
-.add-item-content {
-    padding: 20rpx 0;
-}
-
-.staff-card {
-    display: flex;
-    align-items: center;
-    padding: 20rpx;
-    background: #f9f9f9;
-    border-radius: 12rpx;
-}
-
-.staff-avatar-large {
-    width: 120rpx;
-    height: 120rpx;
-    border-radius: 12rpx;
-    margin-right: 20rpx;
-}
-
-.staff-info-detail {
-    flex: 1;
-}
-
-.staff-name-large {
-    font-size: 30rpx;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 6rpx;
-}
-
-.add-price {
-    text-align: right;
-}
-
-.addon-change-content {
-    padding: 8rpx 0 4rpx;
-}
-
-.addon-action-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 8rpx 18rpx;
-    border-radius: 999rpx;
-    font-size: 24rpx;
-    color: var(--wm-color-primary, #e85a4f);
-    background: rgba(232, 90, 79, 0.1);
-    margin-bottom: 20rpx;
-}
-
-.addon-change-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20rpx;
-    padding: 18rpx 20rpx;
-    background: #f9f9fb;
-    border-radius: 12rpx;
-}
-
-.addon-change-item + .addon-change-item {
-    margin-top: 12rpx;
-}
-
-.addon-change-item__main {
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-}
-
-.addon-change-item__name {
-    font-size: 28rpx;
-    color: #333;
-    font-weight: 600;
-}
-
-.addon-change-item__meta {
-    font-size: 24rpx;
-    color: #999;
-}
-
-.addon-change-item__price {
-    font-size: 28rpx;
+.change-detail__price-diff {
     font-weight: 700;
-    color: #d85c61;
-}
 
-.image-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16rpx;
-}
+    &--up {
+        color: var(--wm-color-danger, #c94b49);
+    }
 
-.attach-image {
-    width: 160rpx;
-    height: 160rpx;
-    border-radius: 8rpx;
-}
-
-.order-card {
-    padding: 20rpx;
-    background: #f9f9f9;
-    border-radius: 12rpx;
-}
-
-.bottom-actions {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 20rpx 30rpx;
-    background: #fff;
-    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.05);
-}
-
-.btn-cancel {
-    width: 100%;
-    height: 72rpx;
-    line-height: 72rpx;
-    background: #fff;
-    border: 1rpx solid #ff3b30;
-    color: #ff3b30;
-    border-radius: 44rpx;
-    font-size: 30rpx;
+    &--down {
+        color: var(--wm-color-success, #2f7d58);
+    }
 }
 </style>

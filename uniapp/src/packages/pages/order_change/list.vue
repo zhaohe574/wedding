@@ -2,184 +2,134 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer">
         <BaseNavbar title="我的申请" />
-        <view class="change-list">
-            <!-- 类型筛选 -->
-            <view class="type-tabs bg-white sticky top-0 z-10">
-                <scroll-view scroll-x class="whitespace-nowrap">
+
+        <view class="change-list-page">
+            <scroll-view
+                scroll-x
+                class="change-list-page__filter-scroll"
+                :show-scrollbar="false"
+            >
+                <view class="change-list-page__filter-row">
                     <view
                         v-for="tab in typeTabs"
                         :key="tab.value"
-                        class="inline-block px-4 py-3 text-sm"
-                        :class="
-                            currentType === tab.value
-                                ? 'text-primary border-b-2 border-primary font-medium'
-                                : 'text-gray-500'
-                        "
+                        class="change-list-page__filter-chip"
+                        :class="{
+                            'change-list-page__filter-chip--active': currentType === tab.value
+                        }"
                         @click="changeType(tab.value)"
                     >
-                        {{ tab.label }}
+                        <text class="change-list-page__filter-chip-text">{{ tab.label }}</text>
                     </view>
-                </scroll-view>
-            </view>
-
-            <!-- 列表 -->
-            <view class="p-3">
-                <view v-if="loading && list.length === 0" class="py-20 text-center text-gray-400">
-                    加载中...
                 </view>
-                <view v-else-if="list.length === 0" class="py-20 text-center text-gray-400">
-                    <image
-                        src="/static/images/empty.png"
-                        class="w-32 h-32 mx-auto mb-4"
-                        mode="aspectFit"
-                    />
-                    <text>暂无申请记录</text>
+            </scroll-view>
+
+            <view class="change-list-page__content">
+                <view v-if="loading && list.length === 0" class="change-list-page__loading">
+                    <tn-loading size="72" mode="flower" :color="$theme.primaryColor" />
+                    <text class="change-list-page__loading-text">加载申请记录中...</text>
                 </view>
-                <view v-else>
-                    <!-- 变更申请列表 -->
-                    <template v-if="currentType === 'change'">
-                        <view
-                            v-for="item in list"
-                            :key="item.id"
-                            class="bg-white rounded-lg mb-3 p-4"
-                            @click="goChangeDetail(item.id)"
-                        >
-                            <view class="flex justify-between items-start mb-2">
-                                <view>
-                                    <text class="text-xs text-gray-400">{{ item.change_sn }}</text>
-                                    <view class="flex items-center mt-1">
-                                        <view class="tag" :class="getTypeClass(item.change_type)">
-                                            {{ item.change_type_desc }}
-                                        </view>
-                                        <view
-                                            class="tag ml-2"
-                                            :class="getStatusClass(item.change_status)"
-                                        >
-                                            {{ item.change_status_desc }}
-                                        </view>
-                                    </view>
-                                </view>
-                                <text class="text-xs text-gray-400">{{ item.create_time }}</text>
-                            </view>
 
-                            <!-- 改期 -->
-                            <view v-if="item.change_type === 1" class="text-sm text-gray-600 mt-2">
-                                <text>服务日期: </text>
-                                <text class="text-gray-400">{{ item.old_service_date }}</text>
-                                <text class="mx-1">→</text>
-                                <text class="text-primary">{{ item.new_service_date }}</text>
-                            </view>
-
-                            <!-- 换人 -->
-                            <view
-                                v-else-if="item.change_type === 2"
-                                class="text-sm text-gray-600 mt-2"
-                            >
-                                <text>人员: </text>
-                                <text class="text-gray-400">{{ item.old_staff_name }}</text>
-                                <text class="mx-1">→</text>
-                                <text class="text-primary">{{ item.new_staff_name }}</text>
-                                <text
-                                    v-if="item.price_diff !== 0"
-                                    :class="item.price_diff > 0 ? 'text-red-500' : 'text-green-500'"
-                                    class="ml-2"
-                                >
-                                    {{ item.price_diff > 0 ? '+' : '' }}{{ item.price_diff }}元
-                                </text>
-                            </view>
-
-                            <!-- 加项 -->
-                            <view
-                                v-else-if="item.change_type === 3"
-                                class="text-sm text-gray-600 mt-2"
-                            >
-                                <text>新增: </text>
-                                <text class="text-primary">{{ item.add_staff_name }}</text>
-                                <text class="text-gray-400 ml-1"
-                                    >({{ item.add_package_name }})</text
-                                >
-                                <text class="text-red-500 ml-2">+{{ item.add_price }}元</text>
-                            </view>
-
-                            <view v-if="item.apply_reason" class="text-xs text-gray-400 mt-2">
-                                原因: {{ item.apply_reason }}
-                            </view>
-
-                            <!-- 操作按钮 -->
-                            <view v-if="item.change_status === 0" class="mt-3 flex justify-end">
-                                <button
-                                    class="btn-outline text-red-500 border-red-500"
-                                    @click.stop="handleCancelChange(item)"
-                                >
-                                    取消申请
-                                </button>
-                            </view>
-                        </view>
+                <EmptyState
+                    v-else-if="list.length === 0"
+                    :title="currentType === 'change' ? '暂无变更申请' : '暂无暂停申请'"
+                    :description="
+                        currentType === 'change'
+                            ? '改期、加项等申请提交后会在这里统一查看进度。'
+                            : '暂停申请提交后会在这里统一查看审核与恢复状态。'
+                    "
+                >
+                    <template #icon>
+                        <tn-icon
+                            :name="currentType === 'change' ? 'file-text' : 'clock'"
+                            size="120"
+                            color="#D8CEC8"
+                        />
                     </template>
+                </EmptyState>
 
-                    <!-- 暂停申请列表 -->
-                    <template v-if="currentType === 'pause'">
-                        <view
-                            v-for="item in list"
-                            :key="item.id"
-                            class="bg-white rounded-lg mb-3 p-4"
-                            @click="goPauseDetail(item.id)"
-                        >
-                            <view class="flex justify-between items-start mb-2">
-                                <view>
-                                    <text class="text-xs text-gray-400">{{ item.pause_sn }}</text>
-                                    <view class="flex items-center mt-1">
-                                        <view
-                                            class="tag"
-                                            :class="getPauseTypeClass(item.pause_type)"
-                                        >
-                                            {{ item.pause_type_desc }}
-                                        </view>
-                                        <view
-                                            class="tag ml-2"
-                                            :class="getPauseStatusClass(item.pause_status)"
-                                        >
-                                            {{ item.pause_status_desc }}
-                                        </view>
-                                    </view>
-                                </view>
-                                <text class="text-xs text-gray-400">{{ item.create_time }}</text>
-                            </view>
-
-                            <view class="text-sm text-gray-600 mt-2">
-                                <text>暂停时间: </text>
-                                <text class="text-primary"
-                                    >{{ item.pause_start_date }} ~ {{ item.pause_end_date }}</text
-                                >
-                                <text class="text-gray-400 ml-2">({{ item.pause_days }}天)</text>
-                            </view>
-
-                            <view v-if="item.pause_reason" class="text-xs text-gray-400 mt-2">
-                                原因: {{ item.pause_reason }}
-                            </view>
-
-                            <!-- 操作按钮 -->
-                            <view v-if="item.pause_status === 0" class="mt-3 flex justify-end">
-                                <button
-                                    class="btn-outline text-red-500 border-red-500"
-                                    @click.stop="handleCancelPause(item)"
-                                >
-                                    取消申请
-                                </button>
-                            </view>
-                        </view>
-                    </template>
-
-                    <!-- 加载更多 -->
-                    <view v-if="hasMore" class="py-4 text-center text-gray-400 text-sm">
-                        <text v-if="loading">加载中...</text>
-                        <text v-else @click="loadMore">加载更多</text>
-                    </view>
-                    <view
-                        v-else-if="list.length > 0"
-                        class="py-4 text-center text-gray-400 text-sm"
+                <view v-else class="change-record-list">
+                    <BaseCard
+                        v-for="item in list"
+                        :key="item.id"
+                        variant="surface"
+                        scene="consumer"
+                        :interactive="true"
+                        class="change-record-card"
+                        @click="goDetail(item)"
                     >
-                        没有更多了
+                        <view class="change-record-card__head">
+                            <view class="change-record-card__meta">
+                                <text class="change-record-card__no">{{ getRecordNo(item) }}</text>
+                                <view class="change-record-card__badges">
+                                    <StatusBadge :tone="getTypeTone(item)" size="sm">
+                                        {{ getTypeLabel(item) }}
+                                    </StatusBadge>
+                                    <StatusBadge :tone="getStatusTone(item)" size="sm">
+                                        {{ getStatusLabel(item) }}
+                                    </StatusBadge>
+                                </view>
+                            </view>
+                            <text class="change-record-card__time">{{ item.create_time }}</text>
+                        </view>
+
+                        <text class="change-record-card__title">{{ getRecordTitle(item) }}</text>
+                        <text class="change-record-card__summary">
+                            {{ getPrimarySummary(item) }}
+                        </text>
+                        <text
+                            v-if="getSecondarySummary(item)"
+                            class="change-record-card__summary change-record-card__summary--muted"
+                        >
+                            {{ getSecondarySummary(item) }}
+                        </text>
+
+                        <view
+                            v-if="getReasonText(item)"
+                            class="change-record-card__reason"
+                        >
+                            <text class="change-record-card__reason-label">原因</text>
+                            <text class="change-record-card__reason-text">
+                                {{ getReasonText(item) }}
+                            </text>
+                        </view>
+
+                        <view class="change-record-card__foot">
+                            <text class="change-record-card__foot-note">
+                                {{ getFootNote(item) }}
+                            </text>
+                            <view
+                                v-if="canCancel(item)"
+                                class="change-record-card__actions"
+                                @click.stop
+                            >
+                                <BaseButton
+                                    size="sm"
+                                    variant="danger"
+                                    @click="handleCancel(item)"
+                                >
+                                    取消申请
+                                </BaseButton>
+                            </view>
+                        </view>
+                    </BaseCard>
+
+                    <view v-if="hasMore" class="change-list-page__load-more">
+                        <view v-if="loading" class="change-list-page__load-more-inner">
+                            <tn-loading size="36" mode="flower" :color="$theme.primaryColor" />
+                            <text class="change-list-page__load-more-text">加载中...</text>
+                        </view>
+                        <text
+                            v-else
+                            class="change-list-page__load-more-text change-list-page__load-more-text--action"
+                            @click="loadMore"
+                        >
+                            加载更多
+                        </text>
+                    </view>
+
+                    <view v-else class="change-list-page__load-more">
+                        <text class="change-list-page__load-more-text">没有更多了</text>
                     </view>
                 </view>
             </view>
@@ -189,68 +139,152 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onLoad, onShow, onReachBottom } from '@dcloudio/uni-app'
+import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
-import { getChangeList, cancelChange, getPauseList, cancelPause } from '@/api/orderChange'
+import StatusBadge from '@/components/base/StatusBadge.vue'
+import { cancelChange, cancelPause, getChangeList, getPauseList } from '@/api/orderChange'
+import { useThemeStore } from '@/stores/theme'
+
+const $theme = useThemeStore()
 
 const typeTabs = [
     { label: '变更申请', value: 'change' },
     { label: '暂停申请', value: 'pause' }
 ]
 
-const currentType = ref('change')
+const currentType = ref<'change' | 'pause'>('change')
 const list = ref<any[]>([])
 const loading = ref(false)
 const page = ref(1)
 const hasMore = ref(true)
 
-// 变更类型样式
-const getTypeClass = (type: number) => {
-    const classes: Record<number, string> = {
-        1: 'bg-blue-100 text-blue-600',
-        2: 'bg-orange-100 text-orange-600',
-        3: 'bg-green-100 text-green-600'
+const getTypeTone = (item: any) => {
+    if (currentType.value === 'change') {
+        const map: Record<number, 'info' | 'warning' | 'success' | 'neutral'> = {
+            1: 'info',
+            2: 'warning',
+            3: 'success',
+            4: 'neutral'
+        }
+        return map[Number(item?.change_type || 0)] || 'neutral'
     }
-    return classes[type] || 'bg-gray-100 text-gray-600'
+
+    const map: Record<number, 'danger' | 'warning' | 'info' | 'neutral'> = {
+        1: 'danger',
+        2: 'warning',
+        3: 'info',
+        4: 'neutral'
+    }
+    return map[Number(item?.pause_type || 0)] || 'neutral'
 }
 
-// 变更状态样式
-const getStatusClass = (status: number) => {
-    const classes: Record<number, string> = {
-        0: 'bg-orange-100 text-orange-600',
-        1: 'bg-blue-100 text-blue-600',
-        2: 'bg-red-100 text-red-600',
-        3: 'bg-green-100 text-green-600',
-        4: 'bg-gray-100 text-gray-600'
+const getStatusTone = (item: any) => {
+    if (currentType.value === 'change') {
+        const map: Record<number, 'warning' | 'info' | 'danger' | 'success' | 'neutral'> = {
+            0: 'warning',
+            1: 'info',
+            2: 'danger',
+            3: 'success',
+            4: 'neutral'
+        }
+        return map[Number(item?.change_status || 0)] || 'neutral'
     }
-    return classes[status] || 'bg-gray-100 text-gray-600'
+
+    const map: Record<number, 'warning' | 'info' | 'success' | 'danger' | 'neutral'> = {
+        0: 'warning',
+        1: 'info',
+        2: 'success',
+        3: 'danger',
+        4: 'neutral'
+    }
+    return map[Number(item?.pause_status || 0)] || 'neutral'
 }
 
-// 暂停类型样式
-const getPauseTypeClass = (type: number) => {
-    const classes: Record<number, string> = {
-        1: 'bg-red-100 text-red-600',
-        2: 'bg-orange-100 text-orange-600',
-        3: 'bg-blue-100 text-blue-600',
-        4: 'bg-gray-100 text-gray-600'
+const getRecordNo = (item: any) =>
+    currentType.value === 'change' ? item?.change_sn || '变更单待生成' : item?.pause_sn || '暂停单待生成'
+
+const getTypeLabel = (item: any) =>
+    currentType.value === 'change'
+        ? item?.change_type_desc || '变更申请'
+        : item?.pause_type_desc || '暂停申请'
+
+const getStatusLabel = (item: any) =>
+    currentType.value === 'change'
+        ? item?.change_status_desc || '处理中'
+        : item?.pause_status_desc || '处理中'
+
+const getRecordTitle = (item: any) => {
+    if (currentType.value === 'pause') {
+        return '暂停申请'
     }
-    return classes[type] || 'bg-gray-100 text-gray-600'
+
+    const map: Record<number, string> = {
+        1: '改期申请',
+        2: '换人申请',
+        3: '加项申请'
+    }
+    return map[Number(item?.change_type || 0)] || '变更申请'
 }
 
-// 暂停状态样式
-const getPauseStatusClass = (status: number) => {
-    const classes: Record<number, string> = {
-        0: 'bg-orange-100 text-orange-600',
-        1: 'bg-blue-100 text-blue-600',
-        2: 'bg-green-100 text-green-600',
-        3: 'bg-red-100 text-red-600',
-        4: 'bg-gray-100 text-gray-600'
+const getPrimarySummary = (item: any) => {
+    if (currentType.value === 'pause') {
+        return `暂停周期：${item?.pause_start_date || '待补充'} ~ ${item?.pause_end_date || '待补充'}`
     }
-    return classes[status] || 'bg-gray-100 text-gray-600'
+
+    const type = Number(item?.change_type || 0)
+    if (type === 1) {
+        return `服务日期：${item?.old_service_date || '待补充'} → ${item?.new_service_date || '待补充'}`
+    }
+    if (type === 2) {
+        return `人员变更：${item?.old_staff_name || '待补充'} → ${item?.new_staff_name || '待补充'}`
+    }
+    if (type === 3) {
+        return `新增服务：${item?.add_staff_name || '待补充'} / ${item?.add_package_name || '未选择套餐'}`
+    }
+    return '申请内容待补充'
 }
+
+const getSecondarySummary = (item: any) => {
+    if (currentType.value === 'pause') {
+        return `计划暂停 ${item?.pause_days || 0} 天`
+    }
+
+    const type = Number(item?.change_type || 0)
+    if (type === 2 && Number(item?.price_diff || 0) !== 0) {
+        return `差价：${Number(item.price_diff) > 0 ? '+' : ''}${item.price_diff} 元`
+    }
+    if (type === 3) {
+        return `服务日期：${item?.add_service_date || '待补充'}`
+    }
+    return ''
+}
+
+const getReasonText = (item: any) =>
+    currentType.value === 'change'
+        ? String(item?.apply_reason || '').trim()
+        : String(item?.pause_reason || '').trim()
+
+const getFootNote = (item: any) => {
+    if (currentType.value === 'pause') {
+        return Number(item?.pause_status || 0) === 0 ? '待审核，可在通过前取消申请' : '点击查看暂停详情'
+    }
+
+    return Number(item?.change_status || 0) === 0 ? '待审核，可在通过前取消申请' : '点击查看变更详情'
+}
+
+const canCancel = (item: any) =>
+    currentType.value === 'change'
+        ? Number(item?.change_status || 0) === 0
+        : Number(item?.pause_status || 0) === 0
 
 const fetchList = async (refresh = false) => {
-    if (loading.value) return
+    if (loading.value) {
+        return
+    }
     loading.value = true
 
     try {
@@ -264,19 +298,16 @@ const fetchList = async (refresh = false) => {
 
         if (currentType.value === 'change') {
             res = await getChangeList(params)
-        } else {
-            res = await getPauseList(params)
-        }
-
-        if (currentType.value === 'change') {
             const rawList = Array.isArray(res?.lists) ? res.lists : []
             res = {
                 ...res,
                 lists: rawList.filter((item: any) => Number(item?.change_type) !== 4)
             }
+        } else {
+            res = await getPauseList(params)
         }
 
-        const data = res.lists || []
+        const data = Array.isArray(res?.lists) ? res.lists : []
 
         if (refresh) {
             list.value = data
@@ -285,73 +316,68 @@ const fetchList = async (refresh = false) => {
         }
 
         hasMore.value = data.length === 10
-    } catch (e) {
-        console.error(e)
+    } catch (error) {
+        console.error('获取申请列表失败', error)
     } finally {
         loading.value = false
     }
 }
 
-const changeType = (type: string) => {
+const changeType = (type: 'change' | 'pause') => {
+    if (currentType.value === type) {
+        return
+    }
     currentType.value = type
-    fetchList(true)
+    void fetchList(true)
 }
 
 const loadMore = () => {
     if (hasMore.value && !loading.value) {
-        page.value++
-        fetchList()
+        page.value += 1
+        void fetchList()
     }
 }
 
-const goChangeDetail = (id: number) => {
-    uni.navigateTo({ url: `/packages/pages/order_change/change_detail?id=${id}` })
+const goDetail = (item: any) => {
+    if (currentType.value === 'change') {
+        uni.navigateTo({ url: `/packages/pages/order_change/change_detail?id=${item.id}` })
+        return
+    }
+
+    uni.navigateTo({ url: `/packages/pages/order_change/pause_detail?id=${item.id}` })
 }
 
-const goPauseDetail = (id: number) => {
-    uni.navigateTo({ url: `/packages/pages/order_change/pause_detail?id=${id}` })
-}
-
-const handleCancelChange = async (item: any) => {
-    const res = await uni.showModal({
+const handleCancel = async (item: any) => {
+    const result = await uni.showModal({
         title: '提示',
-        content: '确定要取消该变更申请吗？'
+        content: `确定要取消该${currentType.value === 'change' ? '变更' : '暂停'}申请吗？`
     })
-    if (res.confirm) {
-        try {
+
+    if (!result.confirm) {
+        return
+    }
+
+    try {
+        if (currentType.value === 'change') {
             await cancelChange({ id: item.id })
-            uni.showToast({ title: '已取消' })
-            fetchList(true)
-        } catch (e: any) {
-            uni.showToast({ title: e.message || '操作失败', icon: 'none' })
-        }
-    }
-}
-
-const handleCancelPause = async (item: any) => {
-    const res = await uni.showModal({
-        title: '提示',
-        content: '确定要取消该暂停申请吗？'
-    })
-    if (res.confirm) {
-        try {
+        } else {
             await cancelPause({ id: item.id })
-            uni.showToast({ title: '已取消' })
-            fetchList(true)
-        } catch (e: any) {
-            uni.showToast({ title: e.message || '操作失败', icon: 'none' })
         }
+        uni.showToast({ title: '已取消', icon: 'none' })
+        await fetchList(true)
+    } catch (error: any) {
+        uni.showToast({ title: error?.message || '操作失败', icon: 'none' })
     }
 }
 
 onLoad((options: any) => {
-    if (options.type && ['change', 'pause'].includes(options.type)) {
+    if (options?.type && ['change', 'pause'].includes(options.type)) {
         currentType.value = options.type
     }
 })
 
 onShow(() => {
-    fetchList(true)
+    void fetchList(true)
 })
 
 onReachBottom(() => {
@@ -360,23 +386,180 @@ onReachBottom(() => {
 </script>
 
 <style lang="scss" scoped>
-.change-list {
+.change-list-page {
     min-height: 100vh;
-    background-color: #f5f5f5;
+    background: var(--wm-color-bg-page, #fff7f4);
 }
 
-.tag {
-    display: inline-block;
-    padding: 4rpx 12rpx;
-    font-size: 20rpx;
-    border-radius: 6rpx;
+.change-list-page__filter-scroll {
+    padding: 12rpx 0 0;
 }
 
-.btn-outline {
-    padding: 12rpx 24rpx;
+.change-list-page__filter-row {
+    display: flex;
+    gap: 12rpx;
+    padding: 0 var(--wm-space-page-x, 37rpx) 12rpx;
+}
+
+.change-list-page__filter-chip {
+    flex-shrink: 0;
+    min-width: 138rpx;
+    min-height: 66rpx;
+    padding: 0 24rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.86);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    transition: all var(--wm-motion-base, 220ms) ease;
+
+    &--active {
+        background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, #d9786d 100%);
+        border-color: transparent;
+        box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.18);
+
+        .change-list-page__filter-chip-text {
+            color: #ffffff;
+        }
+    }
+}
+
+.change-list-page__filter-chip-text {
     font-size: 24rpx;
-    border: 1rpx solid #ddd;
-    border-radius: 8rpx;
-    background: #fff;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.change-list-page__content {
+    padding: 6rpx var(--wm-space-page-x, 37rpx) 40rpx;
+}
+
+.change-list-page__loading {
+    min-height: 52vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20rpx;
+}
+
+.change-list-page__loading-text,
+.change-list-page__load-more-text {
+    font-size: 24rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.change-record-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+}
+
+.change-record-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    padding: 28rpx 30rpx !important;
+    border-radius: 42rpx !important;
+}
+
+.change-record-card__head,
+.change-record-card__foot {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.change-record-card__meta {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+}
+
+.change-record-card__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10rpx;
+}
+
+.change-record-card__no,
+.change-record-card__time,
+.change-record-card__foot-note {
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.change-record-card__time {
+    flex-shrink: 0;
+}
+
+.change-record-card__title {
+    display: block;
+    font-size: 30rpx;
+    line-height: 1.38;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.change-record-card__summary {
+    display: block;
+    font-size: 25rpx;
+    line-height: 1.62;
+    color: var(--wm-text-primary, #1e2432);
+
+    &--muted {
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+}
+
+.change-record-card__reason {
+    display: flex;
+    align-items: flex-start;
+    gap: 12rpx;
+    padding: 16rpx 18rpx;
+    border-radius: 24rpx;
+    background: rgba(255, 247, 244, 0.82);
+    border: 1rpx solid rgba(239, 230, 225, 0.92);
+}
+
+.change-record-card__reason-label {
+    flex-shrink: 0;
+    font-size: 22rpx;
+    font-weight: 700;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.change-record-card__reason-text {
+    flex: 1;
+    min-width: 0;
+    font-size: 24rpx;
+    line-height: 1.58;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.change-record-card__actions {
+    flex-shrink: 0;
+}
+
+.change-list-page__load-more {
+    display: flex;
+    justify-content: center;
+    padding: 12rpx 0 6rpx;
+}
+
+.change-list-page__load-more-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 12rpx;
+}
+
+.change-list-page__load-more-text--action {
+    color: var(--wm-color-primary, #e85a4f);
 }
 </style>

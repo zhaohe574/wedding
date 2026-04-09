@@ -97,43 +97,6 @@ export function handleComplaint(data: { id: number; action: number; result: stri
     return request.post({ url: '/ops.aftersaleTicket/handleComplaint', data })
 }
 
-// ==================== 补拍申请 ====================
-
-/**
- * 补拍申请列表
- */
-export function getReshootLists(params: any) {
-    return request.get({ url: '/ops.aftersaleTicket/reshootLists', params })
-}
-
-/**
- * 补拍申请详情
- */
-export function getReshootDetail(id: number) {
-    return request.get({ url: '/ops.aftersaleTicket/reshootDetail', params: { id } })
-}
-
-/**
- * 审核补拍申请
- */
-export function auditReshoot(data: { id: number; approved: number; is_free?: number; fee?: number; remark?: string }) {
-    return request.post({ url: '/ops.aftersaleTicket/auditReshoot', data })
-}
-
-/**
- * 安排补拍
- */
-export function scheduleReshoot(data: { id: number; schedule_date: string; new_staff_id?: number }) {
-    return request.post({ url: '/ops.aftersaleTicket/scheduleReshoot', data })
-}
-
-/**
- * 完成补拍
- */
-export function completeReshoot(data: { id: number; remark?: string }) {
-    return request.post({ url: '/ops.aftersaleTicket/completeReshoot', data })
-}
-
 // ==================== 回访管理 ====================
 
 /**

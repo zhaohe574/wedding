@@ -1476,6 +1476,62 @@ class Order extends BaseModel
     }
 
     /**
+     * @notes 开始服务
+     * @param int $orderId
+     * @param int $operatorId
+     * @param int $operatorType
+     * @param string $logContent
+     * @return array [bool $success, string $message]
+     */
+    public static function startService(
+        int $orderId,
+        int $operatorId,
+        int $operatorType = OrderLog::OPERATOR_ADMIN,
+        string $logContent = '开始服务'
+    ): array {
+        Db::startTrans();
+        try {
+            $order = self::where('id', $orderId)->lock(true)->find();
+            if (!$order) {
+                throw new \RuntimeException('订单不存在');
+            }
+
+            if (!$order->canStartService()) {
+                throw new \RuntimeException('只有待服务的订单才能开始服务');
+            }
+
+            $beforeStatus = (int)$order->order_status;
+            $now = time();
+
+            $order->order_status = self::STATUS_IN_SERVICE;
+            $order->start_service_time = $now;
+            $order->update_time = $now;
+            $order->save();
+
+            OrderItem::where('order_id', $orderId)->update([
+                'item_status' => OrderItem::STATUS_IN_SERVICE,
+                'update_time' => $now,
+            ]);
+
+            OrderLog::addLog(
+                $orderId,
+                $operatorType,
+                $operatorId,
+                'start_service',
+                $beforeStatus,
+                self::STATUS_IN_SERVICE,
+                $logContent
+            );
+
+            Db::commit();
+            return [true, '开始服务成功'];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return [false, $e->getMessage()];
+        }
+    }
+
+    /**
      * @notes 获取订单状态选项
      * @return array
      */

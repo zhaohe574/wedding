@@ -9,6 +9,7 @@ namespace app\adminapi\lists\order;
 
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsExcelInterface;
+use app\common\lists\ListsSearchInterface;
 use app\common\model\order\OrderChange;
 
 /**
@@ -16,7 +17,7 @@ use app\common\model\order\OrderChange;
  * Class OrderChangeLists
  * @package app\adminapi\lists\order
  */
-class OrderChangeLists extends BaseAdminDataLists implements ListsExcelInterface
+class OrderChangeLists extends BaseAdminDataLists implements ListsExcelInterface, ListsSearchInterface
 {
     /**
      * @notes 搜索条件

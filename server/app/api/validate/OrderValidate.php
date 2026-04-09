@@ -40,7 +40,7 @@ class OrderValidate extends BaseValidate
         'reason' => 'max:255',
         'pay_way' => 'require|integer|in:1,2,3,4,5',
         'pay_type' => 'integer|in:1,2,3',
-        'amount' => 'require|float|gt:0',
+        'amount' => 'float|gt:0',
         'voucher' => 'require|max:500',
     ];
 
@@ -73,7 +73,6 @@ class OrderValidate extends BaseValidate
         'pay_way.require' => '请选择支付方式',
         'pay_way.in' => '支付方式参数错误',
         'pay_type.in' => '支付类型参数错误',
-        'amount.require' => '请填写退款金额',
         'amount.gt' => '退款金额必须大于0',
         'voucher.require' => '请上传支付凭证',
         'voucher.max' => '支付凭证地址过长',
@@ -164,7 +163,7 @@ class OrderValidate extends BaseValidate
      */
     public function sceneRefund()
     {
-        return $this->only(['id', 'amount', 'reason'])
+        return $this->only(['id', 'reason'])
             ->append('reason', 'require');
     }
 

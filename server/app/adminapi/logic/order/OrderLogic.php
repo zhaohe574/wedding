@@ -19,6 +19,7 @@ use app\common\model\staff\Staff;
 use app\common\model\user\User;
 use app\common\service\BookingFlowService;
 use app\common\service\OrderNotificationService;
+use app\common\service\OrderRefundService;
 use app\common\service\PackageRegionPriceService;
 use think\facade\Db;
 
@@ -281,6 +282,9 @@ class OrderLogic extends BaseLogic
         $data = array_merge($data, Order::getPaymentSummary($order));
         $data = array_merge($data, Order::getPayTimeoutSummary($order));
         $data = array_merge($data, Order::getConfirmTimeoutSummary($order));
+        $data['refundable_amount'] = OrderRefundService::getRefundableAmount((int)$order->id);
+        $data['can_admin_refund'] = OrderRefundService::canAdminApplyRefund($order);
+        $data['admin_refund_modes'] = ['full', 'partial'];
 
         return $data;
     }
@@ -1002,38 +1006,12 @@ class OrderLogic extends BaseLogic
      */
     public static function startService(int $orderId, int $adminId): bool
     {
-        try {
-            $order = Order::find($orderId);
-            if (!$order) {
-                self::setError('订单不存在');
-                return false;
-            }
-
-            if (!$order->canStartService()) {
-                self::setError('只有待服务的订单才能开始服务');
-                return false;
-            }
-
-            $beforeStatus = $order->order_status;
-            $order->order_status = Order::STATUS_IN_SERVICE;
-            $order->start_service_time = time();
-            $order->update_time = time();
-            $order->save();
-
-            // 更新订单项状态
-            OrderItem::where('order_id', $orderId)->update([
-                'item_status' => 1,
-                'update_time' => time(),
-            ]);
-
-            // 记录日志
-            OrderLog::addLog($orderId, OrderLog::OPERATOR_ADMIN, $adminId, 'start_service', $beforeStatus, Order::STATUS_IN_SERVICE, '开始服务');
-
-            return true;
-        } catch (\Exception $e) {
-            self::setError($e->getMessage());
+        [$success, $message] = Order::startService($orderId, $adminId, OrderLog::OPERATOR_ADMIN, '开始服务');
+        if (!$success) {
+            self::setError($message);
             return false;
         }
+        return true;
     }
 
     /**
@@ -1230,15 +1208,17 @@ class OrderLogic extends BaseLogic
      */
     public static function statistics(array $params): array
     {
-        // 时间范围
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
+        $startDate = trim((string)($params['start_date'] ?? ''));
+        $endDate = trim((string)($params['end_date'] ?? ''));
         $staffId = (int)($params['staff_id'] ?? 0);
-        
-        $startTime = strtotime($startDate);
-        $endTime = strtotime($endDate . ' 23:59:59');
 
-        $query = Order::whereBetween('create_time', [$startTime, $endTime]);
+        $query = Order::where([]);
+        if ($startDate !== '' || $endDate !== '') {
+            $startTime = strtotime($startDate !== '' ? $startDate : '1970-01-01');
+            $endTime = strtotime(($endDate !== '' ? $endDate : date('Y-m-d')) . ' 23:59:59');
+            $query->whereBetween('create_time', [$startTime, $endTime]);
+        }
+
         if ($staffId > 0) {
             $query->whereIn('id', function ($subQuery) use ($staffId) {
                 $subQuery->name('order_item')

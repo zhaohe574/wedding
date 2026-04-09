@@ -49,12 +49,7 @@ const props = defineProps({
     display: flex;
     justify-content: center;
     align-items: center;
-    background: radial-gradient(circle at top right, rgba(232, 90, 79, 0.08) 0, transparent 30%),
-        linear-gradient(
-            180deg,
-            var(--wm-color-bg-page, #fcfbf9) 0%,
-            var(--wm-color-bg-soft, #fff7f4) 100%
-        );
+    background: transparent;
     &--fixed {
         position: fixed;
         top: 0;

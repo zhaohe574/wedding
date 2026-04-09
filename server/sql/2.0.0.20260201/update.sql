@@ -1800,34 +1800,6 @@ CREATE TABLE IF NOT EXISTS `la_complaint` (
     KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='投诉表';
 
--- la_reshoot
-CREATE TABLE IF NOT EXISTS `la_reshoot` (
-    `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '补拍ID',
-    `reshoot_sn` varchar(32) NOT NULL DEFAULT '' COMMENT '补拍编号',
-    `order_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '关联订单ID',
-    `order_item_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '关联订单项ID',
-    `user_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '用户ID',
-    `staff_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务人员ID',
-    `reason` text COMMENT '补拍原因',
-    `images` text COMMENT '图片凭证(JSON数组)',
-    `status` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态:0-待审核,1-已通过,2-已拒绝,3-已完成,4-已取消',
-    `audit_admin_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核人ID',
-    `audit_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核时间',
-    `audit_remark` varchar(255) NOT NULL DEFAULT '' COMMENT '审核备注',
-    `reject_reason` varchar(255) NOT NULL DEFAULT '' COMMENT '拒绝原因',
-    `schedule_date` date DEFAULT NULL COMMENT '补拍日期',
-    `time_slot` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '补拍时间段:0-全天,1-早礼,2-午宴,3-晚宴',
-    `create_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    `delete_time` int(11) UNSIGNED DEFAULT NULL COMMENT '删除时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_reshoot_sn` (`reshoot_sn`),
-    KEY `idx_order_id` (`order_id`),
-    KEY `idx_user_id` (`user_id`),
-    KEY `idx_staff_id` (`staff_id`),
-    KEY `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='补拍申请表';
-
 -- la_service_callback
 CREATE TABLE IF NOT EXISTS `la_service_callback` (
     `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '回访ID',
@@ -1928,8 +1900,6 @@ CREATE TABLE IF NOT EXISTS `la_after_sale_daily_stats` (
     `ticket_overtime` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '超时工单数',
     `complaint_total` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '投诉总数',
     `complaint_handled` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '已处理投诉数',
-    `reshoot_total` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '补拍申请总数',
-    `reshoot_approved` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '已通过补拍数',
     `callback_total` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '回访总数',
     `callback_completed` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '已完成回访数',
     `avg_handle_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '平均处理时长（秒）',

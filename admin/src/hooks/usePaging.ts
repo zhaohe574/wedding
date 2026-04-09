@@ -21,6 +21,7 @@ export function usePaging(options: Options) {
     } = options
     // 记录分页初始参数
     const paramsInit: Record<any, any> = Object.assign({}, toRaw(params))
+    let latestRequestId = 0
     // 分页数据
     const pager = reactive({
         page,
@@ -32,6 +33,7 @@ export function usePaging(options: Options) {
     })
     // 请求分页接口
     const getLists = () => {
+        const requestId = ++latestRequestId
         pager.loading = true
         return fetchFun({
             page_no: pager.page,
@@ -40,6 +42,9 @@ export function usePaging(options: Options) {
             ...fixedParams
         })
             .then((res: any) => {
+                if (requestId !== latestRequestId) {
+                    return Promise.resolve(res)
+                }
                 pager.count = res?.count
                 pager.lists = res?.lists
                 pager.extend = res?.extend
@@ -49,7 +54,9 @@ export function usePaging(options: Options) {
                 return Promise.reject(err)
             })
             .finally(() => {
-                pager.loading = false
+                if (requestId === latestRequestId) {
+                    pager.loading = false
+                }
             })
     }
     // 重置为第一页

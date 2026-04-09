@@ -458,6 +458,23 @@ class StaffCenterController extends BaseApiController
     }
 
     /**
+     * @notes 开始履约
+     */
+    public function orderStartService()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('orderStartService');
+        $result = StaffCenterLogic::orderStartService($this->userId, (int) $params['id']);
+        if (true === $result) {
+            return $this->success('开始履约成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
      * @notes 动态列表
      */
     public function dynamicLists()

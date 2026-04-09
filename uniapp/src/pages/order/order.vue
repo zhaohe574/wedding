@@ -182,7 +182,6 @@
                     </view>
                 </view>
             </view>
-
             <tabbar />
         </view>
     </PageShell>

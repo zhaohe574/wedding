@@ -279,26 +279,25 @@
                 </view>
             </view>
 
-            <view class="order-confirm-page__submit-bar">
+            <ActionArea class="order-confirm-page__submit-bar" sticky safeBottom>
                 <view class="submit-summary">
                     <text class="submit-summary__label">合计</text>
                     <text class="submit-summary__amount"
                         >¥{{ formatPrice(preview.pay_amount) }}</text
                     >
                 </view>
-                <view
-                    class="submit-button"
-                    :class="{
-                        'submit-button--disabled': !canSubmit,
-                        'submit-button--loading': submitting
-                    }"
-                    @click="handleSubmit"
-                >
-                    <text class="submit-button__text">{{
-                        submitting ? '提交中...' : '提交订单'
-                    }}</text>
+                <view class="order-confirm-page__submit-action">
+                    <BaseButton
+                        block
+                        size="lg"
+                        :disabled="!canSubmit"
+                        :loading="submitting"
+                        @click="handleSubmit"
+                    >
+                        提交订单
+                    </BaseButton>
                 </view>
-            </view>
+            </ActionArea>
         </view>
     </PageShell>
 </template>
@@ -306,7 +305,9 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
+import ActionArea from '@/components/base/ActionArea.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
@@ -710,21 +711,17 @@ onShow(() => {
     }
 
     &__submit-bar {
-        position: fixed;
-        left: 22rpx;
-        right: 22rpx;
-        bottom: calc(22rpx + env(safe-area-inset-bottom));
         z-index: 90;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 22rpx;
-        padding: 22rpx;
         border-radius: 45rpx;
-        background: rgba(255, 255, 255, 0.92);
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
-        backdrop-filter: blur(18rpx);
-        -webkit-backdrop-filter: blur(18rpx);
+    }
+
+    &__submit-action {
+        width: 242rpx;
+        flex-shrink: 0;
     }
 }
 
@@ -1195,33 +1192,6 @@ onShow(() => {
     color: var(--wm-color-primary, #e85a4f);
 }
 
-.submit-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 242rpx;
-    min-height: 90rpx;
-    flex-shrink: 0;
-    border-radius: 37rpx;
-    background: var(--wm-color-primary, #e85a4f);
-    box-shadow: 0 20rpx 36rpx rgba(232, 90, 79, 0.16);
-}
-
-.submit-button__text {
-    font-size: 30rpx;
-    font-weight: 700;
-    line-height: 1;
-    color: #ffffff;
-}
-
-.submit-button--disabled {
-    opacity: 0.5;
-}
-
-.submit-button--loading {
-    opacity: 0.86;
-}
-
 @media screen and (max-width: 380px) {
     .booking-grid {
         flex-direction: column;
@@ -1241,12 +1211,7 @@ onShow(() => {
         padding-left: 114rpx;
     }
 
-    .order-confirm-page__submit-bar {
-        left: 22rpx;
-        right: 22rpx;
-    }
-
-    .submit-button {
+    .order-confirm-page__submit-action {
         width: 220rpx;
     }
 }

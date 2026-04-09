@@ -291,9 +291,11 @@
                 </view>
             </view>
 
+            <BaseOverlayMask :show="showRulePopup" @close="closeRulePopup" />
             <tn-popup
                 v-model="showRulePopup"
                 open-direction="bottom"
+                :overlay="false"
                 :overlay-closeable="true"
                 safe-area-inset-bottom
                 :radius="popupBorderRadius"

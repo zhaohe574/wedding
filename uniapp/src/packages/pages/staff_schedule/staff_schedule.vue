@@ -20,6 +20,7 @@
                             <text class="schedule-hero-card__title">
                                 {{ year }} 年 {{ monthText }} 月档期
                             </text>
+                            <text class="schedule-hero-card__desc">{{ monthHeadline }}</text>
                         </view>
 
                         <view class="schedule-nav">
@@ -50,12 +51,25 @@
                             <text class="hero-metric__value">{{ item.value }}</text>
                         </view>
                     </view>
+
+                    <view class="hero-tip">
+                        <view class="hero-tip__badge">
+                            <tn-icon name="calendar" size="24" color="#E85A4F" />
+                        </view>
+                        <view class="hero-tip__copy">
+                            <text class="hero-tip__title">{{ monthTipTitle }}</text>
+                            <text class="hero-tip__desc">{{ monthTipDesc }}</text>
+                        </view>
+                    </view>
                 </view>
 
                 <view class="staff-section-card">
                     <view class="section-head section-head--stack">
                         <view class="section-head__copy">
                             <text class="section-head__title">月历视图</text>
+                            <text class="section-head__desc">
+                                先看待履约日期，再维护可预约与休息日状态
+                            </text>
                         </view>
 
                         <view class="legend-row">
@@ -82,7 +96,6 @@
                                 class="day-cell"
                                 :class="{
                                     'day-cell--selected': cell.dateStr === selectedDate,
-                                    'day-cell--today': cell.isToday,
                                     'day-cell--past': cell.isPast,
                                     'day-cell--other': !cell.currentMonth
                                 }"
@@ -93,7 +106,7 @@
                                     :class="[
                                         `day-cell__inner--${getDayIndicator(cell.dateStr)}`,
                                         {
-                                            'is-clickable': cell.currentMonth && !cell.isPast,
+                                            'is-clickable': cell.currentMonth,
                                             'is-selected': cell.dateStr === selectedDate
                                         }
                                     ]"
@@ -105,22 +118,19 @@
                                         <text v-if="cell.isToday" class="day-cell__tag">今天</text>
                                     </view>
 
-                                    <view
-                                        v-if="cell.currentMonth && !cell.isPast"
-                                        class="day-cell__foot"
-                                    >
-                                        <view
-                                            v-if="getDayIndicator(cell.dateStr) === 'available'"
-                                            class="day-cell__dot day-cell__dot--available"
-                                        />
+                                    <view class="day-cell__content">
                                         <text
-                                            v-else
+                                            v-if="cell.currentMonth"
                                             :class="[
                                                 'day-cell__status',
                                                 `day-cell__status--${getDayIndicator(cell.dateStr)}`
                                             ]"
                                         >
-                                            {{ getIndicatorLabel(getDayIndicator(cell.dateStr)) }}
+                                            {{
+                                                hasPendingOrder(cell.dateStr)
+                                                    ? '已安排'
+                                                    : getStatusLabel(getDayStatusForView(cell.dateStr))
+                                            }}
                                         </text>
                                     </view>
                                 </view>
@@ -133,7 +143,7 @@
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">{{ selectedDateLabel }}</text>
-                            <text class="section-head__meta">{{ getWeekDay(selectedDate) }}</text>
+                            <text class="section-head__desc">{{ getWeekDay(selectedDate) }}</text>
                         </view>
 
                         <view :class="['status-pill', `status-pill--${selectedDayView.modifier}`]">
@@ -141,12 +151,15 @@
                         </view>
                     </view>
 
-                    <view class="selected-day-card">
-                        <view class="selected-day-card__row">
-                            <view class="selected-day-card__copy">
-                                <text class="selected-day-card__eyebrow">当前安排</text>
-                                <text class="selected-day-card__title">
+                    <view class="selected-summary-card">
+                        <view class="selected-summary-card__row">
+                            <view class="selected-summary-card__copy">
+                                <text class="selected-summary-card__eyebrow">当天安排</text>
+                                <text class="selected-summary-card__title">
                                     {{ selectedDayView.title }}
+                                </text>
+                                <text class="selected-summary-card__desc">
+                                    {{ selectedSummaryDesc }}
                                 </text>
                             </view>
                             <view
@@ -168,6 +181,41 @@
                         </view>
                     </view>
 
+                    <view v-if="selectedPendingOrders.length" class="day-order-list">
+                        <view
+                            v-for="item in selectedPendingOrders"
+                            :key="`${item.service_date}-${item.order_id}`"
+                            class="day-order-card"
+                            @click="goOrderDetail(item.order_id)"
+                        >
+                            <view class="day-order-card__head">
+                                <view class="day-order-card__copy">
+                                    <text class="day-order-card__title">{{ item.package_summary }}</text>
+                                    <text class="day-order-card__meta">
+                                        {{ item.contact_name || '未填写联系人' }}
+                                        <text v-if="item.contact_mobile">
+                                            ｜{{ item.contact_mobile }}
+                                        </text>
+                                    </text>
+                                </view>
+                                <view class="status-pill status-pill--warning">
+                                    <text class="status-pill__text">待履约</text>
+                                </view>
+                            </view>
+
+                            <view class="day-order-card__foot">
+                                <text class="day-order-card__info">订单号 {{ item.order_sn }}</text>
+                                <text class="day-order-card__info">
+                                    服务项 {{ item.item_count }}
+                                </text>
+                            </view>
+
+                            <text v-if="item.service_address" class="day-order-card__address">
+                                {{ item.service_address }}
+                            </text>
+                        </view>
+                    </view>
+
                     <view class="action-grid">
                         <view
                             class="schedule-action schedule-action--available"
@@ -182,6 +230,7 @@
                             </view>
                             <view class="schedule-action__copy">
                                 <text class="schedule-action__title">设为可预约</text>
+                                <text class="schedule-action__desc">开放当天新预约</text>
                             </view>
                         </view>
 
@@ -198,6 +247,7 @@
                             </view>
                             <view class="schedule-action__copy">
                                 <text class="schedule-action__title">设为不可用</text>
+                                <text class="schedule-action__desc">关闭当天接单能力</text>
                             </view>
                         </view>
                     </view>
@@ -205,9 +255,9 @@
                     <view class="remark-card">
                         <view class="remark-card__head">
                             <text class="remark-card__title">档期备注</text>
-                            <text class="remark-card__action" @click="openRemarkEditor"
-                                >编辑备注</text
-                            >
+                            <text class="remark-card__action" @click="openRemarkEditor">
+                                编辑备注
+                            </text>
                         </view>
                         <text class="remark-card__content">{{ selectedDayRemark }}</text>
                     </view>
@@ -219,9 +269,11 @@
             </view>
         </view>
 
+        <BaseOverlayMask :show="showRemarkPopup" @close="closeRemarkEditor" />
         <tn-popup
             v-model="showRemarkPopup"
             open-direction="bottom"
+            :overlay="false"
             :overlay-closeable="true"
             safe-area-inset-bottom
             :radius="24"
@@ -280,6 +332,32 @@ interface DayViewModel {
     modifier: BadgeModifier
 }
 
+interface ScheduleDayItem {
+    status?: number
+    remark?: string
+}
+
+interface MonthSummary {
+    available_days: number
+    occupied_days: number
+    unavailable_days: number
+    pending_service_count: number
+}
+
+interface PendingServiceOrderItem {
+    order_id: number
+    order_sn: string
+    service_date: string
+    contact_name: string
+    contact_mobile: string
+    service_address: string
+    package_summary: string
+    item_count: number
+    order_status: number
+    order_status_desc: string
+    can_staff_start: number
+}
+
 const $theme = useThemeStore()
 
 const today = new Date()
@@ -287,7 +365,14 @@ const todayStr = formatDateStr(today)
 const year = ref(today.getFullYear())
 const month = ref(today.getMonth() + 1)
 const selectedDate = ref(formatDateStr(today))
-const schedules = ref<Record<string, any>>({})
+const schedules = ref<Record<string, Record<number, ScheduleDayItem>>>({})
+const monthSummary = ref<MonthSummary>({
+    available_days: 0,
+    occupied_days: 0,
+    unavailable_days: 0,
+    pending_service_count: 0
+})
+const pendingServiceOrders = ref<PendingServiceOrderItem[]>([])
 const loadingMonth = ref(false)
 const submitting = ref(false)
 const showRemarkPopup = ref(false)
@@ -295,6 +380,7 @@ const remarkDraft = ref('')
 
 const weekLabels = ['日', '一', '二', '三', '四', '五', '六']
 const legendItems = [
+    { label: '待履约', tone: 'pending' },
     { label: '可预约', tone: 'available' },
     { label: '已安排', tone: 'booked' },
     { label: '已锁定', tone: 'locked' },
@@ -304,13 +390,28 @@ const legendItems = [
 
 const monthText = computed(() => String(month.value).padStart(2, '0'))
 
+const pendingOrdersByDate = computed<Record<string, PendingServiceOrderItem[]>>(() => {
+    return pendingServiceOrders.value.reduce(
+        (acc, item) => {
+            if (!acc[item.service_date]) {
+                acc[item.service_date] = []
+            }
+            acc[item.service_date].push(item)
+            return acc
+        },
+        {} as Record<string, PendingServiceOrderItem[]>
+    )
+})
+
+const selectedPendingOrders = computed(() => pendingOrdersByDate.value[selectedDate.value] || [])
+
 const monthContext = computed(() => {
     const currentYear = today.getFullYear()
     const currentMonth = today.getMonth() + 1
 
     if (year.value === currentYear && month.value === currentMonth) {
         return {
-            text: '本月工作台',
+            text: '本月排班',
             modifier: 'success' as const
         }
     }
@@ -328,6 +429,26 @@ const monthContext = computed(() => {
     }
 })
 
+const monthHeadline = computed(() => {
+    if (monthSummary.value.pending_service_count > 0) {
+        return `本月有 ${monthSummary.value.pending_service_count} 笔待履约订单，优先处理服务日期更近的安排`
+    }
+    if (monthSummary.value.occupied_days > 0) {
+        return `本月已有 ${monthSummary.value.occupied_days} 天被订单或锁定状态占用`
+    }
+    return '当前月份暂无紧急履约压力，可提前维护可预约档期'
+})
+
+const monthTipTitle = computed(() => {
+    if (monthSummary.value.pending_service_count > 0) return '先处理待履约日期'
+    if (monthSummary.value.unavailable_days > 0) return '继续校准可预约区间'
+    return '本月节奏平稳'
+})
+
+const monthTipDesc = computed(() => {
+    return `可预约 ${monthSummary.value.available_days} 天，已占用 ${monthSummary.value.occupied_days} 天，不可用 ${monthSummary.value.unavailable_days} 天`
+})
+
 function formatDateStr(date: Date): string {
     const y = date.getFullYear()
     const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -338,6 +459,14 @@ function formatDateStr(date: Date): string {
 function getWeekDay(dateStr: string): string {
     const date = new Date(dateStr.replace(/-/g, '/'))
     return ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][date.getDay()]
+}
+
+function getScheduleDay(dateStr: string): ScheduleDayItem | undefined {
+    return schedules.value[dateStr]?.[0]
+}
+
+function hasPendingOrder(dateStr: string): boolean {
+    return (pendingOrdersByDate.value[dateStr] || []).length > 0
 }
 
 const selectedDateLabel = computed(() => {
@@ -393,13 +522,16 @@ const calendarCells = computed<CalendarCell[]>(() => {
 })
 
 function getDayStatus(dateStr: string): number {
-    const dayData = schedules.value[dateStr]
-    if (!dayData) return -1
-    return Number(dayData[0]?.status ?? -1)
+    return Number(getScheduleDay(dateStr)?.status ?? -1)
+}
+
+function getDayStatusForView(dateStr: string): number {
+    const status = getDayStatus(dateStr)
+    return status === -1 ? 1 : status
 }
 
 function getDayIndicator(dateStr: string): DayIndicator {
-    const status = getDayStatus(dateStr)
+    const status = getDayStatusForView(dateStr)
     if (status === 0) return 'unavailable'
     if (status === 2) return 'booked'
     if (status === 3) return 'locked'
@@ -407,68 +539,84 @@ function getDayIndicator(dateStr: string): DayIndicator {
     return 'available'
 }
 
-function getIndicatorLabel(indicator: DayIndicator): string {
-    const map: Record<DayIndicator, string> = {
-        available: '',
-        unavailable: '休',
-        booked: '约',
-        locked: '锁',
-        reserved: '留'
+function getStatusLabel(status: number): string {
+    const map: Record<number, string> = {
+        0: '不可用',
+        1: '可预约',
+        2: '已安排',
+        3: '已锁定',
+        4: '预留'
     }
-    return map[indicator]
+    return map[status] || '可预约'
 }
 
-const stats = computed(() => {
-    let available = 0
-    let booked = 0
-    let unavailable = 0
+function buildMonthSummary(
+    targetYear: number,
+    targetMonth: number,
+    monthSchedules: Record<string, Record<number, ScheduleDayItem>>,
+    monthOrders: PendingServiceOrderItem[]
+): MonthSummary {
+    const startDate = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`
+    const endDate = formatDateStr(new Date(targetYear, targetMonth, 0))
+    const pendingDateMap = new Set(monthOrders.map((item) => item.service_date))
+    let availableDays = 0
+    let occupiedDays = 0
+    let unavailableDays = 0
 
-    const counted = new Set<string>()
-    for (const dateStr of Object.keys(schedules.value)) {
-        if (dateStr < todayStr) continue
-        counted.add(dateStr)
-
-        const status = getDayStatus(dateStr)
-        if (status === 0) {
-            unavailable++
-            continue
+    let cursor = startDate
+    while (cursor <= endDate) {
+        if (cursor >= todayStr) {
+            const status = Number(monthSchedules[cursor]?.[0]?.status ?? 1)
+            if (pendingDateMap.has(cursor)) {
+                occupiedDays++
+            } else if (status === 0) {
+                unavailableDays++
+            } else if (status === 2 || status === 3 || status === 4) {
+                occupiedDays++
+            } else {
+                availableDays++
+            }
         }
 
-        if (status === 2 || status === 3 || status === 4) {
-            booked++
-            continue
-        }
-
-        available++
+        const date = new Date(cursor.replace(/-/g, '/'))
+        date.setDate(date.getDate() + 1)
+        cursor = formatDateStr(date)
     }
 
-    const daysInMonth = new Date(year.value, month.value, 0).getDate()
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year.value}-${String(month.value).padStart(2, '0')}-${String(
-            day
-        ).padStart(2, '0')}`
-        if (dateStr < todayStr || dateStr === todayStr) continue
-        if (counted.has(dateStr)) continue
-        available++
+    return {
+        available_days: availableDays,
+        occupied_days: occupiedDays,
+        unavailable_days: unavailableDays,
+        pending_service_count: monthOrders.length
     }
-
-    return { available, booked, unavailable }
-})
+}
 
 const heroMetrics = computed(() => [
-    { label: '可预约', value: stats.value.available, accent: true },
-    { label: '已安排', value: stats.value.booked, accent: false },
-    { label: '不可用', value: stats.value.unavailable, accent: false }
+    {
+        label: '待履约',
+        value: monthSummary.value.pending_service_count,
+        accent: true
+    },
+    {
+        label: '已占用',
+        value: monthSummary.value.occupied_days,
+        accent: false
+    },
+    {
+        label: '可预约',
+        value: monthSummary.value.available_days,
+        accent: false
+    }
 ])
 
 const dayStatus = computed(() => getDayStatus(selectedDate.value))
-const displayDayStatus = computed(() => (dayStatus.value === -1 ? 1 : dayStatus.value))
+const displayDayStatus = computed(() => getDayStatusForView(selectedDate.value))
 const isSelectedPast = computed(() => selectedDate.value < todayStr)
-const isLockedStatus = computed(() => dayStatus.value >= 2)
+const isLockedStatus = computed(
+    () => dayStatus.value >= 2 || selectedPendingOrders.value.length > 0
+)
 
 function getStatusView(status: number): DayViewModel {
-    const normalizedStatus = status === -1 ? 1 : status
-
     const views: Record<number, DayViewModel> = {
         0: {
             title: '当天已关闭预约',
@@ -484,8 +632,8 @@ function getStatusView(status: number): DayViewModel {
         },
         2: {
             title: '当天已有订单占用',
-            text: '已预约',
-            badge: '已排满',
+            text: '已安排',
+            badge: '已占用',
             modifier: 'warning'
         },
         3: {
@@ -502,32 +650,59 @@ function getStatusView(status: number): DayViewModel {
         }
     }
 
-    return views[normalizedStatus] || views[1]
+    return views[status] || views[1]
 }
 
-const selectedDayView = computed(() => getStatusView(displayDayStatus.value))
+const selectedDayView = computed(() => {
+    if (selectedPendingOrders.value.length > 0) {
+        return {
+            title: '当天存在待履约订单',
+            text: '待履约',
+            badge: `${selectedPendingOrders.value.length} 笔待办`,
+            modifier: 'warning' as const
+        }
+    }
+
+    return getStatusView(displayDayStatus.value)
+})
+
+const selectedScheduleText = computed(() => getStatusLabel(displayDayStatus.value))
+
+const selectedSummaryDesc = computed(() => {
+    if (selectedPendingOrders.value.length > 0) {
+        return '请先进入订单详情开始履约或跟进服务完成情况，当前日期不建议直接覆盖档期。'
+    }
+    if (displayDayStatus.value === 0) {
+        return '当天不会对外开放预约，适合休息、请假或手动关闭接单。'
+    }
+    if (displayDayStatus.value === 1) {
+        return '当天无订单占用，可继续保持开放状态或按实际情况关闭。'
+    }
+    return '当前日期已被业务状态占用，如需调整，请先处理对应订单或释放锁定。'
+})
 
 const selectedDayRemark = computed(() => {
-    const remark = String(schedules.value[selectedDate.value]?.[0]?.remark || '').trim()
+    const remark = String(getScheduleDay(selectedDate.value)?.remark || '').trim()
     return remark || '暂无备注'
 })
 
 const selectedDayLimitText = computed(() => {
     if (isSelectedPast.value) return '历史日期不可调整'
-    if (isLockedStatus.value) return '业务占用，不可覆盖'
-    return '仅修改当天状态'
+    if (selectedPendingOrders.value.length > 0) return '当天存在待履约订单，不可直接覆盖档期'
+    if (dayStatus.value >= 2) return '当前日期已被业务占用，不可直接修改'
+    return '仅支持切换为可预约或不可用，并可补充备注'
 })
 
 const infoCards = computed(() => [
     {
-        label: '当前状态',
-        value: selectedDayView.value.badge,
+        label: '档期状态',
+        value: selectedScheduleText.value,
         accent: displayDayStatus.value === 1 && !isSelectedPast.value
     },
     {
-        label: '修改权限',
-        value: selectedDayLimitText.value,
-        accent: false
+        label: '待履约',
+        value: `${selectedPendingOrders.value.length} 笔`,
+        accent: selectedPendingOrders.value.length > 0
     },
     {
         label: '备注',
@@ -545,13 +720,19 @@ const isUnavailableActionDisabled = computed(
 )
 
 function selectDate(cell: CalendarCell) {
-    if (!cell.currentMonth || cell.isPast) return
+    if (!cell.currentMonth) return
     selectedDate.value = cell.dateStr
+}
+
+function goOrderDetail(orderId: number) {
+    uni.navigateTo({
+        url: `/packages/pages/staff_order_detail/staff_order_detail?id=${orderId}`
+    })
 }
 
 function openRemarkEditor() {
     if (!selectedDate.value) return
-    remarkDraft.value = String(schedules.value[selectedDate.value]?.[0]?.remark || '').trim()
+    remarkDraft.value = String(getScheduleDay(selectedDate.value)?.remark || '').trim()
     showRemarkPopup.value = true
 }
 
@@ -586,14 +767,14 @@ async function changeMonth(delta: number) {
     await fetchMonth()
 }
 
-async function setStatus(status: number, remark?: string) {
-    if (submitting.value) return
-    if (status === 1 && isAvailableActionDisabled.value && remark === undefined) return
-    if (status === 0 && isUnavailableActionDisabled.value && remark === undefined) return
+async function setStatus(status: number, remark?: string): Promise<boolean> {
+    if (submitting.value) return false
+    if (status === 1 && isAvailableActionDisabled.value && remark === undefined) return false
+    if (status === 0 && isUnavailableActionDisabled.value && remark === undefined) return false
 
     if (!isEditableDate.value) {
         uni.showToast({ title: '该日期不可调整', icon: 'none' })
-        return
+        return false
     }
 
     try {
@@ -601,25 +782,19 @@ async function setStatus(status: number, remark?: string) {
         const nextRemark =
             remark !== undefined
                 ? remark.trim()
-                : String(schedules.value[selectedDate.value]?.[0]?.remark || '')
+                : String(getScheduleDay(selectedDate.value)?.remark || '')
         await staffCenterScheduleSetStatus({
             date: selectedDate.value,
             status,
             remark: nextRemark
         })
-
-        if (!schedules.value[selectedDate.value]) {
-            schedules.value[selectedDate.value] = {}
-        }
-        schedules.value[selectedDate.value][0] = {
-            ...schedules.value[selectedDate.value][0],
-            status,
-            remark: nextRemark
-        }
+        await fetchMonth()
         uni.showToast({ title: '设置成功', icon: 'success' })
+        return true
     } catch (error: any) {
         const msg = typeof error === 'string' ? error : error?.msg || error?.message || '设置失败'
         uni.showToast({ title: msg, icon: 'none' })
+        return false
     } finally {
         submitting.value = false
     }
@@ -627,8 +802,8 @@ async function setStatus(status: number, remark?: string) {
 
 async function submitRemark() {
     if (!selectedDate.value) return
-    await setStatus(displayDayStatus.value, remarkDraft.value)
-    if (!submitting.value) {
+    const success = await setStatus(displayDayStatus.value, remarkDraft.value)
+    if (success) {
         showRemarkPopup.value = false
     }
 }
@@ -640,8 +815,14 @@ async function fetchMonth() {
         loadingMonth.value = true
         const response = await staffCenterScheduleMonth({ year: year.value, month: month.value })
         schedules.value = response?.schedules || {}
+        pendingServiceOrders.value = response?.pending_service_orders || []
+        monthSummary.value =
+            response?.month_summary ||
+            buildMonthSummary(year.value, month.value, schedules.value, pendingServiceOrders.value)
     } catch (error: any) {
         schedules.value = {}
+        pendingServiceOrders.value = []
+        monthSummary.value = buildMonthSummary(year.value, month.value, {}, [])
         const msg =
             typeof error === 'string' ? error : error?.msg || error?.message || '加载档期失败'
         uni.showToast({ title: msg, icon: 'none' })
@@ -1309,16 +1490,344 @@ onShow(async () => {
 }
 
 .focus-note {
-    padding: 14rpx 16rpx;
-    border-radius: 20rpx;
-    background: #fcfbf9;
+    padding: 18rpx 20rpx;
+    border-radius: 22rpx;
+    background: #fff6f2;
+    border: 1rpx solid rgba(244, 199, 191, 0.78);
+
+    &__text {
+        font-size: 22rpx;
+        font-weight: 600;
+        line-height: 1.6;
+        color: #b26a5a;
+    }
+}
+
+.schedule-hero-card {
+    &__copy {
+        gap: 8rpx;
+    }
+
+    &__desc {
+        font-size: 24rpx;
+        line-height: 1.6;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+}
+
+.hero-tip {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    padding: 18rpx 20rpx;
+    border-radius: 24rpx;
+    border: 1rpx solid rgba(244, 199, 191, 0.92);
+    background: rgba(255, 255, 255, 0.72);
+
+    &__badge {
+        width: 56rpx;
+        height: 56rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 18rpx;
+        background: #fff1ee;
+        flex-shrink: 0;
+    }
+
+    &__copy {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4rpx;
+    }
+
+    &__title {
+        font-size: 26rpx;
+        font-weight: 700;
+        line-height: 1.35;
+        color: var(--wm-text-primary, #1e2432);
+    }
+
+    &__desc {
+        font-size: 22rpx;
+        line-height: 1.5;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+}
+
+.day-order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+}
+
+.day-order-card,
+.selected-summary-card {
+    border-radius: 24rpx;
     border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: linear-gradient(180deg, #fffdfb 0%, #fff8f4 100%);
+}
+
+.day-order-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    padding: 20rpx;
+
+    &__head,
+    &__info-row,
+    &__foot {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16rpx;
+    }
+
+    &__copy {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6rpx;
+    }
+
+    &__title {
+        font-size: 28rpx;
+        font-weight: 700;
+        line-height: 1.4;
+        color: var(--wm-text-primary, #1e2432);
+    }
+
+    &__meta,
+    &__info,
+    &__address {
+        font-size: 22rpx;
+        line-height: 1.5;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+}
+
+.mini-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8rpx 12rpx;
+    border-radius: 999rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #fff;
 
     &__text {
         font-size: 20rpx;
-        font-weight: 600;
-        line-height: 1.5;
+        line-height: 1;
         color: var(--wm-text-secondary, #7f7b78);
+    }
+
+    &--warning {
+        background: rgba(201, 133, 36, 0.08);
+        border-color: rgba(201, 133, 36, 0.18);
+    }
+
+    &--warning .mini-chip__text {
+        color: #c98524;
+    }
+}
+
+.legend-chip__dot--pending {
+    background: var(--wm-color-primary, #e85a4f);
+}
+
+.day-cell {
+    &__inner {
+        min-height: 116rpx;
+        gap: 10rpx;
+    }
+
+    &__content {
+        display: flex;
+        flex-direction: column;
+        gap: 8rpx;
+        align-items: flex-start;
+    }
+
+    &__status {
+        min-width: 0;
+        height: auto;
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        font-size: 18rpx;
+        line-height: 1.2;
+    }
+
+    &__status--available {
+        color: #2f7d58;
+    }
+
+    &__status--booked {
+        color: #c98524;
+    }
+
+    &__status--locked {
+        color: #607086;
+    }
+
+    &__status--reserved {
+        color: #c99b73;
+    }
+
+    &__status--unavailable {
+        color: #b44a3a;
+    }
+}
+
+.selected-summary-card {
+    display: flex;
+    padding: 18rpx 20rpx;
+
+    &__row {
+        width: 100%;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16rpx;
+    }
+
+    &__copy {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6rpx;
+    }
+
+    &__eyebrow {
+        font-size: 20rpx;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+
+    &__title {
+        font-size: 30rpx;
+        font-weight: 700;
+        line-height: 1.35;
+        color: var(--wm-text-primary, #1e2432);
+    }
+
+    &__desc {
+        font-size: 22rpx;
+        line-height: 1.6;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+}
+
+.info-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.schedule-action__desc {
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.remark-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    padding: 20rpx;
+    border-radius: 24rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #fcfbf9;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12rpx;
+    }
+
+    &__title,
+    &__action {
+        font-size: 24rpx;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    &__title {
+        color: var(--wm-text-primary, #1e2432);
+    }
+
+    &__action {
+        color: var(--wm-color-primary, #e85a4f);
+    }
+
+    &__content {
+        font-size: 24rpx;
+        line-height: 1.7;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+}
+
+.remark-popup {
+    padding: 20rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
+    background: #fffaf8;
+    border-top-left-radius: 32rpx;
+    border-top-right-radius: 32rpx;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12rpx;
+        padding-bottom: 20rpx;
+    }
+
+    &__title,
+    &__action {
+        font-size: 26rpx;
+        line-height: 1.3;
+    }
+
+    &__title {
+        font-weight: 700;
+        color: var(--wm-text-primary, #1e2432);
+    }
+
+    &__action {
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+
+    &__action--primary {
+        font-weight: 700;
+        color: var(--wm-color-primary, #e85a4f);
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 12rpx;
+    }
+
+    &__textarea {
+        width: 100%;
+        min-height: 220rpx;
+        padding: 22rpx;
+        border-radius: 24rpx;
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        background: #fff;
+        box-sizing: border-box;
+        font-size: 26rpx;
+        line-height: 1.6;
+        color: var(--wm-text-primary, #1e2432);
+    }
+
+    &__count {
+        align-self: flex-end;
+        font-size: 20rpx;
+        line-height: 1;
+        color: #b4aca8;
     }
 }
 

@@ -346,6 +346,15 @@
                 }
             },
             {
+                "path": "pages/aftersale/create_ticket",
+                "style": {
+                    "navigationBarTitleText": "提交工单"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
                 "path": "pages/aftersale/ticket_detail",
                 "style": {
                     "navigationBarTitleText": "工单详情"
@@ -373,27 +382,9 @@
                 }
             },
             {
-                "path": "pages/aftersale/reshoot",
+                "path": "pages/aftersale/create_complaint",
                 "style": {
-                    "navigationBarTitleText": "补拍申请"
-                },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/aftersale/reshoot_detail",
-                "style": {
-                    "navigationBarTitleText": "补拍详情"
-                },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/aftersale/apply_reshoot",
-                "style": {
-                    "navigationBarTitleText": "申请补拍"
+                    "navigationBarTitleText": "发起投诉"
                 },
                 "meta": {
                     "auth": true

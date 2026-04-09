@@ -163,7 +163,7 @@
 }
 
 .page-with-tabbar-safe-bottom {
-    padding-bottom: var(--wm-tabbar-safe-space, calc(177rpx + env(safe-area-inset-bottom)));
+    padding-bottom: var(--wm-safe-bottom-tabbar, calc(177rpx + env(safe-area-inset-bottom)));
 }
 
 .fixed-bottom {
@@ -257,55 +257,21 @@
 }
 
 .wm-page-shell > .page-container,
-.wm-page-shell > .apply-page,
-.wm-page-shell > .publish-page,
-.wm-page-shell > .change-list,
-.wm-page-shell > .change-detail,
-.wm-page-shell > .pause-detail,
-.wm-page-shell > .offline-page,
-.wm-page-shell > .review-detail-page,
-.wm-page-shell > .my-reviews-page,
-.wm-page-shell > .notification-page,
-.wm-page-shell > .agreement-page,
-.wm-page-shell > .news-detail-page,
-.wm-page-shell > .waitlist-page,
-.wm-page-shell > .staff-favorite,
-.wm-page-shell > .staff-booking-page,
-.wm-page-shell > .ticket-page,
-.wm-page-shell > .ticket-detail,
-.wm-page-shell > .complaint-page,
-.wm-page-shell > .complaint-detail,
-.wm-page-shell > .reshoot-page,
-.wm-page-shell > .reshoot-detail,
-.wm-page-shell > .callback-page,
-.wm-page-shell > .callback-detail,
-.wm-page-shell > .dashboard-page,
-.wm-page-shell > .collection-page,
-.wm-page-shell > .not-found-page,
-.wm-page-shell > .empty-page,
-.wm-page-shell > .payment-result,
-.wm-page-shell > .as-us-page,
-.wm-page-shell > .home-page,
-.wm-page-shell > .user-page,
-.wm-page-shell > .order-page,
-.wm-page-shell > .staff-list-page,
+.wm-page-shell > view,
+.wm-page-shell > scroll-view,
 .wm-page-shell > .dynamic-page,
 .wm-page-shell > .dynamic-detail,
-.wm-page-shell > .news-page,
-.wm-page-shell > .schedule-query-page,
-.wm-page-shell > .user-data-page,
-.wm-page-shell > .user-set-page,
-.wm-page-shell > .search-page,
 .wm-page-shell > .staff-detail,
-.wm-page-shell > .order-confirm-page,
-.wm-page-shell > .order-detail {
+.wm-page-shell > .order-detail,
+.wm-page-shell > .payment-result {
     min-height: auto !important;
     background: transparent !important;
+    background-image: none !important;
 }
 
 .wm-surface,
 .cinema-surface {
-    background: var(--wm-color-bg-page, #fcfbf9);
+    background: #ffffff;
 }
 
 .wm-panel,

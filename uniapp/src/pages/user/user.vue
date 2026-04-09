@@ -100,9 +100,13 @@ const adminEntryEnabled = computed(() => {
 })
 
 const buildQuickEntryData = (): QuickEntryItem[] => {
+    const pendingServiceCount = Number(
+        orderStats.value.pending_service ?? orderStats.value.paid ?? 0
+    )
     const activeOrderCount =
         Number(orderStats.value.pending_confirm || 0) +
         Number(orderStats.value.pending_pay || 0) +
+        pendingServiceCount +
         Number(orderStats.value.in_service || 0)
 
     return [
@@ -125,7 +129,7 @@ const buildQuickEntryData = (): QuickEntryItem[] => {
         {
             key: 'aftersale',
             title: '售后服务',
-            subtitle: '投诉 / 工单 / 补拍',
+            subtitle: '投诉 / 工单 / 回访',
             is_show: '1',
             disabled: false,
             link: { path: '/packages/pages/aftersale/index', type: 'shop' }
@@ -337,9 +341,9 @@ onShow(async () => {
 .user-page {
     position: relative;
     box-sizing: border-box;
-    --wm-user-page-content-top: 11rpx;
+    --wm-user-page-content-top: 22rpx;
     --wm-user-page-content-side: 37rpx;
-    --wm-user-page-content-bottom: 30rpx;
+    --wm-user-page-content-bottom: 37rpx;
     --wm-user-page-section-gap: 30rpx;
     --wm-user-profile-radius: 49rpx;
     --wm-user-profile-padding: 30rpx;

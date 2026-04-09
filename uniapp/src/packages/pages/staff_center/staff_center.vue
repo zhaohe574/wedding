@@ -29,16 +29,16 @@
                             <text class="staff-hero-card__meta">{{ profileMetaText }}</text>
                         </view>
                     </view>
+                </view>
 
-                    <view class="staff-hero-card__metrics">
-                        <view
-                            v-for="item in heroMetrics"
-                            :key="item.label"
-                            :class="['hero-metric', { 'hero-metric--accent': item.accent }]"
-                        >
-                            <text class="hero-metric__label">{{ item.label }}</text>
-                            <text class="hero-metric__value">{{ item.value }}</text>
-                        </view>
+                <view class="staff-summary-chips" aria-label="工作台摘要">
+                    <view
+                        v-for="item in heroMetrics"
+                        :key="item.label"
+                        :class="['hero-metric', { 'hero-metric--accent': item.accent }]"
+                    >
+                        <text class="hero-metric__label">{{ item.label }}</text>
+                        <text class="hero-metric__value">{{ item.value }}</text>
                     </view>
                 </view>
 
@@ -841,16 +841,15 @@ onShow(async () => {
 .staff-hero-card {
     display: flex;
     flex-direction: column;
-    gap: 20rpx;
-    padding: 30rpx 30rpx 34rpx;
+    gap: 18rpx;
+    padding: 30rpx;
     border-radius: 49rpx;
     border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
     background: linear-gradient(135deg, #fff6f2 0%, #fde8e1 100%);
     box-shadow: 0 20rpx 44rpx rgba(192, 130, 115, 0.16);
 
     &__top,
-    &__profile,
-    &__metrics {
+    &__profile {
         display: flex;
     }
 
@@ -898,10 +897,11 @@ onShow(async () => {
         line-height: 1.5;
         color: var(--wm-text-secondary, #7f7b78);
     }
+}
 
-    &__metrics {
-        gap: 12rpx;
-    }
+.staff-summary-chips {
+    display: flex;
+    gap: 12rpx;
 }
 
 .hero-pill {

@@ -21,6 +21,7 @@ use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\service\BookingFlowService;
 use app\common\service\OrderNotificationService;
+use app\common\service\OrderRefundService;
 use app\common\service\PackageRegionPriceService;
 use think\facade\Db;
 
@@ -458,6 +459,9 @@ class OrderLogic extends BaseLogic
             max(0, (float)($data['total_amount'] ?? 0) - (float)($data['addon_amount'] ?? 0)),
             2
         );
+        $data['refundable_amount'] = OrderRefundService::getRefundableAmount((int)$order->id);
+        $data['refund_apply_amount'] = $data['refundable_amount'];
+        $data['can_user_refund'] = OrderRefundService::canUserApplyRefund($order);
 
         // 获取退款信息
         $refundQuery = Refund::where('order_id', $orderId);
@@ -824,14 +828,12 @@ class OrderLogic extends BaseLogic
      * @notes 申请退款
      * @param int $orderId
      * @param int $userId
-     * @param float $amount
      * @param string $reason
      * @return array
      */
-    public static function applyRefund(int $orderId, int $userId, float $amount, string $reason): array
+    public static function applyRefund(int $orderId, int $userId, string $reason): array
     {
-        $amount = round((float)$amount, 2);
-        [$success, $message, $refund] = Refund::applyRefund($orderId, $userId, $amount, $reason);
+        [$success, $message, $refund] = Refund::applyRefund($orderId, $userId, $reason);
         if ($success && $refund) {
             OrderNotificationService::notifyUserAndStaffOnRefundApplied((int)$refund->id);
         }
@@ -897,6 +899,7 @@ class OrderLogic extends BaseLogic
                 ->where('order_status', $status)
                 ->count();
         }
+        $counts['pending_service'] = (int)($counts['paid'] ?? 0);
         $counts['all'] = Order::where('user_id', $userId)
             ->where('order_status', '<>', Order::STATUS_USER_DELETED)
             ->count();

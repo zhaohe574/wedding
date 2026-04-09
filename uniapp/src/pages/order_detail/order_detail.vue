@@ -365,22 +365,26 @@
             <ActionArea sticky safeBottom>
                 <view class="action-bar">
                     <view class="action-bar__buttons">
-                        <view
+                        <BaseButton
                             v-if="secondaryVisibleAction"
-                            class="action-btn action-btn--secondary"
+                            block
+                            variant="secondary"
+                            size="lg"
                             :style="secondaryVisibleAction.style"
                             @click="secondaryVisibleAction.onClick"
                         >
-                            <text>{{ secondaryVisibleAction.label }}</text>
-                        </view>
-                        <view
+                            {{ secondaryVisibleAction.label }}
+                        </BaseButton>
+                        <BaseButton
                             v-if="primaryVisibleAction"
-                            class="action-btn action-btn--primary"
+                            block
+                            variant="primary"
+                            size="lg"
                             :style="primaryVisibleAction.style"
                             @click="primaryVisibleAction.onClick"
                         >
-                            <text>{{ primaryVisibleAction.label }}</text>
-                        </view>
+                            {{ primaryVisibleAction.label }}
+                        </BaseButton>
                     </view>
                     <view
                         v-if="moreActionItems.length"
@@ -392,11 +396,14 @@
                 </view>
             </ActionArea>
 
+            <BaseOverlayMask :show="showRefundPopup" @close="showRefundPopup = false" />
             <tn-popup
                 v-model="showRefundPopup"
                 open-direction="bottom"
                 :radius="32"
                 safe-area-inset-bottom
+                :overlay="false"
+                :overlay-closeable="true"
             >
                 <view class="popup">
                     <view class="popup__header"
@@ -409,13 +416,16 @@
                     /></view>
                     <view class="popup__content">
                         <view class="form-item"
-                            ><text class="form-item__label">退款金额</text
-                            ><tn-input
-                                v-model="refundForm.amount"
-                                type="number"
-                                :placeholder="`最多可退 ¥${formatAmount(order.pay_amount)}`"
-                                border
-                        /></view>
+                            ><text class="form-item__label">退款金额</text>
+                            <view class="refund-amount-card">
+                                <text class="refund-amount-card__value"
+                                    >¥{{ formatAmount(refundApplyAmount) }}</text
+                                >
+                                <text class="refund-amount-card__tip"
+                                    >按当前剩余可退金额提交，提交后不可修改</text
+                                >
+                            </view>
+                        </view>
                         <view class="form-item"
                             ><text class="form-item__label">退款原因</text
                             ><tn-input
@@ -428,33 +438,33 @@
                         /></view>
                     </view>
                     <view class="popup__actions">
-                        <view
-                            class="popup__btn popup__btn--secondary"
-                            :style="{
-                                borderColor: $theme.primaryColor,
-                                color: $theme.primaryColor
-                            }"
-                            @click="showRefundPopup = false"
-                            ><text>取消</text></view
-                        >
-                        <view
-                            class="popup__btn popup__btn--primary"
-                            :style="{
-                                background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                                color: $theme.btnColor
-                            }"
-                            @click="submitRefund"
-                            ><text>提交申请</text></view
-                        >
+                        <view class="popup__action">
+                            <BaseButton
+                                block
+                                variant="secondary"
+                                size="lg"
+                                @click="showRefundPopup = false"
+                            >
+                                取消
+                            </BaseButton>
+                        </view>
+                        <view class="popup__action">
+                            <BaseButton block variant="primary" size="lg" @click="submitRefund">
+                                提交申请
+                            </BaseButton>
+                        </view>
                     </view>
                 </view>
             </tn-popup>
 
+            <BaseOverlayMask :show="showVoucherPopup" @close="showVoucherPopup = false" />
             <tn-popup
                 v-model="showVoucherPopup"
                 open-direction="bottom"
                 :radius="32"
                 safe-area-inset-bottom
+                :overlay="false"
+                :overlay-closeable="true"
             >
                 <view class="popup">
                     <view class="popup__header"
@@ -485,26 +495,21 @@
                         </view>
                     </view>
                     <view class="popup__actions">
-                        <view
-                            class="popup__btn popup__btn--secondary"
-                            :style="{
-                                borderColor: $theme.primaryColor,
-                                color: $theme.primaryColor
-                            }"
-                            @click="showVoucherPopup = false"
-                            ><text>取消</text></view
-                        >
-                        <view
-                            class="popup__btn popup__btn--primary"
-                            :style="{
-                                background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`,
-                                color: $theme.btnColor
-                            }"
-                            @click="submitVoucher"
-                            ><text>{{
-                                voucherForm.uploading ? '上传中...' : '提交审核'
-                            }}</text></view
-                        >
+                        <view class="popup__action">
+                            <BaseButton
+                                block
+                                variant="secondary"
+                                size="lg"
+                                @click="showVoucherPopup = false"
+                            >
+                                取消
+                            </BaseButton>
+                        </view>
+                        <view class="popup__action">
+                            <BaseButton block variant="primary" size="lg" @click="submitVoucher">
+                                {{ voucherForm.uploading ? '上传中...' : '提交审核' }}
+                            </BaseButton>
+                        </view>
                     </view>
                 </view>
             </tn-popup>
@@ -535,6 +540,7 @@ import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import { useThemeStore } from '@/stores/theme'
 import {
     applyRefund,
@@ -557,7 +563,7 @@ const payState = reactive({
     redirect: '/pages/order_detail/order_detail',
     paymentSn: ''
 })
-const refundForm = reactive({ amount: '', reason: '' })
+const refundForm = reactive({ reason: '' })
 const voucherForm = reactive({ image: '', uploading: false })
 const showFinancialDetails = ref(false)
 const payCountdownSeconds = ref(0)
@@ -568,6 +574,9 @@ let payCountdownRefreshing = false
 let confirmCountdownRefreshing = false
 
 const formatAmount = (value: any) => Number(value || 0).toFixed(2)
+const refundApplyAmount = computed(() =>
+    Number(order.value?.refund_apply_amount ?? order.value?.refundable_amount ?? 0)
+)
 const resolvePaymentChannel = (target: any) => {
     const paymentChannel = Number(target?.payment_channel || 0)
     if ([1, 2].includes(paymentChannel)) {
@@ -1136,15 +1145,7 @@ const primaryVisibleAction = computed(() => {
 })
 
 const canApplyRefund = computed(() => {
-    if (!order.value) return false
-
-    const orderStatus = Number(order.value.order_status || -1)
-    if (![2, 3].includes(orderStatus)) {
-        return false
-    }
-
-    const refundStatus = Number(order.value?.refund?.refund_status ?? -1)
-    return ![0, 1, 2, 3].includes(refundStatus)
+    return !!Number(order.value?.can_user_refund || 0)
 })
 
 const secondaryVisibleAction = computed(() => {
@@ -1380,20 +1381,17 @@ const handleDelete = async () => {
 }
 
 const submitRefund = async () => {
-    if (!refundForm.amount || Number(refundForm.amount) <= 0)
-        return uni.showToast({ title: '请输入退款金额', icon: 'none' })
-    if (Number(refundForm.amount) > Number(order.value?.pay_amount || 0))
-        return uni.showToast({ title: '退款金额不能超过实付金额', icon: 'none' })
+    if (!canApplyRefund.value || refundApplyAmount.value <= 0) {
+        return uni.showToast({ title: '当前订单暂不支持申请退款', icon: 'none' })
+    }
     if (!refundForm.reason.trim()) return uni.showToast({ title: '请输入退款原因', icon: 'none' })
     try {
         await applyRefund({
             id: orderId.value,
-            amount: Number(refundForm.amount),
             reason: refundForm.reason
         })
         uni.showToast({ title: '申请已提交', icon: 'success' })
         showRefundPopup.value = false
-        refundForm.amount = ''
         refundForm.reason = ''
         await fetchDetail()
     } catch (e: any) {
@@ -2017,34 +2015,11 @@ onUnload(() => {
     white-space: nowrap;
 }
 
-.action-btn {
-    flex: 1;
-    min-height: 90rpx;
-    padding: 0 30rpx;
-    border-radius: 37rpx;
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28rpx;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.action-btn--primary {
-    box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.16);
-}
-
-.action-btn--secondary {
-    background: rgba(255, 255, 255, 0.88);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-}
-
 .popup {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.98);
     border-top-left-radius: 52rpx;
     border-top-right-radius: 52rpx;
-    padding: 34rpx 37rpx calc(env(safe-area-inset-bottom) + 37rpx);
+    padding: 34rpx 37rpx 37rpx;
 }
 
 .popup__header {
@@ -2083,26 +2058,36 @@ onUnload(() => {
     color: var(--wm-text-tertiary, #b4aca8);
 }
 
+.refund-amount-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+    padding: 24rpx 28rpx;
+    border-radius: 28rpx;
+    background: var(--wm-color-bg-soft, #fff7f4);
+    border: 2rpx solid var(--wm-color-border, #efe6e1);
+}
+
+.refund-amount-card__value {
+    font-size: 34rpx;
+    font-weight: 700;
+    color: var(--wm-color-danger, #b44a3a);
+}
+
+.refund-amount-card__tip {
+    font-size: 22rpx;
+    line-height: 1.6;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
 .popup__actions {
     display: flex;
     gap: 22rpx;
     margin-top: 28rpx;
 }
 
-.popup__btn {
+.popup__action {
     flex: 1;
-    height: 90rpx;
-    border-radius: 37rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28rpx;
-    font-weight: 700;
-}
-
-.popup__btn--secondary {
-    background: transparent;
-    border: 2rpx solid;
 }
 
 .voucher-upload {
@@ -2164,7 +2149,7 @@ onUnload(() => {
 }
 
 .safe-bottom {
-    height: calc(env(safe-area-inset-bottom) + 37rpx);
+    height: var(--wm-safe-bottom-action, calc(150rpx + env(safe-area-inset-bottom)));
 }
 
 .loading-container {
@@ -2174,7 +2159,7 @@ onUnload(() => {
     align-items: center;
     justify-content: center;
     gap: 16rpx;
-    background: var(--wm-color-page, #fcfbf9);
+    background: var(--wm-color-bg-page, #fff7f4);
 }
 
 .loading-text {

@@ -24,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+// 已废弃：正式底部导航请使用 components/tabbar/tabbar.vue
 import { ref, computed, onMounted } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 
@@ -95,6 +96,7 @@ const getSafeAreaBottom = () => {
 }
 
 onMounted(() => {
+    console.warn('CustomTabbar 已废弃，请改用 components/tabbar/tabbar.vue')
     currentIndex.value = getCurrentIndex()
     getSafeAreaBottom()
 })

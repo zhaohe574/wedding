@@ -63,7 +63,7 @@
                     </el-form-item>
                     <el-form-item class="w-[320px]" label="创建时间">
                         <el-date-picker
-                            v-model="queryParams.create_time"
+                            v-model="createTimeRange"
                             type="daterange"
                             start-placeholder="开始日期"
                             end-placeholder="结束日期"
@@ -184,7 +184,7 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="创建时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="380" fixed="right">
+                <el-table-column label="操作" width="430" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
                         <el-button
@@ -199,6 +199,7 @@
                         <el-button v-if="canConfirmOfflinePay(row)" type="success" link @click="handleConfirmOfflinePay(row)">确认线下收款</el-button>
                         <el-button v-if="row.order_status === 2" type="warning" link @click="handleStartService(row)">开始服务</el-button>
                         <el-button v-if="row.order_status === 3" type="success" link @click="handleComplete(row)">完成</el-button>
+                        <el-button v-if="row.can_admin_refund" type="danger" link @click="handleRefund(row)">退款</el-button>
                         <el-button v-if="row.order_status <= 1" type="danger" link @click="handleCancel(row)">取消</el-button>
                         <el-button v-if="row.order_status === 9" type="danger" link @click="handleDelete(row)">删除</el-button>
                     </template>
@@ -404,6 +405,11 @@
                     <el-descriptions-item label="用户备注" :span="2">{{ currentOrder.user_remark || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="管理备注" :span="2">{{ currentOrder.admin_remark || '-' }}</el-descriptions-item>
                 </el-descriptions>
+                <div v-if="currentOrder.can_admin_refund" class="mt-4 flex justify-end">
+                    <el-button type="danger" plain @click="handleRefund(currentOrder)">
+                        发起退款
+                    </el-button>
+                </div>
                 <div class="service-project-panel mt-4">
                     <div class="service-project-panel__header">
                         <div>
@@ -577,6 +583,54 @@
                 <el-button type="danger" @click="submitCancel">确认取消</el-button>
             </template>
         </el-dialog>
+
+        <el-dialog v-model="refundVisible" title="订单退款" width="560px">
+            <el-form :model="refundForm" label-width="110px">
+                <el-form-item label="订单编号">
+                    <span>{{ refundForm.order_sn || '-' }}</span>
+                </el-form-item>
+                <el-form-item label="退款模式">
+                    <el-radio-group v-model="refundForm.mode">
+                        <el-radio-button label="full">全部退款</el-radio-button>
+                        <el-radio-button label="partial">部分退款</el-radio-button>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item label="最大可退">
+                    <span class="font-medium text-red-500">¥{{ formatAmount(refundForm.refundable_amount) }}</span>
+                </el-form-item>
+                <el-form-item label="退款金额">
+                    <el-input-number
+                        v-model="refundForm.refund_amount"
+                        :min="0.01"
+                        :max="refundAmountInputMax"
+                        :precision="2"
+                        :disabled="refundForm.mode === 'full'"
+                        class="w-full"
+                    />
+                </el-form-item>
+                <el-form-item label="退款说明">
+                    <el-input
+                        v-model="refundForm.reason"
+                        type="textarea"
+                        :rows="3"
+                        maxlength="255"
+                        show-word-limit
+                        placeholder="请输入退款原因，可选"
+                    />
+                </el-form-item>
+                <el-form-item label="处理提示">
+                    <div class="text-sm leading-6 text-gray-500">
+                        {{ refundHintText }}
+                    </div>
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="refundVisible = false">取消</el-button>
+                <el-button type="danger" :loading="refundSubmitting" @click="submitRefundApply">
+                    确认退款
+                </el-button>
+            </template>
+        </el-dialog>
     </admin-page-shell>
 </template>
 
@@ -597,6 +651,7 @@ import {
     orderLists,
     orderOfflineMainPackages,
     orderOfflineRoleCandidates,
+    refundApply,
     orderStartService,
     orderStatistics
 } from '@/api/order'
@@ -668,7 +723,21 @@ const queryParams = reactive({
     payment_mode: '',
     deposit_paid: '',
     balance_paid: '',
-    create_time: []
+    start_time: '',
+    end_time: ''
+})
+
+const createTimeRange = computed<string[]>({
+    get: () => {
+        if (!queryParams.start_time || !queryParams.end_time) {
+            return []
+        }
+        return [queryParams.start_time, queryParams.end_time]
+    },
+    set: (value) => {
+        queryParams.start_time = value?.[0] || ''
+        queryParams.end_time = value?.[1] || ''
+    }
 })
 
 const statistics = ref<any>({})
@@ -750,6 +819,17 @@ const cancelForm = reactive({
     id: 0,
     reason: ''
 })
+const refundVisible = ref(false)
+const refundSubmitting = ref(false)
+const refundForm = reactive({
+    order_id: 0,
+    order_sn: '',
+    order_status: 0,
+    mode: 'full' as 'full' | 'partial',
+    refundable_amount: 0,
+    refund_amount: 0,
+    reason: ''
+})
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let countdownRefreshing = false
 
@@ -810,6 +890,21 @@ const offlineSubmitText = computed(() => offlineEntryMeta.value.submitText)
 const offlinePrimaryAmountLabel = computed(
     () => offlineEntryMeta.value.amountLabel
 )
+const refundAmountInputMax = computed(() => {
+    if (refundForm.mode === 'full') {
+        return Number(refundForm.refundable_amount || 0)
+    }
+    return Number(Math.max(Number(refundForm.refundable_amount || 0) - 0.01, 0.01).toFixed(2))
+})
+const refundHintText = computed(() => {
+    const isFinished = [4, 5, 6, 8, 9].includes(Number(refundForm.order_status || 0))
+    if (refundForm.mode === 'partial') {
+        return '部分退款仅更新订单与支付信息，不释放服务人员档期。'
+    }
+    return isFinished
+        ? '全部退款将更新订单为已退款，不再释放已结束订单的档期。'
+        : '全部退款成功后会释放该订单占用的服务人员档期。'
+})
 
 const getStatistics = async () => {
     const res = await orderStatistics()
@@ -1567,6 +1662,60 @@ const handleComplete = async (row: any) => {
     getStatistics()
 }
 
+const handleRefund = (row: any) => {
+    const refundableAmount = Number(row.refundable_amount || 0)
+    refundForm.order_id = Number(row.id || row.order_id || 0)
+    refundForm.order_sn = row.order_sn || ''
+    refundForm.order_status = Number(row.order_status || 0)
+    refundForm.mode = 'full'
+    refundForm.refundable_amount = refundableAmount
+    refundForm.refund_amount = refundableAmount
+    refundForm.reason = ''
+    refundVisible.value = true
+}
+
+const submitRefundApply = async () => {
+    const maxAmount = Number(refundForm.refundable_amount || 0)
+    const refundAmount = Number(
+        (refundForm.mode === 'full' ? refundForm.refundable_amount : refundForm.refund_amount) || 0
+    )
+
+    if (maxAmount <= 0) {
+        feedback.msgError('当前订单暂无可退金额')
+        return
+    }
+    if (refundAmount <= 0) {
+        feedback.msgError('退款金额必须大于0')
+        return
+    }
+    if (refundAmount > maxAmount) {
+        feedback.msgError('退款金额不能超过最大可退金额')
+        return
+    }
+    if (refundForm.mode === 'partial' && refundAmount >= maxAmount) {
+        feedback.msgError('部分退款金额必须小于最大可退金额')
+        return
+    }
+
+    refundSubmitting.value = true
+    try {
+        await refundApply({
+            order_id: refundForm.order_id,
+            refund_amount: refundAmount,
+            reason: refundForm.reason.trim()
+        })
+        feedback.msgSuccess('退款申请成功')
+        refundVisible.value = false
+        await Promise.all([
+            getLists(),
+            getStatistics(),
+            refreshCurrentOrderDetail(Number(refundForm.order_id || 0))
+        ])
+    } finally {
+        refundSubmitting.value = false
+    }
+}
+
 const handleCancel = (row: any) => {
     cancelForm.id = row.id
     cancelForm.reason = ''
@@ -1612,6 +1761,19 @@ watch(currentOrder, (value) => {
     syncRowCountdownTargets(value)
     startCountdownTimer()
 }, { deep: false })
+
+watch(() => refundForm.mode, (mode) => {
+    if (mode === 'full') {
+        refundForm.refund_amount = Number(refundForm.refundable_amount || 0)
+        return
+    }
+
+    if (Number(refundForm.refund_amount || 0) >= Number(refundForm.refundable_amount || 0)) {
+        refundForm.refund_amount = Number(
+            Math.max(Number(refundForm.refundable_amount || 0) - 0.01, 0.01).toFixed(2)
+        )
+    }
+})
 
 watch(() => offlineForm.bind_mode, (mode) => {
     if (mode === 'temp') {

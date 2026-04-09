@@ -9,6 +9,7 @@ namespace app\adminapi\lists\order;
 
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsExcelInterface;
+use app\common\lists\ListsSearchInterface;
 use app\common\model\order\OrderPause;
 
 /**
@@ -16,7 +17,7 @@ use app\common\model\order\OrderPause;
  * Class OrderPauseLists
  * @package app\adminapi\lists\order
  */
-class OrderPauseLists extends BaseAdminDataLists implements ListsExcelInterface
+class OrderPauseLists extends BaseAdminDataLists implements ListsExcelInterface, ListsSearchInterface
 {
     /**
      * @notes 搜索条件

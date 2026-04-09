@@ -3,154 +3,155 @@
     <PageShell scene="consumer" hasSafeBottom>
         <BaseNavbar title="工单详情" />
 
-        <view class="ticket-detail" v-if="detail">
-            <view class="ticket-detail__status-card">
-                <view class="ticket-detail__status-icon" :class="getStatusClass(detail.status)">
-                    <tn-icon :name="getStatusIcon(detail.status)" size="36" color="#FFFFFF" />
-                </view>
-                <view class="ticket-detail__status-copy">
-                    <text class="ticket-detail__status-text">
-                        {{ detail.status_desc || getStatusText(detail.status) }}
-                    </text>
-                    <text class="ticket-detail__status-time">
-                        更新时间：{{ detail.update_time || detail.create_time }}
-                    </text>
-                </view>
-            </view>
+        <view v-if="detail" class="aftersale-detail-page">
+            <view class="aftersale-detail-page__wrapper">
+                <AfterSaleStatusBanner
+                    label="工单状态"
+                    :title="ticketStatus.label"
+                    :summary="ticketStatus.summary"
+                    :badges="[{ text: detail.type_desc || getTypeText(detail.type), tone: 'info' }]"
+                    :metrics="bannerMetrics"
+                />
 
-            <view class="ticket-detail__section">
-                <text class="ticket-detail__section-title">基础信息</text>
-                <view class="ticket-detail__kv">
-                    <text class="ticket-detail__kv-label">工单编号</text>
-                    <text class="ticket-detail__kv-value">{{ detail.ticket_sn }}</text>
-                </view>
-                <view class="ticket-detail__kv">
-                    <text class="ticket-detail__kv-label">工单类型</text>
-                    <text class="ticket-detail__kv-value">
-                        {{ detail.type_desc || getTypeText(detail.type) }}
+                <BaseCard variant="surface" scene="consumer" class="aftersale-detail-card">
+                    <text class="aftersale-detail-card__title">基础信息</text>
+                    <view class="aftersale-detail-card__kv">
+                        <text class="aftersale-detail-card__label">工单编号</text>
+                        <text class="aftersale-detail-card__value">{{ detail.ticket_sn }}</text>
+                    </view>
+                    <view class="aftersale-detail-card__kv">
+                        <text class="aftersale-detail-card__label">关联订单</text>
+                        <text class="aftersale-detail-card__value">
+                            {{ detail.order?.order_sn || '未关联' }}
+                        </text>
+                    </view>
+                    <view class="aftersale-detail-card__kv">
+                        <text class="aftersale-detail-card__label">创建时间</text>
+                        <text class="aftersale-detail-card__value">{{ detail.create_time }}</text>
+                    </view>
+                </BaseCard>
+
+                <BaseCard variant="surface" scene="consumer" class="aftersale-detail-card">
+                    <text class="aftersale-detail-card__title">问题内容</text>
+                    <text class="aftersale-detail-card__headline">{{ detail.title }}</text>
+                    <text v-if="detail.content" class="aftersale-detail-card__paragraph">
+                        {{ detail.content }}
                     </text>
-                </view>
-                <view class="ticket-detail__kv">
-                    <text class="ticket-detail__kv-label">创建时间</text>
-                    <text class="ticket-detail__kv-value">{{ detail.create_time }}</text>
-                </view>
-                <view v-if="detail.order?.order_sn" class="ticket-detail__kv">
-                    <text class="ticket-detail__kv-label">关联订单</text>
-                    <text class="ticket-detail__kv-value">{{ detail.order.order_sn }}</text>
-                </view>
-            </view>
-
-            <view class="ticket-detail__section">
-                <text class="ticket-detail__section-title">问题内容</text>
-                <text class="ticket-detail__content-title">{{ detail.title }}</text>
-                <text v-if="detail.content" class="ticket-detail__content-text">{{
-                    detail.content
-                }}</text>
-                <view
-                    v-if="Array.isArray(detail.images) && detail.images.length"
-                    class="ticket-detail__gallery"
-                >
-                    <image
-                        v-for="(img, index) in detail.images"
-                        :key="`${img}-${index}`"
-                        :src="img"
-                        mode="aspectFill"
-                        class="ticket-detail__gallery-image"
-                        @click="previewImage(detail.images, index)"
-                    />
-                </view>
-            </view>
-
-            <view v-if="detail.logs?.length" class="ticket-detail__section">
-                <text class="ticket-detail__section-title">处理进度</text>
-                <view class="ticket-detail__timeline">
-                    <view
-                        v-for="(log, index) in detail.logs"
-                        :key="index"
-                        class="ticket-detail__timeline-item"
-                    >
-                        <view
-                            class="ticket-detail__timeline-dot"
-                            :class="{ 'is-active': index === 0 }"
+                    <view v-if="images.length" class="aftersale-detail-card__gallery">
+                        <image
+                            v-for="(img, index) in images"
+                            :key="`${img}-${index}`"
+                            :src="img"
+                            mode="aspectFill"
+                            class="aftersale-detail-card__gallery-image"
+                            @click="openImagePreview(images, index)"
                         />
-                        <view class="ticket-detail__timeline-main">
-                            <text class="ticket-detail__timeline-text">{{ log.content }}</text>
-                            <text class="ticket-detail__timeline-time">{{ log.create_time }}</text>
+                    </view>
+                </BaseCard>
+
+                <BaseCard
+                    v-if="Array.isArray(detail.logs) && detail.logs.length"
+                    variant="surface"
+                    scene="consumer"
+                    class="aftersale-detail-card"
+                >
+                    <text class="aftersale-detail-card__title">处理进度</text>
+                    <view class="aftersale-timeline">
+                        <view
+                            v-for="(log, index) in detail.logs"
+                            :key="`${log.create_time}-${index}`"
+                            class="aftersale-timeline__item"
+                        >
+                            <view class="aftersale-timeline__line">
+                                <view class="aftersale-timeline__dot" :class="{ 'is-active': index === 0 }" />
+                            </view>
+                            <view class="aftersale-timeline__content">
+                                <text class="aftersale-timeline__text">
+                                    {{ log.content || log.remark || '已更新进度' }}
+                                </text>
+                                <text class="aftersale-timeline__time">{{ log.create_time }}</text>
+                            </view>
                         </view>
                     </view>
-                </view>
-            </view>
+                </BaseCard>
 
-            <view v-if="detail.handle_result" class="ticket-detail__section">
-                <text class="ticket-detail__section-title">处理结果</text>
-                <text class="ticket-detail__content-text">{{ detail.handle_result }}</text>
+                <BaseCard
+                    v-if="detail.handle_result"
+                    variant="surface"
+                    scene="consumer"
+                    class="aftersale-detail-card"
+                >
+                    <text class="aftersale-detail-card__title">处理结果</text>
+                    <text class="aftersale-detail-card__paragraph">{{ detail.handle_result }}</text>
+                </BaseCard>
             </view>
         </view>
 
-        <view v-if="detail" class="ticket-detail__action-bar">
-            <BaseButton
-                v-if="detail.status === 0"
-                type="ghost"
-                block
-                size="lg"
-                @click="handleCancel"
-            >
-                取消工单
-            </BaseButton>
-            <BaseButton v-if="detail.status === 2" block size="lg" @click="showConfirmPopup = true">
-                确认完成
-            </BaseButton>
-        </view>
+        <ActionArea v-if="detail && (detail.status === 0 || detail.status === 2)" sticky safeBottom>
+            <view class="aftersale-detail-page__actions">
+                <BaseButton
+                    v-if="detail.status === 0"
+                    variant="ghost"
+                    size="lg"
+                    block
+                    @click="handleCancel"
+                >
+                    取消工单
+                </BaseButton>
+                <BaseButton
+                    v-if="detail.status === 2"
+                    variant="primary"
+                    size="lg"
+                    block
+                    @click="showConfirmPopup = true"
+                >
+                    确认完成
+                </BaseButton>
+            </view>
+        </ActionArea>
 
-        <tn-popup
+        <AfterSaleBottomSheet
             v-model="showConfirmPopup"
-            open-direction="bottom"
-            :radius="28"
-            safe-area-inset-bottom
+            title="确认完成"
+            subtitle="提交满意度后将结束当前工单。"
+            primary-text="确认提交"
+            secondary-text="取消"
+            @confirm="handleConfirm"
         >
-            <view class="confirm-panel">
-                <view class="confirm-panel__head">
-                    <text class="confirm-panel__title">确认完成</text>
-                    <tn-icon
-                        name="close"
-                        size="28"
-                        color="#978B83"
-                        @click="showConfirmPopup = false"
+            <view class="aftersale-sheet-form">
+                <view class="aftersale-sheet-form__field">
+                    <text class="aftersale-sheet-form__label">满意度</text>
+                    <u-rate v-model="confirmForm.satisfaction" :min-count="1" />
+                </view>
+                <view class="aftersale-sheet-form__field">
+                    <text class="aftersale-sheet-form__label">补充备注</text>
+                    <textarea
+                        v-model="confirmForm.remark"
+                        class="aftersale-sheet-form__textarea"
+                        placeholder="可补充处理体验"
                     />
                 </view>
-                <view class="confirm-panel__body">
-                    <view class="confirm-panel__field">
-                        <text class="confirm-panel__label">满意度</text>
-                        <u-rate v-model="confirmForm.satisfaction" :min-count="1" />
-                    </view>
-                    <view class="confirm-panel__field">
-                        <text class="confirm-panel__label">补充备注</text>
-                        <textarea
-                            v-model="confirmForm.remark"
-                            class="confirm-panel__textarea"
-                            placeholder="可选，补充本次处理结果体验"
-                        />
-                    </view>
-                </view>
-                <view class="confirm-panel__footer">
-                    <BaseButton block size="lg" @click="handleConfirm">确认提交</BaseButton>
-                </view>
             </view>
-        </tn-popup>
+        </AfterSaleBottomSheet>
     </PageShell>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
+import { cancelTicket, confirmComplete, getTicketDetail } from '@/api/aftersale'
+import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
-import { getTicketDetail, cancelTicket, confirmComplete } from '@/api/aftersale'
 import { useThemeStore } from '@/stores/theme'
 import { onLoad } from '@dcloudio/uni-app'
+import AfterSaleBottomSheet from './components/AfterSaleBottomSheet.vue'
+import AfterSaleStatusBanner from './components/AfterSaleStatusBanner.vue'
+import { getTicketStatusMeta, normalizeMediaList, openImagePreview } from './shared'
 
 const $theme = useThemeStore()
-const ticketId = ref<number>(0)
+const ticketId = ref(0)
 const detail = ref<any>(null)
 const showConfirmPopup = ref(false)
 const confirmForm = reactive({
@@ -158,50 +159,12 @@ const confirmForm = reactive({
     remark: ''
 })
 
-const getDetail = async () => {
-    try {
-        const res = await getTicketDetail(ticketId.value)
-        detail.value = res?.data || res
-    } catch (error) {
-        uni.showToast({ title: '获取详情失败', icon: 'none' })
-    }
-}
-
-const getStatusClass = (status: number) => {
-    const map: Record<number, string> = {
-        0: 'status-pending',
-        1: 'status-processing',
-        2: 'status-confirming',
-        3: 'status-completed',
-        4: 'status-closed',
-        5: 'status-cancelled'
-    }
-    return map[status] || ''
-}
-
-const getStatusIcon = (status: number) => {
-    const map: Record<number, string> = {
-        0: 'clock',
-        1: 'loading',
-        2: 'shield-check',
-        3: 'check-circle',
-        4: 'close-circle',
-        5: 'close-circle'
-    }
-    return map[status] || 'help'
-}
-
-const getStatusText = (status: number) => {
-    const map: Record<number, string> = {
-        0: '待处理',
-        1: '处理中',
-        2: '待确认',
-        3: '已完成',
-        4: '已关闭',
-        5: '已取消'
-    }
-    return map[status] || '未知'
-}
+const ticketStatus = computed(() => getTicketStatusMeta(Number(detail.value?.status || 0)))
+const images = computed(() => normalizeMediaList(detail.value?.images))
+const bannerMetrics = computed(() => [
+    { label: '更新时间', value: String(detail.value?.update_time || detail.value?.create_time || '-') },
+    { label: '进度节点', value: String(Array.isArray(detail.value?.logs) ? detail.value.logs.length : 0) }
+])
 
 const getTypeText = (type: number) => {
     const map: Record<number, string> = {
@@ -214,29 +177,31 @@ const getTypeText = (type: number) => {
     return map[type] || '其他'
 }
 
-const previewImage = (images: string[], index: number) => {
-    uni.previewImage({
-        urls: images,
-        current: index
-    })
+const getDetail = async () => {
+    try {
+        const res = await getTicketDetail(ticketId.value)
+        detail.value = res?.data || res
+    } catch (error) {
+        uni.showToast({ title: '获取详情失败', icon: 'none' })
+    }
 }
 
 const handleCancel = async () => {
-    uni.showModal({
-        title: '确认取消',
-        content: '确定要取消这条工单吗？',
-        success: async (res) => {
-            if (!res.confirm) return
-
-            try {
-                await cancelTicket(ticketId.value)
-                uni.showToast({ title: '取消成功', icon: 'none' })
-                getDetail()
-            } catch (error: any) {
-                uni.showToast({ title: error?.message || '取消失败', icon: 'none' })
-            }
-        }
+    const result = await uni.showModal({
+        title: '取消工单',
+        content: '确定取消当前工单吗？'
     })
+    if (!result.confirm) {
+        return
+    }
+
+    try {
+        await cancelTicket(ticketId.value)
+        uni.showToast({ title: '已取消', icon: 'none' })
+        await getDetail()
+    } catch (error: any) {
+        uni.showToast({ title: error?.message || '取消失败', icon: 'none' })
+    }
 }
 
 const handleConfirm = async () => {
@@ -244,11 +209,11 @@ const handleConfirm = async () => {
         await confirmComplete({
             id: ticketId.value,
             satisfaction: confirmForm.satisfaction,
-            remark: confirmForm.remark
+            remark: confirmForm.remark.trim()
         })
         showConfirmPopup.value = false
         uni.showToast({ title: '确认成功', icon: 'none' })
-        getDetail()
+        await getDetail()
     } catch (error: any) {
         uni.showToast({ title: error?.message || '操作失败', icon: 'none' })
     }
@@ -257,7 +222,7 @@ const handleConfirm = async () => {
 onLoad((options: any) => {
     ticketId.value = Number(options?.id || 0)
     if (ticketId.value) {
-        getDetail()
+        void getDetail()
     }
 })
 </script>
@@ -265,221 +230,113 @@ onLoad((options: any) => {
 <style lang="scss" scoped>
 @import '../../../styles/aftersale.scss';
 
-.ticket-detail {
+.aftersale-detail-page {
     @include aftersale-page-base;
-    padding: 0 20rpx 160rpx;
+    min-height: 100vh;
 }
 
-.ticket-detail__status-card,
-.ticket-detail__section {
-    @include aftersale-section-card;
-    margin-bottom: 16rpx;
+.aftersale-detail-page__wrapper {
+    @include aftersale-page-wrapper;
 }
 
-.ticket-detail__status-card {
-    display: flex;
-    align-items: center;
-    gap: 20rpx;
+.aftersale-detail-card {
+    @include aftersale-detail-card;
 }
 
-.ticket-detail__status-icon {
-    width: 84rpx;
-    height: 84rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999rpx;
-    flex-shrink: 0;
+.aftersale-detail-card__title {
+    @include aftersale-detail-section-title;
+    margin-bottom: 0;
 }
 
-.ticket-detail__status-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
+.aftersale-detail-card__headline {
+    @include aftersale-detail-card-headline;
 }
 
-.ticket-detail__status-text {
-    font-size: 32rpx;
-    font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+.aftersale-detail-card__paragraph {
+    @include aftersale-detail-card-paragraph;
 }
 
-.ticket-detail__status-time {
-    font-size: 22rpx;
-    color: var(--wm-text-tertiary, #b4aca8);
-}
-
-.ticket-detail__section-title {
-    display: block;
-    margin-bottom: 18rpx;
-    font-size: 30rpx;
-    font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
-}
-
-.ticket-detail__kv {
+.aftersale-detail-card__kv {
     @include aftersale-kv-row;
 }
 
-.ticket-detail__kv + .ticket-detail__kv {
-    margin-top: 14rpx;
-}
-
-.ticket-detail__kv-label {
+.aftersale-detail-card__label {
     @include aftersale-kv-label;
 }
 
-.ticket-detail__kv-value {
+.aftersale-detail-card__value {
     @include aftersale-kv-value;
 }
 
-.ticket-detail__content-title {
-    display: block;
-    font-size: 30rpx;
-    font-weight: 700;
-    line-height: 1.35;
-    color: var(--wm-text-primary, #1e2432);
+.aftersale-detail-card__gallery {
+    @include aftersale-media-grid;
 }
 
-.ticket-detail__content-text {
-    display: block;
-    margin-top: 14rpx;
-    font-size: 26rpx;
-    line-height: 1.7;
-    color: var(--wm-text-secondary, #7f7b78);
+.aftersale-detail-card__gallery-image {
+    @include aftersale-gallery-image;
 }
 
-.ticket-detail__gallery {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10rpx;
-    margin-top: 18rpx;
+.aftersale-timeline {
+    @include aftersale-timeline;
 }
 
-.ticket-detail__gallery-image {
-    width: 100%;
-    height: 180rpx;
-    border-radius: 16rpx;
+.aftersale-timeline__item {
+    @include aftersale-timeline-item;
 }
 
-.ticket-detail__timeline {
+.aftersale-timeline__line {
+    @include aftersale-timeline-line;
+}
+
+.aftersale-timeline__dot {
+    @include aftersale-timeline-dot;
+
+    &.is-active {
+        background: var(--wm-color-primary, #e85a4f);
+    }
+}
+
+.aftersale-timeline__content {
+    @include aftersale-timeline-content;
+}
+
+.aftersale-timeline__text {
+    @include aftersale-timeline-text;
+}
+
+.aftersale-timeline__time {
+    @include aftersale-timeline-time;
+}
+
+.aftersale-detail-page__actions {
+    @include aftersale-action-row;
+}
+
+.aftersale-sheet-form {
     display: flex;
     flex-direction: column;
-    gap: 18rpx;
+    gap: 20rpx;
 }
 
-.ticket-detail__timeline-item {
-    display: flex;
-    gap: 16rpx;
-}
-
-.ticket-detail__timeline-dot {
-    width: 18rpx;
-    height: 18rpx;
-    margin-top: 10rpx;
-    border-radius: 999rpx;
-    background: rgba(180, 172, 168, 0.56);
-    flex-shrink: 0;
-}
-
-.ticket-detail__timeline-dot.is-active {
-    background: var(--wm-color-primary, #e85a4f);
-}
-
-.ticket-detail__timeline-main {
+.aftersale-sheet-form__field {
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    gap: 12rpx;
 }
 
-.ticket-detail__timeline-text {
-    font-size: 26rpx;
-    line-height: 1.7;
-    color: var(--wm-text-primary, #1e2432);
-}
-
-.ticket-detail__timeline-time {
-    font-size: 22rpx;
-    color: var(--wm-text-tertiary, #b4aca8);
-}
-
-.ticket-detail__action-bar {
-    position: fixed;
-    left: 20rpx;
-    right: 20rpx;
-    bottom: calc(20rpx + env(safe-area-inset-bottom));
-}
-
-.confirm-panel {
-    padding: 24rpx 20rpx 28rpx;
-    background: var(--wm-color-bg-page, #fcfbf9);
-}
-
-.confirm-panel__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.confirm-panel__title {
-    font-size: 32rpx;
-    font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
-}
-
-.confirm-panel__body {
-    display: flex;
-    flex-direction: column;
-    gap: 18rpx;
-    margin-top: 20rpx;
-}
-
-.confirm-panel__field {
-    display: flex;
-    flex-direction: column;
-    gap: 10rpx;
-}
-
-.confirm-panel__label {
+.aftersale-sheet-form__label {
     font-size: 24rpx;
     font-weight: 600;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-.confirm-panel__textarea {
+.aftersale-sheet-form__textarea {
     min-height: 180rpx;
-    padding: 20rpx;
-    border-radius: 18rpx;
-    border: 1rpx solid $aftersale-border;
-    background: rgba(255, 255, 255, 0.82);
+    padding: 22rpx 24rpx;
+    @include aftersale-input-surface;
+    box-sizing: border-box;
     font-size: 26rpx;
     line-height: 1.7;
     color: var(--wm-text-primary, #1e2432);
-    box-sizing: border-box;
-}
-
-.confirm-panel__footer {
-    margin-top: 24rpx;
-}
-
-.status-pending {
-    background: #c98524;
-}
-
-.status-processing {
-    background: #607086;
-}
-
-.status-confirming {
-    background: #8f6ab5;
-}
-
-.status-completed {
-    background: #2f7d58;
-}
-
-.status-closed,
-.status-cancelled {
-    background: #978b83;
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" hasTabbar>
-        <BaseNavbar title="婚礼资讯" :back="false" />
+    <PageShell scene="consumer">
+        <BaseNavbar title="婚礼资讯" />
         <view class="news-page cinema-page">
             <view class="news-page__hero">
                 <view class="news-page__hero-badge">Wedding Journal</view>
@@ -58,7 +58,6 @@
                     </tabs>
                 </view>
             </view>
-            <tabbar />
         </view>
     </PageShell>
 </template>

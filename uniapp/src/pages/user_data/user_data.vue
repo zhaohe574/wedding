@@ -94,19 +94,27 @@
                 </view>
             </view>
 
-            <view class="page-actions">
-                <view class="action-btn action-btn--ghost" @click="handleCancelEdit">取消编辑</view>
-                <view class="action-btn action-btn--primary" @click="handleSaveProfile">
-                    {{ saving ? '保存中...' : '保存资料' }}
+            <ActionArea class="user-data-page__actions" sticky safeBottom layout="split">
+                <view class="user-data-page__action">
+                    <BaseButton block size="lg" variant="secondary" @click="handleCancelEdit">
+                        取消编辑
+                    </BaseButton>
                 </view>
-            </view>
+                <view class="user-data-page__action">
+                    <BaseButton block size="lg" :loading="saving" @click="handleSaveProfile">
+                        保存资料
+                    </BaseButton>
+                </view>
+            </ActionArea>
 
+            <BaseOverlayMask :show="showUserName" @close="showUserName = false" />
             <tn-popup
                 v-model="showUserName"
                 :close-btn="true"
                 open-direction="center"
                 :radius="24"
-                :overlay-closeable="false"
+                :overlay="false"
+                :overlay-closeable="true"
             >
                 <view class="edit-popup">
                     <view class="popup-title">修改账号</view>
@@ -131,12 +139,14 @@
                 </view>
             </tn-popup>
 
+            <BaseOverlayMask :show="showMobilePop" @close="showMobilePop = false" />
             <tn-popup
                 v-model="showMobilePop"
                 :close-btn="true"
                 open-direction="center"
                 :radius="24"
-                :overlay-closeable="false"
+                :overlay="false"
+                :overlay-closeable="true"
             >
                 <view class="edit-popup">
                     <view class="popup-title">
@@ -199,6 +209,8 @@ import {
     userEdit,
     userMnpMobile
 } from '@/api/user'
+import ActionArea from '@/components/base/ActionArea.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import { FieldType, SMSEnum } from '@/enums/appEnums'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
@@ -585,11 +597,11 @@ onUnload(() => {
 }
 
 .sync-card {
-    border-radius: 45rpx;
-    border: 1rpx solid #f4c7bf;
+    border-radius: var(--wm-radius-card, 45rpx);
+    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
     background: linear-gradient(135deg, #fff5f1 0%, #fde7e1 100%);
-    padding: 30rpx;
-    box-shadow: 0 16rpx 34rpx rgba(214, 185, 167, 0.14);
+    padding: var(--wm-space-card-padding, 30rpx);
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 34rpx rgba(214, 185, 167, 0.14));
 }
 
 .sync-tag {
@@ -597,8 +609,8 @@ onUnload(() => {
     display: inline-flex;
     border-radius: 999rpx;
     padding: 8rpx 14rpx;
-    background: #fff1ee;
-    color: #e85a4f;
+    background: var(--wm-color-bg-soft, #fff1ee);
+    color: var(--wm-color-primary, #e85a4f);
     font-size: 20rpx;
     font-weight: 700;
 }
@@ -616,7 +628,7 @@ onUnload(() => {
     border-radius: 999rpx;
     overflow: hidden;
     flex-shrink: 0;
-    background: #f2d8d0;
+    background: var(--wm-color-primary-soft, #fff1ee);
 }
 
 .sync-profile__main {
@@ -631,7 +643,7 @@ onUnload(() => {
     font-size: 36rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: #1e2432;
+    color: var(--wm-text-primary, #1e2432);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -640,7 +652,7 @@ onUnload(() => {
 .sync-subtitle {
     font-size: 22rpx;
     line-height: 1.5;
-    color: #7f7b78;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .sync-tip {
@@ -648,29 +660,29 @@ onUnload(() => {
     margin-top: 10rpx;
     font-size: 22rpx;
     line-height: 1.55;
-    color: #7f7b78;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .section-card {
     margin-top: 12rpx;
-    border-radius: 24rpx;
-    border: 1rpx solid #efe6e1;
-    background: rgba(255, 255, 255, 0.84);
+    border-radius: var(--wm-radius-card-soft, 37rpx);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.84));
     padding: 20rpx;
-    box-shadow: 0 14rpx 30rpx rgba(214, 185, 167, 0.1);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 30rpx rgba(214, 185, 167, 0.1));
 }
 
 .section-title {
     display: block;
     font-size: 24rpx;
     font-weight: 700;
-    color: #1e2432;
+    color: var(--wm-text-primary, #1e2432);
     margin-bottom: 12rpx;
 }
 
 .field-card {
-    border-radius: 20rpx;
-    border: 1rpx solid #efe6e1;
+    border-radius: var(--wm-radius-control, 34rpx);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
     background: rgba(252, 251, 249, 0.92);
     padding: 16rpx;
 }
@@ -689,7 +701,7 @@ onUnload(() => {
     display: block;
     font-size: 20rpx;
     font-weight: 600;
-    color: #7f7b78;
+    color: var(--wm-text-secondary, #7f7b78);
     margin-bottom: 8rpx;
 }
 
@@ -697,12 +709,12 @@ onUnload(() => {
     width: 100%;
     min-height: 48rpx;
     font-size: 26rpx;
-    color: #1e2432;
+    color: var(--wm-text-primary, #1e2432);
     line-height: 1.4;
 }
 
 .field-placeholder {
-    color: #b6b0ab;
+    color: var(--wm-text-tertiary, #b6b0ab);
 }
 
 .field-readonly {
@@ -710,7 +722,7 @@ onUnload(() => {
     font-size: 26rpx;
     font-weight: 600;
     line-height: 1.4;
-    color: #1e2432;
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .field-readonly--wrap {
@@ -724,13 +736,13 @@ onUnload(() => {
     gap: 8rpx;
     font-size: 26rpx;
     font-weight: 600;
-    color: #1e2432;
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .contact-value {
     font-size: 24rpx;
     line-height: 1.45;
-    color: #1e2432;
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .contact-actions {
@@ -743,10 +755,10 @@ onUnload(() => {
 .contact-action {
     padding: 8rpx 16rpx;
     border-radius: 999rpx;
-    border: 1rpx solid #efe6e1;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
     background: #fff;
     font-size: 20rpx;
-    color: #1e2432;
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .contact-action--button {
@@ -758,38 +770,13 @@ onUnload(() => {
     border: none;
 }
 
-.page-actions {
-    position: fixed;
-    left: 20rpx;
-    right: 20rpx;
-    bottom: 20rpx;
+.user-data-page__actions {
     z-index: 30;
-    display: flex;
-    gap: 12rpx;
-    padding: 12rpx 0 calc(env(safe-area-inset-bottom) + 20rpx);
 }
 
-.action-btn {
+.user-data-page__action {
     flex: 1;
-    height: 84rpx;
-    border-radius: 18rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 26rpx;
-    font-weight: 700;
-}
-
-.action-btn--ghost {
-    border: 1rpx solid #efe6e1;
-    color: #1e2432;
-    background: rgba(255, 255, 255, 0.84);
-}
-
-.action-btn--primary {
-    background: #e85a4f;
-    color: #fff;
-    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.22);
+    min-width: 0;
 }
 
 .edit-popup {

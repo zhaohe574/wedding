@@ -1,8 +1,9 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <BaseNavbar title="我的收藏" />
+    <PageShell scene="consumer">
+        <BaseNavbar title="我的收藏" />
 
-    <view class="staff-favorite">
+        <view class="staff-favorite">
         <!-- 加载状态 -->
         <view v-if="loading" class="loading-container">
             <tn-loading mode="circle" />
@@ -132,7 +133,8 @@
                 </view>
             </view>
         </view>
-    </view>
+        </view>
+    </PageShell>
 </template>
 
 <script lang="ts" setup>
@@ -141,7 +143,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { getMyFavoriteStaff, toggleStaffFavorite } from '@/api/staff'
 import { useThemeStore } from '@/stores/theme'
 
-const themeStore = useThemeStore()
+const $theme = useThemeStore()
 
 const loading = ref(true)
 const favoriteList = ref<any[]>([])

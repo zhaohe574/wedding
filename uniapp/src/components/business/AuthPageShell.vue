@@ -3,12 +3,6 @@
     <PageShell scene="consumer">
         <BaseNavbar :title="navbarTitle" />
         <view class="auth-shell">
-            <view class="auth-shell__ornament auth-shell__ornament--primary" :style="primaryOrb" />
-            <view
-                class="auth-shell__ornament auth-shell__ornament--secondary"
-                :style="secondaryOrb"
-            />
-
             <view class="auth-shell__content">
                 <view v-if="$slots.hero" class="auth-shell__hero">
                     <slot name="hero" />
@@ -31,11 +25,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import { useThemeStore } from '@/stores/theme'
-import { alphaColor } from '@/utils/color'
 
 interface Props {
     navbarTitle: string
@@ -43,20 +35,6 @@ interface Props {
 
 const props = defineProps<Props>()
 const themeStore = useThemeStore()
-
-const primaryOrb = computed(() => ({
-    background: `radial-gradient(circle, ${alphaColor(
-        themeStore.primaryColor,
-        0.18
-    )} 0%, ${alphaColor(themeStore.primaryColor, 0)} 72%)`
-}))
-
-const secondaryOrb = computed(() => ({
-    background: `radial-gradient(circle, ${alphaColor(
-        themeStore.secondaryColor,
-        0.18
-    )} 0%, ${alphaColor(themeStore.secondaryColor, 0)} 72%)`
-}))
 </script>
 
 <style lang="scss" scoped>
@@ -64,34 +42,7 @@ const secondaryOrb = computed(() => ({
     position: relative;
     min-height: 100vh;
     overflow: hidden;
-    background: linear-gradient(
-            180deg,
-            rgba(255, 245, 241, 0.96) 0%,
-            rgba(252, 251, 249, 1) 56%,
-            rgba(247, 241, 237, 0.92) 100%
-        ),
-        var(--wm-color-bg-page, #fcfbf9);
-}
-
-.auth-shell__ornament {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(8rpx);
-    pointer-events: none;
-}
-
-.auth-shell__ornament--primary {
-    top: -140rpx;
-    right: -80rpx;
-    width: 420rpx;
-    height: 420rpx;
-}
-
-.auth-shell__ornament--secondary {
-    left: -110rpx;
-    bottom: 160rpx;
-    width: 320rpx;
-    height: 320rpx;
+    background: transparent;
 }
 
 .auth-shell__content {

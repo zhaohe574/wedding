@@ -38,7 +38,7 @@
                 </el-form-item>
                 <el-form-item class="w-[320px]" label="创建时间">
                     <el-date-picker
-                        v-model="queryParams.create_time"
+                        v-model="createTimeRange"
                         type="daterange"
                         start-placeholder="开始日期"
                         end-placeholder="结束日期"
@@ -350,7 +350,21 @@ const queryParams = reactive({
     contact_name: '',
     contact_mobile: '',
     order_status: '',
-    create_time: []
+    start_time: '',
+    end_time: ''
+})
+
+const createTimeRange = computed<string[]>({
+    get: () => {
+        if (!queryParams.start_time || !queryParams.end_time) {
+            return []
+        }
+        return [queryParams.start_time, queryParams.end_time]
+    },
+    set: (value) => {
+        queryParams.start_time = value?.[0] || ''
+        queryParams.end_time = value?.[1] || ''
+    }
 })
 
 const statistics = ref<any>({})

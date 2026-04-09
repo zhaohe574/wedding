@@ -77,19 +77,16 @@ const LEGACY_LINK_MAP: Record<string, string> = {
     '/pages/order_change/apply_addon': '/packages/pages/order_change/apply_addon',
     '/pages/aftersale/index': '/packages/pages/aftersale/index',
     '/pages/aftersale/ticket': '/packages/pages/aftersale/ticket',
+    '/pages/aftersale/create_ticket': '/packages/pages/aftersale/create_ticket',
     '/pages/aftersale/ticket_detail': '/packages/pages/aftersale/ticket_detail',
     '/pages/aftersale/complaint': '/packages/pages/aftersale/complaint',
+    '/pages/aftersale/create_complaint': '/packages/pages/aftersale/create_complaint',
     '/pages/aftersale/complaint_detail': '/packages/pages/aftersale/complaint_detail',
-    '/pages/aftersale/reshoot': '/packages/pages/aftersale/reshoot',
-    '/pages/aftersale/reshoot_detail': '/packages/pages/aftersale/reshoot_detail',
-    '/pages/aftersale/apply_reshoot': '/packages/pages/aftersale/apply_reshoot',
     '/pages/aftersale/callback': '/packages/pages/aftersale/callback',
     '/pages/aftersale/callback_detail': '/packages/pages/aftersale/callback_detail',
     '/pages/user_wallet/user_wallet': '/packages/pages/user_wallet/user_wallet',
     '/pages/recharge_record/recharge_record': '/packages/pages/recharge_record/recharge_record'
 }
-
-const TABBAR_PATHS = new Set(['/pages/index/index', '/pages/dynamic/dynamic', '/pages/user/user'])
 
 export const normalizeAppPath = (path = '') => {
     let nextPath = path.trim()
@@ -105,6 +102,8 @@ export const normalizeAppPath = (path = '') => {
 
     return LEGACY_LINK_MAP[nextPath] || nextPath
 }
+
+const TABBAR_PATHS = new Set(['/pages/index/index', '/pages/dynamic/dynamic', '/pages/user/user'])
 
 const buildUrl = (path: string, query?: Record<string, any>) => {
     if (!query || !Object.keys(query).length) {

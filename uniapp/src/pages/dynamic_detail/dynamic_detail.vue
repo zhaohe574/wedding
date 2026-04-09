@@ -72,6 +72,7 @@
                         </view>
                         <button
                             class="dynamic-detail__detail-action dynamic-detail__detail-action--share"
+                            hover-class="none"
                             open-type="share"
                         >
                             <tn-icon name="share" size="28" />
@@ -321,16 +322,12 @@
                 </view>
             </scroll-view>
 
-            <view
-                v-if="showComment"
-                class="dynamic-detail__popup-mask"
-                :style="{
-                    zIndex: commentPopupMaskZIndex,
-                    background: $theme.maskColor || 'rgba(8, 10, 16, 0.58)'
-                }"
-                @tap="closeCommentPopup"
-                @touchmove.stop.prevent="() => {}"
-            ></view>
+            <BaseOverlayMask
+                :show="showComment"
+                :z-index="commentPopupMaskZIndex"
+                :background="$theme.maskColor || 'rgba(8, 10, 16, 0.58)'"
+                @close="closeCommentPopup"
+            />
 
             <TnPopup
                 v-model="showComment"
@@ -1339,8 +1336,16 @@ watch(showComment, (visible) => {
         }
 
         &--share {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             padding: 0 26rpx;
             margin: 0;
+            width: auto;
+            color: inherit;
+            font-size: 26rpx;
+            font-weight: 600;
+            line-height: 1;
             background: rgba(255, 255, 255, 0.84);
 
             &::after {

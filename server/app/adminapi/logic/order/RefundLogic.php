@@ -185,12 +185,6 @@ class RefundLogic extends BaseLogic
                 return false;
             }
 
-            if (!in_array((int)$order->order_status, [Order::STATUS_PAID, Order::STATUS_IN_SERVICE], true)) {
-                self::setError('当前订单状态不可退款');
-                Db::rollback();
-                return false;
-            }
-
             $refundableAmount = OrderRefundService::getRefundableAmount((int)$order->id);
             if ($refundableAmount <= 0) {
                 self::setError('当前订单暂无可退金额');
@@ -216,6 +210,7 @@ class RefundLogic extends BaseLogic
             }
 
             $beforeStatus = (int)$order->order_status;
+            $isFullRefund = $refundAmount >= $refundableAmount;
             $refund = Refund::create([
                 'refund_sn' => Refund::generateRefundSn(),
                 'order_id' => (int)$params['order_id'],
@@ -234,7 +229,9 @@ class RefundLogic extends BaseLogic
                 'update_time' => time(),
             ]);
 
-            OrderRefundService::moveOrderToRefunding($order);
+            if ($isFullRefund) {
+                OrderRefundService::moveOrderToRefunding($order);
+            }
             [$success, $message] = OrderRefundService::executeApprovedRefund($refund);
             $refund = Refund::find((int)$refund->id);
             $order = Order::find((int)$params['order_id']);
@@ -245,8 +242,8 @@ class RefundLogic extends BaseLogic
                 (int)$params['admin_id'],
                 'refund_apply',
                 $beforeStatus,
-                (int)($order->order_status ?? Order::STATUS_REFUNDING),
-                '管理员发起退款：' . ($params['reason'] ?? '管理员操作')
+                (int)($order->order_status ?? ($isFullRefund ? Order::STATUS_REFUNDING : $beforeStatus)),
+                '管理员发起' . ($isFullRefund ? '全额退款' : '部分退款') . '：' . ($params['reason'] ?? '管理员操作')
                 . (!$success && $message !== '' ? '，执行结果：' . $message : '')
             );
 

@@ -165,12 +165,11 @@ class Refund extends BaseModel
      * @notes 申请退款
      * @param int $orderId
      * @param int $userId
-     * @param float $refundAmount
      * @param string $reason
      * @param int $paymentId
      * @return array [bool, string, Refund|null]
      */
-    public static function applyRefund(int $orderId, int $userId, float $refundAmount, string $reason, int $paymentId = 0): array
+    public static function applyRefund(int $orderId, int $userId, string $reason, int $paymentId = 0): array
     {
         Db::startTrans();
         try {
@@ -190,7 +189,7 @@ class Refund extends BaseModel
                 return [false, '当前订单状态不可申请退款', null];
             }
 
-            $refundAmount = round($refundAmount, 2);
+            $refundAmount = OrderRefundService::getRefundableAmount((int)$order->id);
             $validateMessage = self::validateRefundRequest($order, $refundAmount);
             if ($validateMessage !== '') {
                 Db::rollback();

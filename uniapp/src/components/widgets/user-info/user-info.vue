@@ -108,7 +108,7 @@ const handleProfileClick = () => {
     font-size: 52rpx;
     font-weight: 700;
     line-height: 1.05;
-    color: #1e2432;
+    color: var(--wm-text-primary, #1e2432);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -119,9 +119,9 @@ const handleProfileClick = () => {
     z-index: 1;
     border-radius: var(--wm-user-profile-radius, 52rpx);
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.84);
+    background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.84));
     border: 2rpx solid var(--wm-color-border, #efe6e1);
-    box-shadow: 0 24rpx 48rpx rgba(214, 185, 167, 0.1);
+    box-shadow: var(--wm-shadow-soft, 0 24rpx 48rpx rgba(214, 185, 167, 0.1));
     backdrop-filter: blur(28rpx);
     -webkit-backdrop-filter: blur(28rpx);
 
@@ -145,7 +145,7 @@ const handleProfileClick = () => {
     border-radius: var(--wm-user-profile-avatar-radius, 56rpx);
     margin-right: var(--wm-user-profile-gap, 24rpx);
     flex-shrink: 0;
-    background: #f2d8d0;
+    background: var(--wm-color-primary-soft, #fff1ee);
     overflow: hidden;
 }
 
@@ -161,7 +161,7 @@ const handleProfileClick = () => {
     font-size: 34rpx;
     line-height: 1.42;
     font-weight: 600;
-    color: #1e2432;
+    color: var(--wm-text-primary, #1e2432);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -171,7 +171,7 @@ const handleProfileClick = () => {
     font-size: 24rpx;
     line-height: 1.55;
     font-weight: 600;
-    color: #7f7b78;
+    color: var(--wm-text-secondary, #7f7b78);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;

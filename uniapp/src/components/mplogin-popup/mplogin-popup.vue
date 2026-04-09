@@ -1,9 +1,11 @@
 <template>
     <view>
+        <BaseOverlayMask :show="showPopup" :closeable="false" />
         <tn-popup
             v-model="showPopup"
             open-direction="bottom"
             :radius="32"
+            :overlay="false"
             :overlay-closeable="false"
             safe-area-inset-bottom
         >

@@ -1,8 +1,9 @@
 <template>
     <page-meta :page-style="pageStyle" />
-    <BaseNavbar title="作品详情" />
+    <PageShell scene="consumer">
+        <BaseNavbar title="作品详情" />
 
-    <view class="work-detail" v-if="workDetail">
+        <view class="work-detail" v-if="workDetail">
         <!-- 顶部封面区域 -->
         <view class="cover-section">
             <image
@@ -173,11 +174,12 @@
             <text class="time-text">创建时间：{{ workDetail.create_time || '-' }}</text>
             <text class="time-text">更新时间：{{ workDetail.update_time || '-' }}</text>
         </view>
-    </view>
+        </view>
 
-    <view v-else class="loading-container">
-        <tn-loading mode="circle" />
-    </view>
+        <view v-else class="loading-container">
+            <tn-loading mode="circle" />
+        </view>
+    </PageShell>
 </template>
 
 <script lang="ts" setup>
@@ -189,11 +191,7 @@ import { useThemeStore } from '@/stores/theme'
 const $theme = useThemeStore()
 const workDetail = ref<any>(null)
 
-// 页面样式（渐变背景）
-const pageStyle = computed(() => {
-    const lightColor = $theme.primaryColor ? `${$theme.primaryColor}10` : '#F3E8FF'
-    return `background: linear-gradient(180deg, ${lightColor} 0%, #FFFFFF 30%);`
-})
+const pageStyle = computed(() => $theme.pageStyle)
 
 // 显示的图片（最多9张）
 const displayImages = computed(() => {

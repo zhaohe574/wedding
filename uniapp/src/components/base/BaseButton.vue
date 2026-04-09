@@ -3,7 +3,7 @@
         :class="buttonClass"
         :style="buttonVars"
         :size="computedSize"
-        shape="round"
+        :shape="shape"
         :disabled="disabled"
         :loading="loading"
         :bg-color="bgColor"
@@ -27,19 +27,31 @@ interface Props {
     variant?: ButtonVariant
     type?: LegacyButtonType
     size?: 'lg' | 'md' | 'sm'
+    shape?: 'round' | 'square'
     block?: boolean
     disabled?: boolean
     loading?: boolean
     textColor?: string
+    radius?: string
+    height?: string
+    fontSize?: string
+    shadow?: string
+    activeShadow?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
     variant: undefined,
     type: 'primary',
     size: 'md',
+    shape: 'round',
     block: false,
     disabled: false,
-    loading: false
+    loading: false,
+    radius: '',
+    height: '',
+    fontSize: '',
+    shadow: '',
+    activeShadow: ''
 })
 
 const emit = defineEmits<{
@@ -89,7 +101,7 @@ const bgColor = computed(() => {
     }
 
     return resolvedVariant.value === 'danger'
-        ? 'var(--wm-color-danger, #B44A3A)'
+        ? 'var(--wm-color-danger, #C94B49)'
         : themeStore.primaryColor
 })
 
@@ -103,7 +115,7 @@ const textColor = computed(() => {
     }
 
     if (resolvedVariant.value === 'danger') {
-        return resolveReadableTextColor('#B44A3A', themeStore.btnColor)
+        return resolveReadableTextColor('#C94B49', themeStore.btnColor)
     }
 
     return resolveReadableTextColor(themeStore.primaryColor, themeStore.btnColor)
@@ -126,38 +138,57 @@ const borderColor = computed(() => {
 })
 
 const buttonVars = computed(() => {
+    const sharedVars: Record<string, string> = {
+        '--button-radius': props.radius || 'var(--wm-radius-pill, 999rpx)'
+    }
+
+    if (props.height) {
+        sharedVars['--button-height'] = props.height
+    }
+
+    if (props.fontSize) {
+        sharedVars['--button-font-size'] = props.fontSize
+    }
+
     if (resolvedVariant.value === 'primary') {
         return {
+            ...sharedVars,
             '--button-bg-start': themeStore.primaryColor,
             '--button-bg-end': themeStore.primaryColor,
-            '--button-shadow': `0 14rpx 28rpx ${alphaColor(themeStore.primaryColor, 0.22)}`,
-            '--button-shadow-active': `0 8rpx 16rpx ${alphaColor(themeStore.primaryColor, 0.18)}`
+            '--button-shadow':
+                props.shadow || `0 12rpx 24rpx ${alphaColor(themeStore.primaryColor, 0.2)}`,
+            '--button-shadow-active':
+                props.activeShadow || `0 6rpx 12rpx ${alphaColor(themeStore.primaryColor, 0.16)}`
         }
     }
 
     if (resolvedVariant.value === 'danger') {
         return {
-            '--button-bg-start': 'var(--wm-color-danger, #B44A3A)',
-            '--button-bg-end': 'var(--wm-color-danger, #B44A3A)',
-            '--button-shadow': '0 14rpx 28rpx rgba(180, 74, 58, 0.2)',
-            '--button-shadow-active': '0 8rpx 16rpx rgba(180, 74, 58, 0.16)'
+            ...sharedVars,
+            '--button-bg-start': 'var(--wm-color-danger, #C94B49)',
+            '--button-bg-end': 'var(--wm-color-danger, #C94B49)',
+            '--button-shadow': props.shadow || '0 12rpx 24rpx rgba(201, 75, 73, 0.18)',
+            '--button-shadow-active':
+                props.activeShadow || '0 6rpx 12rpx rgba(201, 75, 73, 0.14)'
         }
     }
 
     if (resolvedVariant.value === 'ghost') {
         return {
-            '--button-bg-start': 'rgba(255,255,255,0.72)',
-            '--button-bg-end': 'rgba(255,255,255,0.72)',
-            '--button-shadow': 'none',
-            '--button-shadow-active': 'none'
+            ...sharedVars,
+            '--button-bg-start': 'rgba(255,248,245,0.82)',
+            '--button-bg-end': 'rgba(255,248,245,0.82)',
+            '--button-shadow': props.shadow || 'none',
+            '--button-shadow-active': props.activeShadow || 'none'
         }
     }
 
     return {
+        ...sharedVars,
         '--button-bg-start': '#FFFFFF',
         '--button-bg-end': '#FFFFFF',
-        '--button-shadow': 'none',
-        '--button-shadow-active': 'none'
+        '--button-shadow': props.shadow || 'none',
+        '--button-shadow-active': props.activeShadow || 'none'
     }
 })
 
@@ -180,7 +211,7 @@ export default {
 <style lang="scss" scoped>
 .base-button {
     transition: all var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: var(--wm-radius-pill, 999rpx);
+    border-radius: var(--button-radius, var(--wm-radius-pill, 999rpx));
 
     &:active {
         transform: translateY(2rpx) scale(0.99);
@@ -188,7 +219,7 @@ export default {
 
     :deep(.tn-button) {
         width: auto;
-        border-radius: var(--wm-radius-pill, 999rpx);
+        border-radius: var(--button-radius, var(--wm-radius-pill, 999rpx));
         font-weight: 600;
         letter-spacing: 0.6rpx;
         transition: all var(--wm-motion-base, 220ms) ease;
@@ -221,41 +252,43 @@ export default {
 
     &--secondary {
         :deep(.tn-button) {
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.94);
             border-width: 1rpx;
+            border-color: rgba(232, 90, 79, 0.18);
             box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
         }
     }
 
     &--ghost {
         :deep(.tn-button) {
-            background: rgba(255, 255, 255, 0.72);
+            background: rgba(255, 248, 245, 0.82);
             border-width: 1rpx;
+            border-color: rgba(239, 230, 225, 0.96);
             box-shadow: none;
         }
     }
 
     &--lg {
         :deep(.tn-button) {
-            min-height: 88rpx;
-            padding: 0 34rpx;
-            font-size: 30rpx;
+            min-height: var(--button-height, 84rpx);
+            padding: 0 32rpx;
+            font-size: var(--button-font-size, 28rpx);
         }
     }
 
     &--md {
         :deep(.tn-button) {
-            min-height: 76rpx;
-            padding: 0 30rpx;
-            font-size: 28rpx;
+            min-height: var(--button-height, 72rpx);
+            padding: 0 28rpx;
+            font-size: var(--button-font-size, 26rpx);
         }
     }
 
     &--sm {
         :deep(.tn-button) {
-            min-height: 64rpx;
-            padding: 0 24rpx;
-            font-size: 24rpx;
+            min-height: var(--button-height, 60rpx);
+            padding: 0 22rpx;
+            font-size: var(--button-font-size, 24rpx);
         }
     }
 }

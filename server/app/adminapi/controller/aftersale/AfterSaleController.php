@@ -12,7 +12,6 @@ use app\adminapi\controller\concern\OfflineModuleGuard;
 use app\adminapi\logic\aftersale\AfterSaleLogic;
 use app\adminapi\lists\aftersale\TicketLists;
 use app\adminapi\lists\aftersale\ComplaintLists;
-use app\adminapi\lists\aftersale\ReshootLists;
 use app\adminapi\lists\aftersale\CallbackLists;
 use app\adminapi\validate\aftersale\AfterSaleValidate;
 
@@ -167,70 +166,6 @@ class AfterSaleController extends BaseAdminController
         $result = AfterSaleLogic::handleComplaint($params['id'], $this->adminId, $params);
         if ($result === true) {
             return $this->success('处理成功');
-        }
-        return $this->fail($result);
-    }
-
-    // ==================== 补拍申请管理 ====================
-
-    /**
-     * @notes 补拍申请列表
-     * @return \think\response\Json
-     */
-    public function reshootLists()
-    {
-        return $this->dataLists(new ReshootLists());
-    }
-
-    /**
-     * @notes 补拍申请详情
-     * @return \think\response\Json
-     */
-    public function reshootDetail()
-    {
-        $params = (new AfterSaleValidate())->goCheck('reshootDetail');
-        $result = AfterSaleLogic::getReshootDetail($params['id']);
-        return $this->data($result);
-    }
-
-    /**
-     * @notes 审核补拍申请
-     * @return \think\response\Json
-     */
-    public function auditReshoot()
-    {
-        $params = (new AfterSaleValidate())->post()->goCheck('auditReshoot');
-        $result = AfterSaleLogic::auditReshoot($params['id'], $this->adminId, $params['approved'], $params);
-        if ($result === true) {
-            return $this->success('审核成功');
-        }
-        return $this->fail($result);
-    }
-
-    /**
-     * @notes 安排补拍
-     * @return \think\response\Json
-     */
-    public function scheduleReshoot()
-    {
-        $params = (new AfterSaleValidate())->post()->goCheck('scheduleReshoot');
-        $result = AfterSaleLogic::scheduleReshoot($params['id'], $this->adminId, $params);
-        if ($result === true) {
-            return $this->success('安排成功');
-        }
-        return $this->fail($result);
-    }
-
-    /**
-     * @notes 完成补拍
-     * @return \think\response\Json
-     */
-    public function completeReshoot()
-    {
-        $params = (new AfterSaleValidate())->post()->goCheck('completeReshoot');
-        $result = AfterSaleLogic::completeReshoot($params['id'], $this->adminId, $params['remark'] ?? '');
-        if ($result === true) {
-            return $this->success('完成成功');
         }
         return $this->fail($result);
     }
