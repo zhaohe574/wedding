@@ -18,7 +18,8 @@ namespace app\adminapi\http\middleware;
 
 use app\common\{
     cache\AdminAuthCache,
-    service\JsonService
+    service\JsonService,
+    service\StaffService
 };
 use think\helper\Str;
 
@@ -57,6 +58,11 @@ class AuthMiddleware
 
         // 当前访问路径
         $accessUri = strtolower($request->controller() . '/' . $request->action());
+
+        if ($this->isStaffSelfServicePermission($accessUri, $request->adminInfo ?? [])) {
+            return $next($request);
+        }
+
         // 全部路由
         $allUri = $this->formatUrl($adminAuthCache->getAllUri());
 
@@ -73,6 +79,37 @@ class AuthMiddleware
             return $next($request);
         }
         return JsonService::fail('权限不足，无法访问或操作');
+    }
+
+    /**
+     * @notes staff 自助资料接口放行（仍要求后台账号已绑定 staff 档案）
+     */
+    protected function isStaffSelfServicePermission(string $accessUri, array $adminInfo): bool
+    {
+        $selfServiceUris = [
+            'ops.staff/myProfile',
+            'ops.staff/myProfileUpdate',
+            'ops.staff/myProfilePackageConfig',
+            'ops.staff/myProfileConfigurePackages',
+            'ops.staff/myProfileUpdatePackageConfig',
+            'ops.staff/myProfileCreatePackage',
+            'ops.staff/myProfileUpdateStaffPackage',
+            'ops.staff/myProfileDeletePackage',
+            'ops.staff/myProfileRegionEnabledCityOptions',
+            'ops.staff/myProfileRegionDistrictOptions',
+            'ops.staff/myProfileBannerList',
+            'ops.staff/myProfileBannerAdd',
+            'ops.staff/myProfileBannerEdit',
+            'ops.staff/myProfileBannerDelete',
+            'ops.staff/myProfileBannerSort',
+            'ops.staff/myProfileBannerConfig',
+        ];
+
+        if (!in_array($accessUri, array_map(fn ($item) => strtolower(Str::camel($item)), $selfServiceUris), true)) {
+            return false;
+        }
+
+        return StaffService::getStaffScopeId((int)($adminInfo['admin_id'] ?? 0), $adminInfo) > 0;
     }
 
 

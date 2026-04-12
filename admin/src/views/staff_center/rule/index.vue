@@ -1,17 +1,13 @@
 <template>
-    <div class="staff-center-rule">
-        <el-card class="!border-none mb-4" shadow="never">
-            <template #header>
-                <div class="flex items-center justify-between">
-                    <span class="text-lg font-bold">档期规则</span>
-                    <el-button type="primary" @click="handleAdd">
-                        <el-icon class="mr-1"><Plus /></el-icon>新增个人规则
-                    </el-button>
-                </div>
-            </template>
-
-            <div class="text-sm text-gray-500">全局模板只读</div>
-        </el-card>
+    <admin-page-shell class="staff-center-rule" title="档期规则">
+        <search-panel>
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-500">全局模板只读，个人规则可单独维护。</div>
+                <el-button type="primary" @click="handleAdd">
+                    <el-icon class="mr-1"><Plus /></el-icon>新增个人规则
+                </el-button>
+            </div>
+        </search-panel>
 
         <el-card class="!border-none mb-4" shadow="never">
             <template #header>
@@ -136,7 +132,7 @@
                 <el-button type="primary" :loading="submitLoading" @click="handleSubmit">保存</el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script setup lang="ts" name="staffCenterRule">
@@ -276,8 +272,4 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.staff-center-rule {
-    padding: 16px;
-}
-</style>
+<style scoped></style>

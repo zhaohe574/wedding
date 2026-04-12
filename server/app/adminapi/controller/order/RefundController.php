@@ -11,6 +11,8 @@ use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\order\RefundLists;
 use app\adminapi\logic\order\RefundLogic;
 use app\adminapi\validate\order\RefundValidate;
+use app\common\model\order\OrderItem;
+use app\common\service\StaffService;
 
 /**
  * 退款管理控制器
@@ -78,6 +80,17 @@ class RefundController extends BaseAdminController
     public function apply()
     {
         $params = (new RefundValidate())->post()->goCheck('apply');
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $orderId = (int)($params['order_id'] ?? 0);
+            $totalCount = OrderItem::where('order_id', $orderId)->count();
+            $ownedCount = OrderItem::where('order_id', $orderId)
+                ->where('staff_id', $staffScopeId)
+                ->count();
+            if ($totalCount <= 0 || $totalCount !== $ownedCount) {
+                return $this->fail('共享订单不支持当前退款操作');
+            }
+        }
         $params['admin_id'] = $this->adminId;
         $result = RefundLogic::adminApply($params);
         if (true === $result) {

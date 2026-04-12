@@ -121,6 +121,7 @@ class StaffLogic extends BaseLogic
                 'experience_years' => $params['experience_years'] ?? 0,
                 'profile' => $params['profile'] ?? '',
                 'service_desc' => $params['service_desc'] ?? '',
+                'long_detail' => $params['long_detail'] ?? '',
                 'sort' => $params['sort'] ?? 0,
                 'is_recommend' => $params['is_recommend'] ?? 0,
                 'status' => $params['status'] ?? 1,
@@ -208,6 +209,7 @@ class StaffLogic extends BaseLogic
                 'experience_years' => $params['experience_years'] ?? $staff->experience_years,
                 'profile' => $params['profile'] ?? $staff->profile,
                 'service_desc' => $params['service_desc'] ?? $staff->service_desc,
+                'long_detail' => $params['long_detail'] ?? $staff->long_detail,
                 'sort' => $params['sort'] ?? $staff->sort,
                 'is_recommend' => $params['is_recommend'] ?? $staff->is_recommend,
                 'status' => $params['status'] ?? $staff->status,
@@ -292,6 +294,7 @@ class StaffLogic extends BaseLogic
                 'experience_years' => $params['experience_years'] ?? $staff->experience_years,
                 'profile' => $params['profile'] ?? $staff->profile,
                 'service_desc' => $params['service_desc'] ?? $staff->service_desc,
+                'long_detail' => $params['long_detail'] ?? $staff->long_detail,
                 'update_time' => time(),
             ]);
 

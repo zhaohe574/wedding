@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\adminapi\lists\dynamic;
 
 use app\adminapi\lists\BaseAdminDataLists;
+use app\common\lists\ListsExtendInterface;
 use app\common\lists\ListsExcelInterface;
 use app\common\lists\ListsSearchInterface;
 use app\common\model\dynamic\Dynamic;
@@ -18,7 +19,7 @@ use app\common\service\DynamicOwnerService;
  * Class DynamicLists
  * @package app\adminapi\lists\dynamic
  */
-class DynamicLists extends BaseAdminDataLists implements ListsExcelInterface, ListsSearchInterface
+class DynamicLists extends BaseAdminDataLists implements ListsExtendInterface, ListsExcelInterface, ListsSearchInterface
 {
     /**
      * @notes 搜索条件
@@ -82,6 +83,41 @@ class DynamicLists extends BaseAdminDataLists implements ListsExcelInterface, Li
             return 0;
         }
         return $query->count();
+    }
+
+    /**
+     * @notes 扩展统计
+     * @return array
+     */
+    public function extend(): array
+    {
+        $statisticsWhere = array_values(array_filter($this->searchWhere, function ($condition) {
+            return ($condition[0] ?? null) !== 'status';
+        }));
+
+        $query = Dynamic::where($statisticsWhere);
+        $ownerContext = DynamicOwnerService::resolveStaffOwnerContext($this->adminId, $this->adminInfo);
+        if (DynamicOwnerService::isResolvedContext($ownerContext)) {
+            DynamicOwnerService::applyOwnedStaffDynamicFilter($query, (int)$ownerContext['owner_staff_id']);
+        } elseif (DynamicOwnerService::isStaffContext($ownerContext)) {
+            return ['status_counts' => []];
+        }
+
+        $statusCounts = [];
+        foreach ([
+            Dynamic::STATUS_PENDING => '待审核',
+            Dynamic::STATUS_PUBLISHED => '已发布',
+            Dynamic::STATUS_OFFLINE => '已下架',
+            Dynamic::STATUS_REJECTED => '已拒绝',
+        ] as $status => $label) {
+            $statusCounts[] = [
+                'status' => $status,
+                'label' => $label,
+                'count' => (clone $query)->where('status', $status)->count(),
+            ];
+        }
+
+        return ['status_counts' => $statusCounts];
     }
 
     /**

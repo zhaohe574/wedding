@@ -162,6 +162,7 @@ CREATE TABLE IF NOT EXISTS `la_staff` (
   `experience_years` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '从业年限',
   `profile` text COMMENT '个人简介',
   `service_desc` text COMMENT '服务说明',
+  `long_detail` longtext COMMENT '长图详情(JSON)',
   `booking_option_1_name` varchar(100) NOT NULL DEFAULT '' COMMENT '预约附加项1名称',
   `booking_option_1_price` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT '预约附加项1价格',
   `booking_option_2_name` varchar(100) NOT NULL DEFAULT '' COMMENT '预约附加项2名称',
@@ -201,6 +202,22 @@ CREATE TABLE IF NOT EXISTS `la_staff` (
   KEY `idx_is_recommend` (`is_recommend`) USING BTREE,
   KEY `idx_rating` (`rating`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='工作人员表';
+
+SET @wm_has_staff_long_detail := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'la_staff'
+      AND COLUMN_NAME = 'long_detail'
+);
+SET @wm_staff_long_detail_sql := IF(
+    @wm_has_staff_long_detail = 0,
+    'ALTER TABLE `la_staff` ADD COLUMN `long_detail` LONGTEXT NULL COMMENT ''长图详情(JSON)'' AFTER `service_desc`',
+    'SELECT 1'
+);
+PREPARE wm_staff_long_detail_stmt FROM @wm_staff_long_detail_sql;
+EXECUTE wm_staff_long_detail_stmt;
+DEALLOCATE PREPARE wm_staff_long_detail_stmt;
 
 -- la_staff_banner
 CREATE TABLE IF NOT EXISTS `la_staff_banner` (

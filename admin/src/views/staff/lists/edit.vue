@@ -147,6 +147,10 @@
                                     show-word-limit
                                 />
                             </el-form-item>
+
+                            <el-form-item class="mt-4 !mb-0" label="长图详情" prop="long_detail">
+                                <long-detail-editor v-model="formData.long_detail" />
+                            </el-form-item>
                         </div>
 
                     </el-tab-pane>
@@ -635,6 +639,7 @@ import { getUserList, getUserDetail } from '@/api/consumer'
 import { categoryTree, styleTagAll } from '@/api/service'
 import PackageRegionPriceEditor from '@/components/service/package-region-price-editor.vue'
 import PackageRegionPriceSummary from '@/components/service/package-region-price-summary.vue'
+import LongDetailEditor from '@/components/staff/long-detail-editor.vue'
 import { useDictOptions } from '@/hooks/useDictOptions'
 import useMultipleTabs from '@/hooks/useMultipleTabs'
 import { ElMessage } from 'element-plus'
@@ -685,6 +690,7 @@ const formData = reactive({
     experience_years: 0,
     profile: '',
     service_desc: '',
+    long_detail: '',
     sort: 0,
     is_recommend: 0,
     status: 1,

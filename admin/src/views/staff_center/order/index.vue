@@ -1,6 +1,6 @@
 <template>
-    <div class="staff-center-order">
-        <el-card class="!border-none" shadow="never">
+    <admin-page-shell class="staff-center-order" title="我的订单">
+        <search-panel>
             <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item class="w-[180px]" label="订单编号">
                     <el-input v-model="queryParams.order_sn" placeholder="输入订单编号" clearable @keyup.enter="resetPage" />
@@ -32,6 +32,7 @@
                         <el-option label="已评价" :value="5" />
                         <el-option label="已取消" :value="6" />
                         <el-option label="已暂停" :value="7" />
+                        <el-option label="退款中" :value="10" />
                         <el-option label="已退款" :value="8" />
                         <el-option label="用户已删除" :value="9" />
                     </el-select>
@@ -50,9 +51,9 @@
                     <el-button @click="resetParams">重置</el-button>
                 </el-form-item>
             </el-form>
-        </el-card>
+        </search-panel>
 
-        <div class="mt-4 grid grid-cols-6 gap-4">
+        <div class="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
             <el-card class="!border-none" shadow="never">
                 <div class="text-center">
                     <div class="text-gray-500 text-sm">待确认</div>
@@ -81,6 +82,42 @@
                 <div class="text-center">
                     <div class="text-gray-500 text-sm">已完成</div>
                     <div class="text-2xl font-bold mt-2 text-green-500">{{ getStatusCount(4) }}</div>
+                </div>
+            </el-card>
+            <el-card class="!border-none" shadow="never">
+                <div class="text-center">
+                    <div class="text-gray-500 text-sm">已评价</div>
+                    <div class="text-2xl font-bold mt-2 text-emerald-500">{{ getStatusCount(5) }}</div>
+                </div>
+            </el-card>
+            <el-card class="!border-none" shadow="never">
+                <div class="text-center">
+                    <div class="text-gray-500 text-sm">已取消</div>
+                    <div class="text-2xl font-bold mt-2 text-gray-500">{{ getStatusCount(6) }}</div>
+                </div>
+            </el-card>
+            <el-card class="!border-none" shadow="never">
+                <div class="text-center">
+                    <div class="text-gray-500 text-sm">已暂停</div>
+                    <div class="text-2xl font-bold mt-2 text-amber-500">{{ getStatusCount(7) }}</div>
+                </div>
+            </el-card>
+            <el-card class="!border-none" shadow="never">
+                <div class="text-center">
+                    <div class="text-gray-500 text-sm">退款中</div>
+                    <div class="text-2xl font-bold mt-2 text-cyan-500">{{ getStatusCount(10) }}</div>
+                </div>
+            </el-card>
+            <el-card class="!border-none" shadow="never">
+                <div class="text-center">
+                    <div class="text-gray-500 text-sm">已退款</div>
+                    <div class="text-2xl font-bold mt-2 text-red-500">{{ getStatusCount(8) }}</div>
+                </div>
+            </el-card>
+            <el-card class="!border-none" shadow="never">
+                <div class="text-center">
+                    <div class="text-gray-500 text-sm">用户已删除</div>
+                    <div class="text-2xl font-bold mt-2 text-rose-500">{{ getStatusCount(9) }}</div>
                 </div>
             </el-card>
             <el-card class="!border-none" shadow="never">
@@ -114,7 +151,20 @@
                 <el-table-column label="可见金额" width="140">
                     <template #default="{ row }">
                         <div class="text-red-500 font-bold">¥{{ formatAmount(row.pay_amount) }}</div>
-                        <div class="text-xs text-gray-400">含附加服务 ¥{{ formatAmount(row.addon_amount) }}</div>
+                        <div class="text-gray-400 text-xs">{{ row.payment_mode_desc || '全款支付' }}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column label="支付进度" width="150">
+                    <template #default="{ row }">
+                        <div>已付：¥{{ formatAmount(row.paid_amount) }}</div>
+                        <div class="text-gray-400 text-xs">待付：¥{{ formatAmount(row.unpaid_amount) }}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column label="付款渠道" width="110">
+                    <template #default="{ row }">
+                        <el-tag :type="Number(row.payment_channel || 1) === 2 ? 'success' : 'primary'" size="small">
+                            {{ row.payment_channel_desc || '线上支付' }}
+                        </el-tag>
                     </template>
                 </el-table-column>
                 <el-table-column label="订单状态" width="100">
@@ -152,8 +202,13 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="服务日期" prop="service_date" width="120" />
+                <el-table-column label="来源" width="110">
+                    <template #default="{ row }">
+                        <span>{{ row.source_desc || '-' }}</span>
+                    </template>
+                </el-table-column>
                 <el-table-column label="创建时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="160" fixed="right">
+                <el-table-column label="操作" width="430" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
                         <el-button
@@ -170,6 +225,14 @@
                         <el-button v-if="row.order_status === 3" type="success" link @click="handleComplete(row)">
                             完成
                         </el-button>
+                        <el-button v-if="canAuditVoucher(row)" type="warning" link @click="handleAuditVoucher(row)">
+                            审核凭证
+                        </el-button>
+                        <el-button v-if="canConfirmOfflinePay(row)" type="success" link @click="handleConfirmOfflinePay(row)">
+                            确认线下收款
+                        </el-button>
+                        <el-button v-if="row.can_admin_refund" type="danger" link @click="handleRefund(row)">退款</el-button>
+                        <el-button v-if="row.can_staff_manage_payment !== false && row.order_status <= 1" type="danger" link @click="handleCancel(row)">取消</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -194,7 +257,6 @@
                     <el-descriptions-item label="服务日期">{{ getDisplayServiceDate(currentOrder) }}</el-descriptions-item>
                     <el-descriptions-item label="服务地区">{{ currentOrder.service_region_text || currentOrder.service_address || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="主服务金额">¥{{ formatAmount(currentOrder.service_amount) }}</el-descriptions-item>
-                    <el-descriptions-item label="附加服务金额">¥{{ formatAmount(currentOrder.addon_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="订单总额（本人）">¥{{ formatAmount(currentOrder.total_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="优惠金额（本人）">¥{{ formatAmount(currentOrder.discount_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="应付金额（本人）">¥{{ formatAmount(currentOrder.pay_amount) }}</el-descriptions-item>
@@ -202,14 +264,37 @@
                         <span class="text-red-500 font-bold">¥{{ getDisplayPaidAmount(currentOrder) }}</span>
                     </el-descriptions-item>
                     <el-descriptions-item label="支付模式">{{ currentOrder.payment_mode_desc || '全款支付' }}</el-descriptions-item>
+                    <el-descriptions-item label="付款渠道">{{ currentOrder.payment_channel_desc || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="来源">{{ currentOrder.source_desc || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="当前待支付">{{ currentOrder.need_pay_label || '无需支付' }}</el-descriptions-item>
                     <el-descriptions-item label="剩余支付时间">{{ getPayRemainText(currentOrder) }}</el-descriptions-item>
                     <el-descriptions-item label="支付超时处理">{{ currentOrder.pay_timeout_action_desc || '-' }}</el-descriptions-item>
                     <el-descriptions-item v-if="Number(currentOrder.deposit_amount || 0) > 0" label="定金金额">¥{{ formatAmount(currentOrder.deposit_amount) }}</el-descriptions-item>
                     <el-descriptions-item v-if="Number(currentOrder.balance_amount || 0) > 0" label="尾款金额">¥{{ formatAmount(currentOrder.balance_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="待付金额">¥{{ formatAmount(currentOrder.unpaid_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="支付方式">{{ currentOrder.pay_type_desc || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="支付状态">{{ currentOrder.pay_status_desc || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="线下凭证" :span="2">
+                        <el-image
+                            v-if="currentOrder.pay_voucher"
+                            :src="currentOrder.pay_voucher"
+                            fit="contain"
+                            style="width: 100%; max-height: 260px"
+                        />
+                        <span v-else>-</span>
+                    </el-descriptions-item>
+                    <el-descriptions-item label="凭证状态">{{ currentOrder.pay_voucher_status_desc || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="审核备注">{{ currentOrder.pay_voucher_audit_remark || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="用户备注" :span="2">{{ currentOrder.user_remark || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="管理备注" :span="2">{{ currentOrder.admin_remark || '-' }}</el-descriptions-item>
                 </el-descriptions>
+
+                <div v-if="currentOrder.can_admin_refund" class="mt-4 flex justify-end">
+                    <el-button type="danger" plain @click="handleRefund(currentOrder)">发起退款</el-button>
+                </div>
+                <div v-else-if="currentOrder.can_staff_manage_payment === false" class="mt-4 text-sm text-gray-400">
+                    共享订单仅展示本人可见金额与履约信息，退款、线下收款、凭证审核等整单支付操作需由管理员处理。
+                </div>
 
                 <div class="service-project-panel mt-4">
                     <div class="service-project-panel__header">
@@ -258,26 +343,22 @@
                     </div>
                     <div v-else class="service-project-empty">当前订单暂无主套餐信息</div>
 
-                    <div class="service-project-group">
+                    <div v-if="currentLegacyRows.length" class="service-project-group">
                         <div class="service-project-group__header">
-                            <span class="service-project-group__title">附加套餐</span>
-                            <span class="service-project-group__count">{{ currentAddonRows.length }} 项</span>
+                            <span class="service-project-group__title">历史兼容服务项</span>
+                            <span class="service-project-group__count">{{ currentLegacyRows.length }} 项</span>
                         </div>
-                        <div v-if="currentAddonRows.length" class="service-project-grid">
+                        <div class="service-project-grid">
                             <div
-                                v-for="row in currentAddonRows"
+                                v-for="row in currentLegacyRows"
                                 :key="row.key"
-                                class="service-sub-card"
+                                class="service-sub-card service-sub-card--related"
                             >
                                 <div class="service-sub-card__header">
                                     <div class="service-sub-card__title-row">
                                         <span class="service-sub-card__title">{{ row.title }}</span>
                                         <el-tag size="small" :type="row.typeTagType">{{ row.typeText }}</el-tag>
-                                        <el-tag
-                                            v-if="row.statusText"
-                                            size="small"
-                                            :type="row.statusType || 'info'"
-                                        >
+                                        <el-tag v-if="row.statusText" size="small" :type="row.statusType || 'info'">
                                             {{ row.statusText }}
                                         </el-tag>
                                     </div>
@@ -286,9 +367,6 @@
                                 <div v-if="row.metaText" class="service-sub-card__meta">{{ row.metaText }}</div>
                                 <div v-if="row.description" class="service-sub-card__desc">{{ row.description }}</div>
                             </div>
-                        </div>
-                        <div v-else class="service-project-empty service-project-empty--sub">
-                            当前订单未配置附加套餐
                         </div>
                     </div>
 
@@ -324,12 +402,127 @@
                     </div>
 
                     <div class="text-xs text-gray-400 mt-2">
-                        注：订单金额已按当前工作人员视角重算；非本人订单项仅保留服务人员、日期和状态，附加服务同步脱敏。
+                        注：订单金额已按当前工作人员视角重算；非本人订单项仅保留服务人员、日期和状态等必要履约信息。
                     </div>
+                </div>
+
+                <div class="mt-4" v-if="currentOrder.payments && currentOrder.payments.length > 0">
+                    <h4 class="font-bold mb-2">支付记录</h4>
+                    <el-table :data="currentOrder.payments" border size="small">
+                        <el-table-column label="流水号" prop="payment_sn" min-width="180" />
+                        <el-table-column label="支付阶段" min-width="90">
+                            <template #default="{ row }">{{ row.pay_type_desc || '-' }}</template>
+                        </el-table-column>
+                        <el-table-column label="支付方式" min-width="100">
+                            <template #default="{ row }">{{ row.pay_way_desc || '-' }}</template>
+                        </el-table-column>
+                        <el-table-column label="支付金额" min-width="100">
+                            <template #default="{ row }">¥{{ row.pay_amount }}</template>
+                        </el-table-column>
+                        <el-table-column label="支付状态" min-width="100">
+                            <template #default="{ row }">{{ row.pay_status_desc || '-' }}</template>
+                        </el-table-column>
+                        <el-table-column label="支付时间" prop="pay_time" min-width="160" />
+                    </el-table>
+                </div>
+
+                <div class="mt-4" v-if="currentOrder.logs && currentOrder.logs.length > 0">
+                    <h4 class="font-bold mb-2">操作日志</h4>
+                    <el-timeline>
+                        <el-timeline-item v-for="log in currentOrder.logs" :key="log.id" :timestamp="log.create_time" placement="top">
+                            <span class="text-gray-500">[{{ log.operator_type_desc }}]</span>
+                            {{ log.content }}
+                        </el-timeline-item>
+                    </el-timeline>
                 </div>
             </div>
         </el-dialog>
-    </div>
+
+        <el-dialog v-model="auditVisible" title="线下凭证审核" width="520px">
+            <el-form :model="auditForm" label-width="100px">
+                <el-form-item label="订单编号"><span>{{ auditForm.order_sn || '-' }}</span></el-form-item>
+                <el-form-item label="支付金额"><span>¥{{ auditForm.pay_amount }}</span></el-form-item>
+                <el-form-item label="支付凭证">
+                    <el-image v-if="auditForm.voucher" :src="auditForm.voucher" fit="contain" style="width: 100%; max-height: 260px" />
+                    <span v-else>未上传</span>
+                </el-form-item>
+                <el-form-item label="审核备注">
+                    <el-input v-model="auditForm.remark" type="textarea" :rows="3" placeholder="可填写拒绝原因或备注" />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="auditVisible = false">取消</el-button>
+                <el-button type="danger" @click="submitAudit(0)">拒绝</el-button>
+                <el-button type="primary" @click="submitAudit(1)">通过</el-button>
+            </template>
+        </el-dialog>
+
+        <el-dialog v-model="confirmPayVisible" title="确认线下收款" width="520px">
+            <el-form :model="confirmPayForm" label-width="100px">
+                <el-form-item label="订单编号"><span>{{ confirmPayForm.order_sn || '-' }}</span></el-form-item>
+                <el-form-item label="支付阶段"><span>{{ confirmPayForm.pay_label || '-' }}</span></el-form-item>
+                <el-form-item label="支付金额">
+                    <el-input-number v-model="confirmPayForm.pay_amount" :min="0.01" :precision="2" class="w-full" />
+                </el-form-item>
+                <el-form-item label="说明">
+                    <span class="text-gray-500">确认后订单会按线下收款处理，并进入待服务状态或下一支付阶段。</span>
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="confirmPayVisible = false">取消</el-button>
+                <el-button type="primary" @click="submitConfirmOfflinePay">确认收款</el-button>
+            </template>
+        </el-dialog>
+
+        <el-dialog v-model="cancelVisible" title="取消订单" width="500px">
+            <el-form :model="cancelForm" label-width="100px">
+                <el-form-item label="取消原因">
+                    <el-input v-model="cancelForm.reason" type="textarea" :rows="3" placeholder="请输入取消原因" />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="cancelVisible = false">取消</el-button>
+                <el-button type="danger" @click="submitCancel">确认取消</el-button>
+            </template>
+        </el-dialog>
+
+        <el-dialog v-model="refundVisible" title="订单退款" width="560px">
+            <el-form :model="refundForm" label-width="110px">
+                <el-form-item label="订单编号">
+                    <span>{{ refundForm.order_sn || '-' }}</span>
+                </el-form-item>
+                <el-form-item label="退款模式">
+                    <el-radio-group v-model="refundForm.mode">
+                        <el-radio-button label="full">全部退款</el-radio-button>
+                        <el-radio-button label="partial">部分退款</el-radio-button>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item label="最大可退">
+                    <span class="font-medium text-red-500">¥{{ formatAmount(refundForm.refundable_amount) }}</span>
+                </el-form-item>
+                <el-form-item label="退款金额">
+                    <el-input-number
+                        v-model="refundForm.refund_amount"
+                        :min="0.01"
+                        :max="refundAmountInputMax"
+                        :precision="2"
+                        :disabled="refundForm.mode === 'full'"
+                        class="w-full"
+                    />
+                </el-form-item>
+                <el-form-item label="退款说明">
+                    <el-input v-model="refundForm.reason" type="textarea" :rows="3" maxlength="255" show-word-limit placeholder="请输入退款原因，可选" />
+                </el-form-item>
+                <el-form-item label="处理提示">
+                    <div class="text-sm leading-6 text-gray-500">{{ refundHintText }}</div>
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="refundVisible = false">取消</el-button>
+                <el-button type="danger" :loading="refundSubmitting" @click="submitRefundApply">确认退款</el-button>
+            </template>
+        </el-dialog>
+    </admin-page-shell>
 </template>
 
 <script setup lang="ts" name="staffCenterOrder">
@@ -339,11 +532,17 @@ import feedback from '@/utils/feedback'
 import {
     myOrderConfirm,
     myOrderComplete,
-    myOrderDetail,
     myOrders,
     myOrderStartService,
     myOrderStatistics
 } from '@/api/staff-center'
+import {
+    orderAuditVoucher,
+    orderCancel,
+    orderConfirmOfflinePay,
+    orderDetail,
+    refundApply
+} from '@/api/order'
 
 const queryParams = reactive({
     order_sn: '',
@@ -370,6 +569,38 @@ const createTimeRange = computed<string[]>({
 const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentOrder = ref<any>(null)
+const auditVisible = ref(false)
+const auditForm = reactive({
+    id: 0,
+    order_sn: '',
+    pay_amount: 0,
+    voucher: '',
+    remark: ''
+})
+const confirmPayVisible = ref(false)
+const confirmPayForm = reactive({
+    id: 0,
+    order_sn: '',
+    pay_type: 3,
+    pay_amount: 0,
+    pay_label: '全款'
+})
+const cancelVisible = ref(false)
+const cancelForm = reactive({
+    id: 0,
+    reason: ''
+})
+const refundVisible = ref(false)
+const refundSubmitting = ref(false)
+const refundForm = reactive({
+    order_id: 0,
+    order_sn: '',
+    order_status: 0,
+    mode: 'full' as 'full' | 'partial',
+    refundable_amount: 0,
+    refund_amount: 0,
+    reason: ''
+})
 const countdownNowTs = ref(Date.now())
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let countdownRefreshing = false
@@ -385,7 +616,24 @@ const getStatistics = async () => {
 
 const getStatusCount = (status: number) => {
     const item = statistics.value?.status_counts?.find((s: any) => s.status === status)
-    return item ? item.count : 0
+    if (item) return item.count
+
+    const keyMap: Record<number, string> = {
+        0: 'pending_confirm',
+        1: 'pending_pay',
+        2: 'paid',
+        3: 'in_service',
+        4: 'completed',
+        5: 'reviewed',
+        6: 'cancelled',
+        7: 'paused',
+        8: 'refunded',
+        9: 'user_deleted',
+        10: 'refunding'
+    }
+
+    const key = keyMap[status]
+    return key && statistics.value && statistics.value[key] !== undefined ? Number(statistics.value[key] || 0) : 0
 }
 
 const getStatusType = (
@@ -401,7 +649,8 @@ const getStatusType = (
         6: 'info',
         7: 'warning',
         8: 'danger',
-        9: 'danger'
+        9: 'danger',
+        10: 'danger'
     }
     return types[status] || 'info'
 }
@@ -426,6 +675,16 @@ const getDisplayPaidAmount = (order: any) => {
     return Number(order?.paid_amount ?? 0).toFixed(2)
 }
 
+const refundAmountInputMax = computed(() => Number(refundForm.refundable_amount || 0))
+
+const refundHintText = computed(() => {
+    if (refundForm.mode === 'partial') {
+        return '部分退款会保留剩余已付金额，订单后续可继续按业务流程处理。'
+    }
+
+    return '全部退款会按当前订单的最大可退金额发起退款。'
+})
+
 const formatAmount = (amount: number | string | undefined) => {
     return Number(amount ?? 0).toFixed(2)
 }
@@ -439,15 +698,6 @@ const getItemDisplayAmount = (item: any) => {
     }
 
     return Math.max(Number(item?.price || 0) * getItemQuantity(item), 0)
-}
-
-const getAddonDisplayAmount = (addon: any) => {
-    const subtotal = Number(addon?.subtotal)
-    if (Number.isFinite(subtotal) && subtotal >= 0) {
-        return subtotal
-    }
-
-    return Math.max(Number(addon?.price || 0) * Math.max(Number(addon?.quantity || 1), 1), 0)
 }
 
 const formatCountdown = (seconds: number | string | undefined) => {
@@ -512,7 +762,7 @@ const refreshCountdownDrivenData = async () => {
     try {
         await Promise.all([getLists(), getStatistics()])
         if (detailVisible.value && Number(currentOrder.value?.id || 0) > 0) {
-            currentOrder.value = await myOrderDetail({ id: currentOrder.value.id })
+            currentOrder.value = await orderDetail({ id: currentOrder.value.id })
         }
     } finally {
         countdownRefreshing = false
@@ -563,6 +813,19 @@ const getPayRemainText = (row: any) => {
     return formatCountdown(getLiveRemainSeconds(row, 'pay_deadline_time', '__payExpireAt'))
 }
 
+const canAuditVoucher = (row: any) =>
+    row?.can_staff_manage_payment !== false &&
+    Number(row?.order_status || 0) === 1 &&
+    Number(row?.payment_channel || 1) === 2 &&
+    !!row?.pay_voucher &&
+    Number(row?.pay_voucher_status) === 0
+
+const canConfirmOfflinePay = (row: any) =>
+    row?.can_staff_manage_payment !== false &&
+    Number(row?.order_status || 0) === 1 &&
+    Number(row?.payment_channel || 1) === 2 &&
+    !(row?.pay_voucher && Number(row?.pay_voucher_status) === 0)
+
 const isMaskedItem = (item: any) => {
     return item?.package_name === '--'
 }
@@ -600,9 +863,7 @@ const currentOrderItems = computed(() => {
 })
 
 const currentPrimaryItem = computed(() =>
-    currentOrderItems.value.find((item: any) => Number(item?.item_type || 1) === 1) ||
-    currentOrderItems.value[0] ||
-    null
+    currentOrderItems.value.find((item: any) => Number(item?.item_type || 1) === 1) || null
 )
 
 const currentPrimaryMasked = computed(() => isMaskedItem(currentPrimaryItem.value))
@@ -680,71 +941,6 @@ const buildServiceRowKey = (
     extra = ''
 ) => `${kind}:${String(title || '').trim()}:${formatAmount(amount)}:${quantity}:${extra}`
 
-const currentAddonRows = computed<ServiceDetailRow[]>(() => {
-    const rows: ServiceDetailRow[] = []
-    const seen = new Set<string>()
-
-    const pushRow = (row: ServiceDetailRow, amount: number, quantity: number, extra = '') => {
-        const key = buildServiceRowKey(row.typeText, row.title, amount, quantity, extra)
-        if (seen.has(key)) return
-        seen.add(key)
-        rows.push({ ...row, key })
-    }
-
-    currentOrderItems.value.forEach((item: any) => {
-        const masked = isMaskedItem(item)
-        ;(item?.addons || []).forEach((addon: any) => {
-            const quantity = Math.max(Number(addon?.quantity || 1), 1)
-            const amount = getAddonDisplayAmount(addon)
-            pushRow(
-                {
-                    key: '',
-                    title: masked ? '已脱敏附加项' : addon?.addon_name || addon?.name || '附加套餐',
-                    typeText: '附加套餐',
-                    typeTagType: 'warning',
-                    description: masked ? '仅展示履约结构，具体附加明细已脱敏。' : '',
-                    metaText: masked ? '已脱敏' : `数量 x${quantity}`,
-                    priceText: masked ? '--' : `¥${formatAmount(amount)}`,
-                    statusText: getItemStatusText(Number(item?.item_status || 0)),
-                    statusType: getItemStatusType(Number(item?.item_status || 0))
-                },
-                amount,
-                quantity
-            )
-        })
-    })
-
-    currentOrderItems.value
-        .filter((item: any) => Number(item?.item_type || 1) === 2)
-        .forEach((item: any) => {
-            const masked = isMaskedItem(item)
-            const amount = getItemDisplayAmount(item)
-            const quantity = getItemQuantity(item)
-            pushRow(
-                {
-                    key: '',
-                    title: masked
-                        ? '已脱敏附加项'
-                        : item?.item_meta?.label || item?.package_name || '附加套餐',
-                    typeText: '附加套餐',
-                    typeTagType: 'warning',
-                    description: getDetailItemDescription(item, masked),
-                    metaText: masked
-                        ? '已脱敏'
-                        : [item?.service_date, `数量 x${quantity}`].filter(Boolean).join(' · '),
-                    priceText: masked ? '--' : `¥${formatAmount(amount)}`,
-                    statusText: getItemStatusText(Number(item?.item_status || 0)),
-                    statusType: getItemStatusType(Number(item?.item_status || 0))
-                },
-                amount,
-                quantity,
-                item?.service_date || ''
-            )
-        })
-
-    return rows
-})
-
 const currentRelatedRows = computed<ServiceDetailRow[]>(() =>
     currentOrderItems.value
         .filter((item: any) => Number(item?.item_type || 1) === 3)
@@ -768,11 +964,34 @@ const currentRelatedRows = computed<ServiceDetailRow[]>(() =>
         })
 )
 
+const currentLegacyRows = computed<ServiceDetailRow[]>(() =>
+    currentOrderItems.value
+        .filter((item: any) => Number(item?.item_type || 1) === 2)
+        .map((item: any) => {
+            const masked = isMaskedItem(item)
+            const amount = getItemDisplayAmount(item)
+            const quantity = getItemQuantity(item)
+            const title = String(item?.item_meta?.label || item?.package_name || '历史服务项').trim() || '历史服务项'
+            return {
+                key: buildServiceRowKey('legacy', title, amount, quantity, item?.service_date || ''),
+                title: masked ? '已脱敏历史服务项' : title,
+                typeText: '历史兼容',
+                typeTagType: 'info',
+                description: masked ? '旧订单兼容展示，具体历史明细已脱敏。' : getDetailItemDescription(item, false),
+                metaText: masked ? '已脱敏' : [item?.service_date, `数量 x${quantity}`].filter(Boolean).join(' · '),
+                priceText: masked ? '--' : `¥${formatAmount(amount)}`,
+                statusText: getItemStatusText(Number(item?.item_status || 0)),
+                statusType: getItemStatusType(Number(item?.item_status || 0))
+            }
+        })
+)
+
 const currentServiceSummaryText = computed(() => {
-    const parts = [
-        currentPrimaryItem.value ? '1 个主套餐' : '0 个主套餐',
-        `${currentAddonRows.value.length} 个附加套餐`
-    ]
+    const parts = [currentPrimaryItem.value ? '1 个主套餐' : '0 个主套餐']
+
+    if (currentLegacyRows.value.length) {
+        parts.push(`${currentLegacyRows.value.length} 个历史兼容项`)
+    }
 
     if (currentRelatedRows.value.length) {
         parts.push(`${currentRelatedRows.value.length} 个协作服务`)
@@ -781,9 +1000,14 @@ const currentServiceSummaryText = computed(() => {
     return parts.join(' · ')
 })
 
-const handleDetail = async (row: any) => {
-    currentOrder.value = await myOrderDetail({ id: row.id })
+const openOrderDetail = async (id: number) => {
+    if (!id) return
+    currentOrder.value = await orderDetail({ id })
     detailVisible.value = true
+}
+
+const handleDetail = async (row: any) => {
+    await openOrderDetail(Number(row.id || 0))
 }
 
 const handleConfirm = async (row: any) => {
@@ -792,6 +1016,48 @@ const handleConfirm = async (row: any) => {
     feedback.msgSuccess('确认成功')
     getLists()
     getStatistics()
+}
+
+const handleAuditVoucher = (row: any) => {
+    auditForm.id = Number(row.id || 0)
+    auditForm.order_sn = row.order_sn || ''
+    auditForm.pay_amount = Number(row.need_pay_amount || row.pay_amount || 0)
+    auditForm.voucher = row.pay_voucher || ''
+    auditForm.remark = ''
+    auditVisible.value = true
+}
+
+const handleConfirmOfflinePay = (row: any) => {
+    confirmPayForm.id = Number(row.id || 0)
+    confirmPayForm.order_sn = row.order_sn || ''
+    confirmPayForm.pay_type = row.need_pay === 'deposit' ? 1 : row.need_pay === 'balance' ? 2 : 3
+    confirmPayForm.pay_amount = Number(row.need_pay_amount || row.pay_amount || 0)
+    confirmPayForm.pay_label = row.need_pay === 'deposit' ? '定金' : row.need_pay === 'balance' ? '尾款' : '全款'
+    confirmPayVisible.value = true
+}
+
+const submitAudit = async (approved: number) => {
+    await orderAuditVoucher({ id: auditForm.id, approved, remark: auditForm.remark })
+    feedback.msgSuccess('操作成功')
+    auditVisible.value = false
+    await Promise.all([getLists(), getStatistics()])
+    if (detailVisible.value && Number(currentOrder.value?.id || 0) === Number(auditForm.id || 0)) {
+        await openOrderDetail(Number(auditForm.id || 0))
+    }
+}
+
+const submitConfirmOfflinePay = async () => {
+    await orderConfirmOfflinePay({
+        id: confirmPayForm.id,
+        pay_type: confirmPayForm.pay_type,
+        pay_amount: Number(confirmPayForm.pay_amount || 0)
+    })
+    feedback.msgSuccess('线下收款已确认')
+    confirmPayVisible.value = false
+    await Promise.all([getLists(), getStatistics()])
+    if (detailVisible.value && Number(currentOrder.value?.id || 0) === Number(confirmPayForm.id || 0)) {
+        await openOrderDetail(Number(confirmPayForm.id || 0))
+    }
 }
 
 const handleStartService = async (row: any) => {
@@ -808,6 +1074,72 @@ const handleComplete = async (row: any) => {
     feedback.msgSuccess('操作成功')
     getLists()
     getStatistics()
+}
+
+const handleRefund = (row: any) => {
+    const refundableAmount = Number(row.refundable_amount || 0)
+    refundForm.order_id = Number(row.id || row.order_id || 0)
+    refundForm.order_sn = row.order_sn || ''
+    refundForm.order_status = Number(row.order_status || 0)
+    refundForm.mode = 'full'
+    refundForm.refundable_amount = refundableAmount
+    refundForm.refund_amount = refundableAmount
+    refundForm.reason = ''
+    refundVisible.value = true
+}
+
+const submitRefundApply = async () => {
+    const maxAmount = Number(refundForm.refundable_amount || 0)
+    const refundAmount = Number((refundForm.mode === 'full' ? refundForm.refundable_amount : refundForm.refund_amount) || 0)
+    if (maxAmount <= 0) {
+        feedback.msgError('当前订单暂无可退金额')
+        return
+    }
+    if (refundAmount <= 0) {
+        feedback.msgError('退款金额必须大于0')
+        return
+    }
+    if (refundAmount > maxAmount) {
+        feedback.msgError('退款金额不能超过最大可退金额')
+        return
+    }
+    if (refundForm.mode === 'partial' && refundAmount >= maxAmount) {
+        feedback.msgError('部分退款金额必须小于最大可退金额')
+        return
+    }
+
+    refundSubmitting.value = true
+    try {
+        await refundApply({
+            order_id: refundForm.order_id,
+            refund_amount: refundAmount,
+            reason: refundForm.reason.trim()
+        })
+        feedback.msgSuccess('退款申请成功')
+        refundVisible.value = false
+        await Promise.all([getLists(), getStatistics()])
+        if (detailVisible.value && Number(currentOrder.value?.id || 0) === Number(refundForm.order_id || 0)) {
+            await openOrderDetail(Number(refundForm.order_id || 0))
+        }
+    } finally {
+        refundSubmitting.value = false
+    }
+}
+
+const handleCancel = (row: any) => {
+    cancelForm.id = Number(row.id || 0)
+    cancelForm.reason = ''
+    cancelVisible.value = true
+}
+
+const submitCancel = async () => {
+    await orderCancel(cancelForm)
+    feedback.msgSuccess('订单已取消')
+    cancelVisible.value = false
+    await Promise.all([getLists(), getStatistics()])
+    if (detailVisible.value && Number(currentOrder.value?.id || 0) === Number(cancelForm.id || 0)) {
+        await openOrderDetail(Number(cancelForm.id || 0))
+    }
 }
 
 onActivated(() => {
@@ -840,6 +1172,22 @@ watch(
         startCountdownTimer()
     },
     { deep: false }
+)
+
+watch(
+    () => refundForm.mode,
+    (mode) => {
+        if (mode === 'full') {
+            refundForm.refund_amount = Number(refundForm.refundable_amount || 0)
+            return
+        }
+
+        if (Number(refundForm.refund_amount || 0) >= Number(refundForm.refundable_amount || 0)) {
+            refundForm.refund_amount = Number(
+                Math.max(Number(refundForm.refundable_amount || 0) - 0.01, 0.01).toFixed(2)
+            )
+        }
+    }
 )
 
 getLists()

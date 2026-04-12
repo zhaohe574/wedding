@@ -1,6 +1,6 @@
 <template>
-    <div class="staff-center-booking">
-        <el-card class="!border-none" shadow="never">
+    <admin-page-shell class="staff-center-booking" title="我的预约项">
+        <search-panel>
             <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item class="w-[200px]" label="订单编号">
                     <el-input v-model="queryParams.order_sn" placeholder="输入订单编号" clearable @keyup.enter="resetPage" />
@@ -43,7 +43,7 @@
                     <el-button @click="handleReset">重置</el-button>
                 </el-form-item>
             </el-form>
-        </el-card>
+        </search-panel>
 
         <div class="mt-4 grid grid-cols-5 gap-4">
             <el-card class="!border-none" shadow="never">
@@ -171,7 +171,7 @@
                     <el-descriptions-item label="剩余确认时间">{{ getConfirmRemainText(currentDetail) }}</el-descriptions-item>
                     <el-descriptions-item label="超时处理">{{ currentDetail.confirm_timeout_action_desc || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="订单项状态">{{ currentDetail.item_status_desc }}</el-descriptions-item>
-                    <el-descriptions-item label="订单状态">{{ currentDetail.order_status }}</el-descriptions-item>
+                    <el-descriptions-item label="订单状态">{{ currentDetail.order_status_desc || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="订单总额">¥{{ currentDetail.total_amount }}</el-descriptions-item>
                     <el-descriptions-item label="应付金额">¥{{ currentDetail.pay_amount }}</el-descriptions-item>
                     <el-descriptions-item label="优惠金额">¥{{ currentDetail.discount_amount }}</el-descriptions-item>
@@ -182,7 +182,7 @@
                 <el-button @click="detailVisible = false">关闭</el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script setup lang="ts" name="staffCenterBooking">

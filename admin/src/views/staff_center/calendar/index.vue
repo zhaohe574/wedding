@@ -1,6 +1,6 @@
 <template>
-    <div class="staff-center-calendar">
-        <el-card class="!border-none mb-4" shadow="never">
+    <admin-page-shell class="staff-center-calendar" title="我的档期日历">
+        <search-panel>
             <el-form class="mb-[-16px]" :inline="true">
                 <el-form-item label="年月">
                     <el-date-picker
@@ -18,7 +18,7 @@
                     <el-button type="success" @click="handleBatchSet">批量设置</el-button>
                 </el-form-item>
             </el-form>
-        </el-card>
+        </search-panel>
 
         <el-row :gutter="16" class="mb-4">
             <el-col :span="6">
@@ -242,7 +242,7 @@
                 <el-button type="primary" :loading="batchLoading" @click="handleBatchSubmit">确定</el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script setup lang="ts" name="staffCenterCalendar">
@@ -413,8 +413,4 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.staff-center-calendar {
-    padding: 16px;
-}
-</style>
+<style scoped></style>

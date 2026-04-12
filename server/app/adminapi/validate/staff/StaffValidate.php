@@ -30,6 +30,7 @@ class StaffValidate extends BaseValidate
         'mobile' => 'mobile',
         'wecom_userid' => 'max:64',
         'experience_years' => 'integer|egt:0',
+        'long_detail' => 'max:60000',
         'tag_ids' => 'array',
         'sort' => 'integer|egt:0',
         'status' => 'require|in:0,1',
@@ -54,6 +55,7 @@ class StaffValidate extends BaseValidate
         'mobile.mobile' => '手机号格式不正确',
         'experience_years.integer' => '从业年限格式不正确',
         'experience_years.egt' => '从业年限不能小于0',
+        'long_detail.max' => '长图详情内容过长',
         'tag_ids.array' => '标签格式错误',
         'sort.integer' => '排序格式不正确',
         'sort.egt' => '排序不能小于0',
@@ -68,7 +70,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneAdd(): StaffValidate
     {
-        return $this->only(['user_id', 'name', 'category_id', 'mobile', 'wecom_userid', 'experience_years', 'tag_ids', 'sort', 'status', 'is_recommend'])
+        return $this->only(['user_id', 'name', 'category_id', 'mobile', 'wecom_userid', 'experience_years', 'long_detail', 'tag_ids', 'sort', 'status', 'is_recommend'])
             ->append('user_id', 'require|gt:0');
     }
 
@@ -78,7 +80,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneEdit(): StaffValidate
     {
-        return $this->only(['id', 'user_id', 'name', 'category_id', 'mobile', 'wecom_userid', 'experience_years', 'tag_ids', 'sort', 'status', 'is_recommend']);
+        return $this->only(['id', 'user_id', 'name', 'category_id', 'mobile', 'wecom_userid', 'experience_years', 'long_detail', 'tag_ids', 'sort', 'status', 'is_recommend']);
     }
 
     /**
@@ -87,7 +89,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneMyProfile(): StaffValidate
     {
-        return $this->only(['id', 'name', 'mobile', 'experience_years', 'avatar', 'profile', 'service_desc', 'tag_ids']);
+        return $this->only(['id', 'name', 'mobile', 'experience_years', 'avatar', 'profile', 'service_desc', 'long_detail', 'tag_ids']);
     }
 
     /**

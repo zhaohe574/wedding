@@ -129,11 +129,6 @@
                         v-if="currentTab === 'intro'"
                         class="content-section content-section--stack"
                     >
-                        <view class="soft-card">
-                            <text class="soft-card__title">人员简介</text>
-                            <text class="soft-card__content">{{ staffProfileText }}</text>
-                        </view>
-
                         <view v-if="displayTagList.length" class="soft-card">
                             <text class="soft-card__title">擅长风格</text>
                             <view class="soft-tags">
@@ -143,9 +138,8 @@
                             </view>
                         </view>
 
-                        <view v-if="staffServiceText" class="soft-card">
-                            <text class="soft-card__title">服务说明</text>
-                            <text class="soft-card__content">{{ staffServiceText }}</text>
+                        <view v-if="hasLongDetail" class="detail-stream-shell">
+                            <staff-long-detail-renderer :content="staffInfo.long_detail" />
                         </view>
                     </view>
 
@@ -686,6 +680,8 @@ import { getStaffDetail, getStaffList, toggleStaffFavorite, getStaffWorks } from
 import { getStaffReviews, getStaffReviewStats } from '@/api/review'
 import { checkScheduleAvailable, joinWaitlist } from '@/api/schedule'
 import { getServiceRegionTree } from '@/api/service'
+import StaffLongDetailRenderer from '@/packages/components/staff-long-detail/staff-long-detail-renderer.vue'
+import { hasLongDetailContent } from '@/packages/components/staff-long-detail/utils'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import StaffBanner from '@/packages/components/staff-banner/staff-banner.vue'
@@ -922,6 +918,7 @@ const displayTagList = computed(() => {
     const tags = Array.isArray(staffInfo.value?.tags) ? staffInfo.value.tags : []
     return tags.map((item: any) => String(item || '').trim()).filter((item: string) => item)
 })
+const hasLongDetail = computed(() => hasLongDetailContent(staffInfo.value?.long_detail))
 const statusBadgeList = computed(() => {
     const badges: string[] = []
     if (staffInfo.value?.is_verified) {
@@ -952,19 +949,6 @@ const staffSummaryText = computed(() => {
         parts.push(`服务 ${orderCount} 场`)
     }
     return parts.join('｜') || '资料正在完善中'
-})
-const staffProfileText = computed(() => {
-    const profile = String(staffInfo.value?.profile || '').trim()
-    const serviceDesc = String(staffInfo.value?.service_desc || '').trim()
-    return profile || serviceDesc || '暂无简介'
-})
-const staffServiceText = computed(() => {
-    const profile = String(staffInfo.value?.profile || '').trim()
-    const serviceDesc = String(staffInfo.value?.service_desc || '').trim()
-    if (!serviceDesc || serviceDesc === profile) {
-        return ''
-    }
-    return serviceDesc
 })
 const staffPrice = computed(() => {
     const hasPrice =
@@ -2468,6 +2452,12 @@ onShareTimeline(() => {
     display: flex;
     flex-direction: column;
     gap: 22rpx;
+}
+
+.detail-stream-shell {
+    overflow: hidden;
+    border-radius: 36rpx;
+    box-shadow: 0 16rpx 34rpx rgba(155, 132, 121, 0.1);
 }
 
 .soft-card {

@@ -176,6 +176,9 @@ export default defineComponent({
         })
 
         const showUpload = computed(() => {
+            if (limit.value == -1) {
+                return true
+            }
             return props.limit - fileList.value.length > 0
         })
         const meterialLimit: any = computed(() => {

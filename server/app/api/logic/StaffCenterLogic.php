@@ -415,6 +415,7 @@ class StaffCenterLogic extends BaseLogic
                 'experience_years' => $params['experience_years'] ?? $staff->experience_years,
                 'profile' => $params['profile'] ?? $staff->profile,
                 'service_desc' => $params['service_desc'] ?? $staff->service_desc,
+                'long_detail' => $params['long_detail'] ?? $staff->long_detail,
                 'update_time' => time(),
             ];
 

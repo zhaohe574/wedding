@@ -212,6 +212,23 @@
                         />
                     </view>
                 </view>
+
+                <view class="staff-profile-card">
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">长图详情</text>
+                            <text class="section-head__desc">
+                                支持图片、文本模块，自定义排序后会在人员详情页展示。
+                            </text>
+                        </view>
+                        <text class="section-head__meta">{{ longDetailCount }} 个模块</text>
+                    </view>
+
+                    <staff-long-detail-editor
+                        v-model="form.long_detail"
+                        @uploading-change="handleLongDetailUploadingChange"
+                    />
+                </view>
             </view>
 
             <view class="save-bar">
@@ -239,8 +256,14 @@ import { computed, reactive, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import StaffLongDetailEditor from '@/packages/components/staff-long-detail/staff-long-detail-editor.vue'
 import { staffCenterProfile, staffCenterUpdateProfile } from '@/api/staffCenter'
 import { getServiceCategories, getStyleTags } from '@/api/service'
+import {
+    parseLongDetailContent,
+    parseLongDetailDraftContent,
+    stringifyLongDetailContent
+} from '@/packages/components/staff-long-detail/utils'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 
@@ -254,6 +277,8 @@ interface HeroBadgeItem {
 
 const $theme = useThemeStore()
 const saving = ref(false)
+const longDetailUploading = ref(false)
+const profileLoaded = ref(false)
 const categories = ref<Array<{ id: number; name: string }>>([])
 const groupedTags = ref<Record<string, Array<{ id: number; name: string }>>>({})
 
@@ -265,6 +290,7 @@ const form = reactive({
     experience_years: '',
     profile: '',
     service_desc: '',
+    long_detail: '',
     tag_ids: [] as number[]
 })
 
@@ -327,6 +353,8 @@ const tagStatusTip = computed(() => {
         text: '当前标签保存后需管理员审核通过才会生效。'
     }
 })
+
+const longDetailCount = computed(() => parseLongDetailContent(form.long_detail).length)
 
 const getAuditTone = (status: number): HeroBadgeTone => {
     if (status === 1) return 'success'
@@ -412,6 +440,7 @@ const loadProfile = async () => {
             : ''
     form.profile = data?.profile || ''
     form.service_desc = data?.service_desc || ''
+    form.long_detail = data?.long_detail || ''
     profileMeta.current_tag_names = Array.isArray(data?.tag_names) ? data.tag_names : []
     profileMeta.pending_tag_ids = Array.isArray(data?.pending_tag_ids)
         ? data.pending_tag_ids.map((item: any) => Number(item))
@@ -452,9 +481,18 @@ const toggleTag = (tagId: number) => {
     form.tag_ids = [...form.tag_ids, currentId]
 }
 
+const handleLongDetailUploadingChange = (value: boolean) => {
+    longDetailUploading.value = value
+}
+
 const handleSave = async () => {
     if (!form.name.trim()) {
         uni.showToast({ title: '请输入姓名', icon: 'none' })
+        return
+    }
+
+    if (longDetailUploading.value) {
+        uni.showToast({ title: '请等待图片上传完成后再保存', icon: 'none' })
         return
     }
 
@@ -464,6 +502,7 @@ const handleSave = async () => {
         category_id: form.category_id,
         profile: form.profile,
         service_desc: form.service_desc,
+        long_detail: stringifyLongDetailContent(parseLongDetailDraftContent(form.long_detail)),
         tag_ids: form.tag_ids
     }
 
@@ -489,8 +528,12 @@ const handleSave = async () => {
 
 onShow(async () => {
     if (!(await ensureStaffCenterAccess())) return
-    await Promise.all([loadCategories(), loadProfile()])
-    await loadTags()
+
+    if (!profileLoaded.value) {
+        await Promise.all([loadCategories(), loadProfile()])
+        await loadTags()
+        profileLoaded.value = true
+    }
 })
 </script>
 

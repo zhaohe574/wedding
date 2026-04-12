@@ -133,8 +133,15 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
             ->toArray();
 
         $pendingCounts = [];
+        $orderItemTotals = [];
         if (!empty($lists)) {
             $orderIds = array_column($lists, 'id');
+            $totalRows = OrderItem::whereIn('order_id', $orderIds)
+                ->field('order_id, COUNT(*) as total_count')
+                ->group('order_id')
+                ->select()
+                ->toArray();
+            $orderItemTotals = array_column($totalRows, 'total_count', 'order_id');
             $pendingQuery = OrderItem::whereIn('order_id', $orderIds)
                 ->where('confirm_status', 0)
                 ->where('item_status', '<>', OrderItem::STATUS_CANCELLED);
@@ -151,7 +158,7 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
 
         foreach ($lists as &$item) {
             if ($staffScopeId > 0) {
-                $item = OrderLogic::applyStaffVisibleOrderAmounts($item, $staffScopeId);
+                $item = $this->applyStaffVisibleOrderAmounts($item, $staffScopeId);
             }
             $item['order_status_desc'] = $this->getStatusDesc($item['order_status']);
             $item['pay_status_desc'] = $this->getPayStatusDesc($item['pay_status']);
@@ -166,6 +173,12 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
             $item = array_merge($item, Order::buildPaymentSummaryFromState($item));
             $item['pending_confirm_count'] = (int)($pendingCounts[$item['id']] ?? 0);
             $item['has_pending_confirm'] = $item['pending_confirm_count'] > 0 ? 1 : 0;
+            $item['can_staff_manage_payment'] = true;
+            if ($staffScopeId > 0) {
+                $visibleItemCount = count($item['items'] ?? []);
+                $totalItemCount = (int)($orderItemTotals[$item['id']] ?? $visibleItemCount);
+                $item['can_staff_manage_payment'] = $totalItemCount > 0 && $totalItemCount === $visibleItemCount;
+            }
             $item = array_merge(
                 $item,
                 Order::buildPayTimeoutSummaryFromState(
@@ -178,7 +191,11 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
                 )
             );
             $item['refundable_amount'] = OrderRefundService::getRefundableAmount((int)$item['id']);
+            if ($staffScopeId > 0) {
+                $item['refundable_amount'] = min((float)$item['refundable_amount'], (float)($item['paid_amount'] ?? 0));
+            }
             $item['can_admin_refund'] = $item['refundable_amount'] > 0
+                && !empty($item['can_staff_manage_payment'])
                 && !OrderRefundService::hasPendingRefund((int)$item['id']);
 
             if (
@@ -311,5 +328,104 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
             Order::SOURCE_ADMIN => '后台',
         ];
         return $map[$source] ?? '未知';
+    }
+
+    /**
+     * @notes 列表按服务人员视角重算金额
+     */
+    protected function applyStaffVisibleOrderAmounts(array $order, int $staffScopeId): array
+    {
+        $items = $order['items'] ?? [];
+        $serviceAmount = 0.0;
+        $addonAmount = 0.0;
+
+        foreach ($items as $item) {
+            if ((int)($item['staff_id'] ?? 0) !== $staffScopeId) {
+                continue;
+            }
+
+            $subtotal = isset($item['subtotal']) ? (float)$item['subtotal'] : 0.0;
+            if ($subtotal <= 0) {
+                $price = (float)($item['price'] ?? 0);
+                $quantity = max((int)($item['quantity'] ?? 1), 1);
+                $subtotal = $price * $quantity;
+            }
+
+            $itemAddonAmount = 0.0;
+            foreach (($item['addons'] ?? []) as $addon) {
+                $itemAddonAmount += (float)($addon['subtotal'] ?? $addon['price'] ?? 0);
+            }
+
+            if ((int)($item['item_type'] ?? 1) === 1) {
+                $serviceAmount += $subtotal;
+            } else {
+                $addonAmount += $subtotal;
+            }
+            $addonAmount += round($itemAddonAmount, 2);
+        }
+
+        $serviceAmount = round($serviceAmount, 2);
+        $addonAmount = round($addonAmount, 2);
+        $visibleTotal = round($serviceAmount + $addonAmount, 2);
+        $originTotalAmount = (float)($order['total_amount'] ?? 0);
+        $originPayAmount = (float)($order['pay_amount'] ?? 0);
+        $originDepositAmount = (float)($order['deposit_amount'] ?? 0);
+        $originBalanceAmount = (float)($order['balance_amount'] ?? 0);
+        $discountTotal = (float)($order['discount_amount'] ?? 0);
+        $paidTotal = (float)($order['paid_amount'] ?? 0);
+
+        $staffDiscount = 0.0;
+        if ($originTotalAmount > 0 && $visibleTotal > 0) {
+            $staffDiscount = round($discountTotal * ($visibleTotal / $originTotalAmount), 2);
+        }
+
+        $staffPayAmount = round(max($visibleTotal - $staffDiscount, 0), 2);
+        $staffPaidAmount = 0.0;
+        if ($originPayAmount > 0 && $staffPayAmount > 0 && $paidTotal > 0) {
+            $staffPaidAmount = round($paidTotal * ($staffPayAmount / $originPayAmount), 2);
+            if ($staffPaidAmount > $staffPayAmount) {
+                $staffPaidAmount = $staffPayAmount;
+            }
+        }
+
+        $staffDepositAmount = 0.0;
+        $staffBalanceAmount = 0.0;
+        if ($originDepositAmount > 0 && $originPayAmount > 0 && $staffPayAmount > 0) {
+            $staffDepositAmount = round($originDepositAmount * ($staffPayAmount / $originPayAmount), 2);
+            if ($staffDepositAmount > $staffPayAmount) {
+                $staffDepositAmount = $staffPayAmount;
+            }
+            $staffBalanceAmount = round(max($staffPayAmount - $staffDepositAmount, 0), 2);
+        }
+
+        $depositPaid = 0;
+        $balancePaid = 0;
+        if ($staffDepositAmount > 0) {
+            if ((int)($order['deposit_paid'] ?? 0) === 1 && $staffPaidAmount >= $staffDepositAmount) {
+                $depositPaid = 1;
+            }
+            if ((int)($order['balance_paid'] ?? 0) === 1 && $staffPaidAmount >= $staffPayAmount) {
+                $balancePaid = 1;
+            }
+        }
+
+        $order['service_amount'] = $serviceAmount;
+        $order['addon_amount'] = $addonAmount;
+        $order['total_amount'] = $visibleTotal;
+        $order['discount_amount'] = $staffDiscount;
+        $order['pay_amount'] = $staffPayAmount;
+        $order['paid_amount'] = $staffPaidAmount;
+        $order['unpaid_amount'] = round(max($staffPayAmount - $staffPaidAmount, 0), 2);
+        $order['deposit_amount'] = $staffDepositAmount;
+        $order['balance_amount'] = $staffBalanceAmount;
+        $order['deposit_paid'] = $depositPaid;
+        $order['balance_paid'] = $balancePaid;
+        if ($staffPayAmount <= 0) {
+            $order['pay_status'] = Order::PAY_STATUS_UNPAID;
+        } elseif ($staffPaidAmount >= $staffPayAmount) {
+            $order['pay_status'] = Order::PAY_STATUS_PAID;
+        }
+
+        return $order;
     }
 }

@@ -90,11 +90,10 @@ class DynamicController extends BaseAdminController
      */
     public function audit()
     {
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
-            return $this->fail('无权限操作');
-        }
         $params = (new DynamicValidate())->post()->goCheck('audit');
+        if ($response = $this->checkDynamicScope((int)$params['id'])) {
+            return $response;
+        }
         $result = DynamicLogic::audit((int)$params['id'], $this->adminId, (bool)$params['approved'], $params['remark'] ?? '');
         if (true === $result) {
             return $this->success('审核成功');
@@ -108,11 +107,10 @@ class DynamicController extends BaseAdminController
      */
     public function offline()
     {
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
-            return $this->fail('无权限操作');
-        }
         $params = (new DynamicValidate())->post()->goCheck('offline');
+        if ($response = $this->checkDynamicScope((int)$params['id'])) {
+            return $response;
+        }
         $result = DynamicLogic::offline((int)$params['id'], $this->adminId, $params['reason'] ?? '');
         if (true === $result) {
             return $this->success('下架成功');
@@ -126,11 +124,10 @@ class DynamicController extends BaseAdminController
      */
     public function setTop()
     {
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
-            return $this->fail('无权限操作');
-        }
         $params = (new DynamicValidate())->post()->goCheck('setTop');
+        if ($response = $this->checkDynamicScope((int)$params['id'])) {
+            return $response;
+        }
         $result = DynamicLogic::setTop((int)$params['id'], (int)$params['is_top']);
         if (true === $result) {
             return $this->success('设置成功');
@@ -144,11 +141,10 @@ class DynamicController extends BaseAdminController
      */
     public function setHot()
     {
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
-            return $this->fail('无权限操作');
-        }
         $params = (new DynamicValidate())->post()->goCheck('setHot');
+        if ($response = $this->checkDynamicScope((int)$params['id'])) {
+            return $response;
+        }
         $result = DynamicLogic::setHot((int)$params['id'], (int)$params['is_hot']);
         if (true === $result) {
             return $this->success('设置成功');

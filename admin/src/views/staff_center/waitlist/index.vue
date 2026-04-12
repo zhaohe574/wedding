@@ -1,6 +1,6 @@
 <template>
-    <div class="staff-center-waitlist">
-        <el-card class="!border-none" shadow="never">
+    <admin-page-shell class="staff-center-waitlist" title="我的候补">
+        <search-panel>
             <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item class="w-[180px]" label="候补编号">
                     <el-input v-model="queryParams.id" placeholder="输入候补编号" clearable @keyup.enter="resetPage" />
@@ -36,7 +36,7 @@
                     <el-button type="success" @click="handleBatchNotify">批量通知</el-button>
                 </el-form-item>
             </el-form>
-        </el-card>
+        </search-panel>
 
         <div class="mt-4 grid grid-cols-4 gap-4">
             <el-card class="!border-none" shadow="never">
@@ -135,7 +135,7 @@
                 <el-button @click="detailVisible = false">关闭</el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script setup lang="ts" name="staffCenterWaitlist">

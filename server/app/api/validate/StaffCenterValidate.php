@@ -25,6 +25,7 @@ class StaffCenterValidate extends BaseValidate
         'experience_years' => 'integer|egt:0',
         'profile' => 'max:500',
         'service_desc' => 'max:1000',
+        'long_detail' => 'max:60000',
         'tag_ids' => 'array',
 
         'title' => 'length:1,100',
@@ -75,6 +76,7 @@ class StaffCenterValidate extends BaseValidate
         'experience_years.egt' => '从业年限不能小于0',
         'profile.max' => '个人简介长度不能超过500',
         'service_desc.max' => '服务说明长度不能超过1000',
+        'long_detail.max' => '长图详情内容过长',
         'tag_ids.array' => '标签格式错误',
 
         'title.require' => '请输入标题',
@@ -117,7 +119,7 @@ class StaffCenterValidate extends BaseValidate
 
     public function sceneProfile(): StaffCenterValidate
     {
-        return $this->only(['name', 'avatar', 'mobile', 'category_id', 'experience_years', 'profile', 'service_desc', 'tag_ids'])
+        return $this->only(['name', 'avatar', 'mobile', 'category_id', 'experience_years', 'profile', 'service_desc', 'long_detail', 'tag_ids'])
             ->append('category_id', 'require');
     }
 

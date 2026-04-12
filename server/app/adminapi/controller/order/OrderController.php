@@ -12,6 +12,7 @@ use app\adminapi\lists\order\OrderLists;
 use app\adminapi\lists\order\OrderLogLists;
 use app\adminapi\logic\order\OrderLogic;
 use app\adminapi\validate\order\OrderValidate;
+use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\service\StaffService;
 
@@ -54,7 +55,134 @@ class OrderController extends BaseAdminController
         if ($result === null) {
             return $this->fail('订单不存在');
         }
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $result = $this->applyStaffVisibleOrderAmounts($result, $staffScopeId);
+            $items = $result['items'] ?? [];
+            $result['can_staff_manage_payment'] = $this->canStaffManageWholeOrder($result, $staffScopeId);
+            foreach ($items as $index => $item) {
+                if ((int)($item['staff_id'] ?? 0) === $staffScopeId) {
+                    continue;
+                }
+                $items[$index]['package_name'] = '--';
+                $items[$index]['package_description'] = '';
+                $items[$index]['price'] = 0;
+                $items[$index]['subtotal'] = 0;
+                $items[$index]['addons'] = [];
+                if (isset($items[$index]['item_meta']) && is_array($items[$index]['item_meta'])) {
+                    unset($items[$index]['item_meta']['label']);
+                }
+            }
+            $result['items'] = $items;
+            $result = array_merge($result, Order::buildPaymentSummaryFromState($result));
+            $result['refundable_amount'] = min(
+                (float)($result['refundable_amount'] ?? 0),
+                (float)($result['paid_amount'] ?? 0)
+            );
+            $result['can_admin_refund'] = $result['refundable_amount'] > 0
+                && !empty($result['can_admin_refund'])
+                && !empty($result['can_staff_manage_payment']);
+        }
         return $this->data($result);
+    }
+
+    /**
+     * @notes 订单详情按服务人员视角重算金额
+     */
+    protected function applyStaffVisibleOrderAmounts(array $order, int $staffScopeId): array
+    {
+        $items = $order['items'] ?? [];
+        $serviceAmount = 0.0;
+        $addonAmount = 0.0;
+
+        foreach ($items as $item) {
+            if ((int)($item['staff_id'] ?? 0) !== $staffScopeId) {
+                continue;
+            }
+
+            $subtotal = isset($item['subtotal']) ? (float)$item['subtotal'] : 0.0;
+            if ($subtotal <= 0) {
+                $price = (float)($item['price'] ?? 0);
+                $quantity = max((int)($item['quantity'] ?? 1), 1);
+                $subtotal = $price * $quantity;
+            }
+
+            $itemAddonAmount = 0.0;
+            foreach (($item['addons'] ?? []) as $addon) {
+                $itemAddonAmount += (float)($addon['subtotal'] ?? $addon['price'] ?? 0);
+            }
+
+            if ((int)($item['item_type'] ?? 1) === 1) {
+                $serviceAmount += $subtotal;
+            } else {
+                $addonAmount += $subtotal;
+            }
+            $addonAmount += round($itemAddonAmount, 2);
+        }
+
+        $serviceAmount = round($serviceAmount, 2);
+        $addonAmount = round($addonAmount, 2);
+        $visibleTotal = round($serviceAmount + $addonAmount, 2);
+        $originTotalAmount = (float)($order['total_amount'] ?? 0);
+        $originPayAmount = (float)($order['pay_amount'] ?? 0);
+        $originDepositAmount = (float)($order['deposit_amount'] ?? 0);
+        $originBalanceAmount = (float)($order['balance_amount'] ?? 0);
+        $discountTotal = (float)($order['discount_amount'] ?? 0);
+        $paidTotal = (float)($order['paid_amount'] ?? 0);
+
+        $staffDiscount = 0.0;
+        if ($originTotalAmount > 0 && $visibleTotal > 0) {
+            $staffDiscount = round($discountTotal * ($visibleTotal / $originTotalAmount), 2);
+        }
+
+        $staffPayAmount = round(max($visibleTotal - $staffDiscount, 0), 2);
+        $staffPaidAmount = 0.0;
+        if ($originPayAmount > 0 && $staffPayAmount > 0 && $paidTotal > 0) {
+            $staffPaidAmount = round($paidTotal * ($staffPayAmount / $originPayAmount), 2);
+            if ($staffPaidAmount > $staffPayAmount) {
+                $staffPaidAmount = $staffPayAmount;
+            }
+        }
+
+        $staffDepositAmount = 0.0;
+        $staffBalanceAmount = 0.0;
+        if ($originDepositAmount > 0 && $originPayAmount > 0 && $staffPayAmount > 0) {
+            $staffDepositAmount = round($originDepositAmount * ($staffPayAmount / $originPayAmount), 2);
+            if ($staffDepositAmount > $staffPayAmount) {
+                $staffDepositAmount = $staffPayAmount;
+            }
+            $staffBalanceAmount = round(max($staffPayAmount - $staffDepositAmount, 0), 2);
+        }
+
+        $depositPaid = 0;
+        $balancePaid = 0;
+        if ($staffDepositAmount > 0) {
+            if ((int)($order['deposit_paid'] ?? 0) === 1 && $staffPaidAmount >= $staffDepositAmount) {
+                $depositPaid = 1;
+            }
+            if ((int)($order['balance_paid'] ?? 0) === 1 && $staffPaidAmount >= $staffPayAmount) {
+                $balancePaid = 1;
+            }
+        }
+
+        $order['service_amount'] = $serviceAmount;
+        $order['addon_amount'] = $addonAmount;
+        $order['total_amount'] = $visibleTotal;
+        $order['discount_amount'] = $staffDiscount;
+        $order['pay_amount'] = $staffPayAmount;
+        $order['paid_amount'] = $staffPaidAmount;
+        $order['unpaid_amount'] = round(max($staffPayAmount - $staffPaidAmount, 0), 2);
+        $order['deposit_amount'] = $staffDepositAmount;
+        $order['balance_amount'] = $staffBalanceAmount;
+        $order['deposit_paid'] = $depositPaid;
+        $order['balance_paid'] = $balancePaid;
+        if ($staffPayAmount <= 0) {
+            $order['pay_status'] = Order::PAY_STATUS_UNPAID;
+        } elseif ($staffPaidAmount >= $staffPayAmount) {
+            $order['pay_status'] = Order::PAY_STATUS_PAID;
+        }
+
+        return $order;
     }
 
     /**
@@ -110,6 +238,9 @@ class OrderController extends BaseAdminController
     {
         $params = (new OrderValidate())->post()->goCheck('cancel');
         if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+        if ($response = $this->checkWholeOrderManageScope((int)$params['id'])) {
             return $response;
         }
         $result = OrderLogic::cancel((int)$params['id'], $this->adminId, $params['reason'] ?? '');
@@ -185,6 +316,9 @@ class OrderController extends BaseAdminController
         if ($response = $this->checkOrderScope((int)$params['id'])) {
             return $response;
         }
+        if ($response = $this->checkWholeOrderManageScope((int)$params['id'])) {
+            return $response;
+        }
         $params['admin_id'] = $this->adminId;
         $result = OrderLogic::confirmOfflinePay($params);
         if (true === $result) {
@@ -201,6 +335,9 @@ class OrderController extends BaseAdminController
     {
         $params = (new OrderValidate())->post()->goCheck('auditVoucher');
         if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+        if ($response = $this->checkWholeOrderManageScope((int)$params['id'])) {
             return $response;
         }
         $params['admin_id'] = $this->adminId;
@@ -399,6 +536,42 @@ class OrderController extends BaseAdminController
             return $this->fail('无权限操作');
         }
         return null;
+    }
+
+    /**
+     * @notes 校验 staff 是否可管理整单支付动作（必须整单都归属当前 staff）
+     * @param int $orderId
+     * @return \think\response\Json|null
+     */
+    protected function checkWholeOrderManageScope(int $orderId)
+    {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId <= 0) {
+            return null;
+        }
+        $totalCount = OrderItem::where('order_id', $orderId)->count();
+        $ownedCount = OrderItem::where('order_id', $orderId)->where('staff_id', $staffScopeId)->count();
+        if ($totalCount <= 0 || $totalCount !== $ownedCount) {
+            return $this->fail('共享订单不支持当前支付/退款操作');
+        }
+        return null;
+    }
+
+    /**
+     * @notes 判断详情是否允许当前 staff 管理整单支付动作
+     */
+    protected function canStaffManageWholeOrder(array $order, int $staffScopeId): bool
+    {
+        $items = $order['items'] ?? [];
+        if (empty($items)) {
+            return false;
+        }
+        foreach ($items as $item) {
+            if ((int)($item['staff_id'] ?? 0) !== $staffScopeId) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
