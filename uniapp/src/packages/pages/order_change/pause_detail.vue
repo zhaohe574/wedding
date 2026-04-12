@@ -86,7 +86,9 @@
                             </text>
                         </view>
                         <view class="order-change-comparison__arrow">~</view>
-                        <view class="order-change-comparison__item order-change-comparison__item--highlight">
+                        <view
+                            class="order-change-comparison__item order-change-comparison__item--highlight"
+                        >
                             <text class="order-change-comparison__label">结束日期</text>
                             <text class="order-change-comparison__value">
                                 {{ getValueText(detail.pause_end_date) }}
@@ -97,7 +99,12 @@
                         <view class="order-change-summary-grid__item">
                             <text class="order-change-summary-grid__label">计划天数</text>
                             <text class="order-change-summary-grid__value">
-                                {{ getValueText(detail.pause_days ? `${detail.pause_days} 天` : '', '待补充') }}
+                                {{
+                                    getValueText(
+                                        detail.pause_days ? `${detail.pause_days} 天` : '',
+                                        '待补充'
+                                    )
+                                }}
                             </text>
                         </view>
                         <view class="order-change-summary-grid__item">
@@ -105,7 +112,9 @@
                             <text class="order-change-summary-grid__value">
                                 {{
                                     getValueText(
-                                        detail.actual_pause_days ? `${detail.actual_pause_days} 天` : '',
+                                        detail.actual_pause_days
+                                            ? `${detail.actual_pause_days} 天`
+                                            : '',
                                         '尚未结束'
                                     )
                                 }}
@@ -247,7 +256,10 @@ const remainDaysText = computed(() => {
 })
 const statusMetrics = computed(() => [
     { label: '申请时间', value: getValueText(detail.value?.create_time, '-') },
-    { label: '暂停周期', value: getValueText(detail.value?.pause_days ? `${detail.value.pause_days} 天` : '', '-') },
+    {
+        label: '暂停周期',
+        value: getValueText(detail.value?.pause_days ? `${detail.value.pause_days} 天` : '', '-')
+    },
     { label: '当前状态', value: remainDaysText.value }
 ])
 

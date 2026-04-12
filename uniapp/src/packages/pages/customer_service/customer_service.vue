@@ -5,102 +5,108 @@
 
         <view class="consult-page">
             <view class="consult-shell">
-            <view class="consult-hero">
-                <view class="consult-badge">{{
-                    state.entryType === 'advisor' ? '专属顾问' : '统一客服'
-                }}</view>
-                <view class="consult-title">{{
-                    state.entryType === 'advisor' ? '联系顾问' : '联系客服'
-                }}</view>
-                <view class="consult-subtitle">{{ sceneTitle }}</view>
-            </view>
+                <view class="consult-hero">
+                    <view class="consult-badge">{{
+                        state.entryType === 'advisor' ? '专属顾问' : '统一客服'
+                    }}</view>
+                    <view class="consult-title">{{
+                        state.entryType === 'advisor' ? '联系顾问' : '联系客服'
+                    }}</view>
+                    <view class="consult-subtitle">{{ sceneTitle }}</view>
+                </view>
 
-            <view v-if="state.loading" class="loading-card">
-                <tn-icon name="loading" size="40" :color="$theme.primaryColor" />
-                <text>正在匹配顾问信息...</text>
-            </view>
+                <view v-if="state.loading" class="loading-card">
+                    <tn-icon name="loading" size="40" :color="$theme.primaryColor" />
+                    <text>正在匹配顾问信息...</text>
+                </view>
 
-            <view v-else-if="state.error" class="error-card">
-                <tn-icon name="warning" size="40" color="#F56C6C" />
-                <text class="error-text">{{ state.error }}</text>
-                <view class="retry-btn" @click="loadConsultContact">重试</view>
-            </view>
+                <view v-else-if="state.error" class="error-card">
+                    <tn-icon name="warning" size="40" color="#F56C6C" />
+                    <text class="error-text">{{ state.error }}</text>
+                    <view class="retry-btn" @click="loadConsultContact">重试</view>
+                </view>
 
-            <view v-else class="contact-card">
-                <view class="advisor-header">
-                    <image
-                        v-if="contact.avatar"
-                        class="advisor-avatar"
-                        :src="contact.avatar"
-                        mode="aspectFill"
-                    />
-                    <view v-else class="advisor-avatar avatar-placeholder">
-                        {{ contact.name?.slice(0, 1) || '顾' }}
-                    </view>
-                    <view class="advisor-main">
-                        <view class="advisor-name">{{ contact.name }}</view>
-                        <view class="advisor-role">{{ contact.role }}</view>
-                        <view v-if="contact.service_time" class="advisor-service-time">
-                            服务时间：{{ contact.service_time }}
+                <view v-else class="contact-card">
+                    <view class="advisor-header">
+                        <image
+                            v-if="contact.avatar"
+                            class="advisor-avatar"
+                            :src="contact.avatar"
+                            mode="aspectFill"
+                        />
+                        <view v-else class="advisor-avatar avatar-placeholder">
+                            {{ contact.name?.slice(0, 1) || '顾' }}
+                        </view>
+                        <view class="advisor-main">
+                            <view class="advisor-name">{{ contact.name }}</view>
+                            <view class="advisor-role">{{ contact.role }}</view>
+                            <view v-if="contact.service_time" class="advisor-service-time">
+                                服务时间：{{ contact.service_time }}
+                            </view>
                         </view>
                     </view>
-                </view>
 
-                <view class="contact-panel">
-                    <view class="contact-panel-title">联系信息</view>
-                    <view class="contact-row" v-if="contact.mobile">
-                        <text class="label">手机号</text>
-                        <text class="value">{{ contact.mobile }}</text>
+                    <view class="contact-panel">
+                        <view class="contact-panel-title">联系信息</view>
+                        <view class="contact-row" v-if="contact.mobile">
+                            <text class="label">手机号</text>
+                            <text class="value">{{ contact.mobile }}</text>
+                        </view>
+                        <view class="contact-row" v-if="contact.wechat_alias">
+                            <text class="label">企微号</text>
+                            <text class="value">{{ contact.wechat_alias }}</text>
+                        </view>
+                        <view class="contact-row" v-if="contact.contact_link">
+                            <text class="label">联系入口</text>
+                            <text class="value value-link">已配置</text>
+                        </view>
                     </view>
-                    <view class="contact-row" v-if="contact.wechat_alias">
-                        <text class="label">企微号</text>
-                        <text class="value">{{ contact.wechat_alias }}</text>
-                    </view>
-                    <view class="contact-row" v-if="contact.contact_link">
-                        <text class="label">联系入口</text>
-                        <text class="value value-link">已配置</text>
-                    </view>
-                </view>
 
-                <view class="qr-section">
-                    <view class="qr-title">
-                        {{ state.entryType === 'advisor' ? '专属顾问二维码' : '统一客服二维码' }}
+                    <view class="qr-section">
+                        <view class="qr-title">
+                            {{
+                                state.entryType === 'advisor' ? '专属顾问二维码' : '统一客服二维码'
+                            }}
+                        </view>
+                        <image
+                            v-if="contact.contact_qr_code"
+                            class="qr-image"
+                            :src="contact.contact_qr_code"
+                            mode="aspectFit"
+                            show-menu-by-longpress
+                        />
+                        <view v-else class="qr-empty">暂未配置二维码，请使用下方联系方式</view>
                     </view>
-                    <image
-                        v-if="contact.contact_qr_code"
-                        class="qr-image"
-                        :src="contact.contact_qr_code"
-                        mode="aspectFit"
-                        show-menu-by-longpress
-                    />
-                    <view v-else class="qr-empty">暂未配置二维码，请使用下方联系方式</view>
-                </view>
 
-                <view class="action-list">
-                    <view
-                        v-if="contact.wechat_alias"
-                        class="action-btn primary"
-                        @click="copyWechatAlias"
-                    >
-                        复制企微号
+                    <view class="action-list">
+                        <view
+                            v-if="contact.wechat_alias"
+                            class="action-btn primary"
+                            @click="copyWechatAlias"
+                        >
+                            复制企微号
+                        </view>
+                        <view
+                            v-if="contact.mobile"
+                            class="action-btn secondary"
+                            @click="handleCall"
+                        >
+                            拨打电话
+                        </view>
+                        <view
+                            v-if="contact.contact_link"
+                            class="action-btn secondary"
+                            @click="openContactLink"
+                        >
+                            打开联系入口
+                        </view>
                     </view>
-                    <view v-if="contact.mobile" class="action-btn secondary" @click="handleCall">
-                        拨打电话
-                    </view>
-                    <view
-                        v-if="contact.contact_link"
-                        class="action-btn secondary"
-                        @click="openContactLink"
-                    >
-                        打开联系入口
-                    </view>
-                </view>
 
-                <view class="tips-card">
-                    <view class="tips-title">联系说明</view>
-                    <view class="tips-text">{{ contact.tips || defaultTips }}</view>
+                    <view class="tips-card">
+                        <view class="tips-title">联系说明</view>
+                        <view class="tips-text">{{ contact.tips || defaultTips }}</view>
+                    </view>
                 </view>
-            </view>
             </view>
         </view>
     </PageShell>

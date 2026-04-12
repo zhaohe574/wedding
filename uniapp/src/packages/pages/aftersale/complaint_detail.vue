@@ -21,26 +21,36 @@
                     </view>
                     <view class="aftersale-detail-card__kv">
                         <text class="aftersale-detail-card__label">关联订单</text>
-                        <text class="aftersale-detail-card__value">{{ detail.order?.order_sn || '未关联' }}</text>
+                        <text class="aftersale-detail-card__value">{{
+                            detail.order?.order_sn || '未关联'
+                        }}</text>
                     </view>
                     <view class="aftersale-detail-card__kv">
                         <text class="aftersale-detail-card__label">涉及人员</text>
-                        <text class="aftersale-detail-card__value">{{ detail.staff?.name || '平台待核查' }}</text>
+                        <text class="aftersale-detail-card__value">{{
+                            detail.staff?.name || '平台待核查'
+                        }}</text>
                     </view>
                     <view class="aftersale-detail-card__kv">
                         <text class="aftersale-detail-card__label">联系人</text>
-                        <text class="aftersale-detail-card__value">{{ detail.contact_name || '未填写' }}</text>
+                        <text class="aftersale-detail-card__value">{{
+                            detail.contact_name || '未填写'
+                        }}</text>
                     </view>
                     <view class="aftersale-detail-card__kv">
                         <text class="aftersale-detail-card__label">联系电话</text>
-                        <text class="aftersale-detail-card__value">{{ detail.contact_mobile || '未填写' }}</text>
+                        <text class="aftersale-detail-card__value">{{
+                            detail.contact_mobile || '未填写'
+                        }}</text>
                     </view>
                 </BaseCard>
 
                 <BaseCard variant="surface" scene="consumer" class="aftersale-detail-card">
                     <text class="aftersale-detail-card__title">投诉内容</text>
                     <text class="aftersale-detail-card__headline">{{ detail.title }}</text>
-                    <text v-if="detail.content" class="aftersale-detail-card__paragraph">{{ detail.content }}</text>
+                    <text v-if="detail.content" class="aftersale-detail-card__paragraph">{{
+                        detail.content
+                    }}</text>
                     <view v-if="images.length" class="aftersale-detail-card__gallery">
                         <image
                             v-for="(img, index) in images"
@@ -67,21 +77,21 @@
                     <text class="aftersale-detail-card__title">处理说明</text>
                     <view class="aftersale-detail-card__kv">
                         <text class="aftersale-detail-card__label">期望结果</text>
-                        <text class="aftersale-detail-card__value">{{ detail.expect_result || '未填写' }}</text>
+                        <text class="aftersale-detail-card__value">{{
+                            detail.expect_result || '未填写'
+                        }}</text>
                     </view>
                     <view class="aftersale-detail-card__kv">
                         <text class="aftersale-detail-card__label">平台处理</text>
-                        <text class="aftersale-detail-card__value">{{ detail.handle_result || '处理中' }}</text>
+                        <text class="aftersale-detail-card__value">{{
+                            detail.handle_result || '处理中'
+                        }}</text>
                     </view>
                 </BaseCard>
             </view>
         </view>
 
-        <ActionArea
-            v-if="detail && detail.status === 2 && !detail.satisfaction"
-            sticky
-            safeBottom
-        >
+        <ActionArea v-if="detail && detail.status === 2 && !detail.satisfaction" sticky safeBottom>
             <view class="aftersale-detail-page__actions">
                 <BaseButton variant="primary" size="lg" block @click="showRatePopup = true">
                     评价处理结果
@@ -142,7 +152,10 @@ const bannerBadges = computed(() => [
 ])
 const bannerMetrics = computed(() => [
     { label: '提交时间', value: String(detail.value?.create_time || '-') },
-    { label: '满意度', value: detail.value?.satisfaction ? `${detail.value.satisfaction} 分` : '待评价' }
+    {
+        label: '满意度',
+        value: detail.value?.satisfaction ? `${detail.value.satisfaction} 分` : '待评价'
+    }
 ])
 
 const getDetail = async () => {

@@ -13,7 +13,6 @@ use app\common\model\review\ReviewTag;
 use app\common\model\review\ReviewTagRelation;
 use app\common\model\review\ReviewReply;
 use app\common\model\review\ReviewLike;
-use app\common\model\review\ReviewAppeal;
 use app\common\model\review\ReviewRewardConfig;
 use app\common\model\review\ReviewShareReward;
 use app\common\model\review\StaffReviewStats;
@@ -485,47 +484,6 @@ class ReviewLogic extends BaseLogic
             'avg_score' => 5.00,
             'good_rate' => 100,
         ];
-    }
-
-    /**
-     * @notes 提交申诉
-     * @param array $params
-     * @return bool
-     */
-    public static function submitAppeal(array $params): bool
-    {
-        try {
-            $review = Review::find($params['review_id']);
-            if (!$review) {
-                self::setError('评价不存在');
-                return false;
-            }
-
-            // 检查是否已申诉
-            $exists = ReviewAppeal::where([
-                'review_id' => $params['review_id'],
-                'appeal_user_id' => $params['appeal_user_id'],
-                'status' => ReviewAppeal::STATUS_PENDING,
-            ])->find();
-
-            if ($exists) {
-                self::setError('已有待处理的申诉');
-                return false;
-            }
-
-            ReviewAppeal::createAppeal([
-                'review_id' => $params['review_id'],
-                'appeal_user_id' => $params['appeal_user_id'],
-                'appeal_type' => $params['appeal_type'],
-                'appeal_reason' => $params['appeal_reason'],
-                'evidence_images' => $params['evidence_images'] ?? [],
-            ]);
-
-            return true;
-        } catch (\Exception $e) {
-            self::setError($e->getMessage());
-            return false;
-        }
     }
 
     /**

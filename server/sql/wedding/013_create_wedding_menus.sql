@@ -93,10 +93,6 @@ VALUES (@review_menu_id, 'C', '评价列表', '', 100, 'review.review/lists', 'l
 INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`) 
 VALUES (@review_menu_id, 'C', '标签管理', '', 90, 'review.review_tag/lists', 'tag', 'review/tag/index', '', '', 0, 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 
--- 申诉管理
-INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`) 
-VALUES (@review_menu_id, 'C', '申诉管理', '', 80, 'review.review_appeal/lists', 'appeal', 'review/appeal/index', '', '', 0, 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
-
 -- 敏感词管理
 INSERT INTO `la_system_menu`(`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`) 
 VALUES (@review_menu_id, 'C', '敏感词管理', '', 70, 'review.sensitive_word/lists', 'sensitive', 'review/sensitive/index', '', '', 0, 1, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());

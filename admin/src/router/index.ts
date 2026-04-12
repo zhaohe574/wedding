@@ -38,8 +38,6 @@ const permissionAliasMap = [
     ['dynamic.dynamic/', 'growth.dynamic/'],
     ['dynamic.dynamicComment/', 'growth.dynamicComment/'],
     ['review.review/', 'growth.review/'],
-    ['review.reviewAppeal/', 'growth.reviewAppeal/'],
-    ['review.review_appeal/', 'growth.reviewAppeal/'],
     ['review.reviewTag/', 'growth.reviewTag/'],
     ['review.review_tag/', 'growth.reviewTag/'],
     ['review.reviewShareReward/', 'growth.reviewShareReward/'],

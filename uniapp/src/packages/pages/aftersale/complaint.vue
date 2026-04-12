@@ -24,7 +24,9 @@
                             class="aftersale-record-card"
                             @click="goDetail(item.id)"
                         >
-                            <text class="aftersale-record-card__title">{{ item.title || '未命名投诉' }}</text>
+                            <text class="aftersale-record-card__title">{{
+                                item.title || '未命名投诉'
+                            }}</text>
                             <text class="aftersale-record-card__meta">
                                 关联订单：{{ getOrderText(item) }}
                             </text>
@@ -35,7 +37,11 @@
                             <view class="aftersale-record-card__footer">
                                 <text
                                     class="aftersale-record-card__status"
-                                    :class="getBadgeToneClass(getComplaintStatusMeta(Number(item.status || 0)).tone)"
+                                    :class="
+                                        getBadgeToneClass(
+                                            getComplaintStatusMeta(Number(item.status || 0)).tone
+                                        )
+                                    "
                                 >
                                     {{ getComplaintStatusMeta(Number(item.status || 0)).label }}
                                 </text>
@@ -66,7 +72,12 @@ import { onLoad } from '@dcloudio/uni-app'
 import AfterSaleEmptyState from './components/AfterSaleEmptyState.vue'
 import AfterSaleFilterTabs from './components/AfterSaleFilterTabs.vue'
 import { useAftersaleListPage } from './composables/useAftersaleListPage'
-import { formatSubmitTimeLabel, getBadgeToneClass, getComplaintStatusMeta, getValueText } from './shared'
+import {
+    formatSubmitTimeLabel,
+    getBadgeToneClass,
+    getComplaintStatusMeta,
+    getValueText
+} from './shared'
 
 const $theme = useThemeStore()
 const { paging, dataList, currentStatus, changeStatus, applyQueryStatus, initStatus } =
@@ -121,8 +132,7 @@ onLoad((options: any) => {
     display: flex;
     flex-direction: column;
     gap: 16rpx;
-    padding: 12rpx var(--wm-space-page-x, 37rpx)
-        calc(var(--wm-safe-bottom-action, 160rpx) + 18rpx);
+    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(var(--wm-safe-bottom-action, 160rpx) + 18rpx);
 }
 
 .aftersale-list-page__filters {

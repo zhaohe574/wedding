@@ -123,6 +123,14 @@
                             </router-link>
                         </el-button>
                         <el-button
+                            v-perms="['ops.staffCertificate/lists']"
+                            type="primary"
+                            link
+                            @click="goCertificateList(row.id)"
+                        >
+                            证书
+                        </el-button>
+                        <el-button
                             v-perms="['ops.staff/delete']"
                             type="danger"
                             link
@@ -148,9 +156,12 @@ import { useDictOptions } from '@/hooks/useDictOptions'
 import { usePaging } from '@/hooks/usePaging'
 import { getRoutePath } from '@/router'
 import feedback from '@/utils/feedback'
+import { useRouter } from 'vue-router'
 
 // 新增/编辑页路径：优先从权限路由获取，若无对应菜单则兜底（需执行 015_add_staff_add_edit_menu.sql）
 const staffEditPath = computed(() => getRoutePath('ops.staff/add:edit') || '/service/staff/edit')
+const certificateListPath = computed(() => getRoutePath('ops.staffCertificate/lists') || '/staff/certificate')
+const router = useRouter()
 
 const queryParams = reactive({
     name: '',
@@ -223,6 +234,13 @@ const handleDelete = async (id: number) => {
     await staffDelete({ id })
     getLists()
     getStatistics()
+}
+
+const goCertificateList = (staffId: number) => {
+    router.push({
+        path: certificateListPath.value,
+        query: { staff_id: staffId },
+    })
 }
 
 onActivated(() => {

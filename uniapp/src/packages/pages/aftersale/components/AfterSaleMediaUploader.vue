@@ -17,7 +17,10 @@
             </view>
         </view>
 
-        <view v-if="localList.length || variant !== 'ticket-evidence'" class="aftersale-media__grid">
+        <view
+            v-if="localList.length || variant !== 'ticket-evidence'"
+            class="aftersale-media__grid"
+        >
             <view
                 v-for="(item, index) in localList"
                 :key="`${item}-${index}`"
@@ -44,7 +47,11 @@
                 :class="{ 'is-uploading': uploading }"
                 @click="chooseFile"
             >
-                <tn-icon :name="kind === 'image' ? 'camera' : 'play-circle'" size="30" color="#B4ACA8" />
+                <tn-icon
+                    :name="kind === 'image' ? 'camera' : 'play-circle'"
+                    size="30"
+                    color="#B4ACA8"
+                />
                 <text class="aftersale-media__adder-title">
                     {{ uploading ? '上传中' : addText }}
                 </text>

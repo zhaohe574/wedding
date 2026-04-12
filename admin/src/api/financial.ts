@@ -218,39 +218,3 @@ export function getCostTypeOptions() {
     return request.get({ url: '/finance.cost/typeOptions' })
 }
 
-// ==================== 发票管理 ====================
-
-// 发票列表
-export function getInvoiceList(params?: any) {
-    return request.get({ url: '/finance.invoice/lists', params })
-}
-
-// 发票详情
-export function getInvoiceDetail(params: { id: number }) {
-    return request.get({ url: '/finance.invoice/detail', params })
-}
-
-// 开票
-export function issueInvoice(data: { id: number; invoice_no: string; invoice_url?: string }) {
-    return request.post({ url: '/finance.invoice/issue', data })
-}
-
-// 开票失败
-export function failInvoice(data: { id: number; fail_reason: string }) {
-    return request.post({ url: '/finance.invoice/markFailed', data })
-}
-
-// 作废发票
-export function voidInvoice(data: { id: number; void_reason: string }) {
-    return request.post({ url: '/finance.invoice/void', data })
-}
-
-// 发票统计
-export function getInvoiceStatistics(params?: any) {
-    return request.get({ url: '/finance.invoice/statistics', params })
-}
-
-// 发票类型选项
-export function getInvoiceTypeOptions() {
-    return request.get({ url: '/finance.invoice/typeOptions' })
-}

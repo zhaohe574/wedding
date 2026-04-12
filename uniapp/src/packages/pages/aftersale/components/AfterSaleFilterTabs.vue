@@ -9,7 +9,10 @@
                 @click="handleChange(item.value)"
             >
                 <text class="aftersale-filter-tabs__label">{{ item.label }}</text>
-                <text v-if="showCount && item.count !== undefined" class="aftersale-filter-tabs__count">
+                <text
+                    v-if="showCount && item.count !== undefined"
+                    class="aftersale-filter-tabs__count"
+                >
                     {{ item.count }}
                 </text>
             </view>

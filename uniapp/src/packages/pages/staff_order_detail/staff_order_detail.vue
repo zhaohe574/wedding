@@ -325,7 +325,8 @@ const statusConfig: Record<string, Omit<StatusDescriptor, 'badgeText'>> = {
         badgeModifier: 'success',
         tone: 'success',
         title: '订单待服务，可开始履约',
-        description: '客户已完成首笔支付或全款支付，订单已进入待服务阶段，请确认现场安排后开始履约。'
+        description:
+            '客户已完成首笔支付或全款支付，订单已进入待服务阶段，请确认现场安排后开始履约。'
     },
     in_service: {
         badgeModifier: 'success',
@@ -859,7 +860,10 @@ const clearPayCountdown = () => {
 const syncConfirmCountdown = (seconds: number | string) => {
     clearConfirmCountdown()
     confirmCountdownSeconds.value = Math.max(Number(seconds || 0), 0)
-    if (Number(order.value?.order_status ?? -1) !== 0 || Number(order.value?.confirm_deadline_time || 0) <= 0) {
+    if (
+        Number(order.value?.order_status ?? -1) !== 0 ||
+        Number(order.value?.confirm_deadline_time || 0) <= 0
+    ) {
         return
     }
 
@@ -884,7 +888,10 @@ const syncConfirmCountdown = (seconds: number | string) => {
 const syncPayCountdown = (seconds: number | string) => {
     clearPayCountdown()
     payCountdownSeconds.value = Math.max(Number(seconds || 0), 0)
-    if (Number(order.value?.order_status ?? -1) !== 1 || Number(order.value?.pay_deadline_time || 0) <= 0) {
+    if (
+        Number(order.value?.order_status ?? -1) !== 1 ||
+        Number(order.value?.pay_deadline_time || 0) <= 0
+    ) {
         return
     }
 
@@ -969,7 +976,9 @@ const handleConfirm = () => {
                     uni.showToast({ title: successText, icon: 'success' })
                 } catch (error: any) {
                     const msg =
-                        typeof error === 'string' ? error : error?.msg || error?.message || '操作失败'
+                        typeof error === 'string'
+                            ? error
+                            : error?.msg || error?.message || '操作失败'
                     uni.showToast({ title: msg, icon: 'none' })
                 }
             }
@@ -990,7 +999,9 @@ const handleConfirm = () => {
                     uni.showToast({ title: '开始履约成功', icon: 'success' })
                 } catch (error: any) {
                     const msg =
-                        typeof error === 'string' ? error : error?.msg || error?.message || '操作失败'
+                        typeof error === 'string'
+                            ? error
+                            : error?.msg || error?.message || '操作失败'
                     uni.showToast({ title: msg, icon: 'none' })
                 }
             }

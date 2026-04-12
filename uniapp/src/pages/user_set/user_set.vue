@@ -126,7 +126,9 @@
                                 </view>
                                 <view class="settings-item__copy">
                                     <text class="settings-item__title">服务协议</text>
-                                    <text class="settings-item__desc">查看预约、履约与售后规则</text>
+                                    <text class="settings-item__desc"
+                                        >查看预约、履约与售后规则</text
+                                    >
                                 </view>
                             </view>
                             <view class="settings-item__tail">
@@ -190,7 +192,9 @@
                             </view>
                             <view class="settings-popup__item-copy">
                                 <text class="settings-popup__item-title">修改密码</text>
-                                <text class="settings-popup__item-desc">适用于当前账号仍记得原密码</text>
+                                <text class="settings-popup__item-desc"
+                                    >适用于当前账号仍记得原密码</text
+                                >
                             </view>
                             <tn-icon name="right" :size="28" color="#C8C9CC" />
                         </view>
@@ -203,7 +207,9 @@
                             </view>
                             <view class="settings-popup__item-copy">
                                 <text class="settings-popup__item-title">忘记密码</text>
-                                <text class="settings-popup__item-desc">通过验证流程重新设置密码</text>
+                                <text class="settings-popup__item-desc"
+                                    >通过验证流程重新设置密码</text
+                                >
                             </view>
                             <tn-icon name="right" :size="28" color="#C8C9CC" />
                         </view>

@@ -161,18 +161,4 @@ class ReviewController extends BaseApiController
         return $this->success('', $result);
     }
 
-    /**
-     * @notes 提交申诉
-     * @return \think\response\Json
-     */
-    public function submitAppeal()
-    {
-        $params = (new ReviewValidate())->post()->goCheck('appeal');
-        $params['appeal_user_id'] = $this->userId;
-        $result = ReviewLogic::submitAppeal($params);
-        if ($result === false) {
-            return $this->fail(ReviewLogic::getError());
-        }
-        return $this->success('申诉已提交');
-    }
 }

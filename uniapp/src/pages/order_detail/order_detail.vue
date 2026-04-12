@@ -125,7 +125,9 @@
                     <view v-if="serviceRelatedRows.length" class="service-addon-section">
                         <view class="service-addon-section__header">
                             <text class="service-addon-section__title">协作服务</text>
-                            <text class="service-addon-section__meta">共 {{ serviceRelatedRows.length }} 项</text>
+                            <text class="service-addon-section__meta"
+                                >共 {{ serviceRelatedRows.length }} 项</text
+                            >
                         </view>
                         <view class="service-addon-list">
                             <view
@@ -138,9 +140,10 @@
                                         <text class="service-addon-item__title">{{
                                             item.title
                                         }}</text>
-                                        <text class="service-addon-item__type service-addon-item__type--related">{{
-                                            item.typeText
-                                        }}</text>
+                                        <text
+                                            class="service-addon-item__type service-addon-item__type--related"
+                                            >{{ item.typeText }}</text
+                                        >
                                     </view>
                                     <text v-if="item.metaText" class="service-addon-item__meta">
                                         {{ item.metaText }}
@@ -349,8 +352,12 @@
                                         </text>
                                     </view>
                                     <view class="refund-item__meta">
-                                        <text>{{ getRefundItemStatusText(Number(item.refund_status || 0)) }}</text>
-                                        <text v-if="item.out_refund_no">单号：{{ item.out_refund_no }}</text>
+                                        <text>{{
+                                            getRefundItemStatusText(Number(item.refund_status || 0))
+                                        }}</text>
+                                        <text v-if="item.out_refund_no"
+                                            >单号：{{ item.out_refund_no }}</text
+                                        >
                                     </view>
                                     <text v-if="item.refund_msg" class="refund-item__desc">
                                         {{ item.refund_msg }}
@@ -866,9 +873,10 @@ const serviceCardTitle = computed(() => {
     return String(primaryPackageName.value || '').trim() || '婚礼服务订单'
 })
 const paymentChannel = computed(() => resolvePaymentChannel(order.value))
-const paymentChannelDesc = computed(() =>
-    String(order.value?.payment_channel_desc || '').trim() ||
-    (paymentChannel.value === 2 ? '线下支付' : '线上支付')
+const paymentChannelDesc = computed(
+    () =>
+        String(order.value?.payment_channel_desc || '').trim() ||
+        (paymentChannel.value === 2 ? '线下支付' : '线上支付')
 )
 const needPayAmount = computed(() => {
     if (!order.value) return 0
@@ -879,9 +887,7 @@ const showOfflineVoucherCard = computed(
 )
 const showVoucherPending = computed(
     () =>
-        !!order.value &&
-        paymentChannel.value === 2 &&
-        Number(order.value.pay_voucher_status) === 0
+        !!order.value && paymentChannel.value === 2 && Number(order.value.pay_voucher_status) === 0
 )
 const showConfirmCountdown = computed(
     () =>
@@ -897,18 +903,15 @@ const confirmTimeoutActionText = computed(() =>
 )
 const showConfirmTimeoutAction = computed(
     () =>
-        !!order.value &&
-        Number(order.value.order_status) === 0 &&
-        !!confirmTimeoutActionText.value
+        !!order.value && Number(order.value.order_status) === 0 && !!confirmTimeoutActionText.value
 )
 const showPayCountdown = computed(() => !!order.value && payCountdownSeconds.value > 0)
 const payCountdownText = computed(() => formatCountdown(payCountdownSeconds.value))
-const payTimeoutActionText = computed(() => String(order.value?.pay_timeout_action_desc || '').trim())
+const payTimeoutActionText = computed(() =>
+    String(order.value?.pay_timeout_action_desc || '').trim()
+)
 const showPayTimeoutAction = computed(
-    () =>
-        !!order.value &&
-        Number(order.value.order_status) === 1 &&
-        !!payTimeoutActionText.value
+    () => !!order.value && Number(order.value.order_status) === 1 && !!payTimeoutActionText.value
 )
 const canPayOnline = computed(
     () =>
@@ -941,18 +944,23 @@ const statusDescription = computed(
                     : paymentChannel.value === 2
                     ? showPayCountdown.value
                         ? `请在 ${payCountdownText.value} 内完成线下付款并上传支付凭证。${
-                              payTimeoutActionText.value ? `超时后将${payTimeoutActionText.value}。` : ''
+                              payTimeoutActionText.value
+                                  ? `超时后将${payTimeoutActionText.value}。`
+                                  : ''
                           }`
                         : '该订单需线下付款，请完成付款后上传支付凭证，等待后台审核。'
                     : showPayCountdown.value
                     ? `请在 ${payCountdownText.value} 内完成支付。${
-                          payTimeoutActionText.value ? `超时后将${payTimeoutActionText.value}。` : ''
+                          payTimeoutActionText.value
+                              ? `超时后将${payTimeoutActionText.value}。`
+                              : ''
                       }`
                     : '请尽快完成支付，系统会自动计算当前应付金额。',
                 2: '订单已进入待服务，后台开始服务后将进入执行阶段。',
-                3: Number(order.value?.can_user_complete || 0) === 1
-                    ? '服务进行中，完成后可在这里确认完成。'
-                    : '服务进行中，请等待后台或服务人员推进后续状态。',
+                3:
+                    Number(order.value?.can_user_complete || 0) === 1
+                        ? '服务进行中，完成后可在这里确认完成。'
+                        : '服务进行中，请等待后台或服务人员推进后续状态。',
                 4: '本次服务已完成，感谢你的信任。',
                 5: '订单已评价，服务流程已闭环。',
                 6: '订单已取消，如需继续预约可重新下单。',
@@ -1055,7 +1063,9 @@ const progressItems = computed(() => [
                 ? '已完成'
                 : showConfirmCountdown.value
                 ? `${confirmCountdownText.value}${
-                      confirmTimeoutActionText.value ? `，超时后${confirmTimeoutActionText.value}` : ''
+                      confirmTimeoutActionText.value
+                          ? `，超时后${confirmTimeoutActionText.value}`
+                          : ''
                   }`
                 : '待确认'
     },
@@ -1121,7 +1131,10 @@ const primaryVisibleAction = computed(() => {
         }
     }
 
-    if (Number(order.value.order_status) === 3 && Number(order.value?.can_user_complete || 0) === 1) {
+    if (
+        Number(order.value.order_status) === 3 &&
+        Number(order.value?.can_user_complete || 0) === 1
+    ) {
         return {
             key: 'confirm',
             label: '确认完成',

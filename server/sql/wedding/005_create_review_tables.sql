@@ -124,30 +124,8 @@ CREATE TABLE `la_review_like` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评价点赞表';
 
 -- ----------------------------
--- 评价申诉表
+-- 评价申诉功能已下线，不再创建 la_review_appeal
 -- ----------------------------
-DROP TABLE IF EXISTS `la_review_appeal`;
-CREATE TABLE `la_review_appeal` (
-    `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '申诉ID',
-    `review_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '评价ID',
-    `appeal_user_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '申诉人ID（用户）',
-    `appeal_staff_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '申诉人ID（服务人员）',
-    `appeal_type` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '申诉类型 1恶意差评 2虚假评价 3侵犯隐私 4其他',
-    `appeal_reason` text COMMENT '申诉原因',
-    `evidence_images` text COMMENT '证据图片 JSON数组',
-    `status` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态 0待处理 1已通过 2已驳回',
-    `handle_admin_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '处理人ID',
-    `handle_result` text COMMENT '处理结果',
-    `handle_action` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '处理动作 0无 1删除评价 2隐藏评价 3警告用户',
-    `handle_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '处理时间',
-    `create_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_review_id` (`review_id`),
-    KEY `idx_status` (`status`),
-    KEY `idx_appeal_user_id` (`appeal_user_id`),
-    KEY `idx_appeal_staff_id` (`appeal_staff_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评价申诉表';
 
 -- ----------------------------
 -- 评价奖励配置表

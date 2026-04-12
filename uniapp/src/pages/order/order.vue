@@ -96,10 +96,7 @@
                                     </text>
                                 </view>
                             </view>
-                            <view
-                                v-if="shouldShowPaySection(order)"
-                                class="order-card__confirm"
-                            >
+                            <view v-if="shouldShowPaySection(order)" class="order-card__confirm">
                                 <view
                                     v-if="getPayRemainText(order)"
                                     class="order-card__confirm-item"
@@ -373,7 +370,9 @@ const getConfirmRemainText = (order: any) => {
 const shouldShowConfirmSection = (order: any) =>
     !!getConfirmRemainText(order) ||
     (Number(order?.statusValue ?? order?.order_status ?? -1) === 0 &&
-        !!String(order?.confirmTimeoutActionDesc || order?.confirm_timeout_action_desc || '').trim())
+        !!String(
+            order?.confirmTimeoutActionDesc || order?.confirm_timeout_action_desc || ''
+        ).trim())
 
 const shouldShowPayCountdown = (order: any) =>
     Number(order?.statusValue ?? order?.order_status ?? -1) === 1 &&

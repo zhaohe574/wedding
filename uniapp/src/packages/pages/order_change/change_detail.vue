@@ -107,7 +107,11 @@
                             <view class="order-change-comparison__item">
                                 <text class="order-change-comparison__label">原服务人员</text>
                                 <text class="order-change-comparison__value">
-                                    {{ getValueText(detail.old_staff?.name || detail.old_staff_name) }}
+                                    {{
+                                        getValueText(
+                                            detail.old_staff?.name || detail.old_staff_name
+                                        )
+                                    }}
                                 </text>
                                 <text class="order-change-comparison__meta">
                                     原价格：¥{{ formatCurrency(detail.old_price) }}
@@ -119,7 +123,11 @@
                             >
                                 <text class="order-change-comparison__label">新服务人员</text>
                                 <text class="order-change-comparison__value">
-                                    {{ getValueText(detail.new_staff?.name || detail.new_staff_name) }}
+                                    {{
+                                        getValueText(
+                                            detail.new_staff?.name || detail.new_staff_name
+                                        )
+                                    }}
                                 </text>
                                 <text class="order-change-comparison__meta">
                                     新价格：¥{{ formatCurrency(detail.new_price) }}
@@ -157,7 +165,11 @@
                             <view class="order-change-summary-grid__item">
                                 <text class="order-change-summary-grid__label">服务人员</text>
                                 <text class="order-change-summary-grid__value">
-                                    {{ getValueText(detail.add_staff?.name || detail.add_staff_name) }}
+                                    {{
+                                        getValueText(
+                                            detail.add_staff?.name || detail.add_staff_name
+                                        )
+                                    }}
                                 </text>
                             </view>
                             <view class="order-change-summary-grid__item">

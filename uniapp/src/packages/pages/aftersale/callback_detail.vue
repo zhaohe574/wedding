@@ -21,11 +21,15 @@
                     </view>
                     <view class="aftersale-detail-card__kv">
                         <text class="aftersale-detail-card__label">关联订单</text>
-                        <text class="aftersale-detail-card__value">{{ detail.order?.order_sn || '未关联' }}</text>
+                        <text class="aftersale-detail-card__value">{{
+                            detail.order?.order_sn || '未关联'
+                        }}</text>
                     </view>
                     <view class="aftersale-detail-card__kv">
                         <text class="aftersale-detail-card__label">服务人员</text>
-                        <text class="aftersale-detail-card__value">{{ detail.staff?.name || '待补充' }}</text>
+                        <text class="aftersale-detail-card__value">{{
+                            detail.staff?.name || '待补充'
+                        }}</text>
                     </view>
                 </BaseCard>
 
@@ -33,7 +37,10 @@
                     <text class="aftersale-detail-card__title">
                         {{ detail.questionnaire?.title || '服务回访问卷' }}
                     </text>
-                    <text v-if="detail.questionnaire?.description" class="aftersale-detail-card__paragraph">
+                    <text
+                        v-if="detail.questionnaire?.description"
+                        class="aftersale-detail-card__paragraph"
+                    >
                         {{ detail.questionnaire.description }}
                     </text>
 
@@ -140,7 +147,10 @@ const detail = ref<any>(null)
 
 const callbackStatus = computed(() => getCallbackStatusMeta(Number(detail.value?.status || 0)))
 const bannerMetrics = computed(() => [
-    { label: '计划时间', value: String(detail.value?.plan_time || detail.value?.create_time || '-') },
+    {
+        label: '计划时间',
+        value: String(detail.value?.plan_time || detail.value?.create_time || '-')
+    },
     { label: '当前状态', value: callbackStatus.value.label }
 ])
 

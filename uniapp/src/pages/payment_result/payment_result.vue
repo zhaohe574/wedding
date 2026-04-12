@@ -52,10 +52,7 @@
                                     <text class="payment-result__amount-label">
                                         {{ presentation.amountLabel }}
                                     </text>
-                                    <text
-                                        class="payment-result__amount"
-                                        :class="statusToneClass"
-                                    >
+                                    <text class="payment-result__amount" :class="statusToneClass">
                                         ¥{{ displayAmount }}
                                     </text>
                                 </view>

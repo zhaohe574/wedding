@@ -46,7 +46,9 @@
                     <view class="aftersale-create-section">
                         <view class="aftersale-create-section__head">
                             <text class="aftersale-create-section__title">关联订单</text>
-                            <text class="aftersale-create-section__meta">可选，便于平台更快定位问题</text>
+                            <text class="aftersale-create-section__meta"
+                                >可选，便于平台更快定位问题</text
+                            >
                         </view>
                         <view class="aftersale-create-panel" @click="showOrderPicker = true">
                             <text
@@ -70,7 +72,9 @@
                     box-shadow="0 18rpx 38rpx rgba(214, 185, 167, 0.12)"
                 >
                     <view class="aftersale-create-section">
-                        <view class="aftersale-create-section__head aftersale-create-section__head--stack">
+                        <view
+                            class="aftersale-create-section__head aftersale-create-section__head--stack"
+                        >
                             <text class="aftersale-create-section__title">问题描述</text>
                             <text class="aftersale-create-section__meta">
                                 提交时会自动生成标题：{{ previewTitle }}
@@ -123,7 +127,9 @@
                     box-shadow="0 18rpx 38rpx rgba(214, 185, 167, 0.12)"
                 >
                     <view class="aftersale-create-section">
-                        <view class="aftersale-create-section__head aftersale-create-section__head--stack">
+                        <view
+                            class="aftersale-create-section__head aftersale-create-section__head--stack"
+                        >
                             <text class="aftersale-create-section__title">上传凭证</text>
                             <text class="aftersale-create-section__meta">
                                 现场照片、聊天记录、交付截图都可以上传，最多 6 张。
@@ -151,7 +157,9 @@
                     box-shadow="0 18rpx 38rpx rgba(214, 185, 167, 0.12)"
                 >
                     <view class="aftersale-create-section">
-                        <view class="aftersale-create-section__head aftersale-create-section__head--stack">
+                        <view
+                            class="aftersale-create-section__head aftersale-create-section__head--stack"
+                        >
                             <text class="aftersale-create-section__title">联系方式</text>
                             <text class="aftersale-create-section__meta">
                                 平台跟进时会优先联系这位对接人
@@ -255,10 +263,25 @@ const ticketCategories: TicketCategoryItem[] = [
 ]
 
 const priorityOptions: PriorityOptionItem[] = [
-    { value: 1, label: '低', desc: '常规处理', hint: '常规问题会进入标准队列，预计 72 小时内开始跟进。' },
+    {
+        value: 1,
+        label: '低',
+        desc: '常规处理',
+        hint: '常规问题会进入标准队列，预计 72 小时内开始跟进。'
+    },
     { value: 2, label: '中', desc: '尽快跟进', hint: '默认优先级，适合需要尽快确认的服务问题。' },
-    { value: 3, label: '高', desc: '影响较大', hint: '高优先级问题会优先排队，预计 24 小时内开始跟进。' },
-    { value: 4, label: '紧急', desc: '需要立即响应', hint: '紧急问题会优先处理，请尽量补充清晰凭证。' }
+    {
+        value: 3,
+        label: '高',
+        desc: '影响较大',
+        hint: '高优先级问题会优先排队，预计 24 小时内开始跟进。'
+    },
+    {
+        value: 4,
+        label: '紧急',
+        desc: '需要立即响应',
+        hint: '紧急问题会优先处理，请尽量补充清晰凭证。'
+    }
 ]
 
 const form = reactive({
@@ -323,8 +346,9 @@ const loadOrders = async () => {
         orderOptions.value = toOrderOptions(lists)
         if (form.order_id) {
             selectedOrder.value =
-                orderOptions.value.find((item: any) => Number(item.value) === Number(form.order_id)) ||
-                null
+                orderOptions.value.find(
+                    (item: any) => Number(item.value) === Number(form.order_id)
+                ) || null
         }
     } catch (error) {
         console.error('获取订单列表失败', error)
@@ -394,11 +418,7 @@ const handleSubmit = async () => {
 }
 
 watch(
-    () => [
-        userStore.userInfo?.real_name,
-        userStore.userInfo?.nickname,
-        userStore.userInfo?.mobile
-    ],
+    () => [userStore.userInfo?.real_name, userStore.userInfo?.nickname, userStore.userInfo?.mobile],
     () => {
         fillContactDefaults()
     },
@@ -436,8 +456,7 @@ onLoad((options: any) => {
     display: flex;
     flex-direction: column;
     gap: 18rpx;
-    padding: 12rpx var(--wm-space-page-x, 37rpx)
-        calc(var(--wm-safe-bottom-action, 160rpx) + 78rpx);
+    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(var(--wm-safe-bottom-action, 160rpx) + 78rpx);
 }
 
 .aftersale-create-section {

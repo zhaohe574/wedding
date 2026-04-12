@@ -59,6 +59,7 @@ class ScheduleController extends BaseApiController
     public function checkAvailable()
     {
         $params = (new ScheduleValidate())->goCheck('check');
+        $params['user_id'] = $this->userId;
         $result = ScheduleLogic::checkAvailable($params);
         return $this->data($result);
     }

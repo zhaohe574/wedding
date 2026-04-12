@@ -55,7 +55,3 @@ export function getStaffReviewStats(params: any) {
     return request.get({ url: '/review/staffStats', params })
 }
 
-// 提交申诉
-export function submitAppeal(params: any) {
-    return request.post({ url: '/review/submitAppeal', params })
-}

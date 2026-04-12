@@ -25,12 +25,15 @@ export function getLuckyDays(params?: any) {
 
 // 检查档期是否可预约
 export function checkScheduleAvailable(params: any) {
-    return request.get({ url: '/schedule/checkAvailable', params }) as Promise<ScheduleAvailabilityResult>
+    return request.get({
+        url: '/schedule/checkAvailable',
+        params
+    }) as Promise<ScheduleAvailabilityResult>
 }
 
 // 锁定档期
 export function lockSchedule(params: any) {
-    return request.post({ url: '/schedule/lockSchedule', params })
+    return request.post({ url: '/schedule/lockSchedule', params }, { isAuth: true })
 }
 
 // 释放档期锁定

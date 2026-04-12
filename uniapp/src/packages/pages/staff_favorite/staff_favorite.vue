@@ -4,135 +4,137 @@
         <BaseNavbar title="我的收藏" />
 
         <view class="staff-favorite">
-        <!-- 加载状态 -->
-        <view v-if="loading" class="loading-container">
-            <tn-loading mode="circle" />
-        </view>
-
-        <!-- 空状态 -->
-        <view v-else-if="!favoriteList.length" class="empty-container">
-            <view class="empty-icon">
-                <tn-icon name="star" size="160" color="#D1D5DB" />
-            </view>
-            <text class="empty-text">还没有收藏任何服务人员</text>
-            <text class="empty-hint">快去发现心仪的服务人员吧</text>
-            <view class="empty-btn" @click="goToList">
-                <text class="empty-btn-text">去看看</text>
-            </view>
-        </view>
-
-        <!-- 收藏列表 -->
-        <view v-else class="favorite-list">
-            <!-- 统计信息 -->
-            <view class="stats-bar">
-                <text class="stats-text">共收藏 {{ favoriteList.length }} 位服务人员</text>
+            <!-- 加载状态 -->
+            <view v-if="loading" class="loading-container">
+                <tn-loading mode="circle" />
             </view>
 
-            <!-- 人员卡片 -->
-            <view
-                v-for="item in favoriteList"
-                :key="item.id"
-                class="staff-card"
-                @click="goToDetail(item.id)"
-            >
-                <!-- 卡片内容 -->
-                <view class="card-content">
-                    <!-- 左侧头像 -->
-                    <view class="avatar-wrapper">
-                        <image
-                            class="avatar"
-                            :src="item.avatar || '/static/images/user/default_avatar.png'"
-                            mode="aspectFill"
-                            lazy-load
-                        />
-                        <!-- VIP标识 -->
-                        <view v-if="item.is_vip" class="vip-badge">
-                            <tn-icon name="vip-fill" size="24" color="#FFD700" />
+            <!-- 空状态 -->
+            <view v-else-if="!favoriteList.length" class="empty-container">
+                <view class="empty-icon">
+                    <tn-icon name="star" size="160" color="#D1D5DB" />
+                </view>
+                <text class="empty-text">还没有收藏任何服务人员</text>
+                <text class="empty-hint">快去发现心仪的服务人员吧</text>
+                <view class="empty-btn" @click="goToList">
+                    <text class="empty-btn-text">去看看</text>
+                </view>
+            </view>
+
+            <!-- 收藏列表 -->
+            <view v-else class="favorite-list">
+                <!-- 统计信息 -->
+                <view class="stats-bar">
+                    <text class="stats-text">共收藏 {{ favoriteList.length }} 位服务人员</text>
+                </view>
+
+                <!-- 人员卡片 -->
+                <view
+                    v-for="item in favoriteList"
+                    :key="item.id"
+                    class="staff-card"
+                    @click="goToDetail(item.id)"
+                >
+                    <!-- 卡片内容 -->
+                    <view class="card-content">
+                        <!-- 左侧头像 -->
+                        <view class="avatar-wrapper">
+                            <image
+                                class="avatar"
+                                :src="item.avatar || '/static/images/user/default_avatar.png'"
+                                mode="aspectFill"
+                                lazy-load
+                            />
+                            <!-- VIP标识 -->
+                            <view v-if="item.is_vip" class="vip-badge">
+                                <tn-icon name="vip-fill" size="24" color="#FFD700" />
+                            </view>
                         </view>
-                    </view>
 
-                    <!-- 右侧信息 -->
-                    <view class="info-wrapper">
-                        <!-- 顶部：姓名和收藏按钮 -->
-                        <view class="info-header">
-                            <view class="name-row">
-                                <text class="staff-name">{{ item.name }}</text>
-                                <!-- 认证标识 -->
-                                <view v-if="item.is_verified" class="verified-badge">
+                        <!-- 右侧信息 -->
+                        <view class="info-wrapper">
+                            <!-- 顶部：姓名和收藏按钮 -->
+                            <view class="info-header">
+                                <view class="name-row">
+                                    <text class="staff-name">{{ item.name }}</text>
+                                    <!-- 认证标识 -->
+                                    <view v-if="item.is_verified" class="verified-badge">
+                                        <tn-icon
+                                            name="check-circle-fill"
+                                            size="28"
+                                            :color="$theme.primaryColor"
+                                        />
+                                    </view>
+                                </view>
+                                <!-- 收藏按钮 -->
+                                <view class="favorite-btn" @click.stop="handleCancelFavorite(item)">
                                     <tn-icon
-                                        name="check-circle-fill"
-                                        size="28"
-                                        :color="$theme.primaryColor"
+                                        name="star-fill"
+                                        size="44"
+                                        :color="$theme.secondaryColor"
                                     />
                                 </view>
                             </view>
-                            <!-- 收藏按钮 -->
-                            <view class="favorite-btn" @click.stop="handleCancelFavorite(item)">
-                                <tn-icon
-                                    name="star-fill"
-                                    size="44"
-                                    :color="$theme.secondaryColor"
-                                />
+
+                            <!-- 分类标签 -->
+                            <view class="category-tag">
+                                <text class="category-text">{{ item.category_name }}</text>
                             </view>
-                        </view>
 
-                        <!-- 分类标签 -->
-                        <view class="category-tag">
-                            <text class="category-text">{{ item.category_name }}</text>
-                        </view>
-
-                        <!-- 评分和服务次数 -->
-                        <view class="rating-row">
-                            <view class="rating-stars">
-                                <tn-icon
-                                    v-for="star in 5"
-                                    :key="star"
-                                    :name="star <= Math.floor(item.rating) ? 'star-fill' : 'star'"
-                                    size="24"
-                                    :color="
-                                        star <= Math.floor(item.rating)
-                                            ? $theme.accentColor
-                                            : '#E5E7EB'
-                                    "
-                                />
+                            <!-- 评分和服务次数 -->
+                            <view class="rating-row">
+                                <view class="rating-stars">
+                                    <tn-icon
+                                        v-for="star in 5"
+                                        :key="star"
+                                        :name="
+                                            star <= Math.floor(item.rating) ? 'star-fill' : 'star'
+                                        "
+                                        size="24"
+                                        :color="
+                                            star <= Math.floor(item.rating)
+                                                ? $theme.accentColor
+                                                : '#E5E7EB'
+                                        "
+                                    />
+                                </view>
+                                <text class="rating-score">{{ item.rating }}</text>
+                                <text class="rating-divider">|</text>
+                                <text class="order-count">{{ item.order_count }}单</text>
                             </view>
-                            <text class="rating-score">{{ item.rating }}</text>
-                            <text class="rating-divider">|</text>
-                            <text class="order-count">{{ item.order_count }}单</text>
-                        </view>
 
-                        <!-- 底部：价格和操作 -->
-                        <view class="info-footer">
-                            <view class="price-wrapper">
-                                <template
-                                    v-if="
-                                        item.has_price !== false &&
-                                        item.price !== null &&
-                                        item.price !== undefined
-                                    "
+                            <!-- 底部：价格和操作 -->
+                            <view class="info-footer">
+                                <view class="price-wrapper">
+                                    <template
+                                        v-if="
+                                            item.has_price !== false &&
+                                            item.price !== null &&
+                                            item.price !== undefined
+                                        "
+                                    >
+                                        <text class="price-symbol">¥</text>
+                                        <text class="price-value">{{
+                                            item.price_text || item.price
+                                        }}</text>
+                                        <text class="price-unit">/次</text>
+                                    </template>
+                                    <text v-else class="price-negotiable">面议</text>
+                                </view>
+                                <view
+                                    class="action-btn"
+                                    :style="{
+                                        background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
+                                    }"
+                                    @click.stop="handleBooking(item)"
                                 >
-                                    <text class="price-symbol">¥</text>
-                                    <text class="price-value">{{
-                                        item.price_text || item.price
-                                    }}</text>
-                                    <text class="price-unit">/次</text>
-                                </template>
-                                <text v-else class="price-negotiable">面议</text>
-                            </view>
-                            <view
-                                class="action-btn"
-                                :style="{
-                                    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.primaryColor} 100%)`
-                                }"
-                                @click.stop="handleBooking(item)"
-                            >
-                                <text class="action-text">立即预约</text>
+                                    <text class="action-text">立即预约</text>
+                                </view>
                             </view>
                         </view>
                     </view>
                 </view>
             </view>
-        </view>
         </view>
     </PageShell>
 </template>

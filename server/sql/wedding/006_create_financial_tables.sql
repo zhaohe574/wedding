@@ -218,46 +218,8 @@ CREATE TABLE `la_financial_monthly` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='财务月报表';
 
 -- -----------------------------------------------------------
--- 7. 发票记录表 (la_invoice)
--- 开票记录管理
+-- 7. 发票功能已下线，不再创建 la_invoice
 -- -----------------------------------------------------------
-DROP TABLE IF EXISTS `la_invoice`;
-CREATE TABLE `la_invoice` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `invoice_sn` VARCHAR(32) NOT NULL COMMENT '发票编号',
-    `invoice_no` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '发票号码',
-    `order_id` INT UNSIGNED NOT NULL COMMENT '订单ID',
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `invoice_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '发票类型：1=电子普票,2=电子专票,3=纸质普票,4=纸质专票',
-    `title_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '抬头类型：1=个人,2=企业',
-    `invoice_title` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '发票抬头',
-    `tax_no` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '税号',
-    `bank_name` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '开户行',
-    `bank_account` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '银行账号',
-    `company_address` VARCHAR(200) NOT NULL DEFAULT '' COMMENT '企业地址',
-    `company_phone` VARCHAR(30) NOT NULL DEFAULT '' COMMENT '企业电话',
-    `amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '发票金额',
-    `email` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '接收邮箱',
-    `receiver_name` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '收件人(纸质)',
-    `receiver_phone` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '收件电话(纸质)',
-    `receiver_address` VARCHAR(200) NOT NULL DEFAULT '' COMMENT '收件地址(纸质)',
-    `invoice_url` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '电子发票下载地址',
-    `status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态：0=待开票,1=开票中,2=已开票,3=开票失败,4=已作废',
-    `issue_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '开票时间',
-    `issue_admin_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '开票管理员ID',
-    `fail_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '失败原因',
-    `void_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '作废原因',
-    `void_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '作废时间',
-    `remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '备注',
-    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_invoice_sn` (`invoice_sn`),
-    KEY `idx_order_id` (`order_id`),
-    KEY `idx_user_id` (`user_id`),
-    KEY `idx_status` (`status`),
-    KEY `idx_create_time` (`create_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='发票记录表';
 
 -- -----------------------------------------------------------
 -- 8. 服务人员结算配置表 (la_staff_settlement_config)

@@ -199,16 +199,17 @@ class OrderLogic extends BaseLogic
     /**
      * @notes 校验预约日期是否可下单
      */
-    private static function ensureScheduleAvailable(array $selectedItems): void
+    private static function ensureScheduleAvailable(array $selectedItems, int $userId = 0): void
     {
         foreach ($selectedItems as $item) {
             if (!self::itemRequiresScheduleLock($item)) {
                 continue;
             }
 
-            [$available, $reason] = Schedule::checkAvailabilityWithReason(
+            [$available, $reason] = Schedule::checkAvailabilityForUserWithReason(
                 (int)$item['staff_id'],
                 (string)$item['schedule_date'],
+                $userId,
                 0
             );
             if (!$available) {
@@ -503,7 +504,7 @@ class OrderLogic extends BaseLogic
             if ($userId > 0) {
                 PackageBooking::releaseByUserId($userId);
             }
-            self::ensureScheduleAvailable($selectedItems);
+            self::ensureScheduleAvailable($selectedItems, $userId);
             if ($userId > 0) {
                 foreach ($selectedItems as $selectedItem) {
                     self::refreshTempLock($userId, $selectedItem);
@@ -557,7 +558,7 @@ class OrderLogic extends BaseLogic
         try {
             $userId = (int)$params['user_id'];
             $selectedItems = self::buildSelectedItems($params);
-            self::ensureScheduleAvailable($selectedItems);
+            self::ensureScheduleAvailable($selectedItems, $userId);
             foreach ($selectedItems as $selectedItem) {
                 self::ensureTempLockOwned($userId, $selectedItem);
             }

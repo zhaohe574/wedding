@@ -137,17 +137,28 @@ class ScheduleLogic extends BaseLogic
     {
         $staffId = (int)$params['staff_id'];
         $date = (string)$params['date'];
+        $userId = (int)($params['user_id'] ?? 0);
 
-        [$isAvailable, $message] = Schedule::checkAvailabilityWithReason($staffId, $date, 0);
+        [$isAvailable, $message] = Schedule::checkAvailabilityForUserWithReason(
+            $staffId,
+            $date,
+            $userId,
+            0
+        );
         $schedule = Schedule::where('staff_id', $staffId)
             ->where('schedule_date', $date)
             ->where('time_slot', 0)
             ->find();
+        $ownedLock = $schedule
+            && (int)$schedule->status === Schedule::STATUS_LOCKED
+            && $userId > 0
+            && (int)$schedule->lock_user_id === $userId
+            && (int)$schedule->lock_expire_time > time();
 
         return [
             'is_available' => $isAvailable,
             'status' => $schedule ? $schedule->status : Schedule::STATUS_AVAILABLE,
-            'status_desc' => $schedule ? $schedule->status_desc : '可预约',
+            'status_desc' => $ownedLock ? '已为你锁定' : ($schedule ? $schedule->status_desc : '可预约'),
             'price' => $schedule && (float)$schedule->price > 0 ? (float)$schedule->price : null,
             'message' => $message,
         ];

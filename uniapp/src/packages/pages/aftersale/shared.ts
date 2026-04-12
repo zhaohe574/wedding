@@ -65,7 +65,12 @@ export const complaintLevelOptions: OptionItem[] = [
 const ticketStatusMap: Record<number, StatusMeta> = {
     0: { label: '待处理', tone: 'warning', icon: 'clock', summary: '等待平台接单处理' },
     1: { label: '处理中', tone: 'info', icon: 'loading', summary: '平台正在跟进你的问题' },
-    2: { label: '待确认', tone: 'neutral', icon: 'shield-check', summary: '处理方案已给出，等待你确认' },
+    2: {
+        label: '待确认',
+        tone: 'neutral',
+        icon: 'shield-check',
+        summary: '处理方案已给出，等待你确认'
+    },
     3: { label: '已解决', tone: 'success', icon: 'check-circle', summary: '本次工单已解决' },
     4: { label: '已关闭', tone: 'neutral', icon: 'close-circle', summary: '工单已结束' },
     5: { label: '已取消', tone: 'neutral', icon: 'close-circle', summary: '你已取消当前工单' }
@@ -74,8 +79,18 @@ const ticketStatusMap: Record<number, StatusMeta> = {
 const complaintStatusMap: Record<number, StatusMeta> = {
     0: { label: '待受理', tone: 'warning', icon: 'clock', summary: '平台待受理并开始处理投诉' },
     1: { label: '处理中', tone: 'info', icon: 'loading', summary: '平台正在核查并推进处理' },
-    2: { label: '已处理', tone: 'success', icon: 'check-circle', summary: '处理结果已生成，可查看并评价' },
-    3: { label: '已申诉', tone: 'danger', icon: 'warning-circle', summary: '当前投诉已进入申诉状态' },
+    2: {
+        label: '已处理',
+        tone: 'success',
+        icon: 'check-circle',
+        summary: '处理结果已生成，可查看并评价'
+    },
+    3: {
+        label: '已申诉',
+        tone: 'danger',
+        icon: 'warning-circle',
+        summary: '当前投诉已进入申诉状态'
+    },
     4: { label: '已关闭', tone: 'neutral', icon: 'close-circle', summary: '投诉流程已关闭' }
 }
 

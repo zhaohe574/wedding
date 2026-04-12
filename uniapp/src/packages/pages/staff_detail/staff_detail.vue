@@ -100,7 +100,6 @@
                             </text>
                         </view>
                     </view>
-
                 </view>
 
                 <!-- 标签页切换 -->
@@ -598,10 +597,7 @@
                                             {{ tag }}
                                         </text>
                                     </view>
-                                    <text
-                                        v-else-if="item.profile"
-                                        class="alternative-card__desc"
-                                    >
+                                    <text v-else-if="item.profile" class="alternative-card__desc">
                                         {{ item.profile }}
                                     </text>
                                     <view class="alternative-card__footer">
@@ -978,7 +974,9 @@ const getAlternativeStaffTags = (item: AlternativeStaffItem, limit = 2) => {
 }
 
 const formatAlternativeRoleLine = (item: AlternativeStaffItem) => {
-    const parts = [String(item?.category_name || staffInfo.value?.category?.name || '服务人员').trim()]
+    const parts = [
+        String(item?.category_name || staffInfo.value?.category?.name || '服务人员').trim()
+    ]
     const experienceYears = Number(item?.experience_years || 0)
     if (experienceYears > 0) {
         parts.push(`${experienceYears}年经验`)

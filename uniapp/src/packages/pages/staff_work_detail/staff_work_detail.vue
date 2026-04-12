@@ -4,176 +4,183 @@
         <BaseNavbar title="作品详情" />
 
         <view class="work-detail" v-if="workDetail">
-        <!-- 顶部封面区域 -->
-        <view class="cover-section">
-            <image
-                class="cover-image"
-                :src="
-                    workDetail.cover || workDetail.images?.[0] || '/static/images/default_cover.png'
-                "
-                mode="aspectFill"
-                @click="previewCover"
-            />
+            <!-- 顶部封面区域 -->
+            <view class="cover-section">
+                <image
+                    class="cover-image"
+                    :src="
+                        workDetail.cover ||
+                        workDetail.images?.[0] ||
+                        '/static/images/default_cover.png'
+                    "
+                    mode="aspectFill"
+                    @click="previewCover"
+                />
 
-            <!-- 玻璃态信息卡 -->
-            <view class="glass-info-card">
-                <view class="title-row">
-                    <text class="work-title">{{ workDetail.title || '未命名作品' }}</text>
-                    <view class="badges-group">
-                        <view class="view-badge">
-                            <tn-icon name="eye" size="24" color="#C99B73" />
-                            <text class="view-count">{{ workDetail.view_count || 0 }}</text>
-                        </view>
-                        <view class="type-badge" :style="{ backgroundColor: $theme.primaryColor }">
-                            <text class="type-text">{{ workDetail.type_desc || '作品' }}</text>
-                        </view>
-                    </view>
-                </view>
-
-                <view class="info-tags">
-                    <view v-if="workDetail.shoot_date" class="info-tag">
-                        <tn-icon name="calendar" size="24" color="#666" />
-                        <text class="tag-text">{{ workDetail.shoot_date }}</text>
-                    </view>
-                    <view v-if="workDetail.location" class="info-tag">
-                        <tn-icon name="map-pin" size="24" color="#666" />
-                        <text class="tag-text">{{ workDetail.location }}</text>
-                    </view>
-                </view>
-            </view>
-        </view>
-
-        <!-- 作品描述 -->
-        <view v-if="workDetail.description" class="desc-card">
-            <view class="section-header">
-                <tn-icon name="document" size="32" :color="$theme.primaryColor" />
-                <text class="section-title">作品说明</text>
-            </view>
-            <text class="desc-text">{{ workDetail.description }}</text>
-        </view>
-
-        <!-- 工作人员信息卡片 -->
-        <view v-if="workDetail.staff" class="staff-card" @click="goToStaffDetail">
-            <view class="staff-header">
-                <view class="staff-left">
-                    <image
-                        class="staff-avatar"
-                        :src="workDetail.staff.avatar || '/static/images/user/default_avatar.png'"
-                        mode="aspectFill"
-                    />
-                    <view class="staff-info">
-                        <view class="staff-name-row">
-                            <text class="staff-name">{{ workDetail.staff.name || '-' }}</text>
+                <!-- 玻璃态信息卡 -->
+                <view class="glass-info-card">
+                    <view class="title-row">
+                        <text class="work-title">{{ workDetail.title || '未命名作品' }}</text>
+                        <view class="badges-group">
+                            <view class="view-badge">
+                                <tn-icon name="eye" size="24" color="#C99B73" />
+                                <text class="view-count">{{ workDetail.view_count || 0 }}</text>
+                            </view>
                             <view
-                                class="staff-badge"
-                                :style="{ backgroundColor: $theme.secondaryColor }"
+                                class="type-badge"
+                                :style="{ backgroundColor: $theme.primaryColor }"
                             >
-                                <text class="badge-text">{{
-                                    workDetail.staff.category_name || '未分类'
-                                }}</text>
+                                <text class="type-text">{{ workDetail.type_desc || '作品' }}</text>
                             </view>
                         </view>
-                        <view class="staff-meta">
-                            <text class="staff-sn">工号：{{ workDetail.staff.sn || '-' }}</text>
+                    </view>
+
+                    <view class="info-tags">
+                        <view v-if="workDetail.shoot_date" class="info-tag">
+                            <tn-icon name="calendar" size="24" color="#666" />
+                            <text class="tag-text">{{ workDetail.shoot_date }}</text>
+                        </view>
+                        <view v-if="workDetail.location" class="info-tag">
+                            <tn-icon name="map-pin" size="24" color="#666" />
+                            <text class="tag-text">{{ workDetail.location }}</text>
                         </view>
                     </view>
                 </view>
-                <tn-icon name="arrow-right" size="32" color="#999" />
             </view>
 
-            <view class="staff-stats">
-                <view class="staff-stat-item">
-                    <text class="staff-stat-value" :style="{ color: $theme.primaryColor }">
-                        {{ workDetail.staff.rating || '5.0' }}
-                    </text>
-                    <text class="staff-stat-label">综合评分</text>
+            <!-- 作品描述 -->
+            <view v-if="workDetail.description" class="desc-card">
+                <view class="section-header">
+                    <tn-icon name="document" size="32" :color="$theme.primaryColor" />
+                    <text class="section-title">作品说明</text>
                 </view>
-                <view class="staff-stat-item">
-                    <text class="staff-stat-value" :style="{ color: $theme.ctaColor }">
-                        {{ workDetail.staff.order_count || 0 }}
-                    </text>
-                    <text class="staff-stat-label">服务次数</text>
-                </view>
-                <view class="staff-stat-item">
-                    <text class="staff-stat-value" :style="{ color: $theme.secondaryColor }">
-                        {{ workDetail.staff.review_count || 0 }}
-                    </text>
-                    <text class="staff-stat-label">评价数</text>
-                </view>
-                <view class="staff-stat-item">
-                    <text class="staff-stat-value" :style="{ color: '#10B981' }">
-                        {{ workDetail.staff.favorite_count || 0 }}
-                    </text>
-                    <text class="staff-stat-label">收藏数</text>
-                </view>
+                <text class="desc-text">{{ workDetail.description }}</text>
             </view>
 
-            <view class="staff-price-row">
-                <text class="price-label">服务价格</text>
-                <view class="staff-price">
-                    <template
-                        v-if="
-                            workDetail.staff.has_price !== false &&
-                            workDetail.staff.price !== null &&
-                            workDetail.staff.price !== undefined
-                        "
-                    >
-                        <text class="price-symbol" :style="{ color: $theme.ctaColor }">¥</text>
-                        <text class="price-value" :style="{ color: $theme.ctaColor }">
-                            {{ workDetail.staff.price_text || workDetail.staff.price }}
+            <!-- 工作人员信息卡片 -->
+            <view v-if="workDetail.staff" class="staff-card" @click="goToStaffDetail">
+                <view class="staff-header">
+                    <view class="staff-left">
+                        <image
+                            class="staff-avatar"
+                            :src="
+                                workDetail.staff.avatar || '/static/images/user/default_avatar.png'
+                            "
+                            mode="aspectFill"
+                        />
+                        <view class="staff-info">
+                            <view class="staff-name-row">
+                                <text class="staff-name">{{ workDetail.staff.name || '-' }}</text>
+                                <view
+                                    class="staff-badge"
+                                    :style="{ backgroundColor: $theme.secondaryColor }"
+                                >
+                                    <text class="badge-text">{{
+                                        workDetail.staff.category_name || '未分类'
+                                    }}</text>
+                                </view>
+                            </view>
+                            <view class="staff-meta">
+                                <text class="staff-sn">工号：{{ workDetail.staff.sn || '-' }}</text>
+                            </view>
+                        </view>
+                    </view>
+                    <tn-icon name="arrow-right" size="32" color="#999" />
+                </view>
+
+                <view class="staff-stats">
+                    <view class="staff-stat-item">
+                        <text class="staff-stat-value" :style="{ color: $theme.primaryColor }">
+                            {{ workDetail.staff.rating || '5.0' }}
                         </text>
-                        <text class="price-unit">/次起</text>
-                    </template>
-                    <text v-else class="price-negotiable">面议</text>
+                        <text class="staff-stat-label">综合评分</text>
+                    </view>
+                    <view class="staff-stat-item">
+                        <text class="staff-stat-value" :style="{ color: $theme.ctaColor }">
+                            {{ workDetail.staff.order_count || 0 }}
+                        </text>
+                        <text class="staff-stat-label">服务次数</text>
+                    </view>
+                    <view class="staff-stat-item">
+                        <text class="staff-stat-value" :style="{ color: $theme.secondaryColor }">
+                            {{ workDetail.staff.review_count || 0 }}
+                        </text>
+                        <text class="staff-stat-label">评价数</text>
+                    </view>
+                    <view class="staff-stat-item">
+                        <text class="staff-stat-value" :style="{ color: '#10B981' }">
+                            {{ workDetail.staff.favorite_count || 0 }}
+                        </text>
+                        <text class="staff-stat-label">收藏数</text>
+                    </view>
+                </view>
+
+                <view class="staff-price-row">
+                    <text class="price-label">服务价格</text>
+                    <view class="staff-price">
+                        <template
+                            v-if="
+                                workDetail.staff.has_price !== false &&
+                                workDetail.staff.price !== null &&
+                                workDetail.staff.price !== undefined
+                            "
+                        >
+                            <text class="price-symbol" :style="{ color: $theme.ctaColor }">¥</text>
+                            <text class="price-value" :style="{ color: $theme.ctaColor }">
+                                {{ workDetail.staff.price_text || workDetail.staff.price }}
+                            </text>
+                            <text class="price-unit">/次起</text>
+                        </template>
+                        <text v-else class="price-negotiable">面议</text>
+                    </view>
                 </view>
             </view>
-        </view>
 
-        <!-- 作品图片 -->
-        <view v-if="workDetail.images?.length" class="images-card">
-            <view class="section-header">
-                <tn-icon name="image" size="32" :color="$theme.primaryColor" />
-                <text class="section-title">作品图片（{{ workDetail.images.length }}张）</text>
+            <!-- 作品图片 -->
+            <view v-if="workDetail.images?.length" class="images-card">
+                <view class="section-header">
+                    <tn-icon name="image" size="32" :color="$theme.primaryColor" />
+                    <text class="section-title">作品图片（{{ workDetail.images.length }}张）</text>
+                </view>
+                <view class="images-grid" :class="getGridClass">
+                    <image
+                        v-for="(img, index) in displayImages"
+                        :key="index"
+                        :src="img"
+                        class="image-item"
+                        mode="aspectFill"
+                        @click="previewImages(index)"
+                    />
+                    <view
+                        v-if="workDetail.images.length > 9"
+                        class="image-more"
+                        @click="previewImages(8)"
+                    >
+                        <text class="more-text">+{{ workDetail.images.length - 9 }}</text>
+                    </view>
+                </view>
             </view>
-            <view class="images-grid" :class="getGridClass">
-                <image
-                    v-for="(img, index) in displayImages"
-                    :key="index"
-                    :src="img"
-                    class="image-item"
-                    mode="aspectFill"
-                    @click="previewImages(index)"
+
+            <!-- 作品视频 -->
+            <view v-if="workDetail.video" class="video-card">
+                <view class="section-header">
+                    <tn-icon name="video" size="32" :color="$theme.primaryColor" />
+                    <text class="section-title">作品视频</text>
+                </view>
+                <video
+                    :src="workDetail.video"
+                    class="video-player"
+                    object-fit="cover"
+                    :controls="true"
+                    :show-center-play-btn="true"
                 />
-                <view
-                    v-if="workDetail.images.length > 9"
-                    class="image-more"
-                    @click="previewImages(8)"
-                >
-                    <text class="more-text">+{{ workDetail.images.length - 9 }}</text>
-                </view>
             </view>
-        </view>
 
-        <!-- 作品视频 -->
-        <view v-if="workDetail.video" class="video-card">
-            <view class="section-header">
-                <tn-icon name="video" size="32" :color="$theme.primaryColor" />
-                <text class="section-title">作品视频</text>
+            <!-- 时间信息 -->
+            <view class="time-info">
+                <text class="time-text">创建时间：{{ workDetail.create_time || '-' }}</text>
+                <text class="time-text">更新时间：{{ workDetail.update_time || '-' }}</text>
             </view>
-            <video
-                :src="workDetail.video"
-                class="video-player"
-                object-fit="cover"
-                :controls="true"
-                :show-center-play-btn="true"
-            />
-        </view>
-
-        <!-- 时间信息 -->
-        <view class="time-info">
-            <text class="time-text">创建时间：{{ workDetail.create_time || '-' }}</text>
-            <text class="time-text">更新时间：{{ workDetail.update_time || '-' }}</text>
-        </view>
         </view>
 
         <view v-else class="loading-container">

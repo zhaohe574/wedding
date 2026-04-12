@@ -1,7 +1,11 @@
 <template>
     <div class="hot-topics-preview">
+        <div v-if="!showList.length" class="hot-topics-empty">
+            暂无可预览话题，请先选择真实话题或等待自动数据返回。
+        </div>
+
         <!-- 标题区域 -->
-        <div v-if="content.title" class="topic-header">
+        <div v-else-if="content.title" class="topic-header">
             <div class="header-decoration"></div>
             <span class="header-title">{{ content.title }}</span>
         </div>
@@ -179,31 +183,26 @@ const getRankClass = (index: number): string => {
 const showList = computed(() => {
     const data = props.content.data?.filter((item: any) => item.is_show == '1') || []
     const limit = props.content.show_count || data.length
-    
-    // 如果有真实数据，使用真实数据
-    if (data.length > 0 && data[0].name) {
-        return data.slice(0, limit)
-    }
-    
-    // 否则使用模拟数据用于预览
-    const mockTopics = [
-        { name: '婚礼策划', count: 8520 },
-        { name: '婚纱摄影', count: 6340 },
-        { name: '婚礼现场', count: 5280 },
-        { name: '新娘造型', count: 4150 },
-        { name: '婚礼布置', count: 3890 },
-        { name: '婚礼跟拍', count: 2760 },
-        { name: '婚礼花艺', count: 2340 },
-        { name: '婚礼主持', count: 1980 }
-    ]
-    
-    return mockTopics.slice(0, Math.min(limit, mockTopics.length))
+
+    return data
+        .filter((item: any) => item?.name)
+        .slice(0, limit)
 })
 </script>
 
 <style lang="scss" scoped>
 .hot-topics-preview {
     margin: 10px;
+
+    .hot-topics-empty {
+        padding: 24px 16px;
+        border-radius: 16px;
+        background: #fffaf7;
+        border: 1px dashed #f0d6cb;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #8d6e63;
+    }
     
     /* 标题区域 */
     .topic-header {

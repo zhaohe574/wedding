@@ -27,14 +27,24 @@
                         </text>
                     </view>
                     <view class="staff-long-detail-editor__card-actions">
-                        <text :class="['staff-long-detail-editor__action', { disabled: index === 0 }]" @click="move(index, -1)">上移</text>
                         <text
-                            :class="['staff-long-detail-editor__action', { disabled: index === blocks.length - 1 }]"
+                            :class="['staff-long-detail-editor__action', { disabled: index === 0 }]"
+                            @click="move(index, -1)"
+                            >上移</text
+                        >
+                        <text
+                            :class="[
+                                'staff-long-detail-editor__action',
+                                { disabled: index === blocks.length - 1 }
+                            ]"
                             @click="move(index, 1)"
                         >
                             下移
                         </text>
-                        <text class="staff-long-detail-editor__action staff-long-detail-editor__action--danger" @click="remove(index)">
+                        <text
+                            class="staff-long-detail-editor__action staff-long-detail-editor__action--danger"
+                            @click="remove(index)"
+                        >
                             删除
                         </text>
                     </view>
@@ -58,12 +68,18 @@
                                 class="staff-long-detail-editor__image-preview"
                                 @click="previewImages(block.images, imageIndex)"
                             />
-                            <view class="staff-long-detail-editor__image-remove" @click="removeImage(index, imageIndex)">
+                            <view
+                                class="staff-long-detail-editor__image-remove"
+                                @click="removeImage(index, imageIndex)"
+                            >
                                 <text>×</text>
                             </view>
                         </view>
 
-                        <view class="staff-long-detail-editor__image-adder" @click="selectImages(index)">
+                        <view
+                            class="staff-long-detail-editor__image-adder"
+                            @click="selectImages(index)"
+                        >
                             <text class="staff-long-detail-editor__image-adder-plus">+</text>
                             <text class="staff-long-detail-editor__image-adder-text">
                                 {{ imageUploading ? '上传中' : '添加图片' }}
@@ -149,7 +165,9 @@
                             </view>
                         </view>
 
-                        <view class="staff-long-detail-editor__style-row staff-long-detail-editor__style-row--color">
+                        <view
+                            class="staff-long-detail-editor__style-row staff-long-detail-editor__style-row--color"
+                        >
                             <text class="staff-long-detail-editor__style-label">颜色</text>
                             <view class="staff-long-detail-editor__color-group">
                                 <view

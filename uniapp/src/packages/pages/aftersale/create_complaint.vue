@@ -70,7 +70,9 @@
                     box-shadow="0 18rpx 38rpx rgba(214, 185, 167, 0.12)"
                 >
                     <view class="aftersale-create-section">
-                        <view class="aftersale-create-section__head aftersale-create-section__head--stack">
+                        <view
+                            class="aftersale-create-section__head aftersale-create-section__head--stack"
+                        >
                             <text class="aftersale-create-section__title">投诉内容</text>
                             <text class="aftersale-create-section__meta">
                                 提交时会自动生成标题：{{ previewTitle }}
@@ -122,7 +124,9 @@
                     box-shadow="0 18rpx 38rpx rgba(214, 185, 167, 0.12)"
                 >
                     <view class="aftersale-create-section">
-                        <view class="aftersale-create-section__head aftersale-create-section__head--stack">
+                        <view
+                            class="aftersale-create-section__head aftersale-create-section__head--stack"
+                        >
                             <text class="aftersale-create-section__title">上传凭证</text>
                             <text class="aftersale-create-section__meta">
                                 现场截图、聊天记录等凭证有助于平台快速核查
@@ -150,7 +154,9 @@
                     box-shadow="0 18rpx 38rpx rgba(214, 185, 167, 0.12)"
                 >
                     <view class="aftersale-create-section">
-                        <view class="aftersale-create-section__head aftersale-create-section__head--stack">
+                        <view
+                            class="aftersale-create-section__head aftersale-create-section__head--stack"
+                        >
                             <text class="aftersale-create-section__title">联系方式</text>
                             <text class="aftersale-create-section__meta">
                                 平台处理时会优先通过这组信息与你确认细节
@@ -249,7 +255,7 @@ const form = reactive({
     images: [] as string[],
     videos: [] as string[],
     contact_name: '',
-    contact_mobile: '',
+    contact_mobile: ''
 })
 
 const complaintTypes = complaintTypeOptions
@@ -291,8 +297,9 @@ const loadOrders = async () => {
         orderOptions.value = toOrderOptions(lists)
         if (form.order_id) {
             selectedOrder.value =
-                orderOptions.value.find((item: any) => Number(item.value) === Number(form.order_id)) ||
-                null
+                orderOptions.value.find(
+                    (item: any) => Number(item.value) === Number(form.order_id)
+                ) || null
         }
     } catch (error) {
         console.error('获取订单列表失败', error)
@@ -351,7 +358,7 @@ const handleSubmit = async () => {
             images: form.images,
             videos: [],
             contact_name: contactName,
-            contact_mobile: contactMobile,
+            contact_mobile: contactMobile
         })
         uni.showToast({ title: '投诉已提交', icon: 'none' })
         setTimeout(() => {
@@ -402,8 +409,7 @@ onLoad((options: any) => {
     display: flex;
     flex-direction: column;
     gap: 18rpx;
-    padding: 12rpx var(--wm-space-page-x, 37rpx)
-        calc(var(--wm-safe-bottom-action, 160rpx) + 78rpx);
+    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(var(--wm-safe-bottom-action, 160rpx) + 78rpx);
 }
 
 .aftersale-create-section {

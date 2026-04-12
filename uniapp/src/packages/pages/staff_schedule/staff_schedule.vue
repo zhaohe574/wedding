@@ -129,7 +129,9 @@
                                             {{
                                                 hasPendingOrder(cell.dateStr)
                                                     ? '已安排'
-                                                    : getStatusLabel(getDayStatusForView(cell.dateStr))
+                                                    : getStatusLabel(
+                                                          getDayStatusForView(cell.dateStr)
+                                                      )
                                             }}
                                         </text>
                                     </view>
@@ -190,7 +192,9 @@
                         >
                             <view class="day-order-card__head">
                                 <view class="day-order-card__copy">
-                                    <text class="day-order-card__title">{{ item.package_summary }}</text>
+                                    <text class="day-order-card__title">{{
+                                        item.package_summary
+                                    }}</text>
                                     <text class="day-order-card__meta">
                                         {{ item.contact_name || '未填写联系人' }}
                                         <text v-if="item.contact_mobile">
@@ -391,16 +395,13 @@ const legendItems = [
 const monthText = computed(() => String(month.value).padStart(2, '0'))
 
 const pendingOrdersByDate = computed<Record<string, PendingServiceOrderItem[]>>(() => {
-    return pendingServiceOrders.value.reduce(
-        (acc, item) => {
-            if (!acc[item.service_date]) {
-                acc[item.service_date] = []
-            }
-            acc[item.service_date].push(item)
-            return acc
-        },
-        {} as Record<string, PendingServiceOrderItem[]>
-    )
+    return pendingServiceOrders.value.reduce((acc, item) => {
+        if (!acc[item.service_date]) {
+            acc[item.service_date] = []
+        }
+        acc[item.service_date].push(item)
+        return acc
+    }, {} as Record<string, PendingServiceOrderItem[]>)
 })
 
 const selectedPendingOrders = computed(() => pendingOrdersByDate.value[selectedDate.value] || [])

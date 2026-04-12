@@ -3,234 +3,247 @@
     <PageShell scene="consumer" hasSafeBottom>
         <BaseNavbar title="发表评价" />
         <view class="publish-page">
-        <!-- 顶部渐变背景 -->
-        <view
-            class="top-bg"
-            :style="{
-                background: `linear-gradient(135deg, ${$theme.primaryColor}, ${$theme.primaryColor}88)`
-            }"
-        ></view>
+            <!-- 顶部渐变背景 -->
+            <view
+                class="top-bg"
+                :style="{
+                    background: `linear-gradient(135deg, ${$theme.primaryColor}, ${$theme.primaryColor}88)`
+                }"
+            ></view>
 
-        <!-- 顶部标题区域 -->
-        <view class="top-header">
-            <text class="top-header-title">分享您的体验</text>
-            <text class="top-header-desc">您的评价将帮助我们提供更好的服务</text>
-        </view>
-
-        <!-- 订单信息卡片 -->
-        <view class="order-card" v-if="orderItem">
-            <view class="flex items-center">
-                <image
-                    :src="orderItem.staff?.avatar || '/static/images/user/default_avatar.png'"
-                    class="staff-avatar"
-                    mode="aspectFill"
-                />
-                <view class="flex-1 ml-3">
-                    <view class="text-base font-bold text-gray-800">{{
-                        orderItem.staff_name
-                    }}</view>
-                    <view class="text-sm text-gray-400 mt-1">{{ orderItem.package_name }}</view>
-                    <view class="text-xs text-gray-400 mt-1">
-                        服务日期: {{ orderItem.order?.service_date }}
-                    </view>
-                </view>
-            </view>
-        </view>
-
-        <!-- 综合评分 -->
-        <view class="section-card">
-            <view class="section-header">
-                <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
-                <text class="section-title">服务评分</text>
+            <!-- 顶部标题区域 -->
+            <view class="top-header">
+                <text class="top-header-title">分享您的体验</text>
+                <text class="top-header-desc">您的评价将帮助我们提供更好的服务</text>
             </view>
 
-            <view class="main-score">
-                <text class="main-score-label">综合评分</text>
-                <view class="main-score-stars">
-                    <view v-for="i in 5" :key="i" class="star-touch" @click="formData.score = i">
-                        <tn-icon
-                            :name="i <= formData.score ? 'star-fill' : 'star'"
-                            size="64rpx"
-                            :color="i <= formData.score ? '#ff9800' : '#e0e0e0'"
-                        />
-                    </view>
-                </view>
-                <view class="score-badge" :style="{ background: $theme.primaryColor }">
-                    <text class="score-badge-text">{{ scoreTexts[formData.score - 1] }}</text>
-                </view>
-            </view>
-
-            <view class="detail-divider"></view>
-
-            <view class="detail-scores">
-                <view class="detail-score-row" v-for="item in detailScores" :key="item.key">
-                    <text class="detail-label">{{ item.label }}</text>
-                    <view class="detail-stars">
-                        <view
-                            v-for="i in 5"
-                            :key="i"
-                            class="star-touch-sm"
-                            @click="formData[item.key] = i"
-                        >
-                            <tn-icon
-                                :name="i <= formData[item.key] ? 'star-fill' : 'star'"
-                                size="44rpx"
-                                :color="i <= formData[item.key] ? '#ff9800' : '#e0e0e0'"
-                            />
+            <!-- 订单信息卡片 -->
+            <view class="order-card" v-if="orderItem">
+                <view class="flex items-center">
+                    <image
+                        :src="orderItem.staff?.avatar || '/static/images/user/default_avatar.png'"
+                        class="staff-avatar"
+                        mode="aspectFill"
+                    />
+                    <view class="flex-1 ml-3">
+                        <view class="text-base font-bold text-gray-800">{{
+                            orderItem.staff_name
+                        }}</view>
+                        <view class="text-sm text-gray-400 mt-1">{{ orderItem.package_name }}</view>
+                        <view class="text-xs text-gray-400 mt-1">
+                            服务日期: {{ orderItem.order?.service_date }}
                         </view>
                     </view>
                 </view>
             </view>
-        </view>
 
-        <!-- 评价标签 -->
-        <view class="section-card" v-if="tags.length">
-            <view class="section-header">
-                <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
-                <text class="section-title">选择标签</text>
-                <view class="tag-header-right">
-                    <text
-                        class="tag-count-num"
-                        :style="{ color: selectedTags.length > 0 ? $theme.primaryColor : '#999' }"
-                        >{{ selectedTags.length }}</text
-                    >
-                    <text class="tag-count-sep">/5</text>
+            <!-- 综合评分 -->
+            <view class="section-card">
+                <view class="section-header">
+                    <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
+                    <text class="section-title">服务评分</text>
+                </view>
+
+                <view class="main-score">
+                    <text class="main-score-label">综合评分</text>
+                    <view class="main-score-stars">
+                        <view
+                            v-for="i in 5"
+                            :key="i"
+                            class="star-touch"
+                            @click="formData.score = i"
+                        >
+                            <tn-icon
+                                :name="i <= formData.score ? 'star-fill' : 'star'"
+                                size="64rpx"
+                                :color="i <= formData.score ? '#ff9800' : '#e0e0e0'"
+                            />
+                        </view>
+                    </view>
+                    <view class="score-badge" :style="{ background: $theme.primaryColor }">
+                        <text class="score-badge-text">{{ scoreTexts[formData.score - 1] }}</text>
+                    </view>
+                </view>
+
+                <view class="detail-divider"></view>
+
+                <view class="detail-scores">
+                    <view class="detail-score-row" v-for="item in detailScores" :key="item.key">
+                        <text class="detail-label">{{ item.label }}</text>
+                        <view class="detail-stars">
+                            <view
+                                v-for="i in 5"
+                                :key="i"
+                                class="star-touch-sm"
+                                @click="formData[item.key] = i"
+                            >
+                                <tn-icon
+                                    :name="i <= formData[item.key] ? 'star-fill' : 'star'"
+                                    size="44rpx"
+                                    :color="i <= formData[item.key] ? '#ff9800' : '#e0e0e0'"
+                                />
+                            </view>
+                        </view>
+                    </view>
                 </view>
             </view>
-            <!-- 评分感知提示 -->
-            <view class="tag-hint">
-                <view class="tag-hint-icon" :style="{ background: scoreHintColor + '18' }">
-                    <tn-icon :name="scoreHintIcon" size="28rpx" :color="scoreHintColor" />
+
+            <!-- 评价标签 -->
+            <view class="section-card" v-if="tags.length">
+                <view class="section-header">
+                    <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
+                    <text class="section-title">选择标签</text>
+                    <view class="tag-header-right">
+                        <text
+                            class="tag-count-num"
+                            :style="{
+                                color: selectedTags.length > 0 ? $theme.primaryColor : '#999'
+                            }"
+                            >{{ selectedTags.length }}</text
+                        >
+                        <text class="tag-count-sep">/5</text>
+                    </view>
                 </view>
-                <text class="tag-hint-text">{{ scoreHintText }}</text>
-            </view>
-            <!-- 标签网格 -->
-            <view class="tag-grid">
-                <view
-                    v-for="tag in tags"
-                    :key="tag.id"
-                    class="tag-chip"
-                    :class="{ 'tag-chip--active': selectedTags.includes(tag.id) }"
-                    :style="
-                        selectedTags.includes(tag.id)
-                            ? {
-                                  color: '#fff',
-                                  borderColor: $theme.primaryColor,
-                                  background: $theme.primaryColor
-                              }
-                            : {}
-                    "
-                    @click="toggleTag(tag.id)"
-                >
-                    <tn-icon
-                        v-if="selectedTags.includes(tag.id)"
-                        name="success"
-                        size="24rpx"
-                        color="#fff"
-                        class="tag-chip-icon"
-                    />
-                    <text>{{ tag.name }}</text>
+                <!-- 评分感知提示 -->
+                <view class="tag-hint">
+                    <view class="tag-hint-icon" :style="{ background: scoreHintColor + '18' }">
+                        <tn-icon :name="scoreHintIcon" size="28rpx" :color="scoreHintColor" />
+                    </view>
+                    <text class="tag-hint-text">{{ scoreHintText }}</text>
                 </view>
-            </view>
-            <!-- 已选标签预览 -->
-            <view class="tag-selected-bar" v-if="selectedTags.length > 0">
-                <view class="tag-selected-list">
+                <!-- 标签网格 -->
+                <view class="tag-grid">
                     <view
-                        v-for="tagId in selectedTags"
-                        :key="tagId"
-                        class="tag-mini"
-                        :style="{
-                            background: $theme.primaryColor + '15',
-                            color: $theme.primaryColor
-                        }"
-                        @click="toggleTag(tagId)"
+                        v-for="tag in tags"
+                        :key="tag.id"
+                        class="tag-chip"
+                        :class="{ 'tag-chip--active': selectedTags.includes(tag.id) }"
+                        :style="
+                            selectedTags.includes(tag.id)
+                                ? {
+                                      color: '#fff',
+                                      borderColor: $theme.primaryColor,
+                                      background: $theme.primaryColor
+                                  }
+                                : {}
+                        "
+                        @click="toggleTag(tag.id)"
                     >
-                        <text>{{ getTagName(tagId) }}</text>
-                        <tn-icon name="close" size="20rpx" :color="$theme.primaryColor" />
+                        <tn-icon
+                            v-if="selectedTags.includes(tag.id)"
+                            name="success"
+                            size="24rpx"
+                            color="#fff"
+                            class="tag-chip-icon"
+                        />
+                        <text>{{ tag.name }}</text>
+                    </view>
+                </view>
+                <!-- 已选标签预览 -->
+                <view class="tag-selected-bar" v-if="selectedTags.length > 0">
+                    <view class="tag-selected-list">
+                        <view
+                            v-for="tagId in selectedTags"
+                            :key="tagId"
+                            class="tag-mini"
+                            :style="{
+                                background: $theme.primaryColor + '15',
+                                color: $theme.primaryColor
+                            }"
+                            @click="toggleTag(tagId)"
+                        >
+                            <text>{{ getTagName(tagId) }}</text>
+                            <tn-icon name="close" size="20rpx" :color="$theme.primaryColor" />
+                        </view>
                     </view>
                 </view>
             </view>
-        </view>
 
-        <!-- 评价内容 -->
-        <view class="section-card">
-            <view class="section-header">
-                <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
-                <text class="section-title">评价内容</text>
-            </view>
-            <textarea
-                v-model="formData.content"
-                class="content-input"
-                placeholder="分享您的服务体验，帮助更多人选择..."
-                maxlength="500"
-                :cursor-spacing="120"
-            />
-            <view class="text-right text-xs text-gray-400 mt-1"
-                >{{ formData.content.length }}/500</view
-            >
-        </view>
-
-        <!-- 上传图片/视频 -->
-        <view class="section-card">
-            <view class="section-header">
-                <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
-                <text class="section-title">上传图片/视频（选填）</text>
-            </view>
-            <view class="media-uploader">
-                <view v-for="(img, index) in formData.images" :key="index" class="media-item">
-                    <image :src="img" class="media-image" mode="aspectFill" />
-                    <view class="delete-btn" @click="removeImage(index)">
-                        <tn-icon name="close" size="24rpx" color="#fff"></tn-icon>
-                    </view>
+            <!-- 评价内容 -->
+            <view class="section-card">
+                <view class="section-header">
+                    <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
+                    <text class="section-title">评价内容</text>
                 </view>
-                <view class="add-media" @click="chooseImage" v-if="formData.images.length < 9">
-                    <tn-icon name="camera" size="56rpx" color="#ccc"></tn-icon>
-                    <text class="add-media-text">添加图片</text>
-                </view>
-            </view>
-            <view class="text-xs text-gray-400 mt-2">最多上传9张图片</view>
-        </view>
-
-        <!-- 匿名评价 -->
-        <view class="section-card">
-            <view class="flex justify-between items-center">
-                <view class="flex items-center">
-                    <tn-icon name="my" size="36rpx" color="#999"></tn-icon>
-                    <text class="text-sm text-gray-600 ml-2">匿名评价</text>
-                </view>
-                <switch
-                    :checked="formData.is_anonymous === 1"
-                    @change="handleAnonymousChange"
-                    :color="$theme.primaryColor"
+                <textarea
+                    v-model="formData.content"
+                    class="content-input"
+                    placeholder="分享您的服务体验，帮助更多人选择..."
+                    maxlength="500"
+                    :cursor-spacing="120"
                 />
-            </view>
-        </view>
-
-        <!-- 奖励提示 -->
-        <view
-            class="reward-card"
-            v-if="rewardPoints > 0"
-            :style="{
-                background: $theme.primaryColor + '10',
-                borderColor: $theme.primaryColor + '30'
-            }"
-        >
-            <view class="reward-icon-wrap" :style="{ background: $theme.primaryColor + '20' }">
-                <tn-icon name="gift" size="40rpx" :color="$theme.primaryColor"></tn-icon>
-            </view>
-            <view class="reward-info">
-                <text class="reward-text">评价审核通过后发放积分奖励</text>
-                <text class="reward-points" :style="{ color: $theme.primaryColor }"
-                    >预计 +{{ rewardPoints }} 积分</text
+                <view class="text-right text-xs text-gray-400 mt-1"
+                    >{{ formData.content.length }}/500</view
                 >
             </view>
-        </view>
 
-        <ActionArea class="publish-page__action" sticky safeBottom>
-            <BaseButton block size="lg" :disabled="submitting" :loading="submitting" @click="handleSubmit">
-                {{ submitting ? '提交中...' : '发布评价' }}
-            </BaseButton>
-        </ActionArea>
+            <!-- 上传图片/视频 -->
+            <view class="section-card">
+                <view class="section-header">
+                    <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
+                    <text class="section-title">上传图片/视频（选填）</text>
+                </view>
+                <view class="media-uploader">
+                    <view v-for="(img, index) in formData.images" :key="index" class="media-item">
+                        <image :src="img" class="media-image" mode="aspectFill" />
+                        <view class="delete-btn" @click="removeImage(index)">
+                            <tn-icon name="close" size="24rpx" color="#fff"></tn-icon>
+                        </view>
+                    </view>
+                    <view class="add-media" @click="chooseImage" v-if="formData.images.length < 9">
+                        <tn-icon name="camera" size="56rpx" color="#ccc"></tn-icon>
+                        <text class="add-media-text">添加图片</text>
+                    </view>
+                </view>
+                <view class="text-xs text-gray-400 mt-2">最多上传9张图片</view>
+            </view>
+
+            <!-- 匿名评价 -->
+            <view class="section-card">
+                <view class="flex justify-between items-center">
+                    <view class="flex items-center">
+                        <tn-icon name="my" size="36rpx" color="#999"></tn-icon>
+                        <text class="text-sm text-gray-600 ml-2">匿名评价</text>
+                    </view>
+                    <switch
+                        :checked="formData.is_anonymous === 1"
+                        @change="handleAnonymousChange"
+                        :color="$theme.primaryColor"
+                    />
+                </view>
+            </view>
+
+            <!-- 奖励提示 -->
+            <view
+                class="reward-card"
+                v-if="rewardPoints > 0"
+                :style="{
+                    background: $theme.primaryColor + '10',
+                    borderColor: $theme.primaryColor + '30'
+                }"
+            >
+                <view class="reward-icon-wrap" :style="{ background: $theme.primaryColor + '20' }">
+                    <tn-icon name="gift" size="40rpx" :color="$theme.primaryColor"></tn-icon>
+                </view>
+                <view class="reward-info">
+                    <text class="reward-text">评价审核通过后发放积分奖励</text>
+                    <text class="reward-points" :style="{ color: $theme.primaryColor }"
+                        >预计 +{{ rewardPoints }} 积分</text
+                    >
+                </view>
+            </view>
+
+            <ActionArea class="publish-page__action" sticky safeBottom>
+                <BaseButton
+                    block
+                    size="lg"
+                    :disabled="submitting"
+                    :loading="submitting"
+                    @click="handleSubmit"
+                >
+                    {{ submitting ? '提交中...' : '发布评价' }}
+                </BaseButton>
+            </ActionArea>
         </view>
     </PageShell>
 </template>
@@ -792,5 +805,4 @@ onLoad((options: any) => {
     font-size: 30rpx;
     font-weight: bold;
 }
-
 </style>

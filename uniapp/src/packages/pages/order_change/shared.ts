@@ -55,11 +55,9 @@ export const getChangeStatusMeta = (status: number) =>
 export const getPauseStatusMeta = (status: number) =>
     pauseStatusMap[Number(status)] || pauseStatusMap[0]
 
-export const getChangeTypeMeta = (type: number) =>
-    changeTypeMap[Number(type)] || changeTypeMap[1]
+export const getChangeTypeMeta = (type: number) => changeTypeMap[Number(type)] || changeTypeMap[1]
 
-export const getPauseTypeMeta = (type: number) =>
-    pauseTypeMap[Number(type)] || pauseTypeMap[4]
+export const getPauseTypeMeta = (type: number) => pauseTypeMap[Number(type)] || pauseTypeMap[4]
 
 export const getValueText = (value: unknown, fallback = '待补充') => {
     const text = safeText(value)

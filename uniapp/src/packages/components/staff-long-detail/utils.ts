@@ -27,8 +27,7 @@ const defaultTextStyle = (): LongDetailTextStyle => ({
     bold: false
 })
 
-export const createLongDetailId = () =>
-    `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+export const createLongDetailId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 
 export const createTextBlock = (): LongDetailTextBlock => ({
     id: createLongDetailId(),
@@ -145,7 +144,9 @@ export const parseLongDetailContent = (value?: string): LongDetailBlock[] => {
 
             if (item.type === 'image') {
                 const images = Array.isArray(item.images)
-                    ? item.images.map((image: unknown) => String(image || '').trim()).filter(Boolean)
+                    ? item.images
+                          .map((image: unknown) => String(image || '').trim())
+                          .filter(Boolean)
                     : []
 
                 if (images.length) {
@@ -164,12 +165,12 @@ export const parseLongDetailContent = (value?: string): LongDetailBlock[] => {
                     return acc
                 }
 
-                    acc.push({
-                        id: String(item.id || createLongDetailId()),
-                        type: 'text',
-                        content,
-                        style: normalizeTextStyle(item.style)
-                    })
+                acc.push({
+                    id: String(item.id || createLongDetailId()),
+                    type: 'text',
+                    content,
+                    style: normalizeTextStyle(item.style)
+                })
             }
 
             return acc

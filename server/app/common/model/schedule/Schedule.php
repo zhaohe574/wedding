@@ -113,12 +113,28 @@ class Schedule extends BaseModel
      */
     public static function checkAvailabilityWithReason(int $staffId, string $date, int $timeSlot = 0): array
     {
+        return self::checkAvailabilityForUserWithReason($staffId, $date, 0, $timeSlot);
+    }
+
+    /**
+     * @notes 检查档期是否可预约并返回原因（允许识别当前用户持有的有效锁）
+     * @param int $staffId
+     * @param string $date
+     * @param int $userId
+     * @param int $timeSlot
+     * @return array
+     */
+    public static function checkAvailabilityForUserWithReason(int $staffId, string $date, int $userId = 0, int $timeSlot = 0): array
+    {
         [$ruleAllowed, $ruleReason] = ScheduleRule::checkDate($staffId, $date);
         if (!$ruleAllowed) {
             return [false, $ruleReason];
         }
 
-        return self::isScheduleRecordAvailableWithReason(self::findDateSchedule($staffId, $date));
+        return self::isScheduleRecordAvailableWithReason(
+            self::findDateSchedule($staffId, $date),
+            $userId
+        );
     }
 
     /**
@@ -473,7 +489,7 @@ class Schedule extends BaseModel
      * @param Schedule|null $schedule
      * @return array
      */
-    protected static function isScheduleRecordAvailableWithReason(?self $schedule): array
+    protected static function isScheduleRecordAvailableWithReason(?self $schedule, int $userId = 0): array
     {
         if (!$schedule) {
             return [true, ''];
@@ -485,6 +501,15 @@ class Schedule extends BaseModel
         }
 
         if ((int)$schedule->status === self::STATUS_AVAILABLE) {
+            return [true, ''];
+        }
+
+        if (
+            (int)$schedule->status === self::STATUS_LOCKED
+            && $userId > 0
+            && (int)$schedule->lock_user_id === $userId
+            && (int)$schedule->lock_expire_time > time()
+        ) {
             return [true, ''];
         }
 

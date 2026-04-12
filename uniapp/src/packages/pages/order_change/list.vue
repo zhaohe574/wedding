@@ -4,11 +4,7 @@
         <BaseNavbar title="我的申请" />
 
         <view class="change-list-page">
-            <scroll-view
-                scroll-x
-                class="change-list-page__filter-scroll"
-                :show-scrollbar="false"
-            >
+            <scroll-view scroll-x class="change-list-page__filter-scroll" :show-scrollbar="false">
                 <view class="change-list-page__filter-row">
                     <view
                         v-for="tab in typeTabs"
@@ -84,10 +80,7 @@
                             {{ getSecondarySummary(item) }}
                         </text>
 
-                        <view
-                            v-if="getReasonText(item)"
-                            class="change-record-card__reason"
-                        >
+                        <view v-if="getReasonText(item)" class="change-record-card__reason">
                             <text class="change-record-card__reason-label">原因</text>
                             <text class="change-record-card__reason-text">
                                 {{ getReasonText(item) }}
@@ -103,11 +96,7 @@
                                 class="change-record-card__actions"
                                 @click.stop
                             >
-                                <BaseButton
-                                    size="sm"
-                                    variant="danger"
-                                    @click="handleCancel(item)"
-                                >
+                                <BaseButton size="sm" variant="danger" @click="handleCancel(item)">
                                     取消申请
                                 </BaseButton>
                             </view>
@@ -205,7 +194,9 @@ const getStatusTone = (item: any) => {
 }
 
 const getRecordNo = (item: any) =>
-    currentType.value === 'change' ? item?.change_sn || '变更单待生成' : item?.pause_sn || '暂停单待生成'
+    currentType.value === 'change'
+        ? item?.change_sn || '变更单待生成'
+        : item?.pause_sn || '暂停单待生成'
 
 const getTypeLabel = (item: any) =>
     currentType.value === 'change'
@@ -232,18 +223,24 @@ const getRecordTitle = (item: any) => {
 
 const getPrimarySummary = (item: any) => {
     if (currentType.value === 'pause') {
-        return `暂停周期：${item?.pause_start_date || '待补充'} ~ ${item?.pause_end_date || '待补充'}`
+        return `暂停周期：${item?.pause_start_date || '待补充'} ~ ${
+            item?.pause_end_date || '待补充'
+        }`
     }
 
     const type = Number(item?.change_type || 0)
     if (type === 1) {
-        return `服务日期：${item?.old_service_date || '待补充'} → ${item?.new_service_date || '待补充'}`
+        return `服务日期：${item?.old_service_date || '待补充'} → ${
+            item?.new_service_date || '待补充'
+        }`
     }
     if (type === 2) {
         return `人员变更：${item?.old_staff_name || '待补充'} → ${item?.new_staff_name || '待补充'}`
     }
     if (type === 3) {
-        return `新增服务：${item?.add_staff_name || '待补充'} / ${item?.add_package_name || '未选择套餐'}`
+        return `新增服务：${item?.add_staff_name || '待补充'} / ${
+            item?.add_package_name || '未选择套餐'
+        }`
     }
     return '申请内容待补充'
 }
@@ -270,10 +267,14 @@ const getReasonText = (item: any) =>
 
 const getFootNote = (item: any) => {
     if (currentType.value === 'pause') {
-        return Number(item?.pause_status || 0) === 0 ? '待审核，可在通过前取消申请' : '点击查看暂停详情'
+        return Number(item?.pause_status || 0) === 0
+            ? '待审核，可在通过前取消申请'
+            : '点击查看暂停详情'
     }
 
-    return Number(item?.change_status || 0) === 0 ? '待审核，可在通过前取消申请' : '点击查看变更详情'
+    return Number(item?.change_status || 0) === 0
+        ? '待审核，可在通过前取消申请'
+        : '点击查看变更详情'
 }
 
 const canCancel = (item: any) =>

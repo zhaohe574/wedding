@@ -13,11 +13,7 @@
                 />
             </view>
 
-            <view
-                v-else
-                class="staff-long-detail-renderer__text"
-                :style="getTextStyle(block)"
-            >
+            <view v-else class="staff-long-detail-renderer__text" :style="getTextStyle(block)">
                 {{ block.content }}
             </view>
         </template>

@@ -121,38 +121,6 @@ export function getTagTypeOptions() {
     return request.get({ url: '/growth.reviewTag/typeOptions' })
 }
 
-// ==================== 评价申诉 ====================
-
-// 申诉列表
-export function getAppealList(params?: any) {
-    return request.get({ url: '/growth.reviewAppeal/lists', params })
-}
-
-// 申诉详情
-export function getAppealDetail(params: any) {
-    return request.get({ url: '/growth.reviewAppeal/detail', params })
-}
-
-// 处理申诉
-export function handleAppeal(params: any) {
-    return request.post({ url: '/growth.reviewAppeal/handle', params })
-}
-
-// 申诉统计
-export function getAppealStatistics() {
-    return request.get({ url: '/growth.reviewAppeal/statistics' })
-}
-
-// 申诉类型选项
-export function getAppealTypeOptions() {
-    return request.get({ url: '/growth.reviewAppeal/typeOptions' })
-}
-
-// 处理动作选项
-export function getAppealActionOptions() {
-    return request.get({ url: '/growth.reviewAppeal/actionOptions' })
-}
-
 // ==================== 敏感词 ====================
 
 // 敏感词列表

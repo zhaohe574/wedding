@@ -32,9 +32,6 @@ class ReviewValidate extends BaseValidate
         'review_id' => 'require|integer|gt:0',
         'share_platform' => 'require|in:wechat,moments,weibo,douyin,xiaohongshu',
         'verify_image' => 'max:500',
-        'appeal_type' => 'require|in:1,2,3,4',
-        'appeal_reason' => 'require|max:500',
-        'evidence_images' => 'array|max:5',
     ];
 
     protected $message = [
@@ -67,12 +64,6 @@ class ReviewValidate extends BaseValidate
         'share_platform.require' => '分享平台不能为空',
         'share_platform.in' => '分享平台参数错误',
         'verify_image.max' => '截图链接过长',
-        'appeal_type.require' => '申诉类型不能为空',
-        'appeal_type.in' => '申诉类型参数错误',
-        'appeal_reason.require' => '申诉原因不能为空',
-        'appeal_reason.max' => '申诉原因最多500个字符',
-        'evidence_images.array' => '证据图片格式错误',
-        'evidence_images.max' => '最多上传5张证据图片',
     ];
 
     protected $scene = [
@@ -80,6 +71,5 @@ class ReviewValidate extends BaseValidate
         'publish' => ['order_item_id', 'score', 'score_service', 'score_professional', 'score_punctual', 'score_effect', 'content', 'images', 'video', 'is_anonymous', 'tag_ids'],
         'append' => ['id', 'content', 'images'],
         'shareReward' => ['review_id', 'share_platform', 'verify_image'],
-        'appeal' => ['review_id', 'appeal_type', 'appeal_reason', 'evidence_images'],
     ];
 }

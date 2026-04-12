@@ -503,9 +503,11 @@ const hasActiveOrderCountdown = (order: FormattedOrder) =>
     getLiveRemainSeconds(order, 'payExpireAt', 1) > 0
 
 const hasExpiredOrderCountdown = (order: FormattedOrder) =>
-    (order.statusValue === 0 && Number(order.confirmExpireAt || 0) > 0 &&
+    (order.statusValue === 0 &&
+        Number(order.confirmExpireAt || 0) > 0 &&
         getLiveRemainSeconds(order, 'confirmExpireAt', 0) <= 0) ||
-    (order.statusValue === 1 && Number(order.payExpireAt || 0) > 0 &&
+    (order.statusValue === 1 &&
+        Number(order.payExpireAt || 0) > 0 &&
         getLiveRemainSeconds(order, 'payExpireAt', 1) <= 0)
 
 const refreshOrderCountdownData = async () => {

@@ -52,10 +52,7 @@
                     <view v-for="item in waitlistItems" :key="item.id" class="waitlist-card">
                         <view class="waitlist-card__head">
                             <text class="waitlist-card__title">{{ item.title }}</text>
-                            <view
-                                class="waitlist-card__status"
-                                :class="item.statusClass"
-                            >
+                            <view class="waitlist-card__status" :class="item.statusClass">
                                 <text class="waitlist-card__status-text">
                                     {{ item.statusText }}
                                 </text>

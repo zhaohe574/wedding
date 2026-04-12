@@ -26,18 +26,24 @@
             <view v-if="showFooter" class="aftersale-sheet__footer">
                 <slot name="footer">
                     <view class="aftersale-sheet__actions">
-                    <BaseButton v-if="secondaryText" variant="ghost" size="lg" block @click="handleCancel">
-                        {{ secondaryText }}
-                    </BaseButton>
-                    <BaseButton
-                        variant="primary"
-                        size="lg"
-                        block
-                        :loading="primaryLoading"
-                        @click="emit('confirm')"
-                    >
-                        {{ primaryText }}
-                    </BaseButton>
+                        <BaseButton
+                            v-if="secondaryText"
+                            variant="ghost"
+                            size="lg"
+                            block
+                            @click="handleCancel"
+                        >
+                            {{ secondaryText }}
+                        </BaseButton>
+                        <BaseButton
+                            variant="primary"
+                            size="lg"
+                            block
+                            :loading="primaryLoading"
+                            @click="emit('confirm')"
+                        >
+                            {{ primaryText }}
+                        </BaseButton>
                     </view>
                 </slot>
             </view>

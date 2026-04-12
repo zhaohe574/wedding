@@ -132,7 +132,7 @@
                 <template #header>
                     <div class="flex items-center justify-between">
                         <span>近期订单</span>
-                        <router-link to="/order/lists" class="text-primary text-sm cursor-pointer">
+                        <router-link :to="routePaths.order.value" class="text-primary text-sm cursor-pointer">
                             查看全部
                         </router-link>
                     </div>
@@ -166,12 +166,31 @@
 <script lang="ts" setup name="workbench">
 import vCharts from 'vue-echarts'
 import { getWorkbench } from '@/api/app'
+import { getRoutePath } from '@/router'
 import useSettingStore from '@/stores/modules/setting'
 import { calcColor } from '@/utils/util'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const settingStore = useSettingStore()
+const routePaths = {
+    flow: computed(() => getRoutePath('finance.flow/lists') || '/financial/flow'),
+    order: computed(() => getRoutePath('ops.order/lists') || '/order/lists'),
+    refund: computed(() => getRoutePath('ops.refund/lists') || '/order/refund'),
+    user: computed(() => getRoutePath('user.user/lists') || '/consumer/lists'),
+    staff: computed(() => getRoutePath('ops.staff/lists') || '/staff'),
+}
+
+const pushToPath = (path: string, query?: Record<string, string | number>) => {
+    if (!path) {
+        return
+    }
+
+    router.push({
+        path,
+        query,
+    })
+}
 
 // 排名颜色
 const rankColors = ['#f56c6c', '#e6a23c', '#409eff', '#94a3b8', '#94a3b8']
@@ -214,7 +233,7 @@ const statCards = computed(() => [
         icon: 'Wallet',
         bgColor: calcColor(settingStore.theme, 0.1),
         iconColor: settingStore.theme,
-        onClick: () => router.push('/financial/flow'),
+        onClick: () => pushToPath(routePaths.flow.value),
     },
     {
         key: 'orders',
@@ -225,7 +244,7 @@ const statCards = computed(() => [
         icon: 'Document',
         bgColor: calcColor('#67c23a', 0.1),
         iconColor: '#67c23a',
-        onClick: () => router.push('/order/lists'),
+        onClick: () => pushToPath(routePaths.order.value),
     },
     {
         key: 'users',
@@ -236,7 +255,7 @@ const statCards = computed(() => [
         icon: 'User',
         bgColor: calcColor('#e6a23c', 0.1),
         iconColor: '#e6a23c',
-        onClick: () => router.push('/consumer/lists'),
+        onClick: () => pushToPath(routePaths.user.value),
     },
     {
         key: 'todo',
@@ -262,31 +281,31 @@ const todoItems = computed(() => [
         key: 'pending_confirm',
         label: '待确认订单',
         count: workbenchData.todo.pending_confirm,
-        onClick: () => router.push('/order/lists?order_status=0'),
+        onClick: () => pushToPath(routePaths.order.value, { order_status: 0 }),
     },
     {
         key: 'pending_pay',
         label: '待支付订单',
         count: workbenchData.todo.pending_pay,
-        onClick: () => router.push('/order/lists?order_status=1'),
+        onClick: () => pushToPath(routePaths.order.value, { order_status: 1 }),
     },
     {
         key: 'in_service',
         label: '服务中订单',
         count: workbenchData.todo.in_service,
-        onClick: () => router.push('/order/lists?order_status=3'),
+        onClick: () => pushToPath(routePaths.order.value, { order_status: 3 }),
     },
     {
         key: 'pending_refund',
         label: '待审核退款',
         count: workbenchData.todo.pending_refund,
-        onClick: () => router.push('/order/refund'),
+        onClick: () => pushToPath(routePaths.refund.value),
     },
     {
         key: 'pending_staff',
         label: '待审核员工',
         count: workbenchData.todo.pending_staff,
-        onClick: () => router.push('/service/staff'),
+        onClick: () => pushToPath(routePaths.staff.value),
     },
 ])
 

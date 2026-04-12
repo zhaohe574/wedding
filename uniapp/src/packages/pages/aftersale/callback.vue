@@ -40,7 +40,11 @@
                             <view class="aftersale-record-card__footer">
                                 <text
                                     class="aftersale-record-card__status"
-                                    :class="getBadgeToneClass(getCallbackStatusMeta(Number(item.status || 0)).tone)"
+                                    :class="
+                                        getBadgeToneClass(
+                                            getCallbackStatusMeta(Number(item.status || 0)).tone
+                                        )
+                                    "
                                 >
                                     {{ getCallbackStatusMeta(Number(item.status || 0)).label }}
                                 </text>
@@ -127,8 +131,7 @@ onLoad((options: any) => {
     display: flex;
     flex-direction: column;
     gap: 16rpx;
-    padding: 12rpx var(--wm-space-page-x, 37rpx)
-        calc(var(--wm-safe-bottom-action, 160rpx) + 18rpx);
+    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(var(--wm-safe-bottom-action, 160rpx) + 18rpx);
 }
 
 .aftersale-list-page__filters {

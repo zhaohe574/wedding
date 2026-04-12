@@ -80,10 +80,15 @@
                 >
                     <text class="order-change-card__title">暂停时间</text>
                     <view class="order-change-form-field">
-                        <text class="order-change-form-field__label order-change-form-field__label--required">
+                        <text
+                            class="order-change-form-field__label order-change-form-field__label--required"
+                        >
                             开始日期
                         </text>
-                        <view class="order-change-form-field__shell" @click="openDatePicker('start')">
+                        <view
+                            class="order-change-form-field__shell"
+                            @click="openDatePicker('start')"
+                        >
                             <view class="order-change-form-field__value-row">
                                 <text
                                     v-if="formData.start_date"
@@ -99,7 +104,9 @@
                         </view>
                     </view>
                     <view class="order-change-form-field">
-                        <text class="order-change-form-field__label order-change-form-field__label--required">
+                        <text
+                            class="order-change-form-field__label order-change-form-field__label--required"
+                        >
                             结束日期
                         </text>
                         <view class="order-change-form-field__shell" @click="openDatePicker('end')">
@@ -136,10 +143,14 @@
                 >
                     <text class="order-change-card__title">详细说明</text>
                     <view class="order-change-form-field">
-                        <text class="order-change-form-field__label order-change-form-field__label--required">
+                        <text
+                            class="order-change-form-field__label order-change-form-field__label--required"
+                        >
                             暂停原因
                         </text>
-                        <view class="order-change-form-field__shell order-change-form-field__shell--textarea">
+                        <view
+                            class="order-change-form-field__shell order-change-form-field__shell--textarea"
+                        >
                             <textarea
                                 v-model="formData.reason"
                                 class="order-change-form-field__textarea"
@@ -175,7 +186,10 @@
                                 class="order-change-upload-grid__preview"
                                 @click="openImagePreview(formData.proof_images, index)"
                             />
-                            <view class="order-change-upload-grid__remove" @click.stop="removeImage(index)">
+                            <view
+                                class="order-change-upload-grid__remove"
+                                @click.stop="removeImage(index)"
+                            >
                                 <tn-icon name="close" size="20" color="#FFFFFF" />
                             </view>
                         </view>
@@ -269,12 +283,7 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
-import {
-    formatCurrency,
-    getPageStyleWithPopupLock,
-    getValueText,
-    openImagePreview
-} from './shared'
+import { formatCurrency, getPageStyleWithPopupLock, getValueText, openImagePreview } from './shared'
 
 const $theme = useThemeStore()
 
@@ -313,9 +322,7 @@ const days = computed(() => {
 })
 
 const orderItem = computed(() => orderInfo.value?.items?.[0] || null)
-const pageStyle = computed(() =>
-    getPageStyleWithPopupLock($theme.pageStyle, popupVisible.value)
-)
+const pageStyle = computed(() => getPageStyleWithPopupLock($theme.pageStyle, popupVisible.value))
 const pauseDays = computed(() => {
     if (!formData.start_date || !formData.end_date) {
         return 0
@@ -370,7 +377,9 @@ const syncPickerWithDate = (value?: string) => {
 
 const openDatePicker = (field: 'start' | 'end') => {
     activeDateField.value = field
-    syncPickerWithDate(field === 'start' ? formData.start_date : formData.end_date || formData.start_date)
+    syncPickerWithDate(
+        field === 'start' ? formData.start_date : formData.end_date || formData.start_date
+    )
     datePopup.value?.open()
 }
 

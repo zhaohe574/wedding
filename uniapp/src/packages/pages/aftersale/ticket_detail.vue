@@ -63,7 +63,10 @@
                             class="aftersale-timeline__item"
                         >
                             <view class="aftersale-timeline__line">
-                                <view class="aftersale-timeline__dot" :class="{ 'is-active': index === 0 }" />
+                                <view
+                                    class="aftersale-timeline__dot"
+                                    :class="{ 'is-active': index === 0 }"
+                                />
                             </view>
                             <view class="aftersale-timeline__content">
                                 <text class="aftersale-timeline__text">
@@ -162,8 +165,14 @@ const confirmForm = reactive({
 const ticketStatus = computed(() => getTicketStatusMeta(Number(detail.value?.status || 0)))
 const images = computed(() => normalizeMediaList(detail.value?.images))
 const bannerMetrics = computed(() => [
-    { label: '更新时间', value: String(detail.value?.update_time || detail.value?.create_time || '-') },
-    { label: '进度节点', value: String(Array.isArray(detail.value?.logs) ? detail.value.logs.length : 0) }
+    {
+        label: '更新时间',
+        value: String(detail.value?.update_time || detail.value?.create_time || '-')
+    },
+    {
+        label: '进度节点',
+        value: String(Array.isArray(detail.value?.logs) ? detail.value.logs.length : 0)
+    }
 ])
 
 const getTypeText = (type: number) => {

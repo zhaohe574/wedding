@@ -168,8 +168,7 @@ const buttonVars = computed(() => {
             '--button-bg-start': 'var(--wm-color-danger, #C94B49)',
             '--button-bg-end': 'var(--wm-color-danger, #C94B49)',
             '--button-shadow': props.shadow || '0 12rpx 24rpx rgba(201, 75, 73, 0.18)',
-            '--button-shadow-active':
-                props.activeShadow || '0 6rpx 12rpx rgba(201, 75, 73, 0.14)'
+            '--button-shadow-active': props.activeShadow || '0 6rpx 12rpx rgba(201, 75, 73, 0.14)'
         }
     }
 

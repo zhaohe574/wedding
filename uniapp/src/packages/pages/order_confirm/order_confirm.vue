@@ -263,10 +263,7 @@
                                 </view>
                             </view>
 
-                            <view
-                                v-if="preview.deposit_remark"
-                                class="payment-arrangement__remark"
-                            >
+                            <view v-if="preview.deposit_remark" class="payment-arrangement__remark">
                                 <text class="payment-arrangement__remark-label">{{
                                     paymentRemarkLabel
                                 }}</text>
@@ -304,7 +301,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import ActionArea from '@/components/base/ActionArea.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -312,6 +309,7 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import { previewOrder, createOrder } from '@/api/order'
+import { lockSchedule, releaseScheduleLock } from '@/api/schedule'
 import { BACK_URL } from '@/enums/constantEnums'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
@@ -337,6 +335,8 @@ const userStore = useUserStore()
 const loading = ref(false)
 const submitting = ref(false)
 const initialized = ref(false)
+const scheduleLocking = ref(false)
+const orderCreated = ref(false)
 const selection = reactive({
     staff_id: 0,
     package_id: 0,
@@ -378,6 +378,7 @@ const form = reactive({
     service_address: '',
     remark: ''
 })
+const lockedSchedules = ref<Array<{ staff_id: number; date: string }>>([])
 
 const hasItems = computed(
     () => Array.isArray(preview.value.items) && preview.value.items.length > 0
@@ -420,14 +421,18 @@ const staffInitial = computed(() => {
     const name = String(mainItem.value?.staff?.name || '').trim()
     return name ? name.slice(0, 1) : '婚'
 })
-const paymentModeText = computed(() => String(preview.value.payment_mode_desc || '').trim() || '全款支付')
+const paymentModeText = computed(
+    () => String(preview.value.payment_mode_desc || '').trim() || '全款支付'
+)
 const currentPayStageText = computed(
     () => String(preview.value.current_pay_stage_desc || '').trim() || '待支付'
 )
 const currentPayAmountText = computed(() =>
     formatPrice(preview.value.need_pay_amount ?? preview.value.pay_amount)
 )
-const totalAmountText = computed(() => formatPrice(preview.value.total_amount ?? preview.value.pay_amount))
+const totalAmountText = computed(() =>
+    formatPrice(preview.value.total_amount ?? preview.value.pay_amount)
+)
 const paymentRemarkLabel = computed(() =>
     Number(preview.value.deposit_amount || 0) > 0 ? '定金说明' : '支付说明'
 )
@@ -448,22 +453,45 @@ const mainPackageSummary = computed(() => {
 
 const formatPrice = (value: any) => Number(value || 0).toFixed(2)
 
+const collectScheduleLocks = () => {
+    const date = String(selection.date || '').trim()
+    if (!date) {
+        return []
+    }
+
+    return [
+        selection.staff_id > 0 && selection.package_id > 0 ? selection.staff_id : 0,
+        selection.butler_staff_id > 0 && selection.butler_package_id > 0
+            ? selection.butler_staff_id
+            : 0,
+        selection.director_staff_id > 0 && selection.director_package_id > 0
+            ? selection.director_staff_id
+            : 0,
+    ]
+        .map((staffId) => Number(staffId || 0))
+        .filter((staffId) => Number.isInteger(staffId) && staffId > 0)
+        .filter((staffId, index, list) => list.indexOf(staffId) === index)
+        .map((staff_id) => ({ staff_id, date }))
+}
+
 const getConfirmPageUrl = () => {
     return getOrderConfirmPageUrl(selection)
 }
 
-const ensureSubmitLogin = () => {
+const ensureOrderConfirmLogin = (message = '请先登录后确认订单') => {
     if (userStore.isLogin) {
         return true
     }
 
     cache.set(BACK_URL, getConfirmPageUrl())
-    uni.showToast({ title: '请先登录后提交订单', icon: 'none' })
+    uni.showToast({ title: message, icon: 'none' })
     setTimeout(() => {
         uni.navigateTo({ url: '/pages/login/login' })
     }, 300)
     return false
 }
+
+const ensureSubmitLogin = () => ensureOrderConfirmLogin('请先登录后提交订单')
 
 const initContact = async () => {
     await userStore.getUser()
@@ -491,7 +519,72 @@ const getStaffDetailUrl = () => {
     return getStaffBookingPageUrl(selection)
 }
 
-const handlePreviewError = (message: string) => {
+const releaseCurrentLocks = async (silent = true) => {
+    if (orderCreated.value || !lockedSchedules.value.length) {
+        return
+    }
+
+    const targets = [...lockedSchedules.value]
+    lockedSchedules.value = []
+
+    await Promise.allSettled(
+        targets.map((target) =>
+            releaseScheduleLock({
+                staff_id: target.staff_id,
+                date: target.date
+            }).catch((error) => {
+                if (!silent) {
+                    return Promise.reject(error)
+                }
+                return null
+            })
+        )
+    )
+}
+
+const ensureScheduleLocks = async () => {
+    if (scheduleLocking.value) {
+        return lockedSchedules.value.length > 0
+    }
+
+    const targets = collectScheduleLocks()
+    if (!targets.length) {
+        return false
+    }
+
+    scheduleLocking.value = true
+    const acquired: Array<{ staff_id: number; date: string }> = []
+    try {
+        for (const target of targets) {
+            await lockSchedule({
+                staff_id: target.staff_id,
+                date: target.date
+            })
+            acquired.push(target)
+        }
+
+        lockedSchedules.value = targets
+        return true
+    } catch (error) {
+        if (acquired.length) {
+            await Promise.allSettled(
+                acquired.map((target) =>
+                    releaseScheduleLock({
+                        staff_id: target.staff_id,
+                        date: target.date
+                    }).catch(() => null)
+                )
+            )
+        }
+        lockedSchedules.value = []
+        throw error
+    } finally {
+        scheduleLocking.value = false
+    }
+}
+
+const handlePreviewError = async (message: string) => {
+    await releaseCurrentLocks()
     uni.showToast({ title: message, icon: 'none' })
     const url = getStaffDetailUrl()
     setTimeout(() => {
@@ -526,11 +619,11 @@ const fetchPreview = async () => {
             deposit_remark: data?.deposit_remark || ''
         }
         if (!preview.value.items.length) {
-            handlePreviewError('暂无可结算的服务')
+            await handlePreviewError('暂无可结算的服务')
         }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加载失败'
-        handlePreviewError(errorMsg)
+        await handlePreviewError(errorMsg)
     } finally {
         loading.value = false
     }
@@ -538,7 +631,8 @@ const fetchPreview = async () => {
 
 const isValidMobile = (mobile: string) => /^1[3-9]\d{9}$/.test(mobile)
 
-const handleReselect = () => {
+const handleReselect = async () => {
+    await releaseCurrentLocks()
     const url = getStaffDetailUrl()
     if (!url) {
         uni.navigateBack()
@@ -571,6 +665,8 @@ const handleSubmit = async () => {
 
     submitting.value = true
     try {
+        await ensureScheduleLocks()
+
         try {
             await requestSubscribeByScene('order_confirm')
         } catch (error) {
@@ -587,6 +683,8 @@ const handleSubmit = async () => {
 
         const res = await createOrder(params)
         const orderId = Number(res?.order_id || res?.id || 0)
+        orderCreated.value = true
+        lockedSchedules.value = []
         uni.showToast({ title: '订单已提交', icon: 'success' })
         if (orderId) {
             uni.reLaunch({ url: `/pages/order_detail/order_detail?id=${orderId}` })
@@ -602,9 +700,19 @@ const handleSubmit = async () => {
 }
 
 const initPage = async () => {
-    await initContact()
-    await fetchPreview()
-    initialized.value = true
+    if (!ensureOrderConfirmLogin()) {
+        return
+    }
+    try {
+        await ensureScheduleLocks()
+        await initContact()
+        await fetchPreview()
+        initialized.value = true
+    } catch (error: any) {
+        const errorMsg =
+            typeof error === 'string' ? error : error?.msg || error?.message || '档期锁定失败'
+        await handlePreviewError(errorMsg)
+    }
 }
 
 const getExtraItemTitle = (item: any) => {
@@ -670,8 +778,32 @@ onLoad((options: any) => {
 
 onShow(() => {
     if (initialized.value) {
-        fetchPreview()
+        if (!userStore.isLogin) {
+            return
+        }
+
+        ensureScheduleLocks()
+            .then((locked) => {
+                if (!locked) {
+                    return
+                }
+                return fetchPreview()
+            })
+            .catch((error: any) => {
+                const errorMsg =
+                    typeof error === 'string'
+                        ? error
+                        : error?.msg || error?.message || '档期锁定失败'
+                handlePreviewError(errorMsg)
+            })
     }
+})
+
+onUnload(() => {
+    if (orderCreated.value) {
+        return
+    }
+    void releaseCurrentLocks()
 })
 </script>
 

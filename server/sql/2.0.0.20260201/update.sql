@@ -1197,29 +1197,6 @@ CREATE TABLE IF NOT EXISTS `la_review_like` (
     KEY `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评价点赞表';
 
--- la_review_appeal
-CREATE TABLE IF NOT EXISTS `la_review_appeal` (
-    `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '申诉ID',
-    `review_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '评价ID',
-    `appeal_user_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '申诉人ID（用户）',
-    `appeal_staff_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '申诉人ID（服务人员）',
-    `appeal_type` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '申诉类型 1恶意差评 2虚假评价 3侵犯隐私 4其他',
-    `appeal_reason` text COMMENT '申诉原因',
-    `evidence_images` text COMMENT '证据图片 JSON数组',
-    `status` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态 0待处理 1已通过 2已驳回',
-    `handle_admin_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '处理人ID',
-    `handle_result` text COMMENT '处理结果',
-    `handle_action` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '处理动作 0无 1删除评价 2隐藏评价 3警告用户',
-    `handle_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '处理时间',
-    `create_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_review_id` (`review_id`),
-    KEY `idx_status` (`status`),
-    KEY `idx_appeal_user_id` (`appeal_user_id`),
-    KEY `idx_appeal_staff_id` (`appeal_staff_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评价申诉表';
-
 -- la_review_reward_config
 CREATE TABLE IF NOT EXISTS `la_review_reward_config` (
     `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
@@ -1484,44 +1461,6 @@ CREATE TABLE IF NOT EXISTS `la_financial_monthly` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_report_year_month` (`report_year`, `report_month`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='财务月报表';
-
--- la_invoice
-CREATE TABLE IF NOT EXISTS `la_invoice` (
-    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `invoice_sn` VARCHAR(32) NOT NULL COMMENT '发票编号',
-    `invoice_no` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '发票号码',
-    `order_id` INT UNSIGNED NOT NULL COMMENT '订单ID',
-    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
-    `invoice_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '发票类型：1=电子普票,2=电子专票,3=纸质普票,4=纸质专票',
-    `title_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '抬头类型：1=个人,2=企业',
-    `invoice_title` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '发票抬头',
-    `tax_no` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '税号',
-    `bank_name` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '开户行',
-    `bank_account` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '银行账号',
-    `company_address` VARCHAR(200) NOT NULL DEFAULT '' COMMENT '企业地址',
-    `company_phone` VARCHAR(30) NOT NULL DEFAULT '' COMMENT '企业电话',
-    `amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '发票金额',
-    `email` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '接收邮箱',
-    `receiver_name` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '收件人(纸质)',
-    `receiver_phone` VARCHAR(20) NOT NULL DEFAULT '' COMMENT '收件电话(纸质)',
-    `receiver_address` VARCHAR(200) NOT NULL DEFAULT '' COMMENT '收件地址(纸质)',
-    `invoice_url` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '电子发票下载地址',
-    `status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态：0=待开票,1=开票中,2=已开票,3=失败,4=已作废',
-    `issue_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '开票时间',
-    `issue_admin_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '开票管理员ID',
-    `fail_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '失败原因',
-    `void_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '作废原因',
-    `void_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '作废时间',
-    `remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '备注',
-    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
-    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_invoice_sn` (`invoice_sn`),
-    KEY `idx_order_id` (`order_id`),
-    KEY `idx_user_id` (`user_id`),
-    KEY `idx_status` (`status`),
-    KEY `idx_create_time` (`create_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='发票记录表';
 
 -- la_staff_settlement_config
 CREATE TABLE IF NOT EXISTS `la_staff_settlement_config` (
@@ -1926,6 +1865,10 @@ CREATE TABLE IF NOT EXISTS `la_after_sale_daily_stats` (
     UNIQUE KEY `uk_stat_date` (`stat_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='售后工单每日统计表';
 
+-- 下线功能的遗留表清理
+DROP TABLE IF EXISTS `la_review_appeal`;
+DROP TABLE IF EXISTS `la_invoice`;
+
 -- =============================================================================
 -- Part 2: 基础结构补充
 -- =============================================================================
@@ -2315,7 +2258,6 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (198, 197, 'C', '资金流水', '', 100, 'finance.flow/lists', 'flow', 'financial/flow/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (199, 197, 'C', '结算管理', '', 80, 'finance.settlement/lists', 'settlement', 'financial/settlement/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (200, 197, 'C', '成本管理', '', 70, 'finance.cost/lists', 'cost', 'financial/cost/index', '', '', 0, 0, 1, 1773413107, 1773556013),
-(201, 197, 'C', '发票管理', '', 60, 'finance.invoice/lists', 'invoice', 'financial/invoice/index', '', '', 0, 0, 1, 1773413107, 1773556013),
 (206, 0, 'M', '售后服务', 'el-icon-Service', 550, '', 'aftersale', '', '', '', 0, 0, 1, 1773413107, 1773556013),
 (207, 206, 'C', '售后工单', '', 100, 'ops.aftersaleTicket/lists', 'ticket', 'aftersale/ticket/index', '', '', 0, 0, 1, 1773413107, 1773556013),
 (210, 0, 'M', '消息中心', 'el-icon-Bell', 450, '', 'message', '', '', '', 0, 1, 0, 1773413107, 1773413107),
@@ -2365,6 +2307,33 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (252, 248, 'A', '删除', '', 0, 'ops.addon/delete', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
 (253, 248, 'A', '状态切换', '', 0, 'ops.addon/changeStatus', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
 (254, 248, 'A', '全部', '', 0, 'ops.addon/all', '', '', '', '', 0, 0, 1, 1773650000, 1773650000);
+
+-- 下线功能的遗留菜单清理
+DELETE srm
+FROM `la_system_role_menu` AS srm
+INNER JOIN `la_system_menu` AS sm ON sm.`id` = srm.`menu_id`
+WHERE sm.`perms` IN (
+    'financial.invoice/lists',
+    'finance.invoice/lists',
+    'review.reviewAppeal/lists',
+    'review.review_appeal/lists'
+)
+   OR sm.`component` IN (
+    'financial/invoice/index',
+    'review/appeal/index'
+);
+
+DELETE FROM `la_system_menu`
+WHERE `perms` IN (
+    'financial.invoice/lists',
+    'finance.invoice/lists',
+    'review.reviewAppeal/lists',
+    'review.review_appeal/lists'
+)
+   OR `component` IN (
+    'financial/invoice/index',
+    'review/appeal/index'
+);
 
 -- la_system_role_menu
 INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES

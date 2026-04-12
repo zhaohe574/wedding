@@ -4,275 +4,282 @@
         <BaseNavbar title="评价详情" />
 
         <view class="review-detail-page" v-if="review">
-        <view class="hero-card">
-            <view class="hero-header">
-                <view class="hero-user">
-                    <image
-                        class="user-avatar"
-                        :src="review.user?.avatar || '/static/images/user/default_avatar.png'"
-                        mode="aspectFill"
-                    />
-                    <view class="user-info">
-                        <text class="user-name">{{ review.user?.nickname || '匿名用户' }}</text>
-                        <text class="review-time">{{ review.create_time_text || '-' }}</text>
+            <view class="hero-card">
+                <view class="hero-header">
+                    <view class="hero-user">
+                        <image
+                            class="user-avatar"
+                            :src="review.user?.avatar || '/static/images/user/default_avatar.png'"
+                            mode="aspectFill"
+                        />
+                        <view class="user-info">
+                            <text class="user-name">{{ review.user?.nickname || '匿名用户' }}</text>
+                            <text class="review-time">{{ review.create_time_text || '-' }}</text>
+                        </view>
+                    </view>
+                    <view class="status-badge" :class="`status-${review.status}`">
+                        {{ review.status_text }}
                     </view>
                 </view>
-                <view class="status-badge" :class="`status-${review.status}`">
-                    {{ review.status_text }}
+
+                <view class="score-row">
+                    <view class="score-stars">
+                        <tn-icon
+                            v-for="star in 5"
+                            :key="star"
+                            :name="star <= Number(review.score || 0) ? 'star-fill' : 'star'"
+                            size="28"
+                            :color="star <= Number(review.score || 0) ? '#F59E0B' : '#D1D5DB'"
+                        />
+                    </view>
+                    <text class="score-text">{{ review.score_level }} · {{ review.score }}分</text>
+                </view>
+
+                <view class="meta-list">
+                    <view class="meta-item">
+                        <text class="meta-label">服务人员</text>
+                        <text class="meta-value">{{ review.staff?.name || '-' }}</text>
+                    </view>
+                    <view class="meta-item">
+                        <text class="meta-label">订单编号</text>
+                        <text class="meta-value">{{ review.order?.order_sn || '-' }}</text>
+                    </view>
+                    <view class="meta-item">
+                        <text class="meta-label">服务项目</text>
+                        <text class="meta-value">
+                            {{
+                                review.order_item?.package_name ||
+                                review.orderItem?.package_name ||
+                                '-'
+                            }}
+                        </text>
+                    </view>
+                    <view class="meta-item">
+                        <text class="meta-label">服务日期</text>
+                        <text class="meta-value">
+                            {{ review.service_date || review.order?.service_date || '-' }}
+                        </text>
+                    </view>
                 </view>
             </view>
 
-            <view class="score-row">
-                <view class="score-stars">
-                    <tn-icon
-                        v-for="star in 5"
-                        :key="star"
-                        :name="star <= Number(review.score || 0) ? 'star-fill' : 'star'"
-                        size="28"
-                        :color="star <= Number(review.score || 0) ? '#F59E0B' : '#D1D5DB'"
-                    />
-                </view>
-                <text class="score-text">{{ review.score_level }} · {{ review.score }}分</text>
-            </view>
+            <view class="section-card">
+                <view class="section-title">评价内容</view>
+                <text v-if="review.content" class="review-content">{{ review.content }}</text>
+                <text v-else class="empty-text">用户未填写文字评价</text>
 
-            <view class="meta-list">
-                <view class="meta-item">
-                    <text class="meta-label">服务人员</text>
-                    <text class="meta-value">{{ review.staff?.name || '-' }}</text>
+                <view v-if="review.tags?.length" class="tag-list">
+                    <view v-for="tag in review.tags" :key="tag.id || tag.name" class="tag-item">
+                        {{ tag.name }}
+                    </view>
                 </view>
-                <view class="meta-item">
-                    <text class="meta-label">订单编号</text>
-                    <text class="meta-value">{{ review.order?.order_sn || '-' }}</text>
-                </view>
-                <view class="meta-item">
-                    <text class="meta-label">服务项目</text>
-                    <text class="meta-value">
-                        {{
-                            review.order_item?.package_name || review.orderItem?.package_name || '-'
-                        }}
-                    </text>
-                </view>
-                <view class="meta-item">
-                    <text class="meta-label">服务日期</text>
-                    <text class="meta-value">
-                        {{ review.service_date || review.order?.service_date || '-' }}
-                    </text>
-                </view>
-            </view>
-        </view>
 
-        <view class="section-card">
-            <view class="section-title">评价内容</view>
-            <text v-if="review.content" class="review-content">{{ review.content }}</text>
-            <text v-else class="empty-text">用户未填写文字评价</text>
-
-            <view v-if="review.tags?.length" class="tag-list">
-                <view v-for="tag in review.tags" :key="tag.id || tag.name" class="tag-item">
-                    {{ tag.name }}
-                </view>
-            </view>
-
-            <view v-if="review.images?.length" class="image-grid">
-                <image
-                    v-for="(image, index) in review.images"
-                    :key="`${image}-${index}`"
-                    class="review-image"
-                    :src="image"
-                    mode="aspectFill"
-                    @click="previewImages(review.images, index)"
-                />
-            </view>
-        </view>
-
-        <view class="section-card">
-            <view class="section-title">奖励信息</view>
-            <view class="reward-panel">
-                <view class="reward-main">
-                    <text class="reward-points">+{{ Number(review.reward_points || 0) }}</text>
-                    <text class="reward-unit">积分</text>
-                </view>
-                <view class="reward-status" :class="rewardStatus.className">
-                    {{ rewardStatus.text }}
-                </view>
-            </view>
-            <text class="reward-tip">
-                {{
-                    review.reward_grant_time
-                        ? `积分已于 ${formatDateTime(review.reward_grant_time)} 发放`
-                        : rewardPendingText
-                }}
-            </text>
-        </view>
-
-        <view v-if="review.replies?.length" class="section-card">
-            <view class="section-title">回复记录</view>
-            <view v-for="reply in review.replies" :key="reply.id" class="reply-card">
-                <view class="reply-header">
-                    <text class="reply-type">
-                        {{ Number(reply.reply_type) === 1 ? '用户追评' : '商家回复' }}
-                    </text>
-                    <text class="reply-time">{{ formatDateTime(reply.create_time) }}</text>
-                </view>
-                <text class="reply-content">{{ reply.content }}</text>
-                <view v-if="reply.images?.length" class="reply-images">
+                <view v-if="review.images?.length" class="image-grid">
                     <image
-                        v-for="(image, index) in reply.images"
+                        v-for="(image, index) in review.images"
                         :key="`${image}-${index}`"
-                        class="reply-image"
+                        class="review-image"
                         :src="image"
                         mode="aspectFill"
-                        @click="previewImages(reply.images, index)"
+                        @click="previewImages(review.images, index)"
                     />
                 </view>
             </view>
-        </view>
 
-        <view v-if="review.is_owner" class="section-card">
-            <view class="section-header">
-                <view class="section-title">晒单奖励</view>
-                <view
-                    v-if="review.can_apply_share_reward"
-                    class="apply-btn"
-                    :style="{ background: primaryGradient }"
-                    @click="openSharePopup"
-                >
-                    申请晒单奖励
+            <view class="section-card">
+                <view class="section-title">奖励信息</view>
+                <view class="reward-panel">
+                    <view class="reward-main">
+                        <text class="reward-points">+{{ Number(review.reward_points || 0) }}</text>
+                        <text class="reward-unit">积分</text>
+                    </view>
+                    <view class="reward-status" :class="rewardStatus.className">
+                        {{ rewardStatus.text }}
+                    </view>
                 </view>
+                <text class="reward-tip">
+                    {{
+                        review.reward_grant_time
+                            ? `积分已于 ${formatDateTime(review.reward_grant_time)} 发放`
+                            : rewardPendingText
+                    }}
+                </text>
             </view>
 
-            <text class="section-tip">
-                {{
-                    review.can_apply_share_reward
-                        ? '已审核通过的评价可按平台申请晒单奖励，同平台仅可申请一次。'
-                        : shareRewardDisabledText
-                }}
-            </text>
-
-            <view v-if="review.share_reward_records?.length" class="share-reward-list">
-                <view
-                    v-for="record in review.share_reward_records"
-                    :key="record.id"
-                    class="share-reward-card"
-                >
-                    <view class="share-reward-header">
-                        <view>
-                            <text class="share-platform">{{ record.platform_text }}</text>
-                            <text class="share-points"
-                                >预计奖励 {{ record.reward_points }} 积分</text
-                            >
-                        </view>
-                        <view class="share-status" :class="`share-status-${record.status}`">
-                            {{ record.status_text }}
-                        </view>
+            <view v-if="review.replies?.length" class="section-card">
+                <view class="section-title">回复记录</view>
+                <view v-for="reply in review.replies" :key="reply.id" class="reply-card">
+                    <view class="reply-header">
+                        <text class="reply-type">
+                            {{ Number(reply.reply_type) === 1 ? '用户追评' : '商家回复' }}
+                        </text>
+                        <text class="reply-time">{{ formatDateTime(reply.create_time) }}</text>
                     </view>
-
-                    <view class="share-reward-body">
+                    <text class="reply-content">{{ reply.content }}</text>
+                    <view v-if="reply.images?.length" class="reply-images">
                         <image
-                            v-if="record.verify_image"
-                            class="share-proof"
-                            :src="record.verify_image"
+                            v-for="(image, index) in reply.images"
+                            :key="`${image}-${index}`"
+                            class="reply-image"
+                            :src="image"
                             mode="aspectFill"
-                            @click="previewImages([record.verify_image], 0)"
+                            @click="previewImages(reply.images, index)"
                         />
-                        <view class="share-meta">
-                            <text class="share-meta-text"
-                                >申请平台：{{ record.platform_text }}</text
-                            >
-                            <text class="share-meta-text">
-                                {{
-                                    record.audit_time
-                                        ? `审核时间：${formatDateTime(record.audit_time)}`
-                                        : '审核时间：待审核'
-                                }}
-                            </text>
-                        </view>
                     </view>
                 </view>
             </view>
-            <view v-else class="empty-block">
-                <text>还没有晒单奖励申请记录</text>
-            </view>
-        </view>
 
-        <view class="safe-bottom"></view>
-
-        <BaseOverlayMask :show="showSharePopup" @close="closeSharePopup" />
-        <tn-popup
-            v-model="showSharePopup"
-            open-direction="bottom"
-            :radius="32"
-            :overlay="false"
-            :overlay-closeable="true"
-        >
-            <view class="share-popup">
-                <view class="popup-header">
-                    <text class="popup-title">申请晒单奖励</text>
-                    <tn-icon name="close" size="36" color="#999999" @click="closeSharePopup" />
-                </view>
-
-                <view class="popup-section">
-                    <text class="popup-label">选择平台</text>
-                    <view class="platform-list">
-                        <view
-                            v-for="option in platformOptions"
-                            :key="option.value"
-                            class="platform-item"
-                            :class="{ active: shareForm.share_platform === option.value }"
-                            :style="
-                                shareForm.share_platform === option.value
-                                    ? {
-                                          background: primaryGradient,
-                                          borderColor: $theme.primaryColor,
-                                          color: '#FFFFFF'
-                                      }
-                                    : {}
-                            "
-                            @click="shareForm.share_platform = option.value"
-                        >
-                            {{ option.label }}
-                        </view>
+            <view v-if="review.is_owner" class="section-card">
+                <view class="section-header">
+                    <view class="section-title">晒单奖励</view>
+                    <view
+                        v-if="review.can_apply_share_reward"
+                        class="apply-btn"
+                        :style="{ background: primaryGradient }"
+                        @click="openSharePopup"
+                    >
+                        申请晒单奖励
                     </view>
                 </view>
 
-                <view class="popup-section">
-                    <text class="popup-label">上传核验截图</text>
-                    <text class="popup-tip">请上传对应平台的晒单截图，用于后台审核。</text>
-                    <view class="upload-area">
-                        <view
-                            v-if="shareForm.verify_image"
-                            class="upload-preview"
-                            @click="previewImages([shareForm.verify_image], 0)"
-                        >
-                            <image :src="shareForm.verify_image" mode="aspectFill" />
-                            <view class="upload-remove" @click.stop="shareForm.verify_image = ''">
-                                <tn-icon name="close" size="24" color="#FFFFFF" />
+                <text class="section-tip">
+                    {{
+                        review.can_apply_share_reward
+                            ? '已审核通过的评价可按平台申请晒单奖励，同平台仅可申请一次。'
+                            : shareRewardDisabledText
+                    }}
+                </text>
+
+                <view v-if="review.share_reward_records?.length" class="share-reward-list">
+                    <view
+                        v-for="record in review.share_reward_records"
+                        :key="record.id"
+                        class="share-reward-card"
+                    >
+                        <view class="share-reward-header">
+                            <view>
+                                <text class="share-platform">{{ record.platform_text }}</text>
+                                <text class="share-points"
+                                    >预计奖励 {{ record.reward_points }} 积分</text
+                                >
+                            </view>
+                            <view class="share-status" :class="`share-status-${record.status}`">
+                                {{ record.status_text }}
                             </view>
                         </view>
-                        <view v-else class="upload-box" @click="chooseVerifyImage">
-                            <tn-icon
-                                :name="shareForm.uploading ? 'loading' : 'camera-fill'"
-                                size="40"
-                                :color="$theme.primaryColor"
+
+                        <view class="share-reward-body">
+                            <image
+                                v-if="record.verify_image"
+                                class="share-proof"
+                                :src="record.verify_image"
+                                mode="aspectFill"
+                                @click="previewImages([record.verify_image], 0)"
                             />
-                            <text class="upload-text">
-                                {{ shareForm.uploading ? '上传中...' : '选择截图' }}
-                            </text>
+                            <view class="share-meta">
+                                <text class="share-meta-text"
+                                    >申请平台：{{ record.platform_text }}</text
+                                >
+                                <text class="share-meta-text">
+                                    {{
+                                        record.audit_time
+                                            ? `审核时间：${formatDateTime(record.audit_time)}`
+                                            : '审核时间：待审核'
+                                    }}
+                                </text>
+                            </view>
                         </view>
                     </view>
                 </view>
-
-                <view class="popup-actions">
-                    <view class="popup-btn popup-btn--ghost" @click="closeSharePopup">取消</view>
-                    <view
-                        class="popup-btn popup-btn--primary"
-                        :style="{ background: primaryGradient }"
-                        @click="submitShareReward"
-                    >
-                        提交申请
-                    </view>
+                <view v-else class="empty-block">
+                    <text>还没有晒单奖励申请记录</text>
                 </view>
             </view>
-        </tn-popup>
+
+            <view class="safe-bottom"></view>
+
+            <BaseOverlayMask :show="showSharePopup" @close="closeSharePopup" />
+            <tn-popup
+                v-model="showSharePopup"
+                open-direction="bottom"
+                :radius="32"
+                :overlay="false"
+                :overlay-closeable="true"
+            >
+                <view class="share-popup">
+                    <view class="popup-header">
+                        <text class="popup-title">申请晒单奖励</text>
+                        <tn-icon name="close" size="36" color="#999999" @click="closeSharePopup" />
+                    </view>
+
+                    <view class="popup-section">
+                        <text class="popup-label">选择平台</text>
+                        <view class="platform-list">
+                            <view
+                                v-for="option in platformOptions"
+                                :key="option.value"
+                                class="platform-item"
+                                :class="{ active: shareForm.share_platform === option.value }"
+                                :style="
+                                    shareForm.share_platform === option.value
+                                        ? {
+                                              background: primaryGradient,
+                                              borderColor: $theme.primaryColor,
+                                              color: '#FFFFFF'
+                                          }
+                                        : {}
+                                "
+                                @click="shareForm.share_platform = option.value"
+                            >
+                                {{ option.label }}
+                            </view>
+                        </view>
+                    </view>
+
+                    <view class="popup-section">
+                        <text class="popup-label">上传核验截图</text>
+                        <text class="popup-tip">请上传对应平台的晒单截图，用于后台审核。</text>
+                        <view class="upload-area">
+                            <view
+                                v-if="shareForm.verify_image"
+                                class="upload-preview"
+                                @click="previewImages([shareForm.verify_image], 0)"
+                            >
+                                <image :src="shareForm.verify_image" mode="aspectFill" />
+                                <view
+                                    class="upload-remove"
+                                    @click.stop="shareForm.verify_image = ''"
+                                >
+                                    <tn-icon name="close" size="24" color="#FFFFFF" />
+                                </view>
+                            </view>
+                            <view v-else class="upload-box" @click="chooseVerifyImage">
+                                <tn-icon
+                                    :name="shareForm.uploading ? 'loading' : 'camera-fill'"
+                                    size="40"
+                                    :color="$theme.primaryColor"
+                                />
+                                <text class="upload-text">
+                                    {{ shareForm.uploading ? '上传中...' : '选择截图' }}
+                                </text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <view class="popup-actions">
+                        <view class="popup-btn popup-btn--ghost" @click="closeSharePopup"
+                            >取消</view
+                        >
+                        <view
+                            class="popup-btn popup-btn--primary"
+                            :style="{ background: primaryGradient }"
+                            @click="submitShareReward"
+                        >
+                            提交申请
+                        </view>
+                    </view>
+                </view>
+            </tn-popup>
         </view>
 
         <view v-else class="loading-wrap">
