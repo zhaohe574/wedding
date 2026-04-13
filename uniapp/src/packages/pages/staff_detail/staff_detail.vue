@@ -678,9 +678,11 @@ import { checkScheduleAvailable, joinWaitlist } from '@/api/schedule'
 import { getServiceRegionTree } from '@/api/service'
 import StaffLongDetailRenderer from '@/packages/components/staff-long-detail/staff-long-detail-renderer.vue'
 import { hasLongDetailContent } from '@/packages/components/staff-long-detail/utils'
+import { BACK_URL } from '@/enums/constantEnums'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import StaffBanner from '@/packages/components/staff-banner/staff-banner.vue'
+import cache from '@/utils/cache'
 import {
     buildServiceRegionQuery,
     hasServiceRegion,
@@ -1437,15 +1439,31 @@ const buildTargetStaffDetailQuery = (targetStaffId: number, extra: Record<string
     return params.join('&')
 }
 
+const getBookingPageUrl = () =>
+    getStaffBookingPageUrl({
+        staff_id: staffId.value,
+        package_id: selectedPackageId.value,
+        date: presetDate.value,
+        ...selectedRegion.value
+    })
+
 const navigateToBookingPage = () => {
     uni.navigateTo({
-        url: getStaffBookingPageUrl({
-            staff_id: staffId.value,
-            package_id: selectedPackageId.value,
-            date: presetDate.value,
-            ...selectedRegion.value
-        })
+        url: getBookingPageUrl()
     })
+}
+
+const ensureBookingLogin = (message = '请先登录后预约') => {
+    if (userStore.isLogin) {
+        return true
+    }
+
+    cache.set(BACK_URL, getBookingPageUrl())
+    uni.showToast({ title: message, icon: 'none' })
+    setTimeout(() => {
+        uni.navigateTo({ url: '/pages/login/login' })
+    }, 300)
+    return false
 }
 
 const fetchAlternativeStaffList = async () => {
@@ -1552,6 +1570,10 @@ const handleBook = async () => {
             return
         }
         handleInlineDateEdit()
+        return
+    }
+
+    if (!ensureBookingLogin()) {
         return
     }
 

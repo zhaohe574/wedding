@@ -20,6 +20,7 @@ use app\common\model\service\ServicePackageAddon;
 use app\common\model\service\ServicePackageRegionPrice;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffWork;
+use app\common\service\OrderConfirmLetterService;
 use app\common\service\OrderNotificationService;
 use app\common\service\PackageRegionPriceService;
 use app\common\service\StaffPriceService;
@@ -1458,6 +1459,9 @@ class StaffCenterLogic extends BaseLogic
         }
 
         $result = $query->paginate($pageSize)->toArray();
+        foreach (($result['data'] ?? []) as $index => $item) {
+            $result['data'][$index] = self::formatStaffDynamicItem($item);
+        }
         $result['summary'] = [
             'total' => (int) $summaryQuery->count(),
             'published_count' => (int) Dynamic::where('user_type', Dynamic::USER_TYPE_STAFF)
@@ -1502,7 +1506,7 @@ class StaffCenterLogic extends BaseLogic
             return [];
         }
 
-        return $dynamic->toArray();
+        return self::formatStaffDynamicItem($dynamic->toArray());
     }
 
     /**
@@ -1683,6 +1687,97 @@ class StaffCenterLogic extends BaseLogic
     }
 
     /**
+     * @notes 统一服务人员动态状态反馈
+     * @param array $item
+     * @return array
+     */
+    protected static function formatStaffDynamicItem(array $item): array
+    {
+        $status = (int)($item['status'] ?? Dynamic::STATUS_PENDING);
+        $remark = trim((string)($item['audit_remark'] ?? ''));
+
+        $item['status_desc'] = self::getDynamicStatusDesc($status);
+        $item['dynamic_type_desc'] = $item['dynamic_type_desc'] ?? self::getDynamicTypeDesc((int)($item['dynamic_type'] ?? 0));
+        $item['allow_comment_desc'] = ((int)($item['allow_comment'] ?? 1) === 1) ? '允许评论' : '禁止评论';
+        $item['status_reason'] = self::getDynamicStatusReason($status, $remark);
+        $item['status_hint'] = self::getDynamicStatusHint($status);
+        $item['handled_time'] = (int)($item['audit_time'] ?? 0);
+
+        return $item;
+    }
+
+    /**
+     * @notes 获取动态状态描述
+     * @param int $status
+     * @return string
+     */
+    protected static function getDynamicStatusDesc(int $status): string
+    {
+        return match ($status) {
+            Dynamic::STATUS_PENDING => '待审核',
+            Dynamic::STATUS_PUBLISHED => '已发布',
+            Dynamic::STATUS_OFFLINE => '已下架',
+            Dynamic::STATUS_REJECTED => '已拒绝',
+            default => '未知',
+        };
+    }
+
+    /**
+     * @notes 获取动态类型描述
+     * @param int $type
+     * @return string
+     */
+    protected static function getDynamicTypeDesc(int $type): string
+    {
+        return match ($type) {
+            Dynamic::TYPE_IMAGE_TEXT => '图文',
+            Dynamic::TYPE_VIDEO => '视频',
+            Dynamic::TYPE_CASE => '案例',
+            Dynamic::TYPE_ACTIVITY => '活动',
+            default => '动态',
+        };
+    }
+
+    /**
+     * @notes 获取动态状态原因
+     * @param int $status
+     * @param string $remark
+     * @return string
+     */
+    protected static function getDynamicStatusReason(int $status, string $remark): string
+    {
+        if (in_array($status, [Dynamic::STATUS_OFFLINE, Dynamic::STATUS_REJECTED], true)) {
+            return $remark ?: '暂无补充说明';
+        }
+
+        if ($status === Dynamic::STATUS_PENDING) {
+            return '内容已提交，等待后台审核。';
+        }
+
+        if ($status === Dynamic::STATUS_PUBLISHED) {
+            return '当前内容已对用户可见。';
+        }
+
+        return '';
+    }
+
+    /**
+     * @notes 获取动态状态操作提示
+     * @param int $status
+     * @return string
+     */
+    protected static function getDynamicStatusHint(int $status): string
+    {
+        return match ($status) {
+            Dynamic::STATUS_PENDING => '审核通过后会自动展示到用户端。',
+            Dynamic::STATUS_PUBLISHED => '可继续编辑内容；如被下架会在这里同步处理原因。',
+            Dynamic::STATUS_OFFLINE => '修改内容后可重新提交审核。',
+            Dynamic::STATUS_REJECTED => '请根据原因调整内容后重新提交审核。',
+            default => '',
+        };
+    }
+
+    /**
      * @notes 构造套餐写入载荷
      * @param int $staffId
      * @param array $params
@@ -1800,5 +1895,94 @@ class StaffCenterLogic extends BaseLogic
         }
 
         return $categoryId;
+    }
+
+    public static function orderConfirmLetterGenerate(int $userId, int $orderId)
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        if (!self::buildStaffRelatedOrderBaseQuery($staffId)->where('id', $orderId)->find()) {
+            self::setError('无权限操作该订单确认函');
+            return false;
+        }
+        try {
+            return OrderConfirmLetterService::generate($orderId, 'staff', $staffId, $staffId);
+        } catch (\Throwable $e) {
+            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            return false;
+        }
+    }
+
+    public static function orderConfirmLetterSaveAssets(int $userId, array $params)
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        $letter = \app\common\model\order\OrderConfirmLetter::find((int) $params['letter_id']);
+        if (!$letter || !self::buildStaffRelatedOrderBaseQuery($staffId)->where('id', (int) $letter->order_id)->find()) {
+            self::setError('无权限操作该订单确认函');
+            return false;
+        }
+        try {
+            OrderConfirmLetterService::saveAssets((int) $params['letter_id'], (string) $params['snapshot_hash'], (string) $params['full_image_url'], (string) $params['thumb_image_url']);
+            return ['letter_id' => (int) $params['letter_id'], 'assets_saved' => true];
+        } catch (\Throwable $e) {
+            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            return false;
+        }
+    }
+
+    public static function orderConfirmLetterPush(int $userId, int $letterId)
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        $letter = \app\common\model\order\OrderConfirmLetter::find($letterId);
+        if (!$letter || !self::buildStaffRelatedOrderBaseQuery($staffId)->where('id', (int) $letter->order_id)->find()) {
+            self::setError('无权限操作该订单确认函');
+            return false;
+        }
+        try {
+            return OrderConfirmLetterService::push($letterId, $staffId);
+        } catch (\Throwable $e) {
+            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            return false;
+        }
+    }
+
+    public static function orderConfirmLetterDetail(int $userId, int $letterId): ?array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return null;
+        }
+        $letter = \app\common\model\order\OrderConfirmLetter::find($letterId);
+        if (!$letter || !self::buildStaffRelatedOrderBaseQuery($staffId)->where('id', (int) $letter->order_id)->find()) {
+            self::setError('无权限操作该订单确认函');
+            return null;
+        }
+        return OrderConfirmLetterService::detailForOrder($letterId, (int) $letter->order_id);
+    }
+
+    public static function orderConfirmLetterHistory(int $userId, int $orderId)
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        if (!self::buildStaffRelatedOrderBaseQuery($staffId)->where('id', $orderId)->find()) {
+            self::setError('无权限操作该订单确认函');
+            return false;
+        }
+        return OrderConfirmLetterService::history($orderId);
     }
 }

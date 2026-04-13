@@ -55,6 +55,7 @@ class ReviewLogic extends BaseLogic
             $item['status_text'] = Review::getStatusDesc($item['status']);
             $item['score_level'] = Review::getScoreLevel($item['score']);
             $item['create_time_text'] = date('Y-m-d H:i', $item['create_time']);
+            $item = array_merge($item, self::buildReviewGuide($item));
         }
 
         return [
@@ -204,6 +205,7 @@ class ReviewLogic extends BaseLogic
         $data['status_text'] = Review::getStatusDesc($data['status']);
         $data['score_level'] = Review::getScoreLevel($data['score']);
         $data['create_time_text'] = date('Y-m-d H:i', $data['create_time']);
+        $data = array_merge($data, self::buildReviewGuide($data));
 
         // 检查是否已点赞
         $currentUserId = $params['current_user_id'] ?? 0;
@@ -483,6 +485,46 @@ class ReviewLogic extends BaseLogic
             'video_count' => 0,
             'avg_score' => 5.00,
             'good_rate' => 100,
+        ];
+    }
+
+    /**
+     * @notes 构建评价状态与奖励说明
+     */
+    private static function buildReviewGuide(array $review): array
+    {
+        $status = (int)($review['status'] ?? Review::STATUS_PENDING);
+        $rewardGrantTime = (int)($review['reward_grant_time'] ?? 0);
+        $rewardPoints = (int)($review['reward_points'] ?? 0);
+
+        $statusSummary = '评价状态已更新，请留意审核结果。';
+        if ($status === Review::STATUS_PENDING) {
+            $statusSummary = '评价已提交，当前等待后台审核。';
+        } elseif ($status === Review::STATUS_APPROVED) {
+            $statusSummary = '评价已审核通过，可继续查看奖励与晒单申请状态。';
+        } elseif ($status === Review::STATUS_REJECTED) {
+            $statusSummary = '评价未通过审核，当前不会进入奖励发放流程。';
+        }
+
+        $rewardStatusText = '待审核';
+        $rewardSummary = '评价审核通过后发放积分奖励。';
+        if ($status === Review::STATUS_REJECTED) {
+            $rewardStatusText = '不发放';
+            $rewardSummary = '评价未通过审核，本次不发放评价奖励。';
+        } elseif ($rewardGrantTime > 0) {
+            $rewardStatusText = '已发放';
+            $rewardSummary = sprintf('奖励积分已发放，共 %d 积分。', $rewardPoints);
+        } elseif ($status === Review::STATUS_APPROVED) {
+            $rewardStatusText = $rewardPoints > 0 ? '待发放' : '无需发放';
+            $rewardSummary = $rewardPoints > 0
+                ? sprintf('评价已通过审核，预计发放 %d 积分。', $rewardPoints)
+                : '当前评价无额外积分奖励。';
+        }
+
+        return [
+            'status_summary' => $statusSummary,
+            'reward_status_text' => $rewardStatusText,
+            'reward_summary' => $rewardSummary,
         ];
     }
 

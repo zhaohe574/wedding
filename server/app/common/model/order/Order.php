@@ -202,6 +202,47 @@ class Order extends BaseModel
     }
 
     /**
+     * @notes 构建订单支付展示态
+     * @param array $state
+     * @return array{key:string,desc:string}
+     */
+    public static function buildPayStatusDisplayFromState(array $state): array
+    {
+        $payStatus = (int)($state['pay_status'] ?? self::PAY_STATUS_UNPAID);
+        if ($payStatus === self::PAY_STATUS_PARTIAL_REFUND) {
+            return ['key' => 'partial_refund', 'desc' => '部分退款'];
+        }
+
+        if ($payStatus === self::PAY_STATUS_FULL_REFUND) {
+            return ['key' => 'full_refund', 'desc' => '全额退款'];
+        }
+
+        $payAmount = round((float)($state['pay_amount'] ?? 0), 2);
+        $paidAmount = round((float)($state['paid_amount'] ?? 0), 2);
+        $depositAmount = round((float)($state['deposit_amount'] ?? 0), 2);
+        $depositPaid = (int)($state['deposit_paid'] ?? 0) === 1;
+        $balancePaid = (int)($state['balance_paid'] ?? 0) === 1;
+
+        if ($depositAmount > 0) {
+            if ($depositPaid && !$balancePaid) {
+                return ['key' => 'deposit_paid', 'desc' => '已付定金'];
+            }
+
+            if ($depositPaid && ($balancePaid || ($payAmount > 0 && $paidAmount >= $payAmount))) {
+                return ['key' => 'paid', 'desc' => '已支付'];
+            }
+
+            return ['key' => 'unpaid', 'desc' => '未支付'];
+        }
+
+        if ($payStatus === self::PAY_STATUS_PAID || ($payAmount > 0 && $paidAmount >= $payAmount)) {
+            return ['key' => 'paid', 'desc' => '已支付'];
+        }
+
+        return ['key' => 'unpaid', 'desc' => '未支付'];
+    }
+
+    /**
      * @notes 获取支付方式文案
      * @param int $payWay
      * @return string

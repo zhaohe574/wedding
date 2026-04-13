@@ -61,6 +61,11 @@ class StaffCenterValidate extends BaseValidate
 
         'dynamic_type' => 'in:1,2',
         'allow_comment' => 'in:0,1',
+        'letter_id' => 'require|integer|gt:0',
+        'order_id' => 'integer|gt:0',
+        'snapshot_hash' => 'max:128',
+        'full_image_url' => 'max:500',
+        'thumb_image_url' => 'max:500',
     ];
 
     protected $message = [
@@ -115,6 +120,11 @@ class StaffCenterValidate extends BaseValidate
         'dynamic_type.in' => '动态类型参数错误',
         'content.require' => '请输入动态内容',
         'allow_comment.in' => '评论开关参数错误',
+        'letter_id.require' => '请选择确认函',
+        'letter_id.integer' => '确认函参数错误',
+        'letter_id.gt' => '确认函参数错误',
+        'order_id.integer' => '订单参数错误',
+        'order_id.gt' => '订单参数错误',
     ];
 
     public function sceneProfile(): StaffCenterValidate
@@ -266,6 +276,31 @@ class StaffCenterValidate extends BaseValidate
     public function sceneOrderStartService(): StaffCenterValidate
     {
         return $this->only(['id']);
+    }
+
+    public function sceneOrderConfirmLetterGenerate(): StaffCenterValidate
+    {
+        return $this->only(['order_id']);
+    }
+
+    public function sceneOrderConfirmLetterAsset(): StaffCenterValidate
+    {
+        return $this->only(['letter_id', 'snapshot_hash', 'full_image_url', 'thumb_image_url']);
+    }
+
+    public function sceneOrderConfirmLetterPush(): StaffCenterValidate
+    {
+        return $this->only(['letter_id']);
+    }
+
+    public function sceneOrderConfirmLetterDetail(): StaffCenterValidate
+    {
+        return $this->only(['letter_id']);
+    }
+
+    public function sceneOrderConfirmLetterHistory(): StaffCenterValidate
+    {
+        return $this->only(['order_id']);
     }
 
     /**

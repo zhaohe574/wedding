@@ -748,4 +748,56 @@ class OrderController extends BaseAdminController
         $result = OrderLogic::statistics($params);
         return $this->data($result);
     }
+
+    public function confirmLetterGenerate()
+    {
+        $params = (new OrderValidate())->post()->goCheck('confirmLetterGenerate');
+        if ($response = $this->checkOrderScope((int) $params['id'])) {
+            return $response;
+        }
+        $result = OrderLogic::confirmLetterGenerate((int) $params['id'], $this->adminId);
+        if ($result === false) {
+            return $this->fail(OrderLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    public function confirmLetterPush()
+    {
+        $params = (new OrderValidate())->post()->goCheck('confirmLetterPush');
+        $result = OrderLogic::confirmLetterPush((int) $params['letter_id'], $this->adminId);
+        if ($result === false) {
+            return $this->fail(OrderLogic::getError());
+        }
+        return $this->success('推送成功', $result, 1, 1);
+    }
+
+    public function confirmLetterDetail()
+    {
+        $params = (new OrderValidate())->goCheck('confirmLetterDetail');
+        $result = OrderLogic::confirmLetterDetail((int) $params['letter_id']);
+        if ($result === null) {
+            return $this->fail(OrderLogic::getError() ?: '确认函不存在');
+        }
+        return $this->data($result);
+    }
+
+    public function confirmLetterHistory()
+    {
+        $params = (new OrderValidate())->goCheck('confirmLetterHistory');
+        if ($response = $this->checkOrderScope((int) $params['id'])) {
+            return $response;
+        }
+        return $this->data(OrderLogic::confirmLetterHistory((int) $params['id']));
+    }
+
+    public function confirmLetterAssets()
+    {
+        $params = (new OrderValidate())->post()->goCheck('confirmLetterAssets');
+        $result = OrderLogic::confirmLetterSaveAssets($params);
+        if ($result === false) {
+            return $this->fail(OrderLogic::getError());
+        }
+        return $this->success('保存成功', $result, 1, 1);
+    }
 }

@@ -703,6 +703,8 @@ class OrderRefundService
         $order->pay_status = $isFullyRefunded ? Order::PAY_STATUS_FULL_REFUND : Order::PAY_STATUS_PARTIAL_REFUND;
         $order->update_time = time();
         $order->save();
+
+        OrderConfirmLetterService::markOutdatedByOrderId((int) $order->id);
     }
 
     /**

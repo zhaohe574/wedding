@@ -69,3 +69,11 @@ export function getRefundDetail(params: any) {
 export function getOrderStatistics() {
     return request.get({ url: '/order/statistics' })
 }
+
+export function getOrderConfirmLetterCurrent(params: any) {
+    return request.get({ url: '/order/confirmLetterCurrent', params })
+}
+
+export function getOrderConfirmLetterById(params: any) {
+    return request.get({ url: '/order/confirmLetterById', params })
+}

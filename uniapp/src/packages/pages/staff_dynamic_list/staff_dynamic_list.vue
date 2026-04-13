@@ -164,6 +164,28 @@
                                     {{ getCardDescription(item) }}
                                 </text>
 
+                                <view
+                                    :class="[
+                                        'status-panel',
+                                        `status-panel--${getStatusPanelModifier(
+                                            Number(item.status)
+                                        )}`
+                                    ]"
+                                >
+                                    <text class="status-panel__text">
+                                        {{ getStatusReasonText(item) }}
+                                    </text>
+                                    <text v-if="getStatusHintText(item)" class="status-panel__meta">
+                                        {{ getStatusHintText(item) }}
+                                    </text>
+                                    <text
+                                        v-if="getHandledTimeText(item)"
+                                        class="status-panel__meta"
+                                    >
+                                        最近处理：{{ getHandledTimeText(item) }}
+                                    </text>
+                                </view>
+
                                 <view class="stats-row">
                                     <view class="metric-chip">
                                         <tn-icon
@@ -188,7 +210,7 @@
                                         class="action-btn action-btn--ghost"
                                         @click.stop="handleEdit(item)"
                                     >
-                                        编辑
+                                        {{ getEditButtonText(item) }}
                                     </view>
                                     <view
                                         class="action-btn action-btn--danger"
@@ -359,6 +381,16 @@ const getStatusTone = (status: number): BadgeTone => {
     return map[status] || 'neutral'
 }
 
+const getStatusPanelModifier = (status: number) => {
+    const map: Record<number, string> = {
+        0: 'warning',
+        1: 'success',
+        2: 'neutral',
+        3: 'danger'
+    }
+    return map[status] || 'neutral'
+}
+
 const getImageList = (item: any): string[] => {
     if (Array.isArray(item?.images) && item.images.length > 0) {
         return item.images.filter(Boolean)
@@ -435,6 +467,42 @@ const formatTime = (time: any): string => {
 
     const pad = (value: number) => String(value).padStart(2, '0')
     return `${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+const formatHandledTime = (time: any): string => {
+    if (!time) return ''
+
+    let date: Date
+    if (typeof time === 'number') {
+        date = new Date(time < 1e12 ? time * 1000 : time)
+    } else {
+        date = new Date(String(time).replace(/-/g, '/'))
+    }
+
+    if (isNaN(date.getTime())) return String(time)
+
+    const pad = (value: number) => String(value).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
+        date.getHours()
+    )}:${pad(date.getMinutes())}`
+}
+
+const getStatusReasonText = (item: any) =>
+    normalizeTextValue(item?.status_reason) || '当前状态已更新。'
+
+const getStatusHintText = (item: any) => normalizeTextValue(item?.status_hint)
+
+const getHandledTimeText = (item: any) => {
+    const handledTime = Number(item?.handled_time || 0)
+    return handledTime > 0 ? formatHandledTime(handledTime) : ''
+}
+
+const getEditButtonText = (item: any) => {
+    const status = Number(item?.status || 0)
+    if (status === 2 || status === 3) {
+        return '修改后重提'
+    }
+    return '编辑'
 }
 
 const getQueryDynamicType = () => {
@@ -819,6 +887,51 @@ onShow(async () => {
     word-break: break-all;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+}
+
+.status-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+    margin-top: 16rpx;
+    padding: 18rpx 20rpx;
+    border-radius: 24rpx;
+    border: 1rpx solid rgba(239, 230, 225, 0.92);
+    background: rgba(252, 251, 249, 0.88);
+
+    &--warning {
+        background: rgba(255, 248, 233, 0.9);
+        border-color: rgba(245, 202, 118, 0.5);
+    }
+
+    &--success {
+        background: rgba(240, 250, 243, 0.92);
+        border-color: rgba(129, 199, 132, 0.45);
+    }
+
+    &--neutral {
+        background: rgba(246, 244, 242, 0.95);
+        border-color: rgba(180, 172, 168, 0.42);
+    }
+
+    &--danger {
+        background: rgba(255, 241, 240, 0.94);
+        border-color: rgba(232, 90, 79, 0.3);
+    }
+}
+
+.status-panel__text {
+    font-size: 24rpx;
+    font-weight: 700;
+    line-height: 1.55;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.status-panel__meta {
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1.55;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .chip-row {

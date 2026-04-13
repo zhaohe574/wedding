@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\model\order;
 
 use app\common\model\BaseModel;
+use app\common\service\OrderConfirmLetterService;
 
 /**
  * 支付记录模型
@@ -255,6 +256,7 @@ class Payment extends BaseModel
         if ($order->pay_type != Order::PAY_WAY_COMBINATION) {
             $order->pay_type = $payment->pay_way;
         }
+        OrderConfirmLetterService::invalidateCurrentLetter($order, false);
         $order->update_time = time();
         $order->save();
 

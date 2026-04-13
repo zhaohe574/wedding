@@ -700,10 +700,11 @@ const handleSave = async () => {
                 id: form.id,
                 ...payload
             })
+            uni.showToast({ title: '保存成功，已重新提交审核', icon: 'success' })
         } else {
             await staffCenterDynamicAdd(payload)
+            uni.showToast({ title: '发布成功，待后台审核', icon: 'success' })
         }
-        uni.showToast({ title: '保存成功', icon: 'success' })
         setTimeout(() => uni.navigateBack(), 1200)
     } catch (error: any) {
         const msg = typeof error === 'string' ? error : error?.msg || error?.message || '保存失败'

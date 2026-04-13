@@ -162,6 +162,9 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
             }
             $item['order_status_desc'] = $this->getStatusDesc($item['order_status']);
             $item['pay_status_desc'] = $this->getPayStatusDesc($item['pay_status']);
+            $payStatusDisplay = Order::buildPayStatusDisplayFromState($item);
+            $item['pay_status_display_key'] = $payStatusDisplay['key'];
+            $item['pay_status_display_desc'] = $payStatusDisplay['desc'];
             $item['pay_type_desc'] = $this->getPayTypeDesc($item['pay_type']);
             $item['payment_channel'] = Order::resolvePaymentChannel(
                 $item['payment_channel'] ?? null,
@@ -244,7 +247,7 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
             'user.nickname' => '用户昵称',
             'user.mobile' => '用户手机',
             'order_status_desc' => '订单状态',
-            'pay_status_desc' => '支付状态',
+            'pay_status_display_desc' => '支付状态',
             'pay_type_desc' => '支付方式',
             'payment_channel_desc' => '付款渠道',
             'payment_mode_desc' => '支付模式',

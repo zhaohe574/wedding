@@ -514,6 +514,23 @@ class OrderNotificationService
             StationNotificationService::TARGET_ORDER_DETAIL,
             $orderId
         );
+
+        try {
+            $result = SubscribeMessageService::sendOrderCreateNotice(
+                (int) $order->user_id,
+                [
+                    'order_id' => (int) $order->id,
+                    'order_sn' => (string) $order->order_sn,
+                    'total_amount' => number_format((float) ($order->total_amount ?? 0), 2, '.', ''),
+                    'service_name' => self::resolveServiceName($order),
+                ]
+            );
+            if (!$result['success']) {
+                Log::info('订单创建订阅消息未发送：' . ($result['msg'] ?? '未知原因'));
+            }
+        } catch (\Throwable $e) {
+            Log::error('订单创建订阅消息发送失败：' . $e->getMessage());
+        }
     }
 
     /**
@@ -1361,6 +1378,24 @@ class OrderNotificationService
                 StationNotificationService::TARGET_ORDER_DETAIL,
                 $orderId
             );
+
+            try {
+                $result = SubscribeMessageService::sendScheduleRemindNotice(
+                    (int) $order->user_id,
+                    [
+                        'order_id' => (int) $order->id,
+                        'service_name' => $serviceName,
+                        'service_date' => $serviceDate,
+                        'address' => $address,
+                        'staff_name' => $staffName,
+                    ]
+                );
+                if (!$result['success']) {
+                    Log::info('服务提醒订阅消息未发送：' . ($result['msg'] ?? '未知原因'));
+                }
+            } catch (\Throwable $e) {
+                Log::error('服务提醒订阅消息发送失败：' . $e->getMessage());
+            }
         }
 
         $staffUserIds = self::getOrderStaffUserIds(self::getOrderStaffIds($orderId));

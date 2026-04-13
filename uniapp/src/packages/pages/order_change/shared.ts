@@ -43,12 +43,6 @@ const pauseTypeMap: Record<number, TypeMeta> = {
     4: { label: '其他原因', tone: 'neutral' }
 }
 
-export const orderChangeOfflineCopy = {
-    title: '附加服务变更已下线',
-    description:
-        '旧版附加服务变更申请能力已关闭，当前页面仅保留状态说明与回退入口，后续如重新开放会以新版流程重新接入。'
-}
-
 export const getChangeStatusMeta = (status: number) =>
     changeStatusMap[Number(status)] || changeStatusMap[0]
 

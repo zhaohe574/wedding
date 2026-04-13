@@ -116,6 +116,31 @@ import {
 
 const $theme = useThemeStore()
 
+const notificationRouteMap: Record<string, (targetId?: number) => string> = {
+    order: (targetId) => `/pages/order_detail/order_detail?id=${targetId || 0}`,
+    order_detail: (targetId) => `/pages/order_detail/order_detail?id=${targetId || 0}`,
+    staff_order: (targetId) =>
+        `/packages/pages/staff_order_detail/staff_order_detail?id=${targetId || 0}`,
+    waitlist: () => '/packages/pages/waitlist/waitlist',
+    change: (targetId) => `/packages/pages/order_change/change_detail?id=${targetId || 0}`,
+    pause: (targetId) => `/packages/pages/order_change/pause_detail?id=${targetId || 0}`,
+    aftersale: () => '/packages/pages/aftersale/index',
+    ticket: () => '/packages/pages/aftersale/ticket',
+    ticket_detail: (targetId) => `/packages/pages/aftersale/ticket_detail?id=${targetId || 0}`,
+    complaint: () => '/packages/pages/aftersale/complaint',
+    complaint_detail: (targetId) =>
+        `/packages/pages/aftersale/complaint_detail?id=${targetId || 0}`,
+    callback: () => '/packages/pages/aftersale/callback',
+    callback_detail: (targetId) => `/packages/pages/aftersale/callback_detail?id=${targetId || 0}`,
+    review: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
+    review_list: () => '/packages/pages/review/list',
+    review_detail: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
+    dynamic: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
+    dynamic_detail: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
+    staff_detail: (targetId) => `/packages/pages/staff_detail/staff_detail?id=${targetId || 0}`,
+    confirm_letter: (targetId) => `/pages/order_detail/order_detail?letter_id=${targetId || 0}`
+}
+
 const loading = ref(false)
 const currentType = ref(0)
 const notificationList = ref<any[]>([])
@@ -215,6 +240,48 @@ const refreshListState = async () => {
     await Promise.all([loadUnreadCount(), loadList(true)])
 }
 
+const openNotificationDetail = async (item: any, hint = '') => {
+    try {
+        const detail = await getNotificationDetail({ id: item.id })
+        const lines = [
+            detail?.content || item?.content || '暂无详细内容',
+            detail?.create_time_text ? `时间：${detail.create_time_text}` : '',
+            hint
+        ].filter(Boolean)
+
+        uni.showModal({
+            title: detail?.title || item?.title || '消息详情',
+            content: lines.join('\n\n'),
+            showCancel: false,
+            confirmText: '我知道了'
+        })
+    } catch (error) {
+        console.error(error)
+        uni.showModal({
+            title: item?.title || '消息详情',
+            content: [item?.content || '暂无详细内容', hint].filter(Boolean).join('\n\n'),
+            showCancel: false,
+            confirmText: '我知道了'
+        })
+    }
+}
+
+const navigateByTarget = (item: any) => {
+    const routeBuilder = notificationRouteMap[String(item?.target_type || '').trim()]
+    const route = routeBuilder ? routeBuilder(item?.target_id) : ''
+    if (!route) {
+        return false
+    }
+
+    uni.navigateTo({
+        url: route,
+        fail: () => {
+            openNotificationDetail(item, '当前消息暂不支持直接跳转，请先查看内容说明。')
+        }
+    })
+    return true
+}
+
 const handleItemClick = async (item: any) => {
     if (!isNoticeRead(item)) {
         try {
@@ -227,38 +294,16 @@ const handleItemClick = async (item: any) => {
     }
 
     if (!item.target_type) {
+        openNotificationDetail(item)
         return
     }
 
-    const routeMap: Record<string, (targetId?: number) => string> = {
-        order: (targetId) => `/pages/order_detail/order_detail?id=${targetId || 0}`,
-        order_detail: (targetId) => `/pages/order_detail/order_detail?id=${targetId || 0}`,
-        staff_order: (targetId) =>
-            `/packages/pages/staff_order_detail/staff_order_detail?id=${targetId || 0}`,
-        waitlist: () => '/packages/pages/waitlist/waitlist',
-        change: (targetId) => `/packages/pages/order_change/change_detail?id=${targetId || 0}`,
-        pause: (targetId) => `/packages/pages/order_change/pause_detail?id=${targetId || 0}`,
-        ticket_detail: (targetId) => `/packages/pages/aftersale/ticket_detail?id=${targetId || 0}`,
-        review: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
-        review_list: () => '/packages/pages/review/list',
-        review_detail: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
-        dynamic: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
-        dynamic_detail: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
-        staff_detail: (targetId) => `/packages/pages/staff_detail/staff_detail?id=${targetId || 0}`
-    }
-
-    const routeBuilder = routeMap[item.target_type]
-    const route = routeBuilder ? routeBuilder(item.target_id) : ''
-    if (route) {
-        uni.navigateTo({ url: route })
+    if (navigateByTarget(item)) {
         return
     }
 
-    try {
-        await getNotificationDetail({ id: item.id })
-    } catch (error) {
-        console.error(error)
-    }
+    uni.showToast({ title: '当前消息仅支持查看详情', icon: 'none' })
+    openNotificationDetail(item, '当前消息目标未配置跳转页，已为你打开内容详情。')
 }
 
 const handleMarkAllRead = () => {

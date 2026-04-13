@@ -283,15 +283,6 @@
                 }
             },
             {
-                "path": "pages/order_change/apply_addon",
-                "style": {
-                    "navigationBarTitleText": "功能下线"
-                },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
                 "path": "pages/review/list",
                 "style": {
                     "navigationBarTitleText": "我的评价"

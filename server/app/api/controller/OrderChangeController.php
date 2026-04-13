@@ -108,15 +108,6 @@ class OrderChangeController extends BaseApiController
     }
 
     /**
-     * @notes 申请附加服务变更
-     * @return \think\response\Json
-     */
-    public function applyAddonChange()
-    {
-        return $this->failLegacyAddonOffline();
-    }
-
-    /**
      * @notes 取消变更申请
      * @return \think\response\Json
      */

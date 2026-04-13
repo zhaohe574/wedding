@@ -69,7 +69,7 @@ class StaffLogic extends BaseLogic
     ): array
     {
         $resolvedRegion = self::resolveRegionContext($regionContext);
-        $scheduleStatus = self::resolveScheduleStatus($id, $date);
+        $scheduleStatus = self::resolveScheduleStatus($id, $date, $userId);
 
         $staff = Staff::where('id', $id)
             ->where('delete_time', null)
@@ -250,9 +250,16 @@ class StaffLogic extends BaseLogic
         int $staffId,
         string $roleKey,
         array $regionContext = [],
-        string $date = ''
+        string $date = '',
+        int $userId = 0
     ): array {
-        return BookingFlowService::getRoleCandidates($staffId, $roleKey, $regionContext, $date);
+        return BookingFlowService::getRoleCandidates(
+            $staffId,
+            $roleKey,
+            $regionContext,
+            $date,
+            $userId
+        );
     }
 
     /**
@@ -415,7 +422,7 @@ class StaffLogic extends BaseLogic
      * @param string $date
      * @return array
      */
-    protected static function resolveScheduleStatus(int $staffId, string $date): array
+    protected static function resolveScheduleStatus(int $staffId, string $date, int $userId = 0): array
     {
         $date = trim($date);
         if ($staffId <= 0 || $date === '') {
@@ -425,7 +432,12 @@ class StaffLogic extends BaseLogic
             ];
         }
 
-        [$available, $message] = Schedule::checkAvailabilityWithReason($staffId, $date, 0);
+        [$available, $message] = Schedule::checkAvailabilityForUserWithReason(
+            $staffId,
+            $date,
+            $userId,
+            0
+        );
         return [
             'available' => $available,
             'message' => $message,

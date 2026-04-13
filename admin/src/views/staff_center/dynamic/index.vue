@@ -88,6 +88,11 @@
                         </el-tag>
                     </template>
                 </el-table-column>
+                <el-table-column label="状态反馈" min-width="220" show-overflow-tooltip>
+                    <template #default="{ row }">
+                        <span>{{ getStatusFeedback(row) }}</span>
+                    </template>
+                </el-table-column>
                 <el-table-column label="评论状态" width="100">
                     <template #default="{ row }">
                         <el-tag :type="Number(row.allow_comment || 0) === 1 ? 'success' : 'danger'" size="small">
@@ -147,6 +152,9 @@
                             {{ currentDynamic.status_desc }}
                         </el-tag>
                     </el-descriptions-item>
+                    <el-descriptions-item label="状态反馈" :span="2">
+                        {{ getStatusFeedback(currentDynamic) }}
+                    </el-descriptions-item>
                     <el-descriptions-item label="评论状态">
                         {{ Number(currentDynamic.allow_comment || 0) === 1 ? '允许评论' : '禁止评论' }}
                     </el-descriptions-item>
@@ -188,7 +196,7 @@
         <el-dialog v-model="auditVisible" :title="auditForm.approved ? '审核通过' : '审核拒绝'" width="500px">
             <el-form :model="auditForm" label-width="100px">
                 <el-form-item label="审核备注">
-                    <el-input v-model="auditForm.remark" type="textarea" :rows="3" placeholder="请输入审核备注（可选）" />
+                    <el-input v-model="auditForm.remark" type="textarea" :rows="3" placeholder="通过时可留空；拒绝时建议填写原因，方便服务人员修改后重提" />
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -202,7 +210,7 @@
         <el-dialog v-model="offlineVisible" title="下架动态" width="500px">
             <el-form :model="offlineForm" label-width="100px">
                 <el-form-item label="下架原因">
-                    <el-input v-model="offlineForm.reason" type="textarea" :rows="3" placeholder="请输入下架原因" />
+                    <el-input v-model="offlineForm.reason" type="textarea" :rows="3" placeholder="请填写下架原因，服务人员端会直接展示该反馈" />
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -275,6 +283,25 @@ const getStatusType = (status: number): 'warning' | 'success' | 'info' | 'danger
         3: 'danger'
     }
     return types[status] || 'info'
+}
+
+const getStatusFeedback = (row: any) => {
+    const remark = String(row?.audit_remark || '').trim()
+    const status = Number(row?.status || 0)
+
+    if (status === 2) {
+        return remark || '已下架，未填写补充原因'
+    }
+
+    if (status === 3) {
+        return remark || '审核未通过，未填写补充原因'
+    }
+
+    if (status === 0) {
+        return '等待后台审核处理'
+    }
+
+    return remark || '当前内容已发布'
 }
 
 const handleDetail = async (row: any) => {

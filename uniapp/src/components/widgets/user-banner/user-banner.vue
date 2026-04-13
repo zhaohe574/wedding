@@ -26,7 +26,7 @@
 <script setup lang="ts">
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
-import { navigateTo } from '@/utils/util'
+import { hasConfiguredLink, navigateTo } from '@/utils/util'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -48,7 +48,11 @@ const handleClick = (link: any) => {
 }
 
 const showList = computed(() => {
-    return props.content.data?.filter((item: any) => item.is_show == '1') || []
+    return (
+        props.content.data?.filter(
+            (item: any) => item.is_show == '1' && hasConfiguredLink(item?.link)
+        ) || []
+    )
 })
 </script>
 

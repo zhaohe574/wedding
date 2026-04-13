@@ -84,7 +84,7 @@ import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { loadUserBadgeData } from '@/utils/user-badge'
-import { navigateTo, normalizeAppPath } from '@/utils/util'
+import { hasConfiguredLink, navigateTo, normalizeAppPath } from '@/utils/util'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
@@ -192,7 +192,10 @@ const extraItems = computed(() => {
 })
 
 const showList = computed(() => {
-    const base = props.content.data?.filter((item: any) => item.is_show == '1') || []
+    const base =
+        props.content.data?.filter(
+            (item: any) => item.is_show == '1' && hasConfiguredLink(item?.link)
+        ) || []
     return [...base, ...extraItems.value]
 })
 

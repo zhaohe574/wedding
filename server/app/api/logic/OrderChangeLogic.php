@@ -223,49 +223,6 @@ class OrderChangeLogic extends BaseLogic
     }
 
     /**
-     * @notes 申请附加服务变更
-     * @param int $userId
-     * @param int $orderId
-     * @param int $orderItemId
-     * @param int $addonAction
-     * @param array $addonIds
-     * @param string $reason
-     * @param array $attachImages
-     * @return array
-     */
-    public static function applyAddonChange(
-        int $userId,
-        int $orderId,
-        int $orderItemId,
-        int $addonAction,
-        array $addonIds,
-        string $reason = '',
-        array $attachImages = []
-    ): array {
-        [$success, $message, $change] = OrderChange::applyAddonChange(
-            $userId,
-            $orderId,
-            $orderItemId,
-            $addonAction,
-            $addonIds,
-            $reason,
-            $attachImages
-        );
-
-        if ($success && $change) {
-            OrderNotificationService::notifyUserOnAddonChangeApplied((int) $change->id);
-            OrderNotificationService::notifyStaffOnAddonChangeApplied((int) $change->id);
-        }
-
-        return [
-            'success' => $success,
-            'message' => $message,
-            'change_id' => $change ? $change->id : 0,
-            'price_diff' => $change ? $change->price_diff : 0,
-        ];
-    }
-
-    /**
      * @notes 取消变更申请
      * @param int $changeId
      * @param int $userId

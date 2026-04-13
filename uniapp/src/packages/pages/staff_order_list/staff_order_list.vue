@@ -63,6 +63,13 @@
                                 </view>
                             </scroll-view>
                         </BaseCard>
+
+                        <BaseCard variant="glass" scene="staff" class="scope-card">
+                            <text class="scope-card__title">当前为服务人员履约视角</text>
+                            <text class="scope-card__desc">
+                                这里仅展示与你履约相关的订单、金额与时限。整单支付、退款、线下凭证审核等支付动作统一由后台处理。
+                            </text>
+                        </BaseCard>
                     </view>
                 </template>
 
@@ -810,6 +817,26 @@ onUnload(() => {
 
 .hero-card {
     overflow: hidden;
+}
+
+.scope-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+}
+
+.scope-card__title {
+    font-size: 24rpx;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.scope-card__desc {
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .hero-card__head {

@@ -99,6 +99,14 @@ const adminEntryEnabled = computed(() => {
     return currentUserId > 0 && allowedUserIds.includes(currentUserId)
 })
 
+const weddingProfileSubtitle = computed(() => {
+    const weddingDateText = String(weddingInfo.value?.wedding_date || '').trim()
+    if (weddingDateText) {
+        return `婚期已同步：${weddingDateText}`
+    }
+    return '完善婚期、场地与称呼'
+})
+
 const buildQuickEntryData = (): QuickEntryItem[] => {
     const pendingServiceCount = Number(
         orderStats.value.pending_service ?? orderStats.value.paid ?? 0
@@ -116,30 +124,54 @@ const buildQuickEntryData = (): QuickEntryItem[] => {
             subtitle: `${activeOrderCount} 个进行中`,
             is_show: '1',
             disabled: false,
+            requiresLogin: true,
             link: { path: '/pages/order/order', type: 'shop' }
         },
         {
             key: 'notification',
             title: '通知中心',
-            subtitle: `${Number(unreadMessageCount.value || 0)} 条未读`,
+            subtitle: Number(unreadMessageCount.value || 0)
+                ? `${Number(unreadMessageCount.value || 0)} 条待处理消息`
+                : '订单、互动消息会在这里同步',
             is_show: '1',
             disabled: false,
+            requiresLogin: true,
             link: { path: '/packages/pages/notification/index', type: 'shop' }
+        },
+        {
+            key: 'profile',
+            title: '资料与婚期',
+            subtitle: weddingProfileSubtitle.value,
+            is_show: '1',
+            disabled: false,
+            requiresLogin: true,
+            link: { path: '/pages/user_data/user_data', type: 'shop' }
+        },
+        {
+            key: 'favorite',
+            title: '我的收藏',
+            subtitle: '服务人员与内容收藏入口',
+            is_show: '1',
+            disabled: false,
+            requiresLogin: true,
+            link: { path: '/packages/pages/staff_favorite/staff_favorite', type: 'shop' }
         },
         {
             key: 'aftersale',
             title: '售后服务',
-            subtitle: '投诉 / 工单 / 回访',
+            subtitle: '投诉、工单、回访统一查看',
             is_show: '1',
             disabled: false,
+            requiresLogin: true,
             link: { path: '/packages/pages/aftersale/index', type: 'shop' }
         },
         {
             key: 'waitlist',
             title: '我的候补',
-            subtitle: '查看候补进度',
+            subtitle: '查看候补进度与平台通知',
             is_show: '1',
             disabled: false,
+            requiresLogin: true,
             link: { path: '/packages/pages/waitlist/waitlist', type: 'shop' }
         },
         {

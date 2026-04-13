@@ -155,7 +155,8 @@ class StaffController extends BaseApiController
                 $staffId,
                 $roleKey,
                 $this->request->get(),
-                $this->request->get('date/s', '')
+                $this->request->get('date/s', ''),
+                $this->userId
             );
             return $this->data($result);
         } catch (\Throwable $e) {

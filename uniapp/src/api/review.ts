@@ -54,4 +54,3 @@ export function applyShareReward(params: any) {
 export function getStaffReviewStats(params: any) {
     return request.get({ url: '/review/staffStats', params })
 }
-

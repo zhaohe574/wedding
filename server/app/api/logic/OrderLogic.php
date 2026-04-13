@@ -20,6 +20,7 @@ use app\common\model\schedule\Schedule;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\service\BookingFlowService;
+use app\common\service\OrderConfirmLetterService;
 use app\common\service\OrderNotificationService;
 use app\common\service\OrderRefundService;
 use app\common\service\PackageRegionPriceService;
@@ -35,7 +36,7 @@ class OrderLogic extends BaseLogic
     /**
      * @notes 构造直购选择项
      */
-    private static function buildSelectedItems(array $params): array
+    private static function buildSelectedItems(array $params, int $userId = 0): array
     {
         $staffId = (int)($params['staff_id'] ?? 0);
         $packageId = (int)($params['package_id'] ?? 0);
@@ -156,7 +157,8 @@ class OrderLogic extends BaseLogic
                 $selection['staff_id'],
                 $selection['package_id'],
                 $regionContext,
-                $date
+                $date,
+                $userId
             );
 
             $selectedItems[] = [
@@ -352,6 +354,9 @@ class OrderLogic extends BaseLogic
         foreach ($list['data'] as &$item) {
             $item['order_status_desc'] = self::getStatusDesc($item['order_status']);
             $item['pay_status_desc'] = self::getPayStatusDesc($item['pay_status']);
+            $payStatusDisplay = Order::buildPayStatusDisplayFromState($item);
+            $item['pay_status_display_key'] = $payStatusDisplay['key'];
+            $item['pay_status_display_desc'] = $payStatusDisplay['desc'];
             $item['payment_channel'] = Order::resolvePaymentChannel(
                 $item['payment_channel'] ?? null,
                 $item['pay_type'] ?? null,
@@ -447,6 +452,9 @@ class OrderLogic extends BaseLogic
         $data = $order->toArray();
         $data['order_status_desc'] = self::getStatusDesc((int)$order->order_status);
         $data['pay_status_desc'] = self::getPayStatusDesc((int)$order->pay_status);
+        $payStatusDisplay = Order::buildPayStatusDisplayFromState($data);
+        $data['pay_status_display_key'] = $payStatusDisplay['key'];
+        $data['pay_status_display_desc'] = $payStatusDisplay['desc'];
         $data['pay_type_desc'] = self::getPayTypeDesc((int)$order->pay_type);
         $data['payment_channel_desc'] = $order->payment_channel_desc;
         $data['pay_voucher_status_desc'] = $order->pay_voucher_status_desc ?? '';
@@ -456,6 +464,7 @@ class OrderLogic extends BaseLogic
         $data = array_merge($data, Order::getConfirmTimeoutSummary($order));
         $data['can_user_complete'] = (int)$order->order_status === Order::STATUS_IN_SERVICE
             && Order::canUserCompleteService();
+        $data = array_merge($data, self::buildOrderStatusGuide($data));
         $data['service_amount'] = round(
             max(0, (float)($data['total_amount'] ?? 0) - (float)($data['addon_amount'] ?? 0)),
             2
@@ -500,7 +509,7 @@ class OrderLogic extends BaseLogic
     public static function previewOrder(int $userId, array $params): array
     {
         try {
-            $selectedItems = self::buildSelectedItems($params);
+            $selectedItems = self::buildSelectedItems($params, $userId);
             if ($userId > 0) {
                 PackageBooking::releaseByUserId($userId);
             }
@@ -557,7 +566,7 @@ class OrderLogic extends BaseLogic
         Db::startTrans();
         try {
             $userId = (int)$params['user_id'];
-            $selectedItems = self::buildSelectedItems($params);
+            $selectedItems = self::buildSelectedItems($params, $userId);
             self::ensureScheduleAvailable($selectedItems, $userId);
             foreach ($selectedItems as $selectedItem) {
                 self::ensureTempLockOwned($userId, $selectedItem);
@@ -909,6 +918,117 @@ class OrderLogic extends BaseLogic
     }
 
     /**
+     * @notes 构建用户侧订单状态说明
+     */
+    protected static function buildOrderStatusGuide(array $order): array
+    {
+        $status = (int)($order['order_status'] ?? -1);
+        $paymentChannel = (int)($order['payment_channel'] ?? Order::PAYMENT_CHANNEL_ONLINE);
+        $voucherPending = $paymentChannel === Order::PAYMENT_CHANNEL_OFFLINE
+            && (int)($order['pay_voucher_status'] ?? -1) === Order::VOUCHER_STATUS_PENDING;
+        $canUserComplete = (int)($order['can_user_complete'] ?? 0) === 1;
+
+        $guide = [
+            'status_summary' => '订单状态已更新，请留意后续进度。',
+            'waiting_for' => '等待平台同步',
+            'next_action_text' => '进入订单详情查看最新安排'
+        ];
+
+        switch ($status) {
+            case Order::STATUS_PENDING_CONFIRM:
+                $guide = [
+                    'status_summary' => '订单已提交，正在等待服务人员确认档期与接单安排。',
+                    'waiting_for' => '等待服务人员确认档期',
+                    'next_action_text' => '确认通过后进入支付流程'
+                ];
+                break;
+            case Order::STATUS_PENDING_PAY:
+                if ($voucherPending) {
+                    $guide = [
+                        'status_summary' => '线下付款凭证审核中，审核结果会直接同步到当前订单。',
+                        'waiting_for' => '等待后台审核支付凭证',
+                        'next_action_text' => '审核通过后订单进入待服务状态'
+                    ];
+                    break;
+                }
+
+                if ($paymentChannel === Order::PAYMENT_CHANNEL_OFFLINE) {
+                    $guide = [
+                        'status_summary' => '当前订单需线下付款，完成付款后请尽快上传支付凭证。',
+                        'waiting_for' => '等待你完成付款并上传凭证',
+                        'next_action_text' => '凭证审核通过后进入待服务状态'
+                    ];
+                    break;
+                }
+
+                $guide = [
+                    'status_summary' => '订单待支付，支付完成后即可锁定当前服务安排。',
+                    'waiting_for' => '等待你完成支付',
+                    'next_action_text' => '支付成功后进入待服务状态'
+                ];
+                break;
+            case Order::STATUS_PAID:
+                $guide = [
+                    'status_summary' => '订单已完成支付，当前档期与服务安排已锁定。',
+                    'waiting_for' => '等待服务日期到来或后台开工',
+                    'next_action_text' => '服务开始后自动进入执行中'
+                ];
+                break;
+            case Order::STATUS_IN_SERVICE:
+                $guide = [
+                    'status_summary' => '当前服务执行中，平台会持续同步履约进度。',
+                    'waiting_for' => $canUserComplete ? '等待你确认服务完成' : '等待服务人员或后台推进',
+                    'next_action_text' => $canUserComplete ? '确认完成后可进入评价流程' : '如需调整服务，可在更多操作中发起申请'
+                ];
+                break;
+            case Order::STATUS_COMPLETED:
+                $guide = [
+                    'status_summary' => '服务已完成，若无异常可继续前往评价。',
+                    'waiting_for' => '当前无需等待',
+                    'next_action_text' => '前往评价或保留订单作为后续售后依据'
+                ];
+                break;
+            case Order::STATUS_REVIEWED:
+                $guide = [
+                    'status_summary' => '订单与评价已闭环，本次服务记录已归档。',
+                    'waiting_for' => '当前无需等待',
+                    'next_action_text' => '可查看评价详情或再次预约服务'
+                ];
+                break;
+            case Order::STATUS_CANCELLED:
+                $guide = [
+                    'status_summary' => '当前订单已取消，不再继续占用档期或进入履约流程。',
+                    'waiting_for' => '当前无需等待',
+                    'next_action_text' => '如仍需服务，可重新下单预约'
+                ];
+                break;
+            case Order::STATUS_PAUSED:
+                $guide = [
+                    'status_summary' => '订单当前处于暂停状态，暂停结束后会继续履约。',
+                    'waiting_for' => '等待平台恢复履约或处理暂停申请',
+                    'next_action_text' => '可在“我的申请”中查看暂停进度'
+                ];
+                break;
+            case Order::STATUS_REFUNDING:
+                $guide = [
+                    'status_summary' => '退款申请处理中，到账结果会同步更新到订单与消息中心。',
+                    'waiting_for' => '等待平台审核或支付渠道完成退款',
+                    'next_action_text' => '到账后订单状态会自动更新'
+                ];
+                break;
+            case Order::STATUS_REFUNDED:
+                $guide = [
+                    'status_summary' => '订单已退款，本次交易流程已结束。',
+                    'waiting_for' => '当前无需等待',
+                    'next_action_text' => '如仍需预约，可重新发起下单'
+                ];
+                break;
+        }
+
+        return $guide;
+    }
+
+    /**
      * @notes 获取状态描述
      */
     protected static function getStatusDesc(int $status): string
@@ -924,5 +1044,15 @@ class OrderLogic extends BaseLogic
     protected static function getPayTypeDesc(int $type): string
     {
         return Order::getPayWayText($type);
+    }
+
+    public static function getConfirmLetterCurrent(int $orderId, int $userId): ?array
+    {
+        return OrderConfirmLetterService::currentForUser($orderId, $userId);
+    }
+
+    public static function getConfirmLetterById(int $letterId, int $userId): ?array
+    {
+        return OrderConfirmLetterService::byIdForUser($letterId, $userId);
     }
 }

@@ -73,7 +73,7 @@
                                                 <el-option label="收藏数量" value="collect_count" />
                                                 <el-option label="浏览记录" value="view_count" />
                                                 <el-option label="积分余额" value="points" />
-                                                <el-option label="余额" value="balance" />
+                                                <el-option label="账户余额" value="balance" />
                                             </el-select>
                                         </el-form-item>
                                         <el-form-item label="单位" label-width="60px" class="!mb-0">

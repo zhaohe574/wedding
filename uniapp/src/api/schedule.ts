@@ -33,12 +33,12 @@ export function checkScheduleAvailable(params: any) {
 
 // 锁定档期
 export function lockSchedule(params: any) {
-    return request.post({ url: '/schedule/lockSchedule', params }, { isAuth: true })
+    return request.post({ url: '/schedule/lockSchedule', params }, { isAuth: true, ignoreCancel: true })
 }
 
 // 释放档期锁定
 export function releaseScheduleLock(params: any) {
-    return request.post({ url: '/schedule/releaseLock', params })
+    return request.post({ url: '/schedule/releaseLock', params }, { ignoreCancel: true })
 }
 
 // 加入候补

@@ -474,6 +474,84 @@ class StaffCenterController extends BaseApiController
         return $this->fail(StaffCenterLogic::getError());
     }
 
+    public function orderConfirmLetterGenerate()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+        $params = (new StaffCenterValidate())->post()->goCheck('orderConfirmLetterGenerate');
+        $result = StaffCenterLogic::orderConfirmLetterGenerate($this->userId, (int) $params['order_id']);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    public function orderConfirmLetterSaveAssets()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+        $params = (new StaffCenterValidate())->post()->goCheck('orderConfirmLetterAsset');
+        $result = StaffCenterLogic::orderConfirmLetterSaveAssets($this->userId, $params);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('保存成功', $result, 1, 1);
+    }
+
+    public function orderConfirmLetterPush()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+        $params = (new StaffCenterValidate())->post()->goCheck('orderConfirmLetterPush');
+        $result = StaffCenterLogic::orderConfirmLetterPush($this->userId, (int) $params['letter_id']);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('推送成功', $result, 1, 1);
+    }
+
+    public function orderConfirmLetterDetail()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+        $params = (new StaffCenterValidate())->get()->goCheck('orderConfirmLetterDetail');
+        $result = StaffCenterLogic::orderConfirmLetterDetail($this->userId, (int) $params['letter_id']);
+        if ($result === null) {
+            return $this->fail(StaffCenterLogic::getError() ?: '确认函不存在');
+        }
+        return $this->data($result);
+    }
+
+    public function orderConfirmLetterHistory()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+        $params = (new StaffCenterValidate())->get()->goCheck('orderConfirmLetterHistory');
+        $result = StaffCenterLogic::orderConfirmLetterHistory($this->userId, (int) $params['order_id']);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    public function orderConfirmLetterRegenerateAssets()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+        $params = (new StaffCenterValidate())->post()->goCheck('orderConfirmLetterAsset');
+        $result = StaffCenterLogic::orderConfirmLetterSaveAssets($this->userId, $params);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('图片缓存已更新', $result, 1, 1);
+    }
+
     /**
      * @notes 动态列表
      */
@@ -520,7 +598,7 @@ class StaffCenterController extends BaseApiController
         $params = (new StaffCenterValidate())->post()->goCheck('dynamicAdd');
         $result = StaffCenterLogic::dynamicAdd($this->userId, $params);
         if (true === $result) {
-            return $this->success('发布成功', [], 1, 1);
+            return $this->success('发布成功，已提交审核', [], 1, 1);
         }
         return $this->fail(StaffCenterLogic::getError());
     }
@@ -537,7 +615,7 @@ class StaffCenterController extends BaseApiController
         $params = (new StaffCenterValidate())->post()->goCheck('dynamicEdit');
         $result = StaffCenterLogic::dynamicEdit($this->userId, (int) $params['id'], $params);
         if (true === $result) {
-            return $this->success('保存成功', [], 1, 1);
+            return $this->success('保存成功，已重新提交审核', [], 1, 1);
         }
         return $this->fail(StaffCenterLogic::getError());
     }

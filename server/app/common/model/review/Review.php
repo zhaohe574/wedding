@@ -163,15 +163,6 @@ class Review extends BaseModel
     }
 
     /**
-     * @notes 关联申诉
-     * @return \think\model\relation\HasMany
-     */
-    public function appeals()
-    {
-        return $this->hasMany(ReviewAppeal::class, 'review_id', 'id');
-    }
-
-    /**
      * @notes 图片获取器
      * @param $value
      * @return array

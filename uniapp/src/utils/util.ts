@@ -47,6 +47,8 @@ interface Link {
     query?: Record<string, any>
 }
 
+type LinkInput = Partial<Link> | string | null | undefined
+
 export enum LinkTypeEnum {
     'SHOP_PAGES' = 'shop',
     'CUSTOM_LINK' = 'custom',
@@ -74,7 +76,6 @@ const LEGACY_LINK_MAP: Record<string, string> = {
     '/pages/order_change/apply_pause': '/packages/pages/order_change/apply_pause',
     '/pages/order_change/pause_detail': '/packages/pages/order_change/pause_detail',
     '/pages/order_change/apply_add_item': '/packages/pages/order_change/apply_add_item',
-    '/pages/order_change/apply_addon': '/packages/pages/order_change/apply_addon',
     '/pages/aftersale/index': '/packages/pages/aftersale/index',
     '/pages/aftersale/ticket': '/packages/pages/aftersale/ticket',
     '/pages/aftersale/create_ticket': '/packages/pages/aftersale/create_ticket',
@@ -103,6 +104,56 @@ export const normalizeAppPath = (path = '') => {
     return LEGACY_LINK_MAP[nextPath] || nextPath
 }
 
+const parsePathQuery = (rawPath = '') => {
+    const [pathPart, queryString = ''] = rawPath.split('?')
+    const parsedQuery = queryString ? (parseQuery(queryString) as Record<string, any>) : {}
+
+    return {
+        path: normalizeAppPath(pathPart),
+        query: parsedQuery
+    }
+}
+
+export const resolveAppLink = (link: LinkInput) => {
+    if (!link) return null
+
+    if (typeof link === 'string') {
+        const resolved = parsePathQuery(link.trim())
+        return resolved.path
+            ? {
+                  path: resolved.path,
+                  query: resolved.query
+              }
+            : null
+    }
+
+    if (typeof link !== 'object') {
+        return null
+    }
+
+    const rawPath = String(link.path || '').trim()
+    if (!rawPath) {
+        return null
+    }
+
+    const resolved = parsePathQuery(rawPath)
+    if (!resolved.path) {
+        return null
+    }
+
+    return {
+        path: resolved.path,
+        query: {
+            ...resolved.query,
+            ...(link.query || {})
+        }
+    }
+}
+
+export const getLinkPath = (link: LinkInput) => resolveAppLink(link)?.path || ''
+
+export const hasConfiguredLink = (link: LinkInput) => Boolean(getLinkPath(link))
+
 const TABBAR_PATHS = new Set(['/pages/index/index', '/pages/dynamic/dynamic', '/pages/user/user'])
 
 const buildUrl = (path: string, query?: Record<string, any>) => {
@@ -121,10 +172,32 @@ const handleNavigateFail = (error: any) => {
 }
 
 export function navigateTo(
-    link: Partial<Link> = {},
+    link: LinkInput = {},
     navigateType: 'navigateTo' | 'switchTab' | 'reLaunch' = 'navigateTo'
 ) {
-    if (!link || typeof link !== 'object') {
+    if (!link) {
+        uni.showToast({ title: '页面暂未配置', icon: 'none' })
+        return
+    }
+
+    if (typeof link === 'string') {
+        const resolvedLink = resolveAppLink(link)
+        if (!resolvedLink) {
+            uni.showToast({ title: '页面暂未配置', icon: 'none' })
+            return
+        }
+
+        navigateTo(
+            {
+                path: resolvedLink.path,
+                query: resolvedLink.query
+            },
+            navigateType
+        )
+        return
+    }
+
+    if (typeof link !== 'object') {
         uni.showToast({ title: '页面暂未配置', icon: 'none' })
         return
     }
@@ -135,15 +208,16 @@ export function navigateTo(
         return
     }
 
-    const path = normalizeAppPath(link.path || '')
-    if (!path) {
+    const resolvedLink = resolveAppLink(link)
+    if (!resolvedLink) {
         uni.showToast({ title: '页面暂未配置', icon: 'none' })
         return
     }
+    const { path, query } = resolvedLink
 
     const shouldSwitchTab =
         TABBAR_PATHS.has(path) && (navigateType === 'switchTab' || !!link.canTab)
-    const url = buildUrl(path, link.query)
+    const url = buildUrl(path, query)
 
     if (shouldSwitchTab) {
         uni.switchTab({

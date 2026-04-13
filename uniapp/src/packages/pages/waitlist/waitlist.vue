@@ -62,6 +62,8 @@
                         <view class="waitlist-card__body">
                             <text class="waitlist-card__schedule">{{ item.scheduleText }}</text>
                             <text class="waitlist-card__detail">{{ item.detailText }}</text>
+                            <text class="waitlist-card__summary">{{ item.statusSummary }}</text>
+                            <text class="waitlist-card__next-step">{{ item.nextStepText }}</text>
                         </view>
 
                         <view class="waitlist-card__foot">
@@ -128,6 +130,8 @@ interface WaitlistViewItem extends WaitlistRecord {
     title: string
     scheduleText: string
     detailText: string
+    statusSummary: string
+    nextStepText: string
     createdAtText: string
     statusText: string
     statusClass: string
@@ -188,12 +192,36 @@ const buildDetailText = (item: WaitlistRecord) => {
     )
 }
 
+const getStatusSummary = (status: number) => {
+    const map: Record<number, string> = {
+        0: '已进入候补队列，平台会在档期释放或服务人员可接单时通知你。',
+        1: '当前已有可预约档期，请尽快确认服务内容并完成下单。',
+        2: '你已通过候补完成下单，后续直接在订单中跟进支付与履约。',
+        3: '本次候补已失效，若仍有需要可重新选择日期后再次加入。'
+    }
+
+    return map[status] || '候补状态已更新，请留意消息中心的后续通知。'
+}
+
+const getNextStepText = (status: number) => {
+    const map: Record<number, string> = {
+        0: '下一步：等待平台通知；若计划变化，可先取消当前候补。',
+        1: '下一步：进入服务人员详情确认档期与套餐，然后立即预约。',
+        2: '下一步：前往订单详情查看支付、履约和售后状态。',
+        3: '下一步：重新查询档期，或调整日期后再次加入候补。'
+    }
+
+    return map[status] || '下一步：请关注消息中心中的候补通知。'
+}
+
 const waitlistItems = computed<WaitlistViewItem[]>(() => {
     return waitlist.value.map((item) => ({
         ...item,
         title: buildTitle(item),
         scheduleText: buildScheduleText(item),
         detailText: buildDetailText(item),
+        statusSummary: getStatusSummary(Number(item.notify_status || 0)),
+        nextStepText: getNextStepText(Number(item.notify_status || 0)),
         createdAtText: formatTime(item.create_time),
         statusText: item.notify_status_desc || getStatusText(Number(item.notify_status || 0)),
         statusClass: getStatusClass(Number(item.notify_status || 0)),
@@ -506,6 +534,18 @@ onShow(() => {
     display: block;
     font-size: 24rpx;
     line-height: 1.7;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.waitlist-card__summary,
+.waitlist-card__next-step {
+    display: block;
+    font-size: 24rpx;
+    line-height: 1.7;
+    color: #645b54;
+}
+
+.waitlist-card__next-step {
     color: var(--wm-text-secondary, #7f7b78);
 }
 

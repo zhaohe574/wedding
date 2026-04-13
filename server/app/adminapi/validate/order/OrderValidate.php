@@ -48,6 +48,10 @@ class OrderValidate extends BaseValidate
         'butler_package_id' => 'integer|egt:0',
         'director_staff_id' => 'integer|egt:0',
         'director_package_id' => 'integer|egt:0',
+        'letter_id' => 'require|integer|gt:0',
+        'snapshot_hash' => 'max:128',
+        'full_image_url' => 'max:500',
+        'thumb_image_url' => 'max:500',
     ];
 
     protected $message = [
@@ -88,6 +92,9 @@ class OrderValidate extends BaseValidate
         'main_package_id.integer' => '主套餐参数错误',
         'main_package_id.gt' => '请选择主套餐',
         'addon_ids.array' => '附加项格式错误',
+        'letter_id.require' => '请选择确认函',
+        'letter_id.integer' => '确认函参数错误',
+        'letter_id.gt' => '确认函参数错误',
     ];
 
     /**
@@ -305,5 +312,30 @@ class OrderValidate extends BaseValidate
     {
         return $this->only(['id', 'approved', 'remark'])
             ->remove('remark', 'require');
+    }
+
+    public function sceneConfirmLetterGenerate()
+    {
+        return $this->only(['id']);
+    }
+
+    public function sceneConfirmLetterPush()
+    {
+        return $this->only(['letter_id']);
+    }
+
+    public function sceneConfirmLetterDetail()
+    {
+        return $this->only(['letter_id']);
+    }
+
+    public function sceneConfirmLetterHistory()
+    {
+        return $this->only(['id']);
+    }
+
+    public function sceneConfirmLetterAssets()
+    {
+        return $this->only(['letter_id', 'snapshot_hash', 'full_image_url', 'thumb_image_url']);
     }
 }

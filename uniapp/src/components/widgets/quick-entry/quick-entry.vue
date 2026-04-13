@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { navigateTo } from '@/utils/util'
+import { hasConfiguredLink, navigateTo } from '@/utils/util'
 import { computed } from 'vue'
 
 interface QuickEntryItem {
@@ -56,7 +56,10 @@ const props = defineProps({
 
 const showList = computed<QuickEntryItem[]>(() => {
     const list = Array.isArray(props.content?.data) ? props.content.data : []
-    return list.filter((item: QuickEntryItem) => String(item.is_show ?? '1') !== '0')
+    return list.filter(
+        (item: QuickEntryItem) =>
+            String(item.is_show ?? '1') !== '0' && hasConfiguredLink(item.link)
+    )
 })
 
 const handleClick = (item: QuickEntryItem) => {

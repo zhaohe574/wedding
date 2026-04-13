@@ -160,7 +160,7 @@
                         <view class="section-head__copy">
                             <text class="section-head__title">经营管理</text>
                         </view>
-                        <text class="section-head__meta">后台维护</text>
+                        <text class="section-head__meta">正式能力</text>
                     </view>
 
                     <view class="stats-grid stats-grid--compact">
@@ -181,6 +181,7 @@
                             @click="goPage(item.path)"
                         >
                             <text class="manage-card__title">{{ item.name }}</text>
+                            <text class="manage-card__desc">{{ item.description }}</text>
                         </view>
                     </view>
                 </view>
@@ -662,11 +663,13 @@ const recentOrderMetaText = computed(() =>
 const businessMenus = computed(() => [
     {
         name: '附加项管理',
-        path: '/packages/pages/staff_addon_list/staff_addon_list'
+        path: '/packages/pages/staff_addon_list/staff_addon_list',
+        description: '维护附加服务配置'
     },
     {
         name: '动态管理',
-        path: '/packages/pages/staff_dynamic_list/staff_dynamic_list'
+        path: '/packages/pages/staff_dynamic_list/staff_dynamic_list',
+        description: '查看审核状态与处理反馈'
     }
 ])
 
@@ -720,26 +723,6 @@ const quickMenus = computed<QuickMenuItem[]>(() => [
         iconColor: '#C99B73',
         tone: 'warning',
         singleRow: false
-    },
-    {
-        name: '附加项管理',
-        path: '/packages/pages/staff_addon_list/staff_addon_list',
-        badge: 0,
-        accent: false,
-        icon: 'add',
-        iconColor: '#7F7B78',
-        tone: 'neutral',
-        singleRow: false
-    },
-    {
-        name: '动态管理',
-        path: '/packages/pages/staff_dynamic_list/staff_dynamic_list',
-        badge: 0,
-        accent: false,
-        icon: 'notice',
-        iconColor: '#7F7B78',
-        tone: 'neutral',
-        singleRow: true
     }
 ])
 

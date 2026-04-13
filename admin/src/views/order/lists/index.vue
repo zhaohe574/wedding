@@ -172,7 +172,19 @@
                 <el-table-column label="剩余支付时间" width="160"><template #default="{ row }"><span>{{ getPayRemainText(row) }}</span></template></el-table-column>
                 <el-table-column label="支付超时处理" width="120"><template #default="{ row }"><span>{{ row.pay_timeout_action_desc || '-' }}</span></template></el-table-column>
                 <el-table-column label="支付状态" width="100">
-                    <template #default="{ row }"><el-tag :type="row.pay_status === 1 ? 'success' : 'info'" size="small">{{ row.pay_status_desc }}</el-tag></template>
+                    <template #default="{ row }">
+                        <el-tag :type="getPayStatusType(row.pay_status_display_key)" size="small">
+                            {{ row.pay_status_display_desc || row.pay_status_desc }}
+                        </el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column label="确认函" width="110">
+                    <template #default="{ row }">
+                        <el-tag v-if="Number(row.current_confirm_letter_id || 0) > 0" type="success" size="small">
+                            已生成
+                        </el-tag>
+                        <span v-else class="text-gray-400">未生成</span>
+                    </template>
                 </el-table-column>
                 <el-table-column label="服务日期" prop="service_date" width="110" />
                 <el-table-column label="来源" width="110">
@@ -184,9 +196,17 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="创建时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="430" fixed="right">
+                <el-table-column label="操作" width="500" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
+                        <el-button
+                            v-if="Number(row.paid_amount || 0) > 0 || Number(row.current_confirm_letter_id || 0) > 0"
+                            type="warning"
+                            link
+                            @click="handleConfirmLetter(row)"
+                        >
+                            确认函
+                        </el-button>
                         <el-button
                             v-if="row.order_status === 0 && row.pending_confirm_count > 0"
                             type="success"
@@ -398,7 +418,9 @@
                     <el-descriptions-item v-if="Number(currentOrder.unpaid_amount || 0) >= 0" label="待付金额">¥{{ currentOrder.unpaid_amount }}</el-descriptions-item>
                     <el-descriptions-item v-if="currentOrder.deposit_remark" label="支付说明" :span="2">{{ currentOrder.deposit_remark }}</el-descriptions-item>
                     <el-descriptions-item label="支付方式">{{ currentOrder.pay_type_desc || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="支付状态">{{ currentOrder.pay_status_desc || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="支付状态">
+                        {{ currentOrder.pay_status_display_desc || currentOrder.pay_status_desc || '-' }}
+                    </el-descriptions-item>
                     <el-descriptions-item label="线下凭证" :span="2"><el-image v-if="currentOrder.pay_voucher" :src="currentOrder.pay_voucher" fit="contain" style="width: 100%; max-height: 260px" /><span v-else>-</span></el-descriptions-item>
                     <el-descriptions-item label="凭证状态">{{ currentOrder.pay_voucher_status_desc || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="审核备注">{{ currentOrder.pay_voucher_audit_remark || '-' }}</el-descriptions-item>
@@ -408,6 +430,16 @@
                 <div v-if="currentOrder.can_admin_refund" class="mt-4 flex justify-end">
                     <el-button type="danger" plain @click="handleRefund(currentOrder)">
                         发起退款
+                    </el-button>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <el-button
+                        v-if="Number(currentOrder.paid_amount || 0) > 0 || Number(currentOrder.current_confirm_letter_id || 0) > 0"
+                        type="warning"
+                        plain
+                        @click="handleConfirmLetter(currentOrder)"
+                    >
+                        管理订单确认函
                     </el-button>
                 </div>
                 <div class="service-project-panel mt-4">
@@ -538,6 +570,88 @@
             </div>
         </el-dialog>
 
+        <el-dialog v-model="confirmLetterVisible" title="订单确认函" width="920px">
+            <div class="confirm-letter-panel">
+                <div class="confirm-letter-panel__toolbar">
+                    <div>
+                        <div class="confirm-letter-panel__title">
+                            {{ currentOrder?.order_sn ? `订单：${currentOrder.order_sn}` : '请选择订单' }}
+                        </div>
+                        <div class="confirm-letter-panel__desc">
+                            付定金后可生成确认函；如后续支付尾款、退款或编辑订单信息，需重新生成最新版本。
+                        </div>
+                    </div>
+                    <div class="confirm-letter-panel__actions">
+                        <el-button type="warning" @click="handleGenerateConfirmLetter(currentOrder)">
+                            生成当前版本
+                        </el-button>
+                        <el-button
+                            type="primary"
+                            :disabled="!currentLetter?.letter_id || currentLetter?.is_current !== 1"
+                            @click="handlePushConfirmLetter"
+                        >
+                            推送给顾客
+                        </el-button>
+                    </div>
+                </div>
+
+                <div class="confirm-letter-panel__content">
+                    <div class="confirm-letter-panel__preview">
+                        <div class="confirm-letter-panel__section-title">当前版本预览</div>
+                        <div v-if="currentLetter?.letter_id" class="confirm-letter-preview">
+                            <div class="confirm-letter-preview__meta">
+                                <el-tag size="small" type="success">v{{ currentLetter.version }}</el-tag>
+                                <el-tag size="small" :type="currentLetter.is_pushed ? 'primary' : 'info'">
+                                    {{ currentLetter.is_pushed ? '已推送' : '未推送' }}
+                                </el-tag>
+                                <el-tag v-if="currentLetter.is_current === 1" size="small" type="warning">
+                                    当前版本
+                                </el-tag>
+                            </div>
+                            <el-image
+                                :src="getConfirmLetterPreviewSrc(currentLetter)"
+                                fit="contain"
+                                :preview-src-list="[getConfirmLetterPreviewSrc(currentLetter)]"
+                                class="confirm-letter-preview__image"
+                            />
+                        </div>
+                        <el-empty v-else description="当前订单还没有确认函版本" />
+                    </div>
+
+                    <div class="confirm-letter-panel__history">
+                        <div class="confirm-letter-panel__section-title">版本历史</div>
+                        <el-table :data="currentLetterHistory" border size="small" empty-text="暂无历史版本">
+                            <el-table-column label="版本" min-width="80">
+                                <template #default="{ row }">v{{ row.version }}</template>
+                            </el-table-column>
+                            <el-table-column label="确认日期" prop="confirm_date" min-width="120" />
+                            <el-table-column label="状态" min-width="100">
+                                <template #default="{ row }">
+                                    <el-tag :type="row.is_current ? 'warning' : 'info'" size="small">
+                                        {{ row.is_current ? '当前版本' : '历史版本' }}
+                                    </el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="推送" min-width="90">
+                                <template #default="{ row }">
+                                    <el-tag :type="row.is_pushed ? 'success' : 'info'" size="small">
+                                        {{ row.is_pushed ? '已推送' : '未推送' }}
+                                    </el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="操作" min-width="90" fixed="right">
+                                <template #default="{ row }">
+                                    <el-button type="primary" link @click="handleViewConfirmLetterVersion(row)">
+                                        查看
+                                    </el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+                </div>
+            </div>
+        </el-dialog>
+
         <el-dialog v-model="auditVisible" title="线下凭证审核" width="520px">
             <el-form :model="auditForm" label-width="100px">
                 <el-form-item label="订单编号"><span>{{ auditForm.order_sn || '-' }}</span></el-form-item>
@@ -643,6 +757,10 @@ import {
     orderAuditVoucher,
     orderCancel,
     orderComplete,
+    orderConfirmLetterDetail,
+    orderConfirmLetterGenerate,
+    orderConfirmLetterHistory,
+    orderConfirmLetterPush,
     orderConfirm,
     orderConfirmOfflinePay,
     orderDelete,
@@ -660,6 +778,7 @@ import { regionDistrictOptions, regionEnabledCityOptions } from '@/api/service'
 import { staffAll, staffGetAddonConfig } from '@/api/staff'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
+import { buildOrderConfirmLetterDataUrl } from '@/utils/orderConfirmLetterRenderer'
 
 type RoleKey = 'butler' | 'director'
 type PaymentEntryMode = 'online_pending' | 'offline_voucher' | 'offline_paid'
@@ -743,6 +862,9 @@ const createTimeRange = computed<string[]>({
 const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentOrder = ref<any>(null)
+const confirmLetterVisible = ref(false)
+const currentLetter = ref<any>(null)
+const currentLetterHistory = ref<any[]>([])
 const countdownNowTs = ref(Date.now())
 const userLoading = ref(false)
 const userOptions = ref<any[]>([])
@@ -932,6 +1054,19 @@ const getStatusType = (status: number): 'warning' | 'primary' | 'info' | 'succes
         9: 'danger'
     }
     return types[status] || 'info'
+}
+
+const getPayStatusType = (
+    statusKey: string
+): 'warning' | 'primary' | 'info' | 'success' | 'danger' => {
+    const types: Record<string, 'warning' | 'primary' | 'info' | 'success' | 'danger'> = {
+        unpaid: 'info',
+        deposit_paid: 'warning',
+        paid: 'success',
+        partial_refund: 'warning',
+        full_refund: 'danger'
+    }
+    return types[String(statusKey || '').trim()] || 'info'
 }
 
 const isOfflineOrder = (row: any) => Number(row?.source || 0) === 3 && !row?.user
@@ -1674,6 +1809,55 @@ const handleRefund = (row: any) => {
     refundVisible.value = true
 }
 
+const handleConfirmLetter = async (row: any) => {
+    if (!row?.id) return
+    currentOrder.value = row
+    confirmLetterVisible.value = true
+    currentLetter.value = null
+    currentLetterHistory.value = []
+    try {
+        const history = await orderConfirmLetterHistory({ id: row.id })
+        currentLetterHistory.value = history || []
+        const first = currentLetterHistory.value[0]
+        if (first?.letter_id) {
+            currentLetter.value = await orderConfirmLetterDetail({ letter_id: first.letter_id })
+        }
+    } catch (error: any) {
+        feedback.msgError(error?.message || '加载确认函失败')
+    }
+}
+
+const handleGenerateConfirmLetter = async (row: any) => {
+    if (!row?.id) return
+    await orderConfirmLetterGenerate({ id: row.id })
+    feedback.msgSuccess('确认函已生成')
+    await handleConfirmLetter(row)
+}
+
+const handleViewConfirmLetterVersion = async (row: any) => {
+    if (!row?.letter_id) return
+    currentLetter.value = await orderConfirmLetterDetail({ letter_id: row.letter_id })
+}
+
+const handlePushConfirmLetter = async () => {
+    if (!currentLetter.value?.letter_id) {
+        feedback.msgWarning('请先生成确认函')
+        return
+    }
+    await orderConfirmLetterPush({ letter_id: currentLetter.value.letter_id })
+    feedback.msgSuccess('推送成功')
+    await handleConfirmLetter(currentOrder.value)
+}
+
+const getConfirmLetterPreviewSrc = (letter: any) => {
+    const fullImageUrl = String(letter?.full_image_url || '').trim()
+    if (fullImageUrl) {
+        return fullImageUrl
+    }
+
+    return buildOrderConfirmLetterDataUrl(letter?.rendered_snapshot || {})
+}
+
 const submitRefundApply = async () => {
     const maxAmount = Number(refundForm.refundable_amount || 0)
     const refundAmount = Number(
@@ -2057,6 +2241,79 @@ getStatistics()
 
 .service-project-empty--sub {
     padding: 14px 16px;
+}
+
+.confirm-letter-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.confirm-letter-panel__toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.confirm-letter-panel__title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.confirm-letter-panel__desc {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #6b7280;
+}
+
+.confirm-letter-panel__actions {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.confirm-letter-panel__content {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+    gap: 16px;
+}
+
+.confirm-letter-panel__preview,
+.confirm-letter-panel__history {
+    border: 1px solid #ebe5df;
+    border-radius: 16px;
+    padding: 16px;
+    background: #fff;
+}
+
+.confirm-letter-panel__section-title {
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.confirm-letter-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.confirm-letter-preview__meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.confirm-letter-preview__image {
+    width: 100%;
+    min-height: 520px;
+    border-radius: 12px;
+    border: 1px solid #f0e7e2;
+    background: #faf8f6;
 }
 
 .offline-order-drawer__header {

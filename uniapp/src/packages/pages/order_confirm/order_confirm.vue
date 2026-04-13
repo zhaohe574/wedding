@@ -301,7 +301,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import ActionArea from '@/components/base/ActionArea.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -309,12 +309,19 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import { previewOrder, createOrder } from '@/api/order'
-import { lockSchedule, releaseScheduleLock } from '@/api/schedule'
+import { ClientEnum } from '@/enums/appEnums'
 import { BACK_URL } from '@/enums/constantEnums'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import cache from '@/utils/cache'
-import { requestSubscribeByScene } from '@/utils/subscribe'
+import {
+    clearBookingLockSession,
+    isBookingLockSessionMatchingSelection,
+    releaseAllBookingLocks,
+    renewAllBookingLocks
+} from '@/utils/booking-lock-session'
+import { client } from '@/utils/client'
+import { getAllScenes, setSceneCache, subscribeOrderScenes } from '@/utils/subscribe'
 import {
     getOrderConfirmPageUrl,
     getStaffBookingPageUrl,
@@ -335,8 +342,6 @@ const userStore = useUserStore()
 const loading = ref(false)
 const submitting = ref(false)
 const initialized = ref(false)
-const scheduleLocking = ref(false)
-const orderCreated = ref(false)
 const selection = reactive({
     staff_id: 0,
     package_id: 0,
@@ -378,7 +383,6 @@ const form = reactive({
     service_address: '',
     remark: ''
 })
-const lockedSchedules = ref<Array<{ staff_id: number; date: string }>>([])
 
 const hasItems = computed(
     () => Array.isArray(preview.value.items) && preview.value.items.length > 0
@@ -453,27 +457,6 @@ const mainPackageSummary = computed(() => {
 
 const formatPrice = (value: any) => Number(value || 0).toFixed(2)
 
-const collectScheduleLocks = () => {
-    const date = String(selection.date || '').trim()
-    if (!date) {
-        return []
-    }
-
-    return [
-        selection.staff_id > 0 && selection.package_id > 0 ? selection.staff_id : 0,
-        selection.butler_staff_id > 0 && selection.butler_package_id > 0
-            ? selection.butler_staff_id
-            : 0,
-        selection.director_staff_id > 0 && selection.director_package_id > 0
-            ? selection.director_staff_id
-            : 0,
-    ]
-        .map((staffId) => Number(staffId || 0))
-        .filter((staffId) => Number.isInteger(staffId) && staffId > 0)
-        .filter((staffId, index, list) => list.indexOf(staffId) === index)
-        .map((staff_id) => ({ staff_id, date }))
-}
-
 const getConfirmPageUrl = () => {
     return getOrderConfirmPageUrl(selection)
 }
@@ -504,6 +487,14 @@ const initContact = async () => {
     }
 }
 
+const warmOrderSubscribeScenes = async () => {
+    try {
+        setSceneCache(await getAllScenes())
+    } catch (error) {
+        console.error('预加载订单订阅场景失败', error)
+    }
+}
+
 const buildSelectionParams = (extra: Record<string, any> = {}) => {
     const params: Record<string, any> = {
         ...toBookingOrderParams(selection),
@@ -512,81 +503,39 @@ const buildSelectionParams = (extra: Record<string, any> = {}) => {
     return params
 }
 
-const getStaffDetailUrl = () => {
+const getStaffBookingUrl = () => {
     if (!selection.staff_id) {
         return ''
     }
     return getStaffBookingPageUrl(selection)
 }
 
-const releaseCurrentLocks = async (silent = true) => {
-    if (orderCreated.value || !lockedSchedules.value.length) {
-        return
+const ensureBookingLockSessionReady = () => {
+    if (isBookingLockSessionMatchingSelection(selection)) {
+        return true
     }
 
-    const targets = [...lockedSchedules.value]
-    lockedSchedules.value = []
-
-    await Promise.allSettled(
-        targets.map((target) =>
-            releaseScheduleLock({
-                staff_id: target.staff_id,
-                date: target.date
-            }).catch((error) => {
-                if (!silent) {
-                    return Promise.reject(error)
-                }
-                return null
-            })
-        )
-    )
+    throw new Error('预约锁已失效，请重新确认服务项目')
 }
 
-const ensureScheduleLocks = async () => {
-    if (scheduleLocking.value) {
-        return lockedSchedules.value.length > 0
-    }
-
-    const targets = collectScheduleLocks()
-    if (!targets.length) {
-        return false
-    }
-
-    scheduleLocking.value = true
-    const acquired: Array<{ staff_id: number; date: string }> = []
-    try {
-        for (const target of targets) {
-            await lockSchedule({
-                staff_id: target.staff_id,
-                date: target.date
-            })
-            acquired.push(target)
+const handleLockSessionError = async (message: string) => {
+    initialized.value = false
+    await releaseAllBookingLocks().catch(() => null)
+    uni.showToast({ title: message, icon: 'none' })
+    const url = getStaffBookingUrl()
+    setTimeout(() => {
+        if (url) {
+            uni.redirectTo({ url })
+            return
         }
-
-        lockedSchedules.value = targets
-        return true
-    } catch (error) {
-        if (acquired.length) {
-            await Promise.allSettled(
-                acquired.map((target) =>
-                    releaseScheduleLock({
-                        staff_id: target.staff_id,
-                        date: target.date
-                    }).catch(() => null)
-                )
-            )
-        }
-        lockedSchedules.value = []
-        throw error
-    } finally {
-        scheduleLocking.value = false
-    }
+        uni.navigateBack()
+    }, 1200)
 }
 
 const handlePreviewError = async (message: string) => {
-    await releaseCurrentLocks()
+    initialized.value = false
     uni.showToast({ title: message, icon: 'none' })
-    const url = getStaffDetailUrl()
+    const url = getStaffBookingUrl()
     setTimeout(() => {
         if (url) {
             uni.redirectTo({ url })
@@ -632,13 +581,37 @@ const fetchPreview = async () => {
 const isValidMobile = (mobile: string) => /^1[3-9]\d{9}$/.test(mobile)
 
 const handleReselect = async () => {
-    await releaseCurrentLocks()
-    const url = getStaffDetailUrl()
+    const url = getStaffBookingUrl()
     if (!url) {
         uni.navigateBack()
         return
     }
     uni.redirectTo({ url })
+}
+
+const promptOrderSubscribe = async () => {
+    if (client !== ClientEnum.MP_WEIXIN) {
+        return true
+    }
+
+    const result = await uni.showModal({
+        title: '接收微信服务提醒',
+        content: '订阅后可在微信及时收到订单提交、确认结果、支付结果与服务提醒，避免错过重要进度。',
+        confirmText: '去订阅',
+        cancelText: '暂不订阅'
+    })
+
+    if (!result.confirm) {
+        return false
+    }
+
+    try {
+        await subscribeOrderScenes()
+    } catch (error) {
+        console.error('请求订单订阅失败', error)
+    }
+
+    return true
 }
 
 const handleSubmit = async () => {
@@ -665,13 +638,9 @@ const handleSubmit = async () => {
 
     submitting.value = true
     try {
-        await ensureScheduleLocks()
-
-        try {
-            await requestSubscribeByScene('order_confirm')
-        } catch (error) {
-            // 订阅授权失败不影响下单
-        }
+        ensureBookingLockSessionReady()
+        await renewAllBookingLocks()
+        await promptOrderSubscribe()
 
         const params: any = {
             ...buildSelectionParams(),
@@ -683,8 +652,7 @@ const handleSubmit = async () => {
 
         const res = await createOrder(params)
         const orderId = Number(res?.order_id || res?.id || 0)
-        orderCreated.value = true
-        lockedSchedules.value = []
+        clearBookingLockSession()
         uni.showToast({ title: '订单已提交', icon: 'success' })
         if (orderId) {
             uni.reLaunch({ url: `/pages/order_detail/order_detail?id=${orderId}` })
@@ -704,14 +672,16 @@ const initPage = async () => {
         return
     }
     try {
-        await ensureScheduleLocks()
+        ensureBookingLockSessionReady()
+        await renewAllBookingLocks()
         await initContact()
+        await warmOrderSubscribeScenes()
         await fetchPreview()
         initialized.value = true
     } catch (error: any) {
         const errorMsg =
             typeof error === 'string' ? error : error?.msg || error?.message || '档期锁定失败'
-        await handlePreviewError(errorMsg)
+        await handleLockSessionError(errorMsg)
     }
 }
 
@@ -738,6 +708,8 @@ const getExtraItemDesc = (item: any) => {
 }
 
 onLoad((options: any) => {
+    $theme.setScene('consumer')
+
     const normalized = normalizeBookingQuery({
         ...loadServiceRegionSelection(),
         ...options
@@ -769,11 +741,11 @@ onLoad((options: any) => {
         !selection.date ||
         !hasServiceRegion(selection)
     ) {
-        handlePreviewError('预约信息不完整，请重新选择服务地区和日期')
+        void handlePreviewError('预约信息不完整，请重新选择服务地区和日期')
         return
     }
 
-    initPage()
+    void initPage()
 })
 
 onShow(() => {
@@ -782,11 +754,12 @@ onShow(() => {
             return
         }
 
-        ensureScheduleLocks()
-            .then((locked) => {
-                if (!locked) {
-                    return
-                }
+        Promise.resolve()
+            .then(() => {
+                ensureBookingLockSessionReady()
+                return renewAllBookingLocks()
+            })
+            .then(() => {
                 return fetchPreview()
             })
             .catch((error: any) => {
@@ -794,16 +767,9 @@ onShow(() => {
                     typeof error === 'string'
                         ? error
                         : error?.msg || error?.message || '档期锁定失败'
-                handlePreviewError(errorMsg)
+                handleLockSessionError(errorMsg)
             })
     }
-})
-
-onUnload(() => {
-    if (orderCreated.value) {
-        return
-    }
-    void releaseCurrentLocks()
 })
 </script>
 

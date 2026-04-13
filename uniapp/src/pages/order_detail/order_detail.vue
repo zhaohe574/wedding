@@ -60,6 +60,47 @@
                     </view>
                 </view>
 
+                <view class="card card--secondary">
+                    <text class="card__title">当前说明</text>
+                    <view class="sub-panel">
+                        <view
+                            v-for="item in statusGuideRows"
+                            :key="item.label"
+                            class="sub-panel__row"
+                            :class="{ 'sub-panel__row--stack': item.multiline }"
+                        >
+                            <text class="sub-panel__label">{{ item.label }}</text>
+                            <text
+                                class="sub-panel__value"
+                                :class="{ 'sub-panel__value--left': item.multiline }"
+                            >
+                                {{ item.value }}
+                            </text>
+                        </view>
+                    </view>
+                </view>
+
+                <view v-if="confirmLetterAvailable" class="card card--secondary">
+                    <view class="card__title-row">
+                        <text class="card__title">订单确认函</text>
+                        <view class="inline-copy" @click="handleOpenConfirmLetter">
+                            <text class="inline-copy__text">查看订单确认函</text>
+                        </view>
+                    </view>
+                    <view class="sub-panel">
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">版本</text>
+                            <text class="sub-panel__value">v{{ confirmLetter?.version }}</text>
+                        </view>
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">确认日期</text>
+                            <text class="sub-panel__value">{{
+                                confirmLetter?.rendered_snapshot?.confirm_date || '-'
+                            }}</text>
+                        </view>
+                    </view>
+                </view>
+
                 <view class="card card--core">
                     <text class="card__title">服务信息</text>
                     <view class="service-summary">
@@ -554,13 +595,18 @@ import {
     cancelOrder,
     confirmOrder,
     deleteOrder,
+    getOrderConfirmLetterById,
+    getOrderConfirmLetterCurrent,
     getOrderDetail,
     uploadPayVoucher
 } from '@/api/order'
 import { uploadImage } from '@/api/app'
+import { buildOrderConfirmLetterDataUrl } from '@/utils/orderConfirmLetterRenderer'
 const $theme = useThemeStore()
 const orderId = ref(0)
 const order = ref<any>(null)
+const confirmLetterId = ref(0)
+const confirmLetter = ref<any>(null)
 const showRefundPopup = ref(false)
 const showVoucherPopup = ref(false)
 const payState = reactive({
@@ -581,6 +627,7 @@ let payCountdownRefreshing = false
 let confirmCountdownRefreshing = false
 
 const formatAmount = (value: any) => Number(value || 0).toFixed(2)
+const confirmLetterAvailable = computed(() => !!confirmLetter.value?.letter_id)
 const refundApplyAmount = computed(() =>
     Number(order.value?.refund_apply_amount ?? order.value?.refundable_amount ?? 0)
 )
@@ -992,6 +1039,23 @@ const statusHeadline = computed(() => {
 const statusCardText = computed(
     () => `订单编号：${order.value?.order_sn || '-'}\n${statusDescription.value}`
 )
+const statusGuideRows = computed(() => [
+    {
+        label: '当前阶段',
+        value: String(order.value?.status_summary || statusDescription.value || '订单状态已更新'),
+        multiline: true
+    },
+    {
+        label: '等待对象',
+        value: String(order.value?.waiting_for || '等待平台同步'),
+        multiline: false
+    },
+    {
+        label: '下一步',
+        value: String(order.value?.next_action_text || '进入订单详情查看最新安排'),
+        multiline: true
+    }
+])
 const totalOrderAmount = computed(() =>
     Math.max(Number(order.value?.total_amount || 0), Number(order.value?.pay_amount || 0))
 )
@@ -1283,16 +1347,63 @@ const syncConfirmCountdown = (seconds: number | string) => {
     }, 1000)
 }
 
+const fetchConfirmLetter = async () => {
+    if (confirmLetterId.value > 0) {
+        try {
+            confirmLetter.value = await getOrderConfirmLetterById({
+                letter_id: confirmLetterId.value
+            })
+        } catch {
+            confirmLetter.value = null
+        }
+        return
+    }
+
+    if (orderId.value <= 0) {
+        confirmLetter.value = null
+        return
+    }
+
+    try {
+        confirmLetter.value = await getOrderConfirmLetterCurrent({ id: orderId.value })
+    } catch {
+        confirmLetter.value = null
+    }
+}
+
 const fetchDetail = async () => {
     try {
         order.value = await getOrderDetail({ id: orderId.value })
+        await fetchConfirmLetter()
         syncPayCountdown(order.value?.pay_remain_seconds || 0)
         syncConfirmCountdown(order.value?.confirm_remain_seconds || 0)
     } catch (e: any) {
+        confirmLetter.value = null
         clearPayCountdown()
         clearConfirmCountdown()
         uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
     }
+}
+
+const handleOpenConfirmLetter = () => {
+    if (!confirmLetter.value?.letter_id) {
+        uni.showToast({ title: '订单确认函暂未生成', icon: 'none' })
+        return
+    }
+
+    const imageUrl =
+        String(confirmLetter.value?.full_image_url || '').trim() ||
+        buildOrderConfirmLetterDataUrl(confirmLetter.value?.rendered_snapshot || ({} as any))
+
+    if (!imageUrl) {
+        uni.showToast({ title: '订单确认函暂不可查看', icon: 'none' })
+        return
+    }
+
+    uni.previewImage({
+        urls: [imageUrl],
+        current: imageUrl
+    })
 }
 
 const copyOrderSn = () => {
@@ -1453,12 +1564,28 @@ const submitVoucher = async () => {
     }
 }
 
-onLoad((options: any) => {
+onLoad(async (options: any) => {
     $theme.setScene('consumer')
     orderId.value = Number(options?.id || 0)
+    confirmLetterId.value = Number(options?.letter_id || 0)
     if (options?.payment_sn) payState.paymentSn = String(options.payment_sn)
     if (options?.checkPay) payState.showCheck = true
-    fetchDetail()
+
+    if (orderId.value <= 0 && confirmLetterId.value > 0) {
+        try {
+            const letter = await getOrderConfirmLetterById({ letter_id: confirmLetterId.value })
+            confirmLetter.value = letter || null
+            orderId.value = Number(letter?.order_id || 0)
+        } catch (e: any) {
+            confirmLetter.value = null
+            uni.showToast({ title: e?.message || '加载确认函失败', icon: 'none' })
+            return
+        }
+    }
+
+    if (orderId.value > 0) {
+        fetchDetail()
+    }
 })
 
 onShow(() => {

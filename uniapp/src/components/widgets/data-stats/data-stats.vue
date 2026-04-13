@@ -108,7 +108,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 
@@ -124,13 +125,18 @@ const props = defineProps({
 })
 
 const $theme = useThemeStore()
+const userStore = useUserStore()
+const { userInfo } = storeToRefs(userStore)
 
-const statsData = ref<any>({
-    order_count: 0,
-    collect_count: 0,
-    view_count: 0,
-    points: 0
-})
+type StatsKey = 'order_count' | 'collect_count' | 'view_count' | 'points' | 'balance'
+
+const statsData = computed(() => ({
+    order_count: Number(userInfo.value?.order_count || 0),
+    collect_count: Number(userInfo.value?.collect_count || 0),
+    view_count: Number(userInfo.value?.view_count || 0),
+    points: Number(userInfo.value?.user_points || 0),
+    balance: Number(userInfo.value?.user_money || 0)
+}))
 
 // 过滤显示的统计项
 const showList = computed(() => {
@@ -139,7 +145,19 @@ const showList = computed(() => {
 
 // 获取统计数值
 const getStatValue = (key: string) => {
-    return statsData.value[key] || 0
+    const statsKey = (
+        ['order_count', 'collect_count', 'view_count', 'points', 'balance'] as StatsKey[]
+    ).includes(key as StatsKey)
+        ? (key as StatsKey)
+        : null
+    if (!statsKey) {
+        return 0
+    }
+    const value = Number(statsData.value[statsKey] || 0)
+    if (statsKey === 'balance') {
+        return value.toFixed(2)
+    }
+    return value
 }
 
 // 获取图标背景色（循环使用主题色浅色变体）
@@ -164,7 +182,8 @@ const handleClick = (item: any) => {
     const routeMap: any = {
         order_count: '/pages/order/list',
         collect_count: '/pages/collect/list',
-        view_count: '/pages/history/list'
+        view_count: '/pages/history/list',
+        balance: '/packages/pages/user_wallet/user_wallet'
     }
 
     const url = routeMap[item.value]
@@ -172,26 +191,6 @@ const handleClick = (item: any) => {
         uni.navigateTo({ url })
     }
 }
-
-// 加载统计数据
-const loadStats = async () => {
-    try {
-        // 优化：直接使用 userStore 中的数据，避免重复请求
-        const { userInfo } = useUserStore()
-        if (userInfo) {
-            statsData.value.order_count = userInfo.order_count || 0
-            statsData.value.collect_count = userInfo.collect_count || 0
-            statsData.value.view_count = userInfo.view_count || 0
-            statsData.value.points = userInfo.user_points || 0
-        }
-    } catch (error) {
-        console.error('加载统计数据失败:', error)
-    }
-}
-
-onMounted(() => {
-    loadStats()
-})
 </script>
 
 <style scoped lang="scss">

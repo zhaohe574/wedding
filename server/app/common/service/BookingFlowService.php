@@ -170,7 +170,8 @@ class BookingFlowService
         int $serviceStaffId,
         string $roleKey,
         array $regionContext = [],
-        string $date = ''
+        string $date = '',
+        int $userId = 0
     ): array {
         if ($serviceStaffId <= 0 || !in_array($roleKey, [self::ROLE_BUTLER, self::ROLE_DIRECTOR], true)) {
             return [];
@@ -199,7 +200,8 @@ class BookingFlowService
             (int)$config['related_category_id'],
             $roleKey,
             $normalizedRegion,
-            $date
+            $date,
+            $userId
         );
     }
 
@@ -219,13 +221,20 @@ class BookingFlowService
         int $selectedStaffId,
         int $selectedPackageId,
         array $regionContext = [],
-        string $date = ''
+        string $date = '',
+        int $userId = 0
     ): array {
         if ($selectedStaffId <= 0 || $selectedPackageId <= 0) {
             throw new \InvalidArgumentException('预约人选参数错误');
         }
 
-        $candidates = self::getRoleCandidates($serviceStaffId, $roleKey, $regionContext, $date);
+        $candidates = self::getRoleCandidates(
+            $serviceStaffId,
+            $roleKey,
+            $regionContext,
+            $date,
+            $userId
+        );
         foreach ($candidates as $candidate) {
             if ((int)($candidate['staff_id'] ?? 0) !== $selectedStaffId) {
                 continue;
@@ -273,7 +282,8 @@ class BookingFlowService
         int $categoryId,
         string $roleKey,
         array $regionContext = [],
-        string $date = ''
+        string $date = '',
+        int $userId = 0
     ): array {
         if ($categoryId <= 0) {
             return [];
@@ -296,7 +306,7 @@ class BookingFlowService
                 continue;
             }
 
-            $scheduleStatus = self::resolveScheduleStatus((int)$staff->id, $date);
+            $scheduleStatus = self::resolveScheduleStatus((int)$staff->id, $date, $userId);
             $result[] = [
                 'role_key' => $roleKey,
                 'role_label' => self::getRoleLabel($roleKey),
@@ -361,7 +371,7 @@ class BookingFlowService
      * @param string $date
      * @return array
      */
-    protected static function resolveScheduleStatus(int $staffId, string $date): array
+    protected static function resolveScheduleStatus(int $staffId, string $date, int $userId = 0): array
     {
         $date = trim($date);
         if ($staffId <= 0 || $date === '') {
@@ -371,7 +381,12 @@ class BookingFlowService
             ];
         }
 
-        [$available, $message] = Schedule::checkAvailabilityWithReason($staffId, $date, 0);
+        [$available, $message] = Schedule::checkAvailabilityForUserWithReason(
+            $staffId,
+            $date,
+            $userId,
+            0
+        );
         return [
             'available' => $available,
             'message' => (string)$message,

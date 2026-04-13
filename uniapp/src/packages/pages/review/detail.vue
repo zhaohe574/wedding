@@ -64,6 +64,14 @@
             </view>
 
             <view class="section-card">
+                <view class="section-title">审核与奖励说明</view>
+                <text class="section-tip">{{
+                    review.status_summary || '评价状态已更新，请留意审核结果。'
+                }}</text>
+                <text class="section-tip">{{ review.reward_summary || rewardPendingText }}</text>
+            </view>
+
+            <view class="section-card">
                 <view class="section-title">评价内容</view>
                 <text v-if="review.content" class="review-content">{{ review.content }}</text>
                 <text v-else class="empty-text">用户未填写文字评价</text>
@@ -514,6 +522,17 @@ onPullDownRefresh(() => {
     padding: 28rpx;
     box-shadow: 0 12rpx 32rpx rgba(15, 23, 42, 0.08);
     margin-bottom: 24rpx;
+}
+
+.section-tip {
+    display: block;
+    font-size: 26rpx;
+    line-height: 1.75;
+    color: #6b7280;
+
+    & + .section-tip {
+        margin-top: 12rpx;
+    }
 }
 
 .hero-header,

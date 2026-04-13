@@ -87,6 +87,19 @@
                             </text>
                         </view>
 
+                        <view class="change-record-card__summary-box">
+                            <text class="change-record-card__summary-title">当前进度</text>
+                            <text class="change-record-card__summary-text">
+                                {{ getStatusSummary(item) }}
+                            </text>
+                            <text
+                                v-if="getResultText(item)"
+                                class="change-record-card__summary-text change-record-card__summary-text--muted"
+                            >
+                                {{ getResultText(item) }}
+                            </text>
+                        </view>
+
                         <view class="change-record-card__foot">
                             <text class="change-record-card__foot-note">
                                 {{ getFootNote(item) }}
@@ -137,6 +150,12 @@ import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { cancelChange, cancelPause, getChangeList, getPauseList } from '@/api/orderChange'
 import { useThemeStore } from '@/stores/theme'
+import {
+    getChangeStatusMeta,
+    getChangeTypeMeta,
+    getPauseStatusMeta,
+    getPauseTypeMeta
+} from './shared'
 
 const $theme = useThemeStore()
 
@@ -152,45 +171,15 @@ const page = ref(1)
 const hasMore = ref(true)
 
 const getTypeTone = (item: any) => {
-    if (currentType.value === 'change') {
-        const map: Record<number, 'info' | 'warning' | 'success' | 'neutral'> = {
-            1: 'info',
-            2: 'warning',
-            3: 'success',
-            4: 'neutral'
-        }
-        return map[Number(item?.change_type || 0)] || 'neutral'
-    }
-
-    const map: Record<number, 'danger' | 'warning' | 'info' | 'neutral'> = {
-        1: 'danger',
-        2: 'warning',
-        3: 'info',
-        4: 'neutral'
-    }
-    return map[Number(item?.pause_type || 0)] || 'neutral'
+    return currentType.value === 'change'
+        ? getChangeTypeMeta(Number(item?.change_type || 0)).tone
+        : getPauseTypeMeta(Number(item?.pause_type || 0)).tone
 }
 
 const getStatusTone = (item: any) => {
-    if (currentType.value === 'change') {
-        const map: Record<number, 'warning' | 'info' | 'danger' | 'success' | 'neutral'> = {
-            0: 'warning',
-            1: 'info',
-            2: 'danger',
-            3: 'success',
-            4: 'neutral'
-        }
-        return map[Number(item?.change_status || 0)] || 'neutral'
-    }
-
-    const map: Record<number, 'warning' | 'info' | 'success' | 'danger' | 'neutral'> = {
-        0: 'warning',
-        1: 'info',
-        2: 'success',
-        3: 'danger',
-        4: 'neutral'
-    }
-    return map[Number(item?.pause_status || 0)] || 'neutral'
+    return currentType.value === 'change'
+        ? getChangeStatusMeta(Number(item?.change_status || 0)).tone
+        : getPauseStatusMeta(Number(item?.pause_status || 0)).tone
 }
 
 const getRecordNo = (item: any) =>
@@ -200,13 +189,13 @@ const getRecordNo = (item: any) =>
 
 const getTypeLabel = (item: any) =>
     currentType.value === 'change'
-        ? item?.change_type_desc || '变更申请'
-        : item?.pause_type_desc || '暂停申请'
+        ? item?.change_type_desc || getChangeTypeMeta(Number(item?.change_type || 0)).label
+        : item?.pause_type_desc || getPauseTypeMeta(Number(item?.pause_type || 0)).label
 
 const getStatusLabel = (item: any) =>
     currentType.value === 'change'
-        ? item?.change_status_desc || '处理中'
-        : item?.pause_status_desc || '处理中'
+        ? item?.change_status_desc || getChangeStatusMeta(Number(item?.change_status || 0)).label
+        : item?.pause_status_desc || getPauseStatusMeta(Number(item?.pause_status || 0)).label
 
 const getRecordTitle = (item: any) => {
     if (currentType.value === 'pause') {
@@ -265,16 +254,57 @@ const getReasonText = (item: any) =>
         ? String(item?.apply_reason || '').trim()
         : String(item?.pause_reason || '').trim()
 
-const getFootNote = (item: any) => {
-    if (currentType.value === 'pause') {
-        return Number(item?.pause_status || 0) === 0
-            ? '待审核，可在通过前取消申请'
-            : '点击查看暂停详情'
+const getStatusSummary = (item: any) =>
+    currentType.value === 'change'
+        ? getChangeStatusMeta(Number(item?.change_status || 0)).summary
+        : getPauseStatusMeta(Number(item?.pause_status || 0)).summary
+
+const getResultText = (item: any) => {
+    const fields = [
+        item?.audit_remark,
+        item?.reject_reason,
+        item?.handle_result,
+        item?.admin_remark,
+        item?.remark
+    ]
+        .map((value) => String(value || '').trim())
+        .filter(Boolean)
+
+    if (fields.length) {
+        return fields[0]
     }
 
-    return Number(item?.change_status || 0) === 0
-        ? '待审核，可在通过前取消申请'
-        : '点击查看变更详情'
+    if (currentType.value === 'change') {
+        return Number(item?.change_status || 0) === 1
+            ? '平台已审核通过，正在按变更结果安排执行。'
+            : Number(item?.change_status || 0) === 3
+            ? '本次变更已执行完成，可回到订单详情查看最新安排。'
+            : ''
+    }
+
+    return Number(item?.pause_status || 0) === 1
+        ? '订单已暂停，恢复后会继续履约。'
+        : Number(item?.pause_status || 0) === 2
+        ? '暂停流程已结束，订单已恢复正常履约状态。'
+        : ''
+}
+
+const getFootNote = (item: any) => {
+    if (currentType.value === 'pause') {
+        const status = Number(item?.pause_status || 0)
+        if (status === 0) return '当前等待平台审核，可在通过前取消申请'
+        if (status === 1) return '当前等待平台恢复履约，可到订单详情查看同步状态'
+        if (status === 2) return '恢复完成后可继续在订单中跟进后续安排'
+        if (status === 3) return '申请未通过，请按处理说明调整后重新提交'
+        return '点击查看暂停详情'
+    }
+
+    const status = Number(item?.change_status || 0)
+    if (status === 0) return '当前等待平台审核，可在通过前取消申请'
+    if (status === 1) return '申请已通过，等待平台按确认结果执行'
+    if (status === 2) return '申请未通过，可按处理说明调整后重新发起'
+    if (status === 3) return '变更已执行完成，请回到订单详情确认最新安排'
+    return '点击查看变更详情'
 }
 
 const canCancel = (item: any) =>
@@ -542,6 +572,32 @@ onReachBottom(() => {
     font-size: 24rpx;
     line-height: 1.58;
     color: var(--wm-text-secondary, #7f7b78);
+}
+
+.change-record-card__summary-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+    padding: 18rpx 20rpx;
+    border-radius: 24rpx;
+    background: rgba(249, 244, 240, 0.86);
+    border: 1rpx solid rgba(239, 230, 225, 0.96);
+}
+
+.change-record-card__summary-title {
+    font-size: 22rpx;
+    font-weight: 700;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.change-record-card__summary-text {
+    font-size: 24rpx;
+    line-height: 1.62;
+    color: var(--wm-text-primary, #1e2432);
+
+    &--muted {
+        color: var(--wm-text-secondary, #7f7b78);
+    }
 }
 
 .change-record-card__actions {

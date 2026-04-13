@@ -99,7 +99,7 @@ function getPreviewValue(type: string): string {
         collect_count: '用户实时收藏数',
         view_count: '用户实时浏览数',
         points: '用户实时积分',
-        balance: '用户实时余额'
+        balance: '用户实时账户余额'
     }
 
     return previewMap[type] || '实时数据'
@@ -111,7 +111,7 @@ function getPreviewDesc(type: string): string {
         collect_count: '前台按当前登录用户收藏数据渲染',
         view_count: '前台按当前登录用户浏览记录渲染',
         points: '前台按当前登录用户积分数据渲染',
-        balance: '前台按当前登录用户账户余额渲染'
+        balance: '前台按当前登录用户钱包余额渲染'
     }
 
     return descMap[type] || '前台按真实用户态数据渲染'

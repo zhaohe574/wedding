@@ -37,6 +37,8 @@ interface SceneInfo {
     template_name: string
 }
 
+let sceneCache: SceneInfo[] | null = null
+
 /**
  * 请求单个订阅消息授权
  * @param templateId 模板ID
@@ -100,8 +102,8 @@ export async function requestMultiSubscribe(
 ): Promise<Record<string, SubscribeResult>> {
     // #ifdef MP-WEIXIN
     return new Promise((resolve) => {
-        // 微信最多支持3个模板
-        const ids = templateIds.slice(0, 3)
+        // 微信一次最多支持请求 5 个模板
+        const ids = templateIds.slice(0, 5)
 
         uni.requestSubscribeMessage({
             tmplIds: ids,
@@ -190,31 +192,50 @@ export async function requestSubscribeByScene(scene: SubscribeScene): Promise<Su
  * @returns 场景列表
  */
 export async function getAllScenes(): Promise<SceneInfo[]> {
+    if (sceneCache) {
+        return sceneCache
+    }
+
     try {
         const res = await getSceneList()
-        return res || []
+        const scenes = Array.isArray(res) ? res : []
+        sceneCache = scenes
+        return scenes
     } catch (e) {
         console.error('获取场景列表失败', e)
         return []
     }
 }
 
+export function setSceneCache(scenes: SceneInfo[]) {
+    sceneCache = Array.isArray(scenes) ? scenes : []
+}
+
+export function clearSceneCache() {
+    sceneCache = null
+}
+
+function extractSceneTemplateIds(scenes: SceneInfo[], sceneNames: string[]) {
+    return scenes
+        .filter((scene) => sceneNames.includes(scene.scene))
+        .map((scene) => scene.template_id)
+        .filter(Boolean)
+}
+
 /**
  * 订单相关场景订阅
- * 在下单前调用，一次性请求多个订单相关的订阅授权
+ * 在用户点击提交订单后的授权动作中调用，一次性请求多个订单相关的订阅授权
  */
 export async function subscribeOrderScenes(): Promise<boolean> {
     try {
         const scenes = await getAllScenes()
-        const orderScenes = scenes.filter((s) =>
-            ['order_create', 'order_paid', 'schedule_remind'].includes(s.scene)
-        )
+        const templateIds = extractSceneTemplateIds(scenes, [
+            'order_create',
+            'order_confirm',
+            'order_paid',
+            'schedule_remind'
+        ])
 
-        if (orderScenes.length === 0) {
-            return true
-        }
-
-        const templateIds = orderScenes.map((s) => s.template_id).filter(Boolean)
         if (templateIds.length === 0) {
             return true
         }
@@ -235,15 +256,12 @@ export async function subscribeOrderScenes(): Promise<boolean> {
 export async function subscribeAfterSaleScenes(): Promise<boolean> {
     try {
         const scenes = await getAllScenes()
-        const afterSaleScenes = scenes.filter((s) =>
-            ['ticket_update', 'refund_result', 'callback_remind'].includes(s.scene)
-        )
+        const templateIds = extractSceneTemplateIds(scenes, [
+            'ticket_update',
+            'refund_result',
+            'callback_remind'
+        ])
 
-        if (afterSaleScenes.length === 0) {
-            return true
-        }
-
-        const templateIds = afterSaleScenes.map((s) => s.template_id).filter(Boolean)
         if (templateIds.length === 0) {
             return true
         }

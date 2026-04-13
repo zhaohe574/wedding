@@ -52,6 +52,9 @@
                             <view class="staff-info">
                                 <view class="staff-name">{{ item.staff_name }}</view>
                                 <view class="package-name">{{ item.package_name }}</view>
+                                <view class="pending-note">
+                                    服务已完成，提交评价后会进入审核与奖励流程
+                                </view>
                             </view>
                             <button
                                 class="btn-review"
@@ -97,6 +100,8 @@
                         </view>
                         <view class="card-body">
                             <view class="content" v-if="item.content">{{ item.content }}</view>
+                            <view class="review-summary">{{ item.status_summary }}</view>
+                            <view class="review-reward">{{ item.reward_summary }}</view>
                             <view class="images" v-if="item.images?.length">
                                 <image
                                     v-for="(img, index) in item.images.slice(0, 3)"
@@ -112,8 +117,13 @@
                         </view>
                         <view class="card-footer">
                             <view class="time">{{ item.create_time_text }}</view>
-                            <view class="status" :class="getStatusClass(item.status)">
-                                {{ item.status_text }}
+                            <view class="footer-status-group">
+                                <view class="reward-tag" :class="getRewardClass(item)">
+                                    {{ item.reward_status_text || '待审核' }}
+                                </view>
+                                <view class="status" :class="getStatusClass(item.status)">
+                                    {{ item.status_text }}
+                                </view>
                             </view>
                         </view>
                     </view>
@@ -136,7 +146,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import type { CSSProperties } from 'vue'
-import { onReachBottom } from '@dcloudio/uni-app'
+import { onReachBottom, onShow } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import { getMyReviews, getPendingOrders } from '@/api/review'
 import { useThemeStore } from '@/stores/theme'
@@ -167,6 +177,7 @@ const pendingPage = ref(1)
 const reviewedPage = ref(1)
 const hasMorePending = ref(true)
 const hasMoreReviewed = ref(true)
+const hasInitialized = ref(false)
 
 const getStatusClass = (status: number) => {
     const map: Record<number, string> = {
@@ -175,6 +186,19 @@ const getStatusClass = (status: number) => {
         2: 'rejected'
     }
     return map[status] || ''
+}
+
+const getRewardClass = (item: any) => {
+    if (item?.reward_status_text === '已发放') {
+        return 'granted'
+    }
+    if (item?.reward_status_text === '不发放') {
+        return 'rejected'
+    }
+    if (item?.reward_status_text === '无需发放') {
+        return 'plain'
+    }
+    return 'pending'
 }
 
 const loadPendingList = async (refresh = false) => {
@@ -242,6 +266,15 @@ const switchTab = (tab: string) => {
     }
 }
 
+const refreshCurrentTab = () => {
+    if (currentTab.value === 'pending') {
+        loadPendingList(true)
+        return
+    }
+
+    loadReviewedList(true)
+}
+
 const goReview = (item: any) => {
     uni.navigateTo({
         url: `/packages/pages/review/publish?order_item_id=${item.id}`
@@ -264,6 +297,14 @@ onReachBottom(() => {
 
 onMounted(() => {
     loadPendingList(true)
+})
+
+onShow(() => {
+    if (!hasInitialized.value) {
+        hasInitialized.value = true
+        return
+    }
+    refreshCurrentTab()
 })
 </script>
 
@@ -347,6 +388,13 @@ onMounted(() => {
             color: #999;
             margin-top: 8rpx;
         }
+
+        .pending-note {
+            margin-top: 10rpx;
+            font-size: 22rpx;
+            line-height: 1.6;
+            color: #7f7b78;
+        }
     }
 
     .btn-review {
@@ -406,6 +454,14 @@ onMounted(() => {
         overflow: hidden;
     }
 
+    .review-summary,
+    .review-reward {
+        margin-top: 12rpx;
+        font-size: 24rpx;
+        line-height: 1.7;
+        color: #7f7b78;
+    }
+
     .images {
         display: flex;
         gap: 12rpx;
@@ -438,9 +494,48 @@ onMounted(() => {
         padding-top: 16rpx;
         border-top: 1rpx solid #f0f0f0;
 
+        .footer-status-group {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12rpx;
+            flex-wrap: wrap;
+        }
+
         .time {
             font-size: 24rpx;
             color: #999;
+        }
+
+        .reward-tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40rpx;
+            padding: 0 14rpx;
+            border-radius: 999rpx;
+            font-size: 22rpx;
+            font-weight: 600;
+
+            &.pending {
+                color: #a16207;
+                background: rgba(245, 158, 11, 0.12);
+            }
+
+            &.granted {
+                color: #047857;
+                background: rgba(16, 185, 129, 0.12);
+            }
+
+            &.rejected {
+                color: #b91c1c;
+                background: rgba(239, 68, 68, 0.12);
+            }
+
+            &.plain {
+                color: #6b7280;
+                background: rgba(148, 163, 184, 0.14);
+            }
         }
 
         .status {

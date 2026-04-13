@@ -193,7 +193,7 @@ class Dynamic extends BaseModel
             self::STATUS_PENDING => '待审核',
             self::STATUS_PUBLISHED => '已发布',
             self::STATUS_OFFLINE => '已下架',
-            self::STATUS_REJECTED => '审核拒绝',
+            self::STATUS_REJECTED => '已拒绝',
         ];
         return $map[$data['status']] ?? '未知';
     }

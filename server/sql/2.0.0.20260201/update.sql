@@ -2299,14 +2299,7 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (255, 179, 'C', '标签审核', '', 195, 'ops.staffTagReview/lists', 'staff-tag-review', 'staff/tag_review/index', '', '', 0, 1, 0, 1775001600, 1775001600),
 (256, 255, 'A', '详情', '', 10, 'ops.staffTagReview/detail', '', '', '', '', 0, 0, 0, 1775001600, 1775001600),
 (257, 255, 'A', '审核通过', '', 20, 'ops.staffTagReview/approve', '', '', '', '', 0, 0, 0, 1775001600, 1775001600),
-(258, 255, 'A', '审核拒绝', '', 30, 'ops.staffTagReview/reject', '', '', '', '', 0, 0, 0, 1775001600, 1775001600),
-(248, 179, 'C', '附加服务', '', 75, 'ops.addon/lists', 'addon', 'service/addon/index', '', '', 0, 0, 1, 1773650000, 1773650000),
-(249, 248, 'A', '详情', '', 0, 'ops.addon/detail', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
-(250, 248, 'A', '新增', '', 0, 'ops.addon/add', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
-(251, 248, 'A', '编辑', '', 0, 'ops.addon/edit', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
-(252, 248, 'A', '删除', '', 0, 'ops.addon/delete', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
-(253, 248, 'A', '状态切换', '', 0, 'ops.addon/changeStatus', '', '', '', '', 0, 0, 1, 1773650000, 1773650000),
-(254, 248, 'A', '全部', '', 0, 'ops.addon/all', '', '', '', '', 0, 0, 1, 1773650000, 1773650000);
+(258, 255, 'A', '审核拒绝', '', 30, 'ops.staffTagReview/reject', '', '', '', '', 0, 0, 0, 1775001600, 1775001600);
 
 -- 下线功能的遗留菜单清理
 DELETE srm
@@ -2316,11 +2309,14 @@ WHERE sm.`perms` IN (
     'financial.invoice/lists',
     'finance.invoice/lists',
     'review.reviewAppeal/lists',
-    'review.review_appeal/lists'
+    'review.review_appeal/lists',
+    'growth.reviewAppeal/lists'
 )
+   OR sm.`perms` LIKE 'ops.addon/%'
    OR sm.`component` IN (
     'financial/invoice/index',
-    'review/appeal/index'
+    'review/appeal/index',
+    'service/addon/index'
 );
 
 DELETE FROM `la_system_menu`
@@ -2328,11 +2324,14 @@ WHERE `perms` IN (
     'financial.invoice/lists',
     'finance.invoice/lists',
     'review.reviewAppeal/lists',
-    'review.review_appeal/lists'
+    'review.review_appeal/lists',
+    'growth.reviewAppeal/lists'
 )
+   OR `perms` LIKE 'ops.addon/%'
    OR `component` IN (
     'financial/invoice/index',
-    'review/appeal/index'
+    'review/appeal/index',
+    'service/addon/index'
 );
 
 -- la_system_role_menu
@@ -2559,5 +2558,77 @@ SET `payment_channel` = CASE
     ELSE 1
 END
 WHERE `payment_channel` NOT IN (1, 2) OR `payment_channel` IS NULL;
+
+-- =============================================================================
+-- Part 6: 订单确认函
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS `la_order_confirm_letter` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `order_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单ID',
+  `version` int(11) UNSIGNED NOT NULL DEFAULT 1 COMMENT '版本号',
+  `is_outdated` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否失效：0=否，1=是',
+  `is_pushed` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否已推送：0=否，1=是',
+  `rendered_snapshot` json NOT NULL COMMENT '权威快照JSON',
+  `render_spec_version` varchar(20) NOT NULL DEFAULT 'v1' COMMENT '渲染版本',
+  `snapshot_hash` char(64) NOT NULL DEFAULT '' COMMENT '快照哈希',
+  `full_image_url` varchar(255) NOT NULL DEFAULT '' COMMENT '确认函全图缓存',
+  `thumb_image_url` varchar(255) NOT NULL DEFAULT '' COMMENT '确认函缩略图缓存',
+  `customer_name` varchar(100) NOT NULL DEFAULT '' COMMENT '客户名称快照',
+  `contact_mobile` varchar(30) NOT NULL DEFAULT '' COMMENT '联系电话快照',
+  `service_date` date NOT NULL COMMENT '服务日期快照',
+  `service_address` varchar(255) NOT NULL DEFAULT '' COMMENT '服务地点快照',
+  `service_staff_names` text COMMENT '服务人员快照',
+  `order_total_amount` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT '订单总价快照',
+  `paid_label` varchar(20) NOT NULL DEFAULT '' COMMENT '已付标签快照',
+  `paid_amount` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT '已付金额快照',
+  `remain_amount` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT '尾款快照',
+  `confirm_date` date NOT NULL COMMENT '确认日期快照',
+  `remark_content` text COMMENT '备注快照',
+  `generated_by_type` varchar(20) NOT NULL DEFAULT '' COMMENT '生成人类型',
+  `generated_by_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '生成人ID',
+  `create_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+  `update_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_order_version` (`order_id`,`version`),
+  KEY `idx_order_snapshot` (`order_id`,`snapshot_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单确认函版本表';
+
+CREATE TABLE IF NOT EXISTS `la_order_confirm_letter_push_log` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `letter_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '确认函ID',
+  `order_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单ID',
+  `user_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '客户用户ID',
+  `push_channel` varchar(20) NOT NULL DEFAULT 'station' COMMENT '推送渠道',
+  `notification_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '站内消息ID',
+  `push_status` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '推送状态：0=失败，1=成功',
+  `error_msg` varchar(255) NOT NULL DEFAULT '' COMMENT '失败信息',
+  `create_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_letter_time` (`letter_id`,`create_time`),
+  KEY `idx_order_user` (`order_id`,`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单确认函推送日志';
+
+SET @order_confirm_letter_column_exists = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'la_order'
+      AND COLUMN_NAME = 'current_confirm_letter_id'
+);
+
+SET @order_confirm_letter_column_sql = IF(
+    @order_confirm_letter_column_exists = 0,
+    'ALTER TABLE `la_order` ADD COLUMN `current_confirm_letter_id` INT(11) UNSIGNED NULL DEFAULT NULL COMMENT ''当前有效确认函ID'' AFTER `payment_channel`, ADD KEY `idx_current_confirm_letter_id` (`current_confirm_letter_id`)',
+    'SELECT 1'
+);
+
+PREPARE order_confirm_letter_column_stmt FROM @order_confirm_letter_column_sql;
+EXECUTE order_confirm_letter_column_stmt;
+DEALLOCATE PREPARE order_confirm_letter_column_stmt;
+
+DELETE FROM `la_config` WHERE `type` = 'order_confirmation_letter' AND `name` = 'remark_template';
+INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) VALUES
+('order_confirmation_letter', 'remark_template', '请您认真核对确认函中的服务日期、地点、金额与联系人信息，如有变更请及时联系订单服务人员。', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 
 SET FOREIGN_KEY_CHECKS = 1;

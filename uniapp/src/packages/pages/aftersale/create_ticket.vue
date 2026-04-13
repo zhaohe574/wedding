@@ -258,7 +258,7 @@ const ticketCategories: TicketCategoryItem[] = [
     { label: '素材交付', type: 3 },
     { label: '流程确认', type: 2 },
     { label: '档期协调', type: 3 },
-    { label: '费用发票', type: 4 },
+    { label: '服务建议', type: 4 },
     { label: '其他问题', type: 5 }
 ]
 

@@ -42,6 +42,7 @@ class OrderValidate extends BaseValidate
         'pay_type' => 'integer|in:1,2,3',
         'amount' => 'float|gt:0',
         'voucher' => 'require|max:500',
+        'letter_id' => 'require|integer|gt:0',
     ];
 
     protected $message = [
@@ -76,6 +77,9 @@ class OrderValidate extends BaseValidate
         'amount.gt' => '退款金额必须大于0',
         'voucher.require' => '请上传支付凭证',
         'voucher.max' => '支付凭证地址过长',
+        'letter_id.require' => '请选择确认函',
+        'letter_id.integer' => '确认函参数错误',
+        'letter_id.gt' => '确认函参数错误',
     ];
 
     /**
@@ -174,5 +178,15 @@ class OrderValidate extends BaseValidate
     public function sceneUploadVoucher()
     {
         return $this->only(['id', 'voucher']);
+    }
+
+    public function sceneConfirmLetterCurrent()
+    {
+        return $this->only(['id']);
+    }
+
+    public function sceneConfirmLetterById()
+    {
+        return $this->only(['letter_id']);
     }
 }

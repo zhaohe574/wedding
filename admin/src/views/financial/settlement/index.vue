@@ -1,5 +1,13 @@
 <template>
     <div class="settlement-management">
+        <el-alert
+            class="mb-4"
+            title="当前后台保留结算能力，成本管理与部分财务报表已在精简版后台下线"
+            type="info"
+            :closable="false"
+            show-icon
+        />
+
         <!-- 标签页 -->
         <el-tabs v-model="activeTab" class="mb-4">
             <el-tab-pane label="结算记录" name="records" />
@@ -10,6 +18,9 @@
         <!-- 结算记录 -->
         <template v-if="activeTab === 'records'">
             <el-card class="!border-none mb-4" shadow="never">
+                <div class="panel-tip">
+                    这里展示精简版后台仍保留的正式结算能力，金额口径以结算记录和批次执行结果为准。
+                </div>
                 <el-form :model="queryParams" inline>
                     <el-form-item class="w-[200px]" label="服务人员">
                         <el-input v-model="queryParams.staff_name" placeholder="人员姓名" clearable />
@@ -526,4 +537,5 @@ onMounted(() => {
 .text-warning { color: #E6A23C; }
 .text-danger { color: #F56C6C; }
 .text-muted { color: #909399; }
+.panel-tip { margin-bottom: 16px; font-size: 13px; line-height: 1.7; color: #606266; }
 </style>

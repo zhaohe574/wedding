@@ -111,6 +111,36 @@ export function staffCenterOrderComplete(data: any) {
     return request.post({ url: '/staff_center/orderComplete', data }, { isAuth: true })
 }
 
+export function staffCenterOrderConfirmLetterGenerate(data: any) {
+    return request.post({ url: '/staff_center/orderConfirmLetterGenerate', data }, { isAuth: true })
+}
+
+export function staffCenterOrderConfirmLetterSaveAssets(data: any) {
+    return request.post(
+        { url: '/staff_center/orderConfirmLetterSaveAssets', data },
+        { isAuth: true }
+    )
+}
+
+export function staffCenterOrderConfirmLetterPush(data: any) {
+    return request.post({ url: '/staff_center/orderConfirmLetterPush', data }, { isAuth: true })
+}
+
+export function staffCenterOrderConfirmLetterDetail(data: any) {
+    return request.get({ url: '/staff_center/orderConfirmLetterDetail', data }, { isAuth: true })
+}
+
+export function staffCenterOrderConfirmLetterHistory(data: any) {
+    return request.get({ url: '/staff_center/orderConfirmLetterHistory', data }, { isAuth: true })
+}
+
+export function staffCenterOrderConfirmLetterRegenerateAssets(data: any) {
+    return request.post(
+        { url: '/staff_center/orderConfirmLetterRegenerateAssets', data },
+        { isAuth: true }
+    )
+}
+
 // 动态
 export function staffCenterDynamicLists(data?: any) {
     return request.get({ url: '/staff_center/dynamicLists', data }, { isAuth: true })

@@ -196,8 +196,11 @@
                 </el-table-column>
                 <el-table-column label="支付状态" width="100">
                     <template #default="{ row }">
-                        <el-tag :type="row.pay_status === 1 ? 'success' : 'info'" size="small">
-                            {{ row.pay_status_desc }}
+                        <el-tag
+                            :type="getPayStatusType(row.pay_status_display_key, row.pay_status)"
+                            size="small"
+                        >
+                            {{ row.pay_status_display_desc || row.pay_status_desc }}
                         </el-tag>
                     </template>
                 </el-table-column>
@@ -273,7 +276,9 @@
                     <el-descriptions-item v-if="Number(currentOrder.balance_amount || 0) > 0" label="尾款金额">¥{{ formatAmount(currentOrder.balance_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="待付金额">¥{{ formatAmount(currentOrder.unpaid_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="支付方式">{{ currentOrder.pay_type_desc || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="支付状态">{{ currentOrder.pay_status_desc || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="支付状态">
+                        {{ currentOrder.pay_status_display_desc || currentOrder.pay_status_desc || '-' }}
+                    </el-descriptions-item>
                     <el-descriptions-item label="线下凭证" :span="2">
                         <el-image
                             v-if="currentOrder.pay_voucher"
@@ -293,7 +298,7 @@
                     <el-button type="danger" plain @click="handleRefund(currentOrder)">发起退款</el-button>
                 </div>
                 <div v-else-if="currentOrder.can_staff_manage_payment === false" class="mt-4 text-sm text-gray-400">
-                    共享订单仅展示本人可见金额与履约信息，退款、线下收款、凭证审核等整单支付操作需由管理员处理。
+                    当前订单按服务人员履约视角展示；退款、线下收款、凭证审核等整单支付操作统一由管理员处理。
                 </div>
 
                 <div class="service-project-panel mt-4">
@@ -345,7 +350,7 @@
 
                     <div v-if="currentLegacyRows.length" class="service-project-group">
                         <div class="service-project-group__header">
-                            <span class="service-project-group__title">历史兼容服务项</span>
+                            <span class="service-project-group__title">旧版兼容服务项</span>
                             <span class="service-project-group__count">{{ currentLegacyRows.length }} 项</span>
                         </div>
                         <div class="service-project-grid">
@@ -402,7 +407,7 @@
                     </div>
 
                     <div class="text-xs text-gray-400 mt-2">
-                        注：订单金额已按当前工作人员视角重算；非本人订单项仅保留服务人员、日期和状态等必要履约信息。
+                        注：订单金额已按当前工作人员视角重算；非本人订单项仅保留必要履约信息，整单支付动作统一由管理员处理。
                     </div>
                 </div>
 
@@ -653,6 +658,33 @@ const getStatusType = (
         10: 'danger'
     }
     return types[status] || 'info'
+}
+
+const getPayStatusType = (
+    statusKey: string,
+    payStatus?: number
+): 'warning' | 'primary' | 'info' | 'success' | 'danger' => {
+    const keyTypes: Record<string, 'warning' | 'primary' | 'info' | 'success' | 'danger'> = {
+        unpaid: 'info',
+        deposit_paid: 'warning',
+        paid: 'success',
+        partial_refund: 'warning',
+        full_refund: 'danger'
+    }
+
+    const normalizedKey = String(statusKey || '').trim()
+    if (normalizedKey && keyTypes[normalizedKey]) {
+        return keyTypes[normalizedKey]
+    }
+
+    const payStatusTypes: Record<number, 'warning' | 'primary' | 'info' | 'success' | 'danger'> = {
+        0: 'info',
+        1: 'success',
+        2: 'warning',
+        3: 'danger'
+    }
+
+    return payStatusTypes[Number(payStatus ?? 0)] || 'info'
 }
 
 const getDisplayContactName = (order: any) => {
@@ -977,7 +1009,7 @@ const currentLegacyRows = computed<ServiceDetailRow[]>(() =>
                 title: masked ? '已脱敏历史服务项' : title,
                 typeText: '历史兼容',
                 typeTagType: 'info',
-                description: masked ? '旧订单兼容展示，具体历史明细已脱敏。' : getDetailItemDescription(item, false),
+                description: masked ? '旧版订单兼容展示，具体历史明细已脱敏。' : getDetailItemDescription(item, false),
                 metaText: masked ? '已脱敏' : [item?.service_date, `数量 x${quantity}`].filter(Boolean).join(' · '),
                 priceText: masked ? '--' : `¥${formatAmount(amount)}`,
                 statusText: getItemStatusText(Number(item?.item_status || 0)),
@@ -990,7 +1022,7 @@ const currentServiceSummaryText = computed(() => {
     const parts = [currentPrimaryItem.value ? '1 个主套餐' : '0 个主套餐']
 
     if (currentLegacyRows.value.length) {
-        parts.push(`${currentLegacyRows.value.length} 个历史兼容项`)
+        parts.push(`${currentLegacyRows.value.length} 个旧版兼容项`)
     }
 
     if (currentRelatedRows.value.length) {

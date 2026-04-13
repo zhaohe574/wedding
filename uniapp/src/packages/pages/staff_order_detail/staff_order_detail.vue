@@ -65,6 +65,10 @@
                         <text class="section-head__meta">{{ serviceItemsMeta }}</text>
                     </view>
 
+                    <text v-if="legacyServiceNotice" class="section-note">{{
+                        legacyServiceNotice
+                    }}</text>
+
                     <view v-if="serviceCards.length" class="service-list">
                         <view v-for="item in serviceCards" :key="item.id" class="service-card">
                             <view class="service-card__row service-card__row--start">
@@ -130,8 +134,10 @@
                         <view class="section-head__copy">
                             <text class="section-head__title">金额与结算</text>
                         </view>
-                        <text class="section-head__meta">当前人员视角</text>
+                        <text class="section-head__meta">服务人员视角</text>
                     </view>
+
+                    <text class="section-note">{{ paymentScopeNotice }}</text>
 
                     <view class="sub-panel">
                         <view
@@ -201,6 +207,29 @@
                         </view>
                     </view>
                 </view>
+
+                <view class="staff-section-card">
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">订单确认函</text>
+                        </view>
+                        <text class="section-link" @click="openConfirmLetterActions">更多操作</text>
+                    </view>
+                    <view class="sub-panel">
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">当前版本</text>
+                            <text class="sub-panel__value">{{
+                                confirmLetter?.version ? `v${confirmLetter.version}` : '未生成'
+                            }}</text>
+                        </view>
+                        <view class="sub-panel__row">
+                            <text class="sub-panel__label">确认日期</text>
+                            <text class="sub-panel__value">{{
+                                confirmLetter?.rendered_snapshot?.confirm_date || '-'
+                            }}</text>
+                        </view>
+                    </view>
+                </view>
             </view>
 
             <ActionArea
@@ -244,12 +273,18 @@ import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
 import {
+    staffCenterOrderConfirmLetterDetail,
+    staffCenterOrderConfirmLetterGenerate,
+    staffCenterOrderConfirmLetterHistory,
+    staffCenterOrderConfirmLetterPush,
     staffCenterOrderComplete,
     staffCenterOrderDetail,
     staffCenterOrderConfirm,
     staffCenterOrderStartService
 } from '@/api/staffCenter'
+import { buildOrderConfirmLetterDataUrl } from '@/utils/orderConfirmLetterRenderer'
 import { ensureStaffCenterAccess } from '@/utils/staff-center'
+import { saveImageToPhotosAlbum } from '@/utils/file'
 import { useThemeStore } from '@/stores/theme'
 
 interface HeroChip {
@@ -301,6 +336,7 @@ interface StatusDescriptor {
 
 const $theme = useThemeStore()
 const order = ref<any>(null)
+const confirmLetter = ref<any>(null)
 const confirmCountdownSeconds = ref(0)
 const payCountdownSeconds = ref(0)
 let confirmCountdownTimer: ReturnType<typeof setInterval> | null = null
@@ -475,6 +511,9 @@ const serviceSummaryTitle = computed(() => {
 
 const serviceSummaryMeta = computed(() => `${(order.value?.items || []).length || 0} 项服务`)
 
+const paymentScopeNotice =
+    '当前金额仅按你名下的履约内容重算展示，整单支付、退款、线下凭证审核等动作统一由后台处理。'
+
 const serviceSummaryDescription = computed(() => {
     const region = String(order.value?.service_region_text || '').trim()
     const address = String(order.value?.service_address || '').trim()
@@ -548,6 +587,17 @@ const heroChips = computed<HeroChip[]>(() => {
 })
 
 const summaryTags = computed(() => packageNames.value.slice(0, 3))
+
+const legacyServiceNotice = computed(() => {
+    const hasLegacyItems = (order.value?.items || []).some(
+        (item: any) => Number(item?.item_type || 1) === 2
+    )
+    if (!hasLegacyItems) {
+        return ''
+    }
+
+    return '旧版兼容服务项仅保留必要履约信息，用于帮助核对历史订单，不作为新的服务配置入口。'
+})
 
 const executionRows = computed<InfoRow[]>(() => {
     const rows: InfoRow[] = [
@@ -917,6 +967,7 @@ const fetchDetail = async (id: number) => {
     try {
         const res: any = await staffCenterOrderDetail({ id })
         order.value = res || null
+        await loadConfirmLetter()
         syncConfirmCountdown(order.value?.confirm_remain_seconds || 0)
         syncPayCountdown(order.value?.pay_remain_seconds || 0)
     } catch (error: any) {
@@ -926,6 +977,18 @@ const fetchDetail = async (id: number) => {
             typeof error === 'string' ? error : error?.msg || error?.message || '获取订单失败'
         uni.showToast({ title: msg, icon: 'none' })
     }
+}
+
+const openConfirmLetterActions = () => {
+    uni.showActionSheet({
+        itemList: ['生成确认函', '查看确认函', '推送给客户', '保存图片'],
+        success: ({ tapIndex }) => {
+            if (tapIndex === 0) handleGenerateLetter()
+            if (tapIndex === 1) handlePreviewLetter()
+            if (tapIndex === 2) handlePushLetter()
+            if (tapIndex === 3) handleSaveLetter()
+        }
+    })
 }
 
 const copyOrderSn = () => {
@@ -953,6 +1016,73 @@ const handleContactCustomer = () => {
     uni.makePhoneCall({
         phoneNumber: mobile
     })
+}
+
+const loadConfirmLetter = async () => {
+    const currentOrderId = Number(order.value?.id || 0)
+    if (!currentOrderId) {
+        confirmLetter.value = null
+        return
+    }
+    try {
+        const history: any = await staffCenterOrderConfirmLetterHistory({
+            order_id: currentOrderId
+        })
+        const first = Array.isArray(history) ? history[0] : history?.[0]
+        if (!first?.letter_id) {
+            confirmLetter.value = null
+            return
+        }
+        confirmLetter.value = await staffCenterOrderConfirmLetterDetail({
+            letter_id: first.letter_id
+        })
+    } catch {
+        confirmLetter.value = null
+    }
+}
+
+const handleGenerateLetter = async () => {
+    try {
+        await staffCenterOrderConfirmLetterGenerate({ order_id: Number(order.value?.id || 0) })
+        await loadConfirmLetter()
+        uni.showToast({ title: '确认函已生成', icon: 'success' })
+    } catch (error: any) {
+        uni.showToast({ title: error?.msg || error?.message || '生成失败', icon: 'none' })
+    }
+}
+
+const handlePushLetter = async () => {
+    if (!confirmLetter.value?.letter_id) {
+        uni.showToast({ title: '请先生成确认函', icon: 'none' })
+        return
+    }
+    try {
+        await staffCenterOrderConfirmLetterPush({ letter_id: confirmLetter.value.letter_id })
+        uni.showToast({ title: '推送成功', icon: 'success' })
+        await loadConfirmLetter()
+    } catch (error: any) {
+        uni.showToast({ title: error?.msg || error?.message || '推送失败', icon: 'none' })
+    }
+}
+
+const handlePreviewLetter = () => {
+    const imageUrl =
+        String(confirmLetter.value?.full_image_url || '').trim() ||
+        buildOrderConfirmLetterDataUrl(confirmLetter.value?.rendered_snapshot || {})
+    if (!imageUrl) {
+        uni.showToast({ title: '确认函图片暂未生成', icon: 'none' })
+        return
+    }
+    uni.previewImage({ urls: [imageUrl], current: imageUrl })
+}
+
+const handleSaveLetter = () => {
+    const imageUrl = String(confirmLetter.value?.full_image_url || '').trim()
+    if (!imageUrl) {
+        uni.showToast({ title: '确认函图片暂未生成', icon: 'none' })
+        return
+    }
+    saveImageToPhotosAlbum(imageUrl)
 }
 
 const handleConfirm = () => {
@@ -1295,6 +1425,13 @@ onUnload(() => {
 
 .section-sub-text {
     font-size: 24rpx;
+    line-height: 1.65;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.section-note {
+    font-size: 22rpx;
+    font-weight: 600;
     line-height: 1.65;
     color: var(--wm-text-secondary, #7f7b78);
 }

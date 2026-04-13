@@ -107,6 +107,28 @@ export function orderPayWayOptions() {
     return request.get({ url: '/ops.order/payWayOptions' })
 }
 
+// ==================== 订单确认函 ====================
+
+export function orderConfirmLetterGenerate(params: any) {
+    return request.post({ url: '/ops.order/confirmLetterGenerate', params })
+}
+
+export function orderConfirmLetterPush(params: any) {
+    return request.post({ url: '/ops.order/confirmLetterPush', params })
+}
+
+export function orderConfirmLetterDetail(params: any) {
+    return request.get({ url: '/ops.order/confirmLetterDetail', params })
+}
+
+export function orderConfirmLetterHistory(params: any) {
+    return request.get({ url: '/ops.order/confirmLetterHistory', params })
+}
+
+export function orderConfirmLetterAssets(params: any) {
+    return request.post({ url: '/ops.order/confirmLetterAssets', params })
+}
+
 // ==================== 退款管理 ====================
 
 // 退款列表

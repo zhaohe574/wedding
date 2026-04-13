@@ -18,6 +18,7 @@ use app\common\model\schedule\Schedule;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
 use app\common\service\BookingFlowService;
+use app\common\service\OrderConfirmLetterService;
 use app\common\service\OrderNotificationService;
 use app\common\service\OrderRefundService;
 use app\common\service\PackageRegionPriceService;
@@ -275,6 +276,9 @@ class OrderLogic extends BaseLogic
         $data = $order->toArray();
         $data['order_status_desc'] = $order->order_status_desc;
         $data['pay_status_desc'] = $order->pay_status_desc;
+        $payStatusDisplay = Order::buildPayStatusDisplayFromState($data);
+        $data['pay_status_display_key'] = $payStatusDisplay['key'];
+        $data['pay_status_display_desc'] = $payStatusDisplay['desc'];
         $data['pay_type_desc'] = $order->pay_type_desc;
         $data['payment_channel_desc'] = $order->payment_channel_desc;
         $data['pay_voucher_status_desc'] = $order->pay_voucher_status_desc ?? '';
@@ -287,6 +291,52 @@ class OrderLogic extends BaseLogic
         $data['admin_refund_modes'] = ['full', 'partial'];
 
         return $data;
+    }
+
+    public static function confirmLetterGenerate(int $orderId, int $adminId)
+    {
+        try {
+            return OrderConfirmLetterService::generate($orderId, 'admin', $adminId);
+        } catch (\Throwable $e) {
+            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            return false;
+        }
+    }
+
+    public static function confirmLetterPush(int $letterId, int $adminId)
+    {
+        try {
+            return OrderConfirmLetterService::push($letterId, $adminId);
+        } catch (\Throwable $e) {
+            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            return false;
+        }
+    }
+
+    public static function confirmLetterDetail(int $letterId): ?array
+    {
+        $letter = \app\common\model\order\OrderConfirmLetter::find($letterId);
+        if (!$letter) {
+            self::setError('确认函不存在');
+            return null;
+        }
+        return OrderConfirmLetterService::detailForOrder($letterId, (int) $letter->order_id);
+    }
+
+    public static function confirmLetterHistory(int $orderId): array
+    {
+        return OrderConfirmLetterService::history($orderId);
+    }
+
+    public static function confirmLetterSaveAssets(array $params)
+    {
+        try {
+            OrderConfirmLetterService::saveAssets((int) $params['letter_id'], (string) $params['snapshot_hash'], (string) $params['full_image_url'], (string) $params['thumb_image_url']);
+            return ['letter_id' => (int) $params['letter_id'], 'assets_saved' => true];
+        } catch (\Throwable $e) {
+            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            return false;
+        }
     }
 
     /**
@@ -970,6 +1020,8 @@ class OrderLogic extends BaseLogic
                 $updateData['update_time'] = time();
                 Order::where('id', $params['id'])->update($updateData);
 
+                OrderConfirmLetterService::markOutdatedByOrderId((int) $params['id']);
+
                 // 记录日志
                 OrderLog::addLog($params['id'], OrderLog::OPERATOR_ADMIN, $params['admin_id'], 'edit', $order->order_status, $order->order_status, '编辑订单信息');
             }
@@ -1144,6 +1196,7 @@ class OrderLogic extends BaseLogic
             $order->pay_type = Order::PAY_WAY_OFFLINE;
             $order->payment_channel = Order::PAYMENT_CHANNEL_OFFLINE;
             $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payAmount, 2);
+            OrderConfirmLetterService::invalidateCurrentLetter($order, false);
             $order->update_time = time();
             $order->save();
 
@@ -1254,7 +1307,7 @@ class OrderLogic extends BaseLogic
 
         // 总金额
         $totalAmount = (clone $query)->sum('total_amount');
-        $paidAmount = (clone $query)->where('pay_status', Order::PAY_STATUS_PAID)->sum('pay_amount');
+        $paidAmount = (clone $query)->sum('paid_amount');
 
         // 今日数据
         $todayStart = strtotime(date('Y-m-d'));
@@ -1268,8 +1321,8 @@ class OrderLogic extends BaseLogic
             });
         }
         $todayOrders = (clone $todayQuery)->count();
-        $todayPaidOrders = (clone $todayQuery)->where('pay_status', Order::PAY_STATUS_PAID)->count();
-        $todayAmount = (clone $todayQuery)->where('pay_status', Order::PAY_STATUS_PAID)->sum('pay_amount');
+        $todayPaidOrders = (clone $todayQuery)->where('paid_amount', '>', 0)->count();
+        $todayAmount = (clone $todayQuery)->sum('paid_amount');
 
         return [
             'total_orders' => $totalOrders,
@@ -1385,6 +1438,7 @@ class OrderLogic extends BaseLogic
 
                 Order::applyPaidStateAfterPayment($order, (int)$payType, (int)$payment->pay_time);
                 $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payAmount, 2);
+                OrderConfirmLetterService::invalidateCurrentLetter($order, false);
                 $order->update_time = time();
                 $order->save();
 
