@@ -106,7 +106,7 @@
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
-import { getMyWaitlist, cancelWaitlist } from '@/api/schedule'
+import { getMyWaitlist, cancelWaitlist } from '@/packages/common/api/schedule'
 import { useThemeStore } from '@/stores/theme'
 
 interface WaitlistRecord {

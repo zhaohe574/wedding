@@ -98,7 +98,7 @@
                 </el-table-column>
                 <el-table-column label="审核状态" width="110">
                     <template #default="{ row }">
-                        <el-tag :type="getVerifyTagType(row.verify_status)">
+                        <el-tag :type="getVerifyTagType(getRowVerifyStatus(row))">
                             {{ row.verify_status_desc }}
                         </el-tag>
                     </template>
@@ -115,7 +115,7 @@
                             编辑
                         </el-button>
                         <el-button
-                            v-if="row.verify_status === 0"
+                            v-if="isPendingAudit(row)"
                             v-perms="['ops.staffCertificate/audit']"
                             link
                             type="success"
@@ -124,7 +124,7 @@
                             通过
                         </el-button>
                         <el-button
-                            v-if="row.verify_status === 0"
+                            v-if="isPendingAudit(row)"
                             v-perms="['ops.staffCertificate/audit']"
                             link
                             type="danger"
@@ -167,7 +167,7 @@
                     {{ detailData.sn || '-' }}
                 </el-descriptions-item>
                 <el-descriptions-item label="审核状态">
-                    <el-tag :type="getVerifyTagType(detailData.verify_status)">
+                    <el-tag :type="getVerifyTagType(getRowVerifyStatus(detailData))">
                         {{ detailData.verify_status_desc || '-' }}
                     </el-tag>
                 </el-descriptions-item>
@@ -385,6 +385,14 @@ const getVerifyTagType = (status: number) => {
     return map[status as keyof typeof map] ?? 'info'
 }
 
+const getRowVerifyStatus = (row: Record<string, any> | null | undefined) => {
+    return Number(row?.verify_status ?? row?.audit_status ?? -1)
+}
+
+const isPendingAudit = (row: Record<string, any> | null | undefined) => {
+    return getRowVerifyStatus(row) === 0
+}
+
 const fetchStaffOptions = async () => {
     try {
         staffOptions.value = await staffAll()
@@ -394,8 +402,13 @@ const fetchStaffOptions = async () => {
 }
 
 const openDetail = async (id: number) => {
-    detailData.value = await staffCertificateDetail({ id })
-    detailVisible.value = true
+    try {
+        detailData.value = await staffCertificateDetail({ id })
+        detailVisible.value = true
+    } catch (error) {
+        detailData.value = null
+        ElMessage.error('获取证书详情失败，请稍后重试')
+    }
 }
 
 const openForm = async (id = 0) => {

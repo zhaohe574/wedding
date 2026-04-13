@@ -18,6 +18,27 @@ export function staffCenterUpdateProfile(data: any) {
     return request.post({ url: '/staff_center/updateProfile', data }, { isAuth: true })
 }
 
+// 证书
+export function staffCenterCertificateLists(data?: any) {
+    return request.get({ url: '/staff_center/certificateLists', data }, { isAuth: true })
+}
+
+export function staffCenterCertificateDetail(data: any) {
+    return request.get({ url: '/staff_center/certificateDetail', data }, { isAuth: true })
+}
+
+export function staffCenterCertificateAdd(data: any) {
+    return request.post({ url: '/staff_center/certificateAdd', data }, { isAuth: true })
+}
+
+export function staffCenterCertificateEdit(data: any) {
+    return request.post({ url: '/staff_center/certificateEdit', data }, { isAuth: true })
+}
+
+export function staffCenterCertificateDelete(data: any) {
+    return request.post({ url: '/staff_center/certificateDelete', data }, { isAuth: true })
+}
+
 // 作品
 export function staffCenterWorkLists(data?: any) {
     return request.get({ url: '/staff_center/workLists', data }, { isAuth: true })

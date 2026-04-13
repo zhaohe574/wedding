@@ -26,7 +26,7 @@ class ExpireWaitlists extends Command
         try {
             $handled = 0;
             while (true) {
-                $count = Waitlist::processPastDateWaitlists(100);
+                $count = Waitlist::processExpiredWaitlists(100);
                 if ($count <= 0) {
                     break;
                 }

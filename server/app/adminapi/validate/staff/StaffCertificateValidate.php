@@ -33,7 +33,7 @@ class StaffCertificateValidate extends BaseValidate
         'issue_date' => 'date',
         'expire_date' => 'date',
         'verify_status' => 'require|in:0,1,2',
-        'reject_reason' => 'max:255',
+        'reject_reason' => 'max:255|checkRejectReason',
     ];
 
     /**
@@ -97,6 +97,23 @@ class StaffCertificateValidate extends BaseValidate
         if (!$staff) {
             return '工作人员不存在';
         }
+        return true;
+    }
+
+    /**
+     * @notes 驳回时必须填写拒绝原因
+     * @param $value
+     * @param $rule
+     * @param $data
+     * @return bool|string
+     */
+    protected function checkRejectReason($value, $rule, $data)
+    {
+        $verifyStatus = (int) ($data['verify_status'] ?? -1);
+        if ($verifyStatus === StaffCertificate::VERIFY_REJECT && trim((string) $value) === '') {
+            return '请输入拒绝原因';
+        }
+
         return true;
     }
 }

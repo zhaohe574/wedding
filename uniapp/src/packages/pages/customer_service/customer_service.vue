@@ -115,7 +115,7 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { startConsult } from '@/api/customerService'
+import { startConsult } from '@/packages/common/api/customerService'
 import { useThemeStore } from '@/stores/theme'
 
 const $theme = useThemeStore()

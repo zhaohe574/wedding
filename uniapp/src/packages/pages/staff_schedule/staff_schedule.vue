@@ -315,7 +315,7 @@ import { onShow } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import { staffCenterScheduleMonth, staffCenterScheduleSetStatus } from '@/api/staffCenter'
-import { ensureStaffCenterAccess } from '@/utils/staff-center'
+import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 
 type DayIndicator = 'available' | 'unavailable' | 'booked' | 'locked' | 'reserved'

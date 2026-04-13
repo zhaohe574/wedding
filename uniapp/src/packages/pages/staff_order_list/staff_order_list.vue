@@ -283,9 +283,9 @@ import {
     staffCenterOrderStartService,
     staffCenterOrderStats
 } from '@/api/staffCenter'
-import { useFixedNavbarPagingStyle } from '@/hooks/useFixedNavbarPagingStyle'
+import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { useThemeStore } from '@/stores/theme'
-import { ensureStaffCenterAccess } from '@/utils/staff-center'
+import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 
 type StatusValue = number | ''
 type StatusTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'

@@ -38,6 +38,8 @@ class SubscribeLogic extends BaseLogic
         $data = $template->toArray();
         $data['scene_desc'] = SubscribeMessageTemplate::getSceneDesc($data['scene'] ?? '');
         $data['status_desc'] = $template->status_desc;
+        $data['config_status'] = SubscribeMessageTemplate::getConfigStatus($data['template_id'] ?? '');
+        $data['config_status_desc'] = SubscribeMessageTemplate::getConfigStatusDesc($data['template_id'] ?? '');
         
         // 获取订阅统计
         if (!empty($data['template_id'])) {
@@ -200,6 +202,8 @@ class SubscribeLogic extends BaseLogic
             $template = SubscribeMessageTemplate::where('template_id', $data['template_id'])->find();
             $data['template_name'] = $template ? $template->name : '模板已删除';
         }
+        $data['config_status'] = SubscribeMessageTemplate::getConfigStatus($data['template_id'] ?? '');
+        $data['config_status_desc'] = SubscribeMessageTemplate::getConfigStatusDesc($data['template_id'] ?? '');
 
         return $data;
     }
@@ -264,10 +268,21 @@ class SubscribeLogic extends BaseLogic
     public static function bindTemplate(int $sceneId, string $templateId): bool
     {
         try {
+            $scene = SubscribeMessageScene::find($sceneId);
+            if (!$scene) {
+                self::setError('场景不存在');
+                return false;
+            }
+
             // 检查模板是否存在
             $template = SubscribeMessageTemplate::where('template_id', $templateId)->find();
             if (!$template) {
                 self::setError('模板不存在');
+                return false;
+            }
+
+            if ((string) $template->scene !== (string) $scene->scene) {
+                self::setError('模板场景与订阅场景不一致，不能绑定');
                 return false;
             }
 

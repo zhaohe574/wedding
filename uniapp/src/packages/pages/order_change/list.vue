@@ -148,7 +148,7 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
-import { cancelChange, cancelPause, getChangeList, getPauseList } from '@/api/orderChange'
+import { cancelChange, cancelPause, getChangeList, getPauseList } from '@/packages/common/api/orderChange'
 import { useThemeStore } from '@/stores/theme'
 import {
     getChangeStatusMeta,

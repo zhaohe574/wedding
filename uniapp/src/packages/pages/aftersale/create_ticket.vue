@@ -221,16 +221,19 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { createTicket } from '@/api/aftersale'
+import { createTicket } from '@/packages/common/api/aftersale'
 import { getOrderList } from '@/api/order'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import { ClientEnum } from '@/enums/appEnums'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { onLoad } from '@dcloudio/uni-app'
+import { client } from '@/utils/client'
+import { subscribeAfterSaleScenes } from '@/utils/subscribe'
 import AfterSaleMediaUploader from './components/AfterSaleMediaUploader.vue'
 import { pickOrderByPicker, toOrderOptions } from './shared'
 
@@ -368,6 +371,31 @@ const selectCategory = (label: string) => {
     form.category = label
 }
 
+const promptAfterSaleSubscribe = async () => {
+    if (client !== ClientEnum.MP_WEIXIN) {
+        return true
+    }
+
+    const result = await uni.showModal({
+        title: '接收售后处理提醒',
+        content: '订阅后可在微信及时收到退款结果、工单处理进度等提醒，避免错过平台反馈。',
+        confirmText: '去订阅',
+        cancelText: '暂不订阅'
+    })
+
+    if (!result.confirm) {
+        return false
+    }
+
+    try {
+        await subscribeAfterSaleScenes()
+    } catch (error) {
+        console.error('请求售后订阅失败', error)
+    }
+
+    return true
+}
+
 const handleSubmit = async () => {
     if (submitDisabled.value) {
         return
@@ -396,6 +424,7 @@ const handleSubmit = async () => {
 
     submitting.value = true
     try {
+        await promptAfterSaleSubscribe()
         await createTicket({
             order_id: form.order_id,
             type: Number(selectedCategory.value?.type || 3),

@@ -264,7 +264,7 @@ import {
     parseLongDetailDraftContent,
     stringifyLongDetailContent
 } from '@/packages/components/staff-long-detail/utils'
-import { ensureStaffCenterAccess } from '@/utils/staff-center'
+import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 
 type HeroBadgeTone = 'primary' | 'success' | 'warning' | 'danger' | 'neutral'

@@ -160,9 +160,9 @@ import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { staffCenterAddonLists, staffCenterAddonRemove } from '@/api/staffCenter'
-import { useFixedNavbarPagingStyle } from '@/hooks/useFixedNavbarPagingStyle'
+import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { useThemeStore } from '@/stores/theme'
-import { ensureStaffCenterAccess } from '@/utils/staff-center'
+import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 
 type AddonMetricFilter = 'all' | 'visible' | 'hidden'
 

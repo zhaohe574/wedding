@@ -68,12 +68,13 @@ class StaffCertificate extends BaseModel
      */
     public function getAuditStatusDescAttr($value, $data)
     {
+        $statusValue = $data['audit_status'] ?? $data['verify_status'] ?? 0;
         $statusMap = [
             self::AUDIT_PENDING => '待审核',
             self::AUDIT_PASS => '已通过',
             self::AUDIT_REJECT => '已拒绝',
         ];
-        return $statusMap[$data['audit_status'] ?? 0] ?? '未知';
+        return $statusMap[$statusValue] ?? '未知';
     }
 
     /**
@@ -84,12 +85,13 @@ class StaffCertificate extends BaseModel
      */
     public function getVerifyStatusDescAttr($value, $data)
     {
+        $statusValue = $data['verify_status'] ?? $data['audit_status'] ?? 0;
         $statusMap = [
             self::VERIFY_PENDING => '待审核',
             self::VERIFY_PASS => '已通过',
             self::VERIFY_REJECT => '已拒绝',
         ];
-        return $statusMap[$data['verify_status'] ?? 0] ?? '未知';
+        return $statusMap[$statusValue] ?? '未知';
     }
 
     /**

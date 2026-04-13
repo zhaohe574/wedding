@@ -221,7 +221,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { getOrderList } from '@/api/order'
-import { submitComplaint } from '@/api/aftersale'
+import { submitComplaint } from '@/packages/common/api/aftersale'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'

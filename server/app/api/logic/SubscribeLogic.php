@@ -159,26 +159,36 @@ class SubscribeLogic extends BaseLogic
         $scenes = SubscribeMessageScene::getEnabledScenes();
 
         // 获取关联模板信息
-        $templateIds = array_filter(array_column($scenes, 'template_id'));
+        $templateIds = array_values(array_filter(
+            array_unique(array_column($scenes, 'template_id')),
+            static fn ($templateId) => SubscribeMessageTemplate::isUsableTemplateId((string) $templateId)
+        ));
         $templates = [];
         if (!empty($templateIds)) {
             $templates = SubscribeMessageTemplate::whereIn('template_id', $templateIds)
                 ->where('status', 1)
-                ->column('name, template_id', 'template_id');
+                ->column('name, template_id, scene', 'template_id');
         }
 
         $result = [];
         foreach ($scenes as $scene) {
-            if (empty($scene['template_id']) || !isset($templates[$scene['template_id']])) {
-                continue; // 跳过未绑定模板或模板已禁用的场景
+            $configStatus = SubscribeMessageTemplate::getConfigStatus($scene['template_id'] ?? '');
+            if (
+                $configStatus !== 'configured'
+                || empty($scene['template_id'])
+                || !isset($templates[$scene['template_id']])
+            ) {
+                continue;
             }
-            
+
             $result[] = [
                 'scene' => $scene['scene'],
                 'name' => $scene['name'],
                 'description' => $scene['description'],
                 'template_id' => $scene['template_id'],
                 'template_name' => $templates[$scene['template_id']]['name'] ?? '',
+                'config_status' => $configStatus,
+                'config_status_desc' => SubscribeMessageTemplate::getConfigStatusDesc($scene['template_id']),
             ];
         }
 
@@ -195,35 +205,42 @@ class SubscribeLogic extends BaseLogic
     {
         // 获取场景配置
         $sceneConfig = SubscribeMessageScene::getByScene($scene);
-        if (!$sceneConfig || empty($sceneConfig->template_id)) {
+        $templateId = $sceneConfig ? (string) $sceneConfig->template_id : '';
+        if (!$sceneConfig || !SubscribeMessageTemplate::isUsableTemplateId($templateId)) {
             return [
                 'need_subscribe' => false,
                 'template_id' => '',
-                'reason' => '场景未配置',
+                'config_status' => SubscribeMessageTemplate::getConfigStatus($templateId),
+                'config_status_desc' => SubscribeMessageTemplate::getConfigStatusDesc($templateId),
+                'reason' => '场景未配置有效模板',
             ];
         }
 
         // 检查模板是否启用
-        $template = SubscribeMessageTemplate::where('template_id', $sceneConfig->template_id)
+        $template = SubscribeMessageTemplate::where('template_id', $templateId)
             ->where('status', 1)
             ->find();
         if (!$template) {
             return [
                 'need_subscribe' => false,
                 'template_id' => '',
+                'config_status' => SubscribeMessageTemplate::getConfigStatus($templateId),
+                'config_status_desc' => SubscribeMessageTemplate::getConfigStatusDesc($templateId),
                 'reason' => '模板未启用',
             ];
         }
 
         // 检查用户订阅状态
-        $hasSubscription = UserSubscribe::hasSubscription($userId, $sceneConfig->template_id);
+        $hasSubscription = UserSubscribe::hasSubscription($userId, $templateId);
 
         return [
             'need_subscribe' => !$hasSubscription,
-            'template_id' => $sceneConfig->template_id,
+            'template_id' => $templateId,
             'template_name' => $template->name,
             'scene_name' => $sceneConfig->name,
             'has_subscription' => $hasSubscription,
+            'config_status' => SubscribeMessageTemplate::getConfigStatus($templateId),
+            'config_status_desc' => SubscribeMessageTemplate::getConfigStatusDesc($templateId),
         ];
     }
 

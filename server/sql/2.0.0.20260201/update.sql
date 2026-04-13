@@ -219,6 +219,27 @@ PREPARE wm_staff_long_detail_stmt FROM @wm_staff_long_detail_sql;
 EXECUTE wm_staff_long_detail_stmt;
 DEALLOCATE PREPARE wm_staff_long_detail_stmt;
 
+SET @wm_has_sales_advisor_wecom_userid := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'la_sales_advisor'
+      AND COLUMN_NAME = 'wecom_userid'
+);
+SET @wm_sales_advisor_wecom_userid_sql := IF(
+    EXISTS (
+        SELECT 1
+        FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_sales_advisor'
+    ) AND @wm_has_sales_advisor_wecom_userid = 0,
+    'ALTER TABLE `la_sales_advisor` ADD COLUMN `wecom_userid` VARCHAR(64) NOT NULL DEFAULT '''' COMMENT ''企业微信成员ID'' AFTER `wechat`, ADD KEY `idx_wecom_userid` (`wecom_userid`)',
+    'SELECT 1'
+);
+PREPARE wm_sales_advisor_wecom_userid_stmt FROM @wm_sales_advisor_wecom_userid_sql;
+EXECUTE wm_sales_advisor_wecom_userid_stmt;
+DEALLOCATE PREPARE wm_sales_advisor_wecom_userid_stmt;
+
 -- la_staff_banner
 CREATE TABLE IF NOT EXISTS `la_staff_banner` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -2056,16 +2077,16 @@ INSERT INTO `la_dict_data` (`id`, `name`, `value`, `type_id`, `type_value`, `sor
 -- la_subscribe_message_scene
 DELETE FROM `la_subscribe_message_scene`;
 INSERT INTO `la_subscribe_message_scene` (`id`, `scene`, `name`, `description`, `template_id`, `trigger_event`, `data_mapping`, `page_path`, `is_auto`, `delay_seconds`, `status`, `sort`, `create_time`, `update_time`) VALUES
-(1, 'order_create', '订单创建通知', '用户提交订单后发送确认通知', '', 'OrderCreated', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 110, 1773413107, 1773413107),
-(2, 'order_paid', '支付成功通知', '用户完成支付后发送确认通知', '', 'OrderPaid', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 109, 1773413107, 1773413107),
-(3, 'order_confirm', '订单确认通知', '商家确认订单后通知用户', 'TEMPLATE_ID_ORDER_CONFIRM', 'OrderConfirmed', '{"character_string1":"order_sn","thing2":"status_text","amount3":"pay_amount","time4":"service_date"}', 'pages/order_detail/order_detail', 1, 0, 1, 108, 1773413107, 1773413107),
-(4, 'order_complete', '服务完成通知', '服务完成后通知用户进行评价', '', 'OrderCompleted', NULL, 'pages/review/publish', 1, 0, 1, 107, 1773413107, 1773413107),
-(5, 'schedule_remind', '档期提醒通知', '服务日期前提醒用户', '', 'ScheduleRemind', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 106, 1773413107, 1773413107),
-(6, 'refund_result', '退款结果通知', '退款审核结果通知', '', 'RefundProcessed', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 105, 1773413107, 1773413107),
-(7, 'callback_remind', '回访提醒通知', '服务完成后的回访提醒', '', 'CallbackRemind', NULL, 'pages/aftersale/callback', 1, 0, 1, 104, 1773413107, 1773413107),
-(8, 'ticket_update', '工单进度通知', '售后工单状态更新通知', '', 'TicketUpdated', NULL, 'pages/aftersale/ticket_detail', 1, 0, 1, 103, 1773413107, 1773413107),
-(9, 'change_result', '变更审核通知', '订单变更申请审核结果通知', '', 'ChangeProcessed', NULL, 'pages/order_change/change_detail', 1, 0, 1, 102, 1773413107, 1773413107),
-(10, 'schedule_change', '档期变更通知', '人员档期发生变更时通知', '', 'ScheduleChanged', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 101, 1773413107, 1773413107),
+(1, 'order_create', '订单创建通知', '用户提交订单后发送确认通知', 'TEMPLATE_ID_ORDER_CREATE', 'OrderCreated', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 110, 1773413107, 1773413107),
+(2, 'order_paid', '支付成功通知', '用户完成支付后发送确认通知', 'TEMPLATE_ID_ORDER_PAID', 'OrderPaid', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 109, 1773413107, 1773413107),
+(3, 'order_confirm', '订单确认通知', '商家确认订单后通知用户', 'TEMPLATE_ID_ORDER_CONFIRM', 'OrderConfirmed', '{"character_string1":"order_sn","thing2":"status_text","amount3":"pay_amount","time4":"service_date"}', 'pages/order_detail/order_detail', 1, 0, 0, 108, 1773413107, 1773413107),
+(4, 'order_complete', '服务完成通知', '服务完成后通知用户进行评价', '', 'OrderCompleted', NULL, 'pages/review/publish', 1, 0, 0, 107, 1773413107, 1773413107),
+(5, 'schedule_remind', '档期提醒通知', '服务日期前提醒用户', 'TEMPLATE_ID_SERVICE_REMIND', 'ScheduleRemind', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 106, 1773413107, 1773413107),
+(6, 'refund_result', '退款结果通知', '退款审核结果通知', 'TEMPLATE_ID_REFUND_RESULT', 'RefundProcessed', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 105, 1773413107, 1773413107),
+(7, 'callback_remind', '回访提醒通知', '服务完成后的回访提醒', '', 'CallbackRemind', NULL, 'packages/pages/aftersale/callback', 1, 0, 0, 104, 1773413107, 1773413107),
+(8, 'ticket_update', '工单进度通知', '售后工单状态更新通知', 'TEMPLATE_ID_TICKET_UPDATE', 'TicketUpdated', NULL, 'packages/pages/aftersale/ticket_detail', 1, 0, 1, 103, 1773413107, 1773413107),
+(9, 'change_result', '变更审核通知', '订单变更申请审核结果通知', '', 'ChangeProcessed', NULL, 'pages/order_change/change_detail', 1, 0, 0, 102, 1773413107, 1773413107),
+(10, 'schedule_change', '档期变更通知', '人员档期发生变更时通知', '', 'ScheduleChanged', NULL, 'pages/order_detail/order_detail', 1, 0, 0, 101, 1773413107, 1773413107),
 (11, 'waitlist_release', '候补释放通知', '档期释放后通知候补用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"remark"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 100, 1773413107, 1773413107),
 (12, 'waitlist_expired', '候补失效通知', '候补超过预约日期后通知用户', 'TEMPLATE_ID_WAITLIST_EXPIRED', 'WaitlistExpired', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"remark"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 99, 1773413107, 1773413107);
 
@@ -2272,13 +2293,15 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (221, 218, 'A', '删除', '', 0, 'ops.styleTag/delete', '', '', '', '', 0, 0, 0, 1773413108, 1773413108),
 (222, 218, 'A', '状态切换', '', 0, 'ops.styleTag/changeStatus', '', '', '', '', 0, 0, 0, 1773413108, 1773413108),
 (223, 0, 'M', '服务人员中心', 'el-icon-User', 720, '', 'staff-center', '', '', '', 0, 1, 0, 1773413108, 1773413108),
-(224, 223, 'C', '我的资料', '', 100, 'ops.staff/myProfile', 'profile', 'staff_center/profile/index', '', '', 0, 1, 0, 1773413108, 1773413108),
-(225, 223, 'C', '档期日历', '', 90, 'ops.schedule/myCalendar', 'calendar', 'staff_center/calendar/index', '', '', 0, 1, 0, 1773413108, 1773413108),
-(226, 223, 'C', '档期规则', '', 80, 'ops.scheduleRule/myRules', 'rule', 'staff_center/rule/index', '', '', 0, 1, 0, 1773413108, 1773413108),
-(227, 223, 'C', '预约列表', '', 70, 'ops.booking/myBookings', 'booking', 'staff_center/booking/index', '', '', 0, 1, 0, 1773413108, 1773556013),
-(228, 223, 'C', '候补列表', '', 60, 'ops.waitlist/myWaitlist', 'waitlist', 'staff_center/waitlist/index', '', '', 0, 1, 0, 1773413108, 1773413108),
-(229, 223, 'C', '订单列表', '', 50, 'ops.order/myOrders', 'order', 'staff_center/order/index', '', '', 0, 1, 0, 1773413108, 1773413108),
-(230, 223, 'C', '动态管理', '', 40, 'growth.dynamic/myDynamics', 'dynamic', 'staff_center/dynamic/index', '', '', 0, 1, 0, 1773413108, 1773413108),
+(224, 223, 'C', '基本资料', '', 100, 'ops.staff/myProfile', 'profile', 'staff_center/profile/index', '', '', 0, 1, 0, 1773413108, 1773413108),
+(288, 223, 'C', '服务展示', '', 95, 'ops.staff/myProfileUpdate', 'showcase', 'staff_center/showcase/index', '', '', 0, 1, 0, 1776000000, 1776000000),
+(289, 223, 'C', '我的套餐', '', 90, 'ops.staff/myProfilePackageConfig', 'package', 'staff_center/package/index', '', '', 0, 1, 0, 1776000000, 1776000000),
+(225, 223, 'C', '我的档期', '', 80, 'ops.schedule/myCalendar', 'calendar', 'staff_center/calendar/index', '', '', 0, 1, 0, 1773413108, 1773413108),
+(226, 223, 'C', '接单规则', '', 70, 'ops.scheduleRule/myRules', 'rule', 'staff_center/rule/index', '', '', 0, 1, 0, 1773413108, 1773413108),
+(227, 223, 'C', '预约确认', '', 60, 'ops.booking/myBookings', 'booking', 'staff_center/booking/index', '', '', 0, 0, 0, 1773413108, 1773556013),
+(228, 223, 'C', '候补需求', '', 50, 'ops.waitlist/myWaitlist', 'waitlist', 'staff_center/waitlist/index', '', '', 0, 0, 0, 1773413108, 1773413108),
+(229, 223, 'C', '履约订单', '', 40, 'ops.order/myOrders', 'order', 'staff_center/order/index', '', '', 0, 1, 0, 1773413108, 1773413108),
+(230, 223, 'C', '内容发布', '', 30, 'growth.dynamic/myDynamics', 'dynamic', 'staff_center/dynamic/index', '', '', 0, 1, 0, 1773413108, 1773413108),
 (231, 0, 'M', '作品管理', 'el-icon-Picture', 730, '', 'staff_work', '', '', '', 0, 1, 0, 1773413108, 1773413108),
 (232, 231, 'C', '作品列表', '', 100, 'ops.work/lists', 'lists', 'staff/work/index', '', '', 0, 1, 0, 1773413108, 1773413108),
 (233, 232, 'A', '详情', '', 0, 'ops.work/detail', '', '', '', '', 0, 1, 0, 1773413108, 1773413108),
@@ -2299,7 +2322,36 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (255, 179, 'C', '标签审核', '', 195, 'ops.staffTagReview/lists', 'staff-tag-review', 'staff/tag_review/index', '', '', 0, 1, 0, 1775001600, 1775001600),
 (256, 255, 'A', '详情', '', 10, 'ops.staffTagReview/detail', '', '', '', '', 0, 0, 0, 1775001600, 1775001600),
 (257, 255, 'A', '审核通过', '', 20, 'ops.staffTagReview/approve', '', '', '', '', 0, 0, 0, 1775001600, 1775001600),
-(258, 255, 'A', '审核拒绝', '', 30, 'ops.staffTagReview/reject', '', '', '', '', 0, 0, 0, 1775001600, 1775001600);
+(258, 255, 'A', '审核拒绝', '', 30, 'ops.staffTagReview/reject', '', '', '', '', 0, 0, 0, 1775001600, 1775001600),
+(259, 28, 'C', '企微通知', 'el-icon-MessageBox', 54, 'setting.customer_service/getConfig', 'wecom', 'setting/wecom/index', '', '', 0, 1, 0, 1775001700, 1775001700),
+(260, 259, 'A', '保存配置', '', 0, 'setting.customer_service/setConfig', '', '', '', '', 0, 0, 0, 1775001700, 1775001700),
+(261, 259, 'A', '顾问列表', '', 0, 'setting.wecom_recipient/lists', '', '', '', '', 0, 0, 0, 1775001700, 1775001700),
+(262, 259, 'A', '保存顾问企微成员', '', 0, 'setting.wecom_recipient/updateAdvisor', '', '', '', '', 0, 0, 0, 1775001700, 1775001700),
+(263, 28, 'C', '订阅消息', 'el-icon-Bell', 53, 'growth.subscribe/templateList', 'subscribe-message', 'subscribe/template/index', '', '', 0, 1, 0, 1775001800, 1775001800),
+(264, 263, 'A', '模板详情', '', 0, 'growth.subscribe/templateDetail', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(265, 263, 'A', '新增模板', '', 0, 'growth.subscribe/addTemplate', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(266, 263, 'A', '编辑模板', '', 0, 'growth.subscribe/editTemplate', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(267, 263, 'A', '删除模板', '', 0, 'growth.subscribe/deleteTemplate', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(268, 263, 'A', '切换模板状态', '', 0, 'growth.subscribe/toggleTemplateStatus', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(269, 263, 'A', '场景选项', '', 0, 'growth.subscribe/getSceneOptions', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(270, 263, 'A', '场景列表', '', 0, 'growth.subscribe/sceneList', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(271, 263, 'A', '场景详情', '', 0, 'growth.subscribe/sceneDetail', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(272, 263, 'A', '编辑场景', '', 0, 'growth.subscribe/editScene', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(273, 263, 'A', '切换场景状态', '', 0, 'growth.subscribe/toggleSceneStatus', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(274, 263, 'A', '绑定模板', '', 0, 'growth.subscribe/bindTemplate', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(275, 263, 'A', '发送记录列表', '', 0, 'growth.subscribe/logList', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(276, 263, 'A', '发送记录详情', '', 0, 'growth.subscribe/logDetail', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(277, 263, 'A', '重试发送记录', '', 0, 'growth.subscribe/retryLog', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(278, 263, 'A', '发送统计', '', 0, 'growth.subscribe/getStatistics', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(279, 263, 'A', '发送趋势', '', 0, 'growth.subscribe/getTrend', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(280, 263, 'A', '场景统计', '', 0, 'growth.subscribe/getSceneStatistics', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(281, 263, 'A', '测试发送', '', 0, 'growth.subscribe/testSend', '', '', '', '', 0, 0, 0, 1775001800, 1775001800),
+(282, 179, 'C', '人员证书', '', 185, 'ops.staffCertificate/lists', 'certificate', 'staff/certificate/index', '', '', 0, 1, 0, 1775923200, 1775923200),
+(283, 282, 'A', '详情', '', 10, 'ops.staffCertificate/detail', '', '', '', '', 0, 0, 0, 1775923200, 1775923200),
+(284, 282, 'A', '新增', '', 20, 'ops.staffCertificate/add', '', '', '', '', 0, 0, 0, 1775923200, 1775923200),
+(285, 282, 'A', '编辑', '', 30, 'ops.staffCertificate/edit', '', '', '', '', 0, 0, 0, 1775923200, 1775923200),
+(286, 282, 'A', '删除', '', 40, 'ops.staffCertificate/delete', '', '', '', '', 0, 0, 0, 1775923200, 1775923200),
+(287, 282, 'A', '审核', '', 50, 'ops.staffCertificate/audit', '', '', '', '', 0, 0, 0, 1775923200, 1775923200);
 
 -- 下线功能的遗留菜单清理
 DELETE srm
@@ -2338,6 +2390,8 @@ WHERE `perms` IN (
 INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (1, 223),
 (1, 224),
+(1, 288),
+(1, 289),
 (1, 225),
 (1, 226),
 (1, 227),
@@ -2492,6 +2546,35 @@ INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (2, 256),
 (2, 257),
 (2, 258),
+(2, 259),
+(2, 260),
+(2, 261),
+(2, 262),
+(2, 263),
+(2, 264),
+(2, 265),
+(2, 266),
+(2, 267),
+(2, 268),
+(2, 269),
+(2, 270),
+(2, 271),
+(2, 272),
+(2, 273),
+(2, 274),
+(2, 275),
+(2, 276),
+(2, 277),
+(2, 278),
+(2, 279),
+(2, 280),
+(2, 281),
+(2, 282),
+(2, 283),
+(2, 284),
+(2, 285),
+(2, 286),
+(2, 287),
 (2, 238),
 (2, 239);
 

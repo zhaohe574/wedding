@@ -128,6 +128,10 @@
                         v-if="currentTab === 'intro'"
                         class="content-section content-section--stack"
                     >
+                        <view v-if="hasLongDetail" class="detail-stream-shell">
+                            <staff-long-detail-renderer :content="staffInfo.long_detail" />
+                        </view>
+
                         <view v-if="displayTagList.length" class="soft-card">
                             <text class="soft-card__title">擅长风格</text>
                             <view class="soft-tags">
@@ -137,8 +141,39 @@
                             </view>
                         </view>
 
-                        <view v-if="hasLongDetail" class="detail-stream-shell">
-                            <staff-long-detail-renderer :content="staffInfo.long_detail" />
+                        <view v-if="displayCertificates.length" class="soft-card">
+                            <text class="soft-card__title">资质证书</text>
+                            <scroll-view scroll-x class="certs-scroll">
+                                <view class="certs-wrapper">
+                                    <view
+                                        v-for="cert in displayCertificates"
+                                        :key="cert.id || cert.image"
+                                        class="cert-item"
+                                        @click="openCertificatePopup(cert)"
+                                    >
+                                        <image
+                                            :src="
+                                                resolveDetailImageSrc(
+                                                    'certificate',
+                                                    cert.image,
+                                                    cert.id || cert.image
+                                                )
+                                            "
+                                            mode="aspectFill"
+                                            class="cert-image"
+                                            @error="
+                                                handleDetailImageError(
+                                                    'certificate',
+                                                    cert.image,
+                                                    cert.id || cert.image,
+                                                    $event
+                                                )
+                                            "
+                                        />
+                                        <text class="cert-name">{{ cert.name }}</text>
+                                    </view>
+                                </view>
+                            </scroll-view>
                         </view>
                     </view>
 
@@ -155,10 +190,24 @@
                                 @click="goWorkDetail(work)"
                             >
                                 <image
-                                    :src="work.cover || work.images?.[0]"
+                                    :src="
+                                        resolveDetailImageSrc(
+                                            'work',
+                                            work.cover || work.images?.[0],
+                                            work.id
+                                        )
+                                    "
                                     mode="aspectFill"
                                     class="work-image"
                                     lazy-load
+                                    @error="
+                                        handleDetailImageError(
+                                            'work',
+                                            work.cover || work.images?.[0],
+                                            work.id,
+                                            $event
+                                        )
+                                    "
                                 />
                                 <view class="work-overlay">
                                     <text class="work-title">{{ work.title || '婚礼作品' }}</text>
@@ -172,30 +221,6 @@
                     </view>
 
                     <view v-else class="content-section content-section--stack">
-                        <view
-                            v-if="staffInfo.certificates && staffInfo.certificates.length"
-                            class="soft-card"
-                        >
-                            <text class="soft-card__title">资质证书</text>
-                            <scroll-view scroll-x class="certs-scroll">
-                                <view class="certs-wrapper">
-                                    <view
-                                        v-for="cert in staffInfo.certificates"
-                                        :key="cert.id || cert.image"
-                                        class="cert-item"
-                                        @click="previewCert(cert.image)"
-                                    >
-                                        <image
-                                            :src="cert.image"
-                                            mode="aspectFill"
-                                            class="cert-image"
-                                        />
-                                        <text class="cert-name">{{ cert.name }}</text>
-                                    </view>
-                                </view>
-                            </scroll-view>
-                        </view>
-
                         <view class="review-summary">
                             <view class="review-summary-card">
                                 <text class="review-summary-value">
@@ -657,6 +682,104 @@
                     </view>
                 </view>
             </tn-popup>
+
+            <BaseOverlayMask :show="showCertificatePopup" @close="closeCertificatePopup" />
+            <tn-popup
+                v-model="showCertificatePopup"
+                open-direction="bottom"
+                :overlay="false"
+                :overlay-closeable="true"
+                safe-area-inset-bottom
+                :radius="28"
+            >
+                <view v-if="activeCertificate" class="certificate-popup">
+                    <view class="certificate-popup__header">
+                        <view class="certificate-popup__badge">
+                            <text class="certificate-popup__badge-text">资质详情</text>
+                        </view>
+                        <text class="certificate-popup__title">
+                            {{ activeCertificate.name || '未命名证书' }}
+                        </text>
+                        <text class="certificate-popup__desc">
+                            {{ getCertificateStatusText(activeCertificate) }}
+                        </text>
+                    </view>
+
+                    <image
+                        v-if="activeCertificate.image"
+                        :src="
+                            resolveDetailImageSrc(
+                                'certificate-popup',
+                                activeCertificate.image,
+                                activeCertificate.id || activeCertificate.image
+                            )
+                        "
+                        mode="aspectFill"
+                        class="certificate-popup__image"
+                        @click="previewCertificateImage(activeCertificate.image)"
+                        lazy-load
+                        @error="
+                            handleDetailImageError(
+                                'certificate-popup',
+                                activeCertificate.image,
+                                activeCertificate.id || activeCertificate.image,
+                                $event
+                            )
+                        "
+                    />
+
+                    <view class="certificate-popup__meta-list">
+                        <view class="certificate-popup__meta-item">
+                            <text class="certificate-popup__meta-label">证书类型</text>
+                            <text class="certificate-popup__meta-value">
+                                {{ formatCertificateField(activeCertificate.type) }}
+                            </text>
+                        </view>
+                        <view class="certificate-popup__meta-item">
+                            <text class="certificate-popup__meta-label">证书编号</text>
+                            <text class="certificate-popup__meta-value">
+                                {{ getCertificateSerialNumber(activeCertificate) }}
+                            </text>
+                        </view>
+                        <view class="certificate-popup__meta-item">
+                            <text class="certificate-popup__meta-label">发证机构</text>
+                            <text class="certificate-popup__meta-value">
+                                {{ formatCertificateField(activeCertificate.issue_org) }}
+                            </text>
+                        </view>
+                        <view class="certificate-popup__meta-item">
+                            <text class="certificate-popup__meta-label">发证日期</text>
+                            <text class="certificate-popup__meta-value">
+                                {{ formatCertificateField(activeCertificate.issue_date) }}
+                            </text>
+                        </view>
+                        <view class="certificate-popup__meta-item">
+                            <text class="certificate-popup__meta-label">有效期至</text>
+                            <text class="certificate-popup__meta-value">
+                                {{ getCertificateValidityText(activeCertificate) }}
+                            </text>
+                        </view>
+                        <view class="certificate-popup__meta-item">
+                            <text class="certificate-popup__meta-label">当前状态</text>
+                            <text
+                                class="certificate-popup__meta-value certificate-popup__meta-value--status"
+                            >
+                                {{ getCertificateStatusText(activeCertificate) }}
+                            </text>
+                        </view>
+                    </view>
+
+                    <view class="certificate-popup__actions">
+                        <view
+                            class="certificate-popup__btn"
+                            :style="{ background: $theme.primaryColor }"
+                            @click="closeCertificatePopup"
+                        >
+                            <text class="certificate-popup__btn-text">我知道了</text>
+                        </view>
+                    </view>
+                </view>
+            </tn-popup>
         </view>
 
         <!-- 加载状态 -->
@@ -673,9 +796,10 @@ import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
 import { getStaffDetail, getStaffList, toggleStaffFavorite, getStaffWorks } from '@/api/staff'
-import { getStaffReviews, getStaffReviewStats } from '@/api/review'
-import { checkScheduleAvailable, joinWaitlist } from '@/api/schedule'
+import { getStaffReviews, getStaffReviewStats } from '@/packages/common/api/review'
+import { checkScheduleAvailable, joinWaitlist } from '@/packages/common/api/schedule'
 import { getServiceRegionTree } from '@/api/service'
+import { ClientEnum } from '@/enums/appEnums'
 import StaffLongDetailRenderer from '@/packages/components/staff-long-detail/staff-long-detail-renderer.vue'
 import { hasLongDetailContent } from '@/packages/components/staff-long-detail/utils'
 import { BACK_URL } from '@/enums/constantEnums'
@@ -683,6 +807,8 @@ import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import StaffBanner from '@/packages/components/staff-banner/staff-banner.vue'
 import cache from '@/utils/cache'
+import { client } from '@/utils/client'
+import { isDevMode } from '@/utils/env'
 import {
     buildServiceRegionQuery,
     hasServiceRegion,
@@ -691,7 +817,8 @@ import {
     saveServiceRegionSelection,
     toServiceRegionParams
 } from '@/utils/service-region'
-import { getStaffBookingPageUrl } from '@/utils/staff-booking'
+import { getStaffBookingPageUrl } from '@/packages/common/utils/staff-booking'
+import { subscribeWaitlistScenes } from '../../../utils/subscribe'
 
 type AlternativeStaffItem = {
     id: number
@@ -710,6 +837,22 @@ type AlternativeStaffItem = {
     [key: string]: any
 }
 
+type StaffCertificateItem = {
+    id?: number | string
+    name?: string
+    type?: string
+    sn?: string
+    certificate_no?: string
+    issue_org?: string
+    issue_date?: string
+    expire_date?: string
+    image?: string
+    verify_status_desc?: string
+    audit_status_desc?: string
+    is_expired?: number | boolean
+    [key: string]: any
+}
+
 const staffId = ref<number>(0)
 const staffInfo = ref<any>(null)
 const isShareEntry = ref(false)
@@ -723,10 +866,12 @@ const openBookingPopupRequested = ref(false)
 const pendingDatePickerAfterRegion = ref(false)
 const selectedPackageId = ref<number>(0)
 const showAlternativeStaffPopup = ref(false)
+const showCertificatePopup = ref(false)
 const alternativeStaffLoading = ref(false)
 const alternativeStaffReason = ref('')
 const alternativeStaffList = ref<AlternativeStaffItem[]>([])
 const alternativeStaffQuerying = ref(false)
+const activeCertificate = ref<StaffCertificateItem | null>(null)
 const regionTree = ref<any[]>([])
 const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
 const tempRegion = ref(normalizeServiceRegion(selectedRegion.value))
@@ -765,6 +910,8 @@ const reviewStats = ref({
     avg_score: '5.0',
     good_rate: 100
 })
+const detailImageFallbackMap = ref<Record<string, string>>({})
+const detailImageFallback = '/static/images/user/default_avatar.png'
 
 const getTomorrowDate = () => {
     const tomorrow = new Date()
@@ -814,6 +961,48 @@ const normalizeSelectedDateText = (value = '') => {
         return ''
     }
     return formatDateText(parseDateText(value) as Date)
+}
+
+const getDetailResourceKey = (section: string, identifier: unknown) =>
+    `${section}:${String(identifier ?? '')}`
+
+const resolveDetailImageSrc = (section: string, src: unknown, identifier?: unknown) => {
+    const resourceKey = getDetailResourceKey(section, identifier ?? src)
+    const text = String(src || '').trim()
+    return detailImageFallbackMap.value[resourceKey] || text || detailImageFallback
+}
+
+const logDetailResourceError = (section: string, src: unknown, error: any) => {
+    if (!isDevMode()) {
+        return
+    }
+
+    console.warn('人员详情资源加载失败', {
+        section,
+        staffId: staffId.value,
+        src: String(src || ''),
+        error: error?.detail || error || null
+    })
+}
+
+const handleDetailImageError = (
+    section: string,
+    src: unknown,
+    identifier: unknown,
+    error: any
+) => {
+    logDetailResourceError(section, src, error)
+    const source = String(src || '').trim()
+    const resourceKey = getDetailResourceKey(section, identifier ?? source)
+    if (!source || source === detailImageFallback || detailImageFallbackMap.value[resourceKey]) {
+        return
+    }
+
+    detailImageFallbackMap.value[resourceKey] = detailImageFallback
+}
+
+const resetDetailImageFallbacks = () => {
+    detailImageFallbackMap.value = {}
 }
 
 const getEffectiveSelectableDate = (value = '') => {
@@ -915,6 +1104,12 @@ const regionDistricts = computed(() => {
 const displayTagList = computed(() => {
     const tags = Array.isArray(staffInfo.value?.tags) ? staffInfo.value.tags : []
     return tags.map((item: any) => String(item || '').trim()).filter((item: string) => item)
+})
+const displayCertificates = computed(() => {
+    const certificates = Array.isArray(staffInfo.value?.certificates)
+        ? (staffInfo.value.certificates as StaffCertificateItem[])
+        : []
+    return certificates.filter((item: any) => String(item?.image || '').trim())
 })
 const hasLongDetail = computed(() => hasLongDetailContent(staffInfo.value?.long_detail))
 const statusBadgeList = computed(() => {
@@ -1076,6 +1271,12 @@ watch(currentTab, (newTab) => {
     }
 })
 
+watch(showCertificatePopup, (visible) => {
+    if (!visible) {
+        activeCertificate.value = null
+    }
+})
+
 // 获取详情
 const getDetail = async () => {
     try {
@@ -1086,6 +1287,7 @@ const getDetail = async () => {
         Object.assign(params, toServiceRegionParams(selectedRegion.value))
 
         const data = await getStaffDetail(params)
+        resetDetailImageFallbacks()
         staffInfo.value = data
         syncSelectedPackage()
 
@@ -1466,6 +1668,31 @@ const ensureBookingLogin = (message = '请先登录后预约') => {
     return false
 }
 
+const promptWaitlistSubscribe = async () => {
+    if (client !== ClientEnum.MP_WEIXIN) {
+        return true
+    }
+
+    const result = await uni.showModal({
+        title: '接收候补结果提醒',
+        content: '订阅后可在档期释放或候补失效时及时收到微信提醒，避免错过可预约时机。',
+        confirmText: '去订阅',
+        cancelText: '暂不订阅'
+    })
+
+    if (!result.confirm) {
+        return false
+    }
+
+    try {
+        await subscribeWaitlistScenes()
+    } catch (error) {
+        console.error('请求候补订阅失败', error)
+    }
+
+    return true
+}
+
 const fetchAlternativeStaffList = async () => {
     if (!currentCategoryId.value || !presetDate.value || !hasSelectedRegion.value) {
         alternativeStaffList.value = []
@@ -1540,6 +1767,7 @@ const handleAlternativeJoinWaitlist = async () => {
 
     alternativeStaffQuerying.value = true
     try {
+        await promptWaitlistSubscribe()
         await joinWaitlist({
             staff_id: staffId.value,
             date: presetDate.value,
@@ -1618,10 +1846,53 @@ const goWorkDetail = (work: any) => {
     })
 }
 
-// 预览证书
-const previewCert = (url: string) => {
+const formatCertificateField = (value: unknown, fallback = '暂无') => {
+    const text = String(value ?? '').trim()
+    return text || fallback
+}
+
+const getCertificateSerialNumber = (certificate: StaffCertificateItem | null) => {
+    return formatCertificateField(certificate?.sn || certificate?.certificate_no)
+}
+
+const getCertificateValidityText = (certificate: StaffCertificateItem | null) => {
+    const expireDate = String(certificate?.expire_date || '').trim()
+    return expireDate || '长期有效'
+}
+
+const getCertificateStatusText = (certificate: StaffCertificateItem | null) => {
+    const statusText = String(
+        certificate?.verify_status_desc || certificate?.audit_status_desc || ''
+    ).trim()
+    if (statusText) {
+        return statusText
+    }
+    if (Number(certificate?.is_expired || 0) === 1 || certificate?.is_expired === true) {
+        return '已过期'
+    }
+    return '有效中'
+}
+
+const openCertificatePopup = (certificate: StaffCertificateItem) => {
+    if (!certificate) {
+        return
+    }
+    activeCertificate.value = certificate
+    showCertificatePopup.value = true
+}
+
+const closeCertificatePopup = () => {
+    showCertificatePopup.value = false
+}
+
+const previewCertificateImage = (url: string) => {
+    const imageUrl = String(url || '').trim()
+    if (!imageUrl) {
+        return
+    }
     uni.previewImage({
-        urls: [url]
+        urls: [imageUrl],
+        current: imageUrl
     })
 }
 
@@ -1725,10 +1996,16 @@ onShow(async () => {
     $theme.setScene('consumer')
     // 微信分享直达时隐藏原生“返回首页”按钮
     // #ifdef MP-WEIXIN
-    try {
-        uni.hideHomeButton()
-    } catch (error) {
-        console.warn('隐藏首页按钮失败：', error)
+    if (isShareEntry.value) {
+        const hideHomeButtonTask = uni.hideHomeButton() as unknown
+        if (
+            hideHomeButtonTask &&
+            typeof (hideHomeButtonTask as Promise<unknown>).catch === 'function'
+        ) {
+            ;(hideHomeButtonTask as Promise<unknown>).catch((error: unknown) => {
+                console.warn('隐藏首页按钮失败：', error)
+            })
+        }
     }
     // #endif
 
@@ -2785,6 +3062,115 @@ onShareTimeline(() => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.certificate-popup {
+    display: flex;
+    flex-direction: column;
+    gap: 22rpx;
+    padding: 28rpx 28rpx 34rpx;
+    background: linear-gradient(180deg, #fffaf7 0%, #f7efea 100%);
+}
+
+.certificate-popup__header {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+}
+
+.certificate-popup__badge {
+    display: inline-flex;
+    align-self: flex-start;
+    padding: 10rpx 18rpx;
+    border-radius: 999rpx;
+    background: rgba(232, 90, 79, 0.1);
+}
+
+.certificate-popup__badge-text {
+    font-size: 22rpx;
+    line-height: 1.2;
+    font-weight: 600;
+    color: #c66d5d;
+}
+
+.certificate-popup__title {
+    font-size: 34rpx;
+    line-height: 1.35;
+    font-weight: 700;
+    color: #1e2432;
+}
+
+.certificate-popup__desc {
+    font-size: 24rpx;
+    line-height: 1.6;
+    color: #8d837d;
+}
+
+.certificate-popup__image {
+    width: 100%;
+    height: 360rpx;
+    border-radius: 40rpx;
+    background: #f4efec;
+    box-shadow: 0 14rpx 32rpx rgba(175, 152, 141, 0.14);
+}
+
+.certificate-popup__meta-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+}
+
+.certificate-popup__meta-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24rpx;
+    padding: 22rpx 24rpx;
+    border-radius: 30rpx;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1rpx solid rgba(239, 230, 225, 0.96);
+}
+
+.certificate-popup__meta-label {
+    flex-shrink: 0;
+    font-size: 24rpx;
+    line-height: 1.5;
+    color: #938d89;
+}
+
+.certificate-popup__meta-value {
+    flex: 1;
+    min-width: 0;
+    font-size: 25rpx;
+    line-height: 1.6;
+    font-weight: 600;
+    color: #1e2432;
+    text-align: right;
+    word-break: break-all;
+}
+
+.certificate-popup__meta-value--status {
+    color: #c66d5d;
+}
+
+.certificate-popup__actions {
+    padding-top: 6rpx;
+}
+
+.certificate-popup__btn {
+    min-height: 88rpx;
+    border-radius: 999rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.18);
+}
+
+.certificate-popup__btn-text {
+    font-size: 28rpx;
+    line-height: 1.2;
+    font-weight: 600;
+    color: #ffffff;
 }
 
 .empty-card {

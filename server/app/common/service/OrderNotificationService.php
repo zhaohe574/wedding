@@ -1180,6 +1180,8 @@ class OrderNotificationService
             StationNotificationService::TARGET_ORDER_DETAIL,
             (int)$refund->order_id
         );
+
+        self::sendRefundResultSubscribeNotice($refund, '审核未通过', $remark);
     }
 
     /**
@@ -1212,6 +1214,8 @@ class OrderNotificationService
             StationNotificationService::TARGET_ORDER_DETAIL,
             (int)$refund->order_id
         );
+
+        self::sendRefundResultSubscribeNotice($refund, '退款失败', $message);
     }
 
     /**
@@ -1240,6 +1244,8 @@ class OrderNotificationService
             );
         }
 
+        self::sendRefundResultSubscribeNotice($refund, '退款成功');
+
         self::sendStaffOrderNotice((int)$refund->order_id, '订单退款已完成', $content, (string)$refund->refund_sn);
     }
 
@@ -1261,6 +1267,8 @@ class OrderNotificationService
             StationNotificationService::TARGET_TICKET_DETAIL,
             $ticketId
         );
+
+        self::sendTicketUpdateSubscribeNotice($ticket, '工单已创建', '我们会尽快为您处理。');
     }
 
     /**
@@ -1281,6 +1289,8 @@ class OrderNotificationService
             StationNotificationService::TARGET_TICKET_DETAIL,
             $ticketId
         );
+
+        self::sendTicketUpdateSubscribeNotice($ticket, '工单已受理', '处理人员正在跟进。');
     }
 
     /**
@@ -1300,6 +1310,12 @@ class OrderNotificationService
             sprintf('工单%s已处理完成，请确认处理结果。', (string)$ticket->ticket_sn),
             StationNotificationService::TARGET_TICKET_DETAIL,
             $ticketId
+        );
+
+        self::sendTicketUpdateSubscribeNotice(
+            $ticket,
+            '待确认',
+            trim((string) ($ticket->handle_result ?? '工单已处理完成，请确认处理结果。'))
         );
     }
 
@@ -1326,6 +1342,8 @@ class OrderNotificationService
             StationNotificationService::TARGET_TICKET_DETAIL,
             $ticketId
         );
+
+        self::sendTicketUpdateSubscribeNotice($ticket, '工单已关闭', $reason !== '' ? $reason : '工单已关闭。');
     }
 
     /**
@@ -1346,6 +1364,66 @@ class OrderNotificationService
             StationNotificationService::TARGET_TICKET_DETAIL,
             $ticketId
         );
+
+        self::sendTicketUpdateSubscribeNotice($ticket, '工单已完成', '感谢您的确认。');
+    }
+
+    /**
+     * 发送退款结果订阅消息。
+     */
+    private static function sendRefundResultSubscribeNotice(Refund $refund, string $statusText, string $reason = ''): void
+    {
+        if ((int) $refund->user_id <= 0) {
+            return;
+        }
+
+        $order = Order::find((int) $refund->order_id);
+
+        try {
+            $result = SubscribeMessageService::sendRefundResultNotice(
+                (int) $refund->user_id,
+                [
+                    'refund_id' => (int) $refund->id,
+                    'order_id' => (int) $refund->order_id,
+                    'order_sn' => (string) ($order->order_sn ?? $refund->refund_sn ?? $refund->order_id),
+                    'refund_amount' => number_format((float) ($refund->actual_refund_amount ?: $refund->refund_amount), 2, '.', ''),
+                    'status_text' => $statusText,
+                    'reason' => trim($reason) !== '' ? trim($reason) : trim((string) ($refund->refund_reason ?? '')),
+                ]
+            );
+            if (!$result['success']) {
+                Log::info('退款结果订阅消息未发送：' . ($result['msg'] ?? '未知原因'));
+            }
+        } catch (\Throwable $e) {
+            Log::error('退款结果订阅消息发送失败：' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 发送工单状态更新订阅消息。
+     */
+    private static function sendTicketUpdateSubscribeNotice(AfterSaleTicket $ticket, string $statusText, string $handleNote = ''): void
+    {
+        if ((int) $ticket->user_id <= 0) {
+            return;
+        }
+
+        try {
+            $result = SubscribeMessageService::sendTicketUpdateNotice(
+                (int) $ticket->user_id,
+                [
+                    'ticket_id' => (int) $ticket->id,
+                    'ticket_sn' => (string) ($ticket->ticket_sn ?? ''),
+                    'status_text' => $statusText,
+                    'handle_note' => trim($handleNote) !== '' ? trim($handleNote) : '工单状态已更新',
+                ]
+            );
+            if (!$result['success']) {
+                Log::info('工单更新订阅消息未发送：' . ($result['msg'] ?? '未知原因'));
+            }
+        } catch (\Throwable $e) {
+            Log::error('工单更新订阅消息发送失败：' . $e->getMessage());
+        }
     }
 
     /**

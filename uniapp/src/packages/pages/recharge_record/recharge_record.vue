@@ -37,8 +37,8 @@
 import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { ref, shallowRef } from 'vue'
-import { rechargeRecord } from '@/api/recharge'
-import { useFixedNavbarPagingStyle } from '@/hooks/useFixedNavbarPagingStyle'
+import { rechargeRecord } from '@/packages/common/api/recharge'
+import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 
 const paging = shallowRef()
 const dataList = ref<any[]>([])

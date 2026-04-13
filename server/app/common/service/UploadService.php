@@ -36,6 +36,8 @@ class UploadService
      */
     public static function image($cid, int $sourceId = 0, int $source = FileEnum::SOURCE_ADMIN, string $saveDir = 'uploads/images')
     {
+        $optimizedUploadPath = '';
+        $shouldCleanupOptimizedFile = false;
         try {
             $config = [
                 'default' => ConfigService::get('storage', 'default', 'local'),
@@ -45,13 +47,22 @@ class UploadService
             // 2、执行文件上传
             $StorageDriver = new StorageDriver($config);
             $StorageDriver->setUploadFile('file');
-            $fileName = $StorageDriver->getFileName();
-            $fileInfo = $StorageDriver->getFileInfo();
+            $originalFileInfo = $StorageDriver->getFileInfo();
+            $fileInfo = $originalFileInfo;
 
             // 校验上传文件后缀
             if (!in_array(strtolower($fileInfo['ext']), config('project.file_image'))) {
                 throw new Exception("上传图片不允许上传". $fileInfo['ext'] . "文件");
             }
+
+            MobileImageService::guardUploadSize($fileInfo);
+            $preparedUpload = MobileImageService::prepareUploadFile($fileInfo);
+            $optimizedUploadPath = (string) ($preparedUpload['path'] ?? '');
+            $shouldCleanupOptimizedFile = (bool) ($preparedUpload['cleanup'] ?? false);
+            if ($shouldCleanupOptimizedFile && $optimizedUploadPath !== '') {
+                $StorageDriver->setUploadFileByReal($optimizedUploadPath);
+            }
+            $fileName = $StorageDriver->getFileName();
 
             // 上传文件
             $saveDir = self::getUploadUrl($saveDir);
@@ -89,6 +100,10 @@ class UploadService
 
         } catch (Exception $e) {
             throw new Exception($e->getMessage());
+        } finally {
+            if ($shouldCleanupOptimizedFile && $optimizedUploadPath !== '' && is_file($optimizedUploadPath)) {
+                @unlink($optimizedUploadPath);
+            }
         }
     }
 

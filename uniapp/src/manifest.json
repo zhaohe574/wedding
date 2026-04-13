@@ -56,6 +56,9 @@
             "es6" : true,
             "minified" : true
         },
+        "optimization" : {
+            "subPackages" : true
+        },
         "__usePrivacyCheck__": true,
         "usingComponents" : true
     },

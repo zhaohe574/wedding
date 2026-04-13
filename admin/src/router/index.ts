@@ -57,6 +57,103 @@ const permissionAliasMap = [
     ['decorate.', 'experience.decorate.']
 ] as const
 
+interface BackendMenuRoute {
+    paths: string
+    name: string
+    component?: string
+    is_show: number | boolean
+    is_cache?: number | boolean
+    perms?: string
+    params?: string
+    icon?: string
+    type: number
+    selected?: string
+    children?: BackendMenuRoute[]
+}
+
+const staffCenterTitleMap: Record<string, string> = {
+    'staff_center/profile/index': '基本资料',
+    'staff_center/showcase/index': '服务展示',
+    'staff_center/package/index': '专属套餐',
+    'staff_center/order/index': '履约订单',
+    'staff_center/dynamic/index': '内容发布',
+    'staff_center/calendar/index': '我的档期',
+    'staff_center/booking/index': '预约确认',
+}
+
+const replaceLastPathSegment = (path: string, target: string) => {
+    const segments = String(path || '')
+        .split('/')
+        .filter(Boolean)
+    if (!segments.length) {
+        return target
+    }
+    segments[segments.length - 1] = target
+    return segments.join('/')
+}
+
+const createStaffCenterSiblingRoute = (
+    baseRoute: BackendMenuRoute,
+    target: { component: string; name: string; path: string; perms: string },
+): BackendMenuRoute => ({
+    ...baseRoute,
+    name: target.name,
+    component: target.component,
+    paths: replaceLastPathSegment(baseRoute.paths, target.path),
+    perms: target.perms,
+    is_show: 1,
+})
+
+function normalizeStaffCenterMenus(routes: BackendMenuRoute[]): BackendMenuRoute[] {
+    return routes.map((route) => {
+        const normalized: BackendMenuRoute = {
+            ...route,
+            name: route.component ? staffCenterTitleMap[route.component] || route.name : route.name,
+        }
+
+        if (normalized.component === 'staff_center/booking/index') {
+            normalized.is_show = 0
+        }
+
+        if (Array.isArray(route.children) && route.children.length) {
+            const nextChildren = normalizeStaffCenterMenus(route.children)
+            const profileIndex = nextChildren.findIndex((item) => item.component === 'staff_center/profile/index')
+
+            if (profileIndex >= 0) {
+                const profileRoute = nextChildren[profileIndex]
+                const showcaseRoute = createStaffCenterSiblingRoute(profileRoute, {
+                    component: 'staff_center/showcase/index',
+                    name: '服务展示',
+                    path: 'showcase',
+                    perms: 'ops.staff/myProfile',
+                })
+                const packageRoute = createStaffCenterSiblingRoute(profileRoute, {
+                    component: 'staff_center/package/index',
+                    name: '专属套餐',
+                    path: 'package',
+                    perms: 'ops.staff/myProfilePackageConfig',
+                })
+
+                const upsertChild = (child: BackendMenuRoute, preferredIndex: number) => {
+                    const existingIndex = nextChildren.findIndex((item) => item.component === child.component)
+                    if (existingIndex >= 0) {
+                        nextChildren.splice(existingIndex, 1, child)
+                        return
+                    }
+                    nextChildren.splice(preferredIndex, 0, child)
+                }
+
+                upsertChild(showcaseRoute, profileIndex + 1)
+                upsertChild(packageRoute, profileIndex + 2)
+            }
+
+            normalized.children = nextChildren
+        }
+
+        return normalized
+    })
+}
+
 //
 export function getModulesKey() {
     return Object.keys(modules).map((item) => item.replace('/src/views/', '').replace('.vue', ''))
@@ -64,7 +161,8 @@ export function getModulesKey() {
 
 // 过滤路由所需要的数据
 export function filterAsyncRoutes(routes: any[], firstRoute = true) {
-    return routes.map((route) => {
+    const normalizedRoutes = normalizeStaffCenterMenus(routes as BackendMenuRoute[])
+    return normalizedRoutes.map((route) => {
         const routeRecord = createRouteRecord(route, firstRoute)
         if (route.children != null && route.children && route.children.length) {
             routeRecord.children = filterAsyncRoutes(route.children, false)

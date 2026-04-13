@@ -191,7 +191,7 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
-import { ensureStaffCenterAccess } from '@/utils/staff-center'
+import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 
 const $theme = useThemeStore()
 const saving = ref(false)

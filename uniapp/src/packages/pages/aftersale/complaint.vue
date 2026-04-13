@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { getComplaintLists } from '@/api/aftersale'
+import { getComplaintLists } from '@/packages/common/api/aftersale'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'

@@ -37,14 +37,15 @@ class StaffCertificateController extends BaseAdminController
     public function detail()
     {
         $params = (new StaffCertificateValidate())->goCheck('detail');
+        $certificateId = (int) $params['id'];
         $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
         if ($staffScopeId > 0) {
-            $staffId = (int) StaffCertificate::where('id', $params['id'])->value('staff_id');
+            $staffId = (int) StaffCertificate::where('id', $certificateId)->value('staff_id');
             if ($staffId !== $staffScopeId) {
                 return $this->fail('无权限查看');
             }
         }
-        $result = StaffCertificateLogic::detail($params['id']);
+        $result = StaffCertificateLogic::detail($certificateId);
         return $this->data($result);
     }
 
@@ -114,7 +115,10 @@ class StaffCertificateController extends BaseAdminController
         $params = (new StaffCertificateValidate())->post()->goCheck('audit');
         $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
         if ($staffScopeId > 0) {
-            return $this->fail('无权限操作');
+            $staffId = (int) StaffCertificate::where('id', $params['id'])->value('staff_id');
+            if ($staffId !== $staffScopeId) {
+                return $this->fail('无权限操作');
+            }
         }
         $result = StaffCertificateLogic::audit($params);
         if (true === $result) {

@@ -1,5 +1,5 @@
 <template>
-    <admin-page-shell class="staff-center-order" title="我的订单">
+    <admin-page-shell class="staff-center-order" title="履约订单">
         <search-panel>
             <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item class="w-[180px]" label="订单编号">
@@ -49,9 +49,18 @@
                 <el-form-item>
                     <el-button type="primary" @click="resetPage">查询</el-button>
                     <el-button @click="resetParams">重置</el-button>
+                    <el-button type="primary" plain @click="goToBookings">待确认预约项</el-button>
                 </el-form-item>
             </el-form>
         </search-panel>
+
+        <el-alert
+            class="mt-4"
+            title="这里聚焦履约动作与订单进度。退款、线下收款、凭证审核等整单支付处理已收回运营域，不再作为服务人员自助操作。"
+            type="info"
+            :closable="false"
+            show-icon
+        />
 
         <div class="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
             <el-card class="!border-none" shadow="never">
@@ -211,7 +220,7 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="创建时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="430" fixed="right">
+                <el-table-column label="操作" width="220" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
                         <el-button
@@ -228,14 +237,6 @@
                         <el-button v-if="row.order_status === 3" type="success" link @click="handleComplete(row)">
                             完成
                         </el-button>
-                        <el-button v-if="canAuditVoucher(row)" type="warning" link @click="handleAuditVoucher(row)">
-                            审核凭证
-                        </el-button>
-                        <el-button v-if="canConfirmOfflinePay(row)" type="success" link @click="handleConfirmOfflinePay(row)">
-                            确认线下收款
-                        </el-button>
-                        <el-button v-if="row.can_admin_refund" type="danger" link @click="handleRefund(row)">退款</el-button>
-                        <el-button v-if="row.can_staff_manage_payment !== false && row.order_status <= 1" type="danger" link @click="handleCancel(row)">取消</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -294,10 +295,7 @@
                     <el-descriptions-item label="管理备注" :span="2">{{ currentOrder.admin_remark || '-' }}</el-descriptions-item>
                 </el-descriptions>
 
-                <div v-if="currentOrder.can_admin_refund" class="mt-4 flex justify-end">
-                    <el-button type="danger" plain @click="handleRefund(currentOrder)">发起退款</el-button>
-                </div>
-                <div v-else-if="currentOrder.can_staff_manage_payment === false" class="mt-4 text-sm text-gray-400">
+                <div class="mt-4 text-sm text-gray-400">
                     当前订单按服务人员履约视角展示；退款、线下收款、凭证审核等整单支付操作统一由管理员处理。
                 </div>
 
@@ -443,111 +441,24 @@
             </div>
         </el-dialog>
 
-        <el-dialog v-model="auditVisible" title="线下凭证审核" width="520px">
-            <el-form :model="auditForm" label-width="100px">
-                <el-form-item label="订单编号"><span>{{ auditForm.order_sn || '-' }}</span></el-form-item>
-                <el-form-item label="支付金额"><span>¥{{ auditForm.pay_amount }}</span></el-form-item>
-                <el-form-item label="支付凭证">
-                    <el-image v-if="auditForm.voucher" :src="auditForm.voucher" fit="contain" style="width: 100%; max-height: 260px" />
-                    <span v-else>未上传</span>
-                </el-form-item>
-                <el-form-item label="审核备注">
-                    <el-input v-model="auditForm.remark" type="textarea" :rows="3" placeholder="可填写拒绝原因或备注" />
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="auditVisible = false">取消</el-button>
-                <el-button type="danger" @click="submitAudit(0)">拒绝</el-button>
-                <el-button type="primary" @click="submitAudit(1)">通过</el-button>
-            </template>
-        </el-dialog>
-
-        <el-dialog v-model="confirmPayVisible" title="确认线下收款" width="520px">
-            <el-form :model="confirmPayForm" label-width="100px">
-                <el-form-item label="订单编号"><span>{{ confirmPayForm.order_sn || '-' }}</span></el-form-item>
-                <el-form-item label="支付阶段"><span>{{ confirmPayForm.pay_label || '-' }}</span></el-form-item>
-                <el-form-item label="支付金额">
-                    <el-input-number v-model="confirmPayForm.pay_amount" :min="0.01" :precision="2" class="w-full" />
-                </el-form-item>
-                <el-form-item label="说明">
-                    <span class="text-gray-500">确认后订单会按线下收款处理，并进入待服务状态或下一支付阶段。</span>
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="confirmPayVisible = false">取消</el-button>
-                <el-button type="primary" @click="submitConfirmOfflinePay">确认收款</el-button>
-            </template>
-        </el-dialog>
-
-        <el-dialog v-model="cancelVisible" title="取消订单" width="500px">
-            <el-form :model="cancelForm" label-width="100px">
-                <el-form-item label="取消原因">
-                    <el-input v-model="cancelForm.reason" type="textarea" :rows="3" placeholder="请输入取消原因" />
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="cancelVisible = false">取消</el-button>
-                <el-button type="danger" @click="submitCancel">确认取消</el-button>
-            </template>
-        </el-dialog>
-
-        <el-dialog v-model="refundVisible" title="订单退款" width="560px">
-            <el-form :model="refundForm" label-width="110px">
-                <el-form-item label="订单编号">
-                    <span>{{ refundForm.order_sn || '-' }}</span>
-                </el-form-item>
-                <el-form-item label="退款模式">
-                    <el-radio-group v-model="refundForm.mode">
-                        <el-radio-button label="full">全部退款</el-radio-button>
-                        <el-radio-button label="partial">部分退款</el-radio-button>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item label="最大可退">
-                    <span class="font-medium text-red-500">¥{{ formatAmount(refundForm.refundable_amount) }}</span>
-                </el-form-item>
-                <el-form-item label="退款金额">
-                    <el-input-number
-                        v-model="refundForm.refund_amount"
-                        :min="0.01"
-                        :max="refundAmountInputMax"
-                        :precision="2"
-                        :disabled="refundForm.mode === 'full'"
-                        class="w-full"
-                    />
-                </el-form-item>
-                <el-form-item label="退款说明">
-                    <el-input v-model="refundForm.reason" type="textarea" :rows="3" maxlength="255" show-word-limit placeholder="请输入退款原因，可选" />
-                </el-form-item>
-                <el-form-item label="处理提示">
-                    <div class="text-sm leading-6 text-gray-500">{{ refundHintText }}</div>
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="refundVisible = false">取消</el-button>
-                <el-button type="danger" :loading="refundSubmitting" @click="submitRefundApply">确认退款</el-button>
-            </template>
-        </el-dialog>
     </admin-page-shell>
 </template>
 
 <script setup lang="ts" name="staffCenterOrder">
 import { computed, onActivated, onDeactivated, onUnmounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
 import {
     myOrderConfirm,
     myOrderComplete,
+    myOrderDetail,
     myOrders,
     myOrderStartService,
     myOrderStatistics
 } from '@/api/staff-center'
-import {
-    orderAuditVoucher,
-    orderCancel,
-    orderConfirmOfflinePay,
-    orderDetail,
-    refundApply
-} from '@/api/order'
+
+const router = useRouter()
 
 const queryParams = reactive({
     order_sn: '',
@@ -574,38 +485,6 @@ const createTimeRange = computed<string[]>({
 const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentOrder = ref<any>(null)
-const auditVisible = ref(false)
-const auditForm = reactive({
-    id: 0,
-    order_sn: '',
-    pay_amount: 0,
-    voucher: '',
-    remark: ''
-})
-const confirmPayVisible = ref(false)
-const confirmPayForm = reactive({
-    id: 0,
-    order_sn: '',
-    pay_type: 3,
-    pay_amount: 0,
-    pay_label: '全款'
-})
-const cancelVisible = ref(false)
-const cancelForm = reactive({
-    id: 0,
-    reason: ''
-})
-const refundVisible = ref(false)
-const refundSubmitting = ref(false)
-const refundForm = reactive({
-    order_id: 0,
-    order_sn: '',
-    order_status: 0,
-    mode: 'full' as 'full' | 'partial',
-    refundable_amount: 0,
-    refund_amount: 0,
-    reason: ''
-})
 const countdownNowTs = ref(Date.now())
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let countdownRefreshing = false
@@ -707,16 +586,6 @@ const getDisplayPaidAmount = (order: any) => {
     return Number(order?.paid_amount ?? 0).toFixed(2)
 }
 
-const refundAmountInputMax = computed(() => Number(refundForm.refundable_amount || 0))
-
-const refundHintText = computed(() => {
-    if (refundForm.mode === 'partial') {
-        return '部分退款会保留剩余已付金额，订单后续可继续按业务流程处理。'
-    }
-
-    return '全部退款会按当前订单的最大可退金额发起退款。'
-})
-
 const formatAmount = (amount: number | string | undefined) => {
     return Number(amount ?? 0).toFixed(2)
 }
@@ -794,7 +663,7 @@ const refreshCountdownDrivenData = async () => {
     try {
         await Promise.all([getLists(), getStatistics()])
         if (detailVisible.value && Number(currentOrder.value?.id || 0) > 0) {
-            currentOrder.value = await orderDetail({ id: currentOrder.value.id })
+            currentOrder.value = await myOrderDetail({ id: currentOrder.value.id })
         }
     } finally {
         countdownRefreshing = false
@@ -844,19 +713,6 @@ const getPayRemainText = (row: any) => {
     if (Number(row?.pay_deadline_time || 0) <= 0) return '-'
     return formatCountdown(getLiveRemainSeconds(row, 'pay_deadline_time', '__payExpireAt'))
 }
-
-const canAuditVoucher = (row: any) =>
-    row?.can_staff_manage_payment !== false &&
-    Number(row?.order_status || 0) === 1 &&
-    Number(row?.payment_channel || 1) === 2 &&
-    !!row?.pay_voucher &&
-    Number(row?.pay_voucher_status) === 0
-
-const canConfirmOfflinePay = (row: any) =>
-    row?.can_staff_manage_payment !== false &&
-    Number(row?.order_status || 0) === 1 &&
-    Number(row?.payment_channel || 1) === 2 &&
-    !(row?.pay_voucher && Number(row?.pay_voucher_status) === 0)
 
 const isMaskedItem = (item: any) => {
     return item?.package_name === '--'
@@ -1034,7 +890,7 @@ const currentServiceSummaryText = computed(() => {
 
 const openOrderDetail = async (id: number) => {
     if (!id) return
-    currentOrder.value = await orderDetail({ id })
+    currentOrder.value = await myOrderDetail({ id })
     detailVisible.value = true
 }
 
@@ -1050,47 +906,7 @@ const handleConfirm = async (row: any) => {
     getStatistics()
 }
 
-const handleAuditVoucher = (row: any) => {
-    auditForm.id = Number(row.id || 0)
-    auditForm.order_sn = row.order_sn || ''
-    auditForm.pay_amount = Number(row.need_pay_amount || row.pay_amount || 0)
-    auditForm.voucher = row.pay_voucher || ''
-    auditForm.remark = ''
-    auditVisible.value = true
-}
-
-const handleConfirmOfflinePay = (row: any) => {
-    confirmPayForm.id = Number(row.id || 0)
-    confirmPayForm.order_sn = row.order_sn || ''
-    confirmPayForm.pay_type = row.need_pay === 'deposit' ? 1 : row.need_pay === 'balance' ? 2 : 3
-    confirmPayForm.pay_amount = Number(row.need_pay_amount || row.pay_amount || 0)
-    confirmPayForm.pay_label = row.need_pay === 'deposit' ? '定金' : row.need_pay === 'balance' ? '尾款' : '全款'
-    confirmPayVisible.value = true
-}
-
-const submitAudit = async (approved: number) => {
-    await orderAuditVoucher({ id: auditForm.id, approved, remark: auditForm.remark })
-    feedback.msgSuccess('操作成功')
-    auditVisible.value = false
-    await Promise.all([getLists(), getStatistics()])
-    if (detailVisible.value && Number(currentOrder.value?.id || 0) === Number(auditForm.id || 0)) {
-        await openOrderDetail(Number(auditForm.id || 0))
-    }
-}
-
-const submitConfirmOfflinePay = async () => {
-    await orderConfirmOfflinePay({
-        id: confirmPayForm.id,
-        pay_type: confirmPayForm.pay_type,
-        pay_amount: Number(confirmPayForm.pay_amount || 0)
-    })
-    feedback.msgSuccess('线下收款已确认')
-    confirmPayVisible.value = false
-    await Promise.all([getLists(), getStatistics()])
-    if (detailVisible.value && Number(currentOrder.value?.id || 0) === Number(confirmPayForm.id || 0)) {
-        await openOrderDetail(Number(confirmPayForm.id || 0))
-    }
-}
+const goToBookings = () => router.push('/staff_center/booking')
 
 const handleStartService = async (row: any) => {
     await feedback.confirm('确定要开始服务吗？')
@@ -1106,72 +922,6 @@ const handleComplete = async (row: any) => {
     feedback.msgSuccess('操作成功')
     getLists()
     getStatistics()
-}
-
-const handleRefund = (row: any) => {
-    const refundableAmount = Number(row.refundable_amount || 0)
-    refundForm.order_id = Number(row.id || row.order_id || 0)
-    refundForm.order_sn = row.order_sn || ''
-    refundForm.order_status = Number(row.order_status || 0)
-    refundForm.mode = 'full'
-    refundForm.refundable_amount = refundableAmount
-    refundForm.refund_amount = refundableAmount
-    refundForm.reason = ''
-    refundVisible.value = true
-}
-
-const submitRefundApply = async () => {
-    const maxAmount = Number(refundForm.refundable_amount || 0)
-    const refundAmount = Number((refundForm.mode === 'full' ? refundForm.refundable_amount : refundForm.refund_amount) || 0)
-    if (maxAmount <= 0) {
-        feedback.msgError('当前订单暂无可退金额')
-        return
-    }
-    if (refundAmount <= 0) {
-        feedback.msgError('退款金额必须大于0')
-        return
-    }
-    if (refundAmount > maxAmount) {
-        feedback.msgError('退款金额不能超过最大可退金额')
-        return
-    }
-    if (refundForm.mode === 'partial' && refundAmount >= maxAmount) {
-        feedback.msgError('部分退款金额必须小于最大可退金额')
-        return
-    }
-
-    refundSubmitting.value = true
-    try {
-        await refundApply({
-            order_id: refundForm.order_id,
-            refund_amount: refundAmount,
-            reason: refundForm.reason.trim()
-        })
-        feedback.msgSuccess('退款申请成功')
-        refundVisible.value = false
-        await Promise.all([getLists(), getStatistics()])
-        if (detailVisible.value && Number(currentOrder.value?.id || 0) === Number(refundForm.order_id || 0)) {
-            await openOrderDetail(Number(refundForm.order_id || 0))
-        }
-    } finally {
-        refundSubmitting.value = false
-    }
-}
-
-const handleCancel = (row: any) => {
-    cancelForm.id = Number(row.id || 0)
-    cancelForm.reason = ''
-    cancelVisible.value = true
-}
-
-const submitCancel = async () => {
-    await orderCancel(cancelForm)
-    feedback.msgSuccess('订单已取消')
-    cancelVisible.value = false
-    await Promise.all([getLists(), getStatistics()])
-    if (detailVisible.value && Number(currentOrder.value?.id || 0) === Number(cancelForm.id || 0)) {
-        await openOrderDetail(Number(cancelForm.id || 0))
-    }
 }
 
 onActivated(() => {
@@ -1204,22 +954,6 @@ watch(
         startCountdownTimer()
     },
     { deep: false }
-)
-
-watch(
-    () => refundForm.mode,
-    (mode) => {
-        if (mode === 'full') {
-            refundForm.refund_amount = Number(refundForm.refundable_amount || 0)
-            return
-        }
-
-        if (Number(refundForm.refund_amount || 0) >= Number(refundForm.refundable_amount || 0)) {
-            refundForm.refund_amount = Number(
-                Math.max(Number(refundForm.refundable_amount || 0) - 0.01, 0.01).toFixed(2)
-            )
-        }
-    }
 )
 
 getLists()

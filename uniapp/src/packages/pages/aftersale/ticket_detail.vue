@@ -141,7 +141,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { cancelTicket, confirmComplete, getTicketDetail } from '@/api/aftersale'
+import { cancelTicket, confirmComplete, getTicketDetail } from '@/packages/common/api/aftersale'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'

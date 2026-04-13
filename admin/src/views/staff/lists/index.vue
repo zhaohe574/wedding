@@ -160,7 +160,8 @@ import { useRouter } from 'vue-router'
 
 // 新增/编辑页路径：优先从权限路由获取，若无对应菜单则兜底（需执行 015_add_staff_add_edit_menu.sql）
 const staffEditPath = computed(() => getRoutePath('ops.staff/add:edit') || '/service/staff/edit')
-const certificateListPath = computed(() => getRoutePath('ops.staffCertificate/lists') || '/staff/certificate')
+// 证书页路径：优先从权限路由获取，若菜单缓存未刷新则回退到约定路径
+const certificateListPath = computed(() => getRoutePath('ops.staffCertificate/lists') || '/service/certificate')
 const router = useRouter()
 
 const queryParams = reactive({

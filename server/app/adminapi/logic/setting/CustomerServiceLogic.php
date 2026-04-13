@@ -42,6 +42,10 @@ class CustomerServiceLogic extends BaseLogic
             'service_time' => ConfigService::get('customer_service', 'service_time', ''),
             'contact_link' => ConfigService::get('customer_service', 'contact_link', ''),
             'tips' => ConfigService::get('customer_service', 'tips', ''),
+            'wecom_enabled' => (int) ConfigService::get('customer_service', 'wecom_enabled', 0),
+            'wecom_corp_id' => ConfigService::get('customer_service', 'wecom_corp_id', ''),
+            'wecom_secret' => ConfigService::get('customer_service', 'wecom_secret', ''),
+            'wecom_agent_id' => (int) ConfigService::get('customer_service', 'wecom_agent_id', 0),
         ];
         return $config;
     }
@@ -54,11 +58,14 @@ class CustomerServiceLogic extends BaseLogic
      */
     public static function setConfig($params)
     {
-        $allowField = ['qr_code','wechat','phone','service_time','contact_link','tips'];
+        $allowField = ['qr_code','wechat','phone','service_time','contact_link','tips', 'wecom_enabled', 'wecom_corp_id', 'wecom_secret', 'wecom_agent_id'];
         foreach($params as $key => $value) {
             if(in_array($key, $allowField)) {
                 if ($key == 'qr_code') {
                     $value = FileService::setFileUrl($value);
+                }
+                if (in_array($key, ['wecom_enabled', 'wecom_agent_id'], true)) {
+                    $value = (int) $value;
                 }
                 ConfigService::set('customer_service', $key, $value);
             }

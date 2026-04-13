@@ -207,7 +207,7 @@
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getOrderDetail } from '@/api/order'
-import { applyDateChange, checkCanChange } from '@/api/orderChange'
+import { applyDateChange, checkCanChange } from '@/packages/common/api/orderChange'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'

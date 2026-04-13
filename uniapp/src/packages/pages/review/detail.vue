@@ -300,7 +300,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
-import { getReviewDetail, applyShareReward } from '@/api/review'
+import { getReviewDetail, applyShareReward } from '@/packages/common/api/review'
 import { uploadImage } from '@/api/app'
 import { useThemeStore } from '@/stores/theme'
 

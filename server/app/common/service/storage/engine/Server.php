@@ -65,14 +65,26 @@ abstract class Server
      */
     public function setUploadFileByReal($filePath)
     {
+        if (!is_string($filePath) || $filePath === '' || !is_file($filePath)) {
+            throw new Exception('未找到上传文件的信息');
+        }
+
         // 设置为系统内部上传
         $this->isInternal = true;
+        $this->file = null;
+        $realPath = realpath($filePath) ?: $filePath;
+        $ext = strtolower((string) pathinfo($realPath, PATHINFO_EXTENSION));
+        $mime = '';
+        if (function_exists('mime_content_type')) {
+            $mime = (string) mime_content_type($realPath);
+        }
         // 文件信息
         $this->fileInfo = [
-            'name' => basename($filePath),
-            'size' => filesize($filePath),
-            'tmp_name' => $filePath,
-            'error' => 0,
+            'ext' => $ext,
+            'size' => filesize($realPath),
+            'mime' => $mime,
+            'name' => basename($realPath),
+            'realPath' => $realPath,
         ];
         // 生成保存文件名
         $this->fileName = $this->buildSaveName();

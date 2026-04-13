@@ -18,7 +18,7 @@ class StaffCenterValidate extends BaseValidate
 {
     protected $rule = [
         'id' => 'require|integer|gt:0',
-        'name' => 'require|length:1,50',
+        'name' => 'max:100',
         'avatar' => 'max:255',
         'mobile' => 'mobile',
         'category_id' => 'integer|gt:0',
@@ -59,6 +59,14 @@ class StaffCenterValidate extends BaseValidate
 
         'date' => 'require|dateFormat:Y-m-d',
 
+        'type' => 'max:50',
+        'sn' => 'max:100',
+        'issue_org' => 'max:100',
+        'issue_date' => 'dateFormat:Y-m-d',
+        'expire_date' => 'dateFormat:Y-m-d',
+        'verify_status' => 'in:0,1,2',
+        'reject_reason' => 'max:255',
+
         'dynamic_type' => 'in:1,2',
         'allow_comment' => 'in:0,1',
         'letter_id' => 'require|integer|gt:0',
@@ -73,7 +81,7 @@ class StaffCenterValidate extends BaseValidate
         'id.integer' => '参数错误',
         'id.gt' => '参数错误',
         'name.require' => '请输入姓名',
-        'name.length' => '姓名长度为1-50个字符',
+        'name.max' => '名称长度不能超过100个字符',
         'mobile.mobile' => '手机号格式不正确',
         'category_id.integer' => '服务分类参数错误',
         'category_id.gt' => '请选择服务分类',
@@ -117,6 +125,14 @@ class StaffCenterValidate extends BaseValidate
         'date.require' => '请选择日期',
         'date.dateFormat' => '日期格式错误',
 
+        'type.max' => '证书类型最多50个字符',
+        'sn.max' => '证书编号最多100个字符',
+        'issue_org.max' => '发证机构最多100个字符',
+        'issue_date.dateFormat' => '发证日期格式错误',
+        'expire_date.dateFormat' => '有效期格式错误',
+        'verify_status.in' => '审核状态参数错误',
+        'reject_reason.max' => '拒绝原因长度不能超过255',
+
         'dynamic_type.in' => '动态类型参数错误',
         'content.require' => '请输入动态内容',
         'allow_comment.in' => '评论开关参数错误',
@@ -130,6 +146,7 @@ class StaffCenterValidate extends BaseValidate
     public function sceneProfile(): StaffCenterValidate
     {
         return $this->only(['name', 'avatar', 'mobile', 'category_id', 'experience_years', 'profile', 'service_desc', 'long_detail', 'tag_ids'])
+            ->append('name', 'require|length:1,50')
             ->append('category_id', 'require');
     }
 
@@ -138,6 +155,33 @@ class StaffCenterValidate extends BaseValidate
         return $this->only(['title', 'cover', 'images', 'video', 'description', 'shoot_date', 'location', 'sort', 'is_show'])
             ->append('title', 'require')
             ->append('cover', 'require');
+    }
+
+    public function sceneCertificateLists(): StaffCenterValidate
+    {
+        return $this->only(['verify_status', 'name', 'sn', 'page_no', 'page_size']);
+    }
+
+    public function sceneCertificateDetail(): StaffCenterValidate
+    {
+        return $this->only(['id']);
+    }
+
+    public function sceneCertificateAdd(): StaffCenterValidate
+    {
+        return $this->only(['name', 'type', 'sn', 'image', 'issue_org', 'issue_date', 'expire_date'])
+            ->append('name', 'require');
+    }
+
+    public function sceneCertificateEdit(): StaffCenterValidate
+    {
+        return $this->only(['id', 'name', 'type', 'sn', 'image', 'issue_org', 'issue_date', 'expire_date'])
+            ->append('name', 'require');
+    }
+
+    public function sceneCertificateDelete(): StaffCenterValidate
+    {
+        return $this->only(['id']);
     }
 
     public function sceneWorkLists(): StaffCenterValidate

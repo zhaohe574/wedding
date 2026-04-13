@@ -508,6 +508,24 @@
                 }
             },
             {
+                "path": "pages/staff_certificate_list/staff_certificate_list",
+                "style": {
+                    "navigationBarTitleText": "证书管理"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/staff_certificate_edit/staff_certificate_edit",
+                "style": {
+                    "navigationBarTitleText": "证书编辑"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
                 "path": "pages/staff_work_list/staff_work_list",
                 "style": {
                     "navigationBarTitleText": "作品管理"

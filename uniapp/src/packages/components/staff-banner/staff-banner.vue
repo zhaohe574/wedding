@@ -22,11 +22,12 @@
                     <!-- 图片 -->
                     <view v-if="item.type === 1" class="media-container">
                         <image
-                            :src="item.file_url"
+                            :src="resolveBannerImageSrc(index, 'image', item.file_url)"
                             mode="aspectFill"
                             class="banner-media"
                             @click="handleMediaClick(index)"
                             lazy-load
+                            @error="handleBannerImageError(index, 'image', item.file_url, $event)"
                         />
                     </view>
 
@@ -37,10 +38,10 @@
                         @click="handleMediaClick(index)"
                     >
                         <video
-                            v-if="currentIndex === index"
+                            v-if="currentIndex === index && !failedVideoMap[index]"
                             :id="`video-${index}`"
                             :src="item.file_url"
-                            :poster="item.cover_url"
+                            :poster="resolveBannerImageSrc(index, 'poster', item.cover_url)"
                             :autoplay="item.is_autoplay === 1"
                             :controls="true"
                             :show-center-play-btn="true"
@@ -50,12 +51,14 @@
                             @play="handleVideoPlay"
                             @ended="handleVideoEnded"
                             @pause="handleVideoPause"
+                            @error="handleBannerVideoError(index, item.file_url, $event)"
                         />
                         <image
                             v-else
-                            :src="item.cover_url"
+                            :src="resolveBannerImageSrc(index, 'poster', item.cover_url)"
                             mode="aspectFill"
                             class="banner-media"
+                            @error="handleBannerImageError(index, 'poster', item.cover_url, $event)"
                         />
                         <!-- 播放按钮遮罩 -->
                         <view
@@ -80,6 +83,7 @@
                 :src="defaultImage"
                 mode="aspectFill"
                 class="banner-media default-image"
+                @error="handleBannerImageError(-1, 'image', defaultImage, $event)"
             />
 
             <!-- 自定义指示器 -->
@@ -140,6 +144,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { isDevMode } from '@/utils/env'
 
 interface BannerItem {
     id: number
@@ -184,6 +189,9 @@ const $theme = useThemeStore()
 const isExpanded = ref(false)
 const currentIndex = ref(0)
 const isVideoPlaying = ref(false) // 视频播放状态
+const failedImageMap = ref<Record<string, string>>({})
+const failedVideoMap = ref<Record<number, boolean>>({})
+const bannerFallbackImage = '/static/images/user/default_avatar.png'
 
 // 容器样式
 const containerStyle = computed(() => {
@@ -219,6 +227,47 @@ const progressWidth = computed(() => {
     if (props.bannerList.length === 0) return '0%'
     return `${((currentIndex.value + 1) / props.bannerList.length) * 100}%`
 })
+
+const getMediaKey = (index: number, type: 'image' | 'poster') => `${type}-${index}`
+
+const resolveBannerImageSrc = (index: number, type: 'image' | 'poster', src = '') => {
+    const mediaKey = getMediaKey(index, type)
+    return failedImageMap.value[mediaKey] || src || props.defaultImage || bannerFallbackImage
+}
+
+const logResourceError = (section: string, src: string, error: any) => {
+    if (!isDevMode()) {
+        return
+    }
+
+    console.warn('人员详情资源加载失败', {
+        section,
+        src,
+        error: error?.detail || error || null
+    })
+}
+
+const handleBannerImageError = (
+    index: number,
+    type: 'image' | 'poster',
+    src: string,
+    error: any
+) => {
+    logResourceError(`staff-banner:${type}`, src, error)
+    const fallback = props.defaultImage || bannerFallbackImage
+    const mediaKey = getMediaKey(index, type)
+    if (!src || src === fallback || failedImageMap.value[mediaKey] === fallback) {
+        return
+    }
+
+    failedImageMap.value[mediaKey] = fallback
+}
+
+const handleBannerVideoError = (index: number, src: string, error: any) => {
+    logResourceError('staff-banner:video', src, error)
+    failedVideoMap.value[index] = true
+    isVideoPlaying.value = false
+}
 
 // 切换展开/收起
 const toggleExpand = () => {
@@ -259,6 +308,8 @@ watch(
     () => {
         currentIndex.value = 0
         isExpanded.value = false
+        failedImageMap.value = {}
+        failedVideoMap.value = {}
     },
     { deep: true }
 )

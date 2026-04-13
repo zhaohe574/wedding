@@ -1,4 +1,4 @@
-import { lockSchedule, releaseScheduleLock } from '@/api/schedule'
+import { lockSchedule, releaseScheduleLock } from '@/packages/common/api/schedule'
 import cache from '@/utils/cache'
 
 const BOOKING_LOCK_SESSION_KEY = 'booking_lock_session'

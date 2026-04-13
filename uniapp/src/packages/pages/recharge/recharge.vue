@@ -70,7 +70,7 @@
 </template>
 
 <script lang="ts" setup>
-import { recharge, rechargeConfig } from '@/api/recharge'
+import { recharge, rechargeConfig } from '@/packages/common/api/recharge'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import PageShell from '@/components/base/PageShell.vue'

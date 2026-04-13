@@ -85,6 +85,11 @@ class SubscribeMessageService
                 return ['success' => false, 'msg' => '消息模板不存在或已禁用', 'log_id' => 0];
             }
 
+            if (!SubscribeMessageTemplate::isUsableTemplateId((string) $template->template_id)) {
+                Log::info('订阅消息跳过：模板ID仍为占位值，scene=' . $scene . '，template_id=' . (string) $template->template_id);
+                return ['success' => false, 'msg' => '消息模板尚未配置真实模板ID', 'log_id' => 0];
+            }
+
             // 检查用户订阅状态
             if (!UserSubscribe::hasSubscription($userId, $template->template_id)) {
                 Log::info('订阅消息跳过：用户未订阅模板，user_id=' . $userId . '，template_id=' . $template->template_id);
@@ -433,6 +438,11 @@ class SubscribeMessageService
      */
     public static function sendRefundResultNotice(int $userId, array $refundData): array
     {
+        $page = '';
+        if (!empty($refundData['order_id'])) {
+            $page = 'pages/order_detail/order_detail?id=' . (int) $refundData['order_id'];
+        }
+
         return self::send(
             $userId,
             SubscribeMessageTemplate::SCENE_REFUND_RESULT,
@@ -443,7 +453,8 @@ class SubscribeMessageService
                 'thing4' => $refundData['reason'] ?? '',
             ],
             SubscribeMessageLog::BIZ_TYPE_REFUND,
-            $refundData['refund_id'] ?? 0
+            $refundData['refund_id'] ?? 0,
+            $page
         );
     }
 

@@ -283,8 +283,8 @@ import {
     staffCenterOrderStartService
 } from '@/api/staffCenter'
 import { buildOrderConfirmLetterDataUrl } from '@/utils/orderConfirmLetterRenderer'
-import { ensureStaffCenterAccess } from '@/utils/staff-center'
-import { saveImageToPhotosAlbum } from '@/utils/file'
+import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
+import { saveImageToPhotosAlbum } from '@/packages/common/utils/file'
 import { useThemeStore } from '@/stores/theme'
 
 interface HeroChip {

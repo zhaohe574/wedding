@@ -79,9 +79,9 @@ import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { ref, shallowRef } from 'vue'
 import { accountLog } from '@/api/user'
-import { rechargeConfig } from '@/api/recharge'
+import { rechargeConfig } from '@/packages/common/api/recharge'
 import { onShow } from '@dcloudio/uni-app'
-import { useFixedNavbarPagingStyle } from '@/hooks/useFixedNavbarPagingStyle'
+import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 
 const tabList = ref([
     {

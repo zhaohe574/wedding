@@ -298,7 +298,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { cancelChange, getChangeDetail } from '@/api/orderChange'
+import { cancelChange, getChangeDetail } from '@/packages/common/api/orderChange'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'

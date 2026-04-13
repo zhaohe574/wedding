@@ -589,6 +589,7 @@ import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import { ClientEnum } from '@/enums/appEnums'
 import { useThemeStore } from '@/stores/theme'
 import {
     applyRefund,
@@ -602,6 +603,8 @@ import {
 } from '@/api/order'
 import { uploadImage } from '@/api/app'
 import { buildOrderConfirmLetterDataUrl } from '@/utils/orderConfirmLetterRenderer'
+import { client } from '@/utils/client'
+import { subscribeAfterSaleScenes } from '@/utils/subscribe'
 const $theme = useThemeStore()
 const orderId = ref(0)
 const order = ref<any>(null)
@@ -1504,12 +1507,38 @@ const handleDelete = async () => {
     }
 }
 
+const promptAfterSaleSubscribe = async () => {
+    if (client !== ClientEnum.MP_WEIXIN) {
+        return true
+    }
+
+    const result = await uni.showModal({
+        title: '接收售后处理提醒',
+        content: '订阅后可在微信及时收到退款结果、工单处理进度等提醒，避免错过平台反馈。',
+        confirmText: '去订阅',
+        cancelText: '暂不订阅'
+    })
+
+    if (!result.confirm) {
+        return false
+    }
+
+    try {
+        await subscribeAfterSaleScenes()
+    } catch (error) {
+        console.error('请求售后订阅失败', error)
+    }
+
+    return true
+}
+
 const submitRefund = async () => {
     if (!canApplyRefund.value || refundApplyAmount.value <= 0) {
         return uni.showToast({ title: '当前订单暂不支持申请退款', icon: 'none' })
     }
     if (!refundForm.reason.trim()) return uni.showToast({ title: '请输入退款原因', icon: 'none' })
     try {
+        await promptAfterSaleSubscribe()
         await applyRefund({
             id: orderId.value,
             reason: refundForm.reason

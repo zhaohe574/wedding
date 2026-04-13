@@ -141,7 +141,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { getMyStatistics } from '@/api/aftersale'
+import { getMyStatistics } from '@/packages/common/api/aftersale'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'

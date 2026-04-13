@@ -263,7 +263,7 @@ import {
     adminDashboardOrderStats,
     adminDashboardOverview,
     adminDashboardTeamOverview
-} from '@/api/adminDashboard'
+} from '@/packages/common/api/adminDashboard'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'

@@ -9,6 +9,7 @@ namespace app\common\model\package;
 
 use app\common\model\BaseModel;
 use app\common\model\order\Order;
+use app\common\model\schedule\Waitlist;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use think\facade\Db;
@@ -260,13 +261,60 @@ class PackageBooking extends BaseModel
      */
     public static function releaseByOrderId(int $orderId): int
     {
-        return self::where('order_id', $orderId)
+        $bookings = self::where('order_id', $orderId)
+            ->whereIn('status', [self::STATUS_TEMP_LOCK, self::STATUS_CONFIRMED])
+            ->field('staff_id, booking_date, time_slot, status')
+            ->select()
+            ->toArray();
+
+        $released = self::where('order_id', $orderId)
             ->whereIn('status', [self::STATUS_TEMP_LOCK, self::STATUS_CONFIRMED])
             ->update([
                 'status' => self::STATUS_RELEASED,
                 'lock_expire_time' => null,
                 'update_time' => time(),
             ]);
+
+        if ($released > 0) {
+            self::notifyWaitlistsForReleasedBookings($bookings);
+        }
+
+        return $released;
+    }
+
+    /**
+     * @notes 档期释放后通知候补用户
+     * @param array $bookings
+     * @return void
+     */
+    private static function notifyWaitlistsForReleasedBookings(array $bookings): void
+    {
+        $releaseKeys = [];
+        foreach ($bookings as $booking) {
+            if ((int) ($booking['status'] ?? self::STATUS_RELEASED) !== self::STATUS_CONFIRMED) {
+                continue;
+            }
+
+            $staffId = (int) ($booking['staff_id'] ?? 0);
+            $bookingDate = (string) ($booking['booking_date'] ?? '');
+            if ($staffId <= 0 || $bookingDate === '') {
+                continue;
+            }
+
+            $releaseKeys[$staffId . '|' . $bookingDate] = [
+                'staff_id' => $staffId,
+                'booking_date' => $bookingDate,
+                'time_slot' => 0,
+            ];
+        }
+
+        foreach ($releaseKeys as $release) {
+            Waitlist::notifyWaitlistUsers(
+                (int) $release['staff_id'],
+                (string) $release['booking_date'],
+                (int) $release['time_slot']
+            );
+        }
     }
 
     /**

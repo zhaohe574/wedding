@@ -19,6 +19,7 @@ use app\common\model\service\ServicePackage;
 use app\common\model\service\ServicePackageAddon;
 use app\common\model\service\ServicePackageRegionPrice;
 use app\common\model\staff\Staff;
+use app\common\model\staff\StaffCertificate;
 use app\common\model\staff\StaffWork;
 use app\common\service\OrderConfirmLetterService;
 use app\common\service\OrderNotificationService;
@@ -35,6 +36,9 @@ use think\facade\Db;
  */
 class StaffCenterLogic extends BaseLogic
 {
+    private static ?string $staffCertificateStatusField = null;
+    private static ?array $staffCertificateFields = null;
+
     /**
      * @notes 获取服务人员ID
      */
@@ -456,6 +460,190 @@ class StaffCenterLogic extends BaseLogic
     }
 
     /**
+     * @notes 证书列表
+     */
+    public static function certificateLists(int $userId, array $params = []): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $statusField = self::getStaffCertificateStatusField();
+        $query = StaffCertificate::where('staff_id', $staffId)
+            ->order('id', 'desc');
+
+        if (isset($params['verify_status']) && $params['verify_status'] !== '') {
+            $query->where($statusField, (int) $params['verify_status']);
+        }
+        if (!empty($params['name'])) {
+            $query->whereLike('name', '%' . trim((string) $params['name']) . '%');
+        }
+        if (!empty($params['sn'])) {
+            $query->whereLike(
+                self::getStaffCertificateNumberField(),
+                '%' . trim((string) $params['sn']) . '%'
+            );
+        }
+
+        $pageSize = (int) ($params['page_size'] ?? 10);
+        if ($pageSize <= 0) {
+            $pageSize = 10;
+        }
+
+        $result = $query->paginate($pageSize)->toArray();
+        $result['data'] = array_map(
+            fn($item) => self::formatStaffCertificateItem($item),
+            is_array($result['data'] ?? null) ? $result['data'] : []
+        );
+        $result['summary'] = [
+            'total' => (int) StaffCertificate::where('staff_id', $staffId)->count(),
+            'pending_count' => (int) StaffCertificate::where('staff_id', $staffId)->where($statusField, StaffCertificate::VERIFY_PENDING)->count(),
+            'approved_count' => (int) StaffCertificate::where('staff_id', $staffId)->where($statusField, StaffCertificate::VERIFY_PASS)->count(),
+            'rejected_count' => (int) StaffCertificate::where('staff_id', $staffId)->where($statusField, StaffCertificate::VERIFY_REJECT)->count(),
+        ];
+
+        return $result;
+    }
+
+    /**
+     * @notes 证书详情
+     */
+    public static function certificateDetail(int $userId, int $id): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $certificate = StaffCertificate::where('id', $id)->where('staff_id', $staffId)->find();
+        if (!$certificate) {
+            self::setError('证书不存在');
+            return [];
+        }
+
+        return self::formatStaffCertificateItem($certificate->toArray(), $certificate);
+    }
+
+    /**
+     * @notes 添加证书
+     */
+    public static function certificateAdd(int $userId, array $params): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $issueDate = self::normalizeNullableField($params, 'issue_date');
+        $expireDate = self::normalizeNullableField($params, 'expire_date');
+
+        $createData = [
+            'staff_id' => $staffId,
+            'name' => trim((string) $params['name']),
+            'image' => trim((string) ($params['image'] ?? '')),
+            'issue_org' => trim((string) ($params['issue_org'] ?? '')),
+            'issue_date' => $issueDate['value'],
+            'expire_date' => $expireDate['value'],
+            'create_time' => time(),
+            'update_time' => time(),
+        ];
+        if (self::hasStaffCertificateField('type')) {
+            $createData['type'] = trim((string) ($params['type'] ?? ''));
+        }
+        if (self::hasStaffCertificateField('reject_reason')) {
+            $createData['reject_reason'] = '';
+        }
+        self::syncStaffCertificateNumberPayload(
+            $createData,
+            trim((string) ($params['sn'] ?? ''))
+        );
+        self::syncStaffCertificateStatusPayload($createData, StaffCertificate::VERIFY_PENDING);
+
+        StaffCertificate::create($createData);
+
+        return true;
+    }
+
+    /**
+     * @notes 编辑证书
+     */
+    public static function certificateEdit(int $userId, int $id, array $params): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $certificate = StaffCertificate::where('id', $id)->where('staff_id', $staffId)->find();
+        if (!$certificate) {
+            self::setError('证书不存在');
+            return false;
+        }
+
+        $issueDate = self::normalizeNullableField($params, 'issue_date');
+        $expireDate = self::normalizeNullableField($params, 'expire_date');
+        $certificateData = $certificate->getData();
+
+        $saveData = [
+            'name' => trim((string) ($params['name'] ?? ($certificateData['name'] ?? ''))),
+            'image' => trim((string) ($params['image'] ?? ($certificateData['image'] ?? ''))),
+            'issue_org' => trim((string) ($params['issue_org'] ?? ($certificateData['issue_org'] ?? ''))),
+            'update_time' => time(),
+        ];
+        if (self::hasStaffCertificateField('type')) {
+            $saveData['type'] = trim((string) ($params['type'] ?? ($certificateData['type'] ?? '')));
+        }
+        if (self::hasStaffCertificateField('reject_reason')) {
+            $saveData['reject_reason'] = '';
+        }
+        self::syncStaffCertificateNumberPayload(
+            $saveData,
+            trim((string) (
+                $params['sn']
+                    ?? ($certificateData['sn'] ?? $certificateData['certificate_no'] ?? '')
+            ))
+        );
+        self::syncStaffCertificateStatusPayload($saveData, StaffCertificate::VERIFY_PENDING);
+
+        if ($issueDate['exists']) {
+            $saveData['issue_date'] = $issueDate['value'];
+        }
+        if ($expireDate['exists']) {
+            $saveData['expire_date'] = $expireDate['value'];
+        }
+
+        $certificate->save($saveData);
+
+        return true;
+    }
+
+    /**
+     * @notes 删除证书
+     */
+    public static function certificateDelete(int $userId, int $id): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $certificate = StaffCertificate::where('id', $id)->where('staff_id', $staffId)->find();
+        if (!$certificate) {
+            self::setError('证书不存在');
+            return false;
+        }
+
+        $certificate->delete();
+        return true;
+    }
+
+    /**
      * @notes 作品列表
      */
     public static function workLists(int $userId, array $params): array
@@ -619,6 +807,104 @@ class StaffCenterLogic extends BaseLogic
         }
 
         return ['exists' => true, 'value' => $value];
+    }
+
+    /**
+     * @notes 统一格式化证书数据
+     */
+    private static function formatStaffCertificateItem(
+        array $item,
+        ?StaffCertificate $certificate = null
+    ): array {
+        $certificate = $certificate ?? new StaffCertificate();
+        $certificate->data($item, true);
+
+        $item['type'] = trim((string) ($item['type'] ?? ''));
+        $item['sn'] = trim((string) ($item['sn'] ?? $item['certificate_no'] ?? ''));
+        $item['reject_reason'] = trim((string) ($item['reject_reason'] ?? ''));
+        $item['verify_status'] = (int) (
+            $item['verify_status']
+                ?? $item['audit_status']
+                ?? StaffCertificate::VERIFY_PENDING
+        );
+        $item['verify_status_desc'] = $certificate->getAttr('verify_status_desc');
+        $item['is_expired'] = $certificate->getAttr('is_expired');
+        $item['image'] = $certificate->getAttr('image');
+
+        return $item;
+    }
+
+    /**
+     * @notes 获取证书字段集合
+     */
+    private static function getStaffCertificateFields(): array
+    {
+        if (self::$staffCertificateFields !== null) {
+            return self::$staffCertificateFields;
+        }
+
+        $fields = Db::name('staff_certificate')->getFields();
+        self::$staffCertificateFields = is_array($fields) ? $fields : [];
+
+        return self::$staffCertificateFields;
+    }
+
+    /**
+     * @notes 判断证书字段是否存在
+     */
+    private static function hasStaffCertificateField(string $field): bool
+    {
+        return isset(self::getStaffCertificateFields()[$field]);
+    }
+
+    /**
+     * @notes 获取证书状态字段名（兼容 verify_status / audit_status）
+     */
+    private static function getStaffCertificateStatusField(): string
+    {
+        if (self::$staffCertificateStatusField !== null) {
+            return self::$staffCertificateStatusField;
+        }
+
+        self::$staffCertificateStatusField = self::hasStaffCertificateField('verify_status')
+            ? 'verify_status'
+            : 'audit_status';
+
+        return self::$staffCertificateStatusField;
+    }
+
+    /**
+     * @notes 获取证书编号字段名（兼容 sn / certificate_no）
+     */
+    private static function getStaffCertificateNumberField(): string
+    {
+        return self::hasStaffCertificateField('sn') ? 'sn' : 'certificate_no';
+    }
+
+    /**
+     * @notes 同步写入证书状态字段
+     */
+    private static function syncStaffCertificateStatusPayload(array &$payload, int $status): void
+    {
+        if (self::hasStaffCertificateField('verify_status')) {
+            $payload['verify_status'] = $status;
+        }
+        if (self::hasStaffCertificateField('audit_status')) {
+            $payload['audit_status'] = $status;
+        }
+    }
+
+    /**
+     * @notes 同步写入证书编号字段
+     */
+    private static function syncStaffCertificateNumberPayload(array &$payload, string $number): void
+    {
+        if (self::hasStaffCertificateField('sn')) {
+            $payload['sn'] = $number;
+        }
+        if (self::hasStaffCertificateField('certificate_no')) {
+            $payload['certificate_no'] = $number;
+        }
     }
 
     /**

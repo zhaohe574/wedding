@@ -22,6 +22,22 @@ class Local extends Server
      */
     public function upload($save_dir)
     {
+        if ($this->isInternal) {
+            $targetDir = rtrim(public_path(), '/\\') . DIRECTORY_SEPARATOR . trim($save_dir, '/\\');
+            if (!is_dir($targetDir) && !@mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
+                $this->error = '创建上传目录失败';
+                return false;
+            }
+
+            $targetPath = $targetDir . DIRECTORY_SEPARATOR . $this->fileName;
+            if (!@copy($this->getRealPath(), $targetPath)) {
+                $this->error = '保存优化图片失败';
+                return false;
+            }
+
+            return true;
+        }
+
         // 验证文件并上传
         $info = $this->file->move($save_dir, $this->fileName);
         if (empty($info)) {

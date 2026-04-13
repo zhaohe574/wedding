@@ -434,8 +434,8 @@ import {
     summarizeRegionPrices,
     type RegionLevel,
     type RegionPriceRow
-} from '@/utils/package-region-price'
-import { ensureStaffCenterAccess } from '@/utils/staff-center'
+} from '@/packages/common/utils/package-region-price'
+import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 
 interface RegionDistrict {
     district_code: string

@@ -256,7 +256,7 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import { staffCenterDashboard, staffCenterProfile } from '@/api/staffCenter'
-import { ensureStaffCenterAccess } from '@/utils/staff-center'
+import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 
 type BadgeModifier = 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'ghost'
@@ -661,6 +661,11 @@ const recentOrderMetaText = computed(() =>
 )
 
 const businessMenus = computed(() => [
+    {
+        name: '证书管理',
+        path: '/packages/pages/staff_certificate_list/staff_certificate_list',
+        description: '提交资质证书并查看审核结果'
+    },
     {
         name: '附加项管理',
         path: '/packages/pages/staff_addon_list/staff_addon_list',

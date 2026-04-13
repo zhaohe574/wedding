@@ -157,8 +157,7 @@ class Waitlist extends BaseModel
             $waitlist->notify_time = $notifyTime;
             $waitlist->save();
 
-            self::sendWaitlistSubscribeMessage($waitlist);
-            self::sendWaitlistStationNotification($waitlist);
+            self::dispatchReleaseNotifications($waitlist);
 
             $notifyUsers[] = [
                 'waitlist_id' => (int)$waitlist->id,
@@ -281,10 +280,36 @@ class Waitlist extends BaseModel
      * @notes 处理过期候补
      * @return int
      */
-    public static function processExpiredWaitlists(): int
+    public static function dispatchReleaseNotifications(Waitlist $waitlist): void
     {
+        self::sendWaitlistSubscribeMessage($waitlist);
+        self::sendWaitlistStationNotification($waitlist);
+    }
+
+    /**
+     * @notes 统一发送候补失效通知
+     * @param Waitlist $waitlist
+     * @return void
+     */
+    public static function dispatchExpiredNotifications(Waitlist $waitlist): void
+    {
+        self::sendWaitlistExpiredStationNotification($waitlist);
+        self::sendWaitlistExpiredSubscribeMessage($waitlist);
+    }
+
+    /**
+     * @notes 处理过期候补
+     * @param int $limit
+     * @return int
+     */
+    public static function processExpiredWaitlists(int $limit = 100): int
+    {
+        $today = date('Y-m-d');
         $waitlists = self::where('notify_status', 'in', [self::NOTIFY_STATUS_PENDING, self::NOTIFY_STATUS_NOTIFIED])
-            ->where('expire_time', '<', time())
+            ->where(function ($query) use ($today) {
+                $query->where('expire_time', '<', time())
+                    ->whereOr('schedule_date', '<', $today);
+            })
             ->with([
                 'staff' => function ($q) {
                     $q->field('id, name');
@@ -293,7 +318,7 @@ class Waitlist extends BaseModel
                     $q->field('id, name');
                 },
             ])
-            ->limit(100)
+            ->limit($limit)
             ->select();
 
         if ($waitlists->isEmpty()) {
@@ -306,8 +331,7 @@ class Waitlist extends BaseModel
             $waitlist->notify_status = self::NOTIFY_STATUS_EXPIRED;
             $waitlist->update_time = $now;
             if ($waitlist->save()) {
-                self::sendWaitlistExpiredStationNotification($waitlist);
-                self::sendWaitlistExpiredSubscribeMessage($waitlist);
+                self::dispatchExpiredNotifications($waitlist);
                 $handled++;
             }
         }
@@ -322,37 +346,7 @@ class Waitlist extends BaseModel
      */
     public static function processPastDateWaitlists(int $limit = 100): int
     {
-        $today = date('Y-m-d');
-        $waitlists = self::where('notify_status', 'in', [self::NOTIFY_STATUS_PENDING, self::NOTIFY_STATUS_NOTIFIED])
-            ->where('schedule_date', '<', $today)
-            ->limit($limit)
-            ->with([
-                'staff' => function ($q) {
-                    $q->field('id, name');
-                },
-                'package' => function ($q) {
-                    $q->field('id, name');
-                },
-            ])
-            ->select();
-
-        if ($waitlists->isEmpty()) {
-            return 0;
-        }
-
-        $handled = 0;
-        $now = time();
-        foreach ($waitlists as $waitlist) {
-            $waitlist->notify_status = self::NOTIFY_STATUS_EXPIRED;
-            $waitlist->update_time = $now;
-            if ($waitlist->save()) {
-                self::sendWaitlistExpiredStationNotification($waitlist);
-                self::sendWaitlistExpiredSubscribeMessage($waitlist);
-                $handled++;
-            }
-        }
-
-        return $handled;
+        return self::processExpiredWaitlists($limit);
     }
 
     /**

@@ -10,6 +10,7 @@ namespace app\api\logic;
 use app\common\logic\BaseLogic;
 use app\common\model\schedule\Schedule;
 use app\common\model\staff\Staff;
+use app\common\model\staff\StaffCertificate;
 use app\common\model\staff\StaffWork;
 use app\common\model\staff\Favorite;
 use app\common\model\staff\StaffTag;
@@ -17,8 +18,10 @@ use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
 use app\common\service\BookingFlowService;
 use app\common\service\ConfigService;
+use app\common\service\MobileImageService;
 use app\common\service\PackageRegionPriceService;
 use app\common\service\StaffPriceService;
+use think\facade\Db;
 
 /**
  * 工作人员逻辑（小程序端）
@@ -27,6 +30,8 @@ use app\common\service\StaffPriceService;
  */
 class StaffLogic extends BaseLogic
 {
+    private static ?string $staffCertificateStatusField = null;
+
     /**
      * @notes 推荐工作人员
      * @param int $limit
@@ -76,7 +81,8 @@ class StaffLogic extends BaseLogic
             ->where('status', Staff::STATUS_ENABLE)
             ->where('audit_status', Staff::AUDIT_PASS)
             ->with(['category', 'certificates' => function($query) {
-                $query->where('audit_status', 1)->limit(10);
+                $query->where(self::getStaffCertificateStatusField(), StaffCertificate::VERIFY_PASS)
+                    ->limit(10);
             }])
             ->find();
 
@@ -123,6 +129,9 @@ class StaffLogic extends BaseLogic
             ->order('id', 'asc')
             ->select()
             ->toArray();
+        $data['banners'] = self::optimizeBannerList($data['banners']);
+        $data['certificates'] = self::optimizeCertificateList($data['certificates'] ?? []);
+        $data['long_detail'] = self::optimizeLongDetailContent((string) ($data['long_detail'] ?? ''));
 
         // 是否已收藏
         $data['is_favorite'] = false;
@@ -155,13 +164,15 @@ class StaffLogic extends BaseLogic
             return [];
         }
 
-        return StaffWork::where('staff_id', $staffId)
+        $works = StaffWork::where('staff_id', $staffId)
             ->where('delete_time', null)
             ->where('is_show', 1)
             ->where('audit_status', StaffWork::AUDIT_PASS)
             ->order('sort desc, id desc')
             ->select()
             ->toArray();
+
+        return self::optimizeWorkList($works);
     }
 
     /**
@@ -192,6 +203,10 @@ class StaffLogic extends BaseLogic
             $data['staff']['has_price'] = $displayPrice['has_price'];
             $data['staff']['price_text'] = $displayPrice['price_text'];
         }
+        $data['cover'] = MobileImageService::toMobileDisplayUrl((string) ($data['cover'] ?? ''));
+        $data['images'] = array_values(array_filter(array_map(static function ($image) {
+            return MobileImageService::toMobileDisplayUrl((string) $image);
+        }, is_array($data['images'] ?? null) ? $data['images'] : [])));
         return $data;
     }
 
@@ -442,5 +457,110 @@ class StaffLogic extends BaseLogic
             'available' => $available,
             'message' => $message,
         ];
+    }
+
+    /**
+     * @notes 优化详情轮播图资源
+     * @param array $banners
+     * @return array
+     */
+    protected static function optimizeBannerList(array $banners): array
+    {
+        foreach ($banners as &$banner) {
+            $type = (int) ($banner['type'] ?? 1);
+            if ($type === 1) {
+                $banner['file_url'] = MobileImageService::toMobileDisplayUrl(
+                    (string) ($banner['file_url'] ?? '')
+                );
+                continue;
+            }
+
+            $banner['cover_url'] = MobileImageService::toMobileDisplayUrl(
+                (string) ($banner['cover_url'] ?? '')
+            );
+        }
+
+        return $banners;
+    }
+
+    /**
+     * @notes 优化证书图片
+     * @param array $certificates
+     * @return array
+     */
+    protected static function optimizeCertificateList(array $certificates): array
+    {
+        foreach ($certificates as &$certificate) {
+            $certificate['image'] = MobileImageService::toMobileDisplayUrl(
+                (string) ($certificate['image'] ?? '')
+            );
+        }
+
+        return $certificates;
+    }
+
+    /**
+     * @notes 优化作品列表图片
+     * @param array $works
+     * @return array
+     */
+    protected static function optimizeWorkList(array $works): array
+    {
+        foreach ($works as &$work) {
+            $work['cover'] = MobileImageService::toMobileDisplayUrl((string) ($work['cover'] ?? ''));
+            $images = is_array($work['images'] ?? null) ? $work['images'] : [];
+            $work['images'] = array_values(array_filter(array_map(static function ($image) {
+                return MobileImageService::toMobileDisplayUrl((string) $image);
+            }, $images)));
+        }
+
+        return $works;
+    }
+
+    /**
+     * @notes 优化长图详情中的图片地址
+     * @param string $content
+     * @return string
+     */
+    protected static function optimizeLongDetailContent(string $content): string
+    {
+        $content = trim($content);
+        if ($content === '') {
+            return $content;
+        }
+
+        $blocks = json_decode($content, true);
+        if (!is_array($blocks)) {
+            return $content;
+        }
+
+        foreach ($blocks as &$block) {
+            if (($block['type'] ?? '') !== 'image' || !is_array($block['images'] ?? null)) {
+                continue;
+            }
+
+            $block['images'] = array_values(array_filter(array_map(static function ($image) {
+                return MobileImageService::toMobileDisplayUrl((string) $image);
+            }, $block['images'])));
+        }
+
+        return json_encode($blocks, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: $content;
+    }
+
+    /**
+     * @notes 获取证书状态字段名（兼容 verify_status / audit_status）
+     */
+    protected static function getStaffCertificateStatusField(): string
+    {
+        if (self::$staffCertificateStatusField !== null) {
+            return self::$staffCertificateStatusField;
+        }
+
+        $fields = Db::name('staff_certificate')->getFields();
+        self::$staffCertificateStatusField = isset($fields['verify_status'])
+            ? 'verify_status'
+            : 'audit_status';
+
+        return self::$staffCertificateStatusField;
     }
 }

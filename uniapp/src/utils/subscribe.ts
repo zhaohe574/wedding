@@ -275,6 +275,29 @@ export async function subscribeAfterSaleScenes(): Promise<boolean> {
 }
 
 /**
+ * 候补相关场景订阅
+ */
+export async function subscribeWaitlistScenes(): Promise<boolean> {
+    try {
+        const scenes = await getAllScenes()
+        const templateIds = extractSceneTemplateIds(scenes, [
+            'waitlist_release',
+            'waitlist_expired'
+        ])
+
+        if (templateIds.length === 0) {
+            return true
+        }
+
+        const results = await requestMultiSubscribe(templateIds, 'waitlist')
+        return Object.values(results).some((r) => r.success)
+    } catch (e) {
+        console.error('订阅候补场景失败', e)
+        return false
+    }
+}
+
+/**
  * 显示订阅提示弹窗
  * @param title 标题
  * @param content 内容
@@ -301,5 +324,6 @@ export default {
     getAllScenes,
     subscribeOrderScenes,
     subscribeAfterSaleScenes,
+    subscribeWaitlistScenes,
     showSubscribeTip
 }

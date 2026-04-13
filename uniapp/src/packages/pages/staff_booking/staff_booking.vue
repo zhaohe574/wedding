@@ -299,7 +299,7 @@ import {
     releaseAllBookingLocks,
     renewAllBookingLocks,
     replaceRoleBookingLock
-} from '@/utils/booking-lock-session'
+} from '@/packages/common/utils/booking-lock-session'
 import {
     BOOKING_ROLE_KEYS,
     type BookingRoleKey,
@@ -307,7 +307,7 @@ import {
     getStaffBookingPageUrl,
     getStaffDetailPageUrl,
     normalizeBookingQuery
-} from '@/utils/staff-booking'
+} from '@/packages/common/utils/staff-booking'
 import {
     hasServiceRegion,
     loadServiceRegionSelection,

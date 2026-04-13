@@ -251,7 +251,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getPendingOrders, publishReview, getReviewTags, getRewardRules } from '@/api/review'
+import { getPendingOrders, publishReview, getReviewTags, getRewardRules } from '@/packages/common/api/review'
 import { useThemeStore } from '@/stores/theme'
 
 const $theme = useThemeStore()

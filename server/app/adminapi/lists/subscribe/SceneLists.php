@@ -50,7 +50,7 @@ class SceneLists extends BaseAdminDataLists implements ListsSearchInterface
         $templates = [];
         if (!empty($templateIds)) {
             $templateList = SubscribeMessageTemplate::whereIn('template_id', $templateIds)
-                ->column('name', 'template_id');
+                ->column('name, template_id, status', 'template_id');
             $templates = $templateList;
         }
 
@@ -59,10 +59,12 @@ class SceneLists extends BaseAdminDataLists implements ListsSearchInterface
             $item['create_time'] = (int)$item['create_time'];
             $item['status'] = (int)$item['status'];
             $item['is_auto'] = (int)$item['is_auto'];
-            
-            $item['template_name'] = $templates[$item['template_id']] ?? '未绑定';
+
+            $item['template_name'] = $templates[$item['template_id']]['name'] ?? '未绑定';
             $item['status_desc'] = $item['status'] == 1 ? '启用' : '禁用';
             $item['is_auto_desc'] = $item['is_auto'] == 1 ? '自动发送' : '手动触发';
+            $item['config_status'] = SubscribeMessageTemplate::getConfigStatus($item['template_id']);
+            $item['config_status_desc'] = SubscribeMessageTemplate::getConfigStatusDesc($item['template_id']);
             $item['create_time'] = $item['create_time'] ? date('Y-m-d H:i:s', $item['create_time']) : '';
         }
 

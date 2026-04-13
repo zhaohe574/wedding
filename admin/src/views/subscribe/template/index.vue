@@ -74,6 +74,13 @@
                         <el-table-column prop="name" label="模板名称" min-width="150" />
                         <el-table-column prop="template_id" label="模板ID" min-width="200" show-overflow-tooltip />
                         <el-table-column prop="scene_desc" label="使用场景" width="140" />
+                        <el-table-column label="配置状态" width="150" align="center">
+                            <template #default="{ row }">
+                                <el-tag :type="getConfigStatusType(row.config_status)">
+                                    {{ row.config_status_desc }}
+                                </el-tag>
+                            </template>
+                        </el-table-column>
                         <el-table-column prop="status" label="状态" width="100" align="center">
                             <template #default="{ row }">
                                 <el-switch
@@ -111,6 +118,13 @@
                         <el-table-column prop="name" label="场景名称" min-width="140" />
                         <el-table-column prop="scene" label="场景标识" width="150" />
                         <el-table-column prop="template_name" label="关联模板" width="150" />
+                        <el-table-column label="模板状态" width="150" align="center">
+                            <template #default="{ row }">
+                                <el-tag :type="getConfigStatusType(row.config_status)">
+                                    {{ row.config_status_desc }}
+                                </el-tag>
+                            </template>
+                        </el-table-column>
                         <el-table-column prop="trigger_event" label="触发事件" width="140" />
                         <el-table-column prop="is_auto_desc" label="发送方式" width="100" align="center" />
                         <el-table-column prop="status" label="状态" width="100" align="center">
@@ -711,6 +725,15 @@ const handleRetryLog = async (row: any) => {
     await retryMessageLog(row.id)
     ElMessage.success('重试成功')
     fetchLogList()
+}
+
+const getConfigStatusType = (status: string) => {
+    const map = {
+        configured: 'success',
+        placeholder: 'warning',
+        unbound: 'info'
+    } as const
+    return map[status as keyof typeof map] ?? 'info'
 }
 
 // 获取发送状态样式

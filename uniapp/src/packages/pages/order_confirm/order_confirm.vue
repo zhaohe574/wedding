@@ -319,7 +319,7 @@ import {
     isBookingLockSessionMatchingSelection,
     releaseAllBookingLocks,
     renewAllBookingLocks
-} from '@/utils/booking-lock-session'
+} from '@/packages/common/utils/booking-lock-session'
 import { client } from '@/utils/client'
 import { getAllScenes, setSceneCache, subscribeOrderScenes } from '@/utils/subscribe'
 import {
@@ -327,7 +327,7 @@ import {
     getStaffBookingPageUrl,
     normalizeBookingQuery,
     toBookingOrderParams
-} from '@/utils/staff-booking'
+} from '@/packages/common/utils/staff-booking'
 import {
     formatServiceRegionText,
     hasServiceRegion,

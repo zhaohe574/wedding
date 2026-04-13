@@ -1,5 +1,5 @@
 <template>
-    <admin-page-shell class="staff-center-calendar" title="我的档期日历">
+    <admin-page-shell class="staff-center-calendar" title="我的档期">
         <search-panel>
             <el-form class="mb-[-16px]" :inline="true">
                 <el-form-item label="年月">
@@ -16,6 +16,8 @@
                     <el-button type="primary" @click="fetchCalendar">查询</el-button>
                     <el-button @click="handleReset">重置</el-button>
                     <el-button type="success" @click="handleBatchSet">批量设置</el-button>
+                    <el-button plain @click="goToBooking">待确认预约项</el-button>
+                    <el-button plain @click="goToWaitlist">候补列表</el-button>
                 </el-form-item>
             </el-form>
         </search-panel>
@@ -28,7 +30,7 @@
                             <el-icon class="text-blue-500 text-xl"><Calendar /></el-icon>
                         </div>
                         <div>
-                            <div class="text-gray-500 text-sm">总档期</div>
+                            <div class="text-gray-500 text-sm">本月档期</div>
                             <div class="text-2xl font-bold">{{ statistics.total || 0 }}</div>
                         </div>
                     </div>
@@ -54,23 +56,21 @@
                             <el-icon class="text-orange-500 text-xl"><Ticket /></el-icon>
                         </div>
                         <div>
-                            <div class="text-gray-500 text-sm">已预约</div>
+                            <div class="text-gray-500 text-sm">已占用</div>
                             <div class="text-2xl font-bold text-orange-500">{{ statistics.booked || 0 }}</div>
                         </div>
                     </div>
                 </el-card>
             </el-col>
             <el-col :span="6">
-                <el-card shadow="never">
+                <el-card shadow="never" class="cursor-pointer" @click="goToWaitlist">
                     <div class="flex items-center">
-                        <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mr-4">
-                            <el-icon class="text-red-500 text-xl"><Lock /></el-icon>
+                        <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mr-4">
+                            <el-icon class="text-purple-500 text-xl"><Bell /></el-icon>
                         </div>
                         <div>
-                            <div class="text-gray-500 text-sm">已锁定/预留</div>
-                            <div class="text-2xl font-bold text-red-500">
-                                {{ (statistics.locked || 0) + (statistics.reserved || 0) }}
-                            </div>
+                            <div class="text-gray-500 text-sm">待跟进候补</div>
+                            <div class="text-2xl font-bold text-purple-500">{{ waitlistPendingCount }}</div>
                         </div>
                     </div>
                 </el-card>
@@ -80,7 +80,10 @@
         <el-card class="!border-none" shadow="never">
             <template #header>
                 <div class="flex items-center justify-between">
-                    <span class="text-lg font-bold">我的档期日历</span>
+                    <div>
+                        <span class="text-lg font-bold">我的档期</span>
+                        <div class="text-sm text-gray-400 mt-1">点击具体日期维护可预约、内部预留与锁定释放。</div>
+                    </div>
                     <el-button-group>
                         <el-button @click="prevMonth"><el-icon><ArrowLeft /></el-icon></el-button>
                         <el-button @click="toToday">今天</el-button>
@@ -96,7 +99,7 @@
             </div>
 
             <div class="grid grid-cols-7 gap-1">
-                <div v-for="n in firstDayOfMonth" :key="'empty-' + n" class="h-24 bg-gray-50"></div>
+                <div v-for="n in firstDayOfMonth" :key="`empty-${n}`" class="h-24 bg-gray-50"></div>
 
                 <div
                     v-for="day in calendarDays"
@@ -105,7 +108,7 @@
                     :class="{
                         'bg-blue-50': day.date === today,
                         'bg-red-50': day.calendar?.is_lucky_day,
-                        'bg-yellow-50': day.calendar?.is_holiday
+                        'bg-yellow-50': day.calendar?.is_holiday,
                     }"
                     @click="handleDayClick(day)"
                 >
@@ -142,19 +145,19 @@
             </div>
         </el-card>
 
-        <el-dialog v-model="dayDialogVisible" :title="selectedDay?.date + ' 档期详情'" width="600px">
+        <el-dialog v-model="dayDialogVisible" :title="`${selectedDay?.date || ''} 档期设置`" width="600px">
             <div v-if="selectedDay">
                 <div v-if="selectedDay.calendar" class="mb-4 p-3 bg-gray-50 rounded">
                     <div class="flex gap-4">
-                        <span v-if="selectedDay.calendar.lunar_date">农历: {{ selectedDay.calendar.lunar_date }}</span>
+                        <span v-if="selectedDay.calendar.lunar_date">农历：{{ selectedDay.calendar.lunar_date }}</span>
                         <el-tag v-if="selectedDay.calendar.is_lucky_day" type="danger">吉日</el-tag>
                         <el-tag v-if="selectedDay.calendar.is_holiday" type="warning">{{ selectedDay.calendar.holiday_name }}</el-tag>
                     </div>
                     <div v-if="selectedDay.calendar.lucky_events" class="mt-2 text-sm">
-                        <span class="text-green-600">宜:</span> {{ selectedDay.calendar.lucky_events }}
+                        <span class="text-green-600">宜：</span>{{ selectedDay.calendar.lucky_events }}
                     </div>
                     <div v-if="selectedDay.calendar.unlucky_events" class="mt-1 text-sm">
-                        <span class="text-red-600">忌:</span> {{ selectedDay.calendar.unlucky_events }}
+                        <span class="text-red-600">忌：</span>{{ selectedDay.calendar.unlucky_events }}
                     </div>
                 </div>
 
@@ -172,7 +175,7 @@
                 </el-form>
 
                 <div v-if="selectedDay.schedules && selectedDay.schedules.length > 0" class="mt-4">
-                    <div class="font-bold mb-2">当前档期:</div>
+                    <div class="font-bold mb-2">当前档期：</div>
                     <el-table :data="selectedDay.schedules" size="small">
                         <el-table-column prop="status" label="状态">
                             <template #default="{ row }">
@@ -227,13 +230,13 @@
                 </el-form-item>
                 <el-form-item label="跳过休息日">
                     <el-checkbox-group v-model="batchForm.skip_rest_days">
-                        <el-checkbox :label="0">周日</el-checkbox>
-                        <el-checkbox :label="1">周一</el-checkbox>
-                        <el-checkbox :label="2">周二</el-checkbox>
-                        <el-checkbox :label="3">周三</el-checkbox>
-                        <el-checkbox :label="4">周四</el-checkbox>
-                        <el-checkbox :label="5">周五</el-checkbox>
-                        <el-checkbox :label="6">周六</el-checkbox>
+                        <el-checkbox :value="0">周日</el-checkbox>
+                        <el-checkbox :value="1">周一</el-checkbox>
+                        <el-checkbox :value="2">周二</el-checkbox>
+                        <el-checkbox :value="3">周三</el-checkbox>
+                        <el-checkbox :value="4">周四</el-checkbox>
+                        <el-checkbox :value="5">周五</el-checkbox>
+                        <el-checkbox :value="6">周六</el-checkbox>
                     </el-checkbox-group>
                 </el-form-item>
             </el-form>
@@ -247,28 +250,42 @@
 
 <script setup lang="ts" name="staffCenterCalendar">
 import { computed, onMounted, ref } from 'vue'
-import { ArrowLeft, ArrowRight, Calendar, CircleCheck, Lock, Ticket } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight, Bell, Calendar, CircleCheck, Ticket } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
+import { getRoutePath } from '@/router'
 import {
     myCalendar,
     myCalendarBatchSet,
     myCalendarSetStatus,
     myCalendarStatistics,
-    myCalendarUnlock
+    myCalendarUnlock,
+    myWaitlistStatistics,
 } from '@/api/staff-center'
 
+interface CalendarDay {
+    date: string
+    calendar?: Record<string, any>
+    schedules?: Array<Record<string, any>>
+}
+
+const router = useRouter()
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 const today = new Date().toISOString().split('T')[0]
 
+const bookingPath = computed(() => getRoutePath('ops.booking/myBookings') || '/staff-center/booking')
+const waitlistPath = computed(() => getRoutePath('ops.waitlist/myWaitlist') || '/staff-center/waitlist')
+
 const currentMonth = ref(new Date().toISOString().slice(0, 7))
-const calendarData = ref<any>({})
-const statistics = ref<any>({})
+const calendarData = ref<Record<string, unknown>>({})
+const statistics = ref<Record<string, unknown>>({})
+const waitlistStatistics = ref<Record<string, unknown>>({})
 
 const dayDialogVisible = ref(false)
-const selectedDay = ref<any>(null)
+const selectedDay = ref<CalendarDay | null>(null)
 const dayForm = ref({
     status: 1,
-    remark: ''
+    remark: '',
 })
 
 const batchDialogVisible = ref(false)
@@ -277,8 +294,10 @@ const batchForm = ref({
     dateRange: [] as string[],
     status: 1,
     price: 0,
-    skip_rest_days: [] as number[]
+    skip_rest_days: [] as number[],
 })
+
+const waitlistPendingCount = computed(() => Number(waitlistStatistics.value.waiting || 0))
 
 const firstDayOfMonth = computed(() => {
     const [year, month] = currentMonth.value.split('-').map(Number)
@@ -286,18 +305,20 @@ const firstDayOfMonth = computed(() => {
 })
 
 const calendarDays = computed(() => {
-    const days = calendarData.value.days || {}
-    return Object.values(days) as any[]
+    const days = calendarData.value.days
+    return Array.isArray(days) ? (days as CalendarDay[]) : (Object.values(days || {}) as CalendarDay[])
 })
 
 const fetchCalendar = async () => {
     const [year, month] = currentMonth.value.split('-').map(Number)
-    const [calendarRes, statsRes] = await Promise.all([
+    const [calendarRes, statsRes, waitlistRes] = await Promise.all([
         myCalendar({ year, month }),
-        myCalendarStatistics({ year, month })
+        myCalendarStatistics({ year, month }),
+        myWaitlistStatistics(),
     ])
-    calendarData.value = calendarRes || {}
-    statistics.value = statsRes || {}
+    calendarData.value = (calendarRes || {}) as Record<string, unknown>
+    statistics.value = (statsRes || {}) as Record<string, unknown>
+    waitlistStatistics.value = (waitlistRes || {}) as Record<string, unknown>
 }
 
 const prevMonth = () => {
@@ -322,11 +343,11 @@ const handleReset = () => {
     fetchCalendar()
 }
 
-const handleDayClick = (day: any) => {
+const handleDayClick = (day: CalendarDay) => {
     selectedDay.value = day
     dayForm.value = {
         status: 1,
-        remark: ''
+        remark: '',
     }
     dayDialogVisible.value = true
 }
@@ -335,14 +356,14 @@ const handleSetDayStatus = async () => {
     if (!selectedDay.value) return
     await myCalendarSetStatus({
         date: selectedDay.value.date,
-        ...dayForm.value
+        ...dayForm.value,
     })
     ElMessage.success('设置成功')
     dayDialogVisible.value = false
     fetchCalendar()
 }
 
-const handleUnlock = async (row: any) => {
+const handleUnlock = async (row: Record<string, unknown>) => {
     await ElMessageBox.confirm('确定要释放该档期的锁定吗？', '提示')
     await myCalendarUnlock({ id: row.id })
     ElMessage.success('释放成功')
@@ -354,7 +375,7 @@ const handleBatchSet = () => {
         dateRange: [],
         status: 1,
         price: 0,
-        skip_rest_days: []
+        skip_rest_days: [],
     }
     batchDialogVisible.value = true
 }
@@ -371,7 +392,7 @@ const handleBatchSubmit = async () => {
             end_date: batchForm.value.dateRange[1],
             status: batchForm.value.status,
             price: batchForm.value.price,
-            skip_rest_days: batchForm.value.skip_rest_days
+            skip_rest_days: batchForm.value.skip_rest_days,
         })
         ElMessage.success('批量设置成功')
         batchDialogVisible.value = false
@@ -392,7 +413,7 @@ const getStatusType = (status: number): 'info' | 'success' | 'warning' | 'danger
         1: 'success',
         2: 'warning',
         3: 'danger',
-        4: 'danger'
+        4: 'danger',
     }
     return map[status] || 'info'
 }
@@ -403,14 +424,20 @@ const getStatusClass = (status: number) => {
         1: 'bg-green-100 text-green-600',
         2: 'bg-orange-100 text-orange-600',
         3: 'bg-red-100 text-red-600',
-        4: 'bg-yellow-100 text-yellow-700'
+        4: 'bg-yellow-100 text-yellow-700',
     }
     return map[status] || ''
+}
+
+const goToBooking = () => {
+    router.push(bookingPath.value)
+}
+
+const goToWaitlist = () => {
+    router.push(waitlistPath.value)
 }
 
 onMounted(() => {
     fetchCalendar()
 })
 </script>
-
-<style scoped></style>

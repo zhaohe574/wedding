@@ -38,6 +38,8 @@
         "fix:tn-image": "node scripts/fix-tn-image.js",
         "validate:migration": "node scripts/validate-migration.js",
         "validate:config": "node scripts/validate-config.js",
+        "validate:mp-size": "node scripts/validate-mp-weixin-main-size.js",
+        "build:mp-weixin:check": "npm run build:mp-weixin && npm run validate:mp-size",
         "validate:all": "npm run validate:config && npm run validate:migration"
     },
     "dependencies": {

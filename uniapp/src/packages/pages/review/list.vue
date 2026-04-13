@@ -148,7 +148,7 @@ import { ref, computed, onMounted } from 'vue'
 import type { CSSProperties } from 'vue'
 import { onReachBottom, onShow } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
-import { getMyReviews, getPendingOrders } from '@/api/review'
+import { getMyReviews, getPendingOrders } from '@/packages/common/api/review'
 import { useThemeStore } from '@/stores/theme'
 
 const themeStore = useThemeStore()

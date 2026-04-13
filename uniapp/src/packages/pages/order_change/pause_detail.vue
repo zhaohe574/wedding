@@ -220,7 +220,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { cancelPause, getPauseDetail } from '@/api/orderChange'
+import { cancelPause, getPauseDetail } from '@/packages/common/api/orderChange'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'

@@ -1,5 +1,5 @@
 <template>
-    <admin-page-shell class="staff-center-booking" title="我的预约项">
+    <admin-page-shell class="staff-center-booking" title="预约确认">
         <search-panel>
             <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item class="w-[200px]" label="订单编号">
@@ -21,7 +21,7 @@
                         @keyup.enter="resetPage"
                     />
                 </el-form-item>
-                <el-form-item class="w-[150px]" label="状态">
+                <el-form-item class="w-[150px]" label="确认状态">
                     <el-select v-model="queryParams.status" placeholder="选择状态" clearable>
                         <el-option label="待确认" :value="0" />
                         <el-option label="已确认" :value="1" />
@@ -48,7 +48,7 @@
         <div class="mt-4 grid grid-cols-5 gap-4">
             <el-card class="!border-none" shadow="never">
                 <div class="text-center">
-                    <div class="text-gray-500 text-sm">总预约项</div>
+                    <div class="text-gray-500 text-sm">待处理预约项</div>
                     <div class="text-2xl font-bold mt-2">{{ statistics.total || 0 }}</div>
                 </div>
             </el-card>
@@ -79,6 +79,14 @@
         </div>
 
         <el-card class="!border-none mt-4" shadow="never">
+            <template #header>
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <div class="font-semibold">待确认预约项</div>
+                        <div class="text-sm text-gray-400 mt-1">用于本人确认、取消尚未进入正式履约的预约项。</div>
+                    </div>
+                </div>
+            </template>
             <el-table size="large" v-loading="pager.loading" :data="pager.lists">
                 <el-table-column label="预约项ID" prop="id" width="100" />
                 <el-table-column label="订单编号" prop="order_sn" min-width="180" />
@@ -88,12 +96,10 @@
                         <div class="text-gray-400 text-xs">{{ row.customer_phone || '-' }}</div>
                     </template>
                 </el-table-column>
-                <el-table-column label="服务信息" min-width="220">
+                <el-table-column label="预约内容" min-width="220">
                     <template #default="{ row }">
                         <div>{{ row.package_name || '-' }}</div>
-                        <div class="text-gray-400 text-xs">
-                            {{ row.service_date }}
-                        </div>
+                        <div class="text-gray-400 text-xs">{{ row.service_date }}</div>
                     </template>
                 </el-table-column>
                 <el-table-column label="金额" width="130">
@@ -158,7 +164,7 @@
             </div>
         </el-card>
 
-        <el-dialog v-model="detailVisible" title="预约详情" width="760px">
+        <el-dialog v-model="detailVisible" title="预约确认详情" width="760px">
             <div v-if="currentDetail">
                 <el-descriptions :column="2" border>
                     <el-descriptions-item label="预约项ID">{{ currentDetail.id }}</el-descriptions-item>
@@ -194,7 +200,7 @@ import {
     myBookingConfirm,
     myBookingDetail,
     myBookingStatistics,
-    myBookings
+    myBookings,
 } from '@/api/staff-center'
 
 const queryParams = reactive({
@@ -203,32 +209,27 @@ const queryParams = reactive({
     contact_mobile: '',
     status: '',
     start_date: '',
-    end_date: ''
+    end_date: '',
 })
 
 const dateRange = ref<string[]>([])
-const statistics = ref<any>({})
+const statistics = ref<Record<string, unknown>>({})
 const detailVisible = ref(false)
-const currentDetail = ref<any>(null)
+const currentDetail = ref<Record<string, unknown> | null>(null)
 
-const {
-    pager,
-    getLists: fetchLists,
-    resetPage,
-    resetParams
-} = usePaging({
+const { pager, getLists: fetchLists, resetPage, resetParams } = usePaging({
     fetchFun: myBookings,
-    params: queryParams
+    params: queryParams,
 })
 
 const getStatistics = async () => {
-    statistics.value = (await myBookingStatistics()) || {}
+    statistics.value = ((await myBookingStatistics()) || {}) as Record<string, unknown>
 }
 
 const getLists = async () => {
-    const res = await fetchLists()
-    if (res?.extend) {
-        statistics.value = res.extend
+    const result = await fetchLists()
+    if (result?.extend) {
+        statistics.value = result.extend
     }
 }
 
@@ -240,27 +241,27 @@ const handleReset = () => {
     getStatistics()
 }
 
-const handleDetail = async (row: any) => {
-    currentDetail.value = await myBookingDetail({ id: row.id })
+const handleDetail = async (row: Record<string, unknown>) => {
+    currentDetail.value = (await myBookingDetail({ id: row.id })) as Record<string, unknown>
     detailVisible.value = true
 }
 
-const handleConfirm = async (row: any) => {
-    await ElMessageBox.confirm('确认该预约项后将推进订单确认流程，是否继续？', '提示')
+const handleConfirm = async (row: Record<string, unknown>) => {
+    await ElMessageBox.confirm('确认该预约项后将推进预约确认流程，是否继续？', '提示')
     await myBookingConfirm({ id: row.id })
     ElMessage.success('确认成功')
     getLists()
     getStatistics()
 }
 
-const handleCancel = async (row: any) => {
-    const res = await ElMessageBox.prompt('请输入取消原因（选填）', '取消本人预约项', {
+const handleCancel = async (row: Record<string, unknown>) => {
+    const result = await ElMessageBox.prompt('请输入取消原因（选填）', '取消待确认预约项', {
         confirmButtonText: '确认取消',
         cancelButtonText: '返回',
         inputType: 'textarea',
-        inputPlaceholder: '可不填'
+        inputPlaceholder: '可不填',
     })
-    await myBookingCancel({ id: row.id, reason: res.value || '' })
+    await myBookingCancel({ id: row.id, reason: result.value || '' })
     ElMessage.success('取消成功')
     getLists()
     getStatistics()
@@ -271,7 +272,7 @@ const getItemStatusType = (status: number): 'warning' | 'primary' | 'success' | 
         0: 'warning',
         1: 'primary',
         2: 'success',
-        3: 'info'
+        3: 'info',
     }
     return map[status] || 'info'
 }
@@ -285,9 +286,9 @@ const formatCountdown = (seconds: number | string | undefined) => {
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainSeconds).padStart(2, '0')}`
 }
 
-const getConfirmRemainText = (row: any) => {
-    if (Number(row?.confirm_deadline_time || 0) <= 0) return '-'
-    return formatCountdown(row?.confirm_remain_seconds || 0)
+const getConfirmRemainText = (row: Record<string, unknown>) => {
+    if (Number(row.confirm_deadline_time || 0) <= 0) return '-'
+    return formatCountdown(Number(row.confirm_remain_seconds || 0))
 }
 
 watch(
@@ -296,7 +297,7 @@ watch(
         queryParams.start_date = value?.[0] || ''
         queryParams.end_date = value?.[1] || ''
     },
-    { deep: true }
+    { deep: true },
 )
 
 onActivated(() => {

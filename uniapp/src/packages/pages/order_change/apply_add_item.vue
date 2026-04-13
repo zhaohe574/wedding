@@ -605,7 +605,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getOrderDetail } from '@/api/order'
-import { applyAddItem, checkCanChange } from '@/api/orderChange'
+import { applyAddItem, checkCanChange } from '@/packages/common/api/orderChange'
 import { getStaffList, getStaffPackages } from '@/api/staff'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'

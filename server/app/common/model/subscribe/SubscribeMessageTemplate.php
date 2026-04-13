@@ -18,6 +18,8 @@ class SubscribeMessageTemplate extends BaseModel
 {
     protected $name = 'subscribe_message_template';
 
+    public const PLACEHOLDER_TEMPLATE_PREFIX = 'TEMPLATE_ID_';
+
     // 状态
     const STATUS_DISABLED = 0;  // 禁用
     const STATUS_ENABLED = 1;   // 启用
@@ -123,6 +125,57 @@ class SubscribeMessageTemplate extends BaseModel
         return self::where('scene', $scene)
             ->where('status', self::STATUS_ENABLED)
             ->find();
+    }
+
+    /**
+     * @notes 是否为占位模板ID
+     * @param string|null $templateId
+     * @return bool
+     */
+    public static function isPlaceholderTemplateId(?string $templateId): bool
+    {
+        $templateId = trim((string) $templateId);
+        return $templateId !== '' && str_starts_with($templateId, self::PLACEHOLDER_TEMPLATE_PREFIX);
+    }
+
+    /**
+     * @notes 是否已配置真实模板ID
+     * @param string|null $templateId
+     * @return bool
+     */
+    public static function isUsableTemplateId(?string $templateId): bool
+    {
+        $templateId = trim((string) $templateId);
+        return $templateId !== '' && !self::isPlaceholderTemplateId($templateId);
+    }
+
+    /**
+     * @notes 获取模板配置状态
+     * @param string|null $templateId
+     * @return string
+     */
+    public static function getConfigStatus(?string $templateId): string
+    {
+        $templateId = trim((string) $templateId);
+        if ($templateId === '') {
+            return 'unbound';
+        }
+
+        return self::isPlaceholderTemplateId($templateId) ? 'placeholder' : 'configured';
+    }
+
+    /**
+     * @notes 获取模板配置状态文案
+     * @param string|null $templateId
+     * @return string
+     */
+    public static function getConfigStatusDesc(?string $templateId): string
+    {
+        return match (self::getConfigStatus($templateId)) {
+            'configured' => '已配置真实模板',
+            'placeholder' => '待填写真实模板ID',
+            default => '未绑定模板',
+        };
     }
 
     /**

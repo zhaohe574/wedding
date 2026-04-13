@@ -119,7 +119,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { getComplaintDetail, rateComplaint } from '@/api/aftersale'
+import { getComplaintDetail, rateComplaint } from '@/packages/common/api/aftersale'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'

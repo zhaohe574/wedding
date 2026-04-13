@@ -100,6 +100,91 @@ class StaffCenterController extends BaseApiController
     }
 
     /**
+     * @notes 证书列表
+     */
+    public function certificateLists()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->get()->goCheck('certificateLists');
+        $result = StaffCenterLogic::certificateLists($this->userId, $params);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 证书详情
+     */
+    public function certificateDetail()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->get()->goCheck('certificateDetail');
+        $result = StaffCenterLogic::certificateDetail($this->userId, (int) $params['id']);
+        if (empty($result)) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 添加证书
+     */
+    public function certificateAdd()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('certificateAdd');
+        $result = StaffCenterLogic::certificateAdd($this->userId, $params);
+        if (true === $result) {
+            return $this->success('提交成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
+     * @notes 编辑证书
+     */
+    public function certificateEdit()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('certificateEdit');
+        $result = StaffCenterLogic::certificateEdit($this->userId, (int) $params['id'], $params);
+        if (true === $result) {
+            return $this->success('已重新提交审核', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
+     * @notes 删除证书
+     */
+    public function certificateDelete()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('certificateDelete');
+        $result = StaffCenterLogic::certificateDelete($this->userId, (int) $params['id']);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
      * @notes 作品列表
      */
     public function workLists()
