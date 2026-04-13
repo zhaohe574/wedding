@@ -2714,4 +2714,9 @@ DELETE FROM `la_config` WHERE `type` = 'order_confirmation_letter' AND `name` = 
 INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) VALUES
 ('order_confirmation_letter', 'remark_template', '请您认真核对确认函中的服务日期、地点、金额与联系人信息，如有变更请及时联系订单服务人员。', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 
+-- 下线服务人员详情页风格配置
+DELETE FROM `la_config`
+WHERE `type` = 'feature_switch'
+  AND `name` = 'staff_detail_style';
+
 SET FOREIGN_KEY_CHECKS = 1;

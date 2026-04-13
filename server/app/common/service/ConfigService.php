@@ -33,6 +33,7 @@ class ConfigService
     public static function set(string $type, string $name, $value)
     {
         $original = $value;
+        $cache = new ConfigCache();
         if (is_array($value)) {
             $value = json_encode($value, JSON_UNESCAPED_UNICODE);
         }
@@ -50,7 +51,10 @@ class ConfigService
             $data->save();
         }
 
-        (new ConfigCache())->deleteTag();
+        // 先精确删除当前键和类型聚合缓存，再补充做一次 tag 清理，避免旧缓存残留。
+        $cache->deleteValue($type, $name);
+        $cache->deleteValue($type);
+        $cache->deleteTag();
 
         // 返回原始值
         return $original;

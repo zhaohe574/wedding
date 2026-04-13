@@ -42,6 +42,15 @@ class ConfigCache extends BaseCache
         return $this->store($this->storeName)->tag($this->tagName)->set($key, $value, $ttl);
     }
 
+    /**
+     * @notes 精确删除单个配置缓存，规避历史孤儿缓存文件无法通过 tag 清理的问题
+     */
+    public function deleteValue(string $type, string $name = ''): bool
+    {
+        $key = $this->buildKey($type, $name);
+        return $this->store($this->storeName)->delete($key);
+    }
+
     public function buildKey(string $type, string $name = ''): string
     {
         return $this->prefix . $type . ($name !== '' ? '_' . $name : '');

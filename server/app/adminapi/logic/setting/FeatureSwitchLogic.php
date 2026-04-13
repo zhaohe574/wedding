@@ -18,11 +18,6 @@ use app\common\service\ConfigService;
 class FeatureSwitchLogic extends BaseLogic
 {
     /**
-     * 详情页风格模式
-     */
-    private const STAFF_DETAIL_STYLE_MODES = ['classic', 'immersive', 'conversion'];
-
-    /**
      * @notes 获取功能开关
      */
     public static function getConfig(): array
@@ -36,9 +31,6 @@ class FeatureSwitchLogic extends BaseLogic
             'order_complete_by_staff' => (int) ConfigService::get('feature_switch', 'order_complete_by_staff', 0),
             'admin_dashboard_user_ids' => self::normalizeUserIds(
                 (string) ConfigService::get('feature_switch', 'admin_dashboard_user_ids', '')
-            ),
-            'staff_detail_style' => self::normalizeStyleMode(
-                (string) ConfigService::get('feature_switch', 'staff_detail_style', 'classic')
             ),
             'enable_deposit_mode' => (int) ConfigService::get('order_payment', 'enable_deposit_mode', 0),
             'deposit_type' => self::normalizeDepositType((string) ConfigService::get('order_payment', 'deposit_type', 'ratio')),
@@ -63,25 +55,10 @@ class FeatureSwitchLogic extends BaseLogic
             'admin_dashboard_user_ids',
             self::normalizeUserIds((string) ($params['admin_dashboard_user_ids'] ?? ''))
         );
-        ConfigService::set(
-            'feature_switch',
-            'staff_detail_style',
-            self::normalizeStyleMode((string) ($params['staff_detail_style'] ?? 'classic'))
-        );
         ConfigService::set('order_payment', 'enable_deposit_mode', (int) ($params['enable_deposit_mode'] ?? 0));
         ConfigService::set('order_payment', 'deposit_type', self::normalizeDepositType((string) ($params['deposit_type'] ?? 'ratio')));
         ConfigService::set('order_payment', 'deposit_value', round((float) ($params['deposit_value'] ?? 0), 2));
         ConfigService::set('order_payment', 'deposit_remark', trim((string) ($params['deposit_remark'] ?? '')));
-    }
-
-    /**
-     * @notes 规范化详情页风格
-     */
-    private static function normalizeStyleMode(string $styleMode): string
-    {
-        return in_array($styleMode, self::STAFF_DETAIL_STYLE_MODES, true)
-            ? $styleMode
-            : 'classic';
     }
 
     /**
