@@ -4,8 +4,11 @@
         <BaseNavbar title="订单详情" />
 
         <view v-if="order" class="order-detail">
-            <view class="page-body">
-                <view class="status-card" :style="{ background: statusTheme.background }">
+            <view class="page-body wm-page-content">
+                <view
+                    class="status-card wm-panel-card"
+                    :style="{ background: statusTheme.background }"
+                >
                     <view class="status-card__chip" :style="{ background: statusTheme.iconBg }">
                         <text class="status-card__chip-text">{{ order.order_status_desc }}</text>
                     </view>
@@ -60,7 +63,7 @@
                     </view>
                 </view>
 
-                <view class="card card--secondary">
+                <view class="card card--secondary wm-form-block">
                     <text class="card__title">当前说明</text>
                     <view class="sub-panel">
                         <view
@@ -80,7 +83,7 @@
                     </view>
                 </view>
 
-                <view v-if="confirmLetterAvailable" class="card card--secondary">
+                <view v-if="confirmLetterAvailable" class="card card--secondary wm-form-block">
                     <view class="card__title-row">
                         <text class="card__title">订单确认函</text>
                         <view class="inline-copy" @click="handleOpenConfirmLetter">
@@ -101,7 +104,7 @@
                     </view>
                 </view>
 
-                <view class="card card--core">
+                <view class="card card--core wm-form-block">
                     <text class="card__title">服务信息</text>
                     <view class="service-summary">
                         <view class="service-summary__topbar">
@@ -199,7 +202,7 @@
                     </view>
                 </view>
 
-                <view class="card card--core">
+                <view class="card card--core wm-form-block">
                     <text class="card__title">费用明细</text>
                     <text class="card__main-text">总价 ¥{{ formatAmount(totalOrderAmount) }}</text>
                     <text class="card__sub-text">已付 {{ paidAmountText }}</text>
@@ -247,7 +250,7 @@
                     </view>
                 </view>
 
-                <view class="card card--core">
+                <view class="card card--core wm-form-block">
                     <text class="card__title">流程进度</text>
                     <view class="progress-list">
                         <view
@@ -628,6 +631,9 @@ let payCountdownTimer: ReturnType<typeof setInterval> | null = null
 let confirmCountdownTimer: ReturnType<typeof setInterval> | null = null
 let payCountdownRefreshing = false
 let confirmCountdownRefreshing = false
+let detailRequestPromise: Promise<void> | null = null
+let hasLoadedOnce = false
+let hasBeenHidden = false
 
 const formatAmount = (value: any) => Number(value || 0).toFixed(2)
 const confirmLetterAvailable = computed(() => !!confirmLetter.value?.letter_id)
@@ -1330,7 +1336,7 @@ const syncPayCountdown = (seconds: number | string) => {
 const syncConfirmCountdown = (seconds: number | string) => {
     clearConfirmCountdown()
     confirmCountdownSeconds.value = Math.max(Number(seconds || 0), 0)
-    if (!showConfirmCountdown.value) return
+    if (!showConfirmCountdown.value || confirmCountdownSeconds.value <= 0) return
 
     confirmCountdownTimer = setInterval(async () => {
         if (confirmCountdownSeconds.value > 0) {
@@ -1375,17 +1381,27 @@ const fetchConfirmLetter = async () => {
 }
 
 const fetchDetail = async () => {
-    try {
-        order.value = await getOrderDetail({ id: orderId.value })
-        await fetchConfirmLetter()
-        syncPayCountdown(order.value?.pay_remain_seconds || 0)
-        syncConfirmCountdown(order.value?.confirm_remain_seconds || 0)
-    } catch (e: any) {
-        confirmLetter.value = null
-        clearPayCountdown()
-        clearConfirmCountdown()
-        uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
-    }
+    if (orderId.value <= 0) return
+    if (detailRequestPromise) return detailRequestPromise
+
+    detailRequestPromise = (async () => {
+        try {
+            order.value = await getOrderDetail({ id: orderId.value })
+            await fetchConfirmLetter()
+            syncPayCountdown(order.value?.pay_remain_seconds || 0)
+            syncConfirmCountdown(order.value?.confirm_remain_seconds || 0)
+            hasLoadedOnce = true
+        } catch (e: any) {
+            confirmLetter.value = null
+            clearPayCountdown()
+            clearConfirmCountdown()
+            uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+        } finally {
+            detailRequestPromise = null
+        }
+    })()
+
+    return detailRequestPromise
 }
 
 const handleOpenConfirmLetter = () => {
@@ -1595,6 +1611,9 @@ const submitVoucher = async () => {
 
 onLoad(async (options: any) => {
     $theme.setScene('consumer')
+    hasLoadedOnce = false
+    hasBeenHidden = false
+    detailRequestPromise = null
     orderId.value = Number(options?.id || 0)
     confirmLetterId.value = Number(options?.letter_id || 0)
     if (options?.payment_sn) payState.paymentSn = String(options.payment_sn)
@@ -1613,23 +1632,30 @@ onLoad(async (options: any) => {
     }
 
     if (orderId.value > 0) {
-        fetchDetail()
+        void fetchDetail()
     }
 })
 
 onShow(() => {
     $theme.setScene('consumer')
-    if (orderId.value > 0 && order.value) {
-        fetchDetail()
+    if (!hasLoadedOnce || !hasBeenHidden || orderId.value <= 0) {
+        return
     }
+
+    hasBeenHidden = false
+    void fetchDetail()
 })
 
 onHide(() => {
+    hasBeenHidden = hasLoadedOnce
     clearPayCountdown()
     clearConfirmCountdown()
 })
 
 onUnload(() => {
+    detailRequestPromise = null
+    hasLoadedOnce = false
+    hasBeenHidden = false
     clearPayCountdown()
     clearConfirmCountdown()
 })

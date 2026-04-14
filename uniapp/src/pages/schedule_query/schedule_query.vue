@@ -2,8 +2,8 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" class="schedule-query-page">
         <BaseNavbar class="schedule-query-page__navbar" title="档期查询" />
-        <view class="content">
-            <view class="card" @tap="openDatePicker">
+        <view class="content wm-page-content">
+            <view class="card wm-form-block" @tap="openDatePicker">
                 <view class="field-label">
                     <text class="required-mark" :style="{ color: $theme.ctaColor }">*</text>
                     <text class="title">预约日期</text>
@@ -11,7 +11,7 @@
                 <text class="value" :class="{ muted: !selectedDate }">{{ selectedDateText }}</text>
             </view>
 
-            <view class="card" @tap="openRegionPicker">
+            <view class="card wm-form-block" @tap="openRegionPicker">
                 <view class="field-label">
                     <text class="required-mark" :style="{ color: $theme.ctaColor }">*</text>
                     <text class="title">预约地区</text>
@@ -21,7 +21,7 @@
                 }}</text>
             </view>
 
-            <view class="card">
+            <view class="card wm-form-block">
                 <view class="head">
                     <view class="field-label">
                         <text class="required-mark" :style="{ color: $theme.ctaColor }">*</text>
@@ -45,7 +45,7 @@
                 <text v-else class="helper">暂无可选服务分类</text>
             </view>
 
-            <view class="card">
+            <view class="card wm-form-block">
                 <view class="head">
                     <text class="title">风格标签</text>
                     <text v-if="selectedTagIds.length" class="hint"
@@ -70,7 +70,7 @@
                 >
             </view>
 
-            <view class="card">
+            <view class="card wm-form-block">
                 <text class="title">关键词</text>
                 <textarea
                     v-model="keyword"
@@ -84,7 +84,7 @@
                 />
             </view>
 
-            <view class="card">
+            <view class="card wm-form-block">
                 <view class="head">
                     <text class="title">排序方式</text>
                     <text class="hint">{{ currentSortName }}</text>

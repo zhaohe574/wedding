@@ -3,6 +3,12 @@
     <PageShell scene="consumer" hasTabbar>
         <BaseNavbar title="我的订单" />
         <view class="order-page">
+            <view class="order-page__summary">
+                <text class="order-page__summary-title">按订单状态快速查看服务进度</text>
+                <text class="order-page__summary-desc"
+                    >待确认、待支付、待服务等关键节点会自动同步到这里。</text
+                >
+            </view>
             <scroll-view scroll-x class="order-page__filter-scroll" :show-scrollbar="false">
                 <view class="order-page__filter-row">
                     <view
@@ -24,33 +30,16 @@
 
             <view class="order-page__content">
                 <view v-if="loading && orders.length === 0" class="loading-state">
-                    <view class="loading-content">
-                        <tn-loading size="72" mode="flower" :color="$theme.primaryColor" />
-                        <text class="loading-text">加载中...</text>
-                    </view>
+                    <LoadingState text="订单加载中..." />
                 </view>
 
                 <view v-else-if="orders.length === 0" class="empty-state">
-                    <view class="empty-icon-wrapper">
-                        <tn-icon name="file-text" size="168" color="#D9CDC7" />
-                    </view>
-                    <text class="empty-title">当前筛选下还没有订单</text>
-                    <text class="empty-subtitle">
-                        继续去挑选服务人员，新的预约会第一时间同步到这里。
-                    </text>
-                    <view
-                        class="empty-action-btn"
-                        :style="{
-                            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${
-                                $theme.secondaryColor || $theme.primaryColor
-                            } 100%)`
-                        }"
-                        @click="goHome"
-                    >
-                        <text class="empty-action-text" :style="{ color: $theme.btnColor }">
-                            去预约
-                        </text>
-                    </view>
+                    <EmptyState
+                        title="当前筛选下还没有订单"
+                        description="继续去挑选服务人员，新的预约会第一时间同步到这里。"
+                        action-text="去预约"
+                        @action="goHome"
+                    />
                 </view>
 
                 <view v-else class="order-list">
@@ -61,8 +50,22 @@
                         @click="goDetail(order.id)"
                     >
                         <view class="order-card__body">
-                            <text class="order-card__title">{{ order.serviceTitle }}</text>
-                            <text class="order-card__summary">{{ order.displaySummary }}</text>
+                            <view class="order-card__hero">
+                                <image
+                                    class="order-card__avatar"
+                                    :src="
+                                        order.items[0]?.staffAvatar ||
+                                        '/static/images/user/default_avatar.png'
+                                    "
+                                    mode="aspectFill"
+                                />
+                                <view class="order-card__hero-main">
+                                    <text class="order-card__title">{{ order.serviceTitle }}</text>
+                                    <text class="order-card__summary">{{
+                                        order.displaySummary
+                                    }}</text>
+                                </view>
+                            </view>
                             <view class="order-card__status-row">
                                 <view
                                     class="order-card__status"
@@ -188,6 +191,8 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { onHide, onLoad, onReachBottom, onShow, onUnload } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
 import { useThemeStore } from '@/stores/theme'
 import {
     cancelOrder,
@@ -761,6 +766,25 @@ onReachBottom(() => {
     min-height: 100%;
     background: var(--wm-color-page, #fcfbf9);
 
+    &__summary {
+        display: flex;
+        flex-direction: column;
+        gap: 10rpx;
+        padding: 18rpx 37rpx 6rpx;
+    }
+
+    &__summary-title {
+        font-size: 30rpx;
+        font-weight: 700;
+        color: var(--wm-text-primary, #1e2432);
+    }
+
+    &__summary-desc {
+        font-size: 24rpx;
+        line-height: 1.6;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+
     &__filter-scroll {
         margin-top: 22rpx;
         padding: 0 37rpx;
@@ -828,9 +852,6 @@ onReachBottom(() => {
 
 .loading-state {
     min-height: 56vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .loading-content {
@@ -848,10 +869,8 @@ onReachBottom(() => {
 .empty-state {
     min-height: 56vh;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 72rpx 24rpx 96rpx;
 }
 
 .empty-icon-wrapper {
@@ -911,12 +930,37 @@ onReachBottom(() => {
     border: 1rpx solid var(--wm-color-border, #efe6e1);
     background: rgba(255, 255, 255, 0.88);
     box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.08);
+
+    &:active {
+        transform: translateY(-2rpx);
+    }
 }
 
 .order-card__body {
     display: flex;
     flex-direction: column;
     gap: 20rpx;
+}
+
+.order-card__hero {
+    display: flex;
+    align-items: center;
+    gap: 18rpx;
+}
+
+.order-card__avatar {
+    width: 92rpx;
+    height: 92rpx;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.86);
+    border: 2rpx solid rgba(255, 255, 255, 0.92);
+    box-shadow: 0 10rpx 20rpx rgba(214, 185, 167, 0.16);
+}
+
+.order-card__hero-main {
+    min-width: 0;
+    flex: 1;
 }
 
 .order-card__title {
