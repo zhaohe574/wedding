@@ -3,7 +3,7 @@
     <PageShell scene="staff">
         <BaseNavbar title="订单管理" />
 
-        <view class="page-container">
+        <view class="page-container wm-page-content">
             <z-paging
                 ref="pagingRef"
                 v-model="orderList"
@@ -802,7 +802,6 @@ onUnload(() => {
     display: flex;
     flex-direction: column;
     gap: 16rpx;
-    padding: 0 var(--wm-space-page-x, 37rpx);
     box-sizing: border-box;
 
     &--top {

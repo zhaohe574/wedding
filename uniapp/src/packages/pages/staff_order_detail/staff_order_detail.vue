@@ -5,7 +5,13 @@
 
         <view v-if="order" class="staff-order-detail">
             <view class="staff-order-detail__content">
-                <view :class="['staff-order-hero', `staff-order-hero--${statusInfo.tone}`]">
+                <view
+                    :class="[
+                        'staff-order-hero',
+                        'wm-panel-card',
+                        `staff-order-hero--${statusInfo.tone}`
+                    ]"
+                >
                     <view class="staff-order-hero__top">
                         <view :class="['hero-pill', `hero-pill--${statusInfo.badgeModifier}`]">
                             <text class="hero-pill__text">{{ statusInfo.badgeText }}</text>
@@ -28,7 +34,7 @@
                     </view>
                 </view>
 
-                <view class="staff-section-card">
+                <view class="staff-section-card wm-form-block">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">执行摘要</text>
@@ -57,7 +63,7 @@
                     </view>
                 </view>
 
-                <view class="staff-section-card">
+                <view class="staff-section-card wm-form-block">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">服务项明细</text>
@@ -70,7 +76,11 @@
                     }}</text>
 
                     <view v-if="serviceCards.length" class="service-list">
-                        <view v-for="item in serviceCards" :key="item.id" class="service-card">
+                        <view
+                            v-for="item in serviceCards"
+                            :key="item.id"
+                            class="service-card wm-soft-card"
+                        >
                             <view class="service-card__row service-card__row--start">
                                 <view class="service-card__copy">
                                     <view class="service-card__title-row">
@@ -124,12 +134,14 @@
                         </view>
                     </view>
 
-                    <view v-else class="empty-state">
-                        <text class="empty-state__text">当前没有可展示的服务项</text>
-                    </view>
+                    <EmptyState
+                        v-else
+                        title="当前没有可展示的服务项"
+                        description="套餐项、附加项和服务安排生成后，会在这里统一展示。"
+                    />
                 </view>
 
-                <view class="staff-section-card">
+                <view class="staff-section-card wm-form-block">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">金额与结算</text>
@@ -161,7 +173,7 @@
                     </view>
                 </view>
 
-                <view class="staff-section-card">
+                <view class="staff-section-card wm-form-block">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">履约与联系</text>
@@ -188,7 +200,7 @@
                     </view>
                 </view>
 
-                <view class="staff-section-card">
+                <view class="staff-section-card wm-form-block">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">订单信息</text>
@@ -208,7 +220,7 @@
                     </view>
                 </view>
 
-                <view class="staff-section-card">
+                <view class="staff-section-card wm-form-block">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">订单确认函</text>
@@ -272,6 +284,7 @@ import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
 import {
     staffCenterOrderConfirmLetterDetail,
     staffCenterOrderConfirmLetterGenerate,
@@ -343,6 +356,10 @@ let confirmCountdownTimer: ReturnType<typeof setInterval> | null = null
 let payCountdownTimer: ReturnType<typeof setInterval> | null = null
 let confirmCountdownRefreshing = false
 let payCountdownRefreshing = false
+let detailRequestPromise: Promise<void> | null = null
+let currentOrderId = 0
+let hasLoadedOnce = false
+let hasBeenHidden = false
 
 const statusConfig: Record<string, Omit<StatusDescriptor, 'badgeText'>> = {
     pending_confirm: {
@@ -912,7 +929,8 @@ const syncConfirmCountdown = (seconds: number | string) => {
     confirmCountdownSeconds.value = Math.max(Number(seconds || 0), 0)
     if (
         Number(order.value?.order_status ?? -1) !== 0 ||
-        Number(order.value?.confirm_deadline_time || 0) <= 0
+        Number(order.value?.confirm_deadline_time || 0) <= 0 ||
+        confirmCountdownSeconds.value <= 0
     ) {
         return
     }
@@ -940,7 +958,8 @@ const syncPayCountdown = (seconds: number | string) => {
     payCountdownSeconds.value = Math.max(Number(seconds || 0), 0)
     if (
         Number(order.value?.order_status ?? -1) !== 1 ||
-        Number(order.value?.pay_deadline_time || 0) <= 0
+        Number(order.value?.pay_deadline_time || 0) <= 0 ||
+        payCountdownSeconds.value <= 0
     ) {
         return
     }
@@ -964,19 +983,30 @@ const syncPayCountdown = (seconds: number | string) => {
 }
 
 const fetchDetail = async (id: number) => {
-    try {
-        const res: any = await staffCenterOrderDetail({ id })
-        order.value = res || null
-        await loadConfirmLetter()
-        syncConfirmCountdown(order.value?.confirm_remain_seconds || 0)
-        syncPayCountdown(order.value?.pay_remain_seconds || 0)
-    } catch (error: any) {
-        clearConfirmCountdown()
-        clearPayCountdown()
-        const msg =
-            typeof error === 'string' ? error : error?.msg || error?.message || '获取订单失败'
-        uni.showToast({ title: msg, icon: 'none' })
-    }
+    if (id <= 0) return
+    if (detailRequestPromise) return detailRequestPromise
+
+    detailRequestPromise = (async () => {
+        try {
+            const res: any = await staffCenterOrderDetail({ id })
+            order.value = res || null
+            currentOrderId = Number(order.value?.id || id)
+            await loadConfirmLetter()
+            syncConfirmCountdown(order.value?.confirm_remain_seconds || 0)
+            syncPayCountdown(order.value?.pay_remain_seconds || 0)
+            hasLoadedOnce = true
+        } catch (error: any) {
+            clearConfirmCountdown()
+            clearPayCountdown()
+            const msg =
+                typeof error === 'string' ? error : error?.msg || error?.message || '获取订单失败'
+            uni.showToast({ title: msg, icon: 'none' })
+        } finally {
+            detailRequestPromise = null
+        }
+    })()
+
+    return detailRequestPromise
 }
 
 const openConfirmLetterActions = () => {
@@ -1171,21 +1201,33 @@ onLoad(async (options: any) => {
         return
     }
 
-    fetchDetail(id)
+    currentOrderId = id
+    hasLoadedOnce = false
+    hasBeenHidden = false
+    detailRequestPromise = null
+    void fetchDetail(id)
 })
 
 onShow(() => {
-    if (Number(order.value?.id || 0) > 0) {
-        fetchDetail(Number(order.value.id))
+    if (!hasLoadedOnce || !hasBeenHidden || currentOrderId <= 0) {
+        return
     }
+
+    hasBeenHidden = false
+    void fetchDetail(currentOrderId)
 })
 
 onHide(() => {
+    hasBeenHidden = hasLoadedOnce
     clearConfirmCountdown()
     clearPayCountdown()
 })
 
 onUnload(() => {
+    detailRequestPromise = null
+    currentOrderId = 0
+    hasLoadedOnce = false
+    hasBeenHidden = false
     clearConfirmCountdown()
     clearPayCountdown()
 })
