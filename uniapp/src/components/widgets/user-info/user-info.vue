@@ -1,6 +1,6 @@
 <template>
     <view class="user-info-wrapper">
-        <view class="user-header-shell">
+        <view v-if="showHeader" class="user-header-shell">
             <view
                 class="user-header-status"
                 :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
@@ -43,6 +43,10 @@ const props = defineProps({
     },
     isLogin: {
         type: Boolean
+    },
+    showHeader: {
+        type: Boolean,
+        default: true
     }
 })
 

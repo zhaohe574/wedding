@@ -410,7 +410,7 @@ export default {
 @import '../../styles/dynamic.scss';
 
 .dynamic-card {
-    background: #ffffff;
+    background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.9));
     border-radius: var(--wm-radius-card-glass, 26rpx);
     border: 1rpx solid var(--wm-color-border, #efe6e1);
     overflow: hidden;
@@ -441,7 +441,7 @@ export default {
         width: 88rpx;
         height: 88rpx;
         border-radius: 50%;
-        background: #f3f4f6;
+        background: rgba(255, 255, 255, 0.82);
         border: 2rpx solid #ffffff;
         box-shadow: 0 8rpx 18rpx rgba(15, 23, 42, 0.12);
     }
@@ -469,7 +469,7 @@ export default {
         white-space: nowrap;
         font-size: 30rpx;
         font-weight: 700;
-        color: #1f2937;
+        color: var(--wm-text-primary, #1e2432);
     }
 
     &__role-badge {
@@ -483,15 +483,15 @@ export default {
         color: var(--wm-color-primary, #e85a4f);
 
         &--staff {
-            color: #bb6b44;
+            color: var(--wm-color-secondary, #c99b73);
             background: rgba(232, 90, 79, 0.1);
             border-color: rgba(232, 90, 79, 0.08);
         }
 
         &--official {
-            background: #fff4e5;
-            border-color: #ffd8a8;
-            color: #d97706;
+            background: var(--wm-color-secondary-soft, #f8efe7);
+            border-color: rgba(201, 155, 115, 0.2);
+            color: var(--wm-color-secondary, #c99b73);
         }
     }
 
@@ -505,7 +505,7 @@ export default {
 
     &__meta-text {
         font-size: 24rpx;
-        color: #98a2b3;
+        color: var(--wm-text-secondary, #7f7b78);
         line-height: 1.4;
     }
 
@@ -550,9 +550,9 @@ export default {
         text-overflow: ellipsis;
 
         &--type {
-            background: #f7f8fb;
-            border-color: #e5e7eb;
-            color: #4b5563;
+            background: rgba(255, 255, 255, 0.82);
+            border-color: var(--wm-color-border, #efe6e1);
+            color: var(--wm-text-secondary, #7f7b78);
             font-weight: 600;
         }
     }
@@ -562,7 +562,7 @@ export default {
         padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
         font-size: 28rpx;
         line-height: 1.7;
-        color: #475467;
+        color: var(--wm-text-secondary, #7f7b78);
         word-break: break-all;
     }
 
@@ -607,7 +607,7 @@ export default {
         position: relative;
         overflow: hidden;
         border-radius: var(--wm-radius-card-soft, 20rpx);
-        background: #f3f4f6;
+        background: rgba(255, 255, 255, 0.86);
     }
 
     &__media-image {
@@ -655,8 +655,12 @@ export default {
         flex-wrap: wrap;
         margin-top: var(--wm-space-card-padding-lg, 24rpx);
         padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx);
-        background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
-        border-top: 1rpx solid #eef1f5;
+        background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.96) 0%,
+            rgba(255, 247, 244, 0.92) 100%
+        );
+        border-top: 1rpx solid var(--wm-color-border, #efe6e1);
     }
 
     &__stats {
@@ -673,7 +677,7 @@ export default {
         align-items: center;
         gap: 8rpx;
         font-size: 24rpx;
-        color: #98a2b3;
+        color: var(--wm-text-secondary, #7f7b78);
 
         &.is-active {
             color: var(--wm-color-primary, #e85a4f);
@@ -692,15 +696,15 @@ export default {
         height: 76rpx;
         border-radius: 999rpx;
         padding: 0 24rpx;
-        border: 1rpx solid #e5e7eb;
-        background: #ffffff;
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        background: rgba(255, 255, 255, 0.9);
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 8rpx;
         font-size: 24rpx;
         font-weight: 600;
-        color: #4b5563;
+        color: var(--wm-text-primary, #1e2432);
         transition: all 0.2s ease;
 
         &:active {
@@ -708,7 +712,7 @@ export default {
         }
 
         &--ghost {
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.9);
         }
 
         &--primary {
@@ -732,8 +736,8 @@ export default {
         width: 76rpx;
         height: 76rpx;
         border-radius: 50%;
-        border: 1rpx solid #e5e7eb;
-        background: #ffffff;
+        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        background: rgba(255, 255, 255, 0.9);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -741,7 +745,7 @@ export default {
 
         &:active {
             transform: scale(0.98);
-            background: #f8fafc;
+            background: rgba(255, 241, 238, 0.72);
         }
     }
 }
@@ -943,8 +947,12 @@ export default {
     .dynamic-card__footer {
         gap: var(--wm-space-section-gap-lg, 16rpx);
         padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx);
-        background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
-        border-top: 1rpx solid #eef1f5;
+        background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.96) 0%,
+            rgba(255, 247, 244, 0.92) 100%
+        );
+        border-top: 1rpx solid var(--wm-color-border, #efe6e1);
     }
 
     .dynamic-card__stats {
