@@ -22,8 +22,11 @@
                 </view>
             </view>
 
-            <view class="news-page__surface cinema-surface">
-                <navigator class="news-page__search glass-card" url="/pages/search/search">
+            <view class="news-page__surface cinema-surface wm-page-content">
+                <navigator
+                    class="news-page__search glass-card wm-panel-card"
+                    url="/pages/search/search"
+                >
                     <view class="news-page__search-head">
                         <view>
                             <text class="news-page__search-label">灵感检索</text>
@@ -34,7 +37,7 @@
                     <tn-search-box placeholder="请输入关键词搜索" :disabled="true"></tn-search-box>
                 </navigator>
 
-                <view class="news-page__tabs cinema-panel">
+                <view class="news-page__tabs cinema-panel wm-panel-card">
                     <view class="news-page__tabs-head">
                         <view>
                             <text class="news-page__section-title">精选栏目</text>
@@ -72,7 +75,7 @@ import PageShell from '@/components/base/PageShell.vue'
 
 const tabList = ref<any>([])
 const current = ref<number>(0)
-const themeStore = useThemeStore()
+useThemeStore()
 
 const activeTabName = computed(() => tabList.value[current.value]?.name || '全部')
 

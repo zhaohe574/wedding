@@ -6,7 +6,7 @@
         <view v-if="detail" class="dynamic-detail">
             <scroll-view scroll-y class="dynamic-detail__scroll" :style="scrollStyle">
                 <view class="dynamic-detail__content">
-                    <view class="dynamic-detail__author-card">
+                    <view class="dynamic-detail__author-card wm-panel-card">
                         <view class="dynamic-detail__author-main">
                             <image
                                 :src="
@@ -116,7 +116,7 @@
                         </view>
                     </view>
 
-                    <view class="dynamic-detail__copy">
+                    <view class="dynamic-detail__copy wm-soft-card">
                         <view v-if="showMetaTags" class="dynamic-detail__tag-row">
                             <text
                                 v-if="detail.dynamic_type && detail.dynamic_type !== 1"
@@ -164,7 +164,7 @@
                         <text class="dynamic-detail__location-text">{{ detail.location }}</text>
                     </view>
 
-                    <view class="dynamic-detail__comments">
+                    <view class="dynamic-detail__comments wm-panel-card">
                         <view class="dynamic-detail__comments-head">
                             <text class="dynamic-detail__comments-title">评论区</text>
                             <view class="dynamic-detail__comments-sort">
@@ -1188,7 +1188,7 @@ watch(showComment, (visible) => {
     }
 
     &__content {
-        padding: 22rpx 37rpx calc(37rpx + env(safe-area-inset-bottom));
+        padding: 22rpx 24rpx calc(37rpx + env(safe-area-inset-bottom));
     }
 
     &__author-card {

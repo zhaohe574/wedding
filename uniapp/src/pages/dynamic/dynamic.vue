@@ -2,18 +2,7 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" hasTabbar>
         <view class="dynamic-page">
-            <view class="dynamic-page__header">
-                <view
-                    class="dynamic-page__status"
-                    :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
-                ></view>
-                <view
-                    class="dynamic-page__nav"
-                    :style="{ minHeight: `${navBarMetrics.contentHeight + 14}px` }"
-                >
-                    <text class="dynamic-page__title">动态</text>
-                </view>
-            </view>
+            <MpPageHeader title="动态" surface="glass" />
 
             <view class="dynamic-page__body">
                 <view class="dynamic-page__filters-shell">
@@ -157,9 +146,9 @@
 import { computed, ref, watch } from 'vue'
 import { onLoad, onReachBottom, onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
+import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import DynamicCard from '@/components/business/DynamicCard.vue'
 import PageShell from '@/components/base/PageShell.vue'
-import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
 import { getDynamicList, likeDynamic } from '@/api/dynamic'
 import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
 import { useThemeStore } from '@/stores/theme'
@@ -170,7 +159,6 @@ import type { DynamicCardData } from '@/utils/dynamic'
 
 const $theme = useThemeStore()
 const userStore = useUserStore()
-const navBarMetrics = useNavBarMetrics()
 const sortPopupMaskZIndex = 20108
 const sortPopupZIndex = 20110
 
@@ -372,24 +360,6 @@ onShareAppMessage(() => ({
     --dynamic-page-chip-radius: 37rpx;
     --dynamic-page-chip-height: 82rpx;
     --dynamic-page-section-gap: 30rpx;
-
-    &__header {
-        position: relative;
-    }
-
-    &__nav {
-        display: flex;
-        align-items: flex-end;
-        padding: 19rpx var(--wm-space-page-x, 37rpx) 0;
-        box-sizing: border-box;
-    }
-
-    &__title {
-        font-size: 52rpx;
-        font-weight: 700;
-        line-height: 1.05;
-        color: $dynamic-text;
-    }
 
     &__filters-shell {
         padding: 30rpx 0 22rpx;

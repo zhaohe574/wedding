@@ -3,7 +3,7 @@
     <PageShell scene="consumer">
         <BaseNavbar title="关于我们" />
 
-        <view class="as-us-page">
+        <view class="as-us-page wm-page-content">
             <!-- 顶部装饰背景 -->
             <view class="header-decoration" :style="headerStyle"></view>
 
@@ -23,7 +23,7 @@
             <!-- 信息卡片区域 -->
             <view class="info-cards">
                 <!-- 版本信息卡片 -->
-                <view class="info-card glass-card">
+                <view class="info-card glass-card wm-panel-card">
                     <view class="card-icon-wrapper" :style="iconWrapperStyle">
                         <tn-icon name="tip" size="40" :color="$theme.primaryColor" />
                     </view>
@@ -36,7 +36,10 @@
                 </view>
 
                 <!-- 联系方式卡片 -->
-                <view class="info-card glass-card" v-if="appStore.getWebsiteConfig.contact_phone">
+                <view
+                    class="info-card glass-card wm-panel-card"
+                    v-if="appStore.getWebsiteConfig.contact_phone"
+                >
                     <view class="card-icon-wrapper" :style="iconWrapperStyle">
                         <tn-icon name="phone" size="40" :color="$theme.primaryColor" />
                     </view>
@@ -49,7 +52,10 @@
                 </view>
 
                 <!-- 邮箱卡片 -->
-                <view class="info-card glass-card" v-if="appStore.getWebsiteConfig.contact_email">
+                <view
+                    class="info-card glass-card wm-panel-card"
+                    v-if="appStore.getWebsiteConfig.contact_email"
+                >
                     <view class="card-icon-wrapper" :style="iconWrapperStyle">
                         <tn-icon name="mail" size="40" :color="$theme.primaryColor" />
                     </view>
@@ -62,7 +68,10 @@
                 </view>
 
                 <!-- 地址卡片 -->
-                <view class="info-card glass-card" v-if="appStore.getWebsiteConfig.company_address">
+                <view
+                    class="info-card glass-card wm-panel-card"
+                    v-if="appStore.getWebsiteConfig.company_address"
+                >
                     <view class="card-icon-wrapper" :style="iconWrapperStyle">
                         <tn-icon name="location" size="40" :color="$theme.primaryColor" />
                     </view>
@@ -76,7 +85,7 @@
             </view>
 
             <!-- 关于我们描述 -->
-            <view class="about-section glass-card">
+            <view class="about-section glass-card wm-panel-card">
                 <view class="section-header">
                     <view
                         class="header-line"
