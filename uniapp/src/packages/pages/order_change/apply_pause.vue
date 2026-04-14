@@ -4,7 +4,7 @@
         <BaseNavbar title="申请暂停" />
 
         <view class="order-change-page">
-            <view class="order-change-page__wrapper">
+            <view class="order-change-page__wrapper wm-page-content">
                 <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
                     <tn-icon name="tip-fill" size="34" color="#C98524" />
                     <text class="order-change-tip-card__text">

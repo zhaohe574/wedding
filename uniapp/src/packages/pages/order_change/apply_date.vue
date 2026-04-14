@@ -4,7 +4,7 @@
         <BaseNavbar title="申请改期" />
 
         <view class="order-change-page">
-            <view class="order-change-page__wrapper">
+            <view class="order-change-page__wrapper wm-page-content">
                 <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
                     <tn-icon name="calendar" size="34" color="#E85A4F" />
                     <text class="order-change-tip-card__text">

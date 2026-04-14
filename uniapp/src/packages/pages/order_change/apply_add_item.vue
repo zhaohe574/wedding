@@ -3,7 +3,7 @@
     <PageShell scene="consumer" hasSafeBottom>
         <BaseNavbar title="加项申请" />
         <view class="order-change-page">
-            <view class="order-change-page__wrapper">
+            <view class="order-change-page__wrapper wm-page-content">
                 <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
                     <tn-icon name="gift" size="34" color="#E85A4F" />
                     <text class="order-change-tip-card__text"
