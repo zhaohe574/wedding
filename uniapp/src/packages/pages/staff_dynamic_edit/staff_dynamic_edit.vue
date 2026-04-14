@@ -5,7 +5,7 @@
 
         <view class="page-container">
             <view class="page-section page-section--content">
-                <BaseCard variant="glass" scene="staff" class="form-card">
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">类型与内容</text>
                     </view>
@@ -45,7 +45,7 @@
                             <text class="field-label field-label--required">动态标题</text>
                             <text class="field-side-text">{{ form.title.length }}/100</text>
                         </view>
-                        <view class="field-input-shell">
+                        <view class="field-input-shell wm-soft-card">
                             <tn-input
                                 v-model="form.title"
                                 placeholder="输入动态标题"
@@ -61,7 +61,7 @@
                             <text class="field-label field-label--required">正文内容</text>
                             <text class="field-side-text">{{ form.content.length }}/2000</text>
                         </view>
-                        <view class="textarea-shell">
+                        <view class="textarea-shell wm-soft-card">
                             <textarea
                                 v-model="form.content"
                                 class="field-textarea"
@@ -76,7 +76,7 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card">
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">媒体内容</text>
                     </view>
@@ -110,7 +110,7 @@
 
                                 <view
                                     v-if="form.images.length < 9"
-                                    class="upload-panel upload-panel--grid"
+                                    class="upload-panel upload-panel--grid wm-soft-card"
                                     @click="chooseImage"
                                 >
                                     <view
@@ -162,7 +162,7 @@
 
                             <view
                                 v-else
-                                class="upload-panel upload-panel--cover"
+                                class="upload-panel upload-panel--cover wm-soft-card"
                                 @click="chooseVideo"
                             >
                                 <view class="upload-panel__icon-wrap">
@@ -206,7 +206,7 @@
 
                             <view
                                 v-else
-                                class="upload-panel upload-panel--sub"
+                                class="upload-panel upload-panel--sub wm-soft-card"
                                 @click="chooseVideoCover"
                             >
                                 <view class="upload-panel__icon-wrap upload-panel__icon-wrap--sm">
@@ -224,7 +224,7 @@
                     </template>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card">
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">更多设置</text>
                     </view>
@@ -265,7 +265,7 @@
                             </view>
                         </view>
 
-                        <view v-if="tagInputVisible" class="tag-input-shell">
+                        <view v-if="tagInputVisible" class="tag-input-shell wm-soft-card">
                             <input
                                 v-model="tagInputValue"
                                 class="tag-input"

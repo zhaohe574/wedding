@@ -3,7 +3,7 @@
     <PageShell scene="staff">
         <BaseNavbar title="动态管理" />
 
-        <view class="page-container">
+        <view class="page-container wm-page-content">
             <z-paging
                 ref="pagingRef"
                 v-model="dynamicList"
@@ -32,6 +32,7 @@
                                     :key="item.key"
                                     :class="[
                                         'hero-metric',
+                                        'wm-soft-card',
                                         {
                                             'hero-metric--selected':
                                                 currentStatusFilter === item.key
@@ -223,15 +224,13 @@
                         </BaseCard>
                     </template>
 
-                    <view v-else-if="hasLoaded" class="dynamic-empty-state">
-                        <view class="dynamic-empty-state__icon">
-                            <tn-icon name="edit" size="82" color="#D8CEC8" />
-                        </view>
-                        <text class="dynamic-empty-state__title">{{ emptyStateTitle }}</text>
-                        <view class="dynamic-empty-state__action" @click="handleAdd">
-                            <text class="dynamic-empty-state__action-text">发布动态</text>
-                        </view>
-                    </view>
+                    <EmptyState
+                        v-else-if="hasLoaded"
+                        :title="emptyStateTitle"
+                        description="动态内容、审核状态和曝光数据会统一汇总在这里。"
+                        action-text="发布动态"
+                        @action="handleAdd"
+                    />
                 </view>
             </z-paging>
         </view>
@@ -243,6 +242,7 @@ import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
 import FilterChip from '@/components/base/FilterChip.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
@@ -636,7 +636,6 @@ onShow(async () => {
     display: flex;
     flex-direction: column;
     gap: 16rpx;
-    padding: 0 var(--wm-space-page-x, 37rpx);
     box-sizing: border-box;
 
     &--top {
