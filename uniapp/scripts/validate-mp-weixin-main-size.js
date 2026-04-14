@@ -60,7 +60,10 @@ function getTopLevelEntrySize(entryPath) {
         return stat.size
     }
 
-    return getFilesRecursively(entryPath).reduce((sum, filePath) => sum + fs.statSync(filePath).size, 0)
+    return getFilesRecursively(entryPath).reduce(
+        (sum, filePath) => sum + fs.statSync(filePath).size,
+        0
+    )
 }
 
 function printSectionTitle(title) {

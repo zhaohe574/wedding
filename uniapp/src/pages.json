@@ -32,6 +32,11 @@
                 // #ifdef H5
                 "navigationBarTitleText": "个人中心"
                 // #endif
+            },
+            "meta": {
+                "experience_contract": "user-center-tab",
+                "scope_level": "consumer-hub",
+                "tabbar_navigation": "switchTab-only"
             }
         },
         {
@@ -210,7 +215,9 @@
                     "navigationBarTitleText": "我的收藏"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -234,7 +241,9 @@
                     "navigationBarTitleText": "我的申请"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -243,7 +252,9 @@
                     "navigationBarTitleText": "变更详情"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -252,7 +263,9 @@
                     "navigationBarTitleText": "申请改期"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -261,7 +274,9 @@
                     "navigationBarTitleText": "申请暂停"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -270,7 +285,9 @@
                     "navigationBarTitleText": "暂停详情"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -279,7 +296,9 @@
                     "navigationBarTitleText": "加项申请"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -288,7 +307,9 @@
                     "navigationBarTitleText": "我的评价"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -297,7 +318,9 @@
                     "navigationBarTitleText": "发表评价"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -306,7 +329,9 @@
                     "navigationBarTitleText": "评价详情"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -315,7 +340,9 @@
                     "navigationBarTitleText": "消息中心"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -324,7 +351,9 @@
                     "navigationBarTitleText": "售后服务"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -333,7 +362,9 @@
                     "navigationBarTitleText": "我的工单"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -342,7 +373,9 @@
                     "navigationBarTitleText": "提交工单"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -351,7 +384,9 @@
                     "navigationBarTitleText": "工单详情"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -360,7 +395,9 @@
                     "navigationBarTitleText": "投诉详情"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -369,7 +406,9 @@
                     "navigationBarTitleText": "我的投诉"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -378,7 +417,9 @@
                     "navigationBarTitleText": "发起投诉"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -387,7 +428,9 @@
                     "navigationBarTitleText": "回访问卷"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
             {
@@ -396,7 +439,9 @@
                     "navigationBarTitleText": "回访问卷详情"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
             },
 			{
@@ -405,7 +450,9 @@
 				    "navigationBarTitleText": "我的钱包"
 				},
 				"meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
 			},
             {
@@ -414,7 +461,9 @@
 				    "navigationBarTitleText": "充值"
 				},
 				"meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
 			},
             {
@@ -423,7 +472,9 @@
 				    "navigationBarTitleText": "充值记录"
 				},
 				"meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
                 }
 			},
             {
@@ -477,7 +528,9 @@
                     "navigationBarTitleText": "服务人员中心"
                 },
                 "meta": {
-                    "auth": true
+                    "auth": true,
+                    "experience_contract": "staff-center-workspace",
+                    "scene_lock": "staff"
                 }
             },
             {
@@ -610,6 +663,10 @@
                 "path": "pages/admin_dashboard/admin_dashboard",
                 "style": {
                     "navigationBarTitleText": "管理员看板"
+                },
+                "meta": {
+                    "experience_contract": "admin-dashboard-workspace",
+                    "scene_lock": "admin"
                 }
             }
 		]
@@ -624,6 +681,7 @@
         }
     },
     "tabBar": {
+        // 统一体验合同：tabBar 页面只能使用 switchTab，不能依赖 URL 参数传 scene/source/back。
         "custom": true,
         "iconWidth": "20px",
         "list": [
