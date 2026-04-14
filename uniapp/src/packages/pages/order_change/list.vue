@@ -3,7 +3,7 @@
     <PageShell scene="consumer">
         <BaseNavbar title="我的申请" />
 
-        <view class="change-list-page">
+        <view class="change-list-page wm-page-content">
             <scroll-view scroll-x class="change-list-page__filter-scroll" :show-scrollbar="false">
                 <view class="change-list-page__filter-row">
                     <view
@@ -148,7 +148,12 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
-import { cancelChange, cancelPause, getChangeList, getPauseList } from '@/packages/common/api/orderChange'
+import {
+    cancelChange,
+    cancelPause,
+    getChangeList,
+    getPauseList
+} from '@/packages/common/api/orderChange'
 import { useThemeStore } from '@/stores/theme'
 import {
     getChangeStatusMeta,

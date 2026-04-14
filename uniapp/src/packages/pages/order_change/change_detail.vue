@@ -9,7 +9,7 @@
                 <text class="order-change-page__center-text">加载变更详情中...</text>
             </view>
 
-            <view v-else-if="detail" class="order-change-page__wrapper">
+            <view v-else-if="detail" class="order-change-page__wrapper wm-page-content">
                 <view
                     class="order-change-status-card"
                     :class="`order-change-status-card--${changeStatus.tone}`"
