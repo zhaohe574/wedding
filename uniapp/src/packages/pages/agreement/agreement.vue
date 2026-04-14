@@ -2,8 +2,10 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer">
         <BaseNavbar :title="pageTitle" />
-        <view class="agreement-page">
-            <u-parse :html="agreementContent"></u-parse>
+        <view class="agreement-page wm-page-content">
+            <view class="agreement-page__card wm-panel-card">
+                <u-parse :html="agreementContent"></u-parse>
+            </view>
         </view>
     </PageShell>
 </template>
@@ -37,7 +39,10 @@ onLoad((options: any) => {
 
 <style lang="scss" scoped>
 .agreement-page {
-    padding: 30rpx 24rpx 48rpx;
     background: transparent;
+}
+
+.agreement-page__card {
+    padding: 30rpx;
 }
 </style>

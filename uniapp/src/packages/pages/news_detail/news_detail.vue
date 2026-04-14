@@ -2,9 +2,9 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer">
         <BaseNavbar title="详情" />
-        <view class="news-detail-page cinema-page">
+        <view class="news-detail-page cinema-page wm-page-content">
             <view class="news-detail-page__shell">
-                <view class="news-detail-page__header cinema-panel">
+                <view class="news-detail-page__header cinema-panel wm-panel-card">
                     <text class="news-detail-page__title">{{ newsData.title }}</text>
                     <view class="news-detail-page__meta">
                         <view class="news-detail-page__meta-item" v-if="newsData.author">
@@ -25,7 +25,7 @@
                     </view>
                 </view>
 
-                <view class="news-detail-page__content wm-panel">
+                <view class="news-detail-page__content wm-panel wm-panel-card">
                     <view class="news-detail-page__summary" v-if="newsData.abstract">
                         <text class="news-detail-page__summary-label">摘要：</text>
                         <text class="news-detail-page__summary-text">{{ newsData.abstract }}</text>

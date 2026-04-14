@@ -11,7 +11,7 @@
             use-page-scroll
             :hide-empty-view="true"
         >
-            <view v-if="collectData.length" class="collection-page">
+            <view v-if="collectData.length" class="collection-page wm-page-content">
                 <u-swipe-action
                     v-for="(item, index) in collectData"
                     :key="item.id"
