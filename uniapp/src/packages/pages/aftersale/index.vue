@@ -4,7 +4,7 @@
         <BaseNavbar title="售后服务" />
 
         <view class="aftersale-home">
-            <view class="aftersale-home__wrapper">
+            <view class="aftersale-home__wrapper wm-page-content">
                 <BaseCard variant="surface" scene="consumer" class="aftersale-home__intro">
                     <text class="aftersale-home__intro-title">售后问题统一处理</text>
                     <text class="aftersale-home__intro-summary">
@@ -34,11 +34,19 @@
                         variant="surface"
                         scene="consumer"
                         :interactive="true"
+                        padding="28rpx 30rpx"
+                        border-radius="44rpx"
+                        background="var(--wm-color-primary-soft, rgba(255, 241, 238, 0.96))"
+                        border="1rpx solid var(--wm-color-border-strong, rgba(244, 199, 191, 0.96))"
                         class="aftersale-home__entry-card aftersale-home__entry-card--ticket"
                         @click="goCreateTicket"
                     >
                         <view class="aftersale-home__entry-icon">
-                            <tn-icon name="file-text" :size="28" color="#E85A4F" />
+                            <tn-icon
+                                name="file-text"
+                                :size="28"
+                                color="var(--wm-color-primary, #E85A4F)"
+                            />
                         </view>
                         <view class="aftersale-home__entry-copy">
                             <text class="aftersale-home__entry-title">提交工单</text>
@@ -49,18 +57,24 @@
                                 适合需要平台跟进处理的服务问题
                             </text>
                         </view>
-                        <tn-icon name="right" size="24" color="#B4ACA8" />
+                        <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #B4ACA8)" />
                     </BaseCard>
 
                     <BaseCard
                         variant="surface"
                         scene="consumer"
                         :interactive="true"
+                        padding="28rpx 30rpx"
+                        border-radius="44rpx"
                         class="aftersale-home__entry-card"
                         @click="goCreateComplaint"
                     >
                         <view class="aftersale-home__entry-icon">
-                            <tn-icon name="warning-circle" :size="28" color="#B44A3A" />
+                            <tn-icon
+                                name="warning-circle"
+                                :size="28"
+                                color="var(--wm-color-danger, #C94B49)"
+                            />
                         </view>
                         <view class="aftersale-home__entry-copy">
                             <text class="aftersale-home__entry-title">发起投诉</text>
@@ -71,18 +85,24 @@
                                 适合提交正式反馈与处理诉求
                             </text>
                         </view>
-                        <tn-icon name="right" size="24" color="#B4ACA8" />
+                        <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #B4ACA8)" />
                     </BaseCard>
 
                     <BaseCard
                         variant="surface"
                         scene="consumer"
                         :interactive="true"
+                        padding="28rpx 30rpx"
+                        border-radius="44rpx"
                         class="aftersale-home__entry-card"
                         @click="contactService"
                     >
                         <view class="aftersale-home__entry-icon">
-                            <tn-icon name="service" :size="28" color="#607086" />
+                            <tn-icon
+                                name="service"
+                                :size="28"
+                                color="var(--wm-color-info, #607086)"
+                            />
                         </view>
                         <view class="aftersale-home__entry-copy">
                             <text class="aftersale-home__entry-title">联系人工</text>
@@ -91,18 +111,24 @@
                                 工作时段优先响应，建议先准备订单与问题描述
                             </text>
                         </view>
-                        <tn-icon name="right" size="24" color="#B4ACA8" />
+                        <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #B4ACA8)" />
                     </BaseCard>
 
                     <BaseCard
                         variant="surface"
                         scene="consumer"
                         :interactive="true"
+                        padding="28rpx 30rpx"
+                        border-radius="44rpx"
                         class="aftersale-home__entry-card"
                         @click="goCallback"
                     >
                         <view class="aftersale-home__entry-icon">
-                            <tn-icon name="edit" :size="28" color="#2F7D58" />
+                            <tn-icon
+                                name="edit"
+                                :size="28"
+                                color="var(--wm-color-success, #2F7D58)"
+                            />
                         </view>
                         <view class="aftersale-home__entry-copy">
                             <view class="aftersale-home__entry-head">
@@ -124,7 +150,7 @@
                                 }}
                             </text>
                         </view>
-                        <tn-icon name="right" size="24" color="#B4ACA8" />
+                        <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #B4ACA8)" />
                     </BaseCard>
                 </view>
 
@@ -253,6 +279,7 @@ onShow(() => {
 
 .aftersale-home__wrapper {
     @include aftersale-page-wrapper;
+    padding: 12rpx 0 calc(var(--wm-safe-bottom-action, 160rpx) + 18rpx);
 }
 
 .aftersale-home__intro {
@@ -288,8 +315,8 @@ onShow(() => {
 .aftersale-home__intro-metric {
     padding: 20rpx 22rpx;
     border-radius: 30rpx;
-    background: rgba(255, 247, 244, 0.82);
-    border: 1rpx solid rgba(239, 230, 225, 0.92);
+    background: var(--wm-color-primary-soft, rgba(255, 247, 244, 0.82));
+    border: 1rpx solid var(--wm-color-border, rgba(239, 230, 225, 0.92));
 
     &:active {
         transform: scale(0.98);
@@ -321,13 +348,6 @@ onShow(() => {
     display: flex;
     align-items: flex-start;
     gap: 20rpx;
-    padding: 28rpx 30rpx !important;
-    border-radius: 44rpx !important;
-}
-
-.aftersale-home__entry-card--ticket {
-    background: rgba(255, 241, 238, 0.96) !important;
-    border-color: rgba(244, 199, 191, 0.96) !important;
 }
 
 .aftersale-home__entry-icon {
@@ -338,7 +358,7 @@ onShow(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 247, 244, 0.94);
+    background: rgba(255, 255, 255, 0.92);
 }
 
 .aftersale-home__entry-copy {

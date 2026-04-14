@@ -4,7 +4,7 @@
         <BaseNavbar title="回访问卷" />
 
         <view class="aftersale-list-page">
-            <view class="aftersale-list-page__wrapper">
+            <view class="aftersale-list-page__wrapper wm-page-content">
                 <view class="aftersale-list-page__filters">
                     <AfterSaleFilterTabs
                         v-model="currentStatus"
@@ -128,10 +128,9 @@ onLoad((options: any) => {
 }
 
 .aftersale-list-page__wrapper {
-    display: flex;
-    flex-direction: column;
+    @include aftersale-page-wrapper;
     gap: 16rpx;
-    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(var(--wm-safe-bottom-action, 160rpx) + 18rpx);
+    padding: 12rpx 0 calc(var(--wm-safe-bottom-action, 160rpx) + 18rpx);
 }
 
 .aftersale-list-page__filters {
@@ -145,11 +144,9 @@ onLoad((options: any) => {
 }
 
 .aftersale-record-card {
-    @include aftersale-list-card;
-    border-radius: 44rpx !important;
-    background: rgba(255, 255, 255, 0.92) !important;
-    border: 1rpx solid rgba(239, 230, 225, 0.96) !important;
-    box-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.12) !important;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
 }
 
 .aftersale-record-card__title,
