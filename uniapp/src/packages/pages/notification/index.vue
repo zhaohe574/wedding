@@ -2,9 +2,9 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer">
         <BaseNavbar title="通知中心" />
-        <view class="notification-page">
+        <view class="notification-page wm-page-content">
             <view class="notification-page__content">
-                <view class="notification-page__toolbar">
+                <view class="notification-page__toolbar wm-panel-card">
                     <view class="notification-page__unread-pill">{{ unreadSummaryText }}</view>
                     <view v-if="notificationList.length" class="notification-page__toolbar-actions">
                         <view class="notification-page__toolbar-link" @click="handleDeleteRead">
@@ -66,11 +66,11 @@
                     <text>加载中...</text>
                 </view>
 
-                <view v-else-if="!notificationList.length" class="empty-state">
-                    <tn-icon name="email" :size="120" color="#D9CDC7" />
-                    <text class="empty-text">暂无{{ currentTypeLabel }}</text>
-                    <text class="empty-hint">最新消息会在这里出现</text>
-                </view>
+                <EmptyState
+                    v-else-if="!notificationList.length"
+                    :title="`暂无${currentTypeLabel}`"
+                    description="最新消息会在这里出现，订单、互动和系统提醒也会统一收在这里。"
+                />
 
                 <view v-else class="notice-list">
                     <view
@@ -102,6 +102,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import {
@@ -388,8 +389,7 @@ onShow(() => {
 }
 
 .notification-page__content {
-    padding: 12rpx var(--wm-space-page-x, 37rpx)
-        calc(var(--wm-space-card-padding-lg, 34rpx) + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--wm-space-card-padding-lg, 34rpx) + env(safe-area-inset-bottom));
 }
 
 .notification-page__toolbar {
@@ -397,6 +397,7 @@ onShow(() => {
     align-items: center;
     justify-content: space-between;
     gap: 18rpx;
+    padding: 22rpx 26rpx;
 }
 
 .notification-page__unread-pill {
@@ -519,26 +520,6 @@ onShow(() => {
     font-weight: 600;
     line-height: 1.6;
     color: var(--wm-text-primary, #1e2432);
-}
-
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 56vh;
-}
-
-.empty-text {
-    margin-top: 18rpx;
-    font-size: 28rpx;
-    color: var(--wm-text-primary, #1e2432);
-}
-
-.empty-hint {
-    margin-top: 8rpx;
-    font-size: 22rpx;
-    color: var(--wm-text-tertiary, #b4aca8);
 }
 
 .loading-tip,
