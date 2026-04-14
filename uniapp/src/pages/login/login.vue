@@ -21,7 +21,7 @@
             </view>
         </template>
 
-        <view class="auth-panel">
+        <view class="auth-panel wm-page-content">
             <view v-if="!phoneLogin" class="auth-entry-list">
                 <view
                     v-if="showWechatLoginEntry"
@@ -58,7 +58,7 @@
                 </view>
             </view>
 
-            <view v-if="showLocalLoginForm" class="auth-form">
+            <view v-if="showLocalLoginForm" class="auth-form wm-form-block">
                 <view class="auth-form__head">
                     <text class="auth-form__title">
                         {{ formData.scene == LoginWayEnum.ACCOUNT ? '账号密码登录' : '验证码登录' }}

@@ -10,7 +10,7 @@
             </view>
         </template>
 
-        <view class="auth-form">
+        <view class="auth-form wm-form-block">
             <view class="auth-form__group">
                 <text class="auth-form__label">手机号</text>
                 <BaseInput v-model="formData.mobile" type="tel" placeholder="请输入手机号码">

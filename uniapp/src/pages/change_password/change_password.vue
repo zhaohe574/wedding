@@ -11,7 +11,7 @@
             </view>
         </template>
 
-        <view class="password-form">
+        <view class="password-form wm-form-block">
             <view v-if="type !== 'set'" class="password-form__group">
                 <text class="password-form__label">原密码</text>
                 <BaseInput
