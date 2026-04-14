@@ -4,8 +4,8 @@
         <BaseNavbar title="资料编辑" @back="handleBack" />
 
         <view class="user-data-page">
-            <view class="page-content">
-                <view class="sync-card">
+            <view class="page-content wm-page-content">
+                <view class="sync-card wm-panel-card">
                     <view class="sync-tag">资料同步</view>
                     <view class="sync-profile">
                         <view class="sync-avatar">
@@ -26,9 +26,9 @@
                     >
                 </view>
 
-                <view class="section-card">
+                <view class="section-card wm-form-block">
                     <text class="section-title">基本信息</text>
-                    <view class="field-card">
+                    <view class="field-card wm-soft-card">
                         <text class="field-label">新人称呼</text>
                         <input
                             v-model="form.real_name"
@@ -38,7 +38,7 @@
                         />
                     </view>
 
-                    <view class="field-card">
+                    <view class="field-card wm-soft-card">
                         <text class="field-label">联系方式</text>
                         <view class="contact-value">{{ contactText }}</view>
                         <view class="contact-actions">
@@ -60,7 +60,7 @@
                         </view>
                     </view>
 
-                    <view class="field-card">
+                    <view class="field-card wm-soft-card">
                         <text class="field-label">昵称</text>
                         <input
                             v-model="form.nickname"
@@ -70,7 +70,7 @@
                         />
                     </view>
 
-                    <view class="field-card field-card--click" @click="handleSexClick">
+                    <view class="field-card field-card--click wm-soft-card" @click="handleSexClick">
                         <text class="field-label">性别</text>
                         <view class="field-click-value">
                             <text>{{ getSexText(form.sex) }}</text>
@@ -79,13 +79,13 @@
                     </view>
                 </view>
 
-                <view class="section-card">
+                <view class="section-card wm-form-block">
                     <text class="section-title">婚礼信息与偏好</text>
-                    <view class="field-card">
+                    <view class="field-card wm-soft-card">
                         <text class="field-label">婚礼日期</text>
                         <text class="field-readonly">{{ weddingDateText }}</text>
                     </view>
-                    <view class="field-card">
+                    <view class="field-card wm-soft-card">
                         <text class="field-label">婚礼城市 / 场地</text>
                         <text class="field-readonly field-readonly--wrap">{{
                             weddingVenueText
@@ -116,7 +116,7 @@
                 :overlay="false"
                 :overlay-closeable="true"
             >
-                <view class="edit-popup">
+                <view class="edit-popup wm-form-block">
                     <view class="popup-title">修改账号</view>
                     <view class="popup-input-wrapper">
                         <input
@@ -148,7 +148,7 @@
                 :overlay="false"
                 :overlay-closeable="true"
             >
-                <view class="edit-popup">
+                <view class="edit-popup wm-form-block">
                     <view class="popup-title">
                         {{ userInfo.mobile ? '更换手机号' : '绑定手机号' }}
                     </view>

@@ -2,32 +2,44 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" hasTabbar>
         <view class="user-page">
+            <MpPageHeader title="我的" surface="glass" />
             <view class="user-page__body">
-                <template v-for="(item, index) in state.pages" :key="index">
-                    <template v-if="item.name === 'user-info'">
-                        <w-user-info
-                            :content="mergeUserInfoContent(item.content || {})"
-                            :styles="item.styles"
-                            :user="userInfo"
-                            :isLogin="isLogin"
-                        />
-                    </template>
-                    <template v-if="item.name === 'wedding-countdown' && isComponentEnabled(item)">
-                        <w-wedding-countdown
-                            :content="mergeWeddingCountdownContent(item.content || {})"
-                            :styles="item.styles"
-                            :is-login="isLogin"
-                            :wedding-info="weddingInfo"
-                        />
-                    </template>
-                    <template v-if="item.name === 'quick-entry' && isComponentEnabled(item)">
-                        <w-quick-entry
-                            :content="mergeQuickEntryContent(item.content || {})"
-                            :styles="item.styles"
-                            :is-login="isLogin"
-                        />
-                    </template>
-                </template>
+                <view class="user-page__fixed-skeleton" data-qa="user-fixed-skeleton">
+                    <w-user-info
+                        v-if="isComponentEnabled(userInfoWidget)"
+                        :content="mergeUserInfoContent(userInfoWidget.content || {})"
+                        :styles="userInfoWidget.styles"
+                        :user="userInfo"
+                        :isLogin="isLogin"
+                        :show-header="false"
+                    />
+
+                    <w-quick-entry
+                        v-if="showRoleEntryWidget"
+                        :content="mergeRoleEntryContent(quickEntryWidget.content || {})"
+                        :styles="quickEntryWidget.styles"
+                        :is-login="isLogin"
+                    />
+                </view>
+
+                <view class="user-page__widget-zone" data-qa="user-widget-zone">
+                    <w-wedding-countdown
+                        v-if="isComponentEnabled(weddingCountdownWidget)"
+                        :content="
+                            mergeWeddingCountdownContent(weddingCountdownWidget.content || {})
+                        "
+                        :styles="weddingCountdownWidget.styles"
+                        :is-login="isLogin"
+                        :wedding-info="weddingInfo"
+                    />
+
+                    <w-quick-entry
+                        v-if="isComponentEnabled(quickEntryWidget)"
+                        :content="mergeQuickEntryContent(quickEntryWidget.content || {})"
+                        :styles="quickEntryWidget.styles"
+                        :is-login="isLogin"
+                    />
+                </view>
             </view>
             <tabbar :badge-refresh-key="badgeRefreshKey" />
         </view>
@@ -38,7 +50,9 @@
 import { getDecorate } from '@/api/shop'
 import { getOrderStatistics } from '@/api/order'
 import { getUserWeddingDate } from '@/api/user'
+import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import { appendPageContractQuery, getPageContract, getRoleEntryStates } from '@/utils/page-contract'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
@@ -80,23 +94,38 @@ const unreadMessageCount = ref(0)
 const weddingInfo = ref<Record<string, any>>({})
 
 const USER_WIDGET_ORDER = ['user-info', 'wedding-countdown', 'quick-entry']
+const USER_PAGE_CONTRACT = getPageContract('/pages/user/user')
 
 const featureSwitch = computed(() => appStore.config?.feature_switch || {})
 
-const staffEntryEnabled = computed(() => {
-    return featureSwitch.value.staff_center === 1 && !!userInfo.value?.is_staff
-})
+const roleEntryStates = computed(() =>
+    getRoleEntryStates({
+        featureSwitch: featureSwitch.value,
+        userInfo: userInfo.value,
+        isLogin: isLogin.value
+    })
+)
 
-const adminEntryEnabled = computed(() => {
-    if (featureSwitch.value.admin_dashboard !== 1) return false
-    const rawUserIds = String(featureSwitch.value.admin_dashboard_user_ids || '')
-    if (!rawUserIds.trim()) return false
-    const allowedUserIds = rawUserIds
-        .split(/[\s,，]+/)
-        .map((item: string) => Number(item.trim()))
-        .filter((item: number) => Number.isFinite(item) && item > 0)
-    const currentUserId = Number(userInfo.value?.id || userInfo.value?.user_id || 0)
-    return currentUserId > 0 && allowedUserIds.includes(currentUserId)
+const visibleRoleEntryItems = computed<QuickEntryItem[]>(() => {
+    return roleEntryStates.value
+        .filter((item) => item.visible)
+        .map((item) => ({
+            key: item.key,
+            title: item.title,
+            subtitle: item.subtitle,
+            is_show: '1',
+            disabled: !item.enabled,
+            requiresLogin: true,
+            link: {
+                path: appendPageContractQuery({
+                    path: item.routePath,
+                    scene: item.scene,
+                    source: item.source,
+                    back: item.back
+                }),
+                type: 'shop'
+            }
+        }))
 })
 
 const weddingProfileSubtitle = computed(() => {
@@ -106,6 +135,29 @@ const weddingProfileSubtitle = computed(() => {
     }
     return '完善婚期、场地与称呼'
 })
+
+const widgetMap = computed(() => {
+    return state.pages.reduce((record, item) => {
+        if (item?.name) {
+            record[item.name] = item
+        }
+        return record
+    }, {} as Record<string, DecorateWidget>)
+})
+
+const userInfoWidget = computed(
+    () => widgetMap.value['user-info'] || createDefaultUserWidgets()['user-info']
+)
+
+const weddingCountdownWidget = computed(
+    () => widgetMap.value['wedding-countdown'] || createDefaultUserWidgets()['wedding-countdown']
+)
+
+const quickEntryWidget = computed(
+    () => widgetMap.value['quick-entry'] || createDefaultUserWidgets()['quick-entry']
+)
+
+const showRoleEntryWidget = computed(() => visibleRoleEntryItems.value.length > 0)
 
 const buildQuickEntryData = (): QuickEntryItem[] => {
     const pendingServiceCount = Number(
@@ -182,22 +234,6 @@ const buildQuickEntryData = (): QuickEntryItem[] => {
             disabled: false,
             requiresLogin: true,
             link: { path: '/pages/user_set/user_set', type: 'shop' }
-        },
-        {
-            key: 'staff-center',
-            title: '服务人员入口',
-            subtitle: staffEntryEnabled.value ? '服务人员管理页面' : '需服务人员身份',
-            is_show: isLogin.value && featureSwitch.value.staff_center === 1 ? '1' : '0',
-            disabled: !staffEntryEnabled.value,
-            link: { path: '/packages/pages/staff_center/staff_center', type: 'shop' }
-        },
-        {
-            key: 'admin-dashboard',
-            title: '驾驶舱',
-            subtitle: adminEntryEnabled.value ? '管理员驾驶舱入口' : '需管理员权限',
-            is_show: isLogin.value && featureSwitch.value.admin_dashboard === 1 ? '1' : '0',
-            disabled: !adminEntryEnabled.value,
-            link: { path: '/packages/pages/admin_dashboard/admin_dashboard', type: 'shop' }
         }
     ]
 }
@@ -297,7 +333,20 @@ const mergeQuickEntryContent = (content: Record<string, any>) => {
     return {
         ...content,
         style: 3,
+        title: content.title || '快捷功能',
+        subtitle: content.subtitle || '常用入口',
         data: buildQuickEntryData()
+    }
+}
+
+const mergeRoleEntryContent = (content: Record<string, any>) => {
+    return {
+        ...content,
+        enabled: visibleRoleEntryItems.value.length ? 1 : 0,
+        style: 3,
+        title: '角色入口',
+        subtitle: USER_PAGE_CONTRACT.audience.consumer === 'included' ? '固定骨架区' : '兼容入口',
+        data: visibleRoleEntryItems.value
     }
 }
 
@@ -353,7 +402,6 @@ const loadWeddingInfo = async () => {
 }
 
 onShow(async () => {
-    $theme.setScene('consumer')
     if (isLogin.value && !userInfo.value?.id) {
         await userStore.getUser()
     }
@@ -373,6 +421,7 @@ onShow(async () => {
 .user-page {
     position: relative;
     box-sizing: border-box;
+    min-height: 100%;
     --wm-user-page-content-top: 22rpx;
     --wm-user-page-content-side: 37rpx;
     --wm-user-page-content-bottom: 37rpx;
@@ -406,5 +455,12 @@ onShow(async () => {
     padding: var(--wm-user-page-content-top) var(--wm-user-page-content-side)
         var(--wm-user-page-content-bottom) var(--wm-user-page-content-side);
     box-sizing: border-box;
+}
+
+.user-page__fixed-skeleton,
+.user-page__widget-zone {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wm-user-page-section-gap);
 }
 </style>
