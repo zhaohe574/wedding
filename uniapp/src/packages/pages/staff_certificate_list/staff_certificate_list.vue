@@ -3,7 +3,7 @@
     <PageShell scene="staff">
         <BaseNavbar title="证书管理" />
 
-        <view class="page-container">
+        <view class="page-container wm-page-content">
             <z-paging
                 ref="pagingRef"
                 v-model="certificateList"
@@ -33,6 +33,7 @@
                                     :key="item.key"
                                     :class="[
                                         'hero-metric',
+                                        'wm-soft-card',
                                         { 'hero-metric--selected': currentFilter === item.key }
                                     ]"
                                     @click="switchFilter(item.key)"
@@ -66,49 +67,71 @@
                                 />
                                 <view class="certificate-card__copy">
                                     <view class="certificate-card__title-row">
-                                        <text class="certificate-card__title">{{ item.name || '未命名证书' }}</text>
-                                        <StatusBadge :tone="getStatusTone(Number(item.verify_status))" size="sm">
+                                        <text class="certificate-card__title">{{
+                                            item.name || '未命名证书'
+                                        }}</text>
+                                        <StatusBadge
+                                            :tone="getStatusTone(Number(item.verify_status))"
+                                            size="sm"
+                                        >
                                             {{ item.verify_status_desc || '待审核' }}
                                         </StatusBadge>
                                     </view>
-                                    <text v-if="item.type" class="certificate-card__meta">类型：{{ item.type }}</text>
-                                    <text v-if="item.sn" class="certificate-card__meta">编号：{{ item.sn }}</text>
+                                    <text v-if="item.type" class="certificate-card__meta"
+                                        >类型：{{ item.type }}</text
+                                    >
+                                    <text v-if="item.sn" class="certificate-card__meta"
+                                        >编号：{{ item.sn }}</text
+                                    >
                                 </view>
                             </view>
 
                             <view class="chip-row">
-                                <view v-if="item.issue_org" class="info-chip">{{ item.issue_org }}</view>
+                                <view v-if="item.issue_org" class="info-chip">{{
+                                    item.issue_org
+                                }}</view>
                                 <view class="info-chip">{{ formatDateRange(item) }}</view>
-                                <view :class="['info-chip', item.is_expired ? 'info-chip--danger' : 'info-chip--success']">
+                                <view
+                                    :class="[
+                                        'info-chip',
+                                        item.is_expired ? 'info-chip--danger' : 'info-chip--success'
+                                    ]"
+                                >
                                     {{ item.is_expired ? '已过期' : '有效中' }}
                                 </view>
                             </view>
 
                             <view v-if="item.reject_reason" class="certificate-card__reason">
                                 <text class="certificate-card__reason-label">驳回原因</text>
-                                <text class="certificate-card__reason-text">{{ item.reject_reason }}</text>
+                                <text class="certificate-card__reason-text">{{
+                                    item.reject_reason
+                                }}</text>
                             </view>
 
                             <view class="action-row">
-                                <view class="action-btn action-btn--ghost" @click.stop="handleEdit(item)">
+                                <view
+                                    class="action-btn action-btn--ghost"
+                                    @click.stop="handleEdit(item)"
+                                >
                                     {{ Number(item.verify_status) === 2 ? '修改后重提' : '编辑' }}
                                 </view>
-                                <view class="action-btn action-btn--danger" @click.stop="handleDelete(item)">
+                                <view
+                                    class="action-btn action-btn--danger"
+                                    @click.stop="handleDelete(item)"
+                                >
                                     删除
                                 </view>
                             </view>
                         </BaseCard>
                     </template>
 
-                    <view v-else-if="hasLoaded" class="empty-state">
-                        <view class="empty-state__icon">
-                            <tn-icon name="image" size="92" color="#D8CEC8" />
-                        </view>
-                        <text class="empty-state__title">{{ emptyStateTitle }}</text>
-                        <view class="empty-state__action" @click="handleAdd">
-                            <text class="empty-state__action-text">新增证书</text>
-                        </view>
-                    </view>
+                    <EmptyState
+                        v-else-if="hasLoaded"
+                        :title="emptyStateTitle"
+                        description="证书图片、编号和审核状态会统一显示在这里，便于你随时补充或重提。"
+                        action-text="新增证书"
+                        @action="handleAdd"
+                    />
                 </view>
             </z-paging>
         </view>
@@ -120,13 +143,11 @@ import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
-import {
-    staffCenterCertificateDelete,
-    staffCenterCertificateLists,
-} from '@/api/staffCenter'
+import { staffCenterCertificateDelete, staffCenterCertificateLists } from '@/api/staffCenter'
 import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
@@ -152,7 +173,7 @@ const summary = ref<SummaryState>({
     total: 0,
     pending_count: 0,
     approved_count: 0,
-    rejected_count: 0,
+    rejected_count: 0
 })
 const defaultImage = '/static/images/user/default_avatar.png'
 
@@ -160,7 +181,7 @@ const heroMetrics = computed(() => [
     { key: 'all' as FilterKey, label: '全部', value: summary.value.total },
     { key: 'pending' as FilterKey, label: '待审核', value: summary.value.pending_count },
     { key: 'approved' as FilterKey, label: '已通过', value: summary.value.approved_count },
-    { key: 'rejected' as FilterKey, label: '已拒绝', value: summary.value.rejected_count },
+    { key: 'rejected' as FilterKey, label: '已拒绝', value: summary.value.rejected_count }
 ])
 
 const emptyStateTitle = computed(() => {
@@ -168,7 +189,7 @@ const emptyStateTitle = computed(() => {
         all: '暂时还没有提交证书',
         pending: '当前没有待审核证书',
         approved: '当前没有已通过证书',
-        rejected: '当前没有已拒绝证书',
+        rejected: '当前没有已拒绝证书'
     }
     return titleMap[currentFilter.value]
 })
@@ -177,7 +198,7 @@ const getStatusTone = (status: number): BadgeTone => {
     const map: Record<number, BadgeTone> = {
         0: 'warning',
         1: 'success',
-        2: 'danger',
+        2: 'danger'
     }
     return map[status] || 'neutral'
 }
@@ -195,7 +216,7 @@ const queryList = async (pageNo: number, pageSize: number) => {
 
     try {
         const params: Record<string, any> = {
-            page_size: pageSize,
+            page_size: pageSize
         }
         if (pageNo > 1) {
             params.page_no = pageNo
@@ -214,7 +235,7 @@ const queryList = async (pageNo: number, pageSize: number) => {
             total: Number(res?.summary?.total || 0),
             pending_count: Number(res?.summary?.pending_count || 0),
             approved_count: Number(res?.summary?.approved_count || 0),
-            rejected_count: Number(res?.summary?.rejected_count || 0),
+            rejected_count: Number(res?.summary?.rejected_count || 0)
         }
         hasLoaded.value = true
         pagingRef.value.complete(list)
@@ -244,7 +265,9 @@ const handleAdd = () => {
 }
 
 const handleEdit = (item: any) => {
-    uni.navigateTo({ url: `/packages/pages/staff_certificate_edit/staff_certificate_edit?id=${item.id}` })
+    uni.navigateTo({
+        url: `/packages/pages/staff_certificate_edit/staff_certificate_edit?id=${item.id}`
+    })
 }
 
 const handleDelete = (item: any) => {
@@ -258,10 +281,11 @@ const handleDelete = (item: any) => {
                 uni.showToast({ title: '删除成功', icon: 'success' })
                 pagingRef.value?.reload()
             } catch (error: any) {
-                const msg = typeof error === 'string' ? error : error?.msg || error?.message || '删除失败'
+                const msg =
+                    typeof error === 'string' ? error : error?.msg || error?.message || '删除失败'
                 uni.showToast({ title: msg, icon: 'none' })
             }
-        },
+        }
     })
 }
 
@@ -278,7 +302,11 @@ onShow(async () => {
     min-height: 100vh;
     padding-top: 20rpx;
     box-sizing: border-box;
-    background: radial-gradient(circle at top left, rgba(232, 90, 79, 0.1) 0, rgba(252, 251, 249, 0) 36%),
+    background: radial-gradient(
+            circle at top left,
+            rgba(232, 90, 79, 0.1) 0,
+            rgba(252, 251, 249, 0) 36%
+        ),
         linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
 }
 
@@ -286,7 +314,6 @@ onShow(async () => {
     display: flex;
     flex-direction: column;
     gap: 16rpx;
-    padding: 0 var(--wm-space-page-x, 37rpx);
     box-sizing: border-box;
 
     &--top {

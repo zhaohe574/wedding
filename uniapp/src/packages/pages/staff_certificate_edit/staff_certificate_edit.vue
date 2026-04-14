@@ -5,7 +5,12 @@
 
         <view class="page-container">
             <view class="page-section page-section--content">
-                <BaseCard v-if="isEdit" variant="glass" scene="staff" class="form-card">
+                <BaseCard
+                    v-if="isEdit"
+                    variant="glass"
+                    scene="staff"
+                    class="form-card wm-form-block"
+                >
                     <view class="status-card">
                         <view class="status-card__row">
                             <text class="status-card__label">当前状态</text>
@@ -23,13 +28,18 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card">
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">证书图片</text>
                     </view>
 
                     <view v-if="form.image" class="cover-preview">
-                        <image :src="form.image" class="cover-preview__image" mode="aspectFill" @click="previewImage" />
+                        <image
+                            :src="form.image"
+                            class="cover-preview__image"
+                            mode="aspectFill"
+                            @click="previewImage"
+                        />
                         <view class="cover-preview__toolbar">
                             <view class="cover-preview__action" @click="chooseImage">
                                 <tn-icon name="refresh" size="26" color="#ffffff" />
@@ -43,16 +53,20 @@
                         </view>
                     </view>
 
-                    <view v-else class="upload-panel" @click="chooseImage">
+                    <view v-else class="upload-panel wm-soft-card" @click="chooseImage">
                         <view class="upload-panel__icon-wrap">
-                            <tn-icon name="image" size="50" color="var(--wm-color-primary, #E85A4F)" />
+                            <tn-icon
+                                name="image"
+                                size="50"
+                                color="var(--wm-color-primary, #E85A4F)"
+                            />
                         </view>
                         <text class="upload-panel__title">上传证书图片</text>
                         <text class="upload-panel__meta">建议上传清晰完整的证书照片</text>
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card">
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">证书信息</text>
                     </view>
@@ -62,8 +76,14 @@
                             <text class="field-label field-label--required">证书名称</text>
                             <text class="field-side-text">{{ form.name.length }}/100</text>
                         </view>
-                        <view class="field-input-shell">
-                            <tn-input v-model="form.name" placeholder="例如：婚礼主持人资格证" :maxlength="100" :border="false" class="field-input" />
+                        <view class="field-input-shell wm-soft-card">
+                            <tn-input
+                                v-model="form.name"
+                                placeholder="例如：婚礼主持人资格证"
+                                :maxlength="100"
+                                :border="false"
+                                class="field-input"
+                            />
                         </view>
                     </view>
 
@@ -72,8 +92,14 @@
                             <text class="field-label">证书类型</text>
                             <text class="field-side-text">{{ form.type.length }}/50</text>
                         </view>
-                        <view class="field-input-shell">
-                            <tn-input v-model="form.type" placeholder="例如：职业资格 / 荣誉资质" :maxlength="50" :border="false" class="field-input" />
+                        <view class="field-input-shell wm-soft-card">
+                            <tn-input
+                                v-model="form.type"
+                                placeholder="例如：职业资格 / 荣誉资质"
+                                :maxlength="50"
+                                :border="false"
+                                class="field-input"
+                            />
                         </view>
                     </view>
 
@@ -82,8 +108,14 @@
                             <text class="field-label">证书编号</text>
                             <text class="field-side-text">{{ form.sn.length }}/100</text>
                         </view>
-                        <view class="field-input-shell">
-                            <tn-input v-model="form.sn" placeholder="输入证书编号" :maxlength="100" :border="false" class="field-input" />
+                        <view class="field-input-shell wm-soft-card">
+                            <tn-input
+                                v-model="form.sn"
+                                placeholder="输入证书编号"
+                                :maxlength="100"
+                                :border="false"
+                                class="field-input"
+                            />
                         </view>
                     </view>
 
@@ -92,17 +124,35 @@
                             <text class="field-label">发证机构</text>
                             <text class="field-side-text">{{ form.issue_org.length }}/100</text>
                         </view>
-                        <view class="field-input-shell">
-                            <tn-input v-model="form.issue_org" placeholder="输入发证机构" :maxlength="100" :border="false" class="field-input" />
+                        <view class="field-input-shell wm-soft-card">
+                            <tn-input
+                                v-model="form.issue_org"
+                                placeholder="输入发证机构"
+                                :maxlength="100"
+                                :border="false"
+                                class="field-input"
+                            />
                         </view>
                     </view>
 
                     <view class="setting-list">
-                        <picker mode="date" :value="form.issue_date" @change="handleDateChange('issue_date', $event)">
+                        <picker
+                            mode="date"
+                            :value="form.issue_date"
+                            @change="handleDateChange('issue_date', $event)"
+                        >
                             <view class="setting-item">
                                 <text class="setting-item__label">发证日期</text>
                                 <view class="setting-item__value">
-                                    <text :class="['setting-item__value-text', { 'setting-item__value-text--placeholder': !form.issue_date }]">
+                                    <text
+                                        :class="[
+                                            'setting-item__value-text',
+                                            {
+                                                'setting-item__value-text--placeholder':
+                                                    !form.issue_date
+                                            }
+                                        ]"
+                                    >
                                         {{ form.issue_date || '请选择' }}
                                     </text>
                                     <tn-icon name="arrow-right" size="24" color="#B4ACA8" />
@@ -110,13 +160,30 @@
                             </view>
                         </picker>
 
-                        <view v-if="form.issue_date" class="clear-row" @click="clearDate('issue_date')">清空发证日期</view>
+                        <view
+                            v-if="form.issue_date"
+                            class="clear-row"
+                            @click="clearDate('issue_date')"
+                            >清空发证日期</view
+                        >
 
-                        <picker mode="date" :value="form.expire_date" @change="handleDateChange('expire_date', $event)">
+                        <picker
+                            mode="date"
+                            :value="form.expire_date"
+                            @change="handleDateChange('expire_date', $event)"
+                        >
                             <view class="setting-item">
                                 <text class="setting-item__label">有效期至</text>
                                 <view class="setting-item__value">
-                                    <text :class="['setting-item__value-text', { 'setting-item__value-text--placeholder': !form.expire_date }]">
+                                    <text
+                                        :class="[
+                                            'setting-item__value-text',
+                                            {
+                                                'setting-item__value-text--placeholder':
+                                                    !form.expire_date
+                                            }
+                                        ]"
+                                    >
                                         {{ form.expire_date || '长期有效' }}
                                     </text>
                                     <tn-icon name="arrow-right" size="24" color="#B4ACA8" />
@@ -124,18 +191,38 @@
                             </view>
                         </picker>
 
-                        <view v-if="form.expire_date" class="clear-row" @click="clearDate('expire_date')">设为长期有效</view>
+                        <view
+                            v-if="form.expire_date"
+                            class="clear-row"
+                            @click="clearDate('expire_date')"
+                            >设为长期有效</view
+                        >
                     </view>
                 </BaseCard>
             </view>
 
             <view class="bottom-bar">
                 <view class="bottom-bar__inner">
-                    <view class="bottom-bar__action bottom-bar__action--ghost" @click="handleCancel">
-                        <text class="bottom-bar__action-text bottom-bar__action-text--ghost">取消</text>
+                    <view
+                        class="bottom-bar__action bottom-bar__action--ghost"
+                        @click="handleCancel"
+                    >
+                        <text class="bottom-bar__action-text bottom-bar__action-text--ghost"
+                            >取消</text
+                        >
                     </view>
-                    <view class="bottom-bar__action bottom-bar__action--primary" :style="{ opacity: submitting ? 0.66 : 1 }" @click="handleSubmit">
-                        <tn-icon v-if="submitting" name="loading" size="26" color="#ffffff" class="bottom-bar__loading" />
+                    <view
+                        class="bottom-bar__action bottom-bar__action--primary"
+                        :style="{ opacity: submitting ? 0.66 : 1 }"
+                        @click="handleSubmit"
+                    >
+                        <tn-icon
+                            v-if="submitting"
+                            name="loading"
+                            size="26"
+                            color="#ffffff"
+                            class="bottom-bar__loading"
+                        />
                         <text class="bottom-bar__action-text">{{ submitButtonText }}</text>
                     </view>
                 </view>
@@ -155,7 +242,7 @@ import StatusBadge from '@/components/base/StatusBadge.vue'
 import {
     staffCenterCertificateAdd,
     staffCenterCertificateDetail,
-    staffCenterCertificateEdit,
+    staffCenterCertificateEdit
 } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
@@ -176,7 +263,7 @@ const form = reactive({
     expire_date: '',
     verify_status: 0,
     verify_status_desc: '',
-    reject_reason: '',
+    reject_reason: ''
 })
 
 const isEdit = computed(() => form.id > 0)
@@ -206,7 +293,7 @@ const removeImage = () => {
             if (res.confirm) {
                 form.image = ''
             }
-        },
+        }
     })
 }
 
@@ -227,7 +314,7 @@ const chooseImage = () => {
             } finally {
                 uni.hideLoading()
             }
-        },
+        }
     })
 }
 
@@ -247,7 +334,7 @@ const handleCancel = () => {
             if (res.confirm) {
                 uni.navigateBack()
             }
-        },
+        }
     })
 }
 
@@ -284,7 +371,7 @@ const handleSubmit = async () => {
         image: form.image,
         issue_org: form.issue_org.trim(),
         issue_date: normalizeOptionalDate(form.issue_date),
-        expire_date: normalizeOptionalDate(form.expire_date),
+        expire_date: normalizeOptionalDate(form.expire_date)
     }
 
     submitting.value = true
@@ -320,7 +407,11 @@ onLoad(async (options: any) => {
     padding-top: 20rpx;
     padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
-    background: radial-gradient(circle at top left, rgba(232, 90, 79, 0.1) 0, rgba(252, 251, 249, 0) 36%),
+    background: radial-gradient(
+            circle at top left,
+            rgba(232, 90, 79, 0.1) 0,
+            rgba(252, 251, 249, 0) 36%
+        ),
         linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
 }
 
@@ -530,7 +621,11 @@ onLoad(async (options: any) => {
     justify-content: center;
     gap: 14rpx;
     border-radius: 32rpx;
-    background: linear-gradient(180deg, rgba(255, 245, 241, 0.98) 0%, rgba(255, 250, 246, 0.98) 100%);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 245, 241, 0.98) 0%,
+        rgba(255, 250, 246, 0.98) 100%
+    );
     border: 2rpx dashed rgba(232, 90, 79, 0.24);
 }
 
