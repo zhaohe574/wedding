@@ -5,7 +5,7 @@
 
         <view class="page-container">
             <view class="page-section page-section--content">
-                <BaseCard variant="glass" scene="staff" class="form-card">
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">封面与价格</text>
                     </view>
@@ -38,7 +38,11 @@
                             </view>
                         </view>
 
-                        <view v-else class="upload-panel upload-panel--cover" @click="chooseCover">
+                        <view
+                            v-else
+                            class="upload-panel upload-panel--cover wm-soft-card"
+                            @click="chooseCover"
+                        >
                             <view class="upload-panel__icon-wrap">
                                 <tn-icon
                                     name="image"
@@ -55,7 +59,7 @@
                             <text class="field-label field-label--required">套餐名称</text>
                             <text class="field-side-text">{{ form.name.length }}/50</text>
                         </view>
-                        <view class="field-input-shell">
+                        <view class="field-input-shell wm-soft-card">
                             <tn-input
                                 v-model="form.name"
                                 placeholder="例如：全天主持套餐"
@@ -71,7 +75,7 @@
                             <view class="field-label-row">
                                 <text class="field-label field-label--required">默认价格</text>
                             </view>
-                            <view class="field-input-shell">
+                            <view class="field-input-shell wm-soft-card">
                                 <tn-input
                                     v-model="form.price"
                                     type="digit"
@@ -86,7 +90,7 @@
                             <view class="field-label-row">
                                 <text class="field-label">原价</text>
                             </view>
-                            <view class="field-input-shell">
+                            <view class="field-input-shell wm-soft-card">
                                 <tn-input
                                     v-model="form.original_price"
                                     type="digit"
@@ -103,7 +107,7 @@
                             <text class="field-label">服务时长</text>
                             <text class="field-side-text">单位：小时</text>
                         </view>
-                        <view class="field-input-shell">
+                        <view class="field-input-shell wm-soft-card">
                             <tn-input
                                 v-model="form.duration"
                                 type="number"
@@ -115,7 +119,7 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card">
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">地区价格</text>
                     </view>
@@ -205,7 +209,7 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card">
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">展示设置</text>
                     </view>
@@ -215,7 +219,7 @@
                             <text class="field-label">套餐说明</text>
                             <text class="field-side-text">{{ form.description.length }}/500</text>
                         </view>
-                        <view class="textarea-shell">
+                        <view class="textarea-shell wm-soft-card">
                             <textarea
                                 v-model="form.description"
                                 class="field-textarea"

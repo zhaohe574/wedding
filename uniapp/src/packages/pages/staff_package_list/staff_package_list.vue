@@ -3,7 +3,7 @@
     <PageShell scene="staff">
         <BaseNavbar title="套餐管理" />
 
-        <view class="page-container">
+        <view class="page-container wm-page-content">
             <z-paging
                 ref="pagingRef"
                 v-model="packageList"
@@ -32,6 +32,7 @@
                                     :key="item.key"
                                     :class="[
                                         'hero-metric',
+                                        'wm-soft-card',
                                         {
                                             'hero-metric--selected':
                                                 currentMetricFilter === item.key
@@ -143,15 +144,13 @@
                         </BaseCard>
                     </template>
 
-                    <view v-else-if="hasLoaded" class="package-empty-state">
-                        <view class="package-empty-state__icon">
-                            <tn-icon name="service" size="82" color="#D8CEC8" />
-                        </view>
-                        <text class="package-empty-state__title">{{ emptyStateTitle }}</text>
-                        <view class="package-empty-state__action" @click="goCreate">
-                            <text class="package-empty-state__action-text">新增套餐</text>
-                        </view>
-                    </view>
+                    <EmptyState
+                        v-else-if="hasLoaded"
+                        :title="emptyStateTitle"
+                        description="套餐的价格、地区价和上架状态会统一收在这里管理。"
+                        action-text="新增套餐"
+                        @action="goCreate"
+                    />
                 </view>
             </z-paging>
         </view>
@@ -162,6 +161,7 @@
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import BaseCard from '@/components/base/BaseCard.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
@@ -332,7 +332,6 @@ onShow(async () => {
     display: flex;
     flex-direction: column;
     gap: 16rpx;
-    padding: 0 var(--wm-space-page-x, 37rpx);
     box-sizing: border-box;
 
     &--top {
