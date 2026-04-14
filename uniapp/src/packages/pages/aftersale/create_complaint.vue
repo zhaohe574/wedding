@@ -4,15 +4,12 @@
         <BaseNavbar title="发起投诉" />
 
         <view class="aftersale-create-page">
-            <view class="aftersale-create-page__wrapper">
+            <view class="aftersale-create-page__wrapper wm-page-content">
                 <BaseCard
                     variant="surface"
                     scene="consumer"
                     padding="24rpx 26rpx"
                     border-radius="44rpx"
-                    background="rgba(255, 255, 255, 0.92)"
-                    border="1rpx solid rgba(239, 230, 225, 0.96)"
-                    box-shadow="0 18rpx 38rpx rgba(214, 185, 167, 0.12)"
                 >
                     <view class="aftersale-create-section">
                         <text class="aftersale-create-section__title">投诉对象</text>
@@ -39,9 +36,6 @@
                     scene="consumer"
                     padding="24rpx 26rpx"
                     border-radius="44rpx"
-                    background="rgba(255, 255, 255, 0.92)"
-                    border="1rpx solid rgba(239, 230, 225, 0.96)"
-                    box-shadow="0 18rpx 38rpx rgba(214, 185, 167, 0.12)"
                 >
                     <view class="aftersale-create-section">
                         <view class="aftersale-create-section__head">
@@ -55,7 +49,11 @@
                             >
                                 {{ selectedOrder?.label || '请选择订单' }}
                             </text>
-                            <tn-icon name="right" size="22" color="#B4ACA8" />
+                            <tn-icon
+                                name="right"
+                                size="22"
+                                color="var(--wm-text-tertiary, #B4ACA8)"
+                            />
                         </view>
                     </view>
                 </BaseCard>
@@ -65,9 +63,6 @@
                     scene="consumer"
                     padding="24rpx 26rpx"
                     border-radius="44rpx"
-                    background="rgba(255, 255, 255, 0.92)"
-                    border="1rpx solid rgba(239, 230, 225, 0.96)"
-                    box-shadow="0 18rpx 38rpx rgba(214, 185, 167, 0.12)"
                 >
                     <view class="aftersale-create-section">
                         <view
@@ -119,9 +114,6 @@
                     scene="consumer"
                     padding="24rpx 26rpx"
                     border-radius="44rpx"
-                    background="rgba(255, 255, 255, 0.92)"
-                    border="1rpx solid rgba(239, 230, 225, 0.96)"
-                    box-shadow="0 18rpx 38rpx rgba(214, 185, 167, 0.12)"
                 >
                     <view class="aftersale-create-section">
                         <view
@@ -149,9 +141,6 @@
                     scene="consumer"
                     padding="24rpx 26rpx"
                     border-radius="44rpx"
-                    background="rgba(255, 255, 255, 0.92)"
-                    border="1rpx solid rgba(239, 230, 225, 0.96)"
-                    box-shadow="0 18rpx 38rpx rgba(214, 185, 167, 0.12)"
                 >
                     <view class="aftersale-create-section">
                         <view
@@ -406,10 +395,9 @@ onLoad((options: any) => {
 }
 
 .aftersale-create-page__wrapper {
-    display: flex;
-    flex-direction: column;
+    @include aftersale-page-wrapper;
     gap: 18rpx;
-    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(var(--wm-safe-bottom-action, 160rpx) + 78rpx);
+    padding: 12rpx 0 calc(var(--wm-safe-bottom-action, 160rpx) + 78rpx);
 }
 
 .aftersale-create-section {

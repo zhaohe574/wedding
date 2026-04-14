@@ -3,9 +3,9 @@
     <PageShell scene="consumer">
         <BaseNavbar title="联系顾问" />
 
-        <view class="consult-page">
+        <view class="consult-page wm-page-content">
             <view class="consult-shell">
-                <view class="consult-hero">
+                <view class="consult-hero wm-panel-card">
                     <view class="consult-badge">{{
                         state.entryType === 'advisor' ? '专属顾问' : '统一客服'
                     }}</view>
@@ -15,18 +15,18 @@
                     <view class="consult-subtitle">{{ sceneTitle }}</view>
                 </view>
 
-                <view v-if="state.loading" class="loading-card">
+                <view v-if="state.loading" class="loading-card wm-panel-card">
                     <tn-icon name="loading" size="40" :color="$theme.primaryColor" />
                     <text>正在匹配顾问信息...</text>
                 </view>
 
-                <view v-else-if="state.error" class="error-card">
+                <view v-else-if="state.error" class="error-card wm-panel-card">
                     <tn-icon name="warning" size="40" color="#F56C6C" />
                     <text class="error-text">{{ state.error }}</text>
                     <view class="retry-btn" @click="loadConsultContact">重试</view>
                 </view>
 
-                <view v-else class="contact-card">
+                <view v-else class="contact-card wm-panel-card">
                     <view class="advisor-header">
                         <image
                             v-if="contact.avatar"
@@ -102,7 +102,7 @@
                         </view>
                     </view>
 
-                    <view class="tips-card">
+                    <view class="tips-card wm-soft-card">
                         <view class="tips-title">联系说明</view>
                         <view class="tips-text">{{ contact.tips || defaultTips }}</view>
                     </view>
