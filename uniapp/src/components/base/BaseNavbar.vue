@@ -154,6 +154,9 @@ export default {
     width: 100%;
     background: var(--wm-nav-bg, #fcfbf9);
     box-sizing: border-box;
+    border-bottom: 1rpx solid rgba(239, 230, 225, 0.72);
+    backdrop-filter: blur(18rpx);
+    -webkit-backdrop-filter: blur(18rpx);
 }
 
 .base-navbar__status {
@@ -164,7 +167,7 @@ export default {
     display: flex;
     align-items: center;
     width: 100%;
-    padding: 0 var(--wm-space-6, 45rpx);
+    padding: 0 var(--wm-space-page-x, 37rpx);
     box-sizing: border-box;
 }
 
@@ -185,7 +188,7 @@ export default {
     min-width: 0;
     padding: 0 var(--wm-space-3, 22rpx);
     text-align: center;
-    font-size: 40rpx;
+    font-size: 36rpx;
     font-weight: 700;
     line-height: 1.2;
     color: var(--wm-text-primary, #1e2432);
@@ -195,7 +198,7 @@ export default {
 }
 
 .base-navbar__back {
-    min-height: 82rpx;
+    min-height: 88rpx;
     display: inline-flex;
     align-items: center;
     padding: 0 var(--wm-space-3, 22rpx) 0 0;

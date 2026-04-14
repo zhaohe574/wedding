@@ -1,5 +1,5 @@
 <template>
-    <view class="mp-page-header">
+    <view class="mp-page-header" :class="headerClass">
         <view
             class="mp-page-header__status"
             :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
@@ -59,6 +59,12 @@ const resolvedTitle = computed(() => {
     return typeof props.title === 'string' && props.title.trim() ? props.title : ''
 })
 const titleTextColor = computed(() => themeStore.navColor || '#1E2432')
+const headerClass = computed(() => [
+    `mp-page-header--${props.surface}`,
+    {
+        'mp-page-header--sticky': props.sticky
+    }
+])
 
 const sideSlotStyle = computed(() => ({
     width: `${navBarMetrics.safeInset}px`
@@ -67,13 +73,36 @@ const sideSlotStyle = computed(() => ({
 
 <style scoped lang="scss">
 .mp-page-header {
+    position: relative;
     width: 100%;
+    z-index: 20;
+
+    &--sticky {
+        position: sticky;
+        top: 0;
+    }
+
+    &--overlay,
+    &--glass {
+        background: linear-gradient(
+            180deg,
+            rgba(255, 247, 244, 0.96) 0%,
+            rgba(255, 247, 244, 0.78) 76%,
+            rgba(255, 247, 244, 0) 100%
+        );
+        backdrop-filter: blur(18rpx);
+        -webkit-backdrop-filter: blur(18rpx);
+    }
+
+    &--glass {
+        border-bottom: 1rpx solid rgba(239, 230, 225, 0.56);
+    }
 
     &__body {
         display: flex;
         align-items: center;
         width: 100%;
-        padding: 0 20rpx;
+        padding: 0 var(--wm-space-page-x, 37rpx);
     }
 
     &__side {
@@ -110,8 +139,8 @@ const sideSlotStyle = computed(() => ({
 
     &__title-text {
         max-width: 100%;
-        font-size: 32rpx;
-        font-weight: 400;
+        font-size: 36rpx;
+        font-weight: 700;
         line-height: 1.2;
         color: #1e2432;
         white-space: nowrap;

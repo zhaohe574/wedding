@@ -42,7 +42,9 @@ const handleTap = () => {
     }
 }
 
-const stopTouchMove = () => {}
+const stopTouchMove = () => {
+    return undefined
+}
 </script>
 
 <style lang="scss" scoped>
