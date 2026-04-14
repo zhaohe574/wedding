@@ -1,31 +1,44 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer">
-        <BaseNavbar title="搜索" />
-        <view class="search-page">
-            <!-- 搜索框区域 -->
+        <view class="search-page" :style="searchPageStyle">
+            <MpPageHeader title="搜索" surface="glass" sticky />
             <view class="search-header">
-                <tn-search-box
-                    v-model="keyword"
-                    placeholder="搜索人员/服务/作品"
-                    :search-button-bg-color="$theme.primaryColor"
-                    :search-button-text-color="$theme.btnColor"
-                    @search="handleSearch"
-                    @clear="handleSearchClear"
-                ></tn-search-box>
+                <view class="search-header__input-shell">
+                    <view class="search-header__input-wrap">
+                        <tn-icon name="search" size="32" :color="$theme.primaryColor" />
+                        <input
+                            v-model="keyword"
+                            class="search-header__input"
+                            confirm-type="search"
+                            placeholder="搜索人员、服务、作品"
+                            placeholder-class="search-header__placeholder"
+                            @confirm="handleSearch(keyword)"
+                        />
+                        <view v-if="keyword" class="search-header__clear" @tap="handleSearchClear">
+                            <tn-icon name="close-circle-fill" size="28" color="#B4ACA8" />
+                        </view>
+                    </view>
+                    <view class="search-header__action" @tap="handleSearch(keyword)">
+                        <text class="search-header__action-text">搜索</text>
+                    </view>
+                </view>
             </view>
 
-            <!-- 分类标签 -->
             <view class="search-tabs">
-                <tn-tabs
-                    v-model="currentTypeIndex"
-                    :scroll="false"
-                    height="88rpx"
-                    :active-color="$theme.primaryColor"
-                    :bar-color="$theme.primaryColor"
-                >
-                    <tn-tabs-item v-for="tab in searchTypes" :key="tab.value" :title="tab.label" />
-                </tn-tabs>
+                <scroll-view scroll-x class="search-tabs__scroll" :show-scrollbar="false">
+                    <view class="search-tabs__row">
+                        <view
+                            v-for="(tab, index) in searchTypes"
+                            :key="tab.value"
+                            class="search-tabs__item"
+                            :class="{ 'search-tabs__item--active': currentTypeIndex === index }"
+                            @tap="currentTypeIndex = index"
+                        >
+                            <text class="search-tabs__text">{{ tab.label }}</text>
+                        </view>
+                    </view>
+                </scroll-view>
             </view>
 
             <!-- 内容区域 -->
@@ -39,7 +52,6 @@
                     :his_search="search.his_search"
                 ></suggest>
 
-                <!-- 搜索结果 -->
                 <view class="search-results" v-show="search.searching">
                     <z-paging
                         ref="paging"
@@ -47,21 +59,19 @@
                         @query="queryList"
                         :fixed="false"
                         height="100%"
-                        empty-view-text="暂无搜索结果"
+                        empty-view-text=""
                     >
                         <block v-for="item in search.result" :key="item.id">
-                            <!-- 文章卡片 -->
                             <news-card
                                 v-if="currentType === 'article'"
                                 :item="item"
                                 :newsId="item.id"
                             ></news-card>
 
-                            <!-- 动态卡片 -->
                             <view v-else-if="currentType === 'dynamic'" class="dynamic-result-card">
                                 <dynamic-card
                                     :dynamic="item"
-                                    variant="default"
+                                    variant="plaza-unified"
                                     :show-share="false"
                                     @click="handleDynamicDetail"
                                     @comment="handleDynamicDetail"
@@ -70,7 +80,6 @@
                                 />
                             </view>
 
-                            <!-- 人员卡片 -->
                             <staff-card
                                 v-else-if="currentType === 'staff'"
                                 :staff="item"
@@ -78,7 +87,6 @@
                                 @click="handleStaffDetail"
                             />
 
-                            <!-- 作品卡片 -->
                             <view
                                 v-else-if="currentType === 'work'"
                                 class="result-card"
@@ -107,6 +115,12 @@
                                 </view>
                             </view>
                         </block>
+                        <template #empty>
+                            <EmptyState
+                                title="没有找到匹配内容"
+                                :description="`换个关键词试试，或切换到${currentTypeLabel}以外的分类。`"
+                            />
+                        </template>
                     </z-paging>
                 </view>
             </view>
@@ -119,7 +133,10 @@ import { ref, reactive, shallowRef, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import Suggest from './component/suggest.vue'
 import DynamicCard from '@/components/business/DynamicCard.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
 import StaffCard from '@/components/business/StaffCard.vue'
 import { HISTORY } from '@/enums/constantEnums'
 import { getHotSearch } from '@/api/shop'
@@ -132,6 +149,7 @@ import { useThemeStore } from '@/stores/theme'
 import { mapDynamicItem } from '@/utils/dynamic'
 
 const $theme = useThemeStore()
+const navBarMetrics = useNavBarMetrics()
 
 interface Search {
     hot_search: {
@@ -164,6 +182,10 @@ const searchTypes = [
 ]
 const currentTypeIndex = ref(0)
 const currentType = computed(() => searchTypes[currentTypeIndex.value]?.value || 'article')
+const currentTypeLabel = computed(() => searchTypes[currentTypeIndex.value]?.label || '当前分类')
+const searchPageStyle = computed(() => ({
+    '--wm-search-nav-height': `${navBarMetrics.navBarHeight}px`
+}))
 
 watch(currentTypeIndex, () => {
     search.result = []
@@ -194,8 +216,10 @@ const handleSearch = (value: string) => {
 }
 
 const handleSearchClear = () => {
+    keyword.value = ''
     search.searching = false
     search.result = []
+    paging.value?.clear?.()
 }
 
 const getHotSearchFunc = async () => {
@@ -364,59 +388,162 @@ onLoad((options: any) => {
 <style lang="scss" scoped>
 .search-page {
     background: transparent;
+    min-height: 100vh;
 }
 
-// 搜索头部
 .search-header {
-    padding: 24rpx;
-    background: #ffffff;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+    position: sticky;
+    top: var(--wm-search-nav-height, 0px);
+    z-index: 15;
+    padding: 16rpx 37rpx 18rpx;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 247, 244, 0.98) 0%,
+        rgba(255, 247, 244, 0.88) 100%
+    );
+    backdrop-filter: blur(18rpx);
+    -webkit-backdrop-filter: blur(18rpx);
 }
 
-// 分类标签
+.search-header__input-shell {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+}
+
+.search-header__input-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14rpx;
+    min-height: 94rpx;
+    padding: 0 28rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    box-shadow: 0 10rpx 24rpx rgba(214, 185, 167, 0.12);
+}
+
+.search-header__input {
+    flex: 1;
+    min-width: 0;
+    height: 94rpx;
+    font-size: 28rpx;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.search-header__clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-header__action {
+    height: 94rpx;
+    padding: 0 34rpx;
+    border-radius: 999rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+        135deg,
+        var(--wm-color-primary, #e85a4f) 0%,
+        var(--wm-color-secondary, #c99b73) 100%
+    );
+    box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.18);
+}
+
+.search-header__action-text {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: #ffffff;
+}
+
 .search-tabs {
-    background: #ffffff;
-    padding: 0 12rpx;
-    border-bottom: 1rpx solid #f0f0f0;
+    position: sticky;
+    top: calc(var(--wm-search-nav-height, 0px) + 128rpx);
+    z-index: 14;
+    padding: 0 0 12rpx;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 247, 244, 0.96) 0%,
+        rgba(255, 247, 244, 0.88) 100%
+    );
 }
 
-// 内容区域
+.search-tabs__scroll {
+    white-space: nowrap;
+}
+
+.search-tabs__row {
+    display: inline-flex;
+    gap: 16rpx;
+    padding: 0 37rpx;
+}
+
+.search-tabs__item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 78rpx;
+    padding: 0 30rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.08);
+    transition: all var(--wm-motion-base, 220ms) ease;
+}
+
+.search-tabs__item--active {
+    background: var(--wm-color-primary-soft, #fff1ee);
+    border-color: var(--wm-color-border-strong, #f4c7bf);
+}
+
+.search-tabs__text {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.search-tabs__item--active .search-tabs__text {
+    color: var(--wm-color-primary, #e85a4f);
+}
+
 .search-content {
-    height: calc(100vh - 46px - 88rpx - 88rpx - env(safe-area-inset-bottom));
+    min-height: calc(100vh - 320rpx);
 }
 
 .search-results {
-    height: 100%;
-    padding-top: 24rpx;
+    padding: 12rpx 0 32rpx;
 }
 
 .dynamic-result-card {
-    margin: 0 24rpx 24rpx;
+    margin: 0 37rpx 24rpx;
 }
 
-// 结果卡片（作品、套餐）
 .result-card {
-    margin: 0 24rpx 24rpx;
-    background: #ffffff;
-    border-radius: 16rpx;
-    padding: 24rpx;
+    margin: 0 37rpx 24rpx;
+    background: rgba(255, 255, 255, 0.88);
+    border-radius: var(--wm-radius-card, 45rpx);
+    padding: 28rpx;
     display: flex;
     gap: 24rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
-    transition: all 0.2s ease;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+    transition: all var(--wm-motion-base, 220ms) ease;
 
     &:active {
         transform: translateY(-2rpx);
-        box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
     }
 }
 
 .result-cover {
     width: 180rpx;
     height: 180rpx;
-    border-radius: 12rpx;
+    border-radius: 28rpx;
     flex-shrink: 0;
-    background: #f5f5f5;
+    background: rgba(255, 255, 255, 0.86);
 }
 
 .result-info {
@@ -438,7 +565,7 @@ onLoad((options: any) => {
     flex: 1;
     font-size: 30rpx;
     font-weight: 600;
-    color: #333333;
+    color: var(--wm-text-primary, #1e2432);
     line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -466,7 +593,7 @@ onLoad((options: any) => {
 
 .result-staff {
     font-size: 24rpx;
-    color: #999999;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .result-desc {

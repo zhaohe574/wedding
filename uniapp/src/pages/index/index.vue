@@ -56,12 +56,23 @@
 
                 <view class="home-page__body">
                     <view class="home-page__cta" @tap="goToScheduleQuery">
-                        <text class="home-page__cta-text">查询档期</text>
+                        <view class="home-page__cta-copy">
+                            <text class="home-page__cta-text">查询档期</text>
+                            <text class="home-page__cta-subtext"
+                                >先看日期与地区，再筛选合适团队</text
+                            >
+                        </view>
+                        <tn-icon name="arrow-right" size="28" color="#FFFFFF" />
                     </view>
 
                     <view class="home-page__section">
                         <view class="home-page__section-head">
-                            <text class="home-page__section-title">热门团队</text>
+                            <view class="home-page__section-copy">
+                                <text class="home-page__section-title">热门团队</text>
+                                <text class="home-page__section-subtitle"
+                                    >优先展示近期咨询和预约更活跃的服务团队</text
+                                >
+                            </view>
                             <view class="home-page__section-link" @tap="goToStaffList">
                                 <text class="home-page__section-link-text">查看更多</text>
                             </view>
@@ -502,13 +513,24 @@ onShow(() => {
 }
 
 .home-page__cta {
-    height: 101rpx;
+    min-height: 112rpx;
     border-radius: 37rpx;
-    background: var(--wm-color-primary, #e85a4f);
+    padding: 0 30rpx;
+    background: linear-gradient(
+        135deg,
+        var(--wm-color-primary, #e85a4f) 0%,
+        var(--wm-color-secondary, #c99b73) 100%
+    );
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     box-shadow: 0 18rpx 36rpx rgba(232, 90, 79, 0.2);
+}
+
+.home-page__cta-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
 }
 
 .home-page__cta-text {
@@ -518,21 +540,41 @@ onShow(() => {
     letter-spacing: 1rpx;
 }
 
+.home-page__cta-subtext {
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.82);
+}
+
 .home-page__section {
     padding: 37rpx 0 22rpx;
 }
 
 .home-page__section-head {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
+    gap: 20rpx;
     margin-bottom: 20rpx;
+}
+
+.home-page__section-copy {
+    min-width: 0;
+    flex: 1;
 }
 
 .home-page__section-title {
     font-size: 36rpx;
     font-weight: 700;
     color: var(--wm-text-primary, #1e2432);
+}
+
+.home-page__section-subtitle {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 24rpx;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .home-page__section-link {

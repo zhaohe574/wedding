@@ -13,7 +13,7 @@
                     :key="index"
                     class="keyword-tag"
                     :style="{
-                        backgroundColor: getLightColor($theme.primaryColor, 0.08),
+                        backgroundColor: alphaColor($theme.primaryColor, 0.08),
                         color: $theme.primaryColor
                     }"
                     @click="handleHistoreSearch(hotItem.name)"
@@ -65,6 +65,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import { alphaColor } from '@/utils/color'
 
 const $theme = useThemeStore()
 
@@ -97,26 +98,17 @@ const searchData = computed(() => {
 const handleHistoreSearch = (text: string) => {
     emit('search', text)
 }
-
-// 获取浅色变体
-const getLightColor = (color: string, opacity: number) => {
-    const hex = color.replace('#', '')
-    const r = parseInt(hex.substring(0, 2), 16)
-    const g = parseInt(hex.substring(2, 4), 16)
-    const b = parseInt(hex.substring(4, 6), 16)
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`
-}
 </script>
 
 <style lang="scss" scoped>
 .suggest-container {
     height: 100%;
-    background: #ffffff;
-    padding: 24rpx 0;
+    background: transparent;
+    padding: 12rpx 0 24rpx;
 }
 
 .suggest-section {
-    padding: 0 24rpx;
+    padding: 0 37rpx;
     margin-bottom: 32rpx;
 }
 
@@ -129,8 +121,8 @@ const getLightColor = (color: string, opacity: number) => {
 
 .section-title {
     font-size: 32rpx;
-    font-weight: 600;
-    color: #333333;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .flex-1 {
@@ -141,19 +133,20 @@ const getLightColor = (color: string, opacity: number) => {
     display: flex;
     align-items: center;
     gap: 6rpx;
-    padding: 8rpx 16rpx;
+    padding: 10rpx 18rpx;
     border-radius: 999rpx;
-    background: #f5f5f5;
+    background: rgba(255, 255, 255, 0.84);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
     transition: all 0.2s ease;
 
     &:active {
-        background: #e5e5e5;
+        opacity: 0.82;
     }
 }
 
 .clear-text {
     font-size: 24rpx;
-    color: #999999;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .keyword-list {
@@ -166,6 +159,8 @@ const getLightColor = (color: string, opacity: number) => {
     padding: 12rpx 24rpx;
     border-radius: 999rpx;
     font-size: 28rpx;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
     transition: all 0.2s ease;
     max-width: 100%;
 
@@ -176,11 +171,11 @@ const getLightColor = (color: string, opacity: number) => {
 }
 
 .history-tag {
-    background: #f5f5f5;
-    color: #666666;
+    background: rgba(255, 255, 255, 0.88);
+    color: var(--wm-text-secondary, #7f7b78);
 
     &:active {
-        background: #e5e5e5;
+        opacity: 0.82;
     }
 }
 
@@ -193,8 +188,8 @@ const getLightColor = (color: string, opacity: number) => {
 
 .divider {
     height: 1rpx;
-    background: #f0f0f0;
-    margin: 32rpx 24rpx;
+    background: rgba(239, 230, 225, 0.92);
+    margin: 32rpx 37rpx;
 }
 
 .empty-state {
@@ -209,13 +204,13 @@ const getLightColor = (color: string, opacity: number) => {
 .empty-text {
     margin-top: 32rpx;
     font-size: 32rpx;
-    font-weight: 500;
-    color: #999999;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .empty-hint {
     margin-top: 16rpx;
     font-size: 26rpx;
-    color: #cccccc;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 </style>
