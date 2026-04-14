@@ -33,7 +33,7 @@ interface Props {
     navbarTitle: string
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 const themeStore = useThemeStore()
 </script>
 
@@ -49,7 +49,7 @@ const themeStore = useThemeStore()
     position: relative;
     z-index: 1;
     min-height: calc(100vh - 88rpx);
-    padding: 52rpx 24rpx 56rpx;
+    padding: 52rpx var(--wm-space-page-x, 37rpx) 56rpx;
 }
 
 .auth-shell__hero {
@@ -57,8 +57,8 @@ const themeStore = useThemeStore()
 }
 
 .auth-shell__card {
-    padding: 28rpx 24rpx 32rpx;
-    border-radius: var(--wm-radius-popup, 28rpx);
+    padding: 34rpx 30rpx 38rpx;
+    border-radius: var(--wm-radius-popup, 52rpx);
     background: rgba(255, 255, 255, 0.84);
     border: 1rpx solid rgba(244, 199, 191, 0.48);
     backdrop-filter: blur(20rpx);

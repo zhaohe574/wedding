@@ -168,18 +168,24 @@ watch(
     justify-content: center;
     border-radius: var(--wm-tabbar-item-radius, var(--wm-radius-tabbar-item, 56rpx));
     transition: all var(--wm-motion-base, 220ms) ease;
+    padding: 0 12rpx;
 }
 
 .custom-tabbar__item--active {
-    background: var(--wm-color-primary, #e85a4f);
-    box-shadow: 0 14rpx 30rpx rgba(232, 90, 79, 0.2);
+    background: linear-gradient(
+        135deg,
+        var(--wm-color-primary, #e85a4f) 0%,
+        var(--wm-color-secondary, #c99b73) 100%
+    );
+    box-shadow: 0 14rpx 30rpx rgba(232, 90, 79, 0.22);
 }
 
 .custom-tabbar__text {
     font-size: var(--wm-tabbar-text-size, 22rpx);
-    line-height: 1;
+    line-height: 1.2;
     font-weight: 700;
     color: var(--wm-text-secondary, #7f7b78);
+    letter-spacing: 1rpx;
 }
 
 .custom-tabbar__item--active .custom-tabbar__text {
