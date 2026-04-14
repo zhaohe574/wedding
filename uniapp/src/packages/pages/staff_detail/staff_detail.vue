@@ -4,7 +4,7 @@
         <BaseNavbar title="人员详情" :back="!isShareEntry" />
 
         <view class="staff-detail" v-if="staffInfo">
-            <view class="staff-detail__content">
+            <view class="staff-detail__content wm-page-content">
                 <view class="hero-card">
                     <staff-banner
                         class="hero-card__banner"
@@ -17,7 +17,7 @@
                 </view>
 
                 <!-- 人员信息卡片 -->
-                <view class="info-card">
+                <view class="info-card wm-panel-card">
                     <view class="info-card__header">
                         <view class="info-card__identity">
                             <text class="info-card__name">{{ staffInfo.name }}</text>
@@ -84,7 +84,7 @@
                     </view>
                 </view>
 
-                <view class="booking-brief-card">
+                <view class="booking-brief-card wm-soft-card">
                     <text class="booking-brief-card__title">预约信息</text>
                     <view class="booking-brief-card__grid">
                         <view class="booking-brief-card__item" @click="handleInlineRegionEdit">
@@ -132,7 +132,7 @@
                             <staff-long-detail-renderer :content="staffInfo.long_detail" />
                         </view>
 
-                        <view v-if="displayTagList.length" class="soft-card">
+                        <view v-if="displayTagList.length" class="soft-card wm-soft-card">
                             <text class="soft-card__title">擅长风格</text>
                             <view class="soft-tags">
                                 <view v-for="tag in displayTagList" :key="tag" class="soft-tag">
@@ -141,7 +141,7 @@
                             </view>
                         </view>
 
-                        <view v-if="displayCertificates.length" class="soft-card">
+                        <view v-if="displayCertificates.length" class="soft-card wm-soft-card">
                             <text class="soft-card__title">资质证书</text>
                             <scroll-view scroll-x class="certs-scroll">
                                 <view class="certs-wrapper">
@@ -985,12 +985,7 @@ const logDetailResourceError = (section: string, src: unknown, error: any) => {
     })
 }
 
-const handleDetailImageError = (
-    section: string,
-    src: unknown,
-    identifier: unknown,
-    error: any
-) => {
+const handleDetailImageError = (section: string, src: unknown, identifier: unknown, error: any) => {
     logDetailResourceError(section, src, error)
     const source = String(src || '').trim()
     const resourceKey = getDetailResourceKey(section, identifier ?? source)

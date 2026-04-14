@@ -4,8 +4,8 @@
         <BaseNavbar title="个人资料" />
 
         <view class="staff-profile-page">
-            <view class="staff-profile-page__content">
-                <view class="profile-hero-card">
+            <view class="staff-profile-page__content wm-page-content">
+                <view class="profile-hero-card wm-panel-card">
                     <view class="profile-hero-card__top">
                         <view class="hero-pill hero-pill--primary">
                             <text class="hero-pill__text">资料编辑</text>
@@ -56,7 +56,7 @@
                     </view>
                 </view>
 
-                <view class="staff-profile-card">
+                <view class="staff-profile-card wm-form-block">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">基础信息</text>
@@ -64,7 +64,7 @@
                     </view>
 
                     <view class="field-stack">
-                        <view class="field-card">
+                        <view class="field-card wm-soft-card">
                             <view class="field-card__label">
                                 <text>姓名</text>
                                 <text class="field-card__required">*</text>
@@ -79,7 +79,7 @@
                             </view>
                         </view>
 
-                        <view class="field-card">
+                        <view class="field-card wm-soft-card">
                             <view class="field-card__label">
                                 <text>服务分类</text>
                             </view>
@@ -98,7 +98,7 @@
                             </view>
                         </view>
 
-                        <view class="field-card">
+                        <view class="field-card wm-soft-card">
                             <view class="field-card__label">
                                 <text>手机号</text>
                             </view>
@@ -113,7 +113,7 @@
                             </view>
                         </view>
 
-                        <view class="field-card">
+                        <view class="field-card wm-soft-card">
                             <view class="field-card__label">
                                 <text>从业年限</text>
                             </view>
@@ -131,7 +131,7 @@
                     </view>
                 </view>
 
-                <view class="staff-profile-card">
+                <view class="staff-profile-card wm-form-block">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">个人简介</text>
@@ -139,7 +139,7 @@
                         <text class="section-head__meta">{{ form.profile.length }}/500</text>
                     </view>
 
-                    <view class="textarea-card">
+                    <view class="textarea-card wm-soft-card">
                         <textarea
                             v-model="form.profile"
                             class="wm-textarea"
@@ -151,7 +151,7 @@
                     </view>
                 </view>
 
-                <view class="staff-profile-card">
+                <view class="staff-profile-card wm-form-block">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">服务风格标签</text>
@@ -170,7 +170,7 @@
                         <view
                             v-for="(tags, groupName) in groupedTags"
                             :key="groupName"
-                            class="tag-group-card"
+                            class="tag-group-card wm-soft-card"
                         >
                             <text class="tag-group-card__title">{{ groupName }}</text>
                             <view class="tag-chip-list">
@@ -193,7 +193,7 @@
                     </view>
                 </view>
 
-                <view class="staff-profile-card">
+                <view class="staff-profile-card wm-form-block">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">服务说明</text>
@@ -201,7 +201,7 @@
                         <text class="section-head__meta">{{ form.service_desc.length }}/1000</text>
                     </view>
 
-                    <view class="textarea-card">
+                    <view class="textarea-card wm-soft-card">
                         <textarea
                             v-model="form.service_desc"
                             class="wm-textarea"
@@ -213,7 +213,7 @@
                     </view>
                 </view>
 
-                <view class="staff-profile-card">
+                <view class="staff-profile-card wm-form-block">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">长图详情</text>

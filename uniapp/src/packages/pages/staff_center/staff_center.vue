@@ -4,9 +4,9 @@
         <BaseNavbar title="服务人员中心" />
 
         <view class="staff-center-page">
-            <view class="staff-center-page__content">
+            <view class="staff-center-page__content wm-page-content">
                 <view
-                    class="staff-hero-card"
+                    class="staff-hero-card wm-panel-card"
                     @click="goPage('/packages/pages/staff_profile/staff_profile')"
                 >
                     <view class="staff-hero-card__top">
@@ -42,7 +42,7 @@
                     </view>
                 </view>
 
-                <view class="staff-section-card">
+                <view class="staff-section-card wm-panel-card">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">今日焦点</text>
@@ -88,7 +88,7 @@
                     </view>
                 </view>
 
-                <view class="staff-section-card">
+                <view class="staff-section-card wm-panel-card">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">订单与档期</text>
@@ -155,7 +155,7 @@
                     />
                 </view>
 
-                <view class="staff-section-card">
+                <view class="staff-section-card wm-panel-card">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">经营管理</text>
@@ -186,7 +186,7 @@
                     </view>
                 </view>
 
-                <view class="staff-section-card">
+                <view class="staff-section-card wm-panel-card">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">常用入口</text>
@@ -815,7 +815,6 @@ onShow(async () => {
         display: flex;
         flex-direction: column;
         gap: 15rpx;
-        padding: 0 var(--wm-space-page-x, 37rpx);
     }
 }
 
