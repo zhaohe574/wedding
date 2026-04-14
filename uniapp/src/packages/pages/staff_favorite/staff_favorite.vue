@@ -3,28 +3,25 @@
     <PageShell scene="consumer">
         <BaseNavbar title="我的收藏" />
 
-        <view class="staff-favorite">
+        <view class="staff-favorite wm-page-content">
             <!-- 加载状态 -->
             <view v-if="loading" class="loading-container">
                 <tn-loading mode="circle" />
             </view>
 
             <!-- 空状态 -->
-            <view v-else-if="!favoriteList.length" class="empty-container">
-                <view class="empty-icon">
-                    <tn-icon name="star" size="160" color="#D1D5DB" />
-                </view>
-                <text class="empty-text">还没有收藏任何服务人员</text>
-                <text class="empty-hint">快去发现心仪的服务人员吧</text>
-                <view class="empty-btn" @click="goToList">
-                    <text class="empty-btn-text">去看看</text>
-                </view>
-            </view>
+            <EmptyState
+                v-else-if="!favoriteList.length"
+                title="还没有收藏任何服务人员"
+                description="先去看看近期热门团队或根据档期筛选，喜欢的服务人员可以随时收藏到这里。"
+                action-text="去看看"
+                @action="goToList"
+            />
 
             <!-- 收藏列表 -->
             <view v-else class="favorite-list">
                 <!-- 统计信息 -->
-                <view class="stats-bar">
+                <view class="stats-bar wm-panel-card">
                     <text class="stats-text">共收藏 {{ favoriteList.length }} 位服务人员</text>
                 </view>
 
@@ -32,7 +29,7 @@
                 <view
                     v-for="item in favoriteList"
                     :key="item.id"
-                    class="staff-card"
+                    class="staff-card wm-panel-card"
                     @click="goToDetail(item.id)"
                 >
                     <!-- 卡片内容 -->
@@ -142,6 +139,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import EmptyState from '@/components/base/EmptyState.vue'
 import { getMyFavoriteStaff, toggleStaffFavorite } from '@/api/staff'
 import { useThemeStore } from '@/stores/theme'
 
@@ -225,7 +223,7 @@ onShow(() => {
 <style lang="scss" scoped>
 .staff-favorite {
     min-height: 100vh;
-    background: linear-gradient(180deg, var(--color-primary-light-9) 0%, #f5f5f5 100%);
+    background: transparent;
 }
 
 /* 加载状态 */
