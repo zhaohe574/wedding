@@ -1,5 +1,11 @@
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
+import {
+    ensureSceneAccess,
+    getCurrentPageRoutePath,
+    navigateByBackContract,
+    resolvePageShellProtocol
+} from '@/utils/page-contract'
 
 export const ensureStaffCenterAccess = async (): Promise<boolean> => {
     const appStore = useAppStore()
@@ -18,9 +24,22 @@ export const ensureStaffCenterAccess = async (): Promise<boolean> => {
         await userStore.getUser()
     }
 
-    if (appStore.config?.feature_switch?.staff_center !== 1 || !userStore.userInfo?.is_staff) {
-        uni.showToast({ title: '无权限访问', icon: 'none' })
-        setTimeout(() => uni.navigateBack(), 1200)
+    const access = ensureSceneAccess({
+        scene: 'staff',
+        featureSwitch: appStore.config?.feature_switch,
+        userInfo: userStore.userInfo,
+        isLogin: userStore.isLogin
+    })
+
+    if (!access.allowed) {
+        const routePath = getCurrentPageRoutePath()
+        const protocol = resolvePageShellProtocol({
+            routePath,
+            declaredScene: 'staff'
+        })
+
+        uni.showToast({ title: access.reason || '无权限访问', icon: 'none' })
+        setTimeout(() => navigateByBackContract(protocol), 1200)
         return false
     }
     return true

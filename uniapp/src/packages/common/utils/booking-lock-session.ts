@@ -4,7 +4,7 @@ import cache from '@/utils/cache'
 const BOOKING_LOCK_SESSION_KEY = 'booking_lock_session'
 const BOOKING_LOCK_ROLE_KEYS = ['butler', 'director'] as const
 
-export type BookingLockRoleKey = (typeof BOOKING_LOCK_ROLE_KEYS)[number]
+export type BookingLockRoleKey = typeof BOOKING_LOCK_ROLE_KEYS[number]
 
 export interface BookingLockSession {
     date: string
@@ -72,7 +72,10 @@ const buildTargets = (session: BookingLockSession): BookingLockTarget[] => {
         return []
     }
 
-    return [session.main_staff_id, ...BOOKING_LOCK_ROLE_KEYS.map((roleKey) => session.role_locks[roleKey])]
+    return [
+        session.main_staff_id,
+        ...BOOKING_LOCK_ROLE_KEYS.map((roleKey) => session.role_locks[roleKey])
+    ]
         .map((staffId) => normalizeStaffId(staffId))
         .filter((staffId, index, list) => staffId > 0 && list.indexOf(staffId) === index)
         .map((staff_id) => ({
@@ -132,7 +135,9 @@ export const isBookingLockSessionMatchingSelection = (
     }
 
     return BOOKING_LOCK_ROLE_KEYS.every(
-        (roleKey) => session.role_locks[roleKey] === normalizeStaffId((value as any)?.[`${roleKey}_staff_id`])
+        (roleKey) =>
+            session.role_locks[roleKey] ===
+            normalizeStaffId((value as any)?.[`${roleKey}_staff_id`])
     )
 }
 
@@ -145,8 +150,7 @@ export const ensureMainBookingLock = (value: { staff_id: number; date: string })
         }
 
         const currentSession = loadBookingLockSession()
-        const isSameMain =
-            currentSession.date === date && currentSession.main_staff_id === staffId
+        const isSameMain = currentSession.date === date && currentSession.main_staff_id === staffId
 
         if (!isSameMain && hasValidSession(currentSession)) {
             clearBookingLockSession()
