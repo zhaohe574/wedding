@@ -2,7 +2,7 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" hasSafeBottom>
         <BaseNavbar title="发表评价" />
-        <view class="publish-page">
+        <view class="publish-page wm-page-content">
             <!-- 顶部渐变背景 -->
             <view
                 class="top-bg"
@@ -18,19 +18,17 @@
             </view>
 
             <!-- 订单信息卡片 -->
-            <view class="order-card" v-if="orderItem">
-                <view class="flex items-center">
+            <view class="order-card wm-panel-card" v-if="orderItem">
+                <view class="order-card__main">
                     <image
                         :src="orderItem.staff?.avatar || '/static/images/user/default_avatar.png'"
                         class="staff-avatar"
                         mode="aspectFill"
                     />
-                    <view class="flex-1 ml-3">
-                        <view class="text-base font-bold text-gray-800">{{
-                            orderItem.staff_name
-                        }}</view>
-                        <view class="text-sm text-gray-400 mt-1">{{ orderItem.package_name }}</view>
-                        <view class="text-xs text-gray-400 mt-1">
+                    <view class="order-card__copy">
+                        <view class="order-card__title">{{ orderItem.staff_name }}</view>
+                        <view class="order-card__meta">{{ orderItem.package_name }}</view>
+                        <view class="order-card__submeta">
                             服务日期: {{ orderItem.order?.service_date }}
                         </view>
                     </view>
@@ -38,7 +36,7 @@
             </view>
 
             <!-- 综合评分 -->
-            <view class="section-card">
+            <view class="section-card wm-form-block">
                 <view class="section-header">
                     <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
                     <text class="section-title">服务评分</text>
@@ -89,7 +87,7 @@
             </view>
 
             <!-- 评价标签 -->
-            <view class="section-card" v-if="tags.length">
+            <view class="section-card wm-form-block" v-if="tags.length">
                 <view class="section-header">
                     <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
                     <text class="section-title">选择标签</text>
@@ -160,7 +158,7 @@
             </view>
 
             <!-- 评价内容 -->
-            <view class="section-card">
+            <view class="section-card wm-form-block">
                 <view class="section-header">
                     <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
                     <text class="section-title">评价内容</text>
@@ -172,13 +170,11 @@
                     maxlength="500"
                     :cursor-spacing="120"
                 />
-                <view class="text-right text-xs text-gray-400 mt-1"
-                    >{{ formData.content.length }}/500</view
-                >
+                <view class="content-counter">{{ formData.content.length }}/500</view>
             </view>
 
             <!-- 上传图片/视频 -->
-            <view class="section-card">
+            <view class="section-card wm-form-block">
                 <view class="section-header">
                     <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
                     <text class="section-title">上传图片/视频（选填）</text>
@@ -195,15 +191,15 @@
                         <text class="add-media-text">添加图片</text>
                     </view>
                 </view>
-                <view class="text-xs text-gray-400 mt-2">最多上传9张图片</view>
+                <view class="media-caption">最多上传9张图片</view>
             </view>
 
             <!-- 匿名评价 -->
-            <view class="section-card">
-                <view class="flex justify-between items-center">
-                    <view class="flex items-center">
+            <view class="section-card wm-form-block">
+                <view class="anonymous-row">
+                    <view class="anonymous-row__main">
                         <tn-icon name="my" size="36rpx" color="#999"></tn-icon>
-                        <text class="text-sm text-gray-600 ml-2">匿名评价</text>
+                        <text class="anonymous-row__text">匿名评价</text>
                     </view>
                     <switch
                         :checked="formData.is_anonymous === 1"
@@ -251,7 +247,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getPendingOrders, publishReview, getReviewTags, getRewardRules } from '@/packages/common/api/review'
+import {
+    getPendingOrders,
+    publishReview,
+    getReviewTags,
+    getRewardRules
+} from '@/packages/common/api/review'
 import { useThemeStore } from '@/stores/theme'
 
 const $theme = useThemeStore()
@@ -463,6 +464,35 @@ onLoad((options: any) => {
     background-color: transparent;
     padding-bottom: calc(var(--wm-safe-bottom-action, 160rpx) + 120rpx);
     position: relative;
+}
+
+.order-card__main {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+}
+
+.order-card__copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.order-card__title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.order-card__meta {
+    margin-top: 8rpx;
+    font-size: 24rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.order-card__submeta {
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
 }
 
 .top-bg {
@@ -715,6 +745,14 @@ onLoad((options: any) => {
     line-height: 1.6;
 }
 
+.content-counter,
+.media-caption {
+    margin-top: 8rpx;
+    text-align: right;
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
 /* 图片上传 */
 .media-uploader {
     display: flex;
@@ -777,6 +815,24 @@ onLoad((options: any) => {
     border-radius: 16rpx;
     border: 2rpx solid transparent;
     gap: 16rpx;
+}
+
+.anonymous-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20rpx;
+}
+
+.anonymous-row__main {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+}
+
+.anonymous-row__text {
+    font-size: 26rpx;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .reward-icon-wrap {

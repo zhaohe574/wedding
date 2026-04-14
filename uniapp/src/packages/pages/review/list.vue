@@ -2,11 +2,11 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer">
         <BaseNavbar title="我的评价" />
-        <view class="my-reviews-page">
+        <view class="my-reviews-page wm-page-content">
             <!-- 标签页 -->
-            <view class="tabs">
+            <view class="tabs wm-pill-tabs wm-panel-card">
                 <view
-                    class="tab-item"
+                    class="tab-item wm-pill-tab"
                     :class="{ active: currentTab === 'pending' }"
                     :style="currentTab === 'pending' ? $theme.activeTab.value : {}"
                     @click="switchTab('pending')"
@@ -19,7 +19,7 @@
                     ></view>
                 </view>
                 <view
-                    class="tab-item"
+                    class="tab-item wm-pill-tab"
                     :class="{ active: currentTab === 'reviewed' }"
                     :style="currentTab === 'reviewed' ? $theme.activeTab.value : {}"
                     @click="switchTab('reviewed')"
@@ -36,7 +36,11 @@
             <!-- 待评价列表 -->
             <view v-if="currentTab === 'pending'">
                 <view v-if="pendingList.length" class="list-wrap">
-                    <view v-for="item in pendingList" :key="item.id" class="pending-card">
+                    <view
+                        v-for="item in pendingList"
+                        :key="item.id"
+                        class="pending-card wm-panel-card"
+                    >
                         <view class="card-header">
                             <text class="order-sn">订单号: {{ item.order?.order_sn }}</text>
                             <text class="service-date">{{ item.order?.service_date }}</text>
@@ -66,10 +70,11 @@
                         </view>
                     </view>
                 </view>
-                <view v-else class="empty-tip">
-                    <image src="/static/images/empty.png" class="empty-icon" mode="aspectFit" />
-                    <text>暂无待评价订单</text>
-                </view>
+                <EmptyState
+                    v-else
+                    title="暂无待评价订单"
+                    description="服务完成后，待评价订单会出现在这里，提交后会进入审核与奖励流程。"
+                />
             </view>
 
             <!-- 已评价列表 -->
@@ -78,7 +83,7 @@
                     <view
                         v-for="item in reviewedList"
                         :key="item.id"
-                        class="review-card"
+                        class="review-card wm-panel-card"
                         @click="goDetail(item)"
                     >
                         <view class="card-header">
@@ -128,10 +133,11 @@
                         </view>
                     </view>
                 </view>
-                <view v-else class="empty-tip">
-                    <image src="/static/images/empty.png" class="empty-icon" mode="aspectFit" />
-                    <text>暂无评价记录</text>
-                </view>
+                <EmptyState
+                    v-else
+                    title="暂无评价记录"
+                    description="已提交的评价、审核结果和奖励状态，后续都会在这里集中查看。"
+                />
             </view>
 
             <!-- 加载更多 -->
@@ -147,6 +153,7 @@
 import { ref, computed, onMounted } from 'vue'
 import type { CSSProperties } from 'vue'
 import { onReachBottom, onShow } from '@dcloudio/uni-app'
+import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { getMyReviews, getPendingOrders } from '@/packages/common/api/review'
 import { useThemeStore } from '@/stores/theme'
@@ -315,16 +322,18 @@ onShow(() => {
 
 .tabs {
     display: flex;
-    background: #fff;
-    padding: 0 30rpx;
+    padding: 12rpx;
+    margin-bottom: 20rpx;
 
     .tab-item {
         flex: 1;
         text-align: center;
-        padding: 30rpx 0;
+        min-height: 74rpx;
+        padding: 0 20rpx;
         font-size: 28rpx;
-        color: #666;
+        color: var(--wm-text-secondary, #7f7b78);
         position: relative;
+        justify-content: center;
 
         &.active {
             font-weight: bold;
@@ -343,22 +352,21 @@ onShow(() => {
 }
 
 .list-wrap {
-    padding: 20rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
 }
 
 .pending-card {
-    background: #fff;
-    border-radius: 16rpx;
-    margin-bottom: 20rpx;
     overflow: hidden;
 
     .card-header {
         display: flex;
         justify-content: space-between;
         padding: 20rpx 24rpx;
-        background: #f9f9f9;
+        background: rgba(255, 247, 244, 0.72);
         font-size: 24rpx;
-        color: #999;
+        color: var(--wm-text-tertiary, #b4aca8);
     }
 
     .card-body {
@@ -380,12 +388,12 @@ onShow(() => {
         .staff-name {
             font-size: 30rpx;
             font-weight: bold;
-            color: #333;
+            color: var(--wm-text-primary, #1e2432);
         }
 
         .package-name {
             font-size: 24rpx;
-            color: #999;
+            color: var(--wm-text-secondary, #7f7b78);
             margin-top: 8rpx;
         }
 
@@ -407,9 +415,6 @@ onShow(() => {
 }
 
 .review-card {
-    background: #fff;
-    border-radius: 16rpx;
-    margin-bottom: 20rpx;
     padding: 24rpx;
 
     .card-header {
@@ -446,7 +451,7 @@ onShow(() => {
 
     .content {
         font-size: 28rpx;
-        color: #333;
+        color: var(--wm-text-primary, #1e2432);
         line-height: 1.6;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -504,7 +509,7 @@ onShow(() => {
 
         .time {
             font-size: 24rpx;
-            color: #999;
+            color: var(--wm-text-tertiary, #b4aca8);
         }
 
         .reward-tag {
@@ -561,27 +566,13 @@ onShow(() => {
     }
 }
 
-.empty-tip {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 120rpx 0;
-    color: #999;
-
-    .empty-icon {
-        width: 200rpx;
-        height: 200rpx;
-        margin-bottom: 20rpx;
-    }
-}
-
 .loading-tip {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8rpx;
     padding: 30rpx;
-    color: #999;
+    color: var(--wm-text-tertiary, #b4aca8);
     font-size: 26rpx;
 }
 </style>

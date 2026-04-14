@@ -3,8 +3,8 @@
     <PageShell scene="consumer" hasSafeBottom>
         <BaseNavbar title="评价详情" />
 
-        <view class="review-detail-page" v-if="review">
-            <view class="hero-card">
+        <view class="review-detail-page wm-page-content" v-if="review">
+            <view class="hero-card wm-panel-card">
                 <view class="hero-header">
                     <view class="hero-user">
                         <image
@@ -63,7 +63,7 @@
                 </view>
             </view>
 
-            <view class="section-card">
+            <view class="section-card wm-form-block">
                 <view class="section-title">审核与奖励说明</view>
                 <text class="section-tip">{{
                     review.status_summary || '评价状态已更新，请留意审核结果。'
@@ -71,7 +71,7 @@
                 <text class="section-tip">{{ review.reward_summary || rewardPendingText }}</text>
             </view>
 
-            <view class="section-card">
+            <view class="section-card wm-form-block">
                 <view class="section-title">评价内容</view>
                 <text v-if="review.content" class="review-content">{{ review.content }}</text>
                 <text v-else class="empty-text">用户未填写文字评价</text>
@@ -94,7 +94,7 @@
                 </view>
             </view>
 
-            <view class="section-card">
+            <view class="section-card wm-form-block">
                 <view class="section-title">奖励信息</view>
                 <view class="reward-panel">
                     <view class="reward-main">
@@ -114,9 +114,13 @@
                 </text>
             </view>
 
-            <view v-if="review.replies?.length" class="section-card">
+            <view v-if="review.replies?.length" class="section-card wm-form-block">
                 <view class="section-title">回复记录</view>
-                <view v-for="reply in review.replies" :key="reply.id" class="reply-card">
+                <view
+                    v-for="reply in review.replies"
+                    :key="reply.id"
+                    class="reply-card wm-soft-card"
+                >
                     <view class="reply-header">
                         <text class="reply-type">
                             {{ Number(reply.reply_type) === 1 ? '用户追评' : '商家回复' }}
@@ -137,7 +141,7 @@
                 </view>
             </view>
 
-            <view v-if="review.is_owner" class="section-card">
+            <view v-if="review.is_owner" class="section-card wm-form-block">
                 <view class="section-header">
                     <view class="section-title">晒单奖励</view>
                     <view
@@ -162,7 +166,7 @@
                     <view
                         v-for="record in review.share_reward_records"
                         :key="record.id"
-                        class="share-reward-card"
+                        class="share-reward-card wm-soft-card"
                     >
                         <view class="share-reward-header">
                             <view>
@@ -512,15 +516,12 @@ onPullDownRefresh(() => {
 <style scoped lang="scss">
 .review-detail-page {
     background: transparent;
-    padding: 24rpx 24rpx calc(env(safe-area-inset-bottom) + 24rpx);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 24rpx);
 }
 
 .hero-card,
 .section-card {
-    background: #ffffff;
-    border-radius: 24rpx;
     padding: 28rpx;
-    box-shadow: 0 12rpx 32rpx rgba(15, 23, 42, 0.08);
     margin-bottom: 24rpx;
 }
 
@@ -569,7 +570,7 @@ onPullDownRefresh(() => {
     width: 88rpx;
     height: 88rpx;
     border-radius: 50%;
-    background: #f3f4f6;
+    background: rgba(255, 255, 255, 0.82);
 }
 
 .user-info {
@@ -582,12 +583,12 @@ onPullDownRefresh(() => {
 .user-name {
     font-size: 30rpx;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .review-time {
     font-size: 24rpx;
-    color: #98a2b3;
+    color: var(--wm-text-tertiary, #b4aca8);
 }
 
 .status-badge,
