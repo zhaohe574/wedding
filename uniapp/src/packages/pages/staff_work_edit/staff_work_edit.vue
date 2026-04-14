@@ -5,7 +5,7 @@
 
         <view class="page-container">
             <view class="page-section page-section--content">
-                <BaseCard variant="glass" scene="staff" class="form-card">
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">作品封面与素材</text>
                     </view>
@@ -40,7 +40,11 @@
                             </view>
                         </view>
 
-                        <view v-else class="upload-panel upload-panel--cover" @click="chooseCover">
+                        <view
+                            v-else
+                            class="upload-panel upload-panel--cover wm-soft-card"
+                            @click="chooseCover"
+                        >
                             <view class="upload-panel__icon-wrap">
                                 <tn-icon
                                     name="image"
@@ -120,7 +124,11 @@
                             </view>
                         </view>
 
-                        <view v-else class="upload-panel upload-panel--video" @click="chooseVideo">
+                        <view
+                            v-else
+                            class="upload-panel upload-panel--video wm-soft-card"
+                            @click="chooseVideo"
+                        >
                             <view class="upload-panel__icon-wrap">
                                 <tn-icon
                                     name="video"
@@ -133,7 +141,7 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card">
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">作品内容</text>
                     </view>
@@ -145,7 +153,7 @@
                             </view>
                             <text class="field-side-text">{{ form.title.length }}/50</text>
                         </view>
-                        <view class="field-input-shell">
+                        <view class="field-input-shell wm-soft-card">
                             <tn-input
                                 v-model="form.title"
                                 placeholder="例如：浪漫海边婚礼纪实"
@@ -163,7 +171,7 @@
                             </view>
                             <text class="field-side-text">{{ form.description.length }}/500</text>
                         </view>
-                        <view class="textarea-shell">
+                        <view class="textarea-shell wm-soft-card">
                             <textarea
                                 v-model="form.description"
                                 class="field-textarea"
@@ -176,7 +184,7 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card">
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">展示设置</text>
                     </view>

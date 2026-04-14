@@ -3,7 +3,7 @@
     <PageShell scene="consumer">
         <BaseNavbar title="作品详情" />
 
-        <view class="work-detail" v-if="workDetail">
+        <view class="work-detail wm-page-content" v-if="workDetail">
             <!-- 顶部封面区域 -->
             <view class="cover-section">
                 <image
@@ -18,7 +18,7 @@
                 />
 
                 <!-- 玻璃态信息卡 -->
-                <view class="glass-info-card">
+                <view class="glass-info-card wm-panel-card">
                     <view class="title-row">
                         <text class="work-title">{{ workDetail.title || '未命名作品' }}</text>
                         <view class="badges-group">
@@ -49,7 +49,7 @@
             </view>
 
             <!-- 作品描述 -->
-            <view v-if="workDetail.description" class="desc-card">
+            <view v-if="workDetail.description" class="desc-card wm-form-block">
                 <view class="section-header">
                     <tn-icon name="document" size="32" :color="$theme.primaryColor" />
                     <text class="section-title">作品说明</text>
@@ -58,7 +58,7 @@
             </view>
 
             <!-- 工作人员信息卡片 -->
-            <view v-if="workDetail.staff" class="staff-card" @click="goToStaffDetail">
+            <view v-if="workDetail.staff" class="staff-card wm-panel-card" @click="goToStaffDetail">
                 <view class="staff-header">
                     <view class="staff-left">
                         <image
@@ -137,7 +137,7 @@
             </view>
 
             <!-- 作品图片 -->
-            <view v-if="workDetail.images?.length" class="images-card">
+            <view v-if="workDetail.images?.length" class="images-card wm-form-block">
                 <view class="section-header">
                     <tn-icon name="image" size="32" :color="$theme.primaryColor" />
                     <text class="section-title">作品图片（{{ workDetail.images.length }}张）</text>
@@ -162,7 +162,7 @@
             </view>
 
             <!-- 作品视频 -->
-            <view v-if="workDetail.video" class="video-card">
+            <view v-if="workDetail.video" class="video-card wm-form-block">
                 <view class="section-header">
                     <tn-icon name="video" size="32" :color="$theme.primaryColor" />
                     <text class="section-title">作品视频</text>

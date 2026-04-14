@@ -3,7 +3,7 @@
     <PageShell scene="staff">
         <BaseNavbar title="作品管理" />
 
-        <view class="page-container">
+        <view class="page-container wm-page-content">
             <z-paging
                 ref="pagingRef"
                 v-model="workList"
@@ -33,6 +33,7 @@
                                     :key="item.key"
                                     :class="[
                                         'hero-metric',
+                                        'wm-soft-card',
                                         {
                                             'hero-metric--selected':
                                                 currentMetricFilter === item.key
@@ -143,15 +144,13 @@
                         </BaseCard>
                     </template>
 
-                    <view v-else-if="hasLoaded" class="work-empty-state">
-                        <view class="work-empty-state__icon">
-                            <tn-icon name="image" size="92" color="#D8CEC8" />
-                        </view>
-                        <text class="work-empty-state__title">{{ emptyStateTitle }}</text>
-                        <view class="work-empty-state__action" @click="handleAdd">
-                            <text class="work-empty-state__action-text">新增作品</text>
-                        </view>
-                    </view>
+                    <EmptyState
+                        v-else-if="hasLoaded"
+                        :title="emptyStateTitle"
+                        description="上传封面、图片或视频后，作品会在这里展示审核与上架状态。"
+                        action-text="新增作品"
+                        @action="handleAdd"
+                    />
                 </view>
             </z-paging>
         </view>
@@ -162,6 +161,7 @@
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import BaseCard from '@/components/base/BaseCard.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
@@ -345,7 +345,6 @@ onShow(async () => {
     display: flex;
     flex-direction: column;
     gap: 16rpx;
-    padding: 0 var(--wm-space-page-x, 37rpx);
     box-sizing: border-box;
 
     &--top {
