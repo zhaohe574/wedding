@@ -4,7 +4,7 @@
         <BaseNavbar title="回访问卷详情" />
 
         <view v-if="detail" class="aftersale-detail-page">
-            <view class="aftersale-detail-page__wrapper">
+            <view class="aftersale-detail-page__wrapper wm-page-content">
                 <AfterSaleStatusBanner
                     label="问卷状态"
                     :title="callbackStatus.label"

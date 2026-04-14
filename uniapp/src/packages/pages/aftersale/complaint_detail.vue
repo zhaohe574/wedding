@@ -4,7 +4,7 @@
         <BaseNavbar title="投诉详情" />
 
         <view v-if="detail" class="aftersale-detail-page">
-            <view class="aftersale-detail-page__wrapper">
+            <view class="aftersale-detail-page__wrapper wm-page-content">
                 <AfterSaleStatusBanner
                     label="投诉状态"
                     :title="complaintStatus.label"
