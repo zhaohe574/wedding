@@ -3,7 +3,7 @@
     <PageShell scene="consumer" hasSafeBottom>
         <BaseNavbar title="订单确认" />
 
-        <view class="order-confirm-page">
+        <view class="order-confirm-page wm-page-content">
             <view class="order-confirm-page__step">
                 <view class="order-confirm-page__step-chip">
                     <text>{{ orderConfirmStepTag }}</text>
@@ -26,7 +26,7 @@
                         variant="glass"
                         scene="consumer"
                         :hoverable="false"
-                        class="section-card section-card--reserve"
+                        class="section-card section-card--reserve wm-form-block"
                     >
                         <view class="section-header section-header--stack">
                             <view>
@@ -54,7 +54,7 @@
                         variant="glass"
                         scene="consumer"
                         :hoverable="false"
-                        class="section-card section-card--contact"
+                        class="section-card section-card--contact wm-form-block"
                     >
                         <view class="section-header section-header--stack">
                             <view>
@@ -121,7 +121,7 @@
                         variant="glass"
                         scene="consumer"
                         :hoverable="false"
-                        class="section-card section-card--service"
+                        class="section-card section-card--service wm-form-block"
                     >
                         <view class="section-header">
                             <view class="section-header__text">
@@ -200,7 +200,7 @@
                         variant="glass"
                         scene="consumer"
                         :hoverable="false"
-                        class="section-card section-card--payment"
+                        class="section-card section-card--payment wm-form-block"
                     >
                         <view class="section-header section-header--stack">
                             <view>

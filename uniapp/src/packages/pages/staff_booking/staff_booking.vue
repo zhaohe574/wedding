@@ -3,7 +3,7 @@
     <PageShell scene="consumer">
         <BaseNavbar :title="currentPageTitle" @back="handleBackToDetail" />
 
-        <view class="staff-booking-page" :style="pageStageStyle">
+        <view class="staff-booking-page wm-page-content" :style="pageStageStyle">
             <view class="staff-booking-page__hero">
                 <view class="staff-booking-page__hero-image" :style="heroImageStyle" />
                 <view class="staff-booking-page__base-mask" />
@@ -27,7 +27,7 @@
                                     <view
                                         v-for="item in displayPackages"
                                         :key="resolvePackageId(item)"
-                                        class="choice-card"
+                                        class="choice-card wm-soft-card"
                                         :class="{
                                             'choice-card--selected':
                                                 resolvePackageId(item) === booking.package_id
@@ -58,7 +58,7 @@
 
                                 <template v-else-if="currentStep.type === 'addon'">
                                     <view
-                                        class="choice-card"
+                                        class="choice-card wm-soft-card"
                                         :class="{
                                             'choice-card--selected': !booking.addon_ids.includes(
                                                 resolveAddonId(currentStep.addon)
@@ -90,7 +90,7 @@
                                     </view>
 
                                     <view
-                                        class="choice-card"
+                                        class="choice-card wm-soft-card"
                                         :class="{
                                             'choice-card--selected': booking.addon_ids.includes(
                                                 resolveAddonId(currentStep.addon)
@@ -128,7 +128,7 @@
 
                                 <template v-else>
                                     <view
-                                        class="choice-card"
+                                        class="choice-card wm-soft-card"
                                         :class="{
                                             'choice-card--selected':
                                                 !selectedRoleCandidates[currentStep.key]
@@ -157,7 +157,7 @@
                                     <view
                                         v-for="candidate in currentRoleCandidates"
                                         :key="`${currentStep.key}-${candidate.staff_id}-${candidate.package_id}`"
-                                        class="choice-card"
+                                        class="choice-card wm-soft-card"
                                         :class="{
                                             'choice-card--selected':
                                                 selectedRoleCandidates[currentStep.key]

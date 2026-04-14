@@ -4,8 +4,8 @@
         <BaseNavbar title="档期管理" />
 
         <view class="staff-schedule-page">
-            <view class="staff-schedule-page__content">
-                <view class="schedule-hero-card">
+            <view class="staff-schedule-page__content wm-page-content">
+                <view class="schedule-hero-card wm-panel-card">
                     <view class="schedule-hero-card__top">
                         <view class="hero-pill hero-pill--primary">
                             <text class="hero-pill__text">档期工作台</text>
@@ -63,7 +63,7 @@
                     </view>
                 </view>
 
-                <view class="staff-section-card">
+                <view class="staff-section-card wm-form-block">
                     <view class="section-head section-head--stack">
                         <view class="section-head__copy">
                             <text class="section-head__title">月历视图</text>
@@ -141,7 +141,7 @@
                     </view>
                 </view>
 
-                <view v-if="selectedDate" class="staff-section-card">
+                <view v-if="selectedDate" class="staff-section-card wm-form-block">
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">{{ selectedDateLabel }}</text>
@@ -282,7 +282,7 @@
             safe-area-inset-bottom
             :radius="24"
         >
-            <view class="remark-popup">
+            <view class="remark-popup wm-form-block">
                 <view class="remark-popup__head">
                     <text class="remark-popup__action" @click="closeRemarkEditor">取消</text>
                     <text class="remark-popup__title">编辑档期备注</text>
@@ -841,7 +841,7 @@ onShow(async () => {
 <style lang="scss" scoped>
 .staff-schedule-page {
     min-height: 100vh;
-    padding: 20rpx 20rpx 40rpx;
+    padding: 20rpx 0 40rpx;
     background: radial-gradient(
             circle at top left,
             rgba(255, 241, 238, 0.92) 0,
