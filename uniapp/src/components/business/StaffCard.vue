@@ -126,6 +126,8 @@ export default {
         height: 80rpx;
         border-radius: 50%;
         flex-shrink: 0;
+        border: 2rpx solid rgba(255, 255, 255, 0.92);
+        box-shadow: 0 10rpx 22rpx rgba(214, 185, 167, 0.12);
     }
 
     &__info {
@@ -138,13 +140,19 @@ export default {
     &__name-row {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 8rpx;
     }
 
     &__name {
+        flex: 1;
+        min-width: 0;
         font-size: 32rpx;
         font-weight: 600;
         color: var(--wm-text-primary, #1e2432);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     &__rating {

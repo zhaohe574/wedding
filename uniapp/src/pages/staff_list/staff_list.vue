@@ -30,24 +30,12 @@
                 @query="queryList"
             >
                 <template #empty>
-                    <view class="empty-state">
-                        <view class="empty-state__icon">
-                            <tn-icon name="inbox" size="152" color="#D1D5DB" />
-                        </view>
-                        <text class="empty-state__title">当前筛选暂无可预约团队</text>
-                        <text class="empty-state__subtitle">
-                            返回档期查询页调整条件后，再重新筛选一批更合适的人员。
-                        </text>
-                        <view
-                            class="empty-state__btn"
-                            :style="getPrimaryButtonStyle(0.22)"
-                            @tap="handleEmptyAction"
-                        >
-                            <text class="empty-state__btn-text" :style="{ color: $theme.btnColor }">
-                                返回重筛
-                            </text>
-                        </view>
-                    </view>
+                    <EmptyState
+                        title="当前筛选暂无可预约团队"
+                        description="返回档期查询页调整条件后，再重新筛选一批更合适的人员。"
+                        action-text="返回重筛"
+                        @action="handleEmptyAction"
+                    />
                 </template>
 
                 <view v-if="staffViewMode === 'poster'" class="poster-list">
@@ -235,6 +223,7 @@
 import { computed, ref } from 'vue'
 import { onLoad, onReady, onShow } from '@dcloudio/uni-app'
 import { getStaffList, toggleStaffFavorite } from '@/api/staff'
+import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import { alphaColor } from '@/utils/color'
@@ -327,15 +316,6 @@ const summaryChips = computed(() => [
     { key: 'date', label: selectedDateText.value },
     { key: 'sort', label: currentSortName.value }
 ])
-
-const getPrimaryGradient = () =>
-    `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor || '#C99B73'} 100%)`
-
-const getPrimaryButtonStyle = (alpha = 0.2) => ({
-    backgroundColor: $theme.primaryColor,
-    backgroundImage: getPrimaryGradient(),
-    boxShadow: `0 12rpx 28rpx ${alphaColor($theme.primaryColor, alpha)}`
-})
 
 const getSwitchButtonStyle = () => ({
     backgroundColor: 'rgba(255, 255, 255, 0.91)',
