@@ -30,3 +30,7 @@ uniapp/.npm-cache/
 
 # local temporary exports
 /.tmp/
+
+# local agent state
+/.omx/
+/.sisyphus/
