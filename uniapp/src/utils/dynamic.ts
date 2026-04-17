@@ -36,6 +36,54 @@ const DYNAMIC_TYPE_LABEL_MAP: Record<number, string> = {
     4: '活动'
 }
 
+const toNumber = (value: any): number => {
+    const normalized = Number(value ?? 0)
+    return Number.isFinite(normalized) ? normalized : 0
+}
+
+const toBoolean = (value: any): boolean => {
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase()
+        if (['0', 'false', 'off', 'no', ''].includes(normalized)) {
+            return false
+        }
+        if (['1', 'true', 'on', 'yes'].includes(normalized)) {
+            return true
+        }
+    }
+    return Boolean(value)
+}
+
+const normalizeImageList = (images: any): string[] => {
+    if (!images) {
+        return []
+    }
+    if (Array.isArray(images)) {
+        return images.map((item) => String(item || '').trim()).filter(Boolean)
+    }
+    if (typeof images === 'string') {
+        const value = images.trim()
+        if (!value) {
+            return []
+        }
+
+        try {
+            const parsed = JSON.parse(value)
+            if (Array.isArray(parsed)) {
+                return parsed.map((item) => String(item || '').trim()).filter(Boolean)
+            }
+        } catch (error) {
+            // ignore parse error and fallback to comma-separated parsing
+        }
+
+        return value
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+    }
+    return []
+}
+
 const normalizeTags = (tags: any): string[] => {
     if (!tags) {
         return []
@@ -58,11 +106,11 @@ const getDynamicTypeLabel = (dynamicType: any): string => {
 }
 
 const resolveUserMeta = (item: any) => {
-    const userType = Number(item.user_type || 1)
-    const isFavorite = Boolean(item.is_favorite)
+    const userType = toNumber(item.user_type || 1)
+    const isFavorite = toBoolean(item.is_favorite)
 
     if (userType === 2) {
-        const staffId = Number(item.staff_id || item.user?.id || 0)
+        const staffId = toNumber(item.staff_id || item.user?.id || 0)
         return {
             id: staffId,
             nickname: item.user?.nickname || '服务人员',
@@ -86,7 +134,7 @@ const resolveUserMeta = (item: any) => {
         }
     }
 
-    const authorId = Number(item.user_id || item.user?.id || 0)
+    const authorId = toNumber(item.user_id || item.user?.id || 0)
     return {
         id: authorId,
         nickname: item.user?.nickname || '匿名用户',
@@ -100,19 +148,20 @@ const resolveUserMeta = (item: any) => {
 
 export const mapDynamicItem = (item: any): DynamicCardData => {
     const tags = normalizeTags(item.tags)
-    const dynamicType = Number(item.dynamic_type || 1)
+    const dynamicType = toNumber(item.dynamic_type || 1)
+    const imageList = normalizeImageList(item.images)
 
     let displayImages: string[] = []
     if (item.video_url || item.video) {
         if (item.video_cover) {
             displayImages = [item.video_cover]
         }
-    } else if (Array.isArray(item.images) && item.images.length > 0) {
-        displayImages = item.images
+    } else if (imageList.length > 0) {
+        displayImages = imageList
     }
 
     return {
-        id: item.id,
+        id: toNumber(item.id),
         user: resolveUserMeta(item),
         content: item.content || '',
         images: displayImages,
@@ -127,10 +176,10 @@ export const mapDynamicItem = (item: any): DynamicCardData => {
                   lng: 0
               }
             : undefined,
-        viewCount: item.view_count || 0,
-        likeCount: item.like_count || 0,
-        commentCount: item.comment_count || 0,
-        isLiked: item.is_liked || false,
+        viewCount: toNumber(item.view_count),
+        likeCount: toNumber(item.like_count),
+        commentCount: toNumber(item.comment_count),
+        isLiked: toBoolean(item.is_liked),
         createTime: item.create_time || item.created_at || '',
         dynamicType,
         dynamicTypeLabel: getDynamicTypeLabel(dynamicType)

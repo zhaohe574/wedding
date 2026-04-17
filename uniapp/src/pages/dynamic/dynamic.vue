@@ -6,34 +6,41 @@
 
             <view class="dynamic-page__body">
                 <view class="dynamic-page__filters-shell">
-                    <view class="dynamic-page__filters">
-                        <scroll-view
-                            :scroll-x="true"
-                            class="dynamic-page__filter-scroll"
-                            :show-scrollbar="false"
-                        >
-                            <view class="dynamic-page__filter-track">
-                                <view
-                                    v-if="currentTag"
-                                    class="dynamic-page__topic-chip dynamic-page__topic-chip--active"
-                                    @click="clearTagFilter"
-                                >
-                                    <text class="dynamic-page__topic-text">#{{ currentTag }}</text>
-                                    <tn-icon name="close" size="18" color="#FFFFFF" />
-                                </view>
-
-                                <view
-                                    v-for="(tab, index) in typeTabs"
-                                    :key="tab.label"
-                                    class="dynamic-page__type-chip"
-                                    :class="{ 'is-active': currentTypeIndex === index }"
-                                    @click="currentTypeIndex = index"
-                                >
-                                    {{ tab.label }}
-                                </view>
+                    <scroll-view
+                        :scroll-x="true"
+                        class="dynamic-page__filter-scroll"
+                        :show-scrollbar="false"
+                    >
+                        <view class="dynamic-page__filter-track">
+                            <view
+                                v-if="currentTag"
+                                class="dynamic-page__topic-chip dynamic-page__topic-chip--active"
+                                @click="clearTagFilter"
+                            >
+                                <text class="dynamic-page__topic-text">#{{ currentTag }}</text>
+                                <tn-icon name="close" size="16" color="#FFFFFF" />
                             </view>
-                        </scroll-view>
 
+                            <view
+                                v-for="(tab, index) in typeTabs"
+                                :key="tab.label"
+                                class="dynamic-page__type-chip"
+                                :class="{ 'is-active': currentTypeIndex === index }"
+                                @click="currentTypeIndex = index"
+                            >
+                                {{ tab.label }}
+                            </view>
+                        </view>
+                    </scroll-view>
+
+                    <view class="dynamic-page__filter-actions">
+                        <view
+                            v-if="showResetAction"
+                            class="dynamic-page__reset-chip"
+                            @click="handleResetFilters"
+                        >
+                            重置
+                        </view>
                         <view
                             class="dynamic-page__sort-chip"
                             :class="{ 'is-active': sortIsActive }"
@@ -41,61 +48,65 @@
                         >
                             <tn-icon
                                 name="sort"
-                                size="22"
-                                :color="sortIsActive ? '#E85A4F' : '#5F534B'"
+                                size="20"
+                                :color="sortIsActive ? '#E85A4F' : '#6A5B52'"
                             />
                             <text>{{ currentSortLabel }}</text>
                             <tn-icon
                                 name="arrow-down"
-                                size="18"
-                                :color="sortIsActive ? '#E85A4F' : '#5F534B'"
+                                size="16"
+                                :color="sortIsActive ? '#E85A4F' : '#6A5B52'"
                             />
                         </view>
                     </view>
                 </view>
 
-                <view v-if="loading && dynamics.length === 0" class="dynamic-page__loading">
-                    <tn-loading size="56" mode="flower" color="#E85A4F" />
-                    <text class="dynamic-page__loading-text">动态加载中...</text>
-                </view>
-
-                <view v-else-if="dynamics.length === 0" class="dynamic-page__empty">
-                    <view class="dynamic-page__empty-icon">
-                        <tn-icon name="inbox" size="112" color="#D9CDC7" />
+                <view class="dynamic-page__content">
+                    <view v-if="loading && dynamics.length === 0" class="dynamic-page__loading">
+                        <tn-loading size="52" mode="flower" color="#E85A4F" />
+                        <text class="dynamic-page__loading-text">加载中...</text>
                     </view>
-                    <text class="dynamic-page__empty-title">暂无符合条件的动态</text>
-                    <text class="dynamic-page__empty-desc">调整筛选条件后再试一次</text>
-                    <view
-                        v-if="showResetAction"
-                        class="dynamic-page__empty-action"
-                        @click="handleResetFilters"
-                    >
-                        重置筛选
-                    </view>
-                </view>
 
-                <view v-else class="dynamic-page__list">
-                    <DynamicCard
-                        v-for="item in dynamics"
-                        :key="item.id"
-                        :dynamic="item"
-                        variant="editorial"
-                        :show-share="false"
-                        @click="goDetail"
-                        @like="handleLike"
-                        @comment="goDetail"
-                    />
-
-                    <view class="dynamic-page__load-more">
-                        <text v-if="loading" class="dynamic-page__load-more-text">加载中...</text>
-                        <text
-                            v-else-if="hasMore"
-                            class="dynamic-page__load-more-text dynamic-page__load-more-text--action"
-                            @click="loadMore"
+                    <view v-else-if="dynamics.length === 0" class="dynamic-page__empty">
+                        <view class="dynamic-page__empty-icon">
+                            <tn-icon name="inbox" size="96" color="#D9CDC7" />
+                        </view>
+                        <text class="dynamic-page__empty-title">暂无内容</text>
+                        <text class="dynamic-page__empty-desc">换个筛选试试</text>
+                        <view
+                            v-if="showResetAction"
+                            class="dynamic-page__empty-action"
+                            @click="handleResetFilters"
                         >
-                            加载更多
-                        </text>
-                        <text v-else class="dynamic-page__load-more-text">没有更多了</text>
+                            重置筛选
+                        </view>
+                    </view>
+
+                    <view v-else class="dynamic-page__list">
+                        <DynamicCard
+                            v-for="item in dynamics"
+                            :key="item.id"
+                            :dynamic="item"
+                            variant="editorial"
+                            :show-share="false"
+                            @click="goDetail"
+                            @like="handleLike"
+                            @comment="goDetail"
+                        />
+
+                        <view class="dynamic-page__load-more">
+                            <text v-if="loading" class="dynamic-page__load-more-text"
+                                >加载中...</text
+                            >
+                            <text
+                                v-else-if="hasMore"
+                                class="dynamic-page__load-more-text dynamic-page__load-more-text--action"
+                                @click="loadMore"
+                            >
+                                加载更多
+                            </text>
+                            <text v-else class="dynamic-page__load-more-text">没有更多了</text>
+                        </view>
                     </view>
                 </view>
             </view>
@@ -350,37 +361,78 @@ onShareAppMessage(() => ({
 
 .dynamic-page {
     --wm-space-page-x: 37rpx;
-    --dynamic-page-body-top: 30rpx;
     --dynamic-page-body-bottom: 37rpx;
-    --dynamic-page-panel-radius: 49rpx;
-    --dynamic-page-panel-padding: 30rpx;
+    --dynamic-page-section-gap: 26rpx;
+    --dynamic-page-panel-radius: 44rpx;
     --dynamic-page-panel-border-width: 2rpx;
-    --dynamic-page-panel-bg: rgba(255, 255, 255, 0.86);
-    --dynamic-page-panel-shadow: 0 24rpx 48rpx rgba(214, 185, 167, 0.12);
-    --dynamic-page-chip-radius: 37rpx;
-    --dynamic-page-chip-height: 82rpx;
-    --dynamic-page-section-gap: 30rpx;
+    --dynamic-page-shell-bg: rgba(255, 255, 255, 0.78);
+    --dynamic-page-shell-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.1);
 
-    &__filters-shell {
-        padding: 30rpx 0 22rpx;
+    position: relative;
+    min-height: 100%;
+    background: radial-gradient(circle at top right, rgba(232, 90, 79, 0.12) 0, transparent 34%),
+        linear-gradient(180deg, rgba(255, 248, 245, 0.92) 0%, rgba(252, 251, 249, 0) 30%),
+        $dynamic-bg;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 78rpx;
+        right: -88rpx;
+        width: 280rpx;
+        height: 280rpx;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(232, 90, 79, 0.1) 0, transparent 72%);
+        pointer-events: none;
+        opacity: 0.88;
     }
 
-    &__filters {
+    &__body {
+        position: relative;
+        z-index: 1;
         display: flex;
+        flex-direction: column;
+        gap: 18rpx;
+        padding: 6rpx var(--wm-space-page-x, 37rpx) var(--dynamic-page-body-bottom, 37rpx);
+    }
+    &__filters-shell,
+    &__loading,
+    &__empty {
+        position: relative;
+        overflow: hidden;
+        border-radius: var(--dynamic-page-panel-radius, 44rpx);
+        border: var(--dynamic-page-panel-border-width, 2rpx) solid rgba(239, 230, 225, 0.9);
+        background: var(--dynamic-page-shell-bg, rgba(255, 255, 255, 0.78));
+        box-shadow: var(--dynamic-page-shell-shadow, 0 18rpx 38rpx rgba(214, 185, 167, 0.1));
+        backdrop-filter: blur(18rpx);
+        -webkit-backdrop-filter: blur(18rpx);
+    }
+
+    &__filters-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 14rpx;
+        padding: 18rpx 22rpx;
+        background: rgba(255, 255, 255, 0.7);
+    }
+
+    &__filter-actions {
+        display: inline-flex;
         align-items: center;
-        gap: 16rpx;
-        padding: var(--dynamic-page-panel-padding, 24rpx);
-        border-radius: var(--dynamic-page-panel-radius, 48rpx);
-        background: var(--dynamic-page-panel-bg, rgba(255, 255, 255, 0.86));
-        border: var(--dynamic-page-panel-border-width, 2rpx) solid $dynamic-border;
-        box-shadow: var(--dynamic-page-panel-shadow, 0 24rpx 48rpx rgba(214, 185, 167, 0.12));
-        backdrop-filter: blur(24rpx);
-        -webkit-backdrop-filter: blur(24rpx);
+        gap: 12rpx;
+        flex-shrink: 0;
+    }
+
+    &__reset-chip {
+        @include dynamic-pill(rgba(255, 255, 255, 0.68), $dynamic-text-secondary);
+        min-height: 64rpx;
+        padding: 0 20rpx;
+        background: rgba(255, 255, 255, 0.62);
+        font-size: 24rpx;
+        font-weight: 600;
     }
 
     &__filter-scroll {
-        flex: 1;
-        min-width: 0;
         white-space: nowrap;
 
         &::-webkit-scrollbar {
@@ -391,77 +443,66 @@ onShareAppMessage(() => ({
     &__filter-track {
         display: inline-flex;
         align-items: center;
-        gap: 14rpx;
+        gap: 12rpx;
         width: max-content;
+        min-width: 100%;
         padding-right: 8rpx;
     }
 
-    &__topic-chip {
-        @include dynamic-pill(rgba(255, 255, 255, 0.84), $dynamic-text-secondary);
-        gap: 10rpx;
-        min-height: var(--dynamic-page-chip-height, 72rpx);
-        padding: 0 22rpx;
-        border-radius: var(--dynamic-page-chip-radius, 36rpx);
-        flex-shrink: 0;
-        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.72),
-            0 10rpx 22rpx rgba(214, 185, 167, 0.08);
-        backdrop-filter: blur(12rpx);
-        -webkit-backdrop-filter: blur(12rpx);
+    &__topic-chip,
+    &__type-chip,
+    &__sort-chip {
+        @include dynamic-pill(rgba(255, 255, 255, 0.68), $dynamic-text-secondary);
+        min-height: 68rpx;
+        border-color: rgba(239, 230, 225, 0.92);
+        background: rgba(255, 255, 255, 0.66);
+        box-shadow: none;
         transition: all 0.2s ease;
+    }
+
+    &__topic-chip,
+    &__type-chip {
+        padding: 0 22rpx;
+    }
+
+    &__topic-chip {
+        gap: 8rpx;
+        flex-shrink: 0;
 
         &--active {
             background: $dynamic-accent;
             border-color: transparent;
             color: #ffffff;
-            box-shadow: 0 14rpx 24rpx rgba(232, 90, 79, 0.2);
+            box-shadow: 0 12rpx 22rpx rgba(232, 90, 79, 0.16);
         }
     }
 
     &__topic-text {
-        font-size: 26rpx;
-        font-weight: 600;
+        font-size: 24rpx;
+        font-weight: 700;
         line-height: 1;
     }
 
     &__type-chip {
-        @include dynamic-pill(rgba(255, 255, 255, 0.84), $dynamic-text-secondary);
-        min-width: 112rpx;
-        min-height: var(--dynamic-page-chip-height, 72rpx);
-        padding: 0 22rpx;
-        border-radius: var(--dynamic-page-chip-radius, 36rpx);
-        flex-shrink: 0;
-        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.72),
-            0 10rpx 22rpx rgba(214, 185, 167, 0.08);
-        backdrop-filter: blur(12rpx);
-        -webkit-backdrop-filter: blur(12rpx);
-        transition: all 0.2s ease;
-        font-size: 26rpx;
+        min-width: 108rpx;
+        font-size: 24rpx;
         font-weight: 600;
+        flex-shrink: 0;
 
         &.is-active {
-            color: #ffffff;
-            border-color: transparent;
-            background: $dynamic-accent;
-            box-shadow: 0 14rpx 24rpx rgba(232, 90, 79, 0.2);
+            color: $dynamic-accent;
+            border-color: rgba(232, 90, 79, 0.12);
+            background: rgba(255, 241, 238, 0.92);
         }
     }
 
     &__sort-chip {
-        @include dynamic-pill(rgba(255, 255, 255, 0.84), $dynamic-text-secondary);
-        gap: 10rpx;
-        min-width: 182rpx;
-        min-height: var(--dynamic-page-chip-height, 72rpx);
-        padding: 0 22rpx;
-        border-radius: var(--dynamic-page-chip-radius, 36rpx);
+        gap: 8rpx;
+        padding: 0 20rpx;
         flex-shrink: 0;
-        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.72),
-            0 10rpx 22rpx rgba(214, 185, 167, 0.08);
-        backdrop-filter: blur(12rpx);
-        -webkit-backdrop-filter: blur(12rpx);
-        transition: all 0.2s ease;
 
         text {
-            font-size: 26rpx;
+            font-size: 24rpx;
             font-weight: 600;
             line-height: 1;
             white-space: nowrap;
@@ -469,41 +510,37 @@ onShareAppMessage(() => ({
 
         &.is-active {
             color: $dynamic-accent;
-            border-color: rgba(232, 90, 79, 0.16);
-            background: rgba(255, 241, 238, 0.96);
-            box-shadow: 0 12rpx 22rpx rgba(232, 90, 79, 0.12);
+            border-color: rgba(232, 90, 79, 0.14);
+            background: rgba(255, 241, 238, 0.92);
         }
     }
 
-    &__body {
-        padding: 0 var(--wm-space-page-x, 37rpx) var(--dynamic-page-body-bottom, 37rpx);
-    }
-
-    &__picker-mask {
-        position: fixed;
-        inset: 0;
-        z-index: 20108;
+    &__content {
+        position: relative;
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        overflow: visible;
     }
 
     &__loading,
     &__empty {
-        min-height: 50vh;
+        min-height: 42vh;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 108rpx 32rpx;
-        border-radius: var(--dynamic-page-panel-radius, 48rpx);
-        background: var(--dynamic-page-panel-bg, rgba(255, 255, 255, 0.86));
-        border: var(--dynamic-page-panel-border-width, 2rpx) solid $dynamic-border;
-        box-shadow: var(--dynamic-page-panel-shadow, 0 24rpx 48rpx rgba(214, 185, 167, 0.12));
-        backdrop-filter: blur(24rpx);
-        -webkit-backdrop-filter: blur(24rpx);
+        padding: 96rpx 32rpx;
+        background: rgba(255, 255, 255, 0.7);
+        box-shadow: none;
     }
 
     &__loading-text {
-        margin-top: 22rpx;
-        font-size: 26rpx;
+        margin-top: 20rpx;
+        font-size: 25rpx;
         font-weight: 600;
         color: $dynamic-text-muted;
     }
@@ -523,8 +560,9 @@ onShareAppMessage(() => ({
     }
 
     &__empty-desc {
-        margin-top: 12rpx;
-        font-size: 26rpx;
+        margin-top: 10rpx;
+        max-width: 420rpx;
+        font-size: 24rpx;
         line-height: 1.6;
         color: $dynamic-text-muted;
     }
@@ -532,7 +570,7 @@ onShareAppMessage(() => ({
     &__empty-action {
         margin-top: 32rpx;
         min-width: 224rpx;
-        height: 84rpx;
+        height: 82rpx;
         padding: 0 34rpx;
         border-radius: $dynamic-radius-pill;
         display: inline-flex;
@@ -540,7 +578,6 @@ onShareAppMessage(() => ({
         justify-content: center;
         background: rgba(255, 241, 238, 0.96);
         border: 2rpx solid rgba(232, 90, 79, 0.12);
-        box-shadow: 0 14rpx 26rpx rgba(232, 90, 79, 0.12);
         color: $dynamic-accent;
         font-size: 26rpx;
         font-weight: 700;
@@ -555,33 +592,33 @@ onShareAppMessage(() => ({
     &__list {
         display: flex;
         flex-direction: column;
-        gap: 20rpx;
-        --dynamic-editorial-card-radius: 40rpx;
-        --dynamic-editorial-card-bg: rgba(255, 255, 255, 0.88);
-        --dynamic-editorial-card-shadow: 0 24rpx 48rpx rgba(214, 185, 167, 0.14);
-        --dynamic-editorial-card-blur: 20rpx;
-        --dynamic-editorial-head-padding: 20rpx 20rpx 0;
+        gap: 24rpx;
+        --dynamic-editorial-card-radius: 42rpx;
+        --dynamic-editorial-card-bg: rgba(255, 255, 255, 0.9);
+        --dynamic-editorial-card-shadow: 0 26rpx 52rpx rgba(214, 185, 167, 0.12);
+        --dynamic-editorial-card-blur: 18rpx;
+        --dynamic-editorial-head-padding: 24rpx 24rpx 0;
         --dynamic-editorial-author-gap: 14rpx;
-        --dynamic-editorial-avatar-size: 52rpx;
+        --dynamic-editorial-avatar-size: 54rpx;
         --dynamic-editorial-name-size: 26rpx;
-        --dynamic-editorial-meta-margin-top: 6rpx;
+        --dynamic-editorial-meta-margin-top: 8rpx;
         --dynamic-editorial-meta-size: 22rpx;
-        --dynamic-editorial-cover-margin: 16rpx 20rpx 0;
-        --dynamic-editorial-cover-radius: 28rpx;
-        --dynamic-editorial-cover-height: 332rpx;
-        --dynamic-editorial-video-badge-offset: 16rpx;
+        --dynamic-editorial-cover-margin: 18rpx 24rpx 0;
+        --dynamic-editorial-cover-radius: 30rpx;
+        --dynamic-editorial-cover-height: 340rpx;
+        --dynamic-editorial-video-badge-offset: 18rpx;
         --dynamic-editorial-video-badge-padding: 8rpx 14rpx;
-        --dynamic-editorial-content-padding: 16rpx 20rpx 0;
-        --dynamic-editorial-content-size: 30rpx;
-        --dynamic-editorial-content-line-height: 1.55;
-        --dynamic-editorial-content-clamp: 3;
-        --dynamic-editorial-stats-gap: 16rpx;
-        --dynamic-editorial-stats-padding: 12rpx 20rpx 18rpx;
+        --dynamic-editorial-content-padding: 18rpx 24rpx 0;
+        --dynamic-editorial-content-size: 31rpx;
+        --dynamic-editorial-content-line-height: 1.58;
+        --dynamic-editorial-content-clamp: 4;
+        --dynamic-editorial-stats-gap: 20rpx;
+        --dynamic-editorial-stats-padding: 14rpx 24rpx 24rpx;
         --dynamic-editorial-stat-size: 22rpx;
     }
 
     &__load-more {
-        padding: 16rpx 0 6rpx;
+        padding: 8rpx 0 10rpx;
         text-align: center;
     }
 
