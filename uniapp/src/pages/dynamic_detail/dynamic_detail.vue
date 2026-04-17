@@ -590,6 +590,8 @@ const normalizeImageList = (images: any): string[] => {
     return []
 }
 
+const toNumber = (value: any) => Number(value || 0)
+
 const authorMetaText = computed(() => {
     const parts: string[] = []
     if (detail.value?.create_time) {
@@ -680,10 +682,10 @@ const createCommentItem = (item: any): DynamicCommentItem => ({
     nickname: item.user?.nickname || '匿名用户',
     date: item.create_time || '',
     content: item.content || '',
-    likeActive: item.is_liked || false,
-    likeCount: item.like_count || 0,
+    likeActive: Boolean(item.is_liked),
+    likeCount: toNumber(item.like_count),
     allowDelete: item.user_id === userId.value,
-    commentCount: item.reply_count || 0,
+    commentCount: toNumber(item.reply_count),
     comment: [],
     replyExpanded: false,
     replyLoading: false
@@ -695,8 +697,8 @@ const createReplyItem = (reply: any): DynamicReplyItem => ({
     nickname: reply.user_nickname || '匿名用户',
     date: reply.create_time || '',
     content: reply.content || '',
-    likeActive: reply.is_liked || false,
-    likeCount: reply.like_count || 0,
+    likeActive: Boolean(reply.is_liked),
+    likeCount: toNumber(reply.like_count),
     allowDelete: reply.user_id === userId.value,
     replyUserNickname: reply.reply_user_nickname || ''
 })
@@ -777,7 +779,13 @@ const fetchDetail = async () => {
             images: normalizeImageList(res.images),
             tags,
             is_favorite: Boolean(res.is_favorite),
+            is_collected: Boolean(res.is_collected),
+            is_liked: Boolean(res.is_liked),
             can_favorite: Number(res.user_type) === 2 && Number(res.staff_id || 0) > 0,
+            like_count: toNumber(res.like_count),
+            comment_count: toNumber(res.comment_count),
+            collect_count: toNumber(res.collect_count),
+            view_count: toNumber(res.view_count),
             video: res.video_url || res.video || '',
             video_cover: res.video_cover || ''
         }
