@@ -582,9 +582,9 @@ class StaffLogic extends BaseLogic
      * @param int $staffId
      * @return array
      */
-    public static function getAddonConfig(int $staffId): array
+    public static function getAddonConfig(int $staffId, int $packageId = 0): array
     {
-        return self::getStaffOwnedAddons($staffId);
+        return self::getStaffOwnedAddons($staffId, $packageId);
     }
 
     /**
@@ -820,6 +820,7 @@ class StaffLogic extends BaseLogic
             ->select()
             ->toArray();
 
+        $packages = ServicePackageAddon::attachAddonIds($packages);
         return PackageRegionPriceService::attachRegionPrices($packages);
     }
 
@@ -828,16 +829,24 @@ class StaffLogic extends BaseLogic
      * @param int $staffId
      * @return array
      */
-    protected static function getStaffOwnedAddons(int $staffId): array
+    protected static function getStaffOwnedAddons(int $staffId, int $packageId = 0): array
     {
-        return ServiceAddon::where('staff_id', $staffId)
+        $query = ServiceAddon::where('staff_id', $staffId)
             ->whereNull('delete_time')
             ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show')
             ->append(['category_name', 'staff_name'])
             ->order('sort', 'desc')
-            ->order('id', 'desc')
-            ->select()
-            ->toArray();
+            ->order('id', 'desc');
+
+        if ($packageId > 0) {
+            $allowedAddonIds = ServicePackageAddon::getAddonIds($packageId);
+            if (empty($allowedAddonIds)) {
+                return [];
+            }
+            $query->whereIn('id', $allowedAddonIds);
+        }
+
+        return $query->select()->toArray();
     }
 
     /**

@@ -235,6 +235,12 @@
                             }}</text>
                         </view>
                         <view class="sub-panel__row">
+                            <text class="sub-panel__label">版本记录</text>
+                            <text class="sub-panel__value"
+                                >{{ confirmLetterHistory.length || 0 }} 个版本</text
+                            >
+                        </view>
+                        <view class="sub-panel__row">
                             <text class="sub-panel__label">确认日期</text>
                             <text class="sub-panel__value">{{
                                 confirmLetter?.rendered_snapshot?.confirm_date || '-'
@@ -350,6 +356,7 @@ interface StatusDescriptor {
 const $theme = useThemeStore()
 const order = ref<any>(null)
 const confirmLetter = ref<any>(null)
+const confirmLetterHistory = ref<any[]>([])
 const confirmCountdownSeconds = ref(0)
 const payCountdownSeconds = ref(0)
 let confirmCountdownTimer: ReturnType<typeof setInterval> | null = null
@@ -1010,13 +1017,20 @@ const fetchDetail = async (id: number) => {
 }
 
 const openConfirmLetterActions = () => {
+    const itemList = ['生成确认函', '查看确认函']
+    if (confirmLetterHistory.value.length > 1) {
+        itemList.push('切换版本')
+    }
+    itemList.push('推送给客户', '保存图片')
+
     uni.showActionSheet({
-        itemList: ['生成确认函', '查看确认函', '推送给客户', '保存图片'],
+        itemList,
         success: ({ tapIndex }) => {
             if (tapIndex === 0) handleGenerateLetter()
             if (tapIndex === 1) handlePreviewLetter()
-            if (tapIndex === 2) handlePushLetter()
-            if (tapIndex === 3) handleSaveLetter()
+            if (itemList[tapIndex] === '切换版本') handleSelectConfirmLetterVersion()
+            if (itemList[tapIndex] === '推送给客户') handlePushLetter()
+            if (itemList[tapIndex] === '保存图片') handleSaveLetter()
         }
     })
 }
@@ -1048,27 +1062,66 @@ const handleContactCustomer = () => {
     })
 }
 
-const loadConfirmLetter = async () => {
+const loadConfirmLetter = async (targetLetterId = 0) => {
     const currentOrderId = Number(order.value?.id || 0)
     if (!currentOrderId) {
         confirmLetter.value = null
+        confirmLetterHistory.value = []
         return
     }
     try {
         const history: any = await staffCenterOrderConfirmLetterHistory({
             order_id: currentOrderId
         })
-        const first = Array.isArray(history) ? history[0] : history?.[0]
-        if (!first?.letter_id) {
+        confirmLetterHistory.value = Array.isArray(history) ? history : []
+        const selectedLetterId =
+            targetLetterId > 0
+                ? targetLetterId
+                : Number(confirmLetter.value?.letter_id || 0) ||
+                  Number(confirmLetterHistory.value[0]?.letter_id || 0)
+
+        if (!selectedLetterId) {
             confirmLetter.value = null
             return
         }
+
         confirmLetter.value = await staffCenterOrderConfirmLetterDetail({
-            letter_id: first.letter_id
+            letter_id: selectedLetterId
         })
     } catch {
         confirmLetter.value = null
+        confirmLetterHistory.value = []
     }
+}
+
+const handleSelectConfirmLetterVersion = () => {
+    if (!confirmLetterHistory.value.length) {
+        uni.showToast({ title: '暂无确认函版本记录', icon: 'none' })
+        return
+    }
+
+    uni.showActionSheet({
+        itemList: confirmLetterHistory.value.map((item) => {
+            const tags = [
+                item?.is_current ? '当前' : '',
+                item?.is_pushed ? '已推送' : '未推送'
+            ].filter(Boolean)
+            return `v${item?.version || 0}${tags.length ? `（${tags.join('·')}）` : ''}`
+        }),
+        success: async ({ tapIndex }) => {
+            const target = confirmLetterHistory.value[tapIndex]
+            if (!target?.letter_id) {
+                return
+            }
+
+            try {
+                await loadConfirmLetter(Number(target.letter_id || 0))
+                uni.showToast({ title: `已切换到 v${target.version || 0}`, icon: 'none' })
+            } catch (error: any) {
+                uni.showToast({ title: error?.message || '切换版本失败', icon: 'none' })
+            }
+        }
+    })
 }
 
 const handleGenerateLetter = async () => {

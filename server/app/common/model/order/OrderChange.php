@@ -13,6 +13,7 @@ use app\common\model\schedule\Schedule;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
+use app\common\service\OrderConfirmLetterService;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
 
@@ -725,6 +726,8 @@ class OrderChange extends BaseModel
                 Db::rollback();
                 return $result;
             }
+
+            OrderConfirmLetterService::invalidateCurrentLetter($order, false);
 
             // 更新变更状态
             $change->change_status = self::STATUS_EXECUTED;

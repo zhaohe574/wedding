@@ -81,7 +81,7 @@
                             <el-icon class="text-green-500 text-xl"><CircleCheck /></el-icon>
                         </div>
                         <div>
-                            <div class="text-gray-500 text-sm">已下单</div>
+                            <div class="text-gray-500 text-sm">已转正</div>
                             <div class="text-2xl font-bold text-green-500">{{ statistics.converted || 0 }}</div>
                         </div>
                     </div>
@@ -109,14 +109,25 @@
                 <el-table-column prop="id" label="候补编号" width="80" />
                 <el-table-column prop="customer_name" label="客户姓名" width="120" />
                 <el-table-column prop="customer_phone" label="联系电话" width="130" />
+                <el-table-column prop="staff_name" label="服务人员" width="120" />
                 <el-table-column prop="schedule_date" label="期望日期" width="120" />
                 <el-table-column prop="service_name" label="候补服务" min-width="150" />
                 <el-table-column prop="notify_status" label="状态" width="100">
                     <template #default="{ row }">
                         <el-tag v-if="row.notify_status === 0" type="warning">等待中</el-tag>
                         <el-tag v-else-if="row.notify_status === 1" type="primary">已通知</el-tag>
-                        <el-tag v-else-if="row.notify_status === 2" type="success">已下单</el-tag>
+                        <el-tag v-else-if="row.notify_status === 2" type="success">已转正</el-tag>
                         <el-tag v-else type="info">已过期</el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="notify_time" label="通知时间" width="160">
+                    <template #default="{ row }">
+                        {{ row.notify_time || '-' }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="expire_time" label="截止时间" width="160">
+                    <template #default="{ row }">
+                        {{ row.expire_time || '-' }}
                     </template>
                 </el-table-column>
                 <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
@@ -160,13 +171,16 @@
                     <el-descriptions-item label="候补状态">
                         <el-tag v-if="currentRow.notify_status === 0" type="warning">等待中</el-tag>
                         <el-tag v-else-if="currentRow.notify_status === 1" type="primary">已通知</el-tag>
-                        <el-tag v-else-if="currentRow.notify_status === 2" type="success">已下单</el-tag>
+                        <el-tag v-else-if="currentRow.notify_status === 2" type="success">已转正</el-tag>
                         <el-tag v-else type="info">已过期</el-tag>
                     </el-descriptions-item>
                     <el-descriptions-item label="客户姓名">{{ currentRow.customer_name }}</el-descriptions-item>
                     <el-descriptions-item label="联系电话">{{ currentRow.customer_phone }}</el-descriptions-item>
+                    <el-descriptions-item label="服务人员">{{ currentRow.staff_name || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="期望日期">{{ currentRow.schedule_date }}</el-descriptions-item>
                     <el-descriptions-item label="候补服务" :span="2">{{ currentRow.service_name }}</el-descriptions-item>
+                    <el-descriptions-item label="通知时间">{{ currentRow.notify_time || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="截止时间">{{ currentRow.expire_time || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="备注" :span="2">{{ currentRow.remark || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="申请时间" :span="2">{{ currentRow.create_time }}</el-descriptions-item>
                 </el-descriptions>
@@ -178,7 +192,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { waitlistLists, waitlistBatchNotify, waitlistNotify, waitlistConvert, waitlistInvalidate, waitlistStatistics } from '@/api/waitlist'
+import { waitlistLists, waitlistBatchNotify, waitlistNotify, waitlistConvert, waitlistInvalidate } from '@/api/waitlist'
 
 // 查询参数
 const queryParams = reactive({

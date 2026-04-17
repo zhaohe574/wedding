@@ -8,7 +8,10 @@ declare(strict_types=1);
 namespace app\common\model\order;
 
 use app\common\model\BaseModel;
+use app\common\model\package\PackageBooking;
+use app\common\model\schedule\Schedule;
 use app\common\model\user\User;
+use app\common\service\OrderConfirmLetterService;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
 
@@ -271,6 +274,9 @@ class OrderPause extends BaseModel
         Db::startTrans();
         try {
             $order = Order::find($pause->order_id);
+            if (!$order) {
+                throw new \RuntimeException('订单不存在');
+            }
             $beforeStatus = $pause->pause_status;
 
             if ($approved) {
@@ -279,8 +285,11 @@ class OrderPause extends BaseModel
                 $logContent = '审核通过，订单已暂停';
 
                 // 更新订单暂停状态
+                $beforeOrderStatus = (int)$order->order_status;
                 $order->is_paused = 1;
                 $order->pause_id = $pauseId;
+                $order->order_status = Order::STATUS_PAUSED;
+                OrderConfirmLetterService::invalidateCurrentLetter($order, false);
                 $order->update_time = time();
                 $order->save();
 
@@ -290,8 +299,8 @@ class OrderPause extends BaseModel
                     2, // 管理员
                     $adminId,
                     'pause',
-                    $order->order_status,
-                    $order->order_status,
+                    $beforeOrderStatus,
+                    Order::STATUS_PAUSED,
                     '订单已暂停'
                 );
             } else {
@@ -353,7 +362,14 @@ class OrderPause extends BaseModel
         Db::startTrans();
         try {
             $order = Order::find($pause->order_id);
+            if (!$order) {
+                throw new \RuntimeException('订单不存在');
+            }
             $beforeStatus = $pause->pause_status;
+            $beforeOrderStatus = (int)$order->order_status;
+            $resumeOrderStatus = (int)($order->start_service_time ?? 0) > 0
+                ? Order::STATUS_IN_SERVICE
+                : Order::STATUS_PENDING_SERVICE;
 
             // 计算实际暂停天数
             $actualDays = (time() - strtotime($pause->pause_start_date)) / 86400;
@@ -370,21 +386,80 @@ class OrderPause extends BaseModel
             $pause->update_time = time();
             $pause->save();
 
+            $items = OrderItem::where('order_id', $order->id)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->select();
+
+            if ($newServiceDate !== '') {
+                foreach ($items as $item) {
+                    $available = Schedule::checkAvailable((int)$item->staff_id, $newServiceDate, 0);
+                    if (!$available) {
+                        $staffName = $item->staff_name ?: "人员ID:{$item->staff_id}";
+                        throw new \RuntimeException("{$staffName}在新日期档期已被占用，无法恢复订单");
+                    }
+
+                    if ((int)$item->package_id > 0) {
+                        $bookingCheck = PackageBooking::checkAvailability(
+                            (int)$item->package_id,
+                            $newServiceDate,
+                            (int)$item->staff_id,
+                            0
+                        );
+                        if (!($bookingCheck['available'] ?? false)) {
+                            throw new \RuntimeException((string)($bookingCheck['message'] ?? '套餐改期锁定失败'));
+                        }
+                    }
+                }
+
+                foreach ($items as $item) {
+                    if ((int)$item->schedule_id > 0) {
+                        Schedule::releaseLock((int)$item->schedule_id);
+                    }
+
+                    $lockResult = Schedule::confirmBooking(
+                        (int)$item->staff_id,
+                        $newServiceDate,
+                        0,
+                        (int)$order->id,
+                        (int)$order->user_id
+                    );
+                    if (!($lockResult[0] ?? false)) {
+                        throw new \RuntimeException((string)($lockResult[1] ?? '锁定新档期失败'));
+                    }
+
+                    $item->service_date = $newServiceDate;
+                    $item->time_slot = 0;
+                    $item->schedule_id = (int)($lockResult['schedule_id'] ?? 0);
+                    $item->update_time = time();
+                    $item->save();
+
+                    if ((int)$item->package_id > 0) {
+                        $confirmed = PackageBooking::confirmSelection(
+                            (int)$order->user_id,
+                            (int)$item->package_id,
+                            (int)$item->staff_id,
+                            $newServiceDate,
+                            0,
+                            (int)$order->id,
+                            (int)$item->id
+                        );
+                        if (!$confirmed) {
+                            throw new \RuntimeException('套餐改期锁定失败');
+                        }
+                    }
+                }
+            }
+
             // 更新订单状态
             $order->is_paused = 0;
-            if ($newServiceDate) {
+            $order->pause_id = 0;
+            $order->order_status = $resumeOrderStatus;
+            if ($newServiceDate !== '') {
                 $order->service_date = $newServiceDate;
             }
+            OrderConfirmLetterService::invalidateCurrentLetter($order, false);
             $order->update_time = time();
             $order->save();
-
-            // 如果有新服务日期，更新订单项
-            if ($newServiceDate) {
-                OrderItem::where('order_id', $order->id)->update([
-                    'service_date' => $newServiceDate,
-                    'update_time' => time(),
-                ]);
-            }
 
             // 记录订单日志
             OrderLog::addLog(
@@ -392,8 +467,8 @@ class OrderPause extends BaseModel
                 2, // 管理员
                 $adminId,
                 'resume',
-                $order->order_status,
-                $order->order_status,
+                $beforeOrderStatus,
+                $resumeOrderStatus,
                 '订单已恢复' . ($newServiceDate ? "，新服务日期：{$newServiceDate}" : '')
             );
 

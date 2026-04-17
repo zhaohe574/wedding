@@ -171,12 +171,18 @@
                         <span v-if="selectedDay.calendar.lunar_date">农历: {{ selectedDay.calendar.lunar_date }}</span>
                         <el-tag v-if="selectedDay.calendar.is_lucky_day" type="danger">吉日</el-tag>
                         <el-tag v-if="selectedDay.calendar.is_holiday" type="warning">{{ selectedDay.calendar.holiday_name }}</el-tag>
+                        <span v-if="selectedDay.calendar.congestion_level_text">
+                            拥堵度: {{ selectedDay.calendar.congestion_level_text }}
+                        </span>
                     </div>
                     <div v-if="selectedDay.calendar.lucky_events" class="mt-2 text-sm">
                         <span class="text-green-600">宜:</span> {{ selectedDay.calendar.lucky_events }}
                     </div>
                     <div v-if="selectedDay.calendar.unlucky_events" class="mt-1 text-sm">
                         <span class="text-red-600">忌:</span> {{ selectedDay.calendar.unlucky_events }}
+                    </div>
+                    <div v-if="selectedDay.calendar.remark" class="mt-1 text-sm text-gray-500">
+                        备注: {{ selectedDay.calendar.remark }}
                     </div>
                 </div>
 
@@ -285,6 +291,7 @@ import { staffAll } from '@/api/staff'
 interface ScheduleRow {
     id: number
     status: number
+    remark?: string
 }
 
 interface CalendarMeta {
@@ -294,6 +301,9 @@ interface CalendarMeta {
     holiday_name?: string
     lucky_events?: string
     unlucky_events?: string
+    congestion_level?: number
+    congestion_level_text?: string
+    remark?: string
 }
 
 interface CalendarDay {
@@ -307,13 +317,13 @@ interface CalendarData {
 }
 
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-const today = new Date().toISOString().split('T')[0]
+const today = formatLocalDate()
 
 const queryParams = ref({
     staff_id: '' as any
 })
 
-const currentMonth = ref(new Date().toISOString().slice(0, 7))
+const currentMonth = ref(formatLocalMonth())
 const staffList = ref<any[]>([])
 const calendarData = ref<CalendarData>({})
 const statistics = ref<any>({})
@@ -398,13 +408,13 @@ const nextMonth = () => {
 }
 
 const toToday = () => {
-    currentMonth.value = new Date().toISOString().slice(0, 7)
+    currentMonth.value = formatLocalMonth()
     fetchCalendar()
 }
 
 const handleReset = () => {
     queryParams.value.staff_id = ''
-    currentMonth.value = new Date().toISOString().slice(0, 7)
+    currentMonth.value = formatLocalMonth()
     fetchCalendar()
 }
 
@@ -414,10 +424,11 @@ const handleDayClick = (day: CalendarDay) => {
         ElMessage.warning('请先选择工作人员')
         return
     }
+    const currentSchedule = getPrimarySchedule(day)
     selectedDay.value = day
     dayForm.value = {
-        status: 1,
-        remark: ''
+        status: currentSchedule?.status ?? 1,
+        remark: currentSchedule?.remark ?? ''
     }
     dayDialogVisible.value = true
 }
@@ -511,6 +522,23 @@ const getStatusClass = (status: number) => {
         4: 'bg-purple-100 text-purple-600'
     }
     return map[status] || ''
+}
+
+const getPrimarySchedule = (day: CalendarDay) => {
+    return Array.isArray(day.schedules) && day.schedules.length > 0 ? day.schedules[0] as any : null
+}
+
+function formatLocalDate(date = new Date()) {
+    const year = date.getFullYear()
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    const day = `${date.getDate()}`.padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
+function formatLocalMonth(date = new Date()) {
+    const year = date.getFullYear()
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    return `${year}-${month}`
 }
 
 onMounted(() => {

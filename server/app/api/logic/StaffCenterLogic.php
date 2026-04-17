@@ -294,7 +294,8 @@ class StaffCenterLogic extends BaseLogic
             'pending_confirm_count' => $pendingConfirmCount,
         ], Order::buildPayTimeoutSummaryFromState(
             (int) ($order['order_status'] ?? Order::STATUS_PENDING_PAY),
-            (int) ($order['pay_deadline_time'] ?? 0)
+            (int) ($order['pay_deadline_time'] ?? 0),
+            $order
         ), Order::buildConfirmTimeoutSummaryFromState(
             (int) ($order['order_status'] ?? Order::STATUS_PENDING_CONFIRM),
             (int) ($order['confirm_deadline_time'] ?? 0)
@@ -958,7 +959,11 @@ class StaffCenterLogic extends BaseLogic
             $pageSize = 10;
         }
 
-        return $query->paginate($pageSize)->toArray();
+        $result = $query->paginate($pageSize)->toArray();
+        $result['data'] = ServicePackageAddon::attachAddonIds(
+            is_array($result['data'] ?? null) ? $result['data'] : []
+        );
+        return $result;
     }
 
     /**
@@ -984,6 +989,7 @@ class StaffCenterLogic extends BaseLogic
 
         $data = $package->toArray();
         $list = PackageRegionPriceService::attachRegionPrices([$data]);
+        $list = ServicePackageAddon::attachAddonIds($list);
         return $list[0] ?? $data;
     }
 
@@ -1005,6 +1011,11 @@ class StaffCenterLogic extends BaseLogic
                     (int) $package->id,
                     $staffId,
                     is_array($params['region_prices'] ?? null) ? $params['region_prices'] : []
+                );
+                ServicePackageAddon::syncPackageAddons(
+                    (int) $package->id,
+                    $staffId,
+                    $params['addon_ids'] ?? []
                 );
             });
             return true;
@@ -1040,6 +1051,13 @@ class StaffCenterLogic extends BaseLogic
                     (int) $package->id,
                     $staffId,
                     is_array($params['region_prices'] ?? null) ? $params['region_prices'] : []
+                );
+                ServicePackageAddon::syncPackageAddons(
+                    (int) $package->id,
+                    $staffId,
+                    array_key_exists('addon_ids', $params)
+                        ? $params['addon_ids']
+                        : ServicePackageAddon::getAddonIds((int) $package->id)
                 );
             });
             return true;
@@ -1088,7 +1106,7 @@ class StaffCenterLogic extends BaseLogic
         $query = ServiceAddon::where('staff_id', $staffId)
             ->whereNull('delete_time')
             ->field('id, staff_id, category_id, name, price, original_price, description, image, sort, is_show')
-            ->append(['category_name'])
+            ->append(['category_name', 'package_ids'])
             ->order('sort', 'desc')
             ->order('id', 'desc');
 
@@ -1118,7 +1136,7 @@ class StaffCenterLogic extends BaseLogic
         $addon = ServiceAddon::where('id', $addonId)
             ->where('staff_id', $staffId)
             ->whereNull('delete_time')
-            ->append(['category_name'])
+            ->append(['category_name', 'package_ids'])
             ->find();
         if (!$addon) {
             self::setError('附加服务不存在');
@@ -1454,12 +1472,18 @@ class StaffCenterLogic extends BaseLogic
             $item = self::applyStaffOrderAmounts($item);
             $item['order_status_desc'] = self::getStatusDesc((int) $item['order_status']);
             $item['pay_status_desc'] = self::getPayStatusDesc((int) $item['pay_status']);
-            $item['can_staff_start'] = (int)($item['order_status'] ?? -1) === Order::STATUS_PENDING_SERVICE ? 1 : 0;
+            $canManageWholeOrder = Order::isWholeOrderOwnedByStaff((int)($item['id'] ?? 0), $staffId);
+            $item['can_staff_start'] = (int)($item['order_status'] ?? -1) === Order::STATUS_PENDING_SERVICE
+                && $canManageWholeOrder
+                ? 1
+                : 0;
             $item['can_staff_complete'] = (int)($item['order_status'] ?? -1) === Order::STATUS_IN_SERVICE
+                && $canManageWholeOrder
                 && Order::canStaffCompleteService();
             $item = array_merge($item, Order::buildPayTimeoutSummaryFromState(
                 (int) ($item['order_status'] ?? Order::STATUS_PENDING_PAY),
-                (int) ($item['pay_deadline_time'] ?? 0)
+                (int) ($item['pay_deadline_time'] ?? 0),
+                $item
             ));
             $item = array_merge($item, Order::buildConfirmTimeoutSummaryFromState(
                 (int) ($item['order_status'] ?? Order::STATUS_PENDING_CONFIRM),
@@ -1509,8 +1533,13 @@ class StaffCenterLogic extends BaseLogic
         $data = array_merge($data, Order::getPaymentSummary($order));
         $data = array_merge($data, Order::getPayTimeoutSummary($order));
         $data = array_merge($data, Order::getConfirmTimeoutSummary($order));
-        $data['can_staff_start'] = (int)$order->order_status === Order::STATUS_PENDING_SERVICE ? 1 : 0;
+        $canManageWholeOrder = Order::isWholeOrderOwnedByStaff((int)$order->id, $staffId);
+        $data['can_staff_start'] = (int)$order->order_status === Order::STATUS_PENDING_SERVICE
+            && $canManageWholeOrder
+            ? 1
+            : 0;
         $data['can_staff_complete'] = (int)$order->order_status === Order::STATUS_IN_SERVICE
+            && $canManageWholeOrder
             && Order::canStaffCompleteService();
 
         return $data;
@@ -1642,15 +1671,8 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
-        $staffItems = is_array($order->items ?? null)
-            ? $order->items
-            : ((is_object($order->items ?? null) && method_exists($order->items, 'toArray')) ? $order->items->toArray() : []);
-        $matchedItems = array_values(array_filter($staffItems, function ($item) use ($staffId) {
-            return (int)($item['staff_id'] ?? 0) === $staffId;
-        }));
-
-        if (empty($matchedItems)) {
-            self::setError('无权操作该订单');
+        if (!Order::isWholeOrderOwnedByStaff((int)$order->id, $staffId)) {
+            self::setError('共享订单不支持当前整单履约操作');
             return false;
         }
 
@@ -1680,15 +1702,8 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
-        $staffItems = is_array($order->items ?? null)
-            ? $order->items
-            : ((is_object($order->items ?? null) && method_exists($order->items, 'toArray')) ? $order->items->toArray() : []);
-        $matchedItems = array_values(array_filter($staffItems, function ($item) use ($staffId) {
-            return (int)($item['staff_id'] ?? 0) === $staffId;
-        }));
-
-        if (empty($matchedItems)) {
-            self::setError('无权操作该订单');
+        if (!Order::isWholeOrderOwnedByStaff((int)$order->id, $staffId)) {
+            self::setError('共享订单不支持当前整单履约操作');
             return false;
         }
 

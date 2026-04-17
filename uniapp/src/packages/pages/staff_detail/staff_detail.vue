@@ -865,6 +865,7 @@ const openDatePickerRequested = ref(false)
 const openBookingPopupRequested = ref(false)
 const pendingDatePickerAfterRegion = ref(false)
 const selectedPackageId = ref<number>(0)
+const waitlistId = ref<number>(0)
 const showAlternativeStaffPopup = ref(false)
 const showCertificatePopup = ref(false)
 const alternativeStaffLoading = ref(false)
@@ -1640,6 +1641,7 @@ const getBookingPageUrl = () =>
     getStaffBookingPageUrl({
         staff_id: staffId.value,
         package_id: selectedPackageId.value,
+        waitlist_id: waitlistId.value,
         date: presetDate.value,
         ...selectedRegion.value
     })
@@ -1975,6 +1977,9 @@ onLoad((options) => {
     }
     if (options?.package_id) {
         selectedPackageId.value = Number(options.package_id)
+    }
+    if (options?.waitlist_id) {
+        waitlistId.value = Number(options.waitlist_id)
     }
     if (options?.open_date_picker === '1') {
         openDatePickerRequested.value = true

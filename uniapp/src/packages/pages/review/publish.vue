@@ -233,11 +233,11 @@
                 <BaseButton
                     block
                     size="lg"
-                    :disabled="submitting"
+                    :disabled="submitting || mediaUploading"
                     :loading="submitting"
                     @click="handleSubmit"
                 >
-                    {{ submitting ? '提交中...' : '发布评价' }}
+                    {{ submitting ? '提交中...' : mediaUploading ? '图片上传中...' : '发布评价' }}
                 </BaseButton>
             </ActionArea>
         </view>
@@ -247,6 +247,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import { uploadImage } from '@/api/app'
 import {
     getPendingOrders,
     publishReview,
@@ -260,6 +261,7 @@ const $theme = useThemeStore()
 const orderItemId = ref(0)
 const orderItem = ref<any>(null)
 const submitting = ref(false)
+const mediaUploading = ref(false)
 const tags = ref<any[]>([])
 const selectedTags = ref<number[]>([])
 const rewardConfig = ref<any[]>([])
@@ -386,12 +388,53 @@ const toggleTag = (tagId: number) => {
 
 // 选择图片
 const chooseImage = () => {
+    if (mediaUploading.value || submitting.value) {
+        return
+    }
+
     uni.chooseImage({
         count: 9 - formData.images.length,
         sizeType: ['compressed'],
         sourceType: ['album', 'camera'],
-        success: (res) => {
-            formData.images.push(...res.tempFilePaths)
+        success: async (res) => {
+            const filePaths = Array.isArray(res.tempFilePaths) ? res.tempFilePaths : []
+            if (!filePaths.length) {
+                return
+            }
+
+            mediaUploading.value = true
+            let uploadedCount = 0
+            let failedCount = 0
+
+            try {
+                for (const path of filePaths) {
+                    try {
+                        const uploadRes: any = await uploadImage(path)
+                        const url = String(uploadRes?.uri || uploadRes?.url || '').trim()
+                        if (!url) {
+                            failedCount++
+                            continue
+                        }
+
+                        formData.images.push(url)
+                        uploadedCount++
+                    } catch (error) {
+                        failedCount++
+                    }
+                }
+
+                if (failedCount > 0) {
+                    uni.showToast({
+                        title:
+                            uploadedCount > 0
+                                ? `已上传${uploadedCount}张，${failedCount}张失败`
+                                : '图片上传失败，请重试',
+                        icon: 'none'
+                    })
+                }
+            } finally {
+                mediaUploading.value = false
+            }
         }
     })
 }
@@ -410,6 +453,11 @@ const handleAnonymousChange = (event: Event) => {
 const handleSubmit = async () => {
     if (formData.score < 1) {
         uni.showToast({ title: '请选择评分', icon: 'none' })
+        return
+    }
+
+    if (mediaUploading.value) {
+        uni.showToast({ title: '请等待图片上传完成', icon: 'none' })
         return
     }
 

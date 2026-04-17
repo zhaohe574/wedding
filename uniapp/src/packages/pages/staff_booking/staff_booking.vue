@@ -317,6 +317,7 @@ import {
 type StaffPackage = {
     id?: number
     package_id?: number
+    addon_ids?: number[]
     name?: string
     price?: number | string
     description?: string
@@ -325,6 +326,7 @@ type StaffPackage = {
     duration_desc?: string
     package?: {
         id?: number
+        addon_ids?: number[]
         name?: string
         price?: number | string
         description?: string
@@ -414,9 +416,29 @@ const displayPackages = computed<StaffPackage[]>(() =>
     Array.isArray(staffDetail.value?.packages) ? staffDetail.value?.packages : []
 )
 
-const displayAddons = computed<StaffAddon[]>(() =>
-    Array.isArray(staffDetail.value?.addons) ? staffDetail.value?.addons : []
+const selectedPackage = computed<StaffPackage | null>(() => {
+    return (
+        displayPackages.value.find((item) => resolvePackageId(item) === booking.package_id) || null
+    )
+})
+
+const currentPackageAddonIds = computed<number[]>(() =>
+    resolvePackageAddonIds(selectedPackage.value)
 )
+
+const displayAddons = computed<StaffAddon[]>(() => {
+    const addons = Array.isArray(staffDetail.value?.addons) ? staffDetail.value?.addons : []
+    if (!selectedPackage.value) {
+        return []
+    }
+
+    const allowedAddonIds = new Set(currentPackageAddonIds.value)
+    if (!allowedAddonIds.size) {
+        return []
+    }
+
+    return addons.filter((item) => allowedAddonIds.has(resolveAddonId(item)))
+})
 
 const roleConfigs = computed<RoleConfig[]>(() =>
     Array.isArray(staffDetail.value?.related_role_configs)
@@ -462,12 +484,6 @@ const currentRoleCandidates = computed<RoleCandidate[]>(() => {
     }
 
     return roleCandidatesMap[step.key] || []
-})
-
-const selectedPackage = computed<StaffPackage | null>(() => {
-    return (
-        displayPackages.value.find((item) => resolvePackageId(item) === booking.package_id) || null
-    )
 })
 
 const selectedRoleCandidates = computed<Record<string, RoleCandidate | null>>(() => {
@@ -650,12 +666,31 @@ watch(
     }
 )
 
+watch(
+    () => currentPackageAddonIds.value.join(','),
+    () => {
+        syncAddonSelections()
+    }
+)
+
 const resolvePackageId = (item: StaffPackage | null | undefined) => {
     return Number(item?.package_id || item?.id || item?.package?.id || 0)
 }
 
 const resolvePackageName = (item: StaffPackage | null | undefined) => {
     return String(item?.package?.name || item?.name || '服务套餐')
+}
+
+const resolvePackageAddonIds = (item: StaffPackage | null | undefined) => {
+    const rawList = item?.addon_ids || item?.package?.addon_ids || []
+    if (!Array.isArray(rawList)) {
+        return []
+    }
+
+    return rawList
+        .map((addonId) => Number(addonId))
+        .filter((addonId) => Number.isInteger(addonId) && addonId > 0)
+        .filter((addonId, index, list) => list.indexOf(addonId) === index)
 }
 
 const resolvePackageDescription = (item: StaffPackage | null | undefined) => {
@@ -992,6 +1027,7 @@ const applyBookingQuery = (value: Record<string, any>) => {
     const normalized = normalizeBookingQuery(value)
     booking.staff_id = normalized.staff_id
     booking.package_id = normalized.package_id
+    booking.waitlist_id = normalized.waitlist_id
     booking.date = normalized.date
     booking.province_code = normalized.province_code
     booking.province_name = normalized.province_name

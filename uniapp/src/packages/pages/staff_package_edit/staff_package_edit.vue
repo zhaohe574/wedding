@@ -211,6 +211,51 @@
 
                 <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
+                        <text class="card-head__title">可选附加项</text>
+                        <text class="field-side-text">{{ form.addon_ids.length }} 项已勾选</text>
+                    </view>
+
+                    <view v-if="addonOptions.length" class="addon-chip-list">
+                        <view
+                            v-for="addon in addonOptions"
+                            :key="addon.id"
+                            :class="[
+                                'addon-chip',
+                                'wm-soft-card',
+                                {
+                                    'addon-chip--active': form.addon_ids.includes(
+                                        Number(addon.id || 0)
+                                    ),
+                                    'addon-chip--inactive': Number(addon.is_show ?? 1) !== 1
+                                }
+                            ]"
+                            @click="toggleAddonSelection(Number(addon.id || 0))"
+                        >
+                            <view class="addon-chip__copy">
+                                <text class="addon-chip__title">{{
+                                    addon.name || '未命名附加项'
+                                }}</text>
+                                <text class="addon-chip__meta">
+                                    ¥{{ formatMoney(addon.price) }}
+                                    <text v-if="Number(addon.is_show ?? 1) !== 1"> · 已下架</text>
+                                </text>
+                            </view>
+                            <text class="addon-chip__check">
+                                {{ form.addon_ids.includes(Number(addon.id || 0)) ? '✓' : '+' }}
+                            </text>
+                        </view>
+                    </view>
+
+                    <view v-else class="empty-panel empty-panel--compact">
+                        <view class="empty-panel__icon">
+                            <tn-icon name="add-circle" size="40" color="#D8CEC8" />
+                        </view>
+                        <text class="empty-panel__title">暂无附加项可配置</text>
+                    </view>
+                </BaseCard>
+
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                    <view class="card-head">
                         <text class="card-head__title">展示设置</text>
                     </view>
 
@@ -419,6 +464,7 @@ import { computed, getCurrentInstance, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { uploadImage } from '@/api/app'
 import {
+    staffCenterAddonLists,
     staffCenterPackageAdd,
     staffCenterPackageDetail,
     staffCenterPackageUpdate
@@ -473,6 +519,7 @@ const $theme = useThemeStore()
 const saving = ref(false)
 const showRulePopup = ref(false)
 const regionTree = ref<RegionProvince[]>([])
+const addonOptions = ref<any[]>([])
 const editingRuleIndex = ref(-1)
 
 const form = reactive({
@@ -483,6 +530,7 @@ const form = reactive({
     image: '',
     description: '',
     region_prices: [] as RegionPriceRow[],
+    addon_ids: [] as number[],
     duration: '0',
     sort: '0',
     is_show: 1,
@@ -582,6 +630,17 @@ const normalizeTextValue = (value: unknown) => {
     return String(value).trim()
 }
 
+const normalizeAddonIds = (value: unknown): number[] => {
+    if (!Array.isArray(value)) {
+        return []
+    }
+
+    return value
+        .map((item) => Number(item))
+        .filter((item) => Number.isInteger(item) && item > 0)
+        .filter((item, index, list) => list.indexOf(item) === index)
+}
+
 const getNodeChildren = (source: Record<string, any>) => {
     const candidates = [
         source?.children,
@@ -633,11 +692,25 @@ const fillForm = (data: any) => {
     form.image = data.image || ''
     form.description = data.description || ''
     form.region_prices = sortRegionPriceRows(data.region_prices || [])
+    form.addon_ids = normalizeAddonIds(data.addon_ids)
     form.duration =
         data.duration !== undefined && data.duration !== null ? String(data.duration) : '0'
     form.sort = data.sort !== undefined && data.sort !== null ? String(data.sort) : '0'
     form.is_show = Number(data.is_show ?? 1)
     form.is_recommend = Number(data.is_recommend ?? 0)
+}
+
+const toggleAddonSelection = (addonId: number) => {
+    if (addonId <= 0) {
+        return
+    }
+
+    if (form.addon_ids.includes(addonId)) {
+        form.addon_ids = form.addon_ids.filter((item) => item !== addonId)
+        return
+    }
+
+    form.addon_ids = [...form.addon_ids, addonId]
 }
 
 const formatMoney = (value: number | string) => {
@@ -901,6 +974,18 @@ const loadRegionTree = async () => {
     }
 }
 
+const loadAddonOptions = async () => {
+    try {
+        const data = await staffCenterAddonLists({ page_size: 200 })
+        addonOptions.value = Array.isArray(data?.data) ? data.data : []
+    } catch (error: any) {
+        addonOptions.value = []
+        const msg =
+            typeof error === 'string' ? error : error?.msg || error?.message || '获取附加项失败'
+        uni.showToast({ title: msg, icon: 'none' })
+    }
+}
+
 const loadDetail = async (packageId: number) => {
     const data = await staffCenterPackageDetail({ package_id: packageId })
     fillForm(data || {})
@@ -989,6 +1074,7 @@ const handleSave = async () => {
         image: imageText,
         description: descriptionText,
         region_prices: normalizeRegionPriceRows(form.region_prices),
+        addon_ids: [...form.addon_ids],
         duration: Number(normalizeTextValue(form.duration) || 0),
         sort: Number(normalizeTextValue(form.sort) || 0),
         is_show: form.is_show,
@@ -1024,6 +1110,7 @@ onLoad(async (options: any) => {
     channel?.on('detail', (data: any) => fillForm(data))
 
     await loadRegionTree()
+    await loadAddonOptions()
 
     if (packageId > 0) {
         try {
@@ -1445,6 +1532,10 @@ onLoad(async (options: any) => {
     gap: 14rpx;
 }
 
+.empty-panel--compact {
+    margin-top: 0;
+}
+
 .empty-panel__icon {
     width: 96rpx;
     height: 96rpx;
@@ -1464,6 +1555,66 @@ onLoad(async (options: any) => {
     font-weight: 700;
     line-height: 1.3;
     color: var(--wm-text-primary, #1e2432);
+}
+
+.addon-chip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+}
+
+.addon-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    padding: 22rpx 24rpx;
+    border-radius: 28rpx;
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
+}
+
+.addon-chip--active {
+    border-color: var(--wm-color-border-strong, #f4c7bf);
+    background: var(--wm-color-primary-soft, #fff1ee);
+}
+
+.addon-chip--inactive {
+    opacity: 0.66;
+}
+
+.addon-chip__copy {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.addon-chip__title {
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.addon-chip__meta {
+    font-size: 24rpx;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.addon-chip__check {
+    flex-shrink: 0;
+    width: 48rpx;
+    height: 48rpx;
+    border-radius: 999rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.82);
+    color: var(--wm-color-primary, #e85a4f);
+    font-size: 28rpx;
+    font-weight: 700;
 }
 
 .setting-list {

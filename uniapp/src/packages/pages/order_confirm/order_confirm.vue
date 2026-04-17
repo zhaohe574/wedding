@@ -345,6 +345,7 @@ const initialized = ref(false)
 const selection = reactive({
     staff_id: 0,
     package_id: 0,
+    waitlist_id: 0,
     date: '',
     province_code: '',
     province_name: '',
@@ -716,6 +717,7 @@ onLoad((options: any) => {
     })
     selection.staff_id = normalized.staff_id
     selection.package_id = normalized.package_id
+    selection.waitlist_id = normalized.waitlist_id
     selection.date = normalized.date
     selection.addon_ids = normalized.addon_ids
     selection.butler_staff_id = normalized.butler_staff_id

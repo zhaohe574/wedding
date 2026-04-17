@@ -466,6 +466,20 @@
                 <el-form-item label="地区价格">
                     <package-region-price-editor v-model="staffPackageForm.region_prices" />
                 </el-form-item>
+                <el-form-item label="可选附加项">
+                    <div class="w-full">
+                        <el-checkbox-group
+                            v-if="staffAddons.length"
+                            v-model="staffPackageForm.addon_ids"
+                            class="staff-package-addon-grid"
+                        >
+                            <el-checkbox v-for="addon in staffAddons" :key="addon.id" :label="addon.id">
+                                {{ addon.name }}（¥{{ addon.price }}）
+                            </el-checkbox>
+                        </el-checkbox-group>
+                        <div v-else class="admin-edit-muted">请先新增附加项，再为套餐勾选可售附加内容。</div>
+                    </div>
+                </el-form-item>
                 <div class="grid staff-edit-grid gap-x-8">
                     <el-form-item label="排序" prop="sort">
                         <el-input-number v-model="staffPackageForm.sort" :min="0" :max="9999" class="w-full" />
@@ -814,6 +828,7 @@ const staffPackageForm = reactive({
     image: '',
     description: '',
     region_prices: [] as Record<string, any>[],
+    addon_ids: [] as number[],
     sort: 0,
     is_show: 1,
     is_recommend: 0
@@ -897,6 +912,7 @@ const resetStaffPackageForm = () => {
         image: '',
         description: '',
         region_prices: [],
+        addon_ids: [],
         sort: 0,
         is_show: 1,
         is_recommend: 0
@@ -1057,6 +1073,7 @@ const openEditStaffPackage = (row: any) => {
     staffPackageForm.image = row.image || ''
     staffPackageForm.description = row.description || ''
     staffPackageForm.region_prices = Array.isArray(row.region_prices) ? row.region_prices : []
+    staffPackageForm.addon_ids = Array.isArray(row.addon_ids) ? row.addon_ids.map((id: any) => Number(id)) : []
     staffPackageForm.sort = row.sort || 0
     staffPackageForm.is_show = Number(row.is_show || 0)
     staffPackageForm.is_recommend = Number(row.is_recommend || 0)
@@ -1126,6 +1143,7 @@ const submitStaffPackage = async () => {
             image: staffPackageForm.image,
             description: staffPackageForm.description,
             region_prices: [...staffPackageForm.region_prices],
+            addon_ids: [...staffPackageForm.addon_ids],
             is_show: staffPackageForm.is_show,
             is_recommend: staffPackageForm.is_recommend,
             sort: staffPackageForm.sort
@@ -1389,6 +1407,10 @@ const saveBannerConfig = async () => {
         max-height: 360px;
         overflow-y: auto;
         padding-right: 4px;
+    }
+
+    .staff-package-addon-grid {
+        @apply flex flex-wrap gap-x-4 gap-y-2;
     }
 
     :deep(.staff-edit-tabs .el-tabs__header) {

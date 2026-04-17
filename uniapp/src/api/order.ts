@@ -77,3 +77,7 @@ export function getOrderConfirmLetterCurrent(params: any) {
 export function getOrderConfirmLetterById(params: any) {
     return request.get({ url: '/order/confirmLetterById', params })
 }
+
+export function getOrderConfirmLetterHistory(params: any) {
+    return request.get({ url: '/order/confirmLetterHistory', params })
+}

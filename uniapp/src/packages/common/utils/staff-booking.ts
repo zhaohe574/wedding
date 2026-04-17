@@ -25,6 +25,7 @@ export const normalizeBookingQuery = (value: Record<string, any> | null | undefi
     return {
         staff_id: Number(value?.staff_id || 0),
         package_id: Number(value?.package_id || 0),
+        waitlist_id: Number(value?.waitlist_id || 0),
         date: String(value?.date || ''),
         ...region,
         addon_ids: normalizeAddonIds(value?.addon_ids),
@@ -44,6 +45,10 @@ export const buildBookingQuery = (value: Record<string, any> | null | undefined)
         `package_id=${booking.package_id}`,
         `date=${encodeURIComponent(booking.date)}`
     ]
+
+    if (booking.waitlist_id > 0) {
+        params.push(`waitlist_id=${booking.waitlist_id}`)
+    }
 
     const regionQuery = buildServiceRegionQuery(booking)
     if (regionQuery) {
@@ -86,6 +91,10 @@ export const getStaffDetailPageUrl = (value: Record<string, any> | null | undefi
         params.push(`package_id=${booking.package_id}`)
     }
 
+    if (booking.waitlist_id > 0) {
+        params.push(`waitlist_id=${booking.waitlist_id}`)
+    }
+
     if (booking.date) {
         params.push(`date=${encodeURIComponent(booking.date)}`)
     }
@@ -105,6 +114,10 @@ export const toBookingOrderParams = (value: Record<string, any> | null | undefin
         package_id: booking.package_id,
         date: booking.date,
         ...toServiceRegionParams(booking)
+    }
+
+    if (booking.waitlist_id > 0) {
+        params.waitlist_id = booking.waitlist_id
     }
 
     if (booking.addon_ids.length) {

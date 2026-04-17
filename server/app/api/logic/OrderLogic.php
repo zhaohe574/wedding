@@ -45,6 +45,7 @@ class OrderLogic extends BaseLogic
 
         $staff = Staff::where('id', $staffId)
             ->where('status', Staff::STATUS_ENABLE)
+            ->where('audit_status', Staff::AUDIT_PASS)
             ->whereNull('delete_time')
             ->find();
         if (!$staff) {
@@ -100,6 +101,7 @@ class OrderLogic extends BaseLogic
 
         $selectedAddons = BookingFlowService::resolveSelectedAddons(
             (int)$staff->id,
+            $packageId,
             BookingFlowService::normalizeAddonIds($params['addon_ids'] ?? [])
         );
         foreach ($selectedAddons as $addon) {
@@ -377,20 +379,12 @@ class OrderLogic extends BaseLogic
             ));
             $item = array_merge($item, Order::buildPayTimeoutSummaryFromState(
                 (int)($item['order_status'] ?? Order::STATUS_PENDING_PAY),
-                (int)($item['pay_deadline_time'] ?? 0)
+                (int)($item['pay_deadline_time'] ?? 0),
+                $item
             ));
             $item['can_user_complete'] = (int)($item['order_status'] ?? -1) === Order::STATUS_IN_SERVICE
                 && Order::canUserCompleteService();
 
-            if (
-                (int)($item['payment_channel'] ?? Order::PAYMENT_CHANNEL_ONLINE) === Order::PAYMENT_CHANNEL_OFFLINE
-                && !empty($item['pay_voucher'])
-                && (int)($item['pay_voucher_status'] ?? -1) === Order::VOUCHER_STATUS_PENDING
-            ) {
-                $item['pay_deadline_time'] = 0;
-                $item['pay_remain_seconds'] = 0;
-                $item['pay_timeout_action_desc'] = '';
-            }
         }
 
         return $list;
@@ -598,6 +592,17 @@ class OrderLogic extends BaseLogic
             Db::rollback();
             return ['success' => false, 'message' => $e->getMessage() ?: '请重新确认预约信息'];
         }
+    }
+
+    /**
+     * @notes 获取用户可见的确认函版本记录
+     * @param int $orderId
+     * @param int $userId
+     * @return array
+     */
+    public static function getConfirmLetterHistory(int $orderId, int $userId): array
+    {
+        return OrderConfirmLetterService::historyForUser($orderId, $userId);
     }
 
     /**

@@ -491,7 +491,7 @@ const fetchOrders = async (refresh = false) => {
                 statusValue: Number(order.order_status || 0),
                 statusText:
                     order.order_status_desc || getStatusText(Number(order.order_status || 0)),
-                actualPrice: Number(order.need_pay_amount || order.pay_amount || 0),
+                actualPrice: Number(order.paid_amount || 0),
                 totalPrice: Number(order.pay_amount || 0),
                 paymentChannel: resolvePaymentChannel(order),
                 paymentChannelDesc:

@@ -9,6 +9,7 @@ namespace app\adminapi\logic\schedule;
 
 use app\common\logic\BaseLogic;
 use app\common\model\notification\Notification;
+use app\common\model\schedule\Schedule;
 use app\common\model\schedule\Waitlist;
 use app\common\service\StationNotificationService;
 use think\facade\Db;
@@ -64,6 +65,8 @@ class WaitlistLogic extends BaseLogic
                         $q->field('id, name');
                     },
                 ])
+                ->order('create_time', 'asc')
+                ->order('id', 'asc')
                 ->select();
 
             if ($waitlists->isEmpty()) {
@@ -72,22 +75,35 @@ class WaitlistLogic extends BaseLogic
                 return false;
             }
 
-            $now = time();
-            $waitlistIds = [];
+            $notifiedWaitlists = [];
+            $processedKeys = [];
             foreach ($waitlists as $waitlist) {
-                $waitlistIds[] = $waitlist->id;
+                $releaseKey = $waitlist->staff_id . '|' . $waitlist->schedule_date;
+                if (isset($processedKeys[$releaseKey])) {
+                    continue;
+                }
+
+                [$canNotify] = Waitlist::canNotifyWaitlist($waitlist);
+                if (!$canNotify) {
+                    continue;
+                }
+
+                if (Waitlist::markWaitlistAsNotified($waitlist)) {
+                    $processedKeys[$releaseKey] = true;
+                    $notifiedWaitlists[] = $waitlist;
+                }
             }
 
-            $count = Waitlist::whereIn('id', $waitlistIds)
-                ->update([
-                    'notify_status' => Waitlist::NOTIFY_STATUS_NOTIFIED,
-                    'notify_time' => $now,
-                    'update_time' => $now,
-                ]);
+            $count = count($notifiedWaitlists);
+            if ($count === 0) {
+                self::setError('当前档期未释放或存在更早候补，无法执行通知');
+                Db::rollback();
+                return false;
+            }
 
             Db::commit();
 
-            foreach ($waitlists as $waitlist) {
+            foreach ($notifiedWaitlists as $waitlist) {
                 self::sendWaitlistNotification($waitlist);
             }
 
@@ -127,13 +143,19 @@ class WaitlistLogic extends BaseLogic
             return false;
         }
 
+        [$canNotify, $message] = Waitlist::canNotifyWaitlist($waitlist);
+        if (!$canNotify) {
+            self::setError($message);
+            return false;
+        }
+
         Db::startTrans();
         try {
-            $now = time();
-            $waitlist->notify_status = Waitlist::NOTIFY_STATUS_NOTIFIED;
-            $waitlist->notify_time = $now;
-            $waitlist->update_time = $now;
-            $waitlist->save();
+            if (!Waitlist::markWaitlistAsNotified($waitlist)) {
+                Db::rollback();
+                self::setError('通知状态更新失败');
+                return false;
+            }
 
             Db::commit();
 
@@ -175,11 +197,82 @@ class WaitlistLogic extends BaseLogic
             return false;
         }
 
-        $waitlist->notify_status = Waitlist::NOTIFY_STATUS_ORDERED;
-        $waitlist->update_time = time();
-        $waitlist->save();
+        if (strtotime((string)$waitlist->schedule_date) < strtotime(date('Y-m-d'))) {
+            self::setError('候补日期已过，不能转正');
+            return false;
+        }
 
-        return true;
+        Db::startTrans();
+        try {
+            $schedule = Schedule::where('staff_id', (int)$waitlist->staff_id)
+                ->where('schedule_date', (string)$waitlist->schedule_date)
+                ->where('time_slot', Schedule::TIME_SLOT_ALL)
+                ->find();
+
+            if ($schedule && (int)$schedule->status === Schedule::STATUS_LOCKED && (int)$schedule->lock_expire_time > 0 && (int)$schedule->lock_expire_time < time()) {
+                Schedule::releaseLock((int)$schedule->id);
+                $schedule = Schedule::where('id', (int)$schedule->id)->find();
+            }
+
+            if ($schedule) {
+                if ((int)$schedule->status === Schedule::STATUS_BOOKED) {
+                    Db::rollback();
+                    self::setError('当前档期已被预约，无法转正');
+                    return false;
+                }
+
+                if ((int)$schedule->status === Schedule::STATUS_RESERVED) {
+                    Db::rollback();
+                    self::setError('当前档期已被内部预留，无法转正');
+                    return false;
+                }
+
+                if (
+                    (int)$schedule->status === Schedule::STATUS_LOCKED
+                    && (int)$schedule->lock_user_id > 0
+                    && (int)$schedule->lock_user_id !== (int)$waitlist->user_id
+                    && (int)$schedule->lock_expire_time > time()
+                ) {
+                    Db::rollback();
+                    self::setError('当前档期已被其他用户锁定，无法转正');
+                    return false;
+                }
+
+                $schedule->status = Schedule::STATUS_RESERVED;
+                $schedule->lock_type = Schedule::LOCK_TYPE_INTERNAL;
+                $schedule->lock_user_id = 0;
+                $schedule->lock_expire_time = 0;
+                $schedule->lock_reason = '候补转正占位';
+                $schedule->update_time = time();
+                $schedule->save();
+            } else {
+                Schedule::create([
+                    'staff_id' => (int)$waitlist->staff_id,
+                    'schedule_date' => (string)$waitlist->schedule_date,
+                    'time_slot' => Schedule::TIME_SLOT_ALL,
+                    'status' => Schedule::STATUS_RESERVED,
+                    'lock_type' => Schedule::LOCK_TYPE_INTERNAL,
+                    'lock_user_id' => 0,
+                    'lock_expire_time' => 0,
+                    'lock_reason' => '候补转正占位',
+                    'version' => 1,
+                    'create_time' => time(),
+                    'update_time' => time(),
+                ]);
+            }
+
+            $waitlist->notify_status = Waitlist::NOTIFY_STATUS_ORDERED;
+            $waitlist->expire_time = 0;
+            $waitlist->update_time = time();
+            $waitlist->save();
+
+            Db::commit();
+            return true;
+        } catch (\Throwable $e) {
+            Db::rollback();
+            self::setError('转正失败：' . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -201,7 +294,13 @@ class WaitlistLogic extends BaseLogic
             return false;
         }
 
+        if ((int)$waitlist->notify_status === Waitlist::NOTIFY_STATUS_EXPIRED) {
+            self::setError('该候补已是失效状态');
+            return false;
+        }
+
         $waitlist->notify_status = Waitlist::NOTIFY_STATUS_EXPIRED;
+        $waitlist->expire_time = max((int)$waitlist->expire_time, time());
         $waitlist->update_time = time();
         $waitlist->save();
 

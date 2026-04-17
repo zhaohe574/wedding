@@ -253,4 +253,13 @@ class OrderController extends BaseApiController
         return $this->data($result);
     }
 
+    /**
+     * @notes 确认函历史版本
+     */
+    public function confirmLetterHistory()
+    {
+        $params = (new OrderValidate())->goCheck('confirmLetterHistory');
+        return $this->data(OrderLogic::getConfirmLetterHistory((int) $params['id'], $this->userId));
+    }
+
 }

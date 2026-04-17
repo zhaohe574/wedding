@@ -334,7 +334,7 @@
                                     {{ addon.name }}（¥{{ formatAmount(addon.price) }}）
                                 </el-checkbox>
                             </el-checkbox-group>
-                            <div v-if="!offlineAddonOptions.length" class="text-xs text-gray-400">选择主服务人员后，可在这里勾选要记录的附加项。</div>
+                            <div v-if="!offlineAddonOptions.length" class="text-xs text-gray-400">请先选择主套餐，再勾选该套餐允许记录的附加项。</div>
                         </el-form-item>
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div class="offline-role-card">
@@ -670,16 +670,9 @@
             <el-form :model="confirmPayForm" label-width="100px">
                 <el-form-item label="订单编号"><span>{{ confirmPayForm.order_sn || '-' }}</span></el-form-item>
                 <el-form-item label="支付阶段"><span>{{ confirmPayForm.pay_label || '-' }}</span></el-form-item>
-                <el-form-item label="支付金额">
-                    <el-input-number
-                        v-model="confirmPayForm.pay_amount"
-                        :min="0.01"
-                        :precision="2"
-                        class="w-full"
-                    />
-                </el-form-item>
+                <el-form-item label="支付金额"><span>¥{{ confirmPayForm.pay_amount }}</span></el-form-item>
                 <el-form-item label="说明">
-                    <span class="text-gray-500">确认后订单会按线下收款处理，并进入待服务状态或下一支付阶段。</span>
+                    <span class="text-gray-500">支付阶段与金额由系统按订单当前状态自动计算，确认后将按线下收款处理。</span>
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -1612,12 +1605,15 @@ const loadOfflinePackageOptions = async () => {
 }
 
 const loadOfflineAddonOptions = async () => {
-    if (!offlineForm.main_staff_id) {
+    if (!offlineForm.main_staff_id || !offlineForm.main_package_id) {
         offlineAddonOptions.value = []
         offlineForm.addon_ids = []
         return
     }
-    const list = await staffGetAddonConfig({ staff_id: Number(offlineForm.main_staff_id || 0) })
+    const list = await staffGetAddonConfig({
+        staff_id: Number(offlineForm.main_staff_id || 0),
+        package_id: Number(offlineForm.main_package_id || 0)
+    })
     offlineAddonOptions.value = Array.isArray(list) ? list : []
     const validIds = new Set(offlineAddonOptions.value.map((item: any) => Number(item.id)))
     offlineForm.addon_ids = offlineForm.addon_ids.filter((id) => validIds.has(Number(id)))
@@ -1975,6 +1971,10 @@ watch(() => JSON.stringify({
     clearRoleSelection('butler')
     clearRoleSelection('director')
     await refreshOfflineContextOptions()
+})
+
+watch(() => offlineForm.main_package_id, async () => {
+    await loadOfflineAddonOptions()
 })
 
 watch(() => JSON.stringify({

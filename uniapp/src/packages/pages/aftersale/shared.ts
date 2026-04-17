@@ -102,7 +102,14 @@ const complaintLevelMap: Record<number, StatusMeta> = {
 
 const callbackStatusMap: Record<number, StatusMeta> = {
     0: { label: '待填写', tone: 'warning', icon: 'edit', summary: '还有问卷待提交' },
-    1: { label: '已完成', tone: 'success', icon: 'check-circle', summary: '问卷已提交' }
+    1: { label: '已完成', tone: 'success', icon: 'check-circle', summary: '问卷已提交' },
+    2: {
+        label: '无法联系',
+        tone: 'warning',
+        icon: 'phone-off',
+        summary: '平台暂时无法完成本次回访'
+    },
+    3: { label: '已取消', tone: 'neutral', icon: 'close-circle', summary: '本次回访已取消' }
 }
 
 const safeText = (value: unknown) => (typeof value === 'string' ? value.trim() : '')

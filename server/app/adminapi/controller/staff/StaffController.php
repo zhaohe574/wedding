@@ -340,7 +340,8 @@ class StaffController extends BaseAdminController
             return $this->fail('请选择员工');
         }
 
-        $result = StaffLogic::getAddonConfig($staffId);
+        $packageId = intval($this->request->get('package_id', 0));
+        $result = StaffLogic::getAddonConfig($staffId, $packageId);
         return $this->data($result);
     }
 

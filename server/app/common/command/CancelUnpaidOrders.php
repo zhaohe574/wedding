@@ -35,8 +35,6 @@ class CancelUnpaidOrders extends Command
                     ->where('pay_status', Order::PAY_STATUS_UNPAID)
                     ->where('pay_deadline_time', '>', 0)
                     ->where('pay_deadline_time', '<=', time())
-                    ->whereRaw('((deposit_amount > 0 AND deposit_paid = 0) OR (deposit_amount <= 0 AND pay_status = 0))')
-                    ->whereRaw('(pay_type <> ' . Order::PAY_WAY_OFFLINE . ' OR pay_voucher = \'\' OR pay_voucher_status <> ' . Order::VOUCHER_STATUS_PENDING . ')')
                     ->limit(100)
                     ->column('id');
 
@@ -45,7 +43,7 @@ class CancelUnpaidOrders extends Command
                 }
 
                 foreach ($orderIds as $orderId) {
-                    [$success, ] = Order::autoCancelExpiredOrder((int)$orderId);
+                    [$success, ] = Order::autoHandleExpiredPendingPay((int)$orderId);
                     if ($success) {
                         $handled++;
                     }

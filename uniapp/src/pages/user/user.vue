@@ -2,7 +2,7 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" hasTabbar>
         <view class="user-page">
-            <MpPageHeader title="我的" surface="glass" />
+            <MpPageHeader title="个人中心" surface="glass" title-align="left" title-size="large" />
             <view class="user-page__body">
                 <view class="user-page__fixed-skeleton" data-qa="user-fixed-skeleton">
                     <w-user-info

@@ -10,8 +10,10 @@ namespace app\common\model\order;
 use app\common\model\BaseModel;
 use app\common\model\user\User;
 use app\common\model\schedule\Schedule;
+use app\common\model\schedule\Waitlist;
 use app\common\model\package\PackageBooking;
 use app\common\service\ConfigService;
+use app\common\service\OrderConfirmLetterService;
 use app\common\service\OrderNotificationService;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
@@ -77,6 +79,7 @@ class Order extends BaseModel
 
     const AUTO_CANCEL_REASON = '支付超时自动取消';
     const AUTO_CANCEL_MESSAGE = '订单支付超时，已自动取消';
+    const BALANCE_PAYMENT_TIMEOUT_MESSAGE = '尾款支付已超时，请联系管理员处理';
     const STAFF_CONFIRM_TIMEOUT_CANCEL_REASON = '服务人员确认超时自动取消';
     const STAFF_CONFIRM_TIMEOUT_CANCEL_MESSAGE = '订单因服务人员确认超时，已自动取消';
     const STAFF_CONFIRM_TIMEOUT_AUTO_CONFIRM_REASON = '服务人员确认超时自动同意';
@@ -619,12 +622,15 @@ class Order extends BaseModel
     public static function getPayTimeoutSummary(self $order): array
     {
         $shouldDisplay = $order->shouldDisplayPayCountdown();
+        $actionDesc = $shouldDisplay
+            ? self::resolvePayTimeoutActionDescFromState($order->toArray())
+            : '';
 
         return [
             'pay_deadline_time' => (int)($order->pay_deadline_time ?? 0),
             'pay_remain_seconds' => $order->getPayRemainSeconds(),
             'pay_timeout_action' => 'cancel',
-            'pay_timeout_action_desc' => $shouldDisplay ? self::getPayTimeoutActionDesc() : '',
+            'pay_timeout_action_desc' => $actionDesc,
         ];
     }
 
@@ -634,7 +640,7 @@ class Order extends BaseModel
      * @param int $payDeadlineTime
      * @return array
      */
-    public static function buildPayTimeoutSummaryFromState(int $orderStatus, int $payDeadlineTime): array
+    public static function buildPayTimeoutSummaryFromState(int $orderStatus, int $payDeadlineTime, array $state = []): array
     {
         $shouldDisplay = self::isUnpaidAutoCancelEnabled()
             && $orderStatus === self::STATUS_PENDING_PAY
@@ -644,8 +650,23 @@ class Order extends BaseModel
             'pay_deadline_time' => $shouldDisplay ? $payDeadlineTime : 0,
             'pay_remain_seconds' => $shouldDisplay ? max($payDeadlineTime - time(), 0) : 0,
             'pay_timeout_action' => 'cancel',
-            'pay_timeout_action_desc' => $shouldDisplay ? self::getPayTimeoutActionDesc() : '',
+            'pay_timeout_action_desc' => $shouldDisplay ? self::resolvePayTimeoutActionDescFromState($state + ['order_status' => $orderStatus]) : '',
         ];
+    }
+
+    /**
+     * @notes 根据订单状态推导支付超时动作文案
+     * @param array $state
+     * @return string
+     */
+    protected static function resolvePayTimeoutActionDescFromState(array $state): string
+    {
+        $isBalanceStage = (int)($state['order_status'] ?? 0) === self::STATUS_PENDING_PAY
+            && round((float)($state['deposit_amount'] ?? 0), 2) > 0
+            && (int)($state['deposit_paid'] ?? 0) === 1
+            && (int)($state['balance_paid'] ?? 0) === 0;
+
+        return $isBalanceStage ? '自动完成订单' : self::getPayTimeoutActionDesc();
     }
 
     /**
@@ -691,6 +712,33 @@ class Order extends BaseModel
     }
 
     /**
+     * @notes 判断整单是否全部归属于同一服务人员（排除已取消订单项）
+     * @param int $orderId
+     * @param int $staffId
+     * @return bool
+     */
+    public static function isWholeOrderOwnedByStaff(int $orderId, int $staffId): bool
+    {
+        if ($orderId <= 0 || $staffId <= 0) {
+            return false;
+        }
+
+        $totalCount = OrderItem::where('order_id', $orderId)
+            ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->count();
+        if ($totalCount <= 0) {
+            return false;
+        }
+
+        $ownedCount = OrderItem::where('order_id', $orderId)
+            ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->where('staff_id', $staffId)
+            ->count();
+
+        return $totalCount === $ownedCount;
+    }
+
+    /**
      * @notes 是否处于首笔待支付阶段
      * @return bool
      */
@@ -712,14 +760,35 @@ class Order extends BaseModel
     }
 
     /**
+     * @notes 是否处于尾款待支付阶段
+     * @return bool
+     */
+    public function isInBalancePendingPaymentStage(): bool
+    {
+        return (int)$this->order_status === self::STATUS_PENDING_PAY
+            && (float)$this->deposit_amount > 0
+            && (int)($this->deposit_paid ?? 0) === 1
+            && (int)($this->balance_paid ?? 0) === 0
+            && round((float)($this->balance_amount ?? 0), 2) > 0;
+    }
+
+    /**
+     * @notes 是否处于任意待支付阶段
+     * @return bool
+     */
+    public function isInPendingPaymentStage(): bool
+    {
+        return $this->isInFirstPendingPaymentStage() || $this->isInBalancePendingPaymentStage();
+    }
+
+    /**
      * @notes 是否展示支付倒计时
      * @return bool
      */
     public function shouldDisplayPayCountdown(): bool
     {
         return self::isUnpaidAutoCancelEnabled()
-            && $this->isInFirstPendingPaymentStage()
-            && !$this->isOfflineVoucherPending()
+            && $this->isInPendingPaymentStage()
             && (int)($this->pay_deadline_time ?? 0) > 0;
     }
 
@@ -769,7 +838,20 @@ class Order extends BaseModel
      */
     public function shouldAutoCancelExpiredUnpaid(): bool
     {
-        return $this->shouldDisplayPayCountdown()
+        return self::isUnpaidAutoCancelEnabled()
+            && $this->isInFirstPendingPaymentStage()
+            && (int)($this->pay_deadline_time ?? 0) > 0
+            && (int)$this->pay_deadline_time <= time();
+    }
+
+    /**
+     * @notes 是否符合尾款超时自动收口条件
+     * @return bool
+     */
+    public function shouldAutoCloseExpiredBalancePayment(): bool
+    {
+        return self::isUnpaidAutoCancelEnabled()
+            && $this->isInBalancePendingPaymentStage()
             && (int)($this->pay_deadline_time ?? 0) > 0
             && (int)$this->pay_deadline_time <= time();
     }
@@ -867,7 +949,7 @@ class Order extends BaseModel
     public static function syncPendingPayDeadline(self $order, ?int $startTime = null, bool $persist = true): int
     {
         $deadlineTime = 0;
-        if (self::isUnpaidAutoCancelEnabled() && $order->isInFirstPendingPaymentStage()) {
+        if (self::isUnpaidAutoCancelEnabled() && $order->isInPendingPaymentStage()) {
             $deadlineTime = self::buildPayDeadlineTime($startTime ?? time());
         }
 
@@ -932,6 +1014,22 @@ class Order extends BaseModel
     public static function syncExpiredAutoCancel(self $order): bool
     {
         if (!$order->shouldAutoCancelExpiredUnpaid()) {
+            if (!$order->shouldAutoCloseExpiredBalancePayment()) {
+                return false;
+            }
+
+            [$success, ] = self::autoCloseExpiredBalancePayment((int)$order->id);
+            if ($success) {
+                $order->order_status = self::STATUS_COMPLETED;
+                $order->pay_deadline_time = 0;
+                return true;
+            }
+
+            $latestOrder = self::find((int)$order->id);
+            if ($latestOrder) {
+                self::refreshRuntimeState($order, $latestOrder);
+            }
+
             return false;
         }
 
@@ -978,6 +1076,75 @@ class Order extends BaseModel
 
         Payment::markOrderPendingAsFailed($orderId);
         return [true, $message];
+    }
+
+    /**
+     * @notes 自动收口超时未支付尾款订单
+     * @param int $orderId
+     * @return array
+     */
+    public static function autoCloseExpiredBalancePayment(int $orderId): array
+    {
+        Db::startTrans();
+        try {
+            /** @var Order|null $order */
+            $order = self::where('id', $orderId)->lock(true)->find();
+            if (!$order) {
+                throw new \RuntimeException('订单不存在');
+            }
+
+            if (!$order->shouldAutoCloseExpiredBalancePayment()) {
+                throw new \RuntimeException('订单未达到尾款超时收口条件');
+            }
+
+            $beforeStatus = (int)$order->order_status;
+            $order->order_status = self::STATUS_COMPLETED;
+            $order->pay_deadline_time = 0;
+            if ((int)($order->complete_time ?? 0) <= 0) {
+                $order->complete_time = time();
+            }
+            $order->update_time = time();
+            $order->save();
+
+            OrderLog::addLog(
+                (int)$order->id,
+                OrderLog::OPERATOR_SYSTEM,
+                0,
+                'balance_timeout_close',
+                $beforeStatus,
+                self::STATUS_COMPLETED,
+                self::BALANCE_PAYMENT_TIMEOUT_MESSAGE
+            );
+
+            Db::commit();
+            return [true, self::BALANCE_PAYMENT_TIMEOUT_MESSAGE];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return [false, $e->getMessage()];
+        }
+    }
+
+    /**
+     * @notes 自动处理超时待支付订单（首笔未支付取消、尾款超时收口）
+     * @param int $orderId
+     * @return array
+     */
+    public static function autoHandleExpiredPendingPay(int $orderId): array
+    {
+        $order = self::find($orderId);
+        if (!$order) {
+            return [false, '订单不存在'];
+        }
+
+        if ($order->shouldAutoCancelExpiredUnpaid()) {
+            return self::autoCancelExpiredOrder($orderId);
+        }
+
+        if ($order->shouldAutoCloseExpiredBalancePayment()) {
+            return self::autoCloseExpiredBalancePayment($orderId);
+        }
+
+        return [false, '订单未达到待支付超时处理条件'];
     }
 
     /**
@@ -1308,6 +1475,43 @@ class Order extends BaseModel
             // 记录订单日志
             OrderLog::addLog($order->id, 1, $userId, 'create', 0, self::STATUS_PENDING_CONFIRM, '创建订单');
 
+            $waitlistId = (int)($orderInfo['waitlist_id'] ?? 0);
+            if ($waitlistId > 0) {
+                $primaryServiceItem = null;
+                foreach ($selectedItems as $selectedItem) {
+                    if ((int)($selectedItem['item_type'] ?? OrderItem::TYPE_SERVICE) === OrderItem::TYPE_SERVICE) {
+                        $primaryServiceItem = $selectedItem;
+                        break;
+                    }
+                }
+
+                if (!$primaryServiceItem) {
+                    throw new \RuntimeException('候补转正失败：缺少主服务信息');
+                }
+
+                [$consumed, $consumeMessage] = Waitlist::consumeForOrder(
+                    $waitlistId,
+                    (int)$order->id,
+                    $userId,
+                    (int)($primaryServiceItem['staff_id'] ?? 0),
+                    (string)($primaryServiceItem['schedule_date'] ?? '')
+                );
+
+                if (!$consumed) {
+                    throw new \RuntimeException($consumeMessage ?: '候补转正失败');
+                }
+
+                OrderLog::addLog(
+                    (int)$order->id,
+                    OrderLog::OPERATOR_SYSTEM,
+                    0,
+                    'waitlist_convert',
+                    self::STATUS_PENDING_CONFIRM,
+                    self::STATUS_PENDING_CONFIRM,
+                    '候补转正式预约，候补ID：' . $waitlistId
+                );
+            }
+
             Db::commit();
             return [true, '订单创建成功', $order];
         } catch (\Exception $e) {
@@ -1346,6 +1550,7 @@ class Order extends BaseModel
             $order->cancel_time = time();
             $order->confirm_deadline_time = 0;
             $order->pay_deadline_time = 0;
+            OrderConfirmLetterService::invalidateCurrentLetter($order, false);
             $order->update_time = time();
             $order->save();
 
@@ -1428,7 +1633,9 @@ class Order extends BaseModel
             $order->balance_paid = 1;
             $order->pay_status = self::PAY_STATUS_PAID;
             $order->order_status = self::STATUS_COMPLETED;
-            $order->complete_time = $resolvedPaidAt;
+            $order->complete_time = (int)($order->complete_time ?? 0) > 0
+                ? (int)$order->complete_time
+                : $resolvedPaidAt;
             return (int)$order->order_status;
         }
 
@@ -1483,7 +1690,7 @@ class Order extends BaseModel
                 $afterStatus = self::STATUS_PENDING_PAY;
                 $message = '服务已完成，待支付尾款';
                 $logContent = '服务完成，进入尾款待支付';
-                $order->complete_time = 0;
+                $order->complete_time = $now;
             } else {
                 $order->complete_time = $now;
             }

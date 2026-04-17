@@ -120,6 +120,10 @@ class PayNotifyLogic extends BaseLogic
             return;
         }
 
+        if (!empty($result['refund_id'])) {
+            OrderNotificationService::notifyUserAndStaffOnRefundApplied((int)$result['refund_id']);
+        }
+
         if (empty($result['should_notify']) || empty($result['order_id']) || empty($result['pay_type'])) {
             return;
         }

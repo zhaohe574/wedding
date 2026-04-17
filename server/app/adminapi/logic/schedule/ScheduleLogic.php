@@ -8,9 +8,11 @@ declare(strict_types=1);
 namespace app\adminapi\logic\schedule;
 
 use app\common\logic\BaseLogic;
+use app\common\model\schedule\CalendarEvent;
 use app\common\model\schedule\Schedule;
 use app\common\model\schedule\ScheduleLock;
 use app\common\model\schedule\ScheduleRule;
+use app\common\model\schedule\Waitlist;
 use app\common\model\staff\Staff;
 use think\facade\Db;
 
@@ -57,6 +59,7 @@ class ScheduleLogic extends BaseLogic
             $query->where('staff_id', $staffId);
         }
         $schedules = $query->where('time_slot', Schedule::TIME_SLOT_ALL)->select()->toArray();
+        $calendarEvents = CalendarEvent::getMonthCalendar((int)$year, (int)$month);
 
         // 按日期组织数据
         $result = [];
@@ -65,7 +68,7 @@ class ScheduleLogic extends BaseLogic
             $dayData = [
                 'date' => $currentDate,
                 'schedules' => [],
-                'calendar' => null,
+                'calendar' => self::buildCalendarMeta($calendarEvents[$currentDate] ?? null),
             ];
 
             // 筛选该日期的档期
@@ -94,16 +97,20 @@ class ScheduleLogic extends BaseLogic
     public static function setStatus(array $params): bool
     {
         try {
+            $shouldNotifyWaitlist = false;
             $schedule = Schedule::where('staff_id', $params['staff_id'])
                 ->where('schedule_date', $params['date'])
                 ->where('time_slot', Schedule::TIME_SLOT_ALL)
                 ->find();
 
             if ($schedule) {
+                $previousStatus = (int)$schedule->status;
                 $schedule->status = $params['status'];
                 $schedule->remark = $params['remark'] ?? '';
                 $schedule->update_time = time();
                 $schedule->save();
+                $shouldNotifyWaitlist = (int)$params['status'] === Schedule::STATUS_AVAILABLE
+                    && $previousStatus !== Schedule::STATUS_AVAILABLE;
             } else {
                 Schedule::create([
                     'staff_id' => $params['staff_id'],
@@ -115,7 +122,17 @@ class ScheduleLogic extends BaseLogic
                     'create_time' => time(),
                     'update_time' => time(),
                 ]);
+                $shouldNotifyWaitlist = (int)$params['status'] === Schedule::STATUS_AVAILABLE;
             }
+
+            if ($shouldNotifyWaitlist) {
+                Waitlist::notifyWaitlistUsers(
+                    (int)$params['staff_id'],
+                    (string)$params['date'],
+                    Schedule::TIME_SLOT_ALL
+                );
+            }
+
             return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -137,6 +154,7 @@ class ScheduleLogic extends BaseLogic
             $endDate = $params['end_date'];
             $status = $params['status'];
             $price = $params['price'] ?? 0;
+            $releaseTargets = [];
 
             $count = 0;
             $currentDate = $startDate;
@@ -161,12 +179,16 @@ class ScheduleLogic extends BaseLogic
                         if ($schedule->status == Schedule::STATUS_BOOKED) {
                             continue;
                         }
+                        $previousStatus = (int)$schedule->status;
                         $schedule->status = $status;
                         if ($price > 0) {
                             $schedule->price = $price;
                         }
                         $schedule->update_time = time();
                         $schedule->save();
+                        if ((int)$status === Schedule::STATUS_AVAILABLE && $previousStatus !== Schedule::STATUS_AVAILABLE) {
+                            $releaseTargets[$staffId . '|' . $currentDate] = [$staffId, $currentDate];
+                        }
                     } else {
                         Schedule::create([
                             'staff_id' => $staffId,
@@ -178,6 +200,9 @@ class ScheduleLogic extends BaseLogic
                             'create_time' => time(),
                             'update_time' => time(),
                         ]);
+                        if ((int)$status === Schedule::STATUS_AVAILABLE) {
+                            $releaseTargets[$staffId . '|' . $currentDate] = [$staffId, $currentDate];
+                        }
                     }
                     $count++;
                 }
@@ -185,6 +210,11 @@ class ScheduleLogic extends BaseLogic
             }
 
             Db::commit();
+
+            foreach ($releaseTargets as [$staffId, $date]) {
+                Waitlist::notifyWaitlistUsers((int)$staffId, (string)$date, Schedule::TIME_SLOT_ALL);
+            }
+
             return $count;
         } catch (\Exception $e) {
             Db::rollback();
@@ -282,6 +312,13 @@ class ScheduleLogic extends BaseLogic
                 ]);
 
             Db::commit();
+
+            Waitlist::notifyWaitlistUsers(
+                (int)$schedule->staff_id,
+                (string)$schedule->schedule_date,
+                Schedule::TIME_SLOT_ALL
+            );
+
             return true;
         } catch (\Exception $e) {
             Db::rollback();
@@ -427,5 +464,44 @@ class ScheduleLogic extends BaseLogic
             'reserved' => $reserved,
             'booking_rate' => $total > 0 ? round($booked / $total * 100, 2) : 0,
         ];
+    }
+
+    /**
+     * @notes 构建日历信息
+     * @param array|null $event
+     * @return array
+     */
+    private static function buildCalendarMeta(?array $event): array
+    {
+        $congestionLevel = (int)($event['congestion_level'] ?? 0);
+        return [
+            'event_date' => (string)($event['event_date'] ?? ''),
+            'lunar_date' => (string)($event['lunar_date'] ?? ''),
+            'is_lucky_day' => (int)($event['is_lucky_day'] ?? 0),
+            'lucky_events' => (string)($event['lucky_events'] ?? ''),
+            'unlucky_events' => (string)($event['unlucky_events'] ?? ''),
+            'is_holiday' => (int)($event['is_holiday'] ?? 0),
+            'holiday_name' => (string)($event['holiday_name'] ?? ''),
+            'congestion_level' => $congestionLevel,
+            'congestion_level_text' => self::getCongestionLevelText($congestionLevel),
+            'remark' => (string)($event['remark'] ?? ''),
+        ];
+    }
+
+    /**
+     * @notes 获取拥堵等级文案
+     * @param int $level
+     * @return string
+     */
+    private static function getCongestionLevelText(int $level): string
+    {
+        $map = [
+            CalendarEvent::CONGESTION_UNKNOWN => '未知',
+            CalendarEvent::CONGESTION_LOW => '低',
+            CalendarEvent::CONGESTION_MEDIUM => '中',
+            CalendarEvent::CONGESTION_HIGH => '高',
+        ];
+
+        return $map[$level] ?? '未知';
     }
 }

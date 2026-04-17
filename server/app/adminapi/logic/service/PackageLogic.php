@@ -41,6 +41,7 @@ class PackageLogic extends BaseLogic
 
             $data = $package->append(['category_name', 'staff_name'])->toArray();
             $list = PackageRegionPriceService::attachRegionPrices([$data]);
+            $list = ServicePackageAddon::attachAddonIds($list);
             return $list[0] ?? $data;
         } catch (\Exception $e) {
             // 记录错误日志并返回空数组
@@ -85,6 +86,11 @@ class PackageLogic extends BaseLogic
                     (int)$package->id,
                     $staffId,
                     $params['region_prices'] ?? []
+                );
+                ServicePackageAddon::syncPackageAddons(
+                    (int)$package->id,
+                    $staffId,
+                    $params['addon_ids'] ?? []
                 );
             });
 
@@ -135,6 +141,13 @@ class PackageLogic extends BaseLogic
                     (int)$package->id,
                     $staffId,
                     $params['region_prices'] ?? []
+                );
+                ServicePackageAddon::syncPackageAddons(
+                    (int)$package->id,
+                    $staffId,
+                    array_key_exists('addon_ids', $params)
+                        ? $params['addon_ids']
+                        : ServicePackageAddon::getAddonIds((int)$package->id)
                 );
             });
 
@@ -300,6 +313,11 @@ class PackageLogic extends BaseLogic
                     (int)$package->id,
                     $staffId,
                     $packageData['region_prices'] ?? []
+                );
+                ServicePackageAddon::syncPackageAddons(
+                    (int)$package->id,
+                    $staffId,
+                    $packageData['addon_ids'] ?? []
                 );
             });
 

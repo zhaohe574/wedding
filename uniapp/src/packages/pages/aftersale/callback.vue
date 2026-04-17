@@ -84,7 +84,9 @@ const { paging, dataList, currentStatus, changeStatus, applyQueryStatus, initSta
 const statusTabs = [
     { label: '全部', value: '' },
     { label: '待填写', value: 0 },
-    { label: '已完成', value: 1 }
+    { label: '已完成', value: 1 },
+    { label: '无法联系', value: 2 },
+    { label: '已取消', value: 3 }
 ]
 
 const queryList = async (pageNo: number, pageSize: number) => {

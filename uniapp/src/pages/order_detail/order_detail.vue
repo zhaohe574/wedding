@@ -45,17 +45,12 @@
                                 {{ payTimeoutActionText }}
                             </text>
                         </view>
-                        <view v-else-if="showVoucherPending" class="status-card__meta-item">
+                        <view v-if="showVoucherPending" class="status-card__meta-item">
                             <text class="status-card__meta-label">线下凭证</text>
                             <text class="status-card__meta-value">审核中</text>
                         </view>
-                        <view
-                            v-if="
-                                Number(needPayAmount) > 0 && [1, 2, 3].includes(order.order_status)
-                            "
-                            class="status-card__meta-item"
-                        >
-                            <text class="status-card__meta-label">当前待支付</text>
+                        <view v-if="showNeedPayMeta" class="status-card__meta-item">
+                            <text class="status-card__meta-label">{{ needPayMetaLabel }}</text>
                             <text class="status-card__meta-value"
                                 >¥{{ formatAmount(needPayAmount) }}</text
                             >
@@ -86,14 +81,29 @@
                 <view v-if="confirmLetterAvailable" class="card card--secondary wm-form-block">
                     <view class="card__title-row">
                         <text class="card__title">订单确认函</text>
-                        <view class="inline-copy" @click="handleOpenConfirmLetter">
-                            <text class="inline-copy__text">查看订单确认函</text>
+                        <view class="card__title-actions">
+                            <view
+                                v-if="confirmLetterHistoryAvailable"
+                                class="inline-copy"
+                                @click="handleOpenConfirmLetterHistory"
+                            >
+                                <text class="inline-copy__text">版本记录</text>
+                            </view>
+                            <view class="inline-copy" @click="handleOpenConfirmLetter">
+                                <text class="inline-copy__text">查看订单确认函</text>
+                            </view>
                         </view>
                     </view>
                     <view class="sub-panel">
                         <view class="sub-panel__row">
                             <text class="sub-panel__label">版本</text>
                             <text class="sub-panel__value">v{{ confirmLetter?.version }}</text>
+                        </view>
+                        <view v-if="confirmLetterHistoryAvailable" class="sub-panel__row">
+                            <text class="sub-panel__label">版本记录</text>
+                            <text class="sub-panel__value"
+                                >共 {{ confirmLetterHistory.length }} 个版本</text
+                            >
                         </view>
                         <view class="sub-panel__row">
                             <text class="sub-panel__label">确认日期</text>
@@ -601,6 +611,7 @@ import {
     deleteOrder,
     getOrderConfirmLetterById,
     getOrderConfirmLetterCurrent,
+    getOrderConfirmLetterHistory,
     getOrderDetail,
     uploadPayVoucher
 } from '@/api/order'
@@ -613,6 +624,7 @@ const orderId = ref(0)
 const order = ref<any>(null)
 const confirmLetterId = ref(0)
 const confirmLetter = ref<any>(null)
+const confirmLetterHistory = ref<any[]>([])
 const showRefundPopup = ref(false)
 const showVoucherPopup = ref(false)
 const payState = reactive({
@@ -637,6 +649,7 @@ let hasBeenHidden = false
 
 const formatAmount = (value: any) => Number(value || 0).toFixed(2)
 const confirmLetterAvailable = computed(() => !!confirmLetter.value?.letter_id)
+const confirmLetterHistoryAvailable = computed(() => confirmLetterHistory.value.length > 0)
 const refundApplyAmount = computed(() =>
     Number(order.value?.refund_apply_amount ?? order.value?.refundable_amount ?? 0)
 )
@@ -938,6 +951,26 @@ const needPayAmount = computed(() => {
     if (!order.value) return 0
     return Number(order.value.need_pay_amount || 0)
 })
+const needPayMetaLabel = computed(() => {
+    if (!order.value) return '当前待支付'
+    const status = Number(order.value.order_status || 0)
+    if (
+        [2, 3].includes(status) &&
+        String(order.value.current_pay_stage || '').trim() === 'balance_after_service'
+    ) {
+        return '预计尾款'
+    }
+    return '当前待支付'
+})
+const showNeedPayMeta = computed(() => {
+    if (!order.value || Number(needPayAmount.value) <= 0) return false
+    const status = Number(order.value.order_status || 0)
+    if (status === 1) return true
+    return (
+        [2, 3].includes(status) &&
+        String(order.value.current_pay_stage || '').trim() === 'balance_after_service'
+    )
+})
 const showOfflineVoucherCard = computed(
     () => !!order.value && (paymentChannel.value === 2 || !!order.value?.pay_voucher)
 )
@@ -996,7 +1029,13 @@ const statusDescription = computed(
                       }`
                     : '工作人员确认后，订单会进入支付流程。',
                 1: showVoucherPending.value
-                    ? '线下支付凭证审核中，审核结果会及时同步到订单状态。'
+                    ? showPayCountdown.value
+                        ? `线下支付凭证审核中，请等待后台审核。若在 ${
+                              payCountdownText.value
+                          } 内仍未处理，系统将${
+                              payTimeoutActionText.value || '自动关闭当前支付阶段'
+                          }。`
+                        : '线下支付凭证审核中，审核结果会及时同步到订单状态。'
                     : paymentChannel.value === 2
                     ? showPayCountdown.value
                         ? `请在 ${payCountdownText.value} 内完成线下付款并上传支付凭证。${
@@ -1380,6 +1419,20 @@ const fetchConfirmLetter = async () => {
     }
 }
 
+const fetchConfirmLetterHistory = async () => {
+    if (orderId.value <= 0) {
+        confirmLetterHistory.value = []
+        return
+    }
+
+    try {
+        const history = await getOrderConfirmLetterHistory({ id: orderId.value })
+        confirmLetterHistory.value = Array.isArray(history) ? history : []
+    } catch {
+        confirmLetterHistory.value = []
+    }
+}
+
 const fetchDetail = async () => {
     if (orderId.value <= 0) return
     if (detailRequestPromise) return detailRequestPromise
@@ -1388,11 +1441,13 @@ const fetchDetail = async () => {
         try {
             order.value = await getOrderDetail({ id: orderId.value })
             await fetchConfirmLetter()
+            await fetchConfirmLetterHistory()
             syncPayCountdown(order.value?.pay_remain_seconds || 0)
             syncConfirmCountdown(order.value?.confirm_remain_seconds || 0)
             hasLoadedOnce = true
         } catch (e: any) {
             confirmLetter.value = null
+            confirmLetterHistory.value = []
             clearPayCountdown()
             clearConfirmCountdown()
             uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
@@ -1425,6 +1480,47 @@ const handleOpenConfirmLetter = () => {
     })
 }
 
+const handleOpenConfirmLetterHistory = () => {
+    if (!confirmLetterHistory.value.length) {
+        uni.showToast({ title: '暂无确认函版本记录', icon: 'none' })
+        return
+    }
+
+    uni.showActionSheet({
+        itemList: confirmLetterHistory.value.map((item) => {
+            const tags = [
+                item?.is_current ? '当前' : '',
+                item?.is_pushed ? '已推送' : '未推送',
+                item?.can_view ? '' : '仅保留记录'
+            ].filter(Boolean)
+            return `v${item?.version || 0}${tags.length ? `（${tags.join('·')}）` : ''}`
+        }),
+        success: async ({ tapIndex }) => {
+            const target = confirmLetterHistory.value[tapIndex]
+            if (!target) {
+                return
+            }
+
+            if (!Number(target?.can_view || 0)) {
+                uni.showToast({
+                    title: '历史版本仅保留记录，当前仅支持查看有效版本',
+                    icon: 'none'
+                })
+                return
+            }
+
+            try {
+                confirmLetter.value = await getOrderConfirmLetterById({
+                    letter_id: Number(target.letter_id || 0)
+                })
+                handleOpenConfirmLetter()
+            } catch (error: any) {
+                uni.showToast({ title: error?.message || '加载确认函失败', icon: 'none' })
+            }
+        }
+    })
+}
+
 const copyOrderSn = () => {
     if (!order.value?.order_sn) return
     uni.setClipboardData({
@@ -1439,11 +1535,12 @@ const handleContactAdvisor = () =>
     })
 const openChangeActions = () =>
     uni.showActionSheet({
-        itemList: ['申请改期', '申请暂停', '我的申请'],
+        itemList: ['申请改期', '申请暂停', '申请加项', '我的申请'],
         success: ({ tapIndex }) => {
             const routes = [
                 `/packages/pages/order_change/apply_date?order_id=${orderId.value}`,
                 `/packages/pages/order_change/apply_pause?order_id=${orderId.value}`,
+                `/packages/pages/order_change/apply_add_item?order_id=${orderId.value}`,
                 '/packages/pages/order_change/list?type=change'
             ]
             const url = routes[tapIndex]
@@ -1772,6 +1869,14 @@ onUnload(() => {
     align-items: center;
     justify-content: space-between;
     gap: 16rpx;
+}
+
+.card__title-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 20rpx;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .card__main-text {

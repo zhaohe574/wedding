@@ -220,8 +220,8 @@ const hasShownOnce = ref(false)
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 let pollAttempt = 0
 
-const POLL_INTERVAL = 2000
-const MAX_POLL_COUNT = 3
+const POLL_INTERVAL_STEPS = [2000, 4000, 8000, 15000, 15000, 30000]
+const MAX_POLL_COUNT = POLL_INTERVAL_STEPS.length
 
 const normalizedOrder = computed(() => payResult.value?.order || {})
 const normalizedPayment = computed(() => payResult.value?.payment || {})
@@ -618,12 +618,14 @@ const scheduleNextPoll = () => {
 
     clearPollTimer()
     pollAttempt += 1
+    const lastInterval = POLL_INTERVAL_STEPS[POLL_INTERVAL_STEPS.length - 1] || 2000
+    const interval = POLL_INTERVAL_STEPS[Math.max(pollAttempt - 1, 0)] || lastInterval
     pollTimer = setTimeout(() => {
         fetchPayResult({
             silent: true,
             keepPolling: true
         })
-    }, POLL_INTERVAL)
+    }, interval)
 }
 
 const fetchPayResult = async ({

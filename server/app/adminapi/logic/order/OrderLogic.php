@@ -8,12 +8,15 @@ declare(strict_types=1);
 namespace app\adminapi\logic\order;
 
 use app\common\logic\BaseLogic;
+use app\common\logic\OrderPayLogic;
+use app\common\model\financial\FinancialFlow;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\order\OrderItemAddon;
 use app\common\model\order\OrderLog;
 use app\common\model\order\Payment;
 use app\common\model\service\ServicePackage;
+use app\common\model\service\ServicePackageAddon;
 use app\common\model\schedule\Schedule;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
@@ -1143,39 +1146,30 @@ class OrderLogic extends BaseLogic
 
         Db::startTrans();
         try {
-            $order = Order::find($params['id']);
+            $order = Order::where('id', (int)$params['id'])->lock(true)->find();
             if (!$order) {
-                self::setError('订单不存在');
-                return false;
+                throw new \RuntimeException('订单不存在');
             }
 
-            if ($order->order_status != Order::STATUS_PENDING_PAY) {
-                self::setError('当前订单状态不允许此操作');
-                return false;
+            if ((int)$order->order_status !== Order::STATUS_PENDING_PAY) {
+                throw new \RuntimeException('当前订单状态不允许此操作');
             }
 
             if ($order->getResolvedPaymentChannel() !== Order::PAYMENT_CHANNEL_OFFLINE) {
-                self::setError('当前订单不是线下付款订单');
-                return false;
+                throw new \RuntimeException('当前订单不是线下付款订单');
             }
 
             if ($order->isOfflineVoucherPending()) {
-                self::setError('当前订单已提交支付凭证，请先完成凭证审核');
-                return false;
+                throw new \RuntimeException('当前订单已提交支付凭证，请先完成凭证审核');
             }
 
-            $payType = $params['pay_type'] ?? Payment::TYPE_FULL;
-            $payAmount = $params['pay_amount'] ?? $order->pay_amount;
-
-            if ($payType == Payment::TYPE_DEPOSIT && $order->deposit_paid) {
-                self::setError('定金已支付');
-                return false;
+            $payContext = OrderPayLogic::getCurrentPayContext($order);
+            if ($payContext === false) {
+                throw new \RuntimeException(OrderPayLogic::getError() ?: '当前订单无需支付');
             }
 
-            if ($payType == Payment::TYPE_BALANCE && !$order->deposit_paid) {
-                self::setError('请先支付定金');
-                return false;
-            }
+            $payType = (int)$payContext['pay_type'];
+            $payAmount = round((float)$payContext['pay_amount'], 2);
 
             // 创建支付记录
             $payment = Payment::create([
@@ -1199,6 +1193,8 @@ class OrderLogic extends BaseLogic
             OrderConfirmLetterService::invalidateCurrentLetter($order, false);
             $order->update_time = time();
             $order->save();
+
+            self::recordSuccessfulPaymentFlow($order, $payment, (int)$params['admin_id']);
 
             // 记录日志
             $action = $payType == Payment::TYPE_DEPOSIT ? 'pay_deposit' : ($payType == Payment::TYPE_BALANCE ? 'pay_balance' : 'pay');
@@ -1369,30 +1365,25 @@ class OrderLogic extends BaseLogic
 
         Db::startTrans();
         try {
-            $order = Order::find($params['id']);
+            $order = Order::where('id', (int)$params['id'])->lock(true)->find();
             if (!$order) {
-                self::setError('订单不存在');
-                return false;
+                throw new \RuntimeException('订单不存在');
             }
 
-            if ($order->order_status != Order::STATUS_PENDING_PAY) {
-                self::setError('当前订单状态不允许此操作');
-                return false;
+            if ((int)$order->order_status !== Order::STATUS_PENDING_PAY) {
+                throw new \RuntimeException('当前订单状态不允许此操作');
             }
 
             if ($order->getResolvedPaymentChannel() !== Order::PAYMENT_CHANNEL_OFFLINE) {
-                self::setError('当前订单不是线下付款订单');
-                return false;
+                throw new \RuntimeException('当前订单不是线下付款订单');
             }
 
             if (empty($order->pay_voucher)) {
-                self::setError('订单未提交线下支付凭证');
-                return false;
+                throw new \RuntimeException('订单未提交线下支付凭证');
             }
 
             if ((int)($order->pay_voucher_status ?? -1) !== Order::VOUCHER_STATUS_PENDING) {
-                self::setError('凭证已审核，请勿重复操作');
-                return false;
+                throw new \RuntimeException('凭证已审核，请勿重复操作');
             }
 
             $approved = (int)($params['approved'] ?? 0) === 1;
@@ -1405,21 +1396,13 @@ class OrderLogic extends BaseLogic
             $order->pay_voucher_audit_remark = $remark;
 
             if ($approved) {
-                $payType = Payment::TYPE_FULL;
-                $payAmount = $order->pay_amount;
-
-                if ($order->deposit_amount > 0) {
-                    if (!$order->deposit_paid) {
-                        $payType = Payment::TYPE_DEPOSIT;
-                        $payAmount = $order->deposit_amount;
-                    } elseif (!$order->balance_paid) {
-                        $payType = Payment::TYPE_BALANCE;
-                        $payAmount = $order->balance_amount;
-                    } else {
-                        self::setError('订单已完成支付');
-                        return false;
-                    }
+                $payContext = OrderPayLogic::getCurrentPayContext($order);
+                if ($payContext === false) {
+                    throw new \RuntimeException(OrderPayLogic::getError() ?: '订单已完成支付');
                 }
+
+                $payType = (int)$payContext['pay_type'];
+                $payAmount = round((float)$payContext['pay_amount'], 2);
 
                 $order->pay_type = Order::PAY_WAY_OFFLINE;
                 $payment = Payment::create([
@@ -1441,6 +1424,8 @@ class OrderLogic extends BaseLogic
                 OrderConfirmLetterService::invalidateCurrentLetter($order, false);
                 $order->update_time = time();
                 $order->save();
+
+                self::recordSuccessfulPaymentFlow($order, $payment, (int)$params['admin_id']);
 
                 $action = $payType == Payment::TYPE_DEPOSIT ? 'pay_deposit' : ($payType == Payment::TYPE_BALANCE ? 'pay_balance' : 'pay');
                 OrderLog::addLog(
@@ -1495,6 +1480,39 @@ class OrderLogic extends BaseLogic
             self::setError($e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * @notes 记录支付资金流水
+     * @param Order $order
+     * @param Payment $payment
+     * @param int $adminId
+     * @return void
+     */
+    private static function recordSuccessfulPaymentFlow(Order $order, Payment $payment, int $adminId): void
+    {
+        $exists = FinancialFlow::where('biz_type', FinancialFlow::BIZ_TYPE_ORDER_PAY)
+            ->where('biz_id', (int)$payment->id)
+            ->find();
+        if ($exists) {
+            return;
+        }
+
+        FinancialFlow::createFlow([
+            'flow_type' => FinancialFlow::FLOW_TYPE_INCOME,
+            'biz_type' => FinancialFlow::BIZ_TYPE_ORDER_PAY,
+            'biz_id' => (int)$payment->id,
+            'biz_sn' => (string)$payment->payment_sn,
+            'order_id' => (int)$order->id,
+            'user_id' => (int)$order->user_id,
+            'amount' => round((float)$payment->pay_amount, 2),
+            'direction' => FinancialFlow::DIRECTION_IN,
+            'pay_way' => FinancialFlow::PAY_WAY_OFFLINE,
+            'transaction_id' => (string)($payment->transaction_id ?? ''),
+            'remark' => '订单线下支付入账',
+            'operator_type' => OrderLog::OPERATOR_ADMIN,
+            'operator_id' => $adminId,
+        ]);
     }
 
     /**
@@ -1562,6 +1580,7 @@ class OrderLogic extends BaseLogic
 
         $addons = BookingFlowService::resolveSelectedAddons(
             $mainStaffId,
+            $mainPackageId,
             BookingFlowService::normalizeAddonIds($params['addon_ids'] ?? [])
         );
 
@@ -1688,6 +1707,7 @@ class OrderLogic extends BaseLogic
             ->toArray();
 
         $packages = PackageRegionPriceService::applyResolvedPrices($packages, $regionContext, true);
+        $packages = ServicePackageAddon::attachAddonIds($packages);
         foreach ($packages as &$package) {
             $package['staff_name'] = $staffName;
         }

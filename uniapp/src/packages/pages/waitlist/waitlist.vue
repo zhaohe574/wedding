@@ -62,8 +62,17 @@
                         <view class="waitlist-card__body">
                             <text class="waitlist-card__schedule">{{ item.scheduleText }}</text>
                             <text class="waitlist-card__detail">{{ item.detailText }}</text>
+                            <text v-if="item.timelineText" class="waitlist-card__timeline">
+                                {{ item.timelineText }}
+                            </text>
                             <text class="waitlist-card__summary">{{ item.statusSummary }}</text>
                             <text class="waitlist-card__next-step">{{ item.nextStepText }}</text>
+                            <text
+                                v-if="item.bookBlockReason"
+                                class="waitlist-card__next-step waitlist-card__next-step--danger"
+                            >
+                                当前提示：{{ item.bookBlockReason }}
+                            </text>
                         </view>
 
                         <view class="waitlist-card__foot">
@@ -124,12 +133,19 @@ interface WaitlistRecord {
     notify_status: number
     notify_status_desc?: string
     create_time?: string | number
+    notify_time_text?: string
+    expire_time_text?: string
+    can_book_now?: boolean
+    can_cancel?: boolean
+    book_block_reason?: string
+    status_hint?: string
 }
 
 interface WaitlistViewItem extends WaitlistRecord {
     title: string
     scheduleText: string
     detailText: string
+    timelineText: string
     statusSummary: string
     nextStepText: string
     createdAtText: string
@@ -137,6 +153,7 @@ interface WaitlistViewItem extends WaitlistRecord {
     statusClass: string
     showBookAction: boolean
     showCancelAction: boolean
+    bookBlockReason: string
 }
 
 const $theme = useThemeStore()
@@ -168,7 +185,7 @@ const getStatusText = (status: number) => {
     const map: Record<number, string> = {
         0: '等待中',
         1: '已通知',
-        2: '已下单',
+        2: '已转正',
         3: '已过期'
     }
 
@@ -195,8 +212,8 @@ const buildDetailText = (item: WaitlistRecord) => {
 const getStatusSummary = (status: number) => {
     const map: Record<number, string> = {
         0: '已进入候补队列，平台会在档期释放或服务人员可接单时通知你。',
-        1: '当前已有可预约档期，请尽快确认服务内容并完成下单。',
-        2: '你已通过候补完成下单，后续直接在订单中跟进支付与履约。',
+        1: '当前档期已释放，请尽快确认服务内容并完成预约。',
+        2: '该候补已转为正式预约，请在订单或服务沟通中继续跟进。',
         3: '本次候补已失效，若仍有需要可重新选择日期后再次加入。'
     }
 
@@ -206,12 +223,38 @@ const getStatusSummary = (status: number) => {
 const getNextStepText = (status: number) => {
     const map: Record<number, string> = {
         0: '下一步：等待平台通知；若计划变化，可先取消当前候补。',
-        1: '下一步：进入服务人员详情确认档期与套餐，然后立即预约。',
-        2: '下一步：前往订单详情查看支付、履约和售后状态。',
+        1: '下一步：进入服务人员详情确认档期与套餐，然后尽快预约。',
+        2: '下一步：请留意订单与消息通知中的后续安排。',
         3: '下一步：重新查询档期，或调整日期后再次加入候补。'
     }
 
     return map[status] || '下一步：请关注消息中心中的候补通知。'
+}
+
+const buildTimelineText = (item: WaitlistRecord) => {
+    const parts: string[] = []
+    if (item.notify_time_text) {
+        parts.push(`通知时间 ${item.notify_time_text}`)
+    }
+    if (item.expire_time_text) {
+        parts.push(
+            Number(item.notify_status) === 1
+                ? `预约截止 ${item.expire_time_text}`
+                : `候补保留至 ${item.expire_time_text}`
+        )
+    }
+
+    return parts.join(' · ')
+}
+
+const buildNextStepText = (item: WaitlistRecord) => {
+    if (Number(item.notify_status) === 1 && item.can_book_now === false) {
+        return item.book_block_reason
+            ? `下一步：${item.book_block_reason}，请留意平台后续通知。`
+            : '下一步：请留意平台后续通知。'
+    }
+
+    return getNextStepText(Number(item.notify_status || 0))
 }
 
 const waitlistItems = computed<WaitlistViewItem[]>(() => {
@@ -220,13 +263,15 @@ const waitlistItems = computed<WaitlistViewItem[]>(() => {
         title: buildTitle(item),
         scheduleText: buildScheduleText(item),
         detailText: buildDetailText(item),
-        statusSummary: getStatusSummary(Number(item.notify_status || 0)),
-        nextStepText: getNextStepText(Number(item.notify_status || 0)),
+        timelineText: buildTimelineText(item),
+        statusSummary: item.status_hint || getStatusSummary(Number(item.notify_status || 0)),
+        nextStepText: buildNextStepText(item),
         createdAtText: formatTime(item.create_time),
         statusText: item.notify_status_desc || getStatusText(Number(item.notify_status || 0)),
         statusClass: getStatusClass(Number(item.notify_status || 0)),
-        showBookAction: Number(item.notify_status) === 1,
-        showCancelAction: [0, 1].includes(Number(item.notify_status))
+        showBookAction: Number(item.notify_status) === 1 && Boolean(item.can_book_now),
+        showCancelAction: Boolean(item.can_cancel),
+        bookBlockReason: String(item.book_block_reason || '')
     }))
 })
 
@@ -284,6 +329,11 @@ const goSchedule = () => {
 }
 
 const handleBook = (item: WaitlistRecord) => {
+    if (item.can_book_now === false) {
+        uni.showToast({ title: item.book_block_reason || '当前档期暂不可预约', icon: 'none' })
+        return
+    }
+
     if (!item.staff_id) {
         uni.showToast({ title: '服务人员信息错误', icon: 'none' })
         return
@@ -295,6 +345,9 @@ const handleBook = (item: WaitlistRecord) => {
     }
     if (item.package_id) {
         params.push(`package_id=${item.package_id}`)
+    }
+    if (item.id) {
+        params.push(`waitlist_id=${item.id}`)
     }
     if (!item.schedule_date) {
         params.push('open_date_picker=1')
@@ -545,8 +598,19 @@ onShow(() => {
     color: #645b54;
 }
 
+.waitlist-card__timeline {
+    display: block;
+    font-size: 22rpx;
+    line-height: 1.6;
+    color: var(--wm-text-tertiary, #b4aca8);
+}
+
 .waitlist-card__next-step {
     color: var(--wm-text-secondary, #7f7b78);
+
+    &--danger {
+        color: var(--wm-color-danger, #b44a3a);
+    }
 }
 
 .waitlist-card__foot {

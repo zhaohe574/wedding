@@ -12,6 +12,7 @@ use app\adminapi\lists\order\OrderLists;
 use app\adminapi\lists\order\OrderLogLists;
 use app\adminapi\logic\order\OrderLogic;
 use app\adminapi\validate\order\OrderValidate;
+use app\common\model\order\OrderConfirmLetter;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\service\StaffService;
@@ -282,6 +283,9 @@ class OrderController extends BaseAdminController
         if ($response = $this->checkOrderScope((int)$params['id'])) {
             return $response;
         }
+        if ($response = $this->checkWholeOrderManageScope((int)$params['id'], '共享订单不支持当前整单履约操作')) {
+            return $response;
+        }
         $result = OrderLogic::startService((int)$params['id'], $this->adminId);
         if (true === $result) {
             return $this->success('操作成功');
@@ -297,6 +301,9 @@ class OrderController extends BaseAdminController
     {
         $params = (new OrderValidate())->post()->goCheck('detail');
         if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+        if ($response = $this->checkWholeOrderManageScope((int)$params['id'], '共享订单不支持当前整单履约操作')) {
             return $response;
         }
         $result = OrderLogic::complete((int)$params['id'], $this->adminId);
@@ -543,18 +550,36 @@ class OrderController extends BaseAdminController
      * @param int $orderId
      * @return \think\response\Json|null
      */
-    protected function checkWholeOrderManageScope(int $orderId)
+    protected function checkWholeOrderManageScope(int $orderId, string $message = '共享订单不支持当前支付/退款操作')
     {
         $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
         if ($staffScopeId <= 0) {
             return null;
         }
-        $totalCount = OrderItem::where('order_id', $orderId)->count();
-        $ownedCount = OrderItem::where('order_id', $orderId)->where('staff_id', $staffScopeId)->count();
-        if ($totalCount <= 0 || $totalCount !== $ownedCount) {
-            return $this->fail('共享订单不支持当前支付/退款操作');
+        if (!Order::isWholeOrderOwnedByStaff($orderId, $staffScopeId)) {
+            return $this->fail($message);
         }
         return null;
+    }
+
+    /**
+     * @notes 按确认函校验订单数据范围
+     * @param int $letterId
+     * @return \think\response\Json|null
+     */
+    protected function checkConfirmLetterScope(int $letterId)
+    {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId <= 0) {
+            return null;
+        }
+
+        $letter = OrderConfirmLetter::where('id', $letterId)->find();
+        if (!$letter) {
+            return $this->fail('确认函不存在');
+        }
+
+        return $this->checkOrderScope((int)$letter->order_id);
     }
 
     /**
@@ -706,6 +731,9 @@ class OrderController extends BaseAdminController
         if ($response = $this->checkOrderScope((int)$params['id'])) {
             return $response;
         }
+        if ($response = $this->checkWholeOrderManageScope((int)$params['id'], '共享订单不支持当前整单履约操作')) {
+            return $response;
+        }
         $result = OrderLogic::startService((int)$params['id'], $this->adminId);
         if (true === $result) {
             return $this->success('操作成功', [], 1, 1);
@@ -724,6 +752,9 @@ class OrderController extends BaseAdminController
         }
         $params = (new OrderValidate())->post()->goCheck('detail');
         if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+        if ($response = $this->checkWholeOrderManageScope((int)$params['id'], '共享订单不支持当前整单履约操作')) {
             return $response;
         }
         $result = OrderLogic::complete((int)$params['id'], $this->adminId);
@@ -765,6 +796,9 @@ class OrderController extends BaseAdminController
     public function confirmLetterPush()
     {
         $params = (new OrderValidate())->post()->goCheck('confirmLetterPush');
+        if ($response = $this->checkConfirmLetterScope((int) $params['letter_id'])) {
+            return $response;
+        }
         $result = OrderLogic::confirmLetterPush((int) $params['letter_id'], $this->adminId);
         if ($result === false) {
             return $this->fail(OrderLogic::getError());
@@ -775,6 +809,9 @@ class OrderController extends BaseAdminController
     public function confirmLetterDetail()
     {
         $params = (new OrderValidate())->goCheck('confirmLetterDetail');
+        if ($response = $this->checkConfirmLetterScope((int) $params['letter_id'])) {
+            return $response;
+        }
         $result = OrderLogic::confirmLetterDetail((int) $params['letter_id']);
         if ($result === null) {
             return $this->fail(OrderLogic::getError() ?: '确认函不存在');
@@ -794,6 +831,9 @@ class OrderController extends BaseAdminController
     public function confirmLetterAssets()
     {
         $params = (new OrderValidate())->post()->goCheck('confirmLetterAssets');
+        if ($response = $this->checkConfirmLetterScope((int) $params['letter_id'])) {
+            return $response;
+        }
         $result = OrderLogic::confirmLetterSaveAssets($params);
         if ($result === false) {
             return $this->fail(OrderLogic::getError());

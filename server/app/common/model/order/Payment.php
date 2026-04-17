@@ -8,7 +8,10 @@ declare(strict_types=1);
 namespace app\common\model\order;
 
 use app\common\model\BaseModel;
+use app\common\model\financial\FinancialFlow;
+use app\common\model\order\Refund;
 use app\common\service\OrderConfirmLetterService;
+use app\common\service\OrderRefundService;
 
 /**
  * 支付记录模型
@@ -227,18 +230,33 @@ class Payment extends BaseModel
         // 更新订单状态
         $order = Order::where('id', $payment->order_id)->lock(true)->find();
         if (!$order) {
-            self::recordCallbackInfo($payment, $transactionId, $callbackData);
-            return [false, '订单不存在', []];
+            return self::handleExceptionalPaidCallback(
+                $payment,
+                null,
+                $transactionId,
+                $callbackData,
+                '订单不存在，支付回调已登记待人工处理'
+            );
         }
 
         if ((int)$order->order_status !== Order::STATUS_PENDING_PAY) {
-            self::recordCallbackInfo($payment, $transactionId, $callbackData);
-            return [false, '订单状态不允许确认支付', []];
+            return self::handleExceptionalPaidCallback(
+                $payment,
+                $order,
+                $transactionId,
+                $callbackData,
+                '订单已关闭或状态已变更，系统已登记异常支付并发起补偿处理'
+            );
         }
 
-        if ($order->shouldAutoCancelExpiredUnpaid()) {
-            self::recordCallbackInfo($payment, $transactionId, $callbackData);
-            return [false, Order::AUTO_CANCEL_MESSAGE, []];
+        if ($order->shouldAutoCancelExpiredUnpaid() || $order->shouldAutoCloseExpiredBalancePayment()) {
+            return self::handleExceptionalPaidCallback(
+                $payment,
+                $order,
+                $transactionId,
+                $callbackData,
+                '支付已超时，系统已登记异常支付并发起补偿处理'
+            );
         }
 
         $payment->pay_status = self::STATUS_PAID;
@@ -260,6 +278,8 @@ class Payment extends BaseModel
         $order->update_time = time();
         $order->save();
 
+        self::recordFinancialFlow($payment, $order, $transactionId);
+
         // 记录日志
         OrderLog::addLog(
             $order->id,
@@ -280,6 +300,88 @@ class Payment extends BaseModel
     }
 
     /**
+     * @notes 处理订单关闭后的异常支付回调
+     * @param Payment $payment
+     * @param Order|null $order
+     * @param string $transactionId
+     * @param array $callbackData
+     * @param string $reason
+     * @return array
+     */
+    protected static function handleExceptionalPaidCallback(
+        self $payment,
+        ?Order $order,
+        string $transactionId,
+        array $callbackData,
+        string $reason
+    ): array {
+        $paidAt = time();
+        $payment->pay_status = self::STATUS_PAID;
+        $payment->transaction_id = $transactionId;
+        $payment->pay_time = (int)($payment->pay_time ?? 0) > 0 ? (int)$payment->pay_time : $paidAt;
+        $payment->callback_time = $paidAt;
+        $payment->callback_data = json_encode($callbackData, JSON_UNESCAPED_UNICODE);
+        $payment->remark = self::appendRemark((string)($payment->remark ?? ''), $reason);
+        $payment->update_time = $paidAt;
+        $payment->save();
+
+        $context = [
+            'order_id' => (int)($order->id ?? 0),
+            'pay_type' => (int)$payment->pay_type,
+            'should_notify' => false,
+            'should_notify_completed' => false,
+            'refund_id' => 0,
+            'late_callback_exception' => true,
+        ];
+
+        if (!$order) {
+            return [true, $reason, $context];
+        }
+
+        self::recordFinancialFlow($payment, $order, $transactionId);
+
+        OrderLog::addLog(
+            (int)$order->id,
+            OrderLog::OPERATOR_SYSTEM,
+            0,
+            'pay_exception',
+            (int)$order->order_status,
+            (int)$order->order_status,
+            $reason
+        );
+
+        $shouldAutoRefund = OrderRefundService::isOrderFinishedStatus((int)$order->order_status)
+            || $order->shouldAutoCancelExpiredUnpaid()
+            || $order->shouldAutoCloseExpiredBalancePayment();
+
+        if ($shouldAutoRefund && !OrderRefundService::hasPendingRefund((int)$order->id)) {
+            $refundResult = Refund::createSystemRefund(
+                (int)$order->id,
+                0,
+                round((float)$payment->pay_amount, 2),
+                '订单关闭后收到支付回调，系统已自动创建退款申请',
+                Refund::TYPE_SYSTEM
+            );
+
+            if ($refundResult[0] ?? false) {
+                $context['refund_id'] = (int)($refundResult[2]->id ?? 0);
+            } else {
+                OrderLog::addLog(
+                    (int)$order->id,
+                    OrderLog::OPERATOR_SYSTEM,
+                    0,
+                    'refund_create_fail',
+                    (int)$order->order_status,
+                    (int)$order->order_status,
+                    '异常支付自动退款创建失败：' . (string)($refundResult[1] ?? '未知错误')
+                );
+            }
+        }
+
+        return [true, $reason, $context];
+    }
+
+    /**
      * @notes 记录回调信息
      * @param Payment $payment
      * @param string $transactionId
@@ -293,5 +395,60 @@ class Payment extends BaseModel
         $payment->callback_data = json_encode($callbackData, JSON_UNESCAPED_UNICODE);
         $payment->update_time = time();
         $payment->save();
+    }
+
+    /**
+     * @notes 追加回调备注
+     * @param string $origin
+     * @param string $append
+     * @return string
+     */
+    protected static function appendRemark(string $origin, string $append): string
+    {
+        $parts = array_filter([
+            trim($origin),
+            trim($append),
+        ]);
+
+        return mb_substr(implode('；', array_unique($parts)), 0, 255);
+    }
+
+    /**
+     * @notes 记录支付资金流水
+     */
+    protected static function recordFinancialFlow(self $payment, Order $order, string $transactionId = ''): void
+    {
+        if ((int)$payment->pay_way === self::WAY_OFFLINE) {
+            return;
+        }
+
+        FinancialFlow::safeCreateUniqueFlow([
+            'flow_type' => FinancialFlow::FLOW_TYPE_INCOME,
+            'biz_type' => FinancialFlow::BIZ_TYPE_ORDER_PAY,
+            'biz_id' => (int)$payment->id,
+            'biz_sn' => (string)$payment->payment_sn,
+            'order_id' => (int)$order->id,
+            'user_id' => (int)$order->user_id,
+            'amount' => round((float)$payment->pay_amount, 2),
+            'direction' => FinancialFlow::DIRECTION_IN,
+            'pay_way' => (int)$payment->pay_way,
+            'transaction_id' => trim($transactionId) !== '' ? $transactionId : (string)($payment->transaction_id ?? ''),
+            'remark' => self::buildFinancialFlowRemark((int)$payment->pay_type),
+            'operator_type' => 0,
+            'operator_id' => 0,
+            'create_time' => max((int)($payment->pay_time ?? 0), time()),
+        ]);
+    }
+
+    /**
+     * @notes 构建支付流水备注
+     */
+    protected static function buildFinancialFlowRemark(int $payType): string
+    {
+        return match ($payType) {
+            self::TYPE_DEPOSIT => '订单定金支付入账',
+            self::TYPE_BALANCE => '订单尾款支付入账',
+            default => '订单支付入账',
+        };
     }
 }

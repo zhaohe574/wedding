@@ -14,8 +14,8 @@ use app\common\model\staff\StaffCertificate;
 use app\common\model\staff\StaffWork;
 use app\common\model\staff\Favorite;
 use app\common\model\staff\StaffTag;
-use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
+use app\common\model\service\ServicePackageAddon;
 use app\common\service\BookingFlowService;
 use app\common\service\ConfigService;
 use app\common\service\MobileImageService;
@@ -243,14 +243,7 @@ class StaffLogic extends BaseLogic
             return [];
         }
 
-        return ServiceAddon::alias('addon')
-            ->where('addon.staff_id', $staffId)
-            ->whereNull('addon.delete_time')
-            ->where('addon.is_show', 1)
-            ->field('addon.id, addon.staff_id, addon.category_id, addon.name, addon.price, addon.original_price, addon.image, addon.description, addon.sort, addon.is_show')
-            ->order('addon.sort desc, addon.id desc')
-            ->select()
-            ->toArray();
+        return BookingFlowService::getStaffBookingAddons($staffId, $packageId);
     }
 
     /**
@@ -395,6 +388,8 @@ class StaffLogic extends BaseLogic
         if (PackageRegionPriceService::hasRegionContext($regionContext)) {
             $packages = PackageRegionPriceService::applyResolvedPrices($packages, $regionContext, true);
         }
+
+        $packages = ServicePackageAddon::attachAddonIds($packages);
 
         $result = [];
         foreach ($packages as $package) {

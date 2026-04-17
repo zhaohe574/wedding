@@ -231,10 +231,20 @@
                         >
                             确认
                         </el-button>
-                        <el-button v-if="row.order_status === 2" type="warning" link @click="handleStartService(row)">
+                        <el-button
+                            v-if="Number(row.can_staff_start || 0) === 1"
+                            type="warning"
+                            link
+                            @click="handleStartService(row)"
+                        >
                             开始服务
                         </el-button>
-                        <el-button v-if="row.order_status === 3" type="success" link @click="handleComplete(row)">
+                        <el-button
+                            v-if="Number(row.can_staff_complete || 0) === 1"
+                            type="success"
+                            link
+                            @click="handleComplete(row)"
+                        >
                             完成
                         </el-button>
                     </template>

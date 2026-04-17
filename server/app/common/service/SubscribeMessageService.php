@@ -100,10 +100,7 @@ class SubscribeMessageService
             $content = self::buildMessageContent($template->content, $data, $sceneConfig->data_mapping);
 
             // 使用场景配置的页面路径或传入的页面路径
-            $targetPage = $page ?: $sceneConfig->page_path;
-            if ($businessId && strpos($targetPage, '?') === false) {
-                $targetPage .= '?id=' . $businessId;
-            }
+            $targetPage = self::buildTargetPage($page ?: (string)$sceneConfig->page_path, $businessId);
 
             // 创建发送日志
             $log = SubscribeMessageLog::createLog(
@@ -209,13 +206,13 @@ class SubscribeMessageService
             
             // 根据类型处理值
             if (is_array($value)) {
-                $value = implode(',', $value);
+                $value = implode('，', array_map(static function ($item) {
+                    return self::sanitizeTemplateValue($item);
+                }, $value));
             }
             
             // 截断过长的内容
-            if (strlen($value) > 200) {
-                $value = mb_substr($value, 0, 60, 'UTF-8') . '...';
-            }
+            $value = self::sanitizeTemplateValue($value);
             
             $content[$key] = ['value' => (string)$value];
         }
@@ -281,6 +278,74 @@ class SubscribeMessageService
         }
 
         return json_decode($response, true) ?: ['errcode' => -1, 'errmsg' => '响应解析失败'];
+    }
+
+    /**
+     * @notes 构建安全页面路径
+     */
+    protected static function buildTargetPage(string $page, int $businessId = 0): string
+    {
+        $targetPage = self::sanitizeMiniProgramPage($page);
+        if ($targetPage === '') {
+            return '';
+        }
+
+        if ($businessId > 0 && strpos($targetPage, '?') === false) {
+            $targetPage .= '?id=' . $businessId;
+        }
+
+        return $targetPage;
+    }
+
+    /**
+     * @notes 清洗订阅消息页面路径
+     */
+    protected static function sanitizeMiniProgramPage(string $page): string
+    {
+        $page = trim($page);
+        if ($page === '') {
+            return '';
+        }
+
+        $page = preg_replace('/[\x00-\x1F\x7F]/u', '', $page) ?: '';
+        $page = ltrim($page, '/');
+        if ($page === '' || str_contains($page, '..') || preg_match('#^(?:https?:)?//#i', $page)) {
+            Log::warning('订阅消息页面路径已拒绝', ['page' => $page]);
+            return '';
+        }
+
+        if (!preg_match('#^[A-Za-z0-9_\\-/\\?=&.%]+$#', $page)) {
+            Log::warning('订阅消息页面路径格式非法', ['page' => $page]);
+            return '';
+        }
+
+        return mb_strlen($page, 'UTF-8') > 512 ? mb_substr($page, 0, 512, 'UTF-8') : $page;
+    }
+
+    /**
+     * @notes 清洗模板字段值
+     */
+    protected static function sanitizeTemplateValue($value): string
+    {
+        if (is_bool($value)) {
+            $value = $value ? '是' : '否';
+        } elseif (!is_scalar($value) && $value !== null) {
+            $value = '';
+        }
+
+        $text = trim((string)$value);
+        if ($text === '') {
+            return '';
+        }
+
+        $text = preg_replace('/[\x00-\x1F\x7F]/u', '', $text) ?: '';
+        if ($text === '') {
+            return '';
+        }
+
+        return mb_strlen($text, 'UTF-8') > 200
+            ? mb_substr($text, 0, 200, 'UTF-8')
+            : $text;
     }
 
     /**

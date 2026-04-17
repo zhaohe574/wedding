@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\api\logic;
 
 use app\common\logic\BaseLogic;
+use app\common\model\schedule\CalendarEvent;
 use app\common\model\schedule\Schedule;
 use app\common\model\schedule\ScheduleRule;
 use app\common\model\schedule\Waitlist;
@@ -37,11 +38,13 @@ class ScheduleLogic extends BaseLogic
 
         $startDate = sprintf('%04d-%02d-01', $year, $month);
         $endDate = date('Y-m-t', strtotime($startDate));
+        $calendarEvents = CalendarEvent::getMonthCalendar($year, $month);
         $currentDate = $startDate;
 
         $days = [];
         while ($currentDate <= $endDate) {
             $daySchedules = $schedules[$currentDate] ?? [];
+            $calendarMeta = self::buildCalendarMeta($calendarEvents[$currentDate] ?? null);
             $isAvailable = self::checkDateAvailable($staffId, $currentDate, $rule)
                 && self::isDayScheduleAvailable($daySchedules);
 
@@ -53,10 +56,14 @@ class ScheduleLogic extends BaseLogic
                 'slot_availability' => [
                     Schedule::TIME_SLOT_ALL => $isAvailable,
                 ],
-                'is_lucky_day' => 0,
-                'is_holiday' => 0,
-                'holiday_name' => '',
-                'lunar_date' => '',
+                'calendar' => $calendarMeta,
+                'is_lucky_day' => $calendarMeta['is_lucky_day'],
+                'is_holiday' => $calendarMeta['is_holiday'],
+                'holiday_name' => $calendarMeta['holiday_name'],
+                'lunar_date' => $calendarMeta['lunar_date'],
+                'lucky_events' => $calendarMeta['lucky_events'],
+                'unlucky_events' => $calendarMeta['unlucky_events'],
+                'congestion_level' => $calendarMeta['congestion_level'],
             ];
 
             $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 day'));
@@ -92,21 +99,26 @@ class ScheduleLogic extends BaseLogic
 
         $startDate = sprintf('%04d-%02d-01', $year, $month);
         $endDate = date('Y-m-t', strtotime($startDate));
+        $calendarEvents = CalendarEvent::getMonthCalendar($year, $month);
         $currentDate = $startDate;
 
         $days = [];
         while ($currentDate <= $endDate) {
+            $calendarMeta = self::buildCalendarMeta($calendarEvents[$currentDate] ?? null);
             $days[] = [
                 'date' => $currentDate,
                 'week' => date('w', strtotime($currentDate)),
                 'is_today' => $currentDate == date('Y-m-d'),
                 'is_past' => strtotime($currentDate) < strtotime(date('Y-m-d')),
-                'is_lucky_day' => 0,
-                'is_holiday' => 0,
-                'holiday_name' => '',
-                'lunar_date' => '',
-                'lucky_events' => '',
-                'congestion_level' => 0,
+                'calendar' => $calendarMeta,
+                'is_lucky_day' => $calendarMeta['is_lucky_day'],
+                'is_holiday' => $calendarMeta['is_holiday'],
+                'holiday_name' => $calendarMeta['holiday_name'],
+                'lunar_date' => $calendarMeta['lunar_date'],
+                'lucky_events' => $calendarMeta['lucky_events'],
+                'unlucky_events' => $calendarMeta['unlucky_events'],
+                'congestion_level' => $calendarMeta['congestion_level'],
+                'remark' => $calendarMeta['remark'],
             ];
             $currentDate = date('Y-m-d', strtotime($currentDate . ' +1 day'));
         }
@@ -125,7 +137,18 @@ class ScheduleLogic extends BaseLogic
      */
     public static function getLuckyDays(array $params): array
     {
-        return [];
+        if (!empty($params['start_date']) && !empty($params['end_date'])) {
+            return CalendarEvent::getLuckyDaysInRange(
+                (string)$params['start_date'],
+                (string)$params['end_date'],
+                !empty($params['marriage_only'])
+            );
+        }
+
+        $year = (int)($params['year'] ?? date('Y'));
+        $month = (int)($params['month'] ?? date('m'));
+
+        return CalendarEvent::getMonthLuckyDays($year, $month);
     }
 
     /**
@@ -348,5 +371,44 @@ class ScheduleLogic extends BaseLogic
 
         $lockExpireTime = (int)($schedule['lock_expire_time'] ?? 0);
         return $lockExpireTime > 0 && $lockExpireTime < time();
+    }
+
+    /**
+     * @notes 构建日历信息
+     * @param array|null $event
+     * @return array
+     */
+    protected static function buildCalendarMeta(?array $event): array
+    {
+        $congestionLevel = (int)($event['congestion_level'] ?? 0);
+        return [
+            'event_date' => (string)($event['event_date'] ?? ''),
+            'lunar_date' => (string)($event['lunar_date'] ?? ''),
+            'is_lucky_day' => (int)($event['is_lucky_day'] ?? 0),
+            'lucky_events' => (string)($event['lucky_events'] ?? ''),
+            'unlucky_events' => (string)($event['unlucky_events'] ?? ''),
+            'is_holiday' => (int)($event['is_holiday'] ?? 0),
+            'holiday_name' => (string)($event['holiday_name'] ?? ''),
+            'congestion_level' => $congestionLevel,
+            'congestion_level_text' => self::getCongestionLevelText($congestionLevel),
+            'remark' => (string)($event['remark'] ?? ''),
+        ];
+    }
+
+    /**
+     * @notes 获取拥堵等级文案
+     * @param int $level
+     * @return string
+     */
+    protected static function getCongestionLevelText(int $level): string
+    {
+        $map = [
+            CalendarEvent::CONGESTION_UNKNOWN => '未知',
+            CalendarEvent::CONGESTION_LOW => '低',
+            CalendarEvent::CONGESTION_MEDIUM => '中',
+            CalendarEvent::CONGESTION_HIGH => '高',
+        ];
+
+        return $map[$level] ?? '未知';
     }
 }

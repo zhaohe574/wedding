@@ -152,12 +152,18 @@
                         <span v-if="selectedDay.calendar.lunar_date">农历：{{ selectedDay.calendar.lunar_date }}</span>
                         <el-tag v-if="selectedDay.calendar.is_lucky_day" type="danger">吉日</el-tag>
                         <el-tag v-if="selectedDay.calendar.is_holiday" type="warning">{{ selectedDay.calendar.holiday_name }}</el-tag>
+                        <span v-if="selectedDay.calendar.congestion_level_text">
+                            拥堵度：{{ selectedDay.calendar.congestion_level_text }}
+                        </span>
                     </div>
                     <div v-if="selectedDay.calendar.lucky_events" class="mt-2 text-sm">
                         <span class="text-green-600">宜：</span>{{ selectedDay.calendar.lucky_events }}
                     </div>
                     <div v-if="selectedDay.calendar.unlucky_events" class="mt-1 text-sm">
                         <span class="text-red-600">忌：</span>{{ selectedDay.calendar.unlucky_events }}
+                    </div>
+                    <div v-if="selectedDay.calendar.remark" class="mt-1 text-sm text-gray-500">
+                        备注：{{ selectedDay.calendar.remark }}
                     </div>
                 </div>
 
@@ -271,12 +277,12 @@ interface CalendarDay {
 
 const router = useRouter()
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-const today = new Date().toISOString().split('T')[0]
+const today = formatLocalDate()
 
 const bookingPath = computed(() => getRoutePath('ops.booking/myBookings') || '/staff-center/booking')
 const waitlistPath = computed(() => getRoutePath('ops.waitlist/myWaitlist') || '/staff-center/waitlist')
 
-const currentMonth = ref(new Date().toISOString().slice(0, 7))
+const currentMonth = ref(formatLocalMonth())
 const calendarData = ref<Record<string, unknown>>({})
 const statistics = ref<Record<string, unknown>>({})
 const waitlistStatistics = ref<Record<string, unknown>>({})
@@ -334,20 +340,21 @@ const nextMonth = () => {
 }
 
 const toToday = () => {
-    currentMonth.value = new Date().toISOString().slice(0, 7)
+    currentMonth.value = formatLocalMonth()
     fetchCalendar()
 }
 
 const handleReset = () => {
-    currentMonth.value = new Date().toISOString().slice(0, 7)
+    currentMonth.value = formatLocalMonth()
     fetchCalendar()
 }
 
 const handleDayClick = (day: CalendarDay) => {
+    const currentSchedule = getPrimarySchedule(day)
     selectedDay.value = day
     dayForm.value = {
-        status: 1,
-        remark: '',
+        status: Number(currentSchedule?.status ?? 1),
+        remark: String(currentSchedule?.remark ?? ''),
     }
     dayDialogVisible.value = true
 }
@@ -427,6 +434,23 @@ const getStatusClass = (status: number) => {
         4: 'bg-yellow-100 text-yellow-700',
     }
     return map[status] || ''
+}
+
+const getPrimarySchedule = (day: CalendarDay) => {
+    return Array.isArray(day.schedules) && day.schedules.length > 0 ? day.schedules[0] : null
+}
+
+function formatLocalDate(date = new Date()) {
+    const year = date.getFullYear()
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    const day = `${date.getDate()}`.padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
+function formatLocalMonth(date = new Date()) {
+    const year = date.getFullYear()
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    return `${year}-${month}`
 }
 
 const goToBooking = () => {

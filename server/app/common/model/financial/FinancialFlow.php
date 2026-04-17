@@ -8,9 +8,10 @@ declare(strict_types=1);
 namespace app\common\model\financial;
 
 use app\common\model\BaseModel;
-use app\common\model\user\User;
-use app\common\model\staff\Staff;
 use app\common\model\order\Order;
+use app\common\model\staff\Staff;
+use app\common\model\user\User;
+use think\facade\Log;
 
 /**
  * 资金流水模型
@@ -140,26 +141,68 @@ class FinancialFlow extends BaseModel
      */
     public static function createFlow(array $data): self
     {
+        $data = self::normalizeFlowData($data);
+
         $flow = new self();
         $flow->flow_sn = self::generateFlowSn();
         $flow->flow_type = $data['flow_type'];
-        $flow->biz_type = $data['biz_type'] ?? self::BIZ_TYPE_OTHER;
-        $flow->biz_id = $data['biz_id'] ?? 0;
-        $flow->biz_sn = $data['biz_sn'] ?? '';
-        $flow->order_id = $data['order_id'] ?? 0;
-        $flow->user_id = $data['user_id'] ?? 0;
-        $flow->staff_id = $data['staff_id'] ?? 0;
+        $flow->biz_type = $data['biz_type'];
+        $flow->biz_id = $data['biz_id'];
+        $flow->biz_sn = $data['biz_sn'];
+        $flow->order_id = $data['order_id'];
+        $flow->user_id = $data['user_id'];
+        $flow->staff_id = $data['staff_id'];
         $flow->amount = $data['amount'];
-        $flow->direction = $data['direction'] ?? self::DIRECTION_IN;
-        $flow->balance_before = $data['balance_before'] ?? 0;
-        $flow->balance_after = $data['balance_after'] ?? 0;
-        $flow->pay_way = $data['pay_way'] ?? self::PAY_WAY_SYSTEM;
-        $flow->transaction_id = $data['transaction_id'] ?? '';
-        $flow->remark = $data['remark'] ?? '';
-        $flow->operator_type = $data['operator_type'] ?? 0;
-        $flow->operator_id = $data['operator_id'] ?? 0;
+        $flow->direction = $data['direction'];
+        $flow->balance_before = $data['balance_before'];
+        $flow->balance_after = $data['balance_after'];
+        $flow->pay_way = $data['pay_way'];
+        $flow->transaction_id = $data['transaction_id'];
+        $flow->remark = $data['remark'];
+        $flow->operator_type = $data['operator_type'];
+        $flow->operator_id = $data['operator_id'];
+        $flow->create_time = $data['create_time'];
         $flow->save();
         return $flow;
+    }
+
+    /**
+     * @notes 按业务主键幂等创建流水
+     */
+    public static function createUniqueFlow(array $data): self
+    {
+        $data = self::normalizeFlowData($data);
+
+        if ($data['biz_type'] > 0 && $data['biz_id'] > 0) {
+            $exists = self::where('biz_type', $data['biz_type'])
+                ->where('biz_id', $data['biz_id'])
+                ->where('flow_type', $data['flow_type'])
+                ->find();
+            if ($exists) {
+                return $exists;
+            }
+        }
+
+        return self::createFlow($data);
+    }
+
+    /**
+     * @notes 安全记录流水，避免影响主流程
+     */
+    public static function safeCreateUniqueFlow(array $data): bool
+    {
+        try {
+            self::createUniqueFlow($data);
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('资金流水记录失败: ' . $e->getMessage(), [
+                'biz_type' => (int)($data['biz_type'] ?? 0),
+                'biz_id' => (int)($data['biz_id'] ?? 0),
+                'flow_type' => (int)($data['flow_type'] ?? 0),
+                'order_id' => (int)($data['order_id'] ?? 0),
+            ]);
+            return false;
+        }
     }
 
     /**
@@ -190,5 +233,65 @@ class FinancialFlow extends BaseModel
             ->where('flow_type', self::FLOW_TYPE_INCOME)
             ->group('pay_way')
             ->column('SUM(amount) as amount', 'pay_way');
+    }
+
+    /**
+     * @notes 规范化流水数据
+     */
+    protected static function normalizeFlowData(array $data): array
+    {
+        $amount = round(abs((float)($data['amount'] ?? 0)), 2);
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('流水金额必须大于0');
+        }
+
+        $flowType = (int)($data['flow_type'] ?? 0);
+        if (!array_key_exists($flowType, self::getFlowTypeDesc())) {
+            throw new \InvalidArgumentException('流水类型错误');
+        }
+
+        $bizType = (int)($data['biz_type'] ?? self::BIZ_TYPE_OTHER);
+        if (!array_key_exists($bizType, self::getBizTypeDesc())) {
+            $bizType = self::BIZ_TYPE_OTHER;
+        }
+
+        return [
+            'flow_type' => $flowType,
+            'biz_type' => $bizType,
+            'biz_id' => max(0, (int)($data['biz_id'] ?? 0)),
+            'biz_sn' => self::trimText((string)($data['biz_sn'] ?? ''), 32),
+            'order_id' => max(0, (int)($data['order_id'] ?? 0)),
+            'user_id' => max(0, (int)($data['user_id'] ?? 0)),
+            'staff_id' => max(0, (int)($data['staff_id'] ?? 0)),
+            'amount' => $amount,
+            'direction' => (int)($data['direction'] ?? self::DIRECTION_IN) === self::DIRECTION_OUT
+                ? self::DIRECTION_OUT
+                : self::DIRECTION_IN,
+            'balance_before' => round((float)($data['balance_before'] ?? 0), 2),
+            'balance_after' => round((float)($data['balance_after'] ?? 0), 2),
+            'pay_way' => array_key_exists((int)($data['pay_way'] ?? self::PAY_WAY_SYSTEM), self::getPayWayDesc())
+                ? (int)($data['pay_way'] ?? self::PAY_WAY_SYSTEM)
+                : self::PAY_WAY_SYSTEM,
+            'transaction_id' => self::trimText((string)($data['transaction_id'] ?? ''), 64),
+            'remark' => self::trimText((string)($data['remark'] ?? ''), 255),
+            'operator_type' => max(0, (int)($data['operator_type'] ?? 0)),
+            'operator_id' => max(0, (int)($data['operator_id'] ?? 0)),
+            'create_time' => max(1, (int)($data['create_time'] ?? time())),
+        ];
+    }
+
+    /**
+     * @notes 截断文案
+     */
+    protected static function trimText(string $value, int $maxLength): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        return mb_strlen($value, 'UTF-8') > $maxLength
+            ? mb_substr($value, 0, $maxLength, 'UTF-8')
+            : $value;
     }
 }

@@ -113,6 +113,14 @@
                                     <view v-if="Number(item.duration || 0) > 0" class="info-chip">
                                         {{ Number(item.duration) }}小时
                                     </view>
+                                    <view class="info-chip">
+                                        附加项
+                                        {{
+                                            Array.isArray(item.addon_ids)
+                                                ? item.addon_ids.length
+                                                : 0
+                                        }}
+                                    </view>
                                     <view class="info-chip">排序 {{ Number(item.sort || 0) }}</view>
                                     <view
                                         v-if="Number(item.is_recommend) === 1"

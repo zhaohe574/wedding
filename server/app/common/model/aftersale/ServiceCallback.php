@@ -149,17 +149,46 @@ class ServiceCallback extends BaseModel
      */
     public static function createCallback(array $data): array
     {
+        $order = self::resolveCallbackOrder((int)($data['order_id'] ?? 0), (int)($data['user_id'] ?? 0));
+        if (!$order) {
+            return [false, '关联订单不存在', null];
+        }
+
+        $method = (int)($data['method'] ?? self::METHOD_PHONE);
+        $type = (int)($data['type'] ?? self::TYPE_AFTER);
+        $staffId = self::resolveCallbackStaffId($order, (int)($data['staff_id'] ?? 0));
+        if ($staffId < 0) {
+            return [false, '回访服务人员与订单不匹配', null];
+        }
+
+        if ($method === self::METHOD_QUESTIONNAIRE) {
+            $hasPending = self::where('order_id', (int)$order->id)
+                ->where('user_id', (int)$order->user_id)
+                ->where('type', $type)
+                ->where('method', self::METHOD_QUESTIONNAIRE)
+                ->where('status', self::STATUS_PENDING)
+                ->find();
+            if ($hasPending) {
+                return [false, '当前订单已存在待填写问卷', null];
+            }
+        }
+
         Db::startTrans();
         try {
+            $planTime = (int)($data['plan_time'] ?? 0);
+            if ($planTime <= 0) {
+                $planTime = time() + 86400;
+            }
+
             $callback = self::create([
                 'callback_sn' => self::generateCallbackSn(),
-                'order_id' => $data['order_id'],
-                'user_id' => $data['user_id'],
-                'staff_id' => $data['staff_id'] ?? 0,
-                'type' => $data['type'] ?? self::TYPE_AFTER,
-                'method' => $data['method'] ?? self::METHOD_PHONE,
+                'order_id' => (int)$order->id,
+                'user_id' => (int)$order->user_id,
+                'staff_id' => $staffId,
+                'type' => $type,
+                'method' => $method,
                 'status' => self::STATUS_PENDING,
-                'plan_time' => $data['plan_time'] ?? time() + 86400,  // 默认次日
+                'plan_time' => $planTime,
                 'create_time' => time(),
                 'update_time' => time(),
             ]);
@@ -180,6 +209,14 @@ class ServiceCallback extends BaseModel
     public static function autoCreateAfterServiceCallback(int $orderId): bool
     {
         try {
+            $exists = self::where('order_id', $orderId)
+                ->where('type', self::TYPE_AFTER)
+                ->where('method', self::METHOD_QUESTIONNAIRE)
+                ->find();
+            if ($exists) {
+                return true;
+            }
+
             $order = Order::with(['user', 'items.staff'])->find($orderId);
             if (!$order) {
                 return false;
@@ -224,34 +261,42 @@ class ServiceCallback extends BaseModel
     {
         Db::startTrans();
         try {
-            $callback = self::find($callbackId);
+            $callback = self::lock(true)->find($callbackId);
             if (!$callback) {
+                Db::rollback();
                 return [false, '回访任务不存在'];
             }
 
             if ($callback->status != self::STATUS_PENDING) {
+                Db::rollback();
                 return [false, '当前状态不可操作'];
             }
 
+            $scoreOverall = self::sanitizeScore((int)($callbackData['score_overall'] ?? $callbackData['score'] ?? 0));
+            $hasProblem = !empty($callbackData['has_problem']) ? 1 : 0;
             $callback->status = self::STATUS_COMPLETED;
             $callback->actual_time = time();
             $callback->admin_id = $adminId;
-            $callback->duration = $callbackData['duration'] ?? 0;
-            $callback->score = $callbackData['score'] ?? 0;
-            $callback->score_service = $callbackData['score_service'] ?? 0;
-            $callback->score_professional = $callbackData['score_professional'] ?? 0;
-            $callback->score_punctual = $callbackData['score_punctual'] ?? 0;
-            $callback->score_overall = $callbackData['score_overall'] ?? 0;
-            $callback->content = $callbackData['content'] ?? '';
-            $callback->summary = $callbackData['summary'] ?? '';
-            $callback->has_problem = $callbackData['has_problem'] ?? 0;
-            $callback->remark = $callbackData['remark'] ?? '';
+            $callback->duration = max(0, (int)($callbackData['duration'] ?? 0));
+            $callback->score = self::sanitizeScore((int)($callbackData['score'] ?? $scoreOverall));
+            $callback->score_service = self::sanitizeScore((int)($callbackData['score_service'] ?? $scoreOverall));
+            $callback->score_professional = self::sanitizeScore((int)($callbackData['score_professional'] ?? $scoreOverall));
+            $callback->score_punctual = self::sanitizeScore((int)($callbackData['score_punctual'] ?? $scoreOverall));
+            $callback->score_overall = $scoreOverall;
+            $callback->content = self::trimText((string)($callbackData['content'] ?? ''), 1000);
+            $callback->summary = self::trimText((string)($callbackData['summary'] ?? ''), 1000);
+            $callback->has_problem = $hasProblem;
+            $callback->remark = self::trimText((string)($callbackData['remark'] ?? ''), 500);
             $callback->update_time = time();
 
             // 如果有问题
-            if (!empty($callbackData['has_problem'])) {
-                $callback->problem_type = $callbackData['problem_type'] ?? '';
-                $callback->problem_desc = $callbackData['problem_desc'] ?? '';
+            if ($hasProblem) {
+                $callback->problem_type = self::trimText((string)($callbackData['problem_type'] ?? ''), 100);
+                $callback->problem_desc = self::trimText((string)($callbackData['problem_desc'] ?? ''), 1000);
+                $callback->problem_status = self::PROBLEM_UNHANDLED;
+            } else {
+                $callback->problem_type = '';
+                $callback->problem_desc = '';
                 $callback->problem_status = self::PROBLEM_UNHANDLED;
             }
 
@@ -311,16 +356,19 @@ class ServiceCallback extends BaseModel
     {
         Db::startTrans();
         try {
-            $callback = self::find($callbackId);
+            $callback = self::lock(true)->find($callbackId);
             if (!$callback) {
+                Db::rollback();
                 return [false, '回访任务不存在', 0];
             }
 
             if (!$callback->has_problem) {
+                Db::rollback();
                 return [false, '该回访无问题记录', 0];
             }
 
             if ($callback->problem_status == self::PROBLEM_ESCALATED) {
+                Db::rollback();
                 return [false, '问题已升级', 0];
             }
 
@@ -336,6 +384,7 @@ class ServiceCallback extends BaseModel
             ]);
 
             if (!$ticketResult[0]) {
+                Db::rollback();
                 return [false, '创建工单失败：' . $ticketResult[1], 0];
             }
 
@@ -363,38 +412,63 @@ class ServiceCallback extends BaseModel
     {
         Db::startTrans();
         try {
-            $callback = self::find($callbackId);
+            $callback = self::lock(true)->find($callbackId);
             if (!$callback) {
+                Db::rollback();
                 return [false, '回访任务不存在'];
             }
 
             if ($callback->user_id != $userId) {
+                Db::rollback();
                 return [false, '无权操作'];
             }
 
+            if ((int)$callback->method !== self::METHOD_QUESTIONNAIRE) {
+                Db::rollback();
+                return [false, '当前回访不支持问卷提交'];
+            }
+
             if ($callback->status != self::STATUS_PENDING) {
+                Db::rollback();
                 return [false, '当前状态不可提交'];
             }
+
+            $questionnaire = self::getActiveQuestionnaireByType((int)$callback->type);
+            $questionnaireId = (int)($answers['questionnaire_id'] ?? 0);
+            if ($questionnaire) {
+                if ($questionnaireId > 0 && $questionnaireId !== (int)$questionnaire['id']) {
+                    Db::rollback();
+                    return [false, '问卷已更新，请刷新后重试'];
+                }
+                $questionnaireId = (int)$questionnaire['id'];
+            } elseif ($questionnaireId > 0) {
+                Db::rollback();
+                return [false, '问卷配置不存在'];
+            }
+
+            $allowedQuestions = is_array($questionnaire['questions'] ?? null) ? $questionnaire['questions'] : [];
+            $sanitizedAnswers = self::sanitizeQuestionnaireAnswers($answers['answers'] ?? [], $allowedQuestions);
+            $scoreOverall = self::sanitizeScore((int)($answers['score_overall'] ?? $answers['score'] ?? 0));
 
             // 解析评分
             $callback->status = self::STATUS_COMPLETED;
             $callback->actual_time = time();
-            $callback->score = $answers['score'] ?? 0;
-            $callback->score_service = $answers['score_service'] ?? 0;
-            $callback->score_professional = $answers['score_professional'] ?? 0;
-            $callback->score_punctual = $answers['score_punctual'] ?? 0;
-            $callback->score_overall = $answers['score_overall'] ?? 0;
-            $callback->content = $answers['feedback'] ?? '';
+            $callback->score = self::sanitizeScore((int)($answers['score'] ?? $scoreOverall));
+            $callback->score_service = self::sanitizeScore((int)($answers['score_service'] ?? $scoreOverall));
+            $callback->score_professional = self::sanitizeScore((int)($answers['score_professional'] ?? $scoreOverall));
+            $callback->score_punctual = self::sanitizeScore((int)($answers['score_punctual'] ?? $scoreOverall));
+            $callback->score_overall = $scoreOverall;
+            $callback->content = self::trimText((string)($answers['feedback'] ?? ''), 1000);
             $callback->update_time = time();
             $callback->save();
 
             // 保存问卷答案
-            if (!empty($answers['questionnaire_id'])) {
+            if ($questionnaireId > 0) {
                 Db::name('callback_answer')->insert([
                     'callback_id' => $callbackId,
-                    'questionnaire_id' => $answers['questionnaire_id'],
+                    'questionnaire_id' => $questionnaireId,
                     'user_id' => $userId,
-                    'answers' => json_encode($answers['answers'] ?? [], JSON_UNESCAPED_UNICODE),
+                    'answers' => json_encode($sanitizedAnswers, JSON_UNESCAPED_UNICODE),
                     'create_time' => time(),
                 ]);
             }
@@ -432,5 +506,128 @@ class ServiceCallback extends BaseModel
             'has_problem' => self::where('has_problem', 1)->where('problem_status', self::PROBLEM_UNHANDLED)->count(),
             'avg_score' => round($avgScore, 2),
         ];
+    }
+
+    /**
+     * @notes 解析回访订单
+     */
+    protected static function resolveCallbackOrder(int $orderId, int $userId): ?Order
+    {
+        if ($orderId <= 0 || $userId <= 0) {
+            return null;
+        }
+
+        return Order::with(['items'])
+            ->where('id', $orderId)
+            ->where('user_id', $userId)
+            ->find();
+    }
+
+    /**
+     * @notes 校验回访服务人员
+     */
+    protected static function resolveCallbackStaffId(Order $order, int $staffId = 0): int
+    {
+        $staffIds = [];
+        foreach ($order->items ?? [] as $item) {
+            $itemStaffId = (int)($item->staff_id ?? 0);
+            if ($itemStaffId > 0) {
+                $staffIds[] = $itemStaffId;
+            }
+        }
+        $staffIds = array_values(array_unique($staffIds));
+
+        if ($staffId > 0) {
+            return in_array($staffId, $staffIds, true) ? $staffId : -1;
+        }
+
+        return $staffIds[0] ?? 0;
+    }
+
+    /**
+     * @notes 获取当前启用问卷
+     */
+    protected static function getActiveQuestionnaireByType(int $type): ?array
+    {
+        $questionnaire = Db::name('callback_questionnaire')
+            ->where('type', $type)
+            ->where('status', 1)
+            ->order('sort', 'asc')
+            ->find();
+
+        if (!$questionnaire) {
+            return null;
+        }
+
+        $questionnaire['questions'] = json_decode((string)($questionnaire['questions'] ?? '[]'), true) ?: [];
+        return $questionnaire;
+    }
+
+    /**
+     * @notes 清洗问卷答案
+     */
+    protected static function sanitizeQuestionnaireAnswers($answers, array $allowedQuestions): array
+    {
+        if (!is_array($answers)) {
+            return [];
+        }
+
+        $allowedMap = [];
+        foreach ($allowedQuestions as $index => $question) {
+            $key = (string)($question['id'] ?? $question['key'] ?? $index);
+            $allowedMap[$key] = self::trimText((string)($question['title'] ?? $question['question'] ?? ''), 200);
+        }
+
+        $sanitized = [];
+        foreach ($answers as $answer) {
+            if (!is_array($answer)) {
+                continue;
+            }
+
+            $key = trim((string)($answer['key'] ?? ''));
+            if ($key === '' || (!empty($allowedMap) && !array_key_exists($key, $allowedMap))) {
+                continue;
+            }
+
+            $value = $answer['value'] ?? '';
+            if (is_array($value)) {
+                $value = array_values(array_filter(array_map(static function ($item) {
+                    return self::trimText((string)$item, 100);
+                }, $value)));
+            } else {
+                $value = self::trimText((string)$value, 1000);
+            }
+
+            $sanitized[] = [
+                'key' => $key,
+                'title' => $allowedMap[$key] ?? self::trimText((string)($answer['title'] ?? ''), 200),
+                'value' => $value,
+            ];
+        }
+
+        return $sanitized;
+    }
+
+    /**
+     * @notes 规范评分
+     */
+    protected static function sanitizeScore(int $score): int
+    {
+        return max(0, min(5, $score));
+    }
+
+    /**
+     * @notes 截断文本
+     */
+    protected static function trimText(string $value, int $maxLength): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        return mb_strlen($value, 'UTF-8') > $maxLength
+            ? mb_substr($value, 0, $maxLength, 'UTF-8')
+            : $value;
     }
 }

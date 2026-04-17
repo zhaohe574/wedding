@@ -43,6 +43,7 @@ class OrderValidate extends BaseValidate
         'amount' => 'float|gt:0',
         'voucher' => 'require|max:500',
         'letter_id' => 'require|integer|gt:0',
+        'waitlist_id' => 'integer|gt:0',
     ];
 
     protected $message = [
@@ -80,6 +81,8 @@ class OrderValidate extends BaseValidate
         'letter_id.require' => '请选择确认函',
         'letter_id.integer' => '确认函参数错误',
         'letter_id.gt' => '确认函参数错误',
+        'waitlist_id.integer' => '候补记录参数错误',
+        'waitlist_id.gt' => '候补记录参数错误',
     ];
 
     /**
@@ -112,6 +115,7 @@ class OrderValidate extends BaseValidate
             'service_address',
             'remark',
             'addon_ids',
+            'waitlist_id',
             'butler_staff_id',
             'butler_package_id',
             'director_staff_id',
@@ -136,6 +140,7 @@ class OrderValidate extends BaseValidate
             'district_code',
             'district_name',
             'addon_ids',
+            'waitlist_id',
             'butler_staff_id',
             'butler_package_id',
             'director_staff_id',
@@ -188,5 +193,10 @@ class OrderValidate extends BaseValidate
     public function sceneConfirmLetterById()
     {
         return $this->only(['letter_id']);
+    }
+
+    public function sceneConfirmLetterHistory()
+    {
+        return $this->only(['id']);
     }
 }

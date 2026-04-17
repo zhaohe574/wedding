@@ -39,7 +39,11 @@ class OrderPayLogic extends BaseLogic
     private static function syncExpiredOrderIfNeeded(Order $order): bool
     {
         if (Order::syncExpiredAutoCancel($order)) {
-            self::setError(Order::AUTO_CANCEL_MESSAGE);
+            if ((int)($order->order_status ?? 0) === Order::STATUS_COMPLETED) {
+                self::setError(Order::BALANCE_PAYMENT_TIMEOUT_MESSAGE);
+            } else {
+                self::setError(Order::AUTO_CANCEL_MESSAGE);
+            }
             return true;
         }
 

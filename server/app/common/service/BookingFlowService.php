@@ -11,6 +11,7 @@ use app\common\model\schedule\Schedule;
 use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServiceCategory;
 use app\common\model\service\ServicePackage;
+use app\common\model\service\ServicePackageAddon;
 use app\common\model\staff\Staff;
 
 /**
@@ -26,17 +27,37 @@ class BookingFlowService
     /**
      * @notes 获取服务人员预约附加项
      * @param int $staffId
+     * @param int $packageId
      * @return array
      */
-    public static function getStaffBookingAddons(int $staffId): array
+    public static function getStaffBookingAddons(int $staffId, int $packageId = 0): array
     {
         if ($staffId <= 0) {
             return [];
         }
 
-        return ServiceAddon::where('staff_id', $staffId)
+        $query = ServiceAddon::where('staff_id', $staffId)
             ->whereNull('delete_time')
-            ->where('is_show', 1)
+            ->where('is_show', 1);
+
+        if ($packageId > 0) {
+            $package = ServicePackage::where('id', $packageId)
+                ->where('staff_id', $staffId)
+                ->whereNull('delete_time')
+                ->find();
+            if (!$package) {
+                return [];
+            }
+
+            $allowedAddonIds = ServicePackageAddon::getAddonIds($packageId);
+            if (empty($allowedAddonIds)) {
+                return [];
+            }
+
+            $query->whereIn('id', $allowedAddonIds);
+        }
+
+        return $query
             ->field('id, staff_id, category_id, name, price, original_price, image, description, sort')
             ->order('sort', 'desc')
             ->order('id', 'desc')
@@ -67,10 +88,11 @@ class BookingFlowService
     /**
      * @notes 校验并获取已选预约附加项
      * @param int $staffId
+     * @param int $packageId
      * @param array $addonIds
      * @return array
      */
-    public static function resolveSelectedAddons(int $staffId, array $addonIds): array
+    public static function resolveSelectedAddons(int $staffId, int $packageId, array $addonIds): array
     {
         $addonIds = self::normalizeAddonIds($addonIds);
         if ($staffId <= 0 || empty($addonIds)) {
@@ -78,7 +100,7 @@ class BookingFlowService
         }
 
         $addonMap = [];
-        foreach (self::getStaffBookingAddons($staffId) as $addon) {
+        foreach (self::getStaffBookingAddons($staffId, $packageId) as $addon) {
             $addonMap[(int)($addon['id'] ?? 0)] = $addon;
         }
 
@@ -271,7 +293,7 @@ class BookingFlowService
     }
 
     /**
-     * @notes 查询某分类下的推荐候选人
+     * @notes 查询某分类下的预约候选人（推荐项优先，推荐缺失时回退全部可售）
      * @param int $categoryId
      * @param string $roleKey
      * @param array $regionContext
@@ -292,8 +314,8 @@ class BookingFlowService
         $staffList = Staff::where('category_id', $categoryId)
             ->where('status', Staff::STATUS_ENABLE)
             ->where('audit_status', Staff::AUDIT_PASS)
-            ->where('is_recommend', 1)
             ->whereNull('delete_time')
+            ->order('is_recommend', 'desc')
             ->order('sort', 'desc')
             ->order('rating', 'desc')
             ->order('order_count', 'desc')
@@ -337,8 +359,8 @@ class BookingFlowService
     {
         $package = ServicePackage::where('staff_id', $staffId)
             ->where('is_show', 1)
-            ->where('is_recommend', 1)
             ->whereNull('delete_time')
+            ->order('is_recommend', 'desc')
             ->order('sort', 'desc')
             ->order('id', 'desc')
             ->find();

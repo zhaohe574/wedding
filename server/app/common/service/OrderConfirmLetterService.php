@@ -262,7 +262,44 @@ class OrderConfirmLetterService
         if (!$order) {
             return null;
         }
+        if (
+            (int) ($order->current_confirm_letter_id ?? 0) !== (int) $letter->id
+            || (int) $letter->is_outdated === OrderConfirmLetter::STATUS_OUTDATED
+            || self::calculateEffectivePaidAmount((int) $order->id) <= 0
+        ) {
+            return null;
+        }
         return self::formatLetter($letter);
+    }
+
+    public static function historyForUser(int $orderId, int $userId): array
+    {
+        $order = Order::where('id', $orderId)->where('user_id', $userId)->find();
+        if (!$order || self::calculateEffectivePaidAmount($orderId) <= 0) {
+            return [];
+        }
+
+        $currentLetterId = (int)($order->current_confirm_letter_id ?? 0);
+
+        return OrderConfirmLetter::where('order_id', $orderId)
+            ->order('version', 'desc')
+            ->select()
+            ->map(function (OrderConfirmLetter $letter) use ($currentLetterId) {
+                $isCurrent = (int)$letter->id === $currentLetterId
+                    && (int)$letter->is_outdated === OrderConfirmLetter::STATUS_ACTIVE;
+
+                return [
+                    'letter_id' => (int)$letter->id,
+                    'order_id' => (int)$letter->order_id,
+                    'version' => (int)$letter->version,
+                    'confirm_date' => (string)$letter->confirm_date,
+                    'is_current' => $isCurrent ? 1 : 0,
+                    'is_outdated' => (int)$letter->is_outdated,
+                    'is_pushed' => (int)$letter->is_pushed,
+                    'can_view' => ($isCurrent && (int)$letter->is_pushed === 1) ? 1 : 0,
+                ];
+            })
+            ->toArray();
     }
 
     public static function detailForOrder(int $letterId, int $orderId): ?array

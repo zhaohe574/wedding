@@ -10,6 +10,7 @@ namespace app\common\service;
 use app\common\enum\user\AccountLogEnum;
 use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\AccountLogLogic;
+use app\common\model\financial\FinancialFlow;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\order\Payment;
@@ -200,7 +201,8 @@ class OrderRefundService
                 $item,
                 $transactionId !== '' ? $transactionId : (string)$refund->refund_sn,
                 '线下退款已确认',
-                (string)$refund->refund_reason
+                (string)$refund->refund_reason,
+                $refund
             );
         }
 
@@ -261,7 +263,7 @@ class OrderRefundService
                 return ['success' => false, 'message' => '退款单不存在'];
             }
 
-            self::syncRefundItemCompleted($refundItem, $thirdRefundNo, $message, (string)$refund->refund_reason);
+            self::syncRefundItemCompleted($refundItem, $thirdRefundNo, $message, (string)$refund->refund_reason, $refund);
             [$success, $resultMessage, $notifyCompleted, $notifyFailed] = self::refreshParentRefund($refund);
             $refundId = (int)$refund->id;
 
@@ -452,7 +454,7 @@ class OrderRefundService
             ]
         );
 
-        self::syncRefundItemCompleted($refundItem, 'BALANCE', '余额退款完成', (string)$refund->refund_reason);
+        self::syncRefundItemCompleted($refundItem, 'BALANCE', '余额退款完成', (string)$refund->refund_reason, $refund);
         return [true, '退款完成'];
     }
 
@@ -529,7 +531,8 @@ class OrderRefundService
                     $refundItem,
                     (string)($result['tradeNo'] ?? ''),
                     json_encode($result, JSON_UNESCAPED_UNICODE),
-                    (string)$refund->refund_reason
+                    (string)$refund->refund_reason,
+                    $refund
                 );
                 return [true, '退款完成'];
             }
@@ -564,9 +567,16 @@ class OrderRefundService
      * @param string $thirdRefundNo
      * @param string $message
      * @param string $refundReason
+     * @param Refund|null $refund
      * @return void
      */
-    protected static function syncRefundItemCompleted(RefundItem $refundItem, string $thirdRefundNo = '', string $message = '', string $refundReason = ''): void
+    protected static function syncRefundItemCompleted(
+        RefundItem $refundItem,
+        string $thirdRefundNo = '',
+        string $message = '',
+        string $refundReason = '',
+        ?Refund $refund = null
+    ): void
     {
         $refundItem->refund_status = RefundItem::STATUS_COMPLETED;
         $refundItem->third_refund_no = $thirdRefundNo;
@@ -578,6 +588,7 @@ class OrderRefundService
         $payment = Payment::where('id', (int)$refundItem->payment_id)->lock(true)->find();
         if ($payment) {
             self::applyPaymentRefund($payment, (float)$refundItem->refund_amount, $refundReason);
+            self::recordRefundFinancialFlow($refundItem, $payment, $refund, $thirdRefundNo, $refundReason);
         }
     }
 
@@ -754,6 +765,62 @@ class OrderRefundService
             : Payment::STATUS_PAID;
         $payment->update_time = time();
         $payment->save();
+    }
+
+    /**
+     * @notes 记录退款资金流水
+     * @param RefundItem $refundItem
+     * @param Payment $payment
+     * @param Refund|null $refund
+     * @param string $thirdRefundNo
+     * @param string $refundReason
+     * @return void
+     */
+    protected static function recordRefundFinancialFlow(
+        RefundItem $refundItem,
+        Payment $payment,
+        ?Refund $refund = null,
+        string $thirdRefundNo = '',
+        string $refundReason = ''
+    ): void {
+        $refund = $refund ?: Refund::find((int)$refundItem->refund_id);
+
+        FinancialFlow::safeCreateUniqueFlow([
+            'flow_type' => FinancialFlow::FLOW_TYPE_REFUND,
+            'biz_type' => FinancialFlow::BIZ_TYPE_ORDER_REFUND,
+            'biz_id' => (int)$refundItem->id,
+            'biz_sn' => (string)($refund->refund_sn ?? $refundItem->out_refund_no),
+            'order_id' => (int)$refundItem->order_id,
+            'user_id' => (int)($refund->user_id ?? $payment->user_id ?? 0),
+            'amount' => round((float)$refundItem->refund_amount, 2),
+            'direction' => FinancialFlow::DIRECTION_OUT,
+            'pay_way' => (int)$refundItem->pay_way,
+            'transaction_id' => trim($thirdRefundNo) !== '' ? $thirdRefundNo : (string)($refundItem->third_refund_no ?? ''),
+            'remark' => self::buildRefundFlowRemark($refundReason),
+            'operator_type' => 0,
+            'operator_id' => 0,
+            'create_time' => max((int)($refundItem->refund_time ?? 0), time()),
+        ]);
+    }
+
+    /**
+     * @notes 构建退款流水备注
+     * @param string $refundReason
+     * @return string
+     */
+    protected static function buildRefundFlowRemark(string $refundReason = ''): string
+    {
+        $remark = trim($refundReason);
+        if ($remark === '') {
+            return '订单退款出账';
+        }
+
+        $maxLength = 240;
+        $reason = mb_strlen($remark, 'UTF-8') > $maxLength
+            ? mb_substr($remark, 0, $maxLength, 'UTF-8')
+            : $remark;
+
+        return '订单退款出账：' . $reason;
     }
 
     /**

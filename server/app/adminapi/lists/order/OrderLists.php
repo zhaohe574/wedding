@@ -177,16 +177,29 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
             $item['pending_confirm_count'] = (int)($pendingCounts[$item['id']] ?? 0);
             $item['has_pending_confirm'] = $item['pending_confirm_count'] > 0 ? 1 : 0;
             $item['can_staff_manage_payment'] = true;
+            $item['can_staff_start'] = 0;
+            $item['can_staff_complete'] = 0;
             if ($staffScopeId > 0) {
                 $visibleItemCount = count($item['items'] ?? []);
                 $totalItemCount = (int)($orderItemTotals[$item['id']] ?? $visibleItemCount);
-                $item['can_staff_manage_payment'] = $totalItemCount > 0 && $totalItemCount === $visibleItemCount;
+                $canManageWholeOrder = $totalItemCount > 0 && $totalItemCount === $visibleItemCount;
+                $item['can_staff_manage_payment'] = $canManageWholeOrder;
+                $item['can_staff_start'] = (int)($item['order_status'] ?? -1) === Order::STATUS_PENDING_SERVICE
+                    && $canManageWholeOrder
+                    ? 1
+                    : 0;
+                $item['can_staff_complete'] = (int)($item['order_status'] ?? -1) === Order::STATUS_IN_SERVICE
+                    && $canManageWholeOrder
+                    && Order::canStaffCompleteService()
+                    ? 1
+                    : 0;
             }
             $item = array_merge(
                 $item,
                 Order::buildPayTimeoutSummaryFromState(
                     (int)($item['order_status'] ?? Order::STATUS_PENDING_PAY),
-                    (int)($item['pay_deadline_time'] ?? 0)
+                    (int)($item['pay_deadline_time'] ?? 0),
+                    $item
                 ),
                 Order::buildConfirmTimeoutSummaryFromState(
                     (int)($item['order_status'] ?? Order::STATUS_PENDING_CONFIRM),
@@ -201,15 +214,6 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
                 && !empty($item['can_staff_manage_payment'])
                 && !OrderRefundService::hasPendingRefund((int)$item['id']);
 
-            if (
-                (int)($item['payment_channel'] ?? Order::PAYMENT_CHANNEL_ONLINE) === Order::PAYMENT_CHANNEL_OFFLINE
-                && !empty($item['pay_voucher'])
-                && (int)($item['pay_voucher_status'] ?? -1) === Order::VOUCHER_STATUS_PENDING
-            ) {
-                $item['pay_deadline_time'] = 0;
-                $item['pay_remain_seconds'] = 0;
-                $item['pay_timeout_action_desc'] = '';
-            }
         }
 
         return $lists;

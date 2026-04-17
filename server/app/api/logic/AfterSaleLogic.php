@@ -125,11 +125,20 @@ class AfterSaleLogic extends BaseLogic
                 return '当前状态不可取消';
             }
 
+            $oldStatus = (int)$ticket->status;
             $ticket->status = AfterSaleTicket::STATUS_CANCELLED;
             $ticket->update_time = time();
             $ticket->save();
 
-            AfterSaleTicketLog::addLog($ticketId, 1, $userId, 'cancel', $ticket->status, AfterSaleTicket::STATUS_CANCELLED, '用户取消工单');
+            AfterSaleTicketLog::addLog(
+                $ticketId,
+                1,
+                $userId,
+                'cancel',
+                $oldStatus,
+                AfterSaleTicket::STATUS_CANCELLED,
+                '用户取消工单'
+            );
 
             return true;
         } catch (\Exception $e) {
@@ -303,6 +312,10 @@ class AfterSaleLogic extends BaseLogic
     {
         $callback = ServiceCallback::with(['staff', 'order'])->where('id', $callbackId)->where('user_id', $userId)->find();
         if (!$callback) {
+            return [];
+        }
+
+        if ((int)$callback->method !== ServiceCallback::METHOD_QUESTIONNAIRE) {
             return [];
         }
 
