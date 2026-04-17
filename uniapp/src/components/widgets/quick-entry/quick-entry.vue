@@ -1,25 +1,28 @@
 <template>
     <view v-if="content.enabled !== 0 && showList.length" class="quick-entry-widget">
-        <view class="profile-quick-card">
-            <view class="profile-quick-title-row">
-                <text class="profile-quick-title">{{ content.title || '快捷功能' }}</text>
-                <text class="profile-quick-subtitle">{{ content.subtitle || '常用入口' }}</text>
-            </view>
+        <view v-if="showHeading" class="profile-quick-heading">
+            <text class="profile-quick-title">{{ headingTitle }}</text>
+            <text v-if="headingMeta" class="profile-quick-meta">{{ headingMeta }}</text>
+        </view>
 
-            <view class="profile-quick-grid">
-                <view
-                    v-for="(item, index) in showList"
-                    :key="item.key || index"
-                    class="profile-quick-item"
-                    :class="{
-                        'profile-quick-item--primary': index === 0,
-                        'profile-quick-item--disabled': !!item.disabled
-                    }"
-                    @click="handleClick(item)"
-                >
+        <view class="profile-quick-grid">
+            <view
+                v-for="(item, index) in showList"
+                :key="item.key || index"
+                class="profile-quick-item"
+                :class="{
+                    'profile-quick-item--primary': index === 0,
+                    'profile-quick-item--disabled': !!item.disabled
+                }"
+                @click="handleClick(item)"
+            >
+                <view class="profile-quick-item-top">
                     <text class="profile-quick-item-title">{{ item.title }}</text>
-                    <text class="profile-quick-item-desc">{{ item.subtitle || '点击进入' }}</text>
+                    <text class="profile-quick-item-arrow">›</text>
                 </view>
+                <text v-if="getItemDetail(item)" class="profile-quick-item-desc">
+                    {{ getItemDetail(item) }}
+                </text>
             </view>
         </view>
     </view>
@@ -54,6 +57,15 @@ const props = defineProps({
     }
 })
 
+const conciseSubtitleMap: Record<string, string> = {
+    favorite: '已收藏',
+    aftersale: '售后进度',
+    waitlist: '候补进度',
+    settings: '账号设置',
+    notification: '消息更新',
+    profile: '资料维护'
+}
+
 const showList = computed<QuickEntryItem[]>(() => {
     const list = Array.isArray(props.content?.data) ? props.content.data : []
     return list.filter(
@@ -61,6 +73,31 @@ const showList = computed<QuickEntryItem[]>(() => {
             String(item.is_show ?? '1') !== '0' && hasConfiguredLink(item.link)
     )
 })
+
+const headingTitle = computed(() => {
+    const title = String(props.content?.title || '').trim()
+    if (!title || title === '快捷功能') return '账户入口'
+    return title
+})
+
+const headingMeta = computed(() => {
+    const subtitle = String(props.content?.subtitle || '').trim()
+    if (subtitle && subtitle !== '常用入口') return subtitle
+    return `${showList.value.length} 项`
+})
+
+const showHeading = computed(() => Boolean(headingTitle.value || headingMeta.value))
+
+const getItemDetail = (item: QuickEntryItem) => {
+    const rawSubtitle = String(item.subtitle || '').trim()
+    if (!rawSubtitle || rawSubtitle === '点击进入') return ''
+
+    if (/\d/.test(rawSubtitle) || /婚期|待处理|进行中|同步/.test(rawSubtitle)) {
+        return rawSubtitle
+    }
+
+    return conciseSubtitleMap[item.key || ''] || rawSubtitle
+}
 
 const handleClick = (item: QuickEntryItem) => {
     if (item.disabled) {
@@ -79,37 +116,34 @@ const handleClick = (item: QuickEntryItem) => {
 
 <style scoped lang="scss">
 .quick-entry-widget {
-    position: relative;
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 18rpx;
 }
 
-.profile-quick-card {
-    background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.84));
-    border: 2rpx solid var(--wm-color-border, #efe6e1);
-    border-radius: var(--wm-user-quick-radius, 48rpx);
-    padding: var(--wm-user-quick-padding, 32rpx);
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
-    box-shadow: var(--wm-shadow-soft, 0 16rpx 34rpx rgba(214, 185, 167, 0.12));
-}
-
-.profile-quick-title-row {
+.profile-quick-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--wm-user-quick-title-gap, 24rpx);
+    gap: 16rpx;
+    padding: 0 4rpx;
 }
 
 .profile-quick-title {
-    font-size: 34rpx;
+    min-width: 0;
+    font-size: 24rpx;
+    line-height: 1.4;
     font-weight: 700;
     color: var(--wm-text-primary, #1e2432);
 }
 
-.profile-quick-subtitle {
-    font-size: 24rpx;
+.profile-quick-meta {
+    flex-shrink: 0;
+    font-size: 22rpx;
+    line-height: 1.3;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-tertiary, #9d948f);
 }
 
 .profile-quick-grid {
@@ -121,14 +155,15 @@ const handleClick = (item: QuickEntryItem) => {
 .profile-quick-item {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: var(--wm-user-quick-item-gap, 8rpx);
+    justify-content: space-between;
+    gap: 12rpx;
     min-height: var(--wm-user-quick-item-height, 126rpx);
     border-radius: var(--wm-user-quick-item-radius, 36rpx);
     padding: var(--wm-user-quick-item-padding, 24rpx);
-    background: rgba(255, 248, 245, 0.92);
-    border: 2rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(255, 255, 255, 0.8);
+    border: 2rpx solid rgba(239, 230, 225, 0.9);
     box-sizing: border-box;
+    box-shadow: 0 12rpx 28rpx rgba(214, 185, 167, 0.08);
     transition: all 0.2s ease;
 
     &:active {
@@ -138,16 +173,29 @@ const handleClick = (item: QuickEntryItem) => {
 }
 
 .profile-quick-item--primary {
-    background: var(--wm-color-bg-soft, #fff1ee);
-    border-color: var(--wm-color-border-strong, #f4c7bf);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 245, 241, 0.92) 0%,
+        rgba(255, 255, 255, 0.88) 100%
+    );
+    border-color: rgba(244, 199, 191, 0.9);
 }
 
 .profile-quick-item--disabled {
     opacity: 0.58;
 }
 
+.profile-quick-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12rpx;
+}
+
 .profile-quick-item-title {
+    min-width: 0;
     display: block;
+    flex: 1;
     font-size: 28rpx;
     line-height: 1.4;
     font-weight: 700;
@@ -155,10 +203,17 @@ const handleClick = (item: QuickEntryItem) => {
     word-break: break-word;
 }
 
+.profile-quick-item-arrow {
+    flex-shrink: 0;
+    font-size: 28rpx;
+    line-height: 1;
+    color: var(--wm-text-tertiary, #a89d97);
+}
+
 .profile-quick-item-desc {
     display: -webkit-box;
     font-size: 22rpx;
-    line-height: 1.5;
+    line-height: 1.45;
     font-weight: 600;
     color: var(--wm-text-secondary, #7f7b78);
     overflow: hidden;

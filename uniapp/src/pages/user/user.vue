@@ -422,10 +422,10 @@ onShow(async () => {
     position: relative;
     box-sizing: border-box;
     min-height: 100%;
-    --wm-user-page-content-top: 22rpx;
+    --wm-user-page-content-top: 18rpx;
     --wm-user-page-content-side: 37rpx;
     --wm-user-page-content-bottom: 37rpx;
-    --wm-user-page-section-gap: 30rpx;
+    --wm-user-page-section-gap: 24rpx;
     --wm-user-profile-radius: 49rpx;
     --wm-user-profile-padding: 30rpx;
     --wm-user-profile-min-height: 149rpx;

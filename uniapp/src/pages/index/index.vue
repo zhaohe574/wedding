@@ -56,29 +56,20 @@
 
                 <view class="home-page__body">
                     <view class="home-page__cta" @tap="goToScheduleQuery">
-                        <view class="home-page__cta-copy">
-                            <text class="home-page__cta-text">查询档期</text>
-                            <text class="home-page__cta-subtext"
-                                >先看日期与地区，再筛选合适团队</text
-                            >
-                        </view>
-                        <tn-icon name="arrow-right" size="28" color="#FFFFFF" />
+                        <text class="home-page__cta-text">查询档期</text>
                     </view>
 
                     <view class="home-page__section">
                         <view class="home-page__section-head">
                             <view class="home-page__section-copy">
-                                <text class="home-page__section-title">热门团队</text>
-                                <text class="home-page__section-subtitle"
-                                    >优先展示近期咨询和预约更活跃的服务团队</text
-                                >
+                                <text class="home-page__section-title">推荐人员</text>
                             </view>
                             <view class="home-page__section-link" @tap="goToStaffList">
-                                <text class="home-page__section-link-text">查看更多</text>
+                                <text class="home-page__section-link-text">查看全部</text>
                             </view>
                         </view>
 
-                        <view class="home-page__team-grid">
+                        <view class="home-page__team-list">
                             <view
                                 v-for="(item, index) in displayStaffList"
                                 :key="item ? item.id : `placeholder-${index}`"
@@ -98,13 +89,21 @@
                                     class="home-page__team-image home-page__team-image--placeholder"
                                 />
 
-                                <view class="home-page__team-body">
+                                <view class="home-page__team-copy">
+                                    <text class="home-page__team-kicker">
+                                        {{ item ? '婚礼服务顾问' : '即将开放' }}
+                                    </text>
                                     <text class="home-page__team-name">
-                                        {{ item ? item.name : '更多团队即将上线' }}
+                                        {{ item ? item.name : '更多人员即将上线' }}
                                     </text>
-                                    <text class="home-page__team-role">
-                                        {{ item ? getStaffSubtitle(item) : '敬请期待' }}
-                                    </text>
+                                    <view class="home-page__team-role-wrap">
+                                        <text class="home-page__team-role">
+                                            {{ item ? getStaffSubtitle(item) : '敬请期待' }}
+                                        </text>
+                                    </view>
+                                </view>
+                                <view v-if="item" class="home-page__team-action" aria-hidden="true">
+                                    <text class="home-page__team-action-text">›</text>
                                 </view>
                             </view>
                         </view>
@@ -334,7 +333,7 @@ const getStaffSubtitle = (item: RecommendStaffItem) => {
 
     const subtitle = candidates.find((value) => typeof value === 'string' && value.trim().length)
 
-    return subtitle ? subtitle.trim() : '婚礼服务团队'
+    return subtitle ? subtitle.trim() : '婚礼服务顾问'
 }
 
 const syncNavigationTitle = () => {
@@ -513,49 +512,35 @@ onShow(() => {
 }
 
 .home-page__cta {
-    min-height: 112rpx;
-    border-radius: 37rpx;
+    min-height: 124rpx;
+    border-radius: 40rpx;
     padding: 0 30rpx;
-    background: linear-gradient(
-        135deg,
-        var(--wm-color-primary, #e85a4f) 0%,
-        var(--wm-color-secondary, #c99b73) 100%
-    );
+    background: linear-gradient(135deg, rgba(232, 90, 79, 1) 0%, rgba(214, 118, 92, 0.98) 100%);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 18rpx 36rpx rgba(232, 90, 79, 0.2);
-}
-
-.home-page__cta-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
+    justify-content: center;
+    box-shadow: 0 24rpx 48rpx rgba(176, 106, 91, 0.24);
 }
 
 .home-page__cta-text {
-    font-size: 30rpx;
+    font-size: 34rpx;
+    line-height: 1;
     font-weight: 700;
+    letter-spacing: 2rpx;
     color: #ffffff;
-    letter-spacing: 1rpx;
-}
-
-.home-page__cta-subtext {
-    font-size: 22rpx;
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.82);
+    text-align: center;
 }
 
 .home-page__section {
-    padding: 37rpx 0 22rpx;
+    padding: 24rpx 0 8rpx;
 }
 
 .home-page__section-head {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: 20rpx;
-    margin-bottom: 20rpx;
+    margin-bottom: 22rpx;
 }
 
 .home-page__section-copy {
@@ -564,40 +549,44 @@ onShow(() => {
 }
 
 .home-page__section-title {
-    font-size: 36rpx;
+    display: block;
+    font-size: 32rpx;
+    line-height: 1.3;
     font-weight: 700;
+    letter-spacing: 1rpx;
     color: var(--wm-text-primary, #1e2432);
 }
 
-.home-page__section-subtitle {
-    display: block;
-    margin-top: 8rpx;
-    font-size: 24rpx;
-    line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
-}
-
 .home-page__section-link {
-    padding: 8rpx 0;
+    padding: 6rpx 0 6rpx 18rpx;
 }
 
 .home-page__section-link-text {
     font-size: 22rpx;
-    color: var(--wm-color-primary, #e85a4f);
+    font-weight: 600;
+    color: #9b8478;
 }
 
-.home-page__team-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 22rpx;
+.home-page__team-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18rpx;
 }
 
 .home-page__team-card {
-    overflow: hidden;
-    border-radius: var(--wm-radius-card, 45rpx);
-    background: rgba(255, 251, 248, 0.92);
-    border: 1rpx solid var(--wm-color-border, rgba(226, 214, 207, 0.92));
-    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(94, 64, 54, 0.08));
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+    padding: 18rpx 20rpx;
+    border-radius: 32rpx;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.98) 0%,
+        rgba(252, 247, 242, 0.94) 100%
+    );
+    border: 1rpx solid rgba(231, 222, 216, 0.98);
+    box-shadow: 0 12rpx 28rpx rgba(94, 64, 54, 0.06);
 }
 
 .home-page__team-card--placeholder {
@@ -605,9 +594,12 @@ onShow(() => {
 }
 
 .home-page__team-image {
-    width: 100%;
-    height: 228rpx;
+    width: 120rpx;
+    height: 120rpx;
     display: block;
+    flex-shrink: 0;
+    border-radius: 24rpx;
+    border: 1rpx solid rgba(231, 222, 216, 0.9);
 }
 
 .home-page__team-image--placeholder {
@@ -615,8 +607,23 @@ onShow(() => {
         linear-gradient(180deg, rgba(239, 91, 76, 0.1) 0%, rgba(239, 91, 76, 0) 100%);
 }
 
-.home-page__team-body {
-    padding: 30rpx 30rpx 34rpx;
+.home-page__team-copy {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8rpx;
+}
+
+.home-page__team-kicker {
+    display: block;
+    font-size: 18rpx;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: 2rpx;
+    text-transform: uppercase;
+    color: #ab8f81;
 }
 
 .home-page__team-name,
@@ -627,17 +634,43 @@ onShow(() => {
 .home-page__team-name {
     font-size: 28rpx;
     font-weight: 700;
+    letter-spacing: 0.5rpx;
     color: #2b221f;
-    line-height: 1.4;
+    line-height: 1.35;
+}
+
+.home-page__team-role-wrap {
+    display: flex;
+    align-items: center;
 }
 
 .home-page__team-role {
-    margin-top: 8rpx;
-    font-size: 24rpx;
-    line-height: 1.5;
-    color: #5f534b;
+    max-width: 100%;
+    padding: 10rpx 16rpx;
+    border-radius: 999rpx;
+    font-size: 21rpx;
+    line-height: 1;
+    font-weight: 600;
+    color: #7b6458;
+    background: rgba(245, 236, 230, 0.95);
+    border: 1rpx solid rgba(231, 222, 216, 0.98);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.home-page__team-action {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 8rpx;
+}
+
+.home-page__team-action-text {
+    font-size: 34rpx;
+    line-height: 1;
+    font-weight: 500;
+    color: #8b766b;
 }
 </style>

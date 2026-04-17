@@ -16,8 +16,16 @@
                     <tn-avatar :url="avatarUrl" :size="112" shape="round" />
                 </view>
                 <view class="profile-main">
+                    <view class="profile-meta-row">
+                        <text class="profile-eyebrow">婚礼档案</text>
+                        <text class="profile-status">{{ profileStatus }}</text>
+                    </view>
                     <text class="profile-name">{{ profileName }}</text>
                     <text class="profile-subtitle">{{ profileSubtitle }}</text>
+                </view>
+                <view class="profile-action">
+                    <text class="profile-action-text">{{ actionText }}</text>
+                    <text class="profile-action-arrow">›</text>
                 </view>
             </view>
         </view>
@@ -76,6 +84,14 @@ const profileSubtitle = computed(() => {
     return '点击完善资料，更新主档期'
 })
 
+const profileStatus = computed(() => {
+    return props.isLogin ? '已登录' : '待登录'
+})
+
+const actionText = computed(() => {
+    return props.isLogin ? '完善资料' : '去登录'
+})
+
 const handleProfileClick = () => {
     if (!props.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
@@ -123,7 +139,11 @@ const handleProfileClick = () => {
     z-index: 1;
     border-radius: var(--wm-user-profile-radius, 52rpx);
     overflow: hidden;
-    background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.84));
+    background: linear-gradient(
+        180deg,
+        rgba(255, 253, 250, 0.96) 0%,
+        rgba(252, 247, 242, 0.92) 100%
+    );
     border: 2rpx solid var(--wm-color-border, #efe6e1);
     box-shadow: var(--wm-shadow-soft, 0 24rpx 48rpx rgba(214, 185, 167, 0.1));
     backdrop-filter: blur(28rpx);
@@ -161,6 +181,31 @@ const handleProfileClick = () => {
     gap: 11rpx;
 }
 
+.profile-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 14rpx;
+}
+
+.profile-eyebrow {
+    font-size: 20rpx;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: 2rpx;
+    text-transform: uppercase;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.profile-status {
+    padding: 8rpx 14rpx;
+    border-radius: 999rpx;
+    font-size: 20rpx;
+    line-height: 1;
+    font-weight: 600;
+    color: #7a5a4c;
+    background: rgba(255, 243, 238, 0.92);
+}
+
 .profile-name {
     font-size: 34rpx;
     line-height: 1.42;
@@ -180,5 +225,24 @@ const handleProfileClick = () => {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+.profile-action {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    margin-left: 20rpx;
+    color: #7a5a4c;
+}
+
+.profile-action-text {
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.profile-action-arrow {
+    font-size: 28rpx;
+    line-height: 1;
 }
 </style>
