@@ -6,80 +6,6 @@
         <view v-if="detail" class="dynamic-detail">
             <scroll-view scroll-y class="dynamic-detail__scroll" :style="scrollStyle">
                 <view class="dynamic-detail__content">
-                    <view class="dynamic-detail__author-card wm-panel-card">
-                        <view class="dynamic-detail__author-main">
-                            <image
-                                :src="
-                                    detail.user_avatar || '/static/images/user/default_avatar.png'
-                                "
-                                class="dynamic-detail__avatar"
-                                mode="aspectFill"
-                            />
-                            <view class="dynamic-detail__author-copy">
-                                <view class="dynamic-detail__author-row">
-                                    <text class="dynamic-detail__author-name">
-                                        {{ detail.user_nickname }}
-                                    </text>
-                                    <view
-                                        v-if="detail.user_type === 2"
-                                        class="dynamic-detail__author-badge dynamic-detail__author-badge--staff"
-                                    >
-                                        服务人员
-                                    </view>
-                                    <view
-                                        v-if="detail.user_type === 3"
-                                        class="dynamic-detail__author-badge dynamic-detail__author-badge--official"
-                                    >
-                                        官方
-                                    </view>
-                                    <view
-                                        v-if="detail.is_top === 1"
-                                        class="dynamic-detail__author-badge dynamic-detail__author-badge--top"
-                                    >
-                                        置顶
-                                    </view>
-                                    <view
-                                        v-if="detail.is_hot === 1"
-                                        class="dynamic-detail__author-badge dynamic-detail__author-badge--hot"
-                                    >
-                                        热门
-                                    </view>
-                                </view>
-                                <text class="dynamic-detail__author-meta">
-                                    {{ authorMetaText }}
-                                </text>
-                            </view>
-                        </view>
-
-                        <view
-                            v-if="detail.can_favorite"
-                            class="dynamic-detail__favorite-btn"
-                            :class="{ 'is-active': detail.is_favorite }"
-                            @click="handleFavorite"
-                        >
-                            {{ detail.is_favorite ? '已收藏' : '收藏' }}
-                        </view>
-                    </view>
-
-                    <view class="dynamic-detail__detail-actions">
-                        <view
-                            class="dynamic-detail__detail-action"
-                            :class="{ 'is-active': detail.is_collected }"
-                            @click="handleCollect"
-                        >
-                            <tn-icon :name="detail.is_collected ? 'star-fill' : 'star'" size="28" />
-                            <text>{{ detail.is_collected ? '已收藏动态' : '收藏动态' }}</text>
-                        </view>
-                        <button
-                            class="dynamic-detail__detail-action dynamic-detail__detail-action--share"
-                            hover-class="none"
-                            open-type="share"
-                        >
-                            <tn-icon name="share" size="28" />
-                            <text>分享动态</text>
-                        </button>
-                    </view>
-
                     <view
                         v-if="detail.video"
                         class="dynamic-detail__hero dynamic-detail__hero--video"
@@ -116,7 +42,67 @@
                         </view>
                     </view>
 
-                    <view class="dynamic-detail__copy wm-soft-card">
+                    <view class="dynamic-detail__lead-shell">
+                        <view class="dynamic-detail__author-card">
+                            <view class="dynamic-detail__author-main">
+                                <image
+                                    :src="
+                                        detail.user_avatar ||
+                                        '/static/images/user/default_avatar.png'
+                                    "
+                                    class="dynamic-detail__avatar"
+                                    mode="aspectFill"
+                                />
+                                <view class="dynamic-detail__author-copy">
+                                    <view class="dynamic-detail__author-row">
+                                        <text class="dynamic-detail__author-name">
+                                            {{ detail.user_nickname }}
+                                        </text>
+                                        <view
+                                            v-if="detail.user_type === 2"
+                                            class="dynamic-detail__author-badge dynamic-detail__author-badge--staff"
+                                        >
+                                            服务人员
+                                        </view>
+                                        <view
+                                            v-if="detail.user_type === 3"
+                                            class="dynamic-detail__author-badge dynamic-detail__author-badge--official"
+                                        >
+                                            官方
+                                        </view>
+                                        <view
+                                            v-if="detail.is_top === 1"
+                                            class="dynamic-detail__author-badge dynamic-detail__author-badge--top"
+                                        >
+                                            置顶
+                                        </view>
+                                        <view
+                                            v-if="detail.is_hot === 1"
+                                            class="dynamic-detail__author-badge dynamic-detail__author-badge--hot"
+                                        >
+                                            热门
+                                        </view>
+                                    </view>
+                                    <text class="dynamic-detail__author-meta">
+                                        {{ authorMetaText }}
+                                    </text>
+                                </view>
+                            </view>
+
+                            <view
+                                v-if="detail.can_favorite"
+                                class="dynamic-detail__favorite-btn"
+                                :class="{ 'is-active': detail.is_favorite }"
+                                @click="handleFavorite"
+                            >
+                                <tn-icon
+                                    :name="detail.is_favorite ? 'star-fill' : 'star'"
+                                    size="26"
+                                />
+                                <text>{{ detail.is_favorite ? '已收藏' : '收藏' }}</text>
+                            </view>
+                        </view>
+
                         <view v-if="showMetaTags" class="dynamic-detail__tag-row">
                             <text
                                 v-if="detail.dynamic_type && detail.dynamic_type !== 1"
@@ -137,36 +123,74 @@
                         <text class="dynamic-detail__content-text">{{ detail.content }}</text>
                     </view>
 
-                    <view class="dynamic-detail__stats">
-                        <view
-                            class="dynamic-detail__stat-pill"
-                            :class="{ 'is-active': detail.is_liked }"
-                            @click="handleLike"
-                        >
-                            <text class="dynamic-detail__stat-text">
-                                点赞 {{ formatCount(detail.like_count) }}
-                            </text>
+                    <view class="dynamic-detail__support-band">
+                        <view class="dynamic-detail__support-head">
+                            <view>
+                                <text class="dynamic-detail__support-title">互动支持</text>
+                                <text class="dynamic-detail__support-caption">
+                                    收藏、分享与评论入口保留在次级区，阅读仍是主角
+                                </text>
+                            </view>
                         </view>
-                        <view class="dynamic-detail__stat-pill" @click="showCommentInput">
-                            <text class="dynamic-detail__stat-text">
-                                评论 {{ formatCount(detail.comment_count) }}
-                            </text>
+
+                        <view class="dynamic-detail__stats">
+                            <view
+                                class="dynamic-detail__stat-pill"
+                                :class="{ 'is-active': detail.is_liked }"
+                                @click="handleLike"
+                            >
+                                <text class="dynamic-detail__stat-label">点赞</text>
+                                <text class="dynamic-detail__stat-text">
+                                    {{ formatCount(detail.like_count) }}
+                                </text>
+                            </view>
+                            <view class="dynamic-detail__stat-pill" @click="showCommentInput">
+                                <text class="dynamic-detail__stat-label">评论</text>
+                                <text class="dynamic-detail__stat-text">
+                                    {{ formatCount(detail.comment_count) }}
+                                </text>
+                            </view>
+                            <view class="dynamic-detail__stat-pill">
+                                <text class="dynamic-detail__stat-label">浏览</text>
+                                <text class="dynamic-detail__stat-text">
+                                    {{ formatCount(detail.view_count) }}
+                                </text>
+                            </view>
                         </view>
-                        <view class="dynamic-detail__stat-pill">
-                            <text class="dynamic-detail__stat-text">
-                                浏览 {{ formatCount(detail.view_count) }}
-                            </text>
+
+                        <view class="dynamic-detail__detail-actions">
+                            <view
+                                class="dynamic-detail__detail-action"
+                                :class="{ 'is-active': detail.is_collected }"
+                                @click="handleCollect"
+                            >
+                                <tn-icon
+                                    :name="detail.is_collected ? 'star-fill' : 'star'"
+                                    size="26"
+                                />
+                                <text>{{ detail.is_collected ? '已收藏动态' : '收藏动态' }}</text>
+                            </view>
+                            <button
+                                class="dynamic-detail__detail-action dynamic-detail__detail-action--share"
+                                hover-class="none"
+                                open-type="share"
+                            >
+                                <tn-icon name="share" size="26" />
+                                <text>分享动态</text>
+                            </button>
                         </view>
                     </view>
 
-                    <view v-if="detail.location" class="dynamic-detail__location-row">
-                        <tn-icon name="location" size="22" color="#978B83" />
-                        <text class="dynamic-detail__location-text">{{ detail.location }}</text>
-                    </view>
-
-                    <view class="dynamic-detail__comments wm-panel-card">
+                    <view class="dynamic-detail__comments">
                         <view class="dynamic-detail__comments-head">
-                            <text class="dynamic-detail__comments-title">评论区</text>
+                            <view class="dynamic-detail__comments-copy">
+                                <text class="dynamic-detail__comments-title">
+                                    评论 {{ formatCount(detail.comment_count) }}
+                                </text>
+                                <text class="dynamic-detail__comments-desc">
+                                    互动信息保留在下方，避免抢走正文层级
+                                </text>
+                            </view>
                             <view class="dynamic-detail__comments-sort">
                                 <text
                                     class="dynamic-detail__sort-item"
@@ -418,7 +442,6 @@
         </view>
     </PageShell>
 </template>
-
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
@@ -539,6 +562,33 @@ const detailTags = computed(() => {
 const showMetaTags = computed(() => {
     return detailTags.value.length > 0 || Number(detail.value?.dynamic_type || 1) !== 1
 })
+
+const normalizeImageList = (images: any): string[] => {
+    if (Array.isArray(images)) {
+        return images.map((item) => String(item || '').trim()).filter(Boolean)
+    }
+
+    if (typeof images === 'string') {
+        const value = images.trim()
+        if (!value) return []
+
+        try {
+            const parsed = JSON.parse(value)
+            if (Array.isArray(parsed)) {
+                return parsed.map((item) => String(item || '').trim()).filter(Boolean)
+            }
+        } catch (error) {
+            // ignore parse error and fallback to single-value parsing
+        }
+
+        return value
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+    }
+
+    return []
+}
 
 const authorMetaText = computed(() => {
     const parts: string[] = []
@@ -724,6 +774,7 @@ const fetchDetail = async () => {
 
         detail.value = {
             ...res,
+            images: normalizeImageList(res.images),
             tags,
             is_favorite: Boolean(res.is_favorite),
             can_favorite: Number(res.user_type) === 2 && Number(res.staff_id || 0) > 0,
@@ -1139,9 +1190,14 @@ const deleteCommentItem = async (id: string | number) => {
 }
 
 const previewImage = (images: string[], current: number) => {
+    const previewImages = normalizeImageList(images)
+    if (previewImages.length === 0) {
+        return
+    }
+
     uni.previewImage({
-        urls: images,
-        current
+        urls: previewImages,
+        current: Math.max(0, Math.min(current, previewImages.length - 1))
     })
 }
 
@@ -1188,16 +1244,67 @@ watch(showComment, (visible) => {
     }
 
     &__content {
-        padding: 22rpx 24rpx calc(37rpx + env(safe-area-inset-bottom));
+        padding: 24rpx var(--wm-space-page-x, 37rpx) calc(44rpx + env(safe-area-inset-bottom));
+    }
+
+    &__hero {
+        overflow: hidden;
+        border-radius: 40rpx;
+        background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.98) 0%,
+            rgba(255, 247, 244, 0.94) 100%
+        );
+        border: 1rpx solid rgba(239, 230, 225, 0.9);
+        box-shadow: 0 18rpx 36rpx rgba(214, 185, 167, 0.16);
+    }
+
+    &__hero-image,
+    &__hero-video {
+        display: block;
+        width: 100%;
+        height: 468rpx;
+    }
+
+    &__gallery {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12rpx;
+        margin-top: 16rpx;
+    }
+
+    &__gallery-item {
+        overflow: hidden;
+        border-radius: 24rpx;
+        background: $dynamic-surface-solid;
+        border: 1rpx solid rgba(239, 230, 225, 0.82);
+        box-shadow: 0 10rpx 22rpx rgba(214, 185, 167, 0.12);
+    }
+
+    &__gallery-image {
+        display: block;
+        width: 100%;
+        height: 184rpx;
+    }
+
+    &__lead-shell {
+        margin-top: 22rpx;
+        padding: 34rpx 30rpx 32rpx;
+        border-radius: 34rpx;
+        border: 1rpx solid rgba(239, 230, 225, 0.9);
+        background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.96) 0%,
+            rgba(255, 249, 246, 0.98) 100%
+        );
+        box-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     }
 
     &__author-card {
-        @include dynamic-glass-card(34rpx, 49rpx);
-        padding: 34rpx 34rpx;
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
-        gap: 20rpx;
+        gap: 22rpx;
     }
 
     &__author-main {
@@ -1205,17 +1312,17 @@ watch(showComment, (visible) => {
         min-width: 0;
         display: flex;
         align-items: center;
-        gap: 24rpx;
+        gap: 20rpx;
     }
 
     &__avatar {
-        width: 92rpx;
-        height: 92rpx;
+        width: 88rpx;
+        height: 88rpx;
+        flex-shrink: 0;
         border-radius: 50%;
         background: $dynamic-soft;
-        border: 3rpx solid rgba(255, 255, 255, 0.92);
-        box-shadow: 0 10rpx 22rpx rgba(214, 185, 167, 0.2);
-        flex-shrink: 0;
+        border: 2rpx solid rgba(255, 255, 255, 0.92);
+        box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.14);
     }
 
     &__author-copy {
@@ -1231,28 +1338,28 @@ watch(showComment, (visible) => {
     }
 
     &__author-name {
-        font-size: 26rpx;
+        font-size: 30rpx;
+        line-height: 1.25;
         font-weight: 700;
         color: $dynamic-text;
-        line-height: 1.2;
     }
 
     &__author-badge {
-        height: 34rpx;
-        padding: 0 12rpx;
-        border-radius: $dynamic-radius-pill;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        min-height: 36rpx;
+        padding: 0 14rpx;
+        border-radius: $dynamic-radius-pill;
+        border: 1rpx solid transparent;
         font-size: 18rpx;
         font-weight: 600;
         line-height: 1;
-        border: 1rpx solid transparent;
 
         &--staff {
             color: #8b5cf6;
             background: rgba(139, 92, 246, 0.12);
-            border-color: rgba(139, 92, 246, 0.08);
+            border-color: rgba(139, 92, 246, 0.1);
         }
 
         &--official {
@@ -1264,7 +1371,7 @@ watch(showComment, (visible) => {
         &--top {
             color: $dynamic-accent;
             background: rgba(232, 90, 79, 0.12);
-            border-color: rgba(232, 90, 79, 0.08);
+            border-color: rgba(232, 90, 79, 0.1);
         }
 
         &--hot {
@@ -1277,132 +1384,48 @@ watch(showComment, (visible) => {
     &__author-meta {
         display: block;
         margin-top: 10rpx;
-        font-size: 22rpx;
-        line-height: 1.55;
+        font-size: 23rpx;
+        line-height: 1.6;
         color: $dynamic-text-muted;
         @include dynamic-line-clamp(2);
     }
 
     &__favorite-btn {
-        height: 64rpx;
-        padding: 0 24rpx;
+        min-width: 146rpx;
+        height: 68rpx;
+        padding: 0 22rpx;
         border-radius: $dynamic-radius-pill;
-        border: 1rpx solid rgba(232, 90, 79, 0.14);
-        background: $dynamic-accent;
-        box-shadow: $dynamic-shadow-accent;
+        border: 1rpx solid rgba(232, 90, 79, 0.16);
+        background: rgba(232, 90, 79, 0.1);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        color: #ffffff;
-        font-size: 26rpx;
+        gap: 8rpx;
+        color: $dynamic-accent;
+        font-size: 24rpx;
         font-weight: 600;
         line-height: 1;
         flex-shrink: 0;
 
         &.is-active {
-            color: $dynamic-text-secondary;
-            background: rgba(255, 255, 255, 0.92);
-            border-color: $dynamic-border;
-            box-shadow: none;
+            background: $dynamic-accent;
+            border-color: transparent;
+            box-shadow: $dynamic-shadow-accent;
+            color: #ffffff;
         }
-    }
-
-    &__detail-actions {
-        display: flex;
-        align-items: center;
-        gap: 20rpx;
-        margin-top: 18rpx;
-    }
-
-    &__detail-action {
-        @include dynamic-pill(rgba(255, 255, 255, 0.84), $dynamic-text);
-        flex: 1;
-        min-width: 0;
-        min-height: 90rpx;
-        gap: 22rpx;
-        border-radius: 37rpx;
-        backdrop-filter: blur(24rpx);
-        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.62),
-            0 12rpx 28rpx rgba(214, 185, 167, 0.14);
-        font-size: 26rpx;
-        font-weight: 600;
-        line-height: 1;
-
-        &.is-active {
-            color: $dynamic-accent;
-            background: $dynamic-accent-soft;
-            border-color: rgba(232, 90, 79, 0.14);
-            box-shadow: none;
-        }
-
-        &--share {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 26rpx;
-            margin: 0;
-            width: auto;
-            color: inherit;
-            font-size: 26rpx;
-            font-weight: 600;
-            line-height: 1;
-            background: rgba(255, 255, 255, 0.84);
-
-            &::after {
-                display: none;
-            }
-        }
-    }
-
-    &__hero {
-        margin-top: 14rpx;
-        border-radius: 52rpx;
-        overflow: hidden;
-        background: $dynamic-soft;
-        box-shadow: $dynamic-shadow-soft;
-    }
-
-    &__hero-image,
-    &__hero-video {
-        width: 100%;
-        height: 432rpx;
-        display: block;
-    }
-
-    &__gallery {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8rpx;
-        margin-top: 8rpx;
-    }
-
-    &__gallery-item {
-        border-radius: 40rpx;
-        overflow: hidden;
-        background: $dynamic-soft;
-        box-shadow: $dynamic-shadow-soft;
-    }
-
-    &__gallery-image {
-        width: 100%;
-        height: 182rpx;
-        display: block;
-    }
-
-    &__copy {
-        margin-top: 12rpx;
     }
 
     &__tag-row {
         display: flex;
         align-items: center;
-        gap: 8rpx;
+        gap: 10rpx;
         flex-wrap: wrap;
-        margin-bottom: 10rpx;
+        margin-top: 28rpx;
+        margin-bottom: 18rpx;
     }
 
     &__type-tag {
-        @include dynamic-pill(rgba(255, 255, 255, 0.92), $dynamic-text-secondary);
+        @include dynamic-pill(rgba(255, 255, 255, 0.94), $dynamic-text-secondary);
         min-height: 52rpx;
         padding: 0 18rpx;
 
@@ -1413,7 +1436,7 @@ watch(showComment, (visible) => {
         &--video {
             color: #8b5cf6;
             background: rgba(139, 92, 246, 0.12);
-            border-color: rgba(139, 92, 246, 0.08);
+            border-color: rgba(139, 92, 246, 0.1);
         }
 
         &--case {
@@ -1430,88 +1453,180 @@ watch(showComment, (visible) => {
     }
 
     &__topic-tag {
-        @include dynamic-pill($dynamic-accent-soft, $dynamic-accent);
+        @include dynamic-pill(rgba(255, 241, 238, 0.9), $dynamic-accent);
         min-height: 52rpx;
         padding: 0 18rpx;
 
         text {
             font-size: 22rpx;
-            font-weight: 500;
             line-height: 1;
+            font-weight: 500;
         }
     }
 
     &__content-text {
-        font-size: 30rpx;
-        line-height: 1.72;
+        font-size: 31rpx;
+        line-height: 1.82;
         color: $dynamic-text;
         white-space: pre-wrap;
         word-break: break-word;
     }
 
-    &__stats {
+    &__support-band {
+        margin-top: 20rpx;
+        padding: 26rpx;
+        border-radius: 30rpx;
+        border: 1rpx solid rgba(239, 230, 225, 0.78);
+        background: rgba(255, 252, 250, 0.96);
+        box-shadow: 0 12rpx 28rpx rgba(214, 185, 167, 0.08);
+    }
+
+    &__support-head {
         display: flex;
-        align-items: center;
-        gap: 20rpx;
-        margin-top: 14rpx;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16rpx;
+        margin-bottom: 18rpx;
+    }
+
+    &__support-title {
+        display: block;
+        font-size: 24rpx;
+        line-height: 1.3;
+        font-weight: 700;
+        color: $dynamic-text;
+    }
+
+    &__support-caption {
+        display: block;
+        margin-top: 8rpx;
+        font-size: 22rpx;
+        line-height: 1.55;
+        color: $dynamic-text-muted;
+    }
+
+    &__stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12rpx;
     }
 
     &__stat-pill {
-        @include dynamic-pill(rgba(255, 255, 255, 0.92), $dynamic-text-muted);
-        flex: 1;
-        min-height: 82rpx;
-        padding: 0 30rpx;
-        border-radius: 37rpx;
-        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.65);
+        min-height: 114rpx;
+        padding: 20rpx 18rpx;
+        border-radius: 24rpx;
+        border: 1rpx solid rgba(239, 230, 225, 0.82);
+        background: rgba(255, 255, 255, 0.92);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 8rpx;
+        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.7);
+
+        &.is-active {
+            border-color: rgba(232, 90, 79, 0.16);
+            background: $dynamic-accent-soft;
+        }
+    }
+
+    &__stat-label {
+        font-size: 21rpx;
+        line-height: 1.2;
+        color: $dynamic-text-muted;
+    }
+
+    &__stat-text {
+        font-size: 28rpx;
+        line-height: 1.2;
+        font-weight: 700;
+        color: $dynamic-text;
+    }
+
+    &__detail-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12rpx;
+        margin-top: 14rpx;
+    }
+
+    &__detail-action {
+        min-height: 84rpx;
+        padding: 0 16rpx;
+        border-radius: 22rpx;
+        border: 1rpx solid rgba(239, 230, 225, 0.86);
+        background: rgba(255, 255, 255, 0.94);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10rpx;
+        color: $dynamic-text-secondary;
+        font-size: 23rpx;
+        font-weight: 600;
+        line-height: 1;
 
         &.is-active {
             color: $dynamic-accent;
             background: $dynamic-accent-soft;
-            border-color: rgba(232, 90, 79, 0.14);
+            border-color: rgba(232, 90, 79, 0.16);
+        }
+
+        &--share {
+            width: auto;
+            margin: 0;
+
+            &::after {
+                display: none;
+            }
         }
     }
 
-    &__stat-text {
-        font-size: 24rpx;
-        line-height: 1;
-        font-weight: 600;
-    }
-
-    &__location-row {
-        margin-top: 10rpx;
-        display: inline-flex;
-        align-items: center;
-        gap: 8rpx;
-        color: $dynamic-text-muted;
-    }
-
-    &__location-text {
-        font-size: 22rpx;
-        line-height: 1.4;
-    }
-
     &__comments {
-        margin-top: 28rpx;
+        margin-top: 26rpx;
+        padding: 28rpx 26rpx 20rpx;
+        border-radius: 30rpx;
+        border: 1rpx solid rgba(239, 230, 225, 0.74);
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 12rpx 26rpx rgba(214, 185, 167, 0.08);
     }
 
     &__comments-head {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
-        gap: 18rpx;
-        padding: 0 0 18rpx;
+        gap: 20rpx;
+        padding-bottom: 18rpx;
+    }
+
+    &__comments-copy {
+        flex: 1;
+        min-width: 0;
     }
 
     &__comments-title {
-        font-size: 36rpx;
+        display: block;
+        font-size: 30rpx;
+        line-height: 1.3;
         font-weight: 700;
         color: $dynamic-text;
+    }
+
+    &__comments-desc {
+        display: block;
+        margin-top: 8rpx;
+        font-size: 21rpx;
+        line-height: 1.5;
+        color: $dynamic-text-muted;
     }
 
     &__comments-sort {
         display: inline-flex;
         align-items: center;
-        gap: 14rpx;
+        gap: 12rpx;
+        padding: 10rpx 18rpx;
+        border-radius: $dynamic-radius-pill;
+        background: rgba(255, 247, 244, 0.88);
+        border: 1rpx solid rgba(239, 230, 225, 0.76);
+        flex-shrink: 0;
     }
 
     &__sort-item {
@@ -1521,7 +1636,6 @@ watch(showComment, (visible) => {
 
         &.is-active {
             color: $dynamic-accent;
-            font-weight: 600;
         }
     }
 
@@ -1531,7 +1645,7 @@ watch(showComment, (visible) => {
     }
 
     &__comment-empty {
-        padding: 72rpx 0 20rpx;
+        padding: 84rpx 0 36rpx;
         text-align: center;
         font-size: 24rpx;
         color: $dynamic-text-muted;
@@ -1544,14 +1658,14 @@ watch(showComment, (visible) => {
     &__comment-stack {
         display: flex;
         flex-direction: column;
+        gap: 10rpx;
     }
 
     &__comment-item {
-        padding: 24rpx 8rpx;
-        border-bottom: 1rpx solid #f3ebe6;
+        padding: 24rpx 0 18rpx;
 
-        &:last-child {
-            border-bottom: none;
+        & + & {
+            border-top: 1rpx solid rgba(243, 235, 230, 0.92);
         }
     }
 
@@ -1571,7 +1685,7 @@ watch(showComment, (visible) => {
     &__comment-author {
         flex: 1;
         min-width: 0;
-        font-size: 26rpx;
+        font-size: 25rpx;
         line-height: 1.35;
         font-weight: 700;
         color: $dynamic-text;
@@ -1583,19 +1697,19 @@ watch(showComment, (visible) => {
         align-items: center;
         justify-content: flex-end;
         gap: 8rpx;
-        font-size: 22rpx;
+        font-size: 21rpx;
         line-height: 1.3;
         font-weight: 600;
-        color: #978b83;
+        color: $dynamic-text-muted;
     }
 
     &__comment-time,
     &__comment-meta-dot {
-        color: #978b83;
+        color: $dynamic-text-muted;
     }
 
     &__comment-like-meta {
-        color: #978b83;
+        color: $dynamic-text-muted;
 
         &.is-active {
             color: $dynamic-accent;
@@ -1603,8 +1717,8 @@ watch(showComment, (visible) => {
     }
 
     &__comment-content {
-        font-size: 26rpx;
-        line-height: 1.6;
+        font-size: 25rpx;
+        line-height: 1.72;
         font-weight: 500;
         color: #5f534b;
         white-space: pre-wrap;
@@ -1629,9 +1743,9 @@ watch(showComment, (visible) => {
     }
 
     &__reply-list {
-        margin-top: 10rpx;
-        padding-left: 24rpx;
-        border-left: 2rpx solid #f3ebe6;
+        margin-top: 14rpx;
+        padding-left: 20rpx;
+        border-left: 2rpx solid rgba(243, 235, 230, 0.9);
     }
 
     &__reply-item {
@@ -1647,27 +1761,25 @@ watch(showComment, (visible) => {
         font-size: 22rpx;
         line-height: 1.3;
         font-weight: 600;
-        color: #978b83;
+        color: $dynamic-text-muted;
     }
 
     &__comment-more {
-        padding: 20rpx 0 8rpx;
+        padding: 22rpx 0 6rpx;
         text-align: center;
         font-size: 22rpx;
-        color: #978b83;
+        color: $dynamic-text-muted;
     }
 
     &__popup {
         height: 100%;
-        background: $dynamic-bg;
+        background: linear-gradient(
+            180deg,
+            rgba(255, 251, 249, 0.98) 0%,
+            rgba(252, 248, 246, 1) 100%
+        );
         display: flex;
         flex-direction: column;
-    }
-
-    &__popup-mask {
-        position: fixed;
-        inset: 0;
-        z-index: 20118;
     }
 
     &__popup-head {
@@ -1675,7 +1787,7 @@ watch(showComment, (visible) => {
         align-items: center;
         justify-content: space-between;
         padding: 28rpx 28rpx 20rpx;
-        border-bottom: 1rpx solid $dynamic-divider;
+        border-bottom: 1rpx solid rgba(243, 235, 230, 0.92);
     }
 
     &__popup-title {
@@ -1691,8 +1803,8 @@ watch(showComment, (visible) => {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(255, 255, 255, 0.92);
-        border: 1rpx solid rgba(232, 222, 216, 0.7);
+        background: rgba(255, 255, 255, 0.94);
+        border: 1rpx solid rgba(232, 222, 216, 0.78);
     }
 
     &__popup-body {
@@ -1706,10 +1818,11 @@ watch(showComment, (visible) => {
     &__textarea-panel {
         flex: 1;
         min-height: 0;
-        border-radius: 24rpx;
-        border: 1rpx solid rgba(232, 222, 216, 0.86);
-        background: rgba(255, 255, 255, 0.9);
-        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.6), 0 12rpx 30rpx rgba(214, 185, 167, 0.08);
+        border-radius: 26rpx;
+        border: 1rpx solid rgba(232, 222, 216, 0.82);
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.72),
+            0 10rpx 24rpx rgba(214, 185, 167, 0.06);
         overflow: hidden;
     }
 
@@ -1739,7 +1852,7 @@ watch(showComment, (visible) => {
         flex-direction: column;
         gap: 20rpx;
         padding: 18rpx 24rpx 24rpx;
-        border-top: 1rpx solid $dynamic-divider;
+        border-top: 1rpx solid rgba(243, 235, 230, 0.92);
 
         &.is-emoji-open {
             z-index: 3;
@@ -1772,9 +1885,8 @@ watch(showComment, (visible) => {
         height: 72rpx;
         padding: 0 28rpx;
         border-radius: $dynamic-radius-pill;
-        border: 1rpx solid rgba(232, 222, 216, 0.86);
-        background: rgba(255, 255, 255, 0.92);
-        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.56), 0 10rpx 22rpx rgba(214, 185, 167, 0.1);
+        border: 1rpx solid rgba(232, 222, 216, 0.82);
+        background: rgba(255, 255, 255, 0.94);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -1791,7 +1903,6 @@ watch(showComment, (visible) => {
             color: $dynamic-accent;
             background: $dynamic-accent-soft;
             border-color: rgba(232, 90, 79, 0.14);
-            box-shadow: none;
         }
     }
 
@@ -1829,9 +1940,8 @@ watch(showComment, (visible) => {
         padding: 20rpx 8rpx 6rpx;
         border-radius: 28rpx;
         border: 1rpx solid rgba(232, 222, 216, 0.8);
-        background: rgba(255, 255, 255, 0.9);
-        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.56),
-            0 12rpx 28rpx rgba(214, 185, 167, 0.12);
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 12rpx 28rpx rgba(214, 185, 167, 0.12);
         display: grid;
         grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 14rpx 8rpx;
@@ -1844,7 +1954,7 @@ watch(showComment, (visible) => {
         height: 72rpx;
         border-radius: 22rpx;
         border: 1rpx solid rgba(232, 222, 216, 0.72);
-        background: rgba(255, 255, 255, 0.94);
+        background: rgba(255, 255, 255, 0.96);
         display: flex;
         align-items: center;
         justify-content: center;
