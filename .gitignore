@@ -34,3 +34,4 @@ uniapp/.npm-cache/
 # local agent state
 /.omx/
 /.sisyphus/
+.omx/
