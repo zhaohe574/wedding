@@ -19,6 +19,7 @@
                                 <view class="hero-card__copy">
                                     <text class="hero-card__eyebrow">服务人员中心</text>
                                     <text class="hero-card__title">动态管理</text>
+                                    <text class="hero-card__meta">统一管理展示内容与审核节奏</text>
                                 </view>
 
                                 <view class="hero-card__action" @click="handleAdd">
@@ -69,7 +70,15 @@
                 </template>
 
                 <view class="page-section page-section--list">
-                    <LoadingState v-if="loading && !hasLoaded" text="加载动态中..." />
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">{{ listSectionTitle }}</text>
+                            <text class="section-head__desc">{{ listSectionDesc }}</text>
+                        </view>
+                        <text class="section-head__meta">{{ listSectionMeta }}</text>
+                    </view>
+
+                    <LoadingState v-if="loading && !hasLoaded" text="正在同步动态内容..." />
 
                     <template v-else-if="dynamicList.length">
                         <BaseCard
@@ -227,7 +236,7 @@
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="在这里查看动态状态。"
+                        description="发布后的内容会集中显示在这里。"
                         action-text="发布动态"
                         @action="handleAdd"
                     />
@@ -321,6 +330,41 @@ const emptyStateTitle = computed(() => {
         return '暂无该类型动态'
     }
     return '暂无动态'
+})
+const currentTypeFilterLabel = computed(() => {
+    const map: Record<DynamicTypeFilter, string> = {
+        all: '全部类型',
+        image: '图文',
+        video: '视频'
+    }
+    return map[currentTypeFilter.value]
+})
+const listSectionTitle = computed(() => {
+    const map: Record<DynamicStatusFilter, string> = {
+        published: '已发布动态',
+        pending: '待审核动态',
+        offline: '已下架动态',
+        rejected: '已拒绝动态'
+    }
+    return map[currentStatusFilter.value]
+})
+const listSectionDesc = computed(() => {
+    const map: Record<DynamicStatusFilter, string> = {
+        published: '维护正在展示的内容，让服务人员主页保持持续更新感。',
+        pending: '优先处理审核中的内容，避免发布节奏断档。',
+        offline: '整理已下架内容，控制展示面的信息噪音。',
+        rejected: '根据驳回反馈优化内容，再次提交审核。'
+    }
+    return `${map[currentStatusFilter.value]} 当前筛选：${currentTypeFilterLabel.value}。`
+})
+const listSectionMeta = computed(() => {
+    const map: Record<DynamicStatusFilter, number> = {
+        published: summary.value.published_count,
+        pending: summary.value.pending_count,
+        offline: summary.value.offline_count,
+        rejected: summary.value.rejected_count
+    }
+    return `共 ${map[currentStatusFilter.value]} 条`
 })
 
 const getDynamicType = (item: any) => Number(item?.dynamic_type || 0)
@@ -680,6 +724,15 @@ onShow(async () => {
     color: var(--wm-text-primary, #1e2432);
 }
 
+.hero-card__meta {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 24rpx;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
 .hero-card__action {
     flex-shrink: 0;
     min-height: 56rpx;
@@ -766,7 +819,18 @@ onShow(async () => {
 
 .section-head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+    padding: 0 6rpx;
+}
+
+.section-head__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
 }
 
 .section-head__title {
@@ -774,6 +838,21 @@ onShow(async () => {
     font-weight: 700;
     line-height: 1.3;
     color: var(--wm-text-primary, #1e2432);
+}
+
+.section-head__desc {
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.section-head__meta {
+    flex-shrink: 0;
+    font-size: 22rpx;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .filter-scroll {
