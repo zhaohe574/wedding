@@ -1430,7 +1430,9 @@ const handlePushLetter = async () => {
 const handlePreviewLetter = () => {
     const imageUrl =
         String(confirmLetter.value?.full_image_url || '').trim() ||
-        buildOrderConfirmLetterDataUrl(confirmLetter.value?.rendered_snapshot || {})
+        buildOrderConfirmLetterDataUrl(confirmLetter.value?.rendered_snapshot || {}, {
+            renderSpecVersion: confirmLetter.value?.render_spec_version,
+        })
 
     if (!imageUrl) {
         uni.showToast({ title: '确认函图片暂未生成', icon: 'none' })

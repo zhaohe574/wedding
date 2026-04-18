@@ -1851,7 +1851,9 @@ const getConfirmLetterPreviewSrc = (letter: any) => {
         return fullImageUrl
     }
 
-    return buildOrderConfirmLetterDataUrl(letter?.rendered_snapshot || {})
+    return buildOrderConfirmLetterDataUrl(letter?.rendered_snapshot || {}, {
+        renderSpecVersion: letter?.render_spec_version,
+    })
 }
 
 const submitRefundApply = async () => {

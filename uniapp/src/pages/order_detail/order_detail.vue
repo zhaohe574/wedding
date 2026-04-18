@@ -1889,7 +1889,9 @@ const handleOpenConfirmLetter = () => {
 
     const imageUrl =
         String(confirmLetter.value?.full_image_url || '').trim() ||
-        buildOrderConfirmLetterDataUrl(confirmLetter.value?.rendered_snapshot || ({} as any))
+        buildOrderConfirmLetterDataUrl(confirmLetter.value?.rendered_snapshot || ({} as any), {
+            renderSpecVersion: confirmLetter.value?.render_spec_version,
+        })
 
     if (!imageUrl) {
         uni.showToast({ title: '订单确认函暂不可查看', icon: 'none' })
