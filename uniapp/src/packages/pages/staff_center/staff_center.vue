@@ -64,6 +64,23 @@
 
                     <text class="workbench-hero__headline">{{ heroHeadline }}</text>
 
+                    <view class="workbench-focus-strip">
+                        <view
+                            v-for="item in focusHighlights"
+                            :key="item.key"
+                            :class="['focus-pill', { 'focus-pill--active': item.active }]"
+                        >
+                            <text class="focus-pill__label">{{ item.label }}</text>
+
+                            <view class="focus-pill__value-row">
+                                <text class="focus-pill__value">{{ item.value }}</text>
+                                <text class="focus-pill__unit">{{ item.unit }}</text>
+                            </view>
+
+                            <text class="focus-pill__hint">{{ item.hint }}</text>
+                        </view>
+                    </view>
+
                     <view class="primary-action" @click="primaryAction.action()">
                         <view class="primary-action__main">
                             <view class="primary-action__icon">
@@ -115,13 +132,15 @@
                 </BaseCard>
 
                 <BaseCard variant="glass" scene="staff" class="overview-panel">
-                    <view class="section-head">
+                    <view class="section-head wm-section-head">
                         <view class="section-head__copy">
-                            <text class="section-head__title">今日概览</text>
-                            <text class="section-head__desc">先看履约节奏</text>
+                            <text class="section-head__title wm-section-title">今日概览</text>
+                            <text class="section-head__desc wm-section-desc">先看履约节奏</text>
                         </view>
 
-                        <text class="section-head__meta">{{ overviewMetaText }}</text>
+                        <text class="section-head__meta wm-helper-text">{{
+                            overviewMetaText
+                        }}</text>
                     </view>
 
                     <view class="metric-grid">
@@ -141,10 +160,12 @@
                 </BaseCard>
 
                 <BaseCard variant="glass" scene="staff" class="order-panel">
-                    <view class="section-head">
+                    <view class="section-head wm-section-head">
                         <view class="section-head__copy">
-                            <text class="section-head__title">订单动态</text>
-                            <text class="section-head__desc">最近需要跟进的内容</text>
+                            <text class="section-head__title wm-section-title">订单动态</text>
+                            <text class="section-head__desc wm-section-desc"
+                                >最近需要跟进的内容</text
+                            >
                         </view>
 
                         <view class="section-link" @click="goOrders()">
@@ -204,13 +225,17 @@
                 </BaseCard>
 
                 <BaseCard variant="glass" scene="staff" class="resource-panel">
-                    <view class="section-head">
+                    <view class="section-head wm-section-head">
                         <view class="section-head__copy">
-                            <text class="section-head__title">内容与资料</text>
-                            <text class="section-head__desc">维护服务展示与履约资料</text>
+                            <text class="section-head__title wm-section-title">内容与资料</text>
+                            <text class="section-head__desc wm-section-desc"
+                                >维护服务展示与履约资料</text
+                            >
                         </view>
 
-                        <text class="section-head__meta">{{ resourceMetaText }}</text>
+                        <text class="section-head__meta wm-helper-text">{{
+                            resourceMetaText
+                        }}</text>
                     </view>
 
                     <view class="resource-grid">
@@ -611,6 +636,39 @@ const heroHeadline = computed(() => {
     return '先看订单，再确认档期安排'
 })
 
+const focusHighlights = computed(() => {
+    const todayServiceCount = toNumber(dashboard.value.todo.today_service_count)
+    const upcomingScheduleCount = toNumber(dashboard.value.todo.upcoming_7d_schedule_count)
+    const unreadMessageCount = toNumber(dashboard.value.todo.unread_message_count)
+
+    return [
+        {
+            key: 'today-service',
+            label: '今日服务',
+            value: todayServiceCount,
+            unit: '项',
+            hint: todayServiceCount > 0 ? '优先履约' : '暂无排期',
+            active: todayServiceCount > 0
+        },
+        {
+            key: 'upcoming-schedule',
+            label: '7日安排',
+            value: upcomingScheduleCount,
+            unit: '场',
+            hint: upcomingScheduleCount > 0 ? '提前确认' : '排期宽松',
+            active: upcomingScheduleCount > 0
+        },
+        {
+            key: 'unread-message',
+            label: '待回消息',
+            value: unreadMessageCount,
+            unit: '条',
+            hint: unreadMessageCount > 0 ? '尽快回复' : '沟通顺畅',
+            active: unreadMessageCount > 0
+        }
+    ]
+})
+
 const primaryAction = computed<WorkbenchAction>(() => {
     const pending = toNumber(dashboard.value.todo.pending_confirm_orders)
 
@@ -972,6 +1030,64 @@ onShow(async () => {
     }
 }
 
+.workbench-focus-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
+
+.focus-pill {
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+    min-height: 126rpx;
+    padding: 18rpx;
+    border-radius: 26rpx;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1rpx solid rgba(255, 255, 255, 0.08);
+
+    &--active {
+        background: rgba(255, 244, 238, 0.14);
+        border-color: rgba(255, 223, 210, 0.16);
+    }
+
+    &__label {
+        font-size: 20rpx;
+        font-weight: 600;
+        line-height: 1.35;
+        color: rgba(255, 243, 237, 0.72);
+    }
+
+    &__value-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 6rpx;
+    }
+
+    &__value {
+        font-size: 34rpx;
+        font-weight: 700;
+        line-height: 1;
+        color: #fff7f2;
+    }
+
+    &__unit {
+        padding-bottom: 4rpx;
+        font-size: 20rpx;
+        font-weight: 700;
+        line-height: 1;
+        color: rgba(255, 243, 237, 0.72);
+    }
+
+    &__hint {
+        font-size: 18rpx;
+        font-weight: 600;
+        line-height: 1.45;
+        color: rgba(255, 243, 237, 0.62);
+    }
+}
+
 .hero-eyebrow,
 .profile-entry,
 .section-link,
@@ -1207,21 +1323,6 @@ onShow(async () => {
         display: flex;
         flex-direction: column;
         gap: 4rpx;
-    }
-
-    &__title {
-        font-size: 30rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: #1e2432;
-    }
-
-    &__desc,
-    &__meta {
-        font-size: 21rpx;
-        font-weight: 600;
-        line-height: 1.45;
-        color: #8a7d76;
     }
 
     &__meta {

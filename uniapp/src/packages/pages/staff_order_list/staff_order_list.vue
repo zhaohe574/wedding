@@ -22,7 +22,9 @@
                         >
                             <view class="hero-card__head">
                                 <view class="hero-card__copy">
+                                    <text class="hero-card__eyebrow">履约工作台</text>
                                     <text class="hero-card__title">订单管理</text>
+                                    <text class="hero-card__desc">{{ heroHeadline }}</text>
                                 </view>
 
                                 <view class="hero-card__total">
@@ -31,6 +33,25 @@
                                         {{ Number(orderStats.all || 0) }}
                                     </text>
                                     <text class="hero-card__total-unit">单</text>
+                                </view>
+                            </view>
+
+                            <view class="hero-focus-strip">
+                                <view
+                                    v-for="item in focusCards"
+                                    :key="item.key"
+                                    :class="[
+                                        'hero-focus-card',
+                                        { 'hero-focus-card--accent': item.accent }
+                                    ]"
+                                    @click="switchStatusByValue(item.status)"
+                                >
+                                    <text class="hero-focus-card__label">{{ item.label }}</text>
+                                    <view class="hero-focus-card__value-row">
+                                        <text class="hero-focus-card__value">{{ item.value }}</text>
+                                        <text class="hero-focus-card__unit">{{ item.unit }}</text>
+                                    </view>
+                                    <text class="hero-focus-card__hint">{{ item.hint }}</text>
                                 </view>
                             </view>
 
@@ -447,6 +468,65 @@ const summaryCards = computed<SummaryCardItem[]>(() => [
     }
 ])
 
+const heroHeadline = computed(() => {
+    const pendingConfirm = Number(orderStats.value.pending_confirm || 0)
+    const pendingPay = Number(orderStats.value.pending_pay || 0)
+    const pendingService = Number(orderStats.value.paid || 0)
+    const inService = Number(orderStats.value.in_service || 0)
+
+    if (currentStatus.value === 0) {
+        return pendingConfirm > 0
+            ? `当前有 ${pendingConfirm} 笔订单等待你确认`
+            : '当前筛选下暂无待确认订单'
+    }
+
+    if (currentStatus.value === 3) {
+        return inService > 0
+            ? `正在跟进 ${inService} 笔服务中的订单`
+            : '当前没有服务中的订单，可优先处理新排期'
+    }
+
+    if (pendingConfirm > 0) {
+        return `先确认 ${pendingConfirm} 笔新单，再跟进 ${pendingService} 笔待服务安排`
+    }
+
+    if (pendingPay > 0) {
+        return `有 ${pendingPay} 笔订单等待支付，留意付款进度与服务节奏`
+    }
+
+    return '订单按服务节奏分层展示，优先处理最临近的履约任务'
+})
+
+const focusCards = computed(() => [
+    {
+        key: 'pending-confirm',
+        label: '待确认',
+        value: Number(orderStats.value.pending_confirm || 0),
+        unit: '笔',
+        hint: Number(orderStats.value.pending_confirm || 0) > 0 ? '优先确认' : '暂时平稳',
+        status: 0 as StatusValue,
+        accent: currentStatus.value === 0 || Number(orderStats.value.pending_confirm || 0) > 0
+    },
+    {
+        key: 'pending-pay',
+        label: '待支付',
+        value: Number(orderStats.value.pending_pay || 0),
+        unit: '笔',
+        hint: Number(orderStats.value.pending_pay || 0) > 0 ? '关注支付' : '支付顺畅',
+        status: 1 as StatusValue,
+        accent: currentStatus.value === 1
+    },
+    {
+        key: 'pending-service',
+        label: '待服务',
+        value: Number(orderStats.value.paid || 0),
+        unit: '笔',
+        hint: Number(orderStats.value.paid || 0) > 0 ? '准备履约' : '档期充足',
+        status: 2 as StatusValue,
+        accent: currentStatus.value === 2
+    }
+])
+
 const resetOrderStats = () => {
     orderStats.value = { ...DEFAULT_ORDER_STATS }
 }
@@ -846,6 +926,16 @@ onUnload(() => {
 .hero-card__copy {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.hero-card__eyebrow {
+    font-size: 20rpx;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .hero-card__title {
@@ -853,6 +943,13 @@ onUnload(() => {
     font-weight: 700;
     line-height: 1.28;
     color: var(--wm-text-primary, #1e2432);
+}
+
+.hero-card__desc {
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .hero-card__total {
@@ -889,6 +986,65 @@ onUnload(() => {
     font-weight: 700;
     line-height: 1.2;
     color: var(--wm-text-tertiary, #b4aca8);
+}
+
+.hero-focus-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
+
+.hero-focus-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+    min-width: 0;
+    padding: 18rpx 20rpx;
+    border-radius: 28rpx;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1rpx solid rgba(255, 255, 255, 0.82);
+    box-sizing: border-box;
+
+    &--accent {
+        background: rgba(255, 241, 238, 0.92);
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+    }
+
+    &__label {
+        font-size: 20rpx;
+        font-weight: 700;
+        line-height: 1.3;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+
+    &__value-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 6rpx;
+    }
+
+    &__value {
+        font-size: 34rpx;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--wm-text-primary, #1e2432);
+    }
+
+    &__unit {
+        padding-bottom: 4rpx;
+        font-size: 20rpx;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+
+    &__hint {
+        font-size: 18rpx;
+        font-weight: 600;
+        line-height: 1.45;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
 }
 
 .hero-metrics {
