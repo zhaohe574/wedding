@@ -1,0 +1,15 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "composite": false,
+        "declaration": false,
+        "emitDeclarationOnly": false
+    },
+    "include": [
+        "global.d.ts",
+        "components.d.ts",
+        "auto-imports.d.ts",
+        "typings/**/*.d.ts",
+        "src/utils/orderConfirmLetterRenderer.ts"
+    ]
+}
