@@ -124,15 +124,6 @@
                     </view>
 
                     <view class="dynamic-detail__support-band">
-                        <view class="dynamic-detail__support-head">
-                            <view>
-                                <text class="dynamic-detail__support-title">互动支持</text>
-                                <text class="dynamic-detail__support-caption">
-                                    收藏、分享与评论入口保留在次级区，阅读仍是主角
-                                </text>
-                            </view>
-                        </view>
-
                         <view class="dynamic-detail__stats">
                             <view
                                 class="dynamic-detail__stat-pill"
@@ -183,14 +174,9 @@
 
                     <view class="dynamic-detail__comments">
                         <view class="dynamic-detail__comments-head">
-                            <view class="dynamic-detail__comments-copy">
-                                <text class="dynamic-detail__comments-title">
-                                    评论 {{ formatCount(detail.comment_count) }}
-                                </text>
-                                <text class="dynamic-detail__comments-desc">
-                                    互动信息保留在下方，避免抢走正文层级
-                                </text>
-                            </view>
+                            <text class="dynamic-detail__comments-title">
+                                评论 {{ formatCount(detail.comment_count) }}
+                            </text>
                             <view class="dynamic-detail__comments-sort">
                                 <text
                                     class="dynamic-detail__sort-item"
@@ -211,7 +197,7 @@
                         </view>
 
                         <view v-if="comments.length === 0" class="dynamic-detail__comment-empty">
-                            暂无评论，快来抢沙发吧～
+                            暂无评论
                         </view>
                         <view v-else class="dynamic-detail__comment-list">
                             <view class="dynamic-detail__comment-stack">
@@ -1489,30 +1475,6 @@ watch(showComment, (visible) => {
         box-shadow: 0 12rpx 28rpx rgba(214, 185, 167, 0.08);
     }
 
-    &__support-head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16rpx;
-        margin-bottom: 18rpx;
-    }
-
-    &__support-title {
-        display: block;
-        font-size: 24rpx;
-        line-height: 1.3;
-        font-weight: 700;
-        color: $dynamic-text;
-    }
-
-    &__support-caption {
-        display: block;
-        margin-top: 8rpx;
-        font-size: 22rpx;
-        line-height: 1.55;
-        color: $dynamic-text-muted;
-    }
-
     &__stats {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1605,25 +1567,12 @@ watch(showComment, (visible) => {
         padding-bottom: 18rpx;
     }
 
-    &__comments-copy {
-        flex: 1;
-        min-width: 0;
-    }
-
     &__comments-title {
         display: block;
         font-size: 30rpx;
         line-height: 1.3;
         font-weight: 700;
         color: $dynamic-text;
-    }
-
-    &__comments-desc {
-        display: block;
-        margin-top: 8rpx;
-        font-size: 21rpx;
-        line-height: 1.5;
-        color: $dynamic-text-muted;
     }
 
     &__comments-sort {

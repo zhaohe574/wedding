@@ -128,7 +128,7 @@
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="证书图片、编号和审核状态会统一显示在这里，便于你随时补充或重提。"
+                        description="在这里管理证书。"
                         action-text="新增证书"
                         @action="handleAdd"
                     />

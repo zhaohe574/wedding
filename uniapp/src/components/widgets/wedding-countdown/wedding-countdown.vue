@@ -12,10 +12,6 @@
                 <text class="profile-countdown-value">{{ dayText }}</text>
                 <text class="profile-countdown-note">{{ countdownNote }}</text>
             </view>
-
-            <text v-if="descriptionText" class="profile-countdown-desc">
-                {{ descriptionText }}
-            </text>
         </view>
     </view>
 </template>
@@ -66,17 +62,6 @@ const countdownNote = computed(() => {
         return `${countdown.value.hours} 小时 · ${countdown.value.minutes} 分`
     }
     return `${countdown.value.hours} 小时 · ${countdown.value.minutes} 分 · ${countdown.value.seconds} 秒`
-})
-
-const descriptionText = computed(() => {
-    const customDesc = String(props.content?.desc || '').trim()
-    if (customDesc && customDesc !== '摄影、主持、场地档期已锁定，跟妆和花艺待确认。') {
-        return customDesc
-    }
-    if (weddingDateText.value) {
-        return `仪式日期 · ${weddingDateText.value}`
-    }
-    return ''
 })
 
 const clearTimer = () => {
@@ -218,13 +203,6 @@ onUnmounted(() => {
     font-size: 22rpx;
     line-height: 1.45;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
-}
-
-.profile-countdown-desc {
-    display: block;
-    font-size: 22rpx;
-    line-height: 1.5;
     color: var(--wm-text-secondary, #7f7b78);
 }
 </style>

@@ -63,10 +63,7 @@
                 </view>
 
                 <view v-else class="wm-empty-shell">
-                    <EmptyState
-                        title="暂无钱包流水"
-                        description="充值、消费或退款记录都会显示在这里。"
-                    />
+                    <EmptyState title="暂无钱包流水" description="资金记录会显示在这里。" />
                 </view>
             </view>
         </z-paging>

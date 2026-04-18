@@ -65,16 +65,14 @@
 
             <view class="section-card wm-form-block">
                 <view class="section-title">审核与奖励说明</view>
-                <text class="section-tip">{{
-                    review.status_summary || '评价状态已更新，请留意审核结果。'
-                }}</text>
+                <text class="section-tip">{{ review.status_summary || '请留意审核结果。' }}</text>
                 <text class="section-tip">{{ review.reward_summary || rewardPendingText }}</text>
             </view>
 
             <view class="section-card wm-form-block">
                 <view class="section-title">评价内容</view>
                 <text v-if="review.content" class="review-content">{{ review.content }}</text>
-                <text v-else class="empty-text">用户未填写文字评价</text>
+                <text v-else class="empty-text">未填写评价</text>
 
                 <view v-if="review.tags?.length" class="tag-list">
                     <view v-for="tag in review.tags" :key="tag.id || tag.name" class="tag-item">
@@ -157,7 +155,7 @@
                 <text class="section-tip">
                     {{
                         review.can_apply_share_reward
-                            ? '已审核通过的评价可按平台申请晒单奖励，同平台仅可申请一次。'
+                            ? '审核通过后可申请晒单奖励。'
                             : shareRewardDisabledText
                     }}
                 </text>
@@ -204,7 +202,7 @@
                     </view>
                 </view>
                 <view v-else class="empty-block">
-                    <text>还没有晒单奖励申请记录</text>
+                    <text>暂无晒单奖励记录</text>
                 </view>
             </view>
 
@@ -250,7 +248,7 @@
 
                     <view class="popup-section">
                         <text class="popup-label">上传核验截图</text>
-                        <text class="popup-tip">请上传对应平台的晒单截图，用于后台审核。</text>
+                        <text class="popup-tip">请上传晒单截图。</text>
                         <view class="upload-area">
                             <view
                                 v-if="shareForm.verify_image"
@@ -367,19 +365,19 @@ const rewardStatus = computed(() => {
 
 const rewardPendingText = computed(() => {
     if (Number(review.value?.status) === 2) {
-        return '评价未通过审核，不发放评价积分。'
+        return '评价未通过审核。'
     }
     if (Number(review.value?.status) === 1) {
-        return '评价已审核通过，积分发放处理中。'
+        return '积分发放中。'
     }
-    return '评价审核通过后发放积分。'
+    return '审核通过后发放积分。'
 })
 
 const shareRewardDisabledText = computed(() => {
     if (Number(review.value?.status) === 2) {
-        return '当前评价已被拒绝，暂不可申请晒单奖励。'
+        return '当前不可申请晒单奖励。'
     }
-    return '评价审核通过后才能申请晒单奖励。'
+    return '审核通过后可申请晒单奖励。'
 })
 
 const formatDateTime = (value: number | string) => {

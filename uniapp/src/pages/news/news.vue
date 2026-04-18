@@ -5,10 +5,8 @@
         <view class="news-page cinema-page">
             <view class="news-page__hero">
                 <view class="news-page__hero-badge">Wedding Journal</view>
-                <text class="news-page__hero-title">婚礼灵感、案例趋势与备婚攻略</text>
-                <text class="news-page__hero-desc">
-                    用编辑感更强、信息更清晰的列表节奏整理灵感内容，让备婚浏览更轻盈，也更容易快速找到所需内容。
-                </text>
+                <text class="news-page__hero-title">灵感、案例与攻略</text>
+                <text class="news-page__hero-desc"> 精选婚礼内容。 </text>
                 <view class="news-page__hero-stats glass-card">
                     <view class="news-page__hero-stat">
                         <text class="news-page__hero-stat-value">{{ tabList.length || 1 }}</text>
@@ -30,9 +28,9 @@
                     <view class="news-page__search-head">
                         <view>
                             <text class="news-page__search-label">灵感检索</text>
-                            <text class="news-page__search-title">搜索策划、案例、趋势关键词</text>
+                            <text class="news-page__search-title">搜索关键词</text>
                         </view>
-                        <text class="news-page__search-side">快速进入</text>
+                        <text class="news-page__search-side">搜索</text>
                     </view>
                     <tn-search-box placeholder="请输入关键词搜索" :disabled="true"></tn-search-box>
                 </navigator>
@@ -41,9 +39,7 @@
                     <view class="news-page__tabs-head">
                         <view>
                             <text class="news-page__section-title">精选栏目</text>
-                            <text class="news-page__section-desc">
-                                保持海报感视觉，但优先保证长列表阅读效率。
-                            </text>
+                            <text class="news-page__section-desc"> 按分类查看 </text>
                         </view>
                     </view>
                     <tabs

@@ -56,9 +56,7 @@
                             <view class="staff-info">
                                 <view class="staff-name">{{ item.staff_name }}</view>
                                 <view class="package-name">{{ item.package_name }}</view>
-                                <view class="pending-note">
-                                    服务已完成，提交评价后会进入审核与奖励流程
-                                </view>
+                                <view class="pending-note"> 服务已完成，可去评价 </view>
                             </view>
                             <button
                                 class="btn-review"
@@ -70,11 +68,7 @@
                         </view>
                     </view>
                 </view>
-                <EmptyState
-                    v-else
-                    title="暂无待评价订单"
-                    description="服务完成后，待评价订单会出现在这里，提交后会进入审核与奖励流程。"
-                />
+                <EmptyState v-else title="暂无待评价订单" description="待评价订单会显示在这里。" />
             </view>
 
             <!-- 已评价列表 -->
@@ -133,11 +127,7 @@
                         </view>
                     </view>
                 </view>
-                <EmptyState
-                    v-else
-                    title="暂无评价记录"
-                    description="已提交的评价、审核结果和奖励状态，后续都会在这里集中查看。"
-                />
+                <EmptyState v-else title="暂无评价记录" description="评价记录会显示在这里。" />
             </view>
 
             <!-- 加载更多 -->

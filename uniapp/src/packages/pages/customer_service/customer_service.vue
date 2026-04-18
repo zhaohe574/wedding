@@ -75,7 +75,7 @@
                             mode="aspectFit"
                             show-menu-by-longpress
                         />
-                        <view v-else class="qr-empty">暂未配置二维码，请使用下方联系方式</view>
+                        <view v-else class="qr-empty">暂未配置二维码</view>
                     </view>
 
                     <view class="action-list">
@@ -152,7 +152,7 @@ const sceneTitleMap: Record<string, string> = {
     package_detail: '套餐咨询'
 }
 
-const defaultTips = '如需帮助，请直接联系'
+const defaultTips = '如需帮助请直接联系'
 
 const sceneTitle = computed(() => sceneTitleMap[query.scene] || sceneTitleMap.home)
 const contact = computed(() => state.contact)
@@ -180,7 +180,7 @@ const loadConsultContact = async () => {
             tips: data.contact?.tips || ''
         }
     } catch (error: any) {
-        state.error = error?.message || '顾问信息加载失败，请稍后重试'
+        state.error = error?.message || '加载失败，请稍后重试'
     } finally {
         state.loading = false
     }
@@ -213,7 +213,7 @@ const openContactLink = () => {
     uni.setClipboardData({
         data: contact.value.contact_link,
         success: () => {
-            uni.showToast({ title: '联系链接已复制', icon: 'none' })
+            uni.showToast({ title: '链接已复制', icon: 'none' })
         }
     })
     // #endif

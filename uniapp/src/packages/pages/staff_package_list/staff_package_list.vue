@@ -155,7 +155,7 @@
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="套餐的价格、地区价和上架状态会统一收在这里管理。"
+                        description="在这里管理套餐。"
                         action-text="新增套餐"
                         @action="goCreate"
                     />

@@ -1,112 +1,155 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
+
     <PageShell scene="staff" hasSafeBottom>
         <BaseNavbar title="服务人员中心" />
 
         <view class="staff-center-page">
             <view class="staff-center-page__content wm-page-content">
-                <view
-                    class="staff-hero-card wm-panel-card"
-                    @click="goPage('/packages/pages/staff_profile/staff_profile')"
+                <BaseCard
+                    variant="hero"
+                    scene="staff"
+                    class="workbench-hero"
+                    :background="heroCardBackground"
+                    :border="heroCardBorder"
+                    :box-shadow="heroCardShadow"
                 >
-                    <view class="staff-hero-card__top">
-                        <view class="hero-pill hero-pill--primary">
-                            <text class="hero-pill__text">今日工作台</text>
+                    <view class="workbench-hero__top">
+                        <view class="hero-eyebrow">
+                            <text class="hero-eyebrow__text">服务工作台</text>
                         </view>
-                        <view :class="['hero-pill', `hero-pill--${auditBadge.modifier}`]">
-                            <text class="hero-pill__text">{{ auditBadge.text }}</text>
+
+                        <view class="workbench-hero__badges">
+                            <StatusBadge
+                                :tone="profileStatusBadge.tone"
+                                size="sm"
+                                class="workbench-hero__badge"
+                            >
+                                {{ profileStatusBadge.text }}
+                            </StatusBadge>
+
+                            <StatusBadge
+                                v-if="auditBadge.text"
+                                :tone="auditBadge.tone"
+                                size="sm"
+                                class="workbench-hero__badge"
+                            >
+                                {{ auditBadge.text }}
+                            </StatusBadge>
                         </view>
                     </view>
 
-                    <view class="staff-hero-card__profile">
-                        <image
-                            class="staff-hero-card__avatar"
-                            :src="displayProfile.avatar || defaultAvatar"
-                            mode="aspectFill"
-                        />
-                        <view class="staff-hero-card__copy">
-                            <text class="staff-hero-card__title">{{ profileTitle }}</text>
-                            <text class="staff-hero-card__meta">{{ profileMetaText }}</text>
-                        </view>
-                    </view>
-                </view>
+                    <view class="workbench-hero__head">
+                        <view class="workbench-hero__profile">
+                            <image
+                                class="workbench-hero__avatar"
+                                :src="displayProfile.avatar || defaultAvatar"
+                                mode="aspectFill"
+                            />
 
-                <view class="staff-summary-chips" aria-label="工作台摘要">
-                    <view
-                        v-for="item in heroMetrics"
-                        :key="item.label"
-                        :class="['hero-metric', { 'hero-metric--accent': item.accent }]"
-                    >
-                        <text class="hero-metric__label">{{ item.label }}</text>
-                        <text class="hero-metric__value">{{ item.value }}</text>
-                    </view>
-                </view>
-
-                <view class="staff-section-card wm-panel-card">
-                    <view class="section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title">今日焦点</text>
-                        </view>
-                        <text class="section-head__meta">先处理</text>
-                    </view>
-
-                    <view
-                        class="focus-card focus-card--primary"
-                        @click="handleFocusCard(primaryFocusCard)"
-                    >
-                        <view class="focus-card__row">
-                            <view class="focus-card__copy">
-                                <text class="focus-card__title">{{ primaryFocusCard.label }}</text>
-                            </view>
-                            <view class="focus-badge focus-badge--primary">
-                                <text class="focus-badge__text">{{
-                                    primaryFocusCard.valueText
-                                }}</text>
+                            <view class="workbench-hero__copy">
+                                <text class="workbench-hero__title">{{ profileName }}</text>
+                                <text class="workbench-hero__subtitle">{{ profileMetaLine }}</text>
                             </view>
                         </view>
-                        <view class="focus-card__arrow">
-                            <tn-icon name="right" size="22" color="#E85A4F" />
-                        </view>
-                    </view>
 
-                    <view class="focus-grid">
                         <view
-                            v-for="item in secondaryFocusCards"
+                            class="profile-entry"
+                            @click="goPage('/packages/pages/staff_profile/staff_profile')"
+                        >
+                            <text class="profile-entry__text">资料</text>
+                            <tn-icon name="right" size="18" color="#F6DDD6" />
+                        </view>
+                    </view>
+
+                    <text class="workbench-hero__headline">{{ heroHeadline }}</text>
+
+                    <view class="primary-action" @click="primaryAction.action()">
+                        <view class="primary-action__main">
+                            <view class="primary-action__icon">
+                                <tn-icon :name="primaryAction.icon" size="26" color="#231D1A" />
+                            </view>
+
+                            <view class="primary-action__copy">
+                                <text class="primary-action__label">{{ primaryAction.label }}</text>
+                                <text class="primary-action__hint">{{ primaryAction.hint }}</text>
+                            </view>
+                        </view>
+
+                        <view class="primary-action__value">
+                            <text class="primary-action__number">{{ primaryAction.value }}</text>
+                            <text class="primary-action__unit">{{ primaryAction.unit }}</text>
+                        </view>
+                    </view>
+
+                    <view class="secondary-action-grid">
+                        <view
+                            v-for="item in secondaryActions"
                             :key="item.key"
-                            class="focus-card focus-card--secondary"
-                            @click="handleFocusCard(item)"
+                            :class="['secondary-action', `secondary-action--${item.tone}`]"
+                            @click="item.action()"
                         >
-                            <view class="focus-card__row">
-                                <text class="focus-card__title">{{ item.label }}</text>
+                            <view class="secondary-action__top">
                                 <view
-                                    :class="['focus-badge', `focus-badge--${item.badgeModifier}`]"
+                                    :class="[
+                                        'secondary-action__icon',
+                                        `secondary-action__icon--${item.tone}`
+                                    ]"
                                 >
-                                    <text class="focus-badge__text">{{ item.valueText }}</text>
+                                    <tn-icon :name="item.icon" size="22" :color="item.iconColor" />
                                 </view>
+
+                                <tn-icon name="right" size="18" color="#B8AEA8" />
                             </view>
+
+                            <text class="secondary-action__label">{{ item.label }}</text>
+
+                            <view class="secondary-action__value-row">
+                                <text class="secondary-action__value">{{ item.value }}</text>
+                                <text class="secondary-action__unit">{{ item.unit }}</text>
+                            </view>
+
+                            <text class="secondary-action__hint">{{ item.hint }}</text>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="staff-section-card wm-panel-card">
+                <BaseCard variant="glass" scene="staff" class="overview-panel">
                     <view class="section-head">
                         <view class="section-head__copy">
-                            <text class="section-head__title">订单与档期</text>
+                            <text class="section-head__title">今日概览</text>
+                            <text class="section-head__desc">先看履约节奏</text>
                         </view>
-                        <text class="section-head__meta">{{ recentOrderMetaText }}</text>
+
+                        <text class="section-head__meta">{{ overviewMetaText }}</text>
                     </view>
 
-                    <view class="stats-grid">
+                    <view class="metric-grid">
                         <view
-                            v-for="item in overviewStats"
+                            v-for="item in overviewMetrics"
                             :key="item.label"
-                            :class="['stats-card', { 'stats-card--accent': item.accent }]"
+                            :class="['metric-card', { 'metric-card--accent': item.accent }]"
                         >
-                            <text class="stats-card__label">{{ item.label }}</text>
-                            <view class="stats-card__value-row">
-                                <text class="stats-card__value">{{ item.value }}</text>
-                                <text class="stats-card__unit">{{ item.unit }}</text>
+                            <text class="metric-card__label">{{ item.label }}</text>
+                            <view class="metric-card__value-row">
+                                <text class="metric-card__value">{{ item.value }}</text>
+                                <text class="metric-card__unit">{{ item.unit }}</text>
                             </view>
+                            <text class="metric-card__caption">{{ item.caption }}</text>
+                        </view>
+                    </view>
+                </BaseCard>
+
+                <BaseCard variant="glass" scene="staff" class="order-panel">
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">订单动态</text>
+                            <text class="section-head__desc">最近需要跟进的内容</text>
+                        </view>
+
+                        <view class="section-link" @click="goOrders()">
+                            <text class="section-link__text">全部订单</text>
+                            <tn-icon name="right" size="18" color="#A69B95" />
                         </view>
                     </view>
 
@@ -119,29 +162,34 @@
                         <view
                             v-for="item in recentOrderCards"
                             :key="item.id"
-                            class="order-card"
+                            class="order-item"
                             @click="goOrderDetail(item.id)"
                         >
-                            <view class="order-card__row order-card__row--start">
-                                <view class="order-card__copy">
-                                    <text class="order-card__title">{{ item.title }}</text>
-                                    <text class="order-card__subtitle">{{ item.subtitle }}</text>
+                            <view class="order-item__top">
+                                <view class="order-item__copy">
+                                    <text class="order-item__title">{{ item.title }}</text>
+                                    <text class="order-item__subtitle">{{ item.subtitle }}</text>
                                 </view>
-                                <view
-                                    :class="['status-pill', `status-pill--${item.statusModifier}`]"
-                                >
-                                    <text class="status-pill__text">{{ item.statusLabel }}</text>
-                                </view>
+
+                                <StatusBadge :tone="item.statusTone" size="sm">
+                                    {{ item.statusLabel }}
+                                </StatusBadge>
                             </view>
 
-                            <view class="order-card__row order-card__row--center">
-                                <text class="order-card__sn">订单号 {{ item.orderSn }}</text>
-                                <view
-                                    v-if="item.pendingConfirmCount > 0"
-                                    class="status-pill status-pill--primary"
-                                >
-                                    <text class="status-pill__text">
+                            <view class="order-item__bottom">
+                                <text class="order-item__sn">订单号 {{ item.orderSn }}</text>
+
+                                <view class="order-item__meta">
+                                    <StatusBadge
+                                        v-if="item.pendingConfirmCount > 0"
+                                        tone="info"
+                                        size="sm"
+                                    >
                                         待确认 {{ item.pendingConfirmCount }}
+                                    </StatusBadge>
+
+                                    <text v-if="item.amountText" class="order-item__amount">
+                                        {{ item.amountText }}
                                     </text>
                                 </view>
                             </view>
@@ -151,98 +199,51 @@
                     <EmptyState
                         v-else
                         title="最近还没有订单动态"
-                        description="新订单与客户确认事项会优先显示在这里"
+                        description="订单更新会显示在这里"
                     />
-                </view>
+                </BaseCard>
 
-                <view class="staff-section-card wm-panel-card">
+                <BaseCard variant="glass" scene="staff" class="resource-panel">
                     <view class="section-head">
                         <view class="section-head__copy">
-                            <text class="section-head__title">经营管理</text>
+                            <text class="section-head__title">内容与资料</text>
+                            <text class="section-head__desc">维护服务展示与履约资料</text>
                         </view>
-                        <text class="section-head__meta">正式能力</text>
+
+                        <text class="section-head__meta">{{ resourceMetaText }}</text>
                     </view>
 
-                    <view class="stats-grid stats-grid--compact">
-                        <view v-for="item in businessStats" :key="item.label" class="stats-card">
-                            <text class="stats-card__label">{{ item.label }}</text>
-                            <view class="stats-card__value-row">
-                                <text class="stats-card__value">{{ item.value }}</text>
-                                <text class="stats-card__unit">{{ item.unit }}</text>
-                            </view>
-                        </view>
-                    </view>
-
-                    <view class="manage-grid">
+                    <view class="resource-grid">
                         <view
-                            v-for="item in businessMenus"
+                            v-for="item in resourceMenus"
                             :key="item.path"
-                            class="manage-card"
+                            class="resource-card"
                             @click="goPage(item.path)"
                         >
-                            <text class="manage-card__title">{{ item.name }}</text>
-                            <text class="manage-card__desc">{{ item.description }}</text>
-                        </view>
-                    </view>
-                </view>
-
-                <view class="staff-section-card wm-panel-card">
-                    <view class="section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title">常用入口</text>
-                        </view>
-                        <text class="section-head__meta">快速直达</text>
-                    </view>
-
-                    <view class="quick-grid">
-                        <view
-                            v-for="item in quickMenus"
-                            :key="item.path"
-                            :class="[
-                                'quick-card',
-                                `quick-card--${item.tone}`,
-                                {
-                                    'quick-card--accent': item.accent,
-                                    'quick-card--single': item.singleRow
-                                }
-                            ]"
-                            @click="goPage(item.path)"
-                        >
-                            <view class="quick-card__main">
+                            <view class="resource-card__top">
                                 <view
-                                    :class="['quick-card__icon', `quick-card__icon--${item.tone}`]"
+                                    :class="[
+                                        'resource-card__icon',
+                                        `resource-card__icon--${item.tone}`
+                                    ]"
                                 >
-                                    <tn-icon
-                                        :name="item.icon"
-                                        size="36rpx"
-                                        :color="item.iconColor"
-                                    />
+                                    <tn-icon :name="item.icon" size="22" :color="item.iconColor" />
                                 </view>
 
-                                <view class="quick-card__copy">
-                                    <view class="quick-card__title-row">
-                                        <text class="quick-card__title">{{ item.name }}</text>
-                                        <view
-                                            v-if="item.badge > 0"
-                                            class="status-pill status-pill--ghost"
-                                        >
-                                            <text class="status-pill__text">
-                                                {{ formatBadge(item.badge) }}
-                                            </text>
-                                        </view>
-                                    </view>
+                                <view v-if="item.badge > 0" class="resource-card__badge">
+                                    <text class="resource-card__badge-text">{{
+                                        formatBadge(item.badge)
+                                    }}</text>
                                 </view>
                             </view>
 
-                            <tn-icon
-                                v-if="item.singleRow"
-                                name="right"
-                                size="36rpx"
-                                color="#B4ACA8"
-                            />
+                            <view class="resource-card__copy">
+                                <text class="resource-card__title">{{ item.name }}</text>
+                                <text class="resource-card__desc">{{ item.description }}</text>
+                            </view>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
             </view>
         </view>
     </PageShell>
@@ -250,17 +251,21 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+
 import { onShow } from '@dcloudio/uni-app'
-import PageShell from '@/components/base/PageShell.vue'
+
+import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
+import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { staffCenterDashboard, staffCenterProfile } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 
-type BadgeModifier = 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'ghost'
-type QuickTone = 'primary' | 'warning' | 'info' | 'neutral'
+type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
+type ResourceTone = 'primary' | 'warning' | 'info' | 'neutral'
 
 interface DashboardProfile {
     name: string
@@ -344,24 +349,23 @@ interface DisplayProfile {
     order_count: number
 }
 
-interface HeroMetricItem {
-    label: string
-    value: string
-    accent: boolean
-}
-
-interface FocusCardItem {
+interface WorkbenchAction {
     key: string
-    label: string
-    valueText: string
-    badgeModifier: BadgeModifier
-    action: () => void
-}
-
-interface StatsCardItem {
     label: string
     value: number
     unit: string
+    hint: string
+    icon: string
+    tone: BadgeTone
+    iconColor: string
+    action: () => void
+}
+
+interface OverviewMetric {
+    label: string
+    value: number
+    unit: string
+    caption: string
     accent: boolean
 }
 
@@ -371,23 +375,28 @@ interface RecentOrderCardItem {
     subtitle: string
     orderSn: string
     statusLabel: string
-    statusModifier: BadgeModifier
+    statusTone: BadgeTone
     pendingConfirmCount: number
+    amountText: string
 }
 
-interface QuickMenuItem {
+interface ResourceMenuItem {
     name: string
+    description: string
     path: string
     badge: number
-    accent: boolean
     icon: string
     iconColor: string
-    tone: QuickTone
-    singleRow: boolean
+    tone: ResourceTone
 }
 
 const $theme = useThemeStore()
+
 const defaultAvatar = '/static/images/user/default_avatar.png'
+const heroCardBackground = 'linear-gradient(145deg, #2D2623 0%, #1F1A18 58%, #463A33 100%)'
+const heroCardBorder = '1rpx solid rgba(255, 255, 255, 0.08)'
+const heroCardShadow = '0 24rpx 58rpx rgba(31, 26, 24, 0.28)'
+
 const loading = ref(false)
 const hasLoaded = ref(false)
 const profileDetail = ref<StaffProfileDetail>({})
@@ -426,30 +435,43 @@ const dashboard = ref<DashboardState>(createEmptyDashboard())
 
 const toNumber = (value: unknown) => {
     const result = Number(value ?? 0)
+
     return Number.isFinite(result) ? result : 0
 }
 
 const resolveErrorMessage = (error: unknown) => {
     if (typeof error === 'string') return error
+
     if (error && typeof error === 'object') {
         const target = error as { msg?: string; message?: string }
+
         return target.msg || target.message || '加载失败'
     }
+
     return '加载失败'
 }
 
 const formatRating = (value: unknown) => {
     const rating = toNumber(value)
+
     if (rating <= 0) return ''
+
     return rating.toFixed(1)
+}
+
+const formatAmount = (value: unknown) => {
+    const amount = toNumber(value)
+
+    if (amount <= 0) return ''
+
+    return `¥${amount.toFixed(2).replace(/\.00$/, '')}`
 }
 
 const formatCompactDate = (value: string) => {
     const text = String(value || '').trim()
+
     return text ? text.replace(/-/g, '.') : '待安排服务日期'
 }
-
-const formatCountText = (value: number, unit: string) => `${toNumber(value)} ${unit}`
 
 const buildOrderTitle = (order: DashboardRecentOrder) => {
     const packageNames = Array.isArray(order.package_names)
@@ -469,6 +491,7 @@ const buildOrderTitle = (order: DashboardRecentOrder) => {
 
 const buildOrderSubtitle = (order: DashboardRecentOrder) => {
     const parts = [formatCompactDate(order.service_date)]
+
     const detailText =
         String(order.service_address || '').trim() ||
         String(order.contact_name || '').trim() ||
@@ -481,23 +504,22 @@ const buildOrderSubtitle = (order: DashboardRecentOrder) => {
     return parts.join(' · ')
 }
 
-const getAuditBadgeFallback = (status: number) => {
-    const map: Record<number, string> = {
-        0: '待审核',
-        1: '已通过',
-        2: '已拒绝'
-    }
-    return map[status] || '审核中'
-}
-
-const getAuditBadgeModifier = (status: number): BadgeModifier => {
+const getAuditTone = (status: number): BadgeTone => {
     if (status === 1) return 'success'
     if (status === 2) return 'danger'
+
     return 'warning'
 }
 
-const getOrderStatusModifier = (status: number): BadgeModifier => {
-    const map: Record<number, BadgeModifier> = {
+const getProfileStatusTone = (status: number): BadgeTone => {
+    if (status === 1) return 'success'
+    if (status === 0) return 'warning'
+
+    return 'neutral'
+}
+
+const getOrderStatusTone = (status: number): BadgeTone => {
+    const map: Record<number, BadgeTone> = {
         0: 'warning',
         1: 'info',
         2: 'success',
@@ -506,8 +528,8 @@ const getOrderStatusModifier = (status: number): BadgeModifier => {
         5: 'warning',
         6: 'danger',
         7: 'warning',
-        10: 'warning',
-        8: 'danger'
+        8: 'danger',
+        10: 'warning'
     }
 
     return map[status] || 'neutral'
@@ -532,17 +554,17 @@ const displayProfile = computed<DisplayProfile>(() => {
     }
 })
 
-const profileTitle = computed(() => {
-    const name = displayProfile.value.name || '未填写姓名'
-    const category = displayProfile.value.category_name || '服务人员'
-    return `${name}｜${category}`
-})
+const profileName = computed(() => displayProfile.value.name || '未填写姓名')
 
 const profileMetaText = computed(() => {
     const parts = []
     const rating = formatRating(displayProfile.value.rating)
     const orderCount = toNumber(displayProfile.value.order_count)
     const years = toNumber(displayProfile.value.experience_years)
+
+    if (displayProfile.value.category_name) {
+        parts.push(displayProfile.value.category_name)
+    }
 
     if (rating) {
         parts.push(`评分 ${rating}`)
@@ -554,182 +576,209 @@ const profileMetaText = computed(() => {
         parts.push(`${years} 年经验`)
     }
 
-    return parts.join(' · ') || '完善资料后可提升客户信任感'
+    return parts.join(' · ') || '完善资料'
 })
 
-const visibleTodoTotal = computed(
-    () =>
-        toNumber(dashboard.value.todo.pending_confirm_orders) +
-        toNumber(dashboard.value.todo.today_service_count) +
-        toNumber(dashboard.value.todo.upcoming_7d_schedule_count)
-)
+const profileMetaLine = computed(() => profileMetaText.value)
 
 const auditBadge = computed(() => ({
-    text:
-        displayProfile.value.audit_status_desc ||
-        getAuditBadgeFallback(displayProfile.value.audit_status),
-    modifier: getAuditBadgeModifier(displayProfile.value.audit_status)
+    text: String(displayProfile.value.audit_status_desc || '').trim(),
+    tone: getAuditTone(displayProfile.value.audit_status)
 }))
 
-const heroMetrics = computed<HeroMetricItem[]>(() => [
-    {
-        label: '今日待办',
-        value: formatCountText(visibleTodoTotal.value, '项'),
-        accent: true
-    },
-    {
-        label: '本周档期',
-        value: formatCountText(toNumber(dashboard.value.todo.upcoming_7d_schedule_count), '场'),
-        accent: false
-    },
-    {
-        label: '待确认',
-        value: formatCountText(toNumber(dashboard.value.todo.pending_confirm_orders), '笔'),
-        accent: false
+const profileStatusBadge = computed(() => ({
+    text: displayProfile.value.status_desc || '服务状态',
+    tone: getProfileStatusTone(displayProfile.value.status)
+}))
+
+const heroHeadline = computed(() => {
+    const pending = toNumber(dashboard.value.todo.pending_confirm_orders)
+    const today = toNumber(dashboard.value.todo.today_service_count)
+    const upcoming = toNumber(dashboard.value.todo.upcoming_7d_schedule_count)
+
+    if (pending > 0) {
+        return `优先处理 ${pending} 笔待确认订单`
     }
-])
 
-const primaryFocusCard = computed<FocusCardItem>(() => ({
-    key: 'pending_confirm_orders',
-    label: '待确认订单',
-    valueText: formatCountText(toNumber(dashboard.value.todo.pending_confirm_orders), '笔'),
-    badgeModifier: 'primary',
-    action: () => goOrders(0)
-}))
+    if (today > 0) {
+        return `今日有 ${today} 项服务待履约`
+    }
 
-const secondaryFocusCards = computed<FocusCardItem[]>(() => [
+    if (upcoming > 0) {
+        return `未来 7 日已有 ${upcoming} 场安排`
+    }
+
+    return '先看订单，再确认档期安排'
+})
+
+const primaryAction = computed<WorkbenchAction>(() => {
+    const pending = toNumber(dashboard.value.todo.pending_confirm_orders)
+
+    return {
+        key: 'pending-confirm',
+        label: '待确认订单',
+        value: pending,
+        unit: '笔',
+        hint: pending > 0 ? '优先处理' : '当前无积压',
+        icon: 'warning',
+        tone: 'info',
+        iconColor: '#231D1A',
+        action: () => goOrders(0)
+    }
+})
+
+const secondaryActions = computed<WorkbenchAction[]>(() => {
+    const totalOrders = toNumber(dashboard.value.overview.order_count)
+    const todayServiceCount = toNumber(dashboard.value.todo.today_service_count)
+    const upcomingScheduleCount = toNumber(dashboard.value.todo.upcoming_7d_schedule_count)
+
+    return [
+        {
+            key: 'order-list',
+            label: '订单跟进',
+            value: totalOrders,
+            unit: '单',
+            hint: totalOrders > 0 ? '查看全部订单' : '开始跟进',
+            icon: 'order',
+            tone: 'neutral',
+            iconColor: '#8C817A',
+            action: () => goOrders()
+        },
+        {
+            key: 'schedule',
+            label: '档期管理',
+            value: upcomingScheduleCount,
+            unit: '场',
+            hint: todayServiceCount > 0 ? `今日服务 ${todayServiceCount} 项` : '查看未来安排',
+            icon: 'calendar',
+            tone: 'warning',
+            iconColor: '#C99B73',
+            action: () => goPage('/packages/pages/staff_schedule/staff_schedule')
+        }
+    ]
+})
+
+const overviewMetrics = computed<OverviewMetric[]>(() => [
     {
-        key: 'today_service_count',
         label: '今日服务',
-        valueText: formatCountText(toNumber(dashboard.value.todo.today_service_count), '项'),
-        badgeModifier: 'warning',
-        action: () => goOrders()
+        value: toNumber(dashboard.value.todo.today_service_count),
+        unit: '项',
+        caption: '当日履约',
+        accent: toNumber(dashboard.value.todo.today_service_count) > 0
     },
     {
-        key: 'upcoming_7d_schedule_count',
         label: '7日安排',
-        valueText: formatCountText(toNumber(dashboard.value.todo.upcoming_7d_schedule_count), '场'),
-        badgeModifier: 'info',
-        action: () => goPage('/packages/pages/staff_schedule/staff_schedule')
-    }
-])
-
-const overviewStats = computed<StatsCardItem[]>(() => [
+        value: toNumber(dashboard.value.todo.upcoming_7d_schedule_count),
+        unit: '场',
+        caption: '提前确认',
+        accent: false
+    },
     {
         label: '总订单',
         value: toNumber(dashboard.value.overview.order_count),
         unit: '单',
-        accent: true
+        caption: '累计跟进',
+        accent: false
     },
     {
         label: '档期条目',
         value: toNumber(dashboard.value.overview.schedule_count),
         unit: '条',
+        caption: '工作日历',
         accent: false
     }
 ])
 
-const businessStats = computed<StatsCardItem[]>(() => [
-    {
-        label: '作品数量',
-        value: toNumber(dashboard.value.overview.work_count),
-        unit: '条',
-        accent: false
-    },
-    {
-        label: '服务套餐',
-        value: toNumber(dashboard.value.overview.package_count),
-        unit: '个',
-        accent: false
-    }
-])
+const overviewMetaText = computed(() => {
+    const total =
+        toNumber(dashboard.value.todo.pending_confirm_orders) +
+        toNumber(dashboard.value.todo.today_service_count)
+
+    return total > 0 ? `当前 ${total} 项重点` : '今天较为平稳'
+})
 
 const recentOrderCards = computed<RecentOrderCardItem[]>(() =>
-    dashboard.value.recent_orders.slice(0, 2).map((order) => ({
+    dashboard.value.recent_orders.slice(0, 3).map((order) => ({
         id: order.id,
         title: buildOrderTitle(order),
         subtitle: buildOrderSubtitle(order),
         orderSn: order.order_sn,
         statusLabel: order.order_status_desc || '处理中',
-        statusModifier: getOrderStatusModifier(toNumber(order.order_status)),
-        pendingConfirmCount: toNumber(order.pending_confirm_count)
+        statusTone: getOrderStatusTone(toNumber(order.order_status)),
+        pendingConfirmCount: toNumber(order.pending_confirm_count),
+        amountText: formatAmount(order.pay_amount)
     }))
 )
 
-const recentOrderMetaText = computed(() =>
-    recentOrderCards.value.length ? `近 ${recentOrderCards.value.length} 笔` : '最近更新'
-)
-
-const businessMenus = computed(() => [
-    {
-        name: '证书管理',
-        path: '/packages/pages/staff_certificate_list/staff_certificate_list',
-        description: '提交资质证书并查看审核结果'
-    },
-    {
-        name: '附加项管理',
-        path: '/packages/pages/staff_addon_list/staff_addon_list',
-        description: '维护附加服务配置'
-    },
-    {
-        name: '动态管理',
-        path: '/packages/pages/staff_dynamic_list/staff_dynamic_list',
-        description: '查看审核状态与处理反馈'
-    }
-])
-
-const quickMenus = computed<QuickMenuItem[]>(() => [
-    {
-        name: '档期管理',
-        path: '/packages/pages/staff_schedule/staff_schedule',
-        badge: 0,
-        accent: false,
-        icon: 'calendar',
-        iconColor: '#E85A4F',
-        tone: 'primary',
-        singleRow: false
-    },
-    {
-        name: '订单跟进',
-        path: '/packages/pages/staff_order_list/staff_order_list',
-        badge: toNumber(dashboard.value.todo.pending_confirm_orders),
-        accent: true,
-        icon: 'order',
-        iconColor: '#E85A4F',
-        tone: 'primary',
-        singleRow: false
-    },
+const resourceMenus = computed<ResourceMenuItem[]>(() => [
     {
         name: '资料编辑',
+        description: '维护个人资料',
         path: '/packages/pages/staff_profile/staff_profile',
         badge: 0,
-        accent: false,
-        icon: 'my',
-        iconColor: '#C99B73',
-        tone: 'warning',
-        singleRow: false
+        icon: 'edit',
+        iconColor: '#E85A4F',
+        tone: 'primary'
     },
     {
         name: '作品管理',
+        description: '更新案例内容',
         path: '/packages/pages/staff_work_list/staff_work_list',
-        badge: 0,
-        accent: false,
-        icon: 'folder',
+        badge: toNumber(dashboard.value.overview.work_count),
+        icon: 'image',
         iconColor: '#4D7AD9',
-        tone: 'info',
-        singleRow: false
+        tone: 'info'
     },
     {
         name: '套餐管理',
+        description: '维护服务套餐',
         path: '/packages/pages/staff_package_list/staff_package_list',
-        badge: 0,
-        accent: false,
-        icon: 'set',
+        badge: toNumber(dashboard.value.overview.package_count),
+        icon: 'service',
         iconColor: '#C99B73',
-        tone: 'warning',
-        singleRow: false
+        tone: 'warning'
+    },
+    {
+        name: '附加项管理',
+        description: '管理附加服务',
+        path: '/packages/pages/staff_addon_list/staff_addon_list',
+        badge: toNumber(dashboard.value.overview.addon_count),
+        icon: 'plus',
+        iconColor: '#C99B73',
+        tone: 'warning'
+    },
+    {
+        name: '动态管理',
+        description: '查看审核反馈',
+        path: '/packages/pages/staff_dynamic_list/staff_dynamic_list',
+        badge: 0,
+        icon: 'topic',
+        iconColor: '#8C817A',
+        tone: 'neutral'
+    },
+    {
+        name: '证书管理',
+        description: '维护资质证书',
+        path: '/packages/pages/staff_certificate_list/staff_certificate_list',
+        badge: 0,
+        icon: 'honor',
+        iconColor: '#8C817A',
+        tone: 'neutral'
     }
 ])
+
+const resourceMetaText = computed(() => {
+    const parts = []
+    const workCount = toNumber(dashboard.value.overview.work_count)
+    const packageCount = toNumber(dashboard.value.overview.package_count)
+    const addonCount = toNumber(dashboard.value.overview.addon_count)
+
+    parts.push(`作品 ${workCount}`)
+    parts.push(`套餐 ${packageCount}`)
+    parts.push(`附加项 ${addonCount}`)
+
+    return parts.join(' · ')
+})
 
 const loadPageData = async () => {
     loading.value = true
@@ -746,6 +795,7 @@ const loadPageData = async () => {
     if (dashboardResult.data) {
         const data = dashboardResult.data
         const emptyState = createEmptyDashboard()
+
         dashboard.value = {
             profile: {
                 ...emptyState.profile,
@@ -768,6 +818,7 @@ const loadPageData = async () => {
     }
 
     const errorMessage = dashboardResult.error || profileResult.error
+
     if (errorMessage) {
         uni.showToast({ title: errorMessage, icon: 'none' })
     }
@@ -782,6 +833,7 @@ const goPage = (path: string) => {
 
 const goOrders = (status?: number) => {
     const query = status === undefined ? '' : `?status=${status}`
+
     uni.navigateTo({ url: `/packages/pages/staff_order_list/staff_order_list${query}` })
 }
 
@@ -789,18 +841,17 @@ const goOrderDetail = (id: number) => {
     uni.navigateTo({ url: `/packages/pages/staff_order_detail/staff_order_detail?id=${id}` })
 }
 
-const handleFocusCard = (item: FocusCardItem) => {
-    item.action()
-}
-
 const formatBadge = (value: number) => {
     if (value > 99) return '99+'
+
     return String(value)
 }
 
 onShow(async () => {
     $theme.setScene('staff')
+
     if (!(await ensureStaffCenterAccess())) return
+
     await loadPageData()
 })
 </script>
@@ -814,50 +865,77 @@ onShow(async () => {
     &__content {
         display: flex;
         flex-direction: column;
-        gap: 15rpx;
+        gap: 16rpx;
     }
 }
 
-.staff-hero-card,
-.staff-section-card {
+.workbench-hero,
+.overview-panel,
+.order-panel,
+.resource-panel {
     position: relative;
     overflow: hidden;
-    box-sizing: border-box;
 }
 
-.staff-hero-card {
-    display: flex;
-    flex-direction: column;
-    gap: 18rpx;
-    padding: 30rpx;
-    border-radius: 49rpx;
-    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
-    background: linear-gradient(135deg, #fff6f2 0%, #fde8e1 100%);
-    box-shadow: 0 20rpx 44rpx rgba(192, 130, 115, 0.16);
+.workbench-hero {
+    background: linear-gradient(145deg, #2d2623 0%, #1f1a18 58%, #463a33 100%);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 24rpx 58rpx rgba(31, 26, 24, 0.28);
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+            circle at top right,
+            rgba(255, 237, 226, 0.22),
+            transparent 42%
+        );
+        pointer-events: none;
+    }
 
     &__top,
-    &__profile {
+    &__head,
+    &__profile,
+    &__badges {
         display: flex;
+        align-items: center;
     }
 
     &__top {
-        align-items: center;
         justify-content: space-between;
         gap: 16rpx;
     }
 
+    &__badges {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10rpx;
+    }
+
+    &__badge {
+        flex-shrink: 0;
+    }
+
+    &__head {
+        justify-content: space-between;
+        gap: 20rpx;
+        margin-top: 20rpx;
+    }
+
     &__profile {
-        align-items: center;
-        gap: 22rpx;
+        flex: 1;
+        min-width: 0;
+        gap: 20rpx;
     }
 
     &__avatar {
-        width: 108rpx;
-        height: 108rpx;
+        width: 104rpx;
+        height: 104rpx;
         flex-shrink: 0;
         border-radius: 999rpx;
-        background: #efcbc0;
-        border: 2rpx solid rgba(255, 255, 255, 0.88);
+        border: 2rpx solid rgba(255, 255, 255, 0.24);
+        background: rgba(255, 255, 255, 0.1);
     }
 
     &__copy {
@@ -865,132 +943,263 @@ onShow(async () => {
         min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: 7rpx;
+        gap: 6rpx;
     }
 
     &__title {
         font-size: 40rpx;
         font-weight: 700;
-        line-height: 1.3;
-        color: var(--wm-text-primary, #1e2432);
+        line-height: 1.2;
+        color: #fffaf7;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
-    &__meta {
-        font-size: 24rpx;
+    &__subtitle {
+        font-size: 22rpx;
         font-weight: 600;
-        line-height: 1.5;
-        color: var(--wm-text-secondary, #7f7b78);
+        line-height: 1.45;
+        color: rgba(255, 245, 240, 0.76);
+    }
+
+    &__headline {
+        margin-top: 18rpx;
+        font-size: 28rpx;
+        font-weight: 700;
+        line-height: 1.4;
+        color: #fff7f2;
     }
 }
 
-.staff-summary-chips {
-    display: flex;
-    gap: 12rpx;
+.hero-eyebrow,
+.profile-entry,
+.section-link,
+.primary-action,
+.secondary-action,
+.metric-card,
+.order-item,
+.resource-card {
+    box-sizing: border-box;
 }
 
-.hero-pill {
+.hero-eyebrow {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-height: 42rpx;
-    padding: 11rpx 18rpx;
+    padding: 0 18rpx;
     border-radius: 999rpx;
-    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1rpx solid rgba(255, 255, 255, 0.12);
+
+    &__text {
+        font-size: 20rpx;
+        font-weight: 700;
+        line-height: 1;
+        color: #fff2ec;
+        letter-spacing: 0.8rpx;
+    }
+}
+
+.profile-entry {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    min-height: 56rpx;
+    padding: 0 18rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1rpx solid rgba(255, 255, 255, 0.12);
 
     &__text {
         font-size: 22rpx;
-        font-weight: 700;
+        font-weight: 600;
+        color: #fff2ec;
         line-height: 1;
-    }
-
-    &--primary {
-        background: #fff1ee;
-
-        .hero-pill__text {
-            color: var(--wm-color-primary, #e85a4f);
-        }
-    }
-
-    &--success,
-    &--warning,
-    &--danger {
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
-        background: rgba(255, 255, 255, 0.8);
-    }
-
-    &--success .hero-pill__text {
-        color: #2f7d58;
-    }
-
-    &--warning .hero-pill__text {
-        color: #c98524;
-    }
-
-    &--danger .hero-pill__text {
-        color: #b44a3a;
     }
 }
 
-.hero-metric {
-    flex: 1;
-    min-width: 0;
+.primary-action {
+    position: relative;
     display: flex;
-    flex-direction: column;
-    gap: 4rpx;
-    padding: 15rpx 18rpx;
-    border-radius: 30rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-    background: rgba(255, 255, 255, 0.78);
-    box-sizing: border-box;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-top: 22rpx;
+    padding: 24rpx 26rpx;
+    border-radius: 34rpx;
+    background: linear-gradient(135deg, #f6dcc7 0%, #f3c8a6 100%);
+    box-shadow: 0 16rpx 28rpx rgba(15, 11, 10, 0.16);
 
-    &--accent {
-        background: #fff1ee;
-        border-color: var(--wm-color-border-strong, #f4c7bf);
+    &__main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 16rpx;
+    }
+
+    &__icon {
+        width: 64rpx;
+        height: 64rpx;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 22rpx;
+        background: rgba(35, 29, 26, 0.12);
+    }
+
+    &__copy {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4rpx;
     }
 
     &__label {
-        font-size: 21rpx;
+        font-size: 28rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: #231d1a;
     }
 
-    &--accent .hero-metric__label {
-        color: var(--wm-color-primary, #e85a4f);
+    &__hint {
+        font-size: 20rpx;
+        font-weight: 600;
+        line-height: 1.45;
+        color: rgba(35, 29, 26, 0.68);
     }
 
     &__value {
-        font-size: 38rpx;
+        flex-shrink: 0;
+        display: flex;
+        align-items: flex-end;
+        gap: 8rpx;
+    }
+
+    &__number {
+        font-size: 48rpx;
         font-weight: 700;
-        line-height: 1.2;
-        color: var(--wm-text-primary, #1e2432);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        line-height: 1;
+        color: #231d1a;
+    }
+
+    &__unit {
+        padding-bottom: 5rpx;
+        font-size: 22rpx;
+        font-weight: 700;
+        line-height: 1;
+        color: rgba(35, 29, 26, 0.7);
     }
 }
 
-.staff-section-card {
+.secondary-action-grid,
+.metric-grid,
+.resource-grid {
+    display: grid;
+    gap: 12rpx;
+}
+
+.secondary-action-grid,
+.metric-grid,
+.resource-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.secondary-action-grid {
+    margin-top: 12rpx;
+}
+
+.secondary-action {
     display: flex;
     flex-direction: column;
-    gap: 15rpx;
-    padding: 26rpx 30rpx;
-    border-radius: 45rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
+    gap: 10rpx;
+    min-height: 168rpx;
+    padding: 22rpx;
+    border-radius: 30rpx;
+    border: 1rpx solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.96);
+
+    &--warning {
+        background: linear-gradient(180deg, rgba(255, 248, 237, 0.98) 0%, #fffdf8 100%);
+    }
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10rpx;
+    }
+
+    &__icon {
+        width: 52rpx;
+        height: 52rpx;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 18rpx;
+        background: #f5f1ee;
+
+        &--neutral {
+            background: #f4efeb;
+        }
+
+        &--warning {
+            background: #fff3e4;
+        }
+    }
+
+    &__label {
+        font-size: 26rpx;
+        font-weight: 700;
+        line-height: 1.35;
+        color: #1f1917;
+    }
+
+    &__value-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 6rpx;
+    }
+
+    &__value {
+        font-size: 42rpx;
+        font-weight: 700;
+        line-height: 1;
+        color: #1f1917;
+    }
+
+    &__unit {
+        padding-bottom: 5rpx;
+        font-size: 21rpx;
+        font-weight: 700;
+        color: #8a7d76;
+        line-height: 1;
+    }
+
+    &__hint {
+        font-size: 20rpx;
+        font-weight: 600;
+        line-height: 1.45;
+        color: #8a7d76;
+    }
+}
+
+.overview-panel,
+.order-panel,
+.resource-panel {
+    background: rgba(255, 255, 255, 0.94);
 }
 
 .section-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 18rpx;
+    gap: 16rpx;
 
     &__copy {
         flex: 1;
@@ -1001,206 +1210,50 @@ onShow(async () => {
     }
 
     &__title {
-        font-size: 32rpx;
+        font-size: 30rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: var(--wm-text-primary, #1e2432);
+        color: #1e2432;
     }
 
-    &__desc {
-        font-size: 20rpx;
+    &__desc,
+    &__meta {
+        font-size: 21rpx;
         font-weight: 600;
         line-height: 1.45;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: #8a7d76;
     }
 
     &__meta {
         flex-shrink: 0;
         padding-top: 4rpx;
-        font-size: 22rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: var(--wm-text-secondary, #7f7b78);
     }
 }
 
-.focus-grid,
-.stats-grid,
-.manage-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12rpx;
+.metric-grid {
+    margin-top: 16rpx;
 }
 
-.focus-card,
-.stats-card,
-.manage-card,
-.order-card {
-    border-radius: 30rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-    background: #fcfbf9;
-    box-sizing: border-box;
-}
-
-.focus-card {
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-    padding: 19rpx 22rpx;
-
-    &--primary {
-        background: #fff1ee;
-        border-color: var(--wm-color-border-strong, #f4c7bf);
-    }
-
-    &__row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12rpx;
-    }
-
-    &__copy {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-    }
-
-    &__title {
-        font-size: 28rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: var(--wm-text-primary, #1e2432);
-    }
-
-    &__desc,
-    &__hint {
-        font-size: 20rpx;
-        font-weight: 600;
-        line-height: 1.45;
-        color: var(--wm-text-secondary, #7f7b78);
-    }
-
-    &__footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12rpx;
-    }
-
-    &__arrow {
-        display: flex;
-        justify-content: flex-end;
-    }
-
-    &--primary .focus-card__hint {
-        color: var(--wm-color-primary, #e85a4f);
-    }
-}
-
-.focus-badge,
-.status-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 38rpx;
-    padding: 8rpx 14rpx;
-    border-radius: 999rpx;
-    box-sizing: border-box;
-
-    &__text {
-        font-size: 20rpx;
-        font-weight: 700;
-        line-height: 1;
-        white-space: nowrap;
-    }
-
-    &--primary {
-        background: #fff1ee;
-
-        .focus-badge__text,
-        .status-pill__text {
-            color: var(--wm-color-primary, #e85a4f);
-        }
-    }
-
-    &--warning {
-        background: #fff8ed;
-
-        .focus-badge__text,
-        .status-pill__text {
-            color: #c99b73;
-        }
-    }
-
-    &--info {
-        background: #eef5ff;
-
-        .focus-badge__text,
-        .status-pill__text {
-            color: #4d7ad9;
-        }
-    }
-
-    &--success {
-        background: rgba(47, 125, 88, 0.12);
-
-        .status-pill__text {
-            color: #2f7d58;
-        }
-    }
-
-    &--danger {
-        background: rgba(180, 74, 58, 0.12);
-
-        .status-pill__text {
-            color: #b44a3a;
-        }
-    }
-
-    &--neutral {
-        background: rgba(96, 112, 134, 0.12);
-
-        .status-pill__text {
-            color: #607086;
-        }
-    }
-
-    &--ghost {
-        background: rgba(255, 255, 255, 0.86);
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
-
-        .status-pill__text {
-            color: var(--wm-text-secondary, #7f7b78);
-        }
-    }
-}
-
-.stats-grid--compact .stats-card {
-    min-height: 148rpx;
-}
-
-.stats-card {
+.metric-card {
     display: flex;
     flex-direction: column;
     gap: 6rpx;
-    padding: 19rpx 22rpx;
+    min-height: 156rpx;
+    padding: 22rpx;
+    border-radius: 28rpx;
+    border: 1rpx solid rgba(239, 230, 225, 1);
+    background: #fcfbf9;
 
     &--accent {
-        background: #fff1ee;
-        border-color: var(--wm-color-border-strong, #f4c7bf);
+        background: #fff4ef;
+        border-color: #f4c7bf;
     }
 
     &__label {
-        font-size: 21rpx;
+        font-size: 22rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: var(--wm-text-secondary, #7f7b78);
-    }
-
-    &--accent .stats-card__label {
-        color: var(--wm-color-primary, #e85a4f);
+        color: #847972;
     }
 
     &__value-row {
@@ -1210,22 +1263,40 @@ onShow(async () => {
     }
 
     &__value {
-        font-size: 46rpx;
+        font-size: 44rpx;
         font-weight: 700;
-        line-height: 1.1;
-        color: var(--wm-text-primary, #1e2432);
+        line-height: 1;
+        color: #1e2432;
     }
 
-    &__unit,
-    &__hint {
+    &__unit {
+        padding-bottom: 5rpx;
         font-size: 21rpx;
-        font-weight: 600;
-        line-height: 1.35;
-        color: var(--wm-text-secondary, #7f7b78);
+        font-weight: 700;
+        line-height: 1;
+        color: #8a7d76;
     }
 
-    &__hint {
+    &__caption {
+        font-size: 20rpx;
+        font-weight: 600;
         line-height: 1.45;
+        color: #8a7d76;
+    }
+}
+
+.section-link {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
+    min-height: 42rpx;
+
+    &__text {
+        font-size: 22rpx;
+        font-weight: 600;
+        line-height: 1;
+        color: #8a7d76;
     }
 }
 
@@ -1233,26 +1304,29 @@ onShow(async () => {
     display: flex;
     flex-direction: column;
     gap: 12rpx;
+    margin-top: 16rpx;
 }
 
-.order-card {
+.order-item {
     display: flex;
     flex-direction: column;
     gap: 12rpx;
-    padding: 19rpx 22rpx;
+    padding: 22rpx;
+    border-radius: 28rpx;
+    border: 1rpx solid rgba(239, 230, 225, 1);
+    background: #fcfbf9;
 
-    &__row {
+    &__top,
+    &__bottom,
+    &__meta {
         display: flex;
+        align-items: center;
         justify-content: space-between;
         gap: 12rpx;
+    }
 
-        &--start {
-            align-items: flex-start;
-        }
-
-        &--center {
-            align-items: center;
-        }
+    &__top {
+        align-items: flex-start;
     }
 
     &__copy {
@@ -1260,110 +1334,74 @@ onShow(async () => {
         min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: 5rpx;
+        gap: 4rpx;
     }
 
     &__title {
-        font-size: 28rpx;
+        font-size: 27rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: var(--wm-text-primary, #1e2432);
+        color: #1e2432;
     }
 
-    &__subtitle,
-    &__hint {
-        font-size: 22rpx;
+    &__subtitle {
+        font-size: 21rpx;
         font-weight: 600;
         line-height: 1.45;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: #8a7d76;
     }
 
     &__sn,
-    &__pending-placeholder {
+    &__amount {
         font-size: 20rpx;
         font-weight: 600;
         line-height: 1.35;
-        color: var(--wm-text-tertiary, #b4aca8);
     }
 
-    &__pending-placeholder {
-        flex-shrink: 0;
+    &__sn {
+        color: #b4aca8;
+    }
+
+    &__amount {
+        color: #e85a4f;
     }
 }
 
-.manage-card {
+.resource-grid {
+    margin-top: 16rpx;
+}
+
+.resource-card {
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
-    min-height: 128rpx;
-    padding: 19rpx 22rpx;
-
-    &__title {
-        font-size: 28rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: var(--wm-text-primary, #1e2432);
-    }
-
-    &__desc {
-        font-size: 20rpx;
-        font-weight: 600;
-        line-height: 1.45;
-        color: var(--wm-text-secondary, #7f7b78);
-    }
-}
-
-.quick-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12rpx;
-}
-
-.quick-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     gap: 14rpx;
-    min-height: 136rpx;
-    padding: 19rpx 22rpx;
-    border-radius: 30rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    min-height: 182rpx;
+    padding: 22rpx;
+    border-radius: 28rpx;
+    border: 1rpx solid rgba(239, 230, 225, 1);
     background: #fcfbf9;
-    box-sizing: border-box;
 
-    &--accent {
-        background: #fff1ee;
-        border-color: var(--wm-color-border-strong, #f4c7bf);
-    }
-
-    &--single {
-        grid-column: 1 / -1;
-        min-height: 108rpx;
-    }
-
-    &__main {
-        flex: 1;
-        min-width: 0;
+    &__top {
         display: flex;
         align-items: center;
-        gap: 14rpx;
+        justify-content: space-between;
+        gap: 10rpx;
     }
 
     &__icon {
-        width: 68rpx;
-        height: 68rpx;
-        flex-shrink: 0;
+        width: 58rpx;
+        height: 58rpx;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 24rpx;
+        border-radius: 20rpx;
 
         &--primary {
             background: #fff1ee;
         }
 
         &--warning {
-            background: #fff8ed;
+            background: #fff7ea;
         }
 
         &--info {
@@ -1371,42 +1409,47 @@ onShow(async () => {
         }
 
         &--neutral {
-            background: #f3efea;
+            background: #f4efeb;
         }
     }
 
-    &__copy {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 5rpx;
+    &__badge {
+        min-width: 42rpx;
+        height: 42rpx;
+        padding: 0 12rpx;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999rpx;
+        background: rgba(232, 90, 79, 0.08);
+        border: 1rpx solid rgba(232, 90, 79, 0.14);
     }
 
-    &__title-row {
+    &__badge-text {
+        font-size: 20rpx;
+        font-weight: 700;
+        line-height: 1;
+        color: #e85a4f;
+    }
+
+    &__copy {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10rpx;
+        flex-direction: column;
+        gap: 4rpx;
     }
 
     &__title {
-        flex: 1;
-        min-width: 0;
-        font-size: 24rpx;
+        font-size: 26rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: var(--wm-text-primary, #1e2432);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        color: #1e2432;
     }
 
     &__desc {
         font-size: 20rpx;
         font-weight: 600;
         line-height: 1.45;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: #8a7d76;
     }
 }
 </style>

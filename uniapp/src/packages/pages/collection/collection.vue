@@ -25,10 +25,7 @@
                 </u-swipe-action>
             </view>
             <view v-else class="wm-empty-shell">
-                <EmptyState
-                    title="还没有收藏内容"
-                    description="把感兴趣的灵感资讯加入收藏，后续就能在这里快速回看。"
-                />
+                <EmptyState title="还没有收藏内容" description="收藏内容会显示在这里。" />
             </view>
         </z-paging>
     </PageShell>

@@ -31,8 +31,8 @@
                     :title="currentType === 'change' ? '暂无变更申请' : '暂无暂停申请'"
                     :description="
                         currentType === 'change'
-                            ? '改期、加项等申请提交后会在这里统一查看进度。'
-                            : '暂停申请提交后会在这里统一查看审核与恢复状态。'
+                            ? '变更进度会显示在这里。'
+                            : '暂停进度会显示在这里。'
                     "
                 >
                     <template #icon>

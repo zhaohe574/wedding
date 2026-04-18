@@ -227,7 +227,7 @@
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="动态内容、审核状态和曝光数据会统一汇总在这里。"
+                        description="在这里查看动态状态。"
                         action-text="发布动态"
                         @action="handleAdd"
                     />

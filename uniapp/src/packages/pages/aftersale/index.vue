@@ -6,10 +6,8 @@
         <view class="aftersale-home">
             <view class="aftersale-home__wrapper wm-page-content">
                 <BaseCard variant="surface" scene="consumer" class="aftersale-home__intro">
-                    <text class="aftersale-home__intro-title">售后问题统一处理</text>
-                    <text class="aftersale-home__intro-summary">
-                        工单、投诉、人工协助与回访问卷统一在这里处理，只保留正式入口与标准服务说明。
-                    </text>
+                    <text class="aftersale-home__intro-title">售后服务</text>
+                    <text class="aftersale-home__intro-summary"> 工单、投诉和回访统一处理。 </text>
 
                     <view class="aftersale-home__intro-metrics">
                         <view class="aftersale-home__intro-metric" @click="goTicketList">
@@ -50,12 +48,8 @@
                         </view>
                         <view class="aftersale-home__entry-copy">
                             <text class="aftersale-home__entry-title">提交工单</text>
-                            <text class="aftersale-home__entry-desc">
-                                档期协调、流程确认、素材交付、费用问题
-                            </text>
-                            <text class="aftersale-home__entry-tip">
-                                适合需要平台跟进处理的服务问题
-                            </text>
+                            <text class="aftersale-home__entry-desc"> 档期、流程、交付、费用 </text>
+                            <text class="aftersale-home__entry-tip"> 适合平台跟进 </text>
                         </view>
                         <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #B4ACA8)" />
                     </BaseCard>
@@ -78,12 +72,8 @@
                         </view>
                         <view class="aftersale-home__entry-copy">
                             <text class="aftersale-home__entry-title">发起投诉</text>
-                            <text class="aftersale-home__entry-desc">
-                                服务态度、履约偏差、沟通问题、执行落差
-                            </text>
-                            <text class="aftersale-home__entry-tip">
-                                适合提交正式反馈与处理诉求
-                            </text>
+                            <text class="aftersale-home__entry-desc"> 态度、履约、沟通问题 </text>
+                            <text class="aftersale-home__entry-tip"> 适合正式投诉 </text>
                         </view>
                         <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #B4ACA8)" />
                     </BaseCard>
@@ -106,10 +96,8 @@
                         </view>
                         <view class="aftersale-home__entry-copy">
                             <text class="aftersale-home__entry-title">联系人工</text>
-                            <text class="aftersale-home__entry-desc">紧急问题优先人工协助</text>
-                            <text class="aftersale-home__entry-tip">
-                                工作时段优先响应，建议先准备订单与问题描述
-                            </text>
+                            <text class="aftersale-home__entry-desc">紧急问题可联系人工</text>
+                            <text class="aftersale-home__entry-tip"> 建议准备订单与问题信息 </text>
                         </view>
                         <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #B4ACA8)" />
                     </BaseCard>
@@ -141,13 +129,9 @@
                                     待填写 {{ stats.callback.pending }}
                                 </StatusBadge>
                             </view>
-                            <text class="aftersale-home__entry-desc">服务结束后回收体验反馈</text>
+                            <text class="aftersale-home__entry-desc">服务后填写反馈</text>
                             <text class="aftersale-home__entry-tip">
-                                {{
-                                    stats.callback.pending > 0
-                                        ? '有待填写问卷，请及时完成反馈'
-                                        : '服务反馈、体验评分与问题追踪统一回收'
-                                }}
+                                {{ stats.callback.pending > 0 ? '有待填写问卷' : '体验反馈汇总' }}
                             </text>
                         </view>
                         <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #B4ACA8)" />
@@ -156,9 +140,7 @@
 
                 <BaseCard variant="surface" scene="consumer" class="aftersale-home__note">
                     <text class="aftersale-home__note-title">服务说明</text>
-                    <text class="aftersale-home__note-desc">
-                        工作时段优先响应，紧急问题建议直接联系人工。回访中发现的新问题会继续升级为工单跟进。
-                    </text>
+                    <text class="aftersale-home__note-desc"> 紧急问题可优先联系人工。 </text>
                 </BaseCard>
             </view>
         </view>

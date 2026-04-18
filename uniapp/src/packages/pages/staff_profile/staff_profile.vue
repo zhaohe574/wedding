@@ -143,7 +143,7 @@
                         <textarea
                             v-model="form.profile"
                             class="wm-textarea"
-                            placeholder="介绍你的风格与服务特点"
+                            placeholder="介绍服务特点"
                             :maxlength="500"
                             :auto-height="true"
                             :show-confirm-bar="false"
@@ -205,7 +205,7 @@
                         <textarea
                             v-model="form.service_desc"
                             class="wm-textarea"
-                            placeholder="补充服务内容、流程或注意事项"
+                            placeholder="补充服务说明"
                             :maxlength="1000"
                             :auto-height="true"
                             :show-confirm-bar="false"
@@ -217,9 +217,7 @@
                     <view class="section-head">
                         <view class="section-head__copy">
                             <text class="section-head__title">长图详情</text>
-                            <text class="section-head__desc">
-                                支持图片、文本模块，自定义排序后会在人员详情页展示。
-                            </text>
+                            <text class="section-head__desc"> 支持图片和文本模块。 </text>
                         </view>
                         <text class="section-head__meta">{{ longDetailCount }} 个模块</text>
                     </view>

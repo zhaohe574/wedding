@@ -26,7 +26,7 @@
                 </view>
 
                 <view v-else class="wm-empty-shell">
-                    <EmptyState title="暂无充值记录" description="完成充值后，记录会显示在这里。" />
+                    <EmptyState title="暂无充值记录" description="充值记录会显示在这里。" />
                 </view>
             </view>
         </z-paging>

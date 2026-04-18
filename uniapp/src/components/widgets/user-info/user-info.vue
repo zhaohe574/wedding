@@ -21,7 +21,9 @@
                         <text class="profile-status">{{ profileStatus }}</text>
                     </view>
                     <text class="profile-name">{{ profileName }}</text>
-                    <text class="profile-subtitle">{{ profileSubtitle }}</text>
+                    <text v-if="profileSubtitle" class="profile-subtitle">{{
+                        profileSubtitle
+                    }}</text>
                 </view>
                 <view class="profile-action">
                     <text class="profile-action-text">{{ actionText }}</text>
@@ -76,12 +78,10 @@ const profileName = computed(() => {
 })
 
 const profileSubtitle = computed(() => {
-    if (!props.isLogin) {
-        return '点击登录后完善资料'
-    }
+    if (!props.isLogin) return ''
     const contentSubtitle = String(props.content?.profile_subtitle || '').trim()
     if (contentSubtitle) return contentSubtitle
-    return '点击完善资料，更新主档期'
+    return ''
 })
 
 const profileStatus = computed(() => {

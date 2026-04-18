@@ -13,7 +13,7 @@
             <EmptyState
                 v-else-if="!favoriteList.length"
                 title="还没有收藏任何服务人员"
-                description="先去看看近期热门团队或根据档期筛选，喜欢的服务人员可以随时收藏到这里。"
+                description="去看看可预约人员。"
                 action-text="去看看"
                 @action="goToList"
             />

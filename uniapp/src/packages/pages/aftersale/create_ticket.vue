@@ -40,9 +40,7 @@
                     <view class="aftersale-create-section">
                         <view class="aftersale-create-section__head">
                             <text class="aftersale-create-section__title">关联订单</text>
-                            <text class="aftersale-create-section__meta"
-                                >可选，便于平台更快定位问题</text
-                            >
+                            <text class="aftersale-create-section__meta">选填</text>
                         </view>
                         <view class="aftersale-create-panel" @click="showOrderPicker = true">
                             <text
@@ -72,14 +70,14 @@
                         >
                             <text class="aftersale-create-section__title">问题描述</text>
                             <text class="aftersale-create-section__meta">
-                                提交时会自动生成标题：{{ previewTitle }}
+                                标题预览：{{ previewTitle }}
                             </text>
                         </view>
                         <textarea
                             v-model="form.content"
                             class="aftersale-create-textarea"
                             maxlength="500"
-                            placeholder="简述问题经过、影响范围和当前状态"
+                            placeholder="简述问题"
                             placeholder-style="color: #B4ACA8;"
                         />
 
@@ -105,7 +103,7 @@
                                 v-model="form.assist_focus"
                                 class="aftersale-create-input"
                                 maxlength="60"
-                                placeholder="例如：确认排期、补发素材、推进回复"
+                                placeholder="如：确认排期、补发素材"
                                 placeholder-style="color: #B4ACA8;"
                             />
                         </view>
@@ -124,7 +122,7 @@
                         >
                             <text class="aftersale-create-section__title">上传凭证</text>
                             <text class="aftersale-create-section__meta">
-                                现场照片、聊天记录、交付截图都可以上传，最多 6 张。
+                                可上传凭证，最多 6 张。
                             </text>
                         </view>
                         <AfterSaleMediaUploader
@@ -150,9 +148,7 @@
                             class="aftersale-create-section__head aftersale-create-section__head--stack"
                         >
                             <text class="aftersale-create-section__title">联系方式</text>
-                            <text class="aftersale-create-section__meta">
-                                平台跟进时会优先联系这位对接人
-                            </text>
+                            <text class="aftersale-create-section__meta"> 平台会优先联系此人 </text>
                         </view>
                         <view class="aftersale-contact-panel">
                             <text class="aftersale-contact-panel__label">联系人</text>
@@ -178,9 +174,7 @@
                     </view>
                 </BaseCard>
 
-                <view class="aftersale-create-page__footer-copy">
-                    提交后可查看进度，平台会按优先级和凭证完整度安排处理。
-                </view>
+                <view class="aftersale-create-page__footer-copy"> 提交后可查看进度。 </view>
             </view>
         </view>
 
@@ -259,20 +253,20 @@ const priorityOptions: PriorityOptionItem[] = [
         value: 1,
         label: '低',
         desc: '常规处理',
-        hint: '常规问题会进入标准队列，预计 72 小时内开始跟进。'
+        hint: '常规排队处理。'
     },
-    { value: 2, label: '中', desc: '尽快跟进', hint: '默认优先级，适合需要尽快确认的服务问题。' },
+    { value: 2, label: '中', desc: '尽快跟进', hint: '默认优先级。' },
     {
         value: 3,
         label: '高',
         desc: '影响较大',
-        hint: '高优先级问题会优先排队，预计 24 小时内开始跟进。'
+        hint: '高优先级优先处理。'
     },
     {
         value: 4,
         label: '紧急',
         desc: '需要立即响应',
-        hint: '紧急问题会优先处理，请尽量补充清晰凭证。'
+        hint: '紧急问题优先处理。'
     }
 ]
 
@@ -367,7 +361,7 @@ const promptAfterSaleSubscribe = async () => {
 
     const result = await uni.showModal({
         title: '接收售后处理提醒',
-        content: '订阅后可在微信及时收到退款结果、工单处理进度等提醒，避免错过平台反馈。',
+        content: '订阅后可接收处理提醒。',
         confirmText: '去订阅',
         cancelText: '暂不订阅'
     })

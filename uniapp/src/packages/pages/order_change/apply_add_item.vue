@@ -7,7 +7,7 @@
                 <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
                     <tn-icon name="gift" size="34" color="#E85A4F" />
                     <text class="order-change-tip-card__text"
-                        >请选择新增套餐或服务人员，平台审核通过后会同步写入订单。</text
+                        >选择新增服务，审核通过后写入订单。</text
                     >
                 </BaseCard>
 
@@ -58,9 +58,7 @@
                                 :color="addType === 'package' ? $theme.primaryColor : '#B4ACA8'"
                             />
                             <text class="order-change-choice-card__title">添加套餐</text>
-                            <text class="order-change-choice-card__desc"
-                                >基于当前订单增加服务套餐</text
-                            >
+                            <text class="order-change-choice-card__desc">新增服务</text>
                         </view>
                         <view
                             class="order-change-choice-card"
@@ -73,9 +71,7 @@
                                 :color="addType === 'staff' ? $theme.primaryColor : '#B4ACA8'"
                             />
                             <text class="order-change-choice-card__title">添加人员</text>
-                            <text class="order-change-choice-card__desc"
-                                >新增人员并绑定对应套餐</text
-                            >
+                            <text class="order-change-choice-card__desc">新增人员并关联套餐</text>
                         </view>
                     </view>
                 </BaseCard>
@@ -246,9 +242,7 @@
                                 <tn-icon name="right" size="30" color="#B4ACA8" />
                             </view>
                         </view>
-                        <text class="order-change-form-field__helper"
-                            >最终日期以审核结果为准，可与原订单日期不同。</text
-                        >
+                        <text class="order-change-form-field__helper">以审核结果为准。</text>
                     </view>
                 </BaseCard>
 
@@ -267,7 +261,7 @@
                                 v-model="formData.reason"
                                 class="order-change-form-field__textarea"
                                 maxlength="200"
-                                placeholder="请补充加项原因。"
+                                placeholder="请填写加项原因。"
                                 placeholder-style="color:#B4ACA8;"
                             />
                         </view>

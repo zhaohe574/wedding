@@ -175,7 +175,7 @@
                             <textarea
                                 v-model="form.description"
                                 class="field-textarea"
-                                placeholder="写一句作品亮点或拍摄氛围"
+                                placeholder="写一句作品亮点"
                                 :maxlength="500"
                                 :auto-height="true"
                                 :show-confirm-bar="false"

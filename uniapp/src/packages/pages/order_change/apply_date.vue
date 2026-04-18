@@ -8,7 +8,7 @@
                 <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
                     <tn-icon name="calendar" size="34" color="#E85A4F" />
                     <text class="order-change-tip-card__text">
-                        改期申请提交后会进入平台审核，审核通过后会同步更新订单履约日期，请先确认新的服务日期。
+                        提交后进入审核，请先确认新日期。
                     </text>
                 </BaseCard>
 
@@ -86,7 +86,7 @@
                                 v-model="formData.reason"
                                 class="order-change-form-field__textarea"
                                 maxlength="200"
-                                placeholder="请补充改期原因，帮助平台更快审核。"
+                                placeholder="请填写改期原因。"
                                 placeholder-style="color:#B4ACA8;"
                             />
                         </view>
@@ -102,9 +102,7 @@
                     class="order-change-card order-change-form-card"
                 >
                     <text class="order-change-card__title">附件图片</text>
-                    <text class="order-change-card__caption">
-                        选填，最多上传 5 张，支持拍照或相册选择。
-                    </text>
+                    <text class="order-change-card__caption"> 选填，最多 5 张。 </text>
                     <view class="order-change-upload-grid">
                         <view
                             v-for="(image, index) in formData.attach_images"
@@ -138,7 +136,7 @@
                 <BaseCard variant="surface" scene="consumer" class="order-change-card">
                     <text class="order-change-card__title">提交后说明</text>
                     <text class="order-change-card__paragraph">
-                        提交成功后会自动跳转到变更详情页，后续审核进度与执行结果会在“我的申请”中统一查看。
+                        提交成功，可在“我的申请”查看进度。
                     </text>
                 </BaseCard>
             </view>

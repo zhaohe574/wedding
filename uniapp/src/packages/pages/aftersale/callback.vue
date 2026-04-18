@@ -56,7 +56,7 @@
                         <AfterSaleEmptyState
                             icon="edit"
                             title="暂无回访问卷"
-                            description="服务结束后会在这里收到问卷。"
+                            description="服务后会显示在这里。"
                         />
                     </template>
                 </z-paging>

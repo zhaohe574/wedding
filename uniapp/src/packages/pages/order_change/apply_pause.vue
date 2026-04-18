@@ -8,7 +8,7 @@
                 <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
                     <tn-icon name="tip-fill" size="34" color="#C98524" />
                     <text class="order-change-tip-card__text">
-                        暂停期间订单会进入冻结状态。请准确填写开始和结束日期，审核通过后平台会同步安排恢复时间。
+                        暂停期间订单冻结，请准确填写起止日期。
                     </text>
                 </BaseCard>
 
@@ -155,7 +155,7 @@
                                 v-model="formData.reason"
                                 class="order-change-form-field__textarea"
                                 maxlength="500"
-                                placeholder="请详细说明暂停原因，至少 10 个字。"
+                                placeholder="请填写暂停原因，至少 10 字。"
                                 placeholder-style="color:#B4ACA8;"
                             />
                         </view>
@@ -171,9 +171,7 @@
                     class="order-change-card order-change-form-card"
                 >
                     <text class="order-change-card__title">证明材料</text>
-                    <text class="order-change-card__caption">
-                        选填，最多上传 10 张，用于补充说明暂停原因。
-                    </text>
+                    <text class="order-change-card__caption"> 选填，最多 10 张。 </text>
                     <view class="order-change-upload-grid">
                         <view
                             v-for="(image, index) in formData.proof_images"
@@ -207,7 +205,7 @@
                 <BaseCard variant="surface" scene="consumer" class="order-change-card">
                     <text class="order-change-card__title">提交后说明</text>
                     <text class="order-change-card__paragraph">
-                        暂停申请提交成功后会跳转到暂停详情页。若审核通过，订单会在暂停周期内冻结，恢复时间以平台通知为准。
+                        提交成功，可在详情页查看进度。
                     </text>
                 </BaseCard>
             </view>

@@ -6,7 +6,7 @@
                     <tn-icon name="phone" size="54" color="#E85A4F" />
                 </view>
                 <text class="auth-hero__title">绑定手机号</text>
-                <text class="auth-hero__desc">为了账号安全和订单通知，请先完成手机号绑定。</text>
+                <text class="auth-hero__desc">绑定后可接收订单通知。</text>
             </view>
         </template>
 

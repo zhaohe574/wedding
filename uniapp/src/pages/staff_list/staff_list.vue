@@ -32,7 +32,7 @@
                 <template #empty>
                     <EmptyState
                         title="当前筛选暂无可预约团队"
-                        description="返回档期查询页调整条件后，再重新筛选一批更合适的人员。"
+                        description="调整筛选条件后重试。"
                         action-text="返回重筛"
                         @action="handleEmptyAction"
                     />

@@ -147,7 +147,7 @@
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="上传封面、图片或视频后，作品会在这里展示审核与上架状态。"
+                        description="在这里查看作品状态。"
                         action-text="新增作品"
                         @action="handleAdd"
                     />

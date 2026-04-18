@@ -21,9 +21,7 @@
                             <text class="sync-subtitle">{{ weddingMainDateText }}</text>
                         </view>
                     </view>
-                    <text class="sync-tip"
-                        >保存后会同步给主持、摄影与策划团队，避免服务信息不一致。</text
-                    >
+                    <text class="sync-tip">保存后会同步资料。</text>
                 </view>
 
                 <view class="section-card wm-form-block">
@@ -80,7 +78,7 @@
                 </view>
 
                 <view class="section-card wm-form-block">
-                    <text class="section-title">婚礼信息与偏好</text>
+                    <text class="section-title">婚礼信息</text>
                     <view class="field-card wm-soft-card">
                         <text class="field-label">婚礼日期</text>
                         <text class="field-readonly">{{ weddingDateText }}</text>
@@ -268,17 +266,17 @@ const displayName = computed(() => {
 
 const weddingMainDateText = computed(() => {
     const date = String(weddingInfo.wedding_date || '').trim()
-    return date ? `婚礼主档期：${date}` : '婚礼主档期待补充'
+    return date ? `婚期：${date}` : '婚期待补充'
 })
 
 const weddingDateText = computed(() => {
     const date = String(weddingInfo.wedding_date || '').trim()
-    return date || '未同步婚礼日期'
+    return date || '未填写婚期'
 })
 
 const weddingVenueText = computed(() => {
     const venue = String(weddingInfo.wedding_venue || '').trim()
-    return venue || '待补充婚礼场地'
+    return venue || '待补充场地'
 })
 
 const contactText = computed(() => {

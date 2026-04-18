@@ -88,9 +88,7 @@ const formData = reactive<any>({
 
 const pageTitle = computed(() => (type.value === 'set' ? '设置登录密码' : '修改登录密码'))
 const pageDesc = computed(() =>
-    type.value === 'set'
-        ? '为了账号安全，请先设置一个稳定可靠的登录密码。'
-        : '请输入当前密码并设置新的登录密码，修改后会立即生效。'
+    type.value === 'set' ? '请设置登录密码。' : '请输入当前密码并设置新密码。'
 )
 const hasMixedPassword = computed(
     () => /[a-zA-Z]/.test(formData.password) && /[0-9]/.test(formData.password)

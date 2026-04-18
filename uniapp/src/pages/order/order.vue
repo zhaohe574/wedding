@@ -4,10 +4,8 @@
         <BaseNavbar title="我的订单" />
         <view class="order-page">
             <view class="order-page__summary">
-                <text class="order-page__summary-title">按订单状态快速查看服务进度</text>
-                <text class="order-page__summary-desc"
-                    >待确认、待支付、待服务等关键节点会自动同步到这里。</text
-                >
+                <text class="order-page__summary-title">订单进度</text>
+                <text class="order-page__summary-desc">待确认、待支付等状态在此查看。</text>
             </view>
             <scroll-view scroll-x class="order-page__filter-scroll" :show-scrollbar="false">
                 <view class="order-page__filter-row">
@@ -36,7 +34,7 @@
                 <view v-else-if="orders.length === 0" class="empty-state">
                     <EmptyState
                         title="当前筛选下还没有订单"
-                        description="继续去挑选服务人员，新的预约会第一时间同步到这里。"
+                        description="去预约后会显示在这里。"
                         action-text="去预约"
                         @action="goHome"
                     />

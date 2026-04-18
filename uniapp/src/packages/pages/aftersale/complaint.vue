@@ -53,7 +53,7 @@
                         <AfterSaleEmptyState
                             icon="warning-circle"
                             title="还没有投诉"
-                            description="遇到异常时可以快速提交。"
+                            description="可在这里提交投诉。"
                         />
                     </template>
                 </z-paging>

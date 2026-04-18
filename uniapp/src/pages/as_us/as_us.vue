@@ -98,10 +98,7 @@
                     ></view>
                 </view>
                 <text class="about-text">
-                    {{
-                        appStore.getWebsiteConfig.shop_intro ||
-                        '专注于为新人提供专业、贴心的婚庆服务，让每一场婚礼都成为独一无二的美好回忆。我们拥有经验丰富的团队，致力于打造完美的婚礼体验。'
-                    }}
+                    {{ appStore.getWebsiteConfig.shop_intro || '专注婚礼服务，提供专业团队支持。' }}
                 </text>
             </view>
 
@@ -168,22 +165,22 @@ const features = [
     {
         icon: 'star',
         title: '专业团队',
-        desc: '经验丰富的婚礼策划师'
+        desc: '经验丰富'
     },
     {
         icon: 'like-lack',
         title: '贴心服务',
-        desc: '全程一对一专属服务'
+        desc: '一对一服务'
     },
     {
         icon: 'trusty',
         title: '品质保障',
-        desc: '严格的质量管控体系'
+        desc: '全程把控'
     },
     {
         icon: 'gift',
         title: '个性定制',
-        desc: '量身打造专属婚礼'
+        desc: '定制方案'
     }
 ]
 

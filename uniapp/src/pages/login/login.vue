@@ -16,7 +16,7 @@
                 <text class="auth-hero__eyebrow">Welcome Back</text>
                 <text class="auth-hero__title">登录您的账号</text>
                 <text class="auth-hero__desc">
-                    {{ websiteConfig.shop_name || '婚礼服务平台' }}，继续查看预约、订单与动态内容。
+                    {{ websiteConfig.shop_name || '婚礼服务平台' }}
                 </text>
             </view>
         </template>
@@ -34,7 +34,7 @@
                     </view>
                     <view class="auth-entry__content">
                         <text class="auth-entry__title">微信一键登录</text>
-                        <text class="auth-entry__desc">适合快速进入，自动同步账号信息</text>
+                        <text class="auth-entry__desc">快速登录</text>
                     </view>
                     <tn-icon name="right" size="24" :color="$theme.btnColor" />
                 </view>
@@ -50,9 +50,7 @@
                     </view>
                     <view class="auth-entry__content">
                         <text class="auth-entry__title">{{ localLoginEntryText }}</text>
-                        <text class="auth-entry__desc">
-                            支持账号密码或验证码登录，适合多端账号使用
-                        </text>
+                        <text class="auth-entry__desc"> 账号或验证码登录 </text>
                     </view>
                     <tn-icon name="right" size="24" :color="primaryColor" />
                 </view>
@@ -63,7 +61,7 @@
                     <text class="auth-form__title">
                         {{ formData.scene == LoginWayEnum.ACCOUNT ? '账号密码登录' : '验证码登录' }}
                     </text>
-                    <text class="auth-form__desc">请输入账号信息完成登录</text>
+                    <text class="auth-form__desc">请输入账号信息</text>
                 </view>
 
                 <template

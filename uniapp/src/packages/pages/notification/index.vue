@@ -69,7 +69,7 @@
                 <EmptyState
                     v-else-if="!notificationList.length"
                     :title="`暂无${currentTypeLabel}`"
-                    description="最新消息会在这里出现，订单、互动和系统提醒也会统一收在这里。"
+                    description="消息会显示在这里。"
                 />
 
                 <view v-else class="notice-list">
@@ -277,7 +277,7 @@ const navigateByTarget = (item: any) => {
     uni.navigateTo({
         url: route,
         fail: () => {
-            openNotificationDetail(item, '当前消息暂不支持直接跳转，请先查看内容说明。')
+            openNotificationDetail(item, '当前消息暂不支持跳转。')
         }
     })
     return true
@@ -304,7 +304,7 @@ const handleItemClick = async (item: any) => {
     }
 
     uni.showToast({ title: '当前消息仅支持查看详情', icon: 'none' })
-    openNotificationDetail(item, '当前消息目标未配置跳转页，已为你打开内容详情。')
+    openNotificationDetail(item, '已为你打开详情。')
 }
 
 const handleMarkAllRead = () => {

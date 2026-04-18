@@ -52,7 +52,7 @@ import { getOrderStatistics } from '@/api/order'
 import { getUserWeddingDate } from '@/api/user'
 import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import PageShell from '@/components/base/PageShell.vue'
-import { appendPageContractQuery, getPageContract, getRoleEntryStates } from '@/utils/page-contract'
+import { appendPageContractQuery, getRoleEntryStates } from '@/utils/page-contract'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
@@ -94,8 +94,6 @@ const unreadMessageCount = ref(0)
 const weddingInfo = ref<Record<string, any>>({})
 
 const USER_WIDGET_ORDER = ['user-info', 'wedding-countdown', 'quick-entry']
-const USER_PAGE_CONTRACT = getPageContract('/pages/user/user')
-
 const featureSwitch = computed(() => appStore.config?.feature_switch || {})
 
 const roleEntryStates = computed(() =>
@@ -112,7 +110,7 @@ const visibleRoleEntryItems = computed<QuickEntryItem[]>(() => {
         .map((item) => ({
             key: item.key,
             title: item.title,
-            subtitle: item.subtitle,
+            subtitle: '',
             is_show: '1',
             disabled: !item.enabled,
             requiresLogin: true,
@@ -131,9 +129,9 @@ const visibleRoleEntryItems = computed<QuickEntryItem[]>(() => {
 const weddingProfileSubtitle = computed(() => {
     const weddingDateText = String(weddingInfo.value?.wedding_date || '').trim()
     if (weddingDateText) {
-        return `婚期已同步：${weddingDateText}`
+        return `婚期：${weddingDateText}`
     }
-    return '完善婚期、场地与称呼'
+    return ''
 })
 
 const widgetMap = computed(() => {
@@ -183,8 +181,8 @@ const buildQuickEntryData = (): QuickEntryItem[] => {
             key: 'notification',
             title: '通知中心',
             subtitle: Number(unreadMessageCount.value || 0)
-                ? `${Number(unreadMessageCount.value || 0)} 条待处理消息`
-                : '订单、互动消息会在这里同步',
+                ? `${Number(unreadMessageCount.value || 0)} 条待处理`
+                : '',
             is_show: '1',
             disabled: false,
             requiresLogin: true,
@@ -202,7 +200,7 @@ const buildQuickEntryData = (): QuickEntryItem[] => {
         {
             key: 'favorite',
             title: '我的收藏',
-            subtitle: '服务人员与内容收藏入口',
+            subtitle: '',
             is_show: '1',
             disabled: false,
             requiresLogin: true,
@@ -211,7 +209,7 @@ const buildQuickEntryData = (): QuickEntryItem[] => {
         {
             key: 'aftersale',
             title: '售后服务',
-            subtitle: '投诉、工单、回访统一查看',
+            subtitle: '',
             is_show: '1',
             disabled: false,
             requiresLogin: true,
@@ -220,7 +218,7 @@ const buildQuickEntryData = (): QuickEntryItem[] => {
         {
             key: 'waitlist',
             title: '我的候补',
-            subtitle: '查看候补进度与平台通知',
+            subtitle: '',
             is_show: '1',
             disabled: false,
             requiresLogin: true,
@@ -229,7 +227,7 @@ const buildQuickEntryData = (): QuickEntryItem[] => {
         {
             key: 'settings',
             title: '设置',
-            subtitle: '账号与协议管理',
+            subtitle: '',
             is_show: '1',
             disabled: false,
             requiresLogin: true,
@@ -316,9 +314,7 @@ const mergeUserInfoContent = (content: Record<string, any>) => {
     const weddingDateText = String(weddingInfo.value?.wedding_date || '').trim()
     return {
         ...content,
-        profile_subtitle: weddingDateText
-            ? `婚礼主档期：${weddingDateText}`
-            : '点击完善资料，更新主档期'
+        profile_subtitle: weddingDateText ? `婚期：${weddingDateText}` : ''
     }
 }
 
@@ -334,7 +330,7 @@ const mergeQuickEntryContent = (content: Record<string, any>) => {
         ...content,
         style: 3,
         title: content.title || '快捷功能',
-        subtitle: content.subtitle || '常用入口',
+        subtitle: '',
         data: buildQuickEntryData()
     }
 }
@@ -345,7 +341,7 @@ const mergeRoleEntryContent = (content: Record<string, any>) => {
         enabled: visibleRoleEntryItems.value.length ? 1 : 0,
         style: 3,
         title: '角色入口',
-        subtitle: USER_PAGE_CONTRACT.audience.consumer === 'included' ? '固定骨架区' : '兼容入口',
+        subtitle: '',
         data: visibleRoleEntryItems.value
     }
 }

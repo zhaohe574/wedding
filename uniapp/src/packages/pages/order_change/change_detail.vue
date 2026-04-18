@@ -98,7 +98,7 @@
                             </view>
                         </view>
                         <text class="order-change-card__paragraph">
-                            改期申请会在审核通过后同步更新订单履约日期，请以最终执行结果为准。
+                            审核通过后会更新履约日期。
                         </text>
                     </template>
 
@@ -158,9 +158,7 @@
                         <text class="order-change-card__headline">
                             {{ getValueText(detail.add_package_name, '新增服务待确认') }}
                         </text>
-                        <text class="order-change-card__paragraph">
-                            平台会按新增服务内容、服务人员和服务日期审核本次加项申请。
-                        </text>
+                        <text class="order-change-card__paragraph"> 平台会审核新增服务信息。 </text>
                         <view class="order-change-summary-grid">
                             <view class="order-change-summary-grid__item">
                                 <text class="order-change-summary-grid__label">服务人员</text>
@@ -191,9 +189,7 @@
                         <view class="order-change-card__badge-row">
                             <StatusBadge tone="neutral" size="sm">历史下线能力</StatusBadge>
                         </view>
-                        <text class="order-change-card__paragraph">
-                            旧版附加服务变更不再在用户端提供详细编辑能力，当前页面仅保留状态和基础申请信息。
-                        </text>
+                        <text class="order-change-card__paragraph"> 当前页面仅展示基础信息。 </text>
                     </template>
                 </BaseCard>
 

@@ -14,7 +14,7 @@
             <!-- 顶部标题区域 -->
             <view class="top-header">
                 <text class="top-header-title">分享您的体验</text>
-                <text class="top-header-desc">您的评价将帮助我们提供更好的服务</text>
+                <text class="top-header-desc">欢迎留下真实体验</text>
             </view>
 
             <!-- 订单信息卡片 -->
@@ -166,7 +166,7 @@
                 <textarea
                     v-model="formData.content"
                     class="content-input"
-                    placeholder="分享您的服务体验，帮助更多人选择..."
+                    placeholder="写下您的体验..."
                     maxlength="500"
                     :cursor-spacing="120"
                 />
@@ -222,7 +222,7 @@
                     <tn-icon name="gift" size="40rpx" :color="$theme.primaryColor"></tn-icon>
                 </view>
                 <view class="reward-info">
-                    <text class="reward-text">评价审核通过后发放积分奖励</text>
+                    <text class="reward-text">审核通过后发放积分</text>
                     <text class="reward-points" :style="{ color: $theme.primaryColor }"
                         >预计 +{{ rewardPoints }} 积分</text
                     >
@@ -283,9 +283,9 @@ type DetailScoreKey = 'score_service' | 'score_professional' | 'score_punctual' 
 
 // 评分感知提示
 const scoreHintText = computed(() => {
-    if (formData.score >= 4) return '选择最能描述您满意体验的标签'
-    if (formData.score === 3) return '选择最能描述您体验的标签'
-    return '选择最能描述问题的标签，帮助我们改进'
+    if (formData.score >= 4) return '选择满意标签'
+    if (formData.score === 3) return '选择体验标签'
+    return '选择问题标签'
 })
 
 const scoreHintIcon = computed(() => {
@@ -483,8 +483,8 @@ const handleSubmit = async () => {
             title: '评价成功',
             content:
                 res.reward_points > 0
-                    ? `已提交审核，审核通过后预计发放${res.reward_points}积分`
-                    : '已提交审核，感谢您的评价',
+                    ? `已提交，预计发放${res.reward_points}积分`
+                    : '已提交，感谢评价',
             showCancel: false,
             success: () => {
                 uni.navigateBack()

@@ -116,7 +116,7 @@
         <AfterSaleBottomSheet
             v-model="showConfirmPopup"
             title="确认完成"
-            subtitle="提交满意度后将结束当前工单。"
+            subtitle="提交后将结束工单。"
             primary-text="确认提交"
             secondary-text="取消"
             @confirm="handleConfirm"

@@ -140,7 +140,7 @@
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="附加项的图片、价格和上下架状态，会在这里统一维护。"
+                        description="在这里管理附加项。"
                         action-text="新增附加项"
                         @action="goCreate"
                     />

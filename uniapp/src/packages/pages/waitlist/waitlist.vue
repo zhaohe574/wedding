@@ -211,24 +211,24 @@ const buildDetailText = (item: WaitlistRecord) => {
 
 const getStatusSummary = (status: number) => {
     const map: Record<number, string> = {
-        0: '已进入候补队列，平台会在档期释放或服务人员可接单时通知你。',
-        1: '当前档期已释放，请尽快确认服务内容并完成预约。',
-        2: '该候补已转为正式预约，请在订单或服务沟通中继续跟进。',
-        3: '本次候补已失效，若仍有需要可重新选择日期后再次加入。'
+        0: '已加入候补队列。',
+        1: '档期已释放，请尽快预约。',
+        2: '已转为正式预约。',
+        3: '本次候补已失效。'
     }
 
-    return map[status] || '候补状态已更新，请留意消息中心的后续通知。'
+    return map[status] || '请留意后续通知。'
 }
 
 const getNextStepText = (status: number) => {
     const map: Record<number, string> = {
-        0: '下一步：等待平台通知；若计划变化，可先取消当前候补。',
-        1: '下一步：进入服务人员详情确认档期与套餐，然后尽快预约。',
-        2: '下一步：请留意订单与消息通知中的后续安排。',
-        3: '下一步：重新查询档期，或调整日期后再次加入候补。'
+        0: '下一步：等待通知。',
+        1: '下一步：确认档期并预约。',
+        2: '下一步：留意订单与消息通知。',
+        3: '下一步：重新查询档期。'
     }
 
-    return map[status] || '下一步：请关注消息中心中的候补通知。'
+    return map[status] || '下一步：关注消息通知。'
 }
 
 const buildTimelineText = (item: WaitlistRecord) => {
@@ -250,8 +250,8 @@ const buildTimelineText = (item: WaitlistRecord) => {
 const buildNextStepText = (item: WaitlistRecord) => {
     if (Number(item.notify_status) === 1 && item.can_book_now === false) {
         return item.book_block_reason
-            ? `下一步：${item.book_block_reason}，请留意平台后续通知。`
-            : '下一步：请留意平台后续通知。'
+            ? `下一步：${item.book_block_reason}，请留意后续通知。`
+            : '下一步：请留意后续通知。'
     }
 
     return getNextStepText(Number(item.notify_status || 0))
@@ -361,7 +361,7 @@ const handleBook = (item: WaitlistRecord) => {
 const handleCancel = (item: WaitlistRecord) => {
     uni.showModal({
         title: '取消候补',
-        content: '确定要取消该候补吗？取消后需要重新加入候补队列。',
+        content: '确定要取消该候补吗？取消后需重新加入。',
         confirmColor: '#FF2C3C',
         success: async (res) => {
             if (res.confirm) {

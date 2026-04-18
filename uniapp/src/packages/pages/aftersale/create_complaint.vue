@@ -40,7 +40,7 @@
                     <view class="aftersale-create-section">
                         <view class="aftersale-create-section__head">
                             <text class="aftersale-create-section__title">关联订单</text>
-                            <text class="aftersale-create-section__meta">投诉需关联具体订单</text>
+                            <text class="aftersale-create-section__meta">需关联订单</text>
                         </view>
                         <view class="aftersale-create-panel" @click="showOrderPicker = true">
                             <text
@@ -70,7 +70,7 @@
                         >
                             <text class="aftersale-create-section__title">投诉内容</text>
                             <text class="aftersale-create-section__meta">
-                                提交时会自动生成标题：{{ previewTitle }}
+                                标题预览：{{ previewTitle }}
                             </text>
                         </view>
                         <textarea
@@ -102,7 +102,7 @@
                                 v-model="form.expect_result"
                                 class="aftersale-create-input"
                                 maxlength="60"
-                                placeholder="例如：退款、道歉、补偿说明"
+                                placeholder="如：退款、补偿"
                                 placeholder-style="color: #B4ACA8;"
                             />
                         </view>
@@ -120,9 +120,7 @@
                             class="aftersale-create-section__head aftersale-create-section__head--stack"
                         >
                             <text class="aftersale-create-section__title">上传凭证</text>
-                            <text class="aftersale-create-section__meta">
-                                现场截图、聊天记录等凭证有助于平台快速核查
-                            </text>
+                            <text class="aftersale-create-section__meta"> 建议上传凭证 </text>
                         </view>
                         <AfterSaleMediaUploader
                             v-model="form.images"
@@ -148,7 +146,7 @@
                         >
                             <text class="aftersale-create-section__title">联系方式</text>
                             <text class="aftersale-create-section__meta">
-                                平台处理时会优先通过这组信息与你确认细节
+                                平台会优先联系此信息
                             </text>
                         </view>
 
@@ -177,9 +175,7 @@
                     </view>
                 </BaseCard>
 
-                <view class="aftersale-create-page__footer-copy">
-                    提交后可查看进度，平台会根据投诉等级和凭证完整度优先核查。
-                </view>
+                <view class="aftersale-create-page__footer-copy"> 提交后可查看进度。 </view>
             </view>
         </view>
 

@@ -67,9 +67,7 @@
                     <view class="section-head section-head--stack">
                         <view class="section-head__copy">
                             <text class="section-head__title">月历视图</text>
-                            <text class="section-head__desc">
-                                先看待履约日期，再维护可预约与休息日状态
-                            </text>
+                            <text class="section-head__desc"> 先看待履约日期 </text>
                         </view>
 
                         <view class="legend-row">

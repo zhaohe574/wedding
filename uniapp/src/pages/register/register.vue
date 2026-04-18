@@ -4,7 +4,7 @@
             <view class="auth-hero">
                 <text class="auth-hero__eyebrow">Create Account</text>
                 <text class="auth-hero__title">注册新账号</text>
-                <text class="auth-hero__desc">创建账号后即可继续预约、查看订单和售后服务。</text>
+                <text class="auth-hero__desc">注册后即可预约与查看订单。</text>
             </view>
         </template>
 

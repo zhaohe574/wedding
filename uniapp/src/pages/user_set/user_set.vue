@@ -41,7 +41,7 @@
                             </view>
                             <view class="settings-item__copy">
                                 <text class="settings-item__title">登录密码</text>
-                                <text class="settings-item__desc">统一修改或补设登录密码</text>
+                                <text class="settings-item__desc">修改登录密码</text>
                             </view>
                         </view>
                         <view class="settings-item__tail">
@@ -63,7 +63,7 @@
                             </view>
                             <view class="settings-item__copy">
                                 <text class="settings-item__title">绑定微信</text>
-                                <text class="settings-item__desc">同步微信授权状态与快捷登录</text>
+                                <text class="settings-item__desc">微信快捷登录</text>
                             </view>
                         </view>
                         <view class="settings-item__tail">
@@ -85,7 +85,7 @@
             <BaseCard variant="surface" class="settings-section">
                 <view class="settings-section__head">
                     <text class="settings-section__title">协议与关于</text>
-                    <text class="settings-section__meta">品牌与服务说明</text>
+                    <text class="settings-section__meta">协议与信息</text>
                 </view>
 
                 <view class="settings-list">
@@ -103,7 +103,7 @@
                                 </view>
                                 <view class="settings-item__copy">
                                     <text class="settings-item__title">隐私政策</text>
-                                    <text class="settings-item__desc">查看信息收集与使用说明</text>
+                                    <text class="settings-item__desc">查看协议</text>
                                 </view>
                             </view>
                             <view class="settings-item__tail">
@@ -126,9 +126,7 @@
                                 </view>
                                 <view class="settings-item__copy">
                                     <text class="settings-item__title">服务协议</text>
-                                    <text class="settings-item__desc"
-                                        >查看预约、履约与售后规则</text
-                                    >
+                                    <text class="settings-item__desc">查看协议</text>
                                 </view>
                             </view>
                             <view class="settings-item__tail">
@@ -148,7 +146,7 @@
                                 </view>
                                 <view class="settings-item__copy">
                                     <text class="settings-item__title">关于我们</text>
-                                    <text class="settings-item__desc">查看品牌介绍与版本信息</text>
+                                    <text class="settings-item__desc">品牌与版本</text>
                                 </view>
                             </view>
                             <view class="settings-item__tail settings-item__tail--meta">
@@ -230,9 +228,7 @@
                         <tn-icon name="warning" :size="60" color="#FFFFFF" />
                     </view>
                     <text class="logout-popup__title">确认退出登录？</text>
-                    <text class="logout-popup__desc">
-                        退出后将清除当前设备上的登录状态，需要重新登录才能继续使用预约与订单能力。
-                    </text>
+                    <text class="logout-popup__desc"> 退出后需重新登录。 </text>
                     <view class="logout-popup__actions">
                         <view class="logout-popup__action">
                             <BaseButton

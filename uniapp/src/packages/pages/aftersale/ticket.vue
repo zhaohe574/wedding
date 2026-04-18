@@ -53,7 +53,7 @@
                         <AfterSaleEmptyState
                             icon="file-text"
                             title="还没有工单"
-                            description="需要协助时可以立即提交。"
+                            description="可在这里提交工单。"
                         />
                     </template>
                 </z-paging>

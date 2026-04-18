@@ -31,9 +31,7 @@
                         <view class="section-header section-header--stack">
                             <view>
                                 <text class="section-title">预约信息</text>
-                                <text class="section-desc"
-                                    >当前档期和服务地区会直接写入订单，提交前请再次确认。</text
-                                >
+                                <text class="section-desc">提交前请确认档期与地区。</text>
                             </view>
                         </view>
                         <view class="booking-grid">
@@ -59,9 +57,7 @@
                         <view class="section-header section-header--stack">
                             <view>
                                 <text class="section-title">联系人信息</text>
-                                <text class="section-desc"
-                                    >用于订单沟通、档期确认和上门服务，请尽量填写准确信息。</text
-                                >
+                                <text class="section-desc">请填写准确信息。</text>
                             </view>
                         </view>
 
@@ -126,9 +122,7 @@
                         <view class="section-header">
                             <view class="section-header__text">
                                 <text class="section-title">服务项目</text>
-                                <text class="section-desc"
-                                    >先确认主服务，再统一核对附加项与关联服务人员。</text
-                                >
+                                <text class="section-desc">先确认主服务，再核对附加项。</text>
                             </view>
                             <view class="section-action" @click="handleReselect">
                                 <text>重新选择</text>
@@ -152,7 +146,7 @@
                                 <text class="service-main__name">{{
                                     mainItem.staff?.name || '服务人员'
                                 }}</text>
-                                <text class="service-main__meta">已为当前档期锁定服务人员</text>
+                                <text class="service-main__meta">已锁定服务人员</text>
                                 <view class="service-main__tag">
                                     <text>主套餐</text>
                                 </view>
@@ -205,9 +199,7 @@
                         <view class="section-header section-header--stack">
                             <view>
                                 <text class="section-title">支付安排</text>
-                                <text class="section-desc"
-                                    >提交后将根据当前支付规则进入对应支付阶段。</text
-                                >
+                                <text class="section-desc">提交后按支付规则进入下一步。</text>
                             </view>
                         </view>
                         <view class="payment-arrangement">
@@ -597,7 +589,7 @@ const promptOrderSubscribe = async () => {
 
     const result = await uni.showModal({
         title: '接收微信服务提醒',
-        content: '订阅后可在微信及时收到订单提交、确认结果、支付结果与服务提醒，避免错过重要进度。',
+        content: '订阅后可接收订单提醒。',
         confirmText: '去订阅',
         cancelText: '暂不订阅'
     })

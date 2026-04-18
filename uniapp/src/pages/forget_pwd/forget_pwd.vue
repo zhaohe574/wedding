@@ -4,9 +4,7 @@
             <view class="auth-hero">
                 <text class="auth-hero__eyebrow">Recover Access</text>
                 <text class="auth-hero__title">重置登录密码</text>
-                <text class="auth-hero__desc"
-                    >通过手机号验证码验证身份后，重新设置新的登录密码。</text
-                >
+                <text class="auth-hero__desc">验证手机号后重置密码。</text>
             </view>
         </template>
 

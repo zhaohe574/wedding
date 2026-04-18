@@ -66,9 +66,7 @@
 
                         <BaseCard variant="glass" scene="staff" class="scope-card">
                             <text class="scope-card__title">当前为服务人员履约视角</text>
-                            <text class="scope-card__desc">
-                                这里仅展示与你履约相关的订单、金额与时限。整单支付、退款、线下凭证审核等支付动作统一由后台处理。
-                            </text>
+                            <text class="scope-card__desc"> 这里只显示履约相关订单。 </text>
                         </BaseCard>
                     </view>
                 </template>

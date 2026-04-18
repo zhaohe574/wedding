@@ -102,7 +102,7 @@
         <AfterSaleBottomSheet
             v-model="showRatePopup"
             title="处理满意度"
-            subtitle="提交后会同步到投诉记录。"
+            subtitle="提交后会同步记录。"
             primary-text="提交评价"
             secondary-text="取消"
             @confirm="handleRate"

@@ -234,10 +234,7 @@ class OrderController extends BaseApiController
     {
         $params = (new OrderValidate())->goCheck('confirmLetterCurrent');
         $result = OrderLogic::getConfirmLetterCurrent((int) $params['id'], $this->userId);
-        if ($result === null) {
-            return $this->fail('确认函不存在或当前不可查看');
-        }
-        return $this->data($result);
+        return $this->data($result ?? []);
     }
 
     /**
