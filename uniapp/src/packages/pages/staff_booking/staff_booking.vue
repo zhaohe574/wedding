@@ -17,9 +17,9 @@
                 </view>
 
                 <view v-else-if="currentStep" class="staff-booking-page__content">
-                    <view class="step-badge">
-                        <text class="step-badge__text">{{ currentStepTag }}</text>
-                    </view>
+                    <StatusBadge tone="info" size="sm" class="step-badge">
+                        {{ currentStepTag }}
+                    </StatusBadge>
 
                     <view class="staff-booking-page__main">
                         <text class="staff-booking-page__desc">{{ currentIntroText }}</text>
@@ -314,6 +314,8 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
 
 import LoadingState from '@/components/base/LoadingState.vue'
+
+import StatusBadge from '@/components/base/StatusBadge.vue'
 
 import { BACK_URL } from '@/enums/constantEnums'
 
@@ -1501,25 +1503,7 @@ onUnload(() => {
 .step-badge {
     align-self: flex-start;
 
-    padding: 13rpx 22rpx;
-
-    border-radius: 999rpx;
-
-    background: #fff1ee;
-
-    border: 1rpx solid #f4c7bf;
-
     box-shadow: 0 8rpx 20rpx rgba(232, 90, 79, 0.08);
-}
-
-.step-badge__text {
-    font-size: 22rpx;
-
-    line-height: 1.2;
-
-    font-weight: 600;
-
-    color: #e85a4f;
 }
 
 .choice-scroll {

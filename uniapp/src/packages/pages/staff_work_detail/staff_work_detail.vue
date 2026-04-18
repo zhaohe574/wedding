@@ -4,10 +4,9 @@
         <BaseNavbar title="作品详情" />
 
         <view class="work-detail wm-page-content" v-if="workDetail">
-            <!-- 顶部封面区域 -->
-            <view class="cover-section">
+            <BaseCard variant="hero" scene="consumer" class="work-hero" padding="0">
                 <image
-                    class="cover-image"
+                    class="work-hero__image"
                     :src="
                         workDetail.cover ||
                         workDetail.images?.[0] ||
@@ -17,107 +16,111 @@
                     @click="previewCover"
                 />
 
-                <!-- 玻璃态信息卡 -->
-                <view class="glass-info-card wm-panel-card">
-                    <view class="title-row">
-                        <text class="work-title">{{ workDetail.title || '未命名作品' }}</text>
-                        <view class="badges-group">
-                            <view class="view-badge">
+                <view class="work-hero__overlay">
+                    <view class="work-hero__badge-row">
+                        <StatusBadge tone="neutral" size="sm">
+                            <view class="work-hero__badge-content">
                                 <tn-icon name="eye" size="24" color="#C99B73" />
-                                <text class="view-count">{{ workDetail.view_count || 0 }}</text>
+                                <text>浏览 {{ workDetail.view_count || 0 }}</text>
                             </view>
-                            <view
-                                class="type-badge"
-                                :style="{ backgroundColor: $theme.primaryColor }"
-                            >
-                                <text class="type-text">{{ workDetail.type_desc || '作品' }}</text>
-                            </view>
-                        </view>
+                        </StatusBadge>
+
+                        <StatusBadge tone="info" size="sm">
+                            {{ workDetail.type_desc || '作品' }}
+                        </StatusBadge>
                     </view>
 
-                    <view class="info-tags">
-                        <view v-if="workDetail.shoot_date" class="info-tag">
-                            <tn-icon name="calendar" size="24" color="#666" />
-                            <text class="tag-text">{{ workDetail.shoot_date }}</text>
+                    <view class="work-hero__copy">
+                        <text class="work-hero__eyebrow">婚礼作品集</text>
+                        <text class="work-hero__title">{{ workDetail.title || '未命名作品' }}</text>
+                        <text v-if="workDetail.description" class="work-hero__desc">
+                            {{ workDetail.description }}
+                        </text>
+                    </view>
+
+                    <view class="work-hero__meta-list">
+                        <view v-if="workDetail.shoot_date" class="work-hero__meta-pill">
+                            <tn-icon name="calendar" size="24" color="#7F7B78" />
+                            <text class="work-hero__meta-text">{{ workDetail.shoot_date }}</text>
                         </view>
-                        <view v-if="workDetail.location" class="info-tag">
-                            <tn-icon name="map-pin" size="24" color="#666" />
-                            <text class="tag-text">{{ workDetail.location }}</text>
+
+                        <view v-if="workDetail.location" class="work-hero__meta-pill">
+                            <tn-icon name="map-pin" size="24" color="#7F7B78" />
+                            <text class="work-hero__meta-text">{{ workDetail.location }}</text>
                         </view>
                     </view>
                 </view>
-            </view>
+            </BaseCard>
 
-            <!-- 作品描述 -->
-            <view v-if="workDetail.description" class="desc-card wm-form-block">
-                <view class="section-header">
-                    <tn-icon name="document" size="32" :color="$theme.primaryColor" />
-                    <text class="section-title">作品说明</text>
+            <BaseCard
+                v-if="workDetail.description"
+                variant="surface"
+                scene="consumer"
+                class="detail-card"
+            >
+                <view class="detail-card__head">
+                    <text class="detail-card__eyebrow">作品说明</text>
+                    <text class="detail-card__title">本组作品亮点</text>
                 </view>
-                <text class="desc-text">{{ workDetail.description }}</text>
-            </view>
 
-            <!-- 工作人员信息卡片 -->
-            <view v-if="workDetail.staff" class="staff-card wm-panel-card" @click="goToStaffDetail">
-                <view class="staff-header">
-                    <view class="staff-left">
+                <text class="detail-card__body-text">{{ workDetail.description }}</text>
+            </BaseCard>
+
+            <BaseCard
+                v-if="workDetail.staff"
+                variant="glass"
+                scene="consumer"
+                class="staff-summary-card"
+                interactive
+                @click="goToStaffDetail"
+            >
+                <view class="staff-summary-card__head">
+                    <view class="staff-summary-card__identity">
                         <image
-                            class="staff-avatar"
+                            class="staff-summary-card__avatar"
                             :src="
                                 workDetail.staff.avatar || '/static/images/user/default_avatar.png'
                             "
                             mode="aspectFill"
                         />
-                        <view class="staff-info">
-                            <view class="staff-name-row">
-                                <text class="staff-name">{{ workDetail.staff.name || '-' }}</text>
-                                <view
-                                    class="staff-badge"
-                                    :style="{ backgroundColor: $theme.secondaryColor }"
-                                >
-                                    <text class="badge-text">{{
-                                        workDetail.staff.category_name || '未分类'
-                                    }}</text>
-                                </view>
+
+                        <view class="staff-summary-card__copy">
+                            <view class="staff-summary-card__title-row">
+                                <text class="staff-summary-card__name">
+                                    {{ workDetail.staff.name || '-' }}
+                                </text>
+                                <StatusBadge tone="info" size="sm">
+                                    {{ workDetail.staff.category_name || '未分类' }}
+                                </StatusBadge>
                             </view>
-                            <view class="staff-meta">
-                                <text class="staff-sn">工号：{{ workDetail.staff.sn || '-' }}</text>
+
+                            <text class="staff-summary-card__meta">
+                                工号：{{ workDetail.staff.sn || '-' }}
+                            </text>
+
+                            <view class="staff-summary-card__badge-row">
+                                <StatusBadge tone="neutral" size="sm">
+                                    评分 {{ workDetail.staff.rating || '5.0' }}
+                                </StatusBadge>
+                                <StatusBadge tone="success" size="sm">
+                                    服务 {{ workDetail.staff.order_count || 0 }} 场
+                                </StatusBadge>
+                                <StatusBadge tone="warning" size="sm">
+                                    评价 {{ workDetail.staff.review_count || 0 }}
+                                </StatusBadge>
+                                <StatusBadge tone="neutral" size="sm">
+                                    收藏 {{ workDetail.staff.favorite_count || 0 }}
+                                </StatusBadge>
                             </view>
                         </view>
                     </view>
+
                     <tn-icon name="arrow-right" size="32" color="#999" />
                 </view>
 
-                <view class="staff-stats">
-                    <view class="staff-stat-item">
-                        <text class="staff-stat-value" :style="{ color: $theme.primaryColor }">
-                            {{ workDetail.staff.rating || '5.0' }}
-                        </text>
-                        <text class="staff-stat-label">综合评分</text>
-                    </view>
-                    <view class="staff-stat-item">
-                        <text class="staff-stat-value" :style="{ color: $theme.ctaColor }">
-                            {{ workDetail.staff.order_count || 0 }}
-                        </text>
-                        <text class="staff-stat-label">服务次数</text>
-                    </view>
-                    <view class="staff-stat-item">
-                        <text class="staff-stat-value" :style="{ color: $theme.secondaryColor }">
-                            {{ workDetail.staff.review_count || 0 }}
-                        </text>
-                        <text class="staff-stat-label">评价数</text>
-                    </view>
-                    <view class="staff-stat-item">
-                        <text class="staff-stat-value" :style="{ color: '#10B981' }">
-                            {{ workDetail.staff.favorite_count || 0 }}
-                        </text>
-                        <text class="staff-stat-label">收藏数</text>
-                    </view>
-                </view>
-
-                <view class="staff-price-row">
-                    <text class="price-label">服务价格</text>
-                    <view class="staff-price">
+                <view class="staff-summary-card__price-row">
+                    <text class="staff-summary-card__price-label">服务价格</text>
+                    <view class="staff-summary-card__price">
                         <template
                             v-if="
                                 workDetail.staff.has_price !== false &&
@@ -125,23 +128,30 @@
                                 workDetail.staff.price !== undefined
                             "
                         >
-                            <text class="price-symbol" :style="{ color: $theme.ctaColor }">¥</text>
-                            <text class="price-value" :style="{ color: $theme.ctaColor }">
+                            <text class="staff-summary-card__price-symbol">¥</text>
+                            <text class="staff-summary-card__price-value">
                                 {{ workDetail.staff.price_text || workDetail.staff.price }}
                             </text>
-                            <text class="price-unit">/次起</text>
+                            <text class="staff-summary-card__price-unit">/次起</text>
                         </template>
-                        <text v-else class="price-negotiable">面议</text>
+                        <text v-else class="staff-summary-card__price-negotiable">面议</text>
                     </view>
                 </view>
-            </view>
+            </BaseCard>
 
-            <!-- 作品图片 -->
-            <view v-if="workDetail.images?.length" class="images-card wm-form-block">
-                <view class="section-header">
-                    <tn-icon name="image" size="32" :color="$theme.primaryColor" />
-                    <text class="section-title">作品图片（{{ workDetail.images.length }}张）</text>
+            <BaseCard
+                v-if="workDetail.images?.length"
+                variant="surface"
+                scene="consumer"
+                class="detail-card"
+            >
+                <view class="detail-card__head">
+                    <text class="detail-card__eyebrow">作品图片</text>
+                    <text class="detail-card__title">
+                        共 {{ workDetail.images.length }} 张精选画面
+                    </text>
                 </view>
+
                 <view class="images-grid" :class="getGridClass">
                     <image
                         v-for="(img, index) in displayImages"
@@ -159,13 +169,17 @@
                         <text class="more-text">+{{ workDetail.images.length - 9 }}</text>
                     </view>
                 </view>
-            </view>
+            </BaseCard>
 
-            <!-- 作品视频 -->
-            <view v-if="workDetail.video" class="video-card wm-form-block">
-                <view class="section-header">
-                    <tn-icon name="video" size="32" :color="$theme.primaryColor" />
-                    <text class="section-title">作品视频</text>
+            <BaseCard
+                v-if="workDetail.video"
+                variant="surface"
+                scene="consumer"
+                class="detail-card"
+            >
+                <view class="detail-card__head">
+                    <text class="detail-card__eyebrow">作品视频</text>
+                    <text class="detail-card__title">完整动态记录</text>
                 </view>
                 <video
                     :src="workDetail.video"
@@ -174,13 +188,29 @@
                     :controls="true"
                     :show-center-play-btn="true"
                 />
-            </view>
+            </BaseCard>
 
-            <!-- 时间信息 -->
-            <view class="time-info">
-                <text class="time-text">创建时间：{{ workDetail.create_time || '-' }}</text>
-                <text class="time-text">更新时间：{{ workDetail.update_time || '-' }}</text>
-            </view>
+            <BaseCard variant="surface" scene="consumer" class="detail-card detail-card--meta">
+                <view class="detail-card__head">
+                    <text class="detail-card__eyebrow">时间信息</text>
+                    <text class="detail-card__title">作品更新记录</text>
+                </view>
+
+                <view class="detail-card__meta-list">
+                    <view class="detail-card__meta-row">
+                        <text class="detail-card__meta-label">创建时间</text>
+                        <text class="detail-card__meta-value">
+                            {{ workDetail.create_time || '-' }}
+                        </text>
+                    </view>
+                    <view class="detail-card__meta-row">
+                        <text class="detail-card__meta-label">更新时间</text>
+                        <text class="detail-card__meta-value">
+                            {{ workDetail.update_time || '-' }}
+                        </text>
+                    </view>
+                </view>
+            </BaseCard>
         </view>
 
         <view v-else class="loading-container">
@@ -192,6 +222,8 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import BaseCard from '@/components/base/BaseCard.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { getWorkDetail } from '@/api/staff'
 import { useThemeStore } from '@/stores/theme'
 
@@ -270,6 +302,9 @@ onLoad((options: any) => {
 <style lang="scss" scoped>
 .work-detail {
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
     padding-bottom: 24rpx;
 }
 
@@ -280,268 +315,227 @@ onLoad((options: any) => {
     min-height: 100vh;
 }
 
-/* 顶部封面区域 */
-.cover-section {
+.work-hero {
     position: relative;
     width: 100%;
-    height: 560rpx;
-    margin-bottom: 24rpx;
+    min-height: 640rpx;
+    overflow: hidden;
 }
 
-.cover-image {
+.work-hero__image {
     width: 100%;
-    height: 100%;
+    height: 640rpx;
     display: block;
 }
 
-.glass-info-card {
+.work-hero__overlay {
     position: absolute;
-    bottom: 24rpx;
-    left: 24rpx;
-    right: 24rpx;
-    padding: 24rpx;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20rpx);
-    border-radius: 24rpx;
-    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);
-}
-
-.title-row {
+    inset: 0;
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16rpx;
-    margin-bottom: 16rpx;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 20rpx;
+    padding: 36rpx 32rpx;
+    background: linear-gradient(180deg, rgba(9, 9, 11, 0.08) 0%, rgba(9, 9, 11, 0.62) 100%);
 }
 
-.work-title {
-    font-size: 36rpx;
-    font-weight: 700;
-    color: #1f2937;
-    flex: 1;
-    line-height: 1.4;
-}
-
-.badges-group {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-    flex-shrink: 0;
-}
-
-.view-badge {
-    display: flex;
-    align-items: center;
-    gap: 6rpx;
-    padding: 6rpx 12rpx;
-    background: rgba(59, 130, 246, 0.1);
-    border-radius: 20rpx;
-}
-
-.view-count {
-    font-size: 22rpx;
-    color: #3b82f6;
-    font-weight: 500;
-}
-
-.type-badge {
-    padding: 8rpx 20rpx;
-    border-radius: 24rpx;
-}
-
-.type-text {
-    color: #ffffff;
-    font-size: 24rpx;
-    font-weight: 500;
-}
-
-.info-tags {
+.work-hero__badge-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 16rpx;
+    gap: 12rpx;
 }
 
-.info-tag {
-    display: flex;
+.work-hero__badge-content {
+    display: inline-flex;
     align-items: center;
     gap: 8rpx;
 }
 
-.tag-text {
+.work-hero__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+}
+
+.work-hero__eyebrow {
+    font-size: 22rpx;
+    font-weight: 600;
+    letter-spacing: 4rpx;
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.work-hero__title {
+    font-size: 40rpx;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #fff;
+}
+
+.work-hero__desc {
     font-size: 24rpx;
-    color: #6b7280;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.9);
 }
 
-/* 通用卡片样式 */
-.desc-card,
-.staff-card,
-.images-card,
-.video-card {
-    margin: 0 24rpx 24rpx;
-    padding: 28rpx;
-    background: #ffffff;
-    border-radius: 24rpx;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+.work-hero__meta-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
 }
 
-.section-header {
+.work-hero__meta-pill {
     display: flex;
     align-items: center;
-    gap: 12rpx;
-    margin-bottom: 20rpx;
+    gap: 8rpx;
+    padding: 12rpx 18rpx;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1rpx solid rgba(255, 255, 255, 0.2);
+    border-radius: 999rpx;
+    backdrop-filter: blur(12rpx);
 }
 
-.section-title {
-    font-size: 30rpx;
+.work-hero__meta-text {
+    font-size: 24rpx;
+    font-weight: 500;
+    color: #fff;
+}
+
+.detail-card {
+    margin: 0 24rpx;
+
+    &--meta {
+        margin-bottom: 8rpx;
+    }
+}
+
+.detail-card__head {
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+    margin-bottom: 24rpx;
+}
+
+.detail-card__eyebrow {
+    font-size: 22rpx;
+    font-weight: 600;
+    letter-spacing: 4rpx;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.detail-card__title {
+    font-size: 32rpx;
     font-weight: 700;
-    color: #1f2937;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-/* 作品描述 */
-.desc-text {
+.detail-card__body-text {
     font-size: 28rpx;
     line-height: 1.8;
-    color: #4b5563;
+    color: var(--wm-text-secondary, #7f7b78);
     white-space: pre-wrap;
 }
 
-/* 工作人员卡片 */
-.staff-card {
-    transition: all 0.2s ease;
+.staff-summary-card {
+    margin: 0 24rpx;
 }
 
-.staff-card:active {
-    transform: scale(0.98);
-}
-
-.staff-header {
+.staff-summary-card__head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     margin-bottom: 24rpx;
-    padding-bottom: 24rpx;
-    border-bottom: 2rpx solid #f3f4f6;
+    gap: 16rpx;
 }
 
-.staff-left {
+.staff-summary-card__identity {
     display: flex;
-    align-items: center;
-    gap: 20rpx;
+    align-items: flex-start;
+    gap: 22rpx;
     flex: 1;
 }
 
-.staff-avatar {
-    width: 112rpx;
-    height: 112rpx;
-    border-radius: 20rpx;
+.staff-summary-card__avatar {
+    width: 128rpx;
+    height: 128rpx;
+    border-radius: 28rpx;
     flex-shrink: 0;
 }
 
-.staff-info {
+.staff-summary-card__copy {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    gap: 14rpx;
 }
 
-.staff-name-row {
+.staff-summary-card__title-row {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 12rpx;
 }
 
-.staff-name {
-    font-size: 32rpx;
+.staff-summary-card__name {
+    font-size: 34rpx;
     font-weight: 700;
-    color: #1f2937;
+    color: var(--wm-text-primary, #1e2432);
 }
 
-.staff-badge {
-    padding: 4rpx 12rpx;
-    border-radius: 12rpx;
-}
-
-.badge-text {
-    font-size: 22rpx;
-    color: #ffffff;
-}
-
-.staff-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 4rpx;
-}
-
-.staff-sn {
+.staff-summary-card__meta {
     font-size: 24rpx;
-    color: #9ca3af;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.staff-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16rpx;
-    margin-bottom: 24rpx;
-    padding-bottom: 24rpx;
-    border-bottom: 2rpx solid #f3f4f6;
-}
-
-.staff-stat-item {
+.staff-summary-card__badge-row {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4rpx;
+    flex-wrap: wrap;
+    gap: 10rpx;
 }
 
-.staff-stat-value {
-    font-size: 32rpx;
-    font-weight: 700;
-}
-
-.staff-stat-label {
-    font-size: 22rpx;
-    color: #9ca3af;
-}
-
-.staff-price-row {
+.staff-summary-card__price-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 16rpx;
+    padding-top: 24rpx;
+    border-top: 1rpx solid rgba(239, 230, 225, 0.9);
 }
 
-.price-label {
+.staff-summary-card__price-label {
     font-size: 26rpx;
-    color: #6b7280;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.staff-price {
+.staff-summary-card__price {
     display: flex;
     align-items: baseline;
-    gap: 4rpx;
+    gap: 6rpx;
 }
 
-.price-symbol {
+.staff-summary-card__price-symbol {
     font-size: 28rpx;
-    font-weight: 600;
+    font-weight: 700;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
-.price-value {
+.staff-summary-card__price-value {
     font-size: 44rpx;
     font-weight: 700;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
-.price-unit {
+.staff-summary-card__price-unit,
+.staff-summary-card__price-negotiable {
     font-size: 24rpx;
-    color: #9ca3af;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
-.price-negotiable {
-    font-size: 32rpx;
+.staff-summary-card__price-negotiable {
+    font-size: 30rpx;
     font-weight: 700;
-    color: #9ca3af;
 }
 
-/* 作品图片 */
 .images-grid {
     display: grid;
     gap: 12rpx;
@@ -598,23 +592,34 @@ onLoad((options: any) => {
     color: #ffffff;
 }
 
-/* 作品视频 */
 .video-player {
     width: 100%;
     height: 420rpx;
     border-radius: 16rpx;
 }
 
-/* 时间信息 */
-.time-info {
+.detail-card__meta-list {
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
-    padding: 0 24rpx 24rpx;
+    gap: 18rpx;
 }
 
-.time-text {
-    font-size: 22rpx;
-    color: #9ca3af;
+.detail-card__meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20rpx;
+}
+
+.detail-card__meta-label {
+    font-size: 24rpx;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.detail-card__meta-value {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-text-primary, #1e2432);
+    text-align: right;
 }
 </style>
