@@ -16,9 +16,9 @@
                     ]"
                 >
                     <view class="staff-order-hero__top">
-                        <view :class="['hero-pill', `hero-pill--${statusInfo.badgeModifier}`]">
-                            <text class="hero-pill__text">{{ statusInfo.badgeText }}</text>
-                        </view>
+                        <StatusBadge :tone="statusInfo.badgeModifier as BadgeTone" size="sm">
+                            {{ statusInfo.badgeText }}
+                        </StatusBadge>
 
                         <view class="hero-pill hero-pill--ghost">
                             <text class="hero-pill__text">订单号 {{ order.order_sn }}</text>
@@ -96,14 +96,9 @@
                                     <view class="service-card__title-row">
                                         <text class="service-card__title">{{ item.title }}</text>
 
-                                        <view
-                                            v-if="item.typeText"
-                                            class="status-pill status-pill--primary"
-                                        >
-                                            <text class="status-pill__text">
-                                                {{ item.typeText }}
-                                            </text>
-                                        </view>
+                                        <StatusBadge v-if="item.typeText" tone="info" size="sm">
+                                            {{ item.typeText }}
+                                        </StatusBadge>
                                     </view>
 
                                     <text v-if="item.description" class="service-card__desc">
@@ -117,11 +112,9 @@
                             <view class="service-card__row service-card__row--center">
                                 <text class="service-card__meta">{{ item.dateText }}</text>
 
-                                <view
-                                    :class="['status-pill', `status-pill--${item.statusModifier}`]"
-                                >
-                                    <text class="status-pill__text">{{ item.statusText }}</text>
-                                </view>
+                                <StatusBadge :tone="item.statusModifier as BadgeTone" size="sm">
+                                    {{ item.statusText }}
+                                </StatusBadge>
                             </view>
 
                             <view class="service-card__row service-card__row--center">
@@ -333,6 +326,8 @@ import ActionArea from '@/components/base/ActionArea.vue'
 
 import EmptyState from '@/components/base/EmptyState.vue'
 
+import StatusBadge from '@/components/base/StatusBadge.vue'
+
 import {
     staffCenterOrderConfirmLetterDetail,
     staffCenterOrderConfirmLetterGenerate,
@@ -357,6 +352,8 @@ interface HeroChip {
 
     value: string
 }
+
+type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 
 interface InfoRow {
     label: string

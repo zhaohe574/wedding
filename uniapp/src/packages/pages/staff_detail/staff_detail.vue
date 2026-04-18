@@ -6,7 +6,7 @@
 
         <view class="staff-detail" v-if="staffInfo">
             <view class="staff-detail__content wm-page-content">
-                <view class="hero-card">
+                <BaseCard variant="hero" scene="consumer" class="hero-card" padding="0">
                     <staff-banner
                         class="hero-card__banner"
                         :banner-list="bannerList"
@@ -15,11 +15,9 @@
                             staffInfo.avatar || '/static/images/user/default_avatar.png'
                         "
                     />
-                </view>
+                </BaseCard>
 
-                <!-- 人员信息卡片 -->
-
-                <view class="info-card wm-panel-card">
+                <BaseCard variant="glass" scene="consumer" class="info-card" padding="0">
                     <view class="info-card__header">
                         <view class="info-card__identity">
                             <text class="info-card__name">{{ staffInfo.name }}</text>
@@ -46,13 +44,14 @@
                     </view>
 
                     <view v-if="statusBadgeList.length" class="info-card__badge-list">
-                        <view
+                        <StatusBadge
                             v-for="badge in statusBadgeList"
                             :key="badge"
-                            class="info-card__badge"
+                            tone="neutral"
+                            size="sm"
                         >
-                            <text class="info-card__badge-text">{{ badge }}</text>
-                        </view>
+                            {{ badge }}
+                        </StatusBadge>
                     </view>
 
                     <view class="info-card__metric-row">
@@ -96,10 +95,13 @@
                             <text v-else class="info-card__price-negotiable">面议</text>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="booking-brief-card wm-soft-card">
-                    <text class="booking-brief-card__title">预约信息</text>
+                <BaseCard variant="surface" scene="consumer" class="booking-brief-card" padding="0">
+                    <view class="booking-brief-card__head">
+                        <text class="booking-brief-card__eyebrow">预约信息</text>
+                        <text class="booking-brief-card__title">先确认服务地区与预约日期</text>
+                    </view>
 
                     <view class="booking-brief-card__grid">
                         <view class="booking-brief-card__item" @click="handleInlineRegionEdit">
@@ -118,9 +120,7 @@
                             </text>
                         </view>
                     </view>
-                </view>
-
-                <!-- 标签页切换 -->
+                </BaseCard>
 
                 <view class="tabs-section">
                     <view class="tabs-wrapper">
@@ -140,8 +140,6 @@
                         </view>
                     </view>
                 </view>
-
-                <!-- 标签页内容 -->
 
                 <view class="tab-content">
                     <view
@@ -902,6 +900,10 @@ import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 
 import ActionArea from '@/components/base/ActionArea.vue'
+
+import BaseCard from '@/components/base/BaseCard.vue'
+
+import StatusBadge from '@/components/base/StatusBadge.vue'
 
 import { getStaffDetail, getStaffList, toggleStaffFavorite, getStaffWorks } from '@/api/staff'
 
@@ -3074,6 +3076,24 @@ onShareTimeline(() => {
     border: 1rpx solid #efe6e1;
 
     box-shadow: 0 18rpx 34rpx rgba(214, 185, 167, 0.12);
+}
+
+.booking-brief-card__head {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8rpx;
+}
+
+.booking-brief-card__eyebrow {
+    font-size: 22rpx;
+
+    font-weight: 600;
+
+    letter-spacing: 4rpx;
+
+    color: #e85a4f;
 }
 
 .booking-brief-card__title {
