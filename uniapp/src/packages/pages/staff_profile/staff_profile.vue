@@ -5,7 +5,11 @@
 
         <view class="staff-profile-page">
             <view class="staff-profile-page__content wm-page-content">
-                <view class="profile-hero-card wm-panel-card">
+                <BaseCard
+                    variant="glass"
+                    scene="staff"
+                    class="form-card form-card--hero wm-form-block"
+                >
                     <view class="profile-hero-card__top">
                         <view class="hero-pill hero-pill--primary">
                             <text class="hero-pill__text">资料编辑</text>
@@ -54,12 +58,13 @@
                             </view>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="staff-profile-card wm-form-block">
-                    <view class="section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title">基础信息</text>
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                    <view class="card-head">
+                        <view class="card-head__copy">
+                            <text class="card-head__title">基础信息</text>
+                            <text class="card-head__desc">完善基础资料，提升资料页的完整度</text>
                         </view>
                     </view>
 
@@ -129,14 +134,17 @@
                             </view>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="staff-profile-card wm-form-block">
-                    <view class="section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title">个人简介</text>
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                    <view class="card-head">
+                        <view class="card-head__copy">
+                            <text class="card-head__title">个人简介</text>
+                            <text class="card-head__desc"
+                                >用一段简洁介绍突出你的服务风格与经验</text
+                            >
                         </view>
-                        <text class="section-head__meta">{{ form.profile.length }}/500</text>
+                        <text class="card-head__meta">{{ form.profile.length }}/500</text>
                     </view>
 
                     <view class="textarea-card wm-soft-card">
@@ -149,13 +157,13 @@
                             :show-confirm-bar="false"
                         />
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="staff-profile-card wm-form-block">
-                    <view class="section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title">服务风格标签</text>
-                            <text class="section-head__desc">{{ tagNotice }}</text>
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                    <view class="card-head">
+                        <view class="card-head__copy">
+                            <text class="card-head__title">服务风格标签</text>
+                            <text class="card-head__desc">{{ tagNotice }}</text>
                         </view>
                     </view>
 
@@ -191,14 +199,15 @@
                     <view v-else class="empty-tip">
                         <text>当前分类下暂无可选标签</text>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="staff-profile-card wm-form-block">
-                    <view class="section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title">服务说明</text>
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                    <view class="card-head">
+                        <view class="card-head__copy">
+                            <text class="card-head__title">服务说明</text>
+                            <text class="card-head__desc">补充服务亮点、流程安排或注意事项</text>
                         </view>
-                        <text class="section-head__meta">{{ form.service_desc.length }}/1000</text>
+                        <text class="card-head__meta">{{ form.service_desc.length }}/1000</text>
                     </view>
 
                     <view class="textarea-card wm-soft-card">
@@ -211,28 +220,30 @@
                             :show-confirm-bar="false"
                         />
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="staff-profile-card wm-form-block">
-                    <view class="section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title">长图详情</text>
-                            <text class="section-head__desc"> 支持图片和文本模块。 </text>
+                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                    <view class="card-head">
+                        <view class="card-head__copy">
+                            <text class="card-head__title">长图详情</text>
+                            <text class="card-head__desc"
+                                >支持图片和文本模块，适合展示完整服务内容</text
+                            >
                         </view>
-                        <text class="section-head__meta">{{ longDetailCount }} 个模块</text>
+                        <text class="card-head__meta">{{ longDetailCount }} 个模块</text>
                     </view>
 
                     <staff-long-detail-editor
                         v-model="form.long_detail"
                         @uploading-change="handleLongDetailUploadingChange"
                     />
-                </view>
+                </BaseCard>
             </view>
 
-            <view class="save-bar">
-                <view class="save-bar__inner">
+            <view class="bottom-bar">
+                <view class="bottom-bar__inner">
                     <view
-                        class="save-btn"
+                        class="bottom-bar__action bottom-bar__action--primary"
                         :style="{
                             backgroundColor: $theme.primaryColor,
                             color: $theme.btnColor,
@@ -252,6 +263,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import BaseCard from '@/components/base/BaseCard.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import StaffLongDetailEditor from '@/packages/components/staff-long-detail/staff-long-detail-editor.vue'
@@ -550,8 +562,7 @@ onShow(async () => {
     }
 }
 
-.profile-hero-card,
-.staff-profile-card {
+.form-card {
     position: relative;
     overflow: hidden;
     box-sizing: border-box;
@@ -642,13 +653,6 @@ onShow(async () => {
     padding: 16rpx 0 6rpx;
     font-size: 24rpx;
     line-height: 1.6;
-    color: var(--wm-text-secondary, #7f7b78);
-}
-
-.section-head__desc {
-    margin-top: 6rpx;
-    font-size: 22rpx;
-    line-height: 1.5;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
@@ -802,7 +806,7 @@ onShow(async () => {
     }
 }
 
-.staff-profile-card {
+.form-card:not(.form-card--hero) {
     display: flex;
     flex-direction: column;
     gap: 16rpx;
@@ -815,7 +819,7 @@ onShow(async () => {
     -webkit-backdrop-filter: blur(24rpx);
 }
 
-.section-head {
+.card-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -831,6 +835,13 @@ onShow(async () => {
         font-weight: 700;
         line-height: 1.35;
         color: var(--wm-text-primary, #1e2432);
+    }
+
+    &__desc {
+        margin-top: 6rpx;
+        font-size: 22rpx;
+        line-height: 1.5;
+        color: var(--wm-text-secondary, #7f7b78);
     }
 
     &__meta {
@@ -930,34 +941,36 @@ onShow(async () => {
     color: var(--wm-text-primary, #1e2432);
 }
 
-.save-bar {
+.bottom-bar {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 18rpx var(--wm-space-page-x, 37rpx);
-    padding-bottom: calc(18rpx + env(safe-area-inset-bottom));
-    background: rgba(252, 251, 249, 0.92);
-    backdrop-filter: blur(18rpx);
-    -webkit-backdrop-filter: blur(18rpx);
-    border-top: 1rpx solid rgba(239, 230, 225, 0.92);
+    z-index: 40;
+    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
+    background: rgba(252, 251, 249, 0.88);
+    border-top: 1rpx solid rgba(239, 230, 225, 0.9);
+    backdrop-filter: blur(24rpx);
+    -webkit-backdrop-filter: blur(24rpx);
     box-sizing: border-box;
 
     &__inner {
-        padding: 6rpx 0 0;
+        display: flex;
+        gap: 12rpx;
     }
 }
 
-.save-btn {
-    height: 88rpx;
-    border-radius: 999rpx;
+.bottom-bar__action {
+    flex: 1;
+    min-height: 88rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10rpx;
+    border-radius: 36rpx;
     font-size: 30rpx;
     font-weight: 700;
-    box-shadow: 0 16rpx 28rpx rgba(232, 90, 79, 0.18);
+    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.18);
 }
 
 :deep(.wm-input .input-text),

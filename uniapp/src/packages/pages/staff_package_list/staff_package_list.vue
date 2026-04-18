@@ -19,6 +19,7 @@
                                 <view class="hero-card__copy">
                                     <text class="hero-card__eyebrow">服务人员中心</text>
                                     <text class="hero-card__title">套餐管理</text>
+                                    <text class="hero-card__meta">维护主推套餐与价格层级</text>
                                 </view>
 
                                 <view class="hero-card__action" @click="goCreate">
@@ -49,7 +50,15 @@
                 </template>
 
                 <view class="page-section page-section--list">
-                    <LoadingState v-if="loading && !hasLoaded" text="加载套餐中..." />
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">{{ listSectionTitle }}</text>
+                            <text class="section-head__desc">{{ listSectionDesc }}</text>
+                        </view>
+                        <text class="section-head__meta">{{ listSectionMeta }}</text>
+                    </view>
+
+                    <LoadingState v-if="loading && !hasLoaded" text="正在同步套餐库..." />
 
                     <template v-else-if="packageList.length">
                         <BaseCard
@@ -155,7 +164,7 @@
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="在这里管理套餐。"
+                        description="配置好价格与内容后会出现在这里。"
                         action-text="新增套餐"
                         @action="goCreate"
                     />
@@ -217,6 +226,25 @@ const emptyStateTitle = computed(() => {
     }
     return titleMap[currentMetricFilter.value]
 })
+const listSectionTitle = computed(() => {
+    const map: Record<PackageFilter, string> = {
+        all: '全部套餐',
+        active: '上架中的套餐',
+        recommend: '推荐套餐',
+        inactive: '已下架套餐'
+    }
+    return map[currentMetricFilter.value]
+})
+const listSectionDesc = computed(() => {
+    const map: Record<PackageFilter, string> = {
+        all: '统一梳理服务套餐，保持展示层级与价格表达清晰。',
+        active: '优先检查正在售卖的套餐，保证首页与详情页信息一致。',
+        recommend: '聚焦主推套餐，维持推荐内容的高级感与辨识度。',
+        inactive: '收纳已下架套餐，避免历史内容干扰当前展示。'
+    }
+    return map[currentMetricFilter.value]
+})
+const listSectionMeta = computed(() => `共 ${metricCounts.value[currentMetricFilter.value]} 项`)
 
 const getListParams = (pageNo: number, pageSize: number) => {
     const params: Record<string, number> = {
@@ -333,7 +361,12 @@ onShow(async () => {
     min-height: 100vh;
     padding-top: 20rpx;
     box-sizing: border-box;
-    background: transparent;
+    background: radial-gradient(
+            circle at top left,
+            rgba(232, 90, 79, 0.1) 0,
+            rgba(252, 251, 249, 0) 36%
+        ),
+        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
 }
 
 .page-section {
@@ -354,6 +387,44 @@ onShow(async () => {
 
 .hero-card {
     overflow: hidden;
+}
+
+.section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+    padding: 0 6rpx;
+}
+
+.section-head__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.section-head__title {
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.section-head__desc {
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.section-head__meta {
+    flex-shrink: 0;
+    font-size: 22rpx;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .hero-card__head {
@@ -382,6 +453,15 @@ onShow(async () => {
     font-weight: 700;
     line-height: 1.28;
     color: var(--wm-text-primary, #1e2432);
+}
+
+.hero-card__meta {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 24rpx;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .hero-card__action {

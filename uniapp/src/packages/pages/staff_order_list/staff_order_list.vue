@@ -9,48 +9,51 @@
                 v-model="orderList"
                 :auto="false"
                 :hide-empty-view="true"
-                :paging-style="pagingStyle"
+                :paging-style="resolvedPagingStyle"
                 @query="queryList"
             >
                 <template #top>
                     <view class="page-section page-section--top">
-                        <BaseCard
-                            variant="hero"
-                            scene="staff"
-                            class="hero-card"
-                            :style="heroCardStyle"
-                        >
-                            <view class="hero-card__head">
-                                <view class="hero-card__copy">
-                                    <text class="hero-card__title">订单管理</text>
+                        <BaseCard variant="glass" scene="staff" class="summary-bar">
+                            <view class="summary-bar__head">
+                                <view class="summary-bar__copy">
+                                    <text class="summary-bar__title">订单管理</text>
+                                    <text class="summary-bar__desc">{{ summaryHeadline }}</text>
                                 </view>
 
-                                <view class="hero-card__total">
-                                    <text class="hero-card__total-label">总订单</text>
-                                    <text class="hero-card__total-value">
+                                <view class="summary-bar__total">
+                                    <text class="summary-bar__total-value">
                                         {{ Number(orderStats.all || 0) }}
                                     </text>
-                                    <text class="hero-card__total-unit">单</text>
+                                    <text class="summary-bar__total-unit">单</text>
                                 </view>
                             </view>
 
-                            <view class="hero-metrics">
+                            <view class="summary-strip">
                                 <view
                                     v-for="item in summaryCards"
                                     :key="item.key"
-                                    :class="['hero-metric', { 'hero-metric--accent': item.accent }]"
+                                    :class="[
+                                        'summary-chip',
+                                        { 'summary-chip--accent': item.accent }
+                                    ]"
                                     @click="switchStatusByValue(item.status)"
                                 >
-                                    <text class="hero-metric__label">{{ item.label }}</text>
-                                    <view class="hero-metric__value-row">
-                                        <text class="hero-metric__value">{{ item.value }}</text>
-                                        <text class="hero-metric__unit">{{ item.unit }}</text>
+                                    <text class="summary-chip__label">{{ item.label }}</text>
+                                    <view class="summary-chip__value-row">
+                                        <text class="summary-chip__value">{{ item.value }}</text>
+                                        <text class="summary-chip__unit">{{ item.unit }}</text>
                                     </view>
                                 </view>
                             </view>
 
-                            <scroll-view scroll-x class="hero-status-scroll" show-scrollbar="false">
-                                <view class="hero-status-row">
+                            <view class="summary-bar__scope">
+                                <tn-icon name="tip" size="18" color="#C99B73" />
+                                <text class="summary-bar__scope-text">只显示履约相关订单</text>
+                            </view>
+
+                            <scroll-view scroll-x class="summary-tabs" show-scrollbar="false">
+                                <view class="summary-tabs__row">
                                     <FilterChip
                                         v-for="tab in statusTabs"
                                         :key="String(tab.value)"
@@ -63,15 +66,18 @@
                                 </view>
                             </scroll-view>
                         </BaseCard>
-
-                        <BaseCard variant="glass" scene="staff" class="scope-card">
-                            <text class="scope-card__title">当前为服务人员履约视角</text>
-                            <text class="scope-card__desc"> 这里只显示履约相关订单。 </text>
-                        </BaseCard>
                     </view>
                 </template>
 
                 <view class="page-section page-section--list">
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">{{ listSectionTitle }}</text>
+                            <text class="section-head__desc">{{ listSectionDesc }}</text>
+                        </view>
+                        <text class="section-head__meta">{{ listSectionMeta }}</text>
+                    </view>
+
                     <LoadingState v-if="loading && !hasLoaded" text="正在同步订单工作台..." />
 
                     <template v-else-if="orderList.length">
@@ -86,23 +92,6 @@
                         >
                             <view class="order-card__head">
                                 <view class="order-card__copy">
-                                    <text class="order-card__eyebrow">订单号</text>
-                                    <text class="order-card__sn">{{ order.orderNo }}</text>
-                                    <text class="order-card__time">
-                                        创建时间：{{ order.createTimeText || '暂无记录' }}
-                                    </text>
-                                </view>
-                                <StatusBadge
-                                    :tone="order.statusTone"
-                                    size="md"
-                                    class="order-card__status"
-                                >
-                                    {{ order.statusText }}
-                                </StatusBadge>
-                            </view>
-
-                            <view class="order-card__overview">
-                                <view class="order-card__main">
                                     <view class="order-card__date-row">
                                         <text class="order-card__date">
                                             {{ order.serviceDate || '待安排服务日期' }}
@@ -115,142 +104,90 @@
                                             待确认 {{ order.pendingConfirmCount }}
                                         </StatusBadge>
                                     </view>
-
-                                    <view class="order-card__line">
-                                        <tn-icon
-                                            name="my"
-                                            size="22"
-                                            color="var(--wm-color-secondary, #C99B73)"
-                                        />
-                                        <text>{{ order.contactName || '未填写联系人' }}</text>
-                                    </view>
-                                    <view v-if="order.contactMobile" class="order-card__line">
-                                        <tn-icon
-                                            name="phone"
-                                            size="22"
-                                            color="var(--wm-color-secondary, #C99B73)"
-                                        />
-                                        <text>{{ order.contactMobile }}</text>
-                                    </view>
-                                    <view class="order-card__line">
-                                        <tn-icon
-                                            name="map-pin"
-                                            size="22"
-                                            color="var(--wm-color-secondary, #C99B73)"
-                                        />
-                                        <text>{{ order.location }}</text>
-                                    </view>
-                                    <view
-                                        v-if="getConfirmRemainText(order)"
-                                        class="order-card__line order-card__line--accent"
-                                    >
-                                        <tn-icon
-                                            name="clock"
-                                            size="22"
-                                            color="var(--wm-color-primary, #E85A4F)"
-                                        />
-                                        <text>剩余确认时间：{{ getConfirmRemainText(order) }}</text>
-                                    </view>
-                                    <view
-                                        v-if="order.confirmTimeoutActionDesc"
-                                        class="order-card__line order-card__line--accent"
-                                    >
-                                        <tn-icon
-                                            name="clock"
-                                            size="22"
-                                            color="var(--wm-color-primary, #E85A4F)"
-                                        />
-                                        <text>超时处理：{{ order.confirmTimeoutActionDesc }}</text>
-                                    </view>
-                                    <view
-                                        v-if="getPayRemainText(order)"
-                                        class="order-card__line order-card__line--accent"
-                                    >
-                                        <tn-icon
-                                            name="clock"
-                                            size="22"
-                                            color="var(--wm-color-primary, #E85A4F)"
-                                        />
-                                        <text>剩余支付时间：{{ getPayRemainText(order) }}</text>
-                                    </view>
-                                    <view
-                                        v-if="order.payTimeoutActionDesc"
-                                        class="order-card__line order-card__line--accent"
-                                    >
-                                        <tn-icon
-                                            name="clock"
-                                            size="22"
-                                            color="var(--wm-color-primary, #E85A4F)"
-                                        />
-                                        <text>支付超时处理：{{ order.payTimeoutActionDesc }}</text>
-                                    </view>
+                                    <text class="order-card__sn">订单号 {{ order.orderNo }}</text>
+                                    <text class="order-card__time">
+                                        创建时间：{{ order.createTimeText || '暂无记录' }}
+                                    </text>
                                 </view>
 
-                                <view class="order-card__amount-box">
-                                    <text class="order-card__amount-label">实付金额</text>
-                                    <text class="order-card__amount">¥{{ order.actualPrice }}</text>
-                                    <text class="order-card__amount-sub">
-                                        服务项 {{ order.serviceCount }}
+                                <StatusBadge
+                                    :tone="order.statusTone"
+                                    size="md"
+                                    class="order-card__status"
+                                >
+                                    {{ order.statusText }}
+                                </StatusBadge>
+                            </view>
+
+                            <view
+                                v-if="getOrderAlertText(order)"
+                                :class="[
+                                    'order-card__alert',
+                                    `order-card__alert--${getOrderAlertTone(order)}`
+                                ]"
+                            >
+                                <tn-icon
+                                    name="clock"
+                                    size="18"
+                                    :color="getOrderAlertIconColor(order)"
+                                />
+                                <text class="order-card__alert-text">{{
+                                    getOrderAlertText(order)
+                                }}</text>
+                            </view>
+
+                            <view class="order-card__summary">
+                                <view class="order-card__line order-card__line--primary">
+                                    <tn-icon
+                                        name="map-pin"
+                                        size="22"
+                                        color="var(--wm-color-secondary, #C99B73)"
+                                    />
+                                    <text>{{ order.location }}</text>
+                                </view>
+
+                                <view class="order-card__line">
+                                    <tn-icon
+                                        name="my"
+                                        size="22"
+                                        color="var(--wm-color-secondary, #C99B73)"
+                                    />
+                                    <text>
+                                        {{ order.contactName || '未填写联系人' }}
+                                        <text v-if="order.contactMobile"
+                                            >｜{{ order.contactMobile }}</text
+                                        >
                                     </text>
                                 </view>
                             </view>
 
-                            <view class="service-panel">
-                                <view class="service-panel__head">
-                                    <text class="service-panel__title">服务内容</text>
-                                    <text class="service-panel__count">
-                                        {{ order.serviceCount }} 项
-                                    </text>
-                                </view>
-
-                                <view class="service-panel__tags">
-                                    <text
-                                        v-for="(tag, index) in order.packageNames"
-                                        :key="`${order.id}-${index}`"
-                                        class="service-tag"
-                                    >
-                                        {{ tag }}
-                                    </text>
-                                    <text
-                                        v-if="order.packageNames.length === 0"
-                                        class="service-tag service-tag--muted"
-                                    >
-                                        暂无服务项名称
-                                    </text>
-                                </view>
+                            <view class="order-card__meta-chips">
+                                <text class="service-tag">服务项 {{ order.serviceCount }}</text>
+                                <text class="service-tag">实付 ¥{{ order.actualPrice }}</text>
+                                <text v-if="order.packageNames[0]" class="service-tag">
+                                    {{ order.packageNames[0] }}
+                                </text>
+                                <text
+                                    v-if="order.packageNames.length > 1"
+                                    class="service-tag service-tag--muted"
+                                >
+                                    另 {{ order.packageNames.length - 1 }} 项
+                                </text>
                             </view>
 
                             <view class="order-card__foot">
                                 <view class="order-card__actions">
                                     <view
-                                        class="action-btn action-btn--ghost"
-                                        @click.stop="goDetail(order.id)"
+                                        v-if="getPrimaryActionLabel(order)"
+                                        class="action-btn action-btn--primary"
+                                        :style="primaryActionStyle"
+                                        @click.stop="handlePrimaryAction(order)"
                                     >
+                                        {{ getPrimaryActionLabel(order) }}
+                                    </view>
+                                    <view class="action-link" @click.stop="goDetail(order.id)">
                                         查看详情
-                                    </view>
-                                    <view
-                                        v-if="order.canConfirm"
-                                        class="action-btn action-btn--primary"
-                                        :style="primaryActionStyle"
-                                        @click.stop="confirmOrder(order)"
-                                    >
-                                        确认订单
-                                    </view>
-                                    <view
-                                        v-if="order.canStart"
-                                        class="action-btn action-btn--primary"
-                                        :style="primaryActionStyle"
-                                        @click.stop="startService(order)"
-                                    >
-                                        开始履约
-                                    </view>
-                                    <view
-                                        v-if="order.canComplete"
-                                        class="action-btn action-btn--primary"
-                                        :style="primaryActionStyle"
-                                        @click.stop="completeOrder(order)"
-                                    >
-                                        完成服务
+                                        <tn-icon name="right" size="16" color="#A89D97" />
                                     </view>
                                 </view>
                             </view>
@@ -389,6 +326,12 @@ const DISPLAY_ITEM_TYPES = [1, 3]
 
 const $theme = useThemeStore()
 const pagingStyle = useFixedNavbarPagingStyle()
+const resolvedPagingStyle = computed(() => ({
+    ...pagingStyle.value,
+    paddingLeft: 'var(--wm-space-page-x, 37rpx)',
+    paddingRight: 'var(--wm-space-page-x, 37rpx)',
+    boxSizing: 'border-box'
+}))
 const pagingRef = ref<any>(null)
 const orderList = ref<FormattedOrder[]>([])
 const orderStats = ref<Record<string, number>>({ ...DEFAULT_ORDER_STATS })
@@ -398,13 +341,6 @@ const hasLoaded = ref(false)
 const orderCountdownNowTs = ref(Date.now())
 let orderCountdownTimer: ReturnType<typeof setInterval> | null = null
 let orderCountdownRefreshing = false
-
-const heroCardStyle = computed(() => ({
-    '--wm-hero-gradient': `linear-gradient(135deg, ${
-        $theme.primaryColor || '#E85A4F'
-    }12 0%, var(--wm-color-bg-page, #FCFBF9) 52%, ${$theme.secondaryColor || '#C99B73'}14 100%)`,
-    borderColor: 'var(--wm-color-border-strong, #F4C7BF)'
-}))
 
 const primaryActionStyle = computed(() => ({
     background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${
@@ -427,7 +363,15 @@ const summaryCards = computed<SummaryCardItem[]>(() => [
         value: Number(orderStats.value.pending_confirm || 0),
         unit: '笔',
         status: 0,
-        accent: true
+        accent: currentStatus.value === 0 || Number(orderStats.value.pending_confirm || 0) > 0
+    },
+    {
+        key: 'paid',
+        label: '待服务',
+        value: Number(orderStats.value.paid || 0),
+        unit: '单',
+        status: 2,
+        accent: currentStatus.value === 2
     },
     {
         key: 'in_service',
@@ -435,7 +379,7 @@ const summaryCards = computed<SummaryCardItem[]>(() => [
         value: Number(orderStats.value.in_service || 0),
         unit: '单',
         status: 3,
-        accent: false
+        accent: currentStatus.value === 3
     },
     {
         key: 'completed',
@@ -443,9 +387,38 @@ const summaryCards = computed<SummaryCardItem[]>(() => [
         value: Number(orderStats.value.completed || 0),
         unit: '单',
         status: 4,
-        accent: false
+        accent: currentStatus.value === 4
     }
 ])
+
+const summaryHeadline = computed(() => {
+    const pendingConfirm = Number(orderStats.value.pending_confirm || 0)
+    const pendingPay = Number(orderStats.value.pending_pay || 0)
+    const pendingService = Number(orderStats.value.paid || 0)
+    const inService = Number(orderStats.value.in_service || 0)
+
+    if (currentStatus.value === 0) {
+        return pendingConfirm > 0
+            ? `当前有 ${pendingConfirm} 笔订单等待你确认`
+            : '当前筛选下暂无待确认订单'
+    }
+
+    if (currentStatus.value === 3) {
+        return inService > 0
+            ? `正在跟进 ${inService} 笔服务中的订单`
+            : '当前没有服务中的订单，可优先处理新排期'
+    }
+
+    if (pendingConfirm > 0) {
+        return `先确认 ${pendingConfirm} 笔新单，再跟进 ${pendingService} 笔待服务安排`
+    }
+
+    if (pendingPay > 0) {
+        return `有 ${pendingPay} 笔订单等待支付，留意付款进度与服务节奏`
+    }
+
+    return '订单按服务节奏分层展示，优先处理最临近的履约任务'
+})
 
 const resetOrderStats = () => {
     orderStats.value = { ...DEFAULT_ORDER_STATS }
@@ -621,6 +594,66 @@ const formatOrder = (order: any): FormattedOrder => {
         canComplete: orderStatus === 3 && Number(order?.can_staff_complete || 0) === 1
     }
 }
+
+const getPrimaryActionLabel = (order: FormattedOrder) => {
+    if (order.canConfirm) return '确认订单'
+    if (order.canStart) return '开始履约'
+    if (order.canComplete) return '完成服务'
+    return ''
+}
+
+const handlePrimaryAction = (order: FormattedOrder) => {
+    if (order.canConfirm) return confirmOrder(order)
+    if (order.canStart) return startService(order)
+    if (order.canComplete) return completeOrder(order)
+}
+
+const getOrderAlertText = (order: FormattedOrder) => {
+    if (order.statusValue === 0) {
+        if (getConfirmRemainText(order)) return `剩余确认时间：${getConfirmRemainText(order)}`
+        if (order.confirmTimeoutActionDesc) return `超时处理：${order.confirmTimeoutActionDesc}`
+    }
+
+    if (order.statusValue === 1) {
+        if (getPayRemainText(order)) return `剩余支付时间：${getPayRemainText(order)}`
+        if (order.payTimeoutActionDesc) return `支付超时处理：${order.payTimeoutActionDesc}`
+    }
+
+    return ''
+}
+
+const getOrderAlertTone = (order: FormattedOrder): StatusTone => {
+    if (order.statusValue === 0) return order.confirmTimeoutActionDesc ? 'danger' : 'warning'
+    if (order.statusValue === 1) return order.payTimeoutActionDesc ? 'danger' : 'info'
+    return 'neutral'
+}
+
+const getOrderAlertIconColor = (order: FormattedOrder) => {
+    if (order.statusValue === 0) return order.confirmTimeoutActionDesc ? '#C94B49' : '#C98524'
+    if (order.statusValue === 1) return order.payTimeoutActionDesc ? '#C94B49' : '#E85A4F'
+    return '#607086'
+}
+
+const listSectionTitle = computed(() => {
+    const currentTab = STATUS_TAB_CONFIG.find((item) => item.value === currentStatus.value)
+
+    if (currentTab && currentTab.value !== '') {
+        return `${currentTab.label}订单`
+    }
+
+    return '订单列表'
+})
+
+const listSectionDesc = computed(() => {
+    if (currentStatus.value === 0) return '优先处理确认时效最紧的订单'
+    if (currentStatus.value === 1) return '优先跟进支付与确认节点'
+    if (currentStatus.value === 2) return '准备即将履约的订单'
+    if (currentStatus.value === 3) return '先关注正在履约中的订单'
+
+    return '按履约优先级查看当前订单'
+})
+
+const listSectionMeta = computed(() => `${orderList.value.length} 笔`)
 
 const queryList = async (pageNo: number, pageSize: number) => {
     loading.value = true
@@ -812,113 +845,87 @@ onUnload(() => {
     }
 }
 
-.hero-card {
+.summary-bar,
+.order-card {
+    background: rgba(255, 255, 255, 0.98);
+    border: 1rpx solid rgba(240, 229, 222, 0.98);
+    box-shadow: 0 20rpx 42rpx rgba(185, 129, 116, 0.12);
+}
+
+.summary-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
     overflow: hidden;
 }
 
-.scope-card {
+.summary-bar__head {
     display: flex;
-    flex-direction: column;
-    gap: 10rpx;
-}
-
-.scope-card__title {
-    font-size: 24rpx;
-    font-weight: 700;
-    line-height: 1.35;
-    color: var(--wm-text-primary, #1e2432);
-}
-
-.scope-card__desc {
-    font-size: 22rpx;
-    font-weight: 600;
-    line-height: 1.6;
-    color: var(--wm-text-secondary, #7f7b78);
-}
-
-.hero-card__head {
-    display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 20rpx;
+    gap: 16rpx;
 }
 
-.hero-card__copy {
+.summary-bar__copy {
     flex: 1;
     min-width: 0;
 }
 
-.hero-card__title {
-    font-size: 40rpx;
+.summary-bar__title {
+    display: block;
+    font-size: 34rpx;
     font-weight: 700;
-    line-height: 1.28;
+    line-height: 1.3;
     color: var(--wm-text-primary, #1e2432);
 }
 
-.hero-card__total {
-    flex-shrink: 0;
-    min-width: 132rpx;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4rpx;
-    padding: 18rpx 20rpx;
-    border-radius: 30rpx;
-    text-align: center;
-    background: rgba(255, 255, 255, 0.74);
-    border: 1rpx solid rgba(255, 255, 255, 0.8);
-}
-
-.hero-card__total-label {
-    font-size: 20rpx;
-    font-weight: 700;
-    line-height: 1.2;
+.summary-bar__desc {
+    display: block;
+    margin-top: 6rpx;
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1.45;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-.hero-card__total-value {
-    font-size: 42rpx;
+.summary-bar__total {
+    flex-shrink: 0;
+    min-width: 96rpx;
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 4rpx;
+}
+
+.summary-bar__total-value {
+    font-size: 38rpx;
     font-weight: 700;
     line-height: 1;
     color: var(--wm-text-primary, #1e2432);
 }
 
-.hero-card__total-unit {
+.summary-bar__total-unit {
     font-size: 20rpx;
     font-weight: 700;
     line-height: 1.2;
     color: var(--wm-text-tertiary, #b4aca8);
 }
 
-.hero-metrics {
+.summary-strip {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12rpx;
-    margin-top: 20rpx;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10rpx;
 }
 
-.hero-status-scroll {
-    margin-top: 18rpx;
-    white-space: nowrap;
-}
-
-.hero-status-row {
-    display: inline-flex;
-    gap: 12rpx;
-    padding-bottom: 2rpx;
-}
-
-.hero-metric {
+.summary-chip {
     display: flex;
     flex-direction: column;
-    gap: 6rpx;
+    gap: 4rpx;
     min-width: 0;
-    padding: 18rpx 20rpx;
-    border-radius: 30rpx;
-    background: rgba(255, 255, 255, 0.76);
+    padding: 14rpx 16rpx;
+    border-radius: 24rpx;
+    background: rgba(255, 255, 255, 0.72);
     border: 1rpx solid var(--wm-color-border, #efe6e1);
-    box-sizing: border-box;
 
     &--accent {
         background: var(--wm-color-primary-soft, #fff1ee);
@@ -926,35 +933,93 @@ onUnload(() => {
     }
 }
 
-.hero-metric__label {
-    font-size: 21rpx;
+.summary-chip__label {
+    font-size: 19rpx;
     font-weight: 700;
-    line-height: 1.3;
+    line-height: 1.2;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-.hero-metric--accent .hero-metric__label {
-    color: var(--wm-color-primary, #e85a4f);
-}
-
-.hero-metric__value-row {
+.summary-chip__value-row {
     display: flex;
     align-items: flex-end;
-    gap: 6rpx;
+    gap: 4rpx;
 }
 
-.hero-metric__value {
-    font-size: 40rpx;
+.summary-chip__value {
+    font-size: 30rpx;
     font-weight: 700;
     line-height: 1;
     color: var(--wm-text-primary, #1e2432);
 }
 
-.hero-metric__unit {
+.summary-chip__unit {
+    font-size: 18rpx;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.summary-bar__scope {
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    padding: 0 4rpx;
+}
+
+.summary-bar__scope-text {
     font-size: 20rpx;
     font-weight: 600;
-    line-height: 1.35;
+    line-height: 1.4;
     color: var(--wm-text-secondary, #7f7b78);
+}
+
+.summary-tabs {
+    white-space: nowrap;
+}
+
+.summary-tabs__row {
+    display: inline-flex;
+    gap: 12rpx;
+    padding-bottom: 2rpx;
+}
+
+.section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+    padding: 0 10rpx;
+}
+
+.section-head__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+}
+
+.section-head__title {
+    font-size: 32rpx;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.section-head__desc {
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.section-head__meta {
+    flex-shrink: 0;
+    font-size: 22rpx;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .order-card + .order-card {
@@ -976,13 +1041,6 @@ onUnload(() => {
     gap: 6rpx;
 }
 
-.order-card__eyebrow {
-    font-size: 20rpx;
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--wm-text-tertiary, #b4aca8);
-}
-
 .order-card__sn {
     font-size: 30rpx;
     font-weight: 700;
@@ -1000,17 +1058,6 @@ onUnload(() => {
 
 .order-card__status {
     flex-shrink: 0;
-}
-
-.order-card__overview {
-    display: flex;
-    gap: 18rpx;
-    margin-top: 22rpx;
-}
-
-.order-card__main {
-    flex: 1;
-    min-width: 0;
 }
 
 .order-card__date-row {
@@ -1031,14 +1078,14 @@ onUnload(() => {
     display: flex;
     align-items: flex-start;
     gap: 10rpx;
-    font-size: 24rpx;
+    font-size: 23rpx;
     font-weight: 600;
-    line-height: 1.55;
+    line-height: 1.5;
     color: var(--wm-text-secondary, #7f7b78);
-}
 
-.order-card__line--accent {
-    color: var(--wm-color-primary, #e85a4f);
+    &--primary {
+        color: var(--wm-text-primary, #1e2432);
+    }
 }
 
 .order-card__line + .order-card__line {
@@ -1048,80 +1095,6 @@ onUnload(() => {
 .order-card__line text:last-child {
     flex: 1;
     min-width: 0;
-}
-
-.order-card__amount-box {
-    flex-shrink: 0;
-    min-width: 176rpx;
-    display: flex;
-    flex-direction: column;
-    gap: 10rpx;
-    padding: 20rpx;
-    border-radius: 28rpx;
-    background: linear-gradient(
-        180deg,
-        rgba(255, 241, 238, 0.95) 0%,
-        rgba(255, 255, 255, 0.9) 100%
-    );
-    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
-    box-sizing: border-box;
-}
-
-.order-card__amount-label {
-    font-size: 20rpx;
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--wm-text-secondary, #7f7b78);
-}
-
-.order-card__amount {
-    font-size: 38rpx;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--wm-text-primary, #1e2432);
-}
-
-.order-card__amount-sub {
-    font-size: 22rpx;
-    font-weight: 600;
-    line-height: 1.35;
-    color: var(--wm-color-primary, #e85a4f);
-}
-
-.service-panel {
-    margin-top: 22rpx;
-    padding: 20rpx 22rpx;
-    border-radius: 30rpx;
-    background: rgba(252, 251, 249, 0.9);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-}
-
-.service-panel__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16rpx;
-}
-
-.service-panel__title {
-    font-size: 24rpx;
-    font-weight: 700;
-    line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
-}
-
-.service-panel__count {
-    font-size: 22rpx;
-    font-weight: 600;
-    line-height: 1.35;
-    color: var(--wm-text-secondary, #7f7b78);
-}
-
-.service-panel__tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12rpx;
-    margin-top: 16rpx;
 }
 
 .service-tag {
@@ -1143,6 +1116,45 @@ onUnload(() => {
     }
 }
 
+.order-card__alert {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    margin-top: 16rpx;
+    padding: 14rpx 16rpx;
+    border-radius: 24rpx;
+    font-size: 21rpx;
+    font-weight: 600;
+    line-height: 1.45;
+
+    &--warning {
+        background: rgba(255, 248, 237, 0.92);
+        color: var(--wm-color-warning, #c98524);
+    }
+
+    &--info {
+        background: rgba(255, 241, 238, 0.9);
+        color: var(--wm-color-primary, #e85a4f);
+    }
+
+    &--danger {
+        background: rgba(201, 75, 73, 0.08);
+        color: var(--wm-color-danger, #c94b49);
+    }
+}
+
+.order-card__alert-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.order-card__meta-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
+
 .order-card__foot {
     display: flex;
     justify-content: flex-end;
@@ -1153,33 +1165,51 @@ onUnload(() => {
 
 .order-card__actions {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 12rpx;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
 }
 
 .action-btn {
-    min-width: 124rpx;
-    height: 68rpx;
-    padding: 0 24rpx;
+    min-width: 156rpx;
+    height: 72rpx;
+    padding: 0 28rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
     font-size: 24rpx;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1;
+    transition: all var(--wm-motion-base, 220ms) ease;
 
-    &--ghost {
-        color: var(--wm-text-primary, #1e2432);
-        background: rgba(255, 255, 255, 0.86);
-        border: 2rpx solid var(--wm-color-border, #efe6e1);
+    &:active {
+        transform: translateY(2rpx);
+        opacity: 0.92;
     }
 
     &--primary {
+        margin-left: auto;
         border: none;
-        box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+        box-shadow: 0 18rpx 36rpx rgba(232, 90, 79, 0.18);
+    }
+}
+
+.action-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
+    min-height: 56rpx;
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--wm-text-secondary, #7f7b78);
+    transition: all var(--wm-motion-base, 220ms) ease;
+
+    &:active {
+        transform: translateY(2rpx);
+        opacity: 0.92;
     }
 }
 </style>

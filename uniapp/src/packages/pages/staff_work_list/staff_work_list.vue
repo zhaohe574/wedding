@@ -50,7 +50,15 @@
                 </template>
 
                 <view class="page-section page-section--list">
-                    <LoadingState v-if="loading && !hasLoaded" text="加载作品中..." />
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">{{ listSectionTitle }}</text>
+                            <text class="section-head__desc">{{ listSectionDesc }}</text>
+                        </view>
+                        <text class="section-head__meta">{{ listSectionMeta }}</text>
+                    </view>
+
+                    <LoadingState v-if="loading && !hasLoaded" text="正在同步作品库..." />
 
                     <template v-else-if="workList.length">
                         <BaseCard
@@ -147,7 +155,7 @@
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="在这里查看作品状态。"
+                        description="整理后即可继续展示作品。"
                         action-text="新增作品"
                         @action="handleAdd"
                     />
@@ -211,6 +219,33 @@ const emptyStateTitle = computed(() => {
         rejected: '当前筛选下暂无已拒绝作品'
     }
     return titleMap[currentMetricFilter.value]
+})
+const listSectionTitle = computed(() => {
+    const map: Record<WorkMetricFilter, string> = {
+        visible: '展示中的作品',
+        pending: '待审核作品',
+        hidden: '未展示作品',
+        rejected: '已拒绝作品'
+    }
+    return map[currentMetricFilter.value]
+})
+const listSectionDesc = computed(() => {
+    const map: Record<WorkMetricFilter, string> = {
+        visible: '优先维护对外展示的代表案例，保持作品风格统一。',
+        pending: '先处理审核中的内容，避免作品发布节奏中断。',
+        hidden: '整理暂不展示的内容，保持作品库表达克制清爽。',
+        rejected: '根据审核反馈修正作品内容后再次提交。'
+    }
+    return map[currentMetricFilter.value]
+})
+const listSectionMeta = computed(() => {
+    const map: Record<WorkMetricFilter, number> = {
+        visible: summary.value.visible_count,
+        pending: summary.value.pending_audit_count,
+        hidden: summary.value.hidden_count,
+        rejected: summary.value.rejected_count
+    }
+    return `共 ${map[currentMetricFilter.value]} 条`
 })
 
 const heroMetrics = computed<HeroMetric[]>(() => [
@@ -359,6 +394,44 @@ onShow(async () => {
 
 .hero-card {
     overflow: hidden;
+}
+
+.section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+    padding: 0 6rpx;
+}
+
+.section-head__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.section-head__title {
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.section-head__desc {
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.section-head__meta {
+    flex-shrink: 0;
+    font-size: 22rpx;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .hero-card__head {

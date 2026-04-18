@@ -47,7 +47,15 @@
                 </template>
 
                 <view class="page-section page-section--list">
-                    <LoadingState v-if="loading && !hasLoaded" text="加载证书中..." />
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">{{ listSectionTitle }}</text>
+                            <text class="section-head__desc">{{ listSectionDesc }}</text>
+                        </view>
+                        <text class="section-head__meta">{{ listSectionMeta }}</text>
+                    </view>
+
+                    <LoadingState v-if="loading && !hasLoaded" text="正在同步证书资料..." />
 
                     <template v-else-if="certificateList.length">
                         <BaseCard
@@ -128,7 +136,7 @@
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="在这里管理证书。"
+                        description="补齐资质后会出现在这里。"
                         action-text="新增证书"
                         @action="handleAdd"
                     />
@@ -192,6 +200,33 @@ const emptyStateTitle = computed(() => {
         rejected: '当前没有已拒绝证书'
     }
     return titleMap[currentFilter.value]
+})
+const listSectionTitle = computed(() => {
+    const map: Record<FilterKey, string> = {
+        all: '全部证书',
+        pending: '待审核证书',
+        approved: '已通过证书',
+        rejected: '已拒绝证书'
+    }
+    return map[currentFilter.value]
+})
+const listSectionDesc = computed(() => {
+    const map: Record<FilterKey, string> = {
+        all: '集中查看全部资质材料，保持证书信息完整可追踪。',
+        pending: '优先关注审核中的资质，及时补充缺失信息。',
+        approved: '已通过的证书会作为对外展示的重要信任信息。',
+        rejected: '根据驳回原因修正内容后再提交审核。'
+    }
+    return map[currentFilter.value]
+})
+const listSectionMeta = computed(() => {
+    const map: Record<FilterKey, number> = {
+        all: summary.value.total,
+        pending: summary.value.pending_count,
+        approved: summary.value.approved_count,
+        rejected: summary.value.rejected_count
+    }
+    return `共 ${map[currentFilter.value]} 项`
 })
 
 const getStatusTone = (status: number): BadgeTone => {
@@ -324,6 +359,44 @@ onShow(async () => {
         padding-top: 18rpx;
         padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
     }
+}
+
+.section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+    padding: 0 6rpx;
+}
+
+.section-head__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.section-head__title {
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.section-head__desc {
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.section-head__meta {
+    flex-shrink: 0;
+    font-size: 22rpx;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .hero-card__head,

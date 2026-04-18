@@ -158,6 +158,40 @@ export default {
         border-radius: 37rpx;
     }
 
+    &--staff {
+        &.base-card--surface,
+        &.base-card--panel {
+            background: linear-gradient(
+                180deg,
+                rgba(255, 255, 255, 0.98) 0%,
+                rgba(255, 249, 246, 0.96) 100%
+            );
+            border-color: rgba(241, 209, 197, 0.7);
+            box-shadow: var(--wm-shadow-soft, 0 18rpx 38rpx rgba(185, 129, 116, 0.12));
+        }
+
+        &.base-card--glass {
+            background: linear-gradient(
+                180deg,
+                rgba(255, 255, 255, 0.94) 0%,
+                rgba(255, 247, 244, 0.92) 100%
+            );
+            border-color: rgba(241, 209, 197, 0.88);
+            box-shadow: var(--wm-shadow-card, 0 22rpx 48rpx rgba(185, 129, 116, 0.16));
+        }
+
+        &.base-card--hero {
+            background: radial-gradient(
+                    circle at top right,
+                    rgba(232, 90, 79, 0.1) 0,
+                    transparent 34%
+                ),
+                linear-gradient(180deg, #fff6f2 0%, #fcfbf9 62%, #f7f0ea 100%);
+            border-color: rgba(241, 209, 197, 0.96);
+            box-shadow: var(--wm-shadow-hero, 0 28rpx 60rpx rgba(177, 108, 95, 0.18));
+        }
+    }
+
     &--interactive {
         cursor: pointer;
 

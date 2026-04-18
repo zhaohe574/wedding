@@ -19,6 +19,7 @@
                                 <view class="hero-card__copy">
                                     <text class="hero-card__eyebrow">服务人员中心</text>
                                     <text class="hero-card__title">附加项管理</text>
+                                    <text class="hero-card__meta">补充组合服务与加价项表达</text>
                                 </view>
 
                                 <view class="hero-card__action" @click="goCreate">
@@ -49,7 +50,15 @@
                 </template>
 
                 <view class="page-section page-section--list">
-                    <LoadingState v-if="loading && !hasLoaded" text="加载附加项中..." />
+                    <view class="section-head">
+                        <view class="section-head__copy">
+                            <text class="section-head__title">{{ listSectionTitle }}</text>
+                            <text class="section-head__desc">{{ listSectionDesc }}</text>
+                        </view>
+                        <text class="section-head__meta">{{ listSectionMeta }}</text>
+                    </view>
+
+                    <LoadingState v-if="loading && !hasLoaded" text="正在同步附加项..." />
 
                     <template v-else-if="addonList.length">
                         <BaseCard
@@ -140,7 +149,7 @@
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="在这里管理附加项。"
+                        description="配置好附加服务后会出现在这里。"
                         action-text="新增附加项"
                         @action="goCreate"
                     />
@@ -199,6 +208,23 @@ const emptyStateTitle = computed(() => {
     }
     return titleMap[currentMetricFilter.value]
 })
+const listSectionTitle = computed(() => {
+    const map: Record<AddonMetricFilter, string> = {
+        all: '全部附加项',
+        visible: '上架中的附加项',
+        hidden: '已下架附加项'
+    }
+    return map[currentMetricFilter.value]
+})
+const listSectionDesc = computed(() => {
+    const map: Record<AddonMetricFilter, string> = {
+        all: '统一维护可选附加服务，让套餐组合更完整清晰。',
+        visible: '优先检查当前上架内容，确保对外展示表达简洁一致。',
+        hidden: '归整暂不展示的附加项，减少前端视觉噪音。'
+    }
+    return map[currentMetricFilter.value]
+})
+const listSectionMeta = computed(() => `共 ${metricCounts.value[currentMetricFilter.value]} 项`)
 
 const getListParams = (pageNo: number, pageSize: number) => {
     const params: Record<string, number> = {
@@ -311,7 +337,12 @@ onShow(async () => {
     min-height: 100vh;
     padding-top: 20rpx;
     box-sizing: border-box;
-    background: transparent;
+    background: radial-gradient(
+            circle at top left,
+            rgba(232, 90, 79, 0.1) 0,
+            rgba(252, 251, 249, 0) 36%
+        ),
+        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
 }
 
 .page-section {
@@ -332,6 +363,44 @@ onShow(async () => {
 
 .hero-card {
     overflow: hidden;
+}
+
+.section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+    padding: 0 6rpx;
+}
+
+.section-head__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.section-head__title {
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--wm-text-primary, #1e2432);
+}
+
+.section-head__desc {
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.section-head__meta {
+    flex-shrink: 0;
+    font-size: 22rpx;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--wm-color-primary, #e85a4f);
 }
 
 .hero-card__head {
@@ -360,6 +429,15 @@ onShow(async () => {
     font-weight: 700;
     line-height: 1.28;
     color: var(--wm-text-primary, #1e2432);
+}
+
+.hero-card__meta {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 24rpx;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--wm-text-secondary, #7f7b78);
 }
 
 .hero-card__action {
