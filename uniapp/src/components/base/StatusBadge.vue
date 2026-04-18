@@ -8,6 +8,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useThemeStore } from '@/stores/theme'
 
 interface Props {
     tone?: 'neutral' | 'success' | 'warning' | 'danger' | 'info'
@@ -19,8 +20,13 @@ const props = withDefaults(defineProps<Props>(), {
     size: 'md'
 })
 
+const themeStore = useThemeStore()
+
 const badgeClass = computed(() => [
     'status-badge',
+    {
+        'status-badge--staff': themeStore.scene === 'staff'
+    },
     `status-badge--${props.tone}`,
     `status-badge--${props.size}`
 ])
@@ -79,6 +85,23 @@ const badgeClass = computed(() => [
         background: rgba(232, 90, 79, 0.08);
         border-color: var(--wm-color-border-strong, #f4c7bf);
         color: var(--wm-color-primary, #e85a4f);
+    }
+
+    &--staff {
+        backdrop-filter: blur(14rpx);
+        -webkit-backdrop-filter: blur(14rpx);
+        box-shadow: 0 10rpx 20rpx rgba(185, 129, 116, 0.06);
+    }
+
+    &--staff.status-badge--neutral {
+        background: rgba(255, 247, 244, 0.88);
+        border-color: rgba(241, 209, 197, 0.9);
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+
+    &--staff.status-badge--info {
+        background: rgba(255, 240, 235, 0.9);
+        border-color: rgba(241, 209, 197, 0.96);
     }
 }
 </style>

@@ -119,3 +119,31 @@ page,
     --wm-safe-bottom-tabbar: calc(177rpx + env(safe-area-inset-bottom));
     --wm-safe-bottom-action: calc(150rpx + env(safe-area-inset-bottom));
 }
+
+.wm-page-shell[data-scene='staff'],
+.wm-page--staff {
+    --wm-color-bg-page: #FFF8F5;
+    --wm-color-bg-card: rgba(255, 255, 255, 0.92);
+    --wm-color-bg-soft: #FFF2EE;
+    --wm-color-primary-soft: #FFF0EB;
+    --wm-color-secondary-soft: #F9F0E7;
+    --wm-color-border: #F0E5DE;
+    --wm-color-border-strong: #F1D1C5;
+    --wm-radius-chip: 39rpx;
+    --wm-radius-card-soft: 39rpx;
+    --wm-radius-card: 48rpx;
+    --wm-radius-action-bar: 48rpx;
+    --wm-radius-card-glass: 52rpx;
+    --wm-radius-card-lg: 56rpx;
+    --wm-radius-shell: 72rpx;
+    --wm-space-section-gap-sm: 20rpx;
+    --wm-space-section-gap-md: 28rpx;
+    --wm-space-section-gap-lg: 34rpx;
+    --wm-space-card-padding: 32rpx;
+    --wm-space-card-padding-lg: 36rpx;
+    --wm-space-action-top: 24rpx;
+    --wm-space-action-bottom: 42rpx;
+    --wm-shadow-soft: 0 18rpx 38rpx rgba(185, 129, 116, 0.12);
+    --wm-shadow-card: 0 22rpx 48rpx rgba(185, 129, 116, 0.16);
+    --wm-shadow-hero: 0 28rpx 60rpx rgba(177, 108, 95, 0.18);
+}
