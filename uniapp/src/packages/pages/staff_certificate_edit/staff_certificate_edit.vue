@@ -655,44 +655,76 @@ onLoad(async (options: any) => {
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 20rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
-    background: rgba(252, 251, 249, 0.92);
+    z-index: 40;
+    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
+    background: rgba(252, 251, 249, 0.88);
+    border-top: 1rpx solid rgba(239, 230, 225, 0.9);
     backdrop-filter: blur(24rpx);
     -webkit-backdrop-filter: blur(24rpx);
+    box-sizing: border-box;
 }
 
 .bottom-bar__inner {
-    gap: 18rpx;
+    display: flex;
+    gap: 12rpx;
 }
 
 .bottom-bar__action {
     flex: 1;
     min-height: 88rpx;
+    display: flex;
+    align-items: center;
     justify-content: center;
-    border-radius: 999rpx;
+    gap: 10rpx;
+    border-radius: 36rpx;
+    transition: all var(--wm-motion-base, 220ms) ease;
+
+    &:active {
+        transform: translateY(2rpx);
+        opacity: 0.92;
+    }
 }
 
 .bottom-bar__action--ghost {
-    background: #ffffff;
-    border: 1rpx solid #efe6e1;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1rpx solid var(--wm-color-border, #efe6e1);
 }
 
 .bottom-bar__action--primary {
-    background: linear-gradient(135deg, #f06f61 0%, #e85a4f 100%);
-    box-shadow: 0 18rpx 36rpx rgba(232, 90, 79, 0.22);
+    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, #d96a60 100%);
+    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.18);
 }
 
 .bottom-bar__action-text {
-    font-size: 28rpx;
+    font-size: 30rpx;
     font-weight: 700;
+    line-height: 1;
     color: #fff;
 }
 
 .bottom-bar__action-text--ghost {
-    color: #7f7b78;
+    color: var(--wm-text-primary, #1e2432);
 }
 
 .bottom-bar__loading {
-    margin-right: 10rpx;
+    animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 </style>
