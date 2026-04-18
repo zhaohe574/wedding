@@ -17,7 +17,7 @@ use think\facade\Db;
 
 class OrderConfirmLetterService
 {
-    public const RENDER_SPEC_VERSION = 'v1';
+    public const RENDER_SPEC_VERSION = 'v2';
     public const CONFIG_GROUP = 'order_confirmation_letter';
     public const CONFIG_KEY_REMARK_TEMPLATE = 'remark_template';
     public const ERROR_TEMPLATE = 'REMARK_TEMPLATE_MISSING';
@@ -30,6 +30,9 @@ class OrderConfirmLetterService
     public const ERROR_NOT_PAYABLE = 'ORDER_NOT_PAYABLE_FOR_CONFIRM';
     public const ERROR_USER = 'ORDER_USER_MISSING';
     public const ERROR_STALE = 'SNAPSHOT_STALE';
+    protected const DEFAULT_BRAND_NAME = '喜遇婚礼服务';
+    protected const DEFAULT_BRAND_TAGLINE = 'Wedding Service Confirmation';
+    protected const DEFAULT_FOOTER_NOTE = '本确认函用于确认婚礼服务安排，请以最新生成版本为准并妥善保存。';
 
     public static function getTemplateConfig(): array
     {
@@ -435,6 +438,7 @@ class OrderConfirmLetterService
             'remark_template' => $remarkTemplate,
             'paid_amount' => $paidAmount,
             'staff_names' => $staffNames,
+            'service_team_lines' => self::resolveServiceTeamLines($order, $staffId),
         ];
     }
 
@@ -444,11 +448,15 @@ class OrderConfirmLetterService
         $paidAmount = round((float) $qualification['paid_amount'], 2);
         $remainAmount = round(max($totalAmount - $paidAmount, 0), 2);
         $paidLabel = $paidAmount >= $totalAmount ? '已付全款' : '已付定金';
+        $serviceDate = self::normalizeServiceDate((string) $order->service_date);
         return [
             'title' => '订单确认函',
+            'order_sn' => trim((string) ($order->order_sn ?? '')),
             'customer_name' => trim((string) $order->contact_name),
-            'service_date' => date('Y-m-d', strtotime((string) $order->service_date)),
+            'service_date' => $serviceDate,
+            'service_date_label' => self::buildServiceDateLabel($serviceDate),
             'service_address' => trim((string) $order->service_address),
+            'service_team_lines' => array_values($qualification['service_team_lines'] ?? []),
             'service_staff_names' => array_values($qualification['staff_names']),
             'order_total_amount' => number_format($totalAmount, 2, '.', ''),
             'paid_label' => $paidLabel,
@@ -457,6 +465,9 @@ class OrderConfirmLetterService
             'confirm_date' => date('Y-m-d'),
             'contact_mobile' => trim((string) $order->contact_mobile),
             'remark_content' => trim((string) $qualification['remark_template']),
+            'brand_name' => self::DEFAULT_BRAND_NAME,
+            'brand_tagline' => self::DEFAULT_BRAND_TAGLINE,
+            'footer_note' => self::DEFAULT_FOOTER_NOTE,
         ];
     }
 
@@ -485,6 +496,65 @@ class OrderConfirmLetterService
             $names[] = $name;
         }
         return $names;
+    }
+
+    protected static function resolveServiceTeamLines(Order $order, ?int $staffId = null): array
+    {
+        $lines = [];
+        foreach ($order->items as $item) {
+            if (!in_array((int) $item->item_type, [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF], true)) {
+                continue;
+            }
+            if ((int) $item->item_status === OrderItem::STATUS_CANCELLED) {
+                continue;
+            }
+            if ($staffId !== null && (int) $item->staff_id !== $staffId) {
+                continue;
+            }
+
+            $staffName = trim((string) ($item->staff_name ?? ''));
+            if ($staffName === '') {
+                continue;
+            }
+
+            $itemMeta = is_array($item->item_meta ?? null) ? $item->item_meta : [];
+            $roleLabel = trim((string) ($itemMeta['role_label'] ?? ''));
+            $packageName = trim((string) ($item->package_name ?? ''));
+            $lineLabel = $roleLabel !== ''
+                ? $roleLabel
+                : ($packageName !== ''
+                    ? $packageName
+                    : ((int) $item->item_type === OrderItem::TYPE_RELATED_STAFF ? '协作服务' : '主服务'));
+
+            $line = $lineLabel . '：' . $staffName;
+            if (in_array($line, $lines, true)) {
+                continue;
+            }
+            $lines[] = $line;
+        }
+
+        return $lines;
+    }
+
+    protected static function normalizeServiceDate(string $serviceDate): string
+    {
+        $timestamp = strtotime($serviceDate);
+        if ($timestamp === false) {
+            return trim($serviceDate);
+        }
+
+        return date('Y-m-d', $timestamp);
+    }
+
+    protected static function buildServiceDateLabel(string $serviceDate): string
+    {
+        $timestamp = strtotime($serviceDate);
+        if ($timestamp === false) {
+            return $serviceDate;
+        }
+
+        $weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+        return date('Y年m月d日', $timestamp) . ' 星期' . $weekdays[(int) date('w', $timestamp)];
     }
 
     protected static function formatLetter(OrderConfirmLetter $letter): array
