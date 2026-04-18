@@ -45,6 +45,22 @@ image {
     padding: 24rpx var(--wm-space-page-x, 37rpx) 40rpx;
 }
 
+.wm-page--staff,
+.wm-page-shell[data-scene='staff'] {
+    background: linear-gradient(
+        180deg,
+        rgba(255, 248, 245, 0.98) 0%,
+        rgba(252, 251, 249, 0.96) 42%,
+        rgba(248, 242, 238, 0.92) 100%
+    );
+}
+
+.wm-page--staff .wm-page-content,
+.wm-page-shell[data-scene='staff'] .wm-page-content {
+    padding-top: 28rpx;
+    padding-bottom: 44rpx;
+}
+
 .wm-page-section + .wm-page-section {
     margin-top: var(--wm-space-section-gap-lg, 30rpx);
 }
@@ -115,6 +131,16 @@ image {
     background: linear-gradient(180deg, rgba(255, 247, 244, 0.98) 0%, rgba(255, 247, 244, 0.88) 100%);
     backdrop-filter: blur(18rpx);
     -webkit-backdrop-filter: blur(18rpx);
+}
+
+.wm-page--staff .wm-page-sticky-bar,
+.wm-page-shell[data-scene='staff'] .wm-page-sticky-bar {
+    background: linear-gradient(
+        180deg,
+        rgba(255, 248, 245, 0.98) 0%,
+        rgba(255, 244, 240, 0.9) 100%
+    );
+    border-bottom: 1rpx solid rgba(241, 209, 197, 0.52);
 }
 
 uni-modal {
