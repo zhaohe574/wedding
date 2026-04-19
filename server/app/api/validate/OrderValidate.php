@@ -43,6 +43,7 @@ class OrderValidate extends BaseValidate
         'amount' => 'float|gt:0',
         'voucher' => 'require|max:500',
         'letter_id' => 'require|integer|gt:0',
+        'allow_fallback' => 'integer|in:0,1',
         'waitlist_id' => 'integer|gt:0',
     ];
 
@@ -192,7 +193,7 @@ class OrderValidate extends BaseValidate
 
     public function sceneConfirmLetterById()
     {
-        return $this->only(['letter_id']);
+        return $this->only(['letter_id', 'allow_fallback']);
     }
 
     public function sceneConfirmLetterHistory()

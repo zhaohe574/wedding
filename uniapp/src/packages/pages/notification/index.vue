@@ -138,7 +138,11 @@ const notificationRouteMap: Record<string, (targetId?: number) => string> = {
     review_detail: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
     dynamic: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
     dynamic_detail: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
-    staff_detail: (targetId) => `/packages/pages/staff_detail/staff_detail?id=${targetId || 0}`
+    staff_detail: (targetId) => `/packages/pages/staff_detail/staff_detail?id=${targetId || 0}`,
+    confirm_letter_order: (targetId) =>
+        `/pages/order_detail/order_detail?id=${targetId || 0}&open_confirm_letter=1&from_notification=1`,
+    confirm_letter: (targetId) =>
+        `/pages/order_detail/order_detail?letter_id=${targetId || 0}&from_notification=1`
 }
 
 const buildConfirmLetterNotificationRoute = (item: any) =>

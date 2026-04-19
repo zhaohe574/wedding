@@ -243,7 +243,11 @@ class OrderController extends BaseApiController
     public function confirmLetterById()
     {
         $params = (new OrderValidate())->goCheck('confirmLetterById');
-        $result = OrderLogic::getConfirmLetterById((int) $params['letter_id'], $this->userId);
+        $result = OrderLogic::getConfirmLetterById(
+            (int) $params['letter_id'],
+            $this->userId,
+            (int) ($params['allow_fallback'] ?? 0) === 1
+        );
         if ($result === null) {
             return $this->fail('确认函不存在或当前不可查看');
         }

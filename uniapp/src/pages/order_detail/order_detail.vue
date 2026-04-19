@@ -757,6 +757,10 @@ const order = ref<any>(null)
 
 const confirmLetterId = ref(0)
 
+const confirmLetterFromNotification = ref(false)
+
+const shouldOpenConfirmLetter = ref(false)
+
 const confirmLetter = ref<any>(null)
 
 const confirmLetterHistory = ref<any[]>([])
@@ -1842,8 +1846,12 @@ const fetchConfirmLetter = async () => {
     if (confirmLetterId.value > 0) {
         try {
             confirmLetter.value = await getOrderConfirmLetterById({
-                letter_id: confirmLetterId.value
+                letter_id: confirmLetterId.value,
+                allow_fallback: confirmLetterFromNotification.value ? 1 : 0
             })
+            if (!Number(confirmLetter.value?.letter_id || 0) && Number(confirmLetter.value?.order_id || 0) > 0) {
+                orderId.value = Number(confirmLetter.value.order_id || 0)
+            }
         } catch {
             confirmLetter.value = null
 
@@ -2273,6 +2281,8 @@ onLoad(async (options: any) => {
     orderId.value = Number(options?.id || 0)
 
     confirmLetterId.value = Number(options?.letter_id || 0)
+    confirmLetterFromNotification.value = Number(options?.from_notification || 0) === 1
+    shouldOpenConfirmLetter.value = Number(options?.open_confirm_letter || 0) === 1
 
     if (options?.payment_sn) payState.paymentSn = String(options.payment_sn)
 
@@ -2280,11 +2290,17 @@ onLoad(async (options: any) => {
 
     if (orderId.value <= 0 && confirmLetterId.value > 0) {
         try {
-            const letter = await getOrderConfirmLetterById({ letter_id: confirmLetterId.value })
+            const letter = await getOrderConfirmLetterById({
+                letter_id: confirmLetterId.value,
+                allow_fallback: confirmLetterFromNotification.value ? 1 : 0
+            })
 
             confirmLetter.value = letter || null
 
             orderId.value = Number(letter?.order_id || 0)
+            if (letter?.fallback_message) {
+                uni.showToast({ title: String(letter.fallback_message), icon: 'none' })
+            }
         } catch (e: any) {
             confirmLetter.value = null
 
@@ -2297,7 +2313,15 @@ onLoad(async (options: any) => {
     }
 
     if (orderId.value > 0) {
-        void fetchDetail()
+        try {
+            await fetchDetail()
+            if (confirmLetter.value?.fallback_message) {
+                uni.showToast({ title: String(confirmLetter.value.fallback_message), icon: 'none' })
+            }
+            if (shouldOpenConfirmLetter.value) {
+                handleOpenConfirmLetter()
+            }
+        } catch {}
     }
 })
 

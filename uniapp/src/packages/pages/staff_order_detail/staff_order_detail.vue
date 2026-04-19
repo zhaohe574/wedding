@@ -333,13 +333,17 @@ import {
     staffCenterOrderConfirmLetterGenerate,
     staffCenterOrderConfirmLetterHistory,
     staffCenterOrderConfirmLetterPush,
+    staffCenterOrderConfirmLetterSaveAssets,
     staffCenterOrderComplete,
     staffCenterOrderDetail,
     staffCenterOrderConfirm,
     staffCenterOrderStartService
 } from '@/api/staffCenter'
 
-import { buildOrderConfirmLetterDataUrl } from '@/utils/orderConfirmLetterRenderer'
+import {
+    buildOrderConfirmLetterDataUrl,
+    renderOrderConfirmLetterSvg
+} from '@/utils/orderConfirmLetterRenderer'
 
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 
@@ -426,6 +430,8 @@ const order = ref<any>(null)
 const confirmLetter = ref<any>(null)
 
 const confirmLetterHistory = ref<any[]>([])
+
+const confirmLetterAssetSaving = ref(false)
 
 const confirmCountdownSeconds = ref(0)
 
@@ -1354,6 +1360,7 @@ const loadConfirmLetter = async (targetLetterId = 0) => {
         confirmLetter.value = await staffCenterOrderConfirmLetterDetail({
             letter_id: selectedLetterId
         })
+        confirmLetter.value = await ensureConfirmLetterAssets(confirmLetter.value)
     } catch {
         confirmLetter.value = null
 
@@ -1417,6 +1424,12 @@ const handlePushLetter = async () => {
     }
 
     try {
+        confirmLetter.value = await ensureConfirmLetterAssets(confirmLetter.value, false)
+        if (!String(confirmLetter.value?.full_image_url || '').trim()) {
+            uni.showToast({ title: '请先预览并完成图片保存', icon: 'none' })
+
+            return
+        }
         await staffCenterOrderConfirmLetterPush({ letter_id: confirmLetter.value.letter_id })
 
         uni.showToast({ title: '推送成功', icon: 'success' })
@@ -1453,6 +1466,44 @@ const handleSaveLetter = () => {
     }
 
     saveImageToPhotosAlbum(imageUrl)
+}
+
+const ensureConfirmLetterAssets = async (letter: any, silent = true) => {
+    if (!letter?.letter_id || String(letter?.full_image_url || '').trim() || confirmLetterAssetSaving.value) {
+        return letter
+    }
+
+    const svgContent = renderOrderConfirmLetterSvg(letter?.rendered_snapshot || {}, {
+        renderSpecVersion: letter?.render_spec_version
+    })
+    if (!svgContent) {
+        return letter
+    }
+
+    confirmLetterAssetSaving.value = true
+    try {
+        await staffCenterOrderConfirmLetterSaveAssets({
+            letter_id: Number(letter.letter_id || 0),
+            snapshot_hash: String(letter.snapshot_hash || ''),
+            full_image_url: '',
+            thumb_image_url: '',
+            svg_content: svgContent
+        })
+        const refreshed = await staffCenterOrderConfirmLetterDetail({
+            letter_id: Number(letter.letter_id || 0)
+        })
+        if (Number(confirmLetter.value?.letter_id || 0) === Number(refreshed?.letter_id || 0)) {
+            confirmLetter.value = refreshed
+        }
+        return refreshed
+    } catch (error: any) {
+        if (!silent) {
+            uni.showToast({ title: error?.msg || error?.message || '确认函图片保存失败', icon: 'none' })
+        }
+        return letter
+    } finally {
+        confirmLetterAssetSaving.value = false
+    }
 }
 
 const handleConfirm = () => {

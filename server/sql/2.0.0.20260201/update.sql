@@ -2715,6 +2715,11 @@ PREPARE order_confirm_letter_column_stmt FROM @order_confirm_letter_column_sql;
 EXECUTE order_confirm_letter_column_stmt;
 DEALLOCATE PREPARE order_confirm_letter_column_stmt;
 
+ALTER TABLE `la_order_confirm_letter`
+  MODIFY COLUMN `render_spec_version` varchar(20) NOT NULL DEFAULT 'v2' COMMENT '渲染版本',
+  MODIFY COLUMN `full_image_url` varchar(500) NOT NULL DEFAULT '' COMMENT '确认函全图缓存',
+  MODIFY COLUMN `thumb_image_url` varchar(500) NOT NULL DEFAULT '' COMMENT '确认函缩略图缓存';
+
 DELETE FROM `la_config` WHERE `type` = 'order_confirmation_letter' AND `name` = 'remark_template';
 INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) VALUES
 ('order_confirmation_letter', 'remark_template', '请您认真核对确认函中的服务日期、地点、金额与联系人信息，如有变更请及时联系订单服务人员。', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
