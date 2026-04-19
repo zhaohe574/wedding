@@ -31,7 +31,7 @@ class OrderConfirmLetterService
     public const ERROR_NOT_PAYABLE = 'ORDER_NOT_PAYABLE_FOR_CONFIRM';
     public const ERROR_USER = 'ORDER_USER_MISSING';
     public const ERROR_STALE = 'SNAPSHOT_STALE';
-    public const ERROR_ASSET_REQUIRED = 'ASSET_REQUIRED';
+    public const ERROR_ASSETS_MISSING = 'ASSETS_MISSING';
     protected const DEFAULT_BRAND_NAME = '喜遇婚礼服务';
     protected const DEFAULT_BRAND_TAGLINE = 'Wedding Service Confirmation';
     protected const DEFAULT_FOOTER_NOTE = '本确认函用于确认婚礼服务安排，请以最新生成版本为准并妥善保存。';
@@ -186,18 +186,15 @@ class OrderConfirmLetterService
             if ((string) $letter->snapshot_hash !== $snapshotHash) {
                 throw new \RuntimeException(self::ERROR_STALE);
             }
-            $fullImageUrl = trim($fullImageUrl);
-            $thumbImageUrl = trim($thumbImageUrl);
-            if ($fullImageUrl === '' && trim($svgContent) !== '') {
-                $persistedAssets = self::persistSvgAssets((int) $letter->order_id, $snapshotHash, $svgContent);
-                $fullImageUrl = $persistedAssets['full_image_url'];
-                $thumbImageUrl = $persistedAssets['thumb_image_url'];
+            $normalizedFullImageUrl = self::normalizeStoredImageUrl($fullImageUrl);
+            if ($normalizedFullImageUrl === '') {
+                throw new \RuntimeException(self::ERROR_ASSETS_MISSING);
             }
-            if ($fullImageUrl === '') {
-                throw new \RuntimeException(self::ERROR_ASSET_REQUIRED);
-            }
-            $letter->full_image_url = self::normalizeAssetUrl($fullImageUrl);
-            $letter->thumb_image_url = self::normalizeAssetUrl($thumbImageUrl !== '' ? $thumbImageUrl : $fullImageUrl);
+
+            $normalizedThumbImageUrl = self::normalizeStoredImageUrl($thumbImageUrl);
+
+            $letter->full_image_url = $normalizedFullImageUrl;
+            $letter->thumb_image_url = $normalizedThumbImageUrl !== '' ? $normalizedThumbImageUrl : $normalizedFullImageUrl;
             $letter->update_time = time();
             $letter->save();
         });
@@ -219,8 +216,8 @@ class OrderConfirmLetterService
             if ((int) ($order->current_confirm_letter_id ?? 0) !== (int) $letter->id || (int) $letter->is_outdated === OrderConfirmLetter::STATUS_OUTDATED) {
                 throw new \RuntimeException('当前版本已失效，请重新生成确认函');
             }
-            if (!self::hasPersistedAssets($letter)) {
-                throw new \RuntimeException(self::ERROR_ASSET_REQUIRED);
+            if (!self::hasSavedAssets($letter)) {
+                throw new \RuntimeException(self::ERROR_ASSETS_MISSING);
             }
             if (self::calculateEffectivePaidAmount((int) $order->id) <= 0) {
                 throw new \RuntimeException(self::ERROR_NOT_PAYABLE);
@@ -269,11 +266,8 @@ class OrderConfirmLetterService
             return null;
         }
 
-        $letter = self::resolveCurrentViewableLetter($order);
-        if (!$letter) {
-            return null;
-        }
-        return self::formatLetter($letter);
+        $letter = self::resolveCurrentEffectiveLetter($order);
+        return $letter ? self::formatLetter($letter) : null;
     }
 
     public static function byIdForUser(int $letterId, int $userId, bool $allowFallback = false): ?array
@@ -287,29 +281,21 @@ class OrderConfirmLetterService
         if (!$order) {
             return null;
         }
-        if (self::canUserViewLetter($order, $letter)) {
-            return self::formatLetter($letter);
-        }
-        if (!$allowFallback) {
-            return null;
-        }
-        $current = self::resolveCurrentViewableLetter($order);
-        if ($current) {
-            $data = self::formatLetter($current);
-            $data['used_fallback'] = 1;
-            $data['requested_letter_id'] = $letterId;
-            $data['fallback_message'] = '确认函版本已更新，已为你展示当前有效版本';
-            return $data;
+
+        $currentLetter = self::resolveCurrentEffectiveLetter($order);
+        if ($currentLetter && (int) $currentLetter->id === (int) $letter->id) {
+            return self::formatLetter($currentLetter);
         }
 
-        return [
-            'letter_id' => 0,
-            'order_id' => (int) $order->id,
-            'used_fallback' => 1,
-            'fallback_to_order' => 1,
-            'requested_letter_id' => $letterId,
-            'fallback_message' => '确认函版本已更新，当前暂无可查看确认函',
-        ];
+        if ($currentLetter) {
+            return self::buildLetterPayload($currentLetter, [
+                'requested_letter_id' => (int) $letter->id,
+                'stale_fallback' => 1,
+                'fallback_reason' => 'CURRENT_EFFECTIVE_VERSION',
+            ]);
+        }
+
+        return null;
     }
 
     public static function historyForUser(int $orderId, int $userId): array
@@ -421,7 +407,7 @@ class OrderConfirmLetterService
             self::ERROR_NOT_PAYABLE => '订单尚未产生有效付款，暂时不能生成或推送确认函',
             self::ERROR_USER => '订单未绑定顾客账号，暂时无法推送确认函',
             self::ERROR_STALE => '确认函内容已发生变化，请重新生成后再保存',
-            self::ERROR_ASSET_REQUIRED => '请先预览并完成确认函图片保存后再推送',
+            self::ERROR_ASSETS_MISSING => '请先完成确认函图片保存后再推送或查看',
             default => $message,
         };
     }
@@ -550,6 +536,7 @@ class OrderConfirmLetterService
             if ((int) $item->item_status === OrderItem::STATUS_CANCELLED) {
                 continue;
             }
+
             $staffName = trim((string) ($item->staff_name ?? ''));
             if ($staffName === '') {
                 continue;
@@ -611,8 +598,8 @@ class OrderConfirmLetterService
             'is_pushed' => (int) $letter->is_pushed,
             'render_spec_version' => self::normalizeRenderSpecVersion((string) $letter->render_spec_version),
             'snapshot_hash' => (string) $letter->snapshot_hash,
-            'full_image_url' => self::formatAssetUrl((string) $letter->full_image_url),
-            'thumb_image_url' => self::formatAssetUrl((string) $letter->thumb_image_url),
+            'full_image_url' => self::formatPublicImageUrl((string) $letter->full_image_url),
+            'thumb_image_url' => self::formatPublicImageUrl((string) $letter->thumb_image_url),
             'rendered_snapshot' => is_array($letter->rendered_snapshot) ? $letter->rendered_snapshot : [],
         ];
 
@@ -668,79 +655,5 @@ class OrderConfirmLetterService
     protected static function hasSavedAssets(OrderConfirmLetter $letter): bool
     {
         return trim((string) $letter->full_image_url) !== '';
-    }
-
-    protected static function resolveCurrentViewableLetter(Order $order): ?OrderConfirmLetter
-    {
-        if ((int) ($order->current_confirm_letter_id ?? 0) <= 0) {
-            return null;
-        }
-
-        /** @var OrderConfirmLetter|null $letter */
-        $letter = OrderConfirmLetter::where('id', (int) $order->current_confirm_letter_id)->find();
-        if (!$letter || !self::canUserViewLetter($order, $letter)) {
-            return null;
-        }
-
-        return $letter;
-    }
-
-    protected static function canUserViewLetter(Order $order, OrderConfirmLetter $letter): bool
-    {
-        return (int) $letter->is_pushed === 1
-            && (int) ($order->current_confirm_letter_id ?? 0) === (int) $letter->id
-            && (int) $letter->is_outdated === OrderConfirmLetter::STATUS_ACTIVE
-            && self::calculateEffectivePaidAmount((int) $order->id) > 0;
-    }
-
-    protected static function hasPersistedAssets(OrderConfirmLetter $letter): bool
-    {
-        return trim((string) $letter->full_image_url) !== '';
-    }
-
-    protected static function normalizeAssetUrl(string $url): string
-    {
-        $url = trim($url);
-        if ($url === '') {
-            return '';
-        }
-
-        return FileService::setFileUrl($url);
-    }
-
-    protected static function formatAssetUrl(string $url): string
-    {
-        $url = trim($url);
-        if ($url === '') {
-            return '';
-        }
-
-        return FileService::getFileUrl($url);
-    }
-
-    protected static function persistSvgAssets(int $orderId, string $snapshotHash, string $svgContent): array
-    {
-        $svgContent = trim($svgContent);
-        if ($svgContent === '' || stripos($svgContent, '<svg') === false) {
-            throw new \RuntimeException(self::ERROR_ASSET_REQUIRED);
-        }
-
-        $folder = 'uploads/order-confirm-letter/' . date('Ym');
-        $hash = preg_replace('/[^a-z0-9]/i', '', $snapshotHash);
-        $hash = $hash !== '' ? substr($hash, 0, 24) : substr(md5($svgContent), 0, 24);
-        $relativePath = sprintf('%s/order-%d-%s.svg', $folder, $orderId, $hash);
-        $absolutePath = FileService::getFileUrl($relativePath, 'public_path');
-        $directory = dirname($absolutePath);
-        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
-            throw new \RuntimeException('确认函图片目录创建失败');
-        }
-        if (file_put_contents($absolutePath, $svgContent) === false) {
-            throw new \RuntimeException('确认函图片保存失败');
-        }
-
-        return [
-            'full_image_url' => $relativePath,
-            'thumb_image_url' => $relativePath,
-        ];
     }
 }
