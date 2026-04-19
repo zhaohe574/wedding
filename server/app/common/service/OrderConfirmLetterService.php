@@ -656,4 +656,78 @@ class OrderConfirmLetterService
     {
         return trim((string) $letter->full_image_url) !== '';
     }
+
+    protected static function resolveCurrentViewableLetter(Order $order): ?OrderConfirmLetter
+    {
+        if ((int) ($order->current_confirm_letter_id ?? 0) <= 0) {
+            return null;
+        }
+
+        /** @var OrderConfirmLetter|null $letter */
+        $letter = OrderConfirmLetter::where('id', (int) $order->current_confirm_letter_id)->find();
+        if (!$letter || !self::canUserViewLetter($order, $letter)) {
+            return null;
+        }
+
+        return $letter;
+    }
+
+    protected static function canUserViewLetter(Order $order, OrderConfirmLetter $letter): bool
+    {
+        return (int) $letter->is_pushed === 1
+            && (int) ($order->current_confirm_letter_id ?? 0) === (int) $letter->id
+            && (int) $letter->is_outdated === OrderConfirmLetter::STATUS_ACTIVE
+            && self::calculateEffectivePaidAmount((int) $order->id) > 0;
+    }
+
+    protected static function hasPersistedAssets(OrderConfirmLetter $letter): bool
+    {
+        return trim((string) $letter->full_image_url) !== '';
+    }
+
+    protected static function normalizeAssetUrl(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+
+        return FileService::setFileUrl($url);
+    }
+
+    protected static function formatAssetUrl(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+
+        return FileService::getFileUrl($url);
+    }
+
+    protected static function persistSvgAssets(int $orderId, string $snapshotHash, string $svgContent): array
+    {
+        $svgContent = trim($svgContent);
+        if ($svgContent === '' || stripos($svgContent, '<svg') === false) {
+            throw new \RuntimeException(self::ERROR_ASSET_REQUIRED);
+        }
+
+        $folder = 'uploads/order-confirm-letter/' . date('Ym');
+        $hash = preg_replace('/[^a-z0-9]/i', '', $snapshotHash);
+        $hash = $hash !== '' ? substr($hash, 0, 24) : substr(md5($svgContent), 0, 24);
+        $relativePath = sprintf('%s/order-%d-%s.svg', $folder, $orderId, $hash);
+        $absolutePath = FileService::getFileUrl($relativePath, 'public_path');
+        $directory = dirname($absolutePath);
+        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+            throw new \RuntimeException('确认函图片目录创建失败');
+        }
+        if (file_put_contents($absolutePath, $svgContent) === false) {
+            throw new \RuntimeException('确认函图片保存失败');
+        }
+
+        return [
+            'full_image_url' => $relativePath,
+            'thumb_image_url' => $relativePath,
+        ];
+    }
 }
