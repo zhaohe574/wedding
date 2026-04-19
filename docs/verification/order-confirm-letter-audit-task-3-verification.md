@@ -166,3 +166,29 @@ The branch already has meaningful progress on renderer redesign, current-only us
 ### Frontend worker delta reminder — commit `a111dd7`
 - PASS version-aware renderer fallback and v1/v2 dispatcher wiring remain the latest landed frontend delta.
 - No newer task-2 or task-4 completion artifact was present in team task state at the time of this check; keep monitoring those lanes for asset-upload wiring and client-side stale-notification UX closure.
+
+### Frontend worker delta — commit `bda6129`
+- PASS notification deep links now carry explicit confirm-letter notification context.
+  - Evidence: `bda6129:uniapp/src/packages/pages/notification/index.vue:123-146,253-260`
+  - Delta: confirm-letter notifications now navigate with `entry=confirm_letter_notification` and `notification_id`, so the order-detail page can distinguish stale-notification recovery from ordinary browsing.
+- PASS user-side stale-notification recovery is materially improved.
+  - Evidence: `bda6129:uniapp/src/pages/order_detail/order_detail.vue:1771-1860,2229-2256`
+  - Delta: when a notification deep link by `letter_id` fails, the page now attempts to recover the current visible confirm letter, shows a one-time “版本已更新” hint when recovery succeeds, and falls back to an explicit modal + `reLaunch('/pages/order/order')` when no current visible letter can be resolved.
+- PASS blank fallback image generation is now guarded.
+  - Evidence: `bda6129:uniapp/src/utils/orderConfirmLetterRenderer.ts:63-77,599-605`
+  - Delta: the renderer now returns an empty string instead of generating an empty SVG when the snapshot payload is not actually renderable.
+- PASS static verification claims are reproducible in this pane.
+  - Evidence:
+    - `lsp_diagnostics(uniapp/src/packages/pages/notification/index.vue)` → `diagnosticCount: 0`
+    - `lsp_diagnostics(uniapp/src/pages/order_detail/order_detail.vue)` → `diagnosticCount: 0`
+    - `lsp_diagnostics(uniapp/src/utils/orderConfirmLetterRenderer.ts)` → `diagnosticCount: 0`
+- PARTIAL stale notification fallback remains constrained by backend payload shape.
+  - Evidence:
+    - commit note in `bda6129`
+    - current notification route still lacks an order id in payload construction (`uniapp/src/packages/pages/notification/index.vue`)
+  - Delta: the client now handles stale `letter_id` much better, but truly automatic fallback to the owning order still depends on backend notification payloads carrying enough context.
+- FAIL end-to-end asset persistence is still open after this frontend delta.
+  - Evidence from current audited snapshot:
+    - `admin/src/views/order/lists/index.vue:1808-1856`
+    - `uniapp/src/packages/pages/staff_order_detail/staff_order_detail.vue:1324-1455`
+  - Delta: notification recovery is improved, but admin/staff preview flows still do not implement render -> upload -> saveAssets -> refresh before push/save.
