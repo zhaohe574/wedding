@@ -761,6 +761,10 @@ const confirmLetter = ref<any>(null)
 
 const confirmLetterHistory = ref<any[]>([])
 
+const confirmLetterEntry = ref('')
+
+const confirmLetterFallbackHintShown = ref(false)
+
 const showRefundPopup = ref(false)
 
 const showVoucherPopup = ref(false)
@@ -800,6 +804,8 @@ let detailRequestPromise: Promise<void> | null = null
 let hasLoadedOnce = false
 
 let hasBeenHidden = false
+
+const CONFIRM_LETTER_NOTIFICATION_ENTRY = 'confirm_letter_notification'
 
 const formatAmount = (value: any) => Number(value || 0).toFixed(2)
 
@@ -1802,6 +1808,36 @@ const syncConfirmCountdown = (seconds: number | string) => {
     }, 1000)
 }
 
+const isConfirmLetterNotificationEntry = () =>
+    confirmLetterEntry.value === CONFIRM_LETTER_NOTIFICATION_ENTRY
+
+const showConfirmLetterFallbackHint = (message: string) => {
+    if (confirmLetterFallbackHintShown.value) {
+        return
+    }
+
+    confirmLetterFallbackHintShown.value = true
+    uni.showToast({ title: message, icon: 'none' })
+}
+
+const handleMissingNotificationConfirmLetter = async (message?: string) => {
+    if (!isConfirmLetterNotificationEntry()) {
+        uni.showToast({ title: message || '加载确认函失败', icon: 'none' })
+        return
+    }
+
+    await uni.showModal({
+        title: '确认函已更新',
+        content:
+            message ||
+            '这条通知对应的确认函版本已更新，当前通知未携带订单信息，暂时无法自动跳转。请前往“我的订单”查看当前有效确认函。',
+        showCancel: false,
+        confirmText: '查看订单'
+    })
+
+    uni.reLaunch({ url: '/pages/order/order' })
+}
+
 const fetchConfirmLetter = async () => {
     if (confirmLetterId.value > 0) {
         try {
@@ -1810,6 +1846,17 @@ const fetchConfirmLetter = async () => {
             })
         } catch {
             confirmLetter.value = null
+
+            if (orderId.value > 0) {
+                try {
+                    confirmLetter.value = await getOrderConfirmLetterCurrent({ id: orderId.value })
+                    if (confirmLetter.value?.letter_id && isConfirmLetterNotificationEntry()) {
+                        showConfirmLetterFallbackHint('确认函版本已更新，已切换到当前有效版本')
+                    }
+                } catch {
+                    confirmLetter.value = null
+                }
+            }
         }
 
         return
@@ -1854,6 +1901,14 @@ const fetchDetail = async () => {
             order.value = await getOrderDetail({ id: orderId.value })
 
             await fetchConfirmLetter()
+
+            if (
+                isConfirmLetterNotificationEntry() &&
+                confirmLetterId.value > 0 &&
+                !confirmLetter.value?.letter_id
+            ) {
+                showConfirmLetterFallbackHint('当前暂无可查看确认函，请在订单详情查看最新状态')
+            }
 
             await fetchConfirmLetterHistory()
 
@@ -2211,6 +2266,10 @@ onLoad(async (options: any) => {
 
     detailRequestPromise = null
 
+    confirmLetterFallbackHintShown.value = false
+
+    confirmLetterEntry.value = String(options?.entry || '').trim()
+
     orderId.value = Number(options?.id || 0)
 
     confirmLetterId.value = Number(options?.letter_id || 0)
@@ -2229,7 +2288,9 @@ onLoad(async (options: any) => {
         } catch (e: any) {
             confirmLetter.value = null
 
-            uni.showToast({ title: e?.message || '加载确认函失败', icon: 'none' })
+            await handleMissingNotificationConfirmLetter(
+                e?.message || '这条通知对应的确认函版本已更新，请前往“我的订单”查看当前有效确认函。'
+            )
 
             return
         }

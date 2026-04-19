@@ -80,6 +80,20 @@ const toStringArray = (value: unknown) =>
               .filter(Boolean)
         : []
 
+const hasRenderableSnapshot = (snapshot?: OrderConfirmLetterSnapshot | null) => {
+    if (!snapshot || typeof snapshot !== 'object') {
+        return false
+    }
+
+    return Object.values(snapshot).some((value) => {
+        if (Array.isArray(value)) {
+            return value.some((item) => toText(item))
+        }
+
+        return toText(value)
+    })
+}
+
 const normalizeVersion = (version?: string) => toText(version).toLowerCase()
 
 const resolveRenderOptions = (input?: RenderOptionsInput): Required<OrderConfirmLetterRenderOptions> => {
@@ -593,6 +607,10 @@ export function buildOrderConfirmLetterDataUrl(
     snapshot: OrderConfirmLetterSnapshot,
     options?: RenderOptionsInput
 ) {
+    if (!hasRenderableSnapshot(snapshot)) {
+        return ''
+    }
+
     const svg = renderOrderConfirmLetterSvg(snapshot, options)
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 }

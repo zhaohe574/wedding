@@ -138,9 +138,11 @@ const notificationRouteMap: Record<string, (targetId?: number) => string> = {
     review_detail: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
     dynamic: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
     dynamic_detail: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
-    staff_detail: (targetId) => `/packages/pages/staff_detail/staff_detail?id=${targetId || 0}`,
-    confirm_letter: (targetId) => `/pages/order_detail/order_detail?letter_id=${targetId || 0}`
+    staff_detail: (targetId) => `/packages/pages/staff_detail/staff_detail?id=${targetId || 0}`
 }
+
+const buildConfirmLetterNotificationRoute = (item: any) =>
+    `/pages/order_detail/order_detail?letter_id=${Number(item?.target_id || 0)}&entry=confirm_letter_notification&notification_id=${Number(item?.id || 0)}`
 
 const loading = ref(false)
 const currentType = ref(0)
@@ -268,8 +270,11 @@ const openNotificationDetail = async (item: any, hint = '') => {
 }
 
 const navigateByTarget = (item: any) => {
-    const routeBuilder = notificationRouteMap[String(item?.target_type || '').trim()]
-    const route = routeBuilder ? routeBuilder(item?.target_id) : ''
+    const targetType = String(item?.target_type || '').trim()
+    const route =
+        targetType === 'confirm_letter'
+            ? buildConfirmLetterNotificationRoute(item)
+            : notificationRouteMap[targetType]?.(item?.target_id) || ''
     if (!route) {
         return false
     }
