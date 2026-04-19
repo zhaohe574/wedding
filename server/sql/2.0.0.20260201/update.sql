@@ -2653,10 +2653,10 @@ CREATE TABLE IF NOT EXISTS `la_order_confirm_letter` (
   `is_outdated` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否失效：0=否，1=是',
   `is_pushed` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否已推送：0=否，1=是',
   `rendered_snapshot` json NOT NULL COMMENT '权威快照JSON',
-  `render_spec_version` varchar(20) NOT NULL DEFAULT 'v1' COMMENT '渲染版本',
+  `render_spec_version` varchar(20) NOT NULL DEFAULT 'v2' COMMENT '渲染版本',
   `snapshot_hash` char(64) NOT NULL DEFAULT '' COMMENT '快照哈希',
-  `full_image_url` varchar(255) NOT NULL DEFAULT '' COMMENT '确认函全图缓存',
-  `thumb_image_url` varchar(255) NOT NULL DEFAULT '' COMMENT '确认函缩略图缓存',
+  `full_image_url` varchar(500) NOT NULL DEFAULT '' COMMENT '确认函全图缓存',
+  `thumb_image_url` varchar(500) NOT NULL DEFAULT '' COMMENT '确认函缩略图缓存',
   `customer_name` varchar(100) NOT NULL DEFAULT '' COMMENT '客户名称快照',
   `contact_mobile` varchar(30) NOT NULL DEFAULT '' COMMENT '联系电话快照',
   `service_date` date NOT NULL COMMENT '服务日期快照',
@@ -2691,6 +2691,11 @@ CREATE TABLE IF NOT EXISTS `la_order_confirm_letter_push_log` (
   KEY `idx_letter_time` (`letter_id`,`create_time`),
   KEY `idx_order_user` (`order_id`,`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单确认函推送日志';
+
+ALTER TABLE `la_order_confirm_letter`
+  MODIFY COLUMN `render_spec_version` varchar(20) NOT NULL DEFAULT 'v2' COMMENT '渲染版本',
+  MODIFY COLUMN `full_image_url` varchar(500) NOT NULL DEFAULT '' COMMENT '确认函全图缓存',
+  MODIFY COLUMN `thumb_image_url` varchar(500) NOT NULL DEFAULT '' COMMENT '确认函缩略图缓存';
 
 SET @order_confirm_letter_column_exists = (
     SELECT COUNT(*)
