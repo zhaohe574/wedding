@@ -337,9 +337,7 @@ class StaffCenterValidate extends BaseValidate
 
     public function sceneOrderConfirmLetterAsset(): StaffCenterValidate
     {
-        return $this->only(['letter_id', 'snapshot_hash', 'full_image_url', 'thumb_image_url'])
-            ->append('snapshot_hash', 'require')
-            ->append('full_image_url', 'require');
+        return $this->only(['letter_id', 'snapshot_hash', 'full_image_url', 'thumb_image_url', 'svg_content']);
     }
 
     public function sceneOrderConfirmLetterPush(): StaffCenterValidate
