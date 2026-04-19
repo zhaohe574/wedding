@@ -225,3 +225,20 @@ The branch already has meaningful progress on renderer redesign, current-only us
     - `uniapp/src/pages/order_detail/order_detail.vue:1815-1843,1845-1868`
     - `server/app/common/service/OrderConfirmLetterService.php:273-298`
   - Delta: order-based notification routing plus backend current-letter fallback covers the common stale-link case. When no current visible letter exists, the client still falls back to user messaging / order list redirection rather than a richer server-driven recovery artifact.
+
+### Task-4 terminal delta — result commit `ec57c57`
+- PASS stale-notification fallback state is more stable after recovery.
+  - Evidence: `ec57c57:uniapp/src/pages/order_detail/order_detail.vue:1847-1854,1946-1953,2230-2238`
+  - Delta: after a fallback response or history selection, the page now normalizes `confirmLetterId` back to the currently resolved letter so later preview/history actions stay on the effective version instead of the stale requested id.
+- PASS blank snapshot guard still protects fallback preview rendering.
+  - Evidence: `ec57c57:uniapp/src/utils/orderConfirmLetterRenderer.ts:63-77,599-605`
+- PASS canonical authority and push gating remain unchanged from the merged-head review.
+  - Evidence: merged backend head already verified in `ee45d73`; task-4 only touched uniapp consumer files.
+- FAIL asset auto-persist is still open.
+  - Evidence from current head:
+    - `server/app/common/service/OrderConfirmLetterService.php:180-199`
+    - `admin/src/views/order/lists/index.vue:1808-1856`
+    - `uniapp/src/packages/pages/staff_order_detail/staff_order_detail.vue:1324-1455`
+  - Delta: task-4 improved recovery UX only; it did not add render -> upload/saveAssets -> refresh behavior.
+- INFO environment/test limitations remain unchanged.
+  - Evidence: task-4 result reports PASS `lsp_diagnostics` and `git diff --check`, but FAIL eslint CLI due missing local lint deps / incompatible ad-hoc npx defaults.
