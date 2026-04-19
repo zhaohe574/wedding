@@ -1849,6 +1849,7 @@ const fetchConfirmLetter = async () => {
                 letter_id: confirmLetterId.value,
                 allow_fallback: confirmLetterFromNotification.value ? 1 : 0
             })
+            confirmLetterId.value = Number(confirmLetter.value?.letter_id || confirmLetterId.value || 0)
             if (!Number(confirmLetter.value?.letter_id || 0) && Number(confirmLetter.value?.order_id || 0) > 0) {
                 orderId.value = Number(confirmLetter.value.order_id || 0)
             }
@@ -2300,6 +2301,7 @@ onLoad(async (options: any) => {
             confirmLetter.value = letter || null
 
             orderId.value = Number(letter?.order_id || 0)
+            confirmLetterId.value = Number(letter?.letter_id || confirmLetterId.value || 0)
             if (letter?.fallback_message) {
                 uni.showToast({ title: String(letter.fallback_message), icon: 'none' })
             }
