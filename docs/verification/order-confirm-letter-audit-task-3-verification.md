@@ -128,3 +128,41 @@
 
 ## Conclusion
 The branch already has meaningful progress on renderer redesign, current-only user visibility, and version-aware rendering. The highest-risk gaps still open are canonical staff filtering, missing asset-persistence wiring/gating, stale notification fallback, and the unresolved SQL/runtime contract mismatch.
+
+## Incremental worker delta monitoring
+
+### Backend worker delta — commit `660cf6e` / task 1 completion
+- PASS canonical order-level snapshot generation no longer staff-shapes content.
+  - Evidence:
+    - `660cf6e:server/app/api/logic/StaffCenterLogic.php:2208-2214`
+    - `660cf6e:server/app/common/service/OrderConfirmLetterService.php:64-100,523-555`
+  - Delta: staff generation now calls `OrderConfirmLetterService::generate($orderId, 'staff', $staffId)` without forwarding `staffId` into snapshot shaping, and the service-team resolution path no longer filters by staff.
+- PASS backend asset persistence now requires a real saved image URL and normalizes stored/public URLs.
+  - Evidence:
+    - `660cf6e:server/app/common/service/OrderConfirmLetterService.php:172-194,623-640`
+    - `660cf6e:server/app/adminapi/validate/order/OrderValidate.php:342-346`
+    - `660cf6e:server/app/api/validate/StaffCenterValidate.php:337-341`
+  - Delta: `saveAssets()` now rejects empty canonical URLs, normalizes storage via `FileService`, and both admin/staff validators require `snapshot_hash` and `full_image_url`.
+- PASS backend push gating now blocks pushes until assets exist.
+  - Evidence: `660cf6e:server/app/common/service/OrderConfirmLetterService.php:197-215,649-651`
+- PASS backend stale-link fallback now resolves a stale `letter_id` to the current effective pushed letter when one exists.
+  - Evidence: `660cf6e:server/app/common/service/OrderConfirmLetterService.php:267-292,603-621`
+- PASS SQL compatibility contract is aligned in the migration file.
+  - Evidence: `660cf6e:server/sql/2.0.0.20260201/update.sql:2649-2685`
+  - Delta: default `render_spec_version` becomes `v2`, and cached image URL columns widen to `varchar(500)`.
+- FAIL end-to-end asset protocol is still not complete in current leader snapshot because the admin/staff clients still do not call the save-assets APIs.
+  - Evidence from current audited snapshot:
+    - `admin/src/api/order.ts:128-129`
+    - `admin/src/views/order/lists/index.vue:1808-1856`
+    - `uniapp/src/api/staffCenter.ts:139-160`
+    - `uniapp/src/packages/pages/staff_order_detail/staff_order_detail.vue:1324-1455`
+- PARTIAL stale notification UX is improved but not fully complete.
+  - Evidence:
+    - backend fallback added in `660cf6e:server/app/common/service/OrderConfirmLetterService.php:267-292`
+    - current notification route still deep-links by `letter_id` at `uniapp/src/packages/pages/notification/index.vue:142`
+    - current user page still only nulls the letter on by-id failure at `uniapp/src/pages/order_detail/order_detail.vue:1805-1828`
+  - Delta: stale links can now recover when a current effective pushed letter exists, but the “fallback to order detail with explicit prompt when no current letter exists” branch is still not implemented in the current client snapshot.
+
+### Frontend worker delta reminder — commit `a111dd7`
+- PASS version-aware renderer fallback and v1/v2 dispatcher wiring remain the latest landed frontend delta.
+- No newer task-2 or task-4 completion artifact was present in team task state at the time of this check; keep monitoring those lanes for asset-upload wiring and client-side stale-notification UX closure.
