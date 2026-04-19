@@ -342,6 +342,8 @@ class OrderValidate extends BaseValidate
 
     public function sceneConfirmLetterAssets()
     {
-        return $this->only(['letter_id', 'snapshot_hash', 'full_image_url', 'thumb_image_url', 'svg_content']);
+        return $this->only(['letter_id', 'snapshot_hash', 'full_image_url', 'thumb_image_url'])
+            ->append('snapshot_hash', 'require')
+            ->append('full_image_url', 'require');
     }
 }
