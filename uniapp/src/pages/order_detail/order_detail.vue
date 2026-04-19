@@ -1858,6 +1858,7 @@ const fetchConfirmLetter = async () => {
             if (orderId.value > 0) {
                 try {
                     confirmLetter.value = await getOrderConfirmLetterCurrent({ id: orderId.value })
+                    confirmLetterId.value = Number(confirmLetter.value?.letter_id || 0)
                     if (confirmLetter.value?.letter_id && isConfirmLetterNotificationEntry()) {
                         showConfirmLetterFallbackHint('确认函版本已更新，已切换到当前有效版本')
                     }
@@ -2010,6 +2011,7 @@ const handleOpenConfirmLetterHistory = () => {
                 confirmLetter.value = await getOrderConfirmLetterById({
                     letter_id: Number(target.letter_id || 0)
                 })
+                confirmLetterId.value = Number(confirmLetter.value?.letter_id || target.letter_id || 0)
 
                 handleOpenConfirmLetter()
             } catch (error: any) {
