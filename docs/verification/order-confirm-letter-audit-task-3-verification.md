@@ -192,3 +192,36 @@ The branch already has meaningful progress on renderer redesign, current-only us
     - `admin/src/views/order/lists/index.vue:1808-1856`
     - `uniapp/src/packages/pages/staff_order_detail/staff_order_detail.vue:1324-1455`
   - Delta: notification recovery is improved, but admin/staff preview flows still do not implement render -> upload -> saveAssets -> refresh before push/save.
+
+### Merged-state watch update — current head after worker-2 checkpoint `c2487ec`
+- PASS push notifications now target the order instead of only a stale letter id.
+  - Evidence:
+    - `server/app/common/service/OrderConfirmLetterService.php:240-247`
+    - `server/app/common/service/StationNotificationService.php:19`
+    - `uniapp/src/packages/pages/notification/index.vue:142-145`
+  - Delta: backend push now sends `confirm_letter_order + order_id`, and the uniapp notification page routes that target to order detail with `open_confirm_letter=1&from_notification=1`.
+- PASS user by-id API now accepts notification-mode fallback.
+  - Evidence:
+    - `server/app/api/validate/OrderValidate.php:46,196`
+    - `server/app/api/controller/OrderController.php:243-254`
+    - `server/app/api/logic/OrderLogic.php:1059-1061`
+    - `server/app/common/service/OrderConfirmLetterService.php:273-298`
+  - Delta: stale confirm-letter lookups can now ask the backend for a current-effective fallback instead of only hard failing.
+- PASS push gating remains enforced at the backend.
+  - Evidence: `server/app/common/service/OrderConfirmLetterService.php:203-221`
+- FAIL asset auto-persist is still not closed in the merged head.
+  - Evidence:
+    - `server/app/common/service/OrderConfirmLetterService.php:172-200`
+    - `server/app/api/logic/StaffCenterLogic.php:2233-2239`
+    - `server/app/adminapi/logic/order/OrderLogic.php:337-343`
+    - `server/app/api/validate/StaffCenterValidate.php:75-78,338-342`
+  - Delta: `svg_content` is now threaded through validators and logic calls, but the current merged service still ignores it and still throws unless `full_image_url` is already provided. That means render -> upload/saveAssets auto-persist is not implemented server-side yet.
+- FAIL admin/staff clients still do not complete render -> upload/saveAssets -> refresh automatically.
+  - Evidence:
+    - `admin/src/views/order/lists/index.vue:1808-1856`
+    - `uniapp/src/packages/pages/staff_order_detail/staff_order_detail.vue:1324-1455`
+- PARTIAL stale notification fallback is now much stronger, but not fully self-healing in every no-current-letter case.
+  - Evidence:
+    - `uniapp/src/pages/order_detail/order_detail.vue:1815-1843,1845-1868`
+    - `server/app/common/service/OrderConfirmLetterService.php:273-298`
+  - Delta: order-based notification routing plus backend current-letter fallback covers the common stale-link case. When no current visible letter exists, the client still falls back to user messaging / order list redirection rather than a richer server-driven recovery artifact.
