@@ -1056,8 +1056,8 @@ class OrderLogic extends BaseLogic
         return OrderConfirmLetterService::currentForUser($orderId, $userId);
     }
 
-    public static function getConfirmLetterById(int $letterId, int $userId): ?array
+    public static function getConfirmLetterById(int $letterId, int $userId, bool $allowFallback = false): ?array
     {
-        return OrderConfirmLetterService::byIdForUser($letterId, $userId);
+        return OrderConfirmLetterService::byIdForUser($letterId, $userId, $allowFallback);
     }
 }

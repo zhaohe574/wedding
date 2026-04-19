@@ -16,6 +16,7 @@ use think\facade\Log;
 class StationNotificationService
 {
     public const TARGET_ORDER_DETAIL = 'order_detail';
+    public const TARGET_CONFIRM_LETTER_ORDER = 'confirm_letter_order';
     public const TARGET_STAFF_ORDER = 'staff_order';
     public const TARGET_WAITLIST = 'waitlist';
     public const TARGET_CHANGE = 'change';

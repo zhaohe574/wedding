@@ -334,7 +334,13 @@ class OrderLogic extends BaseLogic
     public static function confirmLetterSaveAssets(array $params)
     {
         try {
-            OrderConfirmLetterService::saveAssets((int) $params['letter_id'], (string) $params['snapshot_hash'], (string) $params['full_image_url'], (string) $params['thumb_image_url']);
+            OrderConfirmLetterService::saveAssets(
+                (int) $params['letter_id'],
+                (string) $params['snapshot_hash'],
+                (string) ($params['full_image_url'] ?? ''),
+                (string) ($params['thumb_image_url'] ?? ''),
+                (string) ($params['svg_content'] ?? '')
+            );
             return ['letter_id' => (int) $params['letter_id'], 'assets_saved' => true];
         } catch (\Throwable $e) {
             self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
