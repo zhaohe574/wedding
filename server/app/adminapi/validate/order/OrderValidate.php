@@ -95,6 +95,11 @@ class OrderValidate extends BaseValidate
         'letter_id.require' => '请选择确认函',
         'letter_id.integer' => '确认函参数错误',
         'letter_id.gt' => '确认函参数错误',
+        'snapshot_hash.require' => '确认函快照已失效，请重新生成后再保存',
+        'snapshot_hash.max' => '确认函快照参数错误',
+        'full_image_url.require' => '请先完成确认函图片保存',
+        'full_image_url.max' => '确认函图片地址过长',
+        'thumb_image_url.max' => '确认函缩略图地址过长',
     ];
 
     /**
@@ -336,6 +341,8 @@ class OrderValidate extends BaseValidate
 
     public function sceneConfirmLetterAssets()
     {
-        return $this->only(['letter_id', 'snapshot_hash', 'full_image_url', 'thumb_image_url']);
+        return $this->only(['letter_id', 'snapshot_hash', 'full_image_url', 'thumb_image_url'])
+            ->append('snapshot_hash', 'require')
+            ->append('full_image_url', 'require');
     }
 }

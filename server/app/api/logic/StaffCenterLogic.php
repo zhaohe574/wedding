@@ -2210,7 +2210,7 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
         try {
-            return OrderConfirmLetterService::generate($orderId, 'staff', $staffId, $staffId);
+            return OrderConfirmLetterService::generate($orderId, 'staff', $staffId);
         } catch (\Throwable $e) {
             self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
             return false;

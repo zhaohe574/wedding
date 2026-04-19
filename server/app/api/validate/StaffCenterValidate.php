@@ -143,6 +143,11 @@ class StaffCenterValidate extends BaseValidate
         'letter_id.gt' => '确认函参数错误',
         'order_id.integer' => '订单参数错误',
         'order_id.gt' => '订单参数错误',
+        'snapshot_hash.require' => '确认函快照已失效，请重新生成后再保存',
+        'snapshot_hash.max' => '确认函快照参数错误',
+        'full_image_url.require' => '请先完成确认函图片保存',
+        'full_image_url.max' => '确认函图片地址过长',
+        'thumb_image_url.max' => '确认函缩略图地址过长',
     ];
 
     public function sceneProfile(): StaffCenterValidate
@@ -331,7 +336,9 @@ class StaffCenterValidate extends BaseValidate
 
     public function sceneOrderConfirmLetterAsset(): StaffCenterValidate
     {
-        return $this->only(['letter_id', 'snapshot_hash', 'full_image_url', 'thumb_image_url']);
+        return $this->only(['letter_id', 'snapshot_hash', 'full_image_url', 'thumb_image_url'])
+            ->append('snapshot_hash', 'require')
+            ->append('full_image_url', 'require');
     }
 
     public function sceneOrderConfirmLetterPush(): StaffCenterValidate
