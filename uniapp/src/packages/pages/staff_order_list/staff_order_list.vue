@@ -14,22 +14,48 @@
             >
                 <template #top>
                     <view class="page-section page-section--top">
-                        <BaseCard variant="glass" scene="staff" class="summary-bar">
-                            <view class="summary-bar__head">
-                                <view class="summary-bar__copy">
-                                    <text class="summary-bar__title">订单管理</text>
-                                    <text class="summary-bar__desc">{{ summaryHeadline }}</text>
+                        <BaseCard
+                            variant="hero"
+                            scene="staff"
+                            class="hero-card"
+                            :style="heroCardStyle"
+                        >
+                            <view class="hero-card__head">
+                                <view class="hero-card__copy">
+                                    <text class="hero-card__eyebrow">履约工作台</text>
+                                    <text class="hero-card__title">订单管理</text>
+                                    <text class="hero-card__desc">{{ heroHeadline }}</text>
                                 </view>
 
-                                <view class="summary-bar__total">
-                                    <text class="summary-bar__total-value">
+                                <view class="hero-card__total">
+                                    <text class="hero-card__total-label">总订单</text>
+                                    <text class="hero-card__total-value">
                                         {{ Number(orderStats.all || 0) }}
                                     </text>
-                                    <text class="summary-bar__total-unit">单</text>
+                                    <text class="hero-card__total-unit">单</text>
                                 </view>
                             </view>
 
-                            <view class="summary-strip">
+                            <view class="hero-focus-strip">
+                                <view
+                                    v-for="item in focusCards"
+                                    :key="item.key"
+                                    :class="[
+                                        'hero-focus-card',
+                                        { 'hero-focus-card--accent': item.accent }
+                                    ]"
+                                    @click="switchStatusByValue(item.status)"
+                                >
+                                    <text class="hero-focus-card__label">{{ item.label }}</text>
+                                    <view class="hero-focus-card__value-row">
+                                        <text class="hero-focus-card__value">{{ item.value }}</text>
+                                        <text class="hero-focus-card__unit">{{ item.unit }}</text>
+                                    </view>
+                                    <text class="hero-focus-card__hint">{{ item.hint }}</text>
+                                </view>
+                            </view>
+
+                            <view class="hero-metrics">
                                 <view
                                     v-for="item in summaryCards"
                                     :key="item.key"
@@ -342,6 +368,13 @@ const orderCountdownNowTs = ref(Date.now())
 let orderCountdownTimer: ReturnType<typeof setInterval> | null = null
 let orderCountdownRefreshing = false
 
+const heroCardStyle = computed(() => ({
+    '--wm-hero-gradient': `linear-gradient(135deg, ${
+        $theme.primaryColor || '#E85A4F'
+    }12 0%, var(--wm-color-bg-page, #FCFBF9) 52%, ${$theme.secondaryColor || '#C99B73'}14 100%)`,
+    borderColor: 'var(--wm-color-border-strong, #F4C7BF)'
+}))
+
 const primaryActionStyle = computed(() => ({
     background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${
         $theme.secondaryColor || $theme.primaryColor
@@ -391,7 +424,7 @@ const summaryCards = computed<SummaryCardItem[]>(() => [
     }
 ])
 
-const summaryHeadline = computed(() => {
+const heroHeadline = computed(() => {
     const pendingConfirm = Number(orderStats.value.pending_confirm || 0)
     const pendingPay = Number(orderStats.value.pending_pay || 0)
     const pendingService = Number(orderStats.value.paid || 0)
@@ -419,6 +452,36 @@ const summaryHeadline = computed(() => {
 
     return '订单按服务节奏分层展示，优先处理最临近的履约任务'
 })
+
+const focusCards = computed(() => [
+    {
+        key: 'pending-confirm',
+        label: '待确认',
+        value: Number(orderStats.value.pending_confirm || 0),
+        unit: '笔',
+        hint: Number(orderStats.value.pending_confirm || 0) > 0 ? '优先确认' : '暂时平稳',
+        status: 0 as StatusValue,
+        accent: currentStatus.value === 0 || Number(orderStats.value.pending_confirm || 0) > 0
+    },
+    {
+        key: 'pending-pay',
+        label: '待支付',
+        value: Number(orderStats.value.pending_pay || 0),
+        unit: '笔',
+        hint: Number(orderStats.value.pending_pay || 0) > 0 ? '关注支付' : '支付顺畅',
+        status: 1 as StatusValue,
+        accent: currentStatus.value === 1
+    },
+    {
+        key: 'pending-service',
+        label: '待服务',
+        value: Number(orderStats.value.paid || 0),
+        unit: '笔',
+        hint: Number(orderStats.value.paid || 0) > 0 ? '准备履约' : '档期充足',
+        status: 2 as StatusValue,
+        accent: currentStatus.value === 2
+    }
+])
 
 const resetOrderStats = () => {
     orderStats.value = { ...DEFAULT_ORDER_STATS }
@@ -845,73 +908,152 @@ onUnload(() => {
     }
 }
 
-.summary-bar,
+.hero-card,
 .order-card {
     background: rgba(255, 255, 255, 0.98);
     border: 1rpx solid rgba(240, 229, 222, 0.98);
     box-shadow: 0 20rpx 42rpx rgba(185, 129, 116, 0.12);
 }
 
-.summary-bar {
+.hero-card {
     display: flex;
     flex-direction: column;
     gap: 14rpx;
     overflow: hidden;
 }
 
-.summary-bar__head {
+.hero-card__head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 16rpx;
+    gap: 20rpx;
 }
 
-.summary-bar__copy {
+.hero-card__copy {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
 }
 
-.summary-bar__title {
-    display: block;
-    font-size: 34rpx;
+.hero-card__eyebrow {
+    font-size: 20rpx;
     font-weight: 700;
-    line-height: 1.3;
+    line-height: 1.2;
+    color: var(--wm-color-primary, #e85a4f);
+}
+
+.hero-card__title {
+    font-size: 40rpx;
+    font-weight: 700;
+    line-height: 1.28;
     color: var(--wm-text-primary, #1e2432);
 }
 
-.summary-bar__desc {
-    display: block;
-    margin-top: 6rpx;
+.hero-card__desc {
     font-size: 22rpx;
     font-weight: 600;
-    line-height: 1.45;
+    line-height: 1.5;
     color: var(--wm-text-secondary, #7f7b78);
 }
 
-.summary-bar__total {
+.hero-card__total {
     flex-shrink: 0;
-    min-width: 96rpx;
+    min-width: 132rpx;
     display: flex;
-    align-items: baseline;
-    justify-content: flex-end;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: 4rpx;
+    padding: 18rpx 20rpx;
+    border-radius: 30rpx;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.74);
+    border: 1rpx solid rgba(255, 255, 255, 0.8);
 }
 
-.summary-bar__total-value {
-    font-size: 38rpx;
+.hero-card__total-label {
+    font-size: 20rpx;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--wm-text-secondary, #7f7b78);
+}
+
+.hero-card__total-value {
+    font-size: 42rpx;
     font-weight: 700;
     line-height: 1;
     color: var(--wm-text-primary, #1e2432);
 }
 
-.summary-bar__total-unit {
+.hero-card__total-unit {
     font-size: 20rpx;
     font-weight: 700;
     line-height: 1.2;
     color: var(--wm-text-tertiary, #b4aca8);
 }
 
-.summary-strip {
+.hero-focus-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
+
+.hero-focus-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+    min-width: 0;
+    padding: 18rpx 20rpx;
+    border-radius: 28rpx;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1rpx solid rgba(255, 255, 255, 0.82);
+    box-sizing: border-box;
+
+    &--accent {
+        background: rgba(255, 241, 238, 0.92);
+        border-color: var(--wm-color-border-strong, #f4c7bf);
+    }
+
+    &__label {
+        font-size: 20rpx;
+        font-weight: 700;
+        line-height: 1.3;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+
+    &__value-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 6rpx;
+    }
+
+    &__value {
+        font-size: 34rpx;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--wm-text-primary, #1e2432);
+    }
+
+    &__unit {
+        padding-bottom: 4rpx;
+        font-size: 20rpx;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+
+    &__hint {
+        font-size: 18rpx;
+        font-weight: 600;
+        line-height: 1.45;
+        color: var(--wm-text-secondary, #7f7b78);
+    }
+}
+
+.hero-metrics {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10rpx;
