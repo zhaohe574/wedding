@@ -333,17 +333,13 @@ import {
     staffCenterOrderConfirmLetterGenerate,
     staffCenterOrderConfirmLetterHistory,
     staffCenterOrderConfirmLetterPush,
-    staffCenterOrderConfirmLetterSaveAssets,
     staffCenterOrderComplete,
     staffCenterOrderDetail,
     staffCenterOrderConfirm,
     staffCenterOrderStartService
 } from '@/api/staffCenter'
 
-import {
-    buildOrderConfirmLetterDataUrl,
-    renderOrderConfirmLetterSvg
-} from '@/utils/orderConfirmLetterRenderer'
+import { isOrderConfirmLetterBitmapAssetUrl } from '@/utils/orderConfirmLetterRenderer'
 
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 
@@ -430,8 +426,6 @@ const order = ref<any>(null)
 const confirmLetter = ref<any>(null)
 
 const confirmLetterHistory = ref<any[]>([])
-
-const confirmLetterAssetSaving = ref(false)
 
 const confirmCountdownSeconds = ref(0)
 
@@ -637,19 +631,19 @@ const payTimeoutActionText = computed(() => {
     return String(order.value?.pay_timeout_action_desc || '').trim()
 })
 
-const uniqueServiceDates = computed(() => {
+const uniqueServiceDates = computed<string[]>(() => {
     const values = (order.value?.items || [])
 
         .map((item: any) => String(item?.service_date || '').trim())
 
         .filter(Boolean)
 
-    return Array.from(new Set(values)).sort()
+    return Array.from(new Set<string>(values)).sort()
 })
 
-const earliestServiceDateText = computed(() => uniqueServiceDates.value[0] || '待安排')
+const earliestServiceDateText = computed<string>(() => uniqueServiceDates.value[0] || '待安排')
 
-const serviceDateSummary = computed(() => {
+const serviceDateSummary = computed<string>(() => {
     if (!uniqueServiceDates.value.length) {
         return '待安排服务日期'
     }
@@ -667,14 +661,14 @@ const pendingConfirmCount = computed(
             .length
 )
 
-const packageNames = computed(() => {
+const packageNames = computed<string[]>(() => {
     const values = (order.value?.items || [])
 
         .map((item: any) => String(item?.package_name || '').trim())
 
         .filter(Boolean)
 
-    return Array.from(new Set(values))
+    return Array.from(new Set<string>(values))
 })
 
 const serviceSummaryTitle = computed(() => {
@@ -779,7 +773,7 @@ const heroChips = computed<HeroChip[]>(() => {
     return chips
 })
 
-const summaryTags = computed(() => packageNames.value.slice(0, 3))
+const summaryTags = computed<string[]>(() => packageNames.value.slice(0, 3))
 
 const legacyServiceNotice = computed(() => {
     const hasLegacyItems = (order.value?.items || []).some(
@@ -1360,7 +1354,6 @@ const loadConfirmLetter = async (targetLetterId = 0) => {
         confirmLetter.value = await staffCenterOrderConfirmLetterDetail({
             letter_id: selectedLetterId
         })
-        confirmLetter.value = await ensureConfirmLetterAssets(confirmLetter.value)
     } catch {
         confirmLetter.value = null
 
@@ -1424,12 +1417,6 @@ const handlePushLetter = async () => {
     }
 
     try {
-        confirmLetter.value = await ensureConfirmLetterAssets(confirmLetter.value, false)
-        if (!String(confirmLetter.value?.full_image_url || '').trim()) {
-            uni.showToast({ title: '请先预览并完成图片保存', icon: 'none' })
-
-            return
-        }
         await staffCenterOrderConfirmLetterPush({ letter_id: confirmLetter.value.letter_id })
 
         uni.showToast({ title: '推送成功', icon: 'success' })
@@ -1440,12 +1427,16 @@ const handlePushLetter = async () => {
     }
 }
 
-const handlePreviewLetter = () => {
-    const imageUrl =
-        String(confirmLetter.value?.full_image_url || '').trim() ||
-        buildOrderConfirmLetterDataUrl(confirmLetter.value?.rendered_snapshot || {}, {
-            renderSpecVersion: confirmLetter.value?.render_spec_version,
-        })
+const getConfirmLetterBitmapSrc = (letter: any) => {
+    const fullImageUrl = String(letter?.full_image_url || '').trim()
+    return isOrderConfirmLetterBitmapAssetUrl(fullImageUrl) ? fullImageUrl : ''
+}
+
+const getConfirmLetterPreviewSrc = (letter: any) =>
+    getConfirmLetterBitmapSrc(letter)
+
+const handlePreviewLetter = async () => {
+    const imageUrl = getConfirmLetterPreviewSrc(confirmLetter.value)
 
     if (!imageUrl) {
         uni.showToast({ title: '确认函图片暂未生成', icon: 'none' })
@@ -1456,8 +1447,8 @@ const handlePreviewLetter = () => {
     uni.previewImage({ urls: [imageUrl], current: imageUrl })
 }
 
-const handleSaveLetter = () => {
-    const imageUrl = String(confirmLetter.value?.full_image_url || '').trim()
+const handleSaveLetter = async () => {
+    const imageUrl = getConfirmLetterBitmapSrc(confirmLetter.value)
 
     if (!imageUrl) {
         uni.showToast({ title: '确认函图片暂未生成', icon: 'none' })
@@ -1466,44 +1457,6 @@ const handleSaveLetter = () => {
     }
 
     saveImageToPhotosAlbum(imageUrl)
-}
-
-const ensureConfirmLetterAssets = async (letter: any, silent = true) => {
-    if (!letter?.letter_id || String(letter?.full_image_url || '').trim() || confirmLetterAssetSaving.value) {
-        return letter
-    }
-
-    const svgContent = renderOrderConfirmLetterSvg(letter?.rendered_snapshot || {}, {
-        renderSpecVersion: letter?.render_spec_version
-    })
-    if (!svgContent) {
-        return letter
-    }
-
-    confirmLetterAssetSaving.value = true
-    try {
-        await staffCenterOrderConfirmLetterSaveAssets({
-            letter_id: Number(letter.letter_id || 0),
-            snapshot_hash: String(letter.snapshot_hash || ''),
-            full_image_url: '',
-            thumb_image_url: '',
-            svg_content: svgContent
-        })
-        const refreshed = await staffCenterOrderConfirmLetterDetail({
-            letter_id: Number(letter.letter_id || 0)
-        })
-        if (Number(confirmLetter.value?.letter_id || 0) === Number(refreshed?.letter_id || 0)) {
-            confirmLetter.value = refreshed
-        }
-        return refreshed
-    } catch (error: any) {
-        if (!silent) {
-            uni.showToast({ title: error?.msg || error?.message || '确认函图片保存失败', icon: 'none' })
-        }
-        return letter
-    } finally {
-        confirmLetterAssetSaving.value = false
-    }
 }
 
 const handleConfirm = () => {

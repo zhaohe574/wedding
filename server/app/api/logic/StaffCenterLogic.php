@@ -2230,14 +2230,15 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
         try {
-            OrderConfirmLetterService::saveAssets(
+            $result = OrderConfirmLetterService::regenerateAssets(
                 (int) $params['letter_id'],
-                (string) $params['snapshot_hash'],
-                (string) ($params['full_image_url'] ?? ''),
-                (string) ($params['thumb_image_url'] ?? ''),
-                (string) ($params['svg_content'] ?? '')
+                (string) ($params['snapshot_hash'] ?? ''),
+                true
             );
-            return ['letter_id' => (int) $params['letter_id'], 'assets_saved' => true];
+            return [
+                'letter_id' => (int) ($result['letter_id'] ?? $params['letter_id']),
+                'assets_saved' => true,
+            ];
         } catch (\Throwable $e) {
             self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
             return false;
@@ -2276,7 +2277,12 @@ class StaffCenterLogic extends BaseLogic
             self::setError('无权限操作该订单确认函');
             return null;
         }
-        return OrderConfirmLetterService::detailForOrder($letterId, (int) $letter->order_id);
+        try {
+            return OrderConfirmLetterService::detailForOrder($letterId, (int) $letter->order_id);
+        } catch (\Throwable $e) {
+            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            return null;
+        }
     }
 
     public static function orderConfirmLetterHistory(int $userId, int $orderId)

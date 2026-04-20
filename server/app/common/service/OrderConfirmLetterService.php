@@ -32,6 +32,13 @@ class OrderConfirmLetterService
     public const ERROR_USER = 'ORDER_USER_MISSING';
     public const ERROR_STALE = 'SNAPSHOT_STALE';
     public const ERROR_ASSETS_MISSING = 'ASSETS_MISSING';
+    public const ERROR_ASSET_RUNTIME = 'ASSET_RUNTIME_UNAVAILABLE';
+    public const ERROR_ASSET_FONT = 'ASSET_FONT_MISSING';
+    public const ERROR_ASSET_RENDER = 'ASSET_RENDER_FAILED';
+    protected const ASSET_FONT_FAMILY = 'Noto Sans SC';
+    protected const ASSET_FONT_FILE = 'NotoSansSC-VF.ttf';
+    protected const ASSET_FONT_DIR = 'app/common/resource/fonts';
+    protected const ASSET_PNG_RESOLUTION = 144;
     protected const DEFAULT_BRAND_NAME = '喜遇婚礼服务';
     protected const DEFAULT_BRAND_TAGLINE = 'Wedding Service Confirmation';
     protected const DEFAULT_FOOTER_NOTE = '本确认函用于确认婚礼服务安排，请以最新生成版本为准并妥善保存。';
@@ -104,15 +111,10 @@ class OrderConfirmLetterService
                 /** @var OrderConfirmLetter|null $current */
                 $current = OrderConfirmLetter::where('id', $currentId)->lock(true)->find();
                 if ($current && (string) $current->snapshot_hash === $snapshotHash) {
-                    return [
-                        'letter_id' => (int) $current->id,
-                        'order_id' => (int) $order->id,
-                        'version' => (int) $current->version,
+                    self::ensurePersistedAssets($current, true);
+                    return self::buildLetterPayload($current, [
                         'reused_current' => true,
-                        'rendered_snapshot' => $current->rendered_snapshot,
-                        'render_spec_version' => self::normalizeRenderSpecVersion((string) $current->render_spec_version),
-                        'snapshot_hash' => (string) $current->snapshot_hash,
-                    ];
+                    ]);
                 }
             }
 
@@ -157,15 +159,11 @@ class OrderConfirmLetterService
             $order->update_time = time();
             $order->save();
 
-            return [
-                'letter_id' => (int) $letter->id,
-                'order_id' => (int) $order->id,
-                'version' => $version,
+            self::ensurePersistedAssets($letter, true);
+
+            return self::buildLetterPayload($letter, [
                 'reused_current' => false,
-                'rendered_snapshot' => $snapshot,
-                'render_spec_version' => self::RENDER_SPEC_VERSION,
-                'snapshot_hash' => $snapshotHash,
-            ];
+            ]);
         });
     }
 
@@ -177,26 +175,28 @@ class OrderConfirmLetterService
         string $svgContent = ''
     ): void
     {
-        Db::transaction(function () use ($letterId, $snapshotHash, $fullImageUrl, $thumbImageUrl, $svgContent) {
+        self::regenerateAssets($letterId, $snapshotHash, true);
+    }
+
+    public static function regenerateAssets(int $letterId, string $snapshotHash = '', bool $force = true): array
+    {
+        return Db::transaction(function () use ($letterId, $snapshotHash, $force) {
             /** @var OrderConfirmLetter|null $letter */
             $letter = OrderConfirmLetter::where('id', $letterId)->lock(true)->find();
             if (!$letter) {
                 throw new \RuntimeException('确认函不存在');
             }
-            if ((string) $letter->snapshot_hash !== $snapshotHash) {
+
+            if ($snapshotHash !== '' && (string) $letter->snapshot_hash !== $snapshotHash) {
                 throw new \RuntimeException(self::ERROR_STALE);
             }
-            $normalizedFullImageUrl = self::normalizeStoredImageUrl($fullImageUrl);
-            if ($normalizedFullImageUrl === '') {
-                throw new \RuntimeException(self::ERROR_ASSETS_MISSING);
-            }
 
-            $normalizedThumbImageUrl = self::normalizeStoredImageUrl($thumbImageUrl);
+            self::ensurePersistedAssets($letter, $force);
 
-            $letter->full_image_url = $normalizedFullImageUrl;
-            $letter->thumb_image_url = $normalizedThumbImageUrl !== '' ? $normalizedThumbImageUrl : $normalizedFullImageUrl;
-            $letter->update_time = time();
-            $letter->save();
+            return [
+                'letter_id' => (int) $letter->id,
+                'assets_saved' => true,
+            ];
         });
     }
 
@@ -216,6 +216,7 @@ class OrderConfirmLetterService
             if ((int) ($order->current_confirm_letter_id ?? 0) !== (int) $letter->id || (int) $letter->is_outdated === OrderConfirmLetter::STATUS_OUTDATED) {
                 throw new \RuntimeException('当前版本已失效，请重新生成确认函');
             }
+            self::ensurePersistedAssets($letter, true);
             if (!self::hasSavedAssets($letter)) {
                 throw new \RuntimeException(self::ERROR_ASSETS_MISSING);
             }
@@ -267,7 +268,12 @@ class OrderConfirmLetterService
         }
 
         $letter = self::resolveCurrentEffectiveLetter($order);
-        return $letter ? self::formatLetter($letter) : null;
+        if (!$letter) {
+            return null;
+        }
+
+        self::ensurePersistedAssets($letter);
+        return self::formatLetter($letter);
     }
 
     public static function byIdForUser(int $letterId, int $userId, bool $allowFallback = false): ?array
@@ -284,10 +290,12 @@ class OrderConfirmLetterService
 
         $currentLetter = self::resolveCurrentEffectiveLetter($order);
         if ($currentLetter && (int) $currentLetter->id === (int) $letter->id) {
+            self::ensurePersistedAssets($currentLetter);
             return self::formatLetter($currentLetter);
         }
 
-        if ($currentLetter) {
+        if ($allowFallback && $currentLetter) {
+            self::ensurePersistedAssets($currentLetter);
             return self::buildLetterPayload($currentLetter, [
                 'requested_letter_id' => (int) $letter->id,
                 'stale_fallback' => 1,
@@ -338,6 +346,7 @@ class OrderConfirmLetterService
         if (!$letter) {
             return null;
         }
+        self::ensurePersistedAssets($letter);
         return self::formatLetter($letter);
     }
 
@@ -408,6 +417,9 @@ class OrderConfirmLetterService
             self::ERROR_USER => '订单未绑定顾客账号，暂时无法推送确认函',
             self::ERROR_STALE => '确认函内容已发生变化，请重新生成后再保存',
             self::ERROR_ASSETS_MISSING => '请先完成确认函图片保存后再推送或查看',
+            self::ERROR_ASSET_RUNTIME => '确认函图片生成环境缺少 Imagick 支持，请联系管理员处理',
+            self::ERROR_ASSET_FONT => '确认函图片字体资源缺失，请联系管理员处理',
+            self::ERROR_ASSET_RENDER => '确认函图片生成失败，请稍后重试',
             default => $message,
         };
     }
@@ -633,6 +645,10 @@ class OrderConfirmLetterService
             return '';
         }
 
+        if (preg_match('/^https?:\/\//i', $normalized) !== 1) {
+            return ltrim($normalized, '/');
+        }
+
         return trim((string) FileService::setFileUrl($normalized));
     }
 
@@ -654,7 +670,49 @@ class OrderConfirmLetterService
 
     protected static function hasSavedAssets(OrderConfirmLetter $letter): bool
     {
-        return trim((string) $letter->full_image_url) !== '';
+        return self::hasPersistedAssets($letter);
+    }
+
+    protected static function ensurePersistedAssets(OrderConfirmLetter $letter, bool $force = false): void
+    {
+        if (!$force && self::hasPersistedAssets($letter)) {
+            return;
+        }
+
+        $svgContent = self::renderSvgForLetter($letter);
+        $persistedAssets = self::persistSvgAssets(
+            (int) $letter->order_id,
+            (string) $letter->snapshot_hash,
+            $svgContent
+        );
+
+        $normalizedFullImageUrl = self::normalizeStoredImageUrl((string) ($persistedAssets['full_image_url'] ?? ''));
+        if ($normalizedFullImageUrl === '') {
+            throw new \RuntimeException(self::ERROR_ASSET_RENDER);
+        }
+
+        $normalizedThumbImageUrl = self::normalizeStoredImageUrl((string) ($persistedAssets['thumb_image_url'] ?? ''));
+        $letter->full_image_url = $normalizedFullImageUrl;
+        $letter->thumb_image_url = $normalizedThumbImageUrl !== '' ? $normalizedThumbImageUrl : $normalizedFullImageUrl;
+        $letter->update_time = time();
+        $letter->save();
+    }
+
+    protected static function renderSvgForLetter(OrderConfirmLetter $letter): string
+    {
+        $snapshot = is_array($letter->rendered_snapshot) ? $letter->rendered_snapshot : [];
+        if (empty($snapshot)) {
+            throw new \RuntimeException(self::ERROR_ASSET_RENDER);
+        }
+
+        $svgContent = OrderConfirmLetterRenderer::render($snapshot, [
+            'render_spec_version' => self::normalizeRenderSpecVersion((string) $letter->render_spec_version),
+        ]);
+        if (trim($svgContent) === '') {
+            throw new \RuntimeException(self::ERROR_ASSET_RENDER);
+        }
+
+        return $svgContent;
     }
 
     protected static function resolveCurrentViewableLetter(Order $order): ?OrderConfirmLetter
@@ -682,7 +740,17 @@ class OrderConfirmLetterService
 
     protected static function hasPersistedAssets(OrderConfirmLetter $letter): bool
     {
-        return trim((string) $letter->full_image_url) !== '';
+        $storedPath = self::normalizeStoredImageUrl((string) $letter->full_image_url);
+        if ($storedPath === '') {
+            return false;
+        }
+
+        if (preg_match('/^https?:\/\//i', $storedPath) === 1) {
+            return true;
+        }
+
+        $absolutePath = self::resolveStoredAssetAbsolutePath($storedPath);
+        return $absolutePath !== '' && is_file($absolutePath);
     }
 
     protected static function normalizeAssetUrl(string $url): string
@@ -692,7 +760,7 @@ class OrderConfirmLetterService
             return '';
         }
 
-        return FileService::setFileUrl($url);
+        return self::normalizeStoredImageUrl($url);
     }
 
     protected static function formatAssetUrl(string $url): string
@@ -705,29 +773,112 @@ class OrderConfirmLetterService
         return FileService::getFileUrl($url);
     }
 
+    protected static function resolveStoredAssetAbsolutePath(string $storedPath): string
+    {
+        $normalized = trim($storedPath);
+        if ($normalized === '' || preg_match('/^https?:\/\//i', $normalized) === 1) {
+            return '';
+        }
+
+        return FileService::getFileUrl(ltrim($normalized, '/'), 'public_path');
+    }
+
     protected static function persistSvgAssets(int $orderId, string $snapshotHash, string $svgContent): array
     {
         $svgContent = trim($svgContent);
         if ($svgContent === '' || stripos($svgContent, '<svg') === false) {
-            throw new \RuntimeException(self::ERROR_ASSET_REQUIRED);
+            throw new \RuntimeException(self::ERROR_ASSETS_MISSING);
         }
 
         $folder = 'uploads/order-confirm-letter/' . date('Ym');
         $hash = preg_replace('/[^a-z0-9]/i', '', $snapshotHash);
         $hash = $hash !== '' ? substr($hash, 0, 24) : substr(md5($svgContent), 0, 24);
-        $relativePath = sprintf('%s/order-%d-%s.svg', $folder, $orderId, $hash);
+        $relativePath = sprintf('%s/order-%d-%s.png', $folder, $orderId, $hash);
         $absolutePath = FileService::getFileUrl($relativePath, 'public_path');
         $directory = dirname($absolutePath);
         if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
             throw new \RuntimeException('确认函图片目录创建失败');
         }
-        if (file_put_contents($absolutePath, $svgContent) === false) {
-            throw new \RuntimeException('确认函图片保存失败');
-        }
+        self::rasterizeSvgAssets($svgContent, $absolutePath);
 
         return [
             'full_image_url' => $relativePath,
             'thumb_image_url' => $relativePath,
         ];
+    }
+
+    protected static function rasterizeSvgAssets(string $svgContent, string $absolutePath): void
+    {
+        if (!extension_loaded('imagick') || !class_exists(\Imagick::class)) {
+            throw new \RuntimeException(self::ERROR_ASSET_RUNTIME);
+        }
+
+        $fontDirectory = self::resolveAssetFontDirectory();
+        $previousFontPath = getenv('MAGICK_FONT_PATH');
+        $imagick = new \Imagick();
+
+        try {
+            putenv('MAGICK_FONT_PATH=' . $fontDirectory);
+            self::ensureImagickFontReady();
+            $imagick->setResolution(self::ASSET_PNG_RESOLUTION, self::ASSET_PNG_RESOLUTION);
+            $imagick->setBackgroundColor(new \ImagickPixel('transparent'));
+            $imagick->readImageBlob($svgContent);
+            $imagick->setImageFormat('png');
+            if (!$imagick->writeImage($absolutePath)) {
+                throw new \RuntimeException(self::ERROR_ASSET_RENDER);
+            }
+        } catch (\Throwable $e) {
+            @unlink($absolutePath);
+            if ($e instanceof \RuntimeException && in_array($e->getMessage(), [
+                self::ERROR_ASSET_RUNTIME,
+                self::ERROR_ASSET_FONT,
+                self::ERROR_ASSET_RENDER,
+            ], true)) {
+                throw $e;
+            }
+
+            throw new \RuntimeException(self::ERROR_ASSET_RENDER, 0, $e);
+        } finally {
+            $imagick->clear();
+            $imagick->destroy();
+            if ($previousFontPath === false || $previousFontPath === '') {
+                putenv('MAGICK_FONT_PATH');
+            } else {
+                putenv('MAGICK_FONT_PATH=' . $previousFontPath);
+            }
+        }
+    }
+
+    protected static function resolveAssetFontDirectory(): string
+    {
+        $fontDirectory = rtrim((string) root_path(), '/\\')
+            . DIRECTORY_SEPARATOR
+            . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, self::ASSET_FONT_DIR);
+        $fontFilePath = $fontDirectory . DIRECTORY_SEPARATOR . self::ASSET_FONT_FILE;
+        if (!is_file($fontFilePath)) {
+            throw new \RuntimeException(self::ERROR_ASSET_FONT);
+        }
+
+        return $fontDirectory;
+    }
+
+    protected static function ensureImagickFontReady(): void
+    {
+        if (!method_exists(\Imagick::class, 'queryFonts')) {
+            return;
+        }
+
+        try {
+            $fonts = \Imagick::queryFonts('*Noto*SC*');
+            if (empty($fonts)) {
+                throw new \RuntimeException(self::ERROR_ASSET_FONT);
+            }
+        } catch (\Throwable $e) {
+            if ($e instanceof \RuntimeException && $e->getMessage() === self::ERROR_ASSET_FONT) {
+                throw $e;
+            }
+
+            throw new \RuntimeException(self::ERROR_ASSET_FONT, 0, $e);
+        }
     }
 }

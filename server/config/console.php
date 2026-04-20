@@ -17,5 +17,7 @@ return [
         'send_station_reminders' => 'app\common\command\SendStationReminders',
         // 退款查询
         'query_refund' => 'app\common\command\QueryRefund',
+        // 重建订单确认函图片资产
+        'rebuild_order_confirm_letter_assets' => 'app\common\command\RebuildOrderConfirmLetterAssets',
     ],
 ];

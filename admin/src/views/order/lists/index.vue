@@ -587,11 +587,7 @@
                         </el-button>
                         <el-button
                             type="primary"
-                            :disabled="
-                                !currentLetter?.letter_id ||
-                                currentLetter?.is_current !== 1 ||
-                                confirmLetterAssetSaving
-                            "
+                            :disabled="!currentLetter?.letter_id || currentLetter?.is_current !== 1"
                             @click="handlePushConfirmLetter"
                         >
                             推送给顾客
@@ -754,7 +750,6 @@ import {
     orderAuditVoucher,
     orderCancel,
     orderComplete,
-    orderConfirmLetterAssets,
     orderConfirmLetterDetail,
     orderConfirmLetterGenerate,
     orderConfirmLetterHistory,
@@ -776,10 +771,7 @@ import { regionDistrictOptions, regionEnabledCityOptions } from '@/api/service'
 import { staffAll, staffGetAddonConfig } from '@/api/staff'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
-import {
-    buildOrderConfirmLetterDataUrl,
-    renderOrderConfirmLetterSvg
-} from '@/utils/orderConfirmLetterRenderer'
+import { isOrderConfirmLetterBitmapAssetUrl } from '@/utils/orderConfirmLetterRenderer'
 
 type RoleKey = 'butler' | 'director'
 type PaymentEntryMode = 'online_pending' | 'offline_voucher' | 'offline_paid'
@@ -866,7 +858,6 @@ const currentOrder = ref<any>(null)
 const confirmLetterVisible = ref(false)
 const currentLetter = ref<any>(null)
 const currentLetterHistory = ref<any[]>([])
-const confirmLetterAssetSaving = ref(false)
 const countdownNowTs = ref(Date.now())
 const userLoading = ref(false)
 const userOptions = ref<any[]>([])
@@ -1826,7 +1817,6 @@ const handleConfirmLetter = async (row: any) => {
         const first = currentLetterHistory.value[0]
         if (first?.letter_id) {
             currentLetter.value = await orderConfirmLetterDetail({ letter_id: first.letter_id })
-            currentLetter.value = await ensureConfirmLetterAssets(currentLetter.value)
         }
     } catch (error: any) {
         feedback.msgError(error?.message || '加载确认函失败')
@@ -1843,7 +1833,6 @@ const handleGenerateConfirmLetter = async (row: any) => {
 const handleViewConfirmLetterVersion = async (row: any) => {
     if (!row?.letter_id) return
     currentLetter.value = await orderConfirmLetterDetail({ letter_id: row.letter_id })
-    currentLetter.value = await ensureConfirmLetterAssets(currentLetter.value)
 }
 
 const handlePushConfirmLetter = async () => {
@@ -1851,61 +1840,18 @@ const handlePushConfirmLetter = async () => {
         feedback.msgWarning('请先生成确认函')
         return
     }
-    currentLetter.value = await ensureConfirmLetterAssets(currentLetter.value, false)
-    if (!String(currentLetter.value?.full_image_url || '').trim()) {
-        feedback.msgWarning('请先预览并完成确认函图片保存')
-        return
-    }
     await orderConfirmLetterPush({ letter_id: currentLetter.value.letter_id })
     feedback.msgSuccess('推送成功')
     await handleConfirmLetter(currentOrder.value)
 }
 
-const getConfirmLetterPreviewSrc = (letter: any) => {
+const getConfirmLetterBitmapSrc = (letter: any) => {
     const fullImageUrl = String(letter?.full_image_url || '').trim()
-    if (fullImageUrl) {
-        return fullImageUrl
-    }
-
-    return buildOrderConfirmLetterDataUrl(letter?.rendered_snapshot || {}, {
-        renderSpecVersion: letter?.render_spec_version,
-    })
+    return isOrderConfirmLetterBitmapAssetUrl(fullImageUrl) ? fullImageUrl : ''
 }
 
-const ensureConfirmLetterAssets = async (letter: any, silent = true) => {
-    if (!letter?.letter_id || String(letter?.full_image_url || '').trim() || confirmLetterAssetSaving.value) {
-        return letter
-    }
-
-    const svgContent = renderOrderConfirmLetterSvg(letter?.rendered_snapshot || {}, {
-        renderSpecVersion: letter?.render_spec_version,
-    })
-    if (!svgContent) {
-        return letter
-    }
-
-    confirmLetterAssetSaving.value = true
-    try {
-        await orderConfirmLetterAssets({
-            letter_id: Number(letter.letter_id || 0),
-            snapshot_hash: String(letter.snapshot_hash || ''),
-            full_image_url: '',
-            thumb_image_url: '',
-            svg_content: svgContent
-        })
-        const refreshed = await orderConfirmLetterDetail({ letter_id: Number(letter.letter_id || 0) })
-        if (Number(currentLetter.value?.letter_id || 0) === Number(refreshed?.letter_id || 0)) {
-            currentLetter.value = refreshed
-        }
-        return refreshed
-    } catch (error: any) {
-        if (!silent) {
-            feedback.msgError(error?.message || '确认函图片保存失败')
-        }
-        return letter
-    } finally {
-        confirmLetterAssetSaving.value = false
-    }
+const getConfirmLetterPreviewSrc = (letter: any) => {
+    return getConfirmLetterBitmapSrc(letter)
 }
 
 const submitRefundApply = async () => {

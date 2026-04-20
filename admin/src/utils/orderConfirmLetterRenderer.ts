@@ -56,6 +56,9 @@ type InfoCardOptions = {
     radius: number
 }
 
+export const ORDER_CONFIRM_LETTER_FONT_FAMILY =
+    'Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif'
+
 const DEFAULT_TITLE = '订单确认函'
 const DEFAULT_HERO_EYEBROW = 'ORDER CONFIRMATION LETTER'
 const DEFAULT_HERO_DESC =
@@ -73,12 +76,42 @@ const escapeXml = (value: string) =>
 
 const toText = (value: unknown) => String(value ?? '').trim()
 
+const getTextFontAttr = () => ` font-family="${escapeXml(ORDER_CONFIRM_LETTER_FONT_FAMILY)}"`
+
 const toStringArray = (value: unknown) =>
     Array.isArray(value)
         ? value
               .map((item) => toText(item))
               .filter(Boolean)
         : []
+
+const hasRenderableSnapshot = (snapshot?: OrderConfirmLetterSnapshot | null) => {
+    if (!snapshot || typeof snapshot !== 'object') {
+        return false
+    }
+
+    return Object.values(snapshot).some((value) => {
+        if (Array.isArray(value)) {
+            return value.some((item) => toText(item))
+        }
+
+        return toText(value)
+    })
+}
+
+export const isOrderConfirmLetterBitmapAssetUrl = (value: unknown) => {
+    const url = toText(value)
+    if (!url) {
+        return false
+    }
+
+    if (/^data:image\/(?:png|jpeg|jpg|webp|bmp)/i.test(url)) {
+        return true
+    }
+
+    const normalized = url.split('#')[0].split('?')[0]
+    return /\.(?:png|jpe?g|webp|bmp)$/i.test(normalized)
+}
 
 const normalizeVersion = (version?: string) => toText(version).toLowerCase()
 
@@ -163,7 +196,7 @@ const drawTextBlock = ({
     const svg = safeLines
         .map(
             (line, index) =>
-                `<text x="${x}" y="${y + index * lineHeight}" text-anchor="${textAnchor}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${fill}">${escapeXml(line)}</text>`
+                `<text x="${x}" y="${y + index * lineHeight}" text-anchor="${textAnchor}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${fill}"${getTextFontAttr()}>${escapeXml(line)}</text>`
         )
         .join('')
 
@@ -171,6 +204,16 @@ const drawTextBlock = ({
         svg,
         height: safeLines.length * lineHeight,
     }
+}
+
+const shiftSvgY = (svg: string, offset: number) => {
+    if (!svg || !offset) {
+        return svg
+    }
+
+    return svg.replace(/( y=")(-?\d+(?:\.\d+)?)(")/g, (_match, prefix, value, suffix) => {
+        return `${prefix}${Number(value) + offset}${suffix}`
+    })
 }
 
 const drawInfoCard = ({
@@ -252,7 +295,7 @@ const renderV1OrderConfirmLetterSvg = (
     const rows = buildV1Rows(snapshot)
     const texts: string[] = []
     texts.push(
-        `<text x="${width / 2}" y="${y}" text-anchor="middle" font-size="${titleSize}" font-weight="700" fill="#1e2432">${escapeXml(
+        `<text x="${width / 2}" y="${y}" text-anchor="middle" font-size="${titleSize}" font-weight="700" fill="#1e2432"${getTextFontAttr()}>${escapeXml(
             toText(snapshot.title) || DEFAULT_TITLE
         )}</text>`
     )
@@ -264,7 +307,7 @@ const renderV1OrderConfirmLetterSvg = (
         const fontWeight = index >= 4 && index <= 6 ? 700 : 400
         lines.forEach((line) => {
             texts.push(
-                `<text x="${padding}" y="${y}" font-size="${fontSize}" font-weight="${fontWeight}" fill="#1e2432">${escapeXml(line)}</text>`
+                `<text x="${padding}" y="${y}" font-size="${fontSize}" font-weight="${fontWeight}" fill="#1e2432"${getTextFontAttr()}>${escapeXml(line)}</text>`
             )
             y += lineHeight
         })
@@ -272,12 +315,12 @@ const renderV1OrderConfirmLetterSvg = (
     })
 
     texts.push(
-        `<text x="${padding}" y="${y}" font-size="${textSize}" font-weight="600" fill="#1e2432">备注：</text>`
+        `<text x="${padding}" y="${y}" font-size="${textSize}" font-weight="600" fill="#1e2432"${getTextFontAttr()}>备注：</text>`
     )
     y += lineHeight
     wrapText(toText(snapshot.remark_content), small ? 22 : 28, 6).forEach((line) => {
         texts.push(
-            `<text x="${padding}" y="${y}" font-size="${textSize}" fill="#5b6475">${escapeXml(line)}</text>`
+            `<text x="${padding}" y="${y}" font-size="${textSize}" fill="#5b6475"${getTextFontAttr()}>${escapeXml(line)}</text>`
         )
         y += lineHeight
     })
@@ -521,10 +564,10 @@ const renderV2OrderConfirmLetterSvg = (
     currentY += teamCardHeight + sectionGap
 
     sections.push(
-        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="${amountCardHeight}" rx="${small ? 24 : 32}" fill="#FFFFFF" stroke="#F4C7BF" /><rect x="${contentX + contentWidth - (small ? 90 : 148)}" y="${currentY + (small ? 18 : 22)}" width="${small ? 62 : 104}" height="${small ? 24 : 36}" rx="999" fill="#FFF1EE" /><text x="${contentX + contentWidth - (small ? 59 : 96)}" y="${currentY + (small ? 34 : 47)}" text-anchor="middle" font-size="${small ? 11 : 18}" font-weight="700" fill="#E85A4F">金额重点</text>${amountTitleBlock.svg.replace(
-            new RegExp(`x="${contentX + cardPaddingX}"`, 'g'),
-            `x="${contentX + cardPaddingX}"`
-        ).replace(/y="([^\"]+)"/g, (_match, value) => `y="${Number(value) + currentY}"`)}${amountTotalBlock.svg.replace(/y="([^\"]+)"/g, (_match, value) => `y="${Number(value) + currentY}"`)}${amountDetailsBlock.svg.replace(/y="([^\"]+)"/g, (_match, value) => `y="${Number(value) + currentY}"`)}`
+        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="${amountCardHeight}" rx="${small ? 24 : 32}" fill="#FFFFFF" stroke="#F4C7BF" /><rect x="${contentX + contentWidth - (small ? 90 : 148)}" y="${currentY + (small ? 18 : 22)}" width="${small ? 62 : 104}" height="${small ? 24 : 36}" rx="999" fill="#FFF1EE" /><text x="${contentX + contentWidth - (small ? 59 : 96)}" y="${currentY + (small ? 34 : 47)}" text-anchor="middle" font-size="${small ? 11 : 18}" font-weight="700" fill="#E85A4F"${getTextFontAttr()}>金额重点</text>${shiftSvgY(
+            amountTitleBlock.svg,
+            currentY
+        )}${shiftSvgY(amountTotalBlock.svg, currentY)}${shiftSvgY(amountDetailsBlock.svg, currentY)}`
     )
     currentY += amountCardHeight + sectionGap
 
@@ -569,7 +612,7 @@ const renderV2OrderConfirmLetterSvg = (
     })
 
     sections.push(
-        `<rect x="${contentX}" y="${footerLineY}" width="${contentWidth}" height="1" fill="#F1E4DD" /><text x="${paperX + paperWidth / 2}" y="${footerBrandY}" text-anchor="middle" font-size="${footerBrandSize}" font-weight="700" letter-spacing="${small ? 0.8 : 1.2}" fill="#C99B73">${escapeXml(
+        `<rect x="${contentX}" y="${footerLineY}" width="${contentWidth}" height="1" fill="#F1E4DD" /><text x="${paperX + paperWidth / 2}" y="${footerBrandY}" text-anchor="middle" font-size="${footerBrandSize}" font-weight="700" letter-spacing="${small ? 0.8 : 1.2}" fill="#C99B73"${getTextFontAttr()}>${escapeXml(
             toText(snapshot.brand_name) || DEFAULT_BRAND_NAME
         )}</text>${footerNoteBlock.svg}`
     )
@@ -593,6 +636,10 @@ export function buildOrderConfirmLetterDataUrl(
     snapshot: OrderConfirmLetterSnapshot,
     options?: RenderOptionsInput
 ) {
+    if (!hasRenderableSnapshot(snapshot)) {
+        return ''
+    }
+
     const svg = renderOrderConfirmLetterSvg(snapshot, options)
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 }

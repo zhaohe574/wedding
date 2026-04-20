@@ -743,7 +743,7 @@ import {
 
 import { uploadImage } from '@/api/app'
 
-import { buildOrderConfirmLetterDataUrl } from '@/utils/orderConfirmLetterRenderer'
+import { isOrderConfirmLetterBitmapAssetUrl } from '@/utils/orderConfirmLetterRenderer'
 
 import { client } from '@/utils/client'
 
@@ -1849,8 +1849,13 @@ const fetchConfirmLetter = async () => {
                 letter_id: confirmLetterId.value,
                 allow_fallback: confirmLetterFromNotification.value ? 1 : 0
             })
-            confirmLetterId.value = Number(confirmLetter.value?.letter_id || confirmLetterId.value || 0)
-            if (!Number(confirmLetter.value?.letter_id || 0) && Number(confirmLetter.value?.order_id || 0) > 0) {
+            confirmLetterId.value = Number(
+                confirmLetter.value?.letter_id || confirmLetterId.value || 0
+            )
+            if (
+                !Number(confirmLetter.value?.letter_id || 0) &&
+                Number(confirmLetter.value?.order_id || 0) > 0
+            ) {
                 orderId.value = Number(confirmLetter.value.order_id || 0)
             }
         } catch {
@@ -1952,11 +1957,8 @@ const handleOpenConfirmLetter = () => {
         return
     }
 
-    const imageUrl =
-        String(confirmLetter.value?.full_image_url || '').trim() ||
-        buildOrderConfirmLetterDataUrl(confirmLetter.value?.rendered_snapshot || ({} as any), {
-            renderSpecVersion: confirmLetter.value?.render_spec_version,
-        })
+    const fullImageUrl = String(confirmLetter.value?.full_image_url || '').trim()
+    const imageUrl = isOrderConfirmLetterBitmapAssetUrl(fullImageUrl) ? fullImageUrl : ''
 
     if (!imageUrl) {
         uni.showToast({ title: '订单确认函暂不可查看', icon: 'none' })
@@ -2012,7 +2014,9 @@ const handleOpenConfirmLetterHistory = () => {
                 confirmLetter.value = await getOrderConfirmLetterById({
                     letter_id: Number(target.letter_id || 0)
                 })
-                confirmLetterId.value = Number(confirmLetter.value?.letter_id || target.letter_id || 0)
+                confirmLetterId.value = Number(
+                    confirmLetter.value?.letter_id || target.letter_id || 0
+                )
 
                 handleOpenConfirmLetter()
             } catch (error: any) {
@@ -2325,7 +2329,9 @@ onLoad(async (options: any) => {
             if (shouldOpenConfirmLetter.value) {
                 handleOpenConfirmLetter()
             }
-        } catch {}
+        } catch (error) {
+            void error
+        }
     }
 })
 

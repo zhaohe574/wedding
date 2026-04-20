@@ -318,12 +318,18 @@ class OrderLogic extends BaseLogic
 
     public static function confirmLetterDetail(int $letterId): ?array
     {
-        $letter = \app\common\model\order\OrderConfirmLetter::find($letterId);
-        if (!$letter) {
-            self::setError('确认函不存在');
+        try {
+            $letter = \app\common\model\order\OrderConfirmLetter::find($letterId);
+            if (!$letter) {
+                self::setError('确认函不存在');
+                return null;
+            }
+
+            return OrderConfirmLetterService::detailForOrder($letterId, (int) $letter->order_id);
+        } catch (\Throwable $e) {
+            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
             return null;
         }
-        return OrderConfirmLetterService::detailForOrder($letterId, (int) $letter->order_id);
     }
 
     public static function confirmLetterHistory(int $orderId): array
@@ -334,14 +340,15 @@ class OrderLogic extends BaseLogic
     public static function confirmLetterSaveAssets(array $params)
     {
         try {
-            OrderConfirmLetterService::saveAssets(
+            $result = OrderConfirmLetterService::regenerateAssets(
                 (int) $params['letter_id'],
-                (string) $params['snapshot_hash'],
-                (string) ($params['full_image_url'] ?? ''),
-                (string) ($params['thumb_image_url'] ?? ''),
-                (string) ($params['svg_content'] ?? '')
+                (string) ($params['snapshot_hash'] ?? ''),
+                true
             );
-            return ['letter_id' => (int) $params['letter_id'], 'assets_saved' => true];
+            return [
+                'letter_id' => (int) ($result['letter_id'] ?? $params['letter_id']),
+                'assets_saved' => true,
+            ];
         } catch (\Throwable $e) {
             self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
             return false;
