@@ -48,7 +48,7 @@ class MessageLogLists extends BaseAdminDataLists implements ListsSearchInterface
         }
 
         $list = SubscribeMessageLog::where($where)
-            ->field('id, user_id, openid, template_id, scene, business_type, business_id, send_status, error_code, error_msg, send_time, create_time')
+            ->field('id, user_id, openid, template_id, scene, business_type, business_id, send_status, error_code, error_msg, planned_send_time, send_time, create_time')
             ->order('id', 'desc')
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
@@ -64,14 +64,15 @@ class MessageLogLists extends BaseAdminDataLists implements ListsSearchInterface
         foreach ($list as &$item) {
             // PHP 8 类型转换
             $item['create_time'] = (int)$item['create_time'];
+            $item['planned_send_time'] = (int)($item['planned_send_time'] ?? 0);
             $item['send_time'] = (int)$item['send_time'];
             $item['send_status'] = (int)$item['send_status'];
-            $item['scene'] = (int)$item['scene'];
-            
+
             $item['user_info'] = $users[$item['user_id']] ?? ['nickname' => '未知用户', 'avatar' => ''];
             $item['scene_desc'] = SubscribeMessageTemplate::getSceneDesc($item['scene']);
             $item['send_status_desc'] = $this->getSendStatusDesc($item['send_status']);
             $item['create_time'] = $item['create_time'] ? date('Y-m-d H:i:s', $item['create_time']) : '';
+            $item['planned_send_time'] = $item['planned_send_time'] ? date('Y-m-d H:i:s', $item['planned_send_time']) : '';
             $item['send_time'] = $item['send_time'] ? date('Y-m-d H:i:s', $item['send_time']) : '';
         }
 

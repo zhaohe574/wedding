@@ -45,7 +45,7 @@ class ScheduleRuleController extends BaseAdminController
      */
     public function detail()
     {
-        $params = (new ScheduleRuleValidate())->goCheck('detail');
+        $params = (new ScheduleRuleValidate())->get()->goCheck('detail');
         $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
         if ($staffScopeId > 0) {
             $staffId = (int) ScheduleRule::where('id', $params['id'])->value('staff_id');
@@ -159,7 +159,7 @@ class ScheduleRuleController extends BaseAdminController
      */
     public function staffRule()
     {
-        $params = (new ScheduleRuleValidate())->goCheck('staffRule');
+        $params = (new ScheduleRuleValidate())->get()->goCheck('staffRule');
         $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
         $staffId = $staffScopeId > 0 ? $staffScopeId : (int) $params['staff_id'];
         $result = ScheduleRuleLogic::getStaffRule($staffId);
@@ -188,7 +188,7 @@ class ScheduleRuleController extends BaseAdminController
         if ($staffScopeId <= 0) {
             return $this->failRequiredStaffScope();
         }
-        $params = (new ScheduleRuleValidate())->goCheck('detail');
+        $params = (new ScheduleRuleValidate())->get()->goCheck('detail');
         $staffId = (int)ScheduleRule::where('id', $params['id'])->value('staff_id');
         if (!in_array($staffId, [0, $staffScopeId], true)) {
             return $this->fail('无权限查看');

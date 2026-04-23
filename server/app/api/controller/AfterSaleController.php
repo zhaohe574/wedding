@@ -40,7 +40,7 @@ class AfterSaleController extends BaseApiController
      */
     public function ticketDetail()
     {
-        $params = (new AfterSaleValidate())->goCheck('detail');
+        $params = (new AfterSaleValidate())->get()->goCheck('detail');
         $result = AfterSaleLogic::getTicketDetail($params['id'], $this->userId);
         if (empty($result)) {
             return $this->fail('工单不存在');
@@ -112,7 +112,7 @@ class AfterSaleController extends BaseApiController
      */
     public function complaintDetail()
     {
-        $params = (new AfterSaleValidate())->goCheck('detail');
+        $params = (new AfterSaleValidate())->get()->goCheck('detail');
         $result = AfterSaleLogic::getComplaintDetail($params['id'], $this->userId);
         if (empty($result)) {
             return $this->fail('投诉记录不存在');
@@ -169,7 +169,7 @@ class AfterSaleController extends BaseApiController
      */
     public function getQuestionnaire()
     {
-        $params = (new AfterSaleValidate())->goCheck('detail');
+        $params = (new AfterSaleValidate())->get()->goCheck('detail');
         $result = AfterSaleLogic::getQuestionnaire($params['id'], $this->userId);
         if (empty($result)) {
             return $this->fail('问卷不存在');

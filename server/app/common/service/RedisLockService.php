@@ -80,7 +80,7 @@ class RedisLockService
     public static function release(string $key, string $token): bool
     {
         $lockKey = self::LOCK_PREFIX . $key;
-        
+
         // 使用Lua脚本保证原子性：只有token匹配才能删除
         $script = <<<LUA
 if redis.call('get', KEYS[1]) == ARGV[1] then
@@ -91,17 +91,18 @@ end
 LUA;
 
         try {
-            $redis = self::getRedis();
-            if ($redis) {
-                $result = $redis->eval($script, [$lockKey, $token], 1);
-                return $result == 1;
+            $handler = self::getRedisHandler();
+            if ($handler) {
+                $result = self::evaluateTokenScript($handler, $script, $lockKey, [$token]);
+                if ($result !== null) {
+                    return $result === 1;
+                }
             }
-        } catch (\Exception $e) {
-            // 降级处理：直接删除
-            return Cache::delete($lockKey);
+        } catch (\Throwable $e) {
+            // 继续降级到缓存兜底
         }
 
-        return false;
+        return self::releaseFallbackLock($lockKey, $token);
     }
 
     /**
@@ -125,16 +126,23 @@ end
 LUA;
 
         try {
-            $redis = self::getRedis();
-            if ($redis) {
-                $result = $redis->eval($script, [$lockKey, $token, $timeout], 1);
-                return $result == 1;
+            $handler = self::getRedisHandler();
+            if ($handler) {
+                $result = self::evaluateTokenScript(
+                    $handler,
+                    $script,
+                    $lockKey,
+                    [$token, (string)$timeout]
+                );
+                if ($result !== null) {
+                    return $result === 1;
+                }
             }
-        } catch (\Exception $e) {
-            return false;
+        } catch (\Throwable $e) {
+            // 继续降级到缓存兜底
         }
 
-        return false;
+        return self::renewFallbackLock($lockKey, $token, $timeout);
     }
 
     /**
@@ -145,6 +153,15 @@ LUA;
     public static function isLocked(string $key): bool
     {
         $lockKey = self::LOCK_PREFIX . $key;
+        try {
+            $handler = self::getRedisHandler();
+            if ($handler && method_exists($handler, 'exists')) {
+                return (bool)$handler->exists($lockKey);
+            }
+        } catch (\Throwable $e) {
+            // 使用缓存兜底
+        }
+
         return Cache::has($lockKey);
     }
 
@@ -156,17 +173,17 @@ LUA;
     public static function getTtl(string $key): int
     {
         $lockKey = self::LOCK_PREFIX . $key;
-        
+
         try {
-            $redis = self::getRedis();
-            if ($redis) {
-                return $redis->ttl($lockKey);
+            $handler = self::getRedisHandler();
+            if ($handler && method_exists($handler, 'ttl')) {
+                return (int)$handler->ttl($lockKey);
             }
-        } catch (\Exception $e) {
-            return -2;
+        } catch (\Throwable $e) {
+            // 使用缓存兜底
         }
 
-        return -2;
+        return Cache::has($lockKey) ? -1 : -2;
     }
 
     /**
@@ -190,13 +207,22 @@ LUA;
      * @param callable $callback 获取锁后执行的回调
      * @return array [bool $success, string $message, mixed $data]
      */
-    public static function lockScheduleWithRedis(int $staffId, string $date, int $timeSlot, int $userId, callable $callback): array
+    public static function lockScheduleWithRedis(
+        int $staffId,
+        string $date,
+        int $timeSlot,
+        int $userId,
+        callable $callback,
+        int $timeout = 5,
+        int $retryCount = 3,
+        int $retryDelay = 100
+    ): array
     {
         $lockKey = self::getScheduleLockKey($staffId, $date, $timeSlot);
-        
+
         // 尝试获取分布式锁
-        $token = self::acquire($lockKey, 5, 3, 100);
-        
+        $token = self::acquire($lockKey, $timeout, $retryCount, $retryDelay);
+
         if ($token === false) {
             return [false, '系统繁忙，请稍后重试', null];
         }
@@ -266,13 +292,14 @@ LUA;
     protected static function setNx(string $key, string $value, int $timeout): bool
     {
         try {
-            $redis = self::getRedis();
-            if ($redis) {
-                // Redis >= 2.6.12 支持 SET key value EX seconds NX
-                $result = $redis->set($key, $value, ['nx', 'ex' => $timeout]);
-                return $result === true;
+            $handler = self::getRedisHandler();
+            if ($handler) {
+                $result = self::setNxByHandler($handler, $key, $value, $timeout);
+                if ($result !== null) {
+                    return $result;
+                }
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // 降级到Cache方式
         }
 
@@ -293,19 +320,20 @@ LUA;
     }
 
     /**
-     * @notes 获取Redis实例
-     * @return \Redis|null
+     * @notes 获取 Redis handler
+     * @return object|null
      */
-    protected static function getRedis(): ?\Redis
+    protected static function getRedisHandler(): ?object
     {
         try {
             $handler = Cache::store('redis')->handler();
-            if ($handler instanceof \Redis) {
+            if (is_object($handler)) {
                 return $handler;
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return null;
         }
+
         return null;
     }
 
@@ -317,26 +345,115 @@ LUA;
     public static function cleanExpiredLocks(string $pattern = '*'): int
     {
         try {
-            $redis = self::getRedis();
-            if (!$redis) {
+            $handler = self::getRedisHandler();
+            if (
+                !$handler ||
+                !method_exists($handler, 'keys') ||
+                !method_exists($handler, 'ttl') ||
+                !method_exists($handler, 'del')
+            ) {
                 return 0;
             }
 
-            $keys = $redis->keys(self::LOCK_PREFIX . $pattern);
+            $keys = $handler->keys(self::LOCK_PREFIX . $pattern);
             $cleaned = 0;
 
             foreach ($keys as $key) {
-                $ttl = $redis->ttl($key);
+                $ttl = (int)$handler->ttl($key);
                 // TTL为-1表示没有设置过期时间，可能是异常锁
                 if ($ttl == -1) {
-                    $redis->del($key);
+                    $handler->del($key);
                     $cleaned++;
                 }
             }
 
             return $cleaned;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return 0;
         }
+    }
+
+    /**
+     * @notes 通过底层 handler 执行 SET NX EX
+     * @return bool|null
+     */
+    protected static function setNxByHandler(object $handler, string $key, string $value, int $timeout): ?bool
+    {
+        if (!method_exists($handler, 'set')) {
+            return null;
+        }
+
+        if ($handler instanceof \Redis) {
+            $result = $handler->set($key, $value, ['nx', 'ex' => $timeout]);
+            return $result === true;
+        }
+
+        $result = $handler->set($key, $value, 'EX', $timeout, 'NX');
+        if (is_string($result)) {
+            return strtoupper($result) === 'OK';
+        }
+
+        return $result === true;
+    }
+
+    /**
+     * @notes 执行 token 校验脚本，兼容 phpredis 与 Predis 参数形式
+     * @return int|null
+     */
+    protected static function evaluateTokenScript(
+        object $handler,
+        string $script,
+        string $lockKey,
+        array $arguments
+    ): ?int {
+        if (!method_exists($handler, 'eval')) {
+            return null;
+        }
+
+        try {
+            $result = $handler->eval($script, array_merge([$lockKey], $arguments), 1);
+            if (is_numeric($result)) {
+                return (int)$result;
+            }
+        } catch (\Throwable $e) {
+            // 尝试兼容另一种参数顺序
+        }
+
+        try {
+            $result = $handler->eval($script, 1, $lockKey, ...$arguments);
+            if (is_numeric($result)) {
+                return (int)$result;
+            }
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return null;
+    }
+
+    /**
+     * @notes 缓存兜底释放锁
+     */
+    protected static function releaseFallbackLock(string $lockKey, string $token): bool
+    {
+        $currentToken = Cache::get($lockKey);
+        if (!is_string($currentToken) || $currentToken !== $token) {
+            return false;
+        }
+
+        return Cache::delete($lockKey);
+    }
+
+    /**
+     * @notes 缓存兜底续期锁
+     */
+    protected static function renewFallbackLock(string $lockKey, string $token, int $timeout): bool
+    {
+        $currentToken = Cache::get($lockKey);
+        if (!is_string($currentToken) || $currentToken !== $token) {
+            return false;
+        }
+
+        return Cache::set($lockKey, $token, $timeout);
     }
 }

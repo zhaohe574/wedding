@@ -2165,12 +2165,9 @@ const promptAfterSaleSubscribe = async () => {
     }
 
     const result = await uni.showModal({
-        title: '接收售后处理提醒',
-
-        content: '订阅后可接收处理提醒。',
-
+        title: '接收售后进度提醒',
+        content: '订阅后可接收退款结果和工单进度提醒。',
         confirmText: '去订阅',
-
         cancelText: '暂不订阅'
     })
 

@@ -21,7 +21,7 @@ class WecomRecipientController extends BaseAdminController
 
     public function updateAdvisor()
     {
-        $params = (new WecomRecipientValidate())->goCheck('updateAdvisor');
+        $params = (new WecomRecipientValidate())->post()->goCheck('updateAdvisor');
         $result = WecomRecipientLogic::updateAdvisor($params);
         if ($result) {
             return $this->success('保存成功');

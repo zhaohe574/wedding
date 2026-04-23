@@ -8,15 +8,14 @@ declare(strict_types=1);
 namespace app\common\service;
 
 use app\common\enum\user\UserTerminalEnum;
-use app\common\model\subscribe\SubscribeMessageTemplate;
-use app\common\model\subscribe\SubscribeMessageScene;
 use app\common\model\subscribe\SubscribeMessageLog;
+use app\common\model\subscribe\SubscribeMessageScene;
+use app\common\model\subscribe\SubscribeMessageTemplate;
 use app\common\model\subscribe\UserSubscribe;
 use app\common\model\user\User;
 use app\common\model\user\UserAuth;
-use app\common\service\wechat\WeChatConfigService;
+use app\common\service\wechat\WeChatMnpService;
 use think\facade\Log;
-use think\facade\Cache;
 
 /**
  * 订阅消息发送服务
@@ -25,9 +24,10 @@ use think\facade\Cache;
  */
 class SubscribeMessageService
 {
-    // 微信API地址
-    const SEND_API_URL = 'https://api.weixin.qq.com/cgi-bin/message/subscribe/send';
-    const ACCESS_TOKEN_URL = 'https://api.weixin.qq.com/cgi-bin/token';
+    /**
+     * 强制立即派发选项
+     */
+    public const OPTION_FORCE_DISPATCH = 'force_dispatch';
 
     /**
      * @notes 发送订阅消息
@@ -37,6 +37,7 @@ class SubscribeMessageService
      * @param string $businessType 业务类型
      * @param int $businessId 业务ID
      * @param string $page 跳转页面
+     * @param array $options 额外选项
      * @return array ['success' => bool, 'msg' => string, 'log_id' => int]
      */
     public static function send(
@@ -45,106 +46,52 @@ class SubscribeMessageService
         array $data,
         string $businessType = '',
         int $businessId = 0,
-        string $page = ''
+        string $page = '',
+        array $options = []
     ): array {
         try {
-            // 获取用户信息
-            $user = User::find($userId);
-            if (!$user) {
-                Log::info('订阅消息跳过：用户不存在，user_id=' . $userId . '，scene=' . $scene);
-                return ['success' => false, 'msg' => '用户不存在', 'log_id' => 0];
+            $forceDispatch = (bool) ($options[self::OPTION_FORCE_DISPATCH] ?? false);
+            $context = self::buildSendContext($userId, $scene, $data, $businessType, $businessId, $page);
+
+            if (!$forceDispatch && (int) ($context['scene_config']->is_auto ?? 1) !== 1) {
+                Log::info('订阅消息跳过：场景为手动触发，scene=' . $scene);
+                return ['success' => false, 'msg' => '场景配置为手动触发', 'log_id' => 0];
             }
 
-            $userAuth = UserAuth::where('user_id', $userId)
-                ->where('terminal', UserTerminalEnum::WECHAT_MMP)
-                ->where('openid', '<>', '')
-                ->order('id', 'desc')
-                ->find();
-            if (!$userAuth) {
-                Log::info('订阅消息跳过：用户未绑定小程序，user_id=' . $userId . '，scene=' . $scene);
-                return ['success' => false, 'msg' => '用户未绑定小程序', 'log_id' => 0];
+            $pendingCount = SubscribeMessageLog::countPendingByUserTemplate($userId, $context['template_id']);
+            if (!UserSubscribe::canReserveSubscription($userId, $context['template_id'], $pendingCount)) {
+                Log::info('订阅消息跳过：用户无可用订阅次数，user_id=' . $userId . '，template_id=' . $context['template_id']);
+                return ['success' => false, 'msg' => '用户无可用订阅次数', 'log_id' => 0];
             }
 
-            // 获取场景配置
-            $sceneConfig = SubscribeMessageScene::getByScene($scene);
-            if (!$sceneConfig) {
-                Log::info('订阅消息跳过：场景未配置或已禁用，scene=' . $scene);
-                return ['success' => false, 'msg' => '场景配置不存在或已禁用', 'log_id' => 0];
-            }
-
-            // 获取模板配置
-            $template = null;
-            if (!empty($sceneConfig->template_id)) {
-                $template = SubscribeMessageTemplate::where('template_id', $sceneConfig->template_id)->find();
-            }
-            if (!$template) {
-                $template = SubscribeMessageTemplate::getByScene($scene);
-            }
-            if (!$template || $template->status != SubscribeMessageTemplate::STATUS_ENABLED) {
-                Log::info('订阅消息跳过：模板未绑定或已禁用，scene=' . $scene . '，template_id=' . ($sceneConfig->template_id ?? ''));
-                return ['success' => false, 'msg' => '消息模板不存在或已禁用', 'log_id' => 0];
-            }
-
-            if (!SubscribeMessageTemplate::isUsableTemplateId((string) $template->template_id)) {
-                Log::info('订阅消息跳过：模板ID仍为占位值，scene=' . $scene . '，template_id=' . (string) $template->template_id);
-                return ['success' => false, 'msg' => '消息模板尚未配置真实模板ID', 'log_id' => 0];
-            }
-
-            // 检查用户订阅状态
-            if (!UserSubscribe::hasSubscription($userId, $template->template_id)) {
-                Log::info('订阅消息跳过：用户未订阅模板，user_id=' . $userId . '，template_id=' . $template->template_id);
-                return ['success' => false, 'msg' => '用户未订阅该消息', 'log_id' => 0];
-            }
-
-            // 构建消息内容
-            $content = self::buildMessageContent($template->content, $data, $sceneConfig->data_mapping);
-
-            // 使用场景配置的页面路径或传入的页面路径
-            $targetPage = self::buildTargetPage($page ?: (string)$sceneConfig->page_path, $businessId);
-
-            // 创建发送日志
+            $plannedSendTime = self::resolvePlannedSendTime($context['scene_config'], $forceDispatch);
             $log = SubscribeMessageLog::createLog(
                 $userId,
-                (string) $userAuth->openid,
-                $template->template_id,
+                $context['openid'],
+                $context['template_id'],
                 $scene,
-                $businessType ?: $sceneConfig->scene,
+                $context['business_type'],
                 $businessId,
-                $content,
-                $targetPage
+                $context['content'],
+                $context['page'],
+                $plannedSendTime,
+                $context['miniprogram_state']
             );
 
-            // 获取access_token
-            $accessToken = self::getAccessToken();
-            if (!$accessToken) {
-                SubscribeMessageLog::updateSendResult($log->id, false, 'TOKEN_ERROR', '获取access_token失败');
-                return ['success' => false, 'msg' => '获取access_token失败', 'log_id' => $log->id];
+            if (!$forceDispatch && $plannedSendTime > time()) {
+                return [
+                    'success' => true,
+                    'queued' => true,
+                    'sent' => false,
+                    'msg' => '已加入发送队列',
+                    'log_id' => (int) $log->id,
+                ];
             }
 
-            // 调用微信API发送消息
-            $result = self::callWechatApi($accessToken, [
-                'touser' => (string) $userAuth->openid,
-                'template_id' => $template->template_id,
-                'page' => $targetPage,
-                'data' => $content,
-                'miniprogram_state' => 'formal',
-            ]);
-
-            if ($result['errcode'] == 0) {
-                // 发送成功，消费订阅次数
-                UserSubscribe::consumeSubscription($userId, $template->template_id);
-                SubscribeMessageLog::updateSendResult($log->id, true, '', '', $result['msgid'] ?? '');
-                return ['success' => true, 'msg' => '发送成功', 'log_id' => $log->id];
-            } else {
-                SubscribeMessageLog::updateSendResult(
-                    $log->id,
-                    false,
-                    (string)$result['errcode'],
-                    $result['errmsg'] ?? '发送失败'
-                );
-                return ['success' => false, 'msg' => $result['errmsg'] ?? '发送失败', 'log_id' => $log->id];
-            }
-        } catch (\Exception $e) {
+            return self::dispatchLog((int) $log->id, true);
+        } catch (\RuntimeException $e) {
+            return ['success' => false, 'msg' => $e->getMessage(), 'log_id' => 0];
+        } catch (\Throwable $e) {
             Log::error('订阅消息发送异常: ' . $e->getMessage());
             return ['success' => false, 'msg' => '发送异常: ' . $e->getMessage(), 'log_id' => 0];
         }
@@ -166,7 +113,8 @@ class SubscribeMessageService
         array $data,
         string $businessType = '',
         int $businessId = 0,
-        string $page = ''
+        string $page = '',
+        array $options = []
     ): array {
         $results = [
             'total' => count($userIds),
@@ -176,7 +124,7 @@ class SubscribeMessageService
         ];
 
         foreach ($userIds as $userId) {
-            $result = self::send($userId, $scene, $data, $businessType, $businessId, $page);
+            $result = self::send($userId, $scene, $data, $businessType, $businessId, $page, $options);
             if ($result['success']) {
                 $results['success']++;
             } else {
@@ -198,22 +146,22 @@ class SubscribeMessageService
     protected static function buildMessageContent(array $templateContent, array $data, array $mapping = []): array
     {
         $content = [];
-        
+
         foreach ($templateContent as $key => $config) {
             // 从mapping中获取数据字段名，或使用key本身
             $dataKey = $mapping[$key] ?? $key;
             $value = $data[$dataKey] ?? '';
-            
+
             // 根据类型处理值
             if (is_array($value)) {
                 $value = implode('，', array_map(static function ($item) {
                     return self::sanitizeTemplateValue($item);
                 }, $value));
             }
-            
+
             // 截断过长的内容
             $value = self::sanitizeTemplateValue($value);
-            
+
             $content[$key] = ['value' => (string)$value];
         }
 
@@ -221,63 +169,234 @@ class SubscribeMessageService
     }
 
     /**
-     * @notes 获取access_token
-     * @return string|null
+     * @notes 派发单条发送日志
+     * @param int $logId
+     * @param bool $force
+     * @return array
      */
-    protected static function getAccessToken(): ?string
+    public static function dispatchLog(int $logId, bool $force = false): array
     {
-        $cacheKey = 'wechat_miniprogram_access_token';
-        $token = Cache::get($cacheKey);
-
-        if ($token) {
-            return $token;
+        $log = SubscribeMessageLog::find($logId);
+        if (!$log) {
+            return ['success' => false, 'msg' => '发送日志不存在', 'log_id' => 0];
         }
 
-        // 从项目现有小程序配置中读取 AppID 和 AppSecret
-        $config = WeChatConfigService::getMnpConfig();
-        $appId = $config['app_id'] ?? '';
-        $appSecret = $config['secret'] ?? '';
-
-        if (empty($appId) || empty($appSecret)) {
-            Log::error('微信小程序配置缺失');
-            return null;
+        if (!$force && (int) $log->send_status !== SubscribeMessageLog::SEND_STATUS_PENDING) {
+            return ['success' => false, 'msg' => '当前记录不可派发', 'log_id' => (int) $log->id];
         }
 
-        $url = self::ACCESS_TOKEN_URL . '?grant_type=client_credential&appid=' . $appId . '&secret=' . $appSecret;
-
-        $response = self::httpGet($url);
-        if (!$response) {
-            return null;
+        if (empty($log->openid)) {
+            SubscribeMessageLog::updateSendResult((int) $log->id, false, 'OPENID_EMPTY', '用户未绑定小程序');
+            return ['success' => false, 'msg' => '用户未绑定小程序', 'log_id' => (int) $log->id];
         }
 
-        $result = json_decode($response, true);
-        if (isset($result['access_token'])) {
-            // 缓存token，过期时间比实际少5分钟
-            $expiresIn = ($result['expires_in'] ?? 7200) - 300;
-            Cache::set($cacheKey, $result['access_token'], $expiresIn);
-            return $result['access_token'];
+        [$sceneUsable, $sceneError] = self::checkLogSceneUsable($log);
+        if (!$sceneUsable) {
+            SubscribeMessageLog::updateSendResult((int) $log->id, false, 'SCENE_INVALID', $sceneError);
+            return ['success' => false, 'msg' => $sceneError, 'log_id' => (int) $log->id];
         }
 
-        Log::error('获取access_token失败: ' . ($result['errmsg'] ?? '未知错误'));
-        return null;
+        try {
+            $wechat = new WeChatMnpService();
+            $result = $wechat->sendSubscribeMessage([
+                'touser' => (string) $log->openid,
+                'template_id' => (string) $log->template_id,
+                'page' => (string) $log->page,
+                'data' => $log->content,
+                'miniprogram_state' => (string) ($log->miniprogram_state ?: 'formal'),
+            ]);
+        } catch (\Throwable $e) {
+            SubscribeMessageLog::updateSendResult((int) $log->id, false, 'DISPATCH_ERROR', $e->getMessage());
+            Log::error('订阅消息派发异常: log_id=' . (int) $log->id . '，error=' . $e->getMessage());
+            return ['success' => false, 'msg' => '发送异常: ' . $e->getMessage(), 'log_id' => (int) $log->id];
+        }
+
+        $errCode = (int) ($result['errcode'] ?? -1);
+        if ($errCode === 0) {
+            UserSubscribe::consumeSubscription((int) $log->user_id, (string) $log->template_id);
+            SubscribeMessageLog::updateSendResult(
+                (int) $log->id,
+                true,
+                '',
+                '',
+                (string) ($result['msgid'] ?? $result['request_id'] ?? '')
+            );
+
+            return [
+                'success' => true,
+                'queued' => false,
+                'sent' => true,
+                'msg' => '发送成功',
+                'log_id' => (int) $log->id,
+            ];
+        }
+
+        $errorMsg = (string) ($result['errmsg'] ?? '发送失败');
+        SubscribeMessageLog::updateSendResult(
+            (int) $log->id,
+            false,
+            (string) $errCode,
+            $errorMsg,
+            (string) ($result['request_id'] ?? $result['msgid'] ?? '')
+        );
+
+        return [
+            'success' => false,
+            'queued' => false,
+            'sent' => false,
+            'msg' => $errorMsg,
+            'log_id' => (int) $log->id,
+        ];
     }
 
     /**
-     * @notes 调用微信API
-     * @param string $accessToken
-     * @param array $data
+     * @notes 扫描并派发到期日志
+     * @param int $limit
      * @return array
      */
-    protected static function callWechatApi(string $accessToken, array $data): array
+    public static function dispatchPendingLogs(int $limit = 100): array
     {
-        $url = self::SEND_API_URL . '?access_token=' . $accessToken;
-        $response = self::httpPost($url, json_encode($data, JSON_UNESCAPED_UNICODE));
+        $logs = SubscribeMessageLog::getDuePendingLogs($limit);
+        $result = [
+            'processed' => 0,
+            'success' => 0,
+            'failed' => 0,
+        ];
 
-        if (!$response) {
-            return ['errcode' => -1, 'errmsg' => 'HTTP请求失败'];
+        foreach ($logs as $log) {
+            $dispatchResult = self::dispatchLog((int) ($log['id'] ?? 0));
+            $result['processed']++;
+            if ($dispatchResult['success'] ?? false) {
+                $result['success']++;
+            } else {
+                $result['failed']++;
+            }
         }
 
-        return json_decode($response, true) ?: ['errcode' => -1, 'errmsg' => '响应解析失败'];
+        return $result;
+    }
+
+    /**
+     * @notes 构建发送上下文
+     * @param int $userId
+     * @param string $scene
+     * @param array $data
+     * @param string $businessType
+     * @param int $businessId
+     * @param string $page
+     * @return array
+     */
+    protected static function buildSendContext(
+        int $userId,
+        string $scene,
+        array $data,
+        string $businessType,
+        int $businessId,
+        string $page
+    ): array {
+        if (!SubscribeMessageTemplate::isActiveScene($scene)) {
+            Log::info('订阅消息跳过：场景已下线，scene=' . $scene);
+            throw new \RuntimeException('订阅消息场景已下线');
+        }
+
+        $user = User::find($userId);
+        if (!$user) {
+            Log::info('订阅消息跳过：用户不存在，user_id=' . $userId . '，scene=' . $scene);
+            throw new \RuntimeException('用户不存在');
+        }
+
+        $userAuth = UserAuth::where('user_id', $userId)
+            ->where('terminal', UserTerminalEnum::WECHAT_MMP)
+            ->where('openid', '<>', '')
+            ->order('id', 'desc')
+            ->find();
+        if (!$userAuth) {
+            Log::info('订阅消息跳过：用户未绑定小程序，user_id=' . $userId . '，scene=' . $scene);
+            throw new \RuntimeException('用户未绑定小程序');
+        }
+
+        $sceneConfig = SubscribeMessageScene::getByScene($scene);
+        if (!$sceneConfig) {
+            Log::info('订阅消息跳过：场景未配置或已禁用，scene=' . $scene);
+            throw new \RuntimeException('场景配置不存在或已禁用');
+        }
+
+        $template = null;
+        if (!empty($sceneConfig->template_id)) {
+            $template = SubscribeMessageTemplate::where('template_id', $sceneConfig->template_id)->find();
+        }
+        if (!$template) {
+            $template = SubscribeMessageTemplate::getByScene($scene);
+        }
+        if (!$template || (int) $template->status !== SubscribeMessageTemplate::STATUS_ENABLED) {
+            Log::info('订阅消息跳过：模板未绑定或已禁用，scene=' . $scene . '，template_id=' . ($sceneConfig->template_id ?? ''));
+            throw new \RuntimeException('消息模板不存在或已禁用');
+        }
+
+        if (!SubscribeMessageTemplate::isUsableTemplateId((string) $template->template_id)) {
+            Log::info('订阅消息跳过：模板ID仍为占位值，scene=' . $scene . '，template_id=' . (string) $template->template_id);
+            throw new \RuntimeException('消息模板尚未配置真实模板ID');
+        }
+
+        if (!UserSubscribe::hasSubscription($userId, (string) $template->template_id)) {
+            Log::info('订阅消息跳过：用户未订阅模板，user_id=' . $userId . '，template_id=' . $template->template_id);
+            throw new \RuntimeException('用户未订阅该消息');
+        }
+
+        return [
+            'openid' => (string) $userAuth->openid,
+            'template_id' => (string) $template->template_id,
+            'scene_config' => $sceneConfig,
+            'business_type' => $businessType ?: (string) $sceneConfig->scene,
+            'content' => self::buildMessageContent($template->content, $data, $sceneConfig->data_mapping),
+            'page' => self::buildTargetPage($page ?: (string) $sceneConfig->page_path, $businessId),
+            'miniprogram_state' => 'formal',
+        ];
+    }
+
+    /**
+     * @notes 计算计划发送时间
+     * @param SubscribeMessageScene $sceneConfig
+     * @param bool $forceDispatch
+     * @return int
+     */
+    protected static function resolvePlannedSendTime(SubscribeMessageScene $sceneConfig, bool $forceDispatch): int
+    {
+        $now = time();
+        if ($forceDispatch) {
+            return $now;
+        }
+
+        $delaySeconds = max((int) ($sceneConfig->delay_seconds ?? 0), 0);
+        return $delaySeconds > 0 ? $now + $delaySeconds : $now;
+    }
+
+    /**
+     * @notes 检查日志关联场景和模板是否可用
+     * @param SubscribeMessageLog $log
+     * @return array{0: bool, 1: string}
+     */
+    protected static function checkLogSceneUsable(SubscribeMessageLog $log): array
+    {
+        if (!SubscribeMessageTemplate::isActiveScene((string) $log->scene)) {
+            return [false, '订阅消息场景已下线'];
+        }
+
+        $sceneConfig = SubscribeMessageScene::where('scene', (string) $log->scene)->find();
+        if (!$sceneConfig || (int) $sceneConfig->status !== SubscribeMessageScene::STATUS_ENABLED) {
+            return [false, '场景配置不存在或已禁用'];
+        }
+
+        $template = SubscribeMessageTemplate::where('template_id', (string) $log->template_id)->find();
+        if (!$template || (int) $template->status !== SubscribeMessageTemplate::STATUS_ENABLED) {
+            return [false, '消息模板不存在或已禁用'];
+        }
+
+        if (!SubscribeMessageTemplate::isUsableTemplateId((string) $template->template_id)) {
+            return [false, '消息模板尚未配置真实模板ID'];
+        }
+
+        return [true, ''];
     }
 
     /**
@@ -346,104 +465,6 @@ class SubscribeMessageService
         return mb_strlen($text, 'UTF-8') > 200
             ? mb_substr($text, 0, 200, 'UTF-8')
             : $text;
-    }
-
-    /**
-     * @notes HTTP GET请求
-     * @param string $url
-     * @return string|null
-     */
-    protected static function httpGet(string $url): ?string
-    {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-
-        $response = curl_exec($ch);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($error) {
-            Log::error('HTTP GET错误: ' . $error);
-            return null;
-        }
-
-        return $response ?: null;
-    }
-
-    /**
-     * @notes HTTP POST请求
-     * @param string $url
-     * @param string $data
-     * @return string|null
-     */
-    protected static function httpPost(string $url, string $data): ?string
-    {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-
-        $response = curl_exec($ch);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($error) {
-            Log::error('HTTP POST错误: ' . $error);
-            return null;
-        }
-
-        return $response ?: null;
-    }
-
-    /**
-     * @notes 发送订单创建通知
-     * @param int $userId
-     * @param array $orderData
-     * @return array
-     */
-    public static function sendOrderCreateNotice(int $userId, array $orderData): array
-    {
-        return self::send(
-            $userId,
-            SubscribeMessageTemplate::SCENE_ORDER_CREATE,
-            [
-                'thing1' => $orderData['service_name'] ?? '婚庆服务',
-                'character_string2' => $orderData['order_sn'] ?? '',
-                'amount3' => $orderData['total_amount'] ?? '0.00',
-                'time4' => date('Y-m-d H:i'),
-            ],
-            SubscribeMessageLog::BIZ_TYPE_ORDER,
-            $orderData['order_id'] ?? 0
-        );
-    }
-
-    /**
-     * @notes 发送支付成功通知
-     * @param int $userId
-     * @param array $orderData
-     * @return array
-     */
-    public static function sendPaySuccessNotice(int $userId, array $orderData): array
-    {
-        return self::send(
-            $userId,
-            SubscribeMessageTemplate::SCENE_ORDER_PAID,
-            [
-                'character_string1' => $orderData['order_sn'] ?? '',
-                'amount2' => $orderData['pay_amount'] ?? '0.00',
-                'time3' => date('Y-m-d H:i'),
-                'thing4' => $orderData['service_name'] ?? '婚庆服务',
-            ],
-            SubscribeMessageLog::BIZ_TYPE_ORDER,
-            $orderData['order_id'] ?? 0
-        );
     }
 
     /**

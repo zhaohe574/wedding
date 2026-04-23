@@ -17,6 +17,11 @@ class OperationLog
     private const LOG_TEXT_MAX_BYTES = 60000;
 
     /**
+     * la_operation_log.url 字段最大字节数
+     */
+    private const LOG_URL_MAX_BYTES = 600;
+
+    /**
      * @notes 管理员操作日志
      * @param $response
      * @return bool|void
@@ -75,7 +80,7 @@ class OperationLog
             $systemLog->admin_name = $request->adminInfo['name'] ?? '';
             $systemLog->action = $notes;
             $systemLog->account = $request->adminInfo['account'] ?? '';
-            $systemLog->url = $request->url(true);
+            $systemLog->url = $this->truncateText((string)$request->url(true), self::LOG_URL_MAX_BYTES);
             $systemLog->type = $request->isGet() ? 'GET' : 'POST';
             $systemLog->params = $this->truncateText((string)json_encode($params, true));
             $systemLog->ip = $request->ip();

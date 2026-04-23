@@ -45,7 +45,7 @@ class ScheduleController extends BaseAdminController
      */
     public function monthCalendar()
     {
-        $params = (new ScheduleValidate())->goCheck('calendar');
+        $params = (new ScheduleValidate())->get()->goCheck('calendar');
         $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
         if ($staffScopeId > 0) {
             $params['staff_id'] = $staffScopeId;
@@ -60,7 +60,7 @@ class ScheduleController extends BaseAdminController
      */
     public function detail()
     {
-        $params = (new ScheduleValidate())->goCheck('detail');
+        $params = (new ScheduleValidate())->get()->goCheck('detail');
         $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
         if ($staffScopeId > 0) {
             $staffId = (int) Schedule::where('id', $params['id'])->value('staff_id');
@@ -228,7 +228,7 @@ class ScheduleController extends BaseAdminController
         if ($staffScopeId <= 0) {
             return $this->failRequiredStaffScope();
         }
-        $params = (new ScheduleValidate())->goCheck('calendar');
+        $params = (new ScheduleValidate())->get()->goCheck('calendar');
         $params['staff_id'] = $staffScopeId;
         $result = ScheduleLogic::getMonthCalendar($params);
         return $this->data($result);

@@ -87,8 +87,11 @@ class SubscribeMessageLog extends BaseModel
         string $businessType,
         int $businessId,
         array $content,
-        string $page = ''
+        string $page = '',
+        int $plannedSendTime = 0,
+        string $miniprogramState = 'formal'
     ): SubscribeMessageLog {
+        $createTime = time();
         return self::create([
             'user_id' => $userId,
             'openid' => $openid,
@@ -98,9 +101,10 @@ class SubscribeMessageLog extends BaseModel
             'business_id' => $businessId,
             'content' => $content,
             'page' => $page,
-            'miniprogram_state' => 'formal',
+            'miniprogram_state' => $miniprogramState,
+            'planned_send_time' => $plannedSendTime > 0 ? $plannedSendTime : $createTime,
             'send_status' => self::SEND_STATUS_PENDING,
-            'create_time' => time(),
+            'create_time' => $createTime,
         ]);
     }
 
@@ -298,8 +302,43 @@ class SubscribeMessageLog extends BaseModel
             ->where('send_status', self::SEND_STATUS_FAILED)
             ->update([
                 'send_status' => self::SEND_STATUS_PENDING,
+                'planned_send_time' => time(),
                 'error_code' => '',
                 'error_msg' => '',
+                'send_time' => 0,
             ]) > 0;
+    }
+
+    /**
+     * @notes 获取用户模板待发送数量
+     * @param int $userId
+     * @param string $templateId
+     * @return int
+     */
+    public static function countPendingByUserTemplate(int $userId, string $templateId): int
+    {
+        return self::where('user_id', $userId)
+            ->where('template_id', $templateId)
+            ->where('send_status', self::SEND_STATUS_PENDING)
+            ->count();
+    }
+
+    /**
+     * @notes 获取到期待发送日志
+     * @param int $limit
+     * @return array
+     */
+    public static function getDuePendingLogs(int $limit = 100): array
+    {
+        return self::where('send_status', self::SEND_STATUS_PENDING)
+            ->where(function ($query) {
+                $query->where('planned_send_time', 0)
+                    ->whereOr('planned_send_time', '<=', time());
+            })
+            ->order('planned_send_time', 'asc')
+            ->order('id', 'asc')
+            ->limit($limit)
+            ->select()
+            ->toArray();
     }
 }

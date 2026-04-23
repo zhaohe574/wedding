@@ -514,23 +514,6 @@ class OrderNotificationService
             StationNotificationService::TARGET_ORDER_DETAIL,
             $orderId
         );
-
-        try {
-            $result = SubscribeMessageService::sendOrderCreateNotice(
-                (int) $order->user_id,
-                [
-                    'order_id' => (int) $order->id,
-                    'order_sn' => (string) $order->order_sn,
-                    'total_amount' => number_format((float) ($order->total_amount ?? 0), 2, '.', ''),
-                    'service_name' => self::resolveServiceName($order),
-                ]
-            );
-            if (!$result['success']) {
-                Log::info('订单创建订阅消息未发送：' . ($result['msg'] ?? '未知原因'));
-            }
-        } catch (\Throwable $e) {
-            Log::error('订单创建订阅消息发送失败：' . $e->getMessage());
-        }
     }
 
     /**
@@ -556,23 +539,6 @@ class OrderNotificationService
                 StationNotificationService::TARGET_ORDER_DETAIL,
                 $orderId
             );
-
-            try {
-                $result = SubscribeMessageService::sendPaySuccessNotice(
-                    (int)$order->user_id,
-                    [
-                        'order_id' => (int)$order->id,
-                        'order_sn' => (string)$order->order_sn,
-                        'pay_amount' => number_format((float)self::resolvePaidStageAmount($order, $payType), 2, '.', ''),
-                        'service_name' => $serviceName,
-                    ]
-                );
-                if (!$result['success']) {
-                    Log::info('支付成功订阅消息未发送：' . ($result['msg'] ?? '未知原因'));
-                }
-            } catch (\Throwable $e) {
-                Log::error('支付成功订阅消息发送失败：' . $e->getMessage());
-            }
         }
 
         self::sendStaffOrderNotice(

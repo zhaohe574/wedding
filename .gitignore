@@ -28,8 +28,12 @@ __pycache__/
 # npm local cache
 uniapp/.npm-cache/
 
+# TypeScript 构建产物
+*.tsbuildinfo
+
 # local temporary exports
 /.tmp/
+/server/*.rar
 
 # local agent state
 /.omx/

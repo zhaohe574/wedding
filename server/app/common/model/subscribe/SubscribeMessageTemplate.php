@@ -39,6 +39,37 @@ class SubscribeMessageTemplate extends BaseModel
     const SCENE_WAITLIST_EXPIRED = 'waitlist_expired'; // 候补失效
 
     /**
+     * 当前仍保留的客户订阅场景。
+     */
+    private const ACTIVE_SCENE_OPTIONS = [
+        ['value' => self::SCENE_ORDER_CONFIRM, 'label' => '订单确认通知'],
+        ['value' => self::SCENE_SCHEDULE_REMIND, 'label' => '服务提醒通知'],
+        ['value' => self::SCENE_REFUND_RESULT, 'label' => '退款结果通知'],
+        ['value' => self::SCENE_TICKET_UPDATE, 'label' => '工单进度通知'],
+        ['value' => self::SCENE_WAITLIST_RELEASE, 'label' => '候补释放通知'],
+        ['value' => self::SCENE_WAITLIST_EXPIRED, 'label' => '候补失效通知'],
+    ];
+
+    /**
+     * 可独立维护模板的场景。
+     * 候补失效复用候补释放模板，因此不单独开放模板维护。
+     */
+    private const TEMPLATE_SCENE_OPTIONS = [
+        ['value' => self::SCENE_ORDER_CONFIRM, 'label' => '订单确认通知'],
+        ['value' => self::SCENE_SCHEDULE_REMIND, 'label' => '服务提醒通知'],
+        ['value' => self::SCENE_REFUND_RESULT, 'label' => '退款结果通知'],
+        ['value' => self::SCENE_TICKET_UPDATE, 'label' => '工单进度通知'],
+        ['value' => self::SCENE_WAITLIST_RELEASE, 'label' => '候补状态通知'],
+    ];
+
+    /**
+     * 允许共用模板的场景组。
+     */
+    private const SHARED_TEMPLATE_SCENE_GROUPS = [
+        [self::SCENE_WAITLIST_RELEASE, self::SCENE_WAITLIST_EXPIRED],
+    ];
+
+    /**
      * @notes 内容JSON自动转换
      * @param $value
      * @return array
@@ -99,20 +130,125 @@ class SubscribeMessageTemplate extends BaseModel
      */
     public static function getSceneList(): array
     {
-        return [
-            ['value' => self::SCENE_ORDER_CREATE, 'label' => '订单创建通知'],
-            ['value' => self::SCENE_ORDER_PAID, 'label' => '支付成功通知'],
-            ['value' => self::SCENE_ORDER_CONFIRM, 'label' => '订单确认通知'],
-            ['value' => self::SCENE_ORDER_COMPLETE, 'label' => '服务完成通知'],
-            ['value' => self::SCENE_SCHEDULE_REMIND, 'label' => '档期提醒通知'],
-            ['value' => self::SCENE_REFUND_RESULT, 'label' => '退款结果通知'],
-            ['value' => self::SCENE_CALLBACK_REMIND, 'label' => '回访提醒通知'],
-            ['value' => self::SCENE_TICKET_UPDATE, 'label' => '工单进度通知'],
-            ['value' => self::SCENE_CHANGE_RESULT, 'label' => '变更审核通知'],
-            ['value' => self::SCENE_SCHEDULE_CHANGE, 'label' => '档期变更通知'],
-            ['value' => self::SCENE_WAITLIST_RELEASE, 'label' => '候补释放通知'],
-            ['value' => self::SCENE_WAITLIST_EXPIRED, 'label' => '候补失效通知'],
+        return self::ACTIVE_SCENE_OPTIONS;
+    }
+
+    /**
+     * @notes 获取活跃场景值列表
+     * @return array
+     */
+    public static function getActiveSceneValues(): array
+    {
+        return array_column(self::ACTIVE_SCENE_OPTIONS, 'value');
+    }
+
+    /**
+     * @notes 判断是否为活跃订阅场景
+     * @param string $scene
+     * @return bool
+     */
+    public static function isActiveScene(string $scene): bool
+    {
+        return in_array($scene, self::getActiveSceneValues(), true);
+    }
+
+    /**
+     * @notes 获取可独立维护模板的场景列表
+     * @return array
+     */
+    public static function getTemplateSceneList(): array
+    {
+        return self::TEMPLATE_SCENE_OPTIONS;
+    }
+
+    /**
+     * @notes 获取可独立维护模板的场景值列表
+     * @return array
+     */
+    public static function getTemplateSceneValues(): array
+    {
+        return array_column(self::TEMPLATE_SCENE_OPTIONS, 'value');
+    }
+
+    /**
+     * @notes 判断是否允许独立维护模板
+     * @param string $scene
+     * @return bool
+     */
+    public static function isTemplateScene(string $scene): bool
+    {
+        return in_array($scene, self::getTemplateSceneValues(), true);
+    }
+
+    /**
+     * @notes 判断模板是否可绑定到目标场景
+     * @param string $templateScene
+     * @param string $targetScene
+     * @return bool
+     */
+    public static function canTemplateBindToScene(string $templateScene, string $targetScene): bool
+    {
+        if ($templateScene === $targetScene) {
+            return true;
+        }
+
+        foreach (self::SHARED_TEMPLATE_SCENE_GROUPS as $sceneGroup) {
+            if (in_array($templateScene, $sceneGroup, true) && in_array($targetScene, $sceneGroup, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @notes 获取场景可用参数
+     * @param string $scene
+     * @return array
+     */
+    public static function getSceneAvailableParams(string $scene): array
+    {
+        $map = [
+            self::SCENE_ORDER_CONFIRM => [
+                ['key' => 'order_sn', 'label' => '订单编号', 'desc' => '系统生成的订单编号'],
+                ['key' => 'status_text', 'label' => '确认状态', 'desc' => '订单确认状态文案'],
+                ['key' => 'pay_amount', 'label' => '订单金额', 'desc' => '订单支付金额'],
+                ['key' => 'service_date', 'label' => '服务日期', 'desc' => '预约服务日期'],
+                ['key' => 'service_name', 'label' => '服务名称', 'desc' => '订单中的服务项目名称'],
+            ],
+            self::SCENE_SCHEDULE_REMIND => [
+                ['key' => 'service_name', 'label' => '服务内容', 'desc' => '待提醒的服务项目名称'],
+                ['key' => 'service_date', 'label' => '服务时间', 'desc' => '预约服务日期时间'],
+                ['key' => 'address', 'label' => '服务地点', 'desc' => '服务执行地点'],
+                ['key' => 'staff_name', 'label' => '服务人员', 'desc' => '当前安排的服务人员'],
+            ],
+            self::SCENE_REFUND_RESULT => [
+                ['key' => 'order_sn', 'label' => '订单编号', 'desc' => '退款关联的订单编号'],
+                ['key' => 'refund_amount', 'label' => '退款金额', 'desc' => '本次退款金额'],
+                ['key' => 'status_text', 'label' => '退款状态', 'desc' => '退款审核结果文案'],
+                ['key' => 'reason', 'label' => '退款原因', 'desc' => '退款或驳回原因'],
+            ],
+            self::SCENE_TICKET_UPDATE => [
+                ['key' => 'ticket_sn', 'label' => '工单编号', 'desc' => '售后工单编号'],
+                ['key' => 'status_text', 'label' => '工单状态', 'desc' => '当前工单状态文案'],
+                ['key' => 'handle_note', 'label' => '处理说明', 'desc' => '本次处理备注'],
+                ['key' => 'update_time', 'label' => '更新时间', 'desc' => '工单最近更新时间'],
+            ],
+            self::SCENE_WAITLIST_RELEASE => [
+                ['key' => 'staff_name', 'label' => '服务人员', 'desc' => '释放档期对应的服务人员'],
+                ['key' => 'schedule_date', 'label' => '档期日期', 'desc' => '释放的预约日期'],
+                ['key' => 'package_name', 'label' => '套餐名称', 'desc' => '候补关联套餐名称'],
+                ['key' => 'status_text', 'label' => '状态说明', 'desc' => '候补状态说明文案'],
+            ],
+            self::SCENE_WAITLIST_EXPIRED => [
+                ['key' => 'staff_name', 'label' => '服务人员', 'desc' => '候补对应的服务人员'],
+                ['key' => 'schedule_date', 'label' => '档期日期', 'desc' => '失效的预约日期'],
+                ['key' => 'package_name', 'label' => '套餐名称', 'desc' => '候补关联套餐名称'],
+                ['key' => 'status_text', 'label' => '状态说明', 'desc' => '候补状态说明文案'],
+            ],
         ];
+
+        return $map[$scene] ?? [];
     }
 
     /**
@@ -185,6 +321,7 @@ class SubscribeMessageTemplate extends BaseModel
     public static function getEnabledTemplates(): array
     {
         return self::where('status', self::STATUS_ENABLED)
+            ->whereIn('scene', self::getTemplateSceneValues())
             ->order('sort', 'desc')
             ->select()
             ->toArray();

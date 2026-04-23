@@ -10,16 +10,10 @@ import {
 
 // 场景类型
 export type SubscribeScene =
-    | 'order_create' // 订单创建
-    | 'order_paid' // 支付成功
     | 'order_confirm' // 订单确认
-    | 'order_complete' // 服务完成
     | 'schedule_remind' // 档期提醒
     | 'refund_result' // 退款结果
-    | 'callback_remind' // 回访提醒
     | 'ticket_update' // 工单更新
-    | 'change_result' // 变更审核
-    | 'schedule_change' // 档期变更
     | 'waitlist_release' // 候补释放
     | 'waitlist_expired' // 候补失效
 
@@ -216,10 +210,14 @@ export function clearSceneCache() {
 }
 
 function extractSceneTemplateIds(scenes: SceneInfo[], sceneNames: string[]) {
-    return scenes
-        .filter((scene) => sceneNames.includes(scene.scene))
-        .map((scene) => scene.template_id)
-        .filter(Boolean)
+    return Array.from(
+        new Set(
+            scenes
+                .filter((scene) => sceneNames.includes(scene.scene))
+                .map((scene) => scene.template_id)
+                .filter(Boolean)
+        )
+    )
 }
 
 /**
@@ -229,12 +227,7 @@ function extractSceneTemplateIds(scenes: SceneInfo[], sceneNames: string[]) {
 export async function subscribeOrderScenes(): Promise<boolean> {
     try {
         const scenes = await getAllScenes()
-        const templateIds = extractSceneTemplateIds(scenes, [
-            'order_create',
-            'order_confirm',
-            'order_paid',
-            'schedule_remind'
-        ])
+        const templateIds = extractSceneTemplateIds(scenes, ['order_confirm', 'schedule_remind'])
 
         if (templateIds.length === 0) {
             return true
@@ -256,11 +249,7 @@ export async function subscribeOrderScenes(): Promise<boolean> {
 export async function subscribeAfterSaleScenes(): Promise<boolean> {
     try {
         const scenes = await getAllScenes()
-        const templateIds = extractSceneTemplateIds(scenes, [
-            'ticket_update',
-            'refund_result',
-            'callback_remind'
-        ])
+        const templateIds = extractSceneTemplateIds(scenes, ['ticket_update', 'refund_result'])
 
         if (templateIds.length === 0) {
             return true

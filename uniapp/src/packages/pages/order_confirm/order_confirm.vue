@@ -588,8 +588,8 @@ const promptOrderSubscribe = async () => {
     }
 
     const result = await uni.showModal({
-        title: '接收微信服务提醒',
-        content: '订阅后可接收订单提醒。',
+        title: '接收订单与服务提醒',
+        content: '订阅后可接收订单确认和服务提醒。',
         confirmText: '去订阅',
         cancelText: '暂不订阅'
     })

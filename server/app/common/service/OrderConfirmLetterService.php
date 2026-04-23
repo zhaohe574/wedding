@@ -17,7 +17,7 @@ use think\facade\Db;
 
 class OrderConfirmLetterService
 {
-    public const RENDER_SPEC_VERSION = 'v2';
+    public const RENDER_SPEC_VERSION = 'v3';
     public const LEGACY_RENDER_SPEC_VERSION = 'v1';
     public const CONFIG_GROUP = 'order_confirmation_letter';
     public const CONFIG_KEY_REMARK_TEMPLATE = 'remark_template';
@@ -35,13 +35,23 @@ class OrderConfirmLetterService
     public const ERROR_ASSET_RUNTIME = 'ASSET_RUNTIME_UNAVAILABLE';
     public const ERROR_ASSET_FONT = 'ASSET_FONT_MISSING';
     public const ERROR_ASSET_RENDER = 'ASSET_RENDER_FAILED';
-    protected const ASSET_FONT_FAMILY = 'Noto Sans SC';
-    protected const ASSET_FONT_FILE = 'NotoSansSC-VF.ttf';
+    protected const ASSET_FONTS = [
+        [
+            'family' => 'Noto Sans SC',
+            'query' => '*Noto*Sans*SC*',
+            'file' => 'NotoSansSC-VF.ttf',
+        ],
+        [
+            'family' => 'Noto Serif SC',
+            'query' => '*Noto*Serif*SC*',
+            'file' => 'NotoSerifSC-wght.ttf',
+        ],
+    ];
     protected const ASSET_FONT_DIR = 'app/common/resource/fonts';
     protected const ASSET_PNG_RESOLUTION = 144;
     protected const DEFAULT_BRAND_NAME = '喜遇婚礼服务';
-    protected const DEFAULT_BRAND_TAGLINE = 'Wedding Service Confirmation';
-    protected const DEFAULT_FOOTER_NOTE = '本确认函用于确认婚礼服务安排，请以最新生成版本为准并妥善保存。';
+    protected const DEFAULT_BRAND_TAGLINE = 'MAISON DE MARIAGE · CONFIRMATION';
+    protected const DEFAULT_FOOTER_NOTE = '请保存此确认函图片，作为婚礼服务安排与付款确认的纸本凭证。';
 
     public static function getTemplateConfig(): array
     {
@@ -854,9 +864,11 @@ class OrderConfirmLetterService
         $fontDirectory = rtrim((string) root_path(), '/\\')
             . DIRECTORY_SEPARATOR
             . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, self::ASSET_FONT_DIR);
-        $fontFilePath = $fontDirectory . DIRECTORY_SEPARATOR . self::ASSET_FONT_FILE;
-        if (!is_file($fontFilePath)) {
-            throw new \RuntimeException(self::ERROR_ASSET_FONT);
+        foreach (self::ASSET_FONTS as $font) {
+            $fontFilePath = $fontDirectory . DIRECTORY_SEPARATOR . (string) ($font['file'] ?? '');
+            if (!is_file($fontFilePath)) {
+                throw new \RuntimeException(self::ERROR_ASSET_FONT);
+            }
         }
 
         return $fontDirectory;
@@ -869,9 +881,11 @@ class OrderConfirmLetterService
         }
 
         try {
-            $fonts = \Imagick::queryFonts('*Noto*SC*');
-            if (empty($fonts)) {
-                throw new \RuntimeException(self::ERROR_ASSET_FONT);
+            foreach (self::ASSET_FONTS as $font) {
+                $fonts = \Imagick::queryFonts((string) ($font['query'] ?? '*'));
+                if (empty($fonts)) {
+                    throw new \RuntimeException(self::ERROR_ASSET_FONT);
+                }
             }
         } catch (\Throwable $e) {
             if ($e instanceof \RuntimeException && $e->getMessage() === self::ERROR_ASSET_FONT) {

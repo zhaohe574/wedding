@@ -35,6 +35,8 @@ type TextBlockOptions = {
     fill: string
     fontWeight?: number | string
     textAnchor?: 'start' | 'middle' | 'end'
+    fontFamily?: string
+    letterSpacing?: number | string
 }
 
 type InfoCardOptions = {
@@ -56,15 +58,21 @@ type InfoCardOptions = {
     radius: number
 }
 
-export const ORDER_CONFIRM_LETTER_FONT_FAMILY =
+export const ORDER_CONFIRM_LETTER_FONT_FAMILY_SANS =
     'Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif'
+export const ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF =
+    'Noto Serif SC, Georgia, Times New Roman, serif'
 
 const DEFAULT_TITLE = '订单确认函'
 const DEFAULT_HERO_EYEBROW = 'ORDER CONFIRMATION LETTER'
 const DEFAULT_HERO_DESC =
     '为保证婚礼现场执行准确无误，系统已根据当前订单信息自动生成本次正式确认函。'
-const DEFAULT_BRAND_NAME = 'LIKE WEDDING · 婚礼服务中心'
-const DEFAULT_FOOTER_NOTE = '请保存此确认函图片，作为婚礼服务安排与付款进度的核对凭证。'
+const DEFAULT_BRAND_NAME = '喜遇婚礼服务'
+const DEFAULT_FOOTER_NOTE = '请保存此确认函图片，作为婚礼服务安排与付款确认的纸本凭证。'
+const V3_DEFAULT_HERO_EYEBROW = 'MAISON DE MARIAGE · CONFIRMATION'
+const V3_DEFAULT_SUBTITLE = 'Wedding Order Confirmation'
+const V3_DEFAULT_HERO_DESC = '以法式纸本礼仪的方式，确认本次婚礼档期、服务内容与付款安排。'
+const V3_FOOTER_KICKER = 'Avec amour et promesse.'
 
 const escapeXml = (value: string) =>
     String(value || '')
@@ -76,7 +84,8 @@ const escapeXml = (value: string) =>
 
 const toText = (value: unknown) => String(value ?? '').trim()
 
-const getTextFontAttr = () => ` font-family="${escapeXml(ORDER_CONFIRM_LETTER_FONT_FAMILY)}"`
+const getTextFontAttr = (fontFamily = ORDER_CONFIRM_LETTER_FONT_FAMILY_SANS) =>
+    ` font-family="${escapeXml(fontFamily)}"`
 
 const toStringArray = (value: unknown) =>
     Array.isArray(value) ? value.map((item) => toText(item)).filter(Boolean) : []
@@ -127,6 +136,7 @@ const resolveRenderOptions = (
     }
 }
 
+const isV3Spec = (version?: string) => normalizeVersion(version).startsWith('v3')
 const isV2Spec = (version?: string) => normalizeVersion(version).startsWith('v2')
 
 const wrapText = (text: string, maxCharsPerLine: number, maxLines: number) => {
@@ -188,15 +198,21 @@ const drawTextBlock = ({
     lineHeight,
     fill,
     fontWeight = 500,
-    textAnchor = 'start'
+    textAnchor = 'start',
+    fontFamily = ORDER_CONFIRM_LETTER_FONT_FAMILY_SANS,
+    letterSpacing
 }: TextBlockOptions) => {
     const safeLines = lines.length ? lines : ['']
+    const letterSpacingAttr =
+        letterSpacing === undefined ? '' : ` letter-spacing="${escapeXml(String(letterSpacing))}"`
     const svg = safeLines
         .map(
             (line, index) =>
                 `<text x="${x}" y="${
                     y + index * lineHeight
-                }" text-anchor="${textAnchor}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${fill}"${getTextFontAttr()}>${escapeXml(
+                }" text-anchor="${textAnchor}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${fill}"${getTextFontAttr(
+                    fontFamily
+                )}${letterSpacingAttr}>${escapeXml(
                     line
                 )}</text>`
         )
@@ -656,11 +672,530 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
     )}</svg>`
 }
 
+const renderV3OrderConfirmLetterSvg = (
+    snapshot: OrderConfirmLetterSnapshot,
+    small = false
+) => {
+    const width = small ? 540 : 1080
+    const height = small ? 960 : 1920
+    const pagePadding = small ? 24 : 60
+    const paperX = pagePadding
+    const paperY = pagePadding
+    const paperWidth = width - pagePadding * 2
+    const paperHeight = height - pagePadding * 2
+    const paperPaddingX = small ? 34 : 74
+    const paperPaddingY = small ? 34 : 72
+    const contentX = paperX + paperPaddingX
+    const contentWidth = paperWidth - paperPaddingX * 2
+    const sectionGap = small ? 16 : 34
+
+    const title = toText(snapshot.title) || DEFAULT_TITLE
+    const heroEyebrow = toText(snapshot.brand_tagline) || V3_DEFAULT_HERO_EYEBROW
+    const heroSubtitle = V3_DEFAULT_SUBTITLE
+    const heroDescLines = wrapText(
+        toText((snapshot as any).hero_desc) || V3_DEFAULT_HERO_DESC,
+        small ? 24 : 38,
+        2
+    )
+
+    const heroMetaPrimaryParts = [
+        toText(snapshot.customer_name),
+        toText(snapshot.service_date_label) || toText(snapshot.service_date),
+        toText(snapshot.service_address),
+    ].filter(Boolean)
+    const heroMetaSecondaryParts = [
+        toText(snapshot.order_sn) ? `订单编号：${toText(snapshot.order_sn)}` : '',
+        toText(snapshot.confirm_date) ? `确认日期：${toText(snapshot.confirm_date)}` : '',
+    ].filter(Boolean)
+    let heroMetaLines: string[] = []
+    if (heroMetaPrimaryParts.length) {
+        heroMetaLines = heroMetaLines.concat(
+            wrapText(heroMetaPrimaryParts.join(' · '), small ? 28 : 42, 1)
+        )
+    }
+    if (heroMetaSecondaryParts.length) {
+        heroMetaLines = heroMetaLines.concat(
+            wrapText(heroMetaSecondaryParts.join(' · '), small ? 26 : 38, 1)
+        )
+    }
+    if (!heroMetaLines.length) {
+        heroMetaLines = ['确认信息待更新']
+    }
+
+    const leftInfoLines = [
+        `新人：${toText(snapshot.customer_name) || '-'}`,
+        `婚礼日期：${toText(snapshot.service_date_label) || toText(snapshot.service_date) || '-'}`,
+        `举办地点：${toText(snapshot.service_address) || '-'}`,
+    ].flatMap((line) => wrapText(line, small ? 16 : 23, 2))
+
+    const serviceTeamLines = toStringArray(snapshot.service_team_lines)
+    const staffNames = toStringArray(snapshot.service_staff_names)
+    const rightInfoSource = serviceTeamLines.length
+        ? serviceTeamLines.slice(0, small ? 3 : 4)
+        : staffNames.length
+          ? [`服务团队：${staffNames.join('、')}`]
+          : ['服务团队：待补充']
+    const rightInfoLines = rightInfoSource
+        .flatMap((line) => wrapText(line, small ? 16 : 23, 2))
+        .slice(0, small ? 5 : 6)
+
+    const amountDetailLines = [
+        `${toText(snapshot.paid_label) || '已付定金'}：¥${toText(snapshot.paid_amount) || '0.00'}`,
+        `待付尾款：¥${toText(snapshot.remain_amount) || '0.00'}`,
+        '支付节点：婚礼前 3 日',
+    ]
+
+    const acknowledgementLines = wrapText(
+        toText(snapshot.remark_content) || DEFAULT_FOOTER_NOTE,
+        small ? 18 : 28,
+        4
+    )
+    const contactLines = [
+        `联系电话：${toText(snapshot.contact_mobile) || '-'}`,
+        `确认日期：${toText(snapshot.confirm_date) || '-'}`,
+        '当前版本：婚礼确认函',
+    ]
+
+    const heroPaddingTop = small ? 18 : 24
+    const heroPaddingBottom = small ? 20 : 26
+    const sealSize = small ? 44 : 84
+    const sealInnerSize = small ? 34 : 64
+    const heroEyebrowSize = small ? 9 : 16
+    const heroTitleSize = small ? 30 : 54
+    const heroSubtitleSize = small ? 16 : 28
+    const heroDescSize = small ? 13 : 22
+    const heroMetaSize = small ? 11 : 20
+    const heroDescLineHeight = small ? 18 : 32
+    const heroMetaLineHeight = small ? 16 : 26
+    const heroHeight =
+        heroPaddingTop +
+        heroEyebrowSize +
+        (small ? 12 : 16) +
+        sealSize +
+        (small ? 12 : 16) +
+        heroTitleSize +
+        (small ? 8 : 10) +
+        heroSubtitleSize +
+        (small ? 10 : 14) +
+        heroDescLines.length * heroDescLineHeight +
+        (small ? 10 : 14) +
+        heroMetaLines.length * heroMetaLineHeight +
+        heroPaddingBottom
+
+    const sectionLabelSize = small ? 9 : 16
+    const sectionLabelGap = small ? 10 : 14
+    const sectionBodySize = small ? 14 : 24
+    const sectionBodyLineHeight = small ? 20 : 36
+    const infoSectionPaddingY = small ? 16 : 26
+    const infoSectionHeight =
+        infoSectionPaddingY * 2 +
+        sectionLabelSize +
+        sectionLabelGap +
+        Math.max(leftInfoLines.length, rightInfoLines.length) * sectionBodyLineHeight
+
+    const amountPaddingY = small ? 18 : 28
+    const amountLabelSize = small ? 9 : 16
+    const amountValueSize = small ? 32 : 58
+    const amountValueLineHeight = small ? 34 : 60
+    const amountCaptionSize = small ? 14 : 22
+    const amountBodySize = small ? 13 : 22
+    const amountBodyLineHeight = small ? 20 : 33
+    const amountSectionHeight =
+        amountPaddingY * 2 +
+        amountLabelSize +
+        (small ? 10 : 12) +
+        amountValueLineHeight +
+        (small ? 8 : 10) +
+        amountCaptionSize +
+        Math.max(small ? 16 : 24, amountDetailLines.length * amountBodyLineHeight)
+
+    const ackBodySize = small ? 13 : 22
+    const ackBodyLineHeight = small ? 20 : 34
+    const ackSectionPaddingY = small ? 16 : 24
+    const ackSectionHeight =
+        ackSectionPaddingY * 2 +
+        sectionLabelSize +
+        sectionLabelGap +
+        Math.max(acknowledgementLines.length, contactLines.length) * ackBodyLineHeight
+
+    const signLineGap = small ? 10 : 12
+    const signLabelSize = small ? 12 : 19
+    const signSectionHeight = (small ? 22 : 28) + signLineGap + signLabelSize
+
+    const footerKickerSize = small ? 14 : 22
+    const footerBrandSize = small ? 16 : 24
+    const footerNoteSize = small ? 11 : 18
+    const footerNoteLineHeight = small ? 16 : 28
+    const footerNoteLines = wrapText(
+        toText(snapshot.footer_note) || DEFAULT_FOOTER_NOTE,
+        small ? 24 : 34,
+        2
+    )
+
+    let currentY = paperY + paperPaddingY
+    const sections: string[] = []
+    const centerX = paperX + paperWidth / 2
+
+    sections.push(
+        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="${heroHeight}" fill="url(#v3HeroGradient)" stroke="#E2D4C3" />`
+    )
+    sections.push(
+        `<ellipse cx="${contentX + contentWidth - (small ? 58 : 108)}" cy="${currentY + (small ? 24 : 38)}" rx="${small ? 34 : 66}" ry="${small ? 28 : 54}" fill="#F2DED1" fill-opacity="0.4" /><ellipse cx="${contentX + contentWidth - (small ? 42 : 72)}" cy="${currentY + (small ? 36 : 54)}" rx="${small ? 22 : 46}" ry="${small ? 18 : 36}" fill="#F8EEE4" fill-opacity="0.8" />`
+    )
+
+    const heroEyebrowY = currentY + heroPaddingTop + heroEyebrowSize
+    sections.push(
+        drawTextBlock({
+            x: centerX,
+            y: heroEyebrowY,
+            lines: [heroEyebrow],
+            fontSize: heroEyebrowSize,
+            lineHeight: heroEyebrowSize,
+            fill: '#A98A69',
+            fontWeight: 500,
+            textAnchor: 'middle',
+            letterSpacing: small ? 1.4 : 2.2,
+        }).svg
+    )
+
+    const sealY = heroEyebrowY + (small ? 12 : 16)
+    sections.push(
+        `<circle cx="${centerX}" cy="${sealY + sealSize / 2}" r="${sealSize / 2}" fill="none" stroke="#CDB08E" stroke-width="1" /><circle cx="${centerX}" cy="${sealY + sealSize / 2}" r="${sealInnerSize / 2}" fill="none" stroke="#E7D7C2" stroke-width="1" />`
+    )
+    sections.push(
+        drawTextBlock({
+            x: centerX,
+            y: sealY + sealSize / 2 + (small ? 5 : 9),
+            lines: ['LW'],
+            fontSize: small ? 16 : 28,
+            lineHeight: small ? 16 : 28,
+            fill: '#A78663',
+            fontWeight: 600,
+            textAnchor: 'middle',
+            fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF,
+        }).svg
+    )
+
+    const heroTitleY = sealY + sealSize + (small ? 12 : 16) + heroTitleSize
+    sections.push(
+        drawTextBlock({
+            x: centerX,
+            y: heroTitleY,
+            lines: [title],
+            fontSize: heroTitleSize,
+            lineHeight: heroTitleSize,
+            fill: '#3B322B',
+            fontWeight: 700,
+            textAnchor: 'middle',
+        }).svg
+    )
+
+    const heroSubtitleY = heroTitleY + (small ? 8 : 10) + heroSubtitleSize
+    sections.push(
+        drawTextBlock({
+            x: centerX,
+            y: heroSubtitleY,
+            lines: [heroSubtitle],
+            fontSize: heroSubtitleSize,
+            lineHeight: heroSubtitleSize,
+            fill: '#9F8467',
+            fontWeight: 500,
+            textAnchor: 'middle',
+            fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF,
+        }).svg
+    )
+
+    const heroDescY = heroSubtitleY + (small ? 10 : 14) + heroDescSize
+    sections.push(
+        drawTextBlock({
+            x: centerX,
+            y: heroDescY,
+            lines: heroDescLines,
+            fontSize: heroDescSize,
+            lineHeight: heroDescLineHeight,
+            fill: '#6E6256',
+            fontWeight: 500,
+            textAnchor: 'middle',
+        }).svg
+    )
+
+    const heroMetaY =
+        heroDescY + heroDescLines.length * heroDescLineHeight + (small ? 10 : 14) + heroMetaSize
+    sections.push(
+        drawTextBlock({
+            x: centerX,
+            y: heroMetaY,
+            lines: heroMetaLines,
+            fontSize: heroMetaSize,
+            lineHeight: heroMetaLineHeight,
+            fill: '#B38E69',
+            fontWeight: 500,
+            textAnchor: 'middle',
+        }).svg
+    )
+
+    currentY += heroHeight + sectionGap
+
+    const columnGap = small ? 18 : 40
+    const columnWidth = (contentWidth - columnGap) / 2
+    const sectionBodyY =
+        currentY + infoSectionPaddingY + sectionLabelSize + sectionLabelGap + sectionBodySize
+    sections.push(
+        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="1" fill="#E6D9CB" /><rect x="${contentX}" y="${
+            currentY + infoSectionHeight
+        }" width="${contentWidth}" height="1" fill="#E6D9CB" />`
+    )
+    sections.push(
+        drawTextBlock({
+            x: contentX,
+            y: currentY + infoSectionPaddingY + sectionLabelSize,
+            lines: ['CEREMONY DETAILS'],
+            fontSize: sectionLabelSize,
+            lineHeight: sectionLabelSize,
+            fill: '#A98A69',
+            fontWeight: 500,
+            letterSpacing: small ? 1.4 : 2,
+        }).svg
+    )
+    sections.push(
+        drawTextBlock({
+            x: contentX,
+            y: sectionBodyY,
+            lines: leftInfoLines,
+            fontSize: sectionBodySize,
+            lineHeight: sectionBodyLineHeight,
+            fill: '#342E29',
+            fontWeight: 500,
+        }).svg
+    )
+    sections.push(
+        drawTextBlock({
+            x: contentX + columnWidth + columnGap,
+            y: currentY + infoSectionPaddingY + sectionLabelSize,
+            lines: ['ATELIER SERVICE'],
+            fontSize: sectionLabelSize,
+            lineHeight: sectionLabelSize,
+            fill: '#A98A69',
+            fontWeight: 500,
+            letterSpacing: small ? 1.4 : 2,
+        }).svg
+    )
+    sections.push(
+        drawTextBlock({
+            x: contentX + columnWidth + columnGap,
+            y: sectionBodyY,
+            lines: rightInfoLines,
+            fontSize: sectionBodySize,
+            lineHeight: sectionBodyLineHeight,
+            fill: '#342E29',
+            fontWeight: 500,
+        }).svg
+    )
+
+    currentY += infoSectionHeight + sectionGap
+
+    const amountLabelY = currentY + amountPaddingY + amountLabelSize
+    const amountValueY = amountLabelY + (small ? 10 : 12) + amountValueSize
+    const amountCaptionY = amountValueY + (small ? 8 : 10) + amountCaptionSize
+    const amountRightX = contentX + contentWidth - (small ? 150 : 300)
+    const amountRightY = currentY + amountPaddingY + (small ? 4 : 8) + amountBodySize
+    sections.push(
+        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="${amountSectionHeight}" fill="url(#v3AmountGradient)" stroke="#D9C1A1" stroke-width="1" />`
+    )
+    sections.push(
+        drawTextBlock({
+            x: contentX + (small ? 20 : 30),
+            y: amountLabelY,
+            lines: ['FEE MEMO'],
+            fontSize: amountLabelSize,
+            lineHeight: amountLabelSize,
+            fill: '#A98A69',
+            fontWeight: 500,
+            letterSpacing: small ? 1.4 : 2,
+        }).svg
+    )
+    sections.push(
+        drawTextBlock({
+            x: contentX + (small ? 20 : 30),
+            y: amountValueY,
+            lines: [`¥${toText(snapshot.order_total_amount) || '0.00'}`],
+            fontSize: amountValueSize,
+            lineHeight: amountValueLineHeight,
+            fill: '#7C6146',
+            fontWeight: 600,
+            fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF,
+        }).svg
+    )
+    sections.push(
+        drawTextBlock({
+            x: contentX + (small ? 20 : 30),
+            y: amountCaptionY,
+            lines: ['合同合计金额'],
+            fontSize: amountCaptionSize,
+            lineHeight: amountCaptionSize,
+            fill: '#6D6155',
+            fontWeight: 500,
+        }).svg
+    )
+    sections.push(
+        drawTextBlock({
+            x: amountRightX,
+            y: amountRightY,
+            lines: amountDetailLines,
+            fontSize: amountBodySize,
+            lineHeight: amountBodyLineHeight,
+            fill: '#433932',
+            fontWeight: 500,
+        }).svg
+    )
+
+    currentY += amountSectionHeight + sectionGap
+
+    const ackBodyY =
+        currentY + ackSectionPaddingY + sectionLabelSize + sectionLabelGap + ackBodySize
+    sections.push(
+        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="1" fill="#E6D9CB" /><rect x="${contentX}" y="${
+            currentY + ackSectionHeight
+        }" width="${contentWidth}" height="1" fill="#E6D9CB" />`
+    )
+    sections.push(
+        drawTextBlock({
+            x: contentX,
+            y: currentY + ackSectionPaddingY + sectionLabelSize,
+            lines: ['ACKNOWLEDGEMENT'],
+            fontSize: sectionLabelSize,
+            lineHeight: sectionLabelSize,
+            fill: '#A98A69',
+            fontWeight: 500,
+            letterSpacing: small ? 1.4 : 2,
+        }).svg
+    )
+    sections.push(
+        drawTextBlock({
+            x: contentX,
+            y: ackBodyY,
+            lines: acknowledgementLines,
+            fontSize: ackBodySize,
+            lineHeight: ackBodyLineHeight,
+            fill: '#433932',
+            fontWeight: 500,
+        }).svg
+    )
+    sections.push(
+        drawTextBlock({
+            x: contentX + columnWidth + columnGap,
+            y: currentY + ackSectionPaddingY + sectionLabelSize,
+            lines: ['CONTACT ATELIER'],
+            fontSize: sectionLabelSize,
+            lineHeight: sectionLabelSize,
+            fill: '#A98A69',
+            fontWeight: 500,
+            letterSpacing: small ? 1.4 : 2,
+        }).svg
+    )
+    sections.push(
+        drawTextBlock({
+            x: contentX + columnWidth + columnGap,
+            y: ackBodyY,
+            lines: contactLines,
+            fontSize: small ? 12 : 21,
+            lineHeight: ackBodyLineHeight,
+            fill: '#433932',
+            fontWeight: 500,
+        }).svg
+    )
+
+    currentY += ackSectionHeight + sectionGap
+
+    const signLineY = currentY + (small ? 10 : 14)
+    const signLabelY = signLineY + signLineGap + signLabelSize
+    const signRightX = contentX + columnWidth + columnGap
+    sections.push(
+        `<rect x="${contentX}" y="${signLineY}" width="${columnWidth}" height="1" fill="#D9C4A6" /><rect x="${signRightX}" y="${signLineY}" width="${columnWidth}" height="1" fill="#D9C4A6" />`
+    )
+    sections.push(
+        drawTextBlock({
+            x: contentX,
+            y: signLabelY,
+            lines: ['客户签名'],
+            fontSize: signLabelSize,
+            lineHeight: signLabelSize,
+            fill: '#8B7762',
+            fontWeight: 500,
+        }).svg
+    )
+    sections.push(
+        drawTextBlock({
+            x: signRightX,
+            y: signLabelY,
+            lines: ['婚礼顾问签署'],
+            fontSize: signLabelSize,
+            lineHeight: signLabelSize,
+            fill: '#8B7762',
+            fontWeight: 500,
+        }).svg
+    )
+
+    currentY += signSectionHeight + sectionGap
+
+    const footerLineY = currentY
+    const footerBrandY = footerLineY + (small ? 22 : 24) + footerBrandSize
+    const footerKickerY = footerBrandY + (small ? 6 : 8) + footerKickerSize
+    const footerNoteY = footerKickerY + (small ? 8 : 10) + footerNoteSize
+    sections.push(
+        `<rect x="${contentX}" y="${footerLineY}" width="${contentWidth}" height="1" fill="#E6D9CB" />`
+    )
+    sections.push(
+        drawTextBlock({
+            x: centerX,
+            y: footerBrandY,
+            lines: [toText(snapshot.brand_name) || DEFAULT_BRAND_NAME],
+            fontSize: footerBrandSize,
+            lineHeight: footerBrandSize,
+            fill: '#B08C68',
+            fontWeight: 600,
+            textAnchor: 'middle',
+        }).svg
+    )
+    sections.push(
+        drawTextBlock({
+            x: centerX,
+            y: footerKickerY,
+            lines: [V3_FOOTER_KICKER],
+            fontSize: footerKickerSize,
+            lineHeight: footerKickerSize,
+            fill: '#9F8467',
+            fontWeight: 500,
+            textAnchor: 'middle',
+            fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF,
+        }).svg
+    )
+    sections.push(
+        drawTextBlock({
+            x: centerX,
+            y: footerNoteY,
+            lines: footerNoteLines,
+            fontSize: footerNoteSize,
+            lineHeight: footerNoteLineHeight,
+            fill: '#87796B',
+            fontWeight: 500,
+            textAnchor: 'middle',
+        }).svg
+    )
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><linearGradient id="v3PageGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FAF5EF" /><stop offset="100%" stop-color="#F3E8DC" /></linearGradient><linearGradient id="v3PaperGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFFDFC" /><stop offset="100%" stop-color="#FAF4EC" /></linearGradient><linearGradient id="v3HeroGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FBF6F0" /><stop offset="100%" stop-color="#F7EEE3" /></linearGradient><linearGradient id="v3AmountGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FCF6EF" /><stop offset="100%" stop-color="#F8EDE2" /></linearGradient><filter id="v3PaperShadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="14" flood-color="#C9B397" flood-opacity="0.12" /></filter></defs><rect width="100%" height="100%" fill="url(#v3PageGradient)" /><rect x="${paperX}" y="${paperY}" width="${paperWidth}" height="${paperHeight}" rx="${small ? 8 : 14}" fill="url(#v3PaperGradient)" stroke="#D8C3A7" stroke-width="1" filter="url(#v3PaperShadow)" />${sections.join(
+        ''
+    )}</svg>`
+}
+
 export function renderOrderConfirmLetterSvg(
     snapshot: OrderConfirmLetterSnapshot,
     options?: RenderOptionsInput
 ) {
     const resolved = resolveRenderOptions(options)
+    if (isV3Spec(resolved.renderSpecVersion)) {
+        return renderV3OrderConfirmLetterSvg(snapshot, resolved.small)
+    }
     return isV2Spec(resolved.renderSpecVersion)
         ? renderV2OrderConfirmLetterSvg(snapshot, resolved.small)
         : renderV1OrderConfirmLetterSvg(snapshot, resolved.small)

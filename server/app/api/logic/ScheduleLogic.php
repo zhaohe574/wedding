@@ -14,6 +14,7 @@ use app\common\model\schedule\ScheduleRule;
 use app\common\model\schedule\Waitlist;
 use app\common\model\staff\Staff;
 use app\common\service\StaffPriceService;
+use think\facade\Log;
 
 /**
  * 小程序端档期业务逻辑
@@ -194,14 +195,29 @@ class ScheduleLogic extends BaseLogic
      */
     public static function lockSchedule(array $params): array
     {
+        $startAt = microtime(true);
         [$success, $message] = Schedule::lockScheduleWithRedis(
             (int)$params['staff_id'],
             (string)$params['date'],
             0,
             (int)$params['user_id'],
             Schedule::LOCK_TYPE_NORMAL,
-            (int)($params['lock_duration'] ?? 900)
+            (int)($params['lock_duration'] ?? 900),
+            0,
+            0
         );
+        $elapsedMs = (int)round((microtime(true) - $startAt) * 1000);
+
+        if (!$success || $elapsedMs >= 200) {
+            Log::warning('预约档期锁定耗时异常', [
+                'staff_id' => (int)$params['staff_id'],
+                'date' => (string)$params['date'],
+                'user_id' => (int)$params['user_id'],
+                'success' => $success ? 1 : 0,
+                'message' => $message,
+                'elapsed_ms' => $elapsedMs,
+            ]);
+        }
 
         return ['success' => $success, 'message' => $message];
     }

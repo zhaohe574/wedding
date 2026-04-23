@@ -39,7 +39,7 @@ class PayController extends BaseApiController
      */
     public function payWay()
     {
-        $params = (new PayValidate())->goCheck('payway');
+        $params = (new PayValidate())->get()->goCheck('payway');
         $result = PaymentLogic::getPayWay($this->userId, $this->userInfo['terminal'], $params);
         if ($result === false) {
             return $this->fail(PaymentLogic::getError());
@@ -81,7 +81,7 @@ class PayController extends BaseApiController
      */
     public function payStatus()
     {
-        $params = (new PayValidate())->goCheck('status', ['user_id' => $this->userId]);
+        $params = (new PayValidate())->get()->goCheck('status', ['user_id' => $this->userId]);
         $result = PaymentLogic::getPayStatus($params);
         if ($result === false) {
             return $this->fail(PaymentLogic::getError());

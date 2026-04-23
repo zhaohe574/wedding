@@ -41,7 +41,7 @@ class CostController extends BaseAdminController
      */
     public function detail()
     {
-        $params = (new CostValidate())->goCheck('detail');
+        $params = (new CostValidate())->get()->goCheck('detail');
         $result = CostLogic::detail($params['id']);
         return $this->success('获取成功', $result);
     }
@@ -51,7 +51,7 @@ class CostController extends BaseAdminController
      */
     public function add()
     {
-        $params = (new CostValidate())->goCheck('add');
+        $params = (new CostValidate())->post()->goCheck('add');
         $result = CostLogic::add($params);
         if ($result === false) {
             return $this->fail(CostLogic::getError());
@@ -64,7 +64,7 @@ class CostController extends BaseAdminController
      */
     public function edit()
     {
-        $params = (new CostValidate())->goCheck('edit');
+        $params = (new CostValidate())->post()->goCheck('edit');
         $result = CostLogic::edit($params);
         if ($result === false) {
             return $this->fail(CostLogic::getError());
@@ -77,7 +77,7 @@ class CostController extends BaseAdminController
      */
     public function delete()
     {
-        $params = (new CostValidate())->goCheck('detail');
+        $params = (new CostValidate())->post()->goCheck('detail');
         $result = CostLogic::delete($params['id']);
         if ($result === false) {
             return $this->fail(CostLogic::getError());
@@ -90,7 +90,7 @@ class CostController extends BaseAdminController
      */
     public function confirm()
     {
-        $params = (new CostValidate())->goCheck('detail');
+        $params = (new CostValidate())->post()->goCheck('detail');
         $result = CostLogic::confirm($params['id'], $this->adminId);
         if ($result === false) {
             return $this->fail(CostLogic::getError());
@@ -103,7 +103,7 @@ class CostController extends BaseAdminController
      */
     public function batchConfirm()
     {
-        $params = (new CostValidate())->goCheck('batch');
+        $params = (new CostValidate())->post()->goCheck('batch');
         $result = CostLogic::batchConfirm($params['ids'], $this->adminId);
         if ($result === false) {
             return $this->fail(CostLogic::getError());

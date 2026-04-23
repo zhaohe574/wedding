@@ -4,49 +4,53 @@
         <BaseNavbar title="作品详情" />
 
         <view class="work-detail wm-page-content" v-if="workDetail">
-            <BaseCard variant="hero" scene="consumer" class="work-hero" padding="0">
-                <image
-                    class="work-hero__image"
-                    :src="
-                        workDetail.cover ||
-                        workDetail.images?.[0] ||
-                        '/static/images/default_cover.png'
-                    "
-                    mode="aspectFill"
-                    @click="previewCover"
-                />
+            <BaseCard variant="hero" scene="consumer" padding="0">
+                <view class="work-hero">
+                    <image
+                        class="work-hero__image"
+                        :src="
+                            workDetail.cover ||
+                            workDetail.images?.[0] ||
+                            '/static/images/default_cover.png'
+                        "
+                        mode="aspectFill"
+                        @click="previewCover"
+                    />
 
-                <view class="work-hero__overlay">
-                    <view class="work-hero__badge-row">
-                        <StatusBadge tone="neutral" size="sm">
-                            <view class="work-hero__badge-content">
-                                <tn-icon name="eye" size="24" color="#C99B73" />
-                                <text>浏览 {{ workDetail.view_count || 0 }}</text>
-                            </view>
-                        </StatusBadge>
+                    <view class="work-hero__overlay">
+                        <view class="work-hero__badge-row">
+                            <StatusBadge tone="neutral" size="sm">
+                                <view class="work-hero__badge-content">
+                                    <tn-icon name="eye" size="24" color="#C99B73" />
+                                    <text>浏览 {{ workDetail.view_count || 0 }}</text>
+                                </view>
+                            </StatusBadge>
 
-                        <StatusBadge tone="info" size="sm">
-                            {{ workDetail.type_desc || '作品' }}
-                        </StatusBadge>
-                    </view>
-
-                    <view class="work-hero__copy">
-                        <text class="work-hero__eyebrow">婚礼作品集</text>
-                        <text class="work-hero__title">{{ workDetail.title || '未命名作品' }}</text>
-                        <text v-if="workDetail.description" class="work-hero__desc">
-                            {{ workDetail.description }}
-                        </text>
-                    </view>
-
-                    <view class="work-hero__meta-list">
-                        <view v-if="workDetail.shoot_date" class="work-hero__meta-pill">
-                            <tn-icon name="calendar" size="24" color="#7F7B78" />
-                            <text class="work-hero__meta-text">{{ workDetail.shoot_date }}</text>
+                            <StatusBadge tone="info" size="sm">
+                                {{ workDetail.type_desc || '作品' }}
+                            </StatusBadge>
                         </view>
 
-                        <view v-if="workDetail.location" class="work-hero__meta-pill">
-                            <tn-icon name="map-pin" size="24" color="#7F7B78" />
-                            <text class="work-hero__meta-text">{{ workDetail.location }}</text>
+                        <view class="work-hero__copy">
+                            <text class="work-hero__eyebrow">婚礼作品集</text>
+                            <text class="work-hero__title">
+                                {{ workDetail.title || '未命名作品' }}
+                            </text>
+                            <text v-if="workDetail.description" class="work-hero__desc">
+                                {{ workDetail.description }}
+                            </text>
+                        </view>
+
+                        <view class="work-hero__meta-list">
+                            <view v-if="workDetail.shoot_date" class="work-hero__meta-pill">
+                                <tn-icon name="calendar" size="24" color="#7F7B78" />
+                                <text class="work-hero__meta-text">{{ workDetail.shoot_date }}</text>
+                            </view>
+
+                            <view v-if="workDetail.location" class="work-hero__meta-pill">
+                                <tn-icon name="map-pin" size="24" color="#7F7B78" />
+                                <text class="work-hero__meta-text">{{ workDetail.location }}</text>
+                            </view>
                         </view>
                     </view>
                 </view>
@@ -318,8 +322,10 @@ onLoad((options: any) => {
 .work-hero {
     position: relative;
     width: 100%;
+    height: 640rpx;
     min-height: 640rpx;
     overflow: hidden;
+    border-radius: inherit;
 }
 
 .work-hero__image {

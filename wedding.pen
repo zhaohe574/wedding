@@ -1,5 +1,5 @@
 {
-  "version": "2.10",
+  "version": "2.11",
   "children": [
     {
       "type": "frame",
@@ -19383,11 +19383,11 @@
         },
         "colors": [
           {
-            "color": "#FCFBF9",
+            "color": "#FAF5EF",
             "position": 0
           },
           {
-            "color": "#FFF4EF",
+            "color": "#F3E8DC",
             "position": 1
           }
         ]
@@ -19401,30 +19401,48 @@
           "name": "确认函纸面",
           "width": "fill_container",
           "height": "fill_container",
-          "fill": "#FFFDFB",
-          "cornerRadius": 48,
+          "fill": {
+            "type": "gradient",
+            "gradientType": "linear",
+            "enabled": true,
+            "rotation": 180,
+            "size": {
+              "height": 1
+            },
+            "colors": [
+              {
+                "color": "#FFFDFC",
+                "position": 0
+              },
+              {
+                "color": "#FAF4EC",
+                "position": 1
+              }
+            ]
+          },
+          "cornerRadius": 14,
           "stroke": {
             "align": "inside",
-            "thickness": 2,
-            "fill": "#EFE6E1"
+            "thickness": 1,
+            "fill": "#D8C3A7"
           },
           "effect": {
             "type": "shadow",
             "shadowType": "outer",
-            "color": "#DAB5A61A",
+            "color": "#C9B3971F",
             "offset": {
               "x": 0,
-              "y": 24
+              "y": 20
             },
-            "blur": 36
+            "blur": 38
           },
           "layout": "vertical",
-          "gap": 26,
+          "gap": 34,
           "padding": [
-            54,
-            54,
-            48,
-            54
+            72,
+            74,
+            62,
+            74
           ],
           "children": [
             {
@@ -19436,52 +19454,102 @@
                 "type": "gradient",
                 "gradientType": "linear",
                 "enabled": true,
-                "rotation": 135,
+                "rotation": 180,
                 "size": {
                   "height": 1
                 },
                 "colors": [
                   {
-                    "color": "#FFF7F4",
+                    "color": "#FBF6F0",
                     "position": 0
                   },
                   {
-                    "color": "#FDE9E2",
+                    "color": "#F7EEE3",
                     "position": 1
                   }
                 ]
               },
-              "cornerRadius": 40,
               "stroke": {
                 "align": "inside",
                 "thickness": 1,
-                "fill": "#F4C7BF"
+                "fill": "#E2D4C3"
               },
               "layout": "vertical",
-              "gap": 18,
+              "gap": 14,
               "padding": [
-                38,
-                38,
-                34,
-                38
+                24,
+                96,
+                26,
+                96
               ],
+              "alignItems": "center",
               "children": [
                 {
                   "type": "text",
                   "id": "kVEdP",
                   "name": "heroEyebrowB",
-                  "fill": "$accent-gold",
-                  "content": "ORDER CONFIRMATION LETTER",
-                  "fontFamily": "Inter",
-                  "fontSize": 18,
-                  "fontWeight": "700",
-                  "letterSpacing": 2
+                  "fill": "#A98A69",
+                  "content": "MAISON DE MARIAGE · CONFIRMATION",
+                  "fontFamily": "Geist",
+                  "fontSize": 16,
+                  "fontWeight": "500",
+                  "letterSpacing": 2.2
+                },
+                {
+                  "type": "frame",
+                  "id": "qv1sV",
+                  "name": "sealWrap",
+                  "width": 84,
+                  "height": 84,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "MBmFS",
+                      "x": 0,
+                      "y": 0,
+                      "name": "sealRing",
+                      "width": 84,
+                      "height": 84,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#CDB08E"
+                      }
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "LSpjT",
+                      "x": 10,
+                      "y": 10,
+                      "name": "sealCore",
+                      "width": 64,
+                      "height": 64,
+                      "stroke": {
+                        "align": "inside",
+                        "thickness": 1,
+                        "fill": "#E7D7C2"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "id": "O9cCO",
+                      "x": 24,
+                      "y": 24,
+                      "name": "sealText",
+                      "fill": "#A78663",
+                      "content": "LW",
+                      "fontFamily": "Playfair Display",
+                      "fontSize": 28,
+                      "fontWeight": "600"
+                    }
+                  ]
                 },
                 {
                   "type": "text",
                   "id": "4ICkU",
                   "name": "heroTitleB",
-                  "fill": "$text-primary",
+                  "fill": "#3B322B",
                   "content": "订单确认函",
                   "fontFamily": "Inter",
                   "fontSize": 54,
@@ -19489,182 +19557,390 @@
                 },
                 {
                   "type": "text",
+                  "id": "x1FW0",
+                  "name": "subtitleC",
+                  "fill": "#9F8467",
+                  "content": "Wedding Order Confirmation",
+                  "fontFamily": "Playfair Display",
+                  "fontSize": 28,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
                   "id": "mVfsb",
                   "name": "heroDescB",
-                  "fill": "$text-secondary",
+                  "fill": "#6E6256",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "为保证婚礼现场执行准确无误，系统已根据当前订单信息自动生成本次正式确认函。",
-                  "lineHeight": 1.55,
-                  "fontFamily": "Inter",
-                  "fontSize": 24,
+                  "content": "以法式纸本礼仪的方式，确认本次婚礼档期、服务内容与付款安排。",
+                  "lineHeight": 1.6,
+                  "textAlign": "center",
+                  "fontFamily": "Newsreader",
+                  "fontSize": 22,
                   "fontWeight": "500"
                 },
                 {
                   "type": "text",
                   "id": "9GW0x",
                   "name": "heroMetaB",
-                  "fill": "$accent-coral",
+                  "fill": "#B38E69",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
-                  "content": "订单编号：WD20260618-018\n确认日期：2026.04.12 · 上海",
-                  "lineHeight": 1.6,
-                  "fontFamily": "Inter",
-                  "fontSize": 21,
-                  "fontWeight": "700"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "Y0Fjx",
-              "name": "婚礼信息区",
-              "width": "fill_container",
-              "fill": "#FFF8F5",
-              "cornerRadius": 28,
-              "stroke": {
-                "align": "inside",
-                "thickness": 1,
-                "fill": "#EFE6E1"
-              },
-              "layout": "vertical",
-              "gap": 10,
-              "padding": [
-                24,
-                28
-              ],
-              "children": [
-                {
-                  "type": "text",
-                  "id": "J6oSs",
-                  "name": "infoTextB",
-                  "fill": "$text-primary",
-                  "textGrowth": "fixed-width",
-                  "width": "fill_container",
-                  "content": "婚礼信息\n客户姓名：彦祖\n婚礼日期：2026.06.18 周四\n举办地点：上海青浦草坪仪式区 · 宴会厅 A",
-                  "lineHeight": 1.72,
-                  "fontFamily": "Inter",
-                  "fontSize": 24,
-                  "fontWeight": "600"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "C8QbS",
-              "name": "服务团队区",
-              "width": "fill_container",
-              "fill": "#FFFFFFE8",
-              "cornerRadius": 28,
-              "stroke": {
-                "align": "inside",
-                "thickness": 1,
-                "fill": "#EFE6E1"
-              },
-              "layout": "vertical",
-              "gap": 10,
-              "padding": [
-                24,
-                28
-              ],
-              "children": [
-                {
-                  "type": "text",
-                  "id": "lZkDV",
-                  "name": "staffTextB",
-                  "fill": "$text-primary",
-                  "textGrowth": "fixed-width",
-                  "width": "fill_container",
-                  "content": "服务团队\n主持人：苏棠\n婚礼管家：Mila\n服务范围：主持控场、流程统筹、宴会衔接确认",
-                  "lineHeight": 1.72,
-                  "fontFamily": "Inter",
-                  "fontSize": 24,
-                  "fontWeight": "600"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "8e0Ii",
-              "name": "金额确认区",
-              "width": "fill_container",
-              "fill": "#FFFFFFE8",
-              "cornerRadius": 32,
-              "stroke": {
-                "align": "inside",
-                "thickness": 1,
-                "fill": "#F4C7BF"
-              },
-              "layout": "vertical",
-              "gap": 12,
-              "padding": 28,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "a2sxv",
-                  "name": "amountTitleB",
-                  "fill": "$text-secondary",
-                  "content": "费用确认",
-                  "fontFamily": "Inter",
-                  "fontSize": 22,
-                  "fontWeight": "700"
+                  "content": "彦祖 · 2026.06.18 · 上海青浦",
+                  "lineHeight": 1.5,
+                  "textAlign": "center",
+                  "fontFamily": "Geist",
+                  "fontSize": 20,
+                  "fontWeight": "500"
                 },
                 {
-                  "type": "text",
-                  "id": "0Ll2L",
-                  "name": "amountTotalB",
-                  "fill": "$accent-coral",
-                  "content": "合计 ¥6,800.00",
-                  "fontFamily": "Inter",
-                  "fontSize": 48,
-                  "fontWeight": "700"
+                  "type": "ellipse",
+                  "id": "Uqwdw",
+                  "layoutPosition": "absolute",
+                  "x": 642,
+                  "y": 18,
+                  "name": "petalA",
+                  "fill": "#F2DED166",
+                  "width": 132,
+                  "height": 132
                 },
                 {
-                  "type": "text",
-                  "id": "IbB3N",
-                  "name": "amountDetailB",
-                  "fill": "$text-primary",
-                  "textGrowth": "fixed-width",
-                  "width": "fill_container",
-                  "content": "已付定金：¥2,000.00\n待付尾款：¥4,800.00",
-                  "lineHeight": 1.68,
-                  "fontFamily": "Inter",
-                  "fontSize": 24,
-                  "fontWeight": "600"
+                  "type": "ellipse",
+                  "id": "udtQf",
+                  "layoutPosition": "absolute",
+                  "x": 696,
+                  "y": 62,
+                  "name": "petalB",
+                  "fill": "#F8EEE488",
+                  "width": 92,
+                  "height": 92
                 }
               ]
             },
             {
               "type": "frame",
-              "id": "kSve7",
-              "name": "备注与联系区",
+              "id": "TW7wM",
+              "name": "法式双栏信息区",
               "width": "fill_container",
-              "fill": "#FFF8F5",
-              "cornerRadius": 28,
               "stroke": {
                 "align": "inside",
-                "thickness": 1,
-                "fill": "#EFE6E1"
+                "thickness": {
+                  "top": 1,
+                  "bottom": 1
+                },
+                "fill": "#E6D9CB"
               },
-              "layout": "vertical",
-              "gap": 10,
+              "gap": 40,
               "padding": [
-                24,
-                28
+                26,
+                0
               ],
               "children": [
                 {
-                  "type": "text",
-                  "id": "wxJHs",
-                  "name": "noteTextB",
-                  "fill": "$text-primary",
-                  "textGrowth": "fixed-width",
+                  "type": "frame",
+                  "id": "zgYZj",
                   "width": "fill_container",
-                  "content": "备注与联系\n联系电话：136 0000 2026\n请于婚礼前 3 日确认最终流程。如后续支付尾款、调整服务人员或更改服务内容，系统将重新生成新的确认函版本。",
-                  "lineHeight": 1.72,
-                  "fontFamily": "Inter",
-                  "fontSize": 22,
-                  "fontWeight": "600"
+                  "layout": "vertical",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "XKSdA",
+                      "fill": "#A98A69",
+                      "content": "CEREMONY DETAILS",
+                      "fontFamily": "Geist",
+                      "fontSize": 16,
+                      "fontWeight": "500",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "text",
+                      "id": "O29QR",
+                      "fill": "#342E29",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "新人：彦祖 ＆ 王女士\n婚礼日期：2026.06.18 周四\n举办地点：上海青浦草坪仪式区 · 宴会厅 A",
+                      "lineHeight": 1.72,
+                      "fontFamily": "Newsreader",
+                      "fontSize": 24,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "R3ZIt",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "8RO2S",
+                      "fill": "#A98A69",
+                      "content": "ATELIER SERVICE",
+                      "fontFamily": "Geist",
+                      "fontSize": 16,
+                      "fontWeight": "500",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "text",
+                      "id": "tjUQs",
+                      "fill": "#342E29",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "服务团队：主持人 苏棠\n婚礼管家：Mila\n服务范围：主持控场、流程统筹、宴会衔接确认",
+                      "lineHeight": 1.72,
+                      "fontFamily": "Newsreader",
+                      "fontSize": 24,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "5RIgx",
+              "name": "金额章区",
+              "width": "fill_container",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 180,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#FCF6EF",
+                    "position": 0
+                  },
+                  {
+                    "color": "#F8EDE2",
+                    "position": 1
+                  }
+                ]
+              },
+              "stroke": {
+                "align": "inside",
+                "thickness": 1,
+                "fill": "#D9C1A1"
+              },
+              "gap": 32,
+              "padding": [
+                28,
+                30
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "0JE42",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ggpyR",
+                      "fill": "#A98A69",
+                      "content": "FEE MEMO",
+                      "fontFamily": "Geist",
+                      "fontSize": 16,
+                      "fontWeight": "500",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "text",
+                      "id": "sQ03O",
+                      "fill": "#7C6146",
+                      "content": "¥6,800.00",
+                      "fontFamily": "Playfair Display",
+                      "fontSize": 58,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "zCeOa",
+                      "fill": "#6D6155",
+                      "content": "合同合计金额",
+                      "fontFamily": "Newsreader",
+                      "fontSize": 22,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "FCq6w",
+                  "width": 300,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "IcMAw",
+                      "fill": "#433932",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "已付定金：¥2,000.00\n待付尾款：¥4,800.00\n支付节点：婚礼前 3 日",
+                      "lineHeight": 1.65,
+                      "fontFamily": "Newsreader",
+                      "fontSize": 22,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "3o3ye",
+              "name": "礼仪说明区",
+              "width": "fill_container",
+              "stroke": {
+                "align": "inside",
+                "thickness": {
+                  "top": 1,
+                  "bottom": 1
+                },
+                "fill": "#E6D9CB"
+              },
+              "gap": 40,
+              "padding": [
+                24,
+                0
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "MceIB",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "lucTa",
+                      "fill": "#A98A69",
+                      "content": "ACKNOWLEDGEMENT",
+                      "fontFamily": "Geist",
+                      "fontSize": 16,
+                      "fontWeight": "500",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "text",
+                      "id": "2WWvI",
+                      "fill": "#433932",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "本确认函用于客户核对婚礼档期、服务范围与付款安排。\n如需调整，请于 24 小时内联系婚礼顾问，最终执行以正式合同及补充确认单为准。",
+                      "lineHeight": 1.72,
+                      "fontFamily": "Newsreader",
+                      "fontSize": 22,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "0ZDSZ",
+                  "width": 260,
+                  "layout": "vertical",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "7bc5N",
+                      "fill": "#A98A69",
+                      "content": "CONTACT ATELIER",
+                      "fontFamily": "Geist",
+                      "fontSize": 16,
+                      "fontWeight": "500",
+                      "letterSpacing": 2
+                    },
+                    {
+                      "type": "text",
+                      "id": "zpGPK",
+                      "fill": "#433932",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "联系电话：136 0000 2026\n婚礼顾问：Mila\n发送版本：当前确认函",
+                      "lineHeight": 1.7,
+                      "fontFamily": "Newsreader",
+                      "fontSize": 21,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "L7sz0",
+              "name": "签署线区",
+              "width": "fill_container",
+              "gap": 40,
+              "padding": [
+                6,
+                0,
+                0,
+                0
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "9sbn8",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "q1yqR",
+                      "width": "fill_container",
+                      "height": 1,
+                      "fill": "#D9C4A6"
+                    },
+                    {
+                      "type": "text",
+                      "id": "zjbpx",
+                      "fill": "#8B7762",
+                      "content": "客户签名",
+                      "fontFamily": "Newsreader",
+                      "fontSize": 19,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "C2rjr",
+                  "width": 260,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ex81m",
+                      "width": "fill_container",
+                      "height": 1,
+                      "fill": "#D9C4A6"
+                    },
+                    {
+                      "type": "text",
+                      "id": "IfFxJ",
+                      "fill": "#8B7762",
+                      "content": "婚礼顾问签署",
+                      "fontFamily": "Newsreader",
+                      "fontSize": 19,
+                      "fontWeight": "500"
+                    }
+                  ]
                 }
               ]
             },
@@ -19674,7 +19950,7 @@
               "name": "footerLineB",
               "width": "fill_container",
               "height": 1,
-              "fill": "#F1E4DD"
+              "fill": "#E6D9CB"
             },
             {
               "type": "frame",
@@ -19689,25 +19965,25 @@
                   "type": "text",
                   "id": "JaIZC",
                   "name": "footerBrandB",
-                  "fill": "$accent-gold",
-                  "content": "LIKE WEDDING · 婚礼服务中心",
-                  "fontFamily": "Inter",
-                  "fontSize": 20,
-                  "fontWeight": "700",
-                  "letterSpacing": 1.2
+                  "fill": "#B08C68",
+                  "content": "Maison Like Wedding",
+                  "fontFamily": "Playfair Display",
+                  "fontSize": 24,
+                  "fontWeight": "600",
+                  "letterSpacing": 0.6
                 },
                 {
                   "type": "text",
                   "id": "6luv0",
                   "name": "footerNoteB",
-                  "fill": "$text-secondary",
+                  "fill": "#87796B",
                   "textGrowth": "fixed-width",
-                  "width": 620,
-                  "content": "请保存此确认函图片，作为婚礼服务安排与付款进度的核对凭证。",
-                  "lineHeight": 1.5,
+                  "width": 640,
+                  "content": "Avec amour et promesse.\n请保存此确认函图片，作为婚礼服务安排与付款确认的纸本凭证。",
+                  "lineHeight": 1.6,
                   "textAlign": "center",
-                  "fontFamily": "Inter",
-                  "fontSize": 20,
+                  "fontFamily": "Newsreader",
+                  "fontSize": 18,
                   "fontWeight": "500"
                 }
               ]

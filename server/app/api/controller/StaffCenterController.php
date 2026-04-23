@@ -210,7 +210,7 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $params = (new StaffCenterValidate())->goCheck('workDetail');
+        $params = (new StaffCenterValidate())->get()->goCheck('workDetail');
         $result = StaffCenterLogic::workDetail($this->userId, (int) $params['id']);
         if (empty($result)) {
             return $this->fail(StaffCenterLogic::getError());
@@ -295,7 +295,7 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $params = (new StaffCenterValidate())->goCheck('packageDetail');
+        $params = (new StaffCenterValidate())->get()->goCheck('packageDetail');
         $result = StaffCenterLogic::packageDetail($this->userId, (int) $params['package_id']);
         if (empty($result) && StaffCenterLogic::getError()) {
             return $this->fail(StaffCenterLogic::getError());
@@ -500,7 +500,7 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $params = (new StaffCenterValidate())->goCheck('orderDetail');
+        $params = (new StaffCenterValidate())->get()->goCheck('orderDetail');
         $result = StaffCenterLogic::orderDetail($this->userId, (int) $params['id']);
         if (empty($result)) {
             return $this->fail(StaffCenterLogic::getError());
@@ -663,7 +663,7 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
-        $params = (new StaffCenterValidate())->goCheck('dynamicDetail');
+        $params = (new StaffCenterValidate())->get()->goCheck('dynamicDetail');
         $result = StaffCenterLogic::dynamicDetail($this->userId, (int) $params['id']);
         if (empty($result) && StaffCenterLogic::getError()) {
             return $this->fail(StaffCenterLogic::getError());

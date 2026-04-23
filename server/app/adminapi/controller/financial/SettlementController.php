@@ -33,7 +33,7 @@ class SettlementController extends BaseAdminController
      */
     public function detail()
     {
-        $params = (new SettlementValidate())->goCheck('detail');
+        $params = (new SettlementValidate())->get()->goCheck('detail');
         $result = SettlementLogic::detail($params['id']);
         return $this->success('获取成功', $result);
     }
@@ -43,7 +43,7 @@ class SettlementController extends BaseAdminController
      */
     public function settle()
     {
-        $params = (new SettlementValidate())->goCheck('settle');
+        $params = (new SettlementValidate())->post()->goCheck('settle');
         $result = SettlementLogic::settle($params['id']);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
@@ -56,7 +56,7 @@ class SettlementController extends BaseAdminController
      */
     public function batchSettle()
     {
-        $params = (new SettlementValidate())->goCheck('batchSettle');
+        $params = (new SettlementValidate())->post()->goCheck('batchSettle');
         $result = SettlementLogic::batchSettle($params['ids']);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
@@ -69,7 +69,7 @@ class SettlementController extends BaseAdminController
      */
     public function cancel()
     {
-        $params = (new SettlementValidate())->goCheck('detail');
+        $params = (new SettlementValidate())->post()->goCheck('detail');
         $result = SettlementLogic::cancel($params['id']);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
@@ -110,7 +110,7 @@ class SettlementController extends BaseAdminController
      */
     public function createBatch()
     {
-        $params = (new SettlementValidate())->goCheck('createBatch');
+        $params = (new SettlementValidate())->post()->goCheck('createBatch');
         $result = SettlementLogic::createBatch($params);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
@@ -123,7 +123,7 @@ class SettlementController extends BaseAdminController
      */
     public function auditBatch()
     {
-        $params = (new SettlementValidate())->goCheck('auditBatch');
+        $params = (new SettlementValidate())->post()->goCheck('auditBatch');
         $result = SettlementLogic::auditBatch($params, $this->adminId);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
@@ -136,7 +136,7 @@ class SettlementController extends BaseAdminController
      */
     public function executeBatch()
     {
-        $params = (new SettlementValidate())->goCheck('detail');
+        $params = (new SettlementValidate())->post()->goCheck('detail');
         $params['batch_id'] = $params['id'];
         $result = SettlementLogic::executeBatch($params, $this->adminId);
         if ($result === false) {
@@ -150,7 +150,7 @@ class SettlementController extends BaseAdminController
      */
     public function cancelBatch()
     {
-        $params = (new SettlementValidate())->goCheck('detail');
+        $params = (new SettlementValidate())->post()->goCheck('detail');
         $params['batch_id'] = $params['id'];
         $result = SettlementLogic::cancelBatch($params);
         if ($result === false) {
@@ -173,7 +173,7 @@ class SettlementController extends BaseAdminController
      */
     public function addConfig()
     {
-        $params = (new SettlementValidate())->goCheck('addConfig');
+        $params = (new SettlementValidate())->post()->goCheck('addConfig');
         $result = SettlementLogic::addConfig($params);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
@@ -186,7 +186,7 @@ class SettlementController extends BaseAdminController
      */
     public function editConfig()
     {
-        $params = (new SettlementValidate())->goCheck('editConfig');
+        $params = (new SettlementValidate())->post()->goCheck('editConfig');
         $result = SettlementLogic::editConfig($params);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
@@ -199,7 +199,7 @@ class SettlementController extends BaseAdminController
      */
     public function deleteConfig()
     {
-        $params = (new SettlementValidate())->goCheck('detail');
+        $params = (new SettlementValidate())->post()->goCheck('detail');
         $result = SettlementLogic::deleteConfig($params['id']);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());

@@ -203,11 +203,17 @@ class Waitlist extends BaseModel
      */
     private static function sendWaitlistSubscribeMessage(Waitlist $waitlist): void
     {
+        $statusText = trim((string) ($waitlist->remark ?? ''));
+        if ($statusText === '') {
+            $statusText = '档期已释放，请尽快预约';
+        }
+
         $data = [
             'staff_name' => $waitlist->staff->name ?? '服务人员',
             'schedule_date' => $waitlist->schedule_date ?? '',
             'package_name' => $waitlist->package->name ?? '',
-            'remark' => $waitlist->remark ?? '',
+            'status_text' => $statusText,
+            'remark' => $statusText,
             'waitlist_id' => (string)$waitlist->id,
         ];
 
@@ -271,11 +277,14 @@ class Waitlist extends BaseModel
      */
     private static function sendWaitlistExpiredSubscribeMessage(Waitlist $waitlist): void
     {
+        $statusText = '已超过预约日期，系统已自动取消';
+
         $data = [
             'staff_name' => $waitlist->staff->name ?? '服务人员',
             'schedule_date' => $waitlist->schedule_date ?? '',
             'package_name' => $waitlist->package->name ?? '',
-            'remark' => '已超过预约日期，系统已自动取消',
+            'status_text' => $statusText,
+            'remark' => $statusText,
             'waitlist_id' => (string)$waitlist->id,
         ];
 

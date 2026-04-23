@@ -57,6 +57,11 @@ class SubscribeLogic extends BaseLogic
     public static function addTemplate(array $params): bool
     {
         try {
+            if (!SubscribeMessageTemplate::isTemplateScene((string) ($params['scene'] ?? ''))) {
+                self::setError('当前场景不支持独立模板');
+                return false;
+            }
+
             // 检查模板ID是否重复
             if (SubscribeMessageTemplate::where('template_id', $params['template_id'])->find()) {
                 self::setError('模板ID已存在');
@@ -92,34 +97,47 @@ class SubscribeLogic extends BaseLogic
     public static function editTemplate(array $params): bool
     {
         try {
-            $template = SubscribeMessageTemplate::find($params['id']);
+            $templateId = (int) ($params['id'] ?? 0);
+            $template = SubscribeMessageTemplate::find($templateId);
             if (!$template) {
                 self::setError('模板不存在');
                 return false;
             }
 
+            if (!SubscribeMessageTemplate::isTemplateScene((string) ($params['scene'] ?? ''))) {
+                self::setError('当前场景不支持独立模板');
+                return false;
+            }
+
             // 检查模板ID是否被其他记录使用
             $exists = SubscribeMessageTemplate::where('template_id', $params['template_id'])
-                ->where('id', '<>', $params['id'])
+                ->where('id', '<>', $templateId)
                 ->find();
             if ($exists) {
                 self::setError('模板ID已被使用');
                 return false;
             }
 
-            SubscribeMessageTemplate::updateTemplate($params['id'], [
+            $updateData = [
                 'template_id' => $params['template_id'],
                 'name' => $params['name'],
                 'title' => $params['title'] ?? '',
                 'scene' => $params['scene'],
-                'content' => is_array($params['content']) ? json_encode($params['content'], JSON_UNESCAPED_UNICODE) : $params['content'],
                 'example' => $params['example'] ?? '',
                 'keywords' => $params['keywords'] ?? '',
                 'category_id' => $params['category_id'] ?? '',
-                'status' => $params['status'] ?? 1,
-                'sort' => $params['sort'] ?? 0,
+                'status' => (int) ($params['status'] ?? 1),
+                'sort' => (int) ($params['sort'] ?? 0),
                 'remark' => $params['remark'] ?? '',
-            ]);
+            ];
+
+            if (array_key_exists('content', $params)) {
+                $updateData['content'] = is_array($params['content'])
+                    ? json_encode($params['content'], JSON_UNESCAPED_UNICODE)
+                    : $params['content'];
+            }
+
+            SubscribeMessageTemplate::updateTemplate($templateId, $updateData);
 
             return true;
         } catch (\Exception $e) {
@@ -196,12 +214,15 @@ class SubscribeLogic extends BaseLogic
         }
 
         $data = $scene->toArray();
-        
+        $template = null;
+
         // 获取关联模板信息
         if (!empty($data['template_id'])) {
             $template = SubscribeMessageTemplate::where('template_id', $data['template_id'])->find();
             $data['template_name'] = $template ? $template->name : '模板已删除';
         }
+
+        $data['available_params'] = SubscribeMessageTemplate::getSceneAvailableParams((string) ($data['scene'] ?? ''));
         $data['config_status'] = SubscribeMessageTemplate::getConfigStatus($data['template_id'] ?? '');
         $data['config_status_desc'] = SubscribeMessageTemplate::getConfigStatusDesc($data['template_id'] ?? '');
 
@@ -216,13 +237,14 @@ class SubscribeLogic extends BaseLogic
     public static function editScene(array $params): bool
     {
         try {
-            $scene = SubscribeMessageScene::find($params['id']);
+            $sceneId = (int) ($params['id'] ?? 0);
+            $scene = SubscribeMessageScene::find($sceneId);
             if (!$scene) {
                 self::setError('场景配置不存在');
                 return false;
             }
 
-            SubscribeMessageScene::updateScene($params['id'], [
+            SubscribeMessageScene::updateScene($sceneId, [
                 'name' => $params['name'] ?? $scene->name,
                 'description' => $params['description'] ?? '',
                 'template_id' => $params['template_id'] ?? '',
@@ -231,10 +253,10 @@ class SubscribeLogic extends BaseLogic
                     ? json_encode($params['data_mapping'], JSON_UNESCAPED_UNICODE) 
                     : ($params['data_mapping'] ?? ''),
                 'page_path' => $params['page_path'] ?? '',
-                'is_auto' => $params['is_auto'] ?? 1,
-                'delay_seconds' => $params['delay_seconds'] ?? 0,
-                'status' => $params['status'] ?? 1,
-                'sort' => $params['sort'] ?? 0,
+                'is_auto' => (int) ($params['is_auto'] ?? 1),
+                'delay_seconds' => (int) ($params['delay_seconds'] ?? 0),
+                'status' => (int) ($params['status'] ?? 1),
+                'sort' => (int) ($params['sort'] ?? 0),
             ]);
 
             return true;
@@ -281,7 +303,7 @@ class SubscribeLogic extends BaseLogic
                 return false;
             }
 
-            if ((string) $template->scene !== (string) $scene->scene) {
+            if (!SubscribeMessageTemplate::canTemplateBindToScene((string) $template->scene, (string) $scene->scene)) {
                 self::setError('模板场景与订阅场景不一致，不能绑定');
                 return false;
             }
@@ -310,6 +332,9 @@ class SubscribeLogic extends BaseLogic
         $data = $log->toArray();
         $data['send_status_desc'] = $log->send_status_desc;
         $data['scene_desc'] = SubscribeMessageTemplate::getSceneDesc($data['scene'] ?? '');
+        $data['create_time'] = !empty($data['create_time']) ? date('Y-m-d H:i:s', (int) $data['create_time']) : '';
+        $data['send_time'] = !empty($data['send_time']) ? date('Y-m-d H:i:s', (int) $data['send_time']) : '';
+        $data['planned_send_time'] = !empty($data['planned_send_time']) ? date('Y-m-d H:i:s', (int) $data['planned_send_time']) : '';
 
         return $data;
     }
@@ -333,17 +358,14 @@ class SubscribeLogic extends BaseLogic
                 return false;
             }
 
-            // 重新发送
-            $result = SubscribeMessageService::send(
-                $log->user_id,
-                $log->scene,
-                $log->content,
-                $log->business_type,
-                $log->business_id,
-                $log->page
-            );
+            SubscribeMessageLog::markForRetry($id);
+            $result = SubscribeMessageService::dispatchLog($id, true);
+            if (!$result['success']) {
+                self::setError($result['msg'] ?? '重试失败');
+                return false;
+            }
 
-            return $result['success'];
+            return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());
             return false;
@@ -365,8 +387,12 @@ class SubscribeLogic extends BaseLogic
         $stats = SubscribeMessageLog::getSendStatistics($startDate, $endDate);
 
         // 额外统计
-        $stats['template_count'] = SubscribeMessageTemplate::where('status', 1)->count();
-        $stats['scene_count'] = SubscribeMessageScene::where('status', 1)->count();
+        $stats['template_count'] = SubscribeMessageTemplate::where('status', 1)
+            ->whereIn('scene', SubscribeMessageTemplate::getTemplateSceneValues())
+            ->count();
+        $stats['scene_count'] = SubscribeMessageScene::where('status', 1)
+            ->whereIn('scene', SubscribeMessageTemplate::getActiveSceneValues())
+            ->count();
         $stats['user_subscribe_count'] = UserSubscribe::whereIn('status', [1, 2])->count();
 
         return $stats;
@@ -417,7 +443,8 @@ class SubscribeLogic extends BaseLogic
             $params['data'] ?? [],
             'test',
             0,
-            $params['page'] ?? ''
+            $params['page'] ?? '',
+            [SubscribeMessageService::OPTION_FORCE_DISPATCH => true]
         );
     }
 }

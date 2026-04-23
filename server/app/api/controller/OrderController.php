@@ -234,7 +234,7 @@ class OrderController extends BaseApiController
     {
         $params = (new OrderValidate())->goCheck('confirmLetterCurrent');
         $result = OrderLogic::getConfirmLetterCurrent((int) $params['id'], $this->userId);
-        if ($result === null && OrderLogic::getError()) {
+        if ($result === null && OrderLogic::hasError()) {
             return $this->fail(OrderLogic::getError());
         }
         return $this->data($result ?? []);
@@ -252,7 +252,10 @@ class OrderController extends BaseApiController
             (int) ($params['allow_fallback'] ?? 0) === 1
         );
         if ($result === null) {
-            return $this->fail(OrderLogic::getError() ?: '确认函不存在或当前不可查看');
+            if (OrderLogic::hasError()) {
+                return $this->fail(OrderLogic::getError());
+            }
+            return $this->fail('确认函不存在或当前不可查看');
         }
         return $this->data($result);
     }

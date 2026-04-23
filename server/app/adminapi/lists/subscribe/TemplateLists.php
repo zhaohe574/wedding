@@ -37,6 +37,7 @@ class TemplateLists extends BaseAdminDataLists implements ListsSearchInterface
     public function lists(): array
     {
         $list = SubscribeMessageTemplate::where($this->searchWhere)
+            ->whereIn('scene', SubscribeMessageTemplate::getTemplateSceneValues())
             ->field('id, template_id, name, title, scene, status, sort, remark, create_time, update_time')
             ->order('sort', 'desc')
             ->order('id', 'desc')
@@ -65,6 +66,8 @@ class TemplateLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function count(): int
     {
-        return SubscribeMessageTemplate::where($this->searchWhere)->count();
+        return SubscribeMessageTemplate::where($this->searchWhere)
+            ->whereIn('scene', SubscribeMessageTemplate::getTemplateSceneValues())
+            ->count();
     }
 }
