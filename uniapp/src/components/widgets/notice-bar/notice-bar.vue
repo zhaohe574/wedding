@@ -6,21 +6,21 @@
             <view
                 class="notice-h5"
                 :style="{
-                    backgroundColor: content.bg_color || '#FFF7ED',
-                    color: content.text_color || '#EA580C'
+                    backgroundColor: content.bg_color || '#F8F7F2',
+                    color: content.text_color || '#9F7A2E'
                 }"
             >
                 <tn-icon
                     class="notice-h5__icon"
                     name="notice-fill"
-                    :color="content.text_color || '#EA580C'"
+                    :color="content.text_color || '#9F7A2E'"
                     size="28"
                 />
                 <tn-notice-bar
                     class="notice-h5__bar"
                     :key="`${noticeKey}-horizontal-h5`"
                     :data="horizontalList"
-                    :text-color="content.text_color || '#EA580C'"
+                    :text-color="content.text_color || '#9F7A2E'"
                     :bg-color="'transparent'"
                     :speed="content.scroll_speed || 50"
                     direction="horizontal"
@@ -33,13 +33,13 @@
             <tn-notice-bar
                 :key="noticeKey"
                 :data="horizontalList"
-                :text-color="content.text_color || '#EA580C'"
-                :bg-color="content.bg_color || '#FFF7ED'"
+                :text-color="content.text_color || '#9F7A2E'"
+                :bg-color="content.bg_color || '#F8F7F2'"
                 :speed="content.scroll_speed || 50"
                 direction="horizontal"
                 :loop="true"
                 left-icon="notice-fill"
-                :left-icon-color="content.text_color || '#EA580C'"
+                :left-icon-color="content.text_color || '#9F7A2E'"
                 @click="handleClick(displayList[0])"
             />
             <!-- #endif -->
@@ -51,21 +51,21 @@
             <view
                 class="notice-h5"
                 :style="{
-                    backgroundColor: content.bg_color || '#FFF7ED',
-                    color: content.text_color || '#EA580C'
+                    backgroundColor: content.bg_color || '#F8F7F2',
+                    color: content.text_color || '#9F7A2E'
                 }"
             >
                 <tn-icon
                     class="notice-h5__icon"
                     name="notice-fill"
-                    :color="content.text_color || '#EA580C'"
+                    :color="content.text_color || '#9F7A2E'"
                     size="28"
                 />
                 <tn-notice-bar
                     class="notice-h5__bar"
                     :key="`${noticeKey}-vertical-h5`"
                     :data="verticalList"
-                    :text-color="content.text_color || '#EA580C'"
+                    :text-color="content.text_color || '#9F7A2E'"
                     :bg-color="'transparent'"
                     direction="vertical"
                     :speed="3000"
@@ -77,12 +77,12 @@
             <tn-notice-bar
                 :key="noticeKey"
                 :data="verticalList"
-                :text-color="content.text_color || '#EA580C'"
-                :bg-color="content.bg_color || '#FFF7ED'"
+                :text-color="content.text_color || '#9F7A2E'"
+                :bg-color="content.bg_color || '#F8F7F2'"
                 direction="vertical"
                 :speed="3000"
                 left-icon="notice-fill"
-                :left-icon-color="content.text_color || '#EA580C'"
+                :left-icon-color="content.text_color || '#9F7A2E'"
                 @click="handleVerticalClick"
             />
             <!-- #endif -->
@@ -98,15 +98,15 @@
             >
                 <tn-notice-bar
                     :data="[formatNoticeText(item)]"
-                    :text-color="content.text_color || '#EA580C'"
-                    :bg-color="content.bg_color || '#FFF7ED'"
+                    :text-color="content.text_color || '#9F7A2E'"
+                    :bg-color="content.bg_color || '#F8F7F2'"
                     direction="horizontal"
                     :loop="false"
                     :auto-play="false"
                     left-icon="notice-fill"
-                    :left-icon-color="content.text_color || '#EA580C'"
+                    :left-icon-color="content.text_color || '#9F7A2E'"
                     right-icon="right"
-                    :right-icon-color="content.text_color || '#EA580C'"
+                    :right-icon-color="content.text_color || '#9F7A2E'"
                 />
             </view>
         </view>

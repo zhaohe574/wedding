@@ -49,13 +49,13 @@
                             <tn-icon
                                 name="sort"
                                 size="20"
-                                :color="sortIsActive ? '#E85A4F' : '#6A5B52'"
+                                :color="sortIsActive ? '#0B0B0B' : '#5F5A50'"
                             />
                             <text>{{ currentSortLabel }}</text>
                             <tn-icon
                                 name="arrow-down"
                                 size="16"
-                                :color="sortIsActive ? '#E85A4F' : '#6A5B52'"
+                                :color="sortIsActive ? '#0B0B0B' : '#5F5A50'"
                             />
                         </view>
                     </view>
@@ -63,13 +63,13 @@
 
                 <view class="dynamic-page__content">
                     <view v-if="loading && dynamics.length === 0" class="dynamic-page__loading">
-                        <tn-loading size="52" mode="flower" color="#E85A4F" />
+                        <tn-loading size="52" mode="flower" color="#0B0B0B" />
                         <text class="dynamic-page__loading-text">加载中...</text>
                     </view>
 
                     <view v-else-if="dynamics.length === 0" class="dynamic-page__empty">
                         <view class="dynamic-page__empty-icon">
-                            <tn-icon name="inbox" size="96" color="#D9CDC7" />
+                            <tn-icon name="inbox" size="96" color="#D8D3C7" />
                         </view>
                         <text class="dynamic-page__empty-title">暂无内容</text>
                         <text class="dynamic-page__empty-desc">换个筛选试试</text>
@@ -114,7 +114,7 @@
             <BaseOverlayMask
                 :show="showSortPicker"
                 :z-index="sortPopupMaskZIndex"
-                :background="$theme.maskColor || 'rgba(8, 10, 16, 0.58)'"
+                :background="$theme.maskColor || 'rgba(11, 11, 11, 0.58)'"
                 @close="showSortPicker = false"
             />
 
@@ -130,7 +130,7 @@
                     <view class="dynamic-page__picker-head">
                         <text class="dynamic-page__picker-title">排序方式</text>
                         <view class="dynamic-page__picker-close" @click="showSortPicker = false">
-                            <tn-icon name="close" size="30" color="#978B83" />
+                            <tn-icon name="close" size="30" color="#9A9388" />
                         </view>
                     </view>
 
@@ -366,12 +366,12 @@ onShareAppMessage(() => ({
     --dynamic-page-panel-radius: 44rpx;
     --dynamic-page-panel-border-width: 2rpx;
     --dynamic-page-shell-bg: rgba(255, 255, 255, 0.78);
-    --dynamic-page-shell-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.1);
+    --dynamic-page-shell-shadow: 0 18rpx 38rpx rgba(17, 17, 17, 0.1);
 
     position: relative;
     min-height: 100%;
-    background: radial-gradient(circle at top right, rgba(232, 90, 79, 0.12) 0, transparent 34%),
-        linear-gradient(180deg, rgba(255, 248, 245, 0.92) 0%, rgba(252, 251, 249, 0) 30%),
+    background: radial-gradient(circle at top right, rgba(11, 11, 11, 0.12) 0, transparent 34%),
+        linear-gradient(180deg, rgba(248, 247, 242, 0.92) 0%, rgba(248, 247, 242, 0) 30%),
         $dynamic-bg;
 
     &::before {
@@ -382,7 +382,7 @@ onShareAppMessage(() => ({
         width: 280rpx;
         height: 280rpx;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(232, 90, 79, 0.1) 0, transparent 72%);
+        background: radial-gradient(circle, rgba(11, 11, 11, 0.1) 0, transparent 72%);
         pointer-events: none;
         opacity: 0.88;
     }
@@ -401,9 +401,9 @@ onShareAppMessage(() => ({
         position: relative;
         overflow: hidden;
         border-radius: var(--dynamic-page-panel-radius, 44rpx);
-        border: var(--dynamic-page-panel-border-width, 2rpx) solid rgba(239, 230, 225, 0.9);
+        border: var(--dynamic-page-panel-border-width, 2rpx) solid rgba(231, 226, 214, 0.9);
         background: var(--dynamic-page-shell-bg, rgba(255, 255, 255, 0.78));
-        box-shadow: var(--dynamic-page-shell-shadow, 0 18rpx 38rpx rgba(214, 185, 167, 0.1));
+        box-shadow: var(--dynamic-page-shell-shadow, 0 18rpx 38rpx rgba(17, 17, 17, 0.1));
         backdrop-filter: blur(18rpx);
         -webkit-backdrop-filter: blur(18rpx);
     }
@@ -454,7 +454,7 @@ onShareAppMessage(() => ({
     &__sort-chip {
         @include dynamic-pill(rgba(255, 255, 255, 0.68), $dynamic-text-secondary);
         min-height: 68rpx;
-        border-color: rgba(239, 230, 225, 0.92);
+        border-color: rgba(231, 226, 214, 0.92);
         background: rgba(255, 255, 255, 0.66);
         box-shadow: none;
         transition: all 0.2s ease;
@@ -473,7 +473,7 @@ onShareAppMessage(() => ({
             background: $dynamic-accent;
             border-color: transparent;
             color: #ffffff;
-            box-shadow: 0 12rpx 22rpx rgba(232, 90, 79, 0.16);
+            box-shadow: 0 12rpx 22rpx rgba(11, 11, 11, 0.16);
         }
     }
 
@@ -491,8 +491,8 @@ onShareAppMessage(() => ({
 
         &.is-active {
             color: $dynamic-accent;
-            border-color: rgba(232, 90, 79, 0.12);
-            background: rgba(255, 241, 238, 0.92);
+            border-color: rgba(11, 11, 11, 0.12);
+            background: rgba(247, 240, 223, 0.92);
         }
     }
 
@@ -510,8 +510,8 @@ onShareAppMessage(() => ({
 
         &.is-active {
             color: $dynamic-accent;
-            border-color: rgba(232, 90, 79, 0.14);
-            background: rgba(255, 241, 238, 0.92);
+            border-color: rgba(11, 11, 11, 0.14);
+            background: rgba(247, 240, 223, 0.92);
         }
     }
 
@@ -576,8 +576,8 @@ onShareAppMessage(() => ({
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: rgba(255, 241, 238, 0.96);
-        border: 2rpx solid rgba(232, 90, 79, 0.12);
+        background: rgba(247, 240, 223, 0.96);
+        border: 2rpx solid rgba(11, 11, 11, 0.12);
         color: $dynamic-accent;
         font-size: 26rpx;
         font-weight: 700;
@@ -595,7 +595,7 @@ onShareAppMessage(() => ({
         gap: 24rpx;
         --dynamic-editorial-card-radius: 42rpx;
         --dynamic-editorial-card-bg: rgba(255, 255, 255, 0.9);
-        --dynamic-editorial-card-shadow: 0 26rpx 52rpx rgba(214, 185, 167, 0.12);
+        --dynamic-editorial-card-shadow: 0 26rpx 52rpx rgba(17, 17, 17, 0.12);
         --dynamic-editorial-card-blur: 18rpx;
         --dynamic-editorial-head-padding: 24rpx 24rpx 0;
         --dynamic-editorial-author-gap: 14rpx;
@@ -636,10 +636,10 @@ onShareAppMessage(() => ({
         width: 100vw;
         max-width: 100vw;
         padding: 28rpx 28rpx 36rpx;
-        background: rgba(252, 251, 249, 0.98);
+        background: rgba(248, 247, 242, 0.98);
         border-radius: 44rpx 44rpx 0 0;
-        border-top: 1rpx solid rgba(232, 222, 216, 0.76);
-        box-shadow: 0 -18rpx 36rpx rgba(214, 185, 167, 0.18);
+        border-top: 1rpx solid rgba(231, 226, 214, 0.76);
+        box-shadow: 0 -18rpx 36rpx rgba(17, 17, 17, 0.18);
         backdrop-filter: blur(16rpx);
         -webkit-backdrop-filter: blur(16rpx);
     }
@@ -665,7 +665,7 @@ onShareAppMessage(() => ({
         justify-content: center;
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.9);
-        border: 1rpx solid rgba(232, 222, 216, 0.7);
+        border: 1rpx solid rgba(231, 226, 214, 0.7);
     }
 
     &__picker-grid {
@@ -690,7 +690,7 @@ onShareAppMessage(() => ({
             color: #ffffff;
             border-color: transparent;
             background: $dynamic-accent;
-            box-shadow: 0 14rpx 24rpx rgba(232, 90, 79, 0.18);
+            box-shadow: 0 14rpx 24rpx rgba(11, 11, 11, 0.18);
         }
     }
 }

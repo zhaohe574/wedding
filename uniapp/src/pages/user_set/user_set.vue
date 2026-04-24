@@ -18,7 +18,7 @@
                             <text class="user-profile-card__meta">账号：{{ userAccountText }}</text>
                         </view>
                         <view class="user-profile-card__arrow">
-                            <tn-icon name="right" :size="32" color="#B4ACA8" />
+                            <tn-icon name="right" :size="32" color="#9A9388" />
                         </view>
                     </view>
                 </BaseCard>
@@ -48,7 +48,7 @@
                             <StatusBadge :tone="userInfo.has_password ? 'success' : 'warning'">
                                 {{ userInfo.has_password ? '已设置' : '未设置' }}
                             </StatusBadge>
-                            <tn-icon name="right" :size="28" color="#C8C9CC" />
+                            <tn-icon name="right" :size="28" color="#D8D3C7" />
                         </view>
                     </view>
 
@@ -74,7 +74,7 @@
                                 v-if="!userInfo.is_auth"
                                 name="right"
                                 :size="28"
-                                color="#C8C9CC"
+                                color="#D8D3C7"
                             />
                         </view>
                     </view>
@@ -107,7 +107,7 @@
                                 </view>
                             </view>
                             <view class="settings-item__tail">
-                                <tn-icon name="right" :size="28" color="#C8C9CC" />
+                                <tn-icon name="right" :size="28" color="#D8D3C7" />
                             </view>
                         </view>
                     </navigator>
@@ -130,7 +130,7 @@
                                 </view>
                             </view>
                             <view class="settings-item__tail">
-                                <tn-icon name="right" :size="28" color="#C8C9CC" />
+                                <tn-icon name="right" :size="28" color="#D8D3C7" />
                             </view>
                         </view>
                     </navigator>
@@ -151,7 +151,7 @@
                             </view>
                             <view class="settings-item__tail settings-item__tail--meta">
                                 <text class="settings-item__meta-text">{{ versionText }}</text>
-                                <tn-icon name="right" :size="28" color="#C8C9CC" />
+                                <tn-icon name="right" :size="28" color="#D8D3C7" />
                             </view>
                         </view>
                     </navigator>
@@ -177,7 +177,7 @@
                     <view class="settings-popup__head">
                         <text class="settings-popup__title">密码管理</text>
                         <view class="settings-popup__close" @click="show = false">
-                            <tn-icon name="close" :size="30" color="#7F7B78" />
+                            <tn-icon name="close" :size="30" color="#5F5A50" />
                         </view>
                     </view>
                     <view class="settings-popup__list">
@@ -194,7 +194,7 @@
                                     >适用于当前账号仍记得原密码</text
                                 >
                             </view>
-                            <tn-icon name="right" :size="28" color="#C8C9CC" />
+                            <tn-icon name="right" :size="28" color="#D8D3C7" />
                         </view>
                         <view class="settings-popup__item" @click="handlePasswordAction(1)">
                             <view
@@ -209,7 +209,7 @@
                                     >通过验证流程重新设置密码</text
                                 >
                             </view>
-                            <tn-icon name="right" :size="28" color="#C8C9CC" />
+                            <tn-icon name="right" :size="28" color="#D8D3C7" />
                         </view>
                     </view>
                 </view>
@@ -291,9 +291,9 @@ const getIconBg = (type: string) => {
         secondary: $theme.secondaryColor,
         cta: $theme.ctaColor,
         accent: $theme.accentColor,
-        info: '#909399',
-        warning: '#C98524',
-        success: '#2F7D58'
+        info: '#9A9388',
+        warning: '#9F7A2E',
+        success: '#4D4A42'
     }
     return `linear-gradient(135deg, ${colors[type]} 0%, ${colors[type]} 100%)`
 }
@@ -416,14 +416,14 @@ onLoad(async (options) => {
     font-size: 36rpx;
     line-height: 1.35;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .user-profile-card__meta {
     margin-top: 10rpx;
     font-size: 24rpx;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .user-profile-card__arrow {
@@ -445,13 +445,13 @@ onLoad(async (options) => {
     font-size: 30rpx;
     line-height: 1.3;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .settings-section__meta {
     font-size: 22rpx;
     line-height: 1.4;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .settings-list {
@@ -462,7 +462,7 @@ onLoad(async (options) => {
     justify-content: space-between;
     gap: 16rpx;
     padding: 26rpx 0;
-    border-bottom: 1rpx solid var(--wm-color-border, #efe6e1);
+    border-bottom: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .settings-item--last,
@@ -485,7 +485,7 @@ onLoad(async (options) => {
     justify-content: center;
     flex-shrink: 0;
     border-radius: 24rpx;
-    box-shadow: 0 10rpx 22rpx rgba(232, 90, 79, 0.16);
+    box-shadow: 0 10rpx 22rpx rgba(11, 11, 11, 0.16);
 }
 
 .settings-item__icon {
@@ -498,7 +498,7 @@ onLoad(async (options) => {
     font-size: 28rpx;
     line-height: 1.35;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .settings-item__desc,
@@ -506,7 +506,7 @@ onLoad(async (options) => {
     margin-top: 6rpx;
     font-size: 22rpx;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .settings-item__tail {
@@ -521,7 +521,7 @@ onLoad(async (options) => {
 .settings-item__meta-text {
     font-size: 24rpx;
     line-height: 1.3;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .user-set-page__logout {
@@ -543,7 +543,7 @@ onLoad(async (options) => {
     font-size: 32rpx;
     line-height: 1.3;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .settings-popup__close {
@@ -553,7 +553,7 @@ onLoad(async (options) => {
     width: 64rpx;
     height: 64rpx;
     border-radius: 999rpx;
-    background: var(--wm-color-bg-soft, #fff1ee);
+    background: var(--wm-color-bg-soft, #f3f2ee);
 }
 
 .settings-popup__list {
@@ -566,7 +566,7 @@ onLoad(async (options) => {
 }
 
 .settings-popup__item + .settings-popup__item {
-    border-top: 1rpx solid var(--wm-color-border, #efe6e1);
+    border-top: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .settings-popup__item-icon {
@@ -592,7 +592,7 @@ onLoad(async (options) => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 14rpx 28rpx rgba(201, 133, 36, 0.18);
+    box-shadow: 0 14rpx 28rpx rgba(159, 122, 46, 0.18);
 }
 
 .logout-popup__title {
@@ -600,14 +600,14 @@ onLoad(async (options) => {
     font-size: 36rpx;
     line-height: 1.3;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .logout-popup__desc {
     margin-top: 18rpx;
     font-size: 26rpx;
     line-height: 1.65;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     text-align: center;
 }
 

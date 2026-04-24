@@ -157,9 +157,9 @@ onUnmounted(() => {
         var(--wm-user-countdown-padding-right, 36rpx) var(--wm-user-countdown-padding-bottom, 40rpx)
         var(--wm-user-countdown-padding-left, 36rpx);
     border-radius: var(--wm-user-countdown-radius, 56rpx);
-    border: 2rpx solid rgba(244, 199, 191, 0.72);
-    background: rgba(255, 248, 245, 0.86);
-    box-shadow: 0 16rpx 34rpx rgba(214, 185, 167, 0.1);
+    border: 2rpx solid rgba(216, 194, 138, 0.72);
+    background: rgba(248, 247, 242, 0.86);
+    box-shadow: 0 16rpx 34rpx rgba(17, 17, 17, 0.1);
     backdrop-filter: blur(24rpx);
     -webkit-backdrop-filter: blur(24rpx);
 }
@@ -178,7 +178,7 @@ onUnmounted(() => {
     font-size: 24rpx;
     line-height: 1.35;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .profile-countdown-date {
@@ -186,7 +186,7 @@ onUnmounted(() => {
     font-size: 22rpx;
     line-height: 1.3;
     font-weight: 600;
-    color: var(--wm-text-tertiary, #9d948f);
+    color: var(--wm-text-tertiary, #9A9388);
 }
 
 .profile-countdown-value {
@@ -194,7 +194,7 @@ onUnmounted(() => {
     font-size: 66rpx;
     line-height: 1;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .profile-countdown-note {
@@ -203,6 +203,6 @@ onUnmounted(() => {
     font-size: 22rpx;
     line-height: 1.45;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 </style>

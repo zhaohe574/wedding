@@ -15,7 +15,7 @@
                     <text v-if="subtitle" class="aftersale-sheet__subtitle">{{ subtitle }}</text>
                 </view>
                 <view class="aftersale-sheet__close" @click="emit('update:modelValue', false)">
-                    <tn-icon name="close" size="28" color="#978B83" />
+                    <tn-icon name="close" size="28" color="#9A9388" />
                 </view>
             </view>
 
@@ -114,7 +114,7 @@ const handleCancel = () => {
     font-size: 34rpx;
     font-weight: 700;
     line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-sheet__subtitle {
@@ -122,7 +122,7 @@ const handleCancel = () => {
     margin-top: 8rpx;
     font-size: 24rpx;
     line-height: 1.55;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .aftersale-sheet__close {

@@ -8,7 +8,7 @@
             <view class="content">
                 使用前请先查看
 
-                <text class="text-[#243245]" hover-class="hover" @click="openContract">
+                <text class="text-[#111111]" hover-class="hover" @click="openContract">
                     {{ name }}
                 </text>
 
@@ -126,7 +126,7 @@ const agreePrivacy = () => {
 .modal-box .title {
     text-align: center;
 
-    color: #333;
+    color: #111111;
 
     font-weight: bold;
 
@@ -138,7 +138,7 @@ const agreePrivacy = () => {
 
     font-size: 28rpx;
 
-    color: #666;
+    color: #5F5A50;
 
     margin-top: 20rpx;
 
@@ -190,8 +190,8 @@ const agreePrivacy = () => {
 }
 
 .modal-box .disagree {
-    color: #0f0f0f;
+    color: #111111;
 
-    background: #f5f5f5;
+    background: #F8F7F2;
 }
 </style>

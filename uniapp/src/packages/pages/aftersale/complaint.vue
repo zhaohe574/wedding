@@ -153,7 +153,7 @@ onLoad((options: any) => {
 .aftersale-record-card__title,
 .aftersale-record-card__meta {
     display: block;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-record-card__title {

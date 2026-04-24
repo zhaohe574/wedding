@@ -111,18 +111,18 @@ export default {
         padding: 0 var(--wm-space-card-padding, 30rpx);
         border-radius: var(--wm-radius-control, 34rpx);
         font-size: 28rpx;
-        color: var(--wm-text-primary, #1e2432);
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        color: var(--wm-text-primary, #111111);
+        border: 1rpx solid var(--wm-color-border, #e7e2d6);
         transition: all var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 
         &::placeholder {
-            color: var(--wm-text-tertiary, #b4aca8);
+            color: var(--wm-text-tertiary, #9a9388);
         }
     }
 
     &--filled {
         :deep(.tn-input) {
-            background: var(--wm-color-bg-soft, #fff7f4);
+            background: var(--wm-color-bg-soft, #f8f7f2);
         }
     }
 
@@ -135,15 +135,15 @@ export default {
     &--focused {
         :deep(.tn-input) {
             background: #ffffff;
-            border-color: var(--wm-color-border-strong, #f4c7bf);
-            box-shadow: 0 0 0 11rpx rgba(232, 90, 79, 0.12);
+            border-color: var(--wm-color-border-strong, #d8c28a);
+            box-shadow: 0 0 0 11rpx rgba(200, 164, 93, 0.14);
         }
     }
 
     &--error {
         :deep(.tn-input) {
-            border-color: rgba(180, 74, 58, 0.3);
-            box-shadow: 0 0 0 11rpx rgba(180, 74, 58, 0.08);
+            border-color: rgba(90, 68, 51, 0.3);
+            box-shadow: 0 0 0 11rpx rgba(90, 68, 51, 0.08);
         }
     }
 

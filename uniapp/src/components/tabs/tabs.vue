@@ -118,7 +118,7 @@ const props = withDefaults(
         fontSize: 28,
         duration: 0.3,
         activeColor: 'var(--color-primary)',
-        inactiveColor: '#333',
+        inactiveColor: '#111111',
         barWidth: 40,
         barHeight: 4,
         gutter: 30,

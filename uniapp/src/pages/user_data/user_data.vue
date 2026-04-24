@@ -72,7 +72,7 @@
                         <text class="field-label">性别</text>
                         <view class="field-click-value">
                             <text>{{ getSexText(form.sex) }}</text>
-                            <tn-icon name="right" size="26" color="#B6B0AB" />
+                            <tn-icon name="right" size="26" color="#9A9388" />
                         </view>
                     </view>
                 </view>
@@ -596,10 +596,10 @@ onUnload(() => {
 
 .sync-card {
     border-radius: var(--wm-radius-card, 45rpx);
-    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
-    background: linear-gradient(135deg, #fff5f1 0%, #fde7e1 100%);
+    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
+    background: linear-gradient(135deg, #ffffff 0%, #f7f0df 100%);
     padding: var(--wm-space-card-padding, 30rpx);
-    box-shadow: var(--wm-shadow-soft, 0 16rpx 34rpx rgba(214, 185, 167, 0.14));
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 34rpx rgba(17, 17, 17, 0.14));
 }
 
 .sync-tag {
@@ -607,8 +607,8 @@ onUnload(() => {
     display: inline-flex;
     border-radius: 999rpx;
     padding: 8rpx 14rpx;
-    background: var(--wm-color-bg-soft, #fff1ee);
-    color: var(--wm-color-primary, #e85a4f);
+    background: var(--wm-color-bg-soft, #f3f2ee);
+    color: var(--wm-color-primary, #0b0b0b);
     font-size: 20rpx;
     font-weight: 700;
 }
@@ -626,7 +626,7 @@ onUnload(() => {
     border-radius: 999rpx;
     overflow: hidden;
     flex-shrink: 0;
-    background: var(--wm-color-primary-soft, #fff1ee);
+    background: var(--wm-color-primary-soft, #f3f2ee);
 }
 
 .sync-profile__main {
@@ -641,7 +641,7 @@ onUnload(() => {
     font-size: 36rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -650,7 +650,7 @@ onUnload(() => {
 .sync-subtitle {
     font-size: 22rpx;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .sync-tip {
@@ -658,30 +658,30 @@ onUnload(() => {
     margin-top: 10rpx;
     font-size: 22rpx;
     line-height: 1.55;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .section-card {
     margin-top: 12rpx;
     border-radius: var(--wm-radius-card-soft, 37rpx);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.84));
     padding: 20rpx;
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 30rpx rgba(214, 185, 167, 0.1));
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 30rpx rgba(17, 17, 17, 0.1));
 }
 
 .section-title {
     display: block;
     font-size: 24rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     margin-bottom: 12rpx;
 }
 
 .field-card {
     border-radius: var(--wm-radius-control, 34rpx);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-    background: rgba(252, 251, 249, 0.92);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    background: rgba(248, 247, 242, 0.92);
     padding: 16rpx;
 }
 
@@ -699,7 +699,7 @@ onUnload(() => {
     display: block;
     font-size: 20rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     margin-bottom: 8rpx;
 }
 
@@ -707,12 +707,12 @@ onUnload(() => {
     width: 100%;
     min-height: 48rpx;
     font-size: 26rpx;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     line-height: 1.4;
 }
 
 .field-placeholder {
-    color: var(--wm-text-tertiary, #b6b0ab);
+    color: var(--wm-text-tertiary, #9A9388);
 }
 
 .field-readonly {
@@ -720,7 +720,7 @@ onUnload(() => {
     font-size: 26rpx;
     font-weight: 600;
     line-height: 1.4;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .field-readonly--wrap {
@@ -734,13 +734,13 @@ onUnload(() => {
     gap: 8rpx;
     font-size: 26rpx;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .contact-value {
     font-size: 24rpx;
     line-height: 1.45;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .contact-actions {
@@ -753,10 +753,10 @@ onUnload(() => {
 .contact-action {
     padding: 8rpx 16rpx;
     border-radius: 999rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: #fff;
     font-size: 20rpx;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .contact-action--button {
@@ -787,14 +787,14 @@ onUnload(() => {
 .popup-title {
     font-size: 36rpx;
     font-weight: 600;
-    color: #1e293b;
+    color: #111111;
     text-align: center;
     margin-bottom: 32rpx;
 }
 
 .popup-input-wrapper {
     padding-bottom: 16rpx;
-    border-bottom: 2rpx solid #e2e8f0;
+    border-bottom: 2rpx solid #E7E2D6;
     margin-bottom: 24rpx;
 }
 
@@ -808,11 +808,11 @@ onUnload(() => {
     width: 100%;
     height: 72rpx;
     font-size: 28rpx;
-    color: #1e293b;
+    color: #111111;
 }
 
 .input-placeholder {
-    color: #cbd5e1;
+    color: #d8d3c7;
 }
 
 .code-btn {
@@ -821,11 +821,11 @@ onUnload(() => {
     font-weight: 500;
     white-space: nowrap;
     border-radius: 18rpx;
-    color: #e85a4f;
+    color: #0b0b0b;
 }
 
 .code-btn-disabled {
-    color: #94a3b8;
+    color: #9a9388;
 }
 
 .popup-actions {
@@ -846,7 +846,7 @@ onUnload(() => {
 }
 
 .popup-btn-primary {
-    background: #e85a4f;
+    background: #0b0b0b;
     color: #ffffff;
 }
 </style>

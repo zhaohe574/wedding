@@ -74,7 +74,7 @@ const resolvedBack = computed(() => {
 const hasLeftSlot = computed(() => Boolean(slots.left))
 const hasRightSlot = computed(() => Boolean(slots.right))
 const resolvedBgColor = computed(() =>
-    props.transparent ? 'transparent' : props.bgColor || themeStore.navBgColor || '#FCFBF9'
+    props.transparent ? 'transparent' : props.bgColor || themeStore.navBgColor || '#FFFFFF'
 )
 const resolvedTextColor = computed(() => props.textColor || themeStore.navColor)
 const showSpacer = computed(() => props.fixed && props.reserveSpace)
@@ -152,9 +152,9 @@ export default {
 
 .base-navbar {
     width: 100%;
-    background: var(--wm-nav-bg, #fcfbf9);
+    background: var(--wm-nav-bg, #ffffff);
     box-sizing: border-box;
-    border-bottom: 1rpx solid rgba(239, 230, 225, 0.72);
+    border-bottom: 1rpx solid rgba(231, 226, 214, 0.72);
     backdrop-filter: blur(18rpx);
     -webkit-backdrop-filter: blur(18rpx);
 }
@@ -191,7 +191,7 @@ export default {
     font-size: 36rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -212,7 +212,7 @@ export default {
 }
 
 .base-navbar__back-text {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .base-navbar__placeholder {

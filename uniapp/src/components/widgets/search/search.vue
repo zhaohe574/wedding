@@ -17,7 +17,7 @@
             >
                 <view class="search-navbar__side" :style="sideSlotStyle">
                     <view class="mini-search" :style="miniSearchStyle" @tap="handleSearchClick">
-                        <tn-icon name="search" size="28" color="#64748B" />
+                        <tn-icon name="search" size="28" color="#5F5A50" />
                     </view>
                 </view>
                 <view class="search-navbar__title">
@@ -45,7 +45,7 @@
 
     <view v-if="isLargeScreen" class="search-floating" :style="floatingSearchWrapperStyle">
         <view class="mini-search mini-search--floating" @tap="handleSearchClick">
-            <tn-icon name="search" size="28" color="#64748B" />
+            <tn-icon name="search" size="28" color="#5F5A50" />
         </view>
     </view>
 
@@ -56,7 +56,7 @@
     >
         <view class="search-box-wrapper-full">
             <view class="search-input-box" :style="searchInputStyle" @tap="handleSearchClick">
-                <tn-icon name="search" :size="36" color="#CCCCCC"></tn-icon>
+                <tn-icon name="search" :size="36" color="#D8D3C7"></tn-icon>
                 <text class="search-placeholder">{{ searchPlaceholder }}</text>
             </view>
         </view>
@@ -111,7 +111,7 @@ const props = defineProps({
         type: Object,
         default: () => ({
             bgColor: '#ffffff',
-            textColor: '#666666',
+            textColor: '#5F5A50',
             borderRadius: 48
         })
     },
@@ -139,14 +139,14 @@ const metaData = computed(() => {
 })
 
 const navbarTitleColor = computed(() => {
-    if (props.percent > 0.5) return '#1E2432'
-    return Number(metaData.value.text_color) === 1 ? '#FFFFFF' : '#1E2432'
+    if (props.percent > 0.5) return '#111111'
+    return Number(metaData.value.text_color) === 1 ? '#FFFFFF' : '#111111'
 })
 
 const navbarWrapperStyle = computed(() => ({
     background: `rgba(255, 255, 255, ${Math.min(Math.max(props.percent, 0), 0.96)})`,
     boxShadow:
-        props.percent > 0.2 ? '0 8rpx 24rpx rgba(15, 23, 42, 0.06)' : '0 0 0 rgba(0, 0, 0, 0)',
+        props.percent > 0.2 ? '0 8rpx 24rpx rgba(17, 17, 17, 0.06)' : '0 0 0 rgba(0, 0, 0, 0)',
     backdropFilter: props.percent > 0.2 ? 'blur(16rpx)' : 'none'
 }))
 
@@ -174,9 +174,9 @@ const hotWords = computed(() => {
 })
 
 const searchInputStyle = computed(() => ({
-    background: props.styles.bgColor || '#f5f5f5',
+    background: props.styles.bgColor || '#F8F7F2',
     borderRadius: `${Number(props.styles.borderRadius || 48)}rpx`,
-    color: props.styles.textColor || '#666666'
+    color: props.styles.textColor || '#5F5A50'
 }))
 
 const getLightColor = (color: string, opacity: number) => {
@@ -288,7 +288,7 @@ const handleHotWordClick = (word: string) => {
 .search-box-wrapper-full {
     background: #ffffff;
     padding: 16rpx 24rpx;
-    border-bottom: 1rpx solid #f0f0f0;
+    border-bottom: 1rpx solid #F8F7F2;
 }
 
 .search-input-box {
@@ -302,7 +302,7 @@ const handleHotWordClick = (word: string) => {
 
 .search-placeholder {
     font-size: 28rpx;
-    color: #999999;
+    color: #9A9388;
 }
 
 .hot-words {
@@ -319,7 +319,7 @@ const handleHotWordClick = (word: string) => {
 
 .hot-words-text {
     font-size: 24rpx;
-    color: #666666;
+    color: #5F5A50;
 }
 
 .hot-words-list {

@@ -29,7 +29,7 @@
                             :key="star"
                             :name="star <= Number(review.score || 0) ? 'star-fill' : 'star'"
                             size="28"
-                            :color="star <= Number(review.score || 0) ? '#F59E0B' : '#D1D5DB'"
+                            :color="star <= Number(review.score || 0) ? '#C8A45D' : '#D8D3C7'"
                         />
                     </view>
                     <text class="score-text">{{ review.score_level }} · {{ review.score }}分</text>
@@ -219,7 +219,7 @@
                 <view class="share-popup">
                     <view class="popup-header">
                         <text class="popup-title">申请晒单奖励</text>
-                        <tn-icon name="close" size="36" color="#999999" @click="closeSharePopup" />
+                        <tn-icon name="close" size="36" color="#9A9388" @click="closeSharePopup" />
                     </view>
 
                     <view class="popup-section">
@@ -527,7 +527,7 @@ onPullDownRefresh(() => {
     display: block;
     font-size: 26rpx;
     line-height: 1.75;
-    color: #6b7280;
+    color: #6c665c;
 
     & + .section-tip {
         margin-top: 12rpx;
@@ -581,12 +581,12 @@ onPullDownRefresh(() => {
 .user-name {
     font-size: 30rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .review-time {
     font-size: 24rpx;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .status-badge,
@@ -601,22 +601,22 @@ onPullDownRefresh(() => {
 .status-0,
 .reward-status-pending,
 .share-status-0 {
-    background: rgba(245, 158, 11, 0.12);
-    color: #d97706;
+    background: rgba(159, 122, 46, 0.12);
+    color: #9f7a2e;
 }
 
 .status-1,
 .reward-status-approved,
 .share-status-1 {
-    background: rgba(16, 185, 129, 0.12);
-    color: #059669;
+    background: rgba(77, 74, 66, 0.12);
+    color: #4D4A42;
 }
 
 .status-2,
 .reward-status-rejected,
 .share-status-2 {
-    background: rgba(239, 68, 68, 0.12);
-    color: #dc2626;
+    background: rgba(90, 68, 51, 0.12);
+    color: #5a4433;
 }
 
 .score-row {
@@ -633,7 +633,7 @@ onPullDownRefresh(() => {
 
 .score-text {
     font-size: 26rpx;
-    color: #667085;
+    color: #5F5A50;
 }
 
 .meta-list {
@@ -645,21 +645,21 @@ onPullDownRefresh(() => {
 .meta-label,
 .popup-label {
     font-size: 24rpx;
-    color: #98a2b3;
+    color: #9a9388;
 }
 
 .meta-value {
     flex: 1;
     text-align: right;
     font-size: 26rpx;
-    color: #344054;
+    color: #5F5A50;
 }
 
 .section-title,
 .popup-title {
     font-size: 30rpx;
     font-weight: 700;
-    color: #1f2937;
+    color: #111111;
 }
 
 .review-content,
@@ -671,13 +671,13 @@ onPullDownRefresh(() => {
     display: block;
     font-size: 26rpx;
     line-height: 1.7;
-    color: #475467;
+    color: #5F5A50;
 }
 
 .empty-text,
 .empty-block text {
     font-size: 26rpx;
-    color: #98a2b3;
+    color: #9a9388;
 }
 
 .tag-list {
@@ -689,10 +689,10 @@ onPullDownRefresh(() => {
 .tag-item {
     padding: 10rpx 18rpx;
     border-radius: 999rpx;
-    background: rgba(232, 90, 79, 0.08);
-    border: 1rpx solid rgba(232, 90, 79, 0.16);
+    background: rgba(11, 11, 11, 0.08);
+    border: 1rpx solid rgba(11, 11, 11, 0.16);
     font-size: 24rpx;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .image-grid,
@@ -707,7 +707,7 @@ onPullDownRefresh(() => {
     width: calc((100% - 32rpx) / 3);
     height: 200rpx;
     border-radius: 18rpx;
-    background: #f3f4f6;
+    background: #f8f7f2;
 }
 
 .reward-panel {
@@ -723,13 +723,13 @@ onPullDownRefresh(() => {
 .reward-points {
     font-size: 54rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .reward-unit,
 .share-points {
     font-size: 24rpx;
-    color: #98a2b3;
+    color: #9a9388;
 }
 
 .reward-tip {
@@ -740,8 +740,8 @@ onPullDownRefresh(() => {
 .share-reward-card {
     padding: 22rpx 24rpx;
     border-radius: 20rpx;
-    background: #f8fafc;
-    border: 1rpx solid #edf2f7;
+    background: #ffffff;
+    border: 1rpx solid #E7E2D6;
 }
 
 .reply-card + .reply-card,
@@ -753,12 +753,12 @@ onPullDownRefresh(() => {
 .share-platform {
     font-size: 26rpx;
     font-weight: 600;
-    color: #344054;
+    color: #5F5A50;
 }
 
 .reply-time {
     font-size: 22rpx;
-    color: #98a2b3;
+    color: #9a9388;
 }
 
 .section-tip {
@@ -794,7 +794,7 @@ onPullDownRefresh(() => {
     width: 160rpx;
     height: 160rpx;
     border-radius: 16rpx;
-    background: #e5e7eb;
+    background: #e7e2d6;
     flex-shrink: 0;
 }
 
@@ -810,7 +810,7 @@ onPullDownRefresh(() => {
     margin-top: 24rpx;
     padding: 40rpx 0;
     text-align: center;
-    background: #f8fafc;
+    background: #ffffff;
     border-radius: 18rpx;
 }
 
@@ -840,13 +840,13 @@ onPullDownRefresh(() => {
     height: 72rpx;
     padding: 0 24rpx;
     border-radius: 18rpx;
-    border: 1rpx solid #e5e7eb;
-    background: #f8fafc;
+    border: 1rpx solid #e7e2d6;
+    background: #ffffff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 24rpx;
-    color: #4b5563;
+    color: #5f5a50;
 }
 
 .upload-area {
@@ -861,8 +861,8 @@ onPullDownRefresh(() => {
 }
 
 .upload-box {
-    border: 2rpx dashed rgba(232, 90, 79, 0.22);
-    background: rgba(232, 90, 79, 0.05);
+    border: 2rpx dashed rgba(11, 11, 11, 0.22);
+    background: rgba(11, 11, 11, 0.05);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -872,13 +872,13 @@ onPullDownRefresh(() => {
 
 .upload-text {
     font-size: 24rpx;
-    color: #667085;
+    color: #5F5A50;
 }
 
 .upload-preview {
     position: relative;
     overflow: hidden;
-    background: #f3f4f6;
+    background: #f8f7f2;
 }
 
 .upload-preview image {
@@ -893,7 +893,7 @@ onPullDownRefresh(() => {
     width: 44rpx;
     height: 44rpx;
     border-radius: 50%;
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(17, 17, 17, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -916,8 +916,8 @@ onPullDownRefresh(() => {
 }
 
 .popup-btn--ghost {
-    border: 2rpx solid #d0d5dd;
-    color: #475467;
+    border: 2rpx solid #D8D3C7;
+    color: #5F5A50;
 }
 
 .popup-btn--primary {
@@ -936,7 +936,7 @@ onPullDownRefresh(() => {
 
 .loading-text {
     font-size: 26rpx;
-    color: #98a2b3;
+    color: #9a9388;
 }
 
 .safe-bottom {

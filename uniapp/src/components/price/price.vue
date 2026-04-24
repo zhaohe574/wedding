@@ -62,7 +62,7 @@ const props = withDefaults(
         content: '',
         prec: 2,
         autoPrec: true,
-        color: '#FA8919',
+        color: '#C8A45D',
         mainSize: '36rpx',
         minorSize: '28rpx',
         lineThrough: false,

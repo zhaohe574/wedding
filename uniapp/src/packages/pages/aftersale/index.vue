@@ -34,8 +34,8 @@
                         :interactive="true"
                         padding="28rpx 30rpx"
                         border-radius="44rpx"
-                        background="var(--wm-color-primary-soft, rgba(255, 241, 238, 0.96))"
-                        border="1rpx solid var(--wm-color-border-strong, rgba(244, 199, 191, 0.96))"
+                        background="var(--wm-color-primary-soft, rgba(247, 240, 223, 0.96))"
+                        border="1rpx solid var(--wm-color-border-strong, rgba(216, 194, 138, 0.96))"
                         class="aftersale-home__entry-card aftersale-home__entry-card--ticket"
                         @click="goCreateTicket"
                     >
@@ -43,7 +43,7 @@
                             <tn-icon
                                 name="file-text"
                                 :size="28"
-                                color="var(--wm-color-primary, #E85A4F)"
+                                color="var(--wm-color-primary, #0B0B0B)"
                             />
                         </view>
                         <view class="aftersale-home__entry-copy">
@@ -51,7 +51,7 @@
                             <text class="aftersale-home__entry-desc"> 档期、流程、交付、费用 </text>
                             <text class="aftersale-home__entry-tip"> 适合平台跟进 </text>
                         </view>
-                        <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #B4ACA8)" />
+                        <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #9A9388)" />
                     </BaseCard>
 
                     <BaseCard
@@ -67,7 +67,7 @@
                             <tn-icon
                                 name="warning-circle"
                                 :size="28"
-                                color="var(--wm-color-danger, #C94B49)"
+                                color="var(--wm-color-danger, #5A4433)"
                             />
                         </view>
                         <view class="aftersale-home__entry-copy">
@@ -75,7 +75,7 @@
                             <text class="aftersale-home__entry-desc"> 态度、履约、沟通问题 </text>
                             <text class="aftersale-home__entry-tip"> 适合正式投诉 </text>
                         </view>
-                        <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #B4ACA8)" />
+                        <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #9A9388)" />
                     </BaseCard>
 
                     <BaseCard
@@ -91,7 +91,7 @@
                             <tn-icon
                                 name="service"
                                 :size="28"
-                                color="var(--wm-color-info, #607086)"
+                                color="var(--wm-color-info, #6C665C)"
                             />
                         </view>
                         <view class="aftersale-home__entry-copy">
@@ -99,7 +99,7 @@
                             <text class="aftersale-home__entry-desc">紧急问题可联系人工</text>
                             <text class="aftersale-home__entry-tip"> 建议准备订单与问题信息 </text>
                         </view>
-                        <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #B4ACA8)" />
+                        <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #9A9388)" />
                     </BaseCard>
 
                     <BaseCard
@@ -115,7 +115,7 @@
                             <tn-icon
                                 name="edit"
                                 :size="28"
-                                color="var(--wm-color-success, #2F7D58)"
+                                color="var(--wm-color-success, #4D4A42)"
                             />
                         </view>
                         <view class="aftersale-home__entry-copy">
@@ -134,7 +134,7 @@
                                 {{ stats.callback.pending > 0 ? '有待填写问卷' : '体验反馈汇总' }}
                             </text>
                         </view>
-                        <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #B4ACA8)" />
+                        <tn-icon name="right" size="24" color="var(--wm-text-tertiary, #9A9388)" />
                     </BaseCard>
                 </view>
 
@@ -277,7 +277,7 @@ onShow(() => {
     font-size: 30rpx;
     line-height: 1.3;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-home__intro-summary,
@@ -285,7 +285,7 @@ onShow(() => {
     display: block;
     font-size: 24rpx;
     line-height: 1.6;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .aftersale-home__intro-metrics {
@@ -297,8 +297,8 @@ onShow(() => {
 .aftersale-home__intro-metric {
     padding: 20rpx 22rpx;
     border-radius: 30rpx;
-    background: var(--wm-color-primary-soft, rgba(255, 247, 244, 0.82));
-    border: 1rpx solid var(--wm-color-border, rgba(239, 230, 225, 0.92));
+    background: var(--wm-color-primary-soft, rgba(248, 247, 242, 0.82));
+    border: 1rpx solid var(--wm-color-border, rgba(231, 226, 214, 0.92));
 
     &:active {
         transform: scale(0.98);
@@ -310,14 +310,14 @@ onShow(() => {
     font-size: 38rpx;
     line-height: 1;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .aftersale-home__intro-metric-label {
     display: block;
     margin-top: 10rpx;
     font-size: 22rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .aftersale-home__section {
@@ -360,7 +360,7 @@ onShow(() => {
     font-size: 30rpx;
     line-height: 1.3;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-home__entry-desc {
@@ -368,7 +368,7 @@ onShow(() => {
     margin-top: 10rpx;
     font-size: 24rpx;
     line-height: 1.58;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .aftersale-home__entry-tip {
@@ -376,6 +376,6 @@ onShow(() => {
     margin-top: 12rpx;
     font-size: 22rpx;
     line-height: 1.5;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 </style>

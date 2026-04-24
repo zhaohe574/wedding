@@ -3,7 +3,7 @@
         <template #hero>
             <view class="auth-hero">
                 <view class="auth-hero__icon">
-                    <tn-icon name="phone" size="54" color="#E85A4F" />
+                    <tn-icon name="phone" size="54" color="#0B0B0B" />
                 </view>
                 <text class="auth-hero__title">绑定手机号</text>
                 <text class="auth-hero__desc">绑定后可接收订单通知。</text>
@@ -15,7 +15,7 @@
                 <text class="auth-form__label">手机号</text>
                 <BaseInput v-model="formData.mobile" type="tel" placeholder="请输入手机号码">
                     <template #prefix>
-                        <tn-icon name="phone" size="30" color="#B4ACA8" />
+                        <tn-icon name="phone" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -24,7 +24,7 @@
                 <text class="auth-form__label">验证码</text>
                 <BaseInput v-model="formData.code" placeholder="请输入验证码">
                     <template #prefix>
-                        <tn-icon name="shield-check" size="30" color="#B4ACA8" />
+                        <tn-icon name="shield-check" size="30" color="#9A9388" />
                     </template>
                     <template #suffix>
                         <text
@@ -145,21 +145,21 @@ const handleConfirm = async () => {
     justify-content: center;
     border-radius: 999rpx;
     background: rgba(255, 255, 255, 0.88);
-    border: 1rpx solid rgba(244, 199, 191, 0.52);
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+    border: 1rpx solid rgba(216, 194, 138, 0.52);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
 }
 
 .auth-hero__title {
     font-size: 52rpx;
     font-weight: 700;
     line-height: 1.18;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .auth-hero__desc {
     font-size: 26rpx;
     line-height: 1.65;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .auth-form {
@@ -177,18 +177,18 @@ const handleConfirm = async () => {
 .auth-form__label {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .auth-code-btn {
     padding-left: 20rpx;
     font-size: 24rpx;
     font-weight: 500;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .auth-code-btn--active {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
     font-weight: 700;
 }
 </style>

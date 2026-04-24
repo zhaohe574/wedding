@@ -72,7 +72,7 @@ const showTitleImage = computed(() => {
 const resolvedTitle = computed(() => {
     return typeof props.title === 'string' && props.title.trim() ? props.title : ''
 })
-const titleTextColor = computed(() => themeStore.navColor || '#1E2432')
+const titleTextColor = computed(() => themeStore.navColor || '#111111')
 const headerClass = computed(() => [
     `mp-page-header--${props.surface}`,
     {
@@ -108,17 +108,17 @@ const leftSideStyle = computed(() => ({
     &--glass {
         background: linear-gradient(
             180deg,
-            rgba(255, 247, 244, 0.96) 0%,
-            rgba(255, 247, 244, 0.78) 76%,
-            rgba(255, 247, 244, 0) 100%
+            rgba(248, 247, 242, 0.96) 0%,
+            rgba(248, 247, 242, 0.78) 76%,
+            rgba(248, 247, 242, 0) 100%
         );
         backdrop-filter: blur(18rpx);
         -webkit-backdrop-filter: blur(18rpx);
     }
 
     &--glass {
-        border-bottom: 1rpx solid rgba(239, 230, 225, 0.56);
-        box-shadow: 0 14rpx 32rpx rgba(214, 185, 167, 0.08);
+        border-bottom: 1rpx solid rgba(231, 226, 214, 0.56);
+        box-shadow: 0 14rpx 32rpx rgba(17, 17, 17, 0.08);
     }
 
     &__body {
@@ -178,7 +178,7 @@ const leftSideStyle = computed(() => ({
         font-size: 36rpx;
         font-weight: 700;
         line-height: 1.2;
-        color: #1e2432;
+        color: #111111;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -187,7 +187,7 @@ const leftSideStyle = computed(() => ({
     &__title-text--large {
         font-size: 42rpx;
         font-weight: 800;
-        letter-spacing: 1rpx;
+        letter-spacing: 0;
     }
 }
 </style>

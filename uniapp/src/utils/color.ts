@@ -3,7 +3,7 @@
  * 说明：
  * - 只支持 #RRGGBB 格式输入，异常时回退到默认主色
  */
-const fallbackColor = '#E85A4F'
+const fallbackColor = '#0B0B0B'
 
 const presetColorMap: Record<string, string> = {
     white: '#FFFFFF',
@@ -70,7 +70,7 @@ export const resolveReadableTextColor = (
     const normalizedBackgroundColor = normalizeHexColor(backgroundColor)
     const normalizedPreferredColor = normalizeHexColor(preferredColor)
     const fallbackLightTextColor = '#FFFFFF'
-    const fallbackDarkTextColor = '#1E2432'
+    const fallbackDarkTextColor = '#111111'
 
     if (!normalizedBackgroundColor) {
         return normalizedPreferredColor || fallbackLightTextColor

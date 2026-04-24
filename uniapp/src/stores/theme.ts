@@ -44,9 +44,9 @@ interface ThemeStore {
 }
 
 const sceneHeroGradientMap: Record<WmScene, string> = {
-    consumer: 'linear-gradient(180deg, #FFF5F1 0%, #FCFBF9 68%, #F7F1ED 100%)',
-    staff: 'linear-gradient(135deg, #FFF5F1 0%, #FDE7E1 100%)',
-    admin: 'linear-gradient(180deg, #FFF7F4 0%, #FCFBF9 100%)'
+    consumer: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 68%, #F7F0DF 100%)',
+    staff: 'linear-gradient(135deg, #FFFFFF 0%, #F8F7F2 58%, #F7F0DF 100%)',
+    admin: 'linear-gradient(180deg, #FFFFFF 0%, #F8F7F2 100%)'
 }
 
 const defaultTokens = createWmThemeTokens()
@@ -65,33 +65,33 @@ export const useThemeStore = defineStore({
     id: 'themeStore',
     state: (): ThemeStore => ({
         scene: 'consumer',
-        presetKey: 'obsidian-gold',
-        primaryColor: '#E85A4F',
-        secondaryColor: '#C99B73',
-        ctaColor: '#E85A4F',
-        accentColor: '#C99B73',
-        minorColor: '#C99B73',
-        surfaceColor: '#FFF7F4',
+        presetKey: 'black-white-gold',
+        primaryColor: '#0B0B0B',
+        secondaryColor: '#C8A45D',
+        ctaColor: '#0B0B0B',
+        accentColor: '#C8A45D',
+        minorColor: '#C8A45D',
+        surfaceColor: '#FFFFFF',
         surfaceElevatedColor: '#FFFFFF',
-        surfaceOverlayColor: 'rgba(255, 255, 255, 0.88)',
-        textPrimaryColor: '#1E2432',
-        textSecondaryColor: '#7F7B78',
-        textTertiaryColor: '#B4ACA8',
+        surfaceOverlayColor: 'rgba(255, 255, 255, 0.94)',
+        textPrimaryColor: '#111111',
+        textSecondaryColor: '#5F5A50',
+        textTertiaryColor: '#9A9388',
         textInverseColor: '#FFFFFF',
-        borderColor: '#EFE6E1',
-        borderStrongColor: '#F4C7BF',
-        pageBgColor: '#FFF7F4',
-        pageBgSoftColor: '#FFF1EE',
+        borderColor: '#E7E2D6',
+        borderStrongColor: '#D8C28A',
+        pageBgColor: '#FFFFFF',
+        pageBgSoftColor: '#F8F7F2',
         heroGradient: sceneHeroGradientMap.consumer,
-        maskColor: 'rgba(30, 36, 50, 0.46)',
-        tabbarActiveColor: '#E85A4F',
-        tabbarInactiveColor: '#9D918B',
+        maskColor: 'rgba(11, 11, 11, 0.54)',
+        tabbarActiveColor: '#0B0B0B',
+        tabbarInactiveColor: '#9A9388',
         navStyle: 'glass',
         cardStyle: 'glass',
         shadowLevel: 'medium',
         btnColor: 'white',
-        navColor: '#1E2432',
-        navBgColor: '#FFF7F4',
+        navColor: '#111111',
+        navBgColor: '#FFFFFF',
         tokens: defaultTokens,
         vars: '',
         pageStyle: ''
@@ -131,7 +131,7 @@ export const useThemeStore = defineStore({
             this.cardStyle = themeConfig.cardStyle
             this.shadowLevel = themeConfig.shadowLevel
             this.btnColor = themeConfig.buttonColor
-            this.navColor = themeConfig.topTextColor === 'white' ? '#FFFFFF' : '#1E2432'
+            this.navColor = themeConfig.topTextColor === 'white' ? '#FFFFFF' : '#111111'
             this.navBgColor = themeConfig.navigationBarColor
             this.updateVars()
         },

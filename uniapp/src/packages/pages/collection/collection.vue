@@ -43,7 +43,7 @@ const options = reactive([
         text: '取消收藏',
         style: {
             color: '#FFFFFF',
-            backgroundColor: '#FF2C3C'
+            backgroundColor: '#5A4433'
         }
     }
 ])

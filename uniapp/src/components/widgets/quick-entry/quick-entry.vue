@@ -135,7 +135,7 @@ const handleClick = (item: QuickEntryItem) => {
     font-size: 24rpx;
     line-height: 1.4;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .profile-quick-meta {
@@ -143,7 +143,7 @@ const handleClick = (item: QuickEntryItem) => {
     font-size: 22rpx;
     line-height: 1.3;
     font-weight: 600;
-    color: var(--wm-text-tertiary, #9d948f);
+    color: var(--wm-text-tertiary, #9A9388);
 }
 
 .profile-quick-grid {
@@ -161,9 +161,9 @@ const handleClick = (item: QuickEntryItem) => {
     border-radius: var(--wm-user-quick-item-radius, 36rpx);
     padding: var(--wm-user-quick-item-padding, 24rpx);
     background: rgba(255, 255, 255, 0.8);
-    border: 2rpx solid rgba(239, 230, 225, 0.9);
+    border: 2rpx solid rgba(231, 226, 214, 0.9);
     box-sizing: border-box;
-    box-shadow: 0 12rpx 28rpx rgba(214, 185, 167, 0.08);
+    box-shadow: 0 12rpx 28rpx rgba(17, 17, 17, 0.08);
     transition: all 0.2s ease;
 
     &:active {
@@ -175,10 +175,10 @@ const handleClick = (item: QuickEntryItem) => {
 .profile-quick-item--primary {
     background: linear-gradient(
         180deg,
-        rgba(255, 245, 241, 0.92) 0%,
+        rgba(248, 247, 242, 0.92) 0%,
         rgba(255, 255, 255, 0.88) 100%
     );
-    border-color: rgba(244, 199, 191, 0.9);
+    border-color: rgba(216, 194, 138, 0.9);
 }
 
 .profile-quick-item--disabled {
@@ -199,7 +199,7 @@ const handleClick = (item: QuickEntryItem) => {
     font-size: 28rpx;
     line-height: 1.4;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     word-break: break-word;
 }
 
@@ -207,7 +207,7 @@ const handleClick = (item: QuickEntryItem) => {
     flex-shrink: 0;
     font-size: 28rpx;
     line-height: 1;
-    color: var(--wm-text-tertiary, #a89d97);
+    color: var(--wm-text-tertiary, #9A9388);
 }
 
 .profile-quick-item-desc {
@@ -215,7 +215,7 @@ const handleClick = (item: QuickEntryItem) => {
     font-size: 22rpx;
     line-height: 1.45;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     overflow: hidden;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;

@@ -58,50 +58,50 @@ const badgeClass = computed(() => [
     }
 
     &--neutral {
-        background: rgba(96, 112, 134, 0.08);
-        border-color: rgba(96, 112, 134, 0.16);
-        color: var(--wm-color-info, #607086);
+        background: rgba(108, 102, 92, 0.08);
+        border-color: rgba(108, 102, 92, 0.16);
+        color: var(--wm-color-info, #6C665C);
     }
 
     &--success {
-        background: rgba(47, 125, 88, 0.08);
-        border-color: rgba(47, 125, 88, 0.16);
-        color: var(--wm-color-success, #2f7d58);
+        background: rgba(77, 74, 66, 0.08);
+        border-color: rgba(77, 74, 66, 0.16);
+        color: var(--wm-color-success, #4d4a42);
     }
 
     &--warning {
-        background: rgba(201, 133, 36, 0.08);
-        border-color: rgba(201, 133, 36, 0.16);
-        color: var(--wm-color-warning, #c98524);
+        background: rgba(159, 122, 46, 0.08);
+        border-color: rgba(159, 122, 46, 0.16);
+        color: var(--wm-color-warning, #9f7a2e);
     }
 
     &--danger {
-        background: rgba(201, 75, 73, 0.08);
-        border-color: rgba(201, 75, 73, 0.16);
-        color: var(--wm-color-danger, #c94b49);
+        background: rgba(90, 68, 51, 0.08);
+        border-color: rgba(90, 68, 51, 0.16);
+        color: var(--wm-color-danger, #5a4433);
     }
 
     &--info {
-        background: rgba(232, 90, 79, 0.08);
-        border-color: var(--wm-color-border-strong, #f4c7bf);
-        color: var(--wm-color-primary, #e85a4f);
+        background: rgba(11, 11, 11, 0.08);
+        border-color: var(--wm-color-border-strong, #d8c28a);
+        color: var(--wm-color-primary, #0b0b0b);
     }
 
     &--staff {
         backdrop-filter: blur(14rpx);
         -webkit-backdrop-filter: blur(14rpx);
-        box-shadow: 0 10rpx 20rpx rgba(185, 129, 116, 0.06);
+        box-shadow: 0 10rpx 20rpx rgba(17, 17, 17, 0.06);
     }
 
     &--staff.status-badge--neutral {
-        background: rgba(255, 247, 244, 0.88);
-        border-color: rgba(241, 209, 197, 0.9);
-        color: var(--wm-text-secondary, #7f7b78);
+        background: rgba(248, 247, 242, 0.88);
+        border-color: rgba(216, 194, 138, 0.9);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &--staff.status-badge--info {
-        background: rgba(255, 240, 235, 0.9);
-        border-color: rgba(241, 209, 197, 0.96);
+        background: rgba(247, 240, 223, 0.9);
+        border-color: rgba(216, 194, 138, 0.96);
     }
 }
 </style>

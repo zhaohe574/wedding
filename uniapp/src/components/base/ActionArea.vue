@@ -38,9 +38,9 @@ const actionClass = computed(() => [
         var(--wm-space-action-bottom, 39rpx);
     background: linear-gradient(
         180deg,
-        rgba(255, 247, 244, 0) 0%,
-        rgba(255, 247, 244, 0.88) 26%,
-        rgba(255, 247, 244, 0.98) 100%
+        rgba(248, 247, 242, 0) 0%,
+        rgba(248, 247, 242, 0.88) 26%,
+        rgba(248, 247, 242, 0.98) 100%
     );
 
     &--safe {

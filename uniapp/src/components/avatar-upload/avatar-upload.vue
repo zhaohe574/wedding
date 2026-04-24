@@ -10,7 +10,7 @@
         <image class="avatar-image" mode="aspectFill" :src="modelValue" v-if="modelValue" />
         <slot v-else>
             <view class="avatar-placeholder" :style="containerStyles">
-                <tn-icon name="plus" :size="48" color="#94A3B8" />
+                <tn-icon name="plus" :size="48" color="#9A9388" />
                 <text class="placeholder-text">添加图片</text>
             </view>
         </slot>
@@ -144,12 +144,12 @@ onUnmounted(() => {
         align-items: center;
         justify-content: center;
         gap: 12rpx;
-        border: 2rpx dashed #e2e8f0;
+        border: 2rpx dashed #E7E2D6;
         box-sizing: border-box;
 
         .placeholder-text {
             font-size: 24rpx;
-            color: #94a3b8;
+            color: #9a9388;
         }
     }
 }

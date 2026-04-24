@@ -106,7 +106,7 @@
                                     class="remark-textarea"
                                     maxlength="200"
                                     placeholder="请输入备注（选填）"
-                                    placeholder-style="color: #b4aca8;"
+                                    placeholder-style="color: #9a9388;"
                                 />
                             </view>
                         </view>
@@ -782,13 +782,13 @@ onShow(() => {
         align-items: center;
         padding: 13rpx 22rpx;
         border-radius: 999rpx;
-        background: var(--wm-color-primary-soft, #fff1ee);
-        border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+        background: var(--wm-color-primary-soft, #f3f2ee);
+        border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
 
         text {
             font-size: 22rpx;
             font-weight: 600;
-            color: var(--wm-color-primary, #e85a4f);
+            color: var(--wm-color-primary, #0b0b0b);
         }
     }
 
@@ -852,7 +852,7 @@ onShow(() => {
     display: block;
     font-size: 30rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .section-desc {
@@ -860,7 +860,7 @@ onShow(() => {
     margin-top: 12rpx;
     font-size: 24rpx;
     line-height: 1.6;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .section-action {
@@ -870,13 +870,13 @@ onShow(() => {
     flex-shrink: 0;
     padding: 12rpx 20rpx;
     border-radius: 999rpx;
-    background: var(--wm-color-primary-soft, #fff1ee);
-    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+    background: var(--wm-color-primary-soft, #f3f2ee);
+    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
 
     text {
         font-size: 22rpx;
         font-weight: 600;
-        color: var(--wm-color-primary, #e85a4f);
+        color: var(--wm-color-primary, #0b0b0b);
     }
 }
 
@@ -890,16 +890,16 @@ onShow(() => {
     min-width: 0;
     padding: 30rpx 30rpx;
     border-radius: 37rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #ffffff;
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .booking-box__label {
     display: block;
     font-size: 22rpx;
-    letter-spacing: 0.08em;
+    letter-spacing: 0;
     text-transform: uppercase;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .booking-box__value {
@@ -908,7 +908,7 @@ onShow(() => {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.45;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .booking-box__value--region {
@@ -931,21 +931,21 @@ onShow(() => {
     min-width: 0;
     padding: 30rpx 30rpx 28rpx;
     border-radius: 37rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #ffffff;
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .payment-arrangement__summary-card--accent {
-    background: linear-gradient(180deg, rgba(255, 244, 240, 0.96) 0%, #fffaf7 100%);
-    border-color: var(--wm-color-border-strong, #f4c7bf);
+    background: linear-gradient(180deg, rgba(247, 240, 223, 0.96) 0%, #FFFFFF 100%);
+    border-color: var(--wm-color-border-strong, #d8c28a);
 }
 
 .payment-arrangement__summary-label {
     display: block;
     font-size: 22rpx;
-    letter-spacing: 0.08em;
+    letter-spacing: 0;
     text-transform: uppercase;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .payment-arrangement__summary-value {
@@ -954,28 +954,28 @@ onShow(() => {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.45;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     word-break: break-word;
 }
 
 .payment-arrangement__summary-value--amount {
     font-size: 38rpx;
     line-height: 1.25;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .payment-arrangement__stage {
     padding: 24rpx 28rpx;
     border-radius: 32rpx;
-    background: linear-gradient(180deg, rgba(255, 250, 247, 0.96) 0%, #ffffff 100%);
-    border: 1rpx solid rgba(244, 199, 191, 0.92);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, #ffffff 100%);
+    border: 1rpx solid rgba(216, 194, 138, 0.92);
 }
 
 .payment-arrangement__stage-label {
     display: block;
     font-size: 22rpx;
-    letter-spacing: 0.06em;
-    color: var(--wm-text-tertiary, #b4aca8);
+    letter-spacing: 0;
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .payment-arrangement__stage-value {
@@ -984,7 +984,7 @@ onShow(() => {
     font-size: 28rpx;
     font-weight: 700;
     line-height: 1.55;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     word-break: break-word;
 }
 
@@ -1007,7 +1007,7 @@ onShow(() => {
     min-width: 0;
     font-size: 24rpx;
     line-height: 1.6;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .payment-arrangement__detail-value {
@@ -1016,22 +1016,22 @@ onShow(() => {
     font-size: 26rpx;
     font-weight: 700;
     line-height: 1.6;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .payment-arrangement__remark {
     padding: 24rpx 26rpx;
     border-radius: 30rpx;
-    background: rgba(252, 251, 249, 0.96);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: rgba(248, 247, 242, 0.96);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .payment-arrangement__remark-label {
     display: block;
     font-size: 22rpx;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--wm-text-secondary, #7f7b78);
+    letter-spacing: 0;
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .payment-arrangement__remark-text {
@@ -1039,7 +1039,7 @@ onShow(() => {
     margin-top: 10rpx;
     font-size: 24rpx;
     line-height: 1.65;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     word-break: break-word;
 }
 
@@ -1052,20 +1052,20 @@ onShow(() => {
     margin-bottom: 8rpx;
     font-size: 28rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .field-label--required::before {
     content: '*';
     margin-right: 6rpx;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .field-shell {
     padding: 0;
     border-radius: 37rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #ffffff;
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .field-shell--textarea {
@@ -1077,11 +1077,11 @@ onShow(() => {
     min-height: 84rpx !important;
     padding: 0 30rpx !important;
     border-radius: 37rpx !important;
-    background: #fcfbf9 !important;
+    background: #ffffff !important;
     border: none !important;
     box-shadow: none !important;
     font-size: 28rpx !important;
-    color: var(--wm-text-primary, #1e2432) !important;
+    color: var(--wm-text-primary, #111111) !important;
 }
 
 .field-item--address .field-shell :deep(.tn-input) {
@@ -1089,7 +1089,7 @@ onShow(() => {
 }
 
 .field-shell :deep(.input-placeholder) {
-    color: var(--wm-text-tertiary, #b4aca8) !important;
+    color: var(--wm-text-tertiary, #9a9388) !important;
 }
 
 .remark-textarea {
@@ -1097,7 +1097,7 @@ onShow(() => {
     min-height: 100rpx;
     font-size: 28rpx;
     line-height: 1.6;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .service-main {
@@ -1115,8 +1115,8 @@ onShow(() => {
     flex-shrink: 0;
     overflow: hidden;
     border-radius: 37rpx;
-    background: var(--wm-color-primary-soft, #fff1ee);
-    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+    background: var(--wm-color-primary-soft, #f3f2ee);
+    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
 }
 
 .service-main__avatar-image {
@@ -1128,7 +1128,7 @@ onShow(() => {
 .service-main__avatar-text {
     font-size: 36rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .service-main__info {
@@ -1143,13 +1143,13 @@ onShow(() => {
     display: block;
     font-size: 32rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .service-main__meta {
     display: block;
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .service-main__tag {
@@ -1158,12 +1158,12 @@ onShow(() => {
     align-self: flex-start;
     padding: 8rpx 18rpx;
     border-radius: 999rpx;
-    background: var(--wm-color-primary-soft, #fff1ee);
+    background: var(--wm-color-primary-soft, #f3f2ee);
 
     text {
         font-size: 22rpx;
         font-weight: 700;
-        color: var(--wm-color-primary, #e85a4f);
+        color: var(--wm-color-primary, #0b0b0b);
     }
 }
 
@@ -1178,13 +1178,13 @@ onShow(() => {
 .service-main__price-label {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .service-main__price-value {
     font-size: 32rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .service-package-summary {
@@ -1192,13 +1192,13 @@ onShow(() => {
     margin-top: 18rpx;
     font-size: 26rpx;
     line-height: 1.55;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .service-addon {
     margin-top: 18rpx;
     padding-top: 18rpx;
-    border-top: 1rpx solid #f7f1ed;
+    border-top: 1rpx solid #f8f7f2;
 }
 
 .service-addon__header {
@@ -1212,13 +1212,13 @@ onShow(() => {
 .service-addon__title {
     font-size: 28rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .service-addon__meta {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .service-addon__list {
@@ -1230,8 +1230,8 @@ onShow(() => {
 .service-addon__card {
     padding: 30rpx 30rpx;
     border-radius: 37rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #ffffff;
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .service-addon__top {
@@ -1246,13 +1246,13 @@ onShow(() => {
     flex: 1;
     font-size: 28rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .service-addon__price {
     font-size: 28rpx;
     font-weight: 700;
-    color: var(--wm-color-secondary, #c99b73);
+    color: var(--wm-color-secondary, #c8a45d);
 }
 
 .service-addon__desc {
@@ -1260,7 +1260,7 @@ onShow(() => {
     margin-top: 8rpx;
     font-size: 24rpx;
     line-height: 1.6;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .submit-summary {
@@ -1275,13 +1275,13 @@ onShow(() => {
 .submit-summary__label {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .submit-summary__amount {
     font-size: 44rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 @media screen and (max-width: 380px) {

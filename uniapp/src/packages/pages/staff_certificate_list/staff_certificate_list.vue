@@ -339,10 +339,10 @@ onShow(async () => {
     box-sizing: border-box;
     background: radial-gradient(
             circle at top left,
-            rgba(232, 90, 79, 0.1) 0,
-            rgba(252, 251, 249, 0) 36%
+            rgba(11, 11, 11, 0.1) 0,
+            rgba(248, 247, 242, 0) 36%
         ),
-        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
+        linear-gradient(180deg, var(--wm-color-bg-page, #ffffff) 0%, #f8f7f2 100%);
 }
 
 .page-section {
@@ -381,14 +381,14 @@ onShow(async () => {
     font-size: 28rpx;
     font-weight: 700;
     line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .section-head__desc {
     font-size: 22rpx;
     font-weight: 600;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .section-head__meta {
@@ -396,7 +396,7 @@ onShow(async () => {
     font-size: 22rpx;
     font-weight: 700;
     line-height: 1.4;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .hero-card__head,
@@ -429,7 +429,7 @@ onShow(async () => {
 .hero-card__eyebrow {
     font-size: 20rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .hero-card__title {
@@ -437,14 +437,14 @@ onShow(async () => {
     margin-top: 10rpx;
     font-size: 40rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .hero-card__meta {
     display: block;
     margin-top: 8rpx;
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .hero-card__action,
@@ -461,14 +461,14 @@ onShow(async () => {
     min-height: 56rpx;
     padding: 0 20rpx;
     background: rgba(255, 255, 255, 0.92);
-    border: 1rpx solid rgba(244, 199, 191, 0.88);
+    border: 1rpx solid rgba(216, 194, 138, 0.88);
 }
 
 .hero-card__action-text,
 .empty-state__action-text {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .hero-metrics {
@@ -482,19 +482,19 @@ onShow(async () => {
     padding: 18rpx 12rpx;
     border-radius: 24rpx;
     background: rgba(255, 255, 255, 0.72);
-    border: 1rpx solid rgba(244, 199, 191, 0.72);
+    border: 1rpx solid rgba(216, 194, 138, 0.72);
     text-align: center;
 }
 
 .hero-metric--selected {
-    background: rgba(232, 90, 79, 0.12);
-    border-color: rgba(232, 90, 79, 0.28);
+    background: rgba(11, 11, 11, 0.12);
+    border-color: rgba(11, 11, 11, 0.28);
 }
 
 .hero-metric__label {
     display: block;
     font-size: 22rpx;
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .hero-metric__value {
@@ -502,7 +502,7 @@ onShow(async () => {
     margin-top: 8rpx;
     font-size: 30rpx;
     font-weight: 700;
-    color: #1e2432;
+    color: #111111;
 }
 
 .certificate-card__head {
@@ -513,7 +513,7 @@ onShow(async () => {
     width: 136rpx;
     height: 104rpx;
     border-radius: 24rpx;
-    background: #f7f1ed;
+    background: #f8f7f2;
     flex-shrink: 0;
 }
 
@@ -522,14 +522,14 @@ onShow(async () => {
     min-width: 0;
     font-size: 30rpx;
     font-weight: 700;
-    color: #1e2432;
+    color: #111111;
 }
 
 .certificate-card__meta {
     display: block;
     margin-top: 10rpx;
     font-size: 24rpx;
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .chip-row {
@@ -541,33 +541,33 @@ onShow(async () => {
 .info-chip {
     padding: 10rpx 18rpx;
     border-radius: 999rpx;
-    background: #f6efe9;
+    background: #F7F0DF;
     font-size: 22rpx;
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .info-chip--success {
-    background: rgba(94, 179, 126, 0.12);
-    color: #2f8a52;
+    background: rgba(77, 74, 66, 0.12);
+    color: #4D4A42;
 }
 
 .info-chip--danger {
-    background: rgba(232, 90, 79, 0.12);
-    color: #d4473c;
+    background: rgba(11, 11, 11, 0.12);
+    color: #5a4433;
 }
 
 .certificate-card__reason {
     margin-top: 18rpx;
     padding: 18rpx 20rpx;
     border-radius: 24rpx;
-    background: rgba(232, 90, 79, 0.08);
+    background: rgba(11, 11, 11, 0.08);
 }
 
 .certificate-card__reason-label {
     display: block;
     font-size: 22rpx;
     font-weight: 700;
-    color: #d4473c;
+    color: #5a4433;
 }
 
 .certificate-card__reason-text {
@@ -575,7 +575,7 @@ onShow(async () => {
     margin-top: 8rpx;
     font-size: 24rpx;
     line-height: 1.6;
-    color: #7a4c46;
+    color: #5A4433;
 }
 
 .action-row {
@@ -592,13 +592,13 @@ onShow(async () => {
 
 .action-btn--ghost {
     background: #fff;
-    border: 1rpx solid #efe6e1;
-    color: #7f7b78;
+    border: 1rpx solid #e7e2d6;
+    color: #5f5a50;
 }
 
 .action-btn--danger {
-    background: rgba(232, 90, 79, 0.12);
-    color: #d4473c;
+    background: rgba(11, 11, 11, 0.12);
+    color: #5a4433;
 }
 
 .empty-state {
@@ -611,7 +611,7 @@ onShow(async () => {
 .empty-state__title {
     margin-top: 20rpx;
     font-size: 26rpx;
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .empty-state__action {

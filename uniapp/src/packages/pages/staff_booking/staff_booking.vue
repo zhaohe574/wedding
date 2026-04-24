@@ -1720,7 +1720,7 @@ onUnload(() => {
 
     overflow: hidden;
 
-    background: #fcfbf9;
+    background: #ffffff;
 }
 
 .staff-booking-page__hero {
@@ -1732,7 +1732,7 @@ onUnload(() => {
 
     overflow: hidden;
 
-    background: #fcfbf9;
+    background: #ffffff;
 }
 
 .staff-booking-page__hero-image,
@@ -1764,11 +1764,11 @@ onUnload(() => {
 
     background: linear-gradient(
         180deg,
-        rgba(9, 9, 11, 0.06) 0%,
+        rgba(11, 11, 11, 0.06) 0%,
 
-        rgba(9, 9, 11, 0.13) 36%,
+        rgba(11, 11, 11, 0.13) 36%,
 
-        rgba(9, 9, 11, 0.28) 100%
+        rgba(11, 11, 11, 0.28) 100%
     );
 }
 
@@ -1777,11 +1777,11 @@ onUnload(() => {
 
     background: linear-gradient(
         180deg,
-        rgba(9, 9, 11, 0) 0%,
+        rgba(11, 11, 11, 0) 0%,
 
-        rgba(9, 9, 11, 0.16) 24%,
+        rgba(11, 11, 11, 0.16) 24%,
 
-        rgba(9, 9, 11, 0.51) 100%
+        rgba(11, 11, 11, 0.51) 100%
     );
 }
 
@@ -1837,7 +1837,7 @@ onUnload(() => {
 
     color: rgba(255, 255, 255, 0.96);
 
-    text-shadow: 0 4rpx 12rpx rgba(9, 9, 11, 0.2);
+    text-shadow: 0 4rpx 12rpx rgba(11, 11, 11, 0.2);
 }
 
 .staff-booking-page__assist-text {
@@ -1847,15 +1847,15 @@ onUnload(() => {
 
     line-height: 1.4;
 
-    color: rgba(255, 241, 238, 0.92);
+    color: rgba(247, 240, 223, 0.92);
 
-    text-shadow: 0 4rpx 12rpx rgba(9, 9, 11, 0.18);
+    text-shadow: 0 4rpx 12rpx rgba(11, 11, 11, 0.18);
 }
 
 .step-badge {
     align-self: flex-start;
 
-    box-shadow: 0 8rpx 20rpx rgba(232, 90, 79, 0.08);
+    box-shadow: 0 8rpx 20rpx rgba(11, 11, 11, 0.08);
 }
 
 .choice-scroll {
@@ -1895,7 +1895,7 @@ onUnload(() => {
 
     background: rgba(255, 255, 255, 0.92);
 
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 
     box-sizing: border-box;
 
@@ -1917,11 +1917,11 @@ onUnload(() => {
 }
 
 .choice-card--selected {
-    background: #fff1ee;
+    background: #f3f2ee;
 
-    border-color: #f4c7bf;
+    border-color: #d8c28a;
 
-    box-shadow: 0 12rpx 28rpx rgba(232, 90, 79, 0.14);
+    box-shadow: 0 12rpx 28rpx rgba(11, 11, 11, 0.14);
 }
 
 .choice-card__body {
@@ -1957,7 +1957,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 
     white-space: nowrap;
 
@@ -1975,7 +1975,7 @@ onUnload(() => {
 
     font-weight: 500;
 
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .choice-card__check {
@@ -1985,7 +1985,7 @@ onUnload(() => {
 
     border-radius: 50%;
 
-    background: #e85a4f;
+    background: #0b0b0b;
 
     color: #ffffff;
 
@@ -1999,7 +1999,7 @@ onUnload(() => {
 
     flex-shrink: 0;
 
-    box-shadow: 0 8rpx 18rpx rgba(232, 90, 79, 0.2);
+    box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.2);
 }
 
 .empty-state {
@@ -2009,7 +2009,7 @@ onUnload(() => {
 
     background: rgba(255, 255, 255, 0.88);
 
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 
     backdrop-filter: blur(18rpx);
 
@@ -2021,7 +2021,7 @@ onUnload(() => {
 
     line-height: 1.5;
 
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .staff-booking-page :deep(.wm-action-area) {
@@ -2033,7 +2033,7 @@ onUnload(() => {
 
     padding: 22rpx 22rpx calc(39rpx + env(safe-area-inset-bottom));
 
-    background: #fcfbf9;
+    background: #ffffff;
 
     border-top: none;
 
@@ -2061,13 +2061,13 @@ onUnload(() => {
 
     background: rgba(255, 255, 255, 0.91);
 
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 
     backdrop-filter: blur(20rpx);
 
     -webkit-backdrop-filter: blur(20rpx);
 
-    box-shadow: 0 18rpx 34rpx rgba(9, 9, 11, 0.08);
+    box-shadow: 0 18rpx 34rpx rgba(11, 11, 11, 0.08);
 }
 
 .total-pill {
@@ -2083,9 +2083,9 @@ onUnload(() => {
 
     border-radius: 37rpx;
 
-    background: #fff1ee;
+    background: #f3f2ee;
 
-    border: 1rpx solid #f4c7bf;
+    border: 1rpx solid #d8c28a;
 }
 
 .total-pill__text {
@@ -2095,7 +2095,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .booking-action-bar__buttons {
@@ -2129,17 +2129,17 @@ onUnload(() => {
 .booking-action-btn--prev {
     width: 164rpx;
 
-    background: #fcfbf9;
+    background: #ffffff;
 
-    border: 1rpx solid #efe6e1;
+    border: 1rpx solid #e7e2d6;
 }
 
 .booking-action-btn--next {
     width: 220rpx;
 
-    background: #e85a4f;
+    background: #0b0b0b;
 
-    box-shadow: 0 10rpx 18rpx rgba(232, 90, 79, 0.16);
+    box-shadow: 0 10rpx 18rpx rgba(11, 11, 11, 0.16);
 }
 
 .booking-action-btn--disabled {
@@ -2155,7 +2155,7 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .booking-action-btn__text--inverse {
@@ -2175,7 +2175,7 @@ onUnload(() => {
 
     inset: 0;
 
-    background: rgba(9, 9, 11, 0.45);
+    background: rgba(11, 11, 11, 0.45);
 }
 
 .summary-popup__dialog {
@@ -2213,13 +2213,13 @@ onUnload(() => {
 
     background: rgba(255, 255, 255, 0.94);
 
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 
     backdrop-filter: blur(24rpx);
 
     -webkit-backdrop-filter: blur(24rpx);
 
-    box-shadow: 0 18rpx 36rpx rgba(9, 9, 11, 0.14);
+    box-shadow: 0 18rpx 36rpx rgba(11, 11, 11, 0.14);
 
     box-sizing: border-box;
 
@@ -2235,9 +2235,9 @@ onUnload(() => {
 
     border-radius: 999rpx;
 
-    background: #fff1ee;
+    background: #f3f2ee;
 
-    border: 1rpx solid #f4c7bf;
+    border: 1rpx solid #d8c28a;
 }
 
 .summary-popup__tag-text {
@@ -2247,7 +2247,7 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: #e85a4f;
+    color: #0b0b0b;
 }
 
 .summary-popup__title {
@@ -2261,7 +2261,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .summary-popup__list {
@@ -2291,7 +2291,7 @@ onUnload(() => {
 
     padding: 10rpx 0;
 
-    border-bottom: 1rpx solid #f7f1ed;
+    border-bottom: 1rpx solid #f8f7f2;
 }
 
 .summary-popup__item:last-child {
@@ -2309,7 +2309,7 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .summary-popup__value {
@@ -2321,11 +2321,11 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .summary-popup__value--accent {
-    color: #e85a4f;
+    color: #0b0b0b;
 }
 
 .summary-popup__total {
@@ -2343,9 +2343,9 @@ onUnload(() => {
 
     border-radius: 37rpx;
 
-    background: #fff1ee;
+    background: #f3f2ee;
 
-    border: 1rpx solid #f4c7bf;
+    border: 1rpx solid #d8c28a;
 }
 
 .summary-popup__total-label {
@@ -2355,7 +2355,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .summary-popup__total-value {
@@ -2365,7 +2365,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: #e85a4f;
+    color: #0b0b0b;
 }
 
 .summary-popup__close {
@@ -2381,9 +2381,9 @@ onUnload(() => {
 
     border-radius: 37rpx;
 
-    background: #fcfbf9;
+    background: #ffffff;
 
-    border: 1rpx solid #efe6e1;
+    border: 1rpx solid #e7e2d6;
 
     &:active {
         transform: scale(0.985);
@@ -2397,6 +2397,6 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: #1e2432;
+    color: #111111;
 }
 </style>

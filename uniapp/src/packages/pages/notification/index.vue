@@ -62,7 +62,7 @@
                 </scroll-view>
 
                 <view v-if="loading && !notificationList.length" class="loading-tip">
-                    <tn-icon name="loading" :size="32" color="#B4ACA8" />
+                    <tn-icon name="loading" :size="32" color="#9A9388" />
                     <text>加载中...</text>
                 </view>
 
@@ -415,10 +415,10 @@ onShow(() => {
     min-height: 56rpx;
     padding: 0 26rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    background: var(--wm-color-primary-soft, #fff1ee);
+    background: var(--wm-color-primary-soft, #f3f2ee);
     font-size: 22rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .notification-page__toolbar-actions {
@@ -433,7 +433,7 @@ onShow(() => {
     flex-shrink: 0;
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .notification-page__filter-scroll {
@@ -459,12 +459,12 @@ onShow(() => {
     min-width: 32rpx;
     padding: 0 8rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    background: rgba(232, 90, 79, 0.1);
+    background: rgba(11, 11, 11, 0.1);
     font-size: 20rpx;
     font-weight: 700;
     line-height: 32rpx;
     text-align: center;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .notification-page__filter-chip-count--active {
@@ -485,9 +485,9 @@ onShow(() => {
     gap: 12rpx;
     padding: 30rpx 34rpx;
     border-radius: var(--wm-radius-card, 45rpx);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.86);
-    box-shadow: 0 10rpx 28rpx rgba(214, 185, 167, 0.08);
+    box-shadow: 0 10rpx 28rpx rgba(17, 17, 17, 0.08);
     backdrop-filter: blur(22rpx);
     -webkit-backdrop-filter: blur(22rpx);
 
@@ -511,7 +511,7 @@ onShow(() => {
     font-size: 28rpx;
     font-weight: 600;
     line-height: 1.6;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .notice-card__delete {
@@ -520,7 +520,7 @@ onShow(() => {
     font-size: 22rpx;
     font-weight: 600;
     line-height: 1.4;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .notice-card__content {
@@ -528,7 +528,7 @@ onShow(() => {
     font-size: 28rpx;
     font-weight: 600;
     line-height: 1.6;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .loading-tip,
@@ -539,6 +539,6 @@ onShow(() => {
     gap: 12rpx;
     padding: 30rpx 0 8rpx;
     font-size: 22rpx;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 </style>

@@ -147,9 +147,9 @@ onShow(() => {
 .recharge-page__eyebrow {
     font-size: 22rpx;
     font-weight: 600;
-    letter-spacing: 0.16em;
+    letter-spacing: 0;
     text-transform: uppercase;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .recharge-page__title {
@@ -157,7 +157,7 @@ onShow(() => {
     display: block;
     font-size: 38rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .recharge-page__desc {
@@ -165,11 +165,11 @@ onShow(() => {
     display: block;
     font-size: 24rpx;
     line-height: 1.6;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .recharge-page__balance {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
     font-weight: 700;
 }
 
@@ -182,7 +182,7 @@ onShow(() => {
 .recharge-page__label {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .recharge-page__amount-box {
@@ -190,13 +190,13 @@ onShow(() => {
     align-items: center;
     gap: 12rpx;
     padding: 8rpx 0 20rpx;
-    border-bottom: 1rpx solid var(--wm-color-border, #efe6e1);
+    border-bottom: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .recharge-page__currency {
     font-size: 48rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .recharge-page__amount-input {
@@ -204,19 +204,19 @@ onShow(() => {
     min-width: 0;
     font-size: 60rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .recharge-page__hint {
     font-size: 22rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .recharge-page__record-link {
     align-self: center;
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
     padding: 12rpx 0 32rpx;
 }
 </style>

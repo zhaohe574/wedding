@@ -19,7 +19,7 @@
                     @input="handleSearch"
                 />
                 <view v-if="searchKeyword" class="clear-icon" @click="clearSearch">
-                    <tn-icon name="close" size="22" color="#64748b"></tn-icon>
+                    <tn-icon name="close" size="22" color="#5f5a50"></tn-icon>
                 </view>
             </view>
         </view>
@@ -97,7 +97,7 @@
 
         <!-- 无搜索结果 -->
         <view v-if="content.show_search && filteredList.length === 0" class="no-result">
-            <tn-icon name="search" size="80" color="#cbd5e1"></tn-icon>
+            <tn-icon name="search" size="80" color="#d8d3c7"></tn-icon>
             <text class="no-result-text">未找到相关问题</text>
             <text class="no-result-hint">试试其他关键词</text>
         </view>
@@ -121,7 +121,7 @@ const props = defineProps({
 })
 
 const themeStore = useThemeStore()
-const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
+const primaryColor = computed(() => themeStore.primaryColor || '#0B0B0B')
 
 // 主题内联样式（兼容小程序，不使用CSS变量）
 const $theme = {
@@ -232,8 +232,8 @@ const clearSearch = () => {
         .header-title {
             font-size: 32rpx;
             font-weight: 700;
-            color: #1e293b;
-            letter-spacing: -0.5rpx;
+            color: #111111;
+            letter-spacing: 0;
         }
     }
 
@@ -261,13 +261,13 @@ const clearSearch = () => {
         .search-input {
             flex: 1;
             font-size: 28rpx;
-            color: #1e293b;
+            color: #111111;
             background: transparent;
             border: none;
             outline: none;
 
             &::placeholder {
-                color: #94a3b8;
+                color: #9a9388;
             }
         }
 
@@ -277,13 +277,13 @@ const clearSearch = () => {
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(148, 163, 184, 0.1);
+            background: rgba(154, 147, 136, 0.1);
             border-radius: 50%;
             cursor: pointer;
             transition: all 0.2s;
 
             &:active {
-                background: rgba(148, 163, 184, 0.2);
+                background: rgba(154, 147, 136, 0.2);
                 transform: scale(0.9);
             }
         }
@@ -334,7 +334,7 @@ const clearSearch = () => {
         .question-text {
             font-size: 28rpx;
             font-weight: 600;
-            color: #1e293b;
+            color: #111111;
             line-height: 1.5;
         }
 
@@ -379,7 +379,7 @@ const clearSearch = () => {
         .answer-icon {
             width: 48rpx;
             height: 48rpx;
-            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            background: linear-gradient(135deg, #4d4a42 0%, #4d4a42 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -388,13 +388,13 @@ const clearSearch = () => {
             font-weight: 800;
             color: #ffffff;
             flex-shrink: 0;
-            box-shadow: 0 4rpx 16rpx rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4rpx 16rpx rgba(77, 74, 66, 0.24);
         }
 
         .answer-text {
             flex: 1;
             font-size: 26rpx;
-            color: #475569;
+            color: #5F5A50;
             line-height: 1.7;
             padding-top: 4rpx;
         }
@@ -459,7 +459,7 @@ const clearSearch = () => {
         .q-text {
             font-size: 28rpx;
             font-weight: 600;
-            color: #1e293b;
+            color: #111111;
             line-height: 1.5;
         }
 
@@ -483,7 +483,7 @@ const clearSearch = () => {
         .a-badge {
             width: 48rpx;
             height: 48rpx;
-            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            background: linear-gradient(135deg, #4d4a42 0%, #4d4a42 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -492,13 +492,13 @@ const clearSearch = () => {
             font-weight: 800;
             color: #ffffff;
             flex-shrink: 0;
-            box-shadow: 0 4rpx 16rpx rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4rpx 16rpx rgba(77, 74, 66, 0.24);
         }
 
         .a-content {
             flex: 1;
             font-size: 26rpx;
-            color: #475569;
+            color: #5F5A50;
             line-height: 1.7;
             padding-top: 4rpx;
         }
@@ -513,12 +513,12 @@ const clearSearch = () => {
         padding: 80rpx 32rpx;
         background: rgba(255, 255, 255, 0.6);
         backdrop-filter: blur(20rpx);
-        border: 2rpx dashed rgba(148, 163, 184, 0.3);
+        border: 2rpx dashed rgba(154, 147, 136, 0.3);
         border-radius: 14rpx;
 
         .no-result-text {
             font-size: 28rpx;
-            color: #64748b;
+            color: #5f5a50;
             font-weight: 600;
             margin-top: 24rpx;
             margin-bottom: 8rpx;
@@ -526,7 +526,7 @@ const clearSearch = () => {
 
         .no-result-hint {
             font-size: 24rpx;
-            color: #94a3b8;
+            color: #9a9388;
         }
     }
 

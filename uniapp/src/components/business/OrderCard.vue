@@ -53,7 +53,7 @@
                 <!-- 服务地点 -->
                 <view class="order-card__info-row">
                     <view class="order-card__info-icon-wrapper">
-                        <tn-icon name="location" size="28" color="#999999" />
+                        <tn-icon name="location" size="28" color="#9A9388" />
                     </view>
                     <view class="order-card__info-content">
                         <view class="order-card__location-wrapper">
@@ -164,16 +164,16 @@ const emit = defineEmits<{
 
 // 状态配置（使用设计规范中的状态色）
 const statusConfig = {
-    pending_confirm: { text: '待确认', color: '#C98524', bgColor: 'rgba(201, 133, 36, 0.12)' },
-    pending_pay: { text: '待支付', color: '#E85A4F', bgColor: 'rgba(232, 90, 79, 0.12)' },
-    paid: { text: '待服务', color: '#2F7D58', bgColor: 'rgba(47, 125, 88, 0.12)' },
-    in_service: { text: '服务中', color: '#607086', bgColor: 'rgba(96, 112, 134, 0.12)' },
-    completed: { text: '已完成', color: '#2F7D58', bgColor: 'rgba(47, 125, 88, 0.12)' },
-    reviewed: { text: '已评价', color: '#2F7D58', bgColor: 'rgba(47, 125, 88, 0.12)' },
-    cancelled: { text: '已取消', color: '#B4ACA8', bgColor: 'rgba(180, 172, 168, 0.14)' },
-    paused: { text: '已暂停', color: '#C98524', bgColor: 'rgba(201, 133, 36, 0.12)' },
-    refunding: { text: '退款中', color: '#0F766E', bgColor: 'rgba(15, 118, 110, 0.12)' },
-    refunded: { text: '已退款', color: '#B44A3A', bgColor: 'rgba(180, 74, 58, 0.12)' }
+    pending_confirm: { text: '待确认', color: '#9F7A2E', bgColor: 'rgba(159, 122, 46, 0.12)' },
+    pending_pay: { text: '待支付', color: '#0B0B0B', bgColor: 'rgba(11, 11, 11, 0.12)' },
+    paid: { text: '待服务', color: '#4D4A42', bgColor: 'rgba(77, 74, 66, 0.12)' },
+    in_service: { text: '服务中', color: '#6C665C', bgColor: 'rgba(108, 102, 92, 0.12)' },
+    completed: { text: '已完成', color: '#4D4A42', bgColor: 'rgba(77, 74, 66, 0.12)' },
+    reviewed: { text: '已评价', color: '#4D4A42', bgColor: 'rgba(77, 74, 66, 0.12)' },
+    cancelled: { text: '已取消', color: '#9A9388', bgColor: 'rgba(154, 147, 136, 0.14)' },
+    paused: { text: '已暂停', color: '#9F7A2E', bgColor: 'rgba(159, 122, 46, 0.12)' },
+    refunding: { text: '退款中', color: '#6C665C', bgColor: 'rgba(108, 102, 92, 0.12)' },
+    refunded: { text: '已退款', color: '#5A4433', bgColor: 'rgba(90, 68, 51, 0.12)' }
 }
 
 const staffList = computed(() => {
@@ -239,9 +239,9 @@ const statusText = computed(() => {
 const statusStyle = computed(() => {
     const config = statusConfig[props.order.status]
     return {
-        background: config?.bgColor || 'rgba(148, 163, 184, 0.12)',
-        color: config?.color || '#999999',
-        border: `1rpx solid ${config?.color || '#999999'}1F`
+        background: config?.bgColor || 'rgba(154, 147, 136, 0.12)',
+        color: config?.color || '#9A9388',
+        border: `1rpx solid ${config?.color || '#9A9388'}1F`
     }
 })
 
@@ -253,12 +253,12 @@ const getActionButtonStyle = (type: string) => {
                 $theme.secondaryColor || $theme.primaryColor
             } 100%)`,
             borderColor: $theme.primaryColor,
-            boxShadow: `0 14rpx 28rpx rgba(8, 10, 16, 0.12)`
+            boxShadow: `0 14rpx 28rpx rgba(11, 11, 11, 0.12)`
         }
     }
     return {
         background: 'rgba(255,255,255,0.84)',
-        borderColor: 'var(--wm-color-border, #EFE6E1)'
+        borderColor: 'var(--wm-color-border, #E7E2D6)'
     }
 }
 
@@ -270,7 +270,7 @@ const getActionTextStyle = (type: string) => {
         }
     }
     return {
-        color: 'var(--wm-text-primary, #1E2432)'
+        color: 'var(--wm-text-primary, #111111)'
     }
 }
 
@@ -300,18 +300,18 @@ export default {
     background: linear-gradient(
         180deg,
         rgba(255, 255, 255, 0.96) 0%,
-        rgba(255, 247, 244, 0.96) 100%
+        rgba(248, 247, 242, 0.96) 100%
     );
     border-radius: var(--wm-radius-card-glass, 26rpx);
     padding: var(--wm-space-card-padding-lg, 24rpx);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
     transition: transform var(--wm-motion-base, 220ms) ease,
         box-shadow var(--wm-motion-base, 220ms) ease;
     overflow: hidden;
 
     &:active {
-        box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
+        box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));
         transform: translateY(-2rpx) scale(0.995);
     }
 
@@ -352,20 +352,20 @@ export default {
     &__eyebrow {
         font-size: 20rpx;
         font-weight: 600;
-        letter-spacing: 0.16em;
+        letter-spacing: 0;
         text-transform: uppercase;
-        color: var(--wm-color-secondary, #c99b73);
+        color: var(--wm-color-secondary, #c8a45d);
     }
 
     &__order-sn {
         font-size: 30rpx;
         font-weight: 700;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__order-time {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__main {
@@ -383,9 +383,9 @@ export default {
         background: linear-gradient(
             135deg,
             rgba(255, 255, 255, 0.94) 0%,
-            rgba(255, 247, 244, 0.98) 100%
+            rgba(248, 247, 242, 0.98) 100%
         );
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        border: 1rpx solid var(--wm-color-border, #e7e2d6);
         border-radius: var(--wm-radius-card-soft, 20rpx);
     }
 
@@ -395,7 +395,7 @@ export default {
         border-radius: var(--wm-radius-card, 24rpx);
         flex-shrink: 0;
         border: 2rpx solid rgba(255, 255, 255, 0.9);
-        box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.16);
+        box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.16);
     }
 
     &__staff-info {
@@ -409,7 +409,7 @@ export default {
     &__staff-name {
         font-size: 28rpx;
         font-weight: 600;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -417,7 +417,7 @@ export default {
 
     &__package-name {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -454,13 +454,13 @@ export default {
 
     &__info-text {
         font-size: 26rpx;
-        color: #666666;
+        color: #5F5A50;
         line-height: 1.5;
     }
 
     &__info-label {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
         margin-bottom: 6rpx;
     }
 
@@ -492,7 +492,7 @@ export default {
     &__schedule-date-text {
         font-size: 26rpx;
         font-weight: 600;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__schedule-slots {
@@ -528,7 +528,7 @@ export default {
     &__location-text {
         flex: 1;
         font-size: 26rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
         line-height: 1.6;
     }
 
@@ -537,7 +537,7 @@ export default {
         justify-content: space-between;
         align-items: flex-end;
         padding: var(--wm-space-card-padding, 20rpx) 0 0;
-        border-top: 1rpx solid var(--wm-color-border, #efe6e1);
+        border-top: 1rpx solid var(--wm-color-border, #e7e2d6);
         margin-bottom: var(--wm-space-card-padding, 20rpx);
     }
 
@@ -555,18 +555,18 @@ export default {
 
     &__price-label {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__price-original {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
         text-decoration: line-through;
     }
 
     &__price-discount {
         font-size: 24rpx;
-        color: var(--wm-color-secondary, #c99b73);
+        color: var(--wm-color-secondary, #c8a45d);
         font-weight: 600;
     }
 
@@ -579,7 +579,7 @@ export default {
 
     &__price-label-total {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__price-total-wrapper {
@@ -615,12 +615,12 @@ export default {
         padding: 0 var(--wm-space-card-padding-lg, 24rpx);
         box-sizing: border-box;
         border-radius: var(--wm-radius-pill, 999rpx);
-        border: 2rpx solid var(--wm-color-border, #efe6e1);
+        border: 2rpx solid var(--wm-color-border, #e7e2d6);
         transition: all 0.2s ease;
         flex-shrink: 0;
 
         &--primary {
-            box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+            box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
             border: none;
         }
 

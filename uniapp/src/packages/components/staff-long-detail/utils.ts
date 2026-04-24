@@ -23,7 +23,7 @@ export type LongDetailBlock = LongDetailImageBlock | LongDetailTextBlock
 const defaultTextStyle = (): LongDetailTextStyle => ({
     align: 'left',
     fontSize: 'md',
-    color: '#1E2432',
+    color: '#111111',
     bold: false
 })
 
@@ -45,7 +45,7 @@ export const createImageBlock = (): LongDetailImageBlock => ({
 const normalizeTextStyle = (style: any): LongDetailTextStyle => ({
     align: ['left', 'center', 'right'].includes(style?.align) ? style.align : 'left',
     fontSize: ['sm', 'md', 'lg'].includes(style?.fontSize) ? style.fontSize : 'md',
-    color: String(style?.color || '#1E2432'),
+    color: String(style?.color || '#111111'),
     bold: Boolean(style?.bold)
 })
 
@@ -118,7 +118,7 @@ export const stringifyLongDetailDraftContent = (blocks: LongDetailBlock[]) => {
                 style: {
                     align: block.style.align,
                     fontSize: block.style.fontSize,
-                    color: block.style.color || '#1E2432',
+                    color: block.style.color || '#111111',
                     bold: Boolean(block.style.bold)
                 }
             }
@@ -203,7 +203,7 @@ export const stringifyLongDetailContent = (blocks: LongDetailBlock[]) => {
                 style: {
                     align: block.style.align,
                     fontSize: block.style.fontSize,
-                    color: block.style.color || '#1E2432',
+                    color: block.style.color || '#111111',
                     bold: Boolean(block.style.bold)
                 }
             })

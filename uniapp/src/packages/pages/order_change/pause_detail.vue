@@ -313,6 +313,6 @@ onLoad((options: any) => {
 @import './shared.scss';
 
 .order-change-card__value--danger {
-    color: var(--wm-color-danger, #c94b49);
+    color: var(--wm-color-danger, #5a4433);
 }
 </style>

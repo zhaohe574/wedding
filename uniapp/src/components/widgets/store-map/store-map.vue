@@ -32,7 +32,7 @@
                 style="height: 400rpx"
             >
                 <view class="text-center text-gray-400">
-                    <tn-icon name="map" size="80" color="#ccc"></tn-icon>
+                    <tn-icon name="map" size="80" color="#D8D3C7"></tn-icon>
                     <text class="block mt-2 text-sm">地图功能仅在小程序中可用</text>
                 </view>
             </view>
@@ -105,7 +105,7 @@
                 style="height: 600rpx"
             >
                 <view class="text-center text-gray-400">
-                    <tn-icon name="map" size="80" color="#ccc"></tn-icon>
+                    <tn-icon name="map" size="80" color="#D8D3C7"></tn-icon>
                     <text class="block mt-2 text-sm">地图功能仅在小程序中可用</text>
                 </view>
             </view>
@@ -186,7 +186,7 @@ const props = defineProps({
 })
 
 const themeStore = useThemeStore()
-const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
+const primaryColor = computed(() => themeStore.primaryColor || '#0B0B0B')
 
 // 内联样式（替代Tailwind主题类和硬编码颜色，兼容小程序）
 const $theme = {
@@ -310,14 +310,14 @@ const handleCall = (item: any) => {
 
     // 主要按钮（实心）
     .primary-btn {
-        background-color: #409eff;
-        border-color: #409eff;
+        background-color: #6c665c;
+        border-color: #6c665c;
     }
 
     // 朴素按钮（空心）
     .plain-btn {
         background-color: #fff;
-        border-color: #dcdfe6;
+        border-color: #D8D3C7;
     }
 
     // 按钮文字
@@ -329,7 +329,7 @@ const handleCall = (item: any) => {
     }
 
     .plain-text {
-        color: #606266;
+        color: #5F5A50;
     }
 
     // Hover 效果

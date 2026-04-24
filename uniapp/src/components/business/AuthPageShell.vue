@@ -60,9 +60,9 @@ const themeStore = useThemeStore()
     padding: 34rpx 30rpx 38rpx;
     border-radius: var(--wm-radius-popup, 52rpx);
     background: rgba(255, 255, 255, 0.84);
-    border: 1rpx solid rgba(244, 199, 191, 0.48);
+    border: 1rpx solid rgba(216, 194, 138, 0.48);
     backdrop-filter: blur(20rpx);
-    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
+    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));
 }
 
 .auth-shell__footer {

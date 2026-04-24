@@ -45,7 +45,7 @@
                         class="publish-grid__add"
                         @click="chooseImage"
                     >
-                        <tn-icon name="plus" size="48" color="#999" />
+                        <tn-icon name="plus" size="48" color="#9A9388" />
 
                         <text class="publish-grid__add-text">添加图片</text>
                     </view>
@@ -67,7 +67,7 @@
                     </view>
 
                     <view v-else class="publish-grid__add" @click="chooseVideo">
-                        <tn-icon name="play-right" size="48" color="#999" />
+                        <tn-icon name="play-right" size="48" color="#9A9388" />
 
                         <text class="publish-grid__add-text">添加视频</text>
                     </view>
@@ -142,12 +142,12 @@
             <view class="publish-card publish-card--row wm-form-block">
                 <view class="publish-row" @click="chooseLocation">
                     <view class="publish-row__main">
-                        <tn-icon name="map" size="36" color="#7F7B78" />
+                        <tn-icon name="map" size="36" color="#5F5A50" />
 
                         <text class="publish-row__text">{{ form.location || '添加位置' }}</text>
                     </view>
 
-                    <tn-icon name="right" size="28" color="#999" />
+                    <tn-icon name="right" size="28" color="#9A9388" />
                 </view>
             </view>
 
@@ -156,7 +156,7 @@
             <view class="publish-card publish-card--row wm-form-block">
                 <view class="publish-row" @click="showVisiblePicker = true">
                     <view class="publish-row__main">
-                        <tn-icon name="eye" size="36" color="#7F7B78" />
+                        <tn-icon name="eye" size="36" color="#5F5A50" />
 
                         <text class="publish-row__text">谁可以看</text>
                     </view>
@@ -576,14 +576,14 @@ onLoad(() => {
 
     font-weight: 700;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .publish-card__caption,
 .publish-card__counter {
     font-size: 22rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .publish-card__counter {
@@ -599,7 +599,7 @@ onLoad(() => {
 
     line-height: 1.8;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .publish-grid {
@@ -661,9 +661,9 @@ onLoad(() => {
 
     justify-content: center;
 
-    background: rgba(255, 247, 244, 0.92);
+    background: rgba(248, 247, 242, 0.92);
 
-    border: 1rpx dashed var(--wm-color-border-strong, #f4c7bf);
+    border: 1rpx dashed var(--wm-color-border-strong, #d8c28a);
 }
 
 .publish-grid__add-text {
@@ -671,7 +671,7 @@ onLoad(() => {
 
     font-size: 22rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .publish-video-shell {
@@ -723,26 +723,26 @@ onLoad(() => {
 
     background: rgba(255, 255, 255, 0.9);
 
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 
     font-size: 24rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .publish-chip--active,
 .publish-tag {
-    background: var(--wm-color-primary-soft, #fff1ee);
+    background: var(--wm-color-primary-soft, #f3f2ee);
 
-    border-color: var(--wm-color-border-strong, #f4c7bf);
+    border-color: var(--wm-color-border-strong, #d8c28a);
 
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .publish-tag--adder {
     background: rgba(255, 255, 255, 0.9);
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .publish-hot-row {
@@ -786,11 +786,11 @@ onLoad(() => {
 .publish-row__tail-text {
     font-size: 26rpx;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .publish-row__tail-text {
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .publish-sheet {
@@ -804,7 +804,7 @@ onLoad(() => {
 
     font-weight: 700;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     margin-bottom: 24rpx;
 }
@@ -816,9 +816,9 @@ onLoad(() => {
 
     border-radius: 24rpx;
 
-    background: rgba(255, 247, 244, 0.92);
+    background: rgba(248, 247, 242, 0.92);
 
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 
     padding: 0 20rpx;
 }
@@ -826,7 +826,7 @@ onLoad(() => {
 .publish-sheet__hash {
     font-size: 32rpx;
 
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .publish-sheet__input {
@@ -838,7 +838,7 @@ onLoad(() => {
 
     font-size: 26rpx;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .publish-sheet__actions {
@@ -860,17 +860,17 @@ onLoad(() => {
 }
 
 .publish-sheet__btn--secondary {
-    background: rgba(255, 247, 244, 0.92);
+    background: rgba(248, 247, 242, 0.92);
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .publish-sheet__btn--primary {
     background: linear-gradient(
         135deg,
-        var(--wm-color-primary, #e85a4f) 0%,
+        var(--wm-color-primary, #0b0b0b) 0%,
 
-        var(--wm-color-secondary, #c99b73) 100%
+        var(--wm-color-secondary, #c8a45d) 100%
     );
 
     color: #ffffff;

@@ -61,7 +61,7 @@
                     <tn-icon
                         name="arrow-down"
                         size="28"
-                        :color="tagDisabled ? '#D0C6C0' : '#B4ACA8'"
+                        :color="tagDisabled ? '#D8D3C7' : '#9A9388'"
                     />
                 </view>
                 <text v-if="!selectedCategoryId" class="helper">请先选择服务分类</text>
@@ -340,7 +340,7 @@ const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
 const tempRegion = ref(normalizeServiceRegion(selectedRegion.value))
 const popupBorderRadius = 28
 const keywordPlaceholderStyle =
-    'color: rgba(30, 36, 50, 0.42); font-size: 30rpx; font-weight: 600; line-height: 1.6;'
+    'color: rgba(11, 11, 11, 0.42); font-size: 30rpx; font-weight: 600; line-height: 1.6;'
 
 const getPrimaryShadow = (alpha = 0.18) => `0 24rpx 40rpx ${alphaColor($theme.primaryColor, alpha)}`
 const isValidSortValue = (value: unknown) => sortOptions.some((item) => item.value === value)
@@ -762,7 +762,7 @@ onShow(() => {
 .card {
     padding: 34rpx 37rpx;
     border-radius: 45rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.84);
     backdrop-filter: blur(24rpx);
     -webkit-backdrop-filter: blur(24rpx);
@@ -793,13 +793,13 @@ onShow(() => {
     display: block;
     font-size: 28rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .hint {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .value {
@@ -808,14 +808,14 @@ onShow(() => {
     font-size: 30rpx;
     font-weight: 600;
     line-height: 1.6;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     white-space: pre-wrap;
 }
 
 .muted,
 .helper,
 .empty {
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .helper,
@@ -844,13 +844,13 @@ onShow(() => {
     min-height: 74rpx;
     padding: 0 28rpx;
     border-radius: 999rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.84);
     backdrop-filter: blur(24rpx);
     -webkit-backdrop-filter: blur(24rpx);
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .chip.soft {
@@ -858,8 +858,8 @@ onShow(() => {
 }
 
 .chip.active {
-    background: var(--wm-color-primary, #e85a4f);
-    border-color: var(--wm-color-primary, #e85a4f);
+    background: var(--wm-color-primary, #0b0b0b);
+    border-color: var(--wm-color-primary, #0b0b0b);
     color: #fff;
 }
 
@@ -872,12 +872,12 @@ onShow(() => {
     min-height: 104rpx;
     padding: 0 30rpx;
     border-radius: 37rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-    background: var(--wm-color-bg-page, #fcfbf9);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    background: var(--wm-color-bg-page, #ffffff);
 }
 
 .dropdown.disabled {
-    background: rgba(248, 241, 236, 0.72);
+    background: rgba(248, 247, 242, 0.72);
 }
 
 .dropdown__text {
@@ -885,14 +885,14 @@ onShow(() => {
     min-width: 0;
     font-size: 28rpx;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .dropdown.muted .dropdown__text {
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .keyword {
@@ -902,7 +902,7 @@ onShow(() => {
     font-size: 30rpx;
     font-weight: 600;
     line-height: 1.6;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .submit {
@@ -923,7 +923,7 @@ onShow(() => {
 .picker {
     border-radius: 52rpx 52rpx 0 0;
     padding-bottom: calc(var(--wm-space-card-padding, 30rpx) + env(safe-area-inset-bottom));
-    background: var(--wm-color-bg-page, #fcfbf9);
+    background: var(--wm-color-bg-page, #ffffff);
     overflow: hidden;
 }
 
@@ -932,7 +932,7 @@ onShow(() => {
     align-items: center;
     justify-content: space-between;
     padding: 34rpx 37rpx 30rpx;
-    border-bottom: 1rpx solid rgba(239, 230, 225, 0.92);
+    border-bottom: 1rpx solid rgba(231, 226, 214, 0.92);
 }
 
 .picker__group {
@@ -943,12 +943,12 @@ onShow(() => {
 
 .picker__action {
     font-size: 28rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .picker__action.primary,
 .picker__title {
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     font-weight: 700;
 }
 
@@ -958,7 +958,7 @@ onShow(() => {
 
 .picker__clear {
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .region {
@@ -972,7 +972,7 @@ onShow(() => {
     padding: 0 16rpx 16rpx;
     font-size: 24rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .region__scroll {
@@ -985,7 +985,7 @@ onShow(() => {
     padding: 20rpx 18rpx;
     font-size: 24rpx;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .date {
@@ -1002,7 +1002,7 @@ onShow(() => {
     align-items: center;
     justify-content: center;
     font-size: 30rpx;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .panel {
@@ -1020,21 +1020,21 @@ onShow(() => {
 .grid__item {
     padding: 30rpx 22rpx;
     border-radius: 37rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.94);
     font-size: 26rpx;
     font-weight: 500;
     line-height: 1.4;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     text-align: center;
 }
 
 .grid__item.active {
     color: #fff;
     font-weight: 600;
-    border-color: var(--wm-color-primary, #e85a4f);
-    background: var(--wm-color-primary, #e85a4f);
-    box-shadow: 0 10rpx 18rpx rgba(232, 90, 79, 0.16);
+    border-color: var(--wm-color-primary, #0b0b0b);
+    background: var(--wm-color-primary, #0b0b0b);
+    box-shadow: 0 10rpx 18rpx rgba(11, 11, 11, 0.16);
 }
 
 .picker__foot {
@@ -1050,10 +1050,10 @@ onShow(() => {
     justify-content: center;
     min-height: 101rpx;
     border-radius: 37rpx;
-    background: rgba(248, 241, 236, 0.86);
+    background: rgba(248, 247, 242, 0.86);
     font-size: 28rpx;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .picker__btn.primary-bg {
@@ -1082,9 +1082,9 @@ onShow(() => {
     padding: 22rpx 37rpx 39rpx;
     background: linear-gradient(
         180deg,
-        rgba(252, 251, 249, 0) 0%,
-        rgba(252, 251, 249, 0.94) 24%,
-        rgba(252, 251, 249, 1) 100%
+        rgba(248, 247, 242, 0) 0%,
+        rgba(248, 247, 242, 0.94) 24%,
+        rgba(248, 247, 242, 1) 100%
     );
 }
 

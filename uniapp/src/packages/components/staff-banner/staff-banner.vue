@@ -340,7 +340,7 @@ const handleVideoPause = () => {
     width: 100%;
     position: relative;
     overflow: hidden;
-    background-color: #f5f5f5;
+    background-color: #F8F7F2;
     transition: height 0.3s ease;
 }
 
@@ -494,7 +494,7 @@ const handleVideoPause = () => {
     height: 56rpx;
     padding: 0 20rpx;
     border-radius: 28rpx;
-    background-color: rgba(15, 23, 42, 0.52);
+    background-color: rgba(17, 17, 17, 0.52);
     backdrop-filter: blur(8rpx);
     display: flex;
     align-items: center;
@@ -505,7 +505,7 @@ const handleVideoPause = () => {
 
     &:active {
         transform: scale(0.96);
-        background-color: rgba(15, 23, 42, 0.72);
+        background-color: rgba(17, 17, 17, 0.72);
     }
 }
 

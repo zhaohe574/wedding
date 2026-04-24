@@ -8,7 +8,7 @@
                     <view class="staff-card__name-row">
                         <text class="staff-card__name">{{ staff.name }}</text>
                         <view class="staff-card__rating">
-                            <tn-icon name="star-fill" size="24" color="#C99B73" />
+                            <tn-icon name="star-fill" size="24" color="#C8A45D" />
                             <text class="staff-card__rating-text">{{ staff.rating }}</text>
                             <text class="staff-card__review-count">({{ staff.reviewCount }})</text>
                         </view>
@@ -50,7 +50,7 @@
                 <tn-icon
                     :name="staff.isFavorite ? 'heart-fill' : 'heart'"
                     size="40"
-                    :color="staff.isFavorite ? '#E85A4F' : '#B4ACA8'"
+                    :color="staff.isFavorite ? '#0B0B0B' : '#9A9388'"
                 />
             </view>
         </view>
@@ -127,7 +127,7 @@ export default {
         border-radius: 50%;
         flex-shrink: 0;
         border: 2rpx solid rgba(255, 255, 255, 0.92);
-        box-shadow: 0 10rpx 22rpx rgba(214, 185, 167, 0.12);
+        box-shadow: 0 10rpx 22rpx rgba(17, 17, 17, 0.12);
     }
 
     &__info {
@@ -149,7 +149,7 @@ export default {
         min-width: 0;
         font-size: 32rpx;
         font-weight: 600;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
@@ -164,17 +164,17 @@ export default {
     &__rating-text {
         font-size: 26rpx;
         font-weight: 500;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__review-count {
         font-size: 24rpx;
-        color: var(--wm-text-tertiary, #b4aca8);
+        color: var(--wm-text-tertiary, #9a9388);
     }
 
     &__category {
         font-size: 26rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__price-row {
@@ -186,16 +186,16 @@ export default {
     &__price {
         font-size: 32rpx;
         font-weight: 600;
-        color: var(--wm-color-secondary, #c99b73);
+        color: var(--wm-color-secondary, #c8a45d);
 
         &--negotiable {
-            color: var(--wm-text-tertiary, #b4aca8);
+            color: var(--wm-text-tertiary, #9a9388);
         }
     }
 
     &__price-unit {
         font-size: 24rpx;
-        color: var(--wm-color-secondary, #c99b73);
+        color: var(--wm-color-secondary, #c8a45d);
     }
 
     &__tags {
@@ -207,10 +207,10 @@ export default {
 
     &__tag {
         padding: 6rpx 14rpx;
-        background: var(--wm-color-primary-soft, #fff1ee);
-        color: var(--wm-color-primary, #e85a4f);
+        background: var(--wm-color-primary-soft, #f3f2ee);
+        color: var(--wm-color-primary, #0b0b0b);
         font-size: 24rpx;
-        border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+        border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
         border-radius: var(--wm-radius-pill, 999rpx);
     }
 

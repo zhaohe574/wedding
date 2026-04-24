@@ -335,7 +335,7 @@
             <BaseOverlayMask
                 :show="showComment"
                 :z-index="commentPopupMaskZIndex"
-                :background="$theme.maskColor || 'rgba(8, 10, 16, 0.58)'"
+                :background="$theme.maskColor || 'rgba(11, 11, 11, 0.58)'"
                 @close="closeCommentPopup"
             />
 
@@ -354,7 +354,7 @@
                             {{ replyTo ? `回复 @${replyTo.user_nickname}` : '发表评论' }}
                         </text>
                         <view class="dynamic-detail__popup-close" @click="closeCommentPopup">
-                            <tn-icon name="close" size="30" color="#978B83" />
+                            <tn-icon name="close" size="30" color="#9A9388" />
                         </view>
                     </view>
                     <view class="dynamic-detail__popup-body">
@@ -1247,10 +1247,10 @@ watch(showComment, (visible) => {
         background: linear-gradient(
             180deg,
             rgba(255, 255, 255, 0.98) 0%,
-            rgba(255, 247, 244, 0.94) 100%
+            rgba(248, 247, 242, 0.94) 100%
         );
-        border: 1rpx solid rgba(239, 230, 225, 0.9);
-        box-shadow: 0 18rpx 36rpx rgba(214, 185, 167, 0.16);
+        border: 1rpx solid rgba(231, 226, 214, 0.9);
+        box-shadow: 0 18rpx 36rpx rgba(17, 17, 17, 0.16);
     }
 
     &__hero-image,
@@ -1271,8 +1271,8 @@ watch(showComment, (visible) => {
         overflow: hidden;
         border-radius: 24rpx;
         background: $dynamic-surface-solid;
-        border: 1rpx solid rgba(239, 230, 225, 0.82);
-        box-shadow: 0 10rpx 22rpx rgba(214, 185, 167, 0.12);
+        border: 1rpx solid rgba(231, 226, 214, 0.82);
+        box-shadow: 0 10rpx 22rpx rgba(17, 17, 17, 0.12);
     }
 
     &__gallery-image {
@@ -1285,13 +1285,13 @@ watch(showComment, (visible) => {
         margin-top: 22rpx;
         padding: 34rpx 30rpx 32rpx;
         border-radius: 34rpx;
-        border: 1rpx solid rgba(239, 230, 225, 0.9);
+        border: 1rpx solid rgba(231, 226, 214, 0.9);
         background: linear-gradient(
             180deg,
             rgba(255, 255, 255, 0.96) 0%,
-            rgba(255, 249, 246, 0.98) 100%
+            rgba(255, 255, 255, 0.98) 100%
         );
-        box-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
+        box-shadow: 0 18rpx 38rpx rgba(17, 17, 17, 0.14);
     }
 
     &__author-card {
@@ -1316,7 +1316,7 @@ watch(showComment, (visible) => {
         border-radius: 50%;
         background: $dynamic-soft;
         border: 2rpx solid rgba(255, 255, 255, 0.92);
-        box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.14);
+        box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.14);
     }
 
     &__author-copy {
@@ -1351,27 +1351,27 @@ watch(showComment, (visible) => {
         line-height: 1;
 
         &--staff {
-            color: #8b5cf6;
-            background: rgba(139, 92, 246, 0.12);
-            border-color: rgba(139, 92, 246, 0.1);
+            color: #c8a45d;
+            background: rgba(200, 164, 93, 0.12);
+            border-color: rgba(200, 164, 93, 0.1);
         }
 
         &--official {
-            color: #a86d28;
-            background: rgba(243, 215, 163, 0.34);
-            border-color: rgba(168, 109, 40, 0.08);
+            color: #9F7A2E;
+            background: rgba(247, 240, 223, 0.34);
+            border-color: rgba(159, 122, 46, 0.08);
         }
 
         &--top {
             color: $dynamic-accent;
-            background: rgba(232, 90, 79, 0.12);
-            border-color: rgba(232, 90, 79, 0.1);
+            background: rgba(11, 11, 11, 0.12);
+            border-color: rgba(11, 11, 11, 0.1);
         }
 
         &--hot {
-            color: #bf6f2d;
-            background: rgba(244, 191, 117, 0.22);
-            border-color: rgba(191, 111, 45, 0.08);
+            color: #9f7a2e;
+            background: rgba(216, 194, 138, 0.22);
+            border-color: rgba(159, 122, 46, 0.08);
         }
     }
 
@@ -1389,8 +1389,8 @@ watch(showComment, (visible) => {
         height: 68rpx;
         padding: 0 22rpx;
         border-radius: $dynamic-radius-pill;
-        border: 1rpx solid rgba(232, 90, 79, 0.16);
-        background: rgba(232, 90, 79, 0.1);
+        border: 1rpx solid rgba(11, 11, 11, 0.16);
+        background: rgba(11, 11, 11, 0.1);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -1428,26 +1428,26 @@ watch(showComment, (visible) => {
         }
 
         &--video {
-            color: #8b5cf6;
-            background: rgba(139, 92, 246, 0.12);
-            border-color: rgba(139, 92, 246, 0.1);
+            color: #c8a45d;
+            background: rgba(200, 164, 93, 0.12);
+            border-color: rgba(200, 164, 93, 0.1);
         }
 
         &--case {
-            color: #0f9f6e;
-            background: rgba(15, 159, 110, 0.12);
-            border-color: rgba(15, 159, 110, 0.08);
+            color: #4D4A42;
+            background: rgba(77, 74, 66, 0.12);
+            border-color: rgba(77, 74, 66, 0.08);
         }
 
         &--activity {
-            color: #bf6f2d;
-            background: rgba(244, 191, 117, 0.2);
-            border-color: rgba(191, 111, 45, 0.08);
+            color: #9f7a2e;
+            background: rgba(216, 194, 138, 0.2);
+            border-color: rgba(159, 122, 46, 0.08);
         }
     }
 
     &__topic-tag {
-        @include dynamic-pill(rgba(255, 241, 238, 0.9), $dynamic-accent);
+        @include dynamic-pill(rgba(247, 240, 223, 0.9), $dynamic-accent);
         min-height: 52rpx;
         padding: 0 18rpx;
 
@@ -1470,9 +1470,9 @@ watch(showComment, (visible) => {
         margin-top: 20rpx;
         padding: 26rpx;
         border-radius: 30rpx;
-        border: 1rpx solid rgba(239, 230, 225, 0.78);
-        background: rgba(255, 252, 250, 0.96);
-        box-shadow: 0 12rpx 28rpx rgba(214, 185, 167, 0.08);
+        border: 1rpx solid rgba(231, 226, 214, 0.78);
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 12rpx 28rpx rgba(17, 17, 17, 0.08);
     }
 
     &__stats {
@@ -1485,7 +1485,7 @@ watch(showComment, (visible) => {
         min-height: 114rpx;
         padding: 20rpx 18rpx;
         border-radius: 24rpx;
-        border: 1rpx solid rgba(239, 230, 225, 0.82);
+        border: 1rpx solid rgba(231, 226, 214, 0.82);
         background: rgba(255, 255, 255, 0.92);
         display: flex;
         flex-direction: column;
@@ -1494,7 +1494,7 @@ watch(showComment, (visible) => {
         box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.7);
 
         &.is-active {
-            border-color: rgba(232, 90, 79, 0.16);
+            border-color: rgba(11, 11, 11, 0.16);
             background: $dynamic-accent-soft;
         }
     }
@@ -1523,7 +1523,7 @@ watch(showComment, (visible) => {
         min-height: 84rpx;
         padding: 0 16rpx;
         border-radius: 22rpx;
-        border: 1rpx solid rgba(239, 230, 225, 0.86);
+        border: 1rpx solid rgba(231, 226, 214, 0.86);
         background: rgba(255, 255, 255, 0.94);
         display: inline-flex;
         align-items: center;
@@ -1537,7 +1537,7 @@ watch(showComment, (visible) => {
         &.is-active {
             color: $dynamic-accent;
             background: $dynamic-accent-soft;
-            border-color: rgba(232, 90, 79, 0.16);
+            border-color: rgba(11, 11, 11, 0.16);
         }
 
         &--share {
@@ -1554,9 +1554,9 @@ watch(showComment, (visible) => {
         margin-top: 26rpx;
         padding: 28rpx 26rpx 20rpx;
         border-radius: 30rpx;
-        border: 1rpx solid rgba(239, 230, 225, 0.74);
+        border: 1rpx solid rgba(231, 226, 214, 0.74);
         background: rgba(255, 255, 255, 0.9);
-        box-shadow: 0 12rpx 26rpx rgba(214, 185, 167, 0.08);
+        box-shadow: 0 12rpx 26rpx rgba(17, 17, 17, 0.08);
     }
 
     &__comments-head {
@@ -1581,8 +1581,8 @@ watch(showComment, (visible) => {
         gap: 12rpx;
         padding: 10rpx 18rpx;
         border-radius: $dynamic-radius-pill;
-        background: rgba(255, 247, 244, 0.88);
-        border: 1rpx solid rgba(239, 230, 225, 0.76);
+        background: rgba(248, 247, 242, 0.88);
+        border: 1rpx solid rgba(231, 226, 214, 0.76);
         flex-shrink: 0;
     }
 
@@ -1597,7 +1597,7 @@ watch(showComment, (visible) => {
     }
 
     &__sort-divider {
-        color: #d8ccc5;
+        color: #D8D3C7;
         font-size: 20rpx;
     }
 
@@ -1622,7 +1622,7 @@ watch(showComment, (visible) => {
         padding: 24rpx 0 18rpx;
 
         & + & {
-            border-top: 1rpx solid rgba(243, 235, 230, 0.92);
+            border-top: 1rpx solid rgba(248, 247, 242, 0.92);
         }
     }
 
@@ -1677,7 +1677,7 @@ watch(showComment, (visible) => {
         font-size: 25rpx;
         line-height: 1.72;
         font-weight: 500;
-        color: #5f534b;
+        color: #5F5A50;
         white-space: pre-wrap;
         word-break: break-word;
     }
@@ -1692,17 +1692,17 @@ watch(showComment, (visible) => {
         font-size: 22rpx;
         line-height: 1.3;
         font-weight: 600;
-        color: #6b615b;
+        color: #5F5A50;
 
         &.is-danger {
-            color: #c96e64;
+            color: #5A4433;
         }
     }
 
     &__reply-list {
         margin-top: 14rpx;
         padding-left: 20rpx;
-        border-left: 2rpx solid rgba(243, 235, 230, 0.9);
+        border-left: 2rpx solid rgba(248, 247, 242, 0.9);
     }
 
     &__reply-item {
@@ -1732,8 +1732,8 @@ watch(showComment, (visible) => {
         height: 100%;
         background: linear-gradient(
             180deg,
-            rgba(255, 251, 249, 0.98) 0%,
-            rgba(252, 248, 246, 1) 100%
+            rgba(255, 255, 255, 0.98) 0%,
+            rgba(248, 247, 242, 1) 100%
         );
         display: flex;
         flex-direction: column;
@@ -1744,7 +1744,7 @@ watch(showComment, (visible) => {
         align-items: center;
         justify-content: space-between;
         padding: 28rpx 28rpx 20rpx;
-        border-bottom: 1rpx solid rgba(243, 235, 230, 0.92);
+        border-bottom: 1rpx solid rgba(248, 247, 242, 0.92);
     }
 
     &__popup-title {
@@ -1761,7 +1761,7 @@ watch(showComment, (visible) => {
         align-items: center;
         justify-content: center;
         background: rgba(255, 255, 255, 0.94);
-        border: 1rpx solid rgba(232, 222, 216, 0.78);
+        border: 1rpx solid rgba(231, 226, 214, 0.78);
     }
 
     &__popup-body {
@@ -1776,10 +1776,10 @@ watch(showComment, (visible) => {
         flex: 1;
         min-height: 0;
         border-radius: 26rpx;
-        border: 1rpx solid rgba(232, 222, 216, 0.82);
+        border: 1rpx solid rgba(231, 226, 214, 0.82);
         background: rgba(255, 255, 255, 0.94);
         box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.72),
-            0 10rpx 24rpx rgba(214, 185, 167, 0.06);
+            0 10rpx 24rpx rgba(17, 17, 17, 0.06);
         overflow: hidden;
     }
 
@@ -1809,7 +1809,7 @@ watch(showComment, (visible) => {
         flex-direction: column;
         gap: 20rpx;
         padding: 18rpx 24rpx 24rpx;
-        border-top: 1rpx solid rgba(243, 235, 230, 0.92);
+        border-top: 1rpx solid rgba(248, 247, 242, 0.92);
 
         &.is-emoji-open {
             z-index: 3;
@@ -1842,7 +1842,7 @@ watch(showComment, (visible) => {
         height: 72rpx;
         padding: 0 28rpx;
         border-radius: $dynamic-radius-pill;
-        border: 1rpx solid rgba(232, 222, 216, 0.82);
+        border: 1rpx solid rgba(231, 226, 214, 0.82);
         background: rgba(255, 255, 255, 0.94);
         display: inline-flex;
         align-items: center;
@@ -1859,7 +1859,7 @@ watch(showComment, (visible) => {
         &.is-active {
             color: $dynamic-accent;
             background: $dynamic-accent-soft;
-            border-color: rgba(232, 90, 79, 0.14);
+            border-color: rgba(11, 11, 11, 0.14);
         }
     }
 
@@ -1896,9 +1896,9 @@ watch(showComment, (visible) => {
         height: 296rpx;
         padding: 20rpx 8rpx 6rpx;
         border-radius: 28rpx;
-        border: 1rpx solid rgba(232, 222, 216, 0.8);
+        border: 1rpx solid rgba(231, 226, 214, 0.8);
         background: rgba(255, 255, 255, 0.94);
-        box-shadow: 0 12rpx 28rpx rgba(214, 185, 167, 0.12);
+        box-shadow: 0 12rpx 28rpx rgba(17, 17, 17, 0.12);
         display: grid;
         grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 14rpx 8rpx;
@@ -1910,12 +1910,12 @@ watch(showComment, (visible) => {
     &__emoji-item {
         height: 72rpx;
         border-radius: 22rpx;
-        border: 1rpx solid rgba(232, 222, 216, 0.72);
+        border: 1rpx solid rgba(231, 226, 214, 0.72);
         background: rgba(255, 255, 255, 0.96);
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.08);
+        box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.08);
     }
 
     &__emoji-char {

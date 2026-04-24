@@ -1,6 +1,6 @@
 $aftersale-surface: rgba(255, 255, 255, 0.9);
-$aftersale-border: rgba(239, 230, 225, 0.92);
-$aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
+$aftersale-border: rgba(231, 226, 214, 0.92);
+$aftersale-shadow: 0 18rpx 38rpx rgba(17, 17, 17, 0.14);
 
 @mixin aftersale-page-base {
     min-height: 100vh;
@@ -25,14 +25,14 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     font-size: 40rpx;
     line-height: 1.24;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 @mixin aftersale-page-meta {
     display: block;
     font-size: 24rpx;
     line-height: 1.55;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 @mixin aftersale-filter-tabs {
@@ -54,16 +54,16 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     border-radius: var(--wm-radius-pill, 999rpx);
     border: 1rpx solid $aftersale-border;
     background: rgba(255, 255, 255, 0.84);
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
     box-sizing: border-box;
 }
 
 @mixin aftersale-filter-item-active {
-    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, #d9786d 100%);
+    background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
     border-color: transparent;
     color: #ffffff;
-    box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.18);
+    box-shadow: 0 12rpx 24rpx rgba(11, 11, 11, 0.18);
 }
 
 @mixin aftersale-card {
@@ -80,7 +80,7 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
 
 @mixin aftersale-input-surface {
     border-radius: 30rpx;
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
     background: rgba(255, 255, 255, 0.92);
     box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
 }
@@ -89,10 +89,10 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     min-height: 62rpx;
     padding: 0 22rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
     background: rgba(255, 255, 255, 0.86);
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -100,20 +100,20 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
 }
 
 @mixin aftersale-choice-chip-active {
-    background: var(--wm-color-primary, #e85a4f);
-    border-color: var(--wm-color-primary, #e85a4f);
+    background: var(--wm-color-primary, #0b0b0b);
+    border-color: var(--wm-color-primary, #0b0b0b);
     color: #ffffff;
-    box-shadow: 0 14rpx 24rpx rgba(232, 90, 79, 0.18);
+    box-shadow: 0 14rpx 24rpx rgba(11, 11, 11, 0.18);
 }
 
 @mixin aftersale-soft-tag {
     min-height: 42rpx;
     padding: 0 14rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    background: var(--wm-color-bg-soft, #fff7f4);
-    border: 1rpx solid rgba(244, 199, 191, 0.9);
+    background: var(--wm-color-bg-soft, #ffffff);
+    border: 1rpx solid rgba(216, 194, 138, 0.9);
     font-size: 22rpx;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -140,7 +140,7 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 16rpx 28rpx rgba(232, 90, 79, 0.2);
+    box-shadow: 0 16rpx 28rpx rgba(11, 11, 11, 0.2);
 }
 
 @mixin aftersale-badge {
@@ -170,7 +170,7 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     font-size: 30rpx;
     line-height: 1.55;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 @mixin aftersale-list-card-meta {
@@ -178,7 +178,7 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     font-size: 24rpx;
     line-height: 1.6;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 @mixin aftersale-list-card-footer {
@@ -211,7 +211,7 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     flex-shrink: 0;
     font-size: 24rpx;
     line-height: 1.55;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 @mixin aftersale-kv-value {
@@ -219,7 +219,7 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     min-width: 0;
     font-size: 26rpx;
     line-height: 1.65;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 @mixin aftersale-fixed-action-bar {
@@ -251,13 +251,13 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     font-size: 28rpx;
     line-height: 1.3;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 @mixin aftersale-muted-caption {
     font-size: 22rpx;
     line-height: 1.45;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 @mixin aftersale-detail-card {
@@ -270,13 +270,13 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     font-size: 30rpx;
     line-height: 1.45;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 @mixin aftersale-detail-card-paragraph {
     font-size: 26rpx;
     line-height: 1.7;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 @mixin aftersale-media-grid {
@@ -307,7 +307,7 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     height: 18rpx;
     margin-top: 10rpx;
     border-radius: 999rpx;
-    background: rgba(180, 172, 168, 0.56);
+    background: rgba(154, 147, 136, 0.56);
 }
 
 @mixin aftersale-timeline-content {
@@ -319,14 +319,14 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     display: block;
     font-size: 26rpx;
     line-height: 1.65;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 @mixin aftersale-timeline-time {
     display: block;
     margin-top: 8rpx;
     font-size: 22rpx;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 @mixin aftersale-result-grid {
@@ -338,8 +338,8 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
 @mixin aftersale-result-card {
     padding: 20rpx;
     border-radius: 24rpx;
-    background: rgba(255, 247, 244, 0.78);
-    border: 1rpx solid rgba(239, 230, 225, 0.92);
+    background: rgba(248, 247, 242, 0.78);
+    border: 1rpx solid rgba(231, 226, 214, 0.92);
 }
 
 @mixin aftersale-action-row {
@@ -351,9 +351,9 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
 @mixin aftersale-bottom-sheet {
     padding: 30rpx var(--wm-space-page-x, 37rpx) calc(env(safe-area-inset-bottom) + 34rpx);
     background:
-        linear-gradient(180deg, rgba(255, 248, 245, 0.98) 0%, #fcfbf9 100%);
+        linear-gradient(180deg, rgba(248, 247, 242, 0.98) 0%, #ffffff 100%);
     border-radius: 52rpx 52rpx 0 0;
-    box-shadow: 0 -18rpx 44rpx rgba(214, 185, 167, 0.14);
+    box-shadow: 0 -18rpx 44rpx rgba(17, 17, 17, 0.14);
 }
 
 @mixin aftersale-sheet-close {
@@ -364,26 +364,26 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(214, 185, 167, 0.14);
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.84);
-    border: 1rpx solid rgba(239, 230, 225, 0.92);
+    border: 1rpx solid rgba(231, 226, 214, 0.92);
     box-sizing: border-box;
 }
 
 .aftersale-tone--neutral {
-    @include aftersale-status-tone(#7f7b78);
+    @include aftersale-status-tone(#5f5a50);
 }
 
 .aftersale-tone--success {
-    @include aftersale-status-tone(#2f7d58);
+    @include aftersale-status-tone(#4d4a42);
 }
 
 .aftersale-tone--warning {
-    @include aftersale-status-tone(#c99b73);
+    @include aftersale-status-tone(#c8a45d);
 }
 
 .aftersale-tone--danger {
-    @include aftersale-status-tone(#c94b49);
+    @include aftersale-status-tone(#5a4433);
 }
 
 .aftersale-tone--info {
-    @include aftersale-status-tone(#5b8def);
+    @include aftersale-status-tone(#6C665C);
 }

@@ -13,7 +13,7 @@
                 <text class="auth-form__label">账号</text>
                 <BaseInput v-model="formData.account" placeholder="请输入账号">
                     <template #prefix>
-                        <tn-icon name="user" size="30" color="#B4ACA8" />
+                        <tn-icon name="user" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -26,7 +26,7 @@
                     placeholder="请输入密码，至少 6 位"
                 >
                     <template #prefix>
-                        <tn-icon name="lock" size="30" color="#B4ACA8" />
+                        <tn-icon name="lock" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -39,7 +39,7 @@
                     placeholder="请再次输入密码"
                 >
                     <template #prefix>
-                        <tn-icon name="shield-check" size="30" color="#B4ACA8" />
+                        <tn-icon name="shield-check" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -141,7 +141,7 @@ const showAgreementModal = () => {
         confirmText: '同意',
         cancelText: '取消',
         confirmStyle: {
-            color: '#E85A4F'
+            color: '#0B0B0B'
         },
         confirm: () => {
             isCheckAgreement.value = true
@@ -185,22 +185,22 @@ const accountRegister = async () => {
 .auth-hero__eyebrow {
     font-size: 22rpx;
     font-weight: 600;
-    letter-spacing: 0.18em;
+    letter-spacing: 0;
     text-transform: uppercase;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .auth-hero__title {
     font-size: 52rpx;
     font-weight: 700;
     line-height: 1.18;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .auth-hero__desc {
     font-size: 26rpx;
     line-height: 1.65;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .auth-form {
@@ -218,7 +218,7 @@ const accountRegister = async () => {
 .auth-form__label {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .password-panel {
@@ -227,7 +227,7 @@ const accountRegister = async () => {
     gap: 12rpx;
     padding: 20rpx;
     border-radius: var(--wm-radius-card-soft, 20rpx);
-    background: var(--wm-color-primary-soft, #fff1ee);
+    background: var(--wm-color-primary-soft, #f3f2ee);
 }
 
 .password-panel__item {
@@ -235,11 +235,11 @@ const accountRegister = async () => {
     align-items: center;
     gap: 12rpx;
     font-size: 24rpx;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .password-panel__item--active {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
     font-weight: 600;
 }
 
@@ -261,11 +261,11 @@ const accountRegister = async () => {
     gap: 4rpx;
     font-size: 24rpx;
     line-height: 1.7;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .agreement-panel__link {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
     font-weight: 600;
 }
 
@@ -278,11 +278,11 @@ const accountRegister = async () => {
 }
 
 .auth-footer__text {
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .auth-footer__link {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
     font-weight: 600;
 }
 </style>

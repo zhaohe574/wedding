@@ -652,54 +652,54 @@ const handleDelete = async (orderId: number) => {
 const getStatusStyle = (status: number) => {
     const styles: Record<number, Record<string, string>> = {
         0: {
-            color: '#E85A4F',
-            background: 'rgba(232, 90, 79, 0.12)',
-            border: '1rpx solid rgba(232, 90, 79, 0.14)'
+            color: '#0B0B0B',
+            background: 'rgba(11, 11, 11, 0.12)',
+            border: '1rpx solid rgba(11, 11, 11, 0.14)'
         },
         1: {
-            color: '#C98524',
-            background: 'rgba(201, 133, 36, 0.12)',
-            border: '1rpx solid rgba(201, 133, 36, 0.14)'
+            color: '#9F7A2E',
+            background: 'rgba(159, 122, 46, 0.12)',
+            border: '1rpx solid rgba(159, 122, 46, 0.14)'
         },
         2: {
-            color: '#2F7D58',
-            background: 'rgba(47, 125, 88, 0.12)',
-            border: '1rpx solid rgba(47, 125, 88, 0.14)'
+            color: '#4D4A42',
+            background: 'rgba(77, 74, 66, 0.12)',
+            border: '1rpx solid rgba(77, 74, 66, 0.14)'
         },
         3: {
-            color: '#6A92E6',
-            background: 'rgba(106, 146, 230, 0.12)',
-            border: '1rpx solid rgba(106, 146, 230, 0.16)'
+            color: '#6C665C',
+            background: 'rgba(108, 102, 92, 0.12)',
+            border: '1rpx solid rgba(108, 102, 92, 0.16)'
         },
         4: {
-            color: '#7F7B78',
-            background: 'rgba(127, 123, 120, 0.12)',
-            border: '1rpx solid rgba(127, 123, 120, 0.14)'
+            color: '#5F5A50',
+            background: 'rgba(154, 147, 136, 0.12)',
+            border: '1rpx solid rgba(154, 147, 136, 0.14)'
         },
         5: {
-            color: '#2F7D58',
-            background: 'rgba(47, 125, 88, 0.12)',
-            border: '1rpx solid rgba(47, 125, 88, 0.14)'
+            color: '#4D4A42',
+            background: 'rgba(77, 74, 66, 0.12)',
+            border: '1rpx solid rgba(77, 74, 66, 0.14)'
         },
         6: {
-            color: '#B4ACA8',
-            background: 'rgba(180, 172, 168, 0.14)',
-            border: '1rpx solid rgba(180, 172, 168, 0.16)'
+            color: '#9A9388',
+            background: 'rgba(154, 147, 136, 0.14)',
+            border: '1rpx solid rgba(154, 147, 136, 0.16)'
         },
         7: {
-            color: '#C98524',
-            background: 'rgba(201, 133, 36, 0.12)',
-            border: '1rpx solid rgba(201, 133, 36, 0.14)'
+            color: '#9F7A2E',
+            background: 'rgba(159, 122, 46, 0.12)',
+            border: '1rpx solid rgba(159, 122, 46, 0.14)'
         },
         10: {
-            color: '#0F766E',
-            background: 'rgba(15, 118, 110, 0.12)',
-            border: '1rpx solid rgba(15, 118, 110, 0.14)'
+            color: '#6C665C',
+            background: 'rgba(108, 102, 92, 0.12)',
+            border: '1rpx solid rgba(108, 102, 92, 0.14)'
         },
         8: {
-            color: '#B44A3A',
-            background: 'rgba(180, 74, 58, 0.12)',
-            border: '1rpx solid rgba(180, 74, 58, 0.14)'
+            color: '#5A4433',
+            background: 'rgba(90, 68, 51, 0.12)',
+            border: '1rpx solid rgba(90, 68, 51, 0.14)'
         }
     }
 
@@ -762,7 +762,7 @@ onReachBottom(() => {
 <style lang="scss" scoped>
 .order-page {
     min-height: 100%;
-    background: var(--wm-color-page, #fcfbf9);
+    background: var(--wm-color-page, #ffffff);
 
     &__summary {
         display: flex;
@@ -774,13 +774,13 @@ onReachBottom(() => {
     &__summary-title {
         font-size: 30rpx;
         font-weight: 700;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__summary-desc {
         font-size: 24rpx;
         line-height: 1.6;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__filter-scroll {
@@ -802,16 +802,16 @@ onReachBottom(() => {
         min-height: 82rpx;
         padding: 0 30rpx;
         border-radius: 999rpx;
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        border: 1rpx solid var(--wm-color-border, #e7e2d6);
         background: rgba(255, 255, 255, 0.84);
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
         box-sizing: border-box;
 
         &--active {
-            border-color: var(--wm-color-primary, #e85a4f);
-            background: var(--wm-color-primary, #e85a4f);
+            border-color: var(--wm-color-primary, #0b0b0b);
+            background: var(--wm-color-primary, #0b0b0b);
             color: #ffffff;
-            box-shadow: 0 8rpx 18rpx rgba(232, 90, 79, 0.14);
+            box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.14);
         }
     }
 
@@ -826,7 +826,7 @@ onReachBottom(() => {
         height: 36rpx;
         padding: 0 10rpx;
         border-radius: 999rpx;
-        background: rgba(232, 90, 79, 0.08);
+        background: rgba(11, 11, 11, 0.08);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -861,7 +861,7 @@ onReachBottom(() => {
 
 .loading-text {
     font-size: 26rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .empty-state {
@@ -883,7 +883,7 @@ onReachBottom(() => {
 .empty-title {
     font-size: 34rpx;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     margin-bottom: 16rpx;
     text-align: center;
 }
@@ -891,7 +891,7 @@ onReachBottom(() => {
 .empty-subtitle {
     font-size: 26rpx;
     line-height: 1.7;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     margin-bottom: 40rpx;
     text-align: center;
 }
@@ -904,7 +904,7 @@ onReachBottom(() => {
     min-height: 88rpx;
     padding: 0 36rpx;
     border-radius: 999rpx;
-    box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.16);
+    box-shadow: 0 12rpx 24rpx rgba(11, 11, 11, 0.16);
 
     &:active {
         transform: translateY(1rpx);
@@ -925,9 +925,9 @@ onReachBottom(() => {
 .order-card {
     padding: 34rpx 37rpx;
     border-radius: 45rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.88);
-    box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.08);
+    box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.08);
 
     &:active {
         transform: translateY(-2rpx);
@@ -953,7 +953,7 @@ onReachBottom(() => {
     flex-shrink: 0;
     background: rgba(255, 255, 255, 0.86);
     border: 2rpx solid rgba(255, 255, 255, 0.92);
-    box-shadow: 0 10rpx 20rpx rgba(214, 185, 167, 0.16);
+    box-shadow: 0 10rpx 20rpx rgba(17, 17, 17, 0.16);
 }
 
 .order-card__hero-main {
@@ -966,14 +966,14 @@ onReachBottom(() => {
     font-size: 30rpx;
     font-weight: 600;
     line-height: 1.6;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .order-card__summary {
     display: block;
     font-size: 28rpx;
     line-height: 1.6;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .order-card__status-row {
@@ -987,8 +987,8 @@ onReachBottom(() => {
     gap: 12rpx;
     padding: 18rpx 22rpx;
     border-radius: 28rpx;
-    background: rgba(255, 241, 238, 0.72);
-    border: 1rpx solid rgba(244, 199, 191, 0.88);
+    background: rgba(247, 240, 223, 0.72);
+    border: 1rpx solid rgba(216, 194, 138, 0.88);
 }
 
 .order-card__confirm-item {
@@ -1001,7 +1001,7 @@ onReachBottom(() => {
 .order-card__confirm-label {
     font-size: 22rpx;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .order-card__confirm-value {
@@ -1009,7 +1009,7 @@ onReachBottom(() => {
     font-weight: 700;
     line-height: 1.5;
     text-align: right;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .order-card__status {
@@ -1046,7 +1046,7 @@ onReachBottom(() => {
 .order-card__order-no {
     font-size: 22rpx;
     line-height: 1.4;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .order-card__amount-row {
@@ -1058,7 +1058,7 @@ onReachBottom(() => {
 
 .order-card__amount-label {
     font-size: 22rpx;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
     line-height: 1;
 }
 
@@ -1066,7 +1066,7 @@ onReachBottom(() => {
     font-size: 34rpx;
     font-weight: 600;
     line-height: 1;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .order-card__actions {
@@ -1082,7 +1082,7 @@ onReachBottom(() => {
     height: 82rpx;
     padding: 0 30rpx;
     border-radius: 999rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.82);
     display: inline-flex;
     align-items: center;
@@ -1091,14 +1091,14 @@ onReachBottom(() => {
 }
 
 .order-card__action--primary {
-    border-color: var(--wm-color-primary, #e85a4f);
-    background: var(--wm-color-primary, #e85a4f);
+    border-color: var(--wm-color-primary, #0b0b0b);
+    background: var(--wm-color-primary, #0b0b0b);
 }
 
 .order-card__action-text {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     line-height: 1;
 }
 
@@ -1111,7 +1111,7 @@ onReachBottom(() => {
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     box-sizing: border-box;
 }
 
@@ -1123,7 +1123,7 @@ onReachBottom(() => {
     font-size: 24rpx;
     font-weight: 600;
     line-height: 1;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .load-more {
@@ -1141,7 +1141,7 @@ onReachBottom(() => {
 
 .load-more-text {
     font-size: 26rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .load-more-clickable {

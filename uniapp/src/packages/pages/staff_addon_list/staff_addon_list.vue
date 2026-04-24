@@ -82,7 +82,7 @@
                                     class="addon-card__image addon-card__image--placeholder"
                                 >
                                     <view class="addon-card__placeholder-mark">
-                                        <tn-icon name="image" size="42" color="#D8CEC8" />
+                                        <tn-icon name="image" size="42" color="#D8D3C7" />
                                     </view>
                                 </view>
 
@@ -339,10 +339,10 @@ onShow(async () => {
     box-sizing: border-box;
     background: radial-gradient(
             circle at top left,
-            rgba(232, 90, 79, 0.1) 0,
-            rgba(252, 251, 249, 0) 36%
+            rgba(11, 11, 11, 0.1) 0,
+            rgba(248, 247, 242, 0) 36%
         ),
-        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
+        linear-gradient(180deg, var(--wm-color-bg-page, #ffffff) 0%, #f8f7f2 100%);
 }
 
 .page-section {
@@ -385,14 +385,14 @@ onShow(async () => {
     font-size: 28rpx;
     font-weight: 700;
     line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .section-head__desc {
     font-size: 22rpx;
     font-weight: 600;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .section-head__meta {
@@ -400,7 +400,7 @@ onShow(async () => {
     font-size: 22rpx;
     font-weight: 700;
     line-height: 1.4;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .hero-card__head {
@@ -419,7 +419,7 @@ onShow(async () => {
     font-size: 20rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .hero-card__title {
@@ -428,7 +428,7 @@ onShow(async () => {
     font-size: 40rpx;
     font-weight: 700;
     line-height: 1.28;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .hero-card__meta {
@@ -437,7 +437,7 @@ onShow(async () => {
     font-size: 24rpx;
     font-weight: 600;
     line-height: 1.45;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .hero-card__action {
@@ -449,8 +449,8 @@ onShow(async () => {
     justify-content: center;
     border-radius: var(--wm-radius-pill, 999rpx);
     background: rgba(255, 255, 255, 0.92);
-    border: 1rpx solid rgba(244, 199, 191, 0.88);
-    box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.7), 0 8rpx 18rpx rgba(177, 108, 95, 0.08);
+    border: 1rpx solid rgba(216, 194, 138, 0.88);
+    box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.7), 0 8rpx 18rpx rgba(17, 17, 17, 0.08);
     backdrop-filter: blur(14rpx);
     -webkit-backdrop-filter: blur(14rpx);
     transition: all var(--wm-motion-base, 220ms) ease;
@@ -465,8 +465,8 @@ onShow(async () => {
     font-size: 22rpx;
     line-height: 1;
     font-weight: 700;
-    letter-spacing: 0.2rpx;
-    color: var(--wm-color-primary, #e85a4f);
+    letter-spacing: 0;
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .hero-metrics {
@@ -484,7 +484,7 @@ onShow(async () => {
     padding: 18rpx 20rpx;
     border-radius: 30rpx;
     background: rgba(255, 255, 255, 0.76);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     transition: all var(--wm-motion-base, 220ms) ease;
     cursor: pointer;
 
@@ -494,9 +494,9 @@ onShow(async () => {
     }
 
     &--selected {
-        background: var(--wm-color-primary-soft, #fff1ee);
-        border-color: var(--wm-color-border-strong, #f4c7bf);
-        box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.12);
+        background: var(--wm-color-primary-soft, #f3f2ee);
+        border-color: var(--wm-color-border-strong, #d8c28a);
+        box-shadow: 0 12rpx 24rpx rgba(11, 11, 11, 0.12);
     }
 }
 
@@ -504,22 +504,22 @@ onShow(async () => {
     font-size: 21rpx;
     font-weight: 700;
     line-height: 1.3;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .hero-metric--selected .hero-metric__label {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .hero-metric__value {
     font-size: 40rpx;
     font-weight: 700;
     line-height: 1;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .hero-metric--selected .hero-metric__value {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .addon-card + .addon-card {
@@ -537,7 +537,7 @@ onShow(async () => {
     width: 100%;
     height: 248rpx;
     display: block;
-    background: #f7f1ed;
+    background: #f8f7f2;
 
     &--placeholder {
         display: flex;
@@ -545,10 +545,10 @@ onShow(async () => {
         justify-content: center;
         background: linear-gradient(
                 135deg,
-                rgba(255, 241, 238, 0.92) 0%,
-                rgba(248, 239, 231, 0.88) 100%
+                rgba(247, 240, 223, 0.92) 0%,
+                rgba(247, 240, 223, 0.88) 100%
             ),
-            #f7f1ed;
+            #f8f7f2;
     }
 }
 
@@ -560,7 +560,7 @@ onShow(async () => {
     justify-content: center;
     border-radius: 36rpx;
     background: rgba(255, 255, 255, 0.56);
-    border: 1rpx solid rgba(244, 199, 191, 0.72);
+    border: 1rpx solid rgba(216, 194, 138, 0.72);
 }
 
 .addon-card__status {
@@ -590,7 +590,7 @@ onShow(async () => {
     font-size: 32rpx;
     font-weight: 700;
     line-height: 1.35;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     word-break: break-all;
 }
 
@@ -603,7 +603,7 @@ onShow(async () => {
 
 .price-row__prefix,
 .price-row__value {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
     line-height: 1;
 }
 
@@ -621,7 +621,7 @@ onShow(async () => {
     margin-left: 8rpx;
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
     text-decoration: line-through;
 }
 
@@ -639,10 +639,10 @@ onShow(async () => {
     padding: 0 16rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
     background: rgba(255, 255, 255, 0.74);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     font-size: 22rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .addon-card__desc {
@@ -652,7 +652,7 @@ onShow(async () => {
     font-size: 24rpx;
     font-weight: 600;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     text-overflow: ellipsis;
     word-break: break-all;
     -webkit-box-orient: vertical;
@@ -673,8 +673,8 @@ onShow(async () => {
     padding: 56rpx 40rpx 72rpx;
     border-radius: var(--wm-radius-card-glass, 49rpx);
     background: rgba(255, 255, 255, 0.88);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));
     backdrop-filter: blur(24rpx);
     -webkit-backdrop-filter: blur(24rpx);
 }
@@ -688,17 +688,17 @@ onShow(async () => {
     border-radius: 40rpx;
     background: linear-gradient(
         180deg,
-        rgba(255, 245, 241, 0.96) 0%,
-        rgba(255, 241, 238, 0.82) 100%
+        rgba(248, 247, 242, 0.96) 0%,
+        rgba(247, 240, 223, 0.82) 100%
     );
-    border: 1rpx solid rgba(244, 199, 191, 0.72);
+    border: 1rpx solid rgba(216, 194, 138, 0.72);
 }
 
 .addon-empty-state__title {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .addon-empty-state__action {
@@ -709,8 +709,8 @@ onShow(async () => {
     align-items: center;
     justify-content: center;
     border-radius: var(--wm-radius-pill, 999rpx);
-    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, #d86a5f 100%);
-    box-shadow: 0 16rpx 30rpx rgba(232, 90, 79, 0.2);
+    background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
+    box-shadow: 0 16rpx 30rpx rgba(11, 11, 11, 0.2);
     transition: all var(--wm-motion-base, 220ms) ease;
 
     &:active {
@@ -723,7 +723,7 @@ onShow(async () => {
     font-size: 26rpx;
     line-height: 1;
     font-weight: 700;
-    letter-spacing: 0.4rpx;
+    letter-spacing: 0;
     color: #ffffff;
 }
 
@@ -744,15 +744,15 @@ onShow(async () => {
     }
 
     &--ghost {
-        color: var(--wm-color-primary, #e85a4f);
+        color: var(--wm-color-primary, #0b0b0b);
         background: rgba(255, 255, 255, 0.7);
-        border: 1rpx solid rgba(232, 90, 79, 0.18);
+        border: 1rpx solid rgba(11, 11, 11, 0.18);
     }
 
     &--danger {
-        color: var(--wm-color-danger, #b44a3a);
-        background: rgba(180, 74, 58, 0.08);
-        border: 1rpx solid rgba(180, 74, 58, 0.12);
+        color: var(--wm-color-danger, #5a4433);
+        background: rgba(90, 68, 51, 0.08);
+        border: 1rpx solid rgba(90, 68, 51, 0.12);
     }
 }
 </style>

@@ -2,7 +2,7 @@
     <view class="my-service mx-[24rpx] mt-[24rpx]">
         <!-- 标题 -->
         <view v-if="content.title" class="title-section mb-[20rpx] px-[8rpx]">
-            <text class="text-[32rpx] font-semibold text-[#1E293B]">{{ content.title }}</text>
+            <text class="text-[32rpx] font-semibold text-[#111111]">{{ content.title }}</text>
         </view>
 
         <!-- 网格布局 -->
@@ -35,7 +35,7 @@
                         </view>
                     </view>
                     <!-- 文字 -->
-                    <text class="text-[24rpx] text-[#334155] text-center">{{ item.name }}</text>
+                    <text class="text-[24rpx] text-[#5F5A50] text-center">{{ item.name }}</text>
                 </view>
             </view>
         </view>
@@ -48,7 +48,7 @@
             <view
                 v-for="(item, index) in displayList"
                 :key="index"
-                class="service-list-item flex items-center px-[32rpx] py-[28rpx] border-b border-[#F1F5F9] last:border-b-0"
+                class="service-list-item flex items-center px-[32rpx] py-[28rpx] border-b border-[#F8F7F2] last:border-b-0"
                 @click="handleClick(item.link)"
             >
                 <!-- 图标 -->
@@ -72,9 +72,9 @@
                     </view>
                 </view>
                 <!-- 文字 -->
-                <text class="flex-1 ml-[24rpx] text-[28rpx] text-[#1E293B]">{{ item.name }}</text>
+                <text class="flex-1 ml-[24rpx] text-[28rpx] text-[#111111]">{{ item.name }}</text>
                 <!-- 箭头 -->
-                <tn-icon name="right" size="32" color="#CBD5E1" />
+                <tn-icon name="right" size="32" color="#D8D3C7" />
             </view>
         </view>
     </view>
@@ -294,12 +294,12 @@ watch(
     .service-list {
         background: linear-gradient(
             180deg,
-            var(--cinema-surface-elevated, #fffdf8) 0%,
-            var(--cinema-surface, #f6f2ea) 100%
+            var(--cinema-surface-elevated, #FFFFFF) 0%,
+            var(--cinema-surface, #F7F0DF) 100%
         );
-        border: 1rpx solid var(--cinema-border, rgba(198, 168, 106, 0.24));
+        border: 1rpx solid var(--cinema-border, rgba(200, 164, 93, 0.24));
         border-radius: 28rpx;
-        box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(8, 10, 16, 0.08));
+        box-shadow: var(--cinema-shadow-soft, 0 18rpx 44rpx rgba(11, 11, 11, 0.08));
         transition: all 0.2s ease;
     }
 
@@ -317,7 +317,7 @@ watch(
         }
 
         .count-badge {
-            box-shadow: 0 10rpx 20rpx rgba(217, 119, 6, 0.28);
+            box-shadow: 0 10rpx 20rpx rgba(159, 122, 46, 0.28);
         }
     }
 
@@ -326,11 +326,11 @@ watch(
         cursor: pointer;
 
         &:active {
-            background-color: var(--cinema-surface, #f6f2ea);
+            background-color: var(--cinema-surface, #F7F0DF);
         }
 
         .count-badge {
-            box-shadow: 0 10rpx 20rpx rgba(217, 119, 6, 0.28);
+            box-shadow: 0 10rpx 20rpx rgba(159, 122, 46, 0.28);
         }
     }
 }

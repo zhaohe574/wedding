@@ -104,7 +104,7 @@
                     <text
                         v-if="item.desc"
                         class="text-xs line-clamp-1 mb-[8rpx]"
-                        style="color: #9ca3af"
+                        style="color: #9a9388"
                     >
                         {{ item.desc }}
                     </text>
@@ -207,7 +207,7 @@
                             <text
                                 v-if="item.desc"
                                 class="text-xs line-clamp-2"
-                                style="color: #9ca3af"
+                                style="color: #9a9388"
                             >
                                 {{ item.desc }}
                             </text>
@@ -255,8 +255,8 @@ const props = defineProps({
 const { getImageUrl } = useAppStore()
 const themeStore = useThemeStore()
 
-const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
-const ctaColor = computed(() => themeStore.ctaColor || '#F97316')
+const primaryColor = computed(() => themeStore.primaryColor || '#0B0B0B')
+const ctaColor = computed(() => themeStore.ctaColor || '#9F7A2E')
 
 const titleBarStyle = computed(() => ({
     background: `linear-gradient(180deg, ${primaryColor.value} 0%, ${tintColor(
@@ -477,8 +477,8 @@ const handleMore = () => {
         left: 16rpx;
         padding: 6rpx 16rpx;
         border-radius: 999rpx;
-        background: #f97316;
-        box-shadow: 0 3rpx 10rpx rgba(249, 115, 22, 0.3);
+        background: #9f7a2e;
+        box-shadow: 0 3rpx 10rpx rgba(159, 122, 46, 0.24);
     }
 
     .cta-button {

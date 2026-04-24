@@ -32,11 +32,11 @@
         <!-- 历史搜索 -->
         <view class="suggest-section" v-if="his_search.length">
             <view class="section-header">
-                <tn-icon name="clock" size="32" color="#999999" />
+                <tn-icon name="clock" size="32" color="#9A9388" />
                 <text class="section-title">历史搜索</text>
                 <view class="flex-1"></view>
                 <view class="clear-btn" @click="() => emit('clear')">
-                    <tn-icon name="delete" size="28" color="#999999" />
+                    <tn-icon name="delete" size="28" color="#9A9388" />
                     <text class="clear-text">清空</text>
                 </view>
             </view>
@@ -55,7 +55,7 @@
 
         <!-- 空状态 -->
         <view class="empty-state" v-if="!searchData.length && !his_search.length">
-            <tn-icon name="search" size="120" color="#E5E5E5" />
+            <tn-icon name="search" size="120" color="#E7E2D6" />
             <text class="empty-text">暂无搜索记录</text>
             <text class="empty-hint">试试搜索人员、服务或作品</text>
         </view>
@@ -122,7 +122,7 @@ const handleHistoreSearch = (text: string) => {
 .section-title {
     font-size: 32rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .flex-1 {
@@ -136,7 +136,7 @@ const handleHistoreSearch = (text: string) => {
     padding: 10rpx 18rpx;
     border-radius: 999rpx;
     background: rgba(255, 255, 255, 0.84);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     transition: all 0.2s ease;
 
     &:active {
@@ -146,7 +146,7 @@ const handleHistoreSearch = (text: string) => {
 
 .clear-text {
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .keyword-list {
@@ -160,7 +160,7 @@ const handleHistoreSearch = (text: string) => {
     border-radius: 999rpx;
     font-size: 28rpx;
     background: rgba(255, 255, 255, 0.88);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     transition: all 0.2s ease;
     max-width: 100%;
 
@@ -172,7 +172,7 @@ const handleHistoreSearch = (text: string) => {
 
 .history-tag {
     background: rgba(255, 255, 255, 0.88);
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     &:active {
         opacity: 0.82;
@@ -188,7 +188,7 @@ const handleHistoreSearch = (text: string) => {
 
 .divider {
     height: 1rpx;
-    background: rgba(239, 230, 225, 0.92);
+    background: rgba(231, 226, 214, 0.92);
     margin: 32rpx 37rpx;
 }
 
@@ -205,12 +205,12 @@ const handleHistoreSearch = (text: string) => {
     margin-top: 32rpx;
     font-size: 32rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .empty-hint {
     margin-top: 16rpx;
     font-size: 26rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 </style>

@@ -65,7 +65,7 @@ const props = withDefaults(
         current: 0,
         name: 'image',
         borderRadius: '0',
-        bgColor: '#f3f4f6'
+        bgColor: '#f8f7f2'
     }
 )
 

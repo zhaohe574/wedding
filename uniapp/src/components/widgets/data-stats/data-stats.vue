@@ -25,15 +25,15 @@
                     </view>
                     <!-- 数值 -->
                     <view class="flex items-baseline mb-[8rpx]">
-                        <text class="text-[40rpx] font-bold text-[#1E293B]">
+                        <text class="text-[40rpx] font-bold text-[#111111]">
                             {{ getStatValue(item.value) }}
                         </text>
-                        <text v-if="item.unit" class="text-[24rpx] text-[#64748B] ml-[4rpx]">{{
+                        <text v-if="item.unit" class="text-[24rpx] text-[#5F5A50] ml-[4rpx]">{{
                             item.unit
                         }}</text>
                     </view>
                     <!-- 标题 -->
-                    <text class="text-[24rpx] text-[#64748B]">{{ item.title }}</text>
+                    <text class="text-[24rpx] text-[#5F5A50]">{{ item.title }}</text>
                 </view>
             </view>
         </view>
@@ -55,20 +55,20 @@
                 </view>
                 <!-- 内容 -->
                 <view class="flex-1">
-                    <text class="text-[24rpx] text-[#64748B] block mb-[8rpx]">{{
+                    <text class="text-[24rpx] text-[#5F5A50] block mb-[8rpx]">{{
                         item.title
                     }}</text>
                     <view class="flex items-baseline">
-                        <text class="text-[40rpx] font-bold text-[#1E293B]">
+                        <text class="text-[40rpx] font-bold text-[#111111]">
                             {{ getStatValue(item.value) }}
                         </text>
-                        <text v-if="item.unit" class="text-[24rpx] text-[#64748B] ml-[4rpx]">{{
+                        <text v-if="item.unit" class="text-[24rpx] text-[#5F5A50] ml-[4rpx]">{{
                             item.unit
                         }}</text>
                     </view>
                 </view>
                 <!-- 箭头 -->
-                <tn-icon name="right" size="32" color="#CBD5E1"></tn-icon>
+                <tn-icon name="right" size="32" color="#D8D3C7"></tn-icon>
             </view>
         </view>
 
@@ -92,15 +92,15 @@
                     </view>
                     <!-- 数值 -->
                     <view class="flex items-baseline mb-[8rpx]">
-                        <text class="text-[36rpx] font-bold text-[#1E293B]">
+                        <text class="text-[36rpx] font-bold text-[#111111]">
                             {{ getStatValue(item.value) }}
                         </text>
-                        <text v-if="item.unit" class="text-[22rpx] text-[#64748B] ml-[4rpx]">{{
+                        <text v-if="item.unit" class="text-[22rpx] text-[#5F5A50] ml-[4rpx]">{{
                             item.unit
                         }}</text>
                     </view>
                     <!-- 标题 -->
-                    <text class="text-[24rpx] text-[#64748B]">{{ item.title }}</text>
+                    <text class="text-[24rpx] text-[#5F5A50]">{{ item.title }}</text>
                 </view>
             </view>
         </view>

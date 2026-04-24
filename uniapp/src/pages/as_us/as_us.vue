@@ -257,14 +257,14 @@ const getFeatureIconStyle = (index: number) => {
     .brand-name {
         font-size: 40rpx;
         font-weight: 700;
-        color: #1f2937;
+        color: #111111;
         margin-bottom: 16rpx;
         text-align: center;
     }
 
     .brand-slogan {
         font-size: 26rpx;
-        color: #6b7280;
+        color: #6c665c;
         text-align: center;
         line-height: 1.6;
     }
@@ -305,7 +305,7 @@ const getFeatureIconStyle = (index: number) => {
 
             .card-label {
                 font-size: 24rpx;
-                color: #9ca3af;
+                color: #9a9388;
                 margin-bottom: 8rpx;
             }
 
@@ -334,7 +334,7 @@ const getFeatureIconStyle = (index: number) => {
 
     .about-text {
         font-size: 28rpx;
-        color: #4b5563;
+        color: #5f5a50;
         line-height: 1.8;
         text-align: justify;
     }
@@ -379,14 +379,14 @@ const getFeatureIconStyle = (index: number) => {
             .feature-title {
                 font-size: 28rpx;
                 font-weight: 600;
-                color: #1f2937;
+                color: #111111;
                 margin-bottom: 12rpx;
                 text-align: center;
             }
 
             .feature-desc {
                 font-size: 24rpx;
-                color: #6b7280;
+                color: #6c665c;
                 text-align: center;
                 line-height: 1.5;
             }
@@ -410,7 +410,7 @@ const getFeatureIconStyle = (index: number) => {
     .section-title {
         font-size: 32rpx;
         font-weight: 700;
-        color: #1f2937;
+        color: #111111;
         margin: 0 24rpx;
     }
 }
@@ -424,13 +424,13 @@ const getFeatureIconStyle = (index: number) => {
 
     .copyright {
         font-size: 24rpx;
-        color: #9ca3af;
+        color: #9a9388;
         margin-bottom: 8rpx;
     }
 
     .copyright-sub {
         font-size: 22rpx;
-        color: #d1d5db;
+        color: #D8D3C7;
     }
 }
 </style>

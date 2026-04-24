@@ -1,4 +1,8 @@
-export type ThemePresetKey = 'obsidian-gold' | 'midnight-rose' | 'navy-silver'
+export type ThemePresetKey =
+    | 'black-white-gold'
+    | 'obsidian-gold'
+    | 'midnight-rose'
+    | 'navy-silver'
 export type WmScene = 'consumer' | 'staff' | 'admin'
 
 export interface WmThemeTokens {
@@ -62,26 +66,26 @@ export interface NormalizedThemeConfig {
 
 const WM_BASE_TOKENS: WmThemeTokens = {
     colors: {
-        'bg-page': '#FFF7F4',
-        'bg-card': '#FFFFFFE8',
-        'bg-soft': '#FFF1EE',
-        'bg-mask': 'rgba(30, 36, 50, 0.46)',
-        primary: '#E85A4F',
-        'primary-strong': '#D84D43',
-        'primary-soft': '#FFF1EE',
-        secondary: '#C99B73',
-        'secondary-soft': '#F8EFE7',
-        border: '#EFE6E1',
-        'border-strong': '#F4C7BF',
-        success: '#2F7D58',
-        warning: '#C98524',
-        danger: '#C94B49',
-        info: '#607086'
+        'bg-page': '#FFFFFF',
+        'bg-card': '#FFFFFF',
+        'bg-soft': '#F8F7F2',
+        'bg-mask': 'rgba(11, 11, 11, 0.54)',
+        primary: '#0B0B0B',
+        'primary-strong': '#000000',
+        'primary-soft': '#F3F2EE',
+        secondary: '#C8A45D',
+        'secondary-soft': '#F7F0DF',
+        border: '#E7E2D6',
+        'border-strong': '#D8C28A',
+        success: '#4D4A42',
+        warning: '#9F7A2E',
+        danger: '#5A4433',
+        info: '#6C665C'
     },
     text: {
-        primary: '#1E2432',
-        secondary: '#7F7B78',
-        tertiary: '#B4ACA8',
+        primary: '#111111',
+        secondary: '#5F5A50',
+        tertiary: '#9A9388',
         inverse: '#FFFFFF'
     },
     font: {
@@ -135,9 +139,9 @@ const WM_BASE_TOKENS: WmThemeTokens = {
         'tabbar-bottom': '39rpx'
     },
     shadow: {
-        soft: '0 14rpx 32rpx rgba(214, 185, 167, 0.16)',
-        card: '0 18rpx 36rpx rgba(214, 185, 167, 0.20)',
-        hero: '0 24rpx 56rpx rgba(177, 108, 95, 0.18)'
+        soft: '0 14rpx 32rpx rgba(17, 17, 17, 0.06)',
+        card: '0 18rpx 40rpx rgba(17, 17, 17, 0.09)',
+        hero: '0 24rpx 56rpx rgba(17, 17, 17, 0.12)'
     },
     motion: {
         fast: '150ms',
@@ -165,26 +169,26 @@ const createPreset = (
     key,
     name,
     legacyThemeId,
-    primaryColor: '#E85A4F',
-    secondaryColor: '#C99B73',
-    ctaColor: '#E85A4F',
-    accentColor: '#C99B73',
-    pageBg: '#FFF7F4',
-    pageBgSoft: '#FFF1EE',
-    surface: '#FFF7F4',
+    primaryColor: '#0B0B0B',
+    secondaryColor: '#C8A45D',
+    ctaColor: '#0B0B0B',
+    accentColor: '#C8A45D',
+    pageBg: '#FFFFFF',
+    pageBgSoft: '#F8F7F2',
+    surface: '#FFFFFF',
     surfaceElevated: '#FFFFFF',
-    surfaceOverlay: 'rgba(255, 255, 255, 0.88)',
-    textPrimary: '#1E2432',
-    textSecondary: '#7F7B78',
+    surfaceOverlay: 'rgba(255, 255, 255, 0.94)',
+    textPrimary: '#111111',
+    textSecondary: '#5F5A50',
     textInverse: '#FFFFFF',
-    borderColor: '#EFE6E1',
-    tabbarActiveColor: '#E85A4F',
-    tabbarInactiveColor: '#9D918B',
-    navBgColor: '#FFF7F4',
+    borderColor: '#E7E2D6',
+    tabbarActiveColor: '#0B0B0B',
+    tabbarInactiveColor: '#9A9388',
+    navBgColor: '#FFFFFF',
     navTextColor: 'black',
     buttonColor: 'white',
-    maskColor: 'rgba(30, 36, 50, 0.46)',
-    heroGradient: 'linear-gradient(180deg, #FFF5F1 0%, #FCFBF9 68%, #F7F1ED 100%)',
+    maskColor: 'rgba(11, 11, 11, 0.54)',
+    heroGradient: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 68%, #F7F0DF 100%)',
     navStyle: 'glass',
     cardStyle: 'glass',
     shadowLevel: 'medium',
@@ -192,15 +196,10 @@ const createPreset = (
 })
 
 export const themePresets: Record<ThemePresetKey, ThemePreset> = {
-    'obsidian-gold': createPreset('obsidian-gold', '暖白珊瑚', 8),
-    'midnight-rose': createPreset('midnight-rose', '柔粉珊瑚', 6, {
-        secondaryColor: '#D7AFA1',
-        accentColor: '#D7AFA1'
-    }),
-    'navy-silver': createPreset('navy-silver', '香槟珊瑚', 1, {
-        secondaryColor: '#CBB7A4',
-        accentColor: '#CBB7A4'
-    })
+    'black-white-gold': createPreset('black-white-gold', '黑白香槟金', 8),
+    'obsidian-gold': createPreset('obsidian-gold', '黑白香槟金', 8),
+    'midnight-rose': createPreset('midnight-rose', '黑白香槟金', 6),
+    'navy-silver': createPreset('navy-silver', '黑白香槟金', 1)
 }
 
 const presetEntries = Object.values(themePresets)
@@ -209,11 +208,11 @@ export const createWmThemeTokens = (scene: WmScene = 'consumer'): WmThemeTokens 
     const tokens: WmThemeTokens = JSON.parse(JSON.stringify(WM_BASE_TOKENS))
 
     if (scene === 'staff') {
-        tokens.shadow.hero = '0 20rpx 44rpx rgba(192, 130, 115, 0.16)'
+        tokens.shadow.hero = '0 20rpx 44rpx rgba(17, 17, 17, 0.1)'
     }
 
     if (scene === 'admin') {
-        tokens.shadow.card = '0 12rpx 28rpx rgba(214, 185, 167, 0.16)'
+        tokens.shadow.card = '0 12rpx 28rpx rgba(17, 17, 17, 0.08)'
         tokens.space['6'] = '20rpx'
         tokens.space['8'] = '28rpx'
     }
@@ -225,23 +224,18 @@ export const getThemePreset = (presetKey?: string): ThemePreset => {
     if (presetKey && themePresets[presetKey as ThemePresetKey]) {
         return themePresets[presetKey as ThemePresetKey]
     }
-    return themePresets['obsidian-gold']
+    return themePresets['black-white-gold']
 }
 
 const inferPresetKeyByLegacyId = (themeColorId?: number): ThemePresetKey => {
     const target = presetEntries.find((item) => item.legacyThemeId === Number(themeColorId))
-    return target?.key ?? 'obsidian-gold'
+    return target?.key ?? 'black-white-gold'
 }
 
 const inferPresetKeyByColor = (color?: string): ThemePresetKey => {
     const value = String(color || '').toLowerCase()
-    if (['#fd498f', '#fa444d', '#a54f72', '#c97d9f'].includes(value)) {
-        return 'midnight-rose'
-    }
-    if (['#2f80ed', '#56ccf2', '#58759d', '#7e95b8'].includes(value)) {
-        return 'navy-silver'
-    }
-    return 'obsidian-gold'
+    if (value) return 'black-white-gold'
+    return 'black-white-gold'
 }
 
 export const normalizeThemeConfig = (rawData: any): NormalizedThemeConfig => {
@@ -259,10 +253,7 @@ export const normalizeThemeConfig = (rawData: any): NormalizedThemeConfig => {
         themeColorId: Number(source.themeColorId || preset.legacyThemeId),
         themeColor1: preset.primaryColor,
         themeColor2: preset.secondaryColor,
-        buttonColor:
-            source.buttonColor === 'black' || source.buttonColor === 'white'
-                ? source.buttonColor
-                : preset.buttonColor,
+        buttonColor: preset.buttonColor,
         navigationBarColor: preset.navBgColor,
         topTextColor: preset.navTextColor,
         accentColor: preset.accentColor,

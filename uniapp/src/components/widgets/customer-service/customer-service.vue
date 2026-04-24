@@ -37,7 +37,7 @@ const appendAlpha = (hexColor: string, alpha: string) => {
     return hexColor
 }
 
-const themeColor = computed(() => props.styles?.themeColor || '#E56B6F')
+const themeColor = computed(() => props.styles?.themeColor || '#C8A45D')
 const cardRadius = computed(() => Number(props.styles?.cardRadius) || 20)
 const cardGap = computed(() => Number(props.styles?.cardGap) || 16)
 
@@ -46,7 +46,7 @@ const entryStyle = computed<CSSProperties>(() => ({
     padding: '32rpx',
     borderRadius: `${cardRadius.value * 2}rpx`,
     background: `linear-gradient(135deg, ${appendAlpha(themeColor.value, '16')} 0%, #ffffff 100%)`,
-    boxShadow: '0 18rpx 40rpx rgba(15, 23, 42, 0.08)'
+    boxShadow: '0 18rpx 40rpx rgba(17, 17, 17, 0.08)'
 }))
 
 const badgeStyle = computed(() => ({
@@ -88,20 +88,20 @@ const goConsult = () => {
 
 .entry-arrow {
     font-size: 24rpx;
-    color: #6b7280;
+    color: #6c665c;
 }
 
 .entry-title {
     font-size: 34rpx;
     font-weight: 700;
-    color: #1f2937;
+    color: #111111;
 }
 
 .entry-subtitle,
 .entry-tips {
     font-size: 25rpx;
     line-height: 1.7;
-    color: #6b7280;
+    color: #6c665c;
 }
 
 .entry-footer {

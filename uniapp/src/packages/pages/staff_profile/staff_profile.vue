@@ -43,7 +43,7 @@
                                     <tn-icon
                                         name="phone"
                                         size="18"
-                                        color="var(--wm-text-secondary, #7f7b78)"
+                                        color="var(--wm-text-secondary, #5f5a50)"
                                     />
                                     <text class="profile-chip__text">{{ mobileText }}</text>
                                 </view>
@@ -51,7 +51,7 @@
                                     <tn-icon
                                         name="calendar"
                                         size="18"
-                                        color="var(--wm-text-secondary, #7f7b78)"
+                                        color="var(--wm-text-secondary, #5f5a50)"
                                     />
                                     <text class="profile-chip__text">{{ experienceText }}</text>
                                 </view>
@@ -552,7 +552,7 @@ onShow(async () => {
     min-height: 100vh;
     padding: 12rpx 0 calc(176rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
-    background: var(--wm-color-page-bg, #fcfbf9);
+    background: var(--wm-color-page-bg, #ffffff);
 
     &__content {
         display: flex;
@@ -584,7 +584,7 @@ onShow(async () => {
     font-size: 24rpx;
     font-weight: 700;
     line-height: 1.4;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .tag-chip-list {
@@ -600,26 +600,26 @@ onShow(async () => {
     min-height: 64rpx;
     padding: 0 26rpx;
     border-radius: 999rpx;
-    border: 2rpx solid rgba(196, 165, 149, 0.28);
+    border: 2rpx solid rgba(216, 194, 138, 0.34);
     background: rgba(255, 255, 255, 0.78);
     transition: all 0.2s ease;
 }
 
 .tag-chip--active {
-    border-color: rgba(200, 124, 93, 0.9);
+    border-color: rgba(200, 164, 93, 0.9);
     background: linear-gradient(
         135deg,
-        rgba(255, 237, 228, 0.96) 0%,
-        rgba(255, 224, 210, 0.96) 100%
+        rgba(247, 240, 223, 0.96) 0%,
+        rgba(216, 194, 138, 0.36) 100%
     );
-    box-shadow: 0 12rpx 24rpx rgba(200, 124, 93, 0.16);
+    box-shadow: 0 12rpx 24rpx rgba(200, 164, 93, 0.16);
 }
 
 .tag-chip__text {
     font-size: 24rpx;
     font-weight: 600;
     line-height: 1.4;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .status-tip {
@@ -629,18 +629,18 @@ onShow(async () => {
 }
 
 .status-tip--info {
-    background: rgba(148, 163, 184, 0.12);
-    color: #475569;
+    background: rgba(154, 147, 136, 0.12);
+    color: #5F5A50;
 }
 
 .status-tip--warning {
-    background: rgba(245, 158, 11, 0.12);
-    color: #b45309;
+    background: rgba(159, 122, 46, 0.12);
+    color: #9F7A2E;
 }
 
 .status-tip--danger {
-    background: rgba(239, 68, 68, 0.12);
-    color: #b91c1c;
+    background: rgba(90, 68, 51, 0.12);
+    color: #5A4433;
 }
 
 .status-tip__text {
@@ -653,7 +653,7 @@ onShow(async () => {
     padding: 16rpx 0 6rpx;
     font-size: 24rpx;
     line-height: 1.6;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .profile-hero-card {
@@ -662,9 +662,9 @@ onShow(async () => {
     gap: 20rpx;
     padding: 28rpx 30rpx 32rpx;
     border-radius: 46rpx;
-    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
-    background: var(--wm-hero-gradient, linear-gradient(135deg, #fff5f1 0%, #fde7e1 100%));
-    box-shadow: 0 20rpx 42rpx rgba(192, 130, 115, 0.16);
+    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
+    background: var(--wm-hero-gradient, linear-gradient(135deg, #ffffff 0%, #f7f0df 100%));
+    box-shadow: 0 20rpx 42rpx rgba(17, 17, 17, 0.16);
 
     &__top,
     &__main {
@@ -703,7 +703,7 @@ onShow(async () => {
         font-size: 22rpx;
         font-weight: 600;
         line-height: 1.35;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__info {
@@ -718,7 +718,7 @@ onShow(async () => {
         font-size: 40rpx;
         font-weight: 700;
         line-height: 1.3;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -728,7 +728,7 @@ onShow(async () => {
         font-size: 24rpx;
         font-weight: 600;
         line-height: 1.45;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 }
 
@@ -748,10 +748,10 @@ onShow(async () => {
     }
 
     &--primary {
-        background: #fff1ee;
+        background: #f3f2ee;
 
         .hero-pill__text {
-            color: var(--wm-color-primary, #e85a4f);
+            color: var(--wm-color-primary, #0b0b0b);
         }
     }
 
@@ -759,24 +759,24 @@ onShow(async () => {
     &--warning,
     &--danger,
     &--neutral {
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        border: 1rpx solid var(--wm-color-border, #e7e2d6);
         background: rgba(255, 255, 255, 0.8);
     }
 
     &--success .hero-pill__text {
-        color: #2f7d58;
+        color: #4d4a42;
     }
 
     &--warning .hero-pill__text {
-        color: #c98524;
+        color: #9f7a2e;
     }
 
     &--danger .hero-pill__text {
-        color: #b44a3a;
+        color: #5a4433;
     }
 
     &--neutral .hero-pill__text {
-        color: #607086;
+        color: #6C665C;
     }
 }
 
@@ -794,7 +794,7 @@ onShow(async () => {
     min-height: 50rpx;
     padding: 10rpx 16rpx;
     border-radius: 999rpx;
-    border: 1rpx solid rgba(239, 230, 225, 0.94);
+    border: 1rpx solid rgba(231, 226, 214, 0.94);
     background: rgba(255, 255, 255, 0.8);
     box-sizing: border-box;
 
@@ -802,7 +802,7 @@ onShow(async () => {
         font-size: 22rpx;
         font-weight: 600;
         line-height: 1.35;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 }
 
@@ -812,9 +812,9 @@ onShow(async () => {
     gap: 16rpx;
     padding: 26rpx 30rpx;
     border-radius: 44rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.92);
-    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
+    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));
     backdrop-filter: blur(24rpx);
     -webkit-backdrop-filter: blur(24rpx);
 }
@@ -834,14 +834,14 @@ onShow(async () => {
         font-size: 32rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__desc {
         margin-top: 6rpx;
         font-size: 22rpx;
         line-height: 1.5;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__meta {
@@ -850,7 +850,7 @@ onShow(async () => {
         font-size: 22rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 }
 
@@ -863,8 +863,8 @@ onShow(async () => {
 .field-card,
 .textarea-card {
     border-radius: 30rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-    background: #fcfbf9;
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    background: #ffffff;
     box-sizing: border-box;
 }
 
@@ -881,11 +881,11 @@ onShow(async () => {
         font-size: 22rpx;
         font-weight: 600;
         line-height: 1.35;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__required {
-        color: #e85a4f;
+        color: #0b0b0b;
     }
 
     &__control,
@@ -905,23 +905,23 @@ onShow(async () => {
         font-size: 28rpx;
         font-weight: 600;
         line-height: 1.35;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__value.is-placeholder {
-        color: var(--wm-text-tertiary, #b4aca8);
+        color: var(--wm-text-tertiary, #9a9388);
     }
 
     &__suffix {
         flex-shrink: 0;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 }
 
 .wm-input {
     width: 100%;
     font-size: 28rpx;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     &--inline {
         flex: 1;
@@ -938,7 +938,7 @@ onShow(async () => {
     min-height: 180rpx;
     font-size: 28rpx;
     line-height: 1.7;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .bottom-bar {
@@ -948,8 +948,8 @@ onShow(async () => {
     bottom: 0;
     z-index: 40;
     padding: 12rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
-    background: rgba(252, 251, 249, 0.88);
-    border-top: 1rpx solid rgba(239, 230, 225, 0.9);
+    background: rgba(248, 247, 242, 0.88);
+    border-top: 1rpx solid rgba(231, 226, 214, 0.9);
     backdrop-filter: blur(24rpx);
     -webkit-backdrop-filter: blur(24rpx);
     box-sizing: border-box;
@@ -970,18 +970,18 @@ onShow(async () => {
     border-radius: 36rpx;
     font-size: 30rpx;
     font-weight: 700;
-    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.18);
+    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
 }
 
 :deep(.wm-input .input-text),
 :deep(.wm-input input) {
     font-size: 28rpx !important;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432) !important;
+    color: var(--wm-text-primary, #111111) !important;
 }
 
 :deep(.wm-input .input-placeholder),
 :deep(.wm-input .tn-input__placeholder) {
-    color: var(--wm-text-tertiary, #b4aca8) !important;
+    color: var(--wm-text-tertiary, #9a9388) !important;
 }
 </style>

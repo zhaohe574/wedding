@@ -134,7 +134,7 @@
 
                 <!-- 箭头 -->
                 <view class="arrow-container">
-                    <tn-icon name="right" size="16" color="#9ca3af"></tn-icon>
+                    <tn-icon name="right" size="16" color="#9a9388"></tn-icon>
                 </view>
             </view>
         </view>
@@ -169,8 +169,8 @@ const props = defineProps({
 
 const { getImageUrl } = useAppStore()
 const themeStore = useThemeStore()
-const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
-const ctaColor = computed(() => themeStore.ctaColor || '#F97316')
+const primaryColor = computed(() => themeStore.primaryColor || '#0B0B0B')
+const ctaColor = computed(() => themeStore.ctaColor || '#9F7A2E')
 const tagStyle = computed(() => ({
     background: `linear-gradient(135deg, ${tintColor(primaryColor.value, 0.85)} 0%, ${tintColor(
         primaryColor.value,
@@ -231,7 +231,7 @@ const handleMore = () => {
     .staff-card {
         display: inline-block;
         width: 280rpx; // 卡片宽度
-        border: 1rpx solid #f3f4f6;
+        border: 1rpx solid #f8f7f2;
         flex-shrink: 0;
         transition: all 0.3s ease;
 
@@ -279,7 +279,7 @@ const handleMore = () => {
             .role-text {
                 font-size: 24rpx;
                 font-weight: 500;
-                color: #0f172a;
+                color: #111111;
             }
         }
     }
@@ -292,7 +292,7 @@ const handleMore = () => {
         .staff-name {
             font-size: 28rpx;
             font-weight: 600;
-            color: #0f172a;
+            color: #111111;
             margin-bottom: 8rpx;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -313,20 +313,20 @@ const handleMore = () => {
                 .rating-text {
                     font-size: 26rpx;
                     font-weight: 600;
-                    color: #f59e0b;
+                    color: #c8a45d;
                 }
             }
 
             .divider {
                 width: 2rpx;
                 height: 20rpx;
-                background: #e5e7eb;
+                background: #e7e2d6;
                 margin: 0 12rpx;
             }
 
             .order-count {
                 font-size: 22rpx;
-                color: #6b7280;
+                color: #6c665c;
             }
         }
 
@@ -338,11 +338,11 @@ const handleMore = () => {
 
             .tag-item {
                 padding: 4rpx 10rpx;
-                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                background: linear-gradient(135deg, #F8F7F2 0%, #F3F2EE 100%);
                 border-radius: 12rpx;
-                border: 1rpx solid #bae6fd;
+                border: 1rpx solid #F3F2EE;
                 font-size: 20rpx;
-                color: #0369a1;
+                color: #6C665C;
                 font-weight: 500;
                 line-height: 1.4;
             }
@@ -364,7 +364,7 @@ const handleMore = () => {
         transition: background-color 0.2s ease;
 
         &:active {
-            background-color: #f9fafb;
+            background-color: #F8F7F2;
         }
 
         // 头像容器
@@ -398,7 +398,7 @@ const handleMore = () => {
                 .list-staff-name {
                     font-size: 32rpx;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: #111111;
                     max-width: 60%;
                     overflow: hidden;
                     text-overflow: ellipsis;
@@ -431,14 +431,14 @@ const handleMore = () => {
                     .list-rating-text {
                         font-size: 26rpx;
                         font-weight: 600;
-                        color: #f59e0b;
+                        color: #c8a45d;
                     }
                 }
 
                 .list-order-count {
                     margin-left: 12rpx;
                     font-size: 24rpx;
-                    color: #6b7280;
+                    color: #6c665c;
                 }
             }
 
@@ -449,7 +449,7 @@ const handleMore = () => {
 
                 .list-tag-text {
                     font-size: 24rpx;
-                    color: #6b7280;
+                    color: #6c665c;
                 }
             }
         }

@@ -10,7 +10,7 @@
             <!-- 统计信息 -->
             <view v-if="content.show_stats" class="ml-auto flex items-center">
                 <view class="flex items-center mr-[24rpx]">
-                    <tn-icon name="star-fill" size="16" color="#f59e0b"></tn-icon>
+                    <tn-icon name="star-fill" size="16" color="#c8a45d"></tn-icon>
                     <text class="text-base font-bold text-amber-500 ml-[8rpx]">{{
                         avgRating
                     }}</text>
@@ -44,7 +44,7 @@
                                     :key="star"
                                     :name="star <= item.rating ? 'star-fill' : 'star'"
                                     size="14"
-                                    :color="star <= item.rating ? '#f59e0b' : '#e5e7eb'"
+                                    :color="star <= item.rating ? '#c8a45d' : '#e7e2d6'"
                                 ></tn-icon>
                             </view>
                             <text class="text-xs text-gray-400 ml-[12rpx]">{{ item.date }}</text>
@@ -128,7 +128,7 @@
                                     :key="star"
                                     :name="star <= item.rating ? 'star-fill' : 'star'"
                                     size="12"
-                                    :color="star <= item.rating ? '#f59e0b' : '#e5e7eb'"
+                                    :color="star <= item.rating ? '#c8a45d' : '#e7e2d6'"
                                 ></tn-icon>
                             </view>
                         </view>
@@ -176,7 +176,7 @@
                         <view class="flex items-center justify-between">
                             <text class="text-sm font-medium text-gray-900">{{ item.name }}</text>
                             <view class="flex items-center">
-                                <tn-icon name="star-fill" size="14" color="#f59e0b"></tn-icon>
+                                <tn-icon name="star-fill" size="14" color="#c8a45d"></tn-icon>
                                 <text class="text-sm text-amber-500 ml-[4rpx]">{{
                                     item.rating
                                 }}</text>
@@ -223,7 +223,7 @@ const props = defineProps({
 
 const { getImageUrl } = useAppStore()
 const themeStore = useThemeStore()
-const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
+const primaryColor = computed(() => themeStore.primaryColor || '#0B0B0B')
 const defaultAvatar = '/static/images/user/default_avatar.png'
 
 // 内联样式（替代CSS变量和Tailwind主题类，兼容小程序）

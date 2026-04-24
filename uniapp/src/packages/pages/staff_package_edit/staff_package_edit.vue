@@ -47,7 +47,7 @@
                                 <tn-icon
                                     name="image"
                                     size="50"
-                                    color="var(--wm-color-primary, #E85A4F)"
+                                    color="var(--wm-color-primary, #0B0B0B)"
                                 />
                             </view>
                             <text class="upload-panel__title">上传封面</text>
@@ -203,7 +203,7 @@
 
                     <view v-else class="empty-panel">
                         <view class="empty-panel__icon">
-                            <tn-icon name="location" size="40" color="#D8CEC8" />
+                            <tn-icon name="location" size="40" color="#D8D3C7" />
                         </view>
                         <text class="empty-panel__title">暂无地区价</text>
                     </view>
@@ -248,7 +248,7 @@
 
                     <view v-else class="empty-panel empty-panel--compact">
                         <view class="empty-panel__icon">
-                            <tn-icon name="add-circle" size="40" color="#D8CEC8" />
+                            <tn-icon name="add-circle" size="40" color="#D8D3C7" />
                         </view>
                         <text class="empty-panel__title">暂无附加项可配置</text>
                     </view>
@@ -771,9 +771,9 @@ const getRegionItemStyle = (active: boolean) => {
     }
 
     return {
-        background: alphaColor($theme.primaryColor || '#E85A4F', 0.1),
-        borderColor: alphaColor($theme.primaryColor || '#E85A4F', 0.28),
-        color: $theme.primaryColor || '#E85A4F'
+        background: alphaColor($theme.primaryColor || '#0B0B0B', 0.1),
+        borderColor: alphaColor($theme.primaryColor || '#0B0B0B', 0.28),
+        color: $theme.primaryColor || '#0B0B0B'
     }
 }
 
@@ -1134,10 +1134,10 @@ onLoad(async (options: any) => {
     box-sizing: border-box;
     background: radial-gradient(
             circle at top left,
-            rgba(232, 90, 79, 0.1) 0,
-            rgba(252, 251, 249, 0) 36%
+            rgba(11, 11, 11, 0.1) 0,
+            rgba(248, 247, 242, 0) 36%
         ),
-        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
+        linear-gradient(180deg, var(--wm-color-bg-page, #ffffff) 0%, #f8f7f2 100%);
 }
 
 .form-card {
@@ -1172,7 +1172,7 @@ onLoad(async (options: any) => {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .field-block + .field-block {
@@ -1201,13 +1201,13 @@ onLoad(async (options: any) => {
     font-size: 28rpx;
     font-weight: 700;
     line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .field-label--required::before {
     content: '*';
     margin-right: 6rpx;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .field-side-text {
@@ -1215,14 +1215,14 @@ onLoad(async (options: any) => {
     font-size: 22rpx;
     font-weight: 600;
     line-height: 1;
-    color: var(--wm-text-tertiary, #948f8b);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .field-input-shell,
 .textarea-shell {
     border-radius: 28rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #ffffff;
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     overflow: hidden;
 }
 
@@ -1249,13 +1249,13 @@ onLoad(async (options: any) => {
 
 .field-input :deep(.input-placeholder),
 .setting-input :deep(.input-placeholder) {
-    color: #b4aca8 !important;
+    color: #9a9388 !important;
 }
 
 .field-input :deep(.input-text),
 .setting-input :deep(.input-text) {
     font-size: 28rpx !important;
-    color: #1e2432 !important;
+    color: #111111 !important;
 }
 
 .field-textarea {
@@ -1263,7 +1263,7 @@ onLoad(async (options: any) => {
     min-height: 220rpx;
     font-size: 28rpx;
     line-height: 1.65;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .cover-preview,
@@ -1276,7 +1276,7 @@ onLoad(async (options: any) => {
     width: 100%;
     overflow: hidden;
     border-radius: 32rpx;
-    background: #f7f1ed;
+    background: #f8f7f2;
 }
 
 .cover-preview__image {
@@ -1294,7 +1294,7 @@ onLoad(async (options: any) => {
     display: flex;
     align-items: center;
     border-radius: 999rpx;
-    background: rgba(19, 24, 35, 0.48);
+    background: rgba(11, 11, 11, 0.48);
     backdrop-filter: blur(14rpx);
     -webkit-backdrop-filter: blur(14rpx);
 }
@@ -1323,10 +1323,10 @@ onLoad(async (options: any) => {
 .upload-panel {
     width: 100%;
     border-radius: 32rpx;
-    border: 1rpx dashed rgba(244, 199, 191, 0.88);
+    border: 1rpx dashed rgba(216, 194, 138, 0.88);
     background: linear-gradient(
         180deg,
-        rgba(255, 245, 241, 0.9) 0%,
+        rgba(248, 247, 242, 0.9) 0%,
         rgba(255, 255, 255, 0.72) 100%
     );
     display: flex;
@@ -1344,14 +1344,14 @@ onLoad(async (options: any) => {
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid rgba(244, 199, 191, 0.72);
+    border: 1rpx solid rgba(216, 194, 138, 0.72);
 }
 
 .upload-panel__title {
     font-size: 28rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .metric-row {
@@ -1367,21 +1367,21 @@ onLoad(async (options: any) => {
     padding: 18rpx 20rpx;
     border-radius: 28rpx;
     background: rgba(255, 255, 255, 0.76);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .metric-chip__label {
     font-size: 21rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .metric-chip__value {
     font-size: 38rpx;
     font-weight: 700;
     line-height: 1;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .action-chip-row {
@@ -1399,10 +1399,10 @@ onLoad(async (options: any) => {
     justify-content: center;
     border-radius: 999rpx;
     background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     font-size: 24rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     transition: all var(--wm-motion-base, 220ms) ease;
 
     &:active {
@@ -1412,9 +1412,9 @@ onLoad(async (options: any) => {
 }
 
 .action-chip--accent {
-    background: var(--wm-color-primary-soft, #fff1ee);
-    border-color: var(--wm-color-border-strong, #f4c7bf);
-    color: var(--wm-color-primary, #e85a4f);
+    background: var(--wm-color-primary-soft, #f3f2ee);
+    border-color: var(--wm-color-border-strong, #d8c28a);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .rule-list {
@@ -1431,7 +1431,7 @@ onLoad(async (options: any) => {
     padding: 20rpx 22rpx;
     border-radius: 28rpx;
     background: rgba(255, 255, 255, 0.78);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .rule-row__main {
@@ -1462,25 +1462,25 @@ onLoad(async (options: any) => {
 }
 
 .rule-badge--province {
-    background: rgba(201, 155, 115, 0.14);
-    color: #b87945;
+    background: rgba(200, 164, 93, 0.14);
+    color: #9F7A2E;
 }
 
 .rule-badge--city {
-    background: rgba(232, 90, 79, 0.12);
-    color: var(--wm-color-primary, #e85a4f);
+    background: rgba(11, 11, 11, 0.12);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .rule-badge--district {
-    background: rgba(47, 125, 88, 0.12);
-    color: #2f7d58;
+    background: rgba(77, 74, 66, 0.12);
+    color: #4d4a42;
 }
 
 .rule-row__price {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .rule-row__title {
@@ -1489,7 +1489,7 @@ onLoad(async (options: any) => {
     font-size: 25rpx;
     font-weight: 600;
     line-height: 1.45;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     word-break: break-all;
 }
 
@@ -1508,23 +1508,23 @@ onLoad(async (options: any) => {
     justify-content: center;
     border-radius: 999rpx;
     background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid rgba(232, 90, 79, 0.18);
+    border: 1rpx solid rgba(11, 11, 11, 0.18);
     font-size: 22rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .rule-row__action--danger {
-    color: var(--wm-color-danger, #b44a3a);
-    border-color: rgba(180, 74, 58, 0.14);
-    background: rgba(180, 74, 58, 0.08);
+    color: var(--wm-color-danger, #5a4433);
+    border-color: rgba(90, 68, 51, 0.14);
+    background: rgba(90, 68, 51, 0.08);
 }
 
 .empty-panel {
     margin-top: 22rpx;
     padding: 42rpx 28rpx;
     border-radius: 30rpx;
-    border: 1rpx dashed rgba(244, 199, 191, 0.88);
+    border: 1rpx dashed rgba(216, 194, 138, 0.88);
     background: rgba(255, 255, 255, 0.66);
     display: flex;
     flex-direction: column;
@@ -1545,7 +1545,7 @@ onLoad(async (options: any) => {
     justify-content: center;
     background: linear-gradient(
         180deg,
-        rgba(255, 245, 241, 0.96) 0%,
+        rgba(248, 247, 242, 0.96) 0%,
         rgba(255, 255, 255, 0.74) 100%
     );
 }
@@ -1554,7 +1554,7 @@ onLoad(async (options: any) => {
     font-size: 28rpx;
     font-weight: 700;
     line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .addon-chip-list {
@@ -1570,12 +1570,12 @@ onLoad(async (options: any) => {
     gap: 16rpx;
     padding: 22rpx 24rpx;
     border-radius: 28rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .addon-chip--active {
-    border-color: var(--wm-color-border-strong, #f4c7bf);
-    background: var(--wm-color-primary-soft, #fff1ee);
+    border-color: var(--wm-color-border-strong, #d8c28a);
+    background: var(--wm-color-primary-soft, #f3f2ee);
 }
 
 .addon-chip--inactive {
@@ -1594,13 +1594,13 @@ onLoad(async (options: any) => {
     font-size: 28rpx;
     font-weight: 700;
     line-height: 1.4;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .addon-chip__meta {
     font-size: 24rpx;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .addon-chip__check {
@@ -1612,15 +1612,15 @@ onLoad(async (options: any) => {
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.82);
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
     font-size: 28rpx;
     font-weight: 700;
 }
 
 .setting-list {
     border-radius: 30rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #ffffff;
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     overflow: hidden;
 }
 
@@ -1631,7 +1631,7 @@ onLoad(async (options: any) => {
     align-items: center;
     justify-content: space-between;
     gap: 16rpx;
-    border-bottom: 1rpx solid rgba(239, 230, 225, 0.9);
+    border-bottom: 1rpx solid rgba(231, 226, 214, 0.9);
     box-sizing: border-box;
 
     &:last-child {
@@ -1644,7 +1644,7 @@ onLoad(async (options: any) => {
     font-size: 28rpx;
     font-weight: 600;
     line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .setting-item__input {
@@ -1674,8 +1674,8 @@ onLoad(async (options: any) => {
     bottom: 0;
     z-index: 40;
     padding: 12rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
-    background: rgba(252, 251, 249, 0.88);
-    border-top: 1rpx solid rgba(239, 230, 225, 0.9);
+    background: rgba(248, 247, 242, 0.88);
+    border-top: 1rpx solid rgba(231, 226, 214, 0.9);
     backdrop-filter: blur(24rpx);
     -webkit-backdrop-filter: blur(24rpx);
     box-sizing: border-box;
@@ -1704,13 +1704,13 @@ onLoad(async (options: any) => {
 .bottom-bar__action--ghost {
     flex: 1;
     background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .bottom-bar__action--primary {
     flex: 1.35;
-    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, #d96a60 100%);
-    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.18);
+    background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
+    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
 }
 
 .bottom-bar__action-text {
@@ -1721,7 +1721,7 @@ onLoad(async (options: any) => {
 }
 
 .bottom-bar__action-text--ghost {
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .bottom-bar__loading {
@@ -1731,7 +1731,7 @@ onLoad(async (options: any) => {
 .picker {
     overflow: hidden;
     border-radius: 44rpx 44rpx 0 0;
-    background: linear-gradient(180deg, rgba(252, 251, 249, 0.98) 0%, #f7f1ed 100%);
+    background: linear-gradient(180deg, rgba(248, 247, 242, 0.98) 0%, #f8f7f2 100%);
 }
 
 .picker__head {
@@ -1741,26 +1741,26 @@ onLoad(async (options: any) => {
     align-items: center;
     justify-content: space-between;
     gap: 16rpx;
-    border-bottom: 1rpx solid rgba(239, 230, 225, 0.9);
+    border-bottom: 1rpx solid rgba(231, 226, 214, 0.9);
 }
 
 .picker__action {
     min-width: 88rpx;
     font-size: 26rpx;
     font-weight: 700;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .picker__action--primary {
     text-align: right;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .picker__title {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .picker__body {
@@ -1781,17 +1781,17 @@ onLoad(async (options: any) => {
     justify-content: center;
     border-radius: 999rpx;
     background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     font-size: 24rpx;
     font-weight: 700;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .level-chip--active {
-    color: var(--wm-color-primary, #e85a4f);
-    background: var(--wm-color-primary-soft, #fff1ee);
-    border-color: var(--wm-color-border-strong, #f4c7bf);
-    box-shadow: 0 8rpx 18rpx rgba(232, 90, 79, 0.12);
+    color: var(--wm-color-primary, #0b0b0b);
+    background: var(--wm-color-primary-soft, #f3f2ee);
+    border-color: var(--wm-color-border-strong, #d8c28a);
+    box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.12);
 }
 
 .region-picker {
@@ -1805,7 +1805,7 @@ onLoad(async (options: any) => {
     min-width: 0;
     border-radius: 30rpx;
     overflow: hidden;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.82);
 }
 
@@ -1816,8 +1816,8 @@ onLoad(async (options: any) => {
     align-items: center;
     font-size: 24rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
-    border-bottom: 1rpx solid rgba(239, 230, 225, 0.9);
+    color: var(--wm-text-primary, #111111);
+    border-bottom: 1rpx solid rgba(231, 226, 214, 0.9);
 }
 
 .region-picker__scroll {
@@ -1829,11 +1829,11 @@ onLoad(async (options: any) => {
     padding: 0 22rpx;
     display: flex;
     align-items: center;
-    border-bottom: 1rpx solid rgba(239, 230, 225, 0.82);
+    border-bottom: 1rpx solid rgba(231, 226, 214, 0.82);
     font-size: 24rpx;
     font-weight: 600;
     line-height: 1.4;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     box-sizing: border-box;
 
     &:last-child {

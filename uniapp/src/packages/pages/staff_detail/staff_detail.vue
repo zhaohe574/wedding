@@ -23,8 +23,8 @@
                     padding="0"
                     border-radius="49rpx"
                     background="rgba(255, 255, 255, 0.84)"
-                    border="1rpx solid rgba(239, 230, 225, 0.96)"
-                    box-shadow="0 16rpx 34rpx rgba(155, 132, 121, 0.1)"
+                    border="1rpx solid rgba(231, 226, 214, 0.96)"
+                    box-shadow="0 16rpx 34rpx rgba(17, 17, 17, 0.1)"
                 >
                     <view class="info-card__inner">
                         <view class="info-card__header">
@@ -38,7 +38,7 @@
                                 <tn-icon
                                     :name="staffInfo.is_favorite ? 'star-fill' : 'star'"
                                     size="34"
-                                    :color="staffInfo.is_favorite ? '#E85A4F' : '#9E9A97'"
+                                    :color="staffInfo.is_favorite ? '#0B0B0B' : '#9A9388'"
                                 />
 
                                 <text
@@ -114,9 +114,9 @@
                     scene="consumer"
                     padding="0"
                     border-radius="52rpx"
-                    background="linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 244, 0.96))"
-                    border="1rpx solid #efe6e1"
-                    box-shadow="0 18rpx 34rpx rgba(214, 185, 167, 0.12)"
+                    background="linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 247, 242, 0.96))"
+                    border="1rpx solid #e7e2d6"
+                    box-shadow="0 18rpx 34rpx rgba(17, 17, 17, 0.12)"
                 >
                     <view class="booking-brief-card__inner">
                         <view class="booking-brief-card__head">
@@ -367,8 +367,8 @@
                                             size="20"
                                             :color="
                                                 star <= Number(review.score || 0)
-                                                    ? '#F3A64A'
-                                                    : '#D8D5D2'
+                                                    ? '#C8A45D'
+                                                    : '#D8D3C7'
                                             "
                                         />
                                     </view>
@@ -725,7 +725,7 @@
 
                                     <view class="alternative-card__footer">
                                         <view class="alternative-card__score">
-                                            <tn-icon name="star-fill" size="20" color="#C99B73" />
+                                            <tn-icon name="star-fill" size="20" color="#C8A45D" />
 
                                             <text class="alternative-card__score-text">
                                                 {{ formatAlternativeRating(item) }}
@@ -2783,7 +2783,7 @@ onShareTimeline(() => {
 
     min-height: 100vh;
 
-    background: var(--wm-color-bg-page, #fff7f4);
+    background: var(--wm-color-bg-page, #ffffff);
 }
 
 .picker-container {
@@ -2797,7 +2797,7 @@ onShareTimeline(() => {
 
     border-radius: 28rpx 28rpx 0 0;
 
-    box-shadow: 0 -12rpx 36rpx rgba(15, 23, 42, 0.1);
+    box-shadow: 0 -12rpx 36rpx rgba(17, 17, 17, 0.1);
 
     max-height: 80vh;
 
@@ -2816,7 +2816,7 @@ onShareTimeline(() => {
 
         padding: 20rpx;
 
-        border-bottom: 1rpx solid #eef1f5;
+        border-bottom: 1rpx solid #F8F7F2;
     }
 
     .picker-title {
@@ -2824,7 +2824,7 @@ onShareTimeline(() => {
 
         font-weight: 700;
 
-        color: #1f2937;
+        color: #111111;
     }
 
     .picker-action {
@@ -2832,7 +2832,7 @@ onShareTimeline(() => {
 
         font-size: 28rpx;
 
-        color: #667085;
+        color: #5F5A50;
 
         text-align: center;
 
@@ -2867,7 +2867,7 @@ onShareTimeline(() => {
 
     font-size: 30rpx;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .picker-footer {
@@ -2877,7 +2877,7 @@ onShareTimeline(() => {
 
     padding: 16rpx 20rpx 20rpx;
 
-    border-top: 1rpx solid #eef1f5;
+    border-top: 1rpx solid #F8F7F2;
 }
 
 .picker-btn {
@@ -2887,9 +2887,9 @@ onShareTimeline(() => {
 
     border-radius: 18rpx;
 
-    background: #f3f4f6;
+    background: #f8f7f2;
 
-    color: #475467;
+    color: #5F5A50;
 
     font-size: 28rpx;
 
@@ -2927,13 +2927,13 @@ onShareTimeline(() => {
 .region-picker-col {
     min-width: 0;
 
-    border: 1rpx solid #eef1f5;
+    border: 1rpx solid #F8F7F2;
 
     border-radius: 20rpx;
 
     overflow: hidden;
 
-    background: #f9fafc;
+    background: #F8F7F2;
 }
 
 .region-picker-col__title {
@@ -2943,9 +2943,9 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    color: #374151;
+    color: #5F5A50;
 
-    border-bottom: 1rpx solid #eef1f5;
+    border-bottom: 1rpx solid #F8F7F2;
 
     background: #ffffff;
 }
@@ -2959,9 +2959,9 @@ onShareTimeline(() => {
 
     font-size: 24rpx;
 
-    color: #4b5563;
+    color: #5f5a50;
 
-    border-bottom: 1rpx solid rgba(229, 231, 235, 0.72);
+    border-bottom: 1rpx solid rgba(231, 226, 214, 0.72);
 
     transition: all 0.2s ease;
 
@@ -3005,9 +3005,9 @@ onShareTimeline(() => {
 
     border-radius: 52rpx;
 
-    background: linear-gradient(135deg, #efcbc0 0%, #c99688 100%);
+    background: linear-gradient(135deg, #D8C28A 0%, #D8C28A 100%);
 
-    box-shadow: 0 18rpx 40rpx rgba(180, 138, 123, 0.18);
+    box-shadow: 0 18rpx 40rpx rgba(17, 17, 17, 0.18);
 }
 
 .hero-card__banner {
@@ -3065,7 +3065,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .info-card__summary {
@@ -3073,7 +3073,7 @@ onShareTimeline(() => {
 
     line-height: 1.6;
 
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .info-card__favorite {
@@ -3091,9 +3091,9 @@ onShareTimeline(() => {
 
     border-radius: 999rpx;
 
-    background: #fff6f1;
+    background: #FFFFFF;
 
-    border: 1rpx solid rgba(232, 90, 79, 0.12);
+    border: 1rpx solid rgba(11, 11, 11, 0.12);
 }
 
 .info-card__favorite-text {
@@ -3103,11 +3103,11 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    color: #9e9a97;
+    color: #9A9388;
 }
 
 .info-card__favorite-text--active {
-    color: #e85a4f;
+    color: #0b0b0b;
 }
 
 .info-card__badge-list {
@@ -3123,9 +3123,9 @@ onShareTimeline(() => {
 
     border-radius: 999rpx;
 
-    background: #fff4ef;
+    background: #f8f7f2;
 
-    border: 1rpx solid rgba(232, 90, 79, 0.12);
+    border: 1rpx solid rgba(11, 11, 11, 0.12);
 }
 
 .info-card__badge-text {
@@ -3135,7 +3135,7 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    color: #c66d5d;
+    color: #9f7a2e;
 }
 
 .info-card__metric-row {
@@ -3157,7 +3157,7 @@ onShareTimeline(() => {
 
     border-radius: 20rpx;
 
-    background: linear-gradient(180deg, #fff8f4 0%, #fff2eb 100%);
+    background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%);
 }
 
 .info-card__metric-value {
@@ -3167,7 +3167,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .info-card__metric-label {
@@ -3175,7 +3175,7 @@ onShareTimeline(() => {
 
     line-height: 1.3;
 
-    color: #938d89;
+    color: #9a9388;
 }
 
 .info-card__price-row {
@@ -3195,7 +3195,7 @@ onShareTimeline(() => {
 
     line-height: 1.3;
 
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .info-card__price-group {
@@ -3214,7 +3214,7 @@ onShareTimeline(() => {
 
 .info-card__price-symbol,
 .info-card__price-value {
-    color: #e85a4f;
+    color: #0b0b0b;
 
     font-weight: 700;
 }
@@ -3235,7 +3235,7 @@ onShareTimeline(() => {
 
     line-height: 1.3;
 
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .info-card__price-negotiable {
@@ -3243,7 +3243,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .booking-brief-card__inner {
@@ -3263,9 +3263,9 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    letter-spacing: 4rpx;
+    letter-spacing: 0;
 
-    color: #e85a4f;
+    color: #0b0b0b;
 }
 
 .booking-brief-card__title {
@@ -3275,7 +3275,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .booking-brief-card__grid {
@@ -3295,9 +3295,9 @@ onShareTimeline(() => {
 
     border-radius: 37rpx;
 
-    background: #fcfbf9;
+    background: #ffffff;
 
-    border: 1rpx solid #efe6e1;
+    border: 1rpx solid #e7e2d6;
 }
 
 .booking-brief-card__label {
@@ -3305,7 +3305,7 @@ onShareTimeline(() => {
 
     font-size: 22rpx;
 
-    color: #8e8985;
+    color: #9A9388;
 }
 
 .booking-brief-card__value {
@@ -3319,7 +3319,7 @@ onShareTimeline(() => {
 
     line-height: 1.5;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .alternative-popup {
@@ -3327,7 +3327,7 @@ onShareTimeline(() => {
 
     padding: 32rpx 28rpx 28rpx;
 
-    background: linear-gradient(180deg, #fffdfc 0%, #fff7f3 100%);
+    background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%);
 }
 
 .alternative-popup__header {
@@ -3345,9 +3345,9 @@ onShareTimeline(() => {
 
     border-radius: 999rpx;
 
-    background: rgba(232, 90, 79, 0.1);
+    background: rgba(11, 11, 11, 0.1);
 
-    border: 1rpx solid rgba(232, 90, 79, 0.16);
+    border: 1rpx solid rgba(11, 11, 11, 0.16);
 }
 
 .alternative-popup__badge-text {
@@ -3357,7 +3357,7 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    color: #c66d5d;
+    color: #9f7a2e;
 }
 
 .alternative-popup__title {
@@ -3367,7 +3367,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .alternative-popup__desc {
@@ -3375,7 +3375,7 @@ onShareTimeline(() => {
 
     line-height: 1.7;
 
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .alternative-popup__loading,
@@ -3420,9 +3420,9 @@ onShareTimeline(() => {
 
     background: rgba(255, 255, 255, 0.94);
 
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 
-    box-shadow: 0 14rpx 28rpx rgba(214, 185, 167, 0.1);
+    box-shadow: 0 14rpx 28rpx rgba(17, 17, 17, 0.1);
 }
 
 .alternative-card__avatar {
@@ -3434,7 +3434,7 @@ onShareTimeline(() => {
 
     border-radius: 24rpx;
 
-    background: linear-gradient(135deg, #fce7e1 0%, #ddb4a6 100%);
+    background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
 }
 
 .alternative-card__content {
@@ -3476,7 +3476,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 
     white-space: nowrap;
 
@@ -3500,7 +3500,7 @@ onShareTimeline(() => {
 
     color: #ffffff;
 
-    background: linear-gradient(135deg, #e85a4f 0%, #c99b73 100%);
+    background: linear-gradient(135deg, #0b0b0b 0%, #c8a45d 100%);
 }
 
 .alternative-card__price {
@@ -3512,7 +3512,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #e85a4f;
+    color: #0b0b0b;
 }
 
 .alternative-card__role {
@@ -3524,7 +3524,7 @@ onShareTimeline(() => {
 
     line-height: 1.45;
 
-    color: #8d837d;
+    color: #5f5a50;
 }
 
 .alternative-card__tags {
@@ -3546,11 +3546,11 @@ onShareTimeline(() => {
 
     line-height: 1.2;
 
-    color: #e85a4f;
+    color: #0b0b0b;
 
-    background: rgba(232, 90, 79, 0.08);
+    background: rgba(11, 11, 11, 0.08);
 
-    border: 1rpx solid rgba(232, 90, 79, 0.16);
+    border: 1rpx solid rgba(11, 11, 11, 0.16);
 }
 
 .alternative-card__desc {
@@ -3562,7 +3562,7 @@ onShareTimeline(() => {
 
     line-height: 1.5;
 
-    color: #4b5563;
+    color: #5f5a50;
 
     overflow: hidden;
 
@@ -3600,7 +3600,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #9a6d48;
+    color: #9F7A2E;
 }
 
 .alternative-card__orders {
@@ -3608,7 +3608,7 @@ onShareTimeline(() => {
 
     line-height: 1.2;
 
-    color: #8d837d;
+    color: #5f5a50;
 }
 
 .alternative-popup__empty {
@@ -3628,7 +3628,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .alternative-popup__empty-desc {
@@ -3636,7 +3636,7 @@ onShareTimeline(() => {
 
     line-height: 1.7;
 
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .alternative-popup__actions {
@@ -3664,11 +3664,11 @@ onShareTimeline(() => {
 .alternative-popup__btn--ghost {
     background: rgba(255, 255, 255, 0.94);
 
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 }
 
 .alternative-popup__btn--primary {
-    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.18);
+    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
 }
 
 .alternative-popup__btn-text {
@@ -3678,7 +3678,7 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    color: #5f5a57;
+    color: #5F5A50;
 }
 
 .alternative-popup__btn-text--primary {
@@ -3692,7 +3692,7 @@ onShareTimeline(() => {
 
     background: rgba(255, 255, 255, 0.84);
 
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 
     backdrop-filter: blur(18rpx);
 
@@ -3726,9 +3726,9 @@ onShareTimeline(() => {
 }
 
 .tab-item--active {
-    background: #e85a4f;
+    background: #0b0b0b;
 
-    box-shadow: 0 10rpx 22rpx rgba(232, 90, 79, 0.18);
+    box-shadow: 0 10rpx 22rpx rgba(11, 11, 11, 0.18);
 }
 
 .tab-text {
@@ -3738,7 +3738,7 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    color: #8a8581;
+    color: #9A9388;
 }
 
 .tab-text--active {
@@ -3770,7 +3770,7 @@ onShareTimeline(() => {
 
     border-radius: 36rpx;
 
-    box-shadow: 0 16rpx 34rpx rgba(155, 132, 121, 0.1);
+    box-shadow: 0 16rpx 34rpx rgba(17, 17, 17, 0.1);
 }
 
 .soft-card {
@@ -3786,7 +3786,7 @@ onShareTimeline(() => {
 
     background: rgba(255, 255, 255, 0.84);
 
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 
     backdrop-filter: blur(18rpx);
 
@@ -3800,7 +3800,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .soft-card__content {
@@ -3808,7 +3808,7 @@ onShareTimeline(() => {
 
     line-height: 1.8;
 
-    color: #4a4541;
+    color: #5F5A50;
 }
 
 .soft-tags {
@@ -3824,9 +3824,9 @@ onShareTimeline(() => {
 
     border-radius: 999rpx;
 
-    background: #fff4ef;
+    background: #f8f7f2;
 
-    border: 1rpx solid rgba(232, 90, 79, 0.14);
+    border: 1rpx solid rgba(11, 11, 11, 0.14);
 }
 
 .soft-tag__text {
@@ -3836,7 +3836,7 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    color: #c66d5d;
+    color: #9f7a2e;
 }
 
 .works-grid {
@@ -3854,9 +3854,9 @@ onShareTimeline(() => {
 
     border-radius: 37rpx;
 
-    background: linear-gradient(135deg, #f8e3db 0%, #ead7cf 100%);
+    background: linear-gradient(135deg, #F7F0DF 0%, #D8D3C7 100%);
 
-    box-shadow: 0 14rpx 30rpx rgba(185, 158, 147, 0.12);
+    box-shadow: 0 14rpx 30rpx rgba(17, 17, 17, 0.12);
 }
 
 .work-image {
@@ -3872,7 +3872,7 @@ onShareTimeline(() => {
 
     padding: 16rpx;
 
-    background: linear-gradient(180deg, rgba(30, 36, 50, 0) 0%, rgba(30, 36, 50, 0.6) 100%);
+    background: linear-gradient(180deg, rgba(11, 11, 11, 0) 0%, rgba(11, 11, 11, 0.6) 100%);
 }
 
 .work-title {
@@ -3914,7 +3914,7 @@ onShareTimeline(() => {
 
     background: rgba(255, 255, 255, 0.84);
 
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 }
 
 .review-summary-value {
@@ -3924,7 +3924,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .review-summary-label {
@@ -3932,7 +3932,7 @@ onShareTimeline(() => {
 
     line-height: 1.3;
 
-    color: #938d89;
+    color: #9a9388;
 }
 
 .review-filter-row {
@@ -3948,15 +3948,15 @@ onShareTimeline(() => {
 
     border-radius: 999rpx;
 
-    background: #fff4ef;
+    background: #f8f7f2;
 
-    border: 1rpx solid rgba(232, 90, 79, 0.12);
+    border: 1rpx solid rgba(11, 11, 11, 0.12);
 
     font-size: 22rpx;
 
     line-height: 1.2;
 
-    color: #b46657;
+    color: #5A4433;
 }
 
 .reviews-list {
@@ -3974,7 +3974,7 @@ onShareTimeline(() => {
 
     background: rgba(255, 255, 255, 0.84);
 
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 }
 
 .review-card-header {
@@ -4006,7 +4006,7 @@ onShareTimeline(() => {
 
     border-radius: 50%;
 
-    background: #f4efec;
+    background: #F8F7F2;
 
     flex-shrink: 0;
 }
@@ -4030,7 +4030,7 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .review-time {
@@ -4038,7 +4038,7 @@ onShareTimeline(() => {
 
     line-height: 1.2;
 
-    color: #938d89;
+    color: #9a9388;
 }
 
 .review-score {
@@ -4058,7 +4058,7 @@ onShareTimeline(() => {
 
     line-height: 1.75;
 
-    color: #4a4541;
+    color: #5F5A50;
 }
 
 .review-tag-list {
@@ -4076,15 +4076,15 @@ onShareTimeline(() => {
 
     border-radius: 999rpx;
 
-    background: #fff4ef;
+    background: #f8f7f2;
 
-    border: 1rpx solid rgba(232, 90, 79, 0.12);
+    border: 1rpx solid rgba(11, 11, 11, 0.12);
 
     font-size: 22rpx;
 
     line-height: 1.2;
 
-    color: #b46657;
+    color: #5A4433;
 }
 
 .review-image-list {
@@ -4104,7 +4104,7 @@ onShareTimeline(() => {
 
     border-radius: 37rpx;
 
-    background: #f4efec;
+    background: #F8F7F2;
 }
 
 .review-reply-list {
@@ -4122,9 +4122,9 @@ onShareTimeline(() => {
 
     border-radius: 34rpx;
 
-    background: #fff7f3;
+    background: #FFFFFF;
 
-    border: 1rpx solid rgba(232, 90, 79, 0.08);
+    border: 1rpx solid rgba(11, 11, 11, 0.08);
 }
 
 .review-reply-type {
@@ -4138,7 +4138,7 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    color: #c66d5d;
+    color: #9f7a2e;
 }
 
 .review-reply-content {
@@ -4148,7 +4148,7 @@ onShareTimeline(() => {
 
     line-height: 1.7;
 
-    color: #5a5451;
+    color: #5F5A50;
 }
 
 .review-load-more {
@@ -4162,11 +4162,11 @@ onShareTimeline(() => {
 
     line-height: 1.3;
 
-    color: #938d89;
+    color: #9a9388;
 }
 
 .review-load-more-text--action {
-    color: #e85a4f;
+    color: #0b0b0b;
 
     font-weight: 600;
 }
@@ -4198,7 +4198,7 @@ onShareTimeline(() => {
 
     border-radius: 37rpx;
 
-    background: #f4efec;
+    background: #F8F7F2;
 }
 
 .cert-name {
@@ -4206,7 +4206,7 @@ onShareTimeline(() => {
 
     line-height: 1.4;
 
-    color: #5a5451;
+    color: #5F5A50;
 
     white-space: nowrap;
 
@@ -4224,7 +4224,7 @@ onShareTimeline(() => {
 
     padding: 28rpx 28rpx 34rpx;
 
-    background: linear-gradient(180deg, #fffaf7 0%, #f7efea 100%);
+    background: linear-gradient(180deg, #FFFFFF 0%, #F8F7F2 100%);
 }
 
 .certificate-popup__header {
@@ -4244,7 +4244,7 @@ onShareTimeline(() => {
 
     border-radius: 999rpx;
 
-    background: rgba(232, 90, 79, 0.1);
+    background: rgba(11, 11, 11, 0.1);
 }
 
 .certificate-popup__badge-text {
@@ -4254,7 +4254,7 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    color: #c66d5d;
+    color: #9f7a2e;
 }
 
 .certificate-popup__title {
@@ -4264,7 +4264,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .certificate-popup__desc {
@@ -4272,7 +4272,7 @@ onShareTimeline(() => {
 
     line-height: 1.6;
 
-    color: #8d837d;
+    color: #5f5a50;
 }
 
 .certificate-popup__image {
@@ -4282,9 +4282,9 @@ onShareTimeline(() => {
 
     border-radius: 40rpx;
 
-    background: #f4efec;
+    background: #F8F7F2;
 
-    box-shadow: 0 14rpx 32rpx rgba(175, 152, 141, 0.14);
+    box-shadow: 0 14rpx 32rpx rgba(17, 17, 17, 0.14);
 }
 
 .certificate-popup__meta-list {
@@ -4310,7 +4310,7 @@ onShareTimeline(() => {
 
     background: rgba(255, 255, 255, 0.94);
 
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 }
 
 .certificate-popup__meta-label {
@@ -4320,7 +4320,7 @@ onShareTimeline(() => {
 
     line-height: 1.5;
 
-    color: #938d89;
+    color: #9a9388;
 }
 
 .certificate-popup__meta-value {
@@ -4334,7 +4334,7 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    color: #1e2432;
+    color: #111111;
 
     text-align: right;
 
@@ -4342,7 +4342,7 @@ onShareTimeline(() => {
 }
 
 .certificate-popup__meta-value--status {
-    color: #c66d5d;
+    color: #9f7a2e;
 }
 
 .certificate-popup__actions {
@@ -4360,7 +4360,7 @@ onShareTimeline(() => {
 
     justify-content: center;
 
-    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.18);
+    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
 }
 
 .certificate-popup__btn-text {
@@ -4388,7 +4388,7 @@ onShareTimeline(() => {
 
     background: rgba(255, 255, 255, 0.84);
 
-    border: 1rpx dashed rgba(201, 179, 168, 0.8);
+    border: 1rpx dashed rgba(216, 194, 138, 0.8);
 }
 
 .empty-card__text {
@@ -4396,7 +4396,7 @@ onShareTimeline(() => {
 
     line-height: 1.4;
 
-    color: #938d89;
+    color: #9a9388;
 }
 
 .loading-container,
@@ -4441,19 +4441,19 @@ onShareTimeline(() => {
 
     background: rgba(255, 255, 255, 0.9);
 
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 
-    box-shadow: 0 10rpx 24rpx rgba(155, 132, 121, 0.08);
+    box-shadow: 0 10rpx 24rpx rgba(17, 17, 17, 0.08);
 
     overflow: hidden;
 }
 
 .action-button--primary {
-    background: #e85a4f;
+    background: #0b0b0b;
 
-    border-color: #e85a4f;
+    border-color: #0b0b0b;
 
-    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.22);
+    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.22);
 }
 
 .action-button__text {
@@ -4463,7 +4463,7 @@ onShareTimeline(() => {
 
     font-weight: 700;
 
-    color: #1e2432;
+    color: #111111;
 }
 
 .action-button__text--primary {

@@ -58,7 +58,7 @@
                             @click="goPage('/packages/pages/staff_profile/staff_profile')"
                         >
                             <text class="profile-entry__text">资料</text>
-                            <tn-icon name="right" size="18" color="#F6DDD6" />
+                            <tn-icon name="right" size="18" color="#F7F0DF" />
                         </view>
                     </view>
 
@@ -84,7 +84,7 @@
                     <view class="primary-action" @click="primaryAction.action()">
                         <view class="primary-action__main">
                             <view class="primary-action__icon">
-                                <tn-icon :name="primaryAction.icon" size="26" color="#231D1A" />
+                                <tn-icon :name="primaryAction.icon" size="26" color="#111111" />
                             </view>
 
                             <view class="primary-action__copy">
@@ -116,7 +116,7 @@
                                     <tn-icon :name="item.icon" size="22" :color="item.iconColor" />
                                 </view>
 
-                                <tn-icon name="right" size="18" color="#B8AEA8" />
+                                <tn-icon name="right" size="18" color="#9A9388" />
                             </view>
 
                             <text class="secondary-action__label">{{ item.label }}</text>
@@ -170,7 +170,7 @@
 
                         <view class="section-link" @click="goOrders()">
                             <text class="section-link__text">全部订单</text>
-                            <tn-icon name="right" size="18" color="#A69B95" />
+                            <tn-icon name="right" size="18" color="#9A9388" />
                         </view>
                     </view>
 
@@ -418,9 +418,9 @@ interface ResourceMenuItem {
 const $theme = useThemeStore()
 
 const defaultAvatar = '/static/images/user/default_avatar.png'
-const heroCardBackground = 'linear-gradient(145deg, #2D2623 0%, #1F1A18 58%, #463A33 100%)'
+const heroCardBackground = 'linear-gradient(145deg, #111111 0%, #0B0B0B 58%, #5A4433 100%)'
 const heroCardBorder = '1rpx solid rgba(255, 255, 255, 0.08)'
-const heroCardShadow = '0 24rpx 58rpx rgba(31, 26, 24, 0.28)'
+const heroCardShadow = '0 24rpx 58rpx rgba(11, 11, 11, 0.22)'
 
 const loading = ref(false)
 const hasLoaded = ref(false)
@@ -680,7 +680,7 @@ const primaryAction = computed<WorkbenchAction>(() => {
         hint: pending > 0 ? '优先处理' : '当前无积压',
         icon: 'warning',
         tone: 'info',
-        iconColor: '#231D1A',
+        iconColor: '#111111',
         action: () => goOrders(0)
     }
 })
@@ -699,7 +699,7 @@ const secondaryActions = computed<WorkbenchAction[]>(() => {
             hint: totalOrders > 0 ? '查看全部订单' : '开始跟进',
             icon: 'order',
             tone: 'neutral',
-            iconColor: '#8C817A',
+            iconColor: '#9A9388',
             action: () => goOrders()
         },
         {
@@ -710,7 +710,7 @@ const secondaryActions = computed<WorkbenchAction[]>(() => {
             hint: todayServiceCount > 0 ? `今日服务 ${todayServiceCount} 项` : '查看未来安排',
             icon: 'calendar',
             tone: 'warning',
-            iconColor: '#C99B73',
+            iconColor: '#C8A45D',
             action: () => goPage('/packages/pages/staff_schedule/staff_schedule')
         }
     ]
@@ -775,7 +775,7 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
         path: '/packages/pages/staff_profile/staff_profile',
         badge: 0,
         icon: 'edit',
-        iconColor: '#E85A4F',
+        iconColor: '#0B0B0B',
         tone: 'primary'
     },
     {
@@ -784,7 +784,7 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
         path: '/packages/pages/staff_work_list/staff_work_list',
         badge: toNumber(dashboard.value.overview.work_count),
         icon: 'image',
-        iconColor: '#4D7AD9',
+        iconColor: '#6C665C',
         tone: 'info'
     },
     {
@@ -793,7 +793,7 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
         path: '/packages/pages/staff_package_list/staff_package_list',
         badge: toNumber(dashboard.value.overview.package_count),
         icon: 'service',
-        iconColor: '#C99B73',
+        iconColor: '#C8A45D',
         tone: 'warning'
     },
     {
@@ -802,7 +802,7 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
         path: '/packages/pages/staff_addon_list/staff_addon_list',
         badge: toNumber(dashboard.value.overview.addon_count),
         icon: 'plus',
-        iconColor: '#C99B73',
+        iconColor: '#C8A45D',
         tone: 'warning'
     },
     {
@@ -811,7 +811,7 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
         path: '/packages/pages/staff_dynamic_list/staff_dynamic_list',
         badge: 0,
         icon: 'topic',
-        iconColor: '#8C817A',
+        iconColor: '#9A9388',
         tone: 'neutral'
     },
     {
@@ -820,7 +820,7 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
         path: '/packages/pages/staff_certificate_list/staff_certificate_list',
         badge: 0,
         icon: 'honor',
-        iconColor: '#8C817A',
+        iconColor: '#9A9388',
         tone: 'neutral'
     }
 ])
@@ -936,9 +936,9 @@ onShow(async () => {
 }
 
 .workbench-hero {
-    background: linear-gradient(145deg, #2d2623 0%, #1f1a18 58%, #463a33 100%);
+    background: linear-gradient(145deg, #111111 0%, #0B0B0B 58%, #5A4433 100%);
     border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 24rpx 58rpx rgba(31, 26, 24, 0.28);
+    box-shadow: 0 24rpx 58rpx rgba(11, 11, 11, 0.22);
 
     &::before {
         content: '';
@@ -946,7 +946,7 @@ onShow(async () => {
         inset: 0;
         background: radial-gradient(
             circle at top right,
-            rgba(255, 237, 226, 0.22),
+            rgba(200, 164, 93, 0.2),
             transparent 42%
         );
         pointer-events: none;
@@ -1008,7 +1008,7 @@ onShow(async () => {
         font-size: 40rpx;
         font-weight: 700;
         line-height: 1.2;
-        color: #fffaf7;
+        color: #FFFFFF;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1018,7 +1018,7 @@ onShow(async () => {
         font-size: 22rpx;
         font-weight: 600;
         line-height: 1.45;
-        color: rgba(255, 245, 240, 0.76);
+        color: rgba(255, 255, 255, 0.76);
     }
 
     &__headline {
@@ -1026,7 +1026,7 @@ onShow(async () => {
         font-size: 28rpx;
         font-weight: 700;
         line-height: 1.4;
-        color: #fff7f2;
+        color: #FFFFFF;
     }
 }
 
@@ -1048,15 +1048,15 @@ onShow(async () => {
     border: 1rpx solid rgba(255, 255, 255, 0.08);
 
     &--active {
-        background: rgba(255, 244, 238, 0.14);
-        border-color: rgba(255, 223, 210, 0.16);
+        background: rgba(247, 240, 223, 0.14);
+        border-color: rgba(216, 194, 138, 0.22);
     }
 
     &__label {
         font-size: 20rpx;
         font-weight: 600;
         line-height: 1.35;
-        color: rgba(255, 243, 237, 0.72);
+        color: rgba(255, 255, 255, 0.72);
     }
 
     &__value-row {
@@ -1069,7 +1069,7 @@ onShow(async () => {
         font-size: 34rpx;
         font-weight: 700;
         line-height: 1;
-        color: #fff7f2;
+        color: #FFFFFF;
     }
 
     &__unit {
@@ -1077,14 +1077,14 @@ onShow(async () => {
         font-size: 20rpx;
         font-weight: 700;
         line-height: 1;
-        color: rgba(255, 243, 237, 0.72);
+        color: rgba(255, 255, 255, 0.72);
     }
 
     &__hint {
         font-size: 18rpx;
         font-weight: 600;
         line-height: 1.45;
-        color: rgba(255, 243, 237, 0.62);
+        color: rgba(255, 255, 255, 0.62);
     }
 }
 
@@ -1113,8 +1113,8 @@ onShow(async () => {
         font-size: 20rpx;
         font-weight: 700;
         line-height: 1;
-        color: #fff2ec;
-        letter-spacing: 0.8rpx;
+        color: #FFFFFF;
+        letter-spacing: 0;
     }
 }
 
@@ -1132,7 +1132,7 @@ onShow(async () => {
     &__text {
         font-size: 22rpx;
         font-weight: 600;
-        color: #fff2ec;
+        color: #FFFFFF;
         line-height: 1;
     }
 }
@@ -1146,8 +1146,9 @@ onShow(async () => {
     margin-top: 22rpx;
     padding: 24rpx 26rpx;
     border-radius: 34rpx;
-    background: linear-gradient(135deg, #f6dcc7 0%, #f3c8a6 100%);
-    box-shadow: 0 16rpx 28rpx rgba(15, 11, 10, 0.16);
+    background: linear-gradient(135deg, #F7F0DF 0%, #D8C28A 100%);
+    border: 1rpx solid rgba(200, 164, 93, 0.42);
+    box-shadow: 0 16rpx 28rpx rgba(11, 11, 11, 0.12);
 
     &__main {
         flex: 1;
@@ -1165,7 +1166,7 @@ onShow(async () => {
         align-items: center;
         justify-content: center;
         border-radius: 22rpx;
-        background: rgba(35, 29, 26, 0.12);
+        background: rgba(17, 17, 17, 0.12);
     }
 
     &__copy {
@@ -1180,14 +1181,14 @@ onShow(async () => {
         font-size: 28rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: #231d1a;
+        color: #111111;
     }
 
     &__hint {
         font-size: 20rpx;
         font-weight: 600;
         line-height: 1.45;
-        color: rgba(35, 29, 26, 0.68);
+        color: rgba(17, 17, 17, 0.68);
     }
 
     &__value {
@@ -1201,7 +1202,7 @@ onShow(async () => {
         font-size: 48rpx;
         font-weight: 700;
         line-height: 1;
-        color: #231d1a;
+        color: #111111;
     }
 
     &__unit {
@@ -1209,7 +1210,7 @@ onShow(async () => {
         font-size: 22rpx;
         font-weight: 700;
         line-height: 1;
-        color: rgba(35, 29, 26, 0.7);
+        color: rgba(17, 17, 17, 0.7);
     }
 }
 
@@ -1241,7 +1242,7 @@ onShow(async () => {
     background: rgba(255, 255, 255, 0.96);
 
     &--warning {
-        background: linear-gradient(180deg, rgba(255, 248, 237, 0.98) 0%, #fffdf8 100%);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #FFFFFF 100%);
     }
 
     &__top {
@@ -1258,14 +1259,14 @@ onShow(async () => {
         align-items: center;
         justify-content: center;
         border-radius: 18rpx;
-        background: #f5f1ee;
+        background: #F8F7F2;
 
         &--neutral {
-            background: #f4efeb;
+            background: #F8F7F2;
         }
 
         &--warning {
-            background: #fff3e4;
+            background: #F7F0DF;
         }
     }
 
@@ -1273,7 +1274,7 @@ onShow(async () => {
         font-size: 26rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: #1f1917;
+        color: #0B0B0B;
     }
 
     &__value-row {
@@ -1286,14 +1287,14 @@ onShow(async () => {
         font-size: 42rpx;
         font-weight: 700;
         line-height: 1;
-        color: #1f1917;
+        color: #0B0B0B;
     }
 
     &__unit {
         padding-bottom: 5rpx;
         font-size: 21rpx;
         font-weight: 700;
-        color: #8a7d76;
+        color: #5f5a50;
         line-height: 1;
     }
 
@@ -1301,7 +1302,7 @@ onShow(async () => {
         font-size: 20rpx;
         font-weight: 600;
         line-height: 1.45;
-        color: #8a7d76;
+        color: #5f5a50;
     }
 }
 
@@ -1342,19 +1343,19 @@ onShow(async () => {
     min-height: 156rpx;
     padding: 22rpx;
     border-radius: 28rpx;
-    border: 1rpx solid rgba(239, 230, 225, 1);
-    background: #fcfbf9;
+    border: 1rpx solid rgba(231, 226, 214, 1);
+    background: #ffffff;
 
     &--accent {
-        background: #fff4ef;
-        border-color: #f4c7bf;
+        background: #f8f7f2;
+        border-color: #d8c28a;
     }
 
     &__label {
         font-size: 22rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: #847972;
+        color: #9A9388;
     }
 
     &__value-row {
@@ -1367,7 +1368,7 @@ onShow(async () => {
         font-size: 44rpx;
         font-weight: 700;
         line-height: 1;
-        color: #1e2432;
+        color: #111111;
     }
 
     &__unit {
@@ -1375,14 +1376,14 @@ onShow(async () => {
         font-size: 21rpx;
         font-weight: 700;
         line-height: 1;
-        color: #8a7d76;
+        color: #5f5a50;
     }
 
     &__caption {
         font-size: 20rpx;
         font-weight: 600;
         line-height: 1.45;
-        color: #8a7d76;
+        color: #5f5a50;
     }
 }
 
@@ -1397,7 +1398,7 @@ onShow(async () => {
         font-size: 22rpx;
         font-weight: 600;
         line-height: 1;
-        color: #8a7d76;
+        color: #5f5a50;
     }
 }
 
@@ -1414,8 +1415,8 @@ onShow(async () => {
     gap: 12rpx;
     padding: 22rpx;
     border-radius: 28rpx;
-    border: 1rpx solid rgba(239, 230, 225, 1);
-    background: #fcfbf9;
+    border: 1rpx solid rgba(231, 226, 214, 1);
+    background: #ffffff;
 
     &__top,
     &__bottom,
@@ -1442,14 +1443,14 @@ onShow(async () => {
         font-size: 27rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: #1e2432;
+        color: #111111;
     }
 
     &__subtitle {
         font-size: 21rpx;
         font-weight: 600;
         line-height: 1.45;
-        color: #8a7d76;
+        color: #5f5a50;
     }
 
     &__sn,
@@ -1460,11 +1461,11 @@ onShow(async () => {
     }
 
     &__sn {
-        color: #b4aca8;
+        color: #9a9388;
     }
 
     &__amount {
-        color: #e85a4f;
+        color: #0b0b0b;
     }
 }
 
@@ -1479,8 +1480,8 @@ onShow(async () => {
     min-height: 182rpx;
     padding: 22rpx;
     border-radius: 28rpx;
-    border: 1rpx solid rgba(239, 230, 225, 1);
-    background: #fcfbf9;
+    border: 1rpx solid rgba(231, 226, 214, 1);
+    background: #ffffff;
 
     &__top {
         display: flex;
@@ -1498,19 +1499,19 @@ onShow(async () => {
         border-radius: 20rpx;
 
         &--primary {
-            background: #fff1ee;
+            background: #f3f2ee;
         }
 
         &--warning {
-            background: #fff7ea;
+            background: #F7F0DF;
         }
 
         &--info {
-            background: #eef5ff;
+            background: #F3F2EE;
         }
 
         &--neutral {
-            background: #f4efeb;
+            background: #F8F7F2;
         }
     }
 
@@ -1522,15 +1523,15 @@ onShow(async () => {
         align-items: center;
         justify-content: center;
         border-radius: 999rpx;
-        background: rgba(232, 90, 79, 0.08);
-        border: 1rpx solid rgba(232, 90, 79, 0.14);
+        background: rgba(11, 11, 11, 0.08);
+        border: 1rpx solid rgba(11, 11, 11, 0.14);
     }
 
     &__badge-text {
         font-size: 20rpx;
         font-weight: 700;
         line-height: 1;
-        color: #e85a4f;
+        color: #0b0b0b;
     }
 
     &__copy {
@@ -1543,14 +1544,14 @@ onShow(async () => {
         font-size: 26rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: #1e2432;
+        color: #111111;
     }
 
     &__desc {
         font-size: 20rpx;
         font-weight: 600;
         line-height: 1.45;
-        color: #8a7d76;
+        color: #5f5a50;
     }
 }
 </style>

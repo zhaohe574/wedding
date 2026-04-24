@@ -496,7 +496,7 @@ const hexToRgb = (hexColor: string) => {
 const toRgba = (hexColor: string, alpha: number) => {
     const rgb = hexToRgb(hexColor)
 
-    if (!rgb) return `rgba(232, 90, 79, ${alpha})`
+    if (!rgb) return `rgba(11, 11, 11, ${alpha})`
 
     return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`
 }
@@ -578,37 +578,35 @@ const heroCardStyle = computed(() => ({
         '#FFFFFF',
 
         0.93
-    )} 0%, ${mixColor($theme.secondaryColor || '#C99B73', '#FFFFFF', 0.9)} 100%)`,
+    )} 0%, ${mixColor($theme.secondaryColor || '#C8A45D', '#FFFFFF', 0.9)} 100%)`,
 
-    borderColor: 'var(--wm-color-border-strong, #F4C7BF)',
+    borderColor: 'var(--wm-color-border-strong, #D8C28A)',
 
-    boxShadow: 'var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16))'
+    boxShadow: 'var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.06))'
 }))
 
 const heroRefreshStyle = computed(() => ({
     backgroundColor: '#FFFFFF',
 
-    borderColor: 'var(--wm-color-border, #EFE6E1)'
+    borderColor: 'var(--wm-color-border, #E7E2D6)'
 }))
 
 const heroChipStyle = computed(() => ({
     backgroundColor: '#FFFFFF',
 
-    borderColor: 'var(--wm-color-border, #EFE6E1)'
+    borderColor: 'var(--wm-color-border, #E7E2D6)'
 }))
 
 const panelStyle = computed(() => ({
     backgroundColor: '#FFFFFF',
 
-    borderColor: 'var(--wm-color-border, #EFE6E1)',
+    borderColor: 'var(--wm-color-border, #E7E2D6)',
 
-    boxShadow: 'var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16))'
+    boxShadow: 'var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.06))'
 }))
 
 const activeTabStyle = computed(() => ({
-    background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${
-        $theme.secondaryColor || '#C99B73'
-    } 100%)`,
+    background: $theme.primaryColor,
 
     color: '#FFFFFF',
 
@@ -620,21 +618,21 @@ const activeTabStyle = computed(() => ({
 const defaultTabStyle = computed(() => ({
     backgroundColor: 'rgba(255, 255, 255, 0.92)',
 
-    color: 'var(--wm-text-secondary, #7F7B78)',
+    color: 'var(--wm-text-secondary, #5F5A50)',
 
-    borderColor: 'var(--wm-color-border, #EFE6E1)'
+    borderColor: 'var(--wm-color-border, #E7E2D6)'
 }))
 
 const teamStatStyle = computed(() => ({
-    backgroundColor: 'var(--wm-color-bg-soft, #FFF7F4)',
+    backgroundColor: 'var(--wm-color-bg-soft, #FFFFFF)',
 
-    borderColor: 'var(--wm-color-border, #EFE6E1)'
+    borderColor: 'var(--wm-color-border, #E7E2D6)'
 }))
 
 const memberRecommendStyle = computed(() => ({
     color: $theme.primaryColor,
 
-    backgroundColor: 'var(--wm-color-primary-soft, #FFF1EE)'
+    backgroundColor: 'var(--wm-color-primary-soft, #F3F2EE)'
 }))
 
 const totalOrders = computed(() => Number(orderStats.value?.total_orders || 0))
@@ -719,7 +717,7 @@ const coreMetrics = computed(() => [
 
         hint: `支付推进率 ${formatPercent(paidProgressRate.value)}`,
 
-        color: '#19BE6B'
+        color: '#4D4A42'
     },
 
     {
@@ -729,7 +727,7 @@ const coreMetrics = computed(() => [
 
         hint: `今日收款 ¥${formatMoney(orderStats.value?.today?.amount)}`,
 
-        color: '#C98524'
+        color: '#9F7A2E'
     }
 ])
 
@@ -821,7 +819,7 @@ const todoCards = computed(() => [
 
         hint: '',
 
-        color: '#C99B73'
+        color: '#C8A45D'
     },
 
     {
@@ -831,7 +829,7 @@ const todoCards = computed(() => [
 
         hint: '',
 
-        color: '#F59E0B'
+        color: '#C8A45D'
     },
 
     {
@@ -841,7 +839,7 @@ const todoCards = computed(() => [
 
         hint: '',
 
-        color: '#14B8A6'
+        color: '#6C665C'
     },
 
     {
@@ -851,30 +849,30 @@ const todoCards = computed(() => [
 
         hint: '',
 
-        color: '#607086'
+        color: '#6C665C'
     }
 ])
 
 const statusColorMap: Record<string, string> = {
-    待确认: '#C99B73',
+    待确认: '#C8A45D',
 
-    待支付: '#F59E0B',
+    待支付: '#C8A45D',
 
-    待服务: '#10B981',
+    待服务: '#4D4A42',
 
-    服务中: '#14B8A6',
+    服务中: '#6C665C',
 
-    已完成: '#64748B',
+    已完成: '#5F5A50',
 
-    已评价: '#C99B73',
+    已评价: '#C8A45D',
 
-    已取消: '#EF4444',
+    已取消: '#5A4433',
 
-    已暂停: '#F97316',
+    已暂停: '#9F7A2E',
 
-    已退款: '#DC2626',
+    已退款: '#5A4433',
 
-    用户已删除: '#8B5CF6'
+    用户已删除: '#C8A45D'
 }
 
 const statusItems = computed(() => {
@@ -892,7 +890,7 @@ const statusItems = computed(() => {
 
             percent: Number(percent.toFixed(1)),
 
-            color: statusColorMap[item.label] || '#94A3B8'
+            color: statusColorMap[item.label] || '#9A9388'
         }
     })
 
@@ -937,19 +935,19 @@ const insights = computed<InsightItem[]>(() => {
             good: {
                 levelText: '稳定',
 
-                color: '#10B981'
+                color: '#4D4A42'
             },
 
             warning: {
                 levelText: '关注',
 
-                color: '#F59E0B'
+                color: '#C8A45D'
             },
 
             risk: {
                 levelText: '重点',
 
-                color: '#EF4444'
+                color: '#5A4433'
             }
         }[level]
 
@@ -1017,11 +1015,11 @@ const getTodoCardStyle = (color: string) => ({
 
 const getLoadTagStyle = (level: string) => {
     const toneMap: Record<string, { color: string }> = {
-        高负载: { color: '#EF4444' },
+        高负载: { color: '#5A4433' },
 
-        平稳: { color: '#F59E0B' },
+        平稳: { color: '#C8A45D' },
 
-        可分配: { color: '#10B981' }
+        可分配: { color: '#4D4A42' }
     }
 
     const tone = toneMap[level] || toneMap['可分配']
@@ -1273,7 +1271,7 @@ onShow(async () => {
 
     line-height: 1.4;
 
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .hero-title {
@@ -1285,7 +1283,7 @@ onShow(async () => {
 
     line-height: 1.35;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     font-weight: 700;
 }
@@ -1299,7 +1297,7 @@ onShow(async () => {
 
     line-height: 1.5;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .hero-refresh {
@@ -1321,7 +1319,7 @@ onShow(async () => {
 .hero-refresh-text {
     font-size: 24rpx;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     line-height: 1;
 }
@@ -1339,7 +1337,7 @@ onShow(async () => {
 .hero-meta-text {
     font-size: 22rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     line-height: 1.5;
 }
@@ -1374,7 +1372,7 @@ onShow(async () => {
 .hero-chip-label {
     font-size: 22rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .hero-chip-value {
@@ -1384,7 +1382,7 @@ onShow(async () => {
 
     line-height: 1.3;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     font-weight: 700;
 }
@@ -1439,7 +1437,7 @@ onShow(async () => {
 
     line-height: 1.35;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     font-weight: 700;
 }
@@ -1451,7 +1449,7 @@ onShow(async () => {
 
     line-height: 1.5;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .metric-grid,
@@ -1501,7 +1499,7 @@ onShow(async () => {
 .team-stat-label {
     font-size: 22rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .metric-value,
@@ -1513,7 +1511,7 @@ onShow(async () => {
 
     line-height: 1.3;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     font-weight: 700;
 }
@@ -1526,7 +1524,7 @@ onShow(async () => {
 
     line-height: 1.5;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .snapshot-row {
@@ -1542,7 +1540,7 @@ onShow(async () => {
 
     padding-top: 20rpx;
 
-    border-top: 2rpx solid var(--wm-color-border, #efe6e1);
+    border-top: 2rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .snapshot-label,
@@ -1553,7 +1551,7 @@ onShow(async () => {
 .snapshot-label {
     font-size: 22rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .snapshot-value {
@@ -1561,7 +1559,7 @@ onShow(async () => {
 
     font-size: 28rpx;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     font-weight: 700;
 }
@@ -1587,9 +1585,9 @@ onShow(async () => {
 
     border-radius: 22rpx;
 
-    background: linear-gradient(180deg, #ffffff 0%, #fff7f4 100%);
+    background: linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
 
-    border: 2rpx solid var(--wm-color-border, #efe6e1);
+    border: 2rpx solid var(--wm-color-border, #e7e2d6);
 
     box-sizing: border-box;
 }
@@ -1611,7 +1609,7 @@ onShow(async () => {
 
     flex-shrink: 0;
 
-    background: var(--wm-color-bg-soft, #fff7f4);
+    background: var(--wm-color-bg-soft, #ffffff);
 }
 
 .member-main {
@@ -1635,7 +1633,7 @@ onShow(async () => {
 
     line-height: 1.35;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     font-weight: 700;
 
@@ -1664,7 +1662,7 @@ onShow(async () => {
 
     font-size: 22rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     line-height: 1.4;
 }
@@ -1697,7 +1695,7 @@ onShow(async () => {
 .member-data-label {
     font-size: 20rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     line-height: 1.4;
 }
@@ -1707,7 +1705,7 @@ onShow(async () => {
 
     font-size: 28rpx;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     font-weight: 700;
 }
@@ -1756,11 +1754,11 @@ onShow(async () => {
 }
 
 .status-label {
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .status-meta {
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .status-track {
@@ -1770,7 +1768,7 @@ onShow(async () => {
 
     margin-top: 10rpx;
 
-    background: var(--wm-color-bg-soft, #fff7f4);
+    background: var(--wm-color-bg-soft, #ffffff);
 
     border-radius: 999rpx;
 
@@ -1820,7 +1818,7 @@ onShow(async () => {
 
     padding: 0 6rpx;
 
-    background: linear-gradient(180deg, #fff7f4 0%, #ffffff 100%);
+    background: linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
 
     border-radius: 18rpx;
 }
@@ -1843,7 +1841,7 @@ onShow(async () => {
 
     font-size: 20rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     line-height: 1.4;
 }
@@ -1853,7 +1851,7 @@ onShow(async () => {
 
     font-size: 20rpx;
 
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 
     line-height: 1.4;
 }
@@ -1901,7 +1899,7 @@ onShow(async () => {
 
     line-height: 1.6;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .panel-empty {
@@ -1911,7 +1909,7 @@ onShow(async () => {
 
     line-height: 1.5;
 
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 
     text-align: center;
 }

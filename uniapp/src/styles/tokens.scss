@@ -1,16 +1,16 @@
-$wm-color-bg-page: #FFF7F4;
-$wm-color-bg-card: #FFFFFFE8;
-$wm-color-bg-soft: #FFF1EE;
-$wm-color-primary: #E85A4F;
-$wm-color-primary-strong: #D84D43;
-$wm-color-primary-soft: #FFF1EE;
-$wm-color-secondary: #C99B73;
-$wm-color-secondary-soft: #F8EFE7;
-$wm-color-border: #EFE6E1;
-$wm-color-border-strong: #F4C7BF;
-$wm-color-text-primary: #1E2432;
-$wm-color-text-secondary: #7F7B78;
-$wm-color-text-tertiary: #B4ACA8;
+$wm-color-bg-page: #FFFFFF;
+$wm-color-bg-card: #FFFFFF;
+$wm-color-bg-soft: #F3F2EE;
+$wm-color-primary: #0B0B0B;
+$wm-color-primary-strong: #000000;
+$wm-color-primary-soft: #F3F2EE;
+$wm-color-secondary: #C8A45D;
+$wm-color-secondary-soft: #F7F0DF;
+$wm-color-border: #E7E2D6;
+$wm-color-border-strong: #D8C28A;
+$wm-color-text-primary: #111111;
+$wm-color-text-secondary: #5F5A50;
+$wm-color-text-tertiary: #9A9388;
 $wm-radius-input: 34rpx;
 $wm-radius-control: 34rpx;
 $wm-radius-action: 34rpx;
@@ -46,24 +46,24 @@ $wm-space-tabbar-bottom: 39rpx;
 
 page,
 :root {
-    --wm-color-bg-page: #FFF7F4;
-    --wm-color-bg-card: #FFFFFFE8;
-    --wm-color-bg-soft: #FFF1EE;
-    --wm-color-bg-mask: rgba(30, 36, 50, 0.46);
-    --wm-color-primary: #E85A4F;
-    --wm-color-primary-strong: #D84D43;
-    --wm-color-primary-soft: #FFF1EE;
-    --wm-color-secondary: #C99B73;
-    --wm-color-secondary-soft: #F8EFE7;
-    --wm-color-border: #EFE6E1;
-    --wm-color-border-strong: #F4C7BF;
-    --wm-color-success: #2F7D58;
-    --wm-color-warning: #C98524;
-    --wm-color-danger: #C94B49;
-    --wm-color-info: #607086;
-    --wm-text-primary: #1E2432;
-    --wm-text-secondary: #7F7B78;
-    --wm-text-tertiary: #B4ACA8;
+    --wm-color-bg-page: #FFFFFF;
+    --wm-color-bg-card: #FFFFFF;
+    --wm-color-bg-soft: #F3F2EE;
+    --wm-color-bg-mask: rgba(11, 11, 11, 0.46);
+    --wm-color-primary: #0B0B0B;
+    --wm-color-primary-strong: #000000;
+    --wm-color-primary-soft: #F3F2EE;
+    --wm-color-secondary: #C8A45D;
+    --wm-color-secondary-soft: #F7F0DF;
+    --wm-color-border: #E7E2D6;
+    --wm-color-border-strong: #D8C28A;
+    --wm-color-success: #4D4A42;
+    --wm-color-warning: #9F7A2E;
+    --wm-color-danger: #5A4433;
+    --wm-color-info: #6C665C;
+    --wm-text-primary: #111111;
+    --wm-text-secondary: #5F5A50;
+    --wm-text-tertiary: #9A9388;
     --wm-text-inverse: #FFFFFF;
     --wm-font-family-display: SF Pro Display, PingFang SC, Microsoft YaHei, sans-serif;
     --wm-font-family-body: PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif;
@@ -110,9 +110,9 @@ page,
     --wm-tabbar-item-height: 101rpx;
     --wm-tabbar-item-radius: 56rpx;
     --wm-tabbar-text-size: 22rpx;
-    --wm-shadow-soft: 0 14rpx 32rpx rgba(214, 185, 167, 0.16);
-    --wm-shadow-card: 0 18rpx 36rpx rgba(214, 185, 167, 0.2);
-    --wm-shadow-hero: 0 24rpx 56rpx rgba(177, 108, 95, 0.18);
+    --wm-shadow-soft: 0 14rpx 32rpx rgba(17, 17, 17, 0.06);
+    --wm-shadow-card: 0 18rpx 40rpx rgba(17, 17, 17, 0.09);
+    --wm-shadow-hero: 0 24rpx 56rpx rgba(17, 17, 17, 0.12);
     --wm-motion-fast: 150ms;
     --wm-motion-base: 220ms;
     --wm-motion-slow: 260ms;
@@ -122,13 +122,13 @@ page,
 
 .wm-page-shell[data-scene='staff'],
 .wm-page--staff {
-    --wm-color-bg-page: #FFF8F5;
+    --wm-color-bg-page: #FFFFFF;
     --wm-color-bg-card: rgba(255, 255, 255, 0.92);
-    --wm-color-bg-soft: #FFF2EE;
-    --wm-color-primary-soft: #FFF0EB;
-    --wm-color-secondary-soft: #F9F0E7;
-    --wm-color-border: #F0E5DE;
-    --wm-color-border-strong: #F1D1C5;
+    --wm-color-bg-soft: #F8F7F2;
+    --wm-color-primary-soft: #F3F2EE;
+    --wm-color-secondary-soft: #F7F0DF;
+    --wm-color-border: #E7E2D6;
+    --wm-color-border-strong: #D8C28A;
     --wm-radius-chip: 39rpx;
     --wm-radius-card-soft: 39rpx;
     --wm-radius-card: 48rpx;
@@ -143,7 +143,7 @@ page,
     --wm-space-card-padding-lg: 36rpx;
     --wm-space-action-top: 24rpx;
     --wm-space-action-bottom: 42rpx;
-    --wm-shadow-soft: 0 18rpx 38rpx rgba(185, 129, 116, 0.12);
-    --wm-shadow-card: 0 22rpx 48rpx rgba(185, 129, 116, 0.16);
-    --wm-shadow-hero: 0 28rpx 60rpx rgba(177, 108, 95, 0.18);
+    --wm-shadow-soft: 0 18rpx 38rpx rgba(17, 17, 17, 0.06);
+    --wm-shadow-card: 0 22rpx 48rpx rgba(17, 17, 17, 0.09);
+    --wm-shadow-hero: 0 28rpx 60rpx rgba(17, 17, 17, 0.12);
 }

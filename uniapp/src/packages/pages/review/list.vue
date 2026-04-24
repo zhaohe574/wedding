@@ -93,7 +93,7 @@
                                 <text class="staff-name">{{ item.staff?.name }}</text>
                             </view>
                             <view class="score">
-                                <tn-icon name="star-fill" size="28rpx" color="#ff9800"></tn-icon>
+                                <tn-icon name="star-fill" size="28rpx" color="#9f7a2e"></tn-icon>
                                 <text>{{ item.score }}</text>
                             </view>
                         </view>
@@ -132,7 +132,7 @@
 
             <!-- 加载更多 -->
             <view v-if="loading" class="loading-tip">
-                <tn-icon name="loading" size="36rpx" color="#999"></tn-icon>
+                <tn-icon name="loading" size="36rpx" color="#9A9388"></tn-icon>
                 <text>加载中...</text>
             </view>
         </view>
@@ -153,16 +153,16 @@ const $theme = {
     pageStyle: computed(() => themeStore.pageStyle),
     navColor: computed(() => themeStore.navColor),
     navBgColor: computed(() => themeStore.navBgColor),
-    primaryColor: computed(() => themeStore.primaryColor || '#E85A4F'),
+    primaryColor: computed(() => themeStore.primaryColor || '#0B0B0B'),
     activeTab: computed<CSSProperties>(() => ({
-        color: themeStore.primaryColor || '#E85A4F',
+        color: themeStore.primaryColor || '#0B0B0B',
         fontWeight: 700
     })),
     tabIndicator: computed(() => ({
-        background: themeStore.primaryColor || '#E85A4F'
+        background: themeStore.primaryColor || '#0B0B0B'
     })),
     btnReview: computed(() => ({
-        background: themeStore.primaryColor || '#E85A4F'
+        background: themeStore.primaryColor || '#0B0B0B'
     }))
 }
 
@@ -321,7 +321,7 @@ onShow(() => {
         min-height: 74rpx;
         padding: 0 20rpx;
         font-size: 28rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
         position: relative;
         justify-content: center;
 
@@ -354,9 +354,9 @@ onShow(() => {
         display: flex;
         justify-content: space-between;
         padding: 20rpx 24rpx;
-        background: rgba(255, 247, 244, 0.72);
+        background: rgba(248, 247, 242, 0.72);
         font-size: 24rpx;
-        color: var(--wm-text-tertiary, #b4aca8);
+        color: var(--wm-text-tertiary, #9a9388);
     }
 
     .card-body {
@@ -378,12 +378,12 @@ onShow(() => {
         .staff-name {
             font-size: 30rpx;
             font-weight: bold;
-            color: var(--wm-text-primary, #1e2432);
+            color: var(--wm-text-primary, #111111);
         }
 
         .package-name {
             font-size: 24rpx;
-            color: var(--wm-text-secondary, #7f7b78);
+            color: var(--wm-text-secondary, #5f5a50);
             margin-top: 8rpx;
         }
 
@@ -391,7 +391,7 @@ onShow(() => {
             margin-top: 10rpx;
             font-size: 22rpx;
             line-height: 1.6;
-            color: #7f7b78;
+            color: #5f5a50;
         }
     }
 
@@ -436,12 +436,12 @@ onShow(() => {
         align-items: center;
         gap: 4rpx;
         font-size: 26rpx;
-        color: #ff9800;
+        color: #9f7a2e;
     }
 
     .content {
         font-size: 28rpx;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
         line-height: 1.6;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -454,7 +454,7 @@ onShow(() => {
         margin-top: 12rpx;
         font-size: 24rpx;
         line-height: 1.7;
-        color: #7f7b78;
+        color: #5f5a50;
     }
 
     .images {
@@ -487,7 +487,7 @@ onShow(() => {
         align-items: center;
         margin-top: 16rpx;
         padding-top: 16rpx;
-        border-top: 1rpx solid #f0f0f0;
+        border-top: 1rpx solid #F8F7F2;
 
         .footer-status-group {
             display: inline-flex;
@@ -499,7 +499,7 @@ onShow(() => {
 
         .time {
             font-size: 24rpx;
-            color: var(--wm-text-tertiary, #b4aca8);
+            color: var(--wm-text-tertiary, #9a9388);
         }
 
         .reward-tag {
@@ -513,23 +513,23 @@ onShow(() => {
             font-weight: 600;
 
             &.pending {
-                color: #a16207;
-                background: rgba(245, 158, 11, 0.12);
+                color: #9F7A2E;
+                background: rgba(159, 122, 46, 0.12);
             }
 
             &.granted {
-                color: #047857;
-                background: rgba(16, 185, 129, 0.12);
+                color: #4D4A42;
+                background: rgba(77, 74, 66, 0.12);
             }
 
             &.rejected {
-                color: #b91c1c;
-                background: rgba(239, 68, 68, 0.12);
+                color: #5A4433;
+                background: rgba(90, 68, 51, 0.12);
             }
 
             &.plain {
-                color: #6b7280;
-                background: rgba(148, 163, 184, 0.14);
+                color: #6c665c;
+                background: rgba(154, 147, 136, 0.14);
             }
         }
 
@@ -539,18 +539,18 @@ onShow(() => {
             border-radius: 4rpx;
 
             &.pending {
-                background: #fff7e6;
-                color: #ff9800;
+                background: #F7F0DF;
+                color: #9f7a2e;
             }
 
             &.approved {
-                background: #e8f5e9;
-                color: #4caf50;
+                background: #F3F2EE;
+                color: #4D4A42;
             }
 
             &.rejected {
-                background: #ffebee;
-                color: #f44336;
+                background: #F3F2EE;
+                color: #5A4433;
             }
         }
     }
@@ -562,7 +562,7 @@ onShow(() => {
     justify-content: center;
     gap: 8rpx;
     padding: 30rpx;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
     font-size: 26rpx;
 }
 </style>

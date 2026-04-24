@@ -74,7 +74,7 @@
                         <text class="auth-form__label">账号</text>
                         <BaseInput v-model="formData.account" placeholder="请输入账号或手机号">
                             <template #prefix>
-                                <tn-icon name="user" size="30" color="#B4ACA8" />
+                                <tn-icon name="user" size="30" color="#9A9388" />
                             </template>
                         </BaseInput>
                     </view>
@@ -87,7 +87,7 @@
                             placeholder="请输入密码"
                         >
                             <template #prefix>
-                                <tn-icon name="lock" size="30" color="#B4ACA8" />
+                                <tn-icon name="lock" size="30" color="#9A9388" />
                             </template>
                             <template #suffix>
                                 <navigator
@@ -116,7 +116,7 @@
                             placeholder="请输入手机号码"
                         >
                             <template #prefix>
-                                <tn-icon name="phone" size="30" color="#B4ACA8" />
+                                <tn-icon name="phone" size="30" color="#9A9388" />
                             </template>
                         </BaseInput>
                     </view>
@@ -125,7 +125,7 @@
                         <text class="auth-form__label">验证码</text>
                         <BaseInput v-model="formData.code" placeholder="请输入验证码">
                             <template #prefix>
-                                <tn-icon name="shield-check" size="30" color="#B4ACA8" />
+                                <tn-icon name="shield-check" size="30" color="#9A9388" />
                             </template>
                             <template #suffix>
                                 <text
@@ -342,7 +342,7 @@ const wechatEntryIconPillStyle = computed(() => ({
 const localEntryStyle = computed(() => ({
     background: alphaColor('#ffffff', 0.84),
     border: `1rpx solid ${alphaColor(primaryColor.value, 0.18)}`,
-    boxShadow: `0 10rpx 24rpx ${alphaColor('#D6B9A7', 0.14)}`
+    boxShadow: `0 10rpx 24rpx ${alphaColor('#C8A45D', 0.14)}`
 }))
 const localEntryIconPillStyle = computed(() => ({
     background: alphaColor(primaryColor.value, 0.1)
@@ -636,8 +636,8 @@ onLoad(async () => {
     justify-content: center;
     border-radius: 999rpx;
     background: rgba(255, 255, 255, 0.92);
-    border: 1rpx solid rgba(244, 199, 191, 0.52);
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+    border: 1rpx solid rgba(216, 194, 138, 0.52);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
 }
 
 .auth-hero__logo {
@@ -651,28 +651,28 @@ onLoad(async () => {
     justify-content: center;
     font-size: 28rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .auth-hero__eyebrow {
     font-size: 22rpx;
     font-weight: 600;
-    letter-spacing: 0.18em;
+    letter-spacing: 0;
     text-transform: uppercase;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .auth-hero__title {
     font-size: 52rpx;
     font-weight: 700;
     line-height: 1.18;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .auth-hero__desc {
     font-size: 26rpx;
     line-height: 1.65;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .auth-panel,
@@ -734,7 +734,7 @@ onLoad(async () => {
 }
 
 .auth-entry--secondary {
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .auth-form__head {
@@ -746,12 +746,12 @@ onLoad(async () => {
 .auth-form__title {
     font-size: 34rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .auth-form__desc {
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .auth-form__group {
@@ -763,7 +763,7 @@ onLoad(async () => {
 .auth-form__label {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .auth-form__actions {
@@ -778,7 +778,7 @@ onLoad(async () => {
 .agreement-panel__link,
 .auth-footer__link,
 .agreement-popup__link {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
     font-weight: 600;
 }
 
@@ -791,11 +791,11 @@ onLoad(async () => {
     padding-left: 20rpx;
     font-size: 24rpx;
     font-weight: 500;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .auth-code-btn--active {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
     font-weight: 700;
 }
 
@@ -810,7 +810,7 @@ onLoad(async () => {
     gap: 4rpx;
     font-size: 24rpx;
     line-height: 1.7;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .auth-footer {
@@ -822,7 +822,7 @@ onLoad(async () => {
 }
 
 .auth-footer__text {
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .agreement-popup {
@@ -836,7 +836,7 @@ onLoad(async () => {
     font-size: 34rpx;
     font-weight: 700;
     text-align: center;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .agreement-popup__content {
@@ -844,7 +844,7 @@ onLoad(async () => {
     font-size: 28rpx;
     line-height: 1.7;
     text-align: center;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .agreement-popup__actions {
@@ -865,8 +865,8 @@ onLoad(async () => {
 }
 
 .agreement-popup__action--cancel {
-    background: var(--wm-color-bg-soft, #fff7f4);
-    color: var(--wm-text-secondary, #7f7b78);
+    background: var(--wm-color-bg-soft, #ffffff);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .agreement-popup__action--confirm {

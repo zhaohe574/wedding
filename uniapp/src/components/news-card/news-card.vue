@@ -32,7 +32,7 @@
                         <text class="meta-text">{{ item.create_time }}</text>
                     </view>
                     <view class="meta-item">
-                        <tn-icon name="eye" size="24" color="#B4ACA8" />
+                        <tn-icon name="eye" size="24" color="#9A9388" />
                         <text class="meta-text">{{ item.click }}</text>
                     </view>
                 </view>
@@ -79,10 +79,10 @@ const $theme = useThemeStore()
     background: linear-gradient(
         180deg,
         rgba(255, 255, 255, 0.96) 0%,
-        rgba(255, 247, 244, 0.98) 100%
+        rgba(248, 247, 242, 0.98) 100%
     );
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
     overflow: hidden;
     transition: transform var(--wm-motion-base, 220ms) ease,
         box-shadow var(--wm-motion-base, 220ms) ease;
@@ -97,7 +97,7 @@ const $theme = useThemeStore()
 
     &:active {
         transform: translateY(-2rpx) scale(0.995);
-        box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
+        box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));
     }
 }
 
@@ -108,13 +108,13 @@ const $theme = useThemeStore()
     border-radius: var(--wm-radius-card-soft, 20rpx);
     flex-shrink: 0;
     overflow: hidden;
-    background: linear-gradient(145deg, #f6d8d1 0%, #f0b7aa 52%, #dba58d 100%);
+    background: linear-gradient(145deg, #F7F0DF 0%, #D8C28A 52%, #C8A45D 100%);
 }
 
 .news-cover {
     width: 100%;
     height: 100%;
-    background: #f1ece2;
+    background: #F7F0DF;
 }
 
 .news-cover--placeholder {
@@ -134,7 +134,7 @@ const $theme = useThemeStore()
 .news-cover-mask {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(30, 36, 50, 0.38) 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(11, 11, 11, 0.38) 100%);
 }
 
 .news-cover-badge {
@@ -144,11 +144,11 @@ const $theme = useThemeStore()
     padding: 8rpx 16rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
     background: rgba(255, 255, 255, 0.74);
-    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
     font-size: 20rpx;
     font-weight: 600;
-    color: var(--wm-color-primary, #e85a4f);
-    letter-spacing: 0.08em;
+    color: var(--wm-color-primary, #0b0b0b);
+    letter-spacing: 0;
 }
 
 .news-content {
@@ -171,7 +171,7 @@ const $theme = useThemeStore()
 .news-title {
     font-size: 30rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     line-height: 1.45;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -183,7 +183,7 @@ const $theme = useThemeStore()
 .news-desc {
     margin-top: 12rpx;
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     line-height: 1.7;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -211,7 +211,7 @@ const $theme = useThemeStore()
 
 .meta-text {
     font-size: 22rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .news-foot {
@@ -225,8 +225,8 @@ const $theme = useThemeStore()
 .news-foot__hint {
     font-size: 22rpx;
     font-weight: 600;
-    color: var(--wm-color-primary, #e85a4f);
-    letter-spacing: 0.04em;
+    color: var(--wm-color-primary, #0b0b0b);
+    letter-spacing: 0;
 }
 
 .news-foot__arrow {

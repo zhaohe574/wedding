@@ -74,8 +74,8 @@ const borderRadius = computed(() => {
 const interval = computed(() => props.styles.interval || 7000)
 
 // 指示器颜色（使用紫色圆点）
-const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#E85A4F', 0.16))
-const indicatorActiveColor = computed(() => themeStore.primaryColor || '#E85A4F')
+const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#0B0B0B', 0.16))
+const indicatorActiveColor = computed(() => themeStore.primaryColor || '#0B0B0B')
 
 const handleChange = (index: number) => {
     const item = visibleData.value[index]
@@ -90,6 +90,6 @@ const handleChange = (index: number) => {
     margin: 20rpx 20rpx 0;
     overflow: hidden;
     border-radius: 30rpx;
-    box-shadow: var(--cinema-shadow-strong, 0 24rpx 60rpx rgba(8, 10, 16, 0.18));
+    box-shadow: var(--cinema-shadow-strong, 0 24rpx 60rpx rgba(11, 11, 11, 0.18));
 }
 </style>

@@ -301,7 +301,7 @@ onLoad((options: any) => {
     @include aftersale-timeline-dot;
 
     &.is-active {
-        background: var(--wm-color-primary, #e85a4f);
+        background: var(--wm-color-primary, #0b0b0b);
     }
 }
 
@@ -336,7 +336,7 @@ onLoad((options: any) => {
 .aftersale-sheet-form__label {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .aftersale-sheet-form__textarea {
@@ -346,6 +346,6 @@ onLoad((options: any) => {
     box-sizing: border-box;
     font-size: 26rpx;
     line-height: 1.7;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 </style>

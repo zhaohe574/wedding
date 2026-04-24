@@ -30,7 +30,7 @@
 
                 <view v-else-if="waitlistItems.length === 0" class="empty-state">
                     <view class="empty-icon-wrapper">
-                        <tn-icon name="inbox" size="156" color="#D9CDC7" />
+                        <tn-icon name="inbox" size="156" color="#D8D3C7" />
                     </view>
                     <text class="empty-title">暂无候补记录</text>
                     <view
@@ -362,7 +362,7 @@ const handleCancel = (item: WaitlistRecord) => {
     uni.showModal({
         title: '取消候补',
         content: '确定要取消该候补吗？取消后需重新加入。',
-        confirmColor: '#FF2C3C',
+        confirmColor: '#5A4433',
         success: async (res) => {
             if (res.confirm) {
                 try {
@@ -386,7 +386,7 @@ onShow(() => {
 <style lang="scss" scoped>
 .waitlist-page {
     min-height: 100%;
-    background: var(--wm-color-page, #fcfbf9);
+    background: var(--wm-color-page, #ffffff);
 
     &__filter-scroll {
         margin-top: var(--wm-space-section-gap-sm, 22rpx);
@@ -407,16 +407,16 @@ onShow(() => {
         min-height: 82rpx;
         padding: 0 30rpx;
         border-radius: 999rpx;
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        border: 1rpx solid var(--wm-color-border, #e7e2d6);
         background: rgba(255, 255, 255, 0.84);
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
         box-sizing: border-box;
 
         &--active {
-            border-color: var(--wm-color-primary, #e85a4f);
-            background: var(--wm-color-primary, #e85a4f);
+            border-color: var(--wm-color-primary, #0b0b0b);
+            background: var(--wm-color-primary, #0b0b0b);
             color: #ffffff;
-            box-shadow: 0 8rpx 18rpx rgba(232, 90, 79, 0.14);
+            box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.14);
         }
     }
 
@@ -448,7 +448,7 @@ onShow(() => {
 
 .loading-text {
     font-size: 26rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .empty-state {
@@ -472,7 +472,7 @@ onShow(() => {
 .empty-title {
     font-size: 34rpx;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     margin-bottom: var(--wm-space-5, 37rpx);
     text-align: center;
 }
@@ -485,7 +485,7 @@ onShow(() => {
     min-height: 88rpx;
     padding: 0 36rpx;
     border-radius: 999rpx;
-    box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.16);
+    box-shadow: 0 12rpx 24rpx rgba(11, 11, 11, 0.16);
 
     &:active {
         transform: translateY(1rpx);
@@ -506,9 +506,9 @@ onShow(() => {
 .waitlist-card {
     padding: var(--wm-space-card-padding-lg, 34rpx) var(--wm-space-page-x, 37rpx);
     border-radius: var(--wm-radius-card, 45rpx);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.88);
-    box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.08);
+    box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.08);
 }
 
 .waitlist-card__head {
@@ -525,7 +525,7 @@ onShow(() => {
     font-size: 30rpx;
     font-weight: 600;
     line-height: 1.6;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .waitlist-card__status {
@@ -540,27 +540,27 @@ onShow(() => {
 }
 
 .waitlist-card__status--waiting {
-    color: var(--wm-color-info, #607086);
-    background: rgba(96, 112, 134, 0.1);
-    border: 1rpx solid rgba(96, 112, 134, 0.14);
+    color: var(--wm-color-info, #6C665C);
+    background: rgba(108, 102, 92, 0.1);
+    border: 1rpx solid rgba(108, 102, 92, 0.14);
 }
 
 .waitlist-card__status--notified {
-    color: var(--wm-color-warning, #c98524);
-    background: rgba(201, 133, 36, 0.12);
-    border: 1rpx solid rgba(201, 133, 36, 0.14);
+    color: var(--wm-color-warning, #9f7a2e);
+    background: rgba(159, 122, 46, 0.12);
+    border: 1rpx solid rgba(159, 122, 46, 0.14);
 }
 
 .waitlist-card__status--ordered {
-    color: var(--wm-color-success, #2f7d58);
-    background: rgba(47, 125, 88, 0.12);
-    border: 1rpx solid rgba(47, 125, 88, 0.14);
+    color: var(--wm-color-success, #4d4a42);
+    background: rgba(77, 74, 66, 0.12);
+    border: 1rpx solid rgba(77, 74, 66, 0.14);
 }
 
 .waitlist-card__status--expired {
-    color: var(--wm-text-tertiary, #b4aca8);
-    background: rgba(180, 172, 168, 0.14);
-    border: 1rpx solid rgba(180, 172, 168, 0.16);
+    color: var(--wm-text-tertiary, #9a9388);
+    background: rgba(154, 147, 136, 0.14);
+    border: 1rpx solid rgba(154, 147, 136, 0.16);
 }
 
 .waitlist-card__status-text {
@@ -580,14 +580,14 @@ onShow(() => {
     display: block;
     font-size: 28rpx;
     line-height: 1.6;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .waitlist-card__detail {
     display: block;
     font-size: 24rpx;
     line-height: 1.7;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .waitlist-card__summary,
@@ -595,21 +595,21 @@ onShow(() => {
     display: block;
     font-size: 24rpx;
     line-height: 1.7;
-    color: #645b54;
+    color: #5F5A50;
 }
 
 .waitlist-card__timeline {
     display: block;
     font-size: 22rpx;
     line-height: 1.6;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .waitlist-card__next-step {
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     &--danger {
-        color: var(--wm-color-danger, #b44a3a);
+        color: var(--wm-color-danger, #5a4433);
     }
 }
 
@@ -626,7 +626,7 @@ onShow(() => {
     min-width: 0;
     font-size: 22rpx;
     line-height: 1.5;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .waitlist-card__actions {
@@ -642,7 +642,7 @@ onShow(() => {
     height: 82rpx;
     padding: 0 30rpx;
     border-radius: 999rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.82);
     display: inline-flex;
     align-items: center;
@@ -650,8 +650,8 @@ onShow(() => {
     box-sizing: border-box;
 
     &--primary {
-        border-color: var(--wm-color-primary, #e85a4f);
-        background: var(--wm-color-primary, #e85a4f);
+        border-color: var(--wm-color-primary, #0b0b0b);
+        background: var(--wm-color-primary, #0b0b0b);
     }
 }
 
@@ -659,7 +659,7 @@ onShow(() => {
     font-size: 24rpx;
     font-weight: 600;
     line-height: 1;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     &--primary {
         color: #ffffff;

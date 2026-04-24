@@ -50,7 +50,7 @@
                 <tn-icon
                     :name="kind === 'image' ? 'camera' : 'play-circle'"
                     size="30"
-                    color="#B4ACA8"
+                    color="#9A9388"
                 />
                 <text class="aftersale-media__adder-title">
                     {{ uploading ? '上传中' : addText }}
@@ -209,8 +209,8 @@ const chooseFile = () => {
 .aftersale-media__entry {
     min-height: 119rpx;
     border-radius: 34rpx;
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
-    background: rgba(255, 248, 245, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    background: rgba(248, 247, 242, 0.96);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -218,8 +218,8 @@ const chooseFile = () => {
     box-sizing: border-box;
 
     &.is-primary {
-        background: rgba(255, 241, 238, 0.98);
-        border-color: rgba(244, 199, 191, 0.96);
+        background: rgba(247, 240, 223, 0.98);
+        border-color: rgba(216, 194, 138, 0.96);
     }
 
     &.is-disabled {
@@ -231,11 +231,11 @@ const chooseFile = () => {
     font-size: 24rpx;
     line-height: 1.4;
     font-weight: 700;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     text-align: center;
 
     .aftersale-media__entry.is-primary & {
-        color: var(--wm-color-primary, #e85a4f);
+        color: var(--wm-color-primary, #0b0b0b);
     }
 }
 
@@ -249,7 +249,7 @@ const chooseFile = () => {
 
 .aftersale-media__item {
     background: rgba(255, 255, 255, 0.92);
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 }
 
 .aftersale-media__image,
@@ -261,7 +261,7 @@ const chooseFile = () => {
 }
 
 .aftersale-media__video-card {
-    background: #120f0d;
+    background: #0B0B0B;
 }
 
 .aftersale-media__remove {
@@ -274,7 +274,7 @@ const chooseFile = () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(30, 36, 50, 0.56);
+    background: rgba(11, 11, 11, 0.56);
 }
 
 .aftersale-media__adder {
@@ -284,8 +284,8 @@ const chooseFile = () => {
     justify-content: center;
     gap: 8rpx;
     padding: 20rpx;
-    border: 2rpx dashed rgba(239, 230, 225, 0.96);
-    background: rgba(255, 247, 244, 0.86);
+    border: 2rpx dashed rgba(231, 226, 214, 0.96);
+    background: rgba(248, 247, 242, 0.86);
     box-sizing: border-box;
 
     &.is-uploading {
@@ -296,13 +296,13 @@ const chooseFile = () => {
 .aftersale-media__adder-title {
     font-size: 24rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-media__adder-tip {
     font-size: 20rpx;
     line-height: 1.45;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
     text-align: center;
 }
 </style>

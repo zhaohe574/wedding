@@ -77,21 +77,21 @@ withDefaults(defineProps<Props>(), {
 .aftersale-status-banner__label {
     font-size: 22rpx;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--wm-color-primary, #e85a4f);
+    letter-spacing: 0;
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .aftersale-status-banner__title {
     font-size: 40rpx;
     line-height: 1.25;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-status-banner__summary {
     font-size: 24rpx;
     line-height: 1.65;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .aftersale-status-banner__badges {
@@ -110,14 +110,14 @@ withDefaults(defineProps<Props>(), {
 .aftersale-status-banner__metric {
     padding: 18rpx 20rpx;
     border-radius: 28rpx;
-    border: 1rpx solid rgba(239, 230, 225, 0.9);
+    border: 1rpx solid rgba(231, 226, 214, 0.9);
     background: rgba(255, 255, 255, 0.76);
 }
 
 .aftersale-status-banner__metric-label {
     display: block;
     font-size: 22rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .aftersale-status-banner__metric-value {
@@ -126,6 +126,6 @@ withDefaults(defineProps<Props>(), {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 </style>

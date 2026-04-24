@@ -57,7 +57,7 @@ export const generateVarsMap = (color: string, type = 'primary', isDark = false)
     // 验证颜色格式
     if (!isValidHexColor(color)) {
         console.warn(`无效的颜色值: ${color}，使用默认值`)
-        color = '#E85A4F'
+        color = '#0B0B0B'
     }
 
     const colors = {

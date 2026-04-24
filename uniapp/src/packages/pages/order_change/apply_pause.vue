@@ -6,7 +6,7 @@
         <view class="order-change-page">
             <view class="order-change-page__wrapper wm-page-content">
                 <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
-                    <tn-icon name="tip-fill" size="34" color="#C98524" />
+                    <tn-icon name="tip-fill" size="34" color="#9F7A2E" />
                     <text class="order-change-tip-card__text">
                         暂停期间订单冻结，请准确填写起止日期。
                     </text>
@@ -62,7 +62,7 @@
                                 :color="
                                     formData.pause_type === type.value
                                         ? $theme.primaryColor
-                                        : '#B4ACA8'
+                                        : '#9A9388'
                                 "
                             />
                             <text class="order-change-choice-card__title">{{ type.label }}</text>
@@ -99,7 +99,7 @@
                                 <text v-else class="order-change-form-field__placeholder">
                                     请选择开始日期
                                 </text>
-                                <tn-icon name="right" size="30" color="#B4ACA8" />
+                                <tn-icon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                     </view>
@@ -120,7 +120,7 @@
                                 <text v-else class="order-change-form-field__placeholder">
                                     请选择结束日期
                                 </text>
-                                <tn-icon name="right" size="30" color="#B4ACA8" />
+                                <tn-icon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                     </view>
@@ -156,7 +156,7 @@
                                 class="order-change-form-field__textarea"
                                 maxlength="500"
                                 placeholder="请填写暂停原因，至少 10 字。"
-                                placeholder-style="color:#B4ACA8;"
+                                placeholder-style="color:#9A9388;"
                             />
                         </view>
                         <text class="order-change-form-field__counter">
@@ -196,7 +196,7 @@
                             class="order-change-upload-grid__add"
                             @click="chooseImage"
                         >
-                            <tn-icon name="add" size="48" color="#C9B2AA" />
+                            <tn-icon name="add" size="48" color="#D8D3C7" />
                             <text class="order-change-upload-grid__add-text">上传图片</text>
                         </view>
                     </view>

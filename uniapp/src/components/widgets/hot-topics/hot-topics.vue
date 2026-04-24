@@ -155,10 +155,10 @@ const props = defineProps({
 const topicList = ref<any[]>([])
 const themeStore = useThemeStore()
 const palette = computed(() => [
-    themeStore.primaryColor || '#E85A4F',
-    themeStore.ctaColor || '#F97316',
-    themeStore.secondaryColor || '#EC4899',
-    themeStore.accentColor || '#FFD700'
+    themeStore.primaryColor || '#0B0B0B',
+    themeStore.ctaColor || '#9F7A2E',
+    themeStore.secondaryColor || '#C8A45D',
+    themeStore.accentColor || '#C8A45D'
 ])
 const pickColor = (index: number) => palette.value[index % palette.value.length]
 const headerBarStyle = computed(() => ({
@@ -312,26 +312,26 @@ onMounted(() => {
         .header-decoration {
             width: 8rpx;
             height: 40rpx;
-            background: linear-gradient(180deg, #7c3aed 0%, #a78bfa 100%);
+            background: linear-gradient(180deg, #c8a45d 0%, #d8c28a 100%);
             border-radius: 4rpx;
         }
 
         .header-title {
             font-size: 36rpx;
             font-weight: 700;
-            color: #1f2937;
-            letter-spacing: -0.5rpx;
+            color: #111111;
+            letter-spacing: 0;
         }
     }
 
     /* 标签云样式 */
     .tag-cloud-style {
         position: relative;
-        background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #F8F7F2 100%);
         border-radius: 24rpx;
         padding: 28rpx 24rpx;
         overflow: hidden;
-        box-shadow: 0 8rpx 32rpx rgba(124, 58, 237, 0.08);
+        box-shadow: 0 8rpx 32rpx rgba(11, 11, 11, 0.08);
 
         /* 装饰性背景气泡 */
         .cloud-decoration {
@@ -351,7 +351,7 @@ onMounted(() => {
                 &.bubble-1 {
                     width: 200rpx;
                     height: 200rpx;
-                    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+                    background: linear-gradient(135deg, #c8a45d, #d8c28a);
                     top: -60rpx;
                     right: -40rpx;
                     animation: float-1 8s ease-in-out infinite;
@@ -360,7 +360,7 @@ onMounted(() => {
                 &.bubble-2 {
                     width: 150rpx;
                     height: 150rpx;
-                    background: linear-gradient(135deg, #f97316, #fb923c);
+                    background: linear-gradient(135deg, #9f7a2e, #c8a45d);
                     bottom: -40rpx;
                     left: -30rpx;
                     animation: float-2 10s ease-in-out infinite;
@@ -369,7 +369,7 @@ onMounted(() => {
                 &.bubble-3 {
                     width: 120rpx;
                     height: 120rpx;
-                    background: linear-gradient(135deg, #ec4899, #f472b6);
+                    background: linear-gradient(135deg, #c8a45d, #d8c28a);
                     top: 50%;
                     right: 10%;
                     animation: float-3 12s ease-in-out infinite;
@@ -410,34 +410,34 @@ onMounted(() => {
             }
 
             &:nth-child(4n + 1) {
-                background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
-                border-color: #c4b5fd;
+                background: linear-gradient(135deg, #F7F0DF 0%, #F7F0DF 100%);
+                border-color: #D8C28A;
 
                 .tag-hash {
-                    color: #7c3aed;
+                    color: #c8a45d;
                 }
 
                 .tag-name {
-                    color: #6d28d9;
+                    color: #9f7a2e;
                 }
 
                 .tag-count-badge {
-                    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+                    background: linear-gradient(135deg, #c8a45d 0%, #c8a45d 100%);
                 }
 
                 .tag-glow {
                     background: radial-gradient(
                         circle,
-                        rgba(124, 58, 237, 0.3) 0%,
+                        rgba(11, 11, 11, 0.3) 0%,
                         transparent 70%
                     );
                 }
 
                 &:active {
-                    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-                    border-color: #7c3aed;
+                    background: linear-gradient(135deg, #c8a45d 0%, #9f7a2e 100%);
+                    border-color: #c8a45d;
                     transform: scale(0.95) translateY(4rpx);
-                    box-shadow: 0 8rpx 24rpx rgba(124, 58, 237, 0.4);
+                    box-shadow: 0 8rpx 24rpx rgba(11, 11, 11, 0.4);
 
                     .tag-hash,
                     .tag-name {
@@ -459,34 +459,34 @@ onMounted(() => {
             }
 
             &:nth-child(4n + 2) {
-                background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
-                border-color: #fdba74;
+                background: linear-gradient(135deg, #f8f7f2 0%, #F7F0DF 100%);
+                border-color: #D8C28A;
 
                 .tag-hash {
-                    color: #f97316;
+                    color: #9f7a2e;
                 }
 
                 .tag-name {
-                    color: #c2410c;
+                    color: #9F7A2E;
                 }
 
                 .tag-count-badge {
-                    background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
+                    background: linear-gradient(135deg, #9f7a2e 0%, #c8a45d 100%);
                 }
 
                 .tag-glow {
                     background: radial-gradient(
                         circle,
-                        rgba(249, 115, 22, 0.3) 0%,
+                        rgba(159, 122, 46, 0.24) 0%,
                         transparent 70%
                     );
                 }
 
                 &:active {
-                    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-                    border-color: #f97316;
+                    background: linear-gradient(135deg, #9f7a2e 0%, #9f7a2e 100%);
+                    border-color: #9f7a2e;
                     transform: scale(0.95) translateY(4rpx);
-                    box-shadow: 0 8rpx 24rpx rgba(249, 115, 22, 0.4);
+                    box-shadow: 0 8rpx 24rpx rgba(159, 122, 46, 0.28);
 
                     .tag-hash,
                     .tag-name {
@@ -508,34 +508,34 @@ onMounted(() => {
             }
 
             &:nth-child(4n + 3) {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border-color: #93c5fd;
+                background: linear-gradient(135deg, #F8F7F2 0%, #F3F2EE 100%);
+                border-color: #D8D3C7;
 
                 .tag-hash {
-                    color: #3b82f6;
+                    color: #6c665c;
                 }
 
                 .tag-name {
-                    color: #1e40af;
+                    color: #6C665C;
                 }
 
                 .tag-count-badge {
-                    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+                    background: linear-gradient(135deg, #6c665c 0%, #6C665C 100%);
                 }
 
                 .tag-glow {
                     background: radial-gradient(
                         circle,
-                        rgba(59, 130, 246, 0.3) 0%,
+                        rgba(108, 102, 92, 0.22) 0%,
                         transparent 70%
                     );
                 }
 
                 &:active {
-                    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-                    border-color: #3b82f6;
+                    background: linear-gradient(135deg, #6c665c 0%, #6C665C 100%);
+                    border-color: #6c665c;
                     transform: scale(0.95) translateY(4rpx);
-                    box-shadow: 0 8rpx 24rpx rgba(59, 130, 246, 0.4);
+                    box-shadow: 0 8rpx 24rpx rgba(108, 102, 92, 0.28);
 
                     .tag-hash,
                     .tag-name {
@@ -557,34 +557,34 @@ onMounted(() => {
             }
 
             &:nth-child(4n + 4) {
-                background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
-                border-color: #f9a8d4;
+                background: linear-gradient(135deg, #F8F7F2 0%, #F7F0DF 100%);
+                border-color: #D8C28A;
 
                 .tag-hash {
-                    color: #ec4899;
+                    color: #c8a45d;
                 }
 
                 .tag-name {
-                    color: #be185d;
+                    color: #5A4433;
                 }
 
                 .tag-count-badge {
-                    background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+                    background: linear-gradient(135deg, #c8a45d 0%, #d8c28a 100%);
                 }
 
                 .tag-glow {
                     background: radial-gradient(
                         circle,
-                        rgba(236, 72, 153, 0.3) 0%,
+                        rgba(200, 164, 93, 0.24) 0%,
                         transparent 70%
                     );
                 }
 
                 &:active {
-                    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
-                    border-color: #ec4899;
+                    background: linear-gradient(135deg, #0B0B0B 0%, #111111 100%);
+                    border-color: #c8a45d;
                     transform: scale(0.95) translateY(4rpx);
-                    box-shadow: 0 8rpx 24rpx rgba(236, 72, 153, 0.4);
+                    box-shadow: 0 8rpx 24rpx rgba(200, 164, 93, 0.3);
 
                     .tag-hash,
                     .tag-name {
@@ -727,23 +727,23 @@ onMounted(() => {
                 z-index: 0;
 
                 &.pattern-dots {
-                    background-image: radial-gradient(circle, #7c3aed 2rpx, transparent 2rpx);
+                    background-image: radial-gradient(circle, #c8a45d 2rpx, transparent 2rpx);
                     background-size: 32rpx 32rpx;
                 }
 
                 &.pattern-waves {
                     background-image: repeating-linear-gradient(
                         45deg,
-                        #f97316 0rpx,
-                        #f97316 4rpx,
+                        #9f7a2e 0rpx,
+                        #9f7a2e 4rpx,
                         transparent 4rpx,
                         transparent 16rpx
                     );
                 }
 
                 &.pattern-grid {
-                    background-image: linear-gradient(#3b82f6 2rpx, transparent 2rpx),
-                        linear-gradient(90deg, #3b82f6 2rpx, transparent 2rpx);
+                    background-image: linear-gradient(#6c665c 2rpx, transparent 2rpx),
+                        linear-gradient(90deg, #6c665c 2rpx, transparent 2rpx);
                     background-size: 40rpx 40rpx;
                 }
 
@@ -751,8 +751,8 @@ onMounted(() => {
                     background-image: radial-gradient(
                         circle,
                         transparent 20%,
-                        #ec4899 20%,
-                        #ec4899 22%,
+                        #c8a45d 20%,
+                        #c8a45d 22%,
                         transparent 22%
                     );
                     background-size: 48rpx 48rpx;
@@ -806,7 +806,7 @@ onMounted(() => {
             .topic-name {
                 font-size: 36rpx;
                 font-weight: 700;
-                color: #1f2937;
+                color: #111111;
                 line-height: 1.3;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -833,21 +833,21 @@ onMounted(() => {
 
                 .stat-label {
                     font-size: 20rpx;
-                    color: #9ca3af;
+                    color: #9a9388;
                     font-weight: 500;
                 }
 
                 .stat-value {
                     font-size: 28rpx;
                     font-weight: 700;
-                    color: #7c3aed;
+                    color: #c8a45d;
                 }
             }
 
             .arrow-icon {
                 width: 48rpx;
                 height: 48rpx;
-                background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+                background: linear-gradient(135deg, #c8a45d 0%, #d8c28a 100%);
                 border-radius: 12rpx;
                 display: flex;
                 align-items: center;
@@ -855,7 +855,7 @@ onMounted(() => {
                 font-size: 32rpx;
                 font-weight: 700;
                 color: #ffffff;
-                box-shadow: 0 4rpx 12rpx rgba(124, 58, 237, 0.3);
+                box-shadow: 0 4rpx 12rpx rgba(11, 11, 11, 0.3);
             }
         }
     }
@@ -889,25 +889,25 @@ onMounted(() => {
                 transition: width 0.4s;
 
                 &.bar-purple {
-                    background: linear-gradient(180deg, #7c3aed 0%, #a78bfa 100%);
+                    background: linear-gradient(180deg, #c8a45d 0%, #d8c28a 100%);
                 }
 
                 &.bar-orange {
-                    background: linear-gradient(180deg, #f97316 0%, #fb923c 100%);
+                    background: linear-gradient(180deg, #9f7a2e 0%, #c8a45d 100%);
                 }
 
                 &.bar-blue {
-                    background: linear-gradient(180deg, #3b82f6 0%, #60a5fa 100%);
+                    background: linear-gradient(180deg, #6c665c 0%, #6C665C 100%);
                 }
 
                 &.bar-pink {
-                    background: linear-gradient(180deg, #ec4899 0%, #f472b6 100%);
+                    background: linear-gradient(180deg, #c8a45d 0%, #d8c28a 100%);
                 }
             }
 
             &:active {
                 transform: translateX(12rpx) scale(0.98);
-                box-shadow: 0 8rpx 32rpx rgba(124, 58, 237, 0.15);
+                box-shadow: 0 8rpx 32rpx rgba(11, 11, 11, 0.15);
 
                 .item-gradient-bar {
                     width: 16rpx;
@@ -934,23 +934,23 @@ onMounted(() => {
                 box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
 
                 &.rank-gold {
-                    background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
-                    color: #78350f;
+                    background: linear-gradient(135deg, #D8C28A 0%, #c8a45d 100%);
+                    color: #5A4433;
                 }
 
                 &.rank-silver {
-                    background: linear-gradient(135deg, #e5e7eb 0%, #9ca3af 100%);
-                    color: #374151;
+                    background: linear-gradient(135deg, #e7e2d6 0%, #9a9388 100%);
+                    color: #5F5A50;
                 }
 
                 &.rank-bronze {
-                    background: linear-gradient(135deg, #fdba74 0%, #f97316 100%);
-                    color: #7c2d12;
+                    background: linear-gradient(135deg, #D8C28A 0%, #9f7a2e 100%);
+                    color: #5A4433;
                 }
 
                 &.rank-normal {
-                    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-                    color: #6b7280;
+                    background: linear-gradient(135deg, #f8f7f2 0%, #e7e2d6 100%);
+                    color: #6c665c;
                 }
             }
 
@@ -970,7 +970,7 @@ onMounted(() => {
             .topic-name {
                 font-size: 32rpx;
                 font-weight: 700;
-                color: #1f2937;
+                color: #111111;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -978,15 +978,15 @@ onMounted(() => {
 
             .hot-badge {
                 padding: 4rpx 12rpx;
-                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                background: linear-gradient(135deg, #F7F0DF 0%, #D8C28A 100%);
                 border-radius: 8rpx;
                 flex-shrink: 0;
 
                 .hot-text {
                     font-size: 20rpx;
                     font-weight: 800;
-                    color: #92400e;
-                    letter-spacing: 1rpx;
+                    color: #9F7A2E;
+                    letter-spacing: 0;
                 }
             }
 
@@ -1000,12 +1000,12 @@ onMounted(() => {
                 align-items: center;
                 gap: 8rpx;
                 padding: 6rpx 16rpx;
-                background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+                background: linear-gradient(135deg, #F8F7F2 0%, #f8f7f2 100%);
                 border-radius: 12rpx;
 
                 .stat-text {
                     font-size: 24rpx;
-                    color: #6b7280;
+                    color: #6c665c;
                     font-weight: 500;
                 }
             }
@@ -1018,7 +1018,7 @@ onMounted(() => {
             .arrow-circle {
                 width: 56rpx;
                 height: 56rpx;
-                background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+                background: linear-gradient(135deg, #f8f7f2 0%, #e7e2d6 100%);
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
@@ -1027,14 +1027,14 @@ onMounted(() => {
 
                 .arrow-text {
                     font-size: 40rpx;
-                    color: #9ca3af;
+                    color: #9a9388;
                     font-weight: 300;
                     transition: transform 0.4s;
                 }
             }
 
             &:active .arrow-circle {
-                background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+                background: linear-gradient(135deg, #c8a45d 0%, #d8c28a 100%);
 
                 .arrow-text {
                     color: #ffffff;

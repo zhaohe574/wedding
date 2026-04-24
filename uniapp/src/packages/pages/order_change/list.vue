@@ -39,7 +39,7 @@
                         <tn-icon
                             :name="currentType === 'change' ? 'file-text' : 'clock'"
                             size="120"
-                            color="#D8CEC8"
+                            color="#D8D3C7"
                         />
                     </template>
                 </EmptyState>
@@ -424,7 +424,7 @@ onReachBottom(() => {
 <style lang="scss" scoped>
 .change-list-page {
     min-height: 100vh;
-    background: var(--wm-color-bg-page, #fff7f4);
+    background: var(--wm-color-bg-page, #ffffff);
 }
 
 .change-list-page__filter-scroll {
@@ -443,7 +443,7 @@ onReachBottom(() => {
     min-height: 66rpx;
     padding: 0 24rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.86);
     display: inline-flex;
     align-items: center;
@@ -452,9 +452,9 @@ onReachBottom(() => {
     transition: all var(--wm-motion-base, 220ms) ease;
 
     &--active {
-        background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, #d9786d 100%);
+        background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
         border-color: transparent;
-        box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.18);
+        box-shadow: 0 12rpx 24rpx rgba(11, 11, 11, 0.18);
 
         .change-list-page__filter-chip-text {
             color: #ffffff;
@@ -465,7 +465,7 @@ onReachBottom(() => {
 .change-list-page__filter-chip-text {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .change-list-page__content {
@@ -484,7 +484,7 @@ onReachBottom(() => {
 .change-list-page__loading-text,
 .change-list-page__load-more-text {
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .change-record-list {
@@ -528,7 +528,7 @@ onReachBottom(() => {
 .change-record-card__foot-note {
     font-size: 22rpx;
     line-height: 1.5;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .change-record-card__time {
@@ -540,17 +540,17 @@ onReachBottom(() => {
     font-size: 30rpx;
     line-height: 1.38;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .change-record-card__summary {
     display: block;
     font-size: 25rpx;
     line-height: 1.62;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     &--muted {
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 }
 
@@ -560,15 +560,15 @@ onReachBottom(() => {
     gap: 12rpx;
     padding: 16rpx 18rpx;
     border-radius: 24rpx;
-    background: rgba(255, 247, 244, 0.82);
-    border: 1rpx solid rgba(239, 230, 225, 0.92);
+    background: rgba(248, 247, 242, 0.82);
+    border: 1rpx solid rgba(231, 226, 214, 0.92);
 }
 
 .change-record-card__reason-label {
     flex-shrink: 0;
     font-size: 22rpx;
     font-weight: 700;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .change-record-card__reason-text {
@@ -576,7 +576,7 @@ onReachBottom(() => {
     min-width: 0;
     font-size: 24rpx;
     line-height: 1.58;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .change-record-card__summary-box {
@@ -585,23 +585,23 @@ onReachBottom(() => {
     gap: 8rpx;
     padding: 18rpx 20rpx;
     border-radius: 24rpx;
-    background: rgba(249, 244, 240, 0.86);
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    background: rgba(248, 247, 242, 0.86);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
 }
 
 .change-record-card__summary-title {
     font-size: 22rpx;
     font-weight: 700;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .change-record-card__summary-text {
     font-size: 24rpx;
     line-height: 1.62;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 
     &--muted {
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 }
 
@@ -622,6 +622,6 @@ onReachBottom(() => {
 }
 
 .change-list-page__load-more-text--action {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 </style>

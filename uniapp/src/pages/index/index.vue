@@ -422,7 +422,7 @@ onShow(() => {
     position: relative;
     overflow: hidden;
     border-radius: 0 0 56rpx 56rpx;
-    box-shadow: var(--wm-shadow-hero, 0 24rpx 56rpx rgba(177, 108, 95, 0.18));
+    box-shadow: var(--wm-shadow-hero, 0 24rpx 56rpx rgba(17, 17, 17, 0.12));
 }
 
 .home-page__hero-swiper,
@@ -439,7 +439,7 @@ onShow(() => {
             rgba(255, 255, 255, 0.35) 0,
             rgba(255, 255, 255, 0) 28%
         ),
-        linear-gradient(180deg, rgba(109, 62, 52, 0.4) 0%, rgba(74, 43, 36, 0.76) 100%);
+        linear-gradient(180deg, rgba(11, 11, 11, 0.32) 0%, rgba(11, 11, 11, 0.72) 100%);
 }
 
 .home-page__hero-slide {
@@ -451,9 +451,9 @@ onShow(() => {
     inset: 0;
     background: linear-gradient(
             180deg,
-            rgba(27, 19, 16, 0.06) 0%,
-            rgba(27, 19, 16, 0.16) 42%,
-            rgba(27, 19, 16, 0.58) 100%
+            rgba(11, 11, 11, 0.06) 0%,
+            rgba(11, 11, 11, 0.16) 42%,
+            rgba(11, 11, 11, 0.58) 100%
         ),
         linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 38%);
 }
@@ -477,14 +477,14 @@ onShow(() => {
     width: 52rpx;
     height: 6rpx;
     border-radius: 999rpx;
-    background: var(--wm-color-primary, #e85a4f);
+    background: var(--wm-color-secondary, #C8A45D);
 }
 
 .home-page__hero-title {
     font-size: 44rpx;
     line-height: 1.32;
     font-weight: 700;
-    text-shadow: 0 4rpx 10rpx rgba(47, 28, 24, 0.52), 0 12rpx 28rpx rgba(47, 28, 24, 0.72);
+    text-shadow: 0 4rpx 10rpx rgba(11, 11, 11, 0.42), 0 12rpx 28rpx rgba(11, 11, 11, 0.58);
 }
 
 .home-page__hero-dots {
@@ -508,25 +508,27 @@ onShow(() => {
 
 .home-page__hero-dot--active {
     width: 28rpx;
-    background: var(--wm-color-primary, #e85a4f);
+    background: var(--wm-color-secondary, #C8A45D);
 }
 
 .home-page__cta {
     min-height: 124rpx;
     border-radius: 40rpx;
     padding: 0 30rpx;
-    background: linear-gradient(135deg, rgba(232, 90, 79, 1) 0%, rgba(214, 118, 92, 0.98) 100%);
+    background: var(--wm-color-primary, #0b0b0b);
+    border: 1rpx solid rgba(200, 164, 93, 0.34);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 24rpx 48rpx rgba(176, 106, 91, 0.24);
+    box-shadow: 0 18rpx 36rpx rgba(11, 11, 11, 0.14),
+        inset 0 1rpx 0 rgba(200, 164, 93, 0.2);
 }
 
 .home-page__cta-text {
     font-size: 34rpx;
     line-height: 1;
     font-weight: 700;
-    letter-spacing: 2rpx;
+    letter-spacing: 0;
     color: #ffffff;
     text-align: center;
 }
@@ -553,8 +555,8 @@ onShow(() => {
     font-size: 32rpx;
     line-height: 1.3;
     font-weight: 700;
-    letter-spacing: 1rpx;
-    color: var(--wm-text-primary, #1e2432);
+    letter-spacing: 0;
+    color: var(--wm-text-primary, #111111);
 }
 
 .home-page__section-link {
@@ -564,7 +566,7 @@ onShow(() => {
 .home-page__section-link-text {
     font-size: 22rpx;
     font-weight: 600;
-    color: #9b8478;
+    color: #9A9388;
 }
 
 .home-page__team-list {
@@ -583,10 +585,10 @@ onShow(() => {
     background: linear-gradient(
         180deg,
         rgba(255, 255, 255, 0.98) 0%,
-        rgba(252, 247, 242, 0.94) 100%
+        rgba(248, 247, 242, 0.96) 100%
     );
-    border: 1rpx solid rgba(231, 222, 216, 0.98);
-    box-shadow: 0 12rpx 28rpx rgba(94, 64, 54, 0.06);
+    border: 1rpx solid rgba(231, 226, 214, 0.98);
+    box-shadow: 0 12rpx 28rpx rgba(11, 11, 11, 0.06);
 }
 
 .home-page__team-card--placeholder {
@@ -599,12 +601,12 @@ onShow(() => {
     display: block;
     flex-shrink: 0;
     border-radius: 24rpx;
-    border: 1rpx solid rgba(231, 222, 216, 0.9);
+    border: 1rpx solid rgba(231, 226, 214, 0.9);
 }
 
 .home-page__team-image--placeholder {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(230, 221, 215, 0.9) 100%),
-        linear-gradient(180deg, rgba(239, 91, 76, 0.1) 0%, rgba(239, 91, 76, 0) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(231, 226, 214, 0.9) 100%),
+        linear-gradient(180deg, rgba(200, 164, 93, 0.12) 0%, rgba(200, 164, 93, 0) 100%);
 }
 
 .home-page__team-copy {
@@ -621,9 +623,9 @@ onShow(() => {
     font-size: 18rpx;
     line-height: 1.2;
     font-weight: 700;
-    letter-spacing: 2rpx;
+    letter-spacing: 0;
     text-transform: uppercase;
-    color: #ab8f81;
+    color: #C8A45D;
 }
 
 .home-page__team-name,
@@ -634,8 +636,8 @@ onShow(() => {
 .home-page__team-name {
     font-size: 28rpx;
     font-weight: 700;
-    letter-spacing: 0.5rpx;
-    color: #2b221f;
+    letter-spacing: 0;
+    color: #111111;
     line-height: 1.35;
 }
 
@@ -651,9 +653,9 @@ onShow(() => {
     font-size: 21rpx;
     line-height: 1;
     font-weight: 600;
-    color: #7b6458;
-    background: rgba(245, 236, 230, 0.95);
-    border: 1rpx solid rgba(231, 222, 216, 0.98);
+    color: #5F5A50;
+    background: rgba(247, 240, 223, 0.95);
+    border: 1rpx solid rgba(231, 226, 214, 0.98);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -671,6 +673,6 @@ onShow(() => {
     font-size: 34rpx;
     line-height: 1;
     font-weight: 500;
-    color: #8b766b;
+    color: #9A9388;
 }
 </style>

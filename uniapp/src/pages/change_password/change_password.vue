@@ -3,7 +3,7 @@
         <template #hero>
             <view class="password-hero">
                 <view class="password-hero__icon">
-                    <tn-icon name="lock" size="52" color="#E85A4F" />
+                    <tn-icon name="lock" size="52" color="#0B0B0B" />
                 </view>
                 <text class="password-hero__eyebrow">Account Security</text>
                 <text class="password-hero__title">{{ pageTitle }}</text>
@@ -20,7 +20,7 @@
                     placeholder="请输入当前密码"
                 >
                     <template #prefix>
-                        <tn-icon name="lock" size="30" color="#B4ACA8" />
+                        <tn-icon name="lock" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -33,7 +33,7 @@
                     placeholder="6-20位数字+字母或符号组合"
                 >
                     <template #prefix>
-                        <tn-icon name="key" size="30" color="#B4ACA8" />
+                        <tn-icon name="key" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -46,7 +46,7 @@
                     placeholder="请再次输入新密码"
                 >
                     <template #prefix>
-                        <tn-icon name="check-circle" size="30" color="#B4ACA8" />
+                        <tn-icon name="check-circle" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -171,29 +171,29 @@ onLoad((options) => {
     justify-content: center;
     border-radius: 999rpx;
     background: rgba(255, 255, 255, 0.88);
-    border: 1rpx solid rgba(244, 199, 191, 0.52);
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+    border: 1rpx solid rgba(216, 194, 138, 0.52);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
 }
 
 .password-hero__eyebrow {
     font-size: 22rpx;
     font-weight: 600;
-    letter-spacing: 0.18em;
+    letter-spacing: 0;
     text-transform: uppercase;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .password-hero__title {
     font-size: 52rpx;
     font-weight: 700;
     line-height: 1.18;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .password-hero__desc {
     font-size: 26rpx;
     line-height: 1.65;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .password-form {
@@ -211,7 +211,7 @@ onLoad((options) => {
 .password-form__label {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .password-tips {
@@ -220,8 +220,8 @@ onLoad((options) => {
     gap: 10rpx;
     padding: 20rpx 22rpx;
     border-radius: var(--wm-radius-card-soft, 20rpx);
-    background: var(--wm-color-bg-soft, #fff7f4);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: var(--wm-color-bg-soft, #ffffff);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .password-tips__item {
@@ -229,10 +229,10 @@ onLoad((options) => {
     align-items: center;
     gap: 12rpx;
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     &.is-active {
-        color: var(--wm-color-primary, #e85a4f);
+        color: var(--wm-color-primary, #0b0b0b);
         font-weight: 600;
     }
 }

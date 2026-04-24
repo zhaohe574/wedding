@@ -312,7 +312,7 @@ const renderV1OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
     texts.push(
         `<text x="${
             width / 2
-        }" y="${y}" text-anchor="middle" font-size="${titleSize}" font-weight="700" fill="#1e2432"${getTextFontAttr()}>${escapeXml(
+        }" y="${y}" text-anchor="middle" font-size="${titleSize}" font-weight="700" fill="#111111"${getTextFontAttr()}>${escapeXml(
             toText(snapshot.title) || DEFAULT_TITLE
         )}</text>`
     )
@@ -324,7 +324,7 @@ const renderV1OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
         const fontWeight = index >= 4 && index <= 6 ? 700 : 400
         lines.forEach((line) => {
             texts.push(
-                `<text x="${padding}" y="${y}" font-size="${fontSize}" font-weight="${fontWeight}" fill="#1e2432"${getTextFontAttr()}>${escapeXml(
+                `<text x="${padding}" y="${y}" font-size="${fontSize}" font-weight="${fontWeight}" fill="#111111"${getTextFontAttr()}>${escapeXml(
                     line
                 )}</text>`
             )
@@ -334,12 +334,12 @@ const renderV1OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
     })
 
     texts.push(
-        `<text x="${padding}" y="${y}" font-size="${textSize}" font-weight="600" fill="#1e2432"${getTextFontAttr()}>备注：</text>`
+        `<text x="${padding}" y="${y}" font-size="${textSize}" font-weight="600" fill="#111111"${getTextFontAttr()}>备注：</text>`
     )
     y += lineHeight
     wrapText(toText(snapshot.remark_content), small ? 22 : 28, 6).forEach((line) => {
         texts.push(
-            `<text x="${padding}" y="${y}" font-size="${textSize}" fill="#5b6475"${getTextFontAttr()}>${escapeXml(
+            `<text x="${padding}" y="${y}" font-size="${textSize}" fill="#5F5A50"${getTextFontAttr()}>${escapeXml(
                 line
             )}</text>`
         )
@@ -452,7 +452,7 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
         lines: ['费用确认'],
         fontSize: cardTitleSize,
         lineHeight: cardTitleSize,
-        fill: '#7F7B78',
+        fill: '#5F5A50',
         fontWeight: 700
     })
     const amountTotalY = cardPaddingY + amountTitleBlock.height + cardGap + amountBigSize
@@ -462,7 +462,7 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
         lines: [`合计 ¥${toText(snapshot.order_total_amount) || '0.00'}`],
         fontSize: amountBigSize,
         lineHeight: amountBigLineHeight,
-        fill: '#E85A4F',
+        fill: '#0B0B0B',
         fontWeight: 700
     })
     const amountDetailsY = amountTotalY + amountTotalBlock.height + cardGap + cardBodySize
@@ -472,7 +472,7 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
         lines: amountDetailLines,
         fontSize: cardBodySize,
         lineHeight: cardLineHeight,
-        fill: '#1E2432',
+        fill: '#111111',
         fontWeight: 600
     })
     const amountCardHeight =
@@ -489,7 +489,7 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
     sections.push(
         `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="${heroHeight}" rx="${
             small ? 28 : 40
-        }" fill="url(#heroGradient)" stroke="#F4C7BF" /><circle cx="${
+        }" fill="url(#heroGradient)" stroke="#D8C28A" /><circle cx="${
             contentX + contentWidth - (small ? 44 : 90)
         }" cy="${currentY + (small ? 42 : 78)}" r="${
             small ? 22 : 48
@@ -509,7 +509,7 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
             lines: [heroEyebrow],
             fontSize: heroEyebrowSize,
             lineHeight: heroEyebrowSize,
-            fill: '#C99B73',
+            fill: '#C8A45D',
             fontWeight: 700
         }).svg
     )
@@ -521,7 +521,7 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
             lines: [title],
             fontSize: heroTitleSize,
             lineHeight: heroTitleSize,
-            fill: '#1E2432',
+            fill: '#111111',
             fontWeight: 700
         }).svg
     )
@@ -533,7 +533,7 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
             lines: heroDescLines,
             fontSize: heroDescSize,
             lineHeight: heroLineHeight,
-            fill: '#7F7B78',
+            fill: '#5F5A50',
             fontWeight: 500
         }).svg
     )
@@ -546,7 +546,7 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
             lines: heroMetaWrappedLines,
             fontSize: heroMetaSize,
             lineHeight: heroLineHeight,
-            fill: '#E85A4F',
+            fill: '#0B0B0B',
             fontWeight: 700
         }).svg
     )
@@ -560,10 +560,10 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
             width: contentWidth,
             title: '婚礼信息',
             lines: weddingLines,
-            fill: '#FFF8F5',
-            stroke: '#EFE6E1',
-            titleColor: '#7F7B78',
-            bodyColor: '#1E2432',
+            fill: '#FFFFFF',
+            stroke: '#E7E2D6',
+            titleColor: '#5F5A50',
+            bodyColor: '#111111',
             titleSize: cardTitleSize,
             bodySize: cardBodySize,
             lineHeight: cardLineHeight,
@@ -583,9 +583,9 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
             title: '服务团队',
             lines: teamLines,
             fill: '#FFFFFF',
-            stroke: '#EFE6E1',
-            titleColor: '#7F7B78',
-            bodyColor: '#1E2432',
+            stroke: '#E7E2D6',
+            titleColor: '#5F5A50',
+            bodyColor: '#111111',
             titleSize: cardTitleSize,
             bodySize: cardBodySize,
             lineHeight: cardLineHeight,
@@ -600,15 +600,15 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
     sections.push(
         `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="${amountCardHeight}" rx="${
             small ? 24 : 32
-        }" fill="#FFFFFF" stroke="#F4C7BF" /><rect x="${
+        }" fill="#FFFFFF" stroke="#D8C28A" /><rect x="${
             contentX + contentWidth - (small ? 90 : 148)
         }" y="${currentY + (small ? 18 : 22)}" width="${small ? 62 : 104}" height="${
             small ? 24 : 36
-        }" rx="999" fill="#FFF1EE" /><text x="${contentX + contentWidth - (small ? 59 : 96)}" y="${
+        }" rx="999" fill="#F3F2EE" /><text x="${contentX + contentWidth - (small ? 59 : 96)}" y="${
             currentY + (small ? 34 : 47)
         }" text-anchor="middle" font-size="${
             small ? 11 : 18
-        }" font-weight="700" fill="#E85A4F"${getTextFontAttr()}>金额重点</text>${shiftSvgY(
+        }" font-weight="700" fill="#0B0B0B"${getTextFontAttr()}>金额重点</text>${shiftSvgY(
             amountTitleBlock.svg,
             currentY
         )}${shiftSvgY(amountTotalBlock.svg, currentY)}${shiftSvgY(amountDetailsBlock.svg, currentY)}`
@@ -622,10 +622,10 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
             width: contentWidth,
             title: '备注与联系',
             lines: remarkLines,
-            fill: '#FFF8F5',
-            stroke: '#EFE6E1',
-            titleColor: '#7F7B78',
-            bodyColor: '#1E2432',
+            fill: '#FFFFFF',
+            stroke: '#E7E2D6',
+            titleColor: '#5F5A50',
+            bodyColor: '#111111',
             titleSize: cardTitleSize,
             bodySize: remarkCardBodySize,
             lineHeight: remarkCardLineHeight,
@@ -650,24 +650,24 @@ const renderV2OrderConfirmLetterSvg = (snapshot: OrderConfirmLetterSnapshot, sma
         lines: footerNoteLines,
         fontSize: footerNoteSize,
         lineHeight: footerNoteLineHeight,
-        fill: '#7F7B78',
+        fill: '#5F5A50',
         fontWeight: 500,
         textAnchor: 'middle'
     })
 
     sections.push(
-        `<rect x="${contentX}" y="${footerLineY}" width="${contentWidth}" height="1" fill="#F1E4DD" /><text x="${
+        `<rect x="${contentX}" y="${footerLineY}" width="${contentWidth}" height="1" fill="#E7E2D6" /><text x="${
             paperX + paperWidth / 2
         }" y="${footerBrandY}" text-anchor="middle" font-size="${footerBrandSize}" font-weight="700" letter-spacing="${
             small ? 0.8 : 1.2
-        }" fill="#C99B73"${getTextFontAttr()}>${escapeXml(
+        }" fill="#C8A45D"${getTextFontAttr()}>${escapeXml(
             toText(snapshot.brand_name) || DEFAULT_BRAND_NAME
         )}</text>${footerNoteBlock.svg}`
     )
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><linearGradient id="pageGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FCFBF9" /><stop offset="100%" stop-color="#FFF4EF" /></linearGradient><linearGradient id="heroGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FFF7F4" /><stop offset="100%" stop-color="#FDE9E2" /></linearGradient><filter id="paperShadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="24" stdDeviation="18" flood-color="#DAB5A6" flood-opacity="0.18" /></filter></defs><rect width="100%" height="100%" fill="url(#pageGradient)" /><rect x="${paperX}" y="${paperY}" width="${paperWidth}" height="${paperHeight}" rx="${
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><linearGradient id="pageGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFFFFF" /><stop offset="100%" stop-color="#F8F7F2" /></linearGradient><linearGradient id="heroGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FFFFFF" /><stop offset="100%" stop-color="#F7F0DF" /></linearGradient><filter id="paperShadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="24" stdDeviation="18" flood-color="#C8A45D" flood-opacity="0.18" /></filter></defs><rect width="100%" height="100%" fill="url(#pageGradient)" /><rect x="${paperX}" y="${paperY}" width="${paperWidth}" height="${paperHeight}" rx="${
         small ? 28 : 48
-    }" fill="#FFFDFB" stroke="#EFE6E1" stroke-width="2" filter="url(#paperShadow)" />${sections.join(
+    }" fill="#FFFFFF" stroke="#E7E2D6" stroke-width="2" filter="url(#paperShadow)" />${sections.join(
         ''
     )}</svg>`
 }
@@ -837,10 +837,10 @@ const renderV3OrderConfirmLetterSvg = (
     const centerX = paperX + paperWidth / 2
 
     sections.push(
-        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="${heroHeight}" fill="url(#v3HeroGradient)" stroke="#E2D4C3" />`
+        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="${heroHeight}" fill="url(#v3HeroGradient)" stroke="#D8C28A" />`
     )
     sections.push(
-        `<ellipse cx="${contentX + contentWidth - (small ? 58 : 108)}" cy="${currentY + (small ? 24 : 38)}" rx="${small ? 34 : 66}" ry="${small ? 28 : 54}" fill="#F2DED1" fill-opacity="0.4" /><ellipse cx="${contentX + contentWidth - (small ? 42 : 72)}" cy="${currentY + (small ? 36 : 54)}" rx="${small ? 22 : 46}" ry="${small ? 18 : 36}" fill="#F8EEE4" fill-opacity="0.8" />`
+        `<ellipse cx="${contentX + contentWidth - (small ? 58 : 108)}" cy="${currentY + (small ? 24 : 38)}" rx="${small ? 34 : 66}" ry="${small ? 28 : 54}" fill="#F7F0DF" fill-opacity="0.4" /><ellipse cx="${contentX + contentWidth - (small ? 42 : 72)}" cy="${currentY + (small ? 36 : 54)}" rx="${small ? 22 : 46}" ry="${small ? 18 : 36}" fill="#F7F0DF" fill-opacity="0.8" />`
     )
 
     const heroEyebrowY = currentY + heroPaddingTop + heroEyebrowSize
@@ -851,7 +851,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: [heroEyebrow],
             fontSize: heroEyebrowSize,
             lineHeight: heroEyebrowSize,
-            fill: '#A98A69',
+            fill: '#C8A45D',
             fontWeight: 500,
             textAnchor: 'middle',
             letterSpacing: small ? 1.4 : 2.2,
@@ -860,7 +860,7 @@ const renderV3OrderConfirmLetterSvg = (
 
     const sealY = heroEyebrowY + (small ? 12 : 16)
     sections.push(
-        `<circle cx="${centerX}" cy="${sealY + sealSize / 2}" r="${sealSize / 2}" fill="none" stroke="#CDB08E" stroke-width="1" /><circle cx="${centerX}" cy="${sealY + sealSize / 2}" r="${sealInnerSize / 2}" fill="none" stroke="#E7D7C2" stroke-width="1" />`
+        `<circle cx="${centerX}" cy="${sealY + sealSize / 2}" r="${sealSize / 2}" fill="none" stroke="#C8A45D" stroke-width="1" /><circle cx="${centerX}" cy="${sealY + sealSize / 2}" r="${sealInnerSize / 2}" fill="none" stroke="#D8C28A" stroke-width="1" />`
     )
     sections.push(
         drawTextBlock({
@@ -869,7 +869,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: ['LW'],
             fontSize: small ? 16 : 28,
             lineHeight: small ? 16 : 28,
-            fill: '#A78663',
+            fill: '#9F7A2E',
             fontWeight: 600,
             textAnchor: 'middle',
             fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF,
@@ -884,7 +884,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: [title],
             fontSize: heroTitleSize,
             lineHeight: heroTitleSize,
-            fill: '#3B322B',
+            fill: '#111111',
             fontWeight: 700,
             textAnchor: 'middle',
         }).svg
@@ -898,7 +898,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: [heroSubtitle],
             fontSize: heroSubtitleSize,
             lineHeight: heroSubtitleSize,
-            fill: '#9F8467',
+            fill: '#9A9388',
             fontWeight: 500,
             textAnchor: 'middle',
             fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF,
@@ -913,7 +913,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: heroDescLines,
             fontSize: heroDescSize,
             lineHeight: heroDescLineHeight,
-            fill: '#6E6256',
+            fill: '#5F5A50',
             fontWeight: 500,
             textAnchor: 'middle',
         }).svg
@@ -928,7 +928,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: heroMetaLines,
             fontSize: heroMetaSize,
             lineHeight: heroMetaLineHeight,
-            fill: '#B38E69',
+            fill: '#9F7A2E',
             fontWeight: 500,
             textAnchor: 'middle',
         }).svg
@@ -941,9 +941,9 @@ const renderV3OrderConfirmLetterSvg = (
     const sectionBodyY =
         currentY + infoSectionPaddingY + sectionLabelSize + sectionLabelGap + sectionBodySize
     sections.push(
-        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="1" fill="#E6D9CB" /><rect x="${contentX}" y="${
+        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="1" fill="#E7E2D6" /><rect x="${contentX}" y="${
             currentY + infoSectionHeight
-        }" width="${contentWidth}" height="1" fill="#E6D9CB" />`
+        }" width="${contentWidth}" height="1" fill="#E7E2D6" />`
     )
     sections.push(
         drawTextBlock({
@@ -952,7 +952,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: ['CEREMONY DETAILS'],
             fontSize: sectionLabelSize,
             lineHeight: sectionLabelSize,
-            fill: '#A98A69',
+            fill: '#C8A45D',
             fontWeight: 500,
             letterSpacing: small ? 1.4 : 2,
         }).svg
@@ -964,7 +964,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: leftInfoLines,
             fontSize: sectionBodySize,
             lineHeight: sectionBodyLineHeight,
-            fill: '#342E29',
+            fill: '#111111',
             fontWeight: 500,
         }).svg
     )
@@ -975,7 +975,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: ['ATELIER SERVICE'],
             fontSize: sectionLabelSize,
             lineHeight: sectionLabelSize,
-            fill: '#A98A69',
+            fill: '#C8A45D',
             fontWeight: 500,
             letterSpacing: small ? 1.4 : 2,
         }).svg
@@ -987,7 +987,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: rightInfoLines,
             fontSize: sectionBodySize,
             lineHeight: sectionBodyLineHeight,
-            fill: '#342E29',
+            fill: '#111111',
             fontWeight: 500,
         }).svg
     )
@@ -1000,7 +1000,7 @@ const renderV3OrderConfirmLetterSvg = (
     const amountRightX = contentX + contentWidth - (small ? 150 : 300)
     const amountRightY = currentY + amountPaddingY + (small ? 4 : 8) + amountBodySize
     sections.push(
-        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="${amountSectionHeight}" fill="url(#v3AmountGradient)" stroke="#D9C1A1" stroke-width="1" />`
+        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="${amountSectionHeight}" fill="url(#v3AmountGradient)" stroke="#D8C28A" stroke-width="1" />`
     )
     sections.push(
         drawTextBlock({
@@ -1009,7 +1009,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: ['FEE MEMO'],
             fontSize: amountLabelSize,
             lineHeight: amountLabelSize,
-            fill: '#A98A69',
+            fill: '#C8A45D',
             fontWeight: 500,
             letterSpacing: small ? 1.4 : 2,
         }).svg
@@ -1021,7 +1021,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: [`¥${toText(snapshot.order_total_amount) || '0.00'}`],
             fontSize: amountValueSize,
             lineHeight: amountValueLineHeight,
-            fill: '#7C6146',
+            fill: '#5F5A50',
             fontWeight: 600,
             fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF,
         }).svg
@@ -1033,7 +1033,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: ['合同合计金额'],
             fontSize: amountCaptionSize,
             lineHeight: amountCaptionSize,
-            fill: '#6D6155',
+            fill: '#5F5A50',
             fontWeight: 500,
         }).svg
     )
@@ -1044,7 +1044,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: amountDetailLines,
             fontSize: amountBodySize,
             lineHeight: amountBodyLineHeight,
-            fill: '#433932',
+            fill: '#5A4433',
             fontWeight: 500,
         }).svg
     )
@@ -1054,9 +1054,9 @@ const renderV3OrderConfirmLetterSvg = (
     const ackBodyY =
         currentY + ackSectionPaddingY + sectionLabelSize + sectionLabelGap + ackBodySize
     sections.push(
-        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="1" fill="#E6D9CB" /><rect x="${contentX}" y="${
+        `<rect x="${contentX}" y="${currentY}" width="${contentWidth}" height="1" fill="#E7E2D6" /><rect x="${contentX}" y="${
             currentY + ackSectionHeight
-        }" width="${contentWidth}" height="1" fill="#E6D9CB" />`
+        }" width="${contentWidth}" height="1" fill="#E7E2D6" />`
     )
     sections.push(
         drawTextBlock({
@@ -1065,7 +1065,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: ['ACKNOWLEDGEMENT'],
             fontSize: sectionLabelSize,
             lineHeight: sectionLabelSize,
-            fill: '#A98A69',
+            fill: '#C8A45D',
             fontWeight: 500,
             letterSpacing: small ? 1.4 : 2,
         }).svg
@@ -1077,7 +1077,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: acknowledgementLines,
             fontSize: ackBodySize,
             lineHeight: ackBodyLineHeight,
-            fill: '#433932',
+            fill: '#5A4433',
             fontWeight: 500,
         }).svg
     )
@@ -1088,7 +1088,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: ['CONTACT ATELIER'],
             fontSize: sectionLabelSize,
             lineHeight: sectionLabelSize,
-            fill: '#A98A69',
+            fill: '#C8A45D',
             fontWeight: 500,
             letterSpacing: small ? 1.4 : 2,
         }).svg
@@ -1100,7 +1100,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: contactLines,
             fontSize: small ? 12 : 21,
             lineHeight: ackBodyLineHeight,
-            fill: '#433932',
+            fill: '#5A4433',
             fontWeight: 500,
         }).svg
     )
@@ -1111,7 +1111,7 @@ const renderV3OrderConfirmLetterSvg = (
     const signLabelY = signLineY + signLineGap + signLabelSize
     const signRightX = contentX + columnWidth + columnGap
     sections.push(
-        `<rect x="${contentX}" y="${signLineY}" width="${columnWidth}" height="1" fill="#D9C4A6" /><rect x="${signRightX}" y="${signLineY}" width="${columnWidth}" height="1" fill="#D9C4A6" />`
+        `<rect x="${contentX}" y="${signLineY}" width="${columnWidth}" height="1" fill="#D8C28A" /><rect x="${signRightX}" y="${signLineY}" width="${columnWidth}" height="1" fill="#D8C28A" />`
     )
     sections.push(
         drawTextBlock({
@@ -1120,7 +1120,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: ['客户签名'],
             fontSize: signLabelSize,
             lineHeight: signLabelSize,
-            fill: '#8B7762',
+            fill: '#9A9388',
             fontWeight: 500,
         }).svg
     )
@@ -1131,7 +1131,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: ['婚礼顾问签署'],
             fontSize: signLabelSize,
             lineHeight: signLabelSize,
-            fill: '#8B7762',
+            fill: '#9A9388',
             fontWeight: 500,
         }).svg
     )
@@ -1143,7 +1143,7 @@ const renderV3OrderConfirmLetterSvg = (
     const footerKickerY = footerBrandY + (small ? 6 : 8) + footerKickerSize
     const footerNoteY = footerKickerY + (small ? 8 : 10) + footerNoteSize
     sections.push(
-        `<rect x="${contentX}" y="${footerLineY}" width="${contentWidth}" height="1" fill="#E6D9CB" />`
+        `<rect x="${contentX}" y="${footerLineY}" width="${contentWidth}" height="1" fill="#E7E2D6" />`
     )
     sections.push(
         drawTextBlock({
@@ -1152,7 +1152,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: [toText(snapshot.brand_name) || DEFAULT_BRAND_NAME],
             fontSize: footerBrandSize,
             lineHeight: footerBrandSize,
-            fill: '#B08C68',
+            fill: '#9F7A2E',
             fontWeight: 600,
             textAnchor: 'middle',
         }).svg
@@ -1164,7 +1164,7 @@ const renderV3OrderConfirmLetterSvg = (
             lines: [V3_FOOTER_KICKER],
             fontSize: footerKickerSize,
             lineHeight: footerKickerSize,
-            fill: '#9F8467',
+            fill: '#9A9388',
             fontWeight: 500,
             textAnchor: 'middle',
             fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF,
@@ -1177,13 +1177,13 @@ const renderV3OrderConfirmLetterSvg = (
             lines: footerNoteLines,
             fontSize: footerNoteSize,
             lineHeight: footerNoteLineHeight,
-            fill: '#87796B',
+            fill: '#9A9388',
             fontWeight: 500,
             textAnchor: 'middle',
         }).svg
     )
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><linearGradient id="v3PageGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FAF5EF" /><stop offset="100%" stop-color="#F3E8DC" /></linearGradient><linearGradient id="v3PaperGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFFDFC" /><stop offset="100%" stop-color="#FAF4EC" /></linearGradient><linearGradient id="v3HeroGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FBF6F0" /><stop offset="100%" stop-color="#F7EEE3" /></linearGradient><linearGradient id="v3AmountGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FCF6EF" /><stop offset="100%" stop-color="#F8EDE2" /></linearGradient><filter id="v3PaperShadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="14" flood-color="#C9B397" flood-opacity="0.12" /></filter></defs><rect width="100%" height="100%" fill="url(#v3PageGradient)" /><rect x="${paperX}" y="${paperY}" width="${paperWidth}" height="${paperHeight}" rx="${small ? 8 : 14}" fill="url(#v3PaperGradient)" stroke="#D8C3A7" stroke-width="1" filter="url(#v3PaperShadow)" />${sections.join(
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><linearGradient id="v3PageGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F8F7F2" /><stop offset="100%" stop-color="#F7F0DF" /></linearGradient><linearGradient id="v3PaperGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFFFFF" /><stop offset="100%" stop-color="#F8F7F2" /></linearGradient><linearGradient id="v3HeroGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F8F7F2" /><stop offset="100%" stop-color="#F7F0DF" /></linearGradient><linearGradient id="v3AmountGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F7F0DF" /><stop offset="100%" stop-color="#F7F0DF" /></linearGradient><filter id="v3PaperShadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="14" flood-color="#C8A45D" flood-opacity="0.12" /></filter></defs><rect width="100%" height="100%" fill="url(#v3PageGradient)" /><rect x="${paperX}" y="${paperY}" width="${paperWidth}" height="${paperHeight}" rx="${small ? 8 : 14}" fill="url(#v3PaperGradient)" stroke="#D8C28A" stroke-width="1" filter="url(#v3PaperShadow)" />${sections.join(
         ''
     )}</svg>`
 }

@@ -21,7 +21,7 @@
                         <view class="work-hero__badge-row">
                             <StatusBadge tone="neutral" size="sm">
                                 <view class="work-hero__badge-content">
-                                    <tn-icon name="eye" size="24" color="#C99B73" />
+                                    <tn-icon name="eye" size="24" color="#C8A45D" />
                                     <text>浏览 {{ workDetail.view_count || 0 }}</text>
                                 </view>
                             </StatusBadge>
@@ -43,12 +43,12 @@
 
                         <view class="work-hero__meta-list">
                             <view v-if="workDetail.shoot_date" class="work-hero__meta-pill">
-                                <tn-icon name="calendar" size="24" color="#7F7B78" />
+                                <tn-icon name="calendar" size="24" color="#5F5A50" />
                                 <text class="work-hero__meta-text">{{ workDetail.shoot_date }}</text>
                             </view>
 
                             <view v-if="workDetail.location" class="work-hero__meta-pill">
-                                <tn-icon name="map-pin" size="24" color="#7F7B78" />
+                                <tn-icon name="map-pin" size="24" color="#5F5A50" />
                                 <text class="work-hero__meta-text">{{ workDetail.location }}</text>
                             </view>
                         </view>
@@ -119,7 +119,7 @@
                         </view>
                     </view>
 
-                    <tn-icon name="arrow-right" size="32" color="#999" />
+                    <tn-icon name="arrow-right" size="32" color="#9A9388" />
                 </view>
 
                 <view class="staff-summary-card__price-row">
@@ -342,7 +342,7 @@ onLoad((options: any) => {
     justify-content: flex-end;
     gap: 20rpx;
     padding: 36rpx 32rpx;
-    background: linear-gradient(180deg, rgba(9, 9, 11, 0.08) 0%, rgba(9, 9, 11, 0.62) 100%);
+    background: linear-gradient(180deg, rgba(11, 11, 11, 0.08) 0%, rgba(11, 11, 11, 0.62) 100%);
 }
 
 .work-hero__badge-row {
@@ -366,7 +366,7 @@ onLoad((options: any) => {
 .work-hero__eyebrow {
     font-size: 22rpx;
     font-weight: 600;
-    letter-spacing: 4rpx;
+    letter-spacing: 0;
     color: rgba(255, 255, 255, 0.82);
 }
 
@@ -424,21 +424,21 @@ onLoad((options: any) => {
 .detail-card__eyebrow {
     font-size: 22rpx;
     font-weight: 600;
-    letter-spacing: 4rpx;
-    color: var(--wm-color-primary, #e85a4f);
+    letter-spacing: 0;
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .detail-card__title {
     font-size: 32rpx;
     font-weight: 700;
     line-height: 1.35;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .detail-card__body-text {
     font-size: 28rpx;
     line-height: 1.8;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     white-space: pre-wrap;
 }
 
@@ -485,12 +485,12 @@ onLoad((options: any) => {
 .staff-summary-card__name {
     font-size: 34rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .staff-summary-card__meta {
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .staff-summary-card__badge-row {
@@ -505,12 +505,12 @@ onLoad((options: any) => {
     justify-content: space-between;
     gap: 16rpx;
     padding-top: 24rpx;
-    border-top: 1rpx solid rgba(239, 230, 225, 0.9);
+    border-top: 1rpx solid rgba(231, 226, 214, 0.9);
 }
 
 .staff-summary-card__price-label {
     font-size: 26rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .staff-summary-card__price {
@@ -522,19 +522,19 @@ onLoad((options: any) => {
 .staff-summary-card__price-symbol {
     font-size: 28rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .staff-summary-card__price-value {
     font-size: 44rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .staff-summary-card__price-unit,
 .staff-summary-card__price-negotiable {
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .staff-summary-card__price-negotiable {
@@ -619,13 +619,13 @@ onLoad((options: any) => {
 
 .detail-card__meta-label {
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .detail-card__meta-value {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     text-align: right;
 }
 </style>

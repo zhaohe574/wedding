@@ -41,7 +41,7 @@
                 <tn-icon
                     :name="newsData.collect ? 'star-fill' : 'star'"
                     size="34"
-                    :color="newsData.collect ? '#E85A4F' : '#7F7B78'"
+                    :color="newsData.collect ? '#0B0B0B' : '#5F5A50'"
                 ></tn-icon>
                 <text class="news-detail-page__action-text">
                     {{ newsData.collect ? '已收藏' : '收藏' }}
@@ -108,7 +108,7 @@ onLoad((options: any) => {
         font-size: 38rpx;
         font-weight: 700;
         line-height: 1.35;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__meta {
@@ -118,7 +118,7 @@ onLoad((options: any) => {
         gap: 20rpx;
         margin-top: 20rpx;
         font-size: 22rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__meta-item {
@@ -141,21 +141,21 @@ onLoad((options: any) => {
     &__summary {
         padding: 20rpx;
         border-radius: var(--wm-radius-card-soft, 20rpx);
-        background: var(--wm-color-bg-soft, #fff7f4);
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
-        color: var(--wm-text-secondary, #7f7b78);
+        background: var(--wm-color-bg-soft, #ffffff);
+        border: 1rpx solid var(--wm-color-border, #e7e2d6);
+        color: var(--wm-text-secondary, #5f5a50);
         font-size: 26rpx;
         line-height: 1.75;
     }
 
     &__summary-label {
         font-weight: 700;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__article {
         margin-top: 24rpx;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
         font-size: 28rpx;
         line-height: 1.85;
     }
@@ -168,12 +168,12 @@ onLoad((options: any) => {
 
     &__article :deep(p) {
         margin-bottom: 20rpx;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
         line-height: 1.85;
     }
 
     &__article :deep(a) {
-        color: var(--wm-color-primary, #e85a4f);
+        color: var(--wm-color-primary, #0b0b0b);
     }
 
     &__action {
@@ -188,14 +188,14 @@ onLoad((options: any) => {
         padding: 0 30rpx;
         border-radius: var(--wm-radius-pill, 999rpx);
         background: rgba(255, 255, 255, 0.92);
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
-        box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(214, 185, 167, 0.2));
+        border: 1rpx solid var(--wm-color-border, #e7e2d6);
+        box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));
     }
 
     &__action-text {
         font-size: 26rpx;
         font-weight: 600;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 }
 </style>

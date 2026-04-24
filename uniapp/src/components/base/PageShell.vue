@@ -69,8 +69,8 @@ const shellClass = computed(() => [
     position: relative;
     width: 100%;
     min-height: 100vh;
-    background: var(--wm-color-bg-page, #fff7f4);
-    color: var(--wm-text-primary, #1e2432);
+    background: var(--wm-color-bg-page, #ffffff);
+    color: var(--wm-text-primary, #111111);
     isolation: isolate;
 
     &::before {

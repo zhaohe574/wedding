@@ -101,7 +101,7 @@ const bgColor = computed(() => {
     }
 
     return resolvedVariant.value === 'danger'
-        ? 'var(--wm-color-danger, #C94B49)'
+        ? 'var(--wm-color-danger, #5A4433)'
         : themeStore.primaryColor
 })
 
@@ -115,7 +115,7 @@ const textColor = computed(() => {
     }
 
     if (resolvedVariant.value === 'danger') {
-        return resolveReadableTextColor('#C94B49', themeStore.btnColor)
+        return resolveReadableTextColor('#5A4433', themeStore.btnColor)
     }
 
     return resolveReadableTextColor(themeStore.primaryColor, themeStore.btnColor)
@@ -156,27 +156,27 @@ const buttonVars = computed(() => {
             '--button-bg-start': themeStore.primaryColor,
             '--button-bg-end': themeStore.primaryColor,
             '--button-shadow':
-                props.shadow || `0 12rpx 24rpx ${alphaColor(themeStore.primaryColor, 0.2)}`,
+                props.shadow || `0 12rpx 24rpx ${alphaColor(themeStore.primaryColor, 0.18)}`,
             '--button-shadow-active':
-                props.activeShadow || `0 6rpx 12rpx ${alphaColor(themeStore.primaryColor, 0.16)}`
+                props.activeShadow || `0 6rpx 12rpx ${alphaColor(themeStore.primaryColor, 0.12)}`
         }
     }
 
     if (resolvedVariant.value === 'danger') {
         return {
             ...sharedVars,
-            '--button-bg-start': 'var(--wm-color-danger, #C94B49)',
-            '--button-bg-end': 'var(--wm-color-danger, #C94B49)',
-            '--button-shadow': props.shadow || '0 12rpx 24rpx rgba(201, 75, 73, 0.18)',
-            '--button-shadow-active': props.activeShadow || '0 6rpx 12rpx rgba(201, 75, 73, 0.14)'
+            '--button-bg-start': 'var(--wm-color-danger, #5A4433)',
+            '--button-bg-end': 'var(--wm-color-danger, #5A4433)',
+            '--button-shadow': props.shadow || '0 12rpx 24rpx rgba(90, 68, 51, 0.18)',
+            '--button-shadow-active': props.activeShadow || '0 6rpx 12rpx rgba(90, 68, 51, 0.14)'
         }
     }
 
     if (resolvedVariant.value === 'ghost') {
         return {
             ...sharedVars,
-            '--button-bg-start': 'rgba(255,248,245,0.82)',
-            '--button-bg-end': 'rgba(255,248,245,0.82)',
+            '--button-bg-start': 'rgba(248,247,242,0.82)',
+            '--button-bg-end': 'rgba(248,247,242,0.82)',
             '--button-shadow': props.shadow || 'none',
             '--button-shadow-active': props.activeShadow || 'none'
         }
@@ -220,7 +220,7 @@ export default {
         width: auto;
         border-radius: var(--button-radius, var(--wm-radius-pill, 999rpx));
         font-weight: 600;
-        letter-spacing: 0.6rpx;
+        letter-spacing: 0;
         transition: all var(--wm-motion-base, 220ms) ease;
     }
 
@@ -253,16 +253,16 @@ export default {
         :deep(.tn-button) {
             background: rgba(255, 255, 255, 0.94);
             border-width: 1rpx;
-            border-color: rgba(232, 90, 79, 0.18);
-            box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
+            border-color: rgba(200, 164, 93, 0.36);
+            box-shadow: inset 0 1rpx 0 rgba(200, 164, 93, 0.12);
         }
     }
 
     &--ghost {
         :deep(.tn-button) {
-            background: rgba(255, 248, 245, 0.82);
+            background: rgba(248, 247, 242, 0.82);
             border-width: 1rpx;
-            border-color: rgba(239, 230, 225, 0.96);
+            border-color: rgba(231, 226, 214, 0.96);
             box-shadow: none;
         }
     }

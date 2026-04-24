@@ -13,7 +13,7 @@ interface Props {
 
 withDefaults(defineProps<Props>(), {
     text: '加载中...',
-    color: 'var(--wm-color-primary, #E85A4F)'
+    color: 'var(--wm-color-primary, #0B0B0B)'
 })
 </script>
 
@@ -28,7 +28,7 @@ withDefaults(defineProps<Props>(), {
 
     &__text {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 }
 </style>

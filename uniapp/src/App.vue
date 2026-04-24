@@ -55,13 +55,13 @@ onLaunch(async () => {
 @import '@tuniao/tn-icon/dist/index.css';
 
 page {
-    background-color: transparent;
+    background-color: var(--wm-color-bg-page, #ffffff);
     font-family: var(--wm-font-family-body, 'PingFang SC'), 'Hiragino Sans GB', 'Microsoft YaHei',
         'Noto Sans SC', sans-serif;
     font-size: 28rpx;
     line-height: 1.6;
-    color: var(--wm-text-primary, #1e2432);
-    letter-spacing: 0.3rpx;
+    color: var(--wm-text-primary, #111111);
+    letter-spacing: 0;
 }
 
 page,
@@ -85,15 +85,15 @@ image {
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.9);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(232, 90, 79, 0.16);
+    background: rgba(200, 164, 93, 0.28);
     border-radius: 4rpx;
 
     &:hover {
-        background: rgba(232, 90, 79, 0.22);
+        background: rgba(200, 164, 93, 0.42);
     }
 }
 </style>

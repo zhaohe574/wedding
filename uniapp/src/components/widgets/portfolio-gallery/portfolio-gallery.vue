@@ -14,7 +14,7 @@
                 @click="handleMore"
             >
                 <text>查看更多</text>
-                <tn-icon name="right" size="12" color="#9ca3af" class="ml-1"></tn-icon>
+                <tn-icon name="right" size="12" color="#9a9388" class="ml-1"></tn-icon>
             </view>
         </view>
 
@@ -227,7 +227,7 @@ const props = defineProps({
 
 const { getImageUrl } = useAppStore()
 const themeStore = useThemeStore()
-const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
+const primaryColor = computed(() => themeStore.primaryColor || '#0B0B0B')
 const activeCategory = ref('全部')
 
 // 内联样式（替代Tailwind主题类，兼容小程序）

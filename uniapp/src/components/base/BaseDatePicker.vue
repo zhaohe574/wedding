@@ -3,7 +3,7 @@
         <view class="base-date-picker__display">
             <text v-if="displayText" class="base-date-picker__text">{{ displayText }}</text>
             <text v-else class="base-date-picker__placeholder">{{ placeholder }}</text>
-            <tn-icon name="calendar" size="32" color="#B4ACA8" />
+            <tn-icon name="calendar" size="32" color="#9A9388" />
         </view>
 
         <tn-date-time-picker
@@ -115,26 +115,26 @@ export default {
         justify-content: space-between;
         height: 88rpx;
         padding: 0 var(--wm-space-card-padding, 20rpx);
-        background: var(--wm-color-bg-soft, #fff7f4);
+        background: var(--wm-color-bg-soft, #ffffff);
         border-radius: var(--wm-radius-control, 18rpx);
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
+        border: 1rpx solid var(--wm-color-border, #e7e2d6);
         transition: all var(--wm-motion-base, 220ms) ease;
         cursor: pointer;
 
         &:active {
             background: #ffffff;
-            border-color: var(--wm-color-border-strong, #f4c7bf);
+            border-color: var(--wm-color-border-strong, #d8c28a);
         }
     }
 
     &__text {
         font-size: 28rpx;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__placeholder {
         font-size: 28rpx;
-        color: var(--wm-text-tertiary, #b4aca8);
+        color: var(--wm-text-tertiary, #9a9388);
     }
 }
 </style>

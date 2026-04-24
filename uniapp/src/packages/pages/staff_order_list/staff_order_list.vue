@@ -74,7 +74,7 @@
                             </view>
 
                             <view class="summary-bar__scope">
-                                <tn-icon name="tip" size="18" color="#C99B73" />
+                                <tn-icon name="tip" size="18" color="#C8A45D" />
                                 <text class="summary-bar__scope-text">只显示履约相关订单</text>
                             </view>
 
@@ -167,7 +167,7 @@
                                     <tn-icon
                                         name="map-pin"
                                         size="22"
-                                        color="var(--wm-color-secondary, #C99B73)"
+                                        color="var(--wm-color-secondary, #C8A45D)"
                                     />
                                     <text>{{ order.location }}</text>
                                 </view>
@@ -176,7 +176,7 @@
                                     <tn-icon
                                         name="my"
                                         size="22"
-                                        color="var(--wm-color-secondary, #C99B73)"
+                                        color="var(--wm-color-secondary, #C8A45D)"
                                     />
                                     <text>
                                         {{ order.contactName || '未填写联系人' }}
@@ -213,7 +213,7 @@
                                     </view>
                                     <view class="action-link" @click.stop="goDetail(order.id)">
                                         查看详情
-                                        <tn-icon name="right" size="16" color="#A89D97" />
+                                        <tn-icon name="right" size="16" color="#9A9388" />
                                     </view>
                                 </view>
                             </view>
@@ -370,9 +370,9 @@ let orderCountdownRefreshing = false
 
 const heroCardStyle = computed(() => ({
     '--wm-hero-gradient': `linear-gradient(135deg, ${
-        $theme.primaryColor || '#E85A4F'
-    }12 0%, var(--wm-color-bg-page, #FCFBF9) 52%, ${$theme.secondaryColor || '#C99B73'}14 100%)`,
-    borderColor: 'var(--wm-color-border-strong, #F4C7BF)'
+        $theme.primaryColor || '#0B0B0B'
+    }12 0%, var(--wm-color-bg-page, #FFFFFF) 52%, ${$theme.secondaryColor || '#C8A45D'}14 100%)`,
+    borderColor: 'var(--wm-color-border-strong, #D8C28A)'
 }))
 
 const primaryActionStyle = computed(() => ({
@@ -692,9 +692,9 @@ const getOrderAlertTone = (order: FormattedOrder): StatusTone => {
 }
 
 const getOrderAlertIconColor = (order: FormattedOrder) => {
-    if (order.statusValue === 0) return order.confirmTimeoutActionDesc ? '#C94B49' : '#C98524'
-    if (order.statusValue === 1) return order.payTimeoutActionDesc ? '#C94B49' : '#E85A4F'
-    return '#607086'
+    if (order.statusValue === 0) return order.confirmTimeoutActionDesc ? '#5A4433' : '#9F7A2E'
+    if (order.statusValue === 1) return order.payTimeoutActionDesc ? '#5A4433' : '#0B0B0B'
+    return '#6C665C'
 }
 
 const listSectionTitle = computed(() => {
@@ -886,10 +886,10 @@ onUnload(() => {
     box-sizing: border-box;
     background: radial-gradient(
             circle at top left,
-            rgba(232, 90, 79, 0.1) 0,
-            rgba(252, 251, 249, 0) 36%
+            rgba(11, 11, 11, 0.1) 0,
+            rgba(248, 247, 242, 0) 36%
         ),
-        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
+        linear-gradient(180deg, var(--wm-color-bg-page, #ffffff) 0%, #f8f7f2 100%);
 }
 
 .page-section {
@@ -911,8 +911,8 @@ onUnload(() => {
 .hero-card,
 .order-card {
     background: rgba(255, 255, 255, 0.98);
-    border: 1rpx solid rgba(240, 229, 222, 0.98);
-    box-shadow: 0 20rpx 42rpx rgba(185, 129, 116, 0.12);
+    border: 1rpx solid rgba(231, 226, 214, 0.98);
+    box-shadow: 0 20rpx 42rpx rgba(17, 17, 17, 0.12);
 }
 
 .hero-card {
@@ -941,21 +941,21 @@ onUnload(() => {
     font-size: 20rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .hero-card__title {
     font-size: 40rpx;
     font-weight: 700;
     line-height: 1.28;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .hero-card__desc {
     font-size: 22rpx;
     font-weight: 600;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .hero-card__total {
@@ -977,21 +977,21 @@ onUnload(() => {
     font-size: 20rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .hero-card__total-value {
     font-size: 42rpx;
     font-weight: 700;
     line-height: 1;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .hero-card__total-unit {
     font-size: 20rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .hero-focus-strip {
@@ -1013,15 +1013,15 @@ onUnload(() => {
     box-sizing: border-box;
 
     &--accent {
-        background: rgba(255, 241, 238, 0.92);
-        border-color: var(--wm-color-border-strong, #f4c7bf);
+        background: rgba(247, 240, 223, 0.92);
+        border-color: var(--wm-color-border-strong, #d8c28a);
     }
 
     &__label {
         font-size: 20rpx;
         font-weight: 700;
         line-height: 1.3;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__value-row {
@@ -1034,7 +1034,7 @@ onUnload(() => {
         font-size: 34rpx;
         font-weight: 700;
         line-height: 1;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__unit {
@@ -1042,14 +1042,14 @@ onUnload(() => {
         font-size: 20rpx;
         font-weight: 700;
         line-height: 1;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__hint {
         font-size: 18rpx;
         font-weight: 600;
         line-height: 1.45;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 }
 
@@ -1067,11 +1067,11 @@ onUnload(() => {
     padding: 14rpx 16rpx;
     border-radius: 24rpx;
     background: rgba(255, 255, 255, 0.72);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 
     &--accent {
-        background: var(--wm-color-primary-soft, #fff1ee);
-        border-color: var(--wm-color-border-strong, #f4c7bf);
+        background: var(--wm-color-primary-soft, #f3f2ee);
+        border-color: var(--wm-color-border-strong, #d8c28a);
     }
 }
 
@@ -1079,7 +1079,7 @@ onUnload(() => {
     font-size: 19rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .summary-chip__value-row {
@@ -1092,14 +1092,14 @@ onUnload(() => {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .summary-chip__unit {
     font-size: 18rpx;
     font-weight: 600;
     line-height: 1.2;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .summary-bar__scope {
@@ -1113,7 +1113,7 @@ onUnload(() => {
     font-size: 20rpx;
     font-weight: 600;
     line-height: 1.4;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .summary-tabs {
@@ -1146,14 +1146,14 @@ onUnload(() => {
     font-size: 32rpx;
     font-weight: 700;
     line-height: 1.35;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .section-head__desc {
     font-size: 22rpx;
     font-weight: 600;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .section-head__meta {
@@ -1161,7 +1161,7 @@ onUnload(() => {
     font-size: 22rpx;
     font-weight: 700;
     line-height: 1.4;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .order-card + .order-card {
@@ -1187,7 +1187,7 @@ onUnload(() => {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.35;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     word-break: break-all;
 }
 
@@ -1195,7 +1195,7 @@ onUnload(() => {
     font-size: 22rpx;
     font-weight: 600;
     line-height: 1.45;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .order-card__status {
@@ -1213,7 +1213,7 @@ onUnload(() => {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.35;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .order-card__line {
@@ -1223,10 +1223,10 @@ onUnload(() => {
     font-size: 23rpx;
     font-weight: 600;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     &--primary {
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 }
 
@@ -1247,14 +1247,14 @@ onUnload(() => {
     padding: 0 16rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
     background: #ffffff;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     font-size: 22rpx;
     font-weight: 600;
     line-height: 1;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     &--muted {
-        color: var(--wm-text-tertiary, #b4aca8);
+        color: var(--wm-text-tertiary, #9a9388);
     }
 }
 
@@ -1270,18 +1270,18 @@ onUnload(() => {
     line-height: 1.45;
 
     &--warning {
-        background: rgba(255, 248, 237, 0.92);
-        color: var(--wm-color-warning, #c98524);
+        background: rgba(247, 240, 223, 0.92);
+        color: var(--wm-color-warning, #9f7a2e);
     }
 
     &--info {
-        background: rgba(255, 241, 238, 0.9);
-        color: var(--wm-color-primary, #e85a4f);
+        background: rgba(247, 240, 223, 0.9);
+        color: var(--wm-color-primary, #0b0b0b);
     }
 
     &--danger {
-        background: rgba(201, 75, 73, 0.08);
-        color: var(--wm-color-danger, #c94b49);
+        background: rgba(90, 68, 51, 0.08);
+        color: var(--wm-color-danger, #5a4433);
     }
 }
 
@@ -1302,7 +1302,7 @@ onUnload(() => {
     justify-content: flex-end;
     margin-top: 22rpx;
     padding-top: 18rpx;
-    border-top: 1rpx solid var(--wm-color-border, #efe6e1);
+    border-top: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .order-card__actions {
@@ -1334,7 +1334,7 @@ onUnload(() => {
     &--primary {
         margin-left: auto;
         border: none;
-        box-shadow: 0 18rpx 36rpx rgba(232, 90, 79, 0.18);
+        box-shadow: 0 18rpx 36rpx rgba(11, 11, 11, 0.18);
     }
 }
 
@@ -1346,7 +1346,7 @@ onUnload(() => {
     font-size: 22rpx;
     font-weight: 600;
     line-height: 1;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     transition: all var(--wm-motion-base, 220ms) ease;
 
     &:active {

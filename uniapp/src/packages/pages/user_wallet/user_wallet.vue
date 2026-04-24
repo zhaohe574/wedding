@@ -144,7 +144,7 @@ onShow(() => {
 .user-wallet-top__label {
     display: block;
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .user-wallet-top__amount {
@@ -152,7 +152,7 @@ onShow(() => {
     margin-top: 12rpx;
     font-size: 54rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .user-wallet-top__cta {
@@ -163,7 +163,7 @@ onShow(() => {
     align-items: center;
     justify-content: center;
     background: #ffffff;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
     font-size: 24rpx;
     font-weight: 700;
 }
@@ -184,21 +184,21 @@ onShow(() => {
     flex: 1;
     min-width: 0;
     font-size: 28rpx;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .user-wallet-list__amount {
     font-size: 32rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 
     &.is-expense {
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 }
 
 .user-wallet-list__time {
     font-size: 22rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 </style>

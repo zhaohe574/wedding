@@ -2,7 +2,7 @@
     <view class="empty-state-block">
         <view class="empty-state-block__icon">
             <slot name="icon">
-                <tn-icon name="inbox" size="120" color="#D8CEC8" />
+                <tn-icon name="inbox" size="120" color="#D8D3C7" />
             </slot>
         </view>
         <text class="empty-state-block__title">{{ title }}</text>
@@ -44,13 +44,13 @@ const emit = defineEmits<{
     &__title {
         font-size: 30rpx;
         font-weight: 700;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__description {
         font-size: 24rpx;
         line-height: 1.6;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 }
 </style>

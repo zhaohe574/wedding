@@ -94,8 +94,8 @@ onLoad(() => {
     &__hero {
         position: relative;
         padding: 24rpx 24rpx 196rpx;
-        background: radial-gradient(circle at top right, rgba(232, 90, 79, 0.12) 0, transparent 34%),
-            linear-gradient(180deg, #fff5f1 0%, #fcfbf9 72%, #f7f1ed 100%);
+        background: radial-gradient(circle at top right, rgba(11, 11, 11, 0.12) 0, transparent 34%),
+            linear-gradient(180deg, #ffffff 0%, #ffffff 72%, #f8f7f2 100%);
         overflow: hidden;
     }
 
@@ -107,7 +107,7 @@ onLoad(() => {
         width: 260rpx;
         height: 260rpx;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(232, 90, 79, 0.12) 0, transparent 72%);
+        background: radial-gradient(circle, rgba(11, 11, 11, 0.12) 0, transparent 72%);
         pointer-events: none;
     }
 
@@ -117,13 +117,13 @@ onLoad(() => {
         justify-content: center;
         padding: 10rpx 18rpx;
         border-radius: 999rpx;
-        border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+        border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
         background: rgba(255, 255, 255, 0.74);
         font-size: 22rpx;
         font-weight: 600;
-        letter-spacing: 0.16em;
+        letter-spacing: 0;
         text-transform: uppercase;
-        color: var(--wm-color-primary, #e85a4f);
+        color: var(--wm-color-primary, #0b0b0b);
     }
 
     &__hero-title {
@@ -132,8 +132,8 @@ onLoad(() => {
         font-size: 50rpx;
         font-weight: 700;
         line-height: 1.2;
-        letter-spacing: 0.02em;
-        color: var(--wm-text-primary, #1e2432);
+        letter-spacing: 0;
+        color: var(--wm-text-primary, #111111);
     }
 
     &__hero-desc {
@@ -142,7 +142,7 @@ onLoad(() => {
         max-width: 620rpx;
         font-size: 26rpx;
         line-height: 1.7;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__hero-stats {
@@ -165,7 +165,7 @@ onLoad(() => {
         display: block;
         font-size: 32rpx;
         font-weight: 700;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -175,13 +175,13 @@ onLoad(() => {
         display: block;
         margin-top: 8rpx;
         font-size: 22rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__hero-divider {
         width: 1rpx;
         height: 64rpx;
-        background: var(--wm-color-border, #efe6e1);
+        background: var(--wm-color-border, #e7e2d6);
     }
 
     &__surface {
@@ -189,7 +189,7 @@ onLoad(() => {
         margin-top: -148rpx;
         border-radius: 67rpx 67rpx 0 0;
         padding: 0 37rpx 37rpx;
-        box-shadow: 0 -20rpx 40rpx rgba(214, 185, 167, 0.14);
+        box-shadow: 0 -20rpx 40rpx rgba(17, 17, 17, 0.14);
     }
 
     &__search {
@@ -208,9 +208,9 @@ onLoad(() => {
         display: block;
         font-size: 22rpx;
         font-weight: 600;
-        letter-spacing: 0.12em;
+        letter-spacing: 0;
         text-transform: uppercase;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__search-title {
@@ -219,13 +219,13 @@ onLoad(() => {
         font-size: 30rpx;
         font-weight: 600;
         line-height: 1.35;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__search-side {
         padding-top: 6rpx;
         font-size: 22rpx;
-        color: var(--wm-color-primary, #e85a4f);
+        color: var(--wm-color-primary, #0b0b0b);
     }
 
     &__tabs {
@@ -245,7 +245,7 @@ onLoad(() => {
         display: block;
         font-size: 30rpx;
         font-weight: 700;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__section-desc {
@@ -253,7 +253,7 @@ onLoad(() => {
         margin-top: 8rpx;
         font-size: 22rpx;
         line-height: 1.6;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 }
 
@@ -272,20 +272,20 @@ onLoad(() => {
 }
 
 .news-page :deep(.tabs__tab) {
-    color: var(--wm-text-secondary, #7f7b78) !important;
+    color: var(--wm-text-secondary, #5f5a50) !important;
     font-size: 26rpx !important;
     font-weight: 500 !important;
 }
 
 .news-page :deep(.tabs__tab.is-active) {
-    color: var(--wm-color-primary, #e85a4f) !important;
+    color: var(--wm-color-primary, #0b0b0b) !important;
 }
 
 .news-page :deep(.tabs__line) {
     background: linear-gradient(
         135deg,
-        var(--wm-color-primary, #e85a4f) 0%,
-        var(--wm-color-secondary, #c99b73) 100%
+        var(--wm-color-primary, #0b0b0b) 0%,
+        var(--wm-color-secondary, #c8a45d) 100%
     ) !important;
     border-radius: 999rpx;
 }

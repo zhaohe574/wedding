@@ -16,7 +16,7 @@
                             @confirm="handleSearch(keyword)"
                         />
                         <view v-if="keyword" class="search-header__clear" @tap="handleSearchClear">
-                            <tn-icon name="close-circle-fill" size="28" color="#B4ACA8" />
+                            <tn-icon name="close-circle-fill" size="28" color="#9A9388" />
                         </view>
                     </view>
                     <view class="search-header__action" @tap="handleSearch(keyword)">
@@ -107,7 +107,7 @@
                                         item.title || '未命名作品'
                                     }}</text>
                                     <view class="result-meta">
-                                        <tn-icon name="user" size="24" color="#999999" />
+                                        <tn-icon name="user" size="24" color="#9A9388" />
                                         <text class="result-staff">{{
                                             item.staff_name || '未知人员'
                                         }}</text>
@@ -398,8 +398,8 @@ onLoad((options: any) => {
     padding: 16rpx 37rpx 18rpx;
     background: linear-gradient(
         180deg,
-        rgba(255, 247, 244, 0.98) 0%,
-        rgba(255, 247, 244, 0.88) 100%
+        rgba(248, 247, 242, 0.98) 0%,
+        rgba(248, 247, 242, 0.88) 100%
     );
     backdrop-filter: blur(18rpx);
     -webkit-backdrop-filter: blur(18rpx);
@@ -421,8 +421,8 @@ onLoad((options: any) => {
     padding: 0 28rpx;
     border-radius: 999rpx;
     background: rgba(255, 255, 255, 0.92);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-    box-shadow: 0 10rpx 24rpx rgba(214, 185, 167, 0.12);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    box-shadow: 0 10rpx 24rpx rgba(17, 17, 17, 0.12);
 }
 
 .search-header__input {
@@ -430,7 +430,7 @@ onLoad((options: any) => {
     min-width: 0;
     height: 94rpx;
     font-size: 28rpx;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .search-header__clear {
@@ -448,10 +448,10 @@ onLoad((options: any) => {
     justify-content: center;
     background: linear-gradient(
         135deg,
-        var(--wm-color-primary, #e85a4f) 0%,
-        var(--wm-color-secondary, #c99b73) 100%
+        var(--wm-color-primary, #0b0b0b) 0%,
+        var(--wm-color-secondary, #c8a45d) 100%
     );
-    box-shadow: 0 12rpx 24rpx rgba(232, 90, 79, 0.18);
+    box-shadow: 0 12rpx 24rpx rgba(11, 11, 11, 0.18);
 }
 
 .search-header__action-text {
@@ -467,8 +467,8 @@ onLoad((options: any) => {
     padding: 0 0 12rpx;
     background: linear-gradient(
         180deg,
-        rgba(255, 247, 244, 0.96) 0%,
-        rgba(255, 247, 244, 0.88) 100%
+        rgba(248, 247, 242, 0.96) 0%,
+        rgba(248, 247, 242, 0.88) 100%
     );
 }
 
@@ -490,24 +490,24 @@ onLoad((options: any) => {
     padding: 0 30rpx;
     border-radius: 999rpx;
     background: rgba(255, 255, 255, 0.86);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-    box-shadow: 0 8rpx 18rpx rgba(214, 185, 167, 0.08);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.08);
     transition: all var(--wm-motion-base, 220ms) ease;
 }
 
 .search-tabs__item--active {
-    background: var(--wm-color-primary-soft, #fff1ee);
-    border-color: var(--wm-color-border-strong, #f4c7bf);
+    background: var(--wm-color-primary-soft, #f3f2ee);
+    border-color: var(--wm-color-border-strong, #d8c28a);
 }
 
 .search-tabs__text {
     font-size: 26rpx;
     font-weight: 700;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .search-tabs__item--active .search-tabs__text {
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .search-content {
@@ -529,8 +529,8 @@ onLoad((options: any) => {
     padding: 28rpx;
     display: flex;
     gap: 24rpx;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(214, 185, 167, 0.16));
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
     transition: all var(--wm-motion-base, 220ms) ease;
 
     &:active {
@@ -565,7 +565,7 @@ onLoad((options: any) => {
     flex: 1;
     font-size: 30rpx;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
     line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -593,12 +593,12 @@ onLoad((options: any) => {
 
 .result-staff {
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .result-desc {
     font-size: 26rpx;
-    color: #666666;
+    color: #5F5A50;
     line-height: 1.5;
     margin-bottom: 16rpx;
     display: -webkit-box;
@@ -626,7 +626,7 @@ onLoad((options: any) => {
 .price-original {
     margin-left: 12rpx;
     font-size: 24rpx;
-    color: #9ca3af;
+    color: #9a9388;
     text-decoration: line-through;
 }
 </style>

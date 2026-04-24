@@ -54,7 +54,7 @@
                             <tn-icon
                                 :name="i <= formData.score ? 'star-fill' : 'star'"
                                 size="64rpx"
-                                :color="i <= formData.score ? '#ff9800' : '#e0e0e0'"
+                                :color="i <= formData.score ? '#9f7a2e' : '#E7E2D6'"
                             />
                         </view>
                     </view>
@@ -78,7 +78,7 @@
                                 <tn-icon
                                     :name="i <= formData[item.key] ? 'star-fill' : 'star'"
                                     size="44rpx"
-                                    :color="i <= formData[item.key] ? '#ff9800' : '#e0e0e0'"
+                                    :color="i <= formData[item.key] ? '#9f7a2e' : '#E7E2D6'"
                                 />
                             </view>
                         </view>
@@ -95,7 +95,7 @@
                         <text
                             class="tag-count-num"
                             :style="{
-                                color: selectedTags.length > 0 ? $theme.primaryColor : '#999'
+                                color: selectedTags.length > 0 ? $theme.primaryColor : '#9A9388'
                             }"
                             >{{ selectedTags.length }}</text
                         >
@@ -187,7 +187,7 @@
                         </view>
                     </view>
                     <view class="add-media" @click="chooseImage" v-if="formData.images.length < 9">
-                        <tn-icon name="camera" size="56rpx" color="#ccc"></tn-icon>
+                        <tn-icon name="camera" size="56rpx" color="#D8D3C7"></tn-icon>
                         <text class="add-media-text">添加图片</text>
                     </view>
                 </view>
@@ -198,7 +198,7 @@
             <view class="section-card wm-form-block">
                 <view class="anonymous-row">
                     <view class="anonymous-row__main">
-                        <tn-icon name="my" size="36rpx" color="#999"></tn-icon>
+                        <tn-icon name="my" size="36rpx" color="#9A9388"></tn-icon>
                         <text class="anonymous-row__text">匿名评价</text>
                     </view>
                     <switch
@@ -295,9 +295,9 @@ const scoreHintIcon = computed(() => {
 })
 
 const scoreHintColor = computed(() => {
-    if (formData.score >= 4) return '#10b981'
-    if (formData.score === 3) return '#f59e0b'
-    return '#ef4444'
+    if (formData.score >= 4) return '#4d4a42'
+    if (formData.score === 3) return '#c8a45d'
+    return '#5a4433'
 })
 
 // 根据标签ID获取标签名
@@ -528,19 +528,19 @@ onLoad((options: any) => {
 .order-card__title {
     font-size: 32rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .order-card__meta {
     margin-top: 8rpx;
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .order-card__submeta {
     margin-top: 8rpx;
     font-size: 22rpx;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .top-bg {
@@ -587,7 +587,7 @@ onLoad((options: any) => {
     width: 100rpx;
     height: 100rpx;
     border-radius: 50%;
-    border: 4rpx solid #f0f0f0;
+    border: 4rpx solid #F8F7F2;
 }
 
 /* 通用卡片 */
@@ -616,7 +616,7 @@ onLoad((options: any) => {
 .section-title {
     font-size: 28rpx;
     font-weight: bold;
-    color: #333;
+    color: #111111;
     flex: 1;
 }
 
@@ -634,7 +634,7 @@ onLoad((options: any) => {
 
 .tag-count-sep {
     font-size: 24rpx;
-    color: #ccc;
+    color: #D8D3C7;
 }
 
 /* 评分感知提示 */
@@ -644,7 +644,7 @@ onLoad((options: any) => {
     gap: 12rpx;
     margin-bottom: 24rpx;
     padding: 16rpx 20rpx;
-    background: #f9fafb;
+    background: #F8F7F2;
     border-radius: 12rpx;
 }
 
@@ -660,7 +660,7 @@ onLoad((options: any) => {
 
 .tag-hint-text {
     font-size: 24rpx;
-    color: #666;
+    color: #5F5A50;
     line-height: 1.4;
 }
 
@@ -676,11 +676,11 @@ onLoad((options: any) => {
     align-items: center;
     gap: 6rpx;
     padding: 16rpx 28rpx;
-    background: #f5f5f5;
+    background: #F8F7F2;
     border-radius: 40rpx;
     font-size: 26rpx;
-    color: #555;
-    border: 2rpx solid #eee;
+    color: #5F5A50;
+    border: 2rpx solid #E7E2D6;
     transition: all 0.25s ease;
 }
 
@@ -696,7 +696,7 @@ onLoad((options: any) => {
 .tag-selected-bar {
     margin-top: 20rpx;
     padding-top: 20rpx;
-    border-top: 1rpx solid #f0f0f0;
+    border-top: 1rpx solid #F8F7F2;
 }
 
 .tag-selected-list {
@@ -721,7 +721,7 @@ onLoad((options: any) => {
 
 .main-score-label {
     font-size: 28rpx;
-    color: #333;
+    color: #111111;
     font-weight: 500;
     width: 140rpx;
     flex-shrink: 0;
@@ -758,7 +758,7 @@ onLoad((options: any) => {
 
 .detail-divider {
     height: 1rpx;
-    background: linear-gradient(to right, transparent, #e8e8e8, transparent);
+    background: linear-gradient(to right, transparent, #E7E2D6, transparent);
     margin: 8rpx 0 16rpx;
 }
 
@@ -771,7 +771,7 @@ onLoad((options: any) => {
 
         .detail-label {
             font-size: 26rpx;
-            color: #666;
+            color: #5F5A50;
             width: 140rpx;
         }
 
@@ -787,7 +787,7 @@ onLoad((options: any) => {
     width: 100%;
     height: 220rpx;
     padding: 20rpx;
-    background: #f8f8f8;
+    background: #F8F7F2;
     border-radius: 16rpx;
     font-size: 28rpx;
     line-height: 1.6;
@@ -798,7 +798,7 @@ onLoad((options: any) => {
     margin-top: 8rpx;
     text-align: right;
     font-size: 22rpx;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 /* 图片上传 */
@@ -839,19 +839,19 @@ onLoad((options: any) => {
 .add-media {
     width: 160rpx;
     height: 160rpx;
-    border: 2rpx dashed #d9d9d9;
+    border: 2rpx dashed #D8D3C7;
     border-radius: 12rpx;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8rpx;
-    background: #fafafa;
+    background: #F8F7F2;
 }
 
 .add-media-text {
     font-size: 22rpx;
-    color: #bbb;
+    color: #9A9388;
 }
 
 /* 奖励卡片 */
@@ -880,7 +880,7 @@ onLoad((options: any) => {
 
 .anonymous-row__text {
     font-size: 26rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .reward-icon-wrap {
@@ -902,7 +902,7 @@ onLoad((options: any) => {
 
 .reward-text {
     font-size: 26rpx;
-    color: #666;
+    color: #5F5A50;
 }
 
 .reward-points {

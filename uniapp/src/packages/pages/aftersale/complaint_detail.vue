@@ -245,7 +245,7 @@ onLoad((options: any) => {
     height: 180rpx;
     border-radius: 28rpx;
     display: block;
-    background: #120f0d;
+    background: #0B0B0B;
 }
 
 .aftersale-detail-page__actions {
@@ -267,6 +267,6 @@ onLoad((options: any) => {
 .aftersale-sheet-form__label {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 </style>

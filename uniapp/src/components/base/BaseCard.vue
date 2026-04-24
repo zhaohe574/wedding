@@ -121,8 +121,8 @@ export default {
     &--surface,
     &--panel {
         background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.94));
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
-        box-shadow: var(--wm-shadow-soft, 0 16rpx 34rpx rgba(214, 185, 167, 0.14));
+        border: 1rpx solid var(--wm-color-border, #e7e2d6);
+        box-shadow: var(--wm-shadow-soft, 0 16rpx 34rpx rgba(17, 17, 17, 0.06));
     }
 
     &--surface {
@@ -137,8 +137,8 @@ export default {
         padding: var(--wm-space-card-padding, 28rpx);
         border-radius: var(--wm-radius-card-glass, 46rpx);
         background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.9));
-        border: 1rpx solid var(--wm-color-border, #efe6e1);
-        box-shadow: var(--wm-shadow-card, 0 18rpx 38rpx rgba(214, 185, 167, 0.18));
+        border: 1rpx solid var(--wm-color-border, #e7e2d6);
+        box-shadow: var(--wm-shadow-card, 0 18rpx 38rpx rgba(17, 17, 17, 0.09));
         backdrop-filter: blur(20rpx);
         -webkit-backdrop-filter: blur(20rpx);
     }
@@ -148,10 +148,10 @@ export default {
         border-radius: var(--wm-radius-card-lg, 48rpx);
         background: var(
             --wm-hero-gradient,
-            linear-gradient(180deg, #fff6f2 0%, #fcfbf9 62%, #f8f2ee 100%)
+            linear-gradient(180deg, #ffffff 0%, #ffffff 62%, #f7f0df 100%)
         );
-        border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
-        box-shadow: var(--wm-shadow-hero, 0 22rpx 48rpx rgba(177, 108, 95, 0.16));
+        border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
+        box-shadow: var(--wm-shadow-hero, 0 22rpx 48rpx rgba(17, 17, 17, 0.12));
     }
 
     &--admin.base-card--panel {
@@ -164,31 +164,31 @@ export default {
             background: linear-gradient(
                 180deg,
                 rgba(255, 255, 255, 0.98) 0%,
-                rgba(255, 249, 246, 0.96) 100%
+                rgba(248, 247, 242, 0.96) 100%
             );
-            border-color: rgba(241, 209, 197, 0.7);
-            box-shadow: var(--wm-shadow-soft, 0 18rpx 38rpx rgba(185, 129, 116, 0.12));
+            border-color: rgba(216, 194, 138, 0.7);
+            box-shadow: var(--wm-shadow-soft, 0 18rpx 38rpx rgba(17, 17, 17, 0.06));
         }
 
         &.base-card--glass {
             background: linear-gradient(
                 180deg,
                 rgba(255, 255, 255, 0.94) 0%,
-                rgba(255, 247, 244, 0.92) 100%
+                rgba(248, 247, 242, 0.92) 100%
             );
-            border-color: rgba(241, 209, 197, 0.88);
-            box-shadow: var(--wm-shadow-card, 0 22rpx 48rpx rgba(185, 129, 116, 0.16));
+            border-color: rgba(216, 194, 138, 0.88);
+            box-shadow: var(--wm-shadow-card, 0 22rpx 48rpx rgba(17, 17, 17, 0.09));
         }
 
         &.base-card--hero {
             background: radial-gradient(
                     circle at top right,
-                    rgba(232, 90, 79, 0.1) 0,
+                    rgba(200, 164, 93, 0.18) 0,
                     transparent 34%
                 ),
-                linear-gradient(180deg, #fff6f2 0%, #fcfbf9 62%, #f7f0ea 100%);
-            border-color: rgba(241, 209, 197, 0.96);
-            box-shadow: var(--wm-shadow-hero, 0 28rpx 60rpx rgba(177, 108, 95, 0.18));
+                linear-gradient(180deg, #ffffff 0%, #ffffff 62%, #f8f7f2 100%);
+            border-color: rgba(216, 194, 138, 0.96);
+            box-shadow: var(--wm-shadow-hero, 0 28rpx 60rpx rgba(17, 17, 17, 0.12));
         }
     }
 

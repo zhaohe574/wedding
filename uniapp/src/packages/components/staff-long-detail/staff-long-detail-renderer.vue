@@ -39,7 +39,7 @@ const hiddenImageMap = ref<Record<string, boolean>>({})
 const getTextStyle = (block: LongDetailTextBlock): CSSProperties => ({
     textAlign: block.style.align,
     fontSize: getLongDetailFontSize(block.style.fontSize),
-    color: block.style.color || '#1E2432',
+    color: block.style.color || '#111111',
     fontWeight: block.style.bold ? 700 : 400
 })
 

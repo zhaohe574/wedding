@@ -52,7 +52,7 @@
                             <tn-icon
                                 name="right"
                                 size="22"
-                                color="var(--wm-text-tertiary, #B4ACA8)"
+                                color="var(--wm-text-tertiary, #9A9388)"
                             />
                         </view>
                     </view>
@@ -78,7 +78,7 @@
                             class="aftersale-create-textarea"
                             maxlength="500"
                             placeholder="简述投诉内容"
-                            placeholder-style="color: #B4ACA8;"
+                            placeholder-style="color: #9A9388;"
                         />
 
                         <view class="aftersale-inline-field">
@@ -103,7 +103,7 @@
                                 class="aftersale-create-input"
                                 maxlength="60"
                                 placeholder="如：退款、补偿"
-                                placeholder-style="color: #B4ACA8;"
+                                placeholder-style="color: #9A9388;"
                             />
                         </view>
                     </view>
@@ -157,7 +157,7 @@
                                 class="aftersale-contact-panel__input"
                                 maxlength="20"
                                 placeholder="请输入联系人姓名"
-                                placeholder-style="color: #B4ACA8;"
+                                placeholder-style="color: #9A9388;"
                             />
                         </view>
 
@@ -169,7 +169,7 @@
                                 type="number"
                                 maxlength="11"
                                 placeholder="请输入联系电话"
-                                placeholder-style="color: #B4ACA8;"
+                                placeholder-style="color: #9A9388;"
                             />
                         </view>
                     </view>
@@ -405,7 +405,7 @@ onLoad((options: any) => {
 .aftersale-create-section__title {
     font-size: 28rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-create-section__head {
@@ -423,7 +423,7 @@ onLoad((options: any) => {
 .aftersale-create-section__meta {
     font-size: 22rpx;
     line-height: 1.45;
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .aftersale-object-row {
@@ -436,8 +436,8 @@ onLoad((options: any) => {
     min-height: 68rpx;
     padding: 0 12rpx;
     border-radius: 999rpx;
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
-    background: rgba(255, 248, 245, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    background: rgba(248, 247, 242, 0.96);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -445,13 +445,13 @@ onLoad((options: any) => {
     font-size: 24rpx;
     line-height: 1.4;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
     text-align: center;
 
     &.is-active {
-        background: rgba(255, 241, 238, 0.98);
-        border-color: rgba(244, 199, 191, 0.96);
-        color: var(--wm-color-primary, #e85a4f);
+        background: rgba(247, 240, 223, 0.98);
+        border-color: rgba(216, 194, 138, 0.96);
+        color: var(--wm-color-primary, #0b0b0b);
         font-weight: 700;
     }
 }
@@ -460,8 +460,8 @@ onLoad((options: any) => {
 .aftersale-create-input,
 .aftersale-contact-panel {
     border-radius: 34rpx;
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
-    background: rgba(255, 248, 245, 0.92);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    background: rgba(248, 247, 242, 0.92);
     box-sizing: border-box;
 }
 
@@ -479,11 +479,11 @@ onLoad((options: any) => {
     font-size: 26rpx;
     line-height: 1.5;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-create-panel__text.is-placeholder {
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .aftersale-create-textarea {
@@ -491,12 +491,12 @@ onLoad((options: any) => {
     min-height: 180rpx;
     padding: 24rpx;
     border-radius: 34rpx;
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
-    background: rgba(255, 248, 245, 0.92);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    background: rgba(248, 247, 242, 0.92);
     box-sizing: border-box;
     font-size: 26rpx;
     line-height: 1.7;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-inline-field {
@@ -508,7 +508,7 @@ onLoad((options: any) => {
 .aftersale-inline-field__title {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .aftersale-level-list {
@@ -522,7 +522,7 @@ onLoad((options: any) => {
     min-height: 58rpx;
     padding: 0 20rpx;
     border-radius: 999rpx;
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
     background: rgba(255, 255, 255, 0.88);
     display: inline-flex;
     align-items: center;
@@ -530,12 +530,12 @@ onLoad((options: any) => {
     box-sizing: border-box;
     font-size: 22rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     &.is-active {
-        background: rgba(255, 241, 238, 0.98);
-        border-color: rgba(244, 199, 191, 0.96);
-        color: var(--wm-color-primary, #e85a4f);
+        background: rgba(247, 240, 223, 0.98);
+        border-color: rgba(216, 194, 138, 0.96);
+        color: var(--wm-color-primary, #0b0b0b);
     }
 }
 
@@ -544,7 +544,7 @@ onLoad((options: any) => {
     min-height: 88rpx;
     padding: 0 24rpx;
     font-size: 26rpx;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-contact-panel {
@@ -559,7 +559,7 @@ onLoad((options: any) => {
     flex-shrink: 0;
     font-size: 26rpx;
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-contact-panel__input {
@@ -567,14 +567,14 @@ onLoad((options: any) => {
     min-width: 0;
     height: 88rpx;
     font-size: 26rpx;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-create-page__footer-copy {
     padding: 2rpx 2rpx 0;
     font-size: 22rpx;
     line-height: 1.45;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .aftersale-create-page__action-slot {

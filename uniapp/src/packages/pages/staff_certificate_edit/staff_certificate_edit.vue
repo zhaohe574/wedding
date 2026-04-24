@@ -58,7 +58,7 @@
                             <tn-icon
                                 name="image"
                                 size="50"
-                                color="var(--wm-color-primary, #E85A4F)"
+                                color="var(--wm-color-primary, #0B0B0B)"
                             />
                         </view>
                         <text class="upload-panel__title">上传证书图片</text>
@@ -155,7 +155,7 @@
                                     >
                                         {{ form.issue_date || '请选择' }}
                                     </text>
-                                    <tn-icon name="arrow-right" size="24" color="#B4ACA8" />
+                                    <tn-icon name="arrow-right" size="24" color="#9A9388" />
                                 </view>
                             </view>
                         </picker>
@@ -186,7 +186,7 @@
                                     >
                                         {{ form.expire_date || '长期有效' }}
                                     </text>
-                                    <tn-icon name="arrow-right" size="24" color="#B4ACA8" />
+                                    <tn-icon name="arrow-right" size="24" color="#9A9388" />
                                 </view>
                             </view>
                         </picker>
@@ -409,10 +409,10 @@ onLoad(async (options: any) => {
     box-sizing: border-box;
     background: radial-gradient(
             circle at top left,
-            rgba(232, 90, 79, 0.1) 0,
-            rgba(252, 251, 249, 0) 36%
+            rgba(11, 11, 11, 0.1) 0,
+            rgba(248, 247, 242, 0) 36%
         ),
-        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
+        linear-gradient(180deg, var(--wm-color-bg-page, #ffffff) 0%, #f8f7f2 100%);
 }
 
 .page-section {
@@ -453,7 +453,7 @@ onLoad(async (options: any) => {
 .field-label,
 .setting-item__label {
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .status-card__label,
@@ -469,7 +469,7 @@ onLoad(async (options: any) => {
 .clear-row,
 .setting-item__value-text--placeholder,
 .field-input :deep(.input-placeholder) {
-    color: #b4aca8 !important;
+    color: #9a9388 !important;
 }
 
 .status-card__desc,
@@ -487,14 +487,14 @@ onLoad(async (options: any) => {
     margin-top: 18rpx;
     padding: 18rpx 20rpx;
     border-radius: 24rpx;
-    background: rgba(232, 90, 79, 0.08);
+    background: rgba(11, 11, 11, 0.08);
 }
 
 .status-card__reason-label {
     display: block;
     font-size: 22rpx;
     font-weight: 700;
-    color: #d4473c;
+    color: #5a4433;
 }
 
 .status-card__reason-text {
@@ -502,7 +502,7 @@ onLoad(async (options: any) => {
     margin-top: 8rpx;
     font-size: 24rpx;
     line-height: 1.6;
-    color: #7a4c46;
+    color: #5A4433;
 }
 
 .card-head {
@@ -525,7 +525,7 @@ onLoad(async (options: any) => {
 .field-label--required::before {
     content: '*';
     margin-right: 6rpx;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .field-input-shell {
@@ -534,8 +534,8 @@ onLoad(async (options: any) => {
     display: flex;
     align-items: center;
     border-radius: 28rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #ffffff;
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .field-input {
@@ -550,8 +550,8 @@ onLoad(async (options: any) => {
     margin-top: 20rpx;
     border-radius: 28rpx;
     overflow: hidden;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #ffffff;
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .setting-item {
@@ -560,7 +560,7 @@ onLoad(async (options: any) => {
 }
 
 .setting-item + .setting-item {
-    border-top: 1rpx solid #efe6e1;
+    border-top: 1rpx solid #e7e2d6;
 }
 
 .clear-row {
@@ -577,7 +577,7 @@ onLoad(async (options: any) => {
     width: 100%;
     overflow: hidden;
     border-radius: 32rpx;
-    background: #f7f1ed;
+    background: #f8f7f2;
 }
 
 .cover-preview__image {
@@ -593,7 +593,7 @@ onLoad(async (options: any) => {
     bottom: 16rpx;
     min-height: 68rpx;
     border-radius: 999rpx;
-    background: rgba(19, 24, 35, 0.48);
+    background: rgba(11, 11, 11, 0.48);
     backdrop-filter: blur(14rpx);
     -webkit-backdrop-filter: blur(14rpx);
 }
@@ -623,10 +623,10 @@ onLoad(async (options: any) => {
     border-radius: 32rpx;
     background: linear-gradient(
         180deg,
-        rgba(255, 245, 241, 0.98) 0%,
-        rgba(255, 250, 246, 0.98) 100%
+        rgba(248, 247, 242, 0.98) 0%,
+        rgba(255, 255, 255, 0.98) 100%
     );
-    border: 2rpx dashed rgba(232, 90, 79, 0.24);
+    border: 2rpx dashed rgba(11, 11, 11, 0.24);
 }
 
 .upload-panel__icon-wrap {
@@ -636,18 +636,18 @@ onLoad(async (options: any) => {
     align-items: center;
     justify-content: center;
     border-radius: 999rpx;
-    background: rgba(232, 90, 79, 0.12);
+    background: rgba(11, 11, 11, 0.12);
 }
 
 .upload-panel__title {
     font-size: 28rpx;
     font-weight: 700;
-    color: #1e2432;
+    color: #111111;
 }
 
 .upload-panel__meta {
     font-size: 22rpx;
-    color: #948f8b;
+    color: #9a9388;
 }
 
 .bottom-bar {
@@ -657,8 +657,8 @@ onLoad(async (options: any) => {
     bottom: 0;
     z-index: 40;
     padding: 12rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
-    background: rgba(252, 251, 249, 0.88);
-    border-top: 1rpx solid rgba(239, 230, 225, 0.9);
+    background: rgba(248, 247, 242, 0.88);
+    border-top: 1rpx solid rgba(231, 226, 214, 0.9);
     backdrop-filter: blur(24rpx);
     -webkit-backdrop-filter: blur(24rpx);
     box-sizing: border-box;
@@ -687,12 +687,12 @@ onLoad(async (options: any) => {
 
 .bottom-bar__action--ghost {
     background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .bottom-bar__action--primary {
-    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, #d96a60 100%);
-    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.18);
+    background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
+    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
 }
 
 .bottom-bar__action-text {
@@ -703,7 +703,7 @@ onLoad(async (options: any) => {
 }
 
 .bottom-bar__action-text--ghost {
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .bottom-bar__loading {

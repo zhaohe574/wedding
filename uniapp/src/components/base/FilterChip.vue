@@ -49,22 +49,22 @@ const chipClass = computed(() => [
     min-height: 64rpx;
     padding: 0 24rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.9);
     transition: all var(--wm-motion-base, 220ms) ease;
 
     &--selected {
-        background: var(--wm-color-primary-soft, #fff1ee);
-        border-color: var(--wm-color-border-strong, #f4c7bf);
+        background: var(--wm-color-primary-soft, #f3f2ee);
+        border-color: var(--wm-color-border-strong, #d8c28a);
     }
 
     &__text {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &--selected .filter-chip__text {
-        color: var(--wm-color-primary, #e85a4f);
+        color: var(--wm-color-primary, #0b0b0b);
         font-weight: 600;
     }
 }

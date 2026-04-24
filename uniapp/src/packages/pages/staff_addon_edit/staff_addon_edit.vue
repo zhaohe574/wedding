@@ -47,7 +47,7 @@
                                 <tn-icon
                                     name="image"
                                     size="50"
-                                    color="var(--wm-color-primary, #E85A4F)"
+                                    color="var(--wm-color-primary, #0B0B0B)"
                                 />
                             </view>
                             <text class="upload-panel__title">上传封面</text>
@@ -383,10 +383,10 @@ onLoad(async (options: any) => {
     box-sizing: border-box;
     background: radial-gradient(
             circle at top left,
-            rgba(232, 90, 79, 0.1) 0,
-            rgba(252, 251, 249, 0) 36%
+            rgba(11, 11, 11, 0.1) 0,
+            rgba(248, 247, 242, 0) 36%
         ),
-        linear-gradient(180deg, var(--wm-color-bg-page, #fcfbf9) 0%, #f7f1ed 100%);
+        linear-gradient(180deg, var(--wm-color-bg-page, #ffffff) 0%, #f8f7f2 100%);
 }
 
 .form-card {
@@ -421,7 +421,7 @@ onLoad(async (options: any) => {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .field-block + .field-block {
@@ -450,13 +450,13 @@ onLoad(async (options: any) => {
     font-size: 28rpx;
     font-weight: 700;
     line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .field-label--required::before {
     content: '*';
     margin-right: 6rpx;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .field-side-text {
@@ -464,14 +464,14 @@ onLoad(async (options: any) => {
     font-size: 22rpx;
     font-weight: 600;
     line-height: 1;
-    color: var(--wm-text-tertiary, #948f8b);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .field-input-shell,
 .textarea-shell {
     border-radius: 28rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #ffffff;
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     overflow: hidden;
 }
 
@@ -498,13 +498,13 @@ onLoad(async (options: any) => {
 
 .field-input :deep(.input-placeholder),
 .setting-input :deep(.input-placeholder) {
-    color: #b4aca8 !important;
+    color: #9a9388 !important;
 }
 
 .field-input :deep(.input-text),
 .setting-input :deep(.input-text) {
     font-size: 28rpx !important;
-    color: #1e2432 !important;
+    color: #111111 !important;
 }
 
 .field-textarea {
@@ -512,7 +512,7 @@ onLoad(async (options: any) => {
     min-height: 220rpx;
     font-size: 28rpx;
     line-height: 1.65;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .cover-preview,
@@ -525,7 +525,7 @@ onLoad(async (options: any) => {
     width: 100%;
     overflow: hidden;
     border-radius: 32rpx;
-    background: #f7f1ed;
+    background: #f8f7f2;
 }
 
 .cover-preview__image {
@@ -543,7 +543,7 @@ onLoad(async (options: any) => {
     display: flex;
     align-items: center;
     border-radius: 999rpx;
-    background: rgba(19, 24, 35, 0.48);
+    background: rgba(11, 11, 11, 0.48);
     backdrop-filter: blur(14rpx);
     -webkit-backdrop-filter: blur(14rpx);
 }
@@ -572,10 +572,10 @@ onLoad(async (options: any) => {
 .upload-panel {
     width: 100%;
     border-radius: 32rpx;
-    border: 1rpx dashed rgba(244, 199, 191, 0.88);
+    border: 1rpx dashed rgba(216, 194, 138, 0.88);
     background: linear-gradient(
         180deg,
-        rgba(255, 245, 241, 0.9) 0%,
+        rgba(248, 247, 242, 0.9) 0%,
         rgba(255, 255, 255, 0.72) 100%
     );
     display: flex;
@@ -593,20 +593,20 @@ onLoad(async (options: any) => {
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid rgba(244, 199, 191, 0.72);
+    border: 1rpx solid rgba(216, 194, 138, 0.72);
 }
 
 .upload-panel__title {
     font-size: 28rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .setting-list {
     border-radius: 30rpx;
-    background: #fcfbf9;
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    background: #ffffff;
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     overflow: hidden;
 }
 
@@ -617,7 +617,7 @@ onLoad(async (options: any) => {
     align-items: center;
     justify-content: space-between;
     gap: 16rpx;
-    border-bottom: 1rpx solid rgba(239, 230, 225, 0.9);
+    border-bottom: 1rpx solid rgba(231, 226, 214, 0.9);
     box-sizing: border-box;
 
     &:last-child {
@@ -630,7 +630,7 @@ onLoad(async (options: any) => {
     font-size: 28rpx;
     font-weight: 600;
     line-height: 1.3;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .setting-item__input {
@@ -660,8 +660,8 @@ onLoad(async (options: any) => {
     bottom: 0;
     z-index: 40;
     padding: 12rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
-    background: rgba(252, 251, 249, 0.88);
-    border-top: 1rpx solid rgba(239, 230, 225, 0.9);
+    background: rgba(248, 247, 242, 0.88);
+    border-top: 1rpx solid rgba(231, 226, 214, 0.9);
     backdrop-filter: blur(24rpx);
     -webkit-backdrop-filter: blur(24rpx);
     box-sizing: border-box;
@@ -690,13 +690,13 @@ onLoad(async (options: any) => {
 .bottom-bar__action--ghost {
     flex: 1;
     background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .bottom-bar__action--primary {
     flex: 1.35;
-    background: linear-gradient(135deg, var(--wm-color-primary, #e85a4f) 0%, #d96a60 100%);
-    box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.18);
+    background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
+    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
 }
 
 .bottom-bar__action-text {
@@ -707,7 +707,7 @@ onLoad(async (options: any) => {
 }
 
 .bottom-bar__action-text--ghost {
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .bottom-bar__loading {

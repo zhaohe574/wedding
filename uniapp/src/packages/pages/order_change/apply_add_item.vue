@@ -5,7 +5,7 @@
         <view class="order-change-page">
             <view class="order-change-page__wrapper wm-page-content">
                 <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
-                    <tn-icon name="gift" size="34" color="#E85A4F" />
+                    <tn-icon name="gift" size="34" color="#0B0B0B" />
                     <text class="order-change-tip-card__text"
                         >选择新增服务，审核通过后写入订单。</text
                     >
@@ -55,7 +55,7 @@
                             <tn-icon
                                 name="gift"
                                 size="44"
-                                :color="addType === 'package' ? $theme.primaryColor : '#B4ACA8'"
+                                :color="addType === 'package' ? $theme.primaryColor : '#9A9388'"
                             />
                             <text class="order-change-choice-card__title">添加套餐</text>
                             <text class="order-change-choice-card__desc">新增服务</text>
@@ -68,7 +68,7 @@
                             <tn-icon
                                 name="my"
                                 size="44"
-                                :color="addType === 'staff' ? $theme.primaryColor : '#B4ACA8'"
+                                :color="addType === 'staff' ? $theme.primaryColor : '#9A9388'"
                             />
                             <text class="order-change-choice-card__title">添加人员</text>
                             <text class="order-change-choice-card__desc">新增人员并关联套餐</text>
@@ -98,7 +98,7 @@
                                 <text v-else class="order-change-form-field__placeholder"
                                     >请选择新增套餐</text
                                 >
-                                <tn-icon name="right" size="30" color="#B4ACA8" />
+                                <tn-icon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                     </view>
@@ -148,7 +148,7 @@
                                 <text v-else class="order-change-form-field__placeholder"
                                     >请选择新增服务人员</text
                                 >
-                                <tn-icon name="right" size="30" color="#B4ACA8" />
+                                <tn-icon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                     </view>
@@ -194,7 +194,7 @@
                                 <text v-else class="order-change-form-field__placeholder"
                                     >请选择该人员对应套餐</text
                                 >
-                                <tn-icon name="right" size="30" color="#B4ACA8" />
+                                <tn-icon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                     </view>
@@ -239,7 +239,7 @@
                                 <text v-else class="order-change-form-field__placeholder"
                                     >请选择加项服务日期</text
                                 >
-                                <tn-icon name="right" size="30" color="#B4ACA8" />
+                                <tn-icon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                         <text class="order-change-form-field__helper">以审核结果为准。</text>
@@ -262,7 +262,7 @@
                                 class="order-change-form-field__textarea"
                                 maxlength="200"
                                 placeholder="请填写加项原因。"
-                                placeholder-style="color:#B4ACA8;"
+                                placeholder-style="color:#9A9388;"
                             />
                         </view>
                         <text class="order-change-form-field__counter"
@@ -301,7 +301,7 @@
                             class="order-change-upload-grid__add"
                             @click="chooseImage"
                         >
-                            <tn-icon name="add" size="48" color="#C9B2AA" />
+                            <tn-icon name="add" size="48" color="#D8D3C7" />
                             <text class="order-change-upload-grid__add-text">上传图片</text>
                         </view>
                     </view>

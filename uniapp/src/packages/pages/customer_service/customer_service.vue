@@ -21,7 +21,7 @@
                 </view>
 
                 <view v-else-if="state.error" class="error-card wm-panel-card">
-                    <tn-icon name="warning" size="40" color="#F56C6C" />
+                    <tn-icon name="warning" size="40" color="#5A4433" />
                     <text class="error-text">{{ state.error }}</text>
                     <view class="retry-btn" @click="loadConsultContact">重试</view>
                 </view>
@@ -231,8 +231,8 @@ onLoad((options: Record<string, string>) => {
 <style lang="scss" scoped>
 .consult-page {
     min-height: 100vh;
-    background: radial-gradient(circle at top, rgba(229, 107, 111, 0.16), transparent 38%),
-        linear-gradient(180deg, #fffaf8 0%, #f5f7fb 100%);
+    background: radial-gradient(circle at top, rgba(90, 68, 51, 0.16), transparent 38%),
+        linear-gradient(180deg, #FFFFFF 0%, #F8F7F2 100%);
     padding: 24rpx;
     box-sizing: border-box;
 }
@@ -246,8 +246,8 @@ onLoad((options: Record<string, string>) => {
 .consult-hero {
     padding: 40rpx 32rpx;
     border-radius: 28rpx;
-    background: linear-gradient(135deg, #fff6ef 0%, #ffffff 100%);
-    box-shadow: 0 20rpx 48rpx rgba(54, 67, 94, 0.08);
+    background: linear-gradient(135deg, #FFFFFF 0%, #ffffff 100%);
+    box-shadow: 0 20rpx 48rpx rgba(17, 17, 17, 0.08);
 }
 
 .consult-badge {
@@ -255,8 +255,8 @@ onLoad((options: Record<string, string>) => {
     align-items: center;
     padding: 10rpx 18rpx;
     border-radius: 999rpx;
-    background: rgba(229, 107, 111, 0.12);
-    color: #d85c61;
+    background: rgba(90, 68, 51, 0.12);
+    color: #5A4433;
     font-size: 22rpx;
     font-weight: 600;
 }
@@ -265,14 +265,14 @@ onLoad((options: Record<string, string>) => {
     margin-top: 18rpx;
     font-size: 40rpx;
     font-weight: 700;
-    color: #1f2937;
+    color: #111111;
 }
 
 .consult-subtitle {
     margin-top: 12rpx;
     font-size: 25rpx;
     line-height: 1.7;
-    color: #6b7280;
+    color: #6c665c;
 }
 
 .loading-card,
@@ -280,7 +280,7 @@ onLoad((options: Record<string, string>) => {
 .contact-card {
     border-radius: 28rpx;
     background: #ffffff;
-    box-shadow: 0 20rpx 48rpx rgba(54, 67, 94, 0.08);
+    box-shadow: 0 20rpx 48rpx rgba(17, 17, 17, 0.08);
 }
 
 .loading-card,
@@ -290,7 +290,7 @@ onLoad((options: Record<string, string>) => {
     flex-direction: column;
     align-items: center;
     gap: 20rpx;
-    color: #6b7280;
+    color: #6c665c;
 }
 
 .error-text {
@@ -302,7 +302,7 @@ onLoad((options: Record<string, string>) => {
     margin-top: 8rpx;
     padding: 18rpx 40rpx;
     border-radius: 999rpx;
-    background: #1f2937;
+    background: #111111;
     color: #ffffff;
     font-size: 26rpx;
 }
@@ -328,7 +328,7 @@ onLoad((options: Record<string, string>) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #f7c2b2 0%, #f0a1a4 100%);
+    background: linear-gradient(135deg, #D8C28A 0%, #D8C28A 100%);
     color: #ffffff;
     font-size: 42rpx;
     font-weight: 700;
@@ -342,21 +342,21 @@ onLoad((options: Record<string, string>) => {
 .advisor-name {
     font-size: 38rpx;
     font-weight: 700;
-    color: #1f2937;
+    color: #111111;
 }
 
 .advisor-role,
 .advisor-service-time {
     margin-top: 8rpx;
     font-size: 24rpx;
-    color: #6b7280;
+    color: #6c665c;
 }
 
 .contact-panel {
     margin-top: 28rpx;
     padding: 24rpx;
     border-radius: 24rpx;
-    background: #f8fafc;
+    background: #ffffff;
 }
 
 .contact-panel-title,
@@ -364,7 +364,7 @@ onLoad((options: Record<string, string>) => {
 .qr-title {
     font-size: 28rpx;
     font-weight: 600;
-    color: #1f2937;
+    color: #111111;
 }
 
 .contact-row {
@@ -376,18 +376,18 @@ onLoad((options: Record<string, string>) => {
 
 .label {
     font-size: 25rpx;
-    color: #6b7280;
+    color: #6c665c;
 }
 
 .value {
     font-size: 25rpx;
-    color: #1f2937;
+    color: #111111;
     text-align: right;
     word-break: break-all;
 }
 
 .value-link {
-    color: #d85c61;
+    color: #5A4433;
 }
 
 .qr-section {
@@ -403,7 +403,7 @@ onLoad((options: Record<string, string>) => {
     margin-top: 24rpx;
     border-radius: 24rpx;
     background: #ffffff;
-    border: 2rpx solid #f1f5f9;
+    border: 2rpx solid #f8f7f2;
 }
 
 .qr-empty {
@@ -411,11 +411,11 @@ onLoad((options: Record<string, string>) => {
     width: 100%;
     padding: 28rpx 24rpx;
     border-radius: 24rpx;
-    background: #f8fafc;
+    background: #ffffff;
     font-size: 25rpx;
     line-height: 1.6;
     text-align: center;
-    color: #94a3b8;
+    color: #9a9388;
 }
 
 .action-list {
@@ -436,27 +436,27 @@ onLoad((options: Record<string, string>) => {
 }
 
 .action-btn.primary {
-    background: linear-gradient(135deg, #df6c63 0%, #e98d69 100%);
+    background: linear-gradient(135deg, #5A4433 0%, #9F7A2E 100%);
     color: #ffffff;
 }
 
 .action-btn.secondary {
-    background: #f8fafc;
-    color: #1f2937;
-    border: 2rpx solid #e2e8f0;
+    background: #ffffff;
+    color: #111111;
+    border: 2rpx solid #E7E2D6;
 }
 
 .tips-card {
     margin-top: 28rpx;
     padding: 24rpx;
     border-radius: 24rpx;
-    background: rgba(229, 107, 111, 0.08);
+    background: rgba(90, 68, 51, 0.08);
 }
 
 .tips-text {
     margin-top: 12rpx;
     font-size: 25rpx;
     line-height: 1.7;
-    color: #4b5563;
+    color: #5f5a50;
 }
 </style>

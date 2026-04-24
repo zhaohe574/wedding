@@ -2,10 +2,10 @@
     <view class="order-quick-entry mx-[24rpx] mt-[24rpx]" v-if="content.enabled !== 0">
         <!-- 标题栏 -->
         <view class="flex items-center justify-between mb-[20rpx] px-[8rpx]" v-if="content.title">
-            <text class="text-[32rpx] font-semibold text-[#1E293B]">{{ content.title }}</text>
+            <text class="text-[32rpx] font-semibold text-[#111111]">{{ content.title }}</text>
             <view class="flex items-center cursor-pointer" @click="navigateToOrderList">
-                <text class="text-[26rpx] text-[#64748B]">全部订单</text>
-                <tn-icon name="right" size="28" color="#94A3B8" class="ml-[4rpx]" />
+                <text class="text-[26rpx] text-[#5F5A50]">全部订单</text>
+                <tn-icon name="right" size="28" color="#9A9388" class="ml-[4rpx]" />
             </view>
         </view>
 
@@ -69,7 +69,7 @@
                     </view>
 
                     <!-- 文字 -->
-                    <text class="text-[24rpx] text-[#334155]">{{ item.name }}</text>
+                    <text class="text-[24rpx] text-[#5F5A50]">{{ item.name }}</text>
                 </view>
             </view>
         </view>
@@ -85,21 +85,21 @@
         >
             <!-- 标题 -->
             <view class="p-[32rpx] pb-[24rpx]">
-                <text class="text-[28rpx] font-semibold text-[#1E293B]">最近订单</text>
+                <text class="text-[28rpx] font-semibold text-[#111111]">最近订单</text>
             </view>
 
             <!-- 订单列表 -->
             <view
                 v-for="(order, index) in recentOrders"
                 :key="order.id || index"
-                class="order-item px-[32rpx] py-[24rpx] border-t border-[#F1F5F9]"
+                class="order-item px-[32rpx] py-[24rpx] border-t border-[#F8F7F2]"
                 @click="navigateToOrder(order)"
             >
                 <view class="flex items-start justify-between">
                     <view class="flex-1 mr-[24rpx]">
                         <!-- 服务名称和状态 -->
                         <view class="flex items-center mb-[12rpx]">
-                            <text class="text-[28rpx] text-[#1E293B] font-medium flex-1">
+                            <text class="text-[28rpx] text-[#111111] font-medium flex-1">
                                 {{ order.service_name || '服务订单' }}
                             </text>
                             <view
@@ -116,7 +116,7 @@
                         </view>
 
                         <!-- 订单号 -->
-                        <text class="text-[24rpx] text-[#94A3B8]">{{ order.order_no || '' }}</text>
+                        <text class="text-[24rpx] text-[#9A9388]">{{ order.order_no || '' }}</text>
                     </view>
 
                     <!-- 价格 -->
@@ -241,12 +241,12 @@ const getStatusColor = (status: string | number | undefined) => {
         1: $theme.ctaColor, // 待付款 - CTA色
         2: $theme.primaryColor, // 待服务 - 主色
         3: $theme.secondaryColor, // 服务中 - 辅助色
-        4: '#22C55E', // 已完成 - 绿色
-        5: '#22C55E', // 已评价 - 绿色
-        6: '#94A3B8', // 已取消 - 灰色
-        7: '#EF4444', // 已暂停 - 红色
-        10: '#0F766E', // 退款中 - 青绿色
-        8: '#EF4444' // 已退款 - 红色
+        4: '#4D4A42', // 已完成 - 绿色
+        5: '#4D4A42', // 已评价 - 绿色
+        6: '#9A9388', // 已取消 - 灰色
+        7: '#5A4433', // 已暂停 - 红色
+        10: '#6C665C', // 退款中 - 青绿色
+        8: '#5A4433' // 已退款 - 红色
     }
     return colors[statusNum] || $theme.primaryColor
 }
@@ -389,7 +389,7 @@ onMounted(() => {
             }
 
             .count-badge {
-                box-shadow: 0 4rpx 12rpx rgba(249, 115, 22, 0.4);
+                box-shadow: 0 4rpx 12rpx rgba(159, 122, 46, 0.28);
             }
         }
     }
@@ -399,7 +399,7 @@ onMounted(() => {
         cursor: pointer;
 
         &:active {
-            background-color: #f8fafc;
+            background-color: #ffffff;
         }
 
         .status-badge {

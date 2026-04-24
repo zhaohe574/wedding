@@ -21,7 +21,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     zIndex: 20074,
-    background: 'var(--wm-mask-color, rgba(8, 10, 16, 0.58))',
+    background: 'var(--wm-mask-color, rgba(11, 11, 11, 0.58))',
     closeable: true
 })
 

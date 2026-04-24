@@ -240,7 +240,7 @@ onLoad((options: any) => {
 .aftersale-questionnaire__label {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .aftersale-questionnaire__options {
@@ -264,7 +264,7 @@ onLoad((options: any) => {
     box-sizing: border-box;
     font-size: 26rpx;
     line-height: 1.7;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-questionnaire__result-grid {
@@ -278,7 +278,7 @@ onLoad((options: any) => {
 .aftersale-questionnaire__result-label {
     display: block;
     font-size: 22rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .aftersale-questionnaire__result-value {
@@ -286,7 +286,7 @@ onLoad((options: any) => {
     margin-top: 8rpx;
     font-size: 30rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .aftersale-detail-page__actions {

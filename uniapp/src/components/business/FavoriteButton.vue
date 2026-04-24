@@ -62,7 +62,7 @@ const iconSize = computed(() => {
 })
 
 const iconColor = computed(() => {
-    return props.isFavorited ? 'var(--color-primary, #E85A4F)' : 'var(--color-btn-text, #FFFFFF)'
+    return props.isFavorited ? 'var(--color-primary, #0B0B0B)' : 'var(--color-btn-text, #FFFFFF)'
 })
 
 const handleClick = () => {
@@ -86,26 +86,26 @@ const handleClick = () => {
     &.not-favorited {
         background: linear-gradient(
             135deg,
-            var(--wm-color-primary, #e85a4f) 0%,
-            var(--wm-color-secondary, #c99b73) 100%
+            var(--wm-color-primary, #0b0b0b) 0%,
+            var(--wm-color-secondary, #c8a45d) 100%
         );
         color: var(--color-btn-text, #ffffff);
-        box-shadow: 0 8rpx 20rpx rgba(15, 23, 42, 0.12);
+        box-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.12);
 
         &:active {
             transform: scale(0.98);
-            box-shadow: 0 4rpx 12rpx rgba(15, 23, 42, 0.1);
+            box-shadow: 0 4rpx 12rpx rgba(17, 17, 17, 0.1);
         }
     }
 
     &.favorited {
-        background: rgba(232, 90, 79, 0.08);
-        color: var(--wm-color-primary, #e85a4f);
-        border-color: rgba(232, 90, 79, 0.18);
+        background: rgba(11, 11, 11, 0.08);
+        color: var(--wm-color-primary, #0b0b0b);
+        border-color: rgba(11, 11, 11, 0.18);
 
         &:active {
             transform: scale(0.98);
-            background: rgba(232, 90, 79, 0.12);
+            background: rgba(11, 11, 11, 0.12);
         }
     }
 

@@ -152,7 +152,7 @@ const props = defineProps({
 })
 
 const themeStore = useThemeStore()
-const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
+const primaryColor = computed(() => themeStore.primaryColor || '#0B0B0B')
 
 // 主题内联样式（兼容小程序，不使用CSS变量）
 const $theme = {
@@ -224,8 +224,8 @@ const getIconAnimation = (index: number): string => {
         .header-title {
             font-size: 32rpx;
             font-weight: 700;
-            color: #0f172a;
-            letter-spacing: -0.5rpx;
+            color: #111111;
+            letter-spacing: 0;
         }
     }
 
@@ -234,7 +234,7 @@ const getIconAnimation = (index: number): string => {
         background: #ffffff;
         border-radius: 14rpx;
         padding: 20rpx 16rpx;
-        box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
+        box-shadow: 0 4rpx 16rpx rgba(17, 17, 17, 0.06);
 
         .timeline-item {
             display: flex;
@@ -313,20 +313,20 @@ const getIconAnimation = (index: number): string => {
             font-weight: 700;
             border-radius: 12rpx;
             margin-bottom: 8rpx;
-            letter-spacing: 0.5rpx;
+            letter-spacing: 0;
         }
 
         .step-title {
             font-size: 28rpx;
             font-weight: 700;
-            color: #0f172a;
+            color: #111111;
             margin-bottom: 6rpx;
             line-height: 1.4;
         }
 
         .step-description {
             font-size: 24rpx;
-            color: #64748b;
+            color: #5f5a50;
             line-height: 1.5;
         }
     }
@@ -375,18 +375,18 @@ const getIconAnimation = (index: number): string => {
             background: #ffffff;
             border-radius: 14rpx;
             overflow: hidden;
-            box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
+            box-shadow: 0 4rpx 16rpx rgba(17, 17, 17, 0.06);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
             &:active {
                 transform: translateY(4rpx);
-                box-shadow: 0 2rpx 12rpx rgba(15, 23, 42, 0.08);
+                box-shadow: 0 2rpx 12rpx rgba(17, 17, 17, 0.08);
             }
         }
 
         .card-progress-bar {
             height: 6rpx;
-            background: #f1f5f9;
+            background: #f8f7f2;
             position: relative;
             overflow: hidden;
 
@@ -429,7 +429,7 @@ const getIconAnimation = (index: number): string => {
             width: 52rpx;
             height: 52rpx;
             border-radius: 10rpx;
-            background: #f8fafc;
+            background: #ffffff;
             padding: 8rpx;
         }
 
@@ -443,13 +443,13 @@ const getIconAnimation = (index: number): string => {
         .card-title {
             font-size: 28rpx;
             font-weight: 700;
-            color: #0f172a;
+            color: #111111;
             line-height: 1.4;
         }
 
         .card-description {
             font-size: 24rpx;
-            color: #64748b;
+            color: #5f5a50;
             line-height: 1.5;
         }
     }
@@ -482,7 +482,7 @@ const getIconAnimation = (index: number): string => {
             background: #ffffff;
             border-radius: 14rpx;
             padding: 20rpx 16rpx;
-            box-shadow: 0 4rpx 16rpx rgba(15, 23, 42, 0.06);
+            box-shadow: 0 4rpx 16rpx rgba(17, 17, 17, 0.06);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -491,7 +491,7 @@ const getIconAnimation = (index: number): string => {
 
             &:active {
                 transform: scale(0.96);
-                box-shadow: 0 2rpx 12rpx rgba(15, 23, 42, 0.08);
+                box-shadow: 0 2rpx 12rpx rgba(17, 17, 17, 0.08);
             }
         }
 
@@ -545,14 +545,14 @@ const getIconAnimation = (index: number): string => {
         .step-name {
             font-size: 26rpx;
             font-weight: 700;
-            color: #0f172a;
+            color: #111111;
             text-align: center;
             line-height: 1.4;
         }
 
         .step-desc {
             font-size: 22rpx;
-            color: #64748b;
+            color: #5f5a50;
             text-align: center;
             line-height: 1.4;
             display: -webkit-box;

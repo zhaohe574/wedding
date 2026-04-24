@@ -221,7 +221,7 @@ const alignOptions = [
     { label: '右对齐', value: 'right' }
 ] as const
 
-const colorOptions = ['#1E2432', '#3D3D3D', '#7F7B78', '#E85A4F', '#C98A4A', '#2F7D58']
+const colorOptions = ['#111111', '#111111', '#5F5A50', '#0B0B0B', '#C8A45D', '#4D4A42']
 
 const imageUploading = ref(false)
 const blocks = ref<LongDetailBlock[]>(parseLongDetailDraftContent(props.modelValue))
@@ -389,7 +389,7 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
 .staff-long-detail-editor__toolbar,
 .staff-long-detail-editor__card {
     background: rgba(255, 255, 255, 0.92);
-    border: 1rpx solid #efe6e1;
+    border: 1rpx solid #e7e2d6;
     border-radius: 28rpx;
 }
 
@@ -403,8 +403,8 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
 .staff-long-detail-editor__toolbar-btn {
     min-height: 84rpx;
     border-radius: 24rpx;
-    background: #fff5f1;
-    border: 1rpx solid rgba(232, 90, 79, 0.16);
+    background: #ffffff;
+    border: 1rpx solid rgba(11, 11, 11, 0.16);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -424,18 +424,18 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
 .staff-long-detail-editor__toolbar-btn-text,
 .staff-long-detail-editor__card-index {
     font-weight: 700;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .staff-long-detail-editor__empty {
     padding: 36rpx 24rpx;
     border-radius: 28rpx;
-    border: 1rpx dashed #d9d3cf;
+    border: 1rpx dashed #D8D3C7;
     background: rgba(255, 255, 255, 0.72);
     text-align: center;
     font-size: 24rpx;
     line-height: 1.7;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .staff-long-detail-editor__list {
@@ -483,7 +483,7 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
 .staff-long-detail-editor__subhead-text,
 .staff-long-detail-editor__style-label {
     font-weight: 600;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .staff-long-detail-editor__action.disabled {
@@ -491,7 +491,7 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
 }
 
 .staff-long-detail-editor__action--danger {
-    color: #d9485a;
+    color: #5A4433;
 }
 
 .staff-long-detail-editor__subhead {
@@ -500,7 +500,7 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
 
 .staff-long-detail-editor__subhead-tip {
     font-size: 22rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .staff-long-detail-editor__image-grid {
@@ -518,7 +518,7 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
 }
 
 .staff-long-detail-editor__image-item {
-    border: 1rpx solid #efe6e1;
+    border: 1rpx solid #e7e2d6;
 }
 
 .staff-long-detail-editor__image-preview {
@@ -534,7 +534,7 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
     width: 40rpx;
     height: 40rpx;
     border-radius: 999rpx;
-    background: rgba(15, 23, 42, 0.58);
+    background: rgba(17, 17, 17, 0.58);
     color: #ffffff;
     display: flex;
     align-items: center;
@@ -543,8 +543,8 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
 }
 
 .staff-long-detail-editor__image-adder {
-    border: 1rpx dashed #d8d1cd;
-    background: #fcfbf9;
+    border: 1rpx dashed #D8D3C7;
+    background: #ffffff;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -555,7 +555,7 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
 .staff-long-detail-editor__image-adder-plus {
     font-size: 40rpx;
     line-height: 1;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .staff-long-detail-editor__textarea {
@@ -563,11 +563,11 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
     min-height: 220rpx;
     padding: 22rpx;
     border-radius: 24rpx;
-    background: #fcfbf9;
+    background: #ffffff;
     box-sizing: border-box;
     font-size: 28rpx;
     line-height: 1.8;
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .staff-long-detail-editor__style-group {
@@ -592,19 +592,19 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
     min-height: 60rpx;
     padding: 0 24rpx;
     border-radius: 999rpx;
-    border: 1rpx solid #e9e2de;
+    border: 1rpx solid #E7E2D6;
     background: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .staff-long-detail-editor__chip.is-active {
-    background: #fff1ee;
-    border-color: rgba(232, 90, 79, 0.22);
-    color: var(--wm-color-primary, #e85a4f);
+    background: #f3f2ee;
+    border-color: rgba(11, 11, 11, 0.22);
+    color: var(--wm-color-primary, #0b0b0b);
     font-weight: 700;
 }
 
@@ -616,6 +616,6 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
 }
 
 .staff-long-detail-editor__color.is-active {
-    box-shadow: 0 0 0 4rpx #ffffff, 0 0 0 6rpx rgba(232, 90, 79, 0.72);
+    box-shadow: 0 0 0 4rpx #ffffff, 0 0 0 6rpx rgba(11, 11, 11, 0.72);
 }
 </style>

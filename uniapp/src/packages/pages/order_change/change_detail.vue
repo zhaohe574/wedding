@@ -400,18 +400,18 @@ onLoad((options: any) => {
 @import './shared.scss';
 
 .order-change-card__value--danger {
-    color: var(--wm-color-danger, #c94b49);
+    color: var(--wm-color-danger, #5a4433);
 }
 
 .change-detail__price-diff {
     font-weight: 700;
 
     &--up {
-        color: var(--wm-color-danger, #c94b49);
+        color: var(--wm-color-danger, #5a4433);
     }
 
     &--down {
-        color: var(--wm-color-success, #2f7d58);
+        color: var(--wm-color-success, #4d4a42);
     }
 }
 </style>

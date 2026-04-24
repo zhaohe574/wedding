@@ -10,12 +10,12 @@
             <tn-icon
                 :name="currentIndex === index ? item.selectedIcon : item.icon"
                 :size="48"
-                :color="currentIndex === index ? primaryColor : '#999999'"
+                :color="currentIndex === index ? primaryColor : '#9A9388'"
                 class="tabbar-item__icon"
             />
             <text
                 class="tabbar-item__text"
-                :style="{ color: currentIndex === index ? primaryColor : '#999999' }"
+                :style="{ color: currentIndex === index ? primaryColor : '#9A9388' }"
             >
                 {{ item.text }}
             </text>
@@ -40,7 +40,7 @@ const currentIndex = ref(0)
 const safeAreaBottom = ref(0)
 
 // 获取主题色
-const primaryColor = computed(() => themeStore.primaryColor || '#E85A4F')
+const primaryColor = computed(() => themeStore.primaryColor || '#0B0B0B')
 
 // 标签栏配置
 const tabbarList: TabbarItem[] = [
@@ -122,7 +122,7 @@ export default {
     justify-content: space-around;
     height: 120rpx;
     background: #ffffff;
-    border-top: 1rpx solid var(--color-light, #e5e5e5);
+    border-top: 1rpx solid var(--color-light, #E7E2D6);
     z-index: 1000;
 }
 

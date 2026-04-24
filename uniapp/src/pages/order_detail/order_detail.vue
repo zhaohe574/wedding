@@ -572,7 +572,7 @@
                         ><tn-icon
                             name="close"
                             size="40"
-                            color="#999999"
+                            color="#9A9388"
                             @click="showRefundPopup = false"
                     /></view>
 
@@ -640,7 +640,7 @@
                         ><tn-icon
                             name="close"
                             size="40"
-                            color="#999999"
+                            color="#9A9388"
                             @click="showVoucherPopup = false"
                     /></view>
 
@@ -660,7 +660,7 @@
                             </view>
 
                             <view v-else class="voucher-upload__add" @click="chooseVoucherImage">
-                                <tn-icon name="add" size="64" color="#CBD5E1" />
+                                <tn-icon name="add" size="64" color="#D8D3C7" />
 
                                 <text class="voucher-upload__text">选择图片</text>
 
@@ -849,87 +849,87 @@ const getStatusTheme = (status: number) =>
     ((
         {
             0: {
-                background: 'linear-gradient(180deg, #FFF5E8 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F7F0DF 0%, #FFFFFF 100%)',
 
-                iconBg: '#C98524'
+                iconBg: '#9F7A2E'
             },
 
             1: {
-                background: 'linear-gradient(180deg, #FFF1EE 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F3F2EE 0%, #FFFFFF 100%)',
 
-                iconBg: '#E85A4F'
+                iconBg: '#0B0B0B'
             },
 
             2: {
-                background: 'linear-gradient(180deg, #FFF5F1 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%)',
 
-                iconBg: '#E85A4F'
+                iconBg: '#0B0B0B'
             },
 
             3: {
-                background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F8F7F2 0%, #FFFFFF 100%)',
 
-                iconBg: '#2F7D58'
+                iconBg: '#4D4A42'
             },
 
             4: {
-                background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F8F7F2 0%, #FFFFFF 100%)',
 
-                iconBg: '#2F7D58'
+                iconBg: '#4D4A42'
             },
 
             5: {
-                background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F8F7F2 0%, #FFFFFF 100%)',
 
-                iconBg: '#2F7D58'
+                iconBg: '#4D4A42'
             },
 
             6: {
-                background: 'linear-gradient(180deg, #F7F3F1 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F8F7F2 0%, #FFFFFF 100%)',
 
-                iconBg: '#7F7B78'
+                iconBg: '#5F5A50'
             },
 
             7: {
-                background: 'linear-gradient(180deg, #FFF5E8 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F7F0DF 0%, #FFFFFF 100%)',
 
-                iconBg: '#C98524'
+                iconBg: '#9F7A2E'
             },
 
             10: {
-                background: 'linear-gradient(180deg, #EEF9F5 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F8F7F2 0%, #FFFFFF 100%)',
 
-                iconBg: '#0F766E'
+                iconBg: '#6C665C'
             },
 
             8: {
-                background: 'linear-gradient(180deg, #FDEEEE 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F3F2EE 0%, #FFFFFF 100%)',
 
-                iconBg: '#B44A3A'
+                iconBg: '#5A4433'
             }
         } as Record<number, { background: string; iconBg: string }>
     )[status] || {
-        background: 'linear-gradient(180deg, #F7F3F1 0%, #FFFFFF 100%)',
+        background: 'linear-gradient(180deg, #F8F7F2 0%, #FFFFFF 100%)',
 
-        iconBg: '#7F7B78'
+        iconBg: '#5F5A50'
     })
 
 const getRefundStatusStyle = (status: number) =>
     ((
         {
-            0: { color: '#D97706', bg: 'rgba(217,119,6,0.1)' },
+            0: { color: '#9F7A2E', bg: 'rgba(159,122,46,0.1)' },
 
-            1: { color: '#C99B73', bg: 'rgba(201,155,115,0.12)' },
+            1: { color: '#C8A45D', bg: 'rgba(200,164,93,0.12)' },
 
-            2: { color: '#0F766E', bg: 'rgba(15,118,110,0.1)' },
+            2: { color: '#6C665C', bg: 'rgba(108,102,92,0.1)' },
 
-            3: { color: '#16A34A', bg: 'rgba(22,163,74,0.1)' },
+            3: { color: '#4D4A42', bg: 'rgba(77,74,66,0.1)' },
 
-            4: { color: '#DC2626', bg: 'rgba(220,38,38,0.1)' },
+            4: { color: '#5A4433', bg: 'rgba(90,68,51,0.1)' },
 
-            5: { color: '#DC2626', bg: 'rgba(220,38,38,0.1)' }
+            5: { color: '#5A4433', bg: 'rgba(90,68,51,0.1)' }
         } as Record<number, { color: string; bg: string }>
-    )[status] || { color: '#64748B', bg: 'rgba(100,116,139,0.1)' })
+    )[status] || { color: '#5F5A50', bg: 'rgba(108,102,92,0.1)' })
 
 const getPayWayText = (payWay: number) => {
     const texts: Record<number, string> = {
@@ -1677,9 +1677,9 @@ const secondaryVisibleAction = computed(() => {
         label: '联系顾问',
 
         style: {
-            borderColor: 'var(--wm-color-border, #EFE6E1)',
+            borderColor: 'var(--wm-color-border, #E7E2D6)',
 
-            color: 'var(--wm-text-primary, #1E2432)'
+            color: 'var(--wm-text-primary, #111111)'
         },
 
         onClick: handleContactAdvisor
@@ -2369,7 +2369,7 @@ onUnload(() => {
 .order-detail {
     padding-bottom: var(--wm-safe-bottom-action, calc(env(safe-area-inset-bottom) + 150rpx));
 
-    background: var(--wm-color-page, #fcfbf9);
+    background: var(--wm-color-page, #ffffff);
 }
 
 .page-body {
@@ -2393,9 +2393,9 @@ onUnload(() => {
 
     border-radius: 45rpx;
 
-    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
 
-    box-shadow: 0 14rpx 32rpx rgba(214, 185, 167, 0.12);
+    box-shadow: 0 14rpx 32rpx rgba(17, 17, 17, 0.12);
 }
 
 .status-card__chip {
@@ -2431,7 +2431,7 @@ onUnload(() => {
 
     line-height: 1.35;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .status-card__desc {
@@ -2441,7 +2441,7 @@ onUnload(() => {
 
     line-height: 1.65;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     white-space: pre-line;
 }
@@ -2469,7 +2469,7 @@ onUnload(() => {
 
     background: rgba(255, 255, 255, 0.76);
 
-    border: 1rpx solid rgba(244, 199, 191, 0.88);
+    border: 1rpx solid rgba(216, 194, 138, 0.88);
 
     box-sizing: border-box;
 }
@@ -2477,7 +2477,7 @@ onUnload(() => {
 .status-card__meta-label {
     font-size: 22rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .status-card__meta-value {
@@ -2485,7 +2485,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .card {
@@ -2499,11 +2499,11 @@ onUnload(() => {
 
     border-radius: 45rpx;
 
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 
     background: rgba(255, 255, 255, 0.86);
 
-    box-shadow: 0 10rpx 24rpx rgba(214, 185, 167, 0.08);
+    box-shadow: 0 10rpx 24rpx rgba(17, 17, 17, 0.08);
 }
 
 .card--secondary {
@@ -2517,7 +2517,7 @@ onUnload(() => {
 
     line-height: 1.4;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .card__title-row {
@@ -2549,7 +2549,7 @@ onUnload(() => {
 
     line-height: 1.65;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .card__sub-text {
@@ -2557,13 +2557,13 @@ onUnload(() => {
 
     line-height: 1.7;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .card__sub-text--muted {
     font-weight: 500;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .service-summary {
@@ -2577,9 +2577,9 @@ onUnload(() => {
 
     border-radius: 34rpx;
 
-    background: linear-gradient(180deg, rgba(255, 247, 244, 0.96) 0%, #ffffff 100%);
+    background: linear-gradient(180deg, rgba(248, 247, 242, 0.96) 0%, #ffffff 100%);
 
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .service-summary__topbar {
@@ -2597,7 +2597,7 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .service-summary__title {
@@ -2607,7 +2607,7 @@ onUnload(() => {
 
     line-height: 1.5;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .service-summary__price {
@@ -2619,7 +2619,7 @@ onUnload(() => {
 
     line-height: 1.4;
 
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .service-summary__meta-grid {
@@ -2635,7 +2635,7 @@ onUnload(() => {
 
     border-radius: 26rpx;
 
-    border: 1rpx solid rgba(239, 230, 225, 0.92);
+    border: 1rpx solid rgba(231, 226, 214, 0.92);
 
     background: rgba(255, 255, 255, 0.94);
 
@@ -2649,7 +2649,7 @@ onUnload(() => {
 .service-summary__meta-label {
     font-size: 22rpx;
 
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .service-summary__meta-value {
@@ -2657,7 +2657,7 @@ onUnload(() => {
 
     line-height: 1.6;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .service-summary__desc {
@@ -2665,7 +2665,7 @@ onUnload(() => {
 
     line-height: 1.7;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .service-addon-section {
@@ -2695,7 +2695,7 @@ onUnload(() => {
 
     line-height: 1.5;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .service-addon-section__meta {
@@ -2703,7 +2703,7 @@ onUnload(() => {
 
     font-size: 22rpx;
 
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .service-addon-list {
@@ -2727,9 +2727,9 @@ onUnload(() => {
 
     border-radius: 30rpx;
 
-    border: 1rpx solid var(--wm-color-border, #efe6e1);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 
-    background: #fcfbf9;
+    background: #ffffff;
 }
 
 .service-addon-item__copy {
@@ -2761,7 +2761,7 @@ onUnload(() => {
 
     line-height: 1.5;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .service-addon-item__type {
@@ -2781,11 +2781,11 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 
-    background: rgba(255, 241, 238, 0.92);
+    background: rgba(247, 240, 223, 0.92);
 
-    border: 1rpx solid var(--wm-color-border-strong, #f4c7bf);
+    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
 
     box-sizing: border-box;
 }
@@ -2795,7 +2795,7 @@ onUnload(() => {
 
     line-height: 1.6;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .service-addon-item__meta {
@@ -2803,7 +2803,7 @@ onUnload(() => {
 
     line-height: 1.6;
 
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .service-addon-item__price {
@@ -2815,21 +2815,21 @@ onUnload(() => {
 
     line-height: 1.5;
 
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .service-addon-item--related {
-    background: linear-gradient(180deg, #f5fbf8 0%, #ffffff 100%);
+    background: linear-gradient(180deg, #F3F2EE 0%, #ffffff 100%);
 
-    border-color: rgba(198, 234, 215, 0.96);
+    border-color: rgba(231, 226, 214, 0.96);
 }
 
 .service-addon-item__type--related {
-    color: #14804a;
+    color: #4D4A42;
 
-    background: rgba(230, 248, 238, 0.96);
+    background: rgba(248, 247, 242, 0.96);
 
-    border-color: rgba(198, 234, 215, 0.96);
+    border-color: rgba(231, 226, 214, 0.96);
 }
 
 .service-addon-empty {
@@ -2837,9 +2837,9 @@ onUnload(() => {
 
     border-radius: 28rpx;
 
-    border: 1rpx dashed var(--wm-color-border, #efe6e1);
+    border: 1rpx dashed var(--wm-color-border, #e7e2d6);
 
-    background: #fcfbf9;
+    background: #ffffff;
 }
 
 .service-addon-empty text {
@@ -2847,7 +2847,7 @@ onUnload(() => {
 
     line-height: 1.6;
 
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .inline-link {
@@ -2860,7 +2860,7 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .sub-panel {
@@ -2884,7 +2884,7 @@ onUnload(() => {
 }
 
 .sub-panel__row + .sub-panel__row {
-    border-top: 1rpx solid var(--wm-color-border, #efe6e1);
+    border-top: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .sub-panel__row--stack {
@@ -2900,7 +2900,7 @@ onUnload(() => {
 
     line-height: 1.5;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .sub-panel__value {
@@ -2912,7 +2912,7 @@ onUnload(() => {
 
     text-align: right;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .sub-panel__value--left {
@@ -2920,7 +2920,7 @@ onUnload(() => {
 }
 
 .sub-panel__value--danger {
-    color: #dc2626;
+    color: #5a4433;
 }
 
 .progress-list {
@@ -2948,7 +2948,7 @@ onUnload(() => {
 
     line-height: 1.6;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .progress-list__value {
@@ -2960,7 +2960,7 @@ onUnload(() => {
 
     text-align: right;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .info-list {
@@ -2982,7 +2982,7 @@ onUnload(() => {
 
     line-height: 1.65;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .info-list__sub {
@@ -2990,7 +2990,7 @@ onUnload(() => {
 
     line-height: 1.65;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .voucher-image {
@@ -3000,7 +3000,7 @@ onUnload(() => {
 
     overflow: hidden;
 
-    background: var(--wm-color-bg-soft, #fff7f4);
+    background: var(--wm-color-bg-soft, #ffffff);
 }
 
 .voucher-image image {
@@ -3024,13 +3024,13 @@ onUnload(() => {
 
     justify-content: center;
 
-    background: var(--wm-color-bg-soft, #fff7f4);
+    background: var(--wm-color-bg-soft, #ffffff);
 }
 
 .voucher-empty text {
     font-size: 24rpx;
 
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .refund-status {
@@ -3064,9 +3064,9 @@ onUnload(() => {
 
     border-radius: 24rpx;
 
-    background: rgba(248, 250, 252, 0.88);
+    background: rgba(248, 247, 242, 0.88);
 
-    border: 1rpx solid rgba(226, 232, 240, 0.9);
+    border: 1rpx solid rgba(231, 226, 214, 0.9);
 }
 
 .refund-item__head {
@@ -3084,7 +3084,7 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .refund-item__amount {
@@ -3092,7 +3092,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .refund-item__meta {
@@ -3104,7 +3104,7 @@ onUnload(() => {
 
     font-size: 22rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .refund-item__desc {
@@ -3112,7 +3112,7 @@ onUnload(() => {
 
     line-height: 1.6;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .action-bar {
@@ -3152,7 +3152,7 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     white-space: nowrap;
 }
@@ -3182,7 +3182,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .popup__content {
@@ -3202,7 +3202,7 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: var(--wm-text-primary, #1e2432);
+    color: var(--wm-text-primary, #111111);
 }
 
 .form-item__tip {
@@ -3212,7 +3212,7 @@ onUnload(() => {
 
     font-size: 22rpx;
 
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .refund-amount-card {
@@ -3226,9 +3226,9 @@ onUnload(() => {
 
     border-radius: 28rpx;
 
-    background: var(--wm-color-bg-soft, #fff7f4);
+    background: var(--wm-color-bg-soft, #ffffff);
 
-    border: 2rpx solid var(--wm-color-border, #efe6e1);
+    border: 2rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .refund-amount-card__value {
@@ -3236,7 +3236,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: var(--wm-color-danger, #b44a3a);
+    color: var(--wm-color-danger, #5a4433);
 }
 
 .refund-amount-card__tip {
@@ -3244,7 +3244,7 @@ onUnload(() => {
 
     line-height: 1.6;
 
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .popup__actions {
@@ -3277,7 +3277,7 @@ onUnload(() => {
 .voucher-upload__preview {
     position: relative;
 
-    background: var(--wm-color-bg-soft, #fff7f4);
+    background: var(--wm-color-bg-soft, #ffffff);
 }
 
 .voucher-upload__preview image {
@@ -3301,7 +3301,7 @@ onUnload(() => {
 
     border-radius: 50%;
 
-    background: rgba(15, 23, 42, 0.58);
+    background: rgba(17, 17, 17, 0.58);
 
     display: flex;
 
@@ -3311,9 +3311,9 @@ onUnload(() => {
 }
 
 .voucher-upload__add {
-    border: 2rpx dashed var(--wm-color-border, #efe6e1);
+    border: 2rpx dashed var(--wm-color-border, #e7e2d6);
 
-    background: var(--wm-color-bg-soft, #fff7f4);
+    background: var(--wm-color-bg-soft, #ffffff);
 
     display: flex;
 
@@ -3329,7 +3329,7 @@ onUnload(() => {
 
     font-size: 28rpx;
 
-    color: var(--wm-text-secondary, #7f7b78);
+    color: var(--wm-text-secondary, #5f5a50);
 
     font-weight: 600;
 }
@@ -3339,7 +3339,7 @@ onUnload(() => {
 
     font-size: 22rpx;
 
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .safe-bottom {
@@ -3359,12 +3359,12 @@ onUnload(() => {
 
     gap: 16rpx;
 
-    background: var(--wm-color-bg-page, #fff7f4);
+    background: var(--wm-color-bg-page, #ffffff);
 }
 
 .loading-text {
     font-size: 26rpx;
 
-    color: var(--wm-text-tertiary, #b4aca8);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 </style>

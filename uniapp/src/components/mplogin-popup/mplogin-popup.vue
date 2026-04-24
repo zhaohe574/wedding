@@ -47,7 +47,7 @@
                                 name="nickname"
                                 type="nickname"
                                 placeholder="请输入昵称"
-                                placeholder-style="color: #9ca3af;"
+                                placeholder-style="color: #9a9388;"
                             />
                         </view>
 
@@ -135,7 +135,7 @@ const handleSubmit = (e: any) => {
     height: 96rpx;
     flex-shrink: 0;
     border-radius: 24rpx;
-    background: #f8fafc;
+    background: #ffffff;
 }
 
 .mp-login-popup__brand {
@@ -148,7 +148,7 @@ const handleSubmit = (e: any) => {
     font-size: 36rpx;
     line-height: 1.3;
     font-weight: 700;
-    color: #1e2432;
+    color: #111111;
     word-break: break-all;
 }
 
@@ -157,7 +157,7 @@ const handleSubmit = (e: any) => {
     margin-top: 12rpx;
     font-size: 26rpx;
     line-height: 1.6;
-    color: #6b7280;
+    color: #6c665c;
 }
 
 .mp-login-popup__form {
@@ -166,7 +166,7 @@ const handleSubmit = (e: any) => {
 
 .mp-login-popup__field {
     padding: 28rpx 0;
-    border-bottom: 2rpx solid #f1f5f9;
+    border-bottom: 2rpx solid #f8f7f2;
 }
 
 .mp-login-popup__label {
@@ -176,12 +176,12 @@ const handleSubmit = (e: any) => {
     font-size: 28rpx;
     line-height: 1.4;
     font-weight: 600;
-    color: #1f2937;
+    color: #111111;
 }
 
 .mp-login-popup__required {
     margin-right: 8rpx;
-    color: #ef4444;
+    color: #5a4433;
 }
 
 .mp-login-popup__avatar {
@@ -193,11 +193,11 @@ const handleSubmit = (e: any) => {
     width: 100%;
     height: 88rpx;
     padding: 0 24rpx;
-    border: 2rpx solid #e5e7eb;
+    border: 2rpx solid #e7e2d6;
     border-radius: 20rpx;
-    background: #f8fafc;
+    background: #ffffff;
     font-size: 28rpx;
-    color: #1e2432;
+    color: #111111;
     box-sizing: border-box;
 }
 
@@ -209,14 +209,14 @@ const handleSubmit = (e: any) => {
     border-radius: 999rpx;
     background: linear-gradient(
         135deg,
-        var(--color-primary, #7c3aed) 0%,
-        var(--color-primary-dark-2, #6d28d9) 100%
+        var(--color-primary, #c8a45d) 0%,
+        var(--color-primary-dark-2, #9f7a2e) 100%
     );
     color: var(--color-btn-text, #ffffff);
     font-size: 30rpx;
     line-height: 88rpx;
     font-weight: 600;
-    box-shadow: 0 12rpx 32rpx rgba(124, 58, 237, 0.24);
+    box-shadow: 0 12rpx 32rpx rgba(11, 11, 11, 0.24);
 }
 
 .mp-login-popup__skip {
@@ -225,6 +225,6 @@ const handleSubmit = (e: any) => {
     margin-top: 32rpx;
     font-size: 28rpx;
     line-height: 1.5;
-    color: #9ca3af;
+    color: #9a9388;
 }
 </style>

@@ -60,7 +60,7 @@
                                 <tn-icon
                                     :name="item.is_favorite ? 'like-fill' : 'like'"
                                     size="34"
-                                    :color="item.is_favorite ? '#FF4D5A' : '#C7B9AF'"
+                                    :color="item.is_favorite ? '#5A4433' : '#D8D3C7'"
                                 />
                             </view>
                         </view>
@@ -104,7 +104,7 @@
 
                             <view class="poster-card__footer">
                                 <view class="poster-card__score">
-                                    <tn-icon name="star-fill" size="20" color="#C99B73" />
+                                    <tn-icon name="star-fill" size="20" color="#C8A45D" />
                                     <text class="poster-card__score-text">{{
                                         formatRatingText(item)
                                     }}</text>
@@ -148,7 +148,7 @@
                                     <tn-icon
                                         :name="item.is_favorite ? 'like-fill' : 'like'"
                                         size="30"
-                                        :color="item.is_favorite ? '#FF4D5A' : '#D5CCC5'"
+                                        :color="item.is_favorite ? '#5A4433' : '#D8D3C7'"
                                     />
                                 </view>
                             </view>
@@ -171,7 +171,7 @@
                             <view class="line-card__footer">
                                 <view class="line-card__metrics">
                                     <view class="line-card__score">
-                                        <tn-icon name="star-fill" size="20" color="#C99B73" />
+                                        <tn-icon name="star-fill" size="20" color="#C8A45D" />
                                         <text class="line-card__score-text">{{
                                             formatRatingText(item)
                                         }}</text>
@@ -319,8 +319,8 @@ const summaryChips = computed(() => [
 
 const getSwitchButtonStyle = () => ({
     backgroundColor: 'rgba(255, 255, 255, 0.91)',
-    borderColor: '#EFE6E1',
-    boxShadow: `0 12rpx 28rpx ${alphaColor('#D4B09A', 0.12)}`
+    borderColor: '#E7E2D6',
+    boxShadow: `0 12rpx 28rpx ${alphaColor('#C8A45D', 0.12)}`
 })
 
 const buildScheduleQueryUrl = () => {
@@ -524,7 +524,7 @@ onShow(() => {
     min-height: 84rpx;
     padding: 18rpx 20rpx;
     border-radius: 999rpx;
-    border: 1rpx solid #efe6e1;
+    border: 1rpx solid #e7e2d6;
     background: rgba(255, 255, 255, 0.84);
     backdrop-filter: blur(24rpx);
     -webkit-backdrop-filter: blur(24rpx);
@@ -543,7 +543,7 @@ onShow(() => {
     font-size: 27rpx;
     font-weight: 700;
     line-height: 1.35;
-    color: #5f5a57;
+    color: #5F5A50;
 }
 
 .empty-state {
@@ -560,14 +560,14 @@ onShow(() => {
     margin-top: 24rpx;
     font-size: 32rpx;
     font-weight: 600;
-    color: #1e2432;
+    color: #111111;
 }
 
 .empty-state__subtitle {
     margin-top: 12rpx;
     font-size: 26rpx;
     line-height: 1.6;
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .empty-state__btn {
@@ -598,15 +598,15 @@ onShow(() => {
     margin-bottom: 16rpx;
     overflow: hidden;
     border-radius: 28rpx;
-    border: 1rpx solid rgba(239, 230, 225, 0.92);
+    border: 1rpx solid rgba(231, 226, 214, 0.92);
     background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 16rpx 32rpx rgba(214, 185, 167, 0.1);
+    box-shadow: 0 16rpx 32rpx rgba(17, 17, 17, 0.1);
 }
 
 .poster-card__media {
     position: relative;
     height: 296rpx;
-    background: linear-gradient(135deg, #fce7e1 0%, #ddb4a6 100%);
+    background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
 }
 
 .poster-card__image {
@@ -624,8 +624,8 @@ onShow(() => {
     font-size: 20rpx;
     font-weight: 600;
     color: #ffffff;
-    background: linear-gradient(135deg, #e85a4f 0%, #c99b73 100%);
-    box-shadow: 0 8rpx 18rpx rgba(214, 141, 110, 0.22);
+    background: linear-gradient(135deg, #0b0b0b 0%, #c8a45d 100%);
+    box-shadow: 0 8rpx 18rpx rgba(200, 164, 93, 0.18);
 }
 
 .poster-card__favorite {
@@ -639,7 +639,7 @@ onShow(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8rpx 18rpx rgba(30, 36, 50, 0.1);
+    box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.1);
 }
 
 .poster-card__content {
@@ -660,7 +660,7 @@ onShow(() => {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.35;
-    color: #1e2432;
+    color: #111111;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -676,7 +676,7 @@ onShow(() => {
 
 .poster-card__price--negotiable .poster-card__price-value,
 .poster-card__price--negotiable .poster-card__price-unit {
-    color: #b4aca8;
+    color: #9a9388;
 }
 
 .poster-card__price-value {
@@ -684,14 +684,14 @@ onShow(() => {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .poster-card__price-unit {
     font-size: 20rpx;
     font-weight: 600;
     line-height: 1.2;
-    color: #c99b73;
+    color: #c8a45d;
 }
 
 .poster-card__role {
@@ -699,7 +699,7 @@ onShow(() => {
     margin-top: 8rpx;
     font-size: 22rpx;
     line-height: 1.45;
-    color: #8d837d;
+    color: #5f5a50;
 }
 
 .poster-card__tags {
@@ -719,9 +719,9 @@ onShow(() => {
     border-radius: 999rpx;
     font-size: 20rpx;
     line-height: 1.2;
-    color: var(--wm-color-primary, #e85a4f);
-    background: rgba(232, 90, 79, 0.08);
-    border: 1rpx solid rgba(232, 90, 79, 0.16);
+    color: var(--wm-color-primary, #0b0b0b);
+    background: rgba(11, 11, 11, 0.08);
+    border: 1rpx solid rgba(11, 11, 11, 0.16);
 }
 
 .poster-card__desc {
@@ -730,7 +730,7 @@ onShow(() => {
     min-height: 60rpx;
     font-size: 22rpx;
     line-height: 1.45;
-    color: #4b5563;
+    color: #5f5a50;
     overflow: hidden;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -747,7 +747,7 @@ onShow(() => {
 .poster-card__score {
     padding: 8rpx 12rpx;
     border-radius: 999rpx;
-    background: rgba(201, 155, 115, 0.12);
+    background: rgba(200, 164, 93, 0.12);
     display: inline-flex;
     align-items: center;
     gap: 6rpx;
@@ -757,13 +757,13 @@ onShow(() => {
     font-size: 20rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: #9a6d48;
+    color: #9F7A2E;
 }
 
 .poster-card__orders {
     font-size: 20rpx;
     line-height: 1.2;
-    color: #8d837d;
+    color: #5f5a50;
 }
 
 .line-list {
@@ -775,9 +775,9 @@ onShow(() => {
     gap: 16rpx;
     padding: 16rpx;
     border-radius: 28rpx;
-    border: 1rpx solid rgba(239, 230, 225, 0.92);
+    border: 1rpx solid rgba(231, 226, 214, 0.92);
     background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 14rpx 28rpx rgba(214, 185, 167, 0.1);
+    box-shadow: 0 14rpx 28rpx rgba(17, 17, 17, 0.1);
 }
 
 .line-card + .line-card {
@@ -789,7 +789,7 @@ onShow(() => {
     height: 164rpx;
     flex-shrink: 0;
     border-radius: 24rpx;
-    background: linear-gradient(135deg, #fce7e1 0%, #ddb4a6 100%);
+    background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
 }
 
 .line-card__content {
@@ -818,7 +818,7 @@ onShow(() => {
     font-size: 30rpx;
     font-weight: 700;
     line-height: 1.35;
-    color: #1e2432;
+    color: #111111;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -831,7 +831,7 @@ onShow(() => {
     font-size: 20rpx;
     font-weight: 600;
     color: #ffffff;
-    background: linear-gradient(135deg, #e85a4f 0%, #c99b73 100%);
+    background: linear-gradient(135deg, #0b0b0b 0%, #c8a45d 100%);
 }
 
 .line-card__favorite {
@@ -848,7 +848,7 @@ onShow(() => {
     margin-top: 10rpx;
     font-size: 22rpx;
     line-height: 1.45;
-    color: #8d837d;
+    color: #5f5a50;
 }
 
 .line-card__tags {
@@ -867,9 +867,9 @@ onShow(() => {
     border-radius: 999rpx;
     font-size: 20rpx;
     line-height: 1.2;
-    color: var(--wm-color-primary, #e85a4f);
-    background: rgba(232, 90, 79, 0.08);
-    border: 1rpx solid rgba(232, 90, 79, 0.16);
+    color: var(--wm-color-primary, #0b0b0b);
+    background: rgba(11, 11, 11, 0.08);
+    border: 1rpx solid rgba(11, 11, 11, 0.16);
 }
 
 .line-card__desc {
@@ -877,7 +877,7 @@ onShow(() => {
     margin-top: 10rpx;
     font-size: 22rpx;
     line-height: 1.5;
-    color: #4b5563;
+    color: #5f5a50;
     overflow: hidden;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -909,13 +909,13 @@ onShow(() => {
     font-size: 22rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: #9a6d48;
+    color: #9F7A2E;
 }
 
 .line-card__orders {
     font-size: 20rpx;
     line-height: 1.2;
-    color: #8d837d;
+    color: #5f5a50;
 }
 
 .line-card__price {
@@ -923,7 +923,7 @@ onShow(() => {
     font-size: 28rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .view-switch-btn {
@@ -934,7 +934,7 @@ onShow(() => {
     width: 88rpx;
     height: 88rpx;
     border-radius: 44rpx;
-    border: 1rpx solid #efe6e1;
+    border: 1rpx solid #e7e2d6;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -27,7 +27,7 @@
                                 mainSize="44rpx"
                                 minorSize="40rpx"
                                 fontWeight="500"
-                                color="#333"
+                                color="#111111"
                             ></price>
                             <view
                                 v-if="Number(payData.total_amount || 0) > 0"
@@ -507,8 +507,8 @@ onUnmounted(() => {
     border-radius: 999rpx;
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-color-primary, #e85a4f);
-    background: var(--wm-color-primary-soft, #fff1ee);
+    color: var(--wm-color-primary, #0b0b0b);
+    background: var(--wm-color-primary-soft, #f3f2ee);
 }
 
 .payment-summary {
@@ -518,15 +518,15 @@ onUnmounted(() => {
     justify-content: center;
     margin-top: 16rpx;
     font-size: 22rpx;
-    color: #7f7b78;
+    color: #5f5a50;
 }
 
 .payment-remark {
     margin-top: 16rpx;
     padding: 16rpx 20rpx;
     border-radius: 20rpx;
-    background: #f8f5f2;
-    color: #7f7b78;
+    background: #F8F7F2;
+    color: #5f5a50;
     font-size: 22rpx;
     line-height: 1.6;
 }
@@ -535,30 +535,30 @@ onUnmounted(() => {
     margin-top: 20rpx;
     padding: 12rpx 24rpx;
     border-radius: 999rpx;
-    background: var(--wm-color-primary-soft, #fff1ee);
+    background: var(--wm-color-primary-soft, #f3f2ee);
 }
 
 .countdown-tip__label {
     font-size: 22rpx;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .countdown-tip__value {
     margin-left: 12rpx;
     font-size: 28rpx;
     font-weight: 600;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .check-popup__countdown {
     margin-top: 20rpx;
     font-size: 24rpx;
-    color: var(--wm-color-primary, #e85a4f);
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .check-popup__timeout {
     margin-top: 20rpx;
     font-size: 24rpx;
-    color: var(--wm-color-danger, #b44a3a);
+    color: var(--wm-color-danger, #5a4433);
 }
 </style>

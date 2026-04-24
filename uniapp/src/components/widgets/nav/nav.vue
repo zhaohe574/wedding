@@ -65,7 +65,7 @@ const props = defineProps({
     styles: {
         type: Object,
         default: () => ({
-            iconColor: '#666666' // 图标颜色
+            iconColor: '#5F5A50' // 图标颜色
         })
     }
 })
@@ -85,7 +85,7 @@ const pagesNum = computed<number>(() => {
 })
 
 // 图标颜色
-const iconColor = computed(() => props.styles.iconColor || themeStore.primaryColor || '#666666')
+const iconColor = computed(() => props.styles.iconColor || themeStore.primaryColor || '#5F5A50')
 
 // swiper 高度计算（padding 在内部 view 上：pt-md=24 + pb-sm=16 = 40rpx）
 // 每行：图标88 + mt-sm(16) + 文字(40) = 144rpx，行间距 gap-y-md = 24rpx
@@ -101,8 +101,8 @@ const swiperHeight = computed(() => {
 })
 
 // 指示器颜色
-const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#E85A4F', 0.16))
-const indicatorActiveColor = computed(() => themeStore.primaryColor || '#E85A4F')
+const indicatorColor = computed(() => alphaColor(themeStore.primaryColor || '#0B0B0B', 0.16))
+const indicatorActiveColor = computed(() => themeStore.primaryColor || '#0B0B0B')
 
 // 过滤后的可见数据（与admin端预览逻辑保持一致）
 const visibleData = computed(() => {

@@ -56,7 +56,7 @@
                             />
 
                             <view v-if="item.is_vip" class="favorite-card__vip-badge">
-                                <tn-icon name="vip-fill" size="24" color="#FFD700" />
+                                <tn-icon name="vip-fill" size="24" color="#C8A45D" />
                             </view>
                         </view>
 
@@ -109,7 +109,7 @@
                                         :color="
                                             star <= Math.floor(item.rating)
                                                 ? $theme.accentColor
-                                                : '#E5E7EB'
+                                                : '#E7E2D6'
                                         "
                                     />
                                 </view>
@@ -287,21 +287,21 @@ onShow(() => {
     &__eyebrow {
         font-size: 22rpx;
         font-weight: 600;
-        color: var(--wm-color-primary, #e85a4f);
-        letter-spacing: 4rpx;
+        color: var(--wm-color-primary, #0b0b0b);
+        letter-spacing: 0;
     }
 
     &__title {
         font-size: 40rpx;
         line-height: 1.3;
         font-weight: 700;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__meta {
         font-size: 24rpx;
         line-height: 1.6;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__stats {
@@ -321,13 +321,13 @@ onShow(() => {
 
     &__stat-label {
         font-size: 22rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__stat-value {
         font-size: 30rpx;
         font-weight: 700;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 }
 
@@ -356,7 +356,7 @@ onShow(() => {
         width: 44rpx;
         height: 44rpx;
         border-radius: 50%;
-        background: rgba(23, 23, 23, 0.45);
+        background: rgba(17, 17, 17, 0.45);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -396,7 +396,7 @@ onShow(() => {
         font-size: 34rpx;
         line-height: 1.3;
         font-weight: 700;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__badge-row {
@@ -413,7 +413,7 @@ onShow(() => {
         height: 72rpx;
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.66);
-        border: 1rpx solid rgba(239, 230, 225, 0.96);
+        border: 1rpx solid rgba(231, 226, 214, 0.96);
     }
 
     &__rating-row {
@@ -432,13 +432,13 @@ onShow(() => {
     &__rating-score {
         font-size: 26rpx;
         font-weight: 700;
-        color: var(--wm-color-secondary, #c99b73);
+        color: var(--wm-color-secondary, #c8a45d);
     }
 
     &__rating-divider,
     &__order-count {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__footer {
@@ -459,19 +459,19 @@ onShow(() => {
     &__price-symbol {
         font-size: 24rpx;
         font-weight: 700;
-        color: var(--wm-color-primary, #e85a4f);
+        color: var(--wm-color-primary, #0b0b0b);
     }
 
     &__price-value {
         font-size: 40rpx;
         font-weight: 700;
-        color: var(--wm-color-primary, #e85a4f);
+        color: var(--wm-color-primary, #0b0b0b);
     }
 
     &__price-unit,
     &__price-negotiable {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #7f7b78);
+        color: var(--wm-text-secondary, #5f5a50);
     }
 
     &__price-negotiable {
@@ -498,18 +498,18 @@ onShow(() => {
 
     &__ghost-btn {
         background: rgba(255, 255, 255, 0.7);
-        border: 1rpx solid rgba(239, 230, 225, 0.96);
+        border: 1rpx solid rgba(231, 226, 214, 0.96);
     }
 
     &__primary-btn {
-        background: linear-gradient(135deg, #f07c70 0%, #e85a4f 100%);
-        box-shadow: 0 14rpx 28rpx rgba(232, 90, 79, 0.18);
+        background: linear-gradient(135deg, #5A4433 0%, #0b0b0b 100%);
+        box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
     }
 
     &__ghost-btn-text {
         font-size: 24rpx;
         font-weight: 600;
-        color: var(--wm-text-primary, #1e2432);
+        color: var(--wm-text-primary, #111111);
     }
 
     &__primary-btn-text {
