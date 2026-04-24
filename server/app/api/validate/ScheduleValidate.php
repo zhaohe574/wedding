@@ -20,6 +20,7 @@ class ScheduleValidate extends BaseValidate
         'id' => 'require|integer|gt:0',
         'staff_id' => 'require|integer|gt:0',
         'date' => 'require|date',
+        'schedules' => 'require|array|checkSchedules',
         'year' => 'integer|between:2020,2100',
         'month' => 'integer|between:1,12',
         'package_id' => 'require|integer|gt:0',
@@ -34,6 +35,8 @@ class ScheduleValidate extends BaseValidate
         'staff_id.integer' => '工作人员ID格式错误',
         'date.require' => '请选择日期',
         'date.date' => '日期格式错误',
+        'schedules.require' => '请选择需要锁定的档期',
+        'schedules.array' => '档期列表格式错误',
         'year.between' => '年份参数错误',
         'month.between' => '月份参数错误',
         'package_id.require' => '请选择套餐',
@@ -79,6 +82,15 @@ class ScheduleValidate extends BaseValidate
     }
 
     /**
+     * @notes 批量锁定场景
+     * @return ScheduleValidate
+     */
+    public function sceneBatchLock()
+    {
+        return $this->only(['schedules', 'lock_duration']);
+    }
+
+    /**
      * @notes 释放场景
      * @return ScheduleValidate
      */
@@ -103,5 +115,36 @@ class ScheduleValidate extends BaseValidate
     public function sceneCancelWaitlist()
     {
         return $this->only(['id']);
+    }
+
+    /**
+     * @notes 校验批量档期列表
+     * @param mixed $value
+     * @return bool|string
+     */
+    protected function checkSchedules($value)
+    {
+        if (!is_array($value) || $value === []) {
+            return '请选择需要锁定的档期';
+        }
+
+        foreach ($value as $schedule) {
+            if (!is_array($schedule)) {
+                return '档期列表格式错误';
+            }
+
+            $staffId = (int) ($schedule[0] ?? 0);
+            $date = (string) ($schedule[1] ?? '');
+
+            if ($staffId <= 0) {
+                return '档期中的工作人员参数错误';
+            }
+
+            if ($date === '' || strtotime($date) === false) {
+                return '档期中的日期参数错误';
+            }
+        }
+
+        return true;
     }
 }

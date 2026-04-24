@@ -115,27 +115,18 @@ class MobileImageService
         }
 
         $sourcePath = self::toPublicPath($relativeUri);
-        if (!self::shouldOptimize($sourcePath)) {
+        if (!is_file($sourcePath)) {
             return $uri;
         }
 
         $cacheRelativeUri = self::buildCacheRelativeUri($relativeUri, $sourcePath);
         $cachePath = self::toPublicPath($cacheRelativeUri);
-        if (!is_file($cachePath) || filesize($cachePath) === 0) {
-            try {
-                self::ensureDirectory(dirname($cachePath));
-                self::optimizeToTarget($sourcePath, $cachePath);
-                if (!is_file($cachePath) || filesize($cachePath) === 0) {
-                    @unlink($cachePath);
-                    return $uri;
-                }
-            } catch (\Throwable $e) {
-                @unlink($cachePath);
-                return $uri;
-            }
+        if (is_file($cachePath) && filesize($cachePath) > 0) {
+            return FileService::getFileUrl($cacheRelativeUri);
         }
 
-        return FileService::getFileUrl($cacheRelativeUri);
+        // 读取链路不再同步压缩大图，避免详情接口在正式环境触发内存溢出。
+        return $uri;
     }
 
     /**

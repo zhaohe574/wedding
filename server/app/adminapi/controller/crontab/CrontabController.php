@@ -63,7 +63,7 @@ class CrontabController extends BaseAdminController
      */
     public function detail()
     {
-        $params = (new CrontabValidate())->goCheck('detail');
+        $params = (new CrontabValidate())->get()->goCheck('detail');
         $result = CrontabLogic::detail($params);
         return $this->data($result);
     }
@@ -128,7 +128,7 @@ class CrontabController extends BaseAdminController
      */
     public function expression()
     {
-        $params = (new CrontabValidate())->goCheck('expression');
+        $params = (new CrontabValidate())->get()->goCheck('expression');
         $result = CrontabLogic::expression($params);
         return $this->data($result);
     }

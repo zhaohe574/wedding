@@ -1,4 +1,8 @@
-import { lockSchedule, releaseScheduleLock } from '@/packages/common/api/schedule'
+import {
+    batchLockSchedule,
+    lockSchedule,
+    releaseScheduleLock
+} from '@/packages/common/api/schedule'
 import cache from '@/utils/cache'
 
 const BOOKING_LOCK_SESSION_KEY = 'booking_lock_session'
@@ -67,6 +71,21 @@ const runInQueue = <T>(task: () => Promise<T>) => {
     return result
 }
 
+const normalizeTargets = (targets: BookingLockTarget[]) =>
+    targets
+        .map((target) => ({
+            staff_id: normalizeStaffId(target.staff_id),
+            date: normalizeDate(target.date)
+        }))
+        .filter(
+            (target, index, list) =>
+                target.staff_id > 0 &&
+                target.date &&
+                list.findIndex(
+                    (item) => item.staff_id === target.staff_id && item.date === target.date
+                ) === index
+        )
+
 const buildTargets = (session: BookingLockSession): BookingLockTarget[] => {
     if (!hasValidSession(session)) {
         return []
@@ -88,6 +107,18 @@ const acquireLock = async (target: BookingLockTarget) => {
     await lockSchedule({
         staff_id: target.staff_id,
         date: target.date
+    })
+}
+
+const acquireBatchLocks = async (targets: BookingLockTarget[]) => {
+    const normalizedTargets = normalizeTargets(targets)
+
+    if (!normalizedTargets.length) {
+        return
+    }
+
+    await batchLockSchedule({
+        schedules: normalizedTargets.map((target) => [target.staff_id, target.date])
     })
 }
 
@@ -246,9 +277,7 @@ export const renewAllBookingLocks = () =>
             throw new Error('预约锁已失效，请重新开始预约')
         }
 
-        for (const target of targets) {
-            await acquireLock(target)
-        }
+        await acquireBatchLocks(targets)
 
         return saveSession(session)
     })

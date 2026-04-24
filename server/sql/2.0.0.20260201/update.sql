@@ -1016,6 +1016,7 @@ CREATE TABLE IF NOT EXISTS `la_subscribe_message_log` (
     `content` TEXT COMMENT '发送内容(JSON格式)',
     `page` VARCHAR(200) NOT NULL DEFAULT '' COMMENT '跳转页面路径',
     `miniprogram_state` VARCHAR(20) NOT NULL DEFAULT 'formal' COMMENT '小程序状态',
+    `planned_send_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '计划发送时间',
     `send_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发送状态：0-待发送，1-发送成功，2-发送失败',
     `error_code` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '错误码',
     `error_msg` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '错误信息',
@@ -1027,9 +1028,45 @@ CREATE TABLE IF NOT EXISTS `la_subscribe_message_log` (
     KEY `idx_template_id` (`template_id`),
     KEY `idx_scene` (`scene`),
     KEY `idx_business` (`business_type`, `business_id`),
+    KEY `idx_send_plan` (`send_status`, `planned_send_time`),
     KEY `idx_send_status` (`send_status`),
     KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订阅消息发送日志表';
+
+SET @add_subscribe_log_planned_send_time_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_subscribe_message_log'
+          AND COLUMN_NAME = 'planned_send_time'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_subscribe_message_log` ADD COLUMN `planned_send_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT ''计划发送时间'' AFTER `miniprogram_state`'
+);
+PREPARE stmt FROM @add_subscribe_log_planned_send_time_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_subscribe_log_send_plan_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_subscribe_message_log'
+          AND INDEX_NAME = 'idx_send_plan'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_subscribe_message_log` ADD KEY `idx_send_plan` (`send_status`, `planned_send_time`)'
+);
+PREPARE stmt FROM @add_subscribe_log_send_plan_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+UPDATE `la_subscribe_message_log`
+SET `planned_send_time` = `create_time`
+WHERE `send_status` = 0
+  AND `planned_send_time` = 0;
 
 -- la_subscribe_message_scene
 CREATE TABLE IF NOT EXISTS `la_subscribe_message_scene` (
@@ -2077,30 +2114,21 @@ INSERT INTO `la_dict_data` (`id`, `name`, `value`, `type_id`, `type_value`, `sor
 -- la_subscribe_message_scene
 DELETE FROM `la_subscribe_message_scene`;
 INSERT INTO `la_subscribe_message_scene` (`id`, `scene`, `name`, `description`, `template_id`, `trigger_event`, `data_mapping`, `page_path`, `is_auto`, `delay_seconds`, `status`, `sort`, `create_time`, `update_time`) VALUES
-(1, 'order_create', '订单创建通知', '用户提交订单后发送确认通知', 'TEMPLATE_ID_ORDER_CREATE', 'OrderCreated', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 110, 1773413107, 1773413107),
-(2, 'order_paid', '支付成功通知', '用户完成支付后发送确认通知', 'TEMPLATE_ID_ORDER_PAID', 'OrderPaid', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 109, 1773413107, 1773413107),
-(3, 'order_confirm', '订单确认通知', '商家确认订单后通知用户', 'TEMPLATE_ID_ORDER_CONFIRM', 'OrderConfirmed', '{"character_string1":"order_sn","thing2":"status_text","amount3":"pay_amount","time4":"service_date"}', 'pages/order_detail/order_detail', 1, 0, 0, 108, 1773413107, 1773413107),
-(4, 'order_complete', '服务完成通知', '服务完成后通知用户进行评价', '', 'OrderCompleted', NULL, 'pages/review/publish', 1, 0, 0, 107, 1773413107, 1773413107),
-(5, 'schedule_remind', '档期提醒通知', '服务日期前提醒用户', 'TEMPLATE_ID_SERVICE_REMIND', 'ScheduleRemind', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 106, 1773413107, 1773413107),
-(6, 'refund_result', '退款结果通知', '退款审核结果通知', 'TEMPLATE_ID_REFUND_RESULT', 'RefundProcessed', NULL, 'pages/order_detail/order_detail', 1, 0, 1, 105, 1773413107, 1773413107),
-(7, 'callback_remind', '回访提醒通知', '服务完成后的回访提醒', '', 'CallbackRemind', NULL, 'packages/pages/aftersale/callback', 1, 0, 0, 104, 1773413107, 1773413107),
-(8, 'ticket_update', '工单进度通知', '售后工单状态更新通知', 'TEMPLATE_ID_TICKET_UPDATE', 'TicketUpdated', NULL, 'packages/pages/aftersale/ticket_detail', 1, 0, 1, 103, 1773413107, 1773413107),
-(9, 'change_result', '变更审核通知', '订单变更申请审核结果通知', '', 'ChangeProcessed', NULL, 'pages/order_change/change_detail', 1, 0, 0, 102, 1773413107, 1773413107),
-(10, 'schedule_change', '档期变更通知', '人员档期发生变更时通知', '', 'ScheduleChanged', NULL, 'pages/order_detail/order_detail', 1, 0, 0, 101, 1773413107, 1773413107),
-(11, 'waitlist_release', '候补释放通知', '档期释放后通知候补用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"remark"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 100, 1773413107, 1773413107),
-(12, 'waitlist_expired', '候补失效通知', '候补超过预约日期后通知用户', 'TEMPLATE_ID_WAITLIST_EXPIRED', 'WaitlistExpired', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"remark"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 99, 1773413107, 1773413107);
+(1, 'order_confirm', '订单确认通知', '订单确认后通知用户', 'TEMPLATE_ID_ORDER_CONFIRM', 'OrderConfirmed', '{"character_string1":"order_sn","thing2":"status_text","amount3":"pay_amount","time4":"service_date"}', 'pages/order_detail/order_detail', 1, 0, 1, 110, 1773413107, 1773413107),
+(2, 'schedule_remind', '服务提醒通知', '服务开始前提醒用户', 'TEMPLATE_ID_SERVICE_REMIND', 'ScheduleRemind', '{"thing1":"service_name","time2":"service_date","thing3":"address","thing4":"staff_name"}', 'pages/order_detail/order_detail', 1, 0, 1, 109, 1773413107, 1773413107),
+(3, 'refund_result', '退款结果通知', '退款审核结果通知', 'TEMPLATE_ID_REFUND_RESULT', 'RefundProcessed', '{"character_string1":"order_sn","amount2":"refund_amount","phrase3":"status_text","thing4":"reason"}', 'pages/order_detail/order_detail', 1, 0, 1, 108, 1773413107, 1773413107),
+(4, 'ticket_update', '工单进度通知', '售后工单状态更新通知', 'TEMPLATE_ID_TICKET_UPDATE', 'TicketUpdated', '{"character_string1":"ticket_sn","phrase2":"status_text","thing3":"handle_note","time4":"update_time"}', 'packages/pages/aftersale/ticket_detail', 1, 0, 1, 107, 1773413107, 1773413107),
+(5, 'waitlist_release', '候补释放通知', '档期释放后通知候补用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 106, 1773413107, 1773413107),
+(6, 'waitlist_expired', '候补失效通知', '候补超过预约日期后通知用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistExpired', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 105, 1773413107, 1773413107);
 
 -- la_subscribe_message_template
 DELETE FROM `la_subscribe_message_template`;
 INSERT INTO `la_subscribe_message_template` (`id`, `template_id`, `name`, `title`, `scene`, `content`, `example`, `keywords`, `category_id`, `status`, `sort`, `remark`, `create_time`, `update_time`, `delete_time`) VALUES
-(1, 'TEMPLATE_ID_ORDER_CREATE', '订单提交成功通知', '订单提交成功', 'order_create', '{"thing1":{"key":"订单内容","value":""},"character_string2":{"key":"订单编号","value":""},"amount3":{"key":"订单金额","value":""},"time4":{"key":"下单时间","value":""}}', NULL, '订单内容,订单编号,订单金额,下单时间', '', 1, 100, '订单创建后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
-(2, 'TEMPLATE_ID_ORDER_PAID', '支付成功通知', '支付成功', 'order_paid', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"支付金额","value":""},"time3":{"key":"支付时间","value":""},"thing4":{"key":"商品名称","value":""}}', NULL, '订单编号,支付金额,支付时间,商品名称', '', 1, 99, '支付完成后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
-(3, 'TEMPLATE_ID_ORDER_CONFIRM', '订单确认通知', '订单确认通知', 'order_confirm', '{"character_string1":{"key":"订单编号","value":""},"thing2":{"key":"确认状态","value":""},"amount3":{"key":"待付金额","value":""},"time4":{"key":"服务日期","value":""}}', '{"character_string1":"202603150001","thing2":"服务人员已确认","amount3":"2999.00","time4":"2026-03-20"}', '订单编号,确认状态,待付金额,服务日期', '', 1, 98, '订单全部确认后发送，需在微信后台申请模板后更新 template_id', 1773413107, 1773413107, NULL),
-(4, 'TEMPLATE_ID_SERVICE_REMIND', '服务提醒通知', '服务提醒', 'schedule_remind', '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}', NULL, '服务内容,服务时间,服务地点,服务人员', '', 1, 97, '服务前1天/3天提醒，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
-(5, 'TEMPLATE_ID_REFUND_RESULT', '退款结果通知', '退款通知', 'refund_result', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}', NULL, '订单编号,退款金额,退款状态,退款原因', '', 1, 96, '退款审核后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
-(6, 'TEMPLATE_ID_TICKET_UPDATE', '工单进度通知', '工单状态更新', 'ticket_update', '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}', NULL, '工单编号,工单状态,处理说明,更新时间', '', 1, 95, '工单状态变更时发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
-(7, 'TEMPLATE_ID_WAITLIST_RELEASE', '候补释放通知', '候补释放', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"备注","value":""}}', NULL, '服务人员,档期日期,套餐名称,备注', '', 1, 95, '候补释放后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
-(8, 'TEMPLATE_ID_WAITLIST_EXPIRED', '候补失效通知', '候补失效', 'waitlist_expired', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"失效说明","value":""}}', NULL, '服务人员,档期日期,套餐名称,失效说明', '', 1, 94, '候补失效后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL);
+(1, 'TEMPLATE_ID_ORDER_CONFIRM', '订单确认通知', '订单确认通知', 'order_confirm', '{"character_string1":{"key":"订单编号","value":""},"thing2":{"key":"确认状态","value":""},"amount3":{"key":"订单金额","value":""},"time4":{"key":"服务日期","value":""}}', NULL, '订单编号,确认状态,订单金额,服务日期', '', 1, 100, '订单确认后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
+(2, 'TEMPLATE_ID_SERVICE_REMIND', '服务提醒通知', '服务提醒', 'schedule_remind', '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}', NULL, '服务内容,服务时间,服务地点,服务人员', '', 1, 99, '服务开始前提醒，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
+(3, 'TEMPLATE_ID_REFUND_RESULT', '退款结果通知', '退款通知', 'refund_result', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}', NULL, '订单编号,退款金额,退款状态,退款原因', '', 1, 98, '退款审核后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
+(4, 'TEMPLATE_ID_TICKET_UPDATE', '工单进度通知', '工单状态更新', 'ticket_update', '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}', NULL, '工单编号,工单状态,处理说明,更新时间', '', 1, 97, '工单状态变更时发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
+(5, 'TEMPLATE_ID_WAITLIST_RELEASE', '候补状态通知', '候补状态通知', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"状态说明","value":""}}', NULL, '服务人员,档期日期,套餐名称,状态说明', '', 1, 96, '候补释放或失效时发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL);
 
 -- la_system_role
 DELETE FROM `la_system_role`;
@@ -2593,7 +2621,7 @@ INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) 
 -- =============================================================================
 
 DELETE FROM `la_dev_crontab`
-WHERE `command` IN ('cancel_unpaid_orders', 'send_station_reminders', 'expire_waitlists');
+WHERE `command` IN ('cancel_unpaid_orders', 'send_station_reminders', 'expire_waitlists', 'send_subscribe_messages');
 
 INSERT INTO `la_dev_crontab` (
     `name`,
@@ -2610,7 +2638,8 @@ INSERT INTO `la_dev_crontab` (
 ) VALUES
 ('超时未支付订单自动取消', 1, 1, '每分钟扫描待支付首笔订单并自动取消超时单', 'cancel_unpaid_orders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
 ('站内提醒发送', 1, 1, '每分钟扫描服务前一天提醒与暂停到期提醒的站内消息', 'send_station_reminders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-('候补超期自动失效', 1, 1, '每天扫描预约日期已过的候补并自动标记为已过期', 'expire_waitlists', '', 1, '10 0 * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL);
+('候补超期自动失效', 1, 1, '每天扫描预约日期已过的候补并自动标记为已过期', 'expire_waitlists', '', 1, '10 0 * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+('订阅消息派发', 1, 1, '每分钟扫描并派发到期的小程序订阅消息', 'send_subscribe_messages', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL);
 
 -- =============================================================================
 -- Part 5: 订单付款渠道

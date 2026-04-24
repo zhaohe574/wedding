@@ -73,7 +73,7 @@ class DynamicController extends BaseAdminController
      */
     public function detail()
     {
-        $params = (new DynamicValidate())->goCheck('detail');
+        $params = (new DynamicValidate())->get()->goCheck('detail');
         if ($response = $this->checkDynamicScope((int)$params['id'])) {
             return $response;
         }
@@ -304,7 +304,7 @@ class DynamicController extends BaseAdminController
             return $this->fail(DynamicOwnerService::getOwnerViewDeniedMessage());
         }
 
-        $params = (new DynamicValidate())->goCheck('detail');
+        $params = (new DynamicValidate())->get()->goCheck('detail');
         $dynamic = DynamicOwnerService::findOwnedStaffDynamic(
             (int)$params['id'],
             (int)$ownerContext['owner_staff_id']

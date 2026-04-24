@@ -25,7 +25,7 @@ class ScheduleController extends BaseApiController
      */
     public function staffSchedule()
     {
-        $params = (new ScheduleValidate())->goCheck('staffSchedule');
+        $params = (new ScheduleValidate())->get()->goCheck('staffSchedule');
         $result = ScheduleLogic::getStaffSchedule($params);
         return $this->data($result);
     }
@@ -36,7 +36,7 @@ class ScheduleController extends BaseApiController
      */
     public function monthCalendar()
     {
-        $params = (new ScheduleValidate())->goCheck('calendar');
+        $params = (new ScheduleValidate())->get()->goCheck('calendar');
         $result = ScheduleLogic::getMonthCalendar($params);
         return $this->data($result);
     }
@@ -58,7 +58,7 @@ class ScheduleController extends BaseApiController
      */
     public function checkAvailable()
     {
-        $params = (new ScheduleValidate())->goCheck('check');
+        $params = (new ScheduleValidate())->get()->goCheck('check');
         $params['user_id'] = $this->userId;
         $result = ScheduleLogic::checkAvailable($params);
         return $this->data($result);
@@ -75,6 +75,23 @@ class ScheduleController extends BaseApiController
         $result = ScheduleLogic::lockSchedule($params);
         if ($result['success']) {
             return $this->success($result['message']);
+        }
+        return $this->fail($result['message']);
+    }
+
+    /**
+     * @notes 批量锁定档期
+     * @return \think\response\Json
+     */
+    public function batchLockSchedule()
+    {
+        $params = (new ScheduleValidate())->post()->goCheck('batchLock');
+        $params['user_id'] = $this->userId;
+        $result = ScheduleLogic::batchLockSchedule($params);
+        if ($result['success']) {
+            return $this->success($result['message'], [
+                'locked_schedules' => $result['locked_schedules'] ?? [],
+            ]);
         }
         return $this->fail($result['message']);
     }

@@ -35,7 +35,7 @@ class OrderChangeController extends BaseApiController
      */
     public function detail()
     {
-        $params = (new OrderChangeValidate())->goCheck('detail');
+        $params = (new OrderChangeValidate())->get()->goCheck('detail');
         $result = OrderChangeLogic::getChangeDetail($params['id'], $this->userId);
         if ($result === null) {
             return $this->fail('变更记录不存在');
@@ -49,7 +49,7 @@ class OrderChangeController extends BaseApiController
      */
     public function checkCanChange()
     {
-        $params = (new OrderChangeValidate())->goCheck('checkOrder');
+        $params = (new OrderChangeValidate())->get()->goCheck('checkOrder');
         $result = OrderChangeLogic::checkCanChange($params['order_id'], $this->userId);
         return $this->data($result);
     }
@@ -163,7 +163,7 @@ class OrderChangeController extends BaseApiController
      */
     public function pauseDetail()
     {
-        $params = (new OrderChangeValidate())->goCheck('pauseDetail');
+        $params = (new OrderChangeValidate())->get()->goCheck('pauseDetail');
         $result = OrderChangeLogic::getPauseDetail($params['id'], $this->userId);
         if ($result === null) {
             return $this->fail('暂停记录不存在');

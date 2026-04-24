@@ -39,6 +39,14 @@ export function lockSchedule(params: any) {
     )
 }
 
+// 批量锁定档期
+export function batchLockSchedule(params: any) {
+    return request.post(
+        { url: '/schedule/batchLockSchedule', params },
+        { isAuth: true, ignoreCancel: true }
+    )
+}
+
 // 释放档期锁定
 export function releaseScheduleLock(params: any) {
     return request.post({ url: '/schedule/releaseLock', params }, { ignoreCancel: true })

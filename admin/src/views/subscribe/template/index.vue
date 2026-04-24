@@ -36,6 +36,15 @@
             </el-col>
         </el-row>
 
+        <el-card class="guide-card">
+            <el-alert type="warning" :closable="false" show-icon>
+                <template #title>订阅消息使用前请先完成微信小程序配置</template>
+                <div class="guide-text">1．后台配置路径是“设置 / 渠道设置 / 微信小程序”，必须填写正确的 AppID 和 AppSecret。</div>
+                <div class="guide-text">2．模板 ID 必须替换为微信公众平台申请下来的真实模板 ID，占位值不会实际发送。</div>
+                <div class="guide-text">3．场景设置了延迟发送后，依赖定时任务 `send_subscribe_messages` 每分钟扫描并派发。</div>
+            </el-alert>
+        </el-card>
+
         <!-- 标签页 -->
         <el-card>
             <el-tabs v-model="activeTab" @tab-change="handleTabChange">
@@ -127,6 +136,11 @@
                         </el-table-column>
                         <el-table-column prop="trigger_event" label="触发事件" width="140" />
                         <el-table-column prop="is_auto_desc" label="发送方式" width="100" align="center" />
+                        <el-table-column label="延迟发送" width="120" align="center">
+                            <template #default="{ row }">
+                                {{ Number(row.delay_seconds || 0) > 0 ? `${row.delay_seconds} 秒` : '立即发送' }}
+                            </template>
+                        </el-table-column>
                         <el-table-column prop="status" label="状态" width="100" align="center">
                             <template #default="{ row }">
                                 <el-switch
@@ -147,10 +161,11 @@
                 <!-- 发送记录 -->
                 <el-tab-pane label="发送记录" name="log">
                     <div class="toolbar">
+                        <el-button type="primary" plain @click="handleOpenTestSend">测试发送</el-button>
                         <el-select
                             v-model="logSearch.send_status"
                             placeholder="发送状态"
-                            style="width: 120px"
+                            style="width: 120px; margin-left: 8px"
                             clearable
                             @change="fetchLogList"
                         >
@@ -199,6 +214,7 @@
                                 </el-tag>
                             </template>
                         </el-table-column>
+                        <el-table-column prop="planned_send_time" label="计划发送" width="170" />
                         <el-table-column prop="error_msg" label="错误信息" min-width="150" show-overflow-tooltip />
                         <el-table-column prop="create_time" label="创建时间" width="170" />
                         <el-table-column label="操作" width="120" fixed="right">
@@ -253,7 +269,7 @@
                 <el-form-item label="使用场景" prop="scene">
                     <el-select v-model="templateForm.scene" placeholder="选择使用场景" style="width: 100%">
                         <el-option
-                            v-for="item in sceneOptions"
+                            v-for="item in templateSceneOptions"
                             :key="item.value"
                             :label="item.label"
                             :value="item.value"
@@ -303,11 +319,32 @@
                         v-model="sceneForm.data_mapping_text"
                         type="textarea"
                         :rows="6"
-                        placeholder='请输入JSON对象，例如 {"thing1":"staff_name"}'
+                        class="json-textarea"
+                        placeholder="请输入 JSON 对象"
                     />
-                    <div class="form-tip">
-                        示例：{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name"}
-                    </div>
+                    <el-collapse v-model="sceneHelperPanels" class="mapping-helper-collapse">
+                        <el-collapse-item name="available-params">
+                            <template #title>
+                                <div class="mapping-helper-title">
+                                    <span>查看可用参数</span>
+                                </div>
+                            </template>
+                            <div v-if="sceneAvailableParams.length" class="mapping-helper-tags">
+                                <el-tag
+                                    v-for="item in sceneAvailableParams"
+                                    :key="item.key"
+                                    size="small"
+                                    effect="plain"
+                                    class="mapping-helper-tag"
+                                    :title="item.desc || item.label"
+                                >
+                                    <span class="mapping-helper-code">{{ item.key }}</span>
+                                    <span class="mapping-helper-text">{{ item.label }}</span>
+                                </el-tag>
+                            </div>
+                            <div v-else class="mapping-helper-empty">当前场景暂无可用参数</div>
+                        </el-collapse-item>
+                    </el-collapse>
                 </el-form-item>
                 <el-form-item label="跳转页面" prop="page_path">
                     <el-input v-model="sceneForm.page_path" placeholder="小程序跳转页面路径" />
@@ -321,6 +358,7 @@
                 <el-form-item label="延迟发送" prop="delay_seconds">
                     <el-input-number v-model="sceneForm.delay_seconds" :min="0" :max="86400" />
                     <span class="ml-2">秒</span>
+                    <div class="form-tip">设置为 0 表示立即发送。延迟发送依赖订阅消息派发定时任务。</div>
                 </el-form-item>
                 <el-form-item label="状态" prop="status">
                     <el-switch v-model="sceneForm.status" :active-value="1" :inactive-value="0" />
@@ -355,6 +393,42 @@
             </template>
         </el-dialog>
 
+        <!-- 测试发送弹窗 -->
+        <el-dialog v-model="testDialogVisible" title="测试发送" width="640px">
+            <el-form ref="testFormRef" :model="testForm" :rules="testRules" label-width="100px">
+                <el-form-item label="用户 ID" prop="user_id">
+                    <el-input-number v-model="testForm.user_id" :min="1" :max="999999999" style="width: 100%" />
+                </el-form-item>
+                <el-form-item label="发送场景" prop="scene">
+                    <el-select v-model="testForm.scene" placeholder="请选择发送场景" style="width: 100%">
+                        <el-option
+                            v-for="item in templateSceneOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value"
+                        />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="跳转页面" prop="page">
+                    <el-input v-model="testForm.page" placeholder="留空则使用场景默认页面" />
+                </el-form-item>
+                <el-form-item label="消息数据" prop="data_text">
+                    <el-input
+                        v-model="testForm.data_text"
+                        type="textarea"
+                        :rows="10"
+                        class="json-textarea"
+                        placeholder='请输入 JSON 对象，例如 {"thing1":"测试内容","time2":"2026-04-20 12:00"}'
+                    />
+                    <div class="form-tip">仅支持 JSON 对象，键名需与模板关键词字段一致。</div>
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="testDialogVisible = false">取消</el-button>
+                <el-button type="primary" :loading="testSubmitting" @click="handleSubmitTestSend">立即发送</el-button>
+            </template>
+        </el-dialog>
+
         <!-- 日志详情弹窗 -->
         <el-dialog v-model="logDetailVisible" title="发送记录详情" width="600px">
             <el-descriptions :column="2" border v-if="currentLog">
@@ -374,6 +448,7 @@
                 <el-descriptions-item label="错误码">{{ currentLog.error_code || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="错误信息">{{ currentLog.error_msg || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="创建时间">{{ currentLog.create_time }}</el-descriptions-item>
+                <el-descriptions-item label="计划发送">{{ currentLog.planned_send_time || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="发送时间">{{ currentLog.send_time || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="消息内容" :span="2">
                     <pre class="content-pre">{{ JSON.stringify(currentLog.content, null, 2) }}</pre>
@@ -384,7 +459,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { TabPaneName } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
@@ -403,7 +478,8 @@ import {
     getMessageLogList,
     getMessageLogDetail,
     retryMessageLog,
-    getStatistics
+    getStatistics,
+    testSend as testSendMessage
 } from '@/api/subscribe'
 
 // 标签页
@@ -414,6 +490,18 @@ const statistics = ref<any>({})
 
 // 场景选项
 const sceneOptions = ref<any[]>([])
+const templateSceneValues = ['order_confirm', 'schedule_remind', 'refund_result', 'ticket_update', 'waitlist_release']
+const templateSceneLabels: Record<string, string> = {
+    waitlist_release: '候补状态通知'
+}
+const templateSceneOptions = computed(() =>
+    sceneOptions.value
+        .filter((item) => templateSceneValues.includes(item.value))
+        .map((item) => ({
+            ...item,
+            label: templateSceneLabels[item.value] || item.label
+        }))
+)
 
 // 模板列表
 const templateList = ref<any[]>([])
@@ -456,6 +544,8 @@ const templateRules = {
 const sceneDialogVisible = ref(false)
 const sceneFormRef = ref()
 const sceneSubmitting = ref(false)
+const sceneHelperPanels = ref<string[]>([])
+const sceneAvailableParams = ref<any[]>([])
 const sceneForm = reactive<any>({
     id: null,
     scene: '',
@@ -479,6 +569,22 @@ const currentScene = ref<any>(null)
 // 日志详情
 const logDetailVisible = ref(false)
 const currentLog = ref<any>(null)
+
+// 测试发送
+const testDialogVisible = ref(false)
+const testFormRef = ref()
+const testSubmitting = ref(false)
+const testForm = reactive<any>({
+    user_id: undefined,
+    scene: '',
+    page: '',
+    data_text: '{}'
+})
+const testRules = {
+    user_id: [{ required: true, message: '请输入用户 ID', trigger: 'blur' }],
+    scene: [{ required: true, message: '请选择发送场景', trigger: 'change' }],
+    data_text: [{ required: true, message: '请输入消息数据 JSON', trigger: 'blur' }]
+}
 
 // 初始化
 onMounted(() => {
@@ -567,7 +673,7 @@ const handleAddTemplate = () => {
         template_id: '',
         name: '',
         title: '',
-        scene: '',
+        scene: templateSceneOptions.value[0]?.value || '',
         keywords: '',
         status: 1,
         sort: 0,
@@ -633,7 +739,7 @@ const parseDataMapping = (mappingText: string) => {
     }
     try {
         const parsed = JSON.parse(mappingText)
-        if (!parsed || typeof parsed !== 'object') {
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
             return null
         }
         return parsed
@@ -642,7 +748,13 @@ const parseDataMapping = (mappingText: string) => {
     }
 }
 
+const resetSceneHelperState = () => {
+    sceneHelperPanels.value = []
+    sceneAvailableParams.value = []
+}
+
 const handleEditScene = async (row: any) => {
+    resetSceneHelperState()
     let sceneData = row
     try {
         const detail = await getSceneDetail(row.id)
@@ -652,6 +764,7 @@ const handleEditScene = async (row: any) => {
     } catch (e) {
         // 获取详情失败时使用列表数据
     }
+    sceneAvailableParams.value = Array.isArray(sceneData.available_params) ? sceneData.available_params : []
     Object.assign(sceneForm, sceneData, {
         data_mapping_text: formatDataMapping(sceneData.data_mapping)
     })
@@ -712,6 +825,64 @@ const handleSubmitBind = async () => {
     }
 }
 
+const resetTestForm = () => {
+    Object.assign(testForm, {
+        user_id: undefined,
+        scene: sceneOptions.value[0]?.value || '',
+        page: '',
+        data_text: '{}'
+    })
+}
+
+const handleOpenTestSend = () => {
+    resetTestForm()
+    testDialogVisible.value = true
+}
+
+const parseTestData = (dataText: string) => {
+    const text = dataText?.trim()
+    if (!text) {
+        return {}
+    }
+    try {
+        const parsed = JSON.parse(text)
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            return null
+        }
+        return parsed
+    } catch (error) {
+        return null
+    }
+}
+
+const handleSubmitTestSend = async () => {
+    await testFormRef.value?.validate()
+
+    const data = parseTestData(testForm.data_text)
+    if (data === null) {
+        ElMessage.warning('消息数据必须是合法的 JSON 对象')
+        return
+    }
+
+    testSubmitting.value = true
+    try {
+        const result = await testSendMessage({
+            user_id: Number(testForm.user_id),
+            scene: testForm.scene,
+            page: testForm.page || '',
+            data
+        })
+        ElMessage.success(result?.msg || '测试发送成功')
+        testDialogVisible.value = false
+        fetchStatistics()
+        if (activeTab.value === 'log') {
+            fetchLogList()
+        }
+    } finally {
+        testSubmitting.value = false
+    }
+}
+
 // 查看日志详情
 const handleViewLog = async (row: any) => {
     const res = await getMessageLogDetail(row.id)
@@ -725,6 +896,7 @@ const handleRetryLog = async (row: any) => {
     await retryMessageLog(row.id)
     ElMessage.success('重试成功')
     fetchLogList()
+    fetchStatistics()
 }
 
 const getConfigStatusType = (status: string) => {
@@ -750,6 +922,14 @@ const getSendStatusType = (status: number) => {
 <style scoped lang="scss">
 .subscribe-container {
     padding: 16px;
+}
+
+.guide-card {
+    margin-bottom: 16px;
+}
+
+.guide-text {
+    line-height: 1.8;
 }
 
 .stat-card {
@@ -805,6 +985,69 @@ const getSendStatusType = (status: number) => {
     font-size: 12px;
     color: #909399;
     line-height: 1.4;
+    width: 100%;
+}
+
+.json-textarea :deep(textarea) {
+    font-family: Consolas, 'Courier New', monospace;
+}
+
+.mapping-helper-collapse {
+    width: 100%;
+    margin-top: 12px;
+    border-top: 1px solid var(--el-border-color-lighter);
+    border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.mapping-helper-collapse :deep(.el-collapse-item__header) {
+    min-height: 38px;
+    padding: 8px 0;
+    background: transparent;
+    line-height: 1.4;
+}
+
+.mapping-helper-collapse :deep(.el-collapse-item__wrap) {
+    border-bottom: none;
+}
+
+.mapping-helper-collapse :deep(.el-collapse-item__content) {
+    padding-bottom: 0;
+}
+
+.mapping-helper-title {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding-right: 8px;
+    font-size: 13px;
+}
+
+.mapping-helper-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mapping-helper-tag :deep(.el-tag__content) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+}
+
+.mapping-helper-code {
+    font-family: Consolas, 'Courier New', monospace;
+    color: #303133;
+}
+
+.mapping-helper-text {
+    color: #606266;
+}
+
+.mapping-helper-empty {
+    font-size: 12px;
+    color: #909399;
+    line-height: 1.5;
 }
 
 .mb-4 {

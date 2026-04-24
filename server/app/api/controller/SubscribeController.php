@@ -36,7 +36,7 @@ class SubscribeController extends BaseApiController
      */
     public function recordSubscribe()
     {
-        $params = (new SubscribeValidate())->goCheck('recordSubscribe');
+        $params = (new SubscribeValidate())->post()->goCheck('recordSubscribe');
         $params['user_id'] = $this->userId;
         $result = SubscribeLogic::recordSubscribe($params);
         if ($result) {
@@ -51,7 +51,7 @@ class SubscribeController extends BaseApiController
      */
     public function batchRecordSubscribe()
     {
-        $params = (new SubscribeValidate())->goCheck('batchRecord');
+        $params = (new SubscribeValidate())->post()->goCheck('batchRecord');
         $params['user_id'] = $this->userId;
         $result = SubscribeLogic::batchRecordSubscribe($params);
         return $this->data(['count' => $result]);

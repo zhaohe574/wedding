@@ -31,6 +31,7 @@ use think\facade\Db;
 class StaffLogic extends BaseLogic
 {
     private static ?string $staffCertificateStatusField = null;
+    private const MAX_INLINE_LONG_DETAIL_OPTIMIZE_BYTES = 1048576;
 
     /**
      * @notes 推荐工作人员
@@ -521,6 +522,10 @@ class StaffLogic extends BaseLogic
     {
         $content = trim($content);
         if ($content === '') {
+            return $content;
+        }
+
+        if (strlen($content) > self::MAX_INLINE_LONG_DETAIL_OPTIMIZE_BYTES) {
             return $content;
         }
 

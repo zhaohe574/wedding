@@ -15,6 +15,8 @@ return [
         'expire_waitlists' => 'app\common\command\ExpireWaitlists',
         // 站内提醒
         'send_station_reminders' => 'app\common\command\SendStationReminders',
+        // 订阅消息派发
+        'send_subscribe_messages' => 'app\common\command\SendSubscribeMessages',
         // 退款查询
         'query_refund' => 'app\common\command\QueryRefund',
         // 重建订单确认函图片资产

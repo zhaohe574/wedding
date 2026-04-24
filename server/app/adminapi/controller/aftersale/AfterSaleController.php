@@ -47,7 +47,7 @@ class AfterSaleController extends BaseAdminController
      */
     public function ticketDetail()
     {
-        $params = (new AfterSaleValidate())->goCheck('ticketDetail');
+        $params = (new AfterSaleValidate())->get()->goCheck('ticketDetail');
         $result = AfterSaleLogic::getTicketDetail($params['id']);
         return $this->data($result);
     }
@@ -129,7 +129,7 @@ class AfterSaleController extends BaseAdminController
      */
     public function ticketLogs()
     {
-        $params = (new AfterSaleValidate())->goCheck('ticketDetail');
+        $params = (new AfterSaleValidate())->get()->goCheck('ticketDetail');
         $result = AfterSaleLogic::getTicketLogs($params['id']);
         return $this->data($result);
     }
@@ -151,7 +151,7 @@ class AfterSaleController extends BaseAdminController
      */
     public function complaintDetail()
     {
-        $params = (new AfterSaleValidate())->goCheck('complaintDetail');
+        $params = (new AfterSaleValidate())->get()->goCheck('complaintDetail');
         $result = AfterSaleLogic::getComplaintDetail($params['id']);
         return $this->data($result);
     }
@@ -187,7 +187,7 @@ class AfterSaleController extends BaseAdminController
      */
     public function callbackDetail()
     {
-        $params = (new AfterSaleValidate())->goCheck('callbackDetail');
+        $params = (new AfterSaleValidate())->get()->goCheck('callbackDetail');
         $result = AfterSaleLogic::getCallbackDetail($params['id']);
         return $this->data($result);
     }

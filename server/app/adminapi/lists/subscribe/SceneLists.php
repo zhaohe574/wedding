@@ -38,6 +38,7 @@ class SceneLists extends BaseAdminDataLists implements ListsSearchInterface
     public function lists(): array
     {
         $list = SubscribeMessageScene::where($this->searchWhere)
+            ->whereIn('scene', SubscribeMessageTemplate::getActiveSceneValues())
             ->field('id, scene, name, description, template_id, trigger_event, page_path, is_auto, delay_seconds, status, sort, create_time')
             ->order('sort', 'desc')
             ->order('id', 'asc')
@@ -77,6 +78,8 @@ class SceneLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function count(): int
     {
-        return SubscribeMessageScene::where($this->searchWhere)->count();
+        return SubscribeMessageScene::where($this->searchWhere)
+            ->whereIn('scene', SubscribeMessageTemplate::getActiveSceneValues())
+            ->count();
     }
 }

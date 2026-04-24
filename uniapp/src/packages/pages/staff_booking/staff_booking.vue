@@ -24,6 +24,17 @@
                     <view class="staff-booking-page__main">
                         <text class="staff-booking-page__desc">{{ currentIntroText }}</text>
 
+                        <text v-if="!mainLockReady" class="staff-booking-page__assist-text">
+                            正在锁定当前档期，请稍候进入下一步
+                        </text>
+
+                        <text
+                            v-else-if="currentStep.type === 'role' && roleLoadingMap[currentStep.key]"
+                            class="staff-booking-page__assist-text"
+                        >
+                            正在加载可选人员...
+                        </text>
+
                         <scroll-view scroll-x class="choice-scroll" show-scrollbar="false" enhanced>
                             <view class="choice-list" :class="choiceListClass">
                                 <template v-if="currentStep.type === 'package'">
@@ -217,6 +228,17 @@
                         >
                             <text class="empty-state__text">当前档期暂无可预约套餐</text>
                         </view>
+
+                        <view
+                            v-else-if="
+                                currentStep.type === 'role' &&
+                                roleLoadingMap[currentStep.key] &&
+                                !currentRoleCandidates.length
+                            "
+                            class="empty-state"
+                        >
+                            <text class="empty-state__text">正在同步可选人员...</text>
+                        </view>
                     </view>
                 </view>
             </view>
@@ -337,12 +359,17 @@ import {
 } from '@/packages/common/utils/booking-lock-session'
 
 import {
+    BOOKING_RETURN_MODE_DETAIL_BACK,
     BOOKING_ROLE_KEYS,
     type BookingRoleKey,
+    clearStaffDetailRestoreSnapshot,
     getOrderConfirmPageUrl,
     getStaffBookingPageUrl,
     getStaffDetailPageUrl,
-    normalizeBookingQuery
+    loadStaffDetailRestoreSnapshot,
+    normalizeBookingQuery,
+    saveStaffDetailRestoreSnapshot,
+    saveStaffDetailReturnState
 } from '@/packages/common/utils/staff-booking'
 
 import {
@@ -350,6 +377,7 @@ import {
     loadServiceRegionSelection,
     saveServiceRegionSelection
 } from '@/utils/service-region'
+import { isDevMode } from '@/utils/env'
 
 type StaffPackage = {
     id?: number
@@ -472,9 +500,6 @@ type SummaryItem = {
     kind: 'package' | 'addon'
 }
 
-const DEFAULT_HERO_IMAGE =
-    'https://images.unsplash.com/photo-1739047597919-5a047d0d736a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixlib=rb-4.1.0&q=80&w=1080'
-
 const $theme = useThemeStore()
 
 const userStore = useUserStore()
@@ -484,6 +509,10 @@ const navBarMetrics = useNavBarMetrics()
 const loading = ref(true)
 
 const initialized = ref(false)
+
+const detailReady = ref(false)
+
+const mainLockReady = ref(false)
 
 const staffDetail = ref<Record<string, any> | null>(null)
 
@@ -500,6 +529,20 @@ const roleCandidatesMap = reactive<Record<BookingRoleKey, RoleCandidate[]>>({
 
     director: []
 })
+
+const roleLoadingMap = reactive<Record<BookingRoleKey, boolean>>({
+    butler: false,
+
+    director: false
+})
+
+const roleLoadedMap = reactive<Record<BookingRoleKey, boolean>>({
+    butler: false,
+
+    director: false
+})
+
+const roleLoadTaskMap: Partial<Record<BookingRoleKey, Promise<void>>> = {}
 
 const displayPackages = computed<StaffPackage[]>(() =>
     Array.isArray(staffDetail.value?.packages) ? staffDetail.value?.packages : []
@@ -724,13 +767,13 @@ const pageStageStyle = computed(() => ({
 const heroImage = computed(() => {
     const step = currentStep.value
 
-    return String(
+    const image =
         (step?.type === 'addon' ? step.addon.image : '') ||
-            resolvePackageImage(selectedPackage.value || displayPackages.value[0]) ||
-            staffDetail.value?.banners?.[0]?.image ||
-            staffDetail.value?.avatar ||
-            DEFAULT_HERO_IMAGE
-    )
+        resolvePackageImage(selectedPackage.value || displayPackages.value[0]) ||
+        staffDetail.value?.banners?.[0]?.image ||
+        staffDetail.value?.avatar
+
+    return image ? String(image) : ''
 })
 
 const heroImageStyle = computed(() => ({
@@ -740,12 +783,16 @@ const heroImageStyle = computed(() => ({
 const canGoNext = computed(() => {
     const step = currentStep.value
 
-    if (loading.value || !step) {
+    if (loading.value || !step || !mainLockReady.value) {
         return false
     }
 
     if (step.type === 'package') {
         return Boolean(selectedPackage.value)
+    }
+
+    if (step.type === 'role') {
+        return roleLoadedMap[step.key]
     }
 
     return true
@@ -762,34 +809,6 @@ const choiceListClass = computed(() => {
         'choice-list--role': step?.type === 'role'
     }
 })
-
-watch(
-    () => bookingSteps.value.length,
-
-    (length) => {
-        if (!length) {
-            currentStepIndex.value = 0
-
-            return
-        }
-
-        if (currentStepIndex.value > length - 1) {
-            currentStepIndex.value = length - 1
-        }
-    },
-
-    {
-        immediate: true
-    }
-)
-
-watch(
-    () => currentPackageAddonIds.value.join(','),
-
-    () => {
-        syncAddonSelections()
-    }
-)
 
 const resolvePackageId = (item: StaffPackage | null | undefined) => {
     return Number(item?.package_id || item?.id || item?.package?.id || 0)
@@ -865,6 +884,19 @@ const formatSummaryPrice = (item: SummaryItem) => {
     const prefix = item.kind === 'package' ? '' : '+'
 
     return `${prefix}¥${formatPrice(item.price)}`
+}
+
+const refreshInitializedState = () => {
+    initialized.value = detailReady.value && mainLockReady.value
+}
+
+const resetRoleCandidateState = () => {
+    BOOKING_ROLE_KEYS.forEach((roleKey) => {
+        roleCandidatesMap[roleKey] = []
+        roleLoadingMap[roleKey] = false
+        roleLoadedMap[roleKey] = false
+        roleLoadTaskMap[roleKey] = undefined
+    })
 }
 
 const getRoleSelection = (roleKey: BookingRoleKey) => {
@@ -980,6 +1012,8 @@ const closeSummaryPopup = () => {
 
 const getBookingPageUrl = () => getStaffBookingPageUrl(booking)
 
+const STAFF_DETAIL_PAGE_ROUTE = 'packages/pages/staff_detail/staff_detail'
+
 const ensureBookingLogin = (message = '请先登录后预约') => {
     if (userStore.isLogin) {
         return true
@@ -1012,9 +1046,9 @@ const goOrderConfirm = async () => {
     }
 
     try {
-        await reconcileRoleLocksWithSelection(false)
+        await loadSelectedRoleCandidates(false)
 
-        await renewAllBookingLocks()
+        await reconcileRoleLocksWithSelection(false)
 
         uni.navigateTo({
             url: getOrderConfirmPageUrl({
@@ -1030,14 +1064,108 @@ const goOrderConfirm = async () => {
     }
 }
 
+const getPageRoute = (page: Record<string, any> | null | undefined) => {
+    return String(page?.route || page?.__route__ || '')
+}
+
+const getPageRouteList = () => {
+    const pages = getCurrentPages() as Array<Record<string, any>>
+    return pages.map((page) => getPageRoute(page))
+}
+
+const getPreviousPageRoute = () => {
+    const routes = getPageRouteList()
+    return routes[routes.length - 2] || ''
+}
+
+const findStaffDetailPageDelta = () => {
+    const pages = getCurrentPages() as Array<Record<string, any>>
+
+    for (let index = pages.length - 2; index >= 0; index -= 1) {
+        if (getPageRoute(pages[index]) === STAFF_DETAIL_PAGE_ROUTE) {
+            return pages.length - 1 - index
+        }
+    }
+
+    return 0
+}
+
+const syncBookingResultToDetailPage = () => {
+    saveStaffDetailReturnState({
+        staff_id: booking.staff_id,
+        package_id: booking.package_id
+    })
+}
+
+const syncBookingResultToDetailSnapshot = () => {
+    const snapshot = loadStaffDetailRestoreSnapshot()
+
+    if (!snapshot || snapshot.staff_id !== booking.staff_id) {
+        return
+    }
+
+    saveStaffDetailRestoreSnapshot({
+        ...snapshot,
+        package_id: booking.package_id
+    })
+}
+
+const logBookingPageStack = (scene: 'onLoad' | 'return') => {
+    if (!isDevMode()) {
+        return
+    }
+
+    console.log('套餐页页面栈调试', {
+        scene,
+        routes: getPageRouteList(),
+        return_mode: booking.return_mode,
+        staff_id: booking.staff_id
+    })
+}
+
+const logBookingReturn = (action: 'navigateBack' | 'redirectTo' | 'switchTab') => {
+    if (!isDevMode()) {
+        return
+    }
+
+    console.log('套餐页返回调试', {
+        action,
+        return_mode: booking.return_mode,
+        page_count: getCurrentPages().length,
+        previous_route: getPreviousPageRoute(),
+        page_routes: getPageRouteList(),
+        detail_delta: findStaffDetailPageDelta(),
+        staff_id: booking.staff_id,
+        package_id: booking.package_id
+    })
+}
+
+let releaseBookingLocksTask: Promise<void> | null = null
+
+const startReleaseBookingLocks = () => {
+    if (!releaseBookingLocksTask) {
+        releaseBookingLocksTask = releaseAllBookingLocks()
+            .catch(() => null)
+            .finally(() => {
+                releaseBookingLocksTask = null
+            })
+    }
+
+    return releaseBookingLocksTask
+}
+
 const redirectToStaffDetail = () => {
     if (!booking.staff_id) {
+        clearStaffDetailRestoreSnapshot()
+
         if (getCurrentPages().length > 1) {
+            logBookingReturn('navigateBack')
             uni.navigateBack()
 
             return
         }
 
+        logBookingReturn('switchTab')
         uni.switchTab({
             url: '/pages/index/index'
         })
@@ -1045,24 +1173,42 @@ const redirectToStaffDetail = () => {
         return
     }
 
+    const detailDelta = findStaffDetailPageDelta()
+
+    if (booking.return_mode === BOOKING_RETURN_MODE_DETAIL_BACK && detailDelta > 0) {
+        syncBookingResultToDetailPage()
+
+        clearStaffDetailRestoreSnapshot()
+
+        logBookingReturn('navigateBack')
+        uni.navigateBack({
+            delta: detailDelta
+        })
+
+        return
+    }
+
+    syncBookingResultToDetailPage()
+    syncBookingResultToDetailSnapshot()
+
+    logBookingReturn('redirectTo')
     uni.redirectTo({
         url: getStaffDetailPageUrl(booking)
     })
 }
 
-const leaveBookingFlow = async () => {
-    await releaseAllBookingLocks().catch(() => null)
-
+const leaveBookingFlow = () => {
+    void startReleaseBookingLocks()
     redirectToStaffDetail()
 }
 
-const handleBackToDetail = async () => {
-    await leaveBookingFlow()
+const handleBackToDetail = () => {
+    leaveBookingFlow()
 }
 
-const handlePrevious = async () => {
+const handlePrevious = () => {
     if (currentStepIndex.value <= 0) {
-        await leaveBookingFlow()
+        leaveBookingFlow()
 
         return
     }
@@ -1072,9 +1218,25 @@ const handlePrevious = async () => {
 
 const handleNext = async () => {
     if (!canGoNext.value) {
-        if (!booking.package_id) {
+        if (!mainLockReady.value) {
+            uni.showToast({
+                title: '正在锁定档期，请稍候',
+
+                icon: 'none'
+            })
+        } else if (!booking.package_id) {
             uni.showToast({
                 title: '请先选择基础套餐',
+
+                icon: 'none'
+            })
+        } else if (
+            currentStep.value?.type === 'role' &&
+            roleLoadingMap[currentStep.value.key] &&
+            !roleLoadedMap[currentStep.value.key]
+        ) {
+            uni.showToast({
+                title: '正在加载可选人员，请稍候',
 
                 icon: 'none'
             })
@@ -1121,6 +1283,14 @@ const syncRoleSelections = () => {
 
             roleCandidatesMap[roleKey] = []
 
+            roleLoadingMap[roleKey] = false
+
+            roleLoadedMap[roleKey] = false
+
+            return
+        }
+
+        if (!roleLoadedMap[roleKey]) {
             return
         }
 
@@ -1134,8 +1304,11 @@ const syncRoleSelections = () => {
     })
 }
 
-const reconcileRoleLocksWithSelection = async (showError = true) => {
-    for (const roleKey of BOOKING_ROLE_KEYS) {
+const reconcileRoleLocksWithSelection = async (
+    showError = true,
+    roleKeys: BookingRoleKey[] = [...BOOKING_ROLE_KEYS]
+) => {
+    for (const roleKey of roleKeys) {
         const candidate = findSelectedRoleCandidate(roleKey)
 
         try {
@@ -1167,45 +1340,120 @@ const reconcileRoleLocksWithSelection = async (showError = true) => {
     }
 }
 
-const loadRoleCandidates = async (roleKey: BookingRoleKey) => {
-    try {
-        const result = await getStaffBookingRoleCandidates({
-            staff_id: booking.staff_id,
-
-            role_key: roleKey,
-
-            date: booking.date,
-
-            province_code: booking.province_code,
-
-            province_name: booking.province_name,
-
-            city_code: booking.city_code,
-
-            city_name: booking.city_name,
-
-            district_code: booking.district_code,
-
-            district_name: booking.district_name
-        })
-
-        roleCandidatesMap[roleKey] = Array.isArray(result)
-            ? result.filter((item) => item?.schedule_available !== false)
-            : []
-    } catch (error: any) {
-        roleCandidatesMap[roleKey] = []
-
-        const roleLabel =
-            roleConfigs.value.find((item) => item.role_key === roleKey)?.role_label || '关联人员'
-
-        const message =
-            typeof error === 'string'
-                ? error
-                : error?.msg || error?.message || `加载${roleLabel}候选人失败`
-
-        uni.showToast({ title: message, icon: 'none' })
+const loadRoleCandidates = async (
+    roleKey: BookingRoleKey,
+    options: { force?: boolean; silent?: boolean } = {}
+) => {
+    if (roleLoadingMap[roleKey]) {
+        return roleLoadTaskMap[roleKey]
     }
+
+    if (!options.force && roleLoadedMap[roleKey]) {
+        return
+    }
+
+    roleLoadingMap[roleKey] = true
+
+    const task = (async () => {
+        try {
+            const result = await getStaffBookingRoleCandidates({
+                staff_id: booking.staff_id,
+
+                role_key: roleKey,
+
+                date: booking.date,
+
+                province_code: booking.province_code,
+
+                province_name: booking.province_name,
+
+                city_code: booking.city_code,
+
+                city_name: booking.city_name,
+
+                district_code: booking.district_code,
+
+                district_name: booking.district_name
+            })
+
+            roleCandidatesMap[roleKey] = Array.isArray(result)
+                ? result.filter((item) => item?.schedule_available !== false)
+                : []
+        } catch (error: any) {
+            roleCandidatesMap[roleKey] = []
+
+            if (!options.silent) {
+                const roleLabel =
+                    roleConfigs.value.find((item) => item.role_key === roleKey)?.role_label ||
+                    '关联人员'
+
+                const message =
+                    typeof error === 'string'
+                        ? error
+                        : error?.msg || error?.message || `加载${roleLabel}候选人失败`
+
+                uni.showToast({ title: message, icon: 'none' })
+            }
+        } finally {
+            roleLoadingMap[roleKey] = false
+            roleLoadedMap[roleKey] = true
+            roleLoadTaskMap[roleKey] = undefined
+            syncRoleSelections()
+        }
+    })()
+
+    roleLoadTaskMap[roleKey] = task
+
+    return task
 }
+
+watch(
+    () => bookingSteps.value.length,
+
+    (length) => {
+        if (!length) {
+            currentStepIndex.value = 0
+
+            return
+        }
+
+        if (currentStepIndex.value > length - 1) {
+            currentStepIndex.value = length - 1
+        }
+    },
+
+    {
+        immediate: true
+    }
+)
+
+watch(
+    () => currentPackageAddonIds.value.join(','),
+
+    () => {
+        syncAddonSelections()
+    }
+)
+
+watch(
+    () => currentStep.value,
+
+    (step) => {
+        if (!step || step.type !== 'role') {
+            return
+        }
+
+        if (roleLoadedMap[step.key] || roleLoadingMap[step.key]) {
+            return
+        }
+
+        void loadRoleCandidates(step.key)
+    },
+
+    {
+        immediate: true
+    }
+)
 
 const applyBookingQuery = (value: Record<string, any>) => {
     const normalized = normalizeBookingQuery(value)
@@ -1240,13 +1488,23 @@ const applyBookingQuery = (value: Record<string, any>) => {
 
     booking.director_package_id = normalized.director_package_id
 
+    booking.return_mode = normalized.return_mode
+
     booking.flow_total_steps = normalized.flow_total_steps
 }
 
 const handleLoadError = async (message: string) => {
+    loading.value = false
+
     initialized.value = false
 
-    await releaseAllBookingLocks().catch(() => null)
+    detailReady.value = false
+
+    mainLockReady.value = false
+
+    staffDetail.value = null
+
+    void startReleaseBookingLocks()
 
     uni.showToast({
         title: message,
@@ -1259,48 +1517,108 @@ const handleLoadError = async (message: string) => {
     }, 1200)
 }
 
+const fetchStaffDetail = async () => {
+    const detail = await getStaffDetail({
+        id: booking.staff_id,
+
+        date: booking.date,
+
+        province_code: booking.province_code,
+
+        province_name: booking.province_name,
+
+        city_code: booking.city_code,
+
+        city_name: booking.city_name,
+
+        district_code: booking.district_code,
+
+        district_name: booking.district_name
+    })
+
+    if (!detail?.id) {
+        throw new Error('服务人员不存在或已下架')
+    }
+
+    if (detail.schedule_available === false) {
+        throw new Error(detail.schedule_message || '当前档期不可预约，请重新选择日期')
+    }
+
+    return detail
+}
+
+const loadSelectedRoleCandidates = async (silent = true) => {
+    const selectedRoleKeys = BOOKING_ROLE_KEYS.filter((roleKey) => {
+        const selection = getRoleSelection(roleKey)
+        return selection.staff_id > 0 && selection.package_id > 0
+    })
+
+    if (!selectedRoleKeys.length) {
+        return []
+    }
+
+    await Promise.all(
+        selectedRoleKeys.map((roleKey) =>
+            loadRoleCandidates(roleKey, {
+                silent
+            })
+        )
+    )
+
+    syncRoleSelections()
+
+    return selectedRoleKeys
+}
+
 const initPage = async () => {
+    let initFailed = false
+
     loading.value = true
 
     initialized.value = false
 
+    detailReady.value = false
+
+    mainLockReady.value = false
+
+    staffDetail.value = null
+
     showSummaryPopup.value = false
 
-    BOOKING_ROLE_KEYS.forEach((roleKey) => {
-        roleCandidatesMap[roleKey] = []
+    resetRoleCandidateState()
+
+    const mainLockPromise = ensureMainBookingLock({
+        staff_id: booking.staff_id,
+
+        date: booking.date
     })
+        .then(() => {
+            if (initFailed) {
+                return false
+            }
+
+            mainLockReady.value = true
+            refreshInitializedState()
+            return true
+        })
+        .catch(async (error: any) => {
+            if (initFailed) {
+                return false
+            }
+
+            initFailed = true
+
+            const message = typeof error === 'string' ? error : error?.message || '档期锁定失败'
+
+            await handleLoadError(message)
+            return false
+        })
 
     try {
-        await ensureMainBookingLock({
-            staff_id: booking.staff_id,
+        const detail = await fetchStaffDetail()
 
-            date: booking.date
-        })
-
-        const detail = await getStaffDetail({
-            id: booking.staff_id,
-
-            date: booking.date,
-
-            province_code: booking.province_code,
-
-            province_name: booking.province_name,
-
-            city_code: booking.city_code,
-
-            city_name: booking.city_name,
-
-            district_code: booking.district_code,
-
-            district_name: booking.district_name
-        })
-
-        if (!detail?.id) {
-            throw new Error('服务人员不存在或已下架')
-        }
-
-        if (detail.schedule_available === false) {
-            throw new Error(detail.schedule_message || '当前档期不可预约，请重新选择日期')
+        if (initFailed) {
+            return
         }
 
         staffDetail.value = detail
@@ -1309,19 +1627,39 @@ const initPage = async () => {
 
         syncAddonSelections()
 
-        await Promise.all(roleConfigs.value.map((config) => loadRoleCandidates(config.role_key)))
-
         syncRoleSelections()
 
-        await reconcileRoleLocksWithSelection(false)
+        detailReady.value = true
 
-        initialized.value = true
+        loading.value = false
+
+        refreshInitializedState()
+
+        void (async () => {
+            const selectedRoleKeys = await loadSelectedRoleCandidates(true)
+
+            if (!selectedRoleKeys.length) {
+                return
+            }
+
+            const isMainLockReady = await mainLockPromise
+
+            if (!isMainLockReady) {
+                return
+            }
+
+            await reconcileRoleLocksWithSelection(false, selectedRoleKeys)
+        })().catch(() => null)
     } catch (error: any) {
+        if (initFailed) {
+            return
+        }
+
+        initFailed = true
+
         const message = typeof error === 'string' ? error : error?.message || '预约信息加载失败'
 
         await handleLoadError(message)
-    } finally {
-        loading.value = false
     }
 }
 
@@ -1333,6 +1671,8 @@ onLoad((options) => {
 
         ...options
     })
+
+    logBookingPageStack('onLoad')
 
     if (hasServiceRegion(booking)) {
         saveServiceRegionSelection(booking)
@@ -1364,7 +1704,7 @@ onShow(() => {
 })
 
 onUnload(() => {
-    void releaseAllBookingLocks().catch(() => null)
+    void startReleaseBookingLocks()
 })
 </script>
 
@@ -1498,6 +1838,18 @@ onUnload(() => {
     color: rgba(255, 255, 255, 0.96);
 
     text-shadow: 0 4rpx 12rpx rgba(9, 9, 11, 0.2);
+}
+
+.staff-booking-page__assist-text {
+    display: block;
+
+    font-size: 22rpx;
+
+    line-height: 1.4;
+
+    color: rgba(255, 241, 238, 0.92);
+
+    text-shadow: 0 4rpx 12rpx rgba(9, 9, 11, 0.18);
 }
 
 .step-badge {

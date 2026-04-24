@@ -17,107 +17,129 @@
                     />
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="consumer" class="info-card" padding="0">
-                    <view class="info-card__header">
-                        <view class="info-card__identity">
-                            <text class="info-card__name">{{ staffInfo.name }}</text>
+                <BaseCard
+                    variant="glass"
+                    scene="consumer"
+                    padding="0"
+                    border-radius="49rpx"
+                    background="rgba(255, 255, 255, 0.84)"
+                    border="1rpx solid rgba(239, 230, 225, 0.96)"
+                    box-shadow="0 16rpx 34rpx rgba(155, 132, 121, 0.1)"
+                >
+                    <view class="info-card__inner">
+                        <view class="info-card__header">
+                            <view class="info-card__identity">
+                                <text class="info-card__name">{{ staffInfo.name }}</text>
 
-                            <text class="info-card__summary">{{ staffSummaryText }}</text>
+                                <text class="info-card__summary">{{ staffSummaryText }}</text>
+                            </view>
+
+                            <view class="info-card__favorite" @click="handleToggleFavorite">
+                                <tn-icon
+                                    :name="staffInfo.is_favorite ? 'star-fill' : 'star'"
+                                    size="34"
+                                    :color="staffInfo.is_favorite ? '#E85A4F' : '#9E9A97'"
+                                />
+
+                                <text
+                                    class="info-card__favorite-text"
+                                    :class="{
+                                        'info-card__favorite-text--active': staffInfo.is_favorite
+                                    }"
+                                >
+                                    {{ staffInfo.is_favorite ? '已收藏' : '收藏' }}
+                                </text>
+                            </view>
                         </view>
 
-                        <view class="info-card__favorite" @click="handleToggleFavorite">
-                            <tn-icon
-                                :name="staffInfo.is_favorite ? 'star-fill' : 'star'"
-                                size="34"
-                                :color="staffInfo.is_favorite ? '#E85A4F' : '#9E9A97'"
-                            />
-
-                            <text
-                                class="info-card__favorite-text"
-                                :class="{
-                                    'info-card__favorite-text--active': staffInfo.is_favorite
-                                }"
+                        <view v-if="statusBadgeList.length" class="info-card__badge-list">
+                            <StatusBadge
+                                v-for="badge in statusBadgeList"
+                                :key="badge"
+                                tone="neutral"
+                                size="sm"
                             >
-                                {{ staffInfo.is_favorite ? '已收藏' : '收藏' }}
-                            </text>
-                        </view>
-                    </view>
-
-                    <view v-if="statusBadgeList.length" class="info-card__badge-list">
-                        <StatusBadge
-                            v-for="badge in statusBadgeList"
-                            :key="badge"
-                            tone="neutral"
-                            size="sm"
-                        >
-                            {{ badge }}
-                        </StatusBadge>
-                    </view>
-
-                    <view class="info-card__metric-row">
-                        <view class="info-card__metric">
-                            <text class="info-card__metric-value">{{
-                                staffInfo.rating ?? '0.0'
-                            }}</text>
-
-                            <text class="info-card__metric-label">综合评分</text>
+                                {{ badge }}
+                            </StatusBadge>
                         </view>
 
-                        <view class="info-card__metric">
-                            <text class="info-card__metric-value">{{
-                                staffInfo.order_count || 0
-                            }}</text>
+                        <view class="info-card__metric-row">
+                            <view class="info-card__metric">
+                                <text class="info-card__metric-value">{{
+                                    staffInfo.rating ?? '0.0'
+                                }}</text>
 
-                            <text class="info-card__metric-label">服务场次</text>
+                                <text class="info-card__metric-label">综合评分</text>
+                            </view>
+
+                            <view class="info-card__metric">
+                                <text class="info-card__metric-value">{{
+                                    staffInfo.order_count || 0
+                                }}</text>
+
+                                <text class="info-card__metric-label">服务场次</text>
+                            </view>
+
+                            <view class="info-card__metric">
+                                <text class="info-card__metric-value">{{
+                                    staffInfo.view_count || 0
+                                }}</text>
+
+                                <text class="info-card__metric-label">浏览次数</text>
+                            </view>
                         </view>
 
-                        <view class="info-card__metric">
-                            <text class="info-card__metric-value">{{
-                                staffInfo.view_count || 0
-                            }}</text>
+                        <view class="info-card__price-row">
+                            <text class="info-card__price-label">服务价格</text>
 
-                            <text class="info-card__metric-label">浏览次数</text>
-                        </view>
-                    </view>
+                            <view class="info-card__price-group">
+                                <template v-if="staffPrice.hasPrice">
+                                    <text class="info-card__price-symbol">¥</text>
 
-                    <view class="info-card__price-row">
-                        <text class="info-card__price-label">服务价格</text>
+                                    <text class="info-card__price-value">{{
+                                        staffPrice.value
+                                    }}</text>
 
-                        <view class="info-card__price-group">
-                            <template v-if="staffPrice.hasPrice">
-                                <text class="info-card__price-symbol">¥</text>
+                                    <text class="info-card__price-unit">/次起</text>
+                                </template>
 
-                                <text class="info-card__price-value">{{ staffPrice.value }}</text>
-
-                                <text class="info-card__price-unit">/次起</text>
-                            </template>
-
-                            <text v-else class="info-card__price-negotiable">面议</text>
+                                <text v-else class="info-card__price-negotiable">面议</text>
+                            </view>
                         </view>
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="surface" scene="consumer" class="booking-brief-card" padding="0">
-                    <view class="booking-brief-card__head">
-                        <text class="booking-brief-card__eyebrow">预约信息</text>
-                        <text class="booking-brief-card__title">先确认服务地区与预约日期</text>
-                    </view>
-
-                    <view class="booking-brief-card__grid">
-                        <view class="booking-brief-card__item" @click="handleInlineRegionEdit">
-                            <text class="booking-brief-card__label">服务地区</text>
-
-                            <text class="booking-brief-card__value">
-                                {{ hasSelectedRegion ? selectedRegionText : '请选择服务区县' }}
-                            </text>
+                <BaseCard
+                    variant="surface"
+                    scene="consumer"
+                    padding="0"
+                    border-radius="52rpx"
+                    background="linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 244, 0.96))"
+                    border="1rpx solid #efe6e1"
+                    box-shadow="0 18rpx 34rpx rgba(214, 185, 167, 0.12)"
+                >
+                    <view class="booking-brief-card__inner">
+                        <view class="booking-brief-card__head">
+                            <text class="booking-brief-card__eyebrow">预约信息</text>
+                            <text class="booking-brief-card__title">先确认服务地区与预约日期</text>
                         </view>
 
-                        <view class="booking-brief-card__item" @click="handleInlineDateEdit">
-                            <text class="booking-brief-card__label">预约日期</text>
+                        <view class="booking-brief-card__grid">
+                            <view class="booking-brief-card__item" @click="handleInlineRegionEdit">
+                                <text class="booking-brief-card__label">服务地区</text>
 
-                            <text class="booking-brief-card__value">
-                                {{ presetDate || '请选择预约日期' }}
-                            </text>
+                                <text class="booking-brief-card__value">
+                                    {{ hasSelectedRegion ? selectedRegionText : '请选择服务区县' }}
+                                </text>
+                            </view>
+
+                            <view class="booking-brief-card__item" @click="handleInlineDateEdit">
+                                <text class="booking-brief-card__label">预约日期</text>
+
+                                <text class="booking-brief-card__value">
+                                    {{ presetDate || '请选择预约日期' }}
+                                </text>
+                            </view>
                         </view>
                     </view>
                 </BaseCard>
@@ -891,9 +913,15 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
-import { onLoad, onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+import {
+    onLoad,
+    onPageScroll,
+    onShow,
+    onShareAppMessage,
+    onShareTimeline
+} from '@dcloudio/uni-app'
 
 import PageShell from '@/components/base/PageShell.vue'
 
@@ -942,7 +970,14 @@ import {
     toServiceRegionParams
 } from '@/utils/service-region'
 
-import { getStaffBookingPageUrl } from '@/packages/common/utils/staff-booking'
+import {
+    BOOKING_RETURN_MODE_DETAIL_BACK,
+    consumeStaffDetailRestoreSnapshot,
+    consumeStaffDetailReturnState,
+    getStaffBookingPageUrl,
+    saveStaffDetailRestoreSnapshot,
+    type StaffDetailRestoreSnapshot
+} from '@/packages/common/utils/staff-booking'
 
 import { subscribeWaitlistScenes } from '../../../utils/subscribe'
 
@@ -1046,6 +1081,14 @@ const activeCertificate = ref<StaffCertificateItem | null>(null)
 
 const regionTree = ref<any[]>([])
 
+const regionTreeLoading = ref(false)
+
+let regionTreeLoadTask: Promise<void> | null = null
+
+const detailScrollTop = ref(0)
+
+let pendingRestoreScrollTop: number | null = null
+
 const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
 
 const tempRegion = ref(normalizeServiceRegion(selectedRegion.value))
@@ -1053,6 +1096,8 @@ const tempRegion = ref(normalizeServiceRegion(selectedRegion.value))
 const $theme = useThemeStore()
 
 const userStore = useUserStore()
+
+const DETAIL_TAB_KEYS = ['intro', 'works', 'reviews'] as const
 
 // 轮播图数据
 
@@ -1499,6 +1544,121 @@ const resetAlternativeStaffState = () => {
     alternativeStaffList.value = []
 }
 
+const cloneSerializable = <T>(value: T): T | null => {
+    try {
+        return JSON.parse(JSON.stringify(value ?? null)) as T | null
+    } catch (error) {
+        console.warn('详情快照序列化失败：', error)
+        return null
+    }
+}
+
+const applyStaffBannerData = (data: any) => {
+    bannerList.value = Array.isArray(data?.banners) ? data.banners : []
+
+    if (data?.banner_mode === undefined) {
+        return
+    }
+
+    bannerConfig.value = {
+        banner_mode: data.banner_mode || 1,
+
+        banner_small_height: data.banner_small_height || 400,
+
+        banner_large_height: data.banner_large_height || 600,
+
+        banner_indicator_style:
+            data.banner_indicator_style !== undefined ? data.banner_indicator_style : 1,
+
+        banner_autoplay: data.banner_autoplay !== undefined ? data.banner_autoplay : 1,
+
+        banner_interval: data.banner_interval || 3000
+    }
+}
+
+const applyStaffDetailDisplayData = (data: any) => {
+    resetDetailImageFallbacks()
+
+    staffInfo.value = data
+
+    applyStaffBannerData(data)
+}
+
+const scheduleRestoreDetailScroll = () => {
+    if (pendingRestoreScrollTop === null) {
+        return
+    }
+
+    const scrollTop = pendingRestoreScrollTop
+
+    nextTick(() => {
+        setTimeout(() => {
+            uni.pageScrollTo({
+                scrollTop,
+                duration: 0
+            })
+        }, 0)
+    })
+}
+
+const applyDetailRestoreSnapshot = () => {
+    const snapshot = consumeStaffDetailRestoreSnapshot()
+
+    if (isDevMode()) {
+        console.log('人员详情快照恢复调试', {
+            staff_id: staffId.value,
+            snapshot
+        })
+    }
+
+    if (!snapshot || snapshot.staff_id !== staffId.value || !snapshot.staff_info) {
+        return null
+    }
+
+    const normalizedRegion = normalizeServiceRegion(snapshot.selected_region)
+
+    applyStaffDetailDisplayData(snapshot.staff_info)
+
+    selectedPackageId.value = Number(snapshot.package_id || 0)
+
+    syncSelectedPackage()
+
+    selectedRegion.value = normalizedRegion
+
+    tempRegion.value = normalizeServiceRegion(normalizedRegion)
+
+    if (hasServiceRegion(normalizedRegion)) {
+        saveServiceRegionSelection(normalizedRegion)
+    }
+
+    if (snapshot.preset_date) {
+        presetDate.value = normalizeSelectedDateText(snapshot.preset_date)
+    }
+
+    if (DETAIL_TAB_KEYS.includes(snapshot.current_tab as (typeof DETAIL_TAB_KEYS)[number])) {
+        currentTab.value = snapshot.current_tab
+    }
+
+    pendingRestoreScrollTop = snapshot.scroll_top > 0 ? snapshot.scroll_top : 0
+
+    return snapshot
+}
+
+const saveCurrentDetailRestoreSnapshot = () => {
+    const snapshot: StaffDetailRestoreSnapshot = {
+        staff_id: staffId.value,
+        package_id: selectedPackageId.value,
+        staff_info: cloneSerializable(staffInfo.value),
+        selected_region: cloneSerializable(selectedRegion.value) || normalizeServiceRegion(null),
+        preset_date: presetDate.value,
+        current_tab: currentTab.value,
+        scroll_top: detailScrollTop.value,
+        saved_at: Date.now()
+    }
+
+    saveStaffDetailRestoreSnapshot(snapshot)
+}
+
 const syncSelectedPackage = () => {
     const packages = Array.isArray(staffInfo.value?.packages) ? staffInfo.value.packages : []
 
@@ -1517,6 +1677,28 @@ const syncSelectedPackage = () => {
     const recommendedPackage = packages.find((pkg: any) => isRecommendedPackage(pkg))
 
     selectedPackageId.value = getPackageId(recommendedPackage || packages[0])
+}
+
+const applyPendingDetailReturnState = () => {
+    const state = consumeStaffDetailReturnState()
+
+    if (isDevMode()) {
+        console.log('人员详情返回态调试', {
+            staff_id: staffId.value,
+            has_staff_info: Boolean(staffInfo.value),
+            return_state: state
+        })
+    }
+
+    if (!state || state.staff_id !== staffId.value) {
+        return
+    }
+
+    selectedPackageId.value = state.package_id
+
+    if (staffInfo.value) {
+        syncSelectedPackage()
+    }
 }
 
 const handleInlineRegionEdit = () => {
@@ -1605,36 +1787,9 @@ const getDetail = async () => {
 
         const data = await getStaffDetail(params)
 
-        resetDetailImageFallbacks()
-
-        staffInfo.value = data
+        applyStaffDetailDisplayData(data)
 
         syncSelectedPackage()
-
-        // 加载轮播图配置
-
-        if (data.banner_mode !== undefined) {
-            bannerConfig.value = {
-                banner_mode: data.banner_mode || 1,
-
-                banner_small_height: data.banner_small_height || 400,
-
-                banner_large_height: data.banner_large_height || 600,
-
-                banner_indicator_style:
-                    data.banner_indicator_style !== undefined ? data.banner_indicator_style : 1,
-
-                banner_autoplay: data.banner_autoplay !== undefined ? data.banner_autoplay : 1,
-
-                banner_interval: data.banner_interval || 3000
-            }
-        }
-
-        // 加载轮播图列表
-
-        if (data.banners && Array.isArray(data.banners)) {
-            bannerList.value = data.banners
-        }
 
         if (currentTab.value === 'reviews') {
             if (!reviewStatsLoaded.value) {
@@ -1645,6 +1800,10 @@ const getDetail = async () => {
                 loadReviews(true)
             }
         }
+
+        scheduleRestoreDetailScroll()
+
+        pendingRestoreScrollTop = null
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '获取详情失败'
 
@@ -1652,19 +1811,39 @@ const getDetail = async () => {
     }
 }
 
-const getRegionTree = async () => {
-    try {
-        const data = await getServiceRegionTree()
-
-        regionTree.value = Array.isArray(data) ? data : []
-
+const getRegionTree = async (force = false) => {
+    if (!force && regionTree.value.length) {
         syncTempRegion(selectedRegion.value)
-    } catch (error: any) {
-        const errorMsg =
-            typeof error === 'string' ? error : error?.msg || error?.message || '加载服务地区失败'
-
-        uni.showToast({ title: errorMsg, icon: 'none' })
+        return Promise.resolve()
     }
+
+    if (regionTreeLoading.value && regionTreeLoadTask) {
+        return regionTreeLoadTask
+    }
+
+    regionTreeLoading.value = true
+
+    regionTreeLoadTask = (async () => {
+        try {
+            const data = await getServiceRegionTree()
+
+            regionTree.value = Array.isArray(data) ? data : []
+
+            syncTempRegion(selectedRegion.value)
+        } catch (error: any) {
+            const errorMsg =
+                typeof error === 'string'
+                    ? error
+                    : error?.msg || error?.message || '加载服务地区失败'
+
+            uni.showToast({ title: errorMsg, icon: 'none' })
+        } finally {
+            regionTreeLoading.value = false
+            regionTreeLoadTask = null
+        }
+    })()
+
+    return regionTreeLoadTask
 }
 
 // 加载作品列表
@@ -2079,10 +2258,14 @@ const getBookingPageUrl = () =>
 
         date: presetDate.value,
 
+        return_mode: BOOKING_RETURN_MODE_DETAIL_BACK,
+
         ...selectedRegion.value
     })
 
 const navigateToBookingPage = () => {
+    saveCurrentDetailRestoreSnapshot()
+
     uni.navigateTo({
         url: getBookingPageUrl()
     })
@@ -2110,12 +2293,9 @@ const promptWaitlistSubscribe = async () => {
     }
 
     const result = await uni.showModal({
-        title: '接收候补结果提醒',
-
-        content: '订阅后可接收候补提醒。',
-
+        title: '接收候补状态提醒',
+        content: '订阅后可接收候补释放或失效提醒。',
         confirmText: '去订阅',
-
         cancelText: '暂不订阅'
     })
 
@@ -2505,6 +2685,8 @@ onLoad((options) => {
     if (options?.tab && ['intro', 'works', 'reviews'].includes(options.tab)) {
         currentTab.value = options.tab
     }
+
+    applyDetailRestoreSnapshot()
 })
 
 onShow(async () => {
@@ -2529,7 +2711,11 @@ onShow(async () => {
 
     // #endif
 
-    await getRegionTree()
+    applyPendingDetailReturnState()
+
+    scheduleRestoreDetailScroll()
+
+    void getRegionTree().catch(() => null)
 
     if (staffId.value) {
         await getDetail()
@@ -2548,6 +2734,10 @@ onShow(async () => {
             }
         }
     }
+})
+
+onPageScroll((event) => {
+    detailScrollTop.value = Number(event.scrollTop || 0)
 })
 
 onShareAppMessage(() => {
@@ -2832,7 +3022,7 @@ onShareTimeline(() => {
     border-radius: 52rpx;
 }
 
-.info-card {
+.info-card__inner {
     display: flex;
 
     flex-direction: column;
@@ -2841,17 +3031,9 @@ onShareTimeline(() => {
 
     padding: 34rpx;
 
-    border-radius: 49rpx;
-
-    background: rgba(255, 255, 255, 0.84);
-
-    border: 1rpx solid rgba(239, 230, 225, 0.96);
-
     backdrop-filter: blur(20rpx);
 
     -webkit-backdrop-filter: blur(20rpx);
-
-    box-shadow: 0 16rpx 34rpx rgba(155, 132, 121, 0.1);
 }
 
 .info-card__header {
@@ -3064,18 +3246,8 @@ onShareTimeline(() => {
     color: #1e2432;
 }
 
-.booking-brief-card {
-    margin-top: 22rpx;
-
-    padding: 34rpx;
-
-    border-radius: 52rpx;
-
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 244, 0.96));
-
-    border: 1rpx solid #efe6e1;
-
-    box-shadow: 0 18rpx 34rpx rgba(214, 185, 167, 0.12);
+.booking-brief-card__inner {
+    padding: 24rpx 24rpx 26rpx;
 }
 
 .booking-brief-card__head {
@@ -3107,21 +3279,23 @@ onShareTimeline(() => {
 }
 
 .booking-brief-card__grid {
-    display: grid;
+    display: flex;
 
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12rpx;
 
-    gap: 22rpx;
-
-    margin-top: 22rpx;
+    margin-top: 16rpx;
 }
 
 .booking-brief-card__item {
-    padding: 30rpx;
+    flex: 1;
+
+    min-width: 0;
+
+    padding: 24rpx 22rpx;
 
     border-radius: 37rpx;
 
-    background: #ffffff;
+    background: #fcfbf9;
 
     border: 1rpx solid #efe6e1;
 }

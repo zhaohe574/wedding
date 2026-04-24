@@ -38,8 +38,8 @@ class SubscribeController extends BaseAdminController
      */
     public function templateDetail()
     {
-        $params = (new SubscribeValidate())->goCheck('templateDetail');
-        $result = SubscribeLogic::getTemplateDetail($params['id']);
+        $params = (new SubscribeValidate())->get()->goCheck('templateDetail');
+        $result = SubscribeLogic::getTemplateDetail((int) $params['id']);
         return $this->data($result);
     }
 
@@ -49,7 +49,7 @@ class SubscribeController extends BaseAdminController
      */
     public function addTemplate()
     {
-        $params = (new SubscribeValidate())->goCheck('addTemplate');
+        $params = (new SubscribeValidate())->post()->goCheck('addTemplate');
         $result = SubscribeLogic::addTemplate($params);
         if ($result) {
             return $this->success('添加成功');
@@ -63,7 +63,7 @@ class SubscribeController extends BaseAdminController
      */
     public function editTemplate()
     {
-        $params = (new SubscribeValidate())->goCheck('editTemplate');
+        $params = (new SubscribeValidate())->post()->goCheck('editTemplate');
         $result = SubscribeLogic::editTemplate($params);
         if ($result) {
             return $this->success('编辑成功');
@@ -77,8 +77,8 @@ class SubscribeController extends BaseAdminController
      */
     public function deleteTemplate()
     {
-        $params = (new SubscribeValidate())->goCheck('templateDetail');
-        $result = SubscribeLogic::deleteTemplate($params['id']);
+        $params = (new SubscribeValidate())->post()->goCheck('templateDetail');
+        $result = SubscribeLogic::deleteTemplate((int) $params['id']);
         if ($result) {
             return $this->success('删除成功');
         }
@@ -91,8 +91,8 @@ class SubscribeController extends BaseAdminController
      */
     public function toggleTemplateStatus()
     {
-        $params = (new SubscribeValidate())->goCheck('templateDetail');
-        $result = SubscribeLogic::toggleTemplateStatus($params['id']);
+        $params = (new SubscribeValidate())->post()->goCheck('templateDetail');
+        $result = SubscribeLogic::toggleTemplateStatus((int) $params['id']);
         if ($result) {
             return $this->success('操作成功');
         }
@@ -126,8 +126,8 @@ class SubscribeController extends BaseAdminController
      */
     public function sceneDetail()
     {
-        $params = (new SubscribeValidate())->goCheck('sceneDetail');
-        $result = SubscribeLogic::getSceneDetail($params['id']);
+        $params = (new SubscribeValidate())->get()->goCheck('sceneDetail');
+        $result = SubscribeLogic::getSceneDetail((int) $params['id']);
         return $this->data($result);
     }
 
@@ -137,7 +137,7 @@ class SubscribeController extends BaseAdminController
      */
     public function editScene()
     {
-        $params = (new SubscribeValidate())->goCheck('editScene');
+        $params = (new SubscribeValidate())->post()->goCheck('editScene');
         $result = SubscribeLogic::editScene($params);
         if ($result) {
             return $this->success('编辑成功');
@@ -151,8 +151,8 @@ class SubscribeController extends BaseAdminController
      */
     public function toggleSceneStatus()
     {
-        $params = (new SubscribeValidate())->goCheck('sceneDetail');
-        $result = SubscribeLogic::toggleSceneStatus($params['id']);
+        $params = (new SubscribeValidate())->post()->goCheck('sceneDetail');
+        $result = SubscribeLogic::toggleSceneStatus((int) $params['id']);
         if ($result) {
             return $this->success('操作成功');
         }
@@ -165,8 +165,8 @@ class SubscribeController extends BaseAdminController
      */
     public function bindTemplate()
     {
-        $params = (new SubscribeValidate())->goCheck('bindTemplate');
-        $result = SubscribeLogic::bindTemplate($params['scene_id'], $params['template_id']);
+        $params = (new SubscribeValidate())->post()->goCheck('bindTemplate');
+        $result = SubscribeLogic::bindTemplate((int) $params['scene_id'], (string) $params['template_id']);
         if ($result) {
             return $this->success('绑定成功');
         }
@@ -190,8 +190,8 @@ class SubscribeController extends BaseAdminController
      */
     public function logDetail()
     {
-        $params = (new SubscribeValidate())->goCheck('logDetail');
-        $result = SubscribeLogic::getLogDetail($params['id']);
+        $params = (new SubscribeValidate())->get()->goCheck('logDetail');
+        $result = SubscribeLogic::getLogDetail((int) $params['id']);
         return $this->data($result);
     }
 
@@ -201,8 +201,8 @@ class SubscribeController extends BaseAdminController
      */
     public function retryLog()
     {
-        $params = (new SubscribeValidate())->goCheck('logDetail');
-        $result = SubscribeLogic::retryLog($params['id']);
+        $params = (new SubscribeValidate())->post()->goCheck('logDetail');
+        $result = SubscribeLogic::retryLog((int) $params['id']);
         if ($result) {
             return $this->success('重试成功');
         }
@@ -252,7 +252,7 @@ class SubscribeController extends BaseAdminController
      */
     public function testSend()
     {
-        $params = (new SubscribeValidate())->goCheck('testSend');
+        $params = (new SubscribeValidate())->post()->goCheck('testSend');
         $result = SubscribeLogic::testSend($params);
         if ($result['success']) {
             return $this->success('发送成功', $result);

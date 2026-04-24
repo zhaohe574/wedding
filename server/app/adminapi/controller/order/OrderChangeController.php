@@ -35,7 +35,7 @@ class OrderChangeController extends BaseAdminController
      */
     public function detail()
     {
-        $params = (new OrderChangeValidate())->goCheck('detail');
+        $params = (new OrderChangeValidate())->get()->goCheck('detail');
         $result = OrderChangeLogic::detail($params['id']);
         if ($result === null) {
             return $this->fail('变更记录不存在');
@@ -83,7 +83,7 @@ class OrderChangeController extends BaseAdminController
      */
     public function logs()
     {
-        $params = (new OrderChangeValidate())->goCheck('logs');
+        $params = (new OrderChangeValidate())->get()->goCheck('logs');
         $result = OrderChangeLogic::logs($params['id']);
         return $this->data($result);
     }

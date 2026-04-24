@@ -147,8 +147,27 @@ class Schedule extends BaseModel
      * @param int $lockDuration
      * @return array
      */
-    public static function lockScheduleWithRedis(int $staffId, string $date, int $timeSlot, int $userId, int $lockType = self::LOCK_TYPE_NORMAL, int $lockDuration = 900): array
+    public static function lockScheduleWithRedis(
+        int $staffId,
+        string $date,
+        int $timeSlot,
+        int $userId,
+        int $lockType = self::LOCK_TYPE_NORMAL,
+        int $lockDuration = 900,
+        int $lockAcquireRetryCount = 3,
+        int $lockAcquireRetryDelay = 100
+    ): array
     {
+        if (!self::checkRuleAvailable($staffId, $date)) {
+            return [false, '该日期不可预约'];
+        }
+
+        $schedule = self::findDateSchedule($staffId, $date);
+        $renewResult = self::tryRenewOwnedLockFast($schedule, $userId, $lockType, $lockDuration);
+        if ($renewResult !== null) {
+            return $renewResult;
+        }
+
         return RedisLockService::lockScheduleWithRedis(
             $staffId,
             $date,
@@ -156,7 +175,10 @@ class Schedule extends BaseModel
             $userId,
             function () use ($staffId, $date, $userId, $lockType, $lockDuration) {
                 return self::lockSchedule($staffId, $date, self::TIME_SLOT_ALL, $userId, $lockType, $lockDuration);
-            }
+            },
+            5,
+            $lockAcquireRetryCount,
+            $lockAcquireRetryDelay
         );
     }
 
@@ -583,5 +605,46 @@ class Schedule extends BaseModel
             ->where('schedule_date', $date)
             ->where('time_slot', self::TIME_SLOT_ALL)
             ->find();
+    }
+
+    /**
+     * @notes 当前用户已持有有效锁时，直接续期，绕过分布式锁等待
+     * @param Schedule|null $schedule
+     * @param int $userId
+     * @param int $lockType
+     * @param int $lockDuration
+     * @return array|null
+     */
+    protected static function tryRenewOwnedLockFast(
+        ?self $schedule,
+        int $userId,
+        int $lockType,
+        int $lockDuration
+    ): ?array {
+        if (
+            !$schedule ||
+            (int)$schedule->status !== self::STATUS_LOCKED ||
+            (int)$schedule->lock_user_id !== $userId ||
+            (int)$schedule->lock_expire_time <= time()
+        ) {
+            return null;
+        }
+
+        $updated = self::where('id', (int)$schedule->id)
+            ->where('status', self::STATUS_LOCKED)
+            ->where('lock_user_id', $userId)
+            ->where('lock_expire_time', '>', time())
+            ->update([
+                'lock_type' => $lockType,
+                'lock_user_id' => $userId,
+                'lock_expire_time' => time() + $lockDuration,
+                'update_time' => time(),
+            ]);
+
+        if (!$updated) {
+            return null;
+        }
+
+        return [true, '锁定成功', (int)$schedule->id, 'schedule_id' => (int)$schedule->id];
     }
 }

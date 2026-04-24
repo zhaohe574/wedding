@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `la_subscribe_message_template` (
     `template_id` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '微信模板ID',
     `name` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '模板名称',
     `title` VARCHAR(200) NOT NULL DEFAULT '' COMMENT '模板标题',
-    `scene` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '使用场景: order_create/order_paid/order_confirm/order_complete/schedule_remind/refund_result/callback_remind/ticket_update/change_result/schedule_change/waitlist_release/waitlist_expired',
+    `scene` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '使用场景: order_confirm/schedule_remind/refund_result/ticket_update/waitlist_release/waitlist_expired',
     `content` TEXT COMMENT '模板内容(JSON格式，存储字段配置)',
     `example` TEXT COMMENT '示例内容',
     `keywords` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '关键词列表(逗号分隔)',
@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS `la_subscribe_message_log` (
     `content` TEXT COMMENT '发送内容(JSON格式)',
     `page` VARCHAR(200) NOT NULL DEFAULT '' COMMENT '跳转页面路径',
     `miniprogram_state` VARCHAR(20) NOT NULL DEFAULT 'formal' COMMENT '小程序状态: developer/trial/formal',
+    `planned_send_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '计划发送时间',
     `send_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发送状态: 0-待发送 1-发送成功 2-发送失败',
     `error_code` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '错误码',
     `error_msg` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '错误信息',
@@ -79,6 +80,7 @@ CREATE TABLE IF NOT EXISTS `la_subscribe_message_log` (
     KEY `idx_template_id` (`template_id`),
     KEY `idx_scene` (`scene`),
     KEY `idx_business` (`business_type`, `business_id`),
+    KEY `idx_send_plan` (`send_status`, `planned_send_time`),
     KEY `idx_send_status` (`send_status`),
     KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订阅消息发送日志表';
@@ -111,31 +113,21 @@ CREATE TABLE IF NOT EXISTS `la_subscribe_message_scene` (
 -- -----------------------------------------------------
 -- 初始化订阅消息场景配置
 -- -----------------------------------------------------
-INSERT INTO `la_subscribe_message_scene` (`scene`, `name`, `description`, `trigger_event`, `page_path`, `is_auto`, `status`, `create_time`, `update_time`) VALUES
-('order_create', '订单创建通知', '用户提交订单后发送确认通知', 'OrderCreated', 'pages/order_detail/order_detail', 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('order_paid', '支付成功通知', '用户完成支付后发送确认通知', 'OrderPaid', 'pages/order_detail/order_detail', 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('order_confirm', '订单确认通知', '商家确认订单后通知用户', 'OrderConfirmed', 'pages/order_detail/order_detail', 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('order_complete', '服务完成通知', '服务完成后通知用户进行评价', 'OrderCompleted', 'pages/review/publish', 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('schedule_remind', '档期提醒通知', '服务日期前提醒用户', 'ScheduleRemind', 'pages/order_detail/order_detail', 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('refund_result', '退款结果通知', '退款审核结果通知', 'RefundProcessed', 'pages/order_detail/order_detail', 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('callback_remind', '回访提醒通知', '服务完成后的回访提醒', 'CallbackRemind', 'pages/aftersale/callback', 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('ticket_update', '工单进度通知', '售后工单状态更新通知', 'TicketUpdated', 'pages/aftersale/ticket_detail', 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('change_result', '变更审核通知', '订单变更申请审核结果通知', 'ChangeProcessed', 'pages/order_change/change_detail', 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('schedule_change', '档期变更通知', '人员档期发生变更时通知', 'ScheduleChanged', 'pages/order_detail/order_detail', 1, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
-
 INSERT INTO `la_subscribe_message_scene` (`scene`, `name`, `description`, `template_id`, `trigger_event`, `data_mapping`, `page_path`, `is_auto`, `sort`, `status`, `create_time`, `update_time`) VALUES
-('waitlist_release', '候补释放通知', '档期释放后通知候补用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"remark"}', 'packages/pages/waitlist/waitlist', 1, 100, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('waitlist_expired', '候补失效通知', '候补超过预约日期后通知用户', 'TEMPLATE_ID_WAITLIST_EXPIRED', 'WaitlistExpired', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"remark"}', 'packages/pages/waitlist/waitlist', 1, 99, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+('order_confirm', '订单确认通知', '订单确认后通知用户', 'TEMPLATE_ID_ORDER_CONFIRM', 'OrderConfirmed', '{"character_string1":"order_sn","thing2":"status_text","amount3":"pay_amount","time4":"service_date"}', 'pages/order_detail/order_detail', 1, 110, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+('schedule_remind', '服务提醒通知', '服务开始前提醒用户', 'TEMPLATE_ID_SERVICE_REMIND', 'ScheduleRemind', '{"thing1":"service_name","time2":"service_date","thing3":"address","thing4":"staff_name"}', 'pages/order_detail/order_detail', 1, 109, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+('refund_result', '退款结果通知', '退款审核结果通知', 'TEMPLATE_ID_REFUND_RESULT', 'RefundProcessed', '{"character_string1":"order_sn","amount2":"refund_amount","phrase3":"status_text","thing4":"reason"}', 'pages/order_detail/order_detail', 1, 108, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+('ticket_update', '工单进度通知', '售后工单状态更新通知', 'TEMPLATE_ID_TICKET_UPDATE', 'TicketUpdated', '{"character_string1":"ticket_sn","phrase2":"status_text","thing3":"handle_note","time4":"update_time"}', 'packages/pages/aftersale/ticket_detail', 1, 107, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+('waitlist_release', '候补释放通知', '档期释放后通知候补用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 106, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+('waitlist_expired', '候补失效通知', '候补超过预约日期后通知用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistExpired', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 105, 1, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 
 -- -----------------------------------------------------
 -- 初始化示例模板配置
 -- 注意: template_id需要在微信后台申请后填入
 -- -----------------------------------------------------
 INSERT INTO `la_subscribe_message_template` (`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`) VALUES
-('TEMPLATE_ID_ORDER_CREATE', '订单提交成功通知', '订单提交成功', 'order_create', '{"thing1":{"key":"订单内容","value":""},"character_string2":{"key":"订单编号","value":""},"amount3":{"key":"订单金额","value":""},"time4":{"key":"下单时间","value":""}}', '订单内容,订单编号,订单金额,下单时间', 1, 100, '订单创建后发送，需在微信后台申请模板后更新template_id', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('TEMPLATE_ID_ORDER_PAID', '支付成功通知', '支付成功', 'order_paid', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"支付金额","value":""},"time3":{"key":"支付时间","value":""},"thing4":{"key":"商品名称","value":""}}', '订单编号,支付金额,支付时间,商品名称', 1, 99, '支付完成后发送，需在微信后台申请模板后更新template_id', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('TEMPLATE_ID_SERVICE_REMIND', '服务提醒通知', '服务提醒', 'schedule_remind', '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}', '服务内容,服务时间,服务地点,服务人员', 1, 98, '服务前1天/3天提醒，需在微信后台申请模板后更新template_id', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('TEMPLATE_ID_REFUND_RESULT', '退款结果通知', '退款通知', 'refund_result', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}', '订单编号,退款金额,退款状态,退款原因', 1, 97, '退款审核后发送，需在微信后台申请模板后更新template_id', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('TEMPLATE_ID_TICKET_UPDATE', '工单进度通知', '工单状态更新', 'ticket_update', '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}', '工单编号,工单状态,处理说明,更新时间', 1, 96, '工单状态变更时发送，需在微信后台申请模板后更新template_id', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('TEMPLATE_ID_WAITLIST_RELEASE', '候补释放通知', '候补释放', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"备注","value":""}}', '服务人员,档期日期,套餐名称,备注', 1, 95, '候补释放后发送，需在微信后台申请模板后更新template_id', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
-('TEMPLATE_ID_WAITLIST_EXPIRED', '候补失效通知', '候补失效', 'waitlist_expired', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"失效说明","value":""}}', '服务人员,档期日期,套餐名称,失效说明', 1, 94, '候补失效后发送，需在微信后台申请模板后更新template_id', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+('TEMPLATE_ID_ORDER_CONFIRM', '订单确认通知', '订单确认通知', 'order_confirm', '{"character_string1":{"key":"订单编号","value":""},"thing2":{"key":"确认状态","value":""},"amount3":{"key":"订单金额","value":""},"time4":{"key":"服务日期","value":""}}', '订单编号,确认状态,订单金额,服务日期', 1, 100, '订单确认后发送，需在微信后台申请模板后更新template_id', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+('TEMPLATE_ID_SERVICE_REMIND', '服务提醒通知', '服务提醒', 'schedule_remind', '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}', '服务内容,服务时间,服务地点,服务人员', 1, 99, '服务开始前提醒，需在微信后台申请模板后更新template_id', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+('TEMPLATE_ID_REFUND_RESULT', '退款结果通知', '退款通知', 'refund_result', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}', '订单编号,退款金额,退款状态,退款原因', 1, 98, '退款审核后发送，需在微信后台申请模板后更新template_id', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+('TEMPLATE_ID_TICKET_UPDATE', '工单进度通知', '工单状态更新', 'ticket_update', '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}', '工单编号,工单状态,处理说明,更新时间', 1, 97, '工单状态变更时发送，需在微信后台申请模板后更新template_id', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()),
+('TEMPLATE_ID_WAITLIST_RELEASE', '候补状态通知', '候补状态通知', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"状态说明","value":""}}', '服务人员,档期日期,套餐名称,状态说明', 1, 96, '候补释放或失效时发送，需在微信后台申请模板后更新template_id', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());

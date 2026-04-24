@@ -27,7 +27,8 @@ class SubscribeLogic extends BaseLogic
      */
     public static function getTemplateList(string $scene = ''): array
     {
-        $query = SubscribeMessageTemplate::where('status', SubscribeMessageTemplate::STATUS_ENABLED);
+        $query = SubscribeMessageTemplate::where('status', SubscribeMessageTemplate::STATUS_ENABLED)
+            ->whereIn('scene', SubscribeMessageTemplate::getTemplateSceneValues());
         
         if (!empty($scene)) {
             $query->where('scene', $scene);
@@ -172,6 +173,10 @@ class SubscribeLogic extends BaseLogic
 
         $result = [];
         foreach ($scenes as $scene) {
+            if (!SubscribeMessageTemplate::isActiveScene((string) ($scene['scene'] ?? ''))) {
+                continue;
+            }
+
             $configStatus = SubscribeMessageTemplate::getConfigStatus($scene['template_id'] ?? '');
             if (
                 $configStatus !== 'configured'
@@ -203,6 +208,16 @@ class SubscribeLogic extends BaseLogic
      */
     public static function checkSceneSubscribe(int $userId, string $scene): array
     {
+        if (!SubscribeMessageTemplate::isActiveScene($scene)) {
+            return [
+                'need_subscribe' => false,
+                'template_id' => '',
+                'config_status' => 'offline',
+                'config_status_desc' => '场景已下线',
+                'reason' => '场景已下线',
+            ];
+        }
+
         // 获取场景配置
         $sceneConfig = SubscribeMessageScene::getByScene($scene);
         $templateId = $sceneConfig ? (string) $sceneConfig->template_id : '';

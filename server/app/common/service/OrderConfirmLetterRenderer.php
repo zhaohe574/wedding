@@ -9,22 +9,36 @@ namespace app\common\service;
 
 class OrderConfirmLetterRenderer
 {
-    public const FONT_FAMILY = 'Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif';
+    public const FONT_FAMILY_SANS = 'Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif';
+    public const FONT_FAMILY_SERIF = 'Noto Serif SC, Georgia, Times New Roman, serif';
 
     protected const DEFAULT_TITLE = '订单确认函';
     protected const DEFAULT_HERO_EYEBROW = 'ORDER CONFIRMATION LETTER';
     protected const DEFAULT_HERO_DESC = '为保证婚礼现场执行准确无误，系统已根据当前订单信息自动生成本次正式确认函。';
-    protected const DEFAULT_BRAND_NAME = 'LIKE WEDDING · 婚礼服务中心';
-    protected const DEFAULT_FOOTER_NOTE = '请保存此确认函图片，作为婚礼服务安排与付款进度的核对凭证。';
+    protected const DEFAULT_BRAND_NAME = '喜遇婚礼服务';
+    protected const DEFAULT_FOOTER_NOTE = '请保存此确认函图片，作为婚礼服务安排与付款确认的纸本凭证。';
+    protected const V3_DEFAULT_HERO_EYEBROW = 'MAISON DE MARIAGE · CONFIRMATION';
+    protected const V3_DEFAULT_SUBTITLE = 'Wedding Order Confirmation';
+    protected const V3_DEFAULT_HERO_DESC = '以法式纸本礼仪的方式，确认本次婚礼档期、服务内容与付款安排。';
+    protected const V3_FOOTER_KICKER = 'Avec amour et promesse.';
 
     public static function render(array $snapshot, array $options = []): string
     {
         $renderSpecVersion = (string) ($options['render_spec_version'] ?? $options['renderSpecVersion'] ?? 'v1');
         $small = (bool) ($options['small'] ?? false);
 
+        if (self::isV3Spec($renderSpecVersion)) {
+            return self::renderV3OrderConfirmLetterSvg($snapshot, $small);
+        }
+
         return self::isV2Spec($renderSpecVersion)
             ? self::renderV2OrderConfirmLetterSvg($snapshot, $small)
             : self::renderV1OrderConfirmLetterSvg($snapshot, $small);
+    }
+
+    protected static function isV3Spec(string $renderSpecVersion): bool
+    {
+        return str_starts_with(strtolower(trim($renderSpecVersion)), 'v3');
     }
 
     protected static function isV2Spec(string $renderSpecVersion): bool
@@ -59,9 +73,9 @@ class OrderConfirmLetterRenderer
         return htmlspecialchars($value, ENT_QUOTES | ENT_XML1, 'UTF-8');
     }
 
-    protected static function getTextFontAttr(): string
+    protected static function getTextFontAttr(?string $fontFamily = null): string
     {
-        return ' font-family="' . self::escapeXml(self::FONT_FAMILY) . '"';
+        return ' font-family="' . self::escapeXml($fontFamily ?: self::FONT_FAMILY_SANS) . '"';
     }
 
     protected static function strLength(string $value): int
@@ -147,18 +161,24 @@ class OrderConfirmLetterRenderer
         $x = (float) $options['x'];
         $y = (float) $options['y'];
         $fill = (string) $options['fill'];
+        $fontFamily = (string) ($options['fontFamily'] ?? self::FONT_FAMILY_SANS);
+        $letterSpacing = $options['letterSpacing'] ?? null;
+        $letterSpacingAttr = $letterSpacing !== null
+            ? ' letter-spacing="' . self::escapeXml((string) $letterSpacing) . '"'
+            : '';
 
         $svg = '';
         foreach (array_values($lines) as $index => $line) {
             $svg .= sprintf(
-                '<text x="%s" y="%s" text-anchor="%s" font-size="%s" font-weight="%s" fill="%s"%s>%s</text>',
+                '<text x="%s" y="%s" text-anchor="%s" font-size="%s" font-weight="%s" fill="%s"%s%s>%s</text>',
                 $x,
                 $y + $index * $lineHeight,
                 $textAnchor,
                 $fontSize,
                 $fontWeight,
                 $fill,
-                self::getTextFontAttr(),
+                self::getTextFontAttr($fontFamily),
+                $letterSpacingAttr,
                 self::escapeXml((string) $line)
             );
         }
@@ -664,6 +684,553 @@ class OrderConfirmLetterRenderer
             $paperWidth,
             $paperHeight,
             $small ? 28 : 48,
+            implode('', $sections)
+        );
+    }
+
+    protected static function renderV3OrderConfirmLetterSvg(array $snapshot, bool $small): string
+    {
+        $width = $small ? 540 : 1080;
+        $height = $small ? 960 : 1920;
+        $pagePadding = $small ? 24 : 60;
+        $paperX = $pagePadding;
+        $paperY = $pagePadding;
+        $paperWidth = $width - $pagePadding * 2;
+        $paperHeight = $height - $pagePadding * 2;
+        $paperPaddingX = $small ? 34 : 74;
+        $paperPaddingY = $small ? 34 : 72;
+        $contentX = $paperX + $paperPaddingX;
+        $contentWidth = $paperWidth - $paperPaddingX * 2;
+        $sectionGap = $small ? 16 : 34;
+
+        $title = self::toText($snapshot['title'] ?? '') ?: self::DEFAULT_TITLE;
+        $heroEyebrow = self::toText($snapshot['brand_tagline'] ?? '') ?: self::V3_DEFAULT_HERO_EYEBROW;
+        $heroSubtitle = self::V3_DEFAULT_SUBTITLE;
+        $heroDescLines = self::wrapText(
+            self::toText($snapshot['hero_desc'] ?? '') ?: self::V3_DEFAULT_HERO_DESC,
+            $small ? 24 : 38,
+            2
+        );
+
+        $heroMetaPrimaryParts = array_values(array_filter([
+            self::toText($snapshot['customer_name'] ?? ''),
+            self::toText($snapshot['service_date_label'] ?? '') ?: self::toText($snapshot['service_date'] ?? ''),
+            self::toText($snapshot['service_address'] ?? ''),
+        ]));
+        $heroMetaSecondaryParts = array_values(array_filter([
+            self::toText($snapshot['order_sn'] ?? '') !== '' ? '订单编号：' . self::toText($snapshot['order_sn'] ?? '') : '',
+            self::toText($snapshot['confirm_date'] ?? '') !== '' ? '确认日期：' . self::toText($snapshot['confirm_date'] ?? '') : '',
+        ]));
+        $heroMetaLines = [];
+        if (!empty($heroMetaPrimaryParts)) {
+            $heroMetaLines = array_merge(
+                $heroMetaLines,
+                self::wrapText(implode(' · ', $heroMetaPrimaryParts), $small ? 28 : 42, 1)
+            );
+        }
+        if (!empty($heroMetaSecondaryParts)) {
+            $heroMetaLines = array_merge(
+                $heroMetaLines,
+                self::wrapText(implode(' · ', $heroMetaSecondaryParts), $small ? 26 : 38, 1)
+            );
+        }
+        if (empty($heroMetaLines)) {
+            $heroMetaLines = ['确认信息待更新'];
+        }
+
+        $leftInfoLines = [];
+        foreach ([
+            '新人：' . (self::toText($snapshot['customer_name'] ?? '') ?: '-'),
+            '婚礼日期：' . (self::toText($snapshot['service_date_label'] ?? '') ?: (self::toText($snapshot['service_date'] ?? '') ?: '-')),
+            '举办地点：' . (self::toText($snapshot['service_address'] ?? '') ?: '-'),
+        ] as $line) {
+            $leftInfoLines = array_merge($leftInfoLines, self::wrapText($line, $small ? 16 : 23, 2));
+        }
+
+        $serviceTeamLines = self::toStringArray($snapshot['service_team_lines'] ?? []);
+        $staffNames = self::toStringArray($snapshot['service_staff_names'] ?? []);
+        $rightInfoSource = !empty($serviceTeamLines)
+            ? array_slice($serviceTeamLines, 0, $small ? 3 : 4)
+            : (!empty($staffNames) ? ['服务团队：' . implode('、', $staffNames)] : ['服务团队：待补充']);
+        $rightInfoLines = [];
+        foreach ($rightInfoSource as $line) {
+            $rightInfoLines = array_merge($rightInfoLines, self::wrapText($line, $small ? 16 : 23, 2));
+        }
+        $rightInfoLines = array_slice($rightInfoLines, 0, $small ? 5 : 6);
+
+        $amountDetailLines = [
+            (self::toText($snapshot['paid_label'] ?? '') ?: '已付定金') . '：¥' . (self::toText($snapshot['paid_amount'] ?? '') ?: '0.00'),
+            '待付尾款：¥' . (self::toText($snapshot['remain_amount'] ?? '') ?: '0.00'),
+            '支付节点：婚礼前 3 日',
+        ];
+
+        $acknowledgementLines = self::wrapText(
+            self::toText($snapshot['remark_content'] ?? '') ?: self::DEFAULT_FOOTER_NOTE,
+            $small ? 18 : 28,
+            $small ? 4 : 4
+        );
+        $contactLines = [
+            '联系电话：' . (self::toText($snapshot['contact_mobile'] ?? '') ?: '-'),
+            '确认日期：' . (self::toText($snapshot['confirm_date'] ?? '') ?: '-'),
+            '当前版本：婚礼确认函',
+        ];
+
+        $heroPaddingTop = $small ? 18 : 24;
+        $heroPaddingBottom = $small ? 20 : 26;
+        $sealSize = $small ? 44 : 84;
+        $sealInnerSize = $small ? 34 : 64;
+        $heroEyebrowSize = $small ? 9 : 16;
+        $heroTitleSize = $small ? 30 : 54;
+        $heroSubtitleSize = $small ? 16 : 28;
+        $heroDescSize = $small ? 13 : 22;
+        $heroMetaSize = $small ? 11 : 20;
+        $heroDescLineHeight = $small ? 18 : 32;
+        $heroMetaLineHeight = $small ? 16 : 26;
+        $heroHeight =
+            $heroPaddingTop +
+            $heroEyebrowSize +
+            ($small ? 12 : 16) +
+            $sealSize +
+            ($small ? 12 : 16) +
+            $heroTitleSize +
+            ($small ? 8 : 10) +
+            $heroSubtitleSize +
+            ($small ? 10 : 14) +
+            count($heroDescLines) * $heroDescLineHeight +
+            ($small ? 10 : 14) +
+            count($heroMetaLines) * $heroMetaLineHeight +
+            $heroPaddingBottom;
+
+        $sectionLabelSize = $small ? 9 : 16;
+        $sectionLabelGap = $small ? 10 : 14;
+        $sectionBodySize = $small ? 14 : 24;
+        $sectionBodyLineHeight = $small ? 20 : 36;
+        $infoSectionPaddingY = $small ? 16 : 26;
+        $infoSectionHeight =
+            $infoSectionPaddingY * 2 +
+            $sectionLabelSize +
+            $sectionLabelGap +
+            max(count($leftInfoLines), count($rightInfoLines)) * $sectionBodyLineHeight;
+
+        $amountPaddingY = $small ? 18 : 28;
+        $amountLabelSize = $small ? 9 : 16;
+        $amountValueSize = $small ? 32 : 58;
+        $amountValueLineHeight = $small ? 34 : 60;
+        $amountCaptionSize = $small ? 14 : 22;
+        $amountBodySize = $small ? 13 : 22;
+        $amountBodyLineHeight = $small ? 20 : 33;
+        $amountSectionHeight =
+            $amountPaddingY * 2 +
+            $amountLabelSize +
+            ($small ? 10 : 12) +
+            $amountValueLineHeight +
+            ($small ? 8 : 10) +
+            $amountCaptionSize +
+            max(($small ? 16 : 24), count($amountDetailLines) * $amountBodyLineHeight);
+
+        $ackBodySize = $small ? 13 : 22;
+        $ackBodyLineHeight = $small ? 20 : 34;
+        $ackSectionPaddingY = $small ? 16 : 24;
+        $ackSectionHeight =
+            $ackSectionPaddingY * 2 +
+            $sectionLabelSize +
+            $sectionLabelGap +
+            max(count($acknowledgementLines), count($contactLines)) * $ackBodyLineHeight;
+
+        $signLineGap = $small ? 10 : 12;
+        $signLabelSize = $small ? 12 : 19;
+        $signSectionHeight = ($small ? 22 : 28) + $signLineGap + $signLabelSize;
+
+        $footerKickerSize = $small ? 14 : 22;
+        $footerBrandSize = $small ? 16 : 24;
+        $footerNoteSize = $small ? 11 : 18;
+        $footerNoteLineHeight = $small ? 16 : 28;
+        $footerNoteLines = self::wrapText(
+            self::toText($snapshot['footer_note'] ?? '') ?: self::DEFAULT_FOOTER_NOTE,
+            $small ? 24 : 34,
+            2
+        );
+        $footerHeight =
+            1 +
+            ($small ? 20 : 24) +
+            $footerBrandSize +
+            ($small ? 6 : 8) +
+            $footerKickerSize +
+            ($small ? 8 : 10) +
+            count($footerNoteLines) * $footerNoteLineHeight;
+
+        $sections = [];
+        $currentY = $paperY + $paperPaddingY;
+        $centerX = $paperX + $paperWidth / 2;
+
+        $sections[] = sprintf(
+            '<rect x="%s" y="%s" width="%s" height="%s" fill="url(#v3HeroGradient)" stroke="#E2D4C3" />',
+            $contentX,
+            $currentY,
+            $contentWidth,
+            $heroHeight
+        );
+        $sections[] = sprintf(
+            '<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="#F2DED1" fill-opacity="0.4" /><ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="#F8EEE4" fill-opacity="0.8" />',
+            $contentX + $contentWidth - ($small ? 58 : 108),
+            $currentY + ($small ? 24 : 38),
+            $small ? 34 : 66,
+            $small ? 28 : 54,
+            $contentX + $contentWidth - ($small ? 42 : 72),
+            $currentY + ($small ? 36 : 54),
+            $small ? 22 : 46,
+            $small ? 18 : 36
+        );
+
+        $heroEyebrowY = $currentY + $heroPaddingTop + $heroEyebrowSize;
+        $sections[] = self::drawTextBlock([
+            'x' => $centerX,
+            'y' => $heroEyebrowY,
+            'lines' => [$heroEyebrow],
+            'fontSize' => $heroEyebrowSize,
+            'lineHeight' => $heroEyebrowSize,
+            'fill' => '#A98A69',
+            'fontWeight' => 500,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SANS,
+            'letterSpacing' => $small ? 1.4 : 2.2,
+        ])['svg'];
+
+        $sealY = $heroEyebrowY + ($small ? 12 : 16);
+        $sealX = $centerX - $sealSize / 2;
+        $sections[] = sprintf(
+            '<circle cx="%s" cy="%s" r="%s" fill="none" stroke="#CDB08E" stroke-width="1" /><circle cx="%s" cy="%s" r="%s" fill="none" stroke="#E7D7C2" stroke-width="1" />',
+            $centerX,
+            $sealY + $sealSize / 2,
+            $sealSize / 2,
+            $centerX,
+            $sealY + $sealSize / 2,
+            $sealInnerSize / 2
+        );
+        $sections[] = self::drawTextBlock([
+            'x' => $centerX,
+            'y' => $sealY + $sealSize / 2 + ($small ? 5 : 9),
+            'lines' => ['LW'],
+            'fontSize' => $small ? 16 : 28,
+            'lineHeight' => $small ? 16 : 28,
+            'fill' => '#A78663',
+            'fontWeight' => 600,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SERIF,
+        ])['svg'];
+
+        $heroTitleY = $sealY + $sealSize + ($small ? 12 : 16) + $heroTitleSize;
+        $sections[] = self::drawTextBlock([
+            'x' => $centerX,
+            'y' => $heroTitleY,
+            'lines' => [$title],
+            'fontSize' => $heroTitleSize,
+            'lineHeight' => $heroTitleSize,
+            'fill' => '#3B322B',
+            'fontWeight' => 700,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+
+        $heroSubtitleY = $heroTitleY + ($small ? 8 : 10) + $heroSubtitleSize;
+        $sections[] = self::drawTextBlock([
+            'x' => $centerX,
+            'y' => $heroSubtitleY,
+            'lines' => [$heroSubtitle],
+            'fontSize' => $heroSubtitleSize,
+            'lineHeight' => $heroSubtitleSize,
+            'fill' => '#9F8467',
+            'fontWeight' => 500,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SERIF,
+        ])['svg'];
+
+        $heroDescY = $heroSubtitleY + ($small ? 10 : 14) + $heroDescSize;
+        $sections[] = self::drawTextBlock([
+            'x' => $centerX,
+            'y' => $heroDescY,
+            'lines' => $heroDescLines,
+            'fontSize' => $heroDescSize,
+            'lineHeight' => $heroDescLineHeight,
+            'fill' => '#6E6256',
+            'fontWeight' => 500,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+
+        $heroMetaY = $heroDescY + count($heroDescLines) * $heroDescLineHeight + ($small ? 10 : 14) + $heroMetaSize;
+        $sections[] = self::drawTextBlock([
+            'x' => $centerX,
+            'y' => $heroMetaY,
+            'lines' => $heroMetaLines,
+            'fontSize' => $heroMetaSize,
+            'lineHeight' => $heroMetaLineHeight,
+            'fill' => '#B38E69',
+            'fontWeight' => 500,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+
+        $currentY += $heroHeight + $sectionGap;
+
+        $columnGap = $small ? 18 : 40;
+        $columnWidth = ($contentWidth - $columnGap) / 2;
+        $sectionBodyY = $currentY + $infoSectionPaddingY + $sectionLabelSize + $sectionLabelGap + $sectionBodySize;
+        $sections[] = sprintf(
+            '<rect x="%s" y="%s" width="%s" height="1" fill="#E6D9CB" /><rect x="%s" y="%s" width="%s" height="1" fill="#E6D9CB" />',
+            $contentX,
+            $currentY,
+            $contentWidth,
+            $contentX,
+            $currentY + $infoSectionHeight,
+            $contentWidth
+        );
+        $sections[] = self::drawTextBlock([
+            'x' => $contentX,
+            'y' => $currentY + $infoSectionPaddingY + $sectionLabelSize,
+            'lines' => ['CEREMONY DETAILS'],
+            'fontSize' => $sectionLabelSize,
+            'lineHeight' => $sectionLabelSize,
+            'fill' => '#A98A69',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+            'letterSpacing' => $small ? 1.4 : 2,
+        ])['svg'];
+        $sections[] = self::drawTextBlock([
+            'x' => $contentX,
+            'y' => $sectionBodyY,
+            'lines' => $leftInfoLines,
+            'fontSize' => $sectionBodySize,
+            'lineHeight' => $sectionBodyLineHeight,
+            'fill' => '#342E29',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+        $sections[] = self::drawTextBlock([
+            'x' => $contentX + $columnWidth + $columnGap,
+            'y' => $currentY + $infoSectionPaddingY + $sectionLabelSize,
+            'lines' => ['ATELIER SERVICE'],
+            'fontSize' => $sectionLabelSize,
+            'lineHeight' => $sectionLabelSize,
+            'fill' => '#A98A69',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+            'letterSpacing' => $small ? 1.4 : 2,
+        ])['svg'];
+        $sections[] = self::drawTextBlock([
+            'x' => $contentX + $columnWidth + $columnGap,
+            'y' => $sectionBodyY,
+            'lines' => $rightInfoLines,
+            'fontSize' => $sectionBodySize,
+            'lineHeight' => $sectionBodyLineHeight,
+            'fill' => '#342E29',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+
+        $currentY += $infoSectionHeight + $sectionGap;
+
+        $amountLabelY = $currentY + $amountPaddingY + $amountLabelSize;
+        $amountValueY = $amountLabelY + ($small ? 10 : 12) + $amountValueSize;
+        $amountCaptionY = $amountValueY + ($small ? 8 : 10) + $amountCaptionSize;
+        $amountRightX = $contentX + $contentWidth - ($small ? 150 : 300);
+        $amountRightY = $currentY + $amountPaddingY + ($small ? 4 : 8) + $amountBodySize;
+        $sections[] = sprintf(
+            '<rect x="%s" y="%s" width="%s" height="%s" fill="url(#v3AmountGradient)" stroke="#D9C1A1" stroke-width="1" />',
+            $contentX,
+            $currentY,
+            $contentWidth,
+            $amountSectionHeight
+        );
+        $sections[] = self::drawTextBlock([
+            'x' => $contentX + ($small ? 20 : 30),
+            'y' => $amountLabelY,
+            'lines' => ['FEE MEMO'],
+            'fontSize' => $amountLabelSize,
+            'lineHeight' => $amountLabelSize,
+            'fill' => '#A98A69',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+            'letterSpacing' => $small ? 1.4 : 2,
+        ])['svg'];
+        $sections[] = self::drawTextBlock([
+            'x' => $contentX + ($small ? 20 : 30),
+            'y' => $amountValueY,
+            'lines' => ['¥' . (self::toText($snapshot['order_total_amount'] ?? '') ?: '0.00')],
+            'fontSize' => $amountValueSize,
+            'lineHeight' => $amountValueLineHeight,
+            'fill' => '#7C6146',
+            'fontWeight' => 600,
+            'fontFamily' => self::FONT_FAMILY_SERIF,
+        ])['svg'];
+        $sections[] = self::drawTextBlock([
+            'x' => $contentX + ($small ? 20 : 30),
+            'y' => $amountCaptionY,
+            'lines' => ['合同合计金额'],
+            'fontSize' => $amountCaptionSize,
+            'lineHeight' => $amountCaptionSize,
+            'fill' => '#6D6155',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+        $sections[] = self::drawTextBlock([
+            'x' => $amountRightX,
+            'y' => $amountRightY,
+            'lines' => $amountDetailLines,
+            'fontSize' => $amountBodySize,
+            'lineHeight' => $amountBodyLineHeight,
+            'fill' => '#433932',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+
+        $currentY += $amountSectionHeight + $sectionGap;
+
+        $ackBodyY = $currentY + $ackSectionPaddingY + $sectionLabelSize + $sectionLabelGap + $ackBodySize;
+        $sections[] = sprintf(
+            '<rect x="%s" y="%s" width="%s" height="1" fill="#E6D9CB" /><rect x="%s" y="%s" width="%s" height="1" fill="#E6D9CB" />',
+            $contentX,
+            $currentY,
+            $contentWidth,
+            $contentX,
+            $currentY + $ackSectionHeight,
+            $contentWidth
+        );
+        $sections[] = self::drawTextBlock([
+            'x' => $contentX,
+            'y' => $currentY + $ackSectionPaddingY + $sectionLabelSize,
+            'lines' => ['ACKNOWLEDGEMENT'],
+            'fontSize' => $sectionLabelSize,
+            'lineHeight' => $sectionLabelSize,
+            'fill' => '#A98A69',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+            'letterSpacing' => $small ? 1.4 : 2,
+        ])['svg'];
+        $sections[] = self::drawTextBlock([
+            'x' => $contentX,
+            'y' => $ackBodyY,
+            'lines' => $acknowledgementLines,
+            'fontSize' => $ackBodySize,
+            'lineHeight' => $ackBodyLineHeight,
+            'fill' => '#433932',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+        $sections[] = self::drawTextBlock([
+            'x' => $contentX + $columnWidth + $columnGap,
+            'y' => $currentY + $ackSectionPaddingY + $sectionLabelSize,
+            'lines' => ['CONTACT ATELIER'],
+            'fontSize' => $sectionLabelSize,
+            'lineHeight' => $sectionLabelSize,
+            'fill' => '#A98A69',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+            'letterSpacing' => $small ? 1.4 : 2,
+        ])['svg'];
+        $sections[] = self::drawTextBlock([
+            'x' => $contentX + $columnWidth + $columnGap,
+            'y' => $ackBodyY,
+            'lines' => $contactLines,
+            'fontSize' => $small ? 12 : 21,
+            'lineHeight' => $ackBodyLineHeight,
+            'fill' => '#433932',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+
+        $currentY += $ackSectionHeight + $sectionGap;
+
+        $signLineY = $currentY + ($small ? 10 : 14);
+        $signLabelY = $signLineY + $signLineGap + $signLabelSize;
+        $signRightX = $contentX + $columnWidth + $columnGap;
+        $sections[] = sprintf(
+            '<rect x="%s" y="%s" width="%s" height="1" fill="#D9C4A6" /><rect x="%s" y="%s" width="%s" height="1" fill="#D9C4A6" />',
+            $contentX,
+            $signLineY,
+            $columnWidth,
+            $signRightX,
+            $signLineY,
+            $columnWidth
+        );
+        $sections[] = self::drawTextBlock([
+            'x' => $contentX,
+            'y' => $signLabelY,
+            'lines' => ['客户签名'],
+            'fontSize' => $signLabelSize,
+            'lineHeight' => $signLabelSize,
+            'fill' => '#8B7762',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+        $sections[] = self::drawTextBlock([
+            'x' => $signRightX,
+            'y' => $signLabelY,
+            'lines' => ['婚礼顾问签署'],
+            'fontSize' => $signLabelSize,
+            'lineHeight' => $signLabelSize,
+            'fill' => '#8B7762',
+            'fontWeight' => 500,
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+
+        $currentY += $signSectionHeight + $sectionGap;
+
+        $footerLineY = $currentY;
+        $footerBrandY = $footerLineY + ($small ? 22 : 24) + $footerBrandSize;
+        $footerKickerY = $footerBrandY + ($small ? 6 : 8) + $footerKickerSize;
+        $footerNoteY = $footerKickerY + ($small ? 8 : 10) + $footerNoteSize;
+        $sections[] = sprintf(
+            '<rect x="%s" y="%s" width="%s" height="1" fill="#E6D9CB" />',
+            $contentX,
+            $footerLineY,
+            $contentWidth
+        );
+        $sections[] = self::drawTextBlock([
+            'x' => $centerX,
+            'y' => $footerBrandY,
+            'lines' => [self::toText($snapshot['brand_name'] ?? '') ?: self::DEFAULT_BRAND_NAME],
+            'fontSize' => $footerBrandSize,
+            'lineHeight' => $footerBrandSize,
+            'fill' => '#B08C68',
+            'fontWeight' => 600,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+        $sections[] = self::drawTextBlock([
+            'x' => $centerX,
+            'y' => $footerKickerY,
+            'lines' => [self::V3_FOOTER_KICKER],
+            'fontSize' => $footerKickerSize,
+            'lineHeight' => $footerKickerSize,
+            'fill' => '#9F8467',
+            'fontWeight' => 500,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SERIF,
+        ])['svg'];
+        $sections[] = self::drawTextBlock([
+            'x' => $centerX,
+            'y' => $footerNoteY,
+            'lines' => $footerNoteLines,
+            'fontSize' => $footerNoteSize,
+            'lineHeight' => $footerNoteLineHeight,
+            'fill' => '#87796B',
+            'fontWeight' => 500,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+
+        return sprintf(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s"><defs><linearGradient id="v3PageGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FAF5EF" /><stop offset="100%%" stop-color="#F3E8DC" /></linearGradient><linearGradient id="v3PaperGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FFFDFC" /><stop offset="100%%" stop-color="#FAF4EC" /></linearGradient><linearGradient id="v3HeroGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FBF6F0" /><stop offset="100%%" stop-color="#F7EEE3" /></linearGradient><linearGradient id="v3AmountGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FCF6EF" /><stop offset="100%%" stop-color="#F8EDE2" /></linearGradient><filter id="v3PaperShadow" x="-20%%" y="-20%%" width="140%%" height="160%%"><feDropShadow dx="0" dy="20" stdDeviation="14" flood-color="#C9B397" flood-opacity="0.12" /></filter></defs><rect width="100%%" height="100%%" fill="url(#v3PageGradient)" /><rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="url(#v3PaperGradient)" stroke="#D8C3A7" stroke-width="1" filter="url(#v3PaperShadow)" />%s</svg>',
+            $width,
+            $height,
+            $width,
+            $height,
+            $paperX,
+            $paperY,
+            $paperWidth,
+            $paperHeight,
+            $small ? 8 : 14,
             implode('', $sections)
         );
     }

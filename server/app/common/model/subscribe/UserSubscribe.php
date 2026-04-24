@@ -124,6 +124,30 @@ class UserSubscribe extends BaseModel
     }
 
     /**
+     * @notes 检查用户是否还能为模板预留一次发送资格
+     * @param int $userId
+     * @param string $templateId
+     * @param int $reservedCount
+     * @return bool
+     */
+    public static function canReserveSubscription(int $userId, string $templateId, int $reservedCount = 0): bool
+    {
+        $record = self::where('user_id', $userId)
+            ->where('template_id', $templateId)
+            ->find();
+
+        if (!$record) {
+            return false;
+        }
+
+        if ($record->status == self::STATUS_PERMANENT) {
+            return true;
+        }
+
+        return (int) $record->accept_count > max($reservedCount, 0);
+    }
+
+    /**
      * @notes 消费一次订阅授权
      * @param int $userId
      * @param string $templateId
