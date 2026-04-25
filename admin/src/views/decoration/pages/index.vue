@@ -41,7 +41,8 @@ import widgets from '../component/widgets'
 enum pagesTypeEnum {
     HOME = '1',
     USER = '2',
-    SERVICE = '3'
+    SERVICE = '3',
+    SPLASH = '6'
 }
 
 const HOME_WIDGET_NAMES = [
@@ -50,6 +51,7 @@ const HOME_WIDGET_NAMES = [
     'home-feature-carousel',
     'home-service-categories'
 ]
+const SPLASH_WIDGET_NAMES = ['splash-ad']
 
 const updatePageData = (value: any) => {
     menus[activeMenu.value].pageData = [...value]
@@ -150,25 +152,31 @@ const normalizeLoadedPageData = (rawData: any) => {
         })
 }
 
-const ensureHomeFixedWidgets = (pageData: any[]) => {
+const ensureFixedWidgets = (pageData: any[], widgetNames: string[]) => {
     const widgetMap = new Map<string, any>()
     pageData.forEach((item: any) => {
         const widgetName = item?.name
-        if (!HOME_WIDGET_NAMES.includes(widgetName) || widgetMap.has(widgetName)) {
+        if (!widgetNames.includes(widgetName) || widgetMap.has(widgetName)) {
             return
         }
 
         widgetMap.set(widgetName, item)
     })
 
-    return HOME_WIDGET_NAMES.map((widgetName) => buildWidgetOptions(widgetName, widgetMap.get(widgetName)))
+    return widgetNames.map((widgetName) => buildWidgetOptions(widgetName, widgetMap.get(widgetName)))
 }
+
+const ensureHomeFixedWidgets = (pageData: any[]) => ensureFixedWidgets(pageData, HOME_WIDGET_NAMES)
+
+const ensureSplashFixedWidget = (pageData: any[]) => ensureFixedWidgets(pageData, SPLASH_WIDGET_NAMES)
+
 
 const menus: Record<
     string,
     {
         id: number
         name: string
+        type?: number
         pageMeta?: any
         pageData: any[]
     }
@@ -193,6 +201,13 @@ const menus: Record<
         name: '客服设置',
         pageMeta: null,
         pageData: generatePageData(['customer-service'])
+    },
+    [pagesTypeEnum.SPLASH]: {
+        id: 6,
+        type: 6,
+        name: '开屏广告页',
+        pageMeta: null,
+        pageData: generatePageData(SPLASH_WIDGET_NAMES)
     }
 })
 
@@ -236,15 +251,21 @@ const getSelectWidget = computed(() => {
 })
 
 const getData = async () => {
+    const fallbackMenu = menus[activeMenu.value]
     const data = await getDecoratePages({ id: activeMenu.value })
-    let pageData = normalizeLoadedPageData(data.data)
+    const targetMenu = menus[String(data?.id)] || fallbackMenu
+    let pageData = normalizeLoadedPageData(data?.data ?? fallbackMenu.pageData)
 
     if (activeMenu.value === pagesTypeEnum.HOME) {
         pageData = ensureHomeFixedWidgets(pageData)
     }
 
-    menus[String(data.id)].pageData = pageData
-    menus[String(data.id)].pageMeta = parseJsonValue<any[] | null>(data?.meta, null)
+    if (activeMenu.value === pagesTypeEnum.SPLASH) {
+        pageData = ensureSplashFixedWidget(pageData)
+    }
+
+    targetMenu.pageData = pageData
+    targetMenu.pageMeta = parseJsonValue<any[] | null>(data?.meta, targetMenu.pageMeta ?? null)
     selectWidgetIndex.value = pageData.findIndex((item: any) => !item?.disabled)
 }
 
@@ -253,7 +274,9 @@ const setData = async () => {
     const pageData =
         activeMenu.value === pagesTypeEnum.HOME
             ? ensureHomeFixedWidgets(data.pageData)
-            : data.pageData
+            : activeMenu.value === pagesTypeEnum.SPLASH
+              ? ensureSplashFixedWidget(data.pageData)
+              : data.pageData
 
     await setDecoratePages({
         ...data,
