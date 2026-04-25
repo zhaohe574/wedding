@@ -1,5 +1,5 @@
 <template>
-    <div class="splash-ad-preview" :style="previewStyle">
+    <div class="splash-ad-preview">
         <div v-if="content.image" class="splash-ad-preview__image">
             <decoration-img width="100%" height="100%" :src="content.image" fit="cover" />
         </div>
@@ -37,14 +37,11 @@ const props = defineProps({
     }
 })
 
-const previewStyle = computed(() => ({
-    '--splash-mask-color': props.styles.mask_color || 'rgba(0, 0, 0, 0.24)'
-}))
-
 const buttonStyle = computed(() => ({
-    backgroundColor: props.styles.button_bg_color || '#111111',
-    color: props.styles.button_text_color || '#FFFFFF',
-    borderRadius: `${props.styles.button_radius ?? 999}px`
+    backgroundColor: props.styles.button_bg_color || '#FFFFFF',
+    color: props.styles.button_text_color || '#333333',
+    borderColor: props.styles.button_border_color || '#FFFFFF',
+    borderRadius: `${props.styles.button_border_radius ?? 24}px`
 }))
 </script>
 
@@ -96,7 +93,7 @@ const buttonStyle = computed(() => ({
     &__button {
         width: 100%;
         height: 44px;
-        border: 0;
+        border: 1px solid #ffffff;
         font-size: 15px;
         font-weight: 600;
         box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);

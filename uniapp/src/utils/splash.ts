@@ -51,9 +51,15 @@ const normalizeSeconds = (value: unknown) => {
 
 const normalizeFrequency = (value: unknown): SplashFrequency => {
     const frequency = String(value || '').trim()
-    if (['every_time', 'every_launch', 'every', 'always', '每次'].includes(frequency)) return 'every_time'
+    if (['every_time', 'every_launch', 'every', 'always', '每次'].includes(frequency)) {
+        return 'every_time'
+    }
     if (['session', 'once_session', '每会话', '每会话一次'].includes(frequency)) return 'session'
-    if (['first_visit', 'once', 'once_forever', 'forever', '仅一次', '首次访问'].includes(frequency)) return 'first_visit'
+    if (
+        ['first_visit', 'once', 'once_forever', 'forever', '仅一次', '首次访问'].includes(frequency)
+    ) {
+        return 'first_visit'
+    }
     return 'daily'
 }
 
@@ -113,7 +119,9 @@ const extractSplashSource = (pageData: Record<string, any>) => {
     }
 }
 
-export const normalizeSplashConfig = (pageData: Record<string, any> | null | undefined): SplashAdConfig => {
+export const normalizeSplashConfig = (
+    pageData: Record<string, any> | null | undefined
+): SplashAdConfig => {
     const source = extractSplashSource(pageData || {})
     const buttonText = String(source.button_text || source.buttonText || '').trim()
 
@@ -125,12 +133,25 @@ export const normalizeSplashConfig = (pageData: Record<string, any> | null | und
             true
         ),
         autoSeconds: normalizeSeconds(source.auto_seconds ?? source.autoSeconds ?? source.seconds),
-        frequency: normalizeFrequency(source.frequency ?? source.show_frequency ?? source.showFrequency),
+        frequency: normalizeFrequency(
+            source.frequency ?? source.show_frequency ?? source.showFrequency
+        ),
         buttonText: buttonText || DEFAULT_SPLASH_CONFIG.buttonText,
         buttonBgColor: normalizeColor(source.button_bg_color ?? source.buttonBgColor, '#FFFFFF'),
-        buttonTextColor: normalizeColor(source.button_text_color ?? source.buttonTextColor, '#333333'),
-        buttonBorderColor: normalizeColor(source.button_border_color ?? source.buttonBorderColor, '#FFFFFF'),
-        buttonBorderRadius: normalizeRadius(source.button_border_radius ?? source.buttonBorderRadius)
+        buttonTextColor: normalizeColor(
+            source.button_text_color ?? source.buttonTextColor,
+            '#333333'
+        ),
+        buttonBorderColor: normalizeColor(
+            source.button_border_color ?? source.buttonBorderColor,
+            '#FFFFFF'
+        ),
+        buttonBorderRadius: normalizeRadius(
+            source.button_border_radius ??
+                source.buttonBorderRadius ??
+                source.button_radius ??
+                source.buttonRadius
+        )
     }
 }
 

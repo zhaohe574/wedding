@@ -158,7 +158,6 @@ onUnload(() => {
     box-sizing: border-box;
 }
 
-
 .splash-page__button {
     width: 100%;
     height: 88rpx;

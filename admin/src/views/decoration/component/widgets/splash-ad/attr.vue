@@ -18,7 +18,7 @@
                 开屏图片仅用于展示，不提供图片链接或点击跳转配置。关闭或未上传图片时，移动端将直接进入首页。
             </div>
             <el-form-item label="自动进入">
-                <el-switch v-model="contentData.auto_enter" :active-value="1" :inactive-value="0" />
+                <el-switch v-model="contentData.auto_enter_enabled" :active-value="1" :inactive-value="0" />
             </el-form-item>
             <el-form-item label="进入秒数">
                 <el-input-number
@@ -53,18 +53,18 @@
             <el-form-item label="文字颜色">
                 <el-color-picker v-model="stylesData.button_text_color" />
             </el-form-item>
+            <el-form-item label="边框颜色">
+                <el-color-picker v-model="stylesData.button_border_color" />
+            </el-form-item>
             <el-form-item label="按钮圆角">
                 <el-input-number
-                    v-model="stylesData.button_radius"
+                    v-model="stylesData.button_border_radius"
                     :min="0"
-                    :max="999"
+                    :max="60"
                     :step="2"
                     controls-position="right"
                     class="!w-full"
                 />
-            </el-form-item>
-            <el-form-item label="遮罩颜色">
-                <el-color-picker v-model="stylesData.mask_color" show-alpha />
             </el-form-item>
         </el-card>
     </el-form>

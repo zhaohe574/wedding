@@ -196,7 +196,7 @@ class SplashAdDecorateService
             'button_bg_color' => self::normalizeColor($styles['button_bg_color'] ?? '#FFFFFF', '#FFFFFF'),
             'button_text_color' => self::normalizeColor($styles['button_text_color'] ?? '#333333', '#333333'),
             'button_border_color' => self::normalizeColor($styles['button_border_color'] ?? '#FFFFFF', '#FFFFFF'),
-            'button_border_radius' => max(0, min(60, (int)($styles['button_border_radius'] ?? 24))),
+            'button_border_radius' => max(0, min(60, (int)($styles['button_border_radius'] ?? $styles['button_radius'] ?? 24))),
         ];
 
         return $widget;
