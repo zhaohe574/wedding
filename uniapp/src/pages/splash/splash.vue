@@ -9,11 +9,12 @@
         <view v-else class="splash-page__fallback" />
         <view class="splash-page__scrim" />
         <view class="splash-page__content">
-            <view class="splash-page__copy">
-                <text v-if="displayConfig.title" class="splash-page__title">{{ displayConfig.title }}</text>
-                <text v-if="displayConfig.subtitle" class="splash-page__subtitle">{{ displayConfig.subtitle }}</text>
-            </view>
-            <button class="splash-page__button" hover-class="splash-page__button--hover" @tap="enterHome">
+            <button
+                class="splash-page__button"
+                :style="buttonStyle"
+                hover-class="splash-page__button--hover"
+                @tap="enterHome"
+            >
                 {{ buttonLabel }}
             </button>
         </view>
@@ -26,6 +27,7 @@ import { computed, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import {
     fetchSplashConfig,
+    armSplashHomeBypass,
     markSplashShown,
     shouldShowSplash,
     SPLASH_HOME_PATH,
@@ -36,13 +38,14 @@ const appStore = useAppStore()
 const displayConfig = ref<SplashAdConfig>({
     enabled: false,
     image: '',
-    title: '',
-    subtitle: '',
-    buttonText: '进入首页',
-    duration: 3,
-    frequency: 'once_day',
-    backgroundColor: '#000000',
-    textColor: '#ffffff'
+    autoEnterEnabled: true,
+    autoSeconds: 3,
+    frequency: 'session',
+    buttonText: '点击进入',
+    buttonBgColor: '#FFFFFF',
+    buttonTextColor: '#333333',
+    buttonBorderColor: '#FFFFFF',
+    buttonBorderRadius: 24
 })
 const countdown = ref(0)
 let timer: ReturnType<typeof setInterval> | null = null
@@ -50,12 +53,17 @@ let entered = false
 
 const displayImage = computed(() => appStore.getImageUrl(displayConfig.value.image))
 const pageStyle = computed(() => ({
-    backgroundColor: displayConfig.value.backgroundColor,
-    color: displayConfig.value.textColor
+    backgroundColor: '#000000'
+}))
+const buttonStyle = computed(() => ({
+    background: displayConfig.value.buttonBgColor,
+    color: displayConfig.value.buttonTextColor,
+    borderColor: displayConfig.value.buttonBorderColor,
+    borderRadius: `${displayConfig.value.buttonBorderRadius}rpx`
 }))
 const buttonLabel = computed(() => {
     const suffix = countdown.value > 0 ? ` ${countdown.value}s` : ''
-    return `${displayConfig.value.buttonText || '进入首页'}${suffix}`
+    return `${displayConfig.value.buttonText || '点击进入'}${suffix}`
 })
 
 const clearCountdown = () => {
@@ -68,11 +76,17 @@ const enterHome = () => {
     if (entered) return
     entered = true
     clearCountdown()
-    uni.reLaunch({ url: SPLASH_HOME_PATH })
+    armSplashHomeBypass()
+    uni.switchTab({
+        url: SPLASH_HOME_PATH,
+        fail: () => {
+            uni.reLaunch({ url: SPLASH_HOME_PATH })
+        }
+    })
 }
 
 const startCountdown = () => {
-    countdown.value = displayConfig.value.duration
+    countdown.value = displayConfig.value.autoSeconds
     timer = setInterval(() => {
         countdown.value -= 1
         if (countdown.value <= 0) {
@@ -93,7 +107,9 @@ onLoad(async (query = {}) => {
         }
 
         markSplashShown(config.frequency)
-        startCountdown()
+        if (config.autoEnterEnabled) {
+            startCountdown()
+        }
     } catch (error) {
         console.error('开屏广告加载失败', error)
         enterHome()
@@ -142,32 +158,11 @@ onUnload(() => {
     box-sizing: border-box;
 }
 
-.splash-page__copy {
-    display: flex;
-    flex-direction: column;
-    gap: 16rpx;
-    margin-bottom: 44rpx;
-}
-
-.splash-page__title {
-    font-size: 48rpx;
-    font-weight: 600;
-    line-height: 1.25;
-}
-
-.splash-page__subtitle {
-    font-size: 28rpx;
-    line-height: 1.6;
-    opacity: 0.86;
-}
 
 .splash-page__button {
     width: 100%;
     height: 88rpx;
-    border: 0;
-    border-radius: 999rpx;
-    background: rgba(255, 255, 255, 0.94);
-    color: #111111;
+    border: 1rpx solid #ffffff;
     font-size: 30rpx;
     font-weight: 600;
     line-height: 88rpx;

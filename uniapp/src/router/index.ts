@@ -9,6 +9,13 @@ import wechatOa from '@/utils/wechat'
 // #endif
 import cache from '@/utils/cache'
 import { BACK_URL } from '@/enums/constantEnums'
+import {
+    consumeSplashHomeBypass,
+    fetchSplashConfig,
+    shouldShowSplash,
+    SPLASH_HOME_PATH,
+    SPLASH_PAGE_PATH
+} from '@/utils/splash'
 
 const router = createRouter({
     routes: [
@@ -26,6 +33,25 @@ const router = createRouter({
     //@ts-ignore
     platform: process.env.UNI_PLATFORM,
     h5: {}
+})
+
+// 开屏广告首页入口保护：直接进入首页时按频率引导到独立开屏页。
+router.beforeEach(async (to, from) => {
+    if (to.path !== SPLASH_HOME_PATH || from.path === SPLASH_PAGE_PATH) {
+        return
+    }
+    if (consumeSplashHomeBypass()) {
+        return
+    }
+
+    try {
+        const config = await fetchSplashConfig()
+        if (shouldShowSplash(config, to.query as Record<string, any>)) {
+            return SPLASH_PAGE_PATH
+        }
+    } catch (error) {
+        console.error('开屏广告守卫失败', error)
+    }
 })
 
 //存储登陆前的页面

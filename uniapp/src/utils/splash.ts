@@ -2,36 +2,40 @@ import { getDecorate } from '@/api/shop'
 import cache from '@/utils/cache'
 
 export const SPLASH_PAGE_ID = 6
+export const SPLASH_PAGE_PATH = '/pages/splash/splash'
 export const SPLASH_HOME_PATH = '/pages/index/index'
 export const SPLASH_STORAGE_KEY = 'splash_ad_shown'
 
-export type SplashFrequency = 'every_launch' | 'once_session' | 'once_day' | 'once'
+export type SplashFrequency = 'session' | 'daily' | 'every_time' | 'first_visit'
 
 export interface SplashAdConfig {
     enabled: boolean
     image: string
-    title: string
-    subtitle: string
-    buttonText: string
-    duration: number
+    autoEnterEnabled: boolean
+    autoSeconds: number
     frequency: SplashFrequency
-    backgroundColor: string
-    textColor: string
+    buttonText: string
+    buttonBgColor: string
+    buttonTextColor: string
+    buttonBorderColor: string
+    buttonBorderRadius: number
 }
 
 const DEFAULT_SPLASH_CONFIG: SplashAdConfig = {
     enabled: false,
     image: '',
-    title: '',
-    subtitle: '',
-    buttonText: '进入首页',
-    duration: 3,
-    frequency: 'once_day',
-    backgroundColor: '#000000',
-    textColor: '#ffffff'
+    autoEnterEnabled: true,
+    autoSeconds: 3,
+    frequency: 'session',
+    buttonText: '点击进入',
+    buttonBgColor: '#FFFFFF',
+    buttonTextColor: '#333333',
+    buttonBorderColor: '#FFFFFF',
+    buttonBorderRadius: 24
 }
 
 let sessionShown = false
+let splashHomeBypassArmed = false
 
 const normalizeBoolean = (value: unknown, fallback = false) => {
     if (value === true || value === 1 || value === '1' || value === 'true') return true
@@ -39,18 +43,29 @@ const normalizeBoolean = (value: unknown, fallback = false) => {
     return fallback
 }
 
-const normalizeDuration = (value: unknown) => {
+const normalizeSeconds = (value: unknown) => {
     const parsed = Number(value)
-    if (!Number.isFinite(parsed)) return DEFAULT_SPLASH_CONFIG.duration
+    if (!Number.isFinite(parsed)) return DEFAULT_SPLASH_CONFIG.autoSeconds
     return Math.min(Math.max(Math.round(parsed), 1), 10)
 }
 
 const normalizeFrequency = (value: unknown): SplashFrequency => {
     const frequency = String(value || '').trim()
-    if (['every_launch', 'every', 'always', '每次'].includes(frequency)) return 'every_launch'
-    if (['once_session', 'session', '每会话'].includes(frequency)) return 'once_session'
-    if (['once', 'once_forever', 'forever', '仅一次'].includes(frequency)) return 'once'
-    return 'once_day'
+    if (['every_time', 'every_launch', 'every', 'always', '每次'].includes(frequency)) return 'every_time'
+    if (['session', 'once_session', '每会话', '每会话一次'].includes(frequency)) return 'session'
+    if (['first_visit', 'once', 'once_forever', 'forever', '仅一次', '首次访问'].includes(frequency)) return 'first_visit'
+    return 'daily'
+}
+
+const normalizeColor = (value: unknown, fallback: string) => {
+    const color = String(value || '').trim()
+    return /^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/.test(color) ? color : fallback
+}
+
+const normalizeRadius = (value: unknown) => {
+    const parsed = Number(value)
+    if (!Number.isFinite(parsed)) return DEFAULT_SPLASH_CONFIG.buttonBorderRadius
+    return Math.min(Math.max(Math.round(parsed), 0), 60)
 }
 
 const safeParseJson = (value: unknown) => {
@@ -62,47 +77,60 @@ const safeParseJson = (value: unknown) => {
     }
 }
 
-const firstRecord = (value: unknown): Record<string, any> => {
+const listFromUnknown = (value: unknown): Record<string, any>[] => {
     const parsed = safeParseJson(value)
     if (Array.isArray(parsed)) {
-        const splashWidget = parsed.find((item) => {
-            const name = String(item?.name || '').toLowerCase()
-            return name.includes('splash') || name.includes('open-screen') || name.includes('ad')
-        })
-        return (splashWidget || parsed[0] || {}) as Record<string, any>
+        return parsed.filter((item) => item && typeof item === 'object') as Record<string, any>[]
     }
-    if (parsed && typeof parsed === 'object') return parsed as Record<string, any>
-    return {}
+    if (parsed && typeof parsed === 'object') {
+        const record = parsed as Record<string, any>
+        const keys = Object.keys(record)
+        if (keys.length && keys.every((key) => /^\d+$/.test(key))) {
+            return keys
+                .sort((a, b) => Number(a) - Number(b))
+                .map((key) => record[key])
+                .filter((item) => item && typeof item === 'object') as Record<string, any>[]
+        }
+        return [record]
+    }
+    return []
 }
 
-const extractContent = (pageData: Record<string, any>) => {
-    const dataRecord = firstRecord(pageData.data)
-    const metaRecord = firstRecord(pageData.meta)
-    const content = firstRecord(dataRecord.content)
-    const styles = firstRecord(dataRecord.styles)
+const firstSplashWidget = (value: unknown): Record<string, any> => {
+    const records = listFromUnknown(value)
+    return records.find((item) => item.name === 'splash-ad') || records[0] || {}
+}
+
+const extractSplashSource = (pageData: Record<string, any>) => {
+    const widget = firstSplashWidget(pageData.data)
+    const content = firstSplashWidget(widget.content)
+    const styles = firstSplashWidget(widget.styles)
 
     return {
-        ...metaRecord,
-        ...dataRecord,
+        ...widget,
         ...content,
         ...styles
     }
 }
 
 export const normalizeSplashConfig = (pageData: Record<string, any> | null | undefined): SplashAdConfig => {
-    const source = extractContent(pageData || {})
-    const image = String(source.image || source.cover || source.poster || source.bg_image || '').trim()
+    const source = extractSplashSource(pageData || {})
+    const buttonText = String(source.button_text || source.buttonText || '').trim()
 
     return {
         enabled: normalizeBoolean(source.enabled ?? source.is_show ?? source.status, false),
-        image,
-        title: String(source.title || '').trim(),
-        subtitle: String(source.subtitle || source.description || '').trim(),
-        buttonText: String(source.button_text || source.buttonText || source.btn_text || '进入首页').trim(),
-        duration: normalizeDuration(source.duration ?? source.countdown ?? source.seconds),
+        image: String(source.image || '').trim(),
+        autoEnterEnabled: normalizeBoolean(
+            source.auto_enter_enabled ?? source.autoEnterEnabled ?? source.auto_enter,
+            true
+        ),
+        autoSeconds: normalizeSeconds(source.auto_seconds ?? source.autoSeconds ?? source.seconds),
         frequency: normalizeFrequency(source.frequency ?? source.show_frequency ?? source.showFrequency),
-        backgroundColor: String(source.background_color || source.backgroundColor || source.bg_color || '#000000'),
-        textColor: String(source.text_color || source.textColor || '#ffffff')
+        buttonText: buttonText || DEFAULT_SPLASH_CONFIG.buttonText,
+        buttonBgColor: normalizeColor(source.button_bg_color ?? source.buttonBgColor, '#FFFFFF'),
+        buttonTextColor: normalizeColor(source.button_text_color ?? source.buttonTextColor, '#333333'),
+        buttonBorderColor: normalizeColor(source.button_border_color ?? source.buttonBorderColor, '#FFFFFF'),
+        buttonBorderRadius: normalizeRadius(source.button_border_radius ?? source.buttonBorderRadius)
     }
 }
 
@@ -119,10 +147,14 @@ const todayKey = () => {
     return `${year}-${month}-${day}`
 }
 
-const getSessionShown = () => sessionShown
+export const armSplashHomeBypass = () => {
+    splashHomeBypassArmed = true
+}
 
-const setSessionShown = () => {
-    sessionShown = true
+export const consumeSplashHomeBypass = () => {
+    if (!splashHomeBypassArmed) return false
+    splashHomeBypassArmed = false
+    return true
 }
 
 export const shouldBypassSplash = (query: Record<string, any> = {}) => {
@@ -134,32 +166,30 @@ export const shouldShowSplash = (config: SplashAdConfig, query: Record<string, a
     if (shouldBypassSplash(query)) return false
     if (!config.enabled || !config.image) return false
 
-    if (config.frequency === 'every_launch') return true
+    if (config.frequency === 'every_time') return true
+    if (config.frequency === 'session') return !sessionShown
 
-    if (config.frequency === 'once_session') {
-        return !getSessionShown()
-    }
+    const shown = cache.get(SPLASH_STORAGE_KEY) as {
+        date?: string
+        firstVisit?: boolean
+    } | null
 
-    const shown = cache.get(SPLASH_STORAGE_KEY) as { date?: string; forever?: boolean } | null
-    if (config.frequency === 'once') {
-        return !shown?.forever
-    }
-
+    if (config.frequency === 'first_visit') return !shown?.firstVisit
     return shown?.date !== todayKey()
 }
 
 export const markSplashShown = (frequency: SplashFrequency) => {
-    if (frequency === 'once_session') {
-        setSessionShown()
+    if (frequency === 'session') {
+        sessionShown = true
         return
     }
 
-    if (frequency === 'once') {
-        cache.set(SPLASH_STORAGE_KEY, { forever: true })
+    if (frequency === 'first_visit') {
+        cache.set(SPLASH_STORAGE_KEY, { firstVisit: true })
         return
     }
 
-    if (frequency === 'once_day') {
+    if (frequency === 'daily') {
         cache.set(SPLASH_STORAGE_KEY, { date: todayKey() })
     }
 }
