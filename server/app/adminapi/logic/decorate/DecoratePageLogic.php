@@ -17,6 +17,7 @@ namespace app\adminapi\logic\decorate;
 use app\common\logic\BaseLogic;
 use app\common\model\decorate\DecoratePage;
 use app\common\service\DecorateDataService;
+use app\common\service\SplashAdDecorateService;
 
 
 /**
@@ -47,11 +48,17 @@ class DecoratePageLogic extends BaseLogic
         $pageData = DecoratePage::findOrEmpty($id)->toArray();
         
         if (empty($pageData)) {
+            if ((int)$id === SplashAdDecorateService::PAGE_ID) {
+                return SplashAdDecorateService::defaultPage();
+            }
             return [];
         }
         
         // 解析并填充动态数据
         $pageData = DecorateDataService::parsePageData($pageData);
+        if ((int)$id === SplashAdDecorateService::PAGE_ID) {
+            return SplashAdDecorateService::normalizePage($pageData);
+        }
 
         return self::filterDetailByPageId($pageData);
     }
@@ -81,6 +88,12 @@ class DecoratePageLogic extends BaseLogic
 
         if (self::isHomePage((int)$params['id'])) {
             $updateData['data'] = self::filterHomePageData($params['data']);
+            $updateData['meta'] = $pageData->meta ?? '';
+        }
+
+        if ((int)$params['id'] === SplashAdDecorateService::PAGE_ID) {
+            $updateData['type'] = SplashAdDecorateService::PAGE_TYPE;
+            $updateData['data'] = SplashAdDecorateService::normalizeDataForSave($params['data']);
             $updateData['meta'] = $pageData->meta ?? '';
         }
 
