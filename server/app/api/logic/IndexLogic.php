@@ -23,6 +23,7 @@ use app\common\service\ConfigService;
 use app\common\service\FileService;
 use app\common\service\DecorateDataService;
 use app\common\service\LoginConfigService;
+use app\common\service\SplashAdDecorateService;
 
 
 /**
@@ -109,11 +110,17 @@ class IndexLogic extends BaseLogic
             ->findOrEmpty($id)->toArray();
         
         if (empty($pageData)) {
+            if ((int)$id === SplashAdDecorateService::PAGE_ID) {
+                return SplashAdDecorateService::defaultPage();
+            }
             return [];
         }
         
         // 动态填充业务数据
         $pageData = DecorateDataService::parsePageData($pageData);
+        if ((int)$id === SplashAdDecorateService::PAGE_ID) {
+            return SplashAdDecorateService::normalizePage($pageData);
+        }
 
         return self::normalizeHomePageData($pageData, (int)$id);
     }
