@@ -1,9 +1,14 @@
 <template>
-    <base-card class="staff-card" variant="glass" :interactive="true" @click="handleClick">
+    <base-card class="staff-card" variant="list" :interactive="true" @click="handleClick">
         <view class="staff-card__content">
             <!-- 头像和基本信息 -->
             <view class="staff-card__header">
-                <image class="staff-card__avatar" :src="staff.avatar" mode="aspectFill" />
+                <image
+                    class="staff-card__avatar"
+                    :src="staff.avatar"
+                    mode="aspectFill"
+                    lazy-load
+                />
                 <view class="staff-card__info">
                     <view class="staff-card__name-row">
                         <text class="staff-card__name">{{ staff.name }}</text>
@@ -127,7 +132,7 @@ export default {
         border-radius: 50%;
         flex-shrink: 0;
         border: 2rpx solid rgba(255, 255, 255, 0.92);
-        box-shadow: 0 10rpx 22rpx rgba(17, 17, 17, 0.12);
+        box-shadow: 0 6rpx 14rpx rgba(17, 17, 17, 0.1);
     }
 
     &__info {
@@ -174,7 +179,7 @@ export default {
 
     &__category {
         font-size: 26rpx;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-text-secondary, #56524a);
     }
 
     &__price-row {
@@ -186,7 +191,7 @@ export default {
     &__price {
         font-size: 32rpx;
         font-weight: 600;
-        color: var(--wm-color-secondary, #c8a45d);
+        color: var(--color-cta, #d0021b);
 
         &--negotiable {
             color: var(--wm-text-tertiary, #9a9388);
@@ -195,7 +200,7 @@ export default {
 
     &__price-unit {
         font-size: 24rpx;
-        color: var(--wm-color-secondary, #c8a45d);
+        color: var(--color-cta, #d0021b);
     }
 
     &__tags {
@@ -207,7 +212,7 @@ export default {
 
     &__tag {
         padding: 6rpx 14rpx;
-        background: var(--wm-color-primary-soft, #f3f2ee);
+        background: var(--wm-color-primary-soft, #f2f1ec);
         color: var(--wm-color-primary, #0b0b0b);
         font-size: 24rpx;
         border: 1rpx solid var(--wm-color-border-strong, #d8c28a);

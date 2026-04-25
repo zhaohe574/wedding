@@ -1,8 +1,8 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
 
-    <PageShell scene="admin" hasSafeBottom>
-        <BaseNavbar title="经营驾驶舱" />
+    <PageShell scene="admin" tone="workspace" hasSafeBottom>
+        <BaseNavbar title="经营驾驶舱" title-align="left" />
 
         <view class="dashboard-page wm-page-content">
             <view class="dashboard-page__stack">
@@ -572,37 +572,31 @@ const periodLabel = computed(() => {
 })
 
 const heroCardStyle = computed(() => ({
-    background: `linear-gradient(180deg, ${mixColor(
-        $theme.primaryColor,
+    background: 'linear-gradient(145deg, #111111 0%, #000000 58%, #2f2924 100%)',
 
-        '#FFFFFF',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
 
-        0.93
-    )} 0%, ${mixColor($theme.secondaryColor || '#C8A45D', '#FFFFFF', 0.9)} 100%)`,
-
-    borderColor: 'var(--wm-color-border-strong, #D8C28A)',
-
-    boxShadow: 'var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.06))'
+    boxShadow: '0 18rpx 42rpx rgba(11, 11, 11, 0.18)'
 }))
 
 const heroRefreshStyle = computed(() => ({
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
 
-    borderColor: 'var(--wm-color-border, #E7E2D6)'
+    borderColor: 'rgba(255, 255, 255, 0.14)'
 }))
 
 const heroChipStyle = computed(() => ({
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.09)',
 
-    borderColor: 'var(--wm-color-border, #E7E2D6)'
+    borderColor: 'rgba(255, 255, 255, 0.12)'
 }))
 
 const panelStyle = computed(() => ({
     backgroundColor: '#FFFFFF',
 
-    borderColor: 'var(--wm-color-border, #E7E2D6)',
+    borderColor: 'var(--wm-color-border, #E2DED5)',
 
-    boxShadow: 'var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.06))'
+    boxShadow: 'none'
 }))
 
 const activeTabStyle = computed(() => ({
@@ -612,7 +606,7 @@ const activeTabStyle = computed(() => ({
 
     borderColor: $theme.primaryColor,
 
-    boxShadow: `0 10rpx 20rpx ${toRgba($theme.primaryColor, 0.18)}`
+    boxShadow: `0 8rpx 18rpx ${toRgba($theme.primaryColor, 0.14)}`
 }))
 
 const defaultTabStyle = computed(() => ({
@@ -620,13 +614,13 @@ const defaultTabStyle = computed(() => ({
 
     color: 'var(--wm-text-secondary, #5F5A50)',
 
-    borderColor: 'var(--wm-color-border, #E7E2D6)'
+    borderColor: 'var(--wm-color-border, #E2DED5)'
 }))
 
 const teamStatStyle = computed(() => ({
     backgroundColor: 'var(--wm-color-bg-soft, #FFFFFF)',
 
-    borderColor: 'var(--wm-color-border, #E7E2D6)'
+    borderColor: 'var(--wm-color-border, #E2DED5)'
 }))
 
 const memberRecommendStyle = computed(() => ({
@@ -866,11 +860,11 @@ const statusColorMap: Record<string, string> = {
 
     已评价: '#C8A45D',
 
-    已取消: '#5A4433',
+    已取消: '#8A4B45',
 
     已暂停: '#9F7A2E',
 
-    已退款: '#5A4433',
+    已退款: '#8A4B45',
 
     用户已删除: '#C8A45D'
 }
@@ -947,7 +941,7 @@ const insights = computed<InsightItem[]>(() => {
             risk: {
                 levelText: '重点',
 
-                color: '#5A4433'
+                color: '#8A4B45'
             }
         }[level]
 
@@ -1015,7 +1009,7 @@ const getTodoCardStyle = (color: string) => ({
 
 const getLoadTagStyle = (level: string) => {
     const toneMap: Record<string, { color: string }> = {
-        高负载: { color: '#5A4433' },
+        高负载: { color: '#8A4B45' },
 
         平稳: { color: '#C8A45D' },
 
@@ -1232,14 +1226,14 @@ onShow(async () => {
 
     flex-direction: column;
 
-    gap: 16rpx;
+    gap: 20rpx;
 }
 
 .hero-card,
 .section-card {
-    border-radius: 24rpx;
+    border-radius: var(--wm-radius-card, 16rpx);
 
-    border-width: 2rpx;
+    border-width: 1rpx;
 
     border-style: solid;
 }
@@ -1271,7 +1265,7 @@ onShow(async () => {
 
     line-height: 1.4;
 
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-secondary, #c8a45d);
 }
 
 .hero-title {
@@ -1283,7 +1277,7 @@ onShow(async () => {
 
     line-height: 1.35;
 
-    color: var(--wm-text-primary, #111111);
+    color: #ffffff;
 
     font-weight: 700;
 }
@@ -1297,7 +1291,7 @@ onShow(async () => {
 
     line-height: 1.5;
 
-    color: var(--wm-text-secondary, #5f5a50);
+    color: rgba(255, 255, 255, 0.72);
 }
 
 .hero-refresh {
@@ -1309,7 +1303,7 @@ onShow(async () => {
 
     border-radius: 999rpx;
 
-    border-width: 2rpx;
+    border-width: 1rpx;
 
     border-style: solid;
 
@@ -1319,7 +1313,7 @@ onShow(async () => {
 .hero-refresh-text {
     font-size: 24rpx;
 
-    color: var(--wm-text-primary, #111111);
+    color: #ffffff;
 
     line-height: 1;
 }
@@ -1337,7 +1331,7 @@ onShow(async () => {
 .hero-meta-text {
     font-size: 22rpx;
 
-    color: var(--wm-text-secondary, #5f5a50);
+    color: rgba(255, 255, 255, 0.66);
 
     line-height: 1.5;
 }
@@ -1357,9 +1351,9 @@ onShow(async () => {
 
     padding: 18rpx 20rpx;
 
-    border-radius: 20rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
 
-    border-width: 2rpx;
+    border-width: 1rpx;
 
     border-style: solid;
 }
@@ -1372,7 +1366,7 @@ onShow(async () => {
 .hero-chip-label {
     font-size: 22rpx;
 
-    color: var(--wm-text-secondary, #5f5a50);
+    color: rgba(255, 255, 255, 0.64);
 }
 
 .hero-chip-value {
@@ -1382,7 +1376,7 @@ onShow(async () => {
 
     line-height: 1.3;
 
-    color: var(--wm-text-primary, #111111);
+    color: #ffffff;
 
     font-weight: 700;
 }
@@ -1400,9 +1394,9 @@ onShow(async () => {
 
     padding: 20rpx 0;
 
-    border-radius: 18rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
 
-    border-width: 2rpx;
+    border-width: 1rpx;
 
     border-style: solid;
 
@@ -1467,9 +1461,9 @@ onShow(async () => {
 .metric-card,
 .todo-card,
 .team-stat-item {
-    border-radius: 20rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
 
-    border-width: 2rpx;
+    border-width: 1rpx;
 
     border-style: solid;
 }
@@ -1540,7 +1534,7 @@ onShow(async () => {
 
     padding-top: 20rpx;
 
-    border-top: 2rpx solid var(--wm-color-border, #e7e2d6);
+    border-top: 1rpx solid var(--wm-color-border, #e2ded5);
 }
 
 .snapshot-label,
@@ -1583,11 +1577,11 @@ onShow(async () => {
 
     padding: 24rpx;
 
-    border-radius: 22rpx;
+    border-radius: var(--wm-radius-card, 16rpx);
 
     background: linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
 
-    border: 2rpx solid var(--wm-color-border, #e7e2d6);
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
 
     box-sizing: border-box;
 }
@@ -1680,7 +1674,7 @@ onShow(async () => {
 .member-data-item {
     padding: 16rpx 12rpx;
 
-    border-radius: 18rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
 
     background: rgba(255, 255, 255, 0.92);
 }
@@ -1820,13 +1814,13 @@ onShow(async () => {
 
     background: linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
 
-    border-radius: 18rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
 }
 
 .trend-fill {
     width: 100%;
 
-    border-radius: 14rpx 14rpx 0 0;
+    border-radius: 10rpx 10rpx 0 0;
 }
 
 .trend-amount,
@@ -1869,9 +1863,9 @@ onShow(async () => {
 
     padding: 22rpx 20rpx;
 
-    border-radius: 20rpx;
+    border-radius: var(--wm-radius-card, 16rpx);
 
-    border-width: 2rpx;
+    border-width: 1rpx;
 
     border-style: solid;
 }

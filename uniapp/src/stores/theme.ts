@@ -44,9 +44,9 @@ interface ThemeStore {
 }
 
 const sceneHeroGradientMap: Record<WmScene, string> = {
-    consumer: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 68%, #F7F0DF 100%)',
-    staff: 'linear-gradient(135deg, #FFFFFF 0%, #F8F7F2 58%, #F7F0DF 100%)',
-    admin: 'linear-gradient(180deg, #FFFFFF 0%, #F8F7F2 100%)'
+    consumer: 'linear-gradient(180deg, #FFFFFF 0%, #F6F5F2 74%, #F8F2E4 100%)',
+    staff: 'linear-gradient(180deg, #FFFFFF 0%, #F7F6F1 100%)',
+    admin: 'linear-gradient(180deg, #FFFFFF 0%, #F5F7F8 100%)'
 }
 
 const defaultTokens = createWmThemeTokens()
@@ -68,7 +68,7 @@ export const useThemeStore = defineStore({
         presetKey: 'black-white-gold',
         primaryColor: '#0B0B0B',
         secondaryColor: '#C8A45D',
-        ctaColor: '#0B0B0B',
+        ctaColor: '#D0021B',
         accentColor: '#C8A45D',
         minorColor: '#C8A45D',
         surfaceColor: '#FFFFFF',
@@ -80,18 +80,18 @@ export const useThemeStore = defineStore({
         textInverseColor: '#FFFFFF',
         borderColor: '#E7E2D6',
         borderStrongColor: '#D8C28A',
-        pageBgColor: '#FFFFFF',
+        pageBgColor: '#F6F5F2',
         pageBgSoftColor: '#F8F7F2',
         heroGradient: sceneHeroGradientMap.consumer,
         maskColor: 'rgba(11, 11, 11, 0.54)',
         tabbarActiveColor: '#0B0B0B',
         tabbarInactiveColor: '#9A9388',
-        navStyle: 'glass',
+        navStyle: 'solid',
         cardStyle: 'glass',
         shadowLevel: 'medium',
         btnColor: 'white',
-        navColor: '#111111',
-        navBgColor: '#FFFFFF',
+        navColor: '#FFFFFF',
+        navBgColor: '#000000',
         tokens: defaultTokens,
         vars: '',
         pageStyle: ''

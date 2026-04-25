@@ -18,7 +18,12 @@
         <view class="order-card__main">
             <!-- 人员信息 -->
             <view class="order-card__staff-section">
-                <image class="order-card__avatar" :src="primaryStaff.avatar" mode="aspectFill" />
+                <image
+                    class="order-card__avatar"
+                    :src="primaryStaff.avatar"
+                    mode="aspectFill"
+                    lazy-load
+                />
                 <view class="order-card__staff-info">
                     <text class="order-card__staff-name">{{ staffSummary }}</text>
                     <text class="order-card__package-name">{{ packageSummary }}</text>
@@ -166,14 +171,14 @@ const emit = defineEmits<{
 const statusConfig = {
     pending_confirm: { text: '待确认', color: '#9F7A2E', bgColor: 'rgba(159, 122, 46, 0.12)' },
     pending_pay: { text: '待支付', color: '#0B0B0B', bgColor: 'rgba(11, 11, 11, 0.12)' },
-    paid: { text: '待服务', color: '#4D4A42', bgColor: 'rgba(77, 74, 66, 0.12)' },
-    in_service: { text: '服务中', color: '#6C665C', bgColor: 'rgba(108, 102, 92, 0.12)' },
-    completed: { text: '已完成', color: '#4D4A42', bgColor: 'rgba(77, 74, 66, 0.12)' },
-    reviewed: { text: '已评价', color: '#4D4A42', bgColor: 'rgba(77, 74, 66, 0.12)' },
+    paid: { text: '待服务', color: '#4F6F5A', bgColor: 'rgba(79, 111, 90, 0.12)' },
+    in_service: { text: '服务中', color: '#596A7A', bgColor: 'rgba(89, 106, 122, 0.12)' },
+    completed: { text: '已完成', color: '#4F6F5A', bgColor: 'rgba(79, 111, 90, 0.12)' },
+    reviewed: { text: '已评价', color: '#4F6F5A', bgColor: 'rgba(79, 111, 90, 0.12)' },
     cancelled: { text: '已取消', color: '#9A9388', bgColor: 'rgba(154, 147, 136, 0.14)' },
     paused: { text: '已暂停', color: '#9F7A2E', bgColor: 'rgba(159, 122, 46, 0.12)' },
-    refunding: { text: '退款中', color: '#6C665C', bgColor: 'rgba(108, 102, 92, 0.12)' },
-    refunded: { text: '已退款', color: '#5A4433', bgColor: 'rgba(90, 68, 51, 0.12)' }
+    refunding: { text: '退款中', color: '#596A7A', bgColor: 'rgba(89, 106, 122, 0.12)' },
+    refunded: { text: '已退款', color: '#8A4B45', bgColor: 'rgba(138, 75, 69, 0.12)' }
 }
 
 const staffList = computed(() => {
@@ -249,16 +254,14 @@ const statusStyle = computed(() => {
 const getActionButtonStyle = (type: string) => {
     if (type === 'primary') {
         return {
-            background: `linear-gradient(135deg, ${$theme.primaryColor} 0%, ${
-                $theme.secondaryColor || $theme.primaryColor
-            } 100%)`,
-            borderColor: $theme.primaryColor,
-            boxShadow: `0 14rpx 28rpx rgba(11, 11, 11, 0.12)`
+            background: $theme.ctaColor,
+            borderColor: $theme.ctaColor,
+            boxShadow: `0 14rpx 28rpx rgba(208, 2, 27, 0.14)`
         }
     }
     return {
         background: 'rgba(255,255,255,0.84)',
-        borderColor: 'var(--wm-color-border, #E7E2D6)'
+        borderColor: 'var(--wm-color-border, #E2DED5)'
     }
 }
 
@@ -300,19 +303,19 @@ export default {
     background: linear-gradient(
         180deg,
         rgba(255, 255, 255, 0.96) 0%,
-        rgba(248, 247, 242, 0.96) 100%
+        rgba(246, 245, 242, 0.96) 100%
     );
-    border-radius: var(--wm-radius-card-glass, 26rpx);
+    border-radius: var(--wm-radius-card, 16rpx);
     padding: var(--wm-space-card-padding-lg, 24rpx);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
+    box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
     transition: transform var(--wm-motion-base, 220ms) ease,
         box-shadow var(--wm-motion-base, 220ms) ease;
     overflow: hidden;
 
     &:active {
-        box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));
-        transform: translateY(-2rpx) scale(0.995);
+        box-shadow: var(--wm-shadow-card, 0 12rpx 28rpx rgba(17, 17, 17, 0.07));
+        transform: translateY(1rpx) scale(0.995);
     }
 
     &::before {
@@ -365,7 +368,7 @@ export default {
 
     &__order-time {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-text-secondary, #56524a);
     }
 
     &__main {
@@ -383,16 +386,16 @@ export default {
         background: linear-gradient(
             135deg,
             rgba(255, 255, 255, 0.94) 0%,
-            rgba(248, 247, 242, 0.98) 100%
+            rgba(246, 245, 242, 0.98) 100%
         );
-        border: 1rpx solid var(--wm-color-border, #e7e2d6);
-        border-radius: var(--wm-radius-card-soft, 20rpx);
+        border: 1rpx solid var(--wm-color-border, #e2ded5);
+        border-radius: var(--wm-radius-card-soft, 14rpx);
     }
 
     &__avatar {
         width: 80rpx;
         height: 80rpx;
-        border-radius: var(--wm-radius-card, 24rpx);
+        border-radius: var(--wm-radius-card-soft, 14rpx);
         flex-shrink: 0;
         border: 2rpx solid rgba(255, 255, 255, 0.9);
         box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.16);
@@ -417,7 +420,7 @@ export default {
 
     &__package-name {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-text-secondary, #56524a);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -454,13 +457,13 @@ export default {
 
     &__info-text {
         font-size: 26rpx;
-        color: #5F5A50;
+        color: #56524A;
         line-height: 1.5;
     }
 
     &__info-label {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-text-secondary, #56524a);
         margin-bottom: 6rpx;
     }
 
@@ -476,7 +479,7 @@ export default {
         justify-content: space-between;
         padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding, 20rpx);
         background: rgba(255, 255, 255, 0.76);
-        border-radius: var(--wm-radius-card-soft, 20rpx);
+        border-radius: var(--wm-radius-card-soft, 14rpx);
         border: 1rpx solid rgba(255, 255, 255, 0.72);
         transition: all 0.2s ease;
         gap: 12rpx;
@@ -521,14 +524,14 @@ export default {
         gap: 8rpx;
         padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding, 20rpx);
         background: rgba(255, 255, 255, 0.76);
-        border-radius: var(--wm-radius-card-soft, 20rpx);
+        border-radius: var(--wm-radius-card-soft, 14rpx);
         border: 1rpx solid rgba(255, 255, 255, 0.72);
     }
 
     &__location-text {
         flex: 1;
         font-size: 26rpx;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-text-secondary, #56524a);
         line-height: 1.6;
     }
 
@@ -537,7 +540,7 @@ export default {
         justify-content: space-between;
         align-items: flex-end;
         padding: var(--wm-space-card-padding, 20rpx) 0 0;
-        border-top: 1rpx solid var(--wm-color-border, #e7e2d6);
+        border-top: 1rpx solid var(--wm-color-border, #e2ded5);
         margin-bottom: var(--wm-space-card-padding, 20rpx);
     }
 
@@ -555,12 +558,12 @@ export default {
 
     &__price-label {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-text-secondary, #56524a);
     }
 
     &__price-original {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-text-secondary, #56524a);
         text-decoration: line-through;
     }
 
@@ -579,7 +582,7 @@ export default {
 
     &__price-label-total {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-text-secondary, #56524a);
     }
 
     &__price-total-wrapper {
@@ -610,17 +613,17 @@ export default {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        height: 64rpx;
+        min-height: 72rpx;
         min-width: 112rpx;
         padding: 0 var(--wm-space-card-padding-lg, 24rpx);
         box-sizing: border-box;
         border-radius: var(--wm-radius-pill, 999rpx);
-        border: 2rpx solid var(--wm-color-border, #e7e2d6);
+        border: 1rpx solid var(--wm-color-border, #e2ded5);
         transition: all 0.2s ease;
         flex-shrink: 0;
 
         &--primary {
-            box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
+            box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
             border: none;
         }
 

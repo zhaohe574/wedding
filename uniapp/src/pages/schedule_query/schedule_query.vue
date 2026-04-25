@@ -106,7 +106,7 @@
         <ActionArea class="schedule-query-page__action" sticky safeBottom>
             <view
                 class="submit"
-                :style="{ backgroundColor: $theme.primaryColor, boxShadow: getPrimaryShadow(0.2) }"
+                :style="{ backgroundColor: $theme.ctaColor, boxShadow: getCtaShadow(0.18) }"
                 @tap="handleSubmit"
             >
                 <text class="submit__text">开始查询</text>
@@ -182,8 +182,8 @@
                     <view
                         class="picker__btn primary-bg"
                         :style="{
-                            background: $theme.primaryColor,
-                            boxShadow: getPrimaryShadow(0.24)
+                            background: $theme.ctaColor,
+                            boxShadow: getCtaShadow(0.2)
                         }"
                         @tap="confirmRegionPicker"
                         >确定</view
@@ -279,8 +279,8 @@
                     <view
                         class="picker__btn primary-bg"
                         :style="{
-                            background: $theme.primaryColor,
-                            boxShadow: getPrimaryShadow(0.24)
+                            background: $theme.ctaColor,
+                            boxShadow: getCtaShadow(0.2)
                         }"
                         @tap="confirmTagPicker"
                         >确定</view
@@ -343,6 +343,7 @@ const keywordPlaceholderStyle =
     'color: rgba(11, 11, 11, 0.42); font-size: 30rpx; font-weight: 600; line-height: 1.6;'
 
 const getPrimaryShadow = (alpha = 0.18) => `0 24rpx 40rpx ${alphaColor($theme.primaryColor, alpha)}`
+const getCtaShadow = (alpha = 0.18) => `0 20rpx 36rpx ${alphaColor($theme.ctaColor, alpha)}`
 const isValidSortValue = (value: unknown) => sortOptions.some((item) => item.value === value)
 const parseIdList = (value: unknown) =>
     Array.from(

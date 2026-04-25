@@ -11,7 +11,7 @@
             </template>
         </el-input>
         <popup ref="popupRef" width="1050px" title="链接选择" @confirm="handleConfirm">
-            <link-content v-model="activeLink" />
+            <link-content v-model="activeLink" :is-tab="props.isTab" />
         </popup>
     </div>
 </template>
@@ -27,6 +27,10 @@ const props = defineProps({
         type: Object
     },
     disabled: {
+        type: Boolean,
+        default: false
+    },
+    isTab: {
         type: Boolean,
         default: false
     }

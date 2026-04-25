@@ -9,13 +9,13 @@
                 <el-radio :value="0">关闭</el-radio>
             </el-radio-group>
             <div class="p-[15px] rounded-[8px] bg-[#f3f8ff] text-[#136bdf] mt-2">
-                开启背景联动后，需为轮播图设置背景图，轮播图切换时，背景图也跟随切换，此时该页面自身的“页面背景“设置将失效。
+                开启背景联动后，可为每张轮播图设置背景色或背景图，轮播图切换时首页背景同步变化。
             </div>
         </el-card>
         <el-card shadow="never" class="!border-none flex mt-2">
             <div class="flex items-end mb-4">
                 <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">轮播图高度</div>
-                <div class="text-xs text-tx-secondary ml-2">
+                <div class="ml-2 text-xs text-tx-secondary">
                     {{ heightTip }}
                 </div>
             </div>
@@ -32,14 +32,30 @@
                     <template #append>rpx</template>
                 </el-input-number>
             </el-form-item>
-            <div v-if="showHeightWarning" class="text-warning text-xs mt-2">
+            <el-form-item label="覆盖区域">
+                <el-input-number
+                    v-model="contentData.overlap_height"
+                    :min="0"
+                    :max="520"
+                    :step="10"
+                    controls-position="right"
+                    :placeholder="defaultOverlapHeight.toString()"
+                    class="!w-full"
+                >
+                    <template #append>rpx</template>
+                </el-input-number>
+            </el-form-item>
+            <div class="mt-2 text-xs text-tx-secondary">
+                团队信息框向上覆盖轮播图的高度，默认 280rpx；轮播图高度与覆盖区域分开控制。
+            </div>
+            <div v-if="showHeightWarning" class="mt-2 text-xs text-warning">
                 {{ heightWarningText }}
             </div>
         </el-card>
         <el-card shadow="never" class="!border-none flex-1 mt-2">
             <div class="flex items-end">
                 <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">轮播图片</div>
-                <div class="text-xs text-tx-secondary ml-2">最多添加5张，建议图片尺寸：750px*340px</div>
+                <div class="ml-2 text-xs text-tx-secondary">最多添加5张，首页顶部只展示纯图片</div>
             </div>
             <div class="flex-1">
                 <draggable
@@ -51,7 +67,7 @@
                 >
                     <template v-slot:item="{ element: item, index }">
                         <del-wrap :key="index" @close="handleDelete(index)" class="w-full">
-                            <div class="bg-fill-light w-full p-4 mt-4">
+                            <div class="w-full p-4 mt-4 bg-fill-light">
                                 <div class="flex justify-center w-[467px]">
                                     <material-picker
                                         size="122px"
@@ -80,35 +96,12 @@
                                     </material-picker>
                                 </div>
                                 <div class="flex-1">
-                                    <el-form-item class="mt-[18px]" label="宣传语">
-                                        <el-input
-                                            v-model="item.slogan"
-                                            type="textarea"
-                                            :rows="3"
-                                            maxlength="60"
-                                            show-word-limit
-                                            placeholder="请输入宣传语，支持换行显示"
-                                        />
-                                    </el-form-item>
-                                    <el-form-item label="距顶部" class="mt-[18px]">
-                                        <el-input-number
-                                            v-model="item.slogan_top"
-                                            :min="0"
-                                            :max="2000"
-                                            :step="10"
-                                            controls-position="right"
-                                            class="!w-full"
-                                        />
-                                        <div class="text-xs text-tx-secondary mt-2">
-                                            留空时使用默认值：{{ defaultSloganTop }}rpx
-                                        </div>
-                                    </el-form-item>
-                                    <el-form-item class="mt-[18px]" label="字体颜色">
-                                        <div class="w-full">
-                                            <color-picker v-model="item.slogan_color" />
-                                            <div class="text-xs text-tx-secondary mt-2">
-                                                未设置时默认白色
-                                            </div>
+                                    <el-form-item class="mt-[18px]" label="背景色">
+                                        <div class="flex items-center gap-3">
+                                            <el-color-picker v-model="item.bg_color" />
+                                            <span class="text-xs text-tx-secondary">
+                                                背景联动开启时优先使用
+                                            </span>
                                         </div>
                                     </el-form-item>
                                     <el-form-item class="mt-[18px]" label="图片链接">
@@ -120,13 +113,13 @@
                                         />
                                     </el-form-item>
                                     <el-form-item label="是否显示" class="mt-[18px] !mb-0">
-                                        <div class="flex-1 flex items-center">
+                                        <div class="flex items-center flex-1">
                                             <el-switch
                                                 v-model="item.is_show"
                                                 active-value="1"
                                                 inactive-value="0"
                                             />
-                                            <div class="drag-move cursor-move ml-auto">
+                                            <div class="ml-auto cursor-move drag-move">
                                                 <icon name="el-icon-Rank" size="18" />
                                             </div>
                                         </div>
@@ -181,21 +174,21 @@ const defaultHeight = computed(() => {
     return 321
 })
 
+const defaultOverlapHeight = computed(() => {
+    return 280
+})
+
 const heightTip = computed(() => {
-    return '建议高度：250-500rpx'
+    return '建议高度：530-1080rpx'
 })
 
 const showHeightWarning = computed(() => {
     const height = contentData.value.height || defaultHeight.value
-    return height < 250 || height > 500
+    return height < 530 || height > 1080
 })
 
 const heightWarningText = computed(() => {
     return '当前高度超出建议范围，可能影响显示效果'
-})
-
-const defaultSloganTop = computed(() => {
-    return 120
 })
 
 watch(
@@ -219,6 +212,7 @@ const handleAdd = () => {
             is_show: '1',
             image: '',
             bg: '',
+            bg_color: '#000000',
             name: '',
             slogan: '',
             slogan_top: null,

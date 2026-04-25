@@ -20,7 +20,7 @@ import { computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { alphaColor, resolveReadableTextColor } from '@/utils/color'
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'cta'
 type LegacyButtonType = 'primary' | 'secondary' | 'cta' | 'ghost' | 'danger'
 
 interface Props {
@@ -66,7 +66,7 @@ const resolvedVariant = computed<ButtonVariant>(() => {
     }
 
     if (props.type === 'cta') {
-        return 'primary'
+        return 'cta'
     }
 
     return props.type
@@ -100,8 +100,12 @@ const bgColor = computed(() => {
         return 'transparent'
     }
 
+    if (resolvedVariant.value === 'cta') {
+        return themeStore.ctaColor || '#D0021B'
+    }
+
     return resolvedVariant.value === 'danger'
-        ? 'var(--wm-color-danger, #5A4433)'
+        ? 'var(--wm-color-danger, #8A4B45)'
         : themeStore.primaryColor
 })
 
@@ -115,7 +119,11 @@ const textColor = computed(() => {
     }
 
     if (resolvedVariant.value === 'danger') {
-        return resolveReadableTextColor('#5A4433', themeStore.btnColor)
+        return resolveReadableTextColor('#8A4B45', themeStore.btnColor)
+    }
+
+    if (resolvedVariant.value === 'cta') {
+        return '#FFFFFF'
     }
 
     return resolveReadableTextColor(themeStore.primaryColor, themeStore.btnColor)
@@ -123,6 +131,10 @@ const textColor = computed(() => {
 
 const borderColor = computed(() => {
     if (resolvedVariant.value === 'primary') {
+        return 'transparent'
+    }
+
+    if (resolvedVariant.value === 'cta') {
         return 'transparent'
     }
 
@@ -162,13 +174,25 @@ const buttonVars = computed(() => {
         }
     }
 
+    if (resolvedVariant.value === 'cta') {
+        return {
+            ...sharedVars,
+            '--button-bg-start': themeStore.ctaColor || '#D0021B',
+            '--button-bg-end': themeStore.ctaColor || '#D0021B',
+            '--button-shadow':
+                props.shadow || '0 12rpx 24rpx rgba(208, 2, 27, 0.18)',
+            '--button-shadow-active':
+                props.activeShadow || '0 6rpx 12rpx rgba(208, 2, 27, 0.12)'
+        }
+    }
+
     if (resolvedVariant.value === 'danger') {
         return {
             ...sharedVars,
-            '--button-bg-start': 'var(--wm-color-danger, #5A4433)',
-            '--button-bg-end': 'var(--wm-color-danger, #5A4433)',
-            '--button-shadow': props.shadow || '0 12rpx 24rpx rgba(90, 68, 51, 0.18)',
-            '--button-shadow-active': props.activeShadow || '0 6rpx 12rpx rgba(90, 68, 51, 0.14)'
+            '--button-bg-start': 'var(--wm-color-danger, #8A4B45)',
+            '--button-bg-end': 'var(--wm-color-danger, #8A4B45)',
+            '--button-shadow': props.shadow || '0 10rpx 20rpx rgba(138, 75, 69, 0.16)',
+            '--button-shadow-active': props.activeShadow || '0 5rpx 10rpx rgba(138, 75, 69, 0.12)'
         }
     }
 
@@ -222,6 +246,7 @@ export default {
         font-weight: 600;
         letter-spacing: 0;
         transition: all var(--wm-motion-base, 220ms) ease;
+        min-width: 88rpx;
     }
 
     &--block {
@@ -233,6 +258,7 @@ export default {
     }
 
     &--primary,
+    &--cta,
     &--danger {
         :deep(.tn-button) {
             background: linear-gradient(
@@ -253,8 +279,8 @@ export default {
         :deep(.tn-button) {
             background: rgba(255, 255, 255, 0.94);
             border-width: 1rpx;
-            border-color: rgba(200, 164, 93, 0.36);
-            box-shadow: inset 0 1rpx 0 rgba(200, 164, 93, 0.12);
+            border-color: rgba(200, 164, 93, 0.28);
+            box-shadow: none;
         }
     }
 
@@ -262,14 +288,14 @@ export default {
         :deep(.tn-button) {
             background: rgba(248, 247, 242, 0.82);
             border-width: 1rpx;
-            border-color: rgba(231, 226, 214, 0.96);
+            border-color: rgba(226, 222, 213, 0.96);
             box-shadow: none;
         }
     }
 
     &--lg {
         :deep(.tn-button) {
-            min-height: var(--button-height, 84rpx);
+            min-height: var(--button-height, 88rpx);
             padding: 0 32rpx;
             font-size: var(--button-font-size, 28rpx);
         }
@@ -277,7 +303,7 @@ export default {
 
     &--md {
         :deep(.tn-button) {
-            min-height: var(--button-height, 72rpx);
+            min-height: var(--button-height, 76rpx);
             padding: 0 28rpx;
             font-size: var(--button-font-size, 26rpx);
         }

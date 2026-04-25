@@ -1,6 +1,6 @@
 $aftersale-surface: rgba(255, 255, 255, 0.9);
-$aftersale-border: rgba(231, 226, 214, 0.92);
-$aftersale-shadow: 0 18rpx 38rpx rgba(17, 17, 17, 0.14);
+$aftersale-border: rgba(226, 222, 213, 0.92);
+$aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
 
 @mixin aftersale-page-base {
     min-height: 100vh;
@@ -63,11 +63,11 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(17, 17, 17, 0.14);
     background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
     border-color: transparent;
     color: #ffffff;
-    box-shadow: 0 12rpx 24rpx rgba(11, 11, 11, 0.18);
+    box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.14);
 }
 
 @mixin aftersale-card {
-    border-radius: var(--wm-radius-card, 42rpx);
+    border-radius: var(--wm-radius-card, 16rpx);
     border: 1rpx solid $aftersale-border;
     background: $aftersale-surface;
     box-shadow: var(--wm-shadow-card, $aftersale-shadow);
@@ -79,8 +79,8 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(17, 17, 17, 0.14);
 }
 
 @mixin aftersale-input-surface {
-    border-radius: 30rpx;
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    border-radius: var(--wm-radius-input, 16rpx);
+    border: 1rpx solid rgba(226, 222, 213, 0.96);
     background: rgba(255, 255, 255, 0.92);
     box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
 }
@@ -89,7 +89,7 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(17, 17, 17, 0.14);
     min-height: 62rpx;
     padding: 0 22rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    border: 1rpx solid rgba(226, 222, 213, 0.96);
     background: rgba(255, 255, 255, 0.86);
     font-size: 24rpx;
     color: var(--wm-text-secondary, #5f5a50);
@@ -103,7 +103,7 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(17, 17, 17, 0.14);
     background: var(--wm-color-primary, #0b0b0b);
     border-color: var(--wm-color-primary, #0b0b0b);
     color: #ffffff;
-    box-shadow: 0 14rpx 24rpx rgba(11, 11, 11, 0.18);
+    box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.14);
 }
 
 @mixin aftersale-soft-tag {
@@ -140,7 +140,7 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(17, 17, 17, 0.14);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 16rpx 28rpx rgba(11, 11, 11, 0.2);
+    box-shadow: 0 10rpx 22rpx rgba(11, 11, 11, 0.16);
 }
 
 @mixin aftersale-badge {
@@ -233,7 +233,7 @@ $aftersale-shadow: 0 18rpx 38rpx rgba(17, 17, 17, 0.14);
 @mixin aftersale-gallery-image {
     width: 100%;
     height: 180rpx;
-    border-radius: 28rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
     display: block;
 }
 

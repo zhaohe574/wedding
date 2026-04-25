@@ -14,7 +14,7 @@
             :type="type"
             :maxlength="maxlength"
             :height="104"
-            :border-radius="34"
+            :border-radius="16"
             @focus="handleFocus"
             @blur="handleBlur"
             @input="handleInput"
@@ -109,10 +109,10 @@ export default {
     :deep(.tn-input) {
         min-height: 104rpx;
         padding: 0 var(--wm-space-card-padding, 30rpx);
-        border-radius: var(--wm-radius-control, 34rpx);
+        border-radius: var(--wm-radius-control, 16rpx);
         font-size: 28rpx;
         color: var(--wm-text-primary, #111111);
-        border: 1rpx solid var(--wm-color-border, #e7e2d6);
+        border: 1rpx solid var(--wm-color-border, #e2ded5);
         transition: all var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 
         &::placeholder {
@@ -122,7 +122,7 @@ export default {
 
     &--filled {
         :deep(.tn-input) {
-            background: var(--wm-color-bg-soft, #f8f7f2);
+            background: var(--wm-color-bg-soft, #f6f5f2);
         }
     }
 
@@ -136,14 +136,14 @@ export default {
         :deep(.tn-input) {
             background: #ffffff;
             border-color: var(--wm-color-border-strong, #d8c28a);
-            box-shadow: 0 0 0 11rpx rgba(200, 164, 93, 0.14);
+            box-shadow: 0 0 0 6rpx rgba(200, 164, 93, 0.12);
         }
     }
 
     &--error {
         :deep(.tn-input) {
-            border-color: rgba(90, 68, 51, 0.3);
-            box-shadow: 0 0 0 11rpx rgba(90, 68, 51, 0.08);
+            border-color: rgba(138, 75, 69, 0.3);
+            box-shadow: 0 0 0 6rpx rgba(138, 75, 69, 0.08);
         }
     }
 

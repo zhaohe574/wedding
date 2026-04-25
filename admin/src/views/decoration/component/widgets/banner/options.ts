@@ -3,6 +3,7 @@ export interface BannerItem {
     is_show: '0' | '1'  // 是否显示
     image: string        // 轮播图片URL
     bg: string          // 背景图片URL
+    bg_color?: string    // 背景联动颜色
     name: string        // 图片名称
     slogan: string      // 宣传语
     slogan_top?: number | null  // 宣传语距顶部高度（rpx）
@@ -16,6 +17,7 @@ export interface BannerContent {
     style: 1            // 固定常规模式
     bg_style: 0 | 1     // 背景联动：0=关闭，1=开启
     height?: number     // 轮播图高度（rpx），可选字段，未设置时使用默认值
+    overlap_height?: number // 团队信息覆盖轮播图区域高度（rpx）
     data: BannerItem[]  // 轮播图数据
 }
 
@@ -35,13 +37,15 @@ export default (): BannerOptions => ({
     content: {
         enabled: 1,
         style: 1, // 固定常规模式
-        bg_style: 0, // 背景联动---0=关闭，1=开启
+        bg_style: 1, // 背景联动---0=关闭，1=开启
         height: undefined, // 轮播图高度（rpx），未设置时使用默认值（321）
+        overlap_height: 280,
         data: [
             {
                 is_show: '1',
                 image: '',
                 bg: '',
+                bg_color: '#000000',
                 name: '',
                 slogan: '',
                 slogan_top: null,

@@ -1,7 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" hasTabbar>
-        <BaseNavbar title="我的订单" />
+    <PageShell scene="consumer" tone="workspace" hasTabbar>
+        <BaseNavbar title="我的订单" title-align="left" />
         <view class="order-page">
             <view class="order-page__summary">
                 <text class="order-page__summary-title">订单进度</text>
@@ -768,7 +768,7 @@ onReachBottom(() => {
         display: flex;
         flex-direction: column;
         gap: 10rpx;
-        padding: 18rpx 37rpx 6rpx;
+        padding: 18rpx var(--wm-space-page-x, 37rpx) 6rpx;
     }
 
     &__summary-title {
@@ -785,7 +785,7 @@ onReachBottom(() => {
 
     &__filter-scroll {
         margin-top: 22rpx;
-        padding: 0 37rpx;
+        padding: 0 var(--wm-space-page-x, 37rpx);
         white-space: nowrap;
     }
 
@@ -799,10 +799,10 @@ onReachBottom(() => {
         display: inline-flex;
         align-items: center;
         gap: 12rpx;
-        min-height: 82rpx;
+        min-height: 76rpx;
         padding: 0 30rpx;
         border-radius: 999rpx;
-        border: 1rpx solid var(--wm-color-border, #e7e2d6);
+        border: 1rpx solid var(--wm-color-border, #e2ded5);
         background: rgba(255, 255, 255, 0.84);
         color: var(--wm-text-secondary, #5f5a50);
         box-sizing: border-box;
@@ -811,7 +811,7 @@ onReachBottom(() => {
             border-color: var(--wm-color-primary, #0b0b0b);
             background: var(--wm-color-primary, #0b0b0b);
             color: #ffffff;
-            box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.14);
+            box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.12);
         }
     }
 
@@ -844,7 +844,7 @@ onReachBottom(() => {
     }
 
     &__content {
-        padding: 22rpx 37rpx 45rpx;
+        padding: 22rpx var(--wm-space-page-x, 37rpx) 45rpx;
     }
 }
 
@@ -919,15 +919,15 @@ onReachBottom(() => {
 .order-list {
     display: flex;
     flex-direction: column;
-    gap: 30rpx;
+    gap: 20rpx;
 }
 
 .order-card {
-    padding: 34rpx 37rpx;
-    border-radius: 45rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: rgba(255, 255, 255, 0.88);
-    box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.08);
+    padding: 28rpx;
+    border-radius: var(--wm-radius-card, 16rpx);
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
 
     &:active {
         transform: translateY(-2rpx);
@@ -953,7 +953,7 @@ onReachBottom(() => {
     flex-shrink: 0;
     background: rgba(255, 255, 255, 0.86);
     border: 2rpx solid rgba(255, 255, 255, 0.92);
-    box-shadow: 0 10rpx 20rpx rgba(17, 17, 17, 0.16);
+    box-shadow: 0 6rpx 14rpx rgba(17, 17, 17, 0.1);
 }
 
 .order-card__hero-main {
@@ -986,8 +986,8 @@ onReachBottom(() => {
     flex-direction: column;
     gap: 12rpx;
     padding: 18rpx 22rpx;
-    border-radius: 28rpx;
-    background: rgba(247, 240, 223, 0.72);
+    border-radius: var(--wm-radius-card-soft, 14rpx);
+    background: rgba(248, 242, 228, 0.72);
     border: 1rpx solid rgba(216, 194, 138, 0.88);
 }
 
@@ -1066,7 +1066,7 @@ onReachBottom(() => {
     font-size: 34rpx;
     font-weight: 600;
     line-height: 1;
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--color-cta, #d0021b);
 }
 
 .order-card__actions {
@@ -1079,10 +1079,10 @@ onReachBottom(() => {
 
 .order-card__action {
     min-width: 128rpx;
-    height: 82rpx;
+    min-height: 82rpx;
     padding: 0 30rpx;
     border-radius: 999rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
     background: rgba(255, 255, 255, 0.82);
     display: inline-flex;
     align-items: center;
@@ -1091,8 +1091,8 @@ onReachBottom(() => {
 }
 
 .order-card__action--primary {
-    border-color: var(--wm-color-primary, #0b0b0b);
-    background: var(--wm-color-primary, #0b0b0b);
+    border-color: var(--color-cta, #d0021b);
+    background: var(--color-cta, #d0021b);
 }
 
 .order-card__action-text {
@@ -1104,14 +1104,14 @@ onReachBottom(() => {
 
 .order-card__link {
     min-width: 128rpx;
-    height: 82rpx;
+    min-height: 82rpx;
     padding: 0 30rpx;
     border-radius: 999rpx;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
     box-sizing: border-box;
 }
 

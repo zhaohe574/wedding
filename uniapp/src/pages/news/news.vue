@@ -1,6 +1,6 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer">
+    <PageShell scene="consumer" hasTabbar>
         <BaseNavbar title="婚礼资讯" />
         <view class="news-page cinema-page">
             <view class="news-page__hero">
@@ -58,12 +58,13 @@
                 </view>
             </view>
         </view>
+        <tabbar :badge-refresh-key="tabbarRefreshKey" />
     </PageShell>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import NewsList from './component/news-list.vue'
 import { getArticleCate } from '@/api/news'
 import { useThemeStore } from '@/stores/theme'
@@ -71,6 +72,7 @@ import PageShell from '@/components/base/PageShell.vue'
 
 const tabList = ref<any>([])
 const current = ref<number>(0)
+const tabbarRefreshKey = ref(0)
 useThemeStore()
 
 const activeTabName = computed(() => tabList.value[current.value]?.name || '全部')
@@ -86,6 +88,10 @@ const getData = async () => {
 
 onLoad(() => {
     getData()
+})
+
+onShow(() => {
+    tabbarRefreshKey.value += 1
 })
 </script>
 

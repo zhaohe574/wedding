@@ -7,7 +7,7 @@
         </view>
         <text class="empty-state-block__title">{{ title }}</text>
         <text v-if="description" class="empty-state-block__description">{{ description }}</text>
-        <BaseButton v-if="actionText" variant="primary" size="md" @click="emit('action')">
+        <BaseButton v-if="actionText" variant="cta" size="md" @click="emit('action')">
             {{ actionText }}
         </BaseButton>
     </view>
@@ -40,17 +40,24 @@ const emit = defineEmits<{
     gap: 16rpx;
     padding: 56rpx 32rpx;
     text-align: center;
+    box-sizing: border-box;
+
+    &__icon {
+        opacity: 0.78;
+    }
 
     &__title {
         font-size: 30rpx;
         font-weight: 700;
+        line-height: 1.35;
         color: var(--wm-text-primary, #111111);
     }
 
     &__description {
+        max-width: 520rpx;
         font-size: 24rpx;
         line-height: 1.6;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-text-secondary, #56524a);
     }
 }
 </style>

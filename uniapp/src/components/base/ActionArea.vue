@@ -38,9 +38,9 @@ const actionClass = computed(() => [
         var(--wm-space-action-bottom, 39rpx);
     background: linear-gradient(
         180deg,
-        rgba(248, 247, 242, 0) 0%,
-        rgba(248, 247, 242, 0.88) 26%,
-        rgba(248, 247, 242, 0.98) 100%
+        rgba(246, 245, 242, 0) 0%,
+        rgba(246, 245, 242, 0.88) 26%,
+        rgba(246, 245, 242, 0.98) 100%
     );
 
     &--safe {
@@ -59,4 +59,11 @@ const actionClass = computed(() => [
         -webkit-backdrop-filter: blur(16rpx);
     }
 }
+
+/* #ifdef MP-WEIXIN */
+.wm-action-area--sticky {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+/* #endif */
 </style>

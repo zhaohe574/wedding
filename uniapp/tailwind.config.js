@@ -7,10 +7,10 @@ module.exports = {
             white: 'var(--color-white, #ffffff)',
             black: 'var(--color-black, #000000)',
             main: 'var(--color-main, #111111)',
-            content: 'var(--color-content, #5F5A50)',
-            muted: 'var(--color-muted, #9A9388)',
+            content: 'var(--color-content, #56524A)',
+            muted: 'var(--color-muted, #8E887D)',
             page: 'var(--color-page, #FFFFFF)',
-            light: 'var(--color-light, #E7E2D6)',
+            light: 'var(--color-light, #E2DED5)',
             disabled: 'var(--color-disabled, #D8D3C7)',
 
             // 主题色系统
@@ -23,7 +23,7 @@ module.exports = {
                 'light-3': 'var(--color-primary-light-3, #4E4E4E)',
                 'light-5': 'var(--color-primary-light-5, #858585)',
                 'light-7': 'var(--color-primary-light-7, #C4C4C4)',
-                'light-9': 'var(--color-primary-light-9, #F3F2EE)',
+                'light-9': 'var(--color-primary-light-9, #F2F1EC)',
                 'dark-2': 'var(--color-primary-dark-2, #000000)'
             },
 
@@ -33,18 +33,18 @@ module.exports = {
                 'light-3': 'var(--color-secondary-light-3, #D8BE83)',
                 'light-5': 'var(--color-secondary-light-5, #E4D1A9)',
                 'light-7': 'var(--color-secondary-light-7, #EFE2C7)',
-                'light-9': 'var(--color-secondary-light-9, #F7F0DF)',
+                'light-9': 'var(--color-secondary-light-9, #F8F2E4)',
                 'dark-2': 'var(--color-secondary-dark-2, #9F7A2E)'
             },
 
             // CTA色（黑）
             cta: {
-                DEFAULT: 'var(--color-cta, #0B0B0B)',
-                'light-3': 'var(--color-cta-light-3, #4E4E4E)',
-                'light-5': 'var(--color-cta-light-5, #858585)',
-                'light-7': 'var(--color-cta-light-7, #C4C4C4)',
-                'light-9': 'var(--color-cta-light-9, #F3F2EE)',
-                'dark-2': 'var(--color-cta-dark-2, #000000)'
+                DEFAULT: 'var(--color-cta, #D0021B)',
+                'light-3': 'var(--color-cta-light-3, #E05263)',
+                'light-5': 'var(--color-cta-light-5, #EC8A96)',
+                'light-7': 'var(--color-cta-light-7, #F6BDC5)',
+                'light-9': 'var(--color-cta-light-9, #FBE8EB)',
+                'dark-2': 'var(--color-cta-dark-2, #A90016)'
             },
 
             // 点缀色（香槟金）
@@ -53,18 +53,18 @@ module.exports = {
                 'light-3': 'var(--color-accent-light-3, #D8BE83)',
                 'light-5': 'var(--color-accent-light-5, #E4D1A9)',
                 'light-7': 'var(--color-accent-light-7, #EFE2C7)',
-                'light-9': 'var(--color-accent-light-9, #F7F0DF)',
+                'light-9': 'var(--color-accent-light-9, #F8F2E4)',
                 'dark-2': 'var(--color-accent-dark-2, #9F7A2E)'
             },
 
             // 功能色彩
             success: {
-                DEFAULT: 'var(--color-success, #4D4A42)',
-                'light-3': 'var(--color-success-light-3, #828078)',
-                'light-5': 'var(--color-success-light-5, #A6A49D)',
-                'light-7': 'var(--color-success-light-7, #CFCDC7)',
-                'light-9': 'var(--color-success-light-9, #F3F2EE)',
-                'dark-2': 'var(--color-success-dark-2, #34322C)'
+                DEFAULT: 'var(--color-success, #4F6F5A)',
+                'light-3': 'var(--color-success-light-3, #7F9B86)',
+                'light-5': 'var(--color-success-light-5, #A8BCA8)',
+                'light-7': 'var(--color-success-light-7, #D5E0D3)',
+                'light-9': 'var(--color-success-light-9, #EEF3EE)',
+                'dark-2': 'var(--color-success-dark-2, #354B3D)'
             },
             warning: {
                 DEFAULT: 'var(--color-warning, #9F7A2E)',
@@ -75,34 +75,34 @@ module.exports = {
                 'dark-2': 'var(--color-warning-dark-2, #7C5E20)'
             },
             error: {
-                DEFAULT: 'var(--color-error, #5A4433)',
-                'light-3': 'var(--color-error-light-3, #8C7867)',
-                'light-5': 'var(--color-error-light-5, #AE9F92)',
-                'light-7': 'var(--color-error-light-7, #D4CBC2)',
-                'light-9': 'var(--color-error-light-9, #F3F2EE)',
-                'dark-2': 'var(--color-error-dark-2, #3B2A20)'
+                DEFAULT: 'var(--color-error, #8A4B45)',
+                'light-3': 'var(--color-error-light-3, #AF766F)',
+                'light-5': 'var(--color-error-light-5, #C9A09B)',
+                'light-7': 'var(--color-error-light-7, #E5CFCC)',
+                'light-9': 'var(--color-error-light-9, #F7ECEE)',
+                'dark-2': 'var(--color-error-dark-2, #673632)'
             },
             info: {
-                DEFAULT: 'var(--color-info, #6C665C)',
-                'light-3': 'var(--color-info-light-3, #9A9388)',
-                'light-5': 'var(--color-info-light-5, #BBB5AA)',
-                'light-7': 'var(--color-info-light-7, #DDD8CF)',
-                'light-9': 'var(--color-info-light-9, #F8F7F2)',
-                'dark-2': 'var(--color-info-dark-2, #4D4941)'
+                DEFAULT: 'var(--color-info, #596A7A)',
+                'light-3': 'var(--color-info-light-3, #8696A4)',
+                'light-5': 'var(--color-info-light-5, #AEB9C3)',
+                'light-7': 'var(--color-info-light-7, #D8DFE6)',
+                'light-9': 'var(--color-info-light-9, #F5F7F8)',
+                'dark-2': 'var(--color-info-dark-2, #3F4C58)'
             },
 
             // 背景色系统
-            'bg-primary': 'var(--color-bg-primary, #F3F2EE)',
-            'bg-secondary': 'var(--color-bg-secondary, #F7F0DF)',
+            'bg-primary': 'var(--color-bg-primary, #F6F5F2)',
+            'bg-secondary': 'var(--color-bg-secondary, #F8F2E4)',
             'bg-card': 'var(--color-bg-card, #FFFFFF)',
             'bg-overlay': 'var(--color-bg-overlay, rgba(11, 11, 11, 0.54))',
 
             // 订单状态色彩
             'order-pending': '#9F7A2E',
             'order-unpaid': '#0B0B0B',
-            'order-paid': '#4D4A42',
-            'order-completed': '#6C665C',
-            'order-cancelled': '#9A9388'
+            'order-paid': '#4F6F5A',
+            'order-completed': '#596A7A',
+            'order-cancelled': '#8E887D'
         },
         fontSize: {
             xs: '24rpx', // 说明文本
@@ -140,17 +140,17 @@ module.exports = {
         },
         extend: {
             borderRadius: {
-                card: '24rpx',
-                'card-large': '28rpx',
+                card: '16rpx',
+                'card-large': '20rpx',
                 button: '999rpx',
-                input: '18rpx',
-                badge: '20rpx'
+                input: '16rpx',
+                badge: '999rpx'
             },
             boxShadow: {
-                card: '0 14rpx 32rpx rgba(17, 17, 17, 0.06)',
-                'card-hover': '0 18rpx 36rpx rgba(17, 17, 17, 0.09)',
+                card: '0 8rpx 20rpx rgba(17, 17, 17, 0.05)',
+                'card-hover': '0 12rpx 28rpx rgba(17, 17, 17, 0.07)',
                 'card-glass':
-                    '0 18rpx 36rpx rgba(17, 17, 17, 0.08), 0 8rpx 16rpx rgba(200, 164, 93, 0.08)',
+                    '0 12rpx 28rpx rgba(17, 17, 17, 0.07), 0 4rpx 10rpx rgba(200, 164, 93, 0.06)',
                 'button-primary': '0 14rpx 28rpx rgba(11, 11, 11, 0.18)',
                 'button-cta': '0 14rpx 28rpx rgba(11, 11, 11, 0.18)',
                 'input-focus': '0 0 0 6rpx rgba(200, 164, 93, 0.14)'

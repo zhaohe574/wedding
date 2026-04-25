@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 
 interface Props {
-    variant?: 'surface' | 'glass' | 'hero' | 'panel'
+    variant?: 'surface' | 'glass' | 'hero' | 'panel' | 'list' | 'media' | 'quiet' | 'bare'
     type?: 'standard' | 'glass' | 'dark'
     scene?: 'consumer' | 'staff' | 'admin'
     interactive?: boolean
@@ -112,17 +112,19 @@ export default {
 <style lang="scss" scoped>
 .base-card {
     width: 100%;
-    border-radius: var(--wm-radius-card, 42rpx);
+    border-radius: var(--wm-radius-card, 16rpx);
     transition: transform var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
         box-shadow var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
         border-color var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
         background var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 
     &--surface,
-    &--panel {
-        background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.94));
-        border: 1rpx solid var(--wm-color-border, #e7e2d6);
-        box-shadow: var(--wm-shadow-soft, 0 16rpx 34rpx rgba(17, 17, 17, 0.06));
+    &--panel,
+    &--list,
+    &--quiet {
+        background: #ffffff;
+        border: 1rpx solid var(--wm-color-border, #e2ded5);
+        box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
     }
 
     &--surface {
@@ -133,51 +135,58 @@ export default {
         padding: var(--wm-space-card-padding, 28rpx) 32rpx;
     }
 
+    &--list {
+        padding: 24rpx;
+    }
+
+    &--quiet,
+    &--bare {
+        box-shadow: none;
+    }
+
+    &--bare {
+        padding: 0;
+        border: none;
+        background: transparent;
+    }
+
     &--glass {
         padding: var(--wm-space-card-padding, 28rpx);
-        border-radius: var(--wm-radius-card-glass, 46rpx);
-        background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.9));
-        border: 1rpx solid var(--wm-color-border, #e7e2d6);
-        box-shadow: var(--wm-shadow-card, 0 18rpx 38rpx rgba(17, 17, 17, 0.09));
-        backdrop-filter: blur(20rpx);
-        -webkit-backdrop-filter: blur(20rpx);
+        border-radius: var(--wm-radius-card-glass, 18rpx);
+        background: rgba(255, 255, 255, 0.96);
+        border: 1rpx solid var(--wm-color-border, #e2ded5);
+        box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
+        backdrop-filter: blur(16rpx);
+        -webkit-backdrop-filter: blur(16rpx);
     }
 
     &--hero {
         padding: var(--wm-space-card-padding-lg, 32rpx);
-        border-radius: var(--wm-radius-card-lg, 48rpx);
+        border-radius: var(--wm-radius-card-lg, 20rpx);
         background: var(
             --wm-hero-gradient,
             linear-gradient(180deg, #ffffff 0%, #ffffff 62%, #f7f0df 100%)
         );
         border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
-        box-shadow: var(--wm-shadow-hero, 0 22rpx 48rpx rgba(17, 17, 17, 0.12));
+        box-shadow: var(--wm-shadow-hero, 0 18rpx 42rpx rgba(17, 17, 17, 0.12));
     }
 
     &--admin.base-card--panel {
-        border-radius: 37rpx;
+        border-radius: var(--wm-radius-card, 16rpx);
     }
 
     &--staff {
         &.base-card--surface,
         &.base-card--panel {
-            background: linear-gradient(
-                180deg,
-                rgba(255, 255, 255, 0.98) 0%,
-                rgba(248, 247, 242, 0.96) 100%
-            );
-            border-color: rgba(216, 194, 138, 0.7);
-            box-shadow: var(--wm-shadow-soft, 0 18rpx 38rpx rgba(17, 17, 17, 0.06));
+            background: #ffffff;
+            border-color: var(--wm-color-border, #e2ded5);
+            box-shadow: none;
         }
 
         &.base-card--glass {
-            background: linear-gradient(
-                180deg,
-                rgba(255, 255, 255, 0.94) 0%,
-                rgba(248, 247, 242, 0.92) 100%
-            );
-            border-color: rgba(216, 194, 138, 0.88);
-            box-shadow: var(--wm-shadow-card, 0 22rpx 48rpx rgba(17, 17, 17, 0.09));
+            background: #ffffff;
+            border-color: var(--wm-color-border, #e2ded5);
+            box-shadow: none;
         }
 
         &.base-card--hero {
@@ -196,8 +205,15 @@ export default {
         cursor: pointer;
 
         &:active {
-            transform: translateY(-1rpx);
+            transform: translateY(1rpx) scale(0.995);
         }
     }
 }
+
+/* #ifdef MP-WEIXIN */
+.base-card--glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+/* #endif */
 </style>

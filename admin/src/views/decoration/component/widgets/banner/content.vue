@@ -1,23 +1,12 @@
 <template>
-    <div class="banner" :style="styles">
+    <div class="banner" :style="[styles, previewBackgroundStyle]">
         <div class="banner-image relative w-full h-full">
             <decoration-img
                 width="100%"
                 :height="previewHeight"
                 :src="getImage"
-                fit="contain"
+                fit="cover"
             />
-            <div v-if="previewSloganLines.length" class="banner-copy" :style="previewCopyStyle">
-                <div class="banner-copy__accent"></div>
-                <div
-                    v-for="(line, index) in previewSloganLines"
-                    :key="`${index}-${line}`"
-                    class="banner-copy__title"
-                    :style="{ color: previewSloganColor }"
-                >
-                    {{ line }}
-                </div>
-            </div>
         </div>
     </div>
 </template>
@@ -55,6 +44,29 @@ const getImage = computed(() => {
     return activeBanner.value?.image || ''
 })
 
+const previewBackgroundStyle = computed(() => {
+    const bgColor = activeBanner.value?.bg_color || '#000000'
+    const bgImage = activeBanner.value?.bg || ''
+
+    if (props.content.bg_style != 1) {
+        return { background: '#000000' }
+    }
+
+    if (bgColor) {
+        return { background: bgColor }
+    }
+
+    if (bgImage) {
+        return {
+            backgroundImage: `url(${bgImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+        }
+    }
+
+    return { background: '#000000' }
+})
+
 const previewHeight = computed(() => {
     const configHeight = props.content.height
     const defaultHeight = 321
@@ -64,68 +76,10 @@ const previewHeight = computed(() => {
     return `${pxHeight}px`
 })
 
-const defaultSloganTop = computed(() => {
-    return 120
-})
-
-const previewSloganLines = computed(() => {
-    const slogan = typeof activeBanner.value?.slogan === 'string' ? activeBanner.value.slogan : ''
-    return slogan
-        .split(/\r?\n/)
-        .map((line: string) => line.trim())
-        .filter(Boolean)
-})
-
-const previewSloganTop = computed(() => {
-    const sloganTop = Number(activeBanner.value?.slogan_top)
-    if (Number.isFinite(sloganTop) && sloganTop >= 0) {
-        return sloganTop
-    }
-
-    return defaultSloganTop.value
-})
-
-const previewSloganColor = computed(() => {
-    const sloganColor = typeof activeBanner.value?.slogan_color === 'string'
-        ? activeBanner.value.slogan_color.trim()
-        : ''
-
-    return sloganColor || '#FFFFFF'
-})
-
-const previewCopyStyle = computed(() => ({
-    top: `${previewSloganTop.value / 2}px`
-}))
 </script>
 
 <style lang="scss" scoped>
-.banner-copy {
-    position: absolute;
-    left: 0;
-    right: 0;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 0 28px;
-    text-align: center;
-    pointer-events: none;
-
-    &__accent {
-        width: 26px;
-        height: 3px;
-        border-radius: 999px;
-        background: #ef5b4c;
-    }
-
-    &__title {
-        font-size: 22px;
-        line-height: 1.35;
-        font-weight: 700;
-        text-shadow:
-            0 2px 6px rgba(47, 28, 24, 0.45),
-            0 8px 18px rgba(47, 28, 24, 0.68);
-    }
+.banner {
+    overflow: hidden;
 }
 </style>

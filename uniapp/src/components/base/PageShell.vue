@@ -1,6 +1,7 @@
 <template>
     <view
         :class="shellClass"
+        :style="shellStyle"
         :data-scene="shellProtocol.scene"
         :data-source="shellProtocol.source"
         :data-back="shellProtocol.back"
@@ -22,6 +23,9 @@ interface Props {
     hasTabbar?: boolean
     hasSafeBottom?: boolean
     headerMode?: 'default' | 'transparent'
+    tone?: 'default' | 'editorial' | 'workspace' | 'business' | 'form' | 'detail'
+    shellStyle?: any
+    suppressOverlay?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -30,7 +34,10 @@ const props = withDefaults(defineProps<Props>(), {
     back: '',
     hasTabbar: false,
     hasSafeBottom: false,
-    headerMode: 'default'
+    headerMode: 'default',
+    tone: 'default',
+    shellStyle: '',
+    suppressOverlay: false
 })
 const themeStore = useThemeStore()
 
@@ -54,12 +61,14 @@ const shellClass = computed(() => [
     'wm-page-shell',
     'wm-page',
     `wm-page--${shellProtocol.value.scene}`,
+    `wm-page-shell--tone-${props.tone}`,
     {
         'page-with-tabbar-safe-bottom': props.hasTabbar,
         'wm-page-shell--with-tabbar': props.hasTabbar,
         'wm-page-shell--safe-bottom': props.hasSafeBottom,
         'wm-page-shell--header-transparent': props.headerMode === 'transparent',
-        'wm-page-shell--header-default': props.headerMode === 'default'
+        'wm-page-shell--header-default': props.headerMode === 'default',
+        'wm-page-shell--suppress-overlay': props.suppressOverlay
     }
 ])
 </script>
@@ -69,9 +78,10 @@ const shellClass = computed(() => [
     position: relative;
     width: 100%;
     min-height: 100vh;
-    background: var(--wm-color-bg-page, #ffffff);
+    background: var(--wm-color-bg-page, #f6f5f2);
     color: var(--wm-text-primary, #111111);
     isolation: isolate;
+    overflow-x: hidden;
 
     &::before {
         content: '';
@@ -79,12 +89,8 @@ const shellClass = computed(() => [
         top: 0;
         left: 0;
         right: 0;
-        height: 320rpx;
-        background: linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.44) 0%,
-            rgba(255, 255, 255, 0) 100%
-        );
+        height: 260rpx;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(246, 245, 242, 0) 100%);
         pointer-events: none;
         opacity: 0;
         transition: opacity var(--wm-motion-base, 220ms) ease;
@@ -92,9 +98,30 @@ const shellClass = computed(() => [
     }
 }
 
-.wm-page-shell--header-default::before,
 .wm-page-shell--header-transparent::before {
     opacity: 1;
+}
+
+.wm-page-shell--tone-editorial::before {
+    height: 360rpx;
+    background: linear-gradient(180deg, rgba(11, 11, 11, 0.08) 0%, rgba(246, 245, 242, 0) 100%);
+    opacity: 1;
+}
+
+.wm-page-shell--tone-workspace::before,
+.wm-page-shell--tone-business::before,
+.wm-page-shell--tone-form::before,
+.wm-page-shell--tone-detail::before,
+.wm-page--staff::before,
+.wm-page--admin::before {
+    height: 260rpx;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(246, 245, 242, 0) 100%);
+    opacity: 1;
+}
+
+.wm-page-shell--suppress-overlay::before {
+    opacity: 0;
+    background: transparent;
 }
 
 .wm-page-shell--with-tabbar {
@@ -104,4 +131,10 @@ const shellClass = computed(() => [
 .wm-page-shell--safe-bottom {
     padding-bottom: var(--wm-safe-bottom-action, calc(150rpx + env(safe-area-inset-bottom)));
 }
+
+/* #ifdef MP-WEIXIN */
+.wm-page-shell::before {
+    transition: none;
+}
+/* #endif */
 </style>

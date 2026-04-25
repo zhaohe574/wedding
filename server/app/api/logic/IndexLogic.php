@@ -32,6 +32,13 @@ use app\common\service\LoginConfigService;
  */
 class IndexLogic extends BaseLogic
 {
+    private const HOME_PAGE_ID = 1;
+    private const HOME_WIDGET_ORDER = [
+        'banner',
+        'home-brand',
+        'home-feature-carousel',
+        'home-service-categories',
+    ];
 
     /**
      * @notes 首页数据
@@ -50,7 +57,7 @@ class IndexLogic extends BaseLogic
         // 动态填充装修数据
         if (!empty($decoratePage)) {
             $decoratePage = DecorateDataService::parsePageData($decoratePage);
-            $decoratePage = self::normalizeHomeBannerPageData($decoratePage, 1);
+            $decoratePage = self::normalizeHomePageData($decoratePage, 1);
         }
 
         // 首页文章
@@ -108,7 +115,7 @@ class IndexLogic extends BaseLogic
         // 动态填充业务数据
         $pageData = DecorateDataService::parsePageData($pageData);
 
-        return self::normalizeHomeBannerPageData($pageData, (int)$id);
+        return self::normalizeHomePageData($pageData, (int)$id);
     }
 
 
@@ -172,14 +179,14 @@ class IndexLogic extends BaseLogic
     }
 
     /**
-     * @notes 首页轮播图固定常规模式
+     * @notes 首页装修固定模块归一化
      * @param array $pageData
      * @param int $pageId
      * @return array
      */
-    private static function normalizeHomeBannerPageData(array $pageData, int $pageId): array
+    private static function normalizeHomePageData(array $pageData, int $pageId): array
     {
-        if ($pageId !== 1 || empty($pageData['data'])) {
+        if ($pageId !== self::HOME_PAGE_ID) {
             return $pageData;
         }
 
@@ -192,25 +199,243 @@ class IndexLogic extends BaseLogic
         }
 
         if (!is_array($data)) {
-            return $pageData;
+            $data = [];
         }
 
-        foreach ($data as &$widget) {
-            if (!is_array($widget) || (string)($widget['name'] ?? '') !== 'banner') {
+        $normalizedWidgets = [];
+        foreach ($data as $widget) {
+            if (!is_array($widget)) {
                 continue;
             }
 
-            $content = isset($widget['content']) && is_array($widget['content']) ? $widget['content'] : [];
-            $content['style'] = 1;
-            $widget['content'] = $content;
+            $widgetName = (string)($widget['name'] ?? '');
+            if (!in_array($widgetName, self::HOME_WIDGET_ORDER, true)) {
+                continue;
+            }
+
+            if (isset($normalizedWidgets[$widgetName])) {
+                continue;
+            }
+
+            $normalizedWidgets[$widgetName] = self::normalizeHomeWidget($widgetName, $widget);
         }
-        unset($widget);
+
+        $data = [];
+        foreach (self::HOME_WIDGET_ORDER as $widgetName) {
+            $data[] = $normalizedWidgets[$widgetName] ?? self::buildDefaultHomeWidget($widgetName);
+        }
 
         $pageData['data'] = $isJsonString
             ? json_encode($data, JSON_UNESCAPED_UNICODE)
             : $data;
 
         return $pageData;
+    }
+
+    /**
+     * @notes 首页组件归一化
+     * @param string $widgetName
+     * @param array $widget
+     * @return array
+     */
+    private static function normalizeHomeWidget(string $widgetName, array $widget): array
+    {
+        $defaultWidget = self::buildDefaultHomeWidget($widgetName);
+        $widget = array_replace_recursive($defaultWidget, $widget);
+
+        if ($widgetName === 'banner') {
+            $content = isset($widget['content']) && is_array($widget['content']) ? $widget['content'] : [];
+            $content['style'] = 1;
+            $content['overlap_height'] = max(0, min(520, (int)($content['overlap_height'] ?? 280)));
+            $content['data'] = self::normalizeListLikeValue($content['data'] ?? []);
+            foreach ($content['data'] as &$item) {
+                if (!is_array($item)) {
+                    $item = [];
+                }
+                $item['bg_color'] = (string)($item['bg_color'] ?? '#000000');
+                $item['slogan'] = (string)($item['slogan'] ?? '');
+                $item['slogan_color'] = (string)($item['slogan_color'] ?? '');
+            }
+            unset($item);
+            $widget['content'] = $content;
+        }
+
+        if (in_array($widgetName, ['home-feature-carousel', 'home-service-categories'], true)) {
+            $content = isset($widget['content']) && is_array($widget['content']) ? $widget['content'] : [];
+            $content['data'] = self::normalizeListLikeValue($content['data'] ?? []);
+            if ($widgetName === 'home-service-categories') {
+                foreach ($content['data'] as &$item) {
+                    if (!is_array($item)) {
+                        $item = [];
+                    }
+                    if (!in_array((string)($item['size'] ?? ''), ['large', 'small', 'wide'], true)) {
+                        $item['size'] = 'small';
+                    }
+                }
+                unset($item);
+            }
+            $widget['content'] = $content;
+        }
+
+        return $widget;
+    }
+
+    /**
+     * @notes 构建首页默认组件
+     * @param string $widgetName
+     * @return array
+     */
+    private static function buildDefaultHomeWidget(string $widgetName): array
+    {
+        return match ($widgetName) {
+            'home-brand' => [
+                'id' => uniqid('home_brand_', true),
+                'title' => '团队信息',
+                'name' => 'home-brand',
+                'pageScope' => ['home'],
+                'content' => [
+                    'enabled' => 1,
+                    'greeting' => 'Hello,',
+                    'team_name' => '我们是星意主持人工作室',
+                    'subtitle' => '选星意，有心意',
+                    'cta_text' => '立即预定',
+                    'cta_link' => [
+                        'path' => '/pages/schedule_query/schedule_query',
+                        'type' => 'shop',
+                    ],
+                ],
+                'styles' => [],
+            ],
+            'home-feature-carousel' => [
+                'id' => uniqid('home_feature_', true),
+                'title' => '预约图片区',
+                'name' => 'home-feature-carousel',
+                'pageScope' => ['home'],
+                'content' => [
+                    'enabled' => 1,
+                    'height' => 300,
+                    'autoplay' => 1,
+                    'interval' => 5000,
+                    'data' => [
+                        [
+                            'is_show' => '1',
+                            'image' => '',
+                            'name' => '',
+                            'link' => [
+                                'path' => '/pages/schedule_query/schedule_query',
+                                'type' => 'shop',
+                            ],
+                        ],
+                    ],
+                ],
+                'styles' => [],
+            ],
+            'home-service-categories' => [
+                'id' => uniqid('home_service_', true),
+                'title' => '服务分类',
+                'name' => 'home-service-categories',
+                'pageScope' => ['home'],
+                'content' => [
+                    'enabled' => 1,
+                    'data' => [
+                        [
+                            'is_show' => '1',
+                            'title' => '西式主持',
+                            'subtitle' => 'WEDDING HOST',
+                            'image' => '',
+                            'size' => 'large',
+                            'link' => [
+                                'path' => '/pages/schedule_query/schedule_query',
+                                'type' => 'shop',
+                                'query' => ['keyword' => '西式主持'],
+                            ],
+                        ],
+                        [
+                            'is_show' => '1',
+                            'title' => '中式主持',
+                            'subtitle' => 'CHINESE HOST',
+                            'image' => '',
+                            'size' => 'small',
+                            'link' => [
+                                'path' => '/pages/schedule_query/schedule_query',
+                                'type' => 'shop',
+                                'query' => ['keyword' => '中式主持'],
+                            ],
+                        ],
+                        [
+                            'is_show' => '1',
+                            'title' => '商务主持',
+                            'subtitle' => 'BUSINESS HOST',
+                            'image' => '',
+                            'size' => 'small',
+                            'link' => [
+                                'path' => '/pages/schedule_query/schedule_query',
+                                'type' => 'shop',
+                                'query' => ['keyword' => '商务主持'],
+                            ],
+                        ],
+                        [
+                            'is_show' => '1',
+                            'title' => '主持培训课程',
+                            'subtitle' => 'HOST TRAINING',
+                            'image' => '',
+                            'size' => 'wide',
+                            'link' => [
+                                'path' => '/pages/news/news',
+                                'type' => 'shop',
+                            ],
+                        ],
+                    ],
+                ],
+                'styles' => [],
+            ],
+            default => [
+                'id' => uniqid('banner_', true),
+                'title' => '首页轮播图',
+                'name' => 'banner',
+                'pageScope' => ['home'],
+                'content' => [
+                    'enabled' => 1,
+                    'style' => 1,
+                    'bg_style' => 1,
+                    'height' => null,
+                    'overlap_height' => 280,
+                    'data' => [
+                        [
+                            'is_show' => '1',
+                            'image' => '',
+                            'bg' => '',
+                            'bg_color' => '#000000',
+                            'name' => '',
+                            'slogan' => '',
+                            'slogan_top' => null,
+                            'slogan_color' => '',
+                            'link' => [],
+                        ],
+                    ],
+                ],
+                'styles' => [],
+            ],
+        };
+    }
+
+    /**
+     * @notes 兼容数字键对象和 JSON 字符串列表
+     * @param mixed $value
+     * @return array
+     */
+    private static function normalizeListLikeValue($value): array
+    {
+        if (is_string($value)) {
+            $decodedValue = json_decode($value, true);
+            $value = is_array($decodedValue) ? $decodedValue : [];
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        return array_values($value);
     }
 
 }

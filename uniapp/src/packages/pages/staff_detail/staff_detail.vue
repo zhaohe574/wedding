@@ -1,8 +1,8 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
 
-    <PageShell scene="consumer">
-        <BaseNavbar title="人员详情" :back="!isShareEntry" />
+    <PageShell scene="consumer" tone="editorial">
+        <BaseNavbar title="人员详情" :back="!isShareEntry" title-align="left" />
 
         <view class="staff-detail" v-if="staffInfo">
             <view class="staff-detail__content wm-page-content">
@@ -2993,7 +2993,7 @@ onShareTimeline(() => {
 
     flex-direction: column;
 
-    gap: 22rpx;
+    gap: 24rpx;
 
     padding: 11rpx 37rpx calc(var(--wm-safe-bottom-action, 150rpx) + 37rpx);
 }
@@ -3003,11 +3003,11 @@ onShareTimeline(() => {
 
     overflow: hidden;
 
-    border-radius: 52rpx;
+    border-radius: var(--wm-radius-card-lg, 20rpx);
 
     background: linear-gradient(135deg, #D8C28A 0%, #D8C28A 100%);
 
-    box-shadow: 0 18rpx 40rpx rgba(17, 17, 17, 0.18);
+    box-shadow: var(--wm-shadow-hero, 0 18rpx 42rpx rgba(17, 17, 17, 0.12));
 }
 
 .hero-card__banner {
@@ -3019,7 +3019,7 @@ onShareTimeline(() => {
 .hero-card__banner :deep(.media-container),
 .hero-card__banner :deep(.banner-media),
 .hero-card__banner :deep(.banner-video) {
-    border-radius: 52rpx;
+    border-radius: var(--wm-radius-card-lg, 20rpx);
 }
 
 .info-card__inner {
@@ -3031,9 +3031,9 @@ onShareTimeline(() => {
 
     padding: 34rpx;
 
-    backdrop-filter: blur(20rpx);
+    backdrop-filter: blur(16rpx);
 
-    -webkit-backdrop-filter: blur(20rpx);
+    -webkit-backdrop-filter: blur(16rpx);
 }
 
 .info-card__header {
@@ -3073,7 +3073,7 @@ onShareTimeline(() => {
 
     line-height: 1.6;
 
-    color: #5f5a50;
+    color: var(--wm-text-secondary, #56524a);
 }
 
 .info-card__favorite {
@@ -3094,6 +3094,7 @@ onShareTimeline(() => {
     background: #FFFFFF;
 
     border: 1rpx solid rgba(11, 11, 11, 0.12);
+    min-width: 88rpx;
 }
 
 .info-card__favorite-text {
@@ -3103,7 +3104,7 @@ onShareTimeline(() => {
 
     font-weight: 600;
 
-    color: #9A9388;
+    color: var(--wm-text-tertiary, #8e887d);
 }
 
 .info-card__favorite-text--active {
@@ -3123,7 +3124,7 @@ onShareTimeline(() => {
 
     border-radius: 999rpx;
 
-    background: #f8f7f2;
+    background: var(--wm-color-bg-soft, #f6f5f2);
 
     border: 1rpx solid rgba(11, 11, 11, 0.12);
 }
@@ -3195,7 +3196,7 @@ onShareTimeline(() => {
 
     line-height: 1.3;
 
-    color: #5f5a50;
+    color: var(--wm-text-secondary, #56524a);
 }
 
 .info-card__price-group {
@@ -3293,11 +3294,11 @@ onShareTimeline(() => {
 
     padding: 24rpx 22rpx;
 
-    border-radius: 37rpx;
+    border-radius: var(--wm-radius-card, 16rpx);
 
     background: #ffffff;
 
-    border: 1rpx solid #e7e2d6;
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
 }
 
 .booking-brief-card__label {
@@ -4411,7 +4412,7 @@ onShareTimeline(() => {
 .loading-state {
     min-height: 220rpx;
 
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card, 16rpx);
 
     background: rgba(255, 255, 255, 0.72);
 }
@@ -4431,7 +4432,7 @@ onShareTimeline(() => {
 
     min-height: 90rpx;
 
-    border-radius: 37rpx;
+    border-radius: var(--wm-radius-action, 999rpx);
 
     display: flex;
 
@@ -4441,9 +4442,9 @@ onShareTimeline(() => {
 
     background: rgba(255, 255, 255, 0.9);
 
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    border: 1rpx solid rgba(226, 222, 213, 0.96);
 
-    box-shadow: 0 10rpx 24rpx rgba(17, 17, 17, 0.08);
+    box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
 
     overflow: hidden;
 }
@@ -4453,7 +4454,7 @@ onShareTimeline(() => {
 
     border-color: #0b0b0b;
 
-    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.22);
+    box-shadow: 0 12rpx 24rpx rgba(11, 11, 11, 0.18);
 }
 
 .action-button__text {
@@ -4505,6 +4506,13 @@ onShareTimeline(() => {
 .share-action-trigger::after {
     display: none;
 }
+
+/* #ifdef MP-WEIXIN */
+.info-card__inner {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+/* #endif */
 
 @media (max-width: 360px) {
     .tab-text {

@@ -1,7 +1,7 @@
 <template>
     <page-meta :page-style="themeStore.pageStyle" />
-    <PageShell scene="consumer">
-        <BaseNavbar :title="navbarTitle" />
+    <PageShell scene="consumer" tone="editorial">
+        <BaseNavbar :title="navbarTitle" title-align="left" />
         <view class="auth-shell">
             <view class="auth-shell__content">
                 <view v-if="$slots.hero" class="auth-shell__hero">
@@ -58,11 +58,11 @@ const themeStore = useThemeStore()
 
 .auth-shell__card {
     padding: 34rpx 30rpx 38rpx;
-    border-radius: var(--wm-radius-popup, 52rpx);
-    background: rgba(255, 255, 255, 0.84);
+    border-radius: var(--wm-radius-card-lg, 20rpx);
+    background: rgba(255, 255, 255, 0.94);
     border: 1rpx solid rgba(216, 194, 138, 0.48);
-    backdrop-filter: blur(20rpx);
-    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));
+    backdrop-filter: blur(16rpx);
+    box-shadow: var(--wm-shadow-card, 0 12rpx 28rpx rgba(17, 17, 17, 0.07));
 }
 
 .auth-shell__footer {
@@ -73,4 +73,11 @@ const themeStore = useThemeStore()
     position: relative;
     z-index: 30;
 }
+
+/* #ifdef MP-WEIXIN */
+.auth-shell__card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+/* #endif */
 </style>

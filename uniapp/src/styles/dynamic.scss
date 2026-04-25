@@ -2,24 +2,24 @@ $dynamic-bg: var(--wm-color-bg-page, #ffffff);
 $dynamic-surface: var(--wm-color-bg-card, rgba(255, 255, 255, 0.88));
 $dynamic-surface-strong: rgba(255, 255, 255, 0.94);
 $dynamic-surface-solid: #ffffff;
-$dynamic-border: var(--wm-color-border, #e7e2d6);
+$dynamic-border: var(--wm-color-border, #e2ded5);
 $dynamic-border-strong: var(--wm-color-border-strong, #d8c28a);
-$dynamic-divider: #F8F7F2;
+$dynamic-divider: #F6F5F2;
 $dynamic-soft: var(--wm-color-bg-soft, #ffffff);
 $dynamic-accent: var(--wm-color-primary, #0b0b0b);
 $dynamic-accent-strong: var(--wm-color-primary-strong, #000000);
-$dynamic-accent-soft: var(--wm-color-primary-soft, #f3f2ee);
+$dynamic-accent-soft: var(--wm-color-primary-soft, #f2f1ec);
 $dynamic-accent-softer: rgba(11, 11, 11, 0.1);
 $dynamic-text: var(--wm-text-primary, #111111);
-$dynamic-text-secondary: #5F5A50;
-$dynamic-text-muted: #9A9388;
-$dynamic-text-placeholder: var(--wm-text-tertiary, #9a9388);
-$dynamic-shadow-soft: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
-$dynamic-shadow-card: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));
-$dynamic-shadow-accent: 0 14rpx 30rpx rgba(11, 11, 11, 0.2);
-$dynamic-radius-page: var(--wm-radius-shell, 36rpx);
-$dynamic-radius-card: var(--wm-radius-card-glass, 26rpx);
-$dynamic-radius-media: var(--wm-radius-card-soft, 20rpx);
+$dynamic-text-secondary: #56524A;
+$dynamic-text-muted: #8E887D;
+$dynamic-text-placeholder: var(--wm-text-tertiary, #8e887d);
+$dynamic-shadow-soft: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
+$dynamic-shadow-card: var(--wm-shadow-card, 0 12rpx 28rpx rgba(17, 17, 17, 0.07));
+$dynamic-shadow-accent: 0 10rpx 22rpx rgba(11, 11, 11, 0.16);
+$dynamic-radius-page: var(--wm-radius-shell, 24rpx);
+$dynamic-radius-card: var(--wm-radius-card-glass, 18rpx);
+$dynamic-radius-media: var(--wm-radius-card-soft, 14rpx);
 $dynamic-radius-pill: var(--wm-radius-pill, 999rpx);
 
 @mixin dynamic-glass-card($padding: var(--wm-space-card-padding-lg, 24rpx), $radius: $dynamic-radius-card) {
@@ -28,8 +28,8 @@ $dynamic-radius-pill: var(--wm-radius-pill, 999rpx);
     border: 1rpx solid $dynamic-border;
     background: $dynamic-surface;
     box-shadow: $dynamic-shadow-soft;
-    backdrop-filter: blur(18rpx);
-    -webkit-backdrop-filter: blur(18rpx);
+    backdrop-filter: blur(16rpx);
+    -webkit-backdrop-filter: blur(16rpx);
 }
 
 @mixin dynamic-pill($bg: $dynamic-surface-strong, $color: $dynamic-text-secondary) {

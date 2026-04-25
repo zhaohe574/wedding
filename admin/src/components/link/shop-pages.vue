@@ -1,6 +1,6 @@
 <template>
     <div class="shop-pages h-[530px] overflow-y-auto">
-        <div v-for="(group, gIndex) in linkGroups" :key="gIndex" class="mb-4">
+        <div v-for="(group, gIndex) in visibleLinkGroups" :key="gIndex" class="mb-4">
             <div class="group-title text-xs text-gray-400 mb-2">{{ group.label }}</div>
             <div class="link-list flex flex-wrap">
                 <div
@@ -25,10 +25,14 @@ import type { PropType } from 'vue'
 
 import { type Link, LinkTypeEnum } from '.'
 
-defineProps({
+const props = defineProps({
     modelValue: {
         type: Object as PropType<Link>,
         default: () => ({})
+    },
+    isTab: {
+        type: Boolean,
+        default: false
     }
 })
 const emit = defineEmits<{
@@ -59,7 +63,7 @@ const linkGroups = ref([
     {
         label: '婚庆服务',
         items: [
-            { path: '/packages/pages/staff_list/staff_list', name: '人员列表', type: T },
+            { path: '/pages/staff_list/staff_list', name: '主持团队', type: T, canTab: true },
             { path: '/packages/pages/staff_favorite/staff_favorite', name: '收藏人员', type: T },
             { path: '/packages/pages/staff_center/staff_center', name: '服务人员中心', type: T },
             { path: '/packages/pages/admin_dashboard/admin_dashboard', name: '管理员看板', type: T }
@@ -68,7 +72,7 @@ const linkGroups = ref([
     {
         label: '订单与购物',
         items: [
-            { path: '/pages/order/order', name: '我的订单', type: T },
+            { path: '/pages/order/order', name: '我的订单', type: T, canTab: true },
             { path: '/packages/pages/waitlist/waitlist', name: '候补列表', type: T }
         ]
     },
@@ -91,7 +95,7 @@ const linkGroups = ref([
     {
         label: '社区互动',
         items: [
-            { path: '/pages/dynamic/dynamic', name: '动态广场', type: T },
+            { path: '/pages/dynamic/dynamic', name: '动态广场', type: T, canTab: true },
             { path: '/pages/dynamic_publish/dynamic_publish', name: '发布动态', type: T }
         ]
     },
@@ -106,6 +110,19 @@ const linkGroups = ref([
         ]
     }
 ])
+
+const visibleLinkGroups = computed(() => {
+    if (!props.isTab) {
+        return linkGroups.value
+    }
+
+    return linkGroups.value
+        .map((group) => ({
+            ...group,
+            items: group.items.filter((item) => (item as any).canTab === true)
+        }))
+        .filter((group) => group.items.length)
+})
 
 const handleSelect = (value: Link) => {
     emit('update:modelValue', value)

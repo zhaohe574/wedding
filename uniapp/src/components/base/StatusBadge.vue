@@ -58,15 +58,15 @@ const badgeClass = computed(() => [
     }
 
     &--neutral {
-        background: rgba(108, 102, 92, 0.08);
-        border-color: rgba(108, 102, 92, 0.16);
-        color: var(--wm-color-info, #6C665C);
+        background: rgba(89, 106, 122, 0.08);
+        border-color: rgba(89, 106, 122, 0.16);
+        color: var(--wm-color-info, #596a7a);
     }
 
     &--success {
-        background: rgba(77, 74, 66, 0.08);
-        border-color: rgba(77, 74, 66, 0.16);
-        color: var(--wm-color-success, #4d4a42);
+        background: rgba(79, 111, 90, 0.08);
+        border-color: rgba(79, 111, 90, 0.16);
+        color: var(--wm-color-success, #4f6f5a);
     }
 
     &--warning {
@@ -76,9 +76,9 @@ const badgeClass = computed(() => [
     }
 
     &--danger {
-        background: rgba(90, 68, 51, 0.08);
-        border-color: rgba(90, 68, 51, 0.16);
-        color: var(--wm-color-danger, #5a4433);
+        background: rgba(138, 75, 69, 0.08);
+        border-color: rgba(138, 75, 69, 0.16);
+        color: var(--wm-color-danger, #8a4b45);
     }
 
     &--info {
@@ -88,20 +88,27 @@ const badgeClass = computed(() => [
     }
 
     &--staff {
-        backdrop-filter: blur(14rpx);
-        -webkit-backdrop-filter: blur(14rpx);
-        box-shadow: 0 10rpx 20rpx rgba(17, 17, 17, 0.06);
+        backdrop-filter: blur(10rpx);
+        -webkit-backdrop-filter: blur(10rpx);
+        box-shadow: 0 6rpx 14rpx rgba(17, 17, 17, 0.05);
     }
 
     &--staff.status-badge--neutral {
-        background: rgba(248, 247, 242, 0.88);
+        background: rgba(247, 246, 241, 0.88);
         border-color: rgba(216, 194, 138, 0.9);
         color: var(--wm-text-secondary, #5f5a50);
     }
 
     &--staff.status-badge--info {
-        background: rgba(247, 240, 223, 0.9);
+        background: rgba(248, 242, 228, 0.9);
         border-color: rgba(216, 194, 138, 0.96);
     }
 }
+
+/* #ifdef MP-WEIXIN */
+.status-badge--staff {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+/* #endif */
 </style>

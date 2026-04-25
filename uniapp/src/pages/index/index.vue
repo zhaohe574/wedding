@@ -1,7 +1,13 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle"> </page-meta>
-    <PageShell scene="consumer" hasTabbar>
-        <view class="home-page">
+    <page-meta :page-style="homePageMetaStyle"> </page-meta>
+    <PageShell
+        scene="consumer"
+        tone="editorial"
+        hasTabbar
+        :shell-style="homePageStyle"
+        :suppress-overlay="isBannerBackgroundLinked"
+    >
+        <view class="home-page" :style="homePageStyle">
             <view class="home-page__content">
                 <view class="home-page__hero" :style="heroStyle">
                     <swiper
@@ -19,6 +25,7 @@
                                     class="home-page__hero-image"
                                     :src="item.image"
                                     mode="aspectFill"
+                                    lazy-load
                                 />
                             </view>
                         </swiper-item>
@@ -27,22 +34,7 @@
                         <view class="home-page__hero-placeholder"></view>
                     </view>
 
-                    <view
-                        v-if="currentBannerSloganLines.length"
-                        class="home-page__hero-copy"
-                        :style="heroCopyStyle"
-                    >
-                        <view class="home-page__hero-accent"></view>
-                        <text
-                            v-for="(line, index) in currentBannerSloganLines"
-                            :key="`${safeBannerIndex}-${index}-${line}`"
-                            class="home-page__hero-title"
-                            :style="{ color: currentBannerSloganColor }"
-                        >
-                            {{ line }}
-                        </text>
-                    </view>
-                    <view v-if="bannerList.length > 1" class="home-page__hero-dots">
+                    <view v-if="bannerList.length > 1" class="home-page__hero-dots" :style="heroDotsStyle">
                         <view
                             v-for="(_, index) in bannerList"
                             :key="index"
@@ -54,56 +46,85 @@
                     </view>
                 </view>
 
-                <view class="home-page__body">
-                    <view class="home-page__cta" @tap="goToScheduleQuery">
-                        <text class="home-page__cta-text">查询档期</text>
-                    </view>
-
-                    <view class="home-page__section">
-                        <view class="home-page__section-head">
-                            <view class="home-page__section-copy">
-                                <text class="home-page__section-title">推荐人员</text>
+                <view class="home-page__body" :style="homeBodyStyle">
+                    <view class="home-page__intro-panel">
+                        <view class="home-page__intro-head">
+                            <view class="home-page__intro-copy">
+                                <text class="home-page__hello">{{ homeBrand.greeting }}</text>
+                                <text class="home-page__intro-title">{{ homeBrand.teamName }}</text>
+                                <text class="home-page__intro-subtitle">{{ homeBrand.subtitle }}</text>
                             </view>
-                            <view class="home-page__section-link" @tap="goToStaffList">
-                                <text class="home-page__section-link-text">查看全部</text>
+                            <view class="home-page__booking-btn" @tap="handleBrandCtaTap">
+                                <text class="home-page__booking-btn-text">{{ homeBrand.ctaText }}</text>
                             </view>
                         </view>
 
-                        <view class="home-page__team-list">
+                        <view
+                            v-if="showFeatureCarousel"
+                            class="home-page__feature"
+                            :style="{ height: `${featureHeight}rpx` }"
+                            @tap="handleFeatureTap(currentFeatureItem)"
+                        >
+                            <swiper
+                                v-if="featureSlides.length > 1"
+                                class="home-page__feature-swiper"
+                                circular
+                                :autoplay="featureAutoplay"
+                                :interval="featureInterval"
+                                duration="450"
+                                @change="handleFeatureChange"
+                            >
+                                <swiper-item v-for="item in featureSlides" :key="item.key">
+                                    <image
+                                        class="home-page__feature-image"
+                                        :src="item.image"
+                                        mode="aspectFill"
+                                        lazy-load
+                                    />
+                                </swiper-item>
+                            </swiper>
+                            <image
+                                v-else-if="currentFeatureItem?.image"
+                                class="home-page__feature-image"
+                                :src="currentFeatureItem.image"
+                                mode="aspectFill"
+                                lazy-load
+                            />
+                            <view v-else class="home-page__feature-image home-page__feature-fallback" />
+                            <view v-if="featureSlides.length > 1" class="home-page__feature-dots">
+                                <view
+                                    v-for="(_, index) in featureSlides"
+                                    :key="index"
+                                    class="home-page__feature-dot"
+                                    :class="{
+                                        'home-page__feature-dot--active': index === safeFeatureIndex
+                                    }"
+                                />
+                            </view>
+                        </view>
+
+                        <view v-if="categoryTiles.length" class="home-page__tile-grid">
                             <view
-                                v-for="(item, index) in displayStaffList"
-                                :key="item ? item.id : `placeholder-${index}`"
-                                class="home-page__team-card"
-                                :class="{ 'home-page__team-card--placeholder': !item }"
-                                @tap="handleStaffTap(item)"
+                                v-for="tile in categoryTiles"
+                                :key="tile.key"
+                                class="home-page__tile"
+                                :class="[
+                                    `home-page__tile--${tile.size}`,
+                                    { 'home-page__tile--no-image': !tile.image }
+                                ]"
+                                @tap="handleCategoryTap(tile)"
                             >
                                 <image
-                                    v-if="item"
-                                    class="home-page__team-image"
-                                    :src="item.avatar"
+                                    v-if="tile.image"
+                                    class="home-page__tile-image"
+                                    :src="tile.image"
                                     mode="aspectFill"
                                     lazy-load
                                 />
-                                <view
-                                    v-else
-                                    class="home-page__team-image home-page__team-image--placeholder"
-                                />
-
-                                <view class="home-page__team-copy">
-                                    <text class="home-page__team-kicker">
-                                        {{ item ? '婚礼服务顾问' : '即将开放' }}
-                                    </text>
-                                    <text class="home-page__team-name">
-                                        {{ item ? item.name : '更多人员即将上线' }}
-                                    </text>
-                                    <view class="home-page__team-role-wrap">
-                                        <text class="home-page__team-role">
-                                            {{ item ? getStaffSubtitle(item) : '敬请期待' }}
-                                        </text>
-                                    </view>
-                                </view>
-                                <view v-if="item" class="home-page__team-action" aria-hidden="true">
-                                    <text class="home-page__team-action-text">›</text>
+                                <view class="home-page__tile-scrim"></view>
+                                <view class="home-page__tile-copy">
+                                    <text class="home-page__tile-title">{{ tile.title }}</text>
+                                    <text class="home-page__tile-subtitle">{{ tile.subtitle }}</text>
                                 </view>
                             </view>
                         </view>
@@ -122,11 +143,10 @@
 
 <script setup lang="ts">
 import { getIndex } from '@/api/shop'
-import { getRecommendStaff } from '@/api/staff'
 import PageShell from '@/components/base/PageShell.vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
-import { navigateTo } from '@/utils/util'
+import { hasConfiguredLink, navigateTo } from '@/utils/util'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 
@@ -134,14 +154,18 @@ import { computed, ref } from 'vue'
 import MpPrivacyPopup from './component/mp-privacy-popup.vue'
 // #endif
 
+type AppLink = Record<string, any> | string | null | undefined
+
 interface DecorateWidget {
     name?: string
-    content?: DecorateBannerContent & Record<string, any>
+    content?: Record<string, any>
 }
 
 interface DecorateBannerContent {
     style?: number | string
+    bg_style?: number | string
     height?: number | string | null
+    overlap_height?: number | string | null
     data?: DecorateBannerItem[]
 }
 
@@ -150,28 +174,44 @@ interface DecorateBannerItem {
     is_show?: string | number
     image?: string
     bg?: string
+    bg_color?: string
     slogan?: string | null
     slogan_top?: number | string | null
     slogan_color?: string | null
-    link?: Record<string, any>
+    link?: AppLink
 }
 
 interface BannerItem {
     key: string | number
     image: string
-    link?: Record<string, any>
-    slogan: string
-    sloganTop?: number
-    sloganColor?: string
+    bgImage: string
+    bgColor: string
+    link?: AppLink
 }
 
-interface RecommendStaffItem {
-    id: number
-    name: string
-    avatar: string
-    category_name?: string
-    tags?: string[]
-    profile?: string
+interface HomeBrandView {
+    greeting: string
+    teamName: string
+    subtitle: string
+    ctaText: string
+    ctaLink: AppLink
+}
+
+interface FeatureSlideItem {
+    id?: string | number
+    is_show?: string | number
+    image?: string
+    link?: AppLink
+}
+
+interface HomeCategoryTile {
+    key: string
+    title: string
+    subtitle: string
+    image: string
+    size: 'large' | 'small' | 'wide'
+    link?: AppLink
+    url?: string
 }
 
 const appStore = useAppStore()
@@ -179,13 +219,66 @@ const themeStore = useThemeStore()
 
 const widgets = ref<DecorateWidget[]>([])
 const metaList = ref<any[]>([])
-const recommendStaffList = ref<RecommendStaffItem[]>([])
 const currentBannerIndex = ref(0)
+const currentFeatureIndex = ref(0)
 const tabbarRefreshKey = ref(0)
-const DEFAULT_BANNER_HEIGHT = 321
-const DEFAULT_LARGE_BANNER_HEIGHT = 1100
-const DEFAULT_BANNER_SLOGAN_TOP = 120
-const DEFAULT_LARGE_BANNER_SLOGAN_TOP = 180
+const DEFAULT_BANNER_HEIGHT = 690
+const DEFAULT_LARGE_BANNER_HEIGHT = 760
+const MIN_EDITORIAL_HERO_HEIGHT = 640
+const DEFAULT_BANNER_OVERLAP_HEIGHT = 280
+const DEFAULT_FEATURE_HEIGHT = 300
+const DEFAULT_PAGE_BACKGROUND = '#f6f5f2'
+const DEFAULT_LINKED_BACKGROUND = '#000000'
+const DEFAULT_SCHEDULE_LINK = {
+    path: '/pages/schedule_query/schedule_query',
+    type: 'shop'
+}
+const DEFAULT_CATEGORY_CONFIG: HomeCategoryTile[] = [
+    {
+        key: 'western',
+        title: '西式主持',
+        subtitle: 'WEDDING HOST',
+        image: '',
+        size: 'large',
+        link: {
+            ...DEFAULT_SCHEDULE_LINK,
+            query: { keyword: '西式主持' }
+        }
+    },
+    {
+        key: 'chinese',
+        title: '中式主持',
+        subtitle: 'CHINESE HOST',
+        image: '',
+        size: 'small',
+        link: {
+            ...DEFAULT_SCHEDULE_LINK,
+            query: { keyword: '中式主持' }
+        }
+    },
+    {
+        key: 'business',
+        title: '商务主持',
+        subtitle: 'BUSINESS HOST',
+        image: '',
+        size: 'small',
+        link: {
+            ...DEFAULT_SCHEDULE_LINK,
+            query: { keyword: '商务主持' }
+        }
+    },
+    {
+        key: 'training',
+        title: '主持培训课程',
+        subtitle: 'HOST TRAINING',
+        image: '',
+        size: 'wide',
+        link: {
+            path: '/pages/news/news',
+            type: 'shop'
+        }
+    }
+]
 
 const normalizePositiveNumber = (value: unknown): number | undefined => {
     if (value === '' || value === null || value === undefined) {
@@ -213,15 +306,8 @@ const normalizeNonNegativeNumber = (value: unknown): number | undefined => {
     return parsedValue
 }
 
-const getDefaultBannerSloganTop = (style: unknown) => {
-    return Number(style) === 2 ? DEFAULT_LARGE_BANNER_SLOGAN_TOP : DEFAULT_BANNER_SLOGAN_TOP
-}
-
-const splitSloganLines = (slogan: string) => {
-    return slogan
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
+const normalizeText = (value: unknown, fallback: string) => {
+    return typeof value === 'string' && value.trim() ? value.trim() : fallback
 }
 
 const bannerWidget = computed(() => {
@@ -232,19 +318,32 @@ const bannerContent = computed<DecorateBannerContent>(() => {
     return bannerWidget.value?.content || {}
 })
 
+const homeBrandWidget = computed(() => {
+    return widgets.value.find((item) => item?.name === 'home-brand')
+})
+
+const featureWidget = computed(() => {
+    return widgets.value.find((item) => item?.name === 'home-feature-carousel')
+})
+
+const serviceCategoriesWidget = computed(() => {
+    return widgets.value.find((item) => item?.name === 'home-service-categories')
+})
+
 const heroHeight = computed(() => {
     const customHeight = normalizePositiveNumber(bannerContent.value.height)
     if (customHeight) {
-        return customHeight
+        return Math.max(customHeight, MIN_EDITORIAL_HERO_HEIGHT)
     }
 
     const bannerStyle = normalizePositiveNumber(bannerContent.value.style)
     return bannerStyle === 2 ? DEFAULT_LARGE_BANNER_HEIGHT : DEFAULT_BANNER_HEIGHT
 })
 
-const heroStyle = computed(() => ({
-    height: `${heroHeight.value}rpx`
-}))
+const bannerOverlapHeight = computed(() => {
+    const customHeight = normalizeNonNegativeNumber(bannerContent.value.overlap_height)
+    return Math.min(Math.max(customHeight ?? DEFAULT_BANNER_OVERLAP_HEIGHT, 0), 520)
+})
 
 const bannerList = computed<BannerItem[]>(() => {
     const rawList = normalizeJsonList(bannerContent.value.data) as DecorateBannerItem[]
@@ -254,10 +353,9 @@ const bannerList = computed<BannerItem[]>(() => {
         .map((item, index: number) => ({
             key: item?.id ?? index,
             image: appStore.getImageUrl(item?.image || item?.bg || ''),
+            bgImage: appStore.getImageUrl(item?.bg || ''),
+            bgColor: typeof item?.bg_color === 'string' ? item.bg_color.trim() : '',
             link: item?.link || {},
-            slogan: typeof item?.slogan === 'string' ? item.slogan : '',
-            sloganTop: normalizeNonNegativeNumber(item?.slogan_top),
-            sloganColor: typeof item?.slogan_color === 'string' ? item.slogan_color.trim() : ''
         }))
         .filter((item) => !!item.image)
 })
@@ -274,35 +372,160 @@ const currentBannerItem = computed(() => {
     return bannerList.value[safeBannerIndex.value] || null
 })
 
-const currentBannerSloganLines = computed(() => {
-    return splitSloganLines(currentBannerItem.value?.slogan || '')
+const isBannerBackgroundLinked = computed(() => {
+    if (!bannerList.value.length) {
+        return false
+    }
+
+    return Number(bannerContent.value.bg_style) === 1
 })
 
-const currentBannerSloganTop = computed(() => {
-    return (
-        currentBannerItem.value?.sloganTop ?? getDefaultBannerSloganTop(bannerContent.value.style)
-    )
+const linkedBannerBackgroundColor = computed(() => {
+    if (!isBannerBackgroundLinked.value) {
+        return ''
+    }
+
+    return currentBannerItem.value?.bgColor || DEFAULT_LINKED_BACKGROUND
 })
 
-const currentBannerSloganColor = computed(() => {
-    const sloganColor =
-        typeof currentBannerItem.value?.sloganColor === 'string'
-            ? currentBannerItem.value.sloganColor.trim()
-            : ''
-
-    return sloganColor || '#FFFFFF'
+const homeBackgroundColor = computed(() => {
+    return linkedBannerBackgroundColor.value || DEFAULT_PAGE_BACKGROUND
 })
 
-const heroCopyStyle = computed(() => ({
-    top: `${currentBannerSloganTop.value}rpx`
+const homePageStyle = computed(() => {
+    return {
+        '--wm-color-bg-page': homeBackgroundColor.value,
+        background: homeBackgroundColor.value,
+        backgroundColor: homeBackgroundColor.value
+    }
+})
+
+const homeBodyStyle = computed(() => ({
+    marginTop: `-${bannerOverlapHeight.value}rpx`
 }))
 
-const displayStaffList = computed(() => {
-    const result = [...recommendStaffList.value.slice(0, 2)]
-    while (result.length < 2) {
-        result.push(null as unknown as RecommendStaffItem)
+const heroDotsStyle = computed(() => ({
+    bottom: `${bannerOverlapHeight.value + 28}rpx`
+}))
+
+const homePageMetaStyle = computed(() => {
+    const baseStyle = themeStore.pageStyle || ''
+    const separator = baseStyle.trim().endsWith(';') || !baseStyle.trim() ? '' : ';'
+    return `${baseStyle}${separator}background-color:${homeBackgroundColor.value};`
+})
+
+const heroStyle = computed(() => ({
+    height: `${heroHeight.value}rpx`,
+    backgroundColor: linkedBannerBackgroundColor.value || DEFAULT_LINKED_BACKGROUND
+}))
+
+const getVisualImage = (index: number) => {
+    return (
+        bannerList.value[index]?.image ||
+        bannerList.value[0]?.image ||
+        ''
+    )
+}
+
+const homeBrand = computed<HomeBrandView>(() => {
+    const content = homeBrandWidget.value?.content || {}
+    return {
+        greeting: normalizeText(content.greeting, 'Hello,'),
+        teamName: normalizeText(content.team_name, '我们是星意主持人工作室'),
+        subtitle: normalizeText(content.subtitle, '选星意，有心意'),
+        ctaText: normalizeText(content.cta_text, '立即预定'),
+        ctaLink: content.cta_link || DEFAULT_SCHEDULE_LINK
     }
-    return result
+})
+
+const featureContent = computed(() => featureWidget.value?.content || {})
+
+const showFeatureCarousel = computed(() => String(featureContent.value.enabled ?? '1') !== '0')
+
+const featureHeight = computed(() => {
+    const customHeight = normalizePositiveNumber(featureContent.value.height)
+    return Math.min(Math.max(customHeight || DEFAULT_FEATURE_HEIGHT, 180), 520)
+})
+
+const featureAutoplay = computed(() => String(featureContent.value.autoplay ?? '1') !== '0')
+
+const featureInterval = computed(() => normalizePositiveNumber(featureContent.value.interval) || 5000)
+
+const featureSlides = computed<BannerItem[]>(() => {
+    if (!showFeatureCarousel.value) {
+        return []
+    }
+
+    const rawList = normalizeJsonList(featureContent.value.data) as FeatureSlideItem[]
+    const slides = rawList
+        .filter((item) => String(item?.is_show ?? '1') !== '0')
+        .map((item, index) => ({
+            key: item?.id ?? index,
+            image: appStore.getImageUrl(item?.image || ''),
+            bgImage: '',
+            bgColor: '',
+            link: item?.link || DEFAULT_SCHEDULE_LINK
+        }))
+        .filter((item) => !!item.image)
+
+    if (slides.length) {
+        return slides
+    }
+
+    const fallbackImage = getVisualImage(1) || getVisualImage(0)
+    return fallbackImage
+        ? [
+              {
+                  key: 'feature-fallback',
+                  image: fallbackImage,
+                  bgImage: '',
+                  bgColor: '',
+                  link: DEFAULT_SCHEDULE_LINK
+              }
+          ]
+        : []
+})
+
+const safeFeatureIndex = computed(() => {
+    if (!featureSlides.value.length) {
+        return 0
+    }
+
+    return Math.min(currentFeatureIndex.value, featureSlides.value.length - 1)
+})
+
+const currentFeatureItem = computed(() => featureSlides.value[safeFeatureIndex.value] || null)
+
+const categoryTiles = computed<HomeCategoryTile[]>(() => {
+    const content = serviceCategoriesWidget.value?.content || {}
+    if (String(content.enabled ?? '1') === '0') {
+        return []
+    }
+
+    const configuredList = normalizeJsonList(content.data)
+        .filter((item: any) => String(item?.is_show ?? '1') !== '0')
+        .map((item: any, index: number) => ({
+            key: String(item?.id ?? `${item?.title || 'category'}-${index}`),
+            title: normalizeText(item?.title, DEFAULT_CATEGORY_CONFIG[index]?.title || '服务分类'),
+            subtitle: normalizeText(item?.subtitle, DEFAULT_CATEGORY_CONFIG[index]?.subtitle || 'SERVICE'),
+            image:
+                appStore.getImageUrl(item?.image || '') ||
+                getVisualImage(index + 2) ||
+                DEFAULT_CATEGORY_CONFIG[index]?.image ||
+                '',
+            size: (['large', 'small', 'wide'].includes(item?.size) ? item.size : 'small') as HomeCategoryTile['size'],
+            link: item?.link || DEFAULT_CATEGORY_CONFIG[index]?.link,
+            url: DEFAULT_CATEGORY_CONFIG[index]?.url
+        }))
+
+    if (configuredList.length) {
+        return configuredList
+    }
+
+    return DEFAULT_CATEGORY_CONFIG.map((item, index) => ({
+        ...item,
+        image: item.image || getVisualImage(index + 2)
+    }))
 })
 
 const normalizeJsonList = (value: any): any[] => {
@@ -324,18 +547,6 @@ const normalizeJsonList = (value: any): any[] => {
 
     return Array.isArray(value) ? value : []
 }
-const getStaffSubtitle = (item: RecommendStaffItem) => {
-    const candidates = [
-        item.category_name,
-        Array.isArray(item.tags) ? item.tags[0] : '',
-        item.profile
-    ]
-
-    const subtitle = candidates.find((value) => typeof value === 'string' && value.trim().length)
-
-    return subtitle ? subtitle.trim() : '婚礼服务顾问'
-}
-
 const syncNavigationTitle = () => {
     const pageTitle = metaList.value?.[0]?.content?.title
     if (typeof pageTitle === 'string' && pageTitle.trim()) {
@@ -345,25 +556,18 @@ const syncNavigationTitle = () => {
 
 const getData = async () => {
     try {
-        const [indexData, recommendData] = await Promise.all([
-            getIndex(),
-            getRecommendStaff({ limit: 2 })
-        ])
+        const indexData = await getIndex()
 
         widgets.value = normalizeJsonList(indexData?.page?.data).filter(
             (item: DecorateWidget) => item?.name !== 'service-packages'
         )
         metaList.value = normalizeJsonList(indexData?.page?.meta)
-        recommendStaffList.value = Array.isArray(recommendData) ? recommendData : []
         currentBannerIndex.value = 0
+        currentFeatureIndex.value = 0
         syncNavigationTitle()
     } catch (error) {
         console.error('获取首页数据失败：', error)
     }
-}
-
-const goToStaffList = () => {
-    uni.navigateTo({ url: '/pages/schedule_query/schedule_query' })
 }
 
 const goToScheduleQuery = () => {
@@ -371,7 +575,7 @@ const goToScheduleQuery = () => {
 }
 
 const handleBannerTap = (item: BannerItem) => {
-    if (!item?.link?.path) {
+    if (!hasConfiguredLink(item?.link)) {
         return
     }
 
@@ -382,14 +586,37 @@ const handleBannerChange = (event: any) => {
     currentBannerIndex.value = Number(event?.detail?.current || 0)
 }
 
-const handleStaffTap = (item: RecommendStaffItem | null) => {
-    if (!item?.id) {
+const handleFeatureChange = (event: any) => {
+    currentFeatureIndex.value = Number(event?.detail?.current || 0)
+}
+
+const handleBrandCtaTap = () => {
+    if (hasConfiguredLink(homeBrand.value.ctaLink)) {
+        navigateTo(homeBrand.value.ctaLink)
         return
     }
 
-    uni.navigateTo({
-        url: `/packages/pages/staff_detail/staff_detail?id=${item.id}`
-    })
+    goToScheduleQuery()
+}
+
+const handleFeatureTap = (item: BannerItem | null) => {
+    if (hasConfiguredLink(item?.link)) {
+        navigateTo(item?.link)
+        return
+    }
+
+    goToScheduleQuery()
+}
+
+const handleCategoryTap = (tile: HomeCategoryTile) => {
+    if (hasConfiguredLink(tile.link)) {
+        navigateTo(tile.link)
+        return
+    }
+
+    if (tile.url) {
+        navigateTo(tile.url)
+    }
 }
 
 onLoad(() => {
@@ -406,23 +633,29 @@ onShow(() => {
 <style lang="scss" scoped>
 .home-page {
     --wm-space-page-x: 37rpx;
+    min-height: 100%;
+    background: var(--wm-color-bg-page, #f6f5f2);
+    transition: background 260ms ease;
 }
 
 .home-page__content {
     display: flex;
     flex-direction: column;
-    gap: 30rpx;
+    gap: 0;
 }
 
 .home-page__body {
-    padding: 0 var(--wm-space-page-x, 37rpx) 37rpx;
+    position: relative;
+    z-index: 3;
+    margin-top: -280rpx;
+    padding: 0 30rpx 37rpx;
 }
 
 .home-page__hero {
     position: relative;
     overflow: hidden;
-    border-radius: 0 0 56rpx 56rpx;
-    box-shadow: var(--wm-shadow-hero, 0 24rpx 56rpx rgba(17, 17, 17, 0.12));
+    border-radius: 0;
+    background: #000000;
 }
 
 .home-page__hero-swiper,
@@ -458,41 +691,12 @@ onShow(() => {
         linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 38%);
 }
 
-.home-page__hero-copy {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10rpx;
-    padding: 0 52rpx;
-    text-align: center;
-    pointer-events: none;
-}
-
-.home-page__hero-accent {
-    width: 52rpx;
-    height: 6rpx;
-    border-radius: 999rpx;
-    background: var(--wm-color-secondary, #C8A45D);
-}
-
-.home-page__hero-title {
-    font-size: 44rpx;
-    line-height: 1.32;
-    font-weight: 700;
-    text-shadow: 0 4rpx 10rpx rgba(11, 11, 11, 0.42), 0 12rpx 28rpx rgba(11, 11, 11, 0.58);
-}
-
 .home-page__hero-dots {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 45rpx;
-    z-index: 1;
+    bottom: 308rpx;
+    z-index: 2;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -511,168 +715,186 @@ onShow(() => {
     background: var(--wm-color-secondary, #C8A45D);
 }
 
-.home-page__cta {
-    min-height: 124rpx;
-    border-radius: 40rpx;
-    padding: 0 30rpx;
-    background: var(--wm-color-primary, #0b0b0b);
-    border: 1rpx solid rgba(200, 164, 93, 0.34);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 18rpx 36rpx rgba(11, 11, 11, 0.14),
-        inset 0 1rpx 0 rgba(200, 164, 93, 0.2);
+.home-page__intro-panel {
+    padding: 26rpx 24rpx 26rpx;
+    border-radius: 30rpx;
+    background: #ffffff;
+    box-shadow: 0 18rpx 44rpx rgba(11, 11, 11, 0.13);
 }
 
-.home-page__cta-text {
-    font-size: 34rpx;
-    line-height: 1;
-    font-weight: 700;
-    letter-spacing: 0;
-    color: #ffffff;
-    text-align: center;
-}
-
-.home-page__section {
-    padding: 24rpx 0 8rpx;
-}
-
-.home-page__section-head {
+.home-page__intro-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 20rpx;
-    margin-bottom: 22rpx;
+    padding: 0 8rpx 24rpx;
 }
 
-.home-page__section-copy {
-    min-width: 0;
+.home-page__intro-copy {
     flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7rpx;
 }
 
-.home-page__section-title {
-    display: block;
-    font-size: 32rpx;
-    line-height: 1.3;
+.home-page__hello {
+    font-size: 24rpx;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #000000;
+}
+
+.home-page__intro-title {
+    font-size: 30rpx;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #111111;
+    word-break: break-word;
+}
+
+.home-page__intro-subtitle {
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: #8e887d;
+}
+
+.home-page__booking-btn {
+    flex-shrink: 0;
+    min-width: 138rpx;
+    min-height: 52rpx;
+    padding: 0 24rpx;
+    border-radius: 999rpx;
+    background: #e28b4f;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+        transform: translateY(1rpx) scale(0.98);
+    }
+}
+
+.home-page__booking-btn-text {
+    font-size: 22rpx;
+    line-height: 1;
     font-weight: 700;
     letter-spacing: 0;
-    color: var(--wm-text-primary, #111111);
+    color: #ffffff;
 }
 
-.home-page__section-link {
-    padding: 6rpx 0 6rpx 18rpx;
-}
-
-.home-page__section-link-text {
-    font-size: 22rpx;
-    font-weight: 600;
-    color: #9A9388;
-}
-
-.home-page__team-list {
-    display: flex;
-    flex-direction: column;
-    gap: 18rpx;
-}
-
-.home-page__team-card {
+.home-page__feature {
     position: relative;
+    overflow: hidden;
+    border-radius: 20rpx;
+    background: #111111;
+}
+
+.home-page__feature-swiper,
+.home-page__feature-image,
+.home-page__feature-fallback {
+    width: 100%;
+    height: 100%;
+}
+
+.home-page__feature-fallback {
+    background: linear-gradient(135deg, #111111 0%, #3b342c 100%);
+}
+
+.home-page__feature-dots {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 18rpx;
     display: flex;
     align-items: center;
-    gap: 20rpx;
-    padding: 18rpx 20rpx;
-    border-radius: 32rpx;
-    background: linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.98) 0%,
-        rgba(248, 247, 242, 0.96) 100%
-    );
-    border: 1rpx solid rgba(231, 226, 214, 0.98);
-    box-shadow: 0 12rpx 28rpx rgba(11, 11, 11, 0.06);
+    justify-content: center;
+    gap: 10rpx;
 }
 
-.home-page__team-card--placeholder {
-    opacity: 0.88;
+.home-page__feature-dot {
+    width: 10rpx;
+    height: 10rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.54);
 }
 
-.home-page__team-image {
-    width: 120rpx;
-    height: 120rpx;
-    display: block;
-    flex-shrink: 0;
-    border-radius: 24rpx;
-    border: 1rpx solid rgba(231, 226, 214, 0.9);
+.home-page__feature-dot--active {
+    width: 26rpx;
+    background: #ffffff;
 }
 
-.home-page__team-image--placeholder {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(231, 226, 214, 0.9) 100%),
-        linear-gradient(180deg, rgba(200, 164, 93, 0.12) 0%, rgba(200, 164, 93, 0) 100%);
+.home-page__tile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 156rpx;
+    gap: 12rpx;
+    margin-top: 24rpx;
 }
 
-.home-page__team-copy {
+.home-page__tile {
+    position: relative;
     min-width: 0;
-    flex: 1;
+    overflow: hidden;
+    border-radius: 20rpx;
+    background: #111111;
+}
+
+.home-page__tile--large {
+    grid-row: span 2;
+}
+
+.home-page__tile--wide {
+    grid-column: span 2;
+}
+
+.home-page__tile--no-image {
+    background: linear-gradient(135deg, #111111 0%, #342b24 100%);
+}
+
+.home-page__tile-image {
+    width: 100%;
+    height: 100%;
+}
+
+.home-page__tile-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.68) 100%);
+}
+
+.home-page__tile-copy {
+    position: absolute;
+    left: 18rpx;
+    right: 18rpx;
+    bottom: 24rpx;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    align-items: center;
     gap: 8rpx;
+    text-align: center;
 }
 
-.home-page__team-kicker {
-    display: block;
-    font-size: 18rpx;
+.home-page__tile-title {
+    font-size: 29rpx;
+    line-height: 1.2;
+    font-weight: 800;
+    color: #ffffff;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
+}
+
+.home-page__tile-subtitle {
+    font-size: 16rpx;
     line-height: 1.2;
     font-weight: 700;
-    letter-spacing: 0;
-    text-transform: uppercase;
-    color: #C8A45D;
-}
-
-.home-page__team-name,
-.home-page__team-role {
-    display: block;
-}
-
-.home-page__team-name {
-    font-size: 28rpx;
-    font-weight: 700;
-    letter-spacing: 0;
-    color: #111111;
-    line-height: 1.35;
-}
-
-.home-page__team-role-wrap {
-    display: flex;
-    align-items: center;
-}
-
-.home-page__team-role {
-    max-width: 100%;
-    padding: 10rpx 16rpx;
-    border-radius: 999rpx;
-    font-size: 21rpx;
-    line-height: 1;
-    font-weight: 600;
-    color: #5F5A50;
-    background: rgba(247, 240, 223, 0.95);
-    border: 1rpx solid rgba(231, 226, 214, 0.98);
+    color: rgba(255, 255, 255, 0.88);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.home-page__team-action {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding-left: 8rpx;
-}
-
-.home-page__team-action-text {
-    font-size: 34rpx;
-    line-height: 1;
-    font-weight: 500;
-    color: #9A9388;
-}
 </style>

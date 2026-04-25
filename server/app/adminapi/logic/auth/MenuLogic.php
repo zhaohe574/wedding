@@ -150,6 +150,7 @@ class MenuLogic extends BaseLogic
             'financial/cost/index',
             'schedule/booking/index',
             'schedule/event/index',
+            'decoration/style/style',
             'crm/customer/index',
             'crm/advisor/index',
             'crm/warning/index',

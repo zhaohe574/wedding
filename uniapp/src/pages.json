@@ -672,9 +672,9 @@
 		]
 	}],
     "globalStyle": {
-        "navigationBarTextStyle": "black",
+        "navigationBarTextStyle": "white",
         "navigationBarTitleText": "商城",
-        "navigationBarBackgroundColor": "#FFFFFF",
+        "navigationBarBackgroundColor": "#000000",
         "navigationStyle": "custom",
         "h5": {
             "navigationStyle": "custom"

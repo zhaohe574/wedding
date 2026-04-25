@@ -4,7 +4,7 @@
         <BaseNavbar title="充值" />
         <view class="recharge-page wm-page-content">
             <view class="wm-page-stack">
-                <BaseCard variant="hero" scene="consumer">
+                <BaseCard variant="hero" scene="consumer" class="recharge-page__hero">
                     <text class="recharge-page__eyebrow">Wallet Recharge</text>
                     <text class="recharge-page__title">为婚礼预算账户补充余额</text>
                     <text class="recharge-page__desc">
@@ -37,7 +37,7 @@
 
                 <view class="wm-page-actions-bar">
                     <BaseButton
-                        variant="primary"
+                        variant="cta"
                         size="lg"
                         block
                         :loading="isLock"
@@ -144,12 +144,17 @@ onShow(() => {
     padding-top: 20rpx;
 }
 
+.recharge-page__hero {
+    background: linear-gradient(145deg, #111111 0%, #000000 58%, #2f2924 100%) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
 .recharge-page__eyebrow {
     font-size: 22rpx;
     font-weight: 600;
     letter-spacing: 0;
     text-transform: uppercase;
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-secondary, #c8a45d);
 }
 
 .recharge-page__title {
@@ -157,7 +162,7 @@ onShow(() => {
     display: block;
     font-size: 38rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #111111);
+    color: #ffffff;
 }
 
 .recharge-page__desc {
@@ -165,11 +170,11 @@ onShow(() => {
     display: block;
     font-size: 24rpx;
     line-height: 1.6;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: rgba(255, 255, 255, 0.72);
 }
 
 .recharge-page__balance {
-    color: var(--wm-color-primary, #0b0b0b);
+    color: #ffffff;
     font-weight: 700;
 }
 

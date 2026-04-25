@@ -10,7 +10,7 @@
             ]"
             @select="handleSelect"
         >
-            <el-sub-menu v-for="(item, index) in menus" :index="item.type" :key="index">
+            <el-sub-menu v-for="(item, index) in visibleMenus" :index="item.type" :key="index">
                 <template #title>
                     <span>{{ item.name }}</span>
                 </template>
@@ -25,7 +25,11 @@
             </el-sub-menu>
         </el-menu>
         <div class="flex-1 ml-4 link-content">
-            <shop-pages v-model="activeLink" v-if="LinkTypeEnum.SHOP_PAGES == activeMenu" />
+            <shop-pages
+                v-model="activeLink"
+                v-if="LinkTypeEnum.SHOP_PAGES == activeMenu"
+                :is-tab="props.isTab"
+            />
             <article-list v-model="activeLink" v-if="LinkTypeEnum.ARTICLE_LIST == activeMenu" />
             <custom-link v-model="activeLink" v-if="LinkTypeEnum.CUSTOM_LINK == activeMenu" />
             <mini-program v-model="activeLink" v-if="LinkTypeEnum.MINI_PROGRAM == activeMenu" />
@@ -46,6 +50,10 @@ const props = defineProps({
     modelValue: {
         type: Object as PropType<Link>,
         required: true
+    },
+    isTab: {
+        type: Boolean,
+        default: false
     }
 })
 const emit = defineEmits<{
@@ -93,6 +101,14 @@ const menus = ref([
     }
 ])
 
+const visibleMenus = computed(() => {
+    if (props.isTab) {
+        return menus.value.filter((item) => item.type === MenuTypeEnum.SHOP_PAGES)
+    }
+
+    return menus.value
+})
+
 const activeLink = computed({
     get() {
         let linkStoreage: any = {}
@@ -131,7 +147,7 @@ watch(
 watch(
     () => props.modelValue,
     (value) => {
-        activeMenu.value = value.type
+        activeMenu.value = props.isTab ? LinkTypeEnum.SHOP_PAGES : value?.type || LinkTypeEnum.SHOP_PAGES
         activeLink.value = value
     },
     {

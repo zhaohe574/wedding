@@ -31,6 +31,52 @@ class DecorateTabbar extends BaseModel
     // 设置JSON数据返回数组
     protected $jsonAssoc = true;
 
+    /**
+     * @notes 默认底部导航配置
+     * @return array
+     */
+    public static function defaultTabbarLists(): array
+    {
+        return [
+            [
+                'name' => '首页',
+                'selected' => FileService::getFileUrl('resource/image/adminapi/default/tabbar_home_sel.png'),
+                'unselected' => FileService::getFileUrl('resource/image/adminapi/default/tabbar_home.png'),
+                'link' => [
+                    'path' => '/pages/index/index',
+                    'name' => '首页',
+                    'type' => 'shop',
+                    'canTab' => true,
+                ],
+                'is_show' => 1,
+            ],
+            [
+                'name' => '动态',
+                'selected' => FileService::getFileUrl('resource/image/adminapi/default/tabbar_text_sel.png'),
+                'unselected' => FileService::getFileUrl('resource/image/adminapi/default/tabbar_text.png'),
+                'link' => [
+                    'path' => '/pages/dynamic/dynamic',
+                    'name' => '动态',
+                    'type' => 'shop',
+                    'canTab' => true,
+                ],
+                'is_show' => 1,
+            ],
+            [
+                'name' => '我的',
+                'selected' => FileService::getFileUrl('resource/image/adminapi/default/tabbar_me_sel.png'),
+                'unselected' => FileService::getFileUrl('resource/image/adminapi/default/tabbar_me.png'),
+                'link' => [
+                    'path' => '/pages/user/user',
+                    'name' => '我的',
+                    'type' => 'shop',
+                    'canTab' => true,
+                ],
+                'is_show' => 1,
+            ],
+        ];
+    }
+
 
     /**
      * @notes 获取底部导航列表
@@ -46,7 +92,7 @@ class DecorateTabbar extends BaseModel
         $tabbar = self::select()->toArray();
 
         if (empty($tabbar)) {
-           return $tabbar;
+           return self::defaultTabbarLists();
         }
 
         foreach ($tabbar as &$item) {

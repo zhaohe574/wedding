@@ -1,6 +1,6 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" hasTabbar>
+    <PageShell scene="consumer" tone="workspace" hasTabbar>
         <view class="user-page">
             <MpPageHeader title="个人中心" surface="glass" title-align="left" title-size="large" />
             <view class="user-page__body">
@@ -422,26 +422,26 @@ onShow(async () => {
     --wm-user-page-content-side: 37rpx;
     --wm-user-page-content-bottom: 37rpx;
     --wm-user-page-section-gap: 24rpx;
-    --wm-user-profile-radius: 49rpx;
+    --wm-user-profile-radius: var(--wm-radius-card-lg, 20rpx);
     --wm-user-profile-padding: 30rpx;
     --wm-user-profile-min-height: 149rpx;
     --wm-user-profile-avatar-size: 104rpx;
-    --wm-user-profile-avatar-radius: 52rpx;
+    --wm-user-profile-avatar-radius: 999rpx;
     --wm-user-profile-gap: 30rpx;
-    --wm-user-countdown-radius: 52rpx;
+    --wm-user-countdown-radius: var(--wm-radius-card-lg, 20rpx);
     --wm-user-countdown-padding-top: 34rpx;
     --wm-user-countdown-padding-right: 34rpx;
     --wm-user-countdown-padding-bottom: 37rpx;
     --wm-user-countdown-padding-left: 34rpx;
     --wm-user-countdown-gap: 15rpx;
-    --wm-user-quick-radius: 45rpx;
+    --wm-user-quick-radius: var(--wm-radius-card, 16rpx);
     --wm-user-quick-padding: 30rpx;
     --wm-user-quick-title-gap: 30rpx;
     --wm-user-quick-grid-gap: 22rpx;
-    --wm-user-quick-item-radius: 37rpx;
+    --wm-user-quick-item-radius: var(--wm-radius-card-soft, 14rpx);
     --wm-user-quick-item-padding: 30rpx;
     --wm-user-quick-item-gap: 11rpx;
-    --wm-user-quick-item-height: 116rpx;
+    --wm-user-quick-item-height: 108rpx;
 }
 
 .user-page__body {

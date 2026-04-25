@@ -1,0 +1,110 @@
+<template>
+    <div class="home-categories-preview">
+        <div
+            v-for="(item, index) in showList"
+            :key="index"
+            class="home-categories-preview__tile"
+            :class="[
+                `home-categories-preview__tile--${item.size || 'small'}`,
+                { 'home-categories-preview__tile--empty': !item.image }
+            ]"
+        >
+            <decoration-img
+                v-if="item.image"
+                width="100%"
+                height="100%"
+                :src="item.image"
+                fit="cover"
+            />
+            <div class="home-categories-preview__shade"></div>
+            <div class="home-categories-preview__copy">
+                <div class="home-categories-preview__title">{{ item.title }}</div>
+                <div class="home-categories-preview__subtitle">{{ item.subtitle }}</div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script lang="ts" setup>
+import type { PropType } from 'vue'
+
+import DecorationImg from '../../decoration-img.vue'
+import type options from './options'
+
+type OptionsType = ReturnType<typeof options>
+
+const props = defineProps({
+    content: {
+        type: Object as PropType<OptionsType['content']>,
+        default: () => ({})
+    },
+    styles: {
+        type: Object as PropType<OptionsType['styles']>,
+        default: () => ({})
+    }
+})
+
+const showList = computed(() => {
+    return props.content.data?.filter((item: any) => item.is_show == '1') || []
+})
+</script>
+
+<style lang="scss" scoped>
+.home-categories-preview {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 78px;
+    gap: 5px;
+    margin: 0 16px 18px;
+
+    &__tile {
+        position: relative;
+        min-width: 0;
+        overflow: hidden;
+        border-radius: 10px;
+        background: #111111;
+    }
+
+    &__tile--large {
+        grid-row: span 2;
+    }
+
+    &__tile--wide {
+        grid-column: span 2;
+    }
+
+    &__tile--empty {
+        background: linear-gradient(135deg, #111111 0%, #342b24 100%);
+    }
+
+    &__shade {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.68) 100%);
+    }
+
+    &__copy {
+        position: absolute;
+        left: 9px;
+        right: 9px;
+        bottom: 13px;
+        text-align: center;
+    }
+
+    &__title {
+        color: #ffffff;
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1.2;
+        word-break: break-word;
+    }
+
+    &__subtitle {
+        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 9px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+}
+</style>

@@ -2,10 +2,7 @@
     <view v-if="showSpacer" class="base-navbar-spacer" :style="spacerStyle"></view>
     <view
         class="base-navbar-wrapper"
-        :class="{
-            'base-navbar-wrapper--fixed': fixed,
-            'base-navbar-wrapper--transparent': transparent
-        }"
+        :class="wrapperClass"
     >
         <view class="base-navbar" :style="navbarStyle">
             <view
@@ -16,11 +13,14 @@
                 <view class="base-navbar__side" :style="sideStyle">
                     <slot v-if="hasLeftSlot" name="left" />
                     <view v-else-if="resolvedBack" class="base-navbar__back" @click="handleBack">
-                        <text class="base-navbar__back-text" :style="backTextStyle">‹ 返回</text>
+                        <text class="base-navbar__back-icon" :style="backTextStyle">‹</text>
+                        <text class="base-navbar__back-text" :style="backTextStyle">返回</text>
                     </view>
                 </view>
 
-                <text class="base-navbar__title" :style="titleStyle">{{ title }}</text>
+                <text class="base-navbar__title" :class="titleClass" :style="titleStyle">{{
+                    title
+                }}</text>
 
                 <view class="base-navbar__side base-navbar__side--placeholder" :style="sideStyle">
                     <slot v-if="hasRightSlot" name="right" />
@@ -45,6 +45,8 @@ interface Props {
     transparent?: boolean
     bgColor?: string
     textColor?: string
+    variant?: 'solid' | 'glass' | 'transparent'
+    titleAlign?: 'center' | 'left'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -55,7 +57,9 @@ const props = withDefaults(defineProps<Props>(), {
     reserveSpace: true,
     transparent: false,
     bgColor: '',
-    textColor: ''
+    textColor: '',
+    variant: 'solid',
+    titleAlign: 'center'
 })
 
 const emit = defineEmits<{
@@ -74,9 +78,15 @@ const resolvedBack = computed(() => {
 const hasLeftSlot = computed(() => Boolean(slots.left))
 const hasRightSlot = computed(() => Boolean(slots.right))
 const resolvedBgColor = computed(() =>
-    props.transparent ? 'transparent' : props.bgColor || themeStore.navBgColor || '#FFFFFF'
+    props.transparent ? 'transparent' : props.bgColor || themeStore.navBgColor || '#000000'
 )
-const resolvedTextColor = computed(() => props.textColor || themeStore.navColor)
+const resolvedTextColor = computed(() => props.textColor || themeStore.navColor || '#FFFFFF')
+const resolvedVariant = computed(() => (props.transparent ? 'transparent' : props.variant))
+const wrapperClass = computed(() => ({
+    'base-navbar-wrapper--fixed': props.fixed,
+    'base-navbar-wrapper--transparent': props.transparent,
+    [`base-navbar-wrapper--${resolvedVariant.value}`]: true
+}))
 const showSpacer = computed(() => props.fixed && props.reserveSpace)
 const spacerStyle = computed(() => ({
     height: `${navBarMetrics.navBarHeight}px`
@@ -87,8 +97,11 @@ const sideStyle = computed(() => ({
 const titleStyle = computed(() => ({
     color: resolvedTextColor.value
 }))
+const titleClass = computed(() => ({
+    'base-navbar__title--left': props.titleAlign === 'left'
+}))
 const backTextStyle = computed(() => ({
-    color: props.textColor || themeStore.primaryColor
+    color: resolvedTextColor.value
 }))
 const hasBackListener = computed(() => Boolean(instance?.vnode.props?.onBack))
 const navbarStyle = computed(() => ({
@@ -152,11 +165,22 @@ export default {
 
 .base-navbar {
     width: 100%;
-    background: var(--wm-nav-bg, #ffffff);
+    background: var(--wm-nav-bg, #000000);
     box-sizing: border-box;
-    border-bottom: 1rpx solid rgba(231, 226, 214, 0.72);
-    backdrop-filter: blur(18rpx);
-    -webkit-backdrop-filter: blur(18rpx);
+    border-bottom: 1rpx solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.base-navbar-wrapper--solid .base-navbar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.base-navbar-wrapper--transparent .base-navbar {
+    border-bottom-color: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 .base-navbar__status {
@@ -191,31 +215,50 @@ export default {
     font-size: 36rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-nav-text, #ffffff);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
+.base-navbar__title--left {
+    text-align: left;
+}
+
 .base-navbar__back {
     min-height: 88rpx;
+    min-width: 88rpx;
     display: inline-flex;
     align-items: center;
+    gap: 6rpx;
     padding: 0 var(--wm-space-3, 22rpx) 0 0;
+}
+
+.base-navbar__back-icon {
+    font-size: 42rpx;
+    font-weight: 500;
+    line-height: 1;
 }
 
 .base-navbar__back-text,
 .base-navbar__placeholder {
-    font-size: 30rpx;
+    font-size: 26rpx;
     font-weight: 600;
     line-height: 1;
 }
 
 .base-navbar__back-text {
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-nav-text, #ffffff);
 }
 
 .base-navbar__placeholder {
     color: transparent;
 }
+
+/* #ifdef MP-WEIXIN */
+.base-navbar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+/* #endif */
 </style>

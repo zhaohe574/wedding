@@ -1,8 +1,8 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
 
-    <PageShell scene="staff" hasSafeBottom>
-        <BaseNavbar title="服务人员中心" />
+    <PageShell scene="staff" tone="workspace" hasSafeBottom>
+        <BaseNavbar title="服务人员中心" title-align="left" />
 
         <view class="staff-center-page">
             <view class="staff-center-page__content wm-page-content">
@@ -418,9 +418,9 @@ interface ResourceMenuItem {
 const $theme = useThemeStore()
 
 const defaultAvatar = '/static/images/user/default_avatar.png'
-const heroCardBackground = 'linear-gradient(145deg, #111111 0%, #0B0B0B 58%, #5A4433 100%)'
+const heroCardBackground = 'linear-gradient(145deg, #111111 0%, #0B0B0B 58%, #2F2924 100%)'
 const heroCardBorder = '1rpx solid rgba(255, 255, 255, 0.08)'
-const heroCardShadow = '0 24rpx 58rpx rgba(11, 11, 11, 0.22)'
+const heroCardShadow = '0 18rpx 42rpx rgba(11, 11, 11, 0.18)'
 
 const loading = ref(false)
 const hasLoaded = ref(false)
@@ -923,7 +923,7 @@ onShow(async () => {
     &__content {
         display: flex;
         flex-direction: column;
-        gap: 16rpx;
+        gap: 20rpx;
     }
 }
 
@@ -936,9 +936,9 @@ onShow(async () => {
 }
 
 .workbench-hero {
-    background: linear-gradient(145deg, #111111 0%, #0B0B0B 58%, #5A4433 100%);
+    background: linear-gradient(145deg, #111111 0%, #0B0B0B 58%, #2F2924 100%);
     border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 24rpx 58rpx rgba(11, 11, 11, 0.22);
+    box-shadow: 0 18rpx 42rpx rgba(11, 11, 11, 0.18);
 
     &::before {
         content: '';
@@ -1043,7 +1043,7 @@ onShow(async () => {
     gap: 6rpx;
     min-height: 126rpx;
     padding: 18rpx;
-    border-radius: 26rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
     background: rgba(255, 255, 255, 0.08);
     border: 1rpx solid rgba(255, 255, 255, 0.08);
 
@@ -1145,10 +1145,10 @@ onShow(async () => {
     gap: 16rpx;
     margin-top: 22rpx;
     padding: 24rpx 26rpx;
-    border-radius: 34rpx;
-    background: linear-gradient(135deg, #F7F0DF 0%, #D8C28A 100%);
+    border-radius: var(--wm-radius-card, 16rpx);
+    background: linear-gradient(135deg, #F8F2E4 0%, #D8C28A 100%);
     border: 1rpx solid rgba(200, 164, 93, 0.42);
-    box-shadow: 0 16rpx 28rpx rgba(11, 11, 11, 0.12);
+    box-shadow: 0 10rpx 22rpx rgba(11, 11, 11, 0.1);
 
     &__main {
         flex: 1;
@@ -1165,7 +1165,7 @@ onShow(async () => {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 22rpx;
+        border-radius: var(--wm-radius-card-soft, 14rpx);
         background: rgba(17, 17, 17, 0.12);
     }
 
@@ -1237,7 +1237,7 @@ onShow(async () => {
     gap: 10rpx;
     min-height: 168rpx;
     padding: 22rpx;
-    border-radius: 30rpx;
+    border-radius: var(--wm-radius-card, 16rpx);
     border: 1rpx solid rgba(255, 255, 255, 0.1);
     background: rgba(255, 255, 255, 0.96);
 
@@ -1342,12 +1342,12 @@ onShow(async () => {
     gap: 6rpx;
     min-height: 156rpx;
     padding: 22rpx;
-    border-radius: 28rpx;
-    border: 1rpx solid rgba(231, 226, 214, 1);
+    border-radius: var(--wm-radius-card, 16rpx);
+        border: 1rpx solid var(--wm-color-border, #e2ded5);
     background: #ffffff;
 
     &--accent {
-        background: #f8f7f2;
+        background: var(--wm-color-bg-soft, #f6f5f2);
         border-color: #d8c28a;
     }
 
@@ -1414,8 +1414,8 @@ onShow(async () => {
     flex-direction: column;
     gap: 12rpx;
     padding: 22rpx;
-    border-radius: 28rpx;
-    border: 1rpx solid rgba(231, 226, 214, 1);
+    border-radius: var(--wm-radius-card, 16rpx);
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
     background: #ffffff;
 
     &__top,
@@ -1479,8 +1479,8 @@ onShow(async () => {
     gap: 14rpx;
     min-height: 182rpx;
     padding: 22rpx;
-    border-radius: 28rpx;
-    border: 1rpx solid rgba(231, 226, 214, 1);
+    border-radius: var(--wm-radius-card, 16rpx);
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
     background: #ffffff;
 
     &__top {
@@ -1496,22 +1496,22 @@ onShow(async () => {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 20rpx;
+        border-radius: var(--wm-radius-card-soft, 14rpx);
 
         &--primary {
             background: #f3f2ee;
         }
 
         &--warning {
-            background: #F7F0DF;
+            background: var(--wm-color-secondary-soft, #f8f2e4);
         }
 
         &--info {
-            background: #F3F2EE;
+            background: var(--wm-color-primary-soft, #f2f1ec);
         }
 
         &--neutral {
-            background: #F8F7F2;
+            background: var(--wm-color-bg-soft, #f6f5f2);
         }
     }
 

@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 
 interface Props {
-    variant?: 'plain' | 'list' | 'hero' | 'panel' | 'form' | 'dashboard'
+    variant?: 'plain' | 'list' | 'hero' | 'panel' | 'form' | 'dashboard' | 'media'
     padding?: string
     gap?: string
 }
@@ -36,6 +36,11 @@ const sectionStyle = computed(() => ({
     &--hero {
         gap: var(--wm-space-card-padding-lg, 34rpx);
         padding-top: var(--wm-space-4, 30rpx);
+    }
+
+    &--media {
+        gap: var(--wm-space-section-gap-md, 26rpx);
+        padding: 0;
     }
 
     &--panel,

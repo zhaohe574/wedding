@@ -1,8 +1,8 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
 
-    <PageShell scene="consumer">
-        <BaseNavbar title="订单详情" />
+    <PageShell scene="consumer" tone="workspace">
+        <BaseNavbar title="订单详情" title-align="left" />
 
         <view v-if="order" class="order-detail">
             <view class="page-body wm-page-content">
@@ -2373,13 +2373,13 @@ onUnload(() => {
 }
 
 .page-body {
-    padding: 22rpx 37rpx 37rpx;
+    padding: 22rpx var(--wm-space-page-x, 37rpx) 37rpx;
 
     display: flex;
 
     flex-direction: column;
 
-    gap: 30rpx;
+    gap: 22rpx;
 }
 
 .status-card {
@@ -2391,11 +2391,11 @@ onUnload(() => {
 
     padding: 34rpx 34rpx 37rpx;
 
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card-lg, 20rpx);
 
     border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
 
-    box-shadow: 0 14rpx 32rpx rgba(17, 17, 17, 0.12);
+    box-shadow: var(--wm-shadow-card, 0 12rpx 28rpx rgba(17, 17, 17, 0.07));
 }
 
 .status-card__chip {
@@ -2497,13 +2497,13 @@ onUnload(() => {
 
     padding: 34rpx 34rpx;
 
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card, 16rpx);
 
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
 
-    background: rgba(255, 255, 255, 0.86);
+    background: rgba(255, 255, 255, 0.94);
 
-    box-shadow: 0 10rpx 24rpx rgba(17, 17, 17, 0.08);
+    box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
 }
 
 .card--secondary {
@@ -3145,6 +3145,7 @@ onUnload(() => {
     justify-content: center;
 
     min-width: 120rpx;
+    min-height: 88rpx;
 }
 
 .action-bar__more-text {
@@ -3160,9 +3161,9 @@ onUnload(() => {
 .popup {
     background: rgba(255, 255, 255, 0.98);
 
-    border-top-left-radius: 52rpx;
+    border-top-left-radius: var(--wm-radius-popup, 24rpx);
 
-    border-top-right-radius: 52rpx;
+    border-top-right-radius: var(--wm-radius-popup, 24rpx);
 
     padding: 34rpx 37rpx 37rpx;
 }

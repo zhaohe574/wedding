@@ -44,7 +44,12 @@ enum pagesTypeEnum {
     SERVICE = '3'
 }
 
-const HOME_WIDGET_NAMES = ['banner']
+const HOME_WIDGET_NAMES = [
+    'banner',
+    'home-brand',
+    'home-feature-carousel',
+    'home-service-categories'
+]
 
 const updatePageData = (value: any) => {
     menus[activeMenu.value].pageData = [...value]
@@ -98,14 +103,27 @@ const parseJsonValue = <T>(value: any, fallback: T): T => {
     return value as T
 }
 
-const generatePageData = (widgetNames: string[]) => {
-    return widgetNames.map((widgetName) => {
-        const options = {
-            id: getNonDuplicateID(),
-            ...(widgets[widgetName]?.options() || {})
+const buildWidgetOptions = (widgetName: string, rawWidget: any = null) => {
+    const defaultOptions = widgets[widgetName]?.options?.() || {}
+    const widget = rawWidget || {}
+
+    return {
+        id: widget?.id || getNonDuplicateID(),
+        ...defaultOptions,
+        ...widget,
+        content: {
+            ...(defaultOptions.content || {}),
+            ...(widget.content || {})
+        },
+        styles: {
+            ...(defaultOptions.styles || {}),
+            ...(widget.styles || {})
         }
-        return options
-    })
+    }
+}
+
+const generatePageData = (widgetNames: string[]) => {
+    return widgetNames.map((widgetName) => buildWidgetOptions(widgetName))
 }
 
 const normalizeLoadedPageData = (rawData: any) => {
@@ -128,21 +146,22 @@ const normalizeLoadedPageData = (rawData: any) => {
                 item.content.enabled = 1
             }
 
-            const defaultOptions = widgets[item.name]?.options()
-            if (defaultOptions?.content) {
-                item.content = { ...defaultOptions.content, ...item.content }
-            }
-            if (defaultOptions?.styles) {
-                item.styles = { ...defaultOptions.styles, ...(item.styles || {}) }
-            }
-
-            return item
+            return buildWidgetOptions(item.name, item)
         })
 }
 
-const ensureHomeBannerOnly = (pageData: any[]) => {
-    const homePageData = pageData.filter((item: any) => item?.name === 'banner')
-    return homePageData.length ? homePageData : generatePageData(HOME_WIDGET_NAMES)
+const ensureHomeFixedWidgets = (pageData: any[]) => {
+    const widgetMap = new Map<string, any>()
+    pageData.forEach((item: any) => {
+        const widgetName = item?.name
+        if (!HOME_WIDGET_NAMES.includes(widgetName) || widgetMap.has(widgetName)) {
+            return
+        }
+
+        widgetMap.set(widgetName, item)
+    })
+
+    return HOME_WIDGET_NAMES.map((widgetName) => buildWidgetOptions(widgetName, widgetMap.get(widgetName)))
 }
 
 const menus: Record<
@@ -221,7 +240,7 @@ const getData = async () => {
     let pageData = normalizeLoadedPageData(data.data)
 
     if (activeMenu.value === pagesTypeEnum.HOME) {
-        pageData = ensureHomeBannerOnly(pageData)
+        pageData = ensureHomeFixedWidgets(pageData)
     }
 
     menus[String(data.id)].pageData = pageData
@@ -231,9 +250,14 @@ const getData = async () => {
 
 const setData = async () => {
     const data = menus[activeMenu.value]
+    const pageData =
+        activeMenu.value === pagesTypeEnum.HOME
+            ? ensureHomeFixedWidgets(data.pageData)
+            : data.pageData
+
     await setDecoratePages({
         ...data,
-        data: JSON.stringify(data.pageData),
+        data: JSON.stringify(pageData),
         meta: data?.pageMeta ? JSON.stringify(data?.pageMeta) : null
     })
     getData()
