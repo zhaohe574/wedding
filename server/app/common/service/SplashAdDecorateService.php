@@ -81,7 +81,7 @@ class SplashAdDecorateService
         $pageData['type'] = self::PAGE_TYPE;
         $pageData['name'] = (string)($pageData['name'] ?: self::PAGE_NAME);
         $pageData['data'] = $isJsonString
-            ? json_encode($normalizedData, JSON_UNESCAPED_UNICODE)
+            ? self::encodeData($normalizedData)
             : $normalizedData;
         $pageData['meta'] = $pageData['meta'] ?? '';
 
@@ -107,7 +107,16 @@ class SplashAdDecorateService
             return $pageData['data'];
         }
 
-        $json = json_encode($pageData['data'], JSON_UNESCAPED_UNICODE);
+        return self::encodeData($pageData['data']);
+    }
+
+    /**
+     * @param mixed $data
+     * @return string
+     */
+    private static function encodeData($data): string
+    {
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE);
         return is_string($json) ? $json : '[]';
     }
 
