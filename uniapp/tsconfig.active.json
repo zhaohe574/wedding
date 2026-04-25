@@ -31,6 +31,7 @@
         "src/pages/notification/**/*.vue",
         "src/pages/review/**/*.vue",
         "src/pages/search/**/*.vue",
+        "src/pages/splash/**/*.vue",
         "src/pages/user/**/*.vue",
         "src/packages/pages/order_confirm/**/*.vue",
         "src/packages/pages/share_plan/**/*.vue",

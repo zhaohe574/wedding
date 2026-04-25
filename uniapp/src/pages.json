@@ -1,6 +1,16 @@
 {
     "pages": [
         {
+            "path": "pages/splash/splash",
+            "style": {
+                "navigationStyle": "custom",
+                "disableScroll": true
+            },
+            "meta": {
+                "white": true
+            }
+        },
+        {
             "path": "pages/index/index",
             "style": {
                 // #ifndef H5
