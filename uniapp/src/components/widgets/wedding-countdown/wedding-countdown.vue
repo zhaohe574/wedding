@@ -9,7 +9,10 @@
             </view>
 
             <view class="profile-countdown-main">
-                <text class="profile-countdown-value">{{ dayText }}</text>
+                <view class="profile-countdown-value-wrap">
+                    <text class="profile-countdown-value">{{ dayNumber }}</text>
+                    <text class="profile-countdown-unit">DAY</text>
+                </view>
                 <text class="profile-countdown-note">{{ countdownNote }}</text>
             </view>
         </view>
@@ -48,7 +51,7 @@ const countdown = ref({
 })
 let timer: ReturnType<typeof setInterval> | null = null
 
-const dayText = computed(() => `${Math.max(Number(countdown.value.days || 0), 0)} DAY`)
+const dayNumber = computed(() => `${Math.max(Number(countdown.value.days || 0), 0)}`)
 
 const labelText = computed(() => String(props.content?.title || '').trim() || '婚礼倒计时')
 
@@ -150,18 +153,30 @@ onUnmounted(() => {
 }
 
 .profile-countdown-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: var(--wm-user-countdown-gap, 16rpx);
     padding: var(--wm-user-countdown-padding-top, 36rpx)
         var(--wm-user-countdown-padding-right, 36rpx) var(--wm-user-countdown-padding-bottom, 40rpx)
         var(--wm-user-countdown-padding-left, 36rpx);
-    border-radius: var(--wm-user-countdown-radius, 56rpx);
-    border: 2rpx solid rgba(216, 194, 138, 0.72);
-    background: rgba(248, 247, 242, 0.86);
-    box-shadow: 0 16rpx 34rpx rgba(17, 17, 17, 0.1);
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
+    border-radius: var(--wm-user-countdown-radius, 16rpx);
+    border: 1rpx solid var(--wm-color-border, #e5e5e5);
+    background: #ffffff;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+
+    &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 24rpx;
+        bottom: 24rpx;
+        width: 6rpx;
+        border-radius: 999rpx;
+        background: var(--wm-color-secondary, #c8a45d);
+    }
 }
 
 .profile-countdown-head,
@@ -178,7 +193,7 @@ onUnmounted(() => {
     font-size: 24rpx;
     line-height: 1.35;
     font-weight: 700;
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-secondary, #c8a45d);
 }
 
 .profile-countdown-date {
@@ -186,15 +201,30 @@ onUnmounted(() => {
     font-size: 22rpx;
     line-height: 1.3;
     font-weight: 600;
-    color: var(--wm-text-tertiary, #9A9388);
+    color: var(--wm-text-tertiary, #8a8a8a);
+}
+
+.profile-countdown-value-wrap {
+    min-width: 0;
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 10rpx;
 }
 
 .profile-countdown-value {
     display: block;
-    font-size: 66rpx;
+    font-size: 72rpx;
     line-height: 1;
     font-weight: 700;
     color: var(--wm-text-primary, #111111);
+}
+
+.profile-countdown-unit {
+    padding-bottom: 7rpx;
+    font-size: 22rpx;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--wm-color-secondary, #c8a45d);
 }
 
 .profile-countdown-note {
@@ -203,6 +233,6 @@ onUnmounted(() => {
     font-size: 22rpx;
     line-height: 1.45;
     font-weight: 600;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: var(--wm-text-secondary, #4a4a4a);
 }
 </style>

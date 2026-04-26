@@ -17,7 +17,10 @@
                 fit="cover"
             />
             <div class="home-categories-preview__shade"></div>
-            <div class="home-categories-preview__copy">
+            <div
+                class="home-categories-preview__copy"
+                :class="`home-categories-preview__copy--${normalizeTextPosition(item.text_position)}`"
+            >
                 <div class="home-categories-preview__title">{{ item.title }}</div>
                 <div class="home-categories-preview__subtitle">{{ item.subtitle }}</div>
             </div>
@@ -47,6 +50,10 @@ const props = defineProps({
 const showList = computed(() => {
     return props.content.data?.filter((item: any) => item.is_show == '1') || []
 })
+
+const normalizeTextPosition = (value?: string) => {
+    return ['top', 'middle', 'bottom'].includes(String(value)) ? value : 'bottom'
+}
 </script>
 
 <style lang="scss" scoped>
@@ -87,8 +94,20 @@ const showList = computed(() => {
         position: absolute;
         left: 9px;
         right: 9px;
-        bottom: 13px;
         text-align: center;
+    }
+
+    &__copy--top {
+        top: 13px;
+    }
+
+    &__copy--middle {
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    &__copy--bottom {
+        bottom: 13px;
     }
 
     &__title {

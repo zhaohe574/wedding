@@ -5,24 +5,60 @@
             <text v-if="headingMeta" class="profile-quick-meta">{{ headingMeta }}</text>
         </view>
 
-        <view class="profile-quick-grid">
-            <view
-                v-for="(item, index) in showList"
-                :key="item.key || index"
-                class="profile-quick-item"
-                :class="{
-                    'profile-quick-item--primary': index === 0,
-                    'profile-quick-item--disabled': !!item.disabled
-                }"
-                @click="handleClick(item)"
-            >
-                <view class="profile-quick-item-top">
-                    <text class="profile-quick-item-title">{{ item.title }}</text>
-                    <text class="profile-quick-item-arrow">›</text>
+        <scroll-view
+            v-if="isRoleEntry"
+            :scroll-x="true"
+            class="profile-role-scroll"
+            :show-scrollbar="false"
+        >
+            <view class="profile-role-track">
+                <view
+                    v-for="(item, index) in showList"
+                    :key="item.key || index"
+                    class="profile-role-pill"
+                    :class="{ 'profile-role-pill--disabled': !!item.disabled }"
+                    @click="handleClick(item)"
+                >
+                    <text class="profile-role-title">{{ item.title }}</text>
+                    <text v-if="getItemDetail(item)" class="profile-role-desc">
+                        {{ getItemDetail(item) }}
+                    </text>
                 </view>
-                <text v-if="getItemDetail(item)" class="profile-quick-item-desc">
-                    {{ getItemDetail(item) }}
-                </text>
+            </view>
+        </scroll-view>
+
+        <view v-else class="profile-entry-panel">
+            <view
+                v-if="primaryEntry"
+                class="profile-entry-primary"
+                :class="{ 'profile-entry-primary--disabled': !!primaryEntry.disabled }"
+                @click="handleClick(primaryEntry)"
+            >
+                <view class="profile-entry-primary-main">
+                    <text class="profile-entry-primary-title">{{ primaryEntry.title }}</text>
+                    <text v-if="getItemDetail(primaryEntry)" class="profile-entry-primary-desc">
+                        {{ getItemDetail(primaryEntry) }}
+                    </text>
+                </view>
+                <tn-icon name="right" size="28" color="#C8A45D" />
+            </view>
+
+            <view v-if="secondaryEntries.length" class="profile-entry-list">
+                <view
+                    v-for="(item, index) in secondaryEntries"
+                    :key="item.key || index"
+                    class="profile-entry-row"
+                    :class="{ 'profile-entry-row--disabled': !!item.disabled }"
+                    @click="handleClick(item)"
+                >
+                    <view class="profile-entry-row-main">
+                        <text class="profile-entry-row-title">{{ item.title }}</text>
+                        <text v-if="getItemDetail(item)" class="profile-entry-row-desc">
+                            {{ getItemDetail(item) }}
+                        </text>
+                    </view>
+                    <tn-icon name="right" size="24" color="#8A8A8A" />
+                </view>
             </view>
         </view>
     </view>
@@ -87,6 +123,9 @@ const headingMeta = computed(() => {
 })
 
 const showHeading = computed(() => Boolean(headingTitle.value || headingMeta.value))
+const isRoleEntry = computed(() => headingTitle.value === '角色入口')
+const primaryEntry = computed(() => (isRoleEntry.value ? null : showList.value[0] || null))
+const secondaryEntries = computed(() => (isRoleEntry.value ? [] : showList.value.slice(1)))
 
 const getItemDetail = (item: QuickEntryItem) => {
     const rawSubtitle = String(item.subtitle || '').trim()
@@ -119,7 +158,7 @@ const handleClick = (item: QuickEntryItem) => {
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 18rpx;
+    gap: 16rpx;
 }
 
 .profile-quick-heading {
@@ -143,28 +182,35 @@ const handleClick = (item: QuickEntryItem) => {
     font-size: 22rpx;
     line-height: 1.3;
     font-weight: 600;
-    color: var(--wm-text-tertiary, #9A9388);
+    color: var(--wm-color-secondary, #c8a45d);
 }
 
-.profile-quick-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--wm-user-quick-grid-gap, 20rpx);
+.profile-role-scroll {
+    white-space: nowrap;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
 }
 
-.profile-quick-item {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 12rpx;
-    min-height: var(--wm-user-quick-item-height, 126rpx);
-    border-radius: var(--wm-user-quick-item-radius, 36rpx);
-    padding: var(--wm-user-quick-item-padding, 24rpx);
-    background: rgba(255, 255, 255, 0.8);
-    border: 2rpx solid rgba(231, 226, 214, 0.9);
+.profile-role-track {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 14rpx;
+    width: max-content;
+}
+
+.profile-role-pill {
+    min-width: 220rpx;
+    max-width: 280rpx;
+    padding: 20rpx 22rpx;
+    border-radius: 16rpx;
+    border: 1rpx solid var(--wm-color-border, #e5e5e5);
+    background: #ffffff;
     box-sizing: border-box;
-    box-shadow: 0 12rpx 28rpx rgba(17, 17, 17, 0.08);
-    transition: all 0.2s ease;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 8rpx;
 
     &:active {
         transform: translateY(1rpx);
@@ -172,52 +218,105 @@ const handleClick = (item: QuickEntryItem) => {
     }
 }
 
-.profile-quick-item--primary {
-    background: linear-gradient(
-        180deg,
-        rgba(248, 247, 242, 0.92) 0%,
-        rgba(255, 255, 255, 0.88) 100%
-    );
-    border-color: rgba(216, 194, 138, 0.9);
+.profile-role-pill--disabled {
+    opacity: 0.54;
 }
 
-.profile-quick-item--disabled {
-    opacity: 0.58;
+.profile-role-title {
+    font-size: 26rpx;
+    line-height: 1.35;
+    font-weight: 700;
+    color: var(--wm-text-primary, #111111);
 }
 
-.profile-quick-item-top {
+.profile-role-desc {
+    font-size: 22rpx;
+    line-height: 1.4;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #4a4a4a);
+}
+
+.profile-entry-panel {
+    border-radius: var(--wm-user-quick-radius, 16rpx);
+    border: 1rpx solid var(--wm-color-border, #e5e5e5);
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.profile-entry-primary {
+    min-height: 112rpx;
+    padding: 24rpx 26rpx;
+    background: var(--wm-color-primary, #0b0b0b);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12rpx;
+    gap: 20rpx;
+    box-sizing: border-box;
+
+    &:active {
+        opacity: 0.92;
+    }
 }
 
-.profile-quick-item-title {
-    min-width: 0;
-    display: block;
+.profile-entry-primary--disabled,
+.profile-entry-row--disabled {
+    opacity: 0.54;
+}
+
+.profile-entry-primary-main,
+.profile-entry-row-main {
     flex: 1;
-    font-size: 28rpx;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.profile-entry-primary-title {
+    font-size: 30rpx;
+    line-height: 1.35;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.profile-entry-primary-desc {
+    font-size: 23rpx;
     line-height: 1.4;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.profile-entry-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-entry-row {
+    min-height: 96rpx;
+    padding: 0 24rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18rpx;
+    border-top: 1rpx solid var(--wm-color-border, #e5e5e5);
+    box-sizing: border-box;
+
+    &:active {
+        background: var(--wm-color-bg-soft, #f7f7f7);
+    }
+}
+
+.profile-entry-row-title {
+    font-size: 27rpx;
+    line-height: 1.35;
     font-weight: 700;
     color: var(--wm-text-primary, #111111);
-    word-break: break-word;
 }
 
-.profile-quick-item-arrow {
-    flex-shrink: 0;
-    font-size: 28rpx;
-    line-height: 1;
-    color: var(--wm-text-tertiary, #9A9388);
-}
-
-.profile-quick-item-desc {
-    display: -webkit-box;
+.profile-entry-row-desc {
     font-size: 22rpx;
-    line-height: 1.45;
+    line-height: 1.4;
     font-weight: 600;
-    color: var(--wm-text-secondary, #5f5a50);
-    overflow: hidden;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    color: var(--wm-text-tertiary, #8a8a8a);
 }
 </style>

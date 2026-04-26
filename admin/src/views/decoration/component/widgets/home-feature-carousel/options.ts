@@ -13,7 +13,7 @@ export default () => ({
         enabled: 1,
         height: 300,
         autoplay: 1,
-        interval: 5000,
+        interval: 5,
         data: [
             {
                 is_show: '1',

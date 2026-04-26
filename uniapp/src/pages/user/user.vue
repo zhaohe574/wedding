@@ -1,6 +1,6 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" tone="workspace" hasTabbar>
+    <PageShell scene="consumer" tone="workspace" hasTabbar suppress-overlay>
         <view class="user-page">
             <MpPageHeader title="个人中心" surface="glass" title-align="left" title-size="large" />
             <view class="user-page__body">
@@ -418,30 +418,31 @@ onShow(async () => {
     position: relative;
     box-sizing: border-box;
     min-height: 100%;
-    --wm-user-page-content-top: 18rpx;
-    --wm-user-page-content-side: 37rpx;
-    --wm-user-page-content-bottom: 37rpx;
-    --wm-user-page-section-gap: 24rpx;
-    --wm-user-profile-radius: var(--wm-radius-card-lg, 20rpx);
+    background: #ffffff;
+    --wm-user-page-content-top: 20rpx;
+    --wm-user-page-content-side: 32rpx;
+    --wm-user-page-content-bottom: 32rpx;
+    --wm-user-page-section-gap: 18rpx;
+    --wm-user-profile-radius: 24rpx;
     --wm-user-profile-padding: 30rpx;
-    --wm-user-profile-min-height: 149rpx;
+    --wm-user-profile-min-height: 164rpx;
     --wm-user-profile-avatar-size: 104rpx;
     --wm-user-profile-avatar-radius: 999rpx;
-    --wm-user-profile-gap: 30rpx;
-    --wm-user-countdown-radius: var(--wm-radius-card-lg, 20rpx);
-    --wm-user-countdown-padding-top: 34rpx;
-    --wm-user-countdown-padding-right: 34rpx;
-    --wm-user-countdown-padding-bottom: 37rpx;
-    --wm-user-countdown-padding-left: 34rpx;
-    --wm-user-countdown-gap: 15rpx;
+    --wm-user-profile-gap: 22rpx;
+    --wm-user-countdown-radius: var(--wm-radius-card, 16rpx);
+    --wm-user-countdown-padding-top: 24rpx;
+    --wm-user-countdown-padding-right: 28rpx;
+    --wm-user-countdown-padding-bottom: 24rpx;
+    --wm-user-countdown-padding-left: 28rpx;
+    --wm-user-countdown-gap: 14rpx;
     --wm-user-quick-radius: var(--wm-radius-card, 16rpx);
-    --wm-user-quick-padding: 30rpx;
-    --wm-user-quick-title-gap: 30rpx;
-    --wm-user-quick-grid-gap: 22rpx;
+    --wm-user-quick-padding: 28rpx;
+    --wm-user-quick-title-gap: 20rpx;
+    --wm-user-quick-grid-gap: 0;
     --wm-user-quick-item-radius: var(--wm-radius-card-soft, 14rpx);
-    --wm-user-quick-item-padding: 30rpx;
-    --wm-user-quick-item-gap: 11rpx;
-    --wm-user-quick-item-height: 108rpx;
+    --wm-user-quick-item-padding: 24rpx;
+    --wm-user-quick-item-gap: 10rpx;
+    --wm-user-quick-item-height: 96rpx;
 }
 
 .user-page__body {

@@ -257,7 +257,7 @@ class DecoratePageLogic extends BaseLogic
                 'enabled' => 1,
                 'height' => 300,
                 'autoplay' => 1,
-                'interval' => 5000,
+                'interval' => 5,
                 'data' => [
                     [
                         'is_show' => '1',
@@ -294,6 +294,7 @@ class DecoratePageLogic extends BaseLogic
                         'subtitle' => 'WEDDING HOST',
                         'image' => '',
                         'size' => 'large',
+                        'text_position' => 'bottom',
                         'link' => [
                             'path' => '/pages/schedule_query/schedule_query',
                             'type' => 'shop',
@@ -306,6 +307,7 @@ class DecoratePageLogic extends BaseLogic
                         'subtitle' => 'CHINESE HOST',
                         'image' => '',
                         'size' => 'small',
+                        'text_position' => 'bottom',
                         'link' => [
                             'path' => '/pages/schedule_query/schedule_query',
                             'type' => 'shop',
@@ -318,6 +320,7 @@ class DecoratePageLogic extends BaseLogic
                         'subtitle' => 'BUSINESS HOST',
                         'image' => '',
                         'size' => 'small',
+                        'text_position' => 'bottom',
                         'link' => [
                             'path' => '/pages/schedule_query/schedule_query',
                             'type' => 'shop',
@@ -330,6 +333,7 @@ class DecoratePageLogic extends BaseLogic
                         'subtitle' => 'HOST TRAINING',
                         'image' => '',
                         'size' => 'wide',
+                        'text_position' => 'bottom',
                         'link' => [
                             'path' => '/pages/news/news',
                             'type' => 'shop',
@@ -374,7 +378,7 @@ class DecoratePageLogic extends BaseLogic
         $content = isset($widget['content']) && is_array($widget['content']) ? $widget['content'] : [];
         $content['style'] = 1;
         $content['overlap_height'] = max(0, min(520, (int)($content['overlap_height'] ?? 280)));
-        $content['data'] = self::normalizeListLikeValue($content['data'] ?? []);
+        $content['data'] = array_slice(self::normalizeListLikeValue($content['data'] ?? []), 0, 1);
         foreach ($content['data'] as &$item) {
             if (!is_array($item)) {
                 $item = [];
@@ -397,6 +401,11 @@ class DecoratePageLogic extends BaseLogic
     private static function normalizeHomeFeatureCarouselWidget(array $widget): array
     {
         $content = isset($widget['content']) && is_array($widget['content']) ? $widget['content'] : [];
+        $interval = (int)($content['interval'] ?? 5);
+        if ($interval > 100) {
+            $interval = (int)round($interval / 1000);
+        }
+        $content['interval'] = max(2, min(10, $interval ?: 5));
         $content['data'] = self::normalizeListLikeValue($content['data'] ?? []);
         $widget['content'] = $content;
 
@@ -418,6 +427,9 @@ class DecoratePageLogic extends BaseLogic
             }
             if (!in_array((string)($item['size'] ?? ''), ['large', 'small', 'wide'], true)) {
                 $item['size'] = 'small';
+            }
+            if (!in_array((string)($item['text_position'] ?? ''), ['top', 'middle', 'bottom'], true)) {
+                $item['text_position'] = 'bottom';
             }
         }
         unset($item);

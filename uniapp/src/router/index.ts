@@ -11,7 +11,7 @@ import cache from '@/utils/cache'
 import { BACK_URL } from '@/enums/constantEnums'
 import {
     consumeSplashHomeBypass,
-    fetchSplashConfig,
+    fetchSplashConfigSafely,
     shouldShowSplash,
     SPLASH_HOME_PATH,
     SPLASH_PAGE_PATH
@@ -45,7 +45,7 @@ router.beforeEach(async (to, from) => {
     }
 
     try {
-        const config = await fetchSplashConfig()
+        const config = await fetchSplashConfigSafely()
         if (shouldShowSplash(config, to.query as Record<string, any>)) {
             return SPLASH_PAGE_PATH
         }

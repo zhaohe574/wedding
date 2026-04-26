@@ -13,7 +13,7 @@
         <view class="user-card" @click="handleProfileClick">
             <view class="profile-row">
                 <view class="avatar-shell">
-                    <tn-avatar :url="avatarUrl" :size="112" shape="round" />
+                    <tn-avatar :url="avatarUrl" :size="104" shape="round" />
                 </view>
                 <view class="profile-main">
                     <view class="profile-meta-row">
@@ -137,17 +137,13 @@ const handleProfileClick = () => {
 .user-card {
     position: relative;
     z-index: 1;
-    border-radius: var(--wm-user-profile-radius, 52rpx);
+    border-radius: var(--wm-user-profile-radius, 16rpx);
     overflow: hidden;
-    background: linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.96) 0%,
-        rgba(248, 247, 242, 0.92) 100%
-    );
-    border: 2rpx solid var(--wm-color-border, #e7e2d6);
-    box-shadow: var(--wm-shadow-soft, 0 24rpx 48rpx rgba(17, 17, 17, 0.1));
-    backdrop-filter: blur(28rpx);
-    -webkit-backdrop-filter: blur(28rpx);
+    background: var(--wm-color-primary, #0b0b0b);
+    border: 1rpx solid var(--wm-color-primary, #0b0b0b);
+    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.16);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 
     &:active {
         transform: translateY(1rpx);
@@ -170,6 +166,7 @@ const handleProfileClick = () => {
     margin-right: var(--wm-user-profile-gap, 24rpx);
     flex-shrink: 0;
     background: var(--wm-color-primary-soft, #f3f2ee);
+    border: 2rpx solid rgba(255, 255, 255, 0.16);
     overflow: hidden;
 }
 
@@ -178,7 +175,7 @@ const handleProfileClick = () => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 11rpx;
+    gap: 8rpx;
 }
 
 .profile-meta-row {
@@ -193,7 +190,7 @@ const handleProfileClick = () => {
     font-weight: 700;
     letter-spacing: 0;
     text-transform: uppercase;
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-secondary, #c8a45d);
 }
 
 .profile-status {
@@ -202,15 +199,15 @@ const handleProfileClick = () => {
     font-size: 20rpx;
     line-height: 1;
     font-weight: 600;
-    color: #5A4433;
-    background: rgba(247, 240, 223, 0.92);
+    color: rgba(255, 255, 255, 0.86);
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .profile-name {
-    font-size: 34rpx;
+    font-size: 36rpx;
     line-height: 1.42;
-    font-weight: 600;
-    color: var(--wm-text-primary, #111111);
+    font-weight: 700;
+    color: #ffffff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -220,7 +217,7 @@ const handleProfileClick = () => {
     font-size: 24rpx;
     line-height: 1.55;
     font-weight: 600;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: rgba(255, 255, 255, 0.72);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -231,8 +228,13 @@ const handleProfileClick = () => {
     display: flex;
     align-items: center;
     gap: 8rpx;
-    margin-left: 20rpx;
-    color: #5A4433;
+    height: 56rpx;
+    padding: 0 18rpx;
+    border-radius: 999rpx;
+    margin-left: 16rpx;
+    background: #ffffff;
+    color: var(--wm-color-primary, #0b0b0b);
+    flex-shrink: 0;
 }
 
 .profile-action-text {
@@ -244,5 +246,6 @@ const handleProfileClick = () => {
 .profile-action-arrow {
     font-size: 28rpx;
     line-height: 1;
+    color: var(--wm-color-primary, #0b0b0b);
 }
 </style>

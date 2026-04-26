@@ -7,11 +7,17 @@
             mode="aspectFill"
         />
         <view v-else class="splash-page__fallback" />
-        <view class="splash-page__scrim" />
         <view class="splash-page__content">
+            <view v-if="displayConfig.logoImage" class="splash-page__logo-wrap">
+                <image
+                    class="splash-page__logo"
+                    :src="displayLogoImage"
+                    mode="widthFix"
+                />
+            </view>
+            <view class="splash-page__spacer" />
             <button
                 class="splash-page__button"
-                :style="buttonStyle"
                 hover-class="splash-page__button--hover"
                 @tap="enterHome"
             >
@@ -26,7 +32,8 @@ import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import {
-    fetchSplashConfig,
+    fetchSplashConfigSafely,
+    getDefaultSplashConfig,
     armSplashHomeBypass,
     markSplashShown,
     shouldShowSplash,
@@ -35,31 +42,15 @@ import {
 } from '@/utils/splash'
 
 const appStore = useAppStore()
-const displayConfig = ref<SplashAdConfig>({
-    enabled: false,
-    image: '',
-    autoEnterEnabled: true,
-    autoSeconds: 3,
-    frequency: 'session',
-    buttonText: '点击进入',
-    buttonBgColor: '#FFFFFF',
-    buttonTextColor: '#333333',
-    buttonBorderColor: '#FFFFFF',
-    buttonBorderRadius: 24
-})
+const displayConfig = ref<SplashAdConfig>(getDefaultSplashConfig())
 const countdown = ref(0)
 let timer: ReturnType<typeof setInterval> | null = null
 let entered = false
 
 const displayImage = computed(() => appStore.getImageUrl(displayConfig.value.image))
+const displayLogoImage = computed(() => appStore.getImageUrl(displayConfig.value.logoImage))
 const pageStyle = computed(() => ({
     backgroundColor: '#000000'
-}))
-const buttonStyle = computed(() => ({
-    background: displayConfig.value.buttonBgColor,
-    color: displayConfig.value.buttonTextColor,
-    borderColor: displayConfig.value.buttonBorderColor,
-    borderRadius: `${displayConfig.value.buttonBorderRadius}rpx`
 }))
 const buttonLabel = computed(() => {
     const suffix = countdown.value > 0 ? ` ${countdown.value}s` : ''
@@ -97,8 +88,7 @@ const startCountdown = () => {
 
 onLoad(async (query = {}) => {
     try {
-        await appStore.getConfig().catch(() => ({}))
-        const config = await fetchSplashConfig()
+        const config = await fetchSplashConfigSafely()
         displayConfig.value = config
 
         if (!shouldShowSplash(config, query as Record<string, any>)) {
@@ -107,6 +97,7 @@ onLoad(async (query = {}) => {
         }
 
         markSplashShown(config.frequency)
+        void appStore.getConfig().catch(() => ({}))
         if (config.autoEnterEnabled) {
             startCountdown()
         }
@@ -141,30 +132,59 @@ onUnload(() => {
     background: linear-gradient(180deg, #111111 0%, #34291d 100%);
 }
 
-.splash-page__scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.52) 100%);
-}
-
 .splash-page__content {
     position: relative;
     z-index: 1;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    align-items: center;
     min-height: 100vh;
-    padding: 96rpx 48rpx calc(72rpx + env(safe-area-inset-bottom));
+    padding: 210rpx 48rpx calc(88rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
 }
 
+.splash-page__logo-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 260rpx;
+    min-height: 168rpx;
+}
+
+.splash-page__logo {
+    display: block;
+    width: 260rpx;
+    max-height: 180rpx;
+    animation: splash-logo-breathe 2.35s ease-in-out infinite;
+    transform-origin: center center;
+    will-change: transform;
+}
+
+.splash-page__spacer {
+    flex: 1;
+    min-height: 48rpx;
+}
+
 .splash-page__button {
-    width: 100%;
-    height: 88rpx;
-    border: 1rpx solid #ffffff;
-    font-size: 30rpx;
+    width: 224rpx;
+    height: 72rpx;
+    margin: 0;
+    padding: 0;
+    border: 2rpx solid rgba(255, 255, 255, 0.72);
+    border-radius: 999rpx;
+    background: rgba(156, 158, 166, 0.78);
+    color: #ffffff;
+    font-size: 28rpx;
     font-weight: 600;
-    line-height: 88rpx;
+    line-height: 72rpx;
+    letter-spacing: 0;
+    box-shadow:
+        inset 0 2rpx 0 rgba(255, 255, 255, 0.5),
+        0 12rpx 28rpx rgba(0, 0, 0, 0.24);
+    animation: splash-button-breathe 2.4s ease-in-out infinite;
+    transform-origin: center center;
+    -webkit-backdrop-filter: blur(10rpx);
+    backdrop-filter: blur(10rpx);
 }
 
 .splash-page__button::after {
@@ -173,5 +193,29 @@ onUnload(() => {
 
 .splash-page__button--hover {
     opacity: 0.88;
+}
+
+@keyframes splash-logo-breathe {
+    0%,
+    100% {
+        opacity: 0.96;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.08);
+    }
+}
+
+@keyframes splash-button-breathe {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.045);
+    }
 }
 </style>

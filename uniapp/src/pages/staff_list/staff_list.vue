@@ -1,39 +1,21 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" tone="editorial" hasTabbar>
-        <BaseNavbar title="星意主持工作室" />
+    <PageShell scene="consumer" hasTabbar>
+        <BaseNavbar title="人员列表" />
 
         <view class="staff-list-page">
-            <view class="staff-list-page__query-area">
-                <view class="staff-list-page__query-bar">
-                    <view class="staff-list-page__query-field" @tap="redirectToScheduleQuery">
-                        <tn-icon name="calendar" size="24" color="#9A9388" />
-                        <text class="staff-list-page__query-text">{{ selectedDateText }}</text>
-                    </view>
+            <view class="filter-summary">
+                <view class="filter-summary__chips">
                     <view
-                        class="staff-list-page__query-field staff-list-page__query-field--category"
+                        v-for="chip in summaryChips"
+                        :key="chip.key"
+                        class="filter-summary__chip"
                         @tap="redirectToScheduleQuery"
                     >
-                        <text class="staff-list-page__query-text">{{
-                            currentCategoryName || '全部'
-                        }}</text>
-                        <tn-icon name="down" size="20" color="#9A9388" />
+                        <text class="filter-summary__chip-label">
+                            {{ chip.label }}
+                        </text>
                     </view>
-                    <view class="staff-list-page__query-submit" @tap="redirectToScheduleQuery">
-                        <text class="staff-list-page__query-submit-text">立即查询</text>
-                    </view>
-                </view>
-            </view>
-
-            <view class="staff-list-page__filter-row">
-                <view
-                    v-for="tab in staffFilterTabs"
-                    :key="tab.key"
-                    class="staff-list-page__filter-item"
-                    @tap="redirectToScheduleQuery"
-                >
-                    <text class="staff-list-page__filter-text">{{ tab.label }}</text>
-                    <tn-icon name="down" size="18" color="#111111" />
                 </view>
             </view>
 
@@ -70,45 +52,66 @@
                                 mode="aspectFill"
                                 lazy-load
                             />
-                            <text class="poster-card__badge">{{ formatPosterBadge(item) }}</text>
+                            <text v-if="item.is_recommend" class="poster-card__badge">推荐</text>
+                            <view
+                                class="poster-card__favorite"
+                                @tap.stop="handleToggleFavorite(item)"
+                            >
+                                <tn-icon
+                                    :name="item.is_favorite ? 'like-fill' : 'like'"
+                                    size="34"
+                                    :color="item.is_favorite ? '#5A4433' : '#D8D3C7'"
+                                />
+                            </view>
                         </view>
 
                         <view class="poster-card__content">
-                            <view class="poster-card__name-row">
-                                <text class="poster-card__name">{{ item.name || '未命名人员' }}</text>
-                                <view v-if="getDisplayTags(item).length" class="poster-card__tags">
+                            <view class="poster-card__head">
+                                <text class="poster-card__name">{{
+                                    item.name || '未命名人员'
+                                }}</text>
+                                <view
+                                    class="poster-card__price"
+                                    :class="{
+                                        'poster-card__price--negotiable': !hasStaffPrice(item)
+                                    }"
+                                >
+                                    <text class="poster-card__price-value">{{
+                                        getStaffPriceValue(item)
+                                    }}</text>
                                     <text
-                                        v-for="tag in getDisplayTags(item)"
-                                        :key="`${item.id}-${tag}`"
-                                        class="poster-card__tag"
+                                        v-if="getStaffPriceSuffix(item)"
+                                        class="poster-card__price-unit"
                                     >
-                                        {{ tag }}
+                                        {{ getStaffPriceSuffix(item) }}
                                     </text>
                                 </view>
                             </view>
-                            <view v-if="getDisplayTags(item).length > 2" class="poster-card__tags poster-card__tags--wrap">
+                            <text class="poster-card__role">{{ formatRoleLine(item) }}</text>
+
+                            <view v-if="getDisplayTags(item).length" class="poster-card__tags">
                                 <text
-                                    v-for="tag in getDisplayTags(item).slice(2)"
-                                    :key="`${item.id}-more-${tag}`"
+                                    v-for="tag in getDisplayTags(item)"
+                                    :key="`${item.id}-${tag}`"
                                     class="poster-card__tag"
                                 >
                                     {{ tag }}
                                 </text>
                             </view>
-                            <text class="poster-card__desc">
-                                {{ buildStaffDescription(item) || formatRoleLine(item) }}
+                            <text v-else-if="buildStaffDescription(item)" class="poster-card__desc">
+                                {{ buildStaffDescription(item) }}
                             </text>
 
-                            <view
-                                class="poster-card__price"
-                                :class="{ 'poster-card__price--negotiable': !hasStaffPrice(item) }"
-                            >
-                                <text class="poster-card__price-value">{{
-                                    getStaffPriceValue(item)
-                                }}</text>
-                                <text v-if="getStaffPriceSuffix(item)" class="poster-card__price-unit">
-                                    {{ getStaffPriceSuffix(item) }}
-                                </text>
+                            <view class="poster-card__footer">
+                                <view class="poster-card__score">
+                                    <tn-icon name="star-fill" size="20" color="#C8A45D" />
+                                    <text class="poster-card__score-text">{{
+                                        formatRatingText(item)
+                                    }}</text>
+                                </view>
+                                <text class="poster-card__orders"
+                                    >已服务{{ item.order_count || 0 }}单</text
+                                >
                             </view>
                         </view>
                     </view>
@@ -145,7 +148,7 @@
                                     <tn-icon
                                         :name="item.is_favorite ? 'like-fill' : 'like'"
                                         size="30"
-                                        :color="item.is_favorite ? '#8A4B45' : '#D8D3C7'"
+                                        :color="item.is_favorite ? '#5A4433' : '#D8D3C7'"
                                     />
                                 </view>
                             </view>
@@ -226,6 +229,7 @@ import { useThemeStore } from '@/stores/theme'
 import { alphaColor } from '@/utils/color'
 import {
     buildServiceRegionQuery,
+    formatServiceRegionText,
     hasServiceRegion,
     loadServiceRegionSelection,
     normalizeServiceRegion,
@@ -283,6 +287,15 @@ const hasValidQuery = computed(() =>
         selectedDate.value && hasServiceRegion(selectedRegion.value) && currentCategoryId.value > 0
     )
 )
+const selectedRegionText = computed(() => {
+    const cityName = selectedRegion.value.city_name || selectedRegion.value.province_name
+    const districtName = selectedRegion.value.district_name
+    if (cityName && districtName) {
+        return `${cityName} · ${districtName}`
+    }
+    return formatServiceRegionText(selectedRegion.value, ' / ') || '未选择'
+})
+
 const normalizeSelectedDateText = (value = '') => {
     const [year, month, day] = value.split('-').map((item) => Number(item))
     if (!year || !month || !day) return ''
@@ -295,11 +308,13 @@ const normalizeSelectedDateText = (value = '') => {
 const selectedDateText = computed(
     () => normalizeSelectedDateText(selectedDate.value) || '未选择日期'
 )
-const staffFilterTabs = computed(() => [
-    { key: 'sort', label: '排序' },
-    { key: 'price', label: '价位' },
-    { key: 'type', label: '类型' },
-    { key: 'gender', label: '性别' }
+const currentSortName = computed(
+    () => sortOptions.find((item) => item.value === currentSort.value)?.label || '综合排序'
+)
+const summaryChips = computed(() => [
+    { key: 'region', label: selectedRegionText.value },
+    { key: 'date', label: selectedDateText.value },
+    { key: 'sort', label: currentSortName.value }
 ])
 
 const getSwitchButtonStyle = () => ({
@@ -363,15 +378,6 @@ const formatRoleLine = (item: any) => {
         parts.push(`${item.experience_years}年经验`)
     }
     return parts.join(' · ')
-}
-
-const formatPosterBadge = (item: any) => {
-    if (item?.is_recommend) {
-        return '联合创始人'
-    }
-
-    const tags = getDisplayTags(item, 1)
-    return String(item?.category_name || tags[0] || currentCategoryName.value || '资深主持').trim()
 }
 
 const formatRatingText = (item: any) => {
@@ -500,93 +506,44 @@ onShow(() => {
 
 <style lang="scss" scoped>
 .staff-list-page {
-    min-height: 100%;
-    background: #ffffff;
 }
 
-.staff-list-page__query-area {
-    padding: 16rpx 22rpx 18rpx;
-    background: #000000;
+.filter-summary {
+    padding: 16rpx 24rpx 12rpx;
 }
 
-.staff-list-page__query-bar {
+.filter-summary__chips {
     display: flex;
-    align-items: center;
-    min-height: 58rpx;
-    overflow: hidden;
-    border-radius: 12rpx;
-    background: #ffffff;
+    align-items: stretch;
+    gap: 16rpx;
 }
 
-.staff-list-page__query-field {
+.filter-summary__chip {
     flex: 1;
     min-width: 0;
-    height: 58rpx;
-    padding: 0 20rpx;
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-}
-
-.staff-list-page__query-field--category {
-    max-width: 170rpx;
-    justify-content: center;
-    border-left: 1rpx solid rgba(11, 11, 11, 0.08);
-}
-
-.staff-list-page__query-text {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 25rpx;
-    line-height: 1;
-    color: #111111;
-}
-
-.staff-list-page__query-submit {
-    width: 202rpx;
-    height: 58rpx;
+    min-height: 84rpx;
+    padding: 18rpx 20rpx;
+    border-radius: 999rpx;
+    border: 1rpx solid #e7e2d6;
+    background: rgba(255, 255, 255, 0.84);
+    backdrop-filter: blur(24rpx);
+    -webkit-backdrop-filter: blur(24rpx);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #d0021b;
 }
 
-.staff-list-page__query-submit-text {
-    font-size: 24rpx;
-    line-height: 1;
-    font-weight: 700;
-    color: #ffffff;
-}
-
-.staff-list-page__filter-row {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    padding: 22rpx 22rpx 18rpx;
-    background: #ffffff;
-    border-bottom: 1rpx solid rgba(11, 11, 11, 0.06);
-}
-
-.staff-list-page__filter-item {
-    min-height: 48rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5rpx;
-}
-
-.staff-list-page__filter-text {
+.filter-summary__chip-label {
     display: block;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     text-align: center;
-    font-size: 25rpx;
-    font-weight: 500;
-    line-height: 1;
-    color: #111111;
+    font-size: 27rpx;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #5F5A50;
 }
 
 .empty-state {
@@ -633,30 +590,23 @@ onShow(() => {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    padding: 0 22rpx calc(132rpx + env(safe-area-inset-bottom));
-    background: #ffffff;
+    padding: 0 20rpx calc(148rpx + env(safe-area-inset-bottom));
 }
 
 .poster-card {
-    width: calc(50% - 7rpx);
-    margin-bottom: 26rpx;
-    overflow: visible;
-    border-radius: 0;
-    border: none;
-    background: transparent;
-    box-shadow: none;
-
-    &:active {
-        transform: translateY(1rpx) scale(0.995);
-    }
+    width: calc(50% - 8rpx);
+    margin-bottom: 16rpx;
+    overflow: hidden;
+    border-radius: 28rpx;
+    border: 1rpx solid rgba(231, 226, 214, 0.92);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 16rpx 32rpx rgba(17, 17, 17, 0.1);
 }
 
 .poster-card__media {
     position: relative;
-    height: 374rpx;
-    overflow: hidden;
-    border-radius: 5rpx;
-    background: #f0efeb;
+    height: 296rpx;
+    background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
 }
 
 .poster-card__image {
@@ -667,40 +617,49 @@ onShow(() => {
 
 .poster-card__badge {
     position: absolute;
-    top: 0;
-    left: 0;
-    max-width: 150rpx;
-    padding: 7rpx 12rpx;
-    border-radius: 0;
+    top: 16rpx;
+    left: 16rpx;
+    padding: 6rpx 14rpx;
+    border-radius: 999rpx;
     font-size: 20rpx;
-    font-weight: 700;
-    line-height: 1;
+    font-weight: 600;
     color: #ffffff;
-    background: #b74c4c;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    background: linear-gradient(135deg, #0b0b0b 0%, #c8a45d 100%);
+    box-shadow: 0 8rpx 18rpx rgba(200, 164, 93, 0.18);
+}
+
+.poster-card__favorite {
+    position: absolute;
+    top: 16rpx;
+    right: 16rpx;
+    width: 60rpx;
+    height: 60rpx;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.1);
 }
 
 .poster-card__content {
-    padding: 14rpx 2rpx 0;
+    padding: 16rpx 16rpx 18rpx;
 }
 
-.poster-card__name-row {
+.poster-card__head {
     display: flex;
-    align-items: center;
-    gap: 8rpx;
-    min-width: 0;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12rpx;
 }
 
 .poster-card__name {
-    flex-shrink: 0;
+    flex: 1;
     min-width: 0;
     display: block;
-    max-width: 142rpx;
-    font-size: 29rpx;
+    font-size: 30rpx;
     font-weight: 700;
-    line-height: 1.25;
+    line-height: 1.35;
     color: #111111;
     white-space: nowrap;
     overflow: hidden;
@@ -708,10 +667,11 @@ onShow(() => {
 }
 
 .poster-card__price {
-    margin-top: 14rpx;
+    flex-shrink: 0;
     display: inline-flex;
     align-items: baseline;
     gap: 4rpx;
+    padding-top: 2rpx;
 }
 
 .poster-card__price--negotiable .poster-card__price-value,
@@ -721,76 +681,103 @@ onShow(() => {
 
 .poster-card__price-value {
     min-width: 0;
-    font-size: 28rpx;
+    font-size: 30rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: #ff1b1b;
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .poster-card__price-unit {
-    font-size: 18rpx;
+    font-size: 20rpx;
     font-weight: 600;
     line-height: 1.2;
-    color: #ff1b1b;
+    color: #c8a45d;
+}
+
+.poster-card__role {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    line-height: 1.45;
+    color: #5f5a50;
 }
 
 .poster-card__tags {
     display: flex;
-    align-items: center;
-    flex-wrap: nowrap;
-    gap: 5rpx;
-    min-width: 0;
-}
-
-.poster-card__tags--wrap {
-    margin-top: 7rpx;
     flex-wrap: wrap;
+    gap: 4rpx;
+    margin-top: 12rpx;
+    min-height: 52rpx;
 }
 
 .poster-card__tag {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 28rpx;
-    padding: 3rpx 7rpx;
-    border-radius: 3rpx;
-    font-size: 18rpx;
+    min-height: 36rpx;
+    padding: 6rpx 12rpx;
+    border-radius: 999rpx;
+    font-size: 20rpx;
     line-height: 1.2;
-    color: #5f5a50;
-    background: #f3f3f3;
-    border: none;
+    color: var(--wm-color-primary, #0b0b0b);
+    background: rgba(11, 11, 11, 0.08);
+    border: 1rpx solid rgba(11, 11, 11, 0.16);
 }
 
 .poster-card__desc {
     display: -webkit-box;
-    margin-top: 10rpx;
-    min-height: 34rpx;
-    font-size: 23rpx;
+    margin-top: 12rpx;
+    min-height: 60rpx;
+    font-size: 22rpx;
     line-height: 1.45;
-    color: #253044;
+    color: #5f5a50;
     overflow: hidden;
-    -webkit-line-clamp: 1;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
 }
 
+.poster-card__footer {
+    margin-top: 14rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8rpx;
+}
+
+.poster-card__score {
+    padding: 8rpx 12rpx;
+    border-radius: 999rpx;
+    background: rgba(200, 164, 93, 0.12);
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
+}
+
+.poster-card__score-text {
+    font-size: 20rpx;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #9F7A2E;
+}
+
+.poster-card__orders {
+    font-size: 20rpx;
+    line-height: 1.2;
+    color: #5f5a50;
+}
+
 .line-list {
-    padding: 20rpx 22rpx calc(132rpx + env(safe-area-inset-bottom));
-    background: #ffffff;
+    padding: 0 20rpx calc(148rpx + env(safe-area-inset-bottom));
 }
 
 .line-card {
     display: flex;
     gap: 16rpx;
     padding: 16rpx;
-    min-height: 196rpx;
-    border-radius: var(--wm-radius-card, 16rpx);
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
+    border-radius: 28rpx;
+    border: 1rpx solid rgba(231, 226, 214, 0.92);
     background: rgba(255, 255, 255, 0.96);
-    box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
-
-    &:active {
-        transform: translateY(1rpx) scale(0.995);
-    }
+    box-shadow: 0 14rpx 28rpx rgba(17, 17, 17, 0.1);
 }
 
 .line-card + .line-card {
@@ -801,7 +788,7 @@ onShow(() => {
     width: 164rpx;
     height: 164rpx;
     flex-shrink: 0;
-    border-radius: var(--wm-radius-card-soft, 14rpx);
+    border-radius: 24rpx;
     background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
 }
 
@@ -947,12 +934,12 @@ onShow(() => {
     width: 88rpx;
     height: 88rpx;
     border-radius: 44rpx;
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
+    border: 1rpx solid #e7e2d6;
     display: flex;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(16rpx);
-    -webkit-backdrop-filter: blur(16rpx);
+    backdrop-filter: blur(28rpx);
+    -webkit-backdrop-filter: blur(28rpx);
 }
 
 .switch-icon-list {
@@ -994,11 +981,4 @@ onShow(() => {
     border-radius: 6rpx;
     background: rgba(255, 255, 255, 0.45);
 }
-
-/* #ifdef MP-WEIXIN */
-.view-switch-btn {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
-/* #endif */
 </style>

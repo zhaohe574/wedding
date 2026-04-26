@@ -49,13 +49,13 @@
                             <tn-icon
                                 name="sort"
                                 size="20"
-                                :color="sortIsActive ? '#0B0B0B' : '#5F5A50'"
+                                :color="sortIsActive ? '#FFFFFF' : '#4A4A4A'"
                             />
                             <text>{{ currentSortLabel }}</text>
                             <tn-icon
                                 name="arrow-down"
                                 size="16"
-                                :color="sortIsActive ? '#0B0B0B' : '#5F5A50'"
+                                :color="sortIsActive ? '#FFFFFF' : '#4A4A4A'"
                             />
                         </view>
                     </view>
@@ -69,7 +69,7 @@
 
                     <view v-else-if="dynamics.length === 0" class="dynamic-page__empty">
                         <view class="dynamic-page__empty-icon">
-                            <tn-icon name="inbox" size="96" color="#D8D3C7" />
+                            <tn-icon name="inbox" size="96" color="#C8A45D" />
                         </view>
                         <text class="dynamic-page__empty-title">暂无内容</text>
                         <text class="dynamic-page__empty-desc">换个筛选试试</text>
@@ -121,7 +121,7 @@
             <TnPopup
                 v-model="showSortPicker"
                 open-direction="bottom"
-                :radius="44"
+                :radius="24"
                 :overlay="false"
                 :safe-area-inset-bottom="true"
                 :z-index="sortPopupZIndex"
@@ -130,7 +130,7 @@
                     <view class="dynamic-page__picker-head">
                         <text class="dynamic-page__picker-title">排序方式</text>
                         <view class="dynamic-page__picker-close" @click="showSortPicker = false">
-                            <tn-icon name="close" size="30" color="#9A9388" />
+                            <tn-icon name="close" size="30" color="#111111" />
                         </view>
                     </view>
 
@@ -142,7 +142,8 @@
                             :class="{ 'is-active': currentSort === item.value }"
                             @click="selectSort(item.value)"
                         >
-                            {{ item.label }}
+                            <view class="dynamic-page__picker-item-mark"></view>
+                            <text>{{ item.label }}</text>
                         </view>
                     </view>
                 </view>
@@ -360,31 +361,20 @@ onShareAppMessage(() => ({
 @import '../../styles/dynamic.scss';
 
 .dynamic-page {
-    --wm-space-page-x: 37rpx;
-    --dynamic-page-body-bottom: 37rpx;
-    --dynamic-page-section-gap: 26rpx;
-    --dynamic-page-panel-radius: 44rpx;
-    --dynamic-page-panel-border-width: 2rpx;
-    --dynamic-page-shell-bg: rgba(255, 255, 255, 0.78);
-    --dynamic-page-shell-shadow: 0 18rpx 38rpx rgba(17, 17, 17, 0.1);
+    --wm-space-page-x: 32rpx;
+    --dynamic-page-body-bottom: 32rpx;
+    --dynamic-page-section-gap: 24rpx;
+    --dynamic-page-panel-radius: 16rpx;
+    --dynamic-page-panel-border-width: 1rpx;
+    --dynamic-page-shell-bg: #ffffff;
+    --dynamic-page-shell-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.04);
 
     position: relative;
     min-height: 100%;
-    background: radial-gradient(circle at top right, rgba(11, 11, 11, 0.12) 0, transparent 34%),
-        linear-gradient(180deg, rgba(248, 247, 242, 0.92) 0%, rgba(248, 247, 242, 0) 30%),
-        $dynamic-bg;
+    background: #ffffff;
 
     &::before {
-        content: '';
-        position: absolute;
-        top: 78rpx;
-        right: -88rpx;
-        width: 280rpx;
-        height: 280rpx;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(11, 11, 11, 0.1) 0, transparent 72%);
-        pointer-events: none;
-        opacity: 0.88;
+        display: none;
     }
 
     &__body {
@@ -392,28 +382,31 @@ onShareAppMessage(() => ({
         z-index: 1;
         display: flex;
         flex-direction: column;
-        gap: 18rpx;
-        padding: 6rpx var(--wm-space-page-x, 37rpx) var(--dynamic-page-body-bottom, 37rpx);
+        gap: 24rpx;
+        padding: 24rpx var(--wm-space-page-x, 32rpx) var(--dynamic-page-body-bottom, 32rpx);
     }
     &__filters-shell,
     &__loading,
     &__empty {
         position: relative;
         overflow: hidden;
-        border-radius: var(--dynamic-page-panel-radius, 44rpx);
-        border: var(--dynamic-page-panel-border-width, 2rpx) solid rgba(231, 226, 214, 0.9);
+        border-radius: var(--dynamic-page-panel-radius, 16rpx);
+        border: var(--dynamic-page-panel-border-width, 1rpx) solid var(--wm-color-border, #e5e5e5);
         background: var(--dynamic-page-shell-bg, rgba(255, 255, 255, 0.78));
         box-shadow: var(--dynamic-page-shell-shadow, 0 18rpx 38rpx rgba(17, 17, 17, 0.1));
-        backdrop-filter: blur(18rpx);
-        -webkit-backdrop-filter: blur(18rpx);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 
     &__filters-shell {
         display: flex;
-        flex-direction: column;
-        gap: 14rpx;
-        padding: 18rpx 22rpx;
-        background: rgba(255, 255, 255, 0.7);
+        flex-direction: row;
+        align-items: center;
+        gap: 12rpx;
+        padding: 12rpx 12rpx 12rpx 18rpx;
+        border-radius: 999rpx;
+        background: #ffffff;
+        box-shadow: none;
     }
 
     &__filter-actions {
@@ -424,15 +417,19 @@ onShareAppMessage(() => ({
     }
 
     &__reset-chip {
-        @include dynamic-pill(rgba(255, 255, 255, 0.68), $dynamic-text-secondary);
-        min-height: 64rpx;
-        padding: 0 20rpx;
-        background: rgba(255, 255, 255, 0.62);
-        font-size: 24rpx;
+        @include dynamic-pill(#ffffff, var(--wm-text-primary, #111111));
+        min-height: 52rpx;
+        padding: 0 16rpx;
+        border-color: transparent;
+        background: #ffffff;
+        color: var(--wm-color-secondary, #c8a45d);
+        font-size: 22rpx;
         font-weight: 600;
     }
 
     &__filter-scroll {
+        flex: 1;
+        min-width: 0;
         white-space: nowrap;
 
         &::-webkit-scrollbar {
@@ -443,19 +440,19 @@ onShareAppMessage(() => ({
     &__filter-track {
         display: inline-flex;
         align-items: center;
-        gap: 12rpx;
+        gap: 8rpx;
         width: max-content;
-        min-width: 100%;
-        padding-right: 8rpx;
+        min-width: 0;
+        padding-right: 0;
     }
 
     &__topic-chip,
     &__type-chip,
     &__sort-chip {
-        @include dynamic-pill(rgba(255, 255, 255, 0.68), $dynamic-text-secondary);
-        min-height: 68rpx;
-        border-color: rgba(231, 226, 214, 0.92);
-        background: rgba(255, 255, 255, 0.66);
+        @include dynamic-pill(#ffffff, var(--wm-text-secondary, #4a4a4a));
+        min-height: 52rpx;
+        border-color: transparent;
+        background: #ffffff;
         box-shadow: none;
         transition: all 0.2s ease;
     }
@@ -471,9 +468,9 @@ onShareAppMessage(() => ({
 
         &--active {
             background: $dynamic-accent;
-            border-color: transparent;
+            border-color: $dynamic-accent;
             color: #ffffff;
-            box-shadow: 0 12rpx 22rpx rgba(11, 11, 11, 0.16);
+            box-shadow: none;
         }
     }
 
@@ -484,34 +481,38 @@ onShareAppMessage(() => ({
     }
 
     &__type-chip {
-        min-width: 108rpx;
-        font-size: 24rpx;
+        min-width: auto;
+        font-size: 23rpx;
         font-weight: 600;
         flex-shrink: 0;
 
         &.is-active {
-            color: $dynamic-accent;
-            border-color: rgba(11, 11, 11, 0.12);
-            background: rgba(247, 240, 223, 0.92);
+            color: #ffffff;
+            border-color: $dynamic-accent;
+            background: $dynamic-accent;
+            box-shadow: none;
         }
     }
 
     &__sort-chip {
         gap: 8rpx;
-        padding: 0 20rpx;
+        padding: 0 18rpx;
         flex-shrink: 0;
+        border-color: var(--wm-color-border, #e5e5e5);
+        background: var(--wm-color-bg-soft, #f7f7f7);
 
         text {
-            font-size: 24rpx;
+            font-size: 23rpx;
             font-weight: 600;
             line-height: 1;
             white-space: nowrap;
         }
 
         &.is-active {
-            color: $dynamic-accent;
-            border-color: rgba(11, 11, 11, 0.14);
-            background: rgba(247, 240, 223, 0.92);
+            color: #ffffff;
+            border-color: $dynamic-accent;
+            background: $dynamic-accent;
+            box-shadow: none;
         }
     }
 
@@ -534,8 +535,8 @@ onShareAppMessage(() => ({
         align-items: center;
         justify-content: center;
         padding: 96rpx 32rpx;
-        background: rgba(255, 255, 255, 0.7);
-        box-shadow: none;
+        background: #ffffff;
+        box-shadow: var(--dynamic-page-shell-shadow, 0 8rpx 18rpx rgba(17, 17, 17, 0.04));
     }
 
     &__loading-text {
@@ -576,9 +577,9 @@ onShareAppMessage(() => ({
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: rgba(247, 240, 223, 0.96);
-        border: 2rpx solid rgba(11, 11, 11, 0.12);
-        color: $dynamic-accent;
+        background: $dynamic-accent;
+        border: 1rpx solid $dynamic-accent;
+        color: #ffffff;
         font-size: 26rpx;
         font-weight: 700;
         transition: all 0.2s ease;
@@ -593,27 +594,27 @@ onShareAppMessage(() => ({
         display: flex;
         flex-direction: column;
         gap: 24rpx;
-        --dynamic-editorial-card-radius: 42rpx;
-        --dynamic-editorial-card-bg: rgba(255, 255, 255, 0.9);
-        --dynamic-editorial-card-shadow: 0 26rpx 52rpx rgba(17, 17, 17, 0.12);
-        --dynamic-editorial-card-blur: 18rpx;
-        --dynamic-editorial-head-padding: 24rpx 24rpx 0;
+        --dynamic-editorial-card-radius: 16rpx;
+        --dynamic-editorial-card-bg: #ffffff;
+        --dynamic-editorial-card-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.04);
+        --dynamic-editorial-card-blur: 0;
+        --dynamic-editorial-head-padding: 20rpx 22rpx 0;
         --dynamic-editorial-author-gap: 14rpx;
         --dynamic-editorial-avatar-size: 54rpx;
         --dynamic-editorial-name-size: 26rpx;
         --dynamic-editorial-meta-margin-top: 8rpx;
         --dynamic-editorial-meta-size: 22rpx;
-        --dynamic-editorial-cover-margin: 18rpx 24rpx 0;
-        --dynamic-editorial-cover-radius: 30rpx;
-        --dynamic-editorial-cover-height: 340rpx;
+        --dynamic-editorial-cover-margin: 0;
+        --dynamic-editorial-cover-radius: 0;
+        --dynamic-editorial-cover-height: 380rpx;
         --dynamic-editorial-video-badge-offset: 18rpx;
         --dynamic-editorial-video-badge-padding: 8rpx 14rpx;
-        --dynamic-editorial-content-padding: 18rpx 24rpx 0;
-        --dynamic-editorial-content-size: 31rpx;
+        --dynamic-editorial-content-padding: 16rpx 22rpx 0;
+        --dynamic-editorial-content-size: 30rpx;
         --dynamic-editorial-content-line-height: 1.58;
         --dynamic-editorial-content-clamp: 4;
         --dynamic-editorial-stats-gap: 20rpx;
-        --dynamic-editorial-stats-padding: 14rpx 24rpx 24rpx;
+        --dynamic-editorial-stats-padding: 14rpx 22rpx 20rpx;
         --dynamic-editorial-stat-size: 22rpx;
     }
 
@@ -627,7 +628,7 @@ onShareAppMessage(() => ({
         color: $dynamic-text-muted;
 
         &--action {
-            color: $dynamic-accent;
+            color: var(--wm-text-primary, #111111);
             font-weight: 600;
         }
     }
@@ -636,12 +637,12 @@ onShareAppMessage(() => ({
         width: 100vw;
         max-width: 100vw;
         padding: 28rpx 28rpx 36rpx;
-        background: rgba(248, 247, 242, 0.98);
-        border-radius: 44rpx 44rpx 0 0;
-        border-top: 1rpx solid rgba(231, 226, 214, 0.76);
-        box-shadow: 0 -18rpx 36rpx rgba(17, 17, 17, 0.18);
-        backdrop-filter: blur(16rpx);
-        -webkit-backdrop-filter: blur(16rpx);
+        background: #ffffff;
+        border-radius: 24rpx 24rpx 0 0;
+        border-top: 1rpx solid var(--wm-color-border, #e5e5e5);
+        box-shadow: 0 -10rpx 24rpx rgba(17, 17, 17, 0.1);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 
     &__picker-head {
@@ -664,34 +665,50 @@ onShareAppMessage(() => ({
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.9);
-        border: 1rpx solid rgba(231, 226, 214, 0.7);
+        background: var(--wm-color-bg-soft, #f7f7f7);
+        border: 1rpx solid var(--wm-color-border, #e5e5e5);
     }
 
     &__picker-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 16rpx;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border-top: 1rpx solid var(--wm-color-border, #e5e5e5);
     }
 
     &__picker-item {
-        height: 88rpx;
-        border-radius: 32rpx;
-        border: 1rpx solid $dynamic-border;
-        background: rgba(255, 255, 255, 0.88);
+        height: 96rpx;
+        border-radius: 0;
+        border: 0;
+        border-bottom: 1rpx solid var(--wm-color-border, #e5e5e5);
+        background: #ffffff;
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
+        gap: 18rpx;
+        padding: 0 4rpx;
         color: $dynamic-text-secondary;
         font-size: 26rpx;
         font-weight: 600;
 
         &.is-active {
-            color: #ffffff;
-            border-color: transparent;
-            background: $dynamic-accent;
-            box-shadow: 0 14rpx 24rpx rgba(11, 11, 11, 0.18);
+            color: $dynamic-text;
+            background: #ffffff;
+            box-shadow: none;
+            font-weight: 700;
         }
+    }
+
+    &__picker-item-mark {
+        width: 6rpx;
+        height: 30rpx;
+        border-radius: 999rpx;
+        background: var(--wm-color-secondary, #c8a45d);
+        opacity: 0;
+    }
+
+    &__picker-item.is-active &__picker-item-mark {
+        opacity: 1;
     }
 }
 

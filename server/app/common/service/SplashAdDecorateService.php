@@ -48,17 +48,13 @@ class SplashAdDecorateService
             'content' => [
                 'enabled' => 0,
                 'image' => '',
+                'logo_image' => '',
                 'auto_enter_enabled' => 1,
                 'auto_seconds' => 3,
                 'frequency' => 'session',
                 'button_text' => '点击进入',
             ],
-            'styles' => [
-                'button_bg_color' => '#FFFFFF',
-                'button_text_color' => '#333333',
-                'button_border_color' => '#FFFFFF',
-                'button_border_radius' => 24,
-            ],
+            'styles' => [],
         ];
     }
 
@@ -170,7 +166,6 @@ class SplashAdDecorateService
         $defaultWidget = self::defaultWidget();
         $widget = array_replace_recursive($defaultWidget, $widget);
         $content = is_array($widget['content'] ?? null) ? $widget['content'] : [];
-        $styles = is_array($widget['styles'] ?? null) ? $widget['styles'] : [];
 
         $enabled = (int)($content['enabled'] ?? 0) === 1 ? 1 : 0;
         $autoEnter = (int)($content['auto_enter_enabled'] ?? $content['auto_enter'] ?? 1) === 1 ? 1 : 0;
@@ -187,30 +182,15 @@ class SplashAdDecorateService
         $widget['content'] = [
             'enabled' => $enabled,
             'image' => (string)($content['image'] ?? ''),
+            'logo_image' => (string)($content['logo_image'] ?? $content['logoImage'] ?? $content['logo'] ?? ''),
             'auto_enter_enabled' => $autoEnter,
             'auto_seconds' => $autoSeconds,
             'frequency' => $frequency,
             'button_text' => (string)($content['button_text'] ?? '点击进入') ?: '点击进入',
         ];
-        $widget['styles'] = [
-            'button_bg_color' => self::normalizeColor($styles['button_bg_color'] ?? '#FFFFFF', '#FFFFFF'),
-            'button_text_color' => self::normalizeColor($styles['button_text_color'] ?? '#333333', '#333333'),
-            'button_border_color' => self::normalizeColor($styles['button_border_color'] ?? '#FFFFFF', '#FFFFFF'),
-            'button_border_radius' => max(0, min(60, (int)($styles['button_border_radius'] ?? $styles['button_radius'] ?? 24))),
-        ];
+        $widget['styles'] = [];
 
         return $widget;
-    }
-
-    /**
-     * @param mixed $value
-     * @param string $fallback
-     * @return string
-     */
-    private static function normalizeColor($value, string $fallback): string
-    {
-        $value = (string)$value;
-        return preg_match('/^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/', $value) ? $value : $fallback;
     }
 
     /**

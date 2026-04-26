@@ -78,7 +78,7 @@ const shellClass = computed(() => [
     position: relative;
     width: 100%;
     min-height: 100vh;
-    background: var(--wm-color-bg-page, #f6f5f2);
+    background: var(--wm-color-bg-page, #ffffff);
     color: var(--wm-text-primary, #111111);
     isolation: isolate;
     overflow-x: hidden;
@@ -90,7 +90,7 @@ const shellClass = computed(() => [
         left: 0;
         right: 0;
         height: 260rpx;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(246, 245, 242, 0) 100%);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0) 100%);
         pointer-events: none;
         opacity: 0;
         transition: opacity var(--wm-motion-base, 220ms) ease;
@@ -104,7 +104,7 @@ const shellClass = computed(() => [
 
 .wm-page-shell--tone-editorial::before {
     height: 360rpx;
-    background: linear-gradient(180deg, rgba(11, 11, 11, 0.08) 0%, rgba(246, 245, 242, 0) 100%);
+    background: linear-gradient(180deg, rgba(11, 11, 11, 0.06) 0%, rgba(255, 255, 255, 0) 100%);
     opacity: 1;
 }
 
@@ -115,7 +115,7 @@ const shellClass = computed(() => [
 .wm-page--staff::before,
 .wm-page--admin::before {
     height: 260rpx;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(246, 245, 242, 0) 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0) 100%);
     opacity: 1;
 }
 

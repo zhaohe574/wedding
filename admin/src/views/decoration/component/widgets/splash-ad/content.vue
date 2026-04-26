@@ -7,13 +7,19 @@
             <el-icon size="36"><Picture /></el-icon>
             <span>请上传开屏广告图片</span>
         </div>
+        <div v-if="content.logo_image" class="splash-ad-preview__logo">
+            <decoration-img
+                class="splash-ad-preview__logo-image"
+                width="142px"
+                height="96px"
+                :src="content.logo_image"
+                fit="contain"
+            />
+        </div>
         <div class="splash-ad-preview__footer">
-            <button class="splash-ad-preview__button" :style="buttonStyle">
+            <button class="splash-ad-preview__button">
                 {{ content.button_text || '点击进入' }}
             </button>
-            <div class="splash-ad-preview__tip">
-                图片仅展示，不配置点击跳转
-            </div>
         </div>
     </div>
 </template>
@@ -26,7 +32,7 @@ import type options from './options'
 
 type OptionsType = ReturnType<typeof options>
 
-const props = defineProps({
+defineProps({
     content: {
         type: Object as PropType<OptionsType['content']>,
         default: () => ({})
@@ -36,13 +42,6 @@ const props = defineProps({
         default: () => ({})
     }
 })
-
-const buttonStyle = computed(() => ({
-    backgroundColor: props.styles.button_bg_color || '#FFFFFF',
-    color: props.styles.button_text_color || '#333333',
-    borderColor: props.styles.button_border_color || '#FFFFFF',
-    borderRadius: `${props.styles.button_border_radius ?? 24}px`
-}))
 </script>
 
 <style lang="scss" scoped>
@@ -52,14 +51,6 @@ const buttonStyle = computed(() => ({
     height: 640px;
     overflow: hidden;
     background: linear-gradient(180deg, #f8f4ec 0%, #111 100%);
-
-    &::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: var(--splash-mask-color);
-        pointer-events: none;
-    }
 
     &__image {
         width: 100%;
@@ -78,30 +69,72 @@ const buttonStyle = computed(() => ({
         background: #f5f5f5;
     }
 
-    &__footer {
+    &__logo {
         position: absolute;
-        left: 24px;
-        right: 24px;
-        bottom: 42px;
+        top: 96px;
+        left: 50%;
         z-index: 1;
         display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
+        justify-content: center;
+        transform: translateX(-50%);
+    }
+
+    &__logo-image {
+        animation: splash-preview-logo-breathe 2.35s ease-in-out infinite;
+        transform-origin: center center;
+        will-change: transform;
+    }
+
+    &__footer {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 74px;
+        z-index: 1;
+        display: flex;
+        justify-content: center;
     }
 
     &__button {
-        width: 100%;
-        height: 44px;
-        border: 1px solid #ffffff;
-        font-size: 15px;
+        width: 112px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        border-radius: 999px;
+        background: rgba(156, 158, 166, 0.78);
+        color: #ffffff;
+        font-size: 14px;
         font-weight: 600;
-        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+        line-height: 34px;
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.5),
+            0 6px 14px rgba(0, 0, 0, 0.24);
+        animation: splash-preview-button-breathe 2.4s ease-in-out infinite;
+        backdrop-filter: blur(5px);
+    }
+}
+
+@keyframes splash-preview-logo-breathe {
+    0%,
+    100% {
+        opacity: 0.96;
+        transform: scale(1);
     }
 
-    &__tip {
-        color: rgba(255, 255, 255, 0.82);
-        font-size: 12px;
+    50% {
+        opacity: 1;
+        transform: scale(1.08);
+    }
+}
+
+@keyframes splash-preview-button-breathe {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.045);
     }
 }
 </style>

@@ -1,16 +1,16 @@
-$wm-color-bg-page: #F6F5F2;
+$wm-color-bg-page: #FFFFFF;
 $wm-color-bg-card: #FFFFFF;
-$wm-color-bg-soft: #F6F5F2;
+$wm-color-bg-soft: #F7F7F7;
 $wm-color-primary: #0B0B0B;
 $wm-color-primary-strong: #000000;
-$wm-color-primary-soft: #F2F1EC;
+$wm-color-primary-soft: #F3F3F3;
 $wm-color-secondary: #C8A45D;
-$wm-color-secondary-soft: #F8F2E4;
-$wm-color-border: #E2DED5;
-$wm-color-border-strong: #D8C28A;
+$wm-color-secondary-soft: #F8F3E7;
+$wm-color-border: #E5E5E5;
+$wm-color-border-strong: #C8A45D;
 $wm-color-text-primary: #111111;
-$wm-color-text-secondary: #56524A;
-$wm-color-text-tertiary: #8E887D;
+$wm-color-text-secondary: #4A4A4A;
+$wm-color-text-tertiary: #8A8A8A;
 $wm-radius-input: 16rpx;
 $wm-radius-control: 16rpx;
 $wm-radius-action: 999rpx;
@@ -46,29 +46,29 @@ $wm-space-tabbar-bottom: 39rpx;
 
 page,
 :root {
-    --wm-color-bg-page: #F6F5F2;
+    --wm-color-bg-page: #FFFFFF;
     --wm-color-page: var(--wm-color-bg-page);
     --wm-color-bg-card: #FFFFFF;
-    --wm-color-bg-soft: #F6F5F2;
+    --wm-color-bg-soft: #F7F7F7;
     --wm-color-bg-mask: rgba(11, 11, 11, 0.46);
     --wm-color-primary: #0B0B0B;
     --wm-color-primary-strong: #000000;
-    --wm-color-primary-soft: #F2F1EC;
+    --wm-color-primary-soft: #F3F3F3;
     --wm-color-secondary: #C8A45D;
-    --wm-color-secondary-soft: #F8F2E4;
-    --wm-color-rose: #B76E79;
-    --wm-color-rose-soft: #F7ECEE;
-    --wm-color-sage: #687667;
-    --wm-color-sage-soft: #EEF3EE;
-    --wm-color-border: #E2DED5;
-    --wm-color-border-strong: #D8C28A;
+    --wm-color-secondary-soft: #F8F3E7;
+    --wm-color-rose: #C8A45D;
+    --wm-color-rose-soft: #F8F3E7;
+    --wm-color-sage: #4A4A4A;
+    --wm-color-sage-soft: #F7F7F7;
+    --wm-color-border: #E5E5E5;
+    --wm-color-border-strong: #C8A45D;
     --wm-color-success: #4F6F5A;
     --wm-color-warning: #9F7A2E;
     --wm-color-danger: #8A4B45;
     --wm-color-info: #596A7A;
     --wm-text-primary: #111111;
-    --wm-text-secondary: #56524A;
-    --wm-text-tertiary: #8E887D;
+    --wm-text-secondary: #4A4A4A;
+    --wm-text-tertiary: #8A8A8A;
     --wm-text-inverse: #FFFFFF;
     --wm-font-family-display: SF Pro Display, PingFang SC, Microsoft YaHei, sans-serif;
     --wm-font-family-body: PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif;
@@ -115,9 +115,9 @@ page,
     --wm-tabbar-item-height: 112rpx;
     --wm-tabbar-item-radius: 0rpx;
     --wm-tabbar-text-size: 22rpx;
-    --wm-shadow-soft: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
-    --wm-shadow-card: 0 12rpx 28rpx rgba(17, 17, 17, 0.07);
-    --wm-shadow-hero: 0 18rpx 42rpx rgba(17, 17, 17, 0.12);
+    --wm-shadow-soft: 0 8rpx 18rpx rgba(17, 17, 17, 0.04);
+    --wm-shadow-card: 0 10rpx 24rpx rgba(17, 17, 17, 0.06);
+    --wm-shadow-hero: 0 16rpx 36rpx rgba(17, 17, 17, 0.1);
     --wm-motion-fast: 150ms;
     --wm-motion-base: 220ms;
     --wm-motion-slow: 260ms;
@@ -127,13 +127,13 @@ page,
 
 .wm-page-shell[data-scene='staff'],
 .wm-page--staff {
-    --wm-color-bg-page: #F7F6F1;
+    --wm-color-bg-page: #FFFFFF;
     --wm-color-bg-card: rgba(255, 255, 255, 0.92);
-    --wm-color-bg-soft: #F7F6F1;
-    --wm-color-primary-soft: #F2F1EC;
-    --wm-color-secondary-soft: #F8F2E4;
-    --wm-color-border: #E2DED5;
-    --wm-color-border-strong: #D8C28A;
+    --wm-color-bg-soft: #F7F7F7;
+    --wm-color-primary-soft: #F3F3F3;
+    --wm-color-secondary-soft: #F8F3E7;
+    --wm-color-border: #E5E5E5;
+    --wm-color-border-strong: #C8A45D;
     --wm-radius-chip: 999rpx;
     --wm-radius-card-soft: 14rpx;
     --wm-radius-card: 16rpx;
@@ -155,10 +155,10 @@ page,
 
 .wm-page-shell[data-scene='admin'],
 .wm-page--admin {
-    --wm-color-bg-page: #F5F7F8;
-    --wm-color-bg-soft: #F5F7F8;
-    --wm-color-border: #DDE3EA;
-    --wm-text-secondary: #52606D;
+    --wm-color-bg-page: #FFFFFF;
+    --wm-color-bg-soft: #F7F7F7;
+    --wm-color-border: #E5E5E5;
+    --wm-text-secondary: #4A4A4A;
     --wm-shadow-soft: 0 8rpx 18rpx rgba(17, 24, 39, 0.05);
     --wm-shadow-card: 0 10rpx 24rpx rgba(17, 24, 39, 0.06);
 }

@@ -4,6 +4,7 @@ export interface HomeServiceCategoryItem {
     subtitle: string
     image: string
     size: 'large' | 'small' | 'wide'
+    text_position: 'top' | 'middle' | 'bottom'
     link: Record<string, any>
 }
 
@@ -20,6 +21,7 @@ export default () => ({
                 subtitle: 'WEDDING HOST',
                 image: '',
                 size: 'large',
+                text_position: 'bottom',
                 link: {
                     path: '/pages/schedule_query/schedule_query',
                     type: 'shop',
@@ -32,6 +34,7 @@ export default () => ({
                 subtitle: 'CHINESE HOST',
                 image: '',
                 size: 'small',
+                text_position: 'bottom',
                 link: {
                     path: '/pages/schedule_query/schedule_query',
                     type: 'shop',
@@ -44,6 +47,7 @@ export default () => ({
                 subtitle: 'BUSINESS HOST',
                 image: '',
                 size: 'small',
+                text_position: 'bottom',
                 link: {
                     path: '/pages/schedule_query/schedule_query',
                     type: 'shop',
@@ -56,6 +60,7 @@ export default () => ({
                 subtitle: 'HOST TRAINING',
                 image: '',
                 size: 'wide',
+                text_position: 'bottom',
                 link: {
                     path: '/pages/news/news',
                     type: 'shop'

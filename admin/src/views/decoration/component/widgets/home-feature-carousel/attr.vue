@@ -18,12 +18,12 @@
             <el-form-item label="自动播放">
                 <el-switch v-model="contentData.autoplay" :active-value="1" :inactive-value="0" />
             </el-form-item>
-            <el-form-item label="间隔">
+            <el-form-item label="间隔(秒)">
                 <el-input-number
                     v-model="contentData.interval"
-                    :min="2000"
-                    :max="10000"
-                    :step="500"
+                    :min="2"
+                    :max="10"
+                    :step="1"
                     controls-position="right"
                     class="!w-full"
                 />

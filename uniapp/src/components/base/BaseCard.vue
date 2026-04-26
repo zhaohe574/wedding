@@ -123,8 +123,8 @@ export default {
     &--list,
     &--quiet {
         background: #ffffff;
-        border: 1rpx solid var(--wm-color-border, #e2ded5);
-        box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
+        border: 1rpx solid var(--wm-color-border, #e5e5e5);
+        box-shadow: var(--wm-shadow-soft, 0 8rpx 18rpx rgba(17, 17, 17, 0.04));
     }
 
     &--surface {
@@ -153,11 +153,11 @@ export default {
     &--glass {
         padding: var(--wm-space-card-padding, 28rpx);
         border-radius: var(--wm-radius-card-glass, 18rpx);
-        background: rgba(255, 255, 255, 0.96);
-        border: 1rpx solid var(--wm-color-border, #e2ded5);
-        box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
-        backdrop-filter: blur(16rpx);
-        -webkit-backdrop-filter: blur(16rpx);
+        background: #ffffff;
+        border: 1rpx solid var(--wm-color-border, #e5e5e5);
+        box-shadow: var(--wm-shadow-soft, 0 8rpx 18rpx rgba(17, 17, 17, 0.04));
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 
     &--hero {
@@ -165,10 +165,10 @@ export default {
         border-radius: var(--wm-radius-card-lg, 20rpx);
         background: var(
             --wm-hero-gradient,
-            linear-gradient(180deg, #ffffff 0%, #ffffff 62%, #f7f0df 100%)
+            linear-gradient(180deg, #ffffff 0%, #ffffff 62%, #f8f3e7 100%)
         );
-        border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
-        box-shadow: var(--wm-shadow-hero, 0 18rpx 42rpx rgba(17, 17, 17, 0.12));
+        border: 1rpx solid var(--wm-color-border-strong, #c8a45d);
+        box-shadow: var(--wm-shadow-hero, 0 16rpx 36rpx rgba(17, 17, 17, 0.1));
     }
 
     &--admin.base-card--panel {
@@ -179,25 +179,25 @@ export default {
         &.base-card--surface,
         &.base-card--panel {
             background: #ffffff;
-            border-color: var(--wm-color-border, #e2ded5);
+            border-color: var(--wm-color-border, #e5e5e5);
             box-shadow: none;
         }
 
         &.base-card--glass {
             background: #ffffff;
-            border-color: var(--wm-color-border, #e2ded5);
+            border-color: var(--wm-color-border, #e5e5e5);
             box-shadow: none;
         }
 
         &.base-card--hero {
             background: radial-gradient(
                     circle at top right,
-                    rgba(200, 164, 93, 0.18) 0,
+                    rgba(200, 164, 93, 0.12) 0,
                     transparent 34%
                 ),
-                linear-gradient(180deg, #ffffff 0%, #ffffff 62%, #f8f7f2 100%);
-            border-color: rgba(216, 194, 138, 0.96);
-            box-shadow: var(--wm-shadow-hero, 0 28rpx 60rpx rgba(17, 17, 17, 0.12));
+                linear-gradient(180deg, #ffffff 0%, #ffffff 62%, #f8f3e7 100%);
+            border-color: rgba(200, 164, 93, 0.72);
+            box-shadow: var(--wm-shadow-hero, 0 16rpx 36rpx rgba(17, 17, 17, 0.1));
         }
     }
 

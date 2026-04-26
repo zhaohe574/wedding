@@ -44,9 +44,9 @@ interface ThemeStore {
 }
 
 const sceneHeroGradientMap: Record<WmScene, string> = {
-    consumer: 'linear-gradient(180deg, #FFFFFF 0%, #F6F5F2 74%, #F8F2E4 100%)',
-    staff: 'linear-gradient(180deg, #FFFFFF 0%, #F7F6F1 100%)',
-    admin: 'linear-gradient(180deg, #FFFFFF 0%, #F5F7F8 100%)'
+    consumer: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 74%, #F8F3E7 100%)',
+    staff: 'linear-gradient(180deg, #FFFFFF 0%, #F7F7F7 100%)',
+    admin: 'linear-gradient(180deg, #FFFFFF 0%, #F7F7F7 100%)'
 }
 
 const defaultTokens = createWmThemeTokens()
@@ -68,26 +68,26 @@ export const useThemeStore = defineStore({
         presetKey: 'black-white-gold',
         primaryColor: '#0B0B0B',
         secondaryColor: '#C8A45D',
-        ctaColor: '#D0021B',
+        ctaColor: '#0B0B0B',
         accentColor: '#C8A45D',
         minorColor: '#C8A45D',
         surfaceColor: '#FFFFFF',
         surfaceElevatedColor: '#FFFFFF',
-        surfaceOverlayColor: 'rgba(255, 255, 255, 0.94)',
+        surfaceOverlayColor: 'rgba(255, 255, 255, 0.96)',
         textPrimaryColor: '#111111',
-        textSecondaryColor: '#5F5A50',
-        textTertiaryColor: '#9A9388',
+        textSecondaryColor: '#4A4A4A',
+        textTertiaryColor: '#8A8A8A',
         textInverseColor: '#FFFFFF',
-        borderColor: '#E7E2D6',
-        borderStrongColor: '#D8C28A',
-        pageBgColor: '#F6F5F2',
-        pageBgSoftColor: '#F8F7F2',
+        borderColor: '#E5E5E5',
+        borderStrongColor: '#C8A45D',
+        pageBgColor: '#FFFFFF',
+        pageBgSoftColor: '#F7F7F7',
         heroGradient: sceneHeroGradientMap.consumer,
         maskColor: 'rgba(11, 11, 11, 0.54)',
         tabbarActiveColor: '#0B0B0B',
         tabbarInactiveColor: '#9A9388',
         navStyle: 'solid',
-        cardStyle: 'glass',
+        cardStyle: 'soft',
         shadowLevel: 'medium',
         btnColor: 'white',
         navColor: '#FFFFFF',

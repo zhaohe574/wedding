@@ -5,7 +5,7 @@
         <view class="content wm-page-content">
             <view class="card wm-form-block" @tap="openDatePicker">
                 <view class="field-label">
-                    <text class="required-mark" :style="{ color: $theme.ctaColor }">*</text>
+                    <text class="required-mark" :style="{ color: $theme.secondaryColor }">*</text>
                     <text class="title">预约日期</text>
                 </view>
                 <text class="value" :class="{ muted: !selectedDate }">{{ selectedDateText }}</text>
@@ -13,7 +13,7 @@
 
             <view class="card wm-form-block" @tap="openRegionPicker">
                 <view class="field-label">
-                    <text class="required-mark" :style="{ color: $theme.ctaColor }">*</text>
+                    <text class="required-mark" :style="{ color: $theme.secondaryColor }">*</text>
                     <text class="title">预约地区</text>
                 </view>
                 <text class="value" :class="{ muted: !hasSelectedRegion }">{{
@@ -24,7 +24,7 @@
             <view class="card wm-form-block">
                 <view class="head">
                     <view class="field-label">
-                        <text class="required-mark" :style="{ color: $theme.ctaColor }">*</text>
+                        <text class="required-mark" :style="{ color: $theme.secondaryColor }">*</text>
                         <text class="title">服务分类</text>
                     </view>
                     <text v-if="selectedCategoryName" class="hint"
@@ -61,7 +61,7 @@
                     <tn-icon
                         name="arrow-down"
                         size="28"
-                        :color="tagDisabled ? '#D8D3C7' : '#9A9388'"
+                        :color="tagDisabled ? '#B8B8B8' : '#0B0B0B'"
                     />
                 </view>
                 <text v-if="!selectedCategoryId" class="helper">请先选择服务分类</text>
@@ -338,12 +338,11 @@ const datePickerValue = ref([0, 0, 0])
 const regionTree = ref<any[]>([])
 const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
 const tempRegion = ref(normalizeServiceRegion(selectedRegion.value))
-const popupBorderRadius = 28
+const popupBorderRadius = 24
 const keywordPlaceholderStyle =
-    'color: rgba(11, 11, 11, 0.42); font-size: 30rpx; font-weight: 600; line-height: 1.6;'
+    'color: rgba(17, 17, 17, 0.42); font-size: 28rpx; font-weight: 500; line-height: 1.55;'
 
-const getPrimaryShadow = (alpha = 0.18) => `0 24rpx 40rpx ${alphaColor($theme.primaryColor, alpha)}`
-const getCtaShadow = (alpha = 0.18) => `0 20rpx 36rpx ${alphaColor($theme.ctaColor, alpha)}`
+const getCtaShadow = (alpha = 0.16) => `0 14rpx 28rpx ${alphaColor($theme.ctaColor, alpha)}`
 const isValidSortValue = (value: unknown) => sortOptions.some((item) => item.value === value)
 const parseIdList = (value: unknown) =>
     Array.from(
@@ -501,7 +500,13 @@ const regionDistricts = computed(
             ?.districts || []
 )
 const getRegionItemStyle = (active: boolean) =>
-    active ? { background: alphaColor($theme.primaryColor, 0.1), color: $theme.primaryColor } : {}
+    active
+        ? {
+              background: alphaColor($theme.secondaryColor, 0.16),
+              color: $theme.primaryColor,
+              fontWeight: '700'
+          }
+        : {}
 
 const syncTempRegion = (value?: Record<string, any>) => {
     tempRegion.value = normalizeServiceRegion(value || selectedRegion.value)
@@ -749,42 +754,46 @@ onShow(() => {
 
 <style lang="scss" scoped>
 .schedule-query-page {
-    background: transparent;
+    --schedule-border: rgba(11, 11, 11, 0.1);
+    --schedule-border-soft: rgba(11, 11, 11, 0.06);
+    --schedule-gold: #c8a45d;
+    background: #ffffff;
 }
 
 .content {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 30rpx;
-    padding: 22rpx 37rpx calc(220rpx + env(safe-area-inset-bottom));
+    gap: 24rpx;
+    padding: 24rpx 32rpx calc(196rpx + env(safe-area-inset-bottom));
 }
 
 .card {
-    padding: 34rpx 37rpx;
-    border-radius: 45rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: rgba(255, 255, 255, 0.84);
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
+    padding: 28rpx 30rpx;
+    border-radius: 16rpx;
+    border: 1rpx solid var(--schedule-border);
+    background: #ffffff;
+    box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.04);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
 .head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 20rpx;
+    gap: 16rpx;
 }
 
 .field-label {
     display: inline-flex;
     align-items: center;
-    gap: 10rpx;
+    gap: 8rpx;
     min-width: 0;
 }
 
 .required-mark {
-    font-size: 30rpx;
+    font-size: 28rpx;
     font-weight: 700;
     line-height: 1;
     flex-shrink: 0;
@@ -798,17 +807,18 @@ onShow(() => {
 }
 
 .hint {
-    font-size: 24rpx;
+    font-size: 22rpx;
     font-weight: 600;
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--schedule-gold);
+    white-space: nowrap;
 }
 
 .value {
     display: block;
-    margin-top: 16rpx;
+    margin-top: 14rpx;
     font-size: 30rpx;
     font-weight: 600;
-    line-height: 1.6;
+    line-height: 1.55;
     color: var(--wm-text-primary, #111111);
     white-space: pre-wrap;
 }
@@ -822,40 +832,40 @@ onShow(() => {
 .helper,
 .empty {
     display: block;
-    margin-top: 24rpx;
-    font-size: 26rpx;
-    line-height: 1.6;
+    margin-top: 18rpx;
+    font-size: 24rpx;
+    line-height: 1.55;
 }
 
 .chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 20rpx;
-    margin-top: 24rpx;
+    gap: 16rpx;
+    margin-top: 22rpx;
 }
 
 .chips.dense {
-    gap: 20rpx;
+    gap: 16rpx;
 }
 
 .chip {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 74rpx;
-    padding: 0 28rpx;
+    min-height: 68rpx;
+    padding: 0 24rpx;
     border-radius: 999rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: rgba(255, 255, 255, 0.84);
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
+    border: 1rpx solid var(--schedule-border);
+    background: #ffffff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: var(--wm-text-secondary, #4a4a4a);
 }
 
 .chip.soft {
-    background: rgba(255, 255, 255, 0.84);
+    background: #ffffff;
 }
 
 .chip.active {
@@ -868,17 +878,17 @@ onShow(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 20rpx;
-    margin-top: 24rpx;
-    min-height: 104rpx;
-    padding: 0 30rpx;
-    border-radius: 37rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: var(--wm-color-bg-page, #ffffff);
+    gap: 16rpx;
+    margin-top: 20rpx;
+    min-height: 92rpx;
+    padding: 0 24rpx;
+    border-radius: 16rpx;
+    border: 1rpx solid var(--schedule-border);
+    background: #ffffff;
 }
 
 .dropdown.disabled {
-    background: rgba(248, 247, 242, 0.72);
+    background: #f7f7f7;
 }
 
 .dropdown__text {
@@ -893,16 +903,16 @@ onShow(() => {
 }
 
 .dropdown.muted .dropdown__text {
-    color: var(--wm-text-tertiary, #9a9388);
+    color: var(--wm-text-tertiary, #8a8a8a);
 }
 
 .keyword {
     width: 100%;
-    min-height: 52rpx;
-    margin-top: 16rpx;
-    font-size: 30rpx;
-    font-weight: 600;
-    line-height: 1.6;
+    min-height: 48rpx;
+    margin-top: 14rpx;
+    font-size: 28rpx;
+    font-weight: 500;
+    line-height: 1.55;
     color: var(--wm-text-primary, #111111);
 }
 
@@ -911,20 +921,20 @@ onShow(() => {
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-height: 116rpx;
-    border-radius: 45rpx;
+    min-height: 104rpx;
+    border-radius: 999rpx;
 }
 
 .submit__text {
-    font-size: 32rpx;
+    font-size: 30rpx;
     font-weight: 700;
     color: #fff;
 }
 
 .picker {
-    border-radius: 52rpx 52rpx 0 0;
+    border-radius: 24rpx 24rpx 0 0;
     padding-bottom: calc(var(--wm-space-card-padding, 30rpx) + env(safe-area-inset-bottom));
-    background: var(--wm-color-bg-page, #ffffff);
+    background: #ffffff;
     overflow: hidden;
 }
 
@@ -932,8 +942,8 @@ onShow(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 34rpx 37rpx 30rpx;
-    border-bottom: 1rpx solid rgba(231, 226, 214, 0.92);
+    padding: 30rpx 32rpx 26rpx;
+    border-bottom: 1rpx solid var(--schedule-border-soft);
 }
 
 .picker__group {
@@ -944,33 +954,37 @@ onShow(() => {
 
 .picker__action {
     font-size: 28rpx;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: var(--wm-text-secondary, #4a4a4a);
 }
 
-.picker__action.primary,
 .picker__title {
     color: var(--wm-text-primary, #111111);
     font-weight: 700;
 }
 
+.picker__action.primary {
+    color: var(--schedule-gold);
+    font-weight: 700;
+}
+
 .picker__title {
-    font-size: 32rpx;
+    font-size: 30rpx;
 }
 
 .picker__clear {
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: var(--wm-text-secondary, #4a4a4a);
 }
 
 .region {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 22rpx;
-    padding: 30rpx 30rpx 0;
+    gap: 14rpx;
+    padding: 26rpx 24rpx 0;
 }
 
 .region__title {
-    padding: 0 16rpx 16rpx;
+    padding: 0 12rpx 14rpx;
     font-size: 24rpx;
     font-weight: 700;
     color: var(--wm-text-primary, #111111);
@@ -978,15 +992,16 @@ onShow(() => {
 
 .region__scroll {
     height: 420rpx;
-    border-radius: 37rpx;
-    background: rgba(255, 255, 255, 0.88);
+    border-radius: 16rpx;
+    border: 1rpx solid var(--schedule-border-soft);
+    background: #ffffff;
 }
 
 .region__item {
-    padding: 20rpx 18rpx;
+    padding: 18rpx 14rpx;
     font-size: 24rpx;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: var(--wm-text-secondary, #4a4a4a);
 }
 
 .date {
@@ -1007,7 +1022,7 @@ onShow(() => {
 }
 
 .panel {
-    padding: 30rpx;
+    padding: 26rpx 24rpx;
     max-height: 60vh;
     overflow-y: auto;
 }
@@ -1015,18 +1030,18 @@ onShow(() => {
 .grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 22rpx;
+    gap: 14rpx;
 }
 
 .grid__item {
-    padding: 30rpx 22rpx;
-    border-radius: 37rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: rgba(255, 255, 255, 0.94);
+    padding: 24rpx 18rpx;
+    border-radius: 16rpx;
+    border: 1rpx solid var(--schedule-border);
+    background: #ffffff;
     font-size: 26rpx;
     font-weight: 500;
     line-height: 1.4;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: var(--wm-text-secondary, #4a4a4a);
     text-align: center;
 }
 
@@ -1040,8 +1055,8 @@ onShow(() => {
 
 .picker__foot {
     display: flex;
-    gap: 22rpx;
-    padding: 30rpx;
+    gap: 16rpx;
+    padding: 26rpx 24rpx 28rpx;
 }
 
 .picker__btn {
@@ -1049,9 +1064,9 @@ onShow(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 101rpx;
-    border-radius: 37rpx;
-    background: rgba(248, 247, 242, 0.86);
+    min-height: 92rpx;
+    border-radius: 16rpx;
+    background: #f7f7f7;
     font-size: 28rpx;
     font-weight: 600;
     color: var(--wm-text-primary, #111111);
@@ -1062,34 +1077,35 @@ onShow(() => {
 }
 
 .schedule-query-page__navbar :deep(.base-navbar) {
-    background: transparent !important;
+    background: #000000 !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
 .schedule-query-page__navbar :deep(.base-navbar__bar) {
-    padding: 0 45rpx;
+    padding: 0 32rpx;
 }
 
 .schedule-query-page__navbar :deep(.base-navbar__title) {
-    font-size: 46rpx;
+    font-size: 34rpx;
     line-height: 1.2;
 }
 
 .schedule-query-page__navbar :deep(.base-navbar__back-text),
 .schedule-query-page__navbar :deep(.base-navbar__placeholder) {
-    font-size: 37rpx;
+    font-size: 26rpx;
 }
 
 .schedule-query-page :deep(.schedule-query-page__action.wm-action-area) {
-    padding: 22rpx 37rpx 39rpx;
+    padding: 20rpx 32rpx 32rpx;
     background: linear-gradient(
         180deg,
-        rgba(248, 247, 242, 0) 0%,
-        rgba(248, 247, 242, 0.94) 24%,
-        rgba(248, 247, 242, 1) 100%
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.94) 24%,
+        rgba(255, 255, 255, 1) 100%
     );
 }
 
 .schedule-query-page :deep(.schedule-query-page__action.wm-action-area--safe) {
-    padding-bottom: calc(39rpx + env(safe-area-inset-bottom));
+    padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
 }
 </style>

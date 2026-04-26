@@ -101,7 +101,7 @@ const bgColor = computed(() => {
     }
 
     if (resolvedVariant.value === 'cta') {
-        return themeStore.ctaColor || '#D0021B'
+        return themeStore.ctaColor || '#0B0B0B'
     }
 
     return resolvedVariant.value === 'danger'
@@ -177,12 +177,12 @@ const buttonVars = computed(() => {
     if (resolvedVariant.value === 'cta') {
         return {
             ...sharedVars,
-            '--button-bg-start': themeStore.ctaColor || '#D0021B',
-            '--button-bg-end': themeStore.ctaColor || '#D0021B',
+            '--button-bg-start': themeStore.ctaColor || '#0B0B0B',
+            '--button-bg-end': themeStore.ctaColor || '#0B0B0B',
             '--button-shadow':
-                props.shadow || '0 12rpx 24rpx rgba(208, 2, 27, 0.18)',
+                props.shadow || '0 12rpx 24rpx rgba(11, 11, 11, 0.16)',
             '--button-shadow-active':
-                props.activeShadow || '0 6rpx 12rpx rgba(208, 2, 27, 0.12)'
+                props.activeShadow || '0 6rpx 12rpx rgba(11, 11, 11, 0.12)'
         }
     }
 
@@ -199,8 +199,8 @@ const buttonVars = computed(() => {
     if (resolvedVariant.value === 'ghost') {
         return {
             ...sharedVars,
-            '--button-bg-start': 'rgba(248,247,242,0.82)',
-            '--button-bg-end': 'rgba(248,247,242,0.82)',
+            '--button-bg-start': '#F7F7F7',
+            '--button-bg-end': '#F7F7F7',
             '--button-shadow': props.shadow || 'none',
             '--button-shadow-active': props.activeShadow || 'none'
         }
@@ -279,16 +279,16 @@ export default {
         :deep(.tn-button) {
             background: rgba(255, 255, 255, 0.94);
             border-width: 1rpx;
-            border-color: rgba(200, 164, 93, 0.28);
+            border-color: rgba(11, 11, 11, 0.12);
             box-shadow: none;
         }
     }
 
     &--ghost {
         :deep(.tn-button) {
-            background: rgba(248, 247, 242, 0.82);
+            background: #f7f7f7;
             border-width: 1rpx;
-            border-color: rgba(226, 222, 213, 0.96);
+            border-color: rgba(11, 11, 11, 0.1);
             box-shadow: none;
         }
     }

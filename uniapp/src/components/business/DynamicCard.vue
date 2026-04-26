@@ -1,6 +1,25 @@
 <template>
     <view class="dynamic-card" :class="cardClass" :style="cardStyle" @click="handleCardClick">
         <template v-if="isEditorial">
+            <view
+                v-if="editorialCover"
+                class="dynamic-card__editorial-cover-wrap"
+                @click.stop="handleMediaClick(0)"
+            >
+                <image
+                    class="dynamic-card__editorial-cover"
+                    :src="editorialCover"
+                    mode="aspectFill"
+                />
+                <view
+                    v-if="dynamic.dynamicType === 2"
+                    class="dynamic-card__video-badge dynamic-card__video-badge--editorial"
+                >
+                    <tn-icon name="play-fill" size="24" color="#FFFFFF" />
+                    <text>播放</text>
+                </view>
+            </view>
+
             <view class="dynamic-card__editorial-head">
                 <view class="dynamic-card__editorial-author">
                     <view class="dynamic-card__avatar-wrap" @click.stop="handleUserClick">
@@ -24,25 +43,6 @@
                         </view>
                         <text class="dynamic-card__editorial-meta">{{ editorialMeta }}</text>
                     </view>
-                </view>
-            </view>
-
-            <view
-                v-if="editorialCover"
-                class="dynamic-card__editorial-cover-wrap"
-                @click.stop="handleMediaClick(0)"
-            >
-                <image
-                    class="dynamic-card__editorial-cover"
-                    :src="editorialCover"
-                    mode="aspectFill"
-                />
-                <view
-                    v-if="dynamic.dynamicType === 2"
-                    class="dynamic-card__video-badge dynamic-card__video-badge--editorial"
-                >
-                    <tn-icon name="play-fill" size="24" color="#FFFFFF" />
-                    <text>播放</text>
                 </view>
             </view>
 
@@ -102,7 +102,7 @@
                             <template v-if="dynamic.location?.name">
                                 <text class="dynamic-card__meta-dot">·</text>
                                 <view class="dynamic-card__location">
-                                    <tn-icon name="location" size="20" color="#9A9388" />
+                                    <tn-icon name="location" size="20" color="#8A8A8A" />
                                     <text class="dynamic-card__meta-text">{{
                                         dynamic.location.name
                                     }}</text>
@@ -164,18 +164,18 @@
             <view class="dynamic-card__footer">
                 <view class="dynamic-card__stats">
                     <view class="dynamic-card__stat">
-                        <tn-icon name="eye" size="22" color="#9A9388" />
+                        <tn-icon name="eye" size="22" color="#8A8A8A" />
                         <text>{{ formatCount(dynamic.viewCount) }} 浏览</text>
                     </view>
                     <view class="dynamic-card__stat">
-                        <tn-icon name="chat" size="22" color="#9A9388" />
+                        <tn-icon name="chat" size="22" color="#8A8A8A" />
                         <text>{{ formatCount(dynamic.commentCount) }} 评论</text>
                     </view>
                     <view class="dynamic-card__stat" :class="{ 'is-active': dynamic.isLiked }">
                         <tn-icon
                             :name="dynamic.isLiked ? 'like-fill' : 'like'"
                             size="22"
-                            :color="dynamic.isLiked ? themeStore.primaryColor : '#9A9388'"
+                            :color="dynamic.isLiked ? themeStore.secondaryColor : '#8A8A8A'"
                         />
                         <text>{{ formatCount(dynamic.likeCount) }} 点赞</text>
                     </view>
@@ -214,7 +214,7 @@
                         class="dynamic-card__icon-action"
                         @click.stop="handleMore"
                     >
-                        <tn-icon name="share" size="24" color="#5F5A50" />
+                        <tn-icon name="share" size="24" color="#4A4A4A" />
                     </view>
                 </view>
             </view>
@@ -257,9 +257,11 @@ const avatarSrc = computed(
 )
 const isPlazaUnified = computed(() => props.variant === 'plaza-unified')
 const isEditorial = computed(() => props.variant === 'editorial')
+const hasEditorialCover = computed(() => isEditorial.value && Boolean(props.dynamic.images?.[0]))
 const cardClass = computed(() => ({
     'dynamic-card--plaza-unified': isPlazaUnified.value,
-    'dynamic-card--editorial': isEditorial.value
+    'dynamic-card--editorial': isEditorial.value,
+    'dynamic-card--editorial-no-cover': isEditorial.value && !hasEditorialCover.value
 }))
 
 const displayTopics = computed(() => props.dynamic.topics?.slice(0, 4) || [])
@@ -278,7 +280,7 @@ const editorialMeta = computed(() => {
 
 const truncatedContent = computed(() => {
     const content = props.dynamic.content || ''
-    const maxLength = isEditorial.value ? 44 : 220
+    const maxLength = isEditorial.value ? (hasEditorialCover.value ? 64 : 120) : 220
     if (content.length > maxLength) {
         return `${content.slice(0, maxLength)}...`
     }
@@ -309,10 +311,10 @@ const primaryShadowColor = computed(() =>
 
 const cardStyle = computed(() => ({
     boxShadow: isEditorial.value
-        ? 'var(--dynamic-editorial-card-shadow, 0 12rpx 24rpx rgba(17, 17, 17, 0.16))'
+        ? 'var(--dynamic-editorial-card-shadow, 0 8rpx 18rpx rgba(17, 17, 17, 0.04))'
         : isPlazaUnified.value
-        ? '0 8rpx 22rpx rgba(17, 17, 17, 0.08)'
-        : `0 10rpx 28rpx ${alphaColor(primaryColor.value, 0.08)}`,
+        ? '0 8rpx 18rpx rgba(17, 17, 17, 0.04)'
+        : `0 8rpx 18rpx ${alphaColor(primaryColor.value, 0.04)}`,
     '--dynamic-card-primary-soft': primarySoftColor.value,
     '--dynamic-card-primary-soft-border': primarySoftBorderColor.value,
     '--dynamic-card-primary-shadow': primaryShadowColor.value
@@ -410,15 +412,16 @@ export default {
 @import '../../styles/dynamic.scss';
 
 .dynamic-card {
-    background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.9));
-    border-radius: var(--wm-radius-card-glass, 26rpx);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    background: var(--wm-color-bg-card, #ffffff);
+    border-radius: var(--wm-radius-card, 16rpx);
+    border: 1rpx solid var(--wm-color-border, #e5e5e5);
     overflow: hidden;
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
+    box-shadow: var(--wm-shadow-soft, 0 8rpx 18rpx rgba(17, 17, 17, 0.04));
     transition: all var(--wm-motion-base, 220ms) ease;
 
     &:active {
-        transform: translateY(-2rpx);
+        transform: translateY(1rpx);
+        opacity: 0.96;
     }
 
     &__header {
@@ -441,9 +444,9 @@ export default {
         width: 88rpx;
         height: 88rpx;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.82);
+        background: var(--wm-color-bg-soft, #f7f7f7);
         border: 2rpx solid #ffffff;
-        box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.12);
+        box-shadow: 0 4rpx 12rpx rgba(17, 17, 17, 0.08);
     }
 
     &__avatar-wrap {
@@ -476,16 +479,16 @@ export default {
         flex-shrink: 0;
         padding: 6rpx 14rpx;
         border-radius: 999rpx;
-        background: rgba(11, 11, 11, 0.08);
-        border: 1rpx solid rgba(11, 11, 11, 0.16);
+        background: var(--wm-color-primary-soft, #f3f3f3);
+        border: 1rpx solid rgba(11, 11, 11, 0.12);
         font-size: 22rpx;
         font-weight: 600;
         color: var(--wm-color-primary, #0b0b0b);
 
         &--staff {
             color: var(--wm-color-secondary, #c8a45d);
-            background: rgba(11, 11, 11, 0.1);
-            border-color: rgba(11, 11, 11, 0.08);
+            background: var(--wm-color-secondary-soft, #f8f3e7);
+            border-color: rgba(200, 164, 93, 0.22);
         }
 
         &--official {
@@ -505,12 +508,12 @@ export default {
 
     &__meta-text {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-text-secondary, #4a4a4a);
         line-height: 1.4;
     }
 
     &__meta-dot {
-        color: #d8d3c7;
+        color: #c9c9c9;
         font-size: 24rpx;
     }
 
@@ -539,8 +542,8 @@ export default {
         max-width: 100%;
         padding: 8rpx 16rpx;
         border-radius: 999rpx;
-        background: rgba(11, 11, 11, 0.08);
-        border: 1rpx solid rgba(11, 11, 11, 0.16);
+        background: var(--wm-color-bg-soft, #f7f7f7);
+        border: 1rpx solid var(--wm-color-border, #e5e5e5);
         font-size: 24rpx;
         font-weight: 500;
         color: var(--wm-color-primary, #0b0b0b);
@@ -550,9 +553,9 @@ export default {
         text-overflow: ellipsis;
 
         &--type {
-            background: rgba(255, 255, 255, 0.82);
-            border-color: var(--wm-color-border, #e7e2d6);
-            color: var(--wm-text-secondary, #5f5a50);
+            background: #ffffff;
+            border-color: var(--wm-color-border, #e5e5e5);
+            color: var(--wm-text-secondary, #4a4a4a);
             font-weight: 600;
         }
     }
@@ -562,7 +565,7 @@ export default {
         padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
         font-size: 28rpx;
         line-height: 1.7;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-text-secondary, #4a4a4a);
         word-break: break-all;
     }
 
@@ -607,7 +610,7 @@ export default {
         position: relative;
         overflow: hidden;
         border-radius: var(--wm-radius-card-soft, 20rpx);
-        background: rgba(255, 255, 255, 0.86);
+        background: var(--wm-color-bg-soft, #f7f7f7);
     }
 
     &__media-image {
@@ -625,11 +628,7 @@ export default {
         gap: 6rpx;
         padding: 10rpx 16rpx;
         border-radius: 999rpx;
-        background: linear-gradient(
-            135deg,
-            var(--wm-color-primary, #0b0b0b) 0%,
-            var(--wm-color-secondary, #c8a45d) 100%
-        );
+        background: rgba(11, 11, 11, 0.82);
         color: #ffffff;
         font-size: 22rpx;
         font-weight: 600;
@@ -655,12 +654,8 @@ export default {
         flex-wrap: wrap;
         margin-top: var(--wm-space-card-padding-lg, 24rpx);
         padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx);
-        background: linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.96) 0%,
-            rgba(248, 247, 242, 0.92) 100%
-        );
-        border-top: 1rpx solid var(--wm-color-border, #e7e2d6);
+        background: #ffffff;
+        border-top: 1rpx solid var(--wm-color-border, #e5e5e5);
     }
 
     &__stats {
@@ -677,10 +672,10 @@ export default {
         align-items: center;
         gap: 8rpx;
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-text-secondary, #4a4a4a);
 
         &.is-active {
-            color: var(--wm-color-primary, #0b0b0b);
+            color: var(--wm-color-secondary, #c8a45d);
             font-weight: 600;
         }
     }
@@ -696,8 +691,8 @@ export default {
         height: 76rpx;
         border-radius: 999rpx;
         padding: 0 24rpx;
-        border: 1rpx solid var(--wm-color-border, #e7e2d6);
-        background: rgba(255, 255, 255, 0.9);
+        border: 1rpx solid var(--wm-color-border, #e5e5e5);
+        background: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -712,22 +707,18 @@ export default {
         }
 
         &--ghost {
-            background: rgba(255, 255, 255, 0.9);
+            background: #ffffff;
         }
 
         &--primary {
             border-color: transparent;
-            background: linear-gradient(
-                135deg,
-                var(--wm-color-primary, #0b0b0b) 0%,
-                var(--wm-color-secondary, #c8a45d) 100%
-            );
+            background: var(--wm-color-primary, #0b0b0b);
             color: var(--color-btn-text, #ffffff);
         }
 
         &--active {
-            border-color: rgba(11, 11, 11, 0.16);
-            background: rgba(11, 11, 11, 0.08);
+            border-color: rgba(200, 164, 93, 0.32);
+            background: var(--wm-color-secondary-soft, #f8f3e7);
             color: var(--wm-color-primary, #0b0b0b);
         }
     }
@@ -736,8 +727,8 @@ export default {
         width: 76rpx;
         height: 76rpx;
         border-radius: 50%;
-        border: 1rpx solid var(--wm-color-border, #e7e2d6);
-        background: rgba(255, 255, 255, 0.9);
+        border: 1rpx solid var(--wm-color-border, #e5e5e5);
+        background: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -745,17 +736,17 @@ export default {
 
         &:active {
             transform: scale(0.98);
-            background: rgba(247, 240, 223, 0.72);
+            background: var(--wm-color-bg-soft, #f7f7f7);
         }
     }
 }
 
 .dynamic-card--editorial {
     border-radius: var(--dynamic-editorial-card-radius, 26rpx);
-    border-color: $dynamic-border;
-    background: var(--dynamic-editorial-card-bg, rgba(255, 255, 255, 0.84));
-    backdrop-filter: blur(var(--dynamic-editorial-card-blur, 14rpx));
-    -webkit-backdrop-filter: blur(var(--dynamic-editorial-card-blur, 14rpx));
+    border-color: var(--wm-color-border, #e5e5e5);
+    background: var(--dynamic-editorial-card-bg, #ffffff);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 
     .dynamic-card__editorial-head {
         padding: var(--dynamic-editorial-head-padding, 12rpx 12rpx 0);
@@ -773,10 +764,10 @@ export default {
     }
 
     .dynamic-card__avatar {
-        width: var(--dynamic-editorial-avatar-size, 42rpx);
-        height: var(--dynamic-editorial-avatar-size, 42rpx);
+        width: var(--dynamic-editorial-avatar-size, 54rpx);
+        height: var(--dynamic-editorial-avatar-size, 54rpx);
         border: 2rpx solid rgba(255, 255, 255, 0.92);
-        box-shadow: 0 6rpx 14rpx rgba(17, 17, 17, 0.14);
+        box-shadow: 0 4rpx 10rpx rgba(17, 17, 17, 0.08);
     }
 
     .dynamic-card__name {
@@ -787,21 +778,21 @@ export default {
     .dynamic-card__role-badge {
         padding: 4rpx 10rpx;
         font-size: 18rpx;
-        color: #9F7A2E;
-        background: rgba(11, 11, 11, 0.08);
-        border-color: rgba(11, 11, 11, 0.12);
+        color: var(--wm-color-secondary, #c8a45d);
+        background: var(--wm-color-secondary-soft, #f8f3e7);
+        border-color: rgba(200, 164, 93, 0.22);
     }
 
     .dynamic-card__role-badge--staff {
-        color: #9F7A2E;
-        background: rgba(11, 11, 11, 0.08);
-        border-color: rgba(11, 11, 11, 0.12);
+        color: var(--wm-color-secondary, #c8a45d);
+        background: var(--wm-color-secondary-soft, #f8f3e7);
+        border-color: rgba(200, 164, 93, 0.22);
     }
 
     .dynamic-card__role-badge--official {
-        color: #9F7A2E;
-        background: rgba(247, 240, 223, 0.3);
-        border-color: rgba(159, 122, 46, 0.12);
+        color: var(--wm-color-primary, #0b0b0b);
+        background: var(--wm-color-primary-soft, #f3f3f3);
+        border-color: rgba(11, 11, 11, 0.12);
     }
 
     .dynamic-card__editorial-meta {
@@ -820,7 +811,7 @@ export default {
         margin: var(--dynamic-editorial-cover-margin, 10rpx 12rpx 0);
         border-radius: var(--dynamic-editorial-cover-radius, 20rpx);
         overflow: hidden;
-        background: $dynamic-soft;
+        background: var(--wm-color-bg-soft, #f7f7f7);
     }
 
     .dynamic-card__editorial-cover {
@@ -851,7 +842,7 @@ export default {
         padding: var(--dynamic-editorial-content-padding, 10rpx 12rpx 0);
         font-size: var(--dynamic-editorial-content-size, 28rpx);
         line-height: var(--dynamic-editorial-content-line-height, 1.45);
-        font-weight: 600;
+        font-weight: 700;
         color: $dynamic-text;
         word-break: break-word;
         overflow: hidden;
@@ -881,7 +872,7 @@ export default {
         color: $dynamic-text-muted;
 
         &.is-active {
-            color: $dynamic-accent;
+            color: var(--wm-color-secondary, #c8a45d);
             font-weight: 600;
         }
     }
@@ -892,9 +883,35 @@ export default {
 
     .dynamic-card__editorial-stat-text {
         font-size: var(--dynamic-editorial-stat-size, 20rpx);
-        font-weight: 500;
+        font-weight: 600;
         line-height: 1;
         white-space: nowrap;
+    }
+}
+
+.dynamic-card--editorial-no-cover {
+    position: relative;
+
+    &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 24rpx;
+        bottom: 24rpx;
+        width: 6rpx;
+        border-radius: 999rpx;
+        background: var(--wm-color-secondary, #c8a45d);
+    }
+
+    .dynamic-card__editorial-head {
+        padding-top: 22rpx;
+    }
+
+    .dynamic-card__editorial-content {
+        padding-top: 20rpx;
+        font-size: 32rpx;
+        line-height: 1.56;
+        -webkit-line-clamp: 5;
     }
 }
 
@@ -920,15 +937,15 @@ export default {
     }
 
     .dynamic-card__tag {
-        background: var(--dynamic-card-primary-soft);
-        border-color: var(--dynamic-card-primary-soft-border);
+        background: var(--wm-color-bg-soft, #f7f7f7);
+        border-color: var(--wm-color-border, #e5e5e5);
         color: var(--wm-color-primary, #0b0b0b);
         font-weight: 500;
 
         &--type {
-            background: #F8F7F2;
-            border-color: #E7E2D6;
-            color: #5f5a50;
+            background: #ffffff;
+            border-color: var(--wm-color-border, #e5e5e5);
+            color: var(--wm-text-secondary, #4a4a4a);
             font-weight: 600;
         }
     }
@@ -937,7 +954,7 @@ export default {
         padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
         font-size: 26rpx;
         line-height: 1.62;
-        color: #5F5A50;
+        color: var(--wm-text-secondary, #4a4a4a);
     }
 
     .dynamic-card__media {
@@ -947,12 +964,8 @@ export default {
     .dynamic-card__footer {
         gap: var(--wm-space-section-gap-lg, 16rpx);
         padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx);
-        background: linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.96) 0%,
-            rgba(248, 247, 242, 0.92) 100%
-        );
-        border-top: 1rpx solid var(--wm-color-border, #e7e2d6);
+        background: #ffffff;
+        border-top: 1rpx solid var(--wm-color-border, #e5e5e5);
     }
 
     .dynamic-card__stats {

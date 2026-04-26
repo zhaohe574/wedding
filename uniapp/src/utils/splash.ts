@@ -11,28 +11,26 @@ export type SplashFrequency = 'session' | 'daily' | 'every_time' | 'first_visit'
 export interface SplashAdConfig {
     enabled: boolean
     image: string
+    logoImage: string
     autoEnterEnabled: boolean
     autoSeconds: number
     frequency: SplashFrequency
     buttonText: string
-    buttonBgColor: string
-    buttonTextColor: string
-    buttonBorderColor: string
-    buttonBorderRadius: number
 }
 
-const DEFAULT_SPLASH_CONFIG: SplashAdConfig = {
+export const DEFAULT_SPLASH_CONFIG: SplashAdConfig = {
     enabled: false,
     image: '',
+    logoImage: '',
     autoEnterEnabled: true,
     autoSeconds: 3,
     frequency: 'session',
-    buttonText: '点击进入',
-    buttonBgColor: '#FFFFFF',
-    buttonTextColor: '#333333',
-    buttonBorderColor: '#FFFFFF',
-    buttonBorderRadius: 24
+    buttonText: '点击进入'
 }
+
+export const getDefaultSplashConfig = (): SplashAdConfig => ({
+    ...DEFAULT_SPLASH_CONFIG
+})
 
 let sessionShown = false
 let splashHomeBypassArmed = false
@@ -61,17 +59,6 @@ const normalizeFrequency = (value: unknown): SplashFrequency => {
         return 'first_visit'
     }
     return 'daily'
-}
-
-const normalizeColor = (value: unknown, fallback: string) => {
-    const color = String(value || '').trim()
-    return /^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/.test(color) ? color : fallback
-}
-
-const normalizeRadius = (value: unknown) => {
-    const parsed = Number(value)
-    if (!Number.isFinite(parsed)) return DEFAULT_SPLASH_CONFIG.buttonBorderRadius
-    return Math.min(Math.max(Math.round(parsed), 0), 60)
 }
 
 const safeParseJson = (value: unknown) => {
@@ -128,6 +115,7 @@ export const normalizeSplashConfig = (
     return {
         enabled: normalizeBoolean(source.enabled ?? source.is_show ?? source.status, false),
         image: String(source.image || '').trim(),
+        logoImage: String(source.logo_image ?? source.logoImage ?? source.logo ?? '').trim(),
         autoEnterEnabled: normalizeBoolean(
             source.auto_enter_enabled ?? source.autoEnterEnabled ?? source.auto_enter,
             true
@@ -136,28 +124,33 @@ export const normalizeSplashConfig = (
         frequency: normalizeFrequency(
             source.frequency ?? source.show_frequency ?? source.showFrequency
         ),
-        buttonText: buttonText || DEFAULT_SPLASH_CONFIG.buttonText,
-        buttonBgColor: normalizeColor(source.button_bg_color ?? source.buttonBgColor, '#FFFFFF'),
-        buttonTextColor: normalizeColor(
-            source.button_text_color ?? source.buttonTextColor,
-            '#333333'
-        ),
-        buttonBorderColor: normalizeColor(
-            source.button_border_color ?? source.buttonBorderColor,
-            '#FFFFFF'
-        ),
-        buttonBorderRadius: normalizeRadius(
-            source.button_border_radius ??
-                source.buttonBorderRadius ??
-                source.button_radius ??
-                source.buttonRadius
-        )
+        buttonText: buttonText || DEFAULT_SPLASH_CONFIG.buttonText
     }
 }
 
 export const fetchSplashConfig = async () => {
     const data = await getDecorate({ id: SPLASH_PAGE_ID })
     return normalizeSplashConfig(data || {})
+}
+
+export const fetchSplashConfigSafely = async (timeoutMs = 3000): Promise<SplashAdConfig> => {
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const timeoutConfig = new Promise<SplashAdConfig>((resolve) => {
+        timer = setTimeout(() => {
+            resolve(getDefaultSplashConfig())
+        }, timeoutMs)
+    })
+
+    try {
+        return await Promise.race([fetchSplashConfig(), timeoutConfig])
+    } catch (error) {
+        console.error('开屏广告配置获取失败', error)
+        return getDefaultSplashConfig()
+    } finally {
+        if (timer) {
+            clearTimeout(timer)
+        }
+    }
 }
 
 const todayKey = () => {
