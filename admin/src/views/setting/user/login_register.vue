@@ -197,7 +197,6 @@ const getData = async () => {
         const data = normalizeLoginSetup(await getLogin())
         Object.assign(formData, data)
     } catch (error) {
-        console.log('获取=>', error)
     }
 }
 
@@ -208,7 +207,6 @@ const handleSubmit = async () => {
         await setLogin(normalizeLoginSetup(formData))
         await getData()
     } catch (error) {
-        console.log('保存=>', error)
     }
 }
 

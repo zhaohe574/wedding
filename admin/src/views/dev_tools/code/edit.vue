@@ -559,7 +559,6 @@ const handleAdd = (data: any) => {
 
 const handleEdit = async (data: any) => {
     const newData = cloneDeep(toRaw(data))
-    console.log(editIndex)
     formData.relations.splice(editIndex, 1, newData)
 }
 

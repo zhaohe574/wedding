@@ -32,7 +32,6 @@ export const useUserStore = defineStore({
                 this.userInfo = data
             } catch (error) {
                 // 静默处理错误，避免在未登录时显示错误提示
-                console.log('获取用户信息失败:', error)
             }
         },
         login(token: string) {

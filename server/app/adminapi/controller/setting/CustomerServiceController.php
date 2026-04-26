@@ -48,4 +48,18 @@ class CustomerServiceController extends BaseAdminController
         CustomerServiceLogic::setConfig($params);
         return $this->success('设置成功', [], 1, 1);
     }
+
+    /**
+     * @notes 发送企微测试消息
+     * @return \think\response\Json
+     */
+    public function testWecomMessage()
+    {
+        $params = $this->request->post();
+        $result = CustomerServiceLogic::testWecomMessage($params);
+        if ($result['success']) {
+            return $this->success($result['message']);
+        }
+        return $this->fail($result['message']);
+    }
 }

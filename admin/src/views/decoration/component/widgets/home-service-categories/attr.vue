@@ -41,6 +41,13 @@
                                     <el-radio-button label="bottom">下</el-radio-button>
                                 </el-radio-group>
                             </el-form-item>
+                            <el-form-item class="mt-[18px]" label="文字对齐">
+                                <el-radio-group v-model="item.text_align">
+                                    <el-radio-button label="left">左</el-radio-button>
+                                    <el-radio-button label="center">中</el-radio-button>
+                                    <el-radio-button label="right">右</el-radio-button>
+                                </el-radio-group>
+                            </el-form-item>
                             <el-form-item class="mt-[18px]" label="跳转链接">
                                 <link-picker v-if="type == 'mobile'" v-model="item.link" />
                                 <el-input
@@ -305,6 +312,7 @@ const handleAdd = () => {
         image: '',
         size: 'small',
         text_position: 'bottom',
+        text_align: 'left',
         link: {
             path: '/pages/schedule_query/schedule_query',
             type: 'shop'

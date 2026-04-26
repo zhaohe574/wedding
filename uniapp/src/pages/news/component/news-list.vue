@@ -55,7 +55,6 @@ const queryList = async (page_no: number, page_size: number) => {
         })
         paging.value.complete(lists)
     } catch (e) {
-        console.log('报错=>', e)
         //TODO handle the exception
         paging.value.complete(false)
     }

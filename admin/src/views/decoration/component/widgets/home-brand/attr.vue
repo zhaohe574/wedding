@@ -25,6 +25,18 @@
                     placeholder="请输入链接"
                 />
             </el-form-item>
+            <el-form-item label="统计数据" class="mt-4 !mb-0">
+                <div class="flex-1 space-y-3">
+                    <div
+                        v-for="(_, index) in contentData.stats"
+                        :key="index"
+                        class="grid grid-cols-2 gap-3"
+                    >
+                        <el-input v-model="contentData.stats[index].value" maxlength="12" placeholder="数值" />
+                        <el-input v-model="contentData.stats[index].label" maxlength="12" placeholder="标签" />
+                    </div>
+                </div>
+            </el-form-item>
         </el-card>
     </el-form>
 </template>
@@ -35,6 +47,11 @@ import type { PropType } from 'vue'
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>
+const DEFAULT_STATS = [
+    { value: '1000+', label: '场仪式' },
+    { value: '98%', label: '好评' },
+    { value: '30+', label: '城市' }
+]
 
 const emits = defineEmits<(event: 'update:content', data: OptionsType['content']) => void>()
 const props = defineProps({
@@ -58,4 +75,16 @@ const contentData = computed({
         emits('update:content', newValue)
     }
 })
+
+const ensureStats = () => {
+    if (!Array.isArray(props.content.stats) || props.content.stats.length !== 3) {
+        props.content.stats = DEFAULT_STATS.map((item, index) => ({
+            ...item,
+            ...(Array.isArray(props.content.stats) ? props.content.stats[index] : {})
+        }))
+        emits('update:content', props.content)
+    }
+}
+
+watchEffect(ensureStats)
 </script>

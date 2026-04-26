@@ -403,7 +403,6 @@ const { isLock, lockFn: handlePay } = useLockFn(async () => {
         uni.hideLoading()
     } catch (error) {
         uni.hideLoading()
-        console.log(error)
     }
 })
 

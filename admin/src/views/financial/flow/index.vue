@@ -150,6 +150,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { getFlowList, getFlowDetail, getFlowStatistics, getFlowTypeOptions, getBizTypeOptions } from '@/api/financial'
 
+type ElTagType = 'success' | 'warning' | 'info' | 'primary' | 'danger' | undefined
+
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
@@ -176,15 +178,15 @@ const formatMoney = (val: number | string) => {
     return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-const getFlowTypeTag = (type: number) => {
-    const map: Record<number, string> = {
+const getFlowTypeTag = (type: number): ElTagType => {
+    const map: Record<number, ElTagType> = {
         1: 'success',
         2: 'danger',
         3: 'warning',
         4: 'info',
-        5: ''
+        5: undefined
     }
-    return map[type] || ''
+    return map[type]
 }
 
 const handleDateChange = (val: string[] | null) => {

@@ -257,7 +257,7 @@
                     />
                 </el-form-item>
                 <el-form-item label="备注">
-                    <el-input v-model="batchForm.remark" type="textarea" rows="3" />
+                    <el-input v-model="batchForm.remark" type="textarea" :rows="3" />
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -288,7 +288,7 @@
                     <span class="ml-2">天</span>
                 </el-form-item>
                 <el-form-item label="备注">
-                    <el-input v-model="configForm.remark" type="textarea" rows="2" />
+                    <el-input v-model="configForm.remark" type="textarea" :rows="2" />
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -307,6 +307,8 @@ import {
     getBatchList, createBatch, auditBatch, executeBatch, cancelBatch,
     getSettlementConfigList, addSettlementConfig, editSettlementConfig, deleteSettlementConfig
 } from '@/api/financial'
+
+type ElTagType = 'success' | 'warning' | 'info' | 'primary' | 'danger' | undefined
 
 const activeTab = ref('records')
 const loading = ref(false)
@@ -349,14 +351,14 @@ const formatMoney = (val: number | string) => {
     return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-const getStatusType = (status: number) => {
-    const map: Record<number, string> = { 0: 'warning', 1: 'success', 2: 'info', 3: 'danger' }
-    return map[status] || ''
+const getStatusType = (status: number): ElTagType => {
+    const map: Record<number, ElTagType> = { 0: 'warning', 1: 'success', 2: 'info', 3: 'danger' }
+    return map[status]
 }
 
-const getBatchStatusType = (status: number) => {
-    const map: Record<number, string> = { 0: 'warning', 1: 'primary', 2: 'info', 3: 'success', 4: 'danger' }
-    return map[status] || ''
+const getBatchStatusType = (status: number): ElTagType => {
+    const map: Record<number, ElTagType> = { 0: 'warning', 1: 'primary', 2: 'info', 3: 'success', 4: 'danger' }
+    return map[status]
 }
 
 const handleDateChange = (val: string[] | null) => {

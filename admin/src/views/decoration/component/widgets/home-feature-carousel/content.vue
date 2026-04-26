@@ -51,7 +51,7 @@ const previewHeight = computed(() => `${(Number(props.content.height) || 300) / 
 .home-feature-preview {
     position: relative;
     overflow: hidden;
-    margin: 0 16px 12px;
+    margin: 12px 16px 12px;
     border-radius: 10px;
     background: #111111;
 
@@ -78,7 +78,7 @@ const previewHeight = computed(() => `${(Number(props.content.height) || 300) / 
 
     &__dot--active {
         width: 14px;
-        background: #ffffff;
+        background: #c8a45d;
     }
 }
 </style>

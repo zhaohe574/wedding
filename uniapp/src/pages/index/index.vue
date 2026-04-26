@@ -40,76 +40,90 @@
                             </view>
                         </view>
 
-                        <view
-                            v-if="showFeatureCarousel"
-                            class="home-page__feature"
-                            :style="{ height: `${featureHeight}rpx` }"
-                            @tap="handleFeatureTap(currentFeatureItem)"
-                        >
-                            <swiper
-                                v-if="featureSlides.length > 1"
-                                class="home-page__feature-swiper"
-                                circular
-                                :autoplay="featureAutoplay"
-                                :interval="featureInterval"
-                                duration="450"
-                                @change="handleFeatureChange"
-                            >
-                                <swiper-item v-for="item in featureSlides" :key="item.key">
-                                    <image
-                                        class="home-page__feature-image"
-                                        :src="item.image"
-                                        mode="aspectFill"
-                                        lazy-load
-                                    />
-                                </swiper-item>
-                            </swiper>
-                            <image
-                                v-else-if="currentFeatureItem?.image"
-                                class="home-page__feature-image"
-                                :src="currentFeatureItem.image"
-                                mode="aspectFill"
-                                lazy-load
-                            />
-                            <view v-else class="home-page__feature-image home-page__feature-fallback" />
-                            <view v-if="featureSlides.length > 1" class="home-page__feature-dots">
-                                <view
-                                    v-for="(_, index) in featureSlides"
-                                    :key="index"
-                                    class="home-page__feature-dot"
-                                    :class="{
-                                        'home-page__feature-dot--active': index === safeFeatureIndex
-                                    }"
-                                />
-                            </view>
+                        <view v-if="homeBrand.stats.length" class="home-page__stats">
+                            <template v-for="(item, index) in homeBrand.stats" :key="`${item.value}-${index}`">
+                                <view v-if="index > 0" class="home-page__stats-dot"></view>
+                                <view class="home-page__stats-item">
+                                    <text class="home-page__stats-value">{{ item.value }}</text>
+                                    <text class="home-page__stats-label">{{ item.label }}</text>
+                                </view>
+                            </template>
                         </view>
+                    </view>
 
-                        <view v-if="categoryTiles.length" class="home-page__tile-grid">
-                            <view
-                                v-for="tile in categoryTiles"
-                                :key="tile.key"
-                                class="home-page__tile"
-                                :class="[
-                                    `home-page__tile--${tile.size}`,
-                                    { 'home-page__tile--no-image': !tile.image }
-                                ]"
-                                @tap="handleCategoryTap(tile)"
-                            >
+                    <view
+                        v-if="showFeatureCarousel"
+                        class="home-page__feature"
+                        :style="{ height: `${featureHeight}rpx` }"
+                        @tap="handleFeatureTap(currentFeatureItem)"
+                    >
+                        <swiper
+                            v-if="featureSlides.length > 1"
+                            class="home-page__feature-swiper"
+                            circular
+                            :autoplay="featureAutoplay"
+                            :interval="featureInterval"
+                            duration="450"
+                            @change="handleFeatureChange"
+                        >
+                            <swiper-item v-for="item in featureSlides" :key="item.key">
                                 <image
-                                    v-if="tile.image"
-                                    class="home-page__tile-image"
-                                    :src="tile.image"
+                                    class="home-page__feature-image"
+                                    :src="item.image"
                                     mode="aspectFill"
                                     lazy-load
                                 />
-                                <view class="home-page__tile-scrim"></view>
-                                <view
-                                    class="home-page__tile-copy"
-                                    :class="`home-page__tile-copy--${tile.textPosition}`"
-                                >
-                                    <text class="home-page__tile-title">{{ tile.title }}</text>
-                                    <text class="home-page__tile-subtitle">{{ tile.subtitle }}</text>
-                                </view>
+                            </swiper-item>
+                        </swiper>
+                        <image
+                            v-else-if="currentFeatureItem?.image"
+                            class="home-page__feature-image"
+                            :src="currentFeatureItem.image"
+                            mode="aspectFill"
+                            lazy-load
+                        />
+                        <view v-else class="home-page__feature-image home-page__feature-fallback" />
+                        <view v-if="featureSlides.length > 1" class="home-page__feature-dots">
+                            <view
+                                v-for="(_, index) in featureSlides"
+                                :key="index"
+                                class="home-page__feature-dot"
+                                :class="{
+                                    'home-page__feature-dot--active': index === safeFeatureIndex
+                                }"
+                            />
+                        </view>
+                    </view>
+
+                    <view v-if="categoryTiles.length" class="home-page__tile-grid">
+                        <view
+                            v-for="tile in categoryTiles"
+                            :key="tile.key"
+                            class="home-page__tile"
+                            :class="[
+                                `home-page__tile--${tile.size}`,
+                                { 'home-page__tile--no-image': !tile.image }
+                            ]"
+                            @tap="handleCategoryTap(tile)"
+                        >
+                            <image
+                                v-if="tile.image"
+                                class="home-page__tile-image"
+                                :src="tile.image"
+                                mode="aspectFill"
+                                lazy-load
+                            />
+                            <view class="home-page__tile-scrim"></view>
+                            <view
+                                class="home-page__tile-copy"
+                                :class="[
+                                    `home-page__tile-copy--${tile.textPosition}`,
+                                    `home-page__tile-copy--align-${tile.textAlign}`
+                                ]"
+                            >
+                                <text class="home-page__tile-title">{{ tile.title }}</text>
+                                <text class="home-page__tile-subtitle">{{ tile.subtitle }}</text>
+                                <view class="home-page__tile-line"></view>
                             </view>
                         </view>
                     </view>
@@ -179,6 +193,10 @@ interface HomeBrandView {
     subtitle: string
     ctaText: string
     ctaLink: AppLink
+    stats: Array<{
+        value: string
+        label: string
+    }>
 }
 
 interface FeatureSlideItem {
@@ -195,6 +213,7 @@ interface HomeCategoryTile {
     image: string
     size: 'large' | 'small' | 'wide'
     textPosition: 'top' | 'middle' | 'bottom'
+    textAlign: 'left' | 'center' | 'right'
     link?: AppLink
     url?: string
 }
@@ -220,6 +239,11 @@ const DEFAULT_SCHEDULE_LINK = {
     path: '/pages/schedule_query/schedule_query',
     type: 'shop'
 }
+const DEFAULT_HOME_BRAND_STATS = [
+    { value: '1000+', label: '场仪式' },
+    { value: '98%', label: '好评' },
+    { value: '30+', label: '城市' }
+]
 const DEFAULT_CATEGORY_CONFIG: HomeCategoryTile[] = [
     {
         key: 'western',
@@ -228,6 +252,7 @@ const DEFAULT_CATEGORY_CONFIG: HomeCategoryTile[] = [
         image: '',
         size: 'large',
         textPosition: 'bottom',
+        textAlign: 'left',
         link: {
             ...DEFAULT_SCHEDULE_LINK,
             query: { keyword: '西式主持' }
@@ -240,6 +265,7 @@ const DEFAULT_CATEGORY_CONFIG: HomeCategoryTile[] = [
         image: '',
         size: 'small',
         textPosition: 'bottom',
+        textAlign: 'left',
         link: {
             ...DEFAULT_SCHEDULE_LINK,
             query: { keyword: '中式主持' }
@@ -252,6 +278,7 @@ const DEFAULT_CATEGORY_CONFIG: HomeCategoryTile[] = [
         image: '',
         size: 'small',
         textPosition: 'bottom',
+        textAlign: 'left',
         link: {
             ...DEFAULT_SCHEDULE_LINK,
             query: { keyword: '商务主持' }
@@ -264,6 +291,7 @@ const DEFAULT_CATEGORY_CONFIG: HomeCategoryTile[] = [
         image: '',
         size: 'wide',
         textPosition: 'bottom',
+        textAlign: 'left',
         link: {
             path: '/pages/news/news',
             type: 'shop'
@@ -305,6 +333,28 @@ const normalizeTextPosition = (value: unknown): HomeCategoryTile['textPosition']
     return ['top', 'middle', 'bottom'].includes(String(value))
         ? (value as HomeCategoryTile['textPosition'])
         : 'bottom'
+}
+
+const normalizeTextAlign = (value: unknown): HomeCategoryTile['textAlign'] => {
+    return ['left', 'center', 'right'].includes(String(value))
+        ? (value as HomeCategoryTile['textAlign'])
+        : 'left'
+}
+
+const normalizeHomeBrandStats = (value: unknown): HomeBrandView['stats'] => {
+    const normalizedList = normalizeJsonList(value)
+        .map((item: any, index) => ({
+            value: normalizeText(item?.value, DEFAULT_HOME_BRAND_STATS[index]?.value || ''),
+            label: normalizeText(item?.label, DEFAULT_HOME_BRAND_STATS[index]?.label || '')
+        }))
+        .filter((item) => item.value || item.label)
+        .slice(0, 3)
+
+    if (normalizedList.length) {
+        return normalizedList
+    }
+
+    return DEFAULT_HOME_BRAND_STATS
 }
 
 const bannerWidget = computed(() => {
@@ -413,7 +463,8 @@ const homeBrand = computed<HomeBrandView>(() => {
         teamName: normalizeText(content.team_name, '我们是星意主持人工作室'),
         subtitle: normalizeText(content.subtitle, '选星意，有心意'),
         ctaText: normalizeText(content.cta_text, '立即预定'),
-        ctaLink: content.cta_link || DEFAULT_SCHEDULE_LINK
+        ctaLink: content.cta_link || DEFAULT_SCHEDULE_LINK,
+        stats: normalizeHomeBrandStats(content.stats)
     }
 })
 
@@ -501,6 +552,7 @@ const categoryTiles = computed<HomeCategoryTile[]>(() => {
             textPosition: normalizeTextPosition(
                 item?.text_position || DEFAULT_CATEGORY_CONFIG[index]?.textPosition
             ),
+            textAlign: normalizeTextAlign(item?.text_align || DEFAULT_CATEGORY_CONFIG[index]?.textAlign),
             link: item?.link || DEFAULT_CATEGORY_CONFIG[index]?.link,
             url: DEFAULT_CATEGORY_CONFIG[index]?.url
         }))
@@ -674,11 +726,11 @@ onShow(() => {
 }
 
 .home-page__intro-panel {
-    padding: 28rpx;
-    border-radius: 16rpx;
+    padding: 32rpx 34rpx 28rpx;
+    border-radius: 20rpx;
     border: 1rpx solid rgba(11, 11, 11, 0.08);
     background: #ffffff;
-    box-shadow: 0 10rpx 24rpx rgba(11, 11, 11, 0.08);
+    box-shadow: 0 12rpx 30rpx rgba(11, 11, 11, 0.1);
 }
 
 .home-page__intro-head {
@@ -686,7 +738,7 @@ onShow(() => {
     align-items: center;
     justify-content: space-between;
     gap: 24rpx;
-    padding: 0 0 28rpx;
+    padding: 0 0 24rpx;
 }
 
 .home-page__intro-copy {
@@ -721,9 +773,9 @@ onShow(() => {
 .home-page__booking-btn {
     flex-shrink: 0;
     min-width: 138rpx;
-    min-height: 60rpx;
+    min-height: 62rpx;
     padding: 0 28rpx;
-    border-radius: 999rpx;
+    border-radius: 12rpx;
     background: #0b0b0b;
     display: inline-flex;
     align-items: center;
@@ -742,9 +794,49 @@ onShow(() => {
     color: #ffffff;
 }
 
+.home-page__stats {
+    min-height: 78rpx;
+    border-top: 1rpx solid rgba(11, 11, 11, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.home-page__stats-item {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4rpx;
+}
+
+.home-page__stats-value {
+    font-size: 30rpx;
+    line-height: 1.15;
+    font-weight: 700;
+    color: #333333;
+}
+
+.home-page__stats-label {
+    font-size: 20rpx;
+    line-height: 1.15;
+    color: #777777;
+}
+
+.home-page__stats-dot {
+    width: 6rpx;
+    height: 6rpx;
+    border-radius: 999rpx;
+    background: #c8a45d;
+    flex-shrink: 0;
+}
+
 .home-page__feature {
     position: relative;
     overflow: hidden;
+    margin-top: 24rpx;
     border-radius: 18rpx;
     background: #111111;
 }
@@ -828,9 +920,22 @@ onShow(() => {
     right: 20rpx;
     display: flex;
     flex-direction: column;
+    gap: 7rpx;
+}
+
+.home-page__tile-copy--align-left {
+    align-items: flex-start;
+    text-align: left;
+}
+
+.home-page__tile-copy--align-center {
     align-items: center;
-    gap: 8rpx;
     text-align: center;
+}
+
+.home-page__tile-copy--align-right {
+    align-items: flex-end;
+    text-align: right;
 }
 
 .home-page__tile-copy--top {
@@ -847,7 +952,7 @@ onShow(() => {
 }
 
 .home-page__tile-title {
-    font-size: 29rpx;
+    font-size: 30rpx;
     line-height: 1.2;
     font-weight: 800;
     color: #ffffff;
@@ -862,10 +967,18 @@ onShow(() => {
     font-size: 16rpx;
     line-height: 1.2;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.88);
+    letter-spacing: 0.5rpx;
+    color: #c8a45d;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.home-page__tile-line {
+    width: 42rpx;
+    height: 2rpx;
+    border-radius: 999rpx;
+    background: #c8a45d;
 }
 
 </style>

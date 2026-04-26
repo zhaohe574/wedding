@@ -34,7 +34,6 @@ const getData = async () => {
     try {
         state.value = await getDecoratePc()
     } catch (error) {
-        console.log(error)
     }
 }
 

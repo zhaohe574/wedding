@@ -120,7 +120,6 @@ export const useMenuOa = (ref: any) => {
         try {
             menuList.value = await getOaMenu()
         } catch (error) {
-            console.log('获取菜单=>', error)
         }
     }
 

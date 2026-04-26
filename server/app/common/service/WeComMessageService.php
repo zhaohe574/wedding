@@ -19,6 +19,14 @@ use think\facade\Log;
 class WeComMessageService
 {
     private const TOKEN_CACHE_KEY = 'wecom_internal_access_token';
+    private const TOKEN_INVALID_ERRCODES = [40001, 40014, 42001];
+
+    private static string $lastError = '';
+
+    public static function getLastError(): string
+    {
+        return self::$lastError;
+    }
 
     /**
      * 给顾问发送内部文本消息。
@@ -59,27 +67,50 @@ class WeComMessageService
      */
     public static function sendTextToUsers(array $userIds, string $content): bool
     {
+        self::$lastError = '';
         $userIds = array_values(array_unique(array_filter(array_map(static fn ($item) => trim((string) $item), $userIds))));
         if (empty($userIds)) {
-            Log::info('企业微信内部消息跳过：未找到可发送成员');
+            self::setLastError('未找到可发送成员');
+            Log::info('企业微信内部消息跳过：' . self::$lastError);
             return false;
         }
 
         $config = self::getConfig();
         if (!$config['enabled']) {
-            Log::info('企业微信内部消息跳过：企业微信内部通知未启用');
+            self::setLastError('企业微信内部通知未启用');
+            Log::info('企业微信内部消息跳过：' . self::$lastError);
             return false;
         }
 
         if (empty($config['corp_id']) || empty($config['secret']) || empty($config['agent_id'])) {
-            Log::info('企业微信内部消息跳过：缺少 corp_id / secret / agent_id 配置');
+            self::setLastError('缺少 corp_id / secret / agent_id 配置');
+            Log::info('企业微信内部消息跳过：' . self::$lastError);
             return false;
         }
 
+        $result = self::sendTextToUsersWithConfig($config, $userIds, $content);
+        if (in_array((int) ($result['errcode'] ?? -1), self::TOKEN_INVALID_ERRCODES, true)) {
+            Cache::delete(self::getTokenCacheKey($config));
+            Log::warning('企业微信内部消息 token 失效，已清理缓存并重试一次：' . ($result['errmsg'] ?? ''));
+            $result = self::sendTextToUsersWithConfig($config, $userIds, $content);
+        }
+
+        if (($result['errcode'] ?? -1) !== 0) {
+            $detail = self::formatSendError($result);
+            self::setLastError($detail);
+            Log::error('企业微信内部消息发送失败：' . $detail);
+            return false;
+        }
+
+        Log::info('企业微信内部消息发送成功：touser=' . implode('|', $userIds));
+        return true;
+    }
+
+    private static function sendTextToUsersWithConfig(array $config, array $userIds, string $content): array
+    {
         $accessToken = self::getAccessToken($config);
         if (empty($accessToken)) {
-            Log::error('企业微信内部消息发送失败：获取 access_token 失败');
-            return false;
+            return ['errcode' => -1, 'errmsg' => '获取 access_token 失败'];
         }
 
         $payload = [
@@ -94,17 +125,10 @@ class WeComMessageService
             'enable_duplicate_check' => 0,
         ];
 
-        $result = self::httpPostJson(
+        return self::httpPostJson(
             'https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=' . $accessToken,
             $payload
         );
-
-        if (($result['errcode'] ?? -1) !== 0) {
-            Log::error('企业微信内部消息发送失败：' . ($result['errmsg'] ?? '未知错误'));
-            return false;
-        }
-
-        return true;
     }
 
     /**
@@ -125,7 +149,7 @@ class WeComMessageService
      */
     private static function getAccessToken(array $config): ?string
     {
-        $cacheKey = self::TOKEN_CACHE_KEY . ':' . md5($config['corp_id'] . '|' . $config['secret']);
+        $cacheKey = self::getTokenCacheKey($config);
         $token = Cache::get($cacheKey);
         if (!empty($token)) {
             return (string) $token;
@@ -145,6 +169,11 @@ class WeComMessageService
         return (string) $result['access_token'];
     }
 
+    private static function getTokenCacheKey(array $config): string
+    {
+        return self::TOKEN_CACHE_KEY . ':' . md5($config['corp_id'] . '|' . $config['secret']);
+    }
+
     /**
      * GET JSON 请求。
      */
@@ -153,13 +182,15 @@ class WeComMessageService
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
         $response = curl_exec($ch);
         $error = curl_error($ch);
         curl_close($ch);
 
         if ($error) {
+            self::setLastError('GET 请求失败：' . $error);
             Log::error('企业微信 GET 请求失败：' . $error);
             return [];
         }
@@ -177,7 +208,8 @@ class WeComMessageService
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data, JSON_UNESCAPED_UNICODE));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
         $response = curl_exec($ch);
@@ -185,10 +217,28 @@ class WeComMessageService
         curl_close($ch);
 
         if ($error) {
+            self::setLastError('POST 请求失败：' . $error);
             Log::error('企业微信 POST 请求失败：' . $error);
             return [];
         }
 
         return json_decode((string) $response, true) ?: [];
+    }
+
+    private static function formatSendError(array $result): string
+    {
+        $parts = [sprintf('errcode=%s', (string) ($result['errcode'] ?? -1))];
+        $parts[] = 'errmsg=' . (string) ($result['errmsg'] ?? '未知错误');
+        foreach (['invaliduser', 'invalidparty', 'invalidtag'] as $key) {
+            if (!empty($result[$key])) {
+                $parts[] = $key . '=' . (string) $result[$key];
+            }
+        }
+        return implode('；', $parts);
+    }
+
+    private static function setLastError(string $error): void
+    {
+        self::$lastError = $error;
     }
 }

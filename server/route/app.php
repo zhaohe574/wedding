@@ -28,5 +28,12 @@ Route::rule('pc/:any', function () {
 
 //定时任务
 Route::rule('crontab', function () {
+    $secret = (string) env('project.crontab_secret', '');
+    $requestSecret = (string) request()->param('secret', '');
+    if ($secret === '' || !hash_equals($secret, $requestSecret)) {
+        abort(404);
+    }
+
     Console::call('crontab');
+    return 'success';
 });

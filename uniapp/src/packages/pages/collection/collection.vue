@@ -69,7 +69,6 @@ const handleCollect = async (index: number): Promise<void> => {
         uni.$u.toast('已取消收藏')
         paging.value.reload()
     } catch (err) {
-        console.log('取消收藏报错=>', err)
     }
 }
 </script>

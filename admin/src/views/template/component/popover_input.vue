@@ -43,6 +43,5 @@
 </template>
 <script lang="ts" setup>
 const onConfirm = (value: string) => {
-    console.log(value)
 }
 </script>

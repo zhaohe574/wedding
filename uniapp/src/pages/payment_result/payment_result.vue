@@ -809,7 +809,6 @@ const fetchPayResult = async ({
             scheduleNextPoll()
         }
     } catch (error) {
-        console.log(error)
 
         if (!silent || previousStatus !== PageStatusEnum.NORMAL) {
             status.value = PageStatusEnum.ERROR

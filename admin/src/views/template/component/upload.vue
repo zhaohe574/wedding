@@ -53,14 +53,11 @@
 import Upload from '@/components/upload/index.vue'
 
 const onChange = (file: any) => {
-    console.log('上传文件的状态发生改变', file)
 }
 
 const onSuccess = (file: any) => {
-    console.log('上传文件成功', file)
 }
 
 const onError = (file: any) => {
-    console.log('上传文件失败', file)
 }
 </script>

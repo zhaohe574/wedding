@@ -15,3 +15,7 @@ export function getWecomRecipients(params?: any) {
 export function updateWecomAdvisor(params: { id: number; wecom_userid: string }) {
     return request.post({ url: '/setting.wecom_recipient/updateAdvisor', params })
 }
+
+export function testWecomMessage(params: { wecom_userid: string; content?: string }) {
+    return request.post({ url: '/setting.customer_service/testWecomMessage', params })
+}

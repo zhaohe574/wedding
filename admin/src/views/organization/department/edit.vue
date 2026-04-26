@@ -84,7 +84,6 @@ const checkMobile = (rule: any, value: any, callback: any) => {
         return callback()
     } else {
         const reg = /^[1][3,4,5,6,7,8,9][0-9]{9}$/
-        console.log(reg.test(value))
         if (reg.test(value)) {
             callback()
         } else {

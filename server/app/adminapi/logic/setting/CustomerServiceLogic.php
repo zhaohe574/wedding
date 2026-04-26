@@ -17,6 +17,7 @@ namespace app\adminapi\logic\setting;
 use app\common\logic\BaseLogic;
 use app\common\service\ConfigService;
 use app\common\service\FileService;
+use app\common\service\WeComMessageService;
 
 /**
  * 客服设置逻辑
@@ -25,6 +26,8 @@ use app\common\service\FileService;
  */
 class CustomerServiceLogic extends BaseLogic
 {
+    public const SECRET_MASK = '******';
+
     /**
      * @notes 获取客服设置
      * @return array
@@ -44,7 +47,8 @@ class CustomerServiceLogic extends BaseLogic
             'tips' => ConfigService::get('customer_service', 'tips', ''),
             'wecom_enabled' => (int) ConfigService::get('customer_service', 'wecom_enabled', 0),
             'wecom_corp_id' => ConfigService::get('customer_service', 'wecom_corp_id', ''),
-            'wecom_secret' => ConfigService::get('customer_service', 'wecom_secret', ''),
+            'wecom_secret' => ConfigService::get('customer_service', 'wecom_secret', '') ? self::SECRET_MASK : '',
+            'wecom_secret_filled' => ConfigService::get('customer_service', 'wecom_secret', '') ? 1 : 0,
             'wecom_agent_id' => (int) ConfigService::get('customer_service', 'wecom_agent_id', 0),
         ];
         return $config;
@@ -64,11 +68,46 @@ class CustomerServiceLogic extends BaseLogic
                 if ($key == 'qr_code') {
                     $value = FileService::setFileUrl($value);
                 }
+                if ($key === 'wecom_secret') {
+                    $value = trim((string) $value);
+                    if ($value === '' || $value === self::SECRET_MASK) {
+                        continue;
+                    }
+                }
                 if (in_array($key, ['wecom_enabled', 'wecom_agent_id'], true)) {
                     $value = (int) $value;
                 }
                 ConfigService::set('customer_service', $key, $value);
             }
         }
+    }
+
+    public static function testWecomMessage(array $params): array
+    {
+        $wecomUserid = trim((string) ($params['wecom_userid'] ?? ''));
+        if ($wecomUserid === '') {
+            return ['success' => false, 'message' => '请输入企微成员ID'];
+        }
+        if (mb_strlen($wecomUserid) > 64) {
+            return ['success' => false, 'message' => '企微成员ID长度不能超过64个字符'];
+        }
+
+        $content = trim((string) ($params['content'] ?? ''));
+        if ($content === '') {
+            $content = '这是一条婚庆管理系统企业微信测试消息。';
+        }
+        if (mb_strlen($content) > 500) {
+            return ['success' => false, 'message' => '测试内容不能超过500个字符'];
+        }
+
+        $success = WeComMessageService::sendTextToUsers([$wecomUserid], $content);
+        if (!$success) {
+            return [
+                'success' => false,
+                'message' => WeComMessageService::getLastError() ?: '发送失败，请检查企微配置与成员ID',
+            ];
+        }
+
+        return ['success' => true, 'message' => '测试消息已发送'];
     }
 }

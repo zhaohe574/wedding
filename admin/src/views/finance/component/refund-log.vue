@@ -58,7 +58,6 @@ const getRefundLog = async () => {
         })
         logLists.value = res
     } catch (error) {
-        console.log(error)
     }
     loading.value = false
 }

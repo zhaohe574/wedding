@@ -42,7 +42,6 @@ const getData = async () => {
             formData[key] = data[key]
         }
     } catch (error) {
-        console.log('获取=>', error)
     }
 }
 
@@ -52,7 +51,6 @@ const handleSubmit = async () => {
         await setUserSetup(formData)
         getData()
     } catch (error) {
-        console.log('保存=>', error)
     }
 }
 

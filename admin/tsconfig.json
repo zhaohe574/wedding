@@ -17,7 +17,9 @@
             "@/*": ["./src/*"]
         },
         "strict": true,
-        "composite": true,
+        "composite": false,
+        "declaration": false,
+        "emitDeclarationOnly": false,
         "types": ["@types/node"]
     }
 }

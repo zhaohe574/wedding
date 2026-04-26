@@ -7,16 +7,24 @@
     <el-form class="mt-4" label-width="70px">
         <el-tabs model-value="nav">
             <el-tab-pane label="主导航设置" name="nav">
-                <menu-set v-model="data.nav" />
+                <menu-set v-model="data.nav" :item-data="defaultItemData" />
             </el-tab-pane>
             <el-tab-pane label="菜单设置" name="menu">
-                <menu-set v-model="data.menu" />
+                <menu-set v-model="data.menu" :item-data="defaultItemData" />
             </el-tab-pane>
         </el-tabs>
     </el-form>
 </template>
 <script lang="ts" setup>
 import MenuSet from './menu-set.vue'
+
+const defaultItemData = {
+    name: '',
+    selected: '',
+    unselected: '',
+    is_show: '1',
+    link: {}
+}
 
 const props = defineProps({
     modelValue: {

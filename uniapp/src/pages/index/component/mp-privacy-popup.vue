@@ -52,8 +52,6 @@ interface PrivacyRes {
 if (wx.getPrivacySetting) {
     wx.getPrivacySetting({
         success(res: PrivacyRes) {
-            console.log(res)
-
             name.value = res.privacyContractName
 
             show.value = res.needAuthorization

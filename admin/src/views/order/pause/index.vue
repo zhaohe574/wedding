@@ -401,7 +401,7 @@ const getStatusTagType = (status: number) => {
 }
 
 const viewOrder = (orderId: number) => {
-    console.log('View order:', orderId)
+    window.open(`/admin/order/lists?id=${orderId}`, '_blank')
 }
 
 const handleDetail = async (row: any) => {

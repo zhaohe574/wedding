@@ -227,7 +227,6 @@ const getHotSearchFunc = async () => {
         search.hot_search = await getHotSearch()
     } catch (e) {
         //TODO handle the exception
-        console.log('获取热门搜索失败=>', e)
     }
 }
 
@@ -302,7 +301,6 @@ const queryList = async (page_no: number, page_size: number) => {
             return
         }
     } catch (e) {
-        console.log('报错=>', e)
         //TODO handle the exception
         paging.value.complete(false)
     }

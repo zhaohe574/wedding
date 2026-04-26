@@ -1111,33 +1111,11 @@ const syncBookingResultToDetailSnapshot = () => {
 }
 
 const logBookingPageStack = (scene: 'onLoad' | 'return') => {
-    if (!isDevMode()) {
-        return
-    }
-
-    console.log('套餐页页面栈调试', {
-        scene,
-        routes: getPageRouteList(),
-        return_mode: booking.return_mode,
-        staff_id: booking.staff_id
-    })
+    void scene
 }
 
 const logBookingReturn = (action: 'navigateBack' | 'redirectTo' | 'switchTab') => {
-    if (!isDevMode()) {
-        return
-    }
-
-    console.log('套餐页返回调试', {
-        action,
-        return_mode: booking.return_mode,
-        page_count: getCurrentPages().length,
-        previous_route: getPreviousPageRoute(),
-        page_routes: getPageRouteList(),
-        detail_delta: findStaffDetailPageDelta(),
-        staff_id: booking.staff_id,
-        package_id: booking.package_id
-    })
+    void action
 }
 
 let releaseBookingLocksTask: Promise<void> | null = null

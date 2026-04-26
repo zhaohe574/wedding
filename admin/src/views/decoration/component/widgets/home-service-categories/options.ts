@@ -13,6 +13,7 @@ export interface HomeServiceCategoryItem {
     image: string
     size: 'large' | 'small' | 'wide'
     text_position: 'top' | 'middle' | 'bottom'
+    text_align: 'left' | 'center' | 'right'
     link: HomeServiceCategoryLink
 }
 
@@ -30,6 +31,7 @@ export default () => ({
                 image: '',
                 size: 'large',
                 text_position: 'bottom',
+                text_align: 'left',
                 link: {
                     path: '/pages/schedule_query/schedule_query',
                     type: 'shop',
@@ -43,6 +45,7 @@ export default () => ({
                 image: '',
                 size: 'small',
                 text_position: 'bottom',
+                text_align: 'left',
                 link: {
                     path: '/pages/schedule_query/schedule_query',
                     type: 'shop',
@@ -56,6 +59,7 @@ export default () => ({
                 image: '',
                 size: 'small',
                 text_position: 'bottom',
+                text_align: 'left',
                 link: {
                     path: '/pages/schedule_query/schedule_query',
                     type: 'shop',
@@ -69,6 +73,7 @@ export default () => ({
                 image: '',
                 size: 'wide',
                 text_position: 'bottom',
+                text_align: 'left',
                 link: {
                     path: '/pages/news/news',
                     type: 'shop'

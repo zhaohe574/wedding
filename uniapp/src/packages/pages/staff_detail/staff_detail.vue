@@ -1604,13 +1604,6 @@ const scheduleRestoreDetailScroll = () => {
 const applyDetailRestoreSnapshot = () => {
     const snapshot = consumeStaffDetailRestoreSnapshot()
 
-    if (isDevMode()) {
-        console.log('人员详情快照恢复调试', {
-            staff_id: staffId.value,
-            snapshot
-        })
-    }
-
     if (!snapshot || snapshot.staff_id !== staffId.value || !snapshot.staff_info) {
         return null
     }
@@ -1681,14 +1674,6 @@ const syncSelectedPackage = () => {
 
 const applyPendingDetailReturnState = () => {
     const state = consumeStaffDetailReturnState()
-
-    if (isDevMode()) {
-        console.log('人员详情返回态调试', {
-            staff_id: staffId.value,
-            has_staff_info: Boolean(staffInfo.value),
-            return_state: state
-        })
-    }
 
     if (!state || state.staff_id !== staffId.value) {
         return

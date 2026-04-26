@@ -250,20 +250,14 @@ const handleNavigation = (item: any) => {
         latitude: item.latitude,
         longitude: item.longitude,
         name: item.name,
-        address: item.address,
-        success: () => {
-            console.log('打开地图成功')
-        }
+        address: item.address
     })
 }
 
 // 拨打电话
 const handleCall = (item: any) => {
     uni.makePhoneCall({
-        phoneNumber: item.phone,
-        success: () => {
-            console.log('拨打电话成功')
-        }
+        phoneNumber: item.phone
     })
 }
 </script>

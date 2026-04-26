@@ -68,6 +68,9 @@ class OperationLog
             if (isset($params['app_secret'])) {
                 $params['app_secret'] = "******";
             }
+            if (isset($params['wecom_secret'])) {
+                $params['wecom_secret'] = "******";
+            }
 
             //导出数据操作进行记录
             if (isset($params['export']) && $params['export'] == 2) {

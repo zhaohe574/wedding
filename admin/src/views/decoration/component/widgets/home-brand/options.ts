@@ -5,6 +5,10 @@ export interface HomeBrandContent {
     subtitle: string
     cta_text: string
     cta_link: Record<string, any>
+    stats: Array<{
+        value: string
+        label: string
+    }>
 }
 
 export default () => ({
@@ -20,7 +24,12 @@ export default () => ({
         cta_link: {
             path: '/pages/schedule_query/schedule_query',
             type: 'shop'
-        }
+        },
+        stats: [
+            { value: '1000+', label: '场仪式' },
+            { value: '98%', label: '好评' },
+            { value: '30+', label: '城市' }
+        ]
     } as HomeBrandContent,
     styles: {}
 })

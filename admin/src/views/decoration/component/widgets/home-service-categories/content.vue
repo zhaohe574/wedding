@@ -19,10 +19,14 @@
             <div class="home-categories-preview__shade"></div>
             <div
                 class="home-categories-preview__copy"
-                :class="`home-categories-preview__copy--${normalizeTextPosition(item.text_position)}`"
+                :class="[
+                    `home-categories-preview__copy--${normalizeTextPosition(item.text_position)}`,
+                    `home-categories-preview__copy--align-${normalizeTextAlign(item.text_align)}`
+                ]"
             >
                 <div class="home-categories-preview__title">{{ item.title }}</div>
                 <div class="home-categories-preview__subtitle">{{ item.subtitle }}</div>
+                <div class="home-categories-preview__line"></div>
             </div>
         </div>
     </div>
@@ -54,6 +58,10 @@ const showList = computed(() => {
 const normalizeTextPosition = (value?: string) => {
     return ['top', 'middle', 'bottom'].includes(String(value)) ? value : 'bottom'
 }
+
+const normalizeTextAlign = (value?: string) => {
+    return ['left', 'center', 'right'].includes(String(value)) ? value : 'left'
+}
 </script>
 
 <style lang="scss" scoped>
@@ -61,8 +69,8 @@ const normalizeTextPosition = (value?: string) => {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-auto-rows: 78px;
-    gap: 5px;
-    margin: 0 16px 18px;
+    gap: 7px;
+    margin: 14px 16px 18px;
 
     &__tile {
         position: relative;
@@ -94,7 +102,23 @@ const normalizeTextPosition = (value?: string) => {
         position: absolute;
         left: 9px;
         right: 9px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__copy--align-left {
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    &__copy--align-center {
+        align-items: center;
         text-align: center;
+    }
+
+    &__copy--align-right {
+        align-items: flex-end;
+        text-align: right;
     }
 
     &__copy--top {
@@ -120,10 +144,17 @@ const normalizeTextPosition = (value?: string) => {
 
     &__subtitle {
         margin-top: 4px;
-        color: rgba(255, 255, 255, 0.86);
+        color: #c8a45d;
         font-size: 9px;
         font-weight: 700;
         line-height: 1.2;
+    }
+
+    &__line {
+        width: 24px;
+        height: 1px;
+        margin-top: 5px;
+        background: #c8a45d;
     }
 }
 </style>

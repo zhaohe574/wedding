@@ -21,9 +21,9 @@
                             v-model="configForm.wecom_secret"
                             type="password"
                             show-password
-                            placeholder="请输入企业微信应用 Secret"
+                            placeholder="不修改请保留 ****** 或留空"
                         />
-                        <span class="text-gray-500 text-xs">请填写应用 Secret，并确保仅由具备权限的管理员维护。</span>
+                        <span class="text-gray-500 text-xs">已配置时仅显示脱敏值；不修改 Secret 时请保留 ****** 或留空。</span>
                     </div>
                 </el-form-item>
                 <el-form-item label="Agent ID">
@@ -98,8 +98,31 @@
         </el-card>
 
         <footer-btns>
+            <el-button :loading="testSubmitting" @click="handleOpenTestDialog">发送测试消息</el-button>
             <el-button type="primary" :loading="configSubmitting" @click="handleSaveConfig">保存企微配置</el-button>
         </footer-btns>
+
+        <el-dialog v-model="testDialogVisible" title="发送企微测试消息" width="520px">
+            <el-form :model="testForm" label-width="110px">
+                <el-form-item label="企微成员ID" required>
+                    <el-input v-model="testForm.wecom_userid" maxlength="64" placeholder="请输入要接收测试消息的成员ID" />
+                </el-form-item>
+                <el-form-item label="消息内容">
+                    <el-input
+                        v-model="testForm.content"
+                        type="textarea"
+                        :rows="4"
+                        maxlength="500"
+                        show-word-limit
+                        placeholder="留空则发送默认测试消息"
+                    />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="testDialogVisible = false">取消</el-button>
+                <el-button type="primary" :loading="testSubmitting" @click="handleSendTestMessage">发送</el-button>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -110,13 +133,16 @@ import {
     getWecomConfig,
     getWecomRecipients,
     setWecomConfig,
+    testWecomMessage,
     updateWecomAdvisor
 } from '@/api/setting/wecom'
 
 const loading = ref(false)
 const configSubmitting = ref(false)
+const testSubmitting = ref(false)
 const savingId = ref<number>(0)
 const recipientList = ref<any[]>([])
+const testDialogVisible = ref(false)
 
 const searchForm = reactive({
     keyword: '',
@@ -127,7 +153,13 @@ const configForm = reactive({
     wecom_enabled: 0,
     wecom_corp_id: '',
     wecom_secret: '',
+    wecom_secret_filled: 0,
     wecom_agent_id: 0
+})
+
+const testForm = reactive({
+    wecom_userid: '',
+    content: ''
 })
 
 const getAdvisorStatusType = (status: number): 'success' | 'info' | 'warning' => {
@@ -144,6 +176,7 @@ const fetchConfig = async () => {
     configForm.wecom_enabled = Number(data?.wecom_enabled || 0)
     configForm.wecom_corp_id = String(data?.wecom_corp_id || '')
     configForm.wecom_secret = String(data?.wecom_secret || '')
+    configForm.wecom_secret_filled = Number(data?.wecom_secret_filled || 0)
     configForm.wecom_agent_id = Number(data?.wecom_agent_id || 0)
 }
 
@@ -187,6 +220,34 @@ const handleSaveAdvisor = async (row: any) => {
         await fetchRecipients()
     } finally {
         savingId.value = 0
+    }
+}
+
+const handleOpenTestDialog = () => {
+    if (!testForm.wecom_userid) {
+        const firstRecipient = recipientList.value.find((item) => String(item.wecom_userid || '').trim())
+        testForm.wecom_userid = String(firstRecipient?.wecom_userid || '')
+    }
+    testDialogVisible.value = true
+}
+
+const handleSendTestMessage = async () => {
+    const wecomUserid = testForm.wecom_userid.trim()
+    if (!wecomUserid) {
+        ElMessage.warning('请输入企微成员ID')
+        return
+    }
+
+    testSubmitting.value = true
+    try {
+        await testWecomMessage({
+            wecom_userid: wecomUserid,
+            content: testForm.content.trim()
+        })
+        ElMessage.success('测试消息已发送')
+        testDialogVisible.value = false
+    } finally {
+        testSubmitting.value = false
     }
 }
 
