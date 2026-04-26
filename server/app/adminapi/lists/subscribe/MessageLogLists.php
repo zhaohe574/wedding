@@ -48,7 +48,7 @@ class MessageLogLists extends BaseAdminDataLists implements ListsSearchInterface
         }
 
         $list = SubscribeMessageLog::where($where)
-            ->field('id, user_id, openid, template_id, scene, business_type, business_id, send_status, error_code, error_msg, planned_send_time, send_time, create_time')
+            ->field('id, user_id, openid, template_id, scene, business_type, business_id, send_status, error_code, error_msg, planned_send_time, next_retry_time, retry_count, send_time, create_time')
             ->order('id', 'desc')
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
@@ -65,6 +65,8 @@ class MessageLogLists extends BaseAdminDataLists implements ListsSearchInterface
             // PHP 8 类型转换
             $item['create_time'] = (int)$item['create_time'];
             $item['planned_send_time'] = (int)($item['planned_send_time'] ?? 0);
+            $item['next_retry_time'] = (int)($item['next_retry_time'] ?? 0);
+            $item['retry_count'] = (int)($item['retry_count'] ?? 0);
             $item['send_time'] = (int)$item['send_time'];
             $item['send_status'] = (int)$item['send_status'];
 
@@ -73,6 +75,7 @@ class MessageLogLists extends BaseAdminDataLists implements ListsSearchInterface
             $item['send_status_desc'] = $this->getSendStatusDesc($item['send_status']);
             $item['create_time'] = $item['create_time'] ? date('Y-m-d H:i:s', $item['create_time']) : '';
             $item['planned_send_time'] = $item['planned_send_time'] ? date('Y-m-d H:i:s', $item['planned_send_time']) : '';
+            $item['next_retry_time'] = $item['next_retry_time'] ? date('Y-m-d H:i:s', $item['next_retry_time']) : '';
             $item['send_time'] = $item['send_time'] ? date('Y-m-d H:i:s', $item['send_time']) : '';
         }
 
@@ -108,6 +111,7 @@ class MessageLogLists extends BaseAdminDataLists implements ListsSearchInterface
             0 => '待发送',
             1 => '发送成功',
             2 => '发送失败',
+            3 => '发送中',
         ];
         return $map[$status] ?? '未知';
     }

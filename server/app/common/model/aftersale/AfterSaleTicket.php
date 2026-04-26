@@ -166,6 +166,19 @@ class AfterSaleTicket extends BaseModel
      */
     public static function createTicket(array $data): array
     {
+        $userId = (int)($data['user_id'] ?? 0);
+        if ($userId <= 0) {
+            return [false, '用户不存在', null];
+        }
+
+        $orderId = (int)($data['order_id'] ?? 0);
+        if ($orderId > 0) {
+            $order = Order::where('id', $orderId)->where('user_id', $userId)->find();
+            if (!$order) {
+                return [false, '关联订单不存在', null];
+            }
+        }
+
         Db::startTrans();
         try {
             // 计算截止时间（根据优先级）
@@ -180,15 +193,15 @@ class AfterSaleTicket extends BaseModel
 
             $ticket = self::create([
                 'ticket_sn' => self::generateTicketSn(),
-                'order_id' => $data['order_id'] ?? 0,
-                'user_id' => $data['user_id'],
+                'order_id' => $orderId,
+                'user_id' => $userId,
                 'type' => $data['type'] ?? self::TYPE_AFTER_SALE,
                 'priority' => $priority,
                 'title' => $data['title'],
                 'content' => $data['content'] ?? '',
                 'images' => $data['images'] ?? [],
                 'contact_name' => $data['contact_name'] ?? '',
-                'contact_phone' => $data['contact_phone'] ?? '',
+                'contact_phone' => $data['contact_phone'] ?? ($data['contact_mobile'] ?? ''),
                 'status' => self::STATUS_PENDING,
                 'deadline' => $deadline,
                 'source' => $data['source'] ?? self::SOURCE_MINIAPP,
@@ -197,7 +210,7 @@ class AfterSaleTicket extends BaseModel
             ]);
 
             // 记录日志
-            AfterSaleTicketLog::addLog($ticket->id, 1, $data['user_id'], 'create', 0, self::STATUS_PENDING, '创建工单');
+            AfterSaleTicketLog::addLog($ticket->id, 1, $userId, 'create', 0, self::STATUS_PENDING, '创建工单');
 
             Db::commit();
             return [true, '工单创建成功', $ticket];

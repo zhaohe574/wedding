@@ -15,6 +15,7 @@ use app\common\model\subscribe\UserSubscribe;
 use app\common\model\user\User;
 use app\common\model\user\UserAuth;
 use app\common\service\wechat\WeChatMnpService;
+use think\facade\Db;
 use think\facade\Log;
 
 /**
@@ -28,6 +29,9 @@ class SubscribeMessageService
      * 强制立即派发选项
      */
     public const OPTION_FORCE_DISPATCH = 'force_dispatch';
+
+    private const MAX_RETRY_COUNT = 3;
+    private const RETRY_DELAYS = [60, 300, 900];
 
     /**
      * @notes 发送订阅消息
@@ -58,25 +62,56 @@ class SubscribeMessageService
                 return ['success' => false, 'msg' => '场景配置为手动触发', 'log_id' => 0];
             }
 
-            $pendingCount = SubscribeMessageLog::countPendingByUserTemplate($userId, $context['template_id']);
-            if (!UserSubscribe::canReserveSubscription($userId, $context['template_id'], $pendingCount)) {
-                Log::info('订阅消息跳过：用户无可用订阅次数，user_id=' . $userId . '，template_id=' . $context['template_id']);
-                return ['success' => false, 'msg' => '用户无可用订阅次数', 'log_id' => 0];
+            $plannedSendTime = self::resolvePlannedSendTime($context['scene_config'], $forceDispatch);
+            $dedupeKey = self::buildDedupeKey($userId, $scene, $context['business_type'], $businessId, $data, $plannedSendTime);
+            $createdLog = false;
+
+            try {
+                $log = Db::transaction(function () use (
+                    $userId,
+                    $scene,
+                    $businessId,
+                    $context,
+                    $plannedSendTime,
+                    $dedupeKey,
+                    &$createdLog
+                ) {
+                    $existingLog = SubscribeMessageLog::findByDedupeKey($dedupeKey);
+                    if ($existingLog) {
+                        return $existingLog;
+                    }
+
+                    if (!UserSubscribe::reserveSubscription($userId, $context['template_id'])) {
+                        Log::info('订阅消息跳过：用户无可用订阅次数，user_id=' . $userId . '，template_id=' . $context['template_id']);
+                        throw new \RuntimeException('用户无可用订阅次数');
+                    }
+
+                    $createdLog = true;
+                    return SubscribeMessageLog::createLog(
+                        $userId,
+                        $context['openid'],
+                        $context['template_id'],
+                        $scene,
+                        $context['business_type'],
+                        $businessId,
+                        $context['content'],
+                        $context['page'],
+                        $plannedSendTime,
+                        $context['miniprogram_state'],
+                        $dedupeKey
+                    );
+                });
+            } catch (\Throwable $e) {
+                $existingLog = SubscribeMessageLog::findByDedupeKey($dedupeKey);
+                if ($existingLog) {
+                    return self::formatExistingLogResult($existingLog);
+                }
+                throw $e;
             }
 
-            $plannedSendTime = self::resolvePlannedSendTime($context['scene_config'], $forceDispatch);
-            $log = SubscribeMessageLog::createLog(
-                $userId,
-                $context['openid'],
-                $context['template_id'],
-                $scene,
-                $context['business_type'],
-                $businessId,
-                $context['content'],
-                $context['page'],
-                $plannedSendTime,
-                $context['miniprogram_state']
-            );
+            if (!$createdLog) {
+                return self::formatExistingLogResult($log);
+            }
 
             if (!$forceDispatch && $plannedSendTime > time()) {
                 return [
@@ -137,6 +172,43 @@ class SubscribeMessageService
     }
 
     /**
+     * @notes 返回已存在幂等日志的发送结果
+     * @param SubscribeMessageLog $log
+     * @return array
+     */
+    protected static function formatExistingLogResult(SubscribeMessageLog $log): array
+    {
+        $status = (int) $log->send_status;
+        if ($status === SubscribeMessageLog::SEND_STATUS_SUCCESS) {
+            return [
+                'success' => true,
+                'queued' => false,
+                'sent' => true,
+                'msg' => '订阅消息已发送',
+                'log_id' => (int) $log->id,
+            ];
+        }
+
+        if (in_array($status, [SubscribeMessageLog::SEND_STATUS_PENDING, SubscribeMessageLog::SEND_STATUS_SENDING], true)) {
+            return [
+                'success' => true,
+                'queued' => true,
+                'sent' => false,
+                'msg' => '订阅消息已在发送队列中',
+                'log_id' => (int) $log->id,
+            ];
+        }
+
+        return [
+            'success' => false,
+            'queued' => false,
+            'sent' => false,
+            'msg' => (string) ($log->error_msg ?: '订阅消息已存在失败记录'),
+            'log_id' => (int) $log->id,
+        ];
+    }
+
+    /**
      * @notes 构建消息内容
      * @param array $templateContent 模板内容配置
      * @param array $data 实际数据
@@ -148,19 +220,19 @@ class SubscribeMessageService
         $content = [];
 
         foreach ($templateContent as $key => $config) {
-            // 从mapping中获取数据字段名，或使用key本身
             $dataKey = $mapping[$key] ?? $key;
-            $value = $data[$dataKey] ?? '';
+            $value = $data[$dataKey] ?? ($data[$key] ?? '');
 
-            // 根据类型处理值
             if (is_array($value)) {
                 $value = implode('，', array_map(static function ($item) {
                     return self::sanitizeTemplateValue($item);
                 }, $value));
             }
 
-            // 截断过长的内容
-            $value = self::sanitizeTemplateValue($value);
+            $value = self::formatTemplateValue($key, $value);
+            if ($value === '') {
+                throw new \RuntimeException('订阅消息字段不能为空：' . $key);
+            }
 
             $content[$key] = ['value' => (string)$value];
         }
@@ -176,23 +248,21 @@ class SubscribeMessageService
      */
     public static function dispatchLog(int $logId, bool $force = false): array
     {
-        $log = SubscribeMessageLog::find($logId);
+        $log = SubscribeMessageLog::claimLog($logId, $force);
         if (!$log) {
-            return ['success' => false, 'msg' => '发送日志不存在', 'log_id' => 0];
-        }
-
-        if (!$force && (int) $log->send_status !== SubscribeMessageLog::SEND_STATUS_PENDING) {
-            return ['success' => false, 'msg' => '当前记录不可派发', 'log_id' => (int) $log->id];
+            return ['success' => false, 'msg' => '发送日志不存在或当前记录不可派发', 'log_id' => $logId];
         }
 
         if (empty($log->openid)) {
             SubscribeMessageLog::updateSendResult((int) $log->id, false, 'OPENID_EMPTY', '用户未绑定小程序');
+            UserSubscribe::releaseReservedSubscription((int) $log->user_id, (string) $log->template_id);
             return ['success' => false, 'msg' => '用户未绑定小程序', 'log_id' => (int) $log->id];
         }
 
         [$sceneUsable, $sceneError] = self::checkLogSceneUsable($log);
         if (!$sceneUsable) {
             SubscribeMessageLog::updateSendResult((int) $log->id, false, 'SCENE_INVALID', $sceneError);
+            UserSubscribe::releaseReservedSubscription((int) $log->user_id, (string) $log->template_id);
             return ['success' => false, 'msg' => $sceneError, 'log_id' => (int) $log->id];
         }
 
@@ -206,14 +276,13 @@ class SubscribeMessageService
                 'miniprogram_state' => (string) ($log->miniprogram_state ?: 'formal'),
             ]);
         } catch (\Throwable $e) {
-            SubscribeMessageLog::updateSendResult((int) $log->id, false, 'DISPATCH_ERROR', $e->getMessage());
             Log::error('订阅消息派发异常: log_id=' . (int) $log->id . '，error=' . $e->getMessage());
-            return ['success' => false, 'msg' => '发送异常: ' . $e->getMessage(), 'log_id' => (int) $log->id];
+            return self::handleDispatchFailure($log, 'DISPATCH_ERROR', $e->getMessage());
         }
 
         $errCode = (int) ($result['errcode'] ?? -1);
         if ($errCode === 0) {
-            UserSubscribe::consumeSubscription((int) $log->user_id, (string) $log->template_id);
+            UserSubscribe::consumeReservedSubscription((int) $log->user_id, (string) $log->template_id);
             SubscribeMessageLog::updateSendResult(
                 (int) $log->id,
                 true,
@@ -232,13 +301,61 @@ class SubscribeMessageService
         }
 
         $errorMsg = (string) ($result['errmsg'] ?? '发送失败');
-        SubscribeMessageLog::updateSendResult(
-            (int) $log->id,
-            false,
+        return self::handleDispatchFailure(
+            $log,
             (string) $errCode,
             $errorMsg,
             (string) ($result['request_id'] ?? $result['msgid'] ?? '')
         );
+    }
+
+    /**
+     * @notes 处理派发失败
+     * @param SubscribeMessageLog $log
+     * @param string $errorCode
+     * @param string $errorMsg
+     * @param string $requestId
+     * @return array
+     */
+    protected static function handleDispatchFailure(
+        SubscribeMessageLog $log,
+        string $errorCode,
+        string $errorMsg,
+        string $requestId = ''
+    ): array {
+        $retryCount = (int) ($log->retry_count ?? 0);
+        if (self::isTransientError($errorCode) && $retryCount < self::MAX_RETRY_COUNT) {
+            $nextRetryTime = time() + self::getRetryDelay($retryCount);
+            SubscribeMessageLog::markTransientFailure(
+                (int) $log->id,
+                $errorCode,
+                $errorMsg,
+                $requestId,
+                $nextRetryTime
+            );
+
+            return [
+                'success' => false,
+                'queued' => true,
+                'sent' => false,
+                'msg' => '发送失败，已加入重试队列：' . $errorMsg,
+                'log_id' => (int) $log->id,
+            ];
+        }
+
+        SubscribeMessageLog::updateSendResult(
+            (int) $log->id,
+            false,
+            $errorCode,
+            $errorMsg,
+            $requestId
+        );
+
+        if (self::shouldClearSubscriptionQuota($errorCode)) {
+            UserSubscribe::clearAvailableSubscription((int) $log->user_id, (string) $log->template_id);
+        } else {
+            UserSubscribe::releaseReservedSubscription((int) $log->user_id, (string) $log->template_id);
+        }
 
         return [
             'success' => false,
@@ -247,6 +364,37 @@ class SubscribeMessageService
             'msg' => $errorMsg,
             'log_id' => (int) $log->id,
         ];
+    }
+
+    /**
+     * @notes 判断是否为可重试错误
+     */
+    protected static function isTransientError(string $errorCode): bool
+    {
+        if ($errorCode === 'DISPATCH_ERROR') {
+            return true;
+        }
+
+        $code = (int) $errorCode;
+        return in_array($code, [-1, 40001, 40014, 42001, 45009, 45011, 50001, 50002], true)
+            || $code >= 50000;
+    }
+
+    /**
+     * @notes 判断是否需要清空本地授权额度
+     */
+    protected static function shouldClearSubscriptionQuota(string $errorCode): bool
+    {
+        return in_array((int) $errorCode, [43101], true);
+    }
+
+    /**
+     * @notes 获取重试延迟秒数
+     */
+    protected static function getRetryDelay(int $retryCount): int
+    {
+        $delays = self::RETRY_DELAYS;
+        return $delays[$retryCount] ?? $delays[array_key_last($delays)];
     }
 
     /**
@@ -264,7 +412,7 @@ class SubscribeMessageService
         ];
 
         foreach ($logs as $log) {
-            $dispatchResult = self::dispatchLog((int) ($log['id'] ?? 0));
+            $dispatchResult = self::dispatchLog((int) ($log['id'] ?? 0), true);
             $result['processed']++;
             if ($dispatchResult['success'] ?? false) {
                 $result['success']++;
@@ -372,6 +520,68 @@ class SubscribeMessageService
     }
 
     /**
+     * @notes 生成业务幂等键
+     */
+    protected static function buildDedupeKey(
+        int $userId,
+        string $scene,
+        string $businessType,
+        int $businessId,
+        array $data,
+        int $plannedSendTime
+    ): string {
+        $statusText = self::normalizeDedupePart((string) ($data['status_text'] ?? $data['phrase2'] ?? $data['phrase3'] ?? ''));
+        $businessPart = $businessId > 0 ? (string) $businessId : substr(sha1(json_encode($data, JSON_UNESCAPED_UNICODE)), 0, 12);
+
+        $key = match ($scene) {
+            SubscribeMessageTemplate::SCENE_ORDER_CONFIRM =>
+                "order_confirm:user:{$userId}:order:{$businessPart}:confirmed",
+            SubscribeMessageTemplate::SCENE_SCHEDULE_REMIND =>
+                'schedule_remind:user:' . $userId . ':order:' . $businessPart
+                    . ':date:' . self::normalizeScheduleDate($data, $plannedSendTime),
+            SubscribeMessageTemplate::SCENE_REFUND_RESULT =>
+                "refund_result:user:{$userId}:refund:{$businessPart}:status:{$statusText}",
+            SubscribeMessageTemplate::SCENE_TICKET_UPDATE =>
+                "ticket_update:user:{$userId}:ticket:{$businessPart}:status:{$statusText}",
+            SubscribeMessageTemplate::SCENE_WAITLIST_RELEASE,
+            SubscribeMessageTemplate::SCENE_WAITLIST_EXPIRED =>
+                "{$scene}:user:{$userId}:waitlist:{$businessPart}",
+            default =>
+                "{$scene}:user:{$userId}:{$businessType}:{$businessPart}:data:" . substr(sha1(json_encode($data, JSON_UNESCAPED_UNICODE)), 0, 12),
+        };
+
+        return strlen($key) <= 128 ? $key : substr($key, 0, 84) . ':' . sha1($key);
+    }
+
+    /**
+     * @notes 归一化档期提醒日期
+     */
+    protected static function normalizeScheduleDate(array $data, int $plannedSendTime): string
+    {
+        $value = (string) ($data['service_date'] ?? $data['time2'] ?? '');
+        $timestamp = $value !== '' ? strtotime($value) : false;
+        if ($timestamp !== false) {
+            return date('Ymd', $timestamp);
+        }
+
+        return $plannedSendTime > 0 ? date('Ymd', $plannedSendTime) : date('Ymd');
+    }
+
+    /**
+     * @notes 归一化幂等键片段
+     */
+    protected static function normalizeDedupePart(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return 'default';
+        }
+
+        $ascii = preg_replace('/[^A-Za-z0-9]+/', '', $value) ?: '';
+        return $ascii !== '' ? substr($ascii, 0, 24) : substr(sha1($value), 0, 12);
+    }
+
+    /**
      * @notes 检查日志关联场景和模板是否可用
      * @param SubscribeMessageLog $log
      * @return array{0: bool, 1: string}
@@ -442,6 +652,56 @@ class SubscribeMessageService
     }
 
     /**
+     * @notes 按微信订阅消息字段类型格式化字段值
+     */
+    protected static function formatTemplateValue(string $key, $value): string
+    {
+        $text = self::sanitizeTemplateValue($value);
+        if ($text === '') {
+            return '';
+        }
+
+        $type = self::getTemplateFieldType($key);
+        if ($type === 'amount' && is_numeric($text)) {
+            $text = number_format((float) $text, 2, '.', '');
+        } elseif (in_array($type, ['time', 'date'], true) && preg_match('/^\d{10}$/', $text)) {
+            $text = date($type === 'date' ? 'Y-m-d' : 'Y-m-d H:i', (int) $text);
+        } elseif ($type === 'character_string') {
+            $text = preg_replace('/[^A-Za-z0-9_\\-.\\/]+/', '', $text) ?: 'UNKNOWN';
+        }
+
+        $limits = [
+            'thing' => 20,
+            'phrase' => 5,
+            'character_string' => 32,
+            'amount' => 10,
+            'time' => 20,
+            'date' => 20,
+            'number' => 32,
+            'name' => 10,
+            'phone_number' => 20,
+            'car_number' => 8,
+        ];
+        $limit = $limits[$type] ?? 200;
+
+        return mb_strlen($text, 'UTF-8') > $limit
+            ? mb_substr($text, 0, $limit, 'UTF-8')
+            : $text;
+    }
+
+    /**
+     * @notes 获取微信模板字段类型
+     */
+    protected static function getTemplateFieldType(string $key): string
+    {
+        if (preg_match('/^([a-z_]+)\d*$/', $key, $matches)) {
+            return $matches[1];
+        }
+
+        return '';
+    }
+
+    /**
      * @notes 清洗模板字段值
      */
     protected static function sanitizeTemplateValue($value): string
@@ -479,14 +739,14 @@ class SubscribeMessageService
             $userId,
             SubscribeMessageTemplate::SCENE_ORDER_CONFIRM,
             [
-                'character_string1' => $orderData['character_string1'] ?? ($orderData['order_sn'] ?? ''),
+                'character_string1' => $orderData['character_string1'] ?? ($orderData['order_sn'] ?? 'UNKNOWN'),
                 'thing2' => $orderData['thing2'] ?? ($orderData['status_text'] ?? '服务人员已确认'),
                 'amount3' => $orderData['amount3'] ?? ($orderData['pay_amount'] ?? '0.00'),
-                'time4' => $orderData['time4'] ?? ($orderData['service_date'] ?? ''),
-                'order_sn' => $orderData['order_sn'] ?? '',
+                'time4' => $orderData['time4'] ?? ($orderData['service_date'] ?? date('Y-m-d H:i')),
+                'order_sn' => $orderData['order_sn'] ?? 'UNKNOWN',
                 'status_text' => $orderData['status_text'] ?? '服务人员已确认',
                 'pay_amount' => $orderData['pay_amount'] ?? '0.00',
-                'service_date' => $orderData['service_date'] ?? '',
+                'service_date' => $orderData['service_date'] ?? date('Y-m-d H:i'),
                 'service_name' => $orderData['service_name'] ?? '婚庆服务',
             ],
             SubscribeMessageLog::BIZ_TYPE_ORDER,
@@ -506,10 +766,10 @@ class SubscribeMessageService
             $userId,
             SubscribeMessageTemplate::SCENE_SCHEDULE_REMIND,
             [
-                'thing1' => $scheduleData['service_name'] ?? '婚庆服务',
-                'time2' => $scheduleData['service_date'] ?? '',
-                'thing3' => $scheduleData['address'] ?? '待确认',
-                'thing4' => $scheduleData['staff_name'] ?? '待分配',
+                'service_name' => $scheduleData['service_name'] ?? '婚庆服务',
+                'service_date' => $scheduleData['service_date'] ?? date('Y-m-d H:i'),
+                'address' => $scheduleData['address'] ?? '待确认',
+                'staff_name' => $scheduleData['staff_name'] ?? '待分配',
             ],
             SubscribeMessageLog::BIZ_TYPE_SCHEDULE,
             $scheduleData['order_id'] ?? 0
@@ -533,10 +793,10 @@ class SubscribeMessageService
             $userId,
             SubscribeMessageTemplate::SCENE_REFUND_RESULT,
             [
-                'character_string1' => $refundData['order_sn'] ?? '',
-                'amount2' => $refundData['refund_amount'] ?? '0.00',
-                'phrase3' => $refundData['status_text'] ?? '处理中',
-                'thing4' => $refundData['reason'] ?? '',
+                'order_sn' => $refundData['order_sn'] ?? 'UNKNOWN',
+                'refund_amount' => $refundData['refund_amount'] ?? '0.00',
+                'status_text' => $refundData['status_text'] ?? '处理中',
+                'reason' => $refundData['reason'] ?? '退款申请已处理',
             ],
             SubscribeMessageLog::BIZ_TYPE_REFUND,
             $refundData['refund_id'] ?? 0,
@@ -556,10 +816,10 @@ class SubscribeMessageService
             $userId,
             SubscribeMessageTemplate::SCENE_TICKET_UPDATE,
             [
-                'character_string1' => $ticketData['ticket_sn'] ?? '',
-                'phrase2' => $ticketData['status_text'] ?? '',
-                'thing3' => $ticketData['handle_note'] ?? '正在处理中',
-                'time4' => date('Y-m-d H:i'),
+                'ticket_sn' => $ticketData['ticket_sn'] ?? 'UNKNOWN',
+                'status_text' => $ticketData['status_text'] ?? '处理中',
+                'handle_note' => $ticketData['handle_note'] ?? '正在处理中',
+                'update_time' => $ticketData['update_time'] ?? date('Y-m-d H:i'),
             ],
             SubscribeMessageLog::BIZ_TYPE_TICKET,
             $ticketData['ticket_id'] ?? 0

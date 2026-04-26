@@ -49,6 +49,51 @@
                                     placeholder="请输入链接"
                                 />
                             </el-form-item>
+                            <el-form-item
+                                v-if="canEditLinkParams(item)"
+                                class="mt-[18px]"
+                                label="跳转参数"
+                            >
+                                <div class="flex-1">
+                                    <div
+                                        v-for="(param, paramIndex) in getQueryParams(item)"
+                                        :key="`${index}-${paramIndex}`"
+                                        class="flex items-center gap-2 mb-2"
+                                    >
+                                        <el-input
+                                            class="!w-[136px]"
+                                            :model-value="param.key"
+                                            placeholder="参数名"
+                                            @input="
+                                                (value) =>
+                                                    handleQueryKeyInput(index, paramIndex, value)
+                                            "
+                                        />
+                                        <el-input
+                                            class="flex-1"
+                                            :model-value="param.value"
+                                            placeholder="参数值"
+                                            @input="
+                                                (value) =>
+                                                    handleQueryValueInput(index, paramIndex, value)
+                                            "
+                                        />
+                                        <el-button
+                                            type="danger"
+                                            link
+                                            @click="handleDeleteQueryParam(index, paramIndex)"
+                                        >
+                                            删除
+                                        </el-button>
+                                    </div>
+                                    <el-button type="primary" link @click="handleAddQueryParam(index)">
+                                        添加参数
+                                    </el-button>
+                                    <div class="form-tips !mt-1">
+                                        参数会追加到跳转链接后，如 keyword=西式主持
+                                    </div>
+                                </div>
+                            </el-form-item>
                             <el-form-item label="是否显示" class="mt-[18px] !mb-0">
                                 <div class="flex-1 flex items-center">
                                     <el-switch
@@ -77,11 +122,15 @@ import { cloneDeep } from 'lodash-es'
 import type { PropType } from 'vue'
 import Draggable from 'vuedraggable'
 
+import { LinkTypeEnum } from '@/components/link'
 import feedback from '@/utils/feedback'
 
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>
+type ServiceCategoryItem = OptionsType['content']['data'][number]
+type QueryValue = string | number | boolean | null | undefined
+type QueryParams = Record<string, QueryValue>
 
 const emits = defineEmits<(event: 'update:content', data: OptionsType['content']) => void>()
 const props = defineProps({
@@ -105,6 +154,147 @@ const contentData = computed({
         emits('update:content', newValue)
     }
 })
+
+const normalizeQuery = (value: unknown): QueryParams => {
+    if (!value || Array.isArray(value) || typeof value !== 'object') {
+        return {}
+    }
+
+    return value as QueryParams
+}
+
+const getQueryParams = (item: ServiceCategoryItem) => {
+    return Object.entries(normalizeQuery(item.link?.query)).map(([key, value]) => ({
+        key,
+        value: value === null || value === undefined ? '' : String(value)
+    }))
+}
+
+const canEditLinkParams = (item: ServiceCategoryItem) => {
+    return props.type === 'mobile' && item.link?.type === LinkTypeEnum.SHOP_PAGES
+}
+
+const buildUniqueQueryKey = (query: QueryParams) => {
+    const baseKey = 'param'
+    if (!Object.prototype.hasOwnProperty.call(query, baseKey)) {
+        return baseKey
+    }
+
+    let index = 1
+    while (Object.prototype.hasOwnProperty.call(query, `${baseKey}${index}`)) {
+        index += 1
+    }
+
+    return `${baseKey}${index}`
+}
+
+const setItemQuery = (item: ServiceCategoryItem, query: QueryParams) => {
+    if (!item.link || typeof item.link !== 'object') {
+        item.link = {
+            path: '/pages/schedule_query/schedule_query',
+            type: LinkTypeEnum.SHOP_PAGES
+        }
+    }
+
+    const normalizedQuery = Object.fromEntries(
+        Object.entries(query)
+            .filter(([key]) => key.trim() !== '')
+            .map(([key, value]) => [
+                key.trim(),
+                value === null || value === undefined ? '' : String(value)
+            ])
+    )
+
+    if (Object.keys(normalizedQuery).length) {
+        item.link.query = normalizedQuery
+        return
+    }
+
+    delete item.link.query
+}
+
+const updateQueryByItemIndex = (index: number, query: QueryParams) => {
+    const item = props.content.data?.[index]
+    if (!item) {
+        return
+    }
+
+    setItemQuery(item, query)
+    emits('update:content', props.content)
+}
+
+const handleAddQueryParam = (index: number) => {
+    const item = props.content.data?.[index]
+    if (!item) {
+        return
+    }
+
+    const query = normalizeQuery(item.link?.query)
+    updateQueryByItemIndex(index, {
+        ...query,
+        [buildUniqueQueryKey(query)]: ''
+    })
+}
+
+const handleDeleteQueryParam = (index: number, paramIndex: number) => {
+    const item = props.content.data?.[index]
+    if (!item) {
+        return
+    }
+
+    const entries = Object.entries(normalizeQuery(item.link?.query))
+    entries.splice(paramIndex, 1)
+    updateQueryByItemIndex(index, Object.fromEntries(entries))
+}
+
+const handleQueryKeyInput = (index: number, paramIndex: number, value: string) => {
+    const newKey = String(value || '').trim()
+    if (!newKey) {
+        feedback.msgError('参数名不能为空')
+        return
+    }
+
+    const item = props.content.data?.[index]
+    if (!item) {
+        return
+    }
+
+    const entries = Object.entries(normalizeQuery(item.link?.query))
+    const currentEntry = entries[paramIndex]
+    if (!currentEntry) {
+        return
+    }
+
+    const [oldKey, oldValue] = currentEntry
+    if (newKey === oldKey) {
+        return
+    }
+
+    const duplicate = entries.some(([key], index) => index !== paramIndex && key === newKey)
+    if (duplicate) {
+        feedback.msgError('参数名不能重复')
+        return
+    }
+
+    entries.splice(paramIndex, 1, [newKey, oldValue])
+    updateQueryByItemIndex(index, Object.fromEntries(entries))
+}
+
+const handleQueryValueInput = (index: number, paramIndex: number, value: string) => {
+    const item = props.content.data?.[index]
+    if (!item) {
+        return
+    }
+
+    const entries = Object.entries(normalizeQuery(item.link?.query))
+    const currentEntry = entries[paramIndex]
+    if (!currentEntry) {
+        return
+    }
+
+    entries.splice(paramIndex, 1, [currentEntry[0], String(value ?? '')])
+    updateQueryByItemIndex(index, Object.fromEntries(entries))
+}
 
 const handleAdd = () => {
     const content = cloneDeep(props.content)

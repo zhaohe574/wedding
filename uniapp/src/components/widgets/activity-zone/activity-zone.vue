@@ -408,9 +408,10 @@ const handleMore = () => {
     } else {
         // 默认跳转到动态列表页，筛选活动类型
         navigateTo({
-            path: '/pages/dynamic/list',
-            query: { type: 4 },
-            name: '活动列表'
+            path: '/pages/dynamic/dynamic',
+            query: { dynamic_type: 4 },
+            name: '活动列表',
+            canTab: true
         })
     }
 }

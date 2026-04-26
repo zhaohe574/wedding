@@ -21,6 +21,7 @@ use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\PayNotifyLogic;
 use app\common\model\order\Payment as OrderPayment;
 use app\common\model\recharge\RechargeOrder;
+use app\common\service\MoneyService;
 use app\common\service\OrderRefundService;
 use app\common\model\user\UserAuth;
 use app\common\service\wechat\WeChatConfigService;
@@ -177,7 +178,7 @@ class WeChatPayService extends BasePayService
             "out_trade_no" => $order['pay_sn'],
             "notify_url" => $this->config['notify_url'],
             "amount" => [
-                "total" => intval($order['order_amount'] * 100),
+                "total" => MoneyService::yuanToFen($order['order_amount']),
             ],
             "payer" => [
                 "openid" => $this->auth['openid']
@@ -213,7 +214,7 @@ class WeChatPayService extends BasePayService
             'out_trade_no' => $order['pay_sn'],
             'notify_url' => $this->config['notify_url'],
             'amount' => [
-                'total' => intval($order['order_amount'] * 100),
+                'total' => MoneyService::yuanToFen($order['order_amount']),
             ],
             'attach' => $from
         ], $order);
@@ -245,7 +246,7 @@ class WeChatPayService extends BasePayService
             'out_trade_no' => $order['pay_sn'],
             'notify_url' => $this->config['notify_url'],
             'amount' => [
-                'total' => intval($order['order_amount'] * 100),
+                'total' => MoneyService::yuanToFen($order['order_amount']),
             ],
             'attach' => $from
         ], $order);
@@ -283,7 +284,7 @@ class WeChatPayService extends BasePayService
             'out_trade_no' => $order['pay_sn'],
             'notify_url' => $this->config['notify_url'],
             'amount' => [
-                'total' => intval(strval($order['order_amount'] * 100)),
+                'total' => MoneyService::yuanToFen($order['order_amount']),
             ],
             'attach' => $from,
             'scene_info' => [
@@ -326,8 +327,8 @@ class WeChatPayService extends BasePayService
             'transaction_id' => $refundData['transaction_id'],
             'out_refund_no' => $refundData['refund_sn'],
             'amount' => [
-                'refund' => intval($refundData['refund_amount'] * 100),
-                'total' => intval($refundData['total_amount'] * 100),
+                'refund' => MoneyService::yuanToFen($refundData['refund_amount']),
+                'total' => MoneyService::yuanToFen($refundData['total_amount']),
                 'currency' => 'CNY',
             ]
         ]);
@@ -416,6 +417,7 @@ class WeChatPayService extends BasePayService
         // 支付通知
         $server->handlePaid(function (Message $message) {
             if ($message['trade_state'] === 'SUCCESS') {
+                $amount = (array)($message['amount'] ?? []);
                 $extra = [
                     'transaction_id' => $message['transaction_id'],
                     'callback_data' => [
@@ -423,6 +425,8 @@ class WeChatPayService extends BasePayService
                         'transaction_id' => $message['transaction_id'],
                         'out_trade_no' => $message['out_trade_no'],
                         'attach' => $message['attach'],
+                        'amount' => $amount,
+                        'payer' => $message['payer'] ?? [],
                     ],
                 ];
                 $attach = $message['attach'];

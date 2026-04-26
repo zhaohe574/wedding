@@ -33,7 +33,7 @@ class SubscribeValidate extends BaseValidate
     ];
 
     protected $scene = [
-        'recordSubscribe' => ['template_id', 'result'],
-        'batchRecord' => ['results'],
+        'recordSubscribe' => ['template_id', 'scene', 'result'],
+        'batchRecord' => ['results', 'scene'],
     ];
 }

@@ -58,16 +58,6 @@
                         </view>
                     </view>
 
-                    <view class="field-card wm-soft-card">
-                        <text class="field-label">昵称</text>
-                        <input
-                            v-model="form.nickname"
-                            class="field-input"
-                            placeholder="请输入昵称"
-                            placeholder-class="field-placeholder"
-                        />
-                    </view>
-
                     <view class="field-card field-card--click wm-soft-card" @click="handleSexClick">
                         <text class="field-label">性别</text>
                         <view class="field-click-value">
@@ -230,13 +220,11 @@ const weddingInfo = reactive<any>({})
 const form = reactive({
     avatar: '',
     real_name: '',
-    nickname: '',
     sex: 0
 })
 const originalForm = reactive({
     avatar: '',
     real_name: '',
-    nickname: '',
     sex: 0
 })
 
@@ -259,9 +247,7 @@ const sexPickerData = [
 
 const displayName = computed(() => {
     const realName = String(form.real_name || '').trim()
-    if (realName) return realName
-    const nickname = String(form.nickname || '').trim()
-    return nickname || '未填写称呼'
+    return realName || '未填写称呼'
 })
 
 const weddingMainDateText = computed(() => {
@@ -300,12 +286,10 @@ const getSexText = (sex: any): string => {
 const resetFormByUserInfo = (info: any) => {
     form.avatar = String(info?.avatar || '')
     form.real_name = String(info?.real_name || '')
-    form.nickname = String(info?.nickname || '')
     form.sex = normalizeSex(info?.sex)
 
     originalForm.avatar = form.avatar
     originalForm.real_name = form.real_name
-    originalForm.nickname = form.nickname
     originalForm.sex = form.sex
 }
 
@@ -506,9 +490,6 @@ const getDirtyFields = () => {
     if (form.real_name !== originalForm.real_name) {
         payloads.push({ field: FieldType.REAL_NAME, value: form.real_name.trim() })
     }
-    if (form.nickname !== originalForm.nickname) {
-        payloads.push({ field: FieldType.NICKNAME, value: form.nickname.trim() })
-    }
     if (form.sex !== originalForm.sex) {
         payloads.push({ field: FieldType.SEX, value: String(form.sex) })
     }
@@ -517,16 +498,12 @@ const getDirtyFields = () => {
 }
 
 const validateProfileForm = () => {
-    if (!form.real_name.trim() && !form.nickname.trim()) {
-        uni.$u.toast('请至少填写新人称呼或昵称')
+    if (!form.real_name.trim()) {
+        uni.$u.toast('请填写新人称呼')
         return false
     }
     if (form.real_name.trim().length > 32) {
         uni.$u.toast('新人称呼长度不能超过32位')
-        return false
-    }
-    if (form.nickname.trim().length > 10) {
-        uni.$u.toast('昵称长度不得超过十位数')
         return false
     }
     return true
@@ -564,7 +541,6 @@ const handleCancelEdit = () => {
     if (saving.value) return
     form.avatar = originalForm.avatar
     form.real_name = originalForm.real_name
-    form.nickname = originalForm.nickname
     form.sex = originalForm.sex
     selectedSex.value = form.sex
     uni.$u.toast('已取消编辑')

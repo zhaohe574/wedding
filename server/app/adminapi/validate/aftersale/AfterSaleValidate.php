@@ -68,14 +68,14 @@ class AfterSaleValidate extends BaseValidate
     protected $scene = [
         // 工单相关
         'ticketDetail' => ['id'],
-        'createTicket' => ['user_id', 'type', 'title'],
+        'createTicket' => ['user_id', 'order_id', 'type', 'priority', 'title', 'content'],
         'assignTicket' => ['id', 'admin_id'],
         'handleTicket' => ['id', 'result'],
         'closeTicket' => ['id', 'reason'],
 
         // 投诉相关
         'complaintDetail' => ['id'],
-        'handleComplaint' => ['id', 'result', 'action'],
+        'handleComplaint' => ['id', 'result', 'action', 'amount'],
 
         // 回访相关
         'callbackDetail' => ['id'],

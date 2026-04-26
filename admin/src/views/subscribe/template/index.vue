@@ -172,6 +172,7 @@
                             <el-option label="待发送" :value="0" />
                             <el-option label="发送成功" :value="1" />
                             <el-option label="发送失败" :value="2" />
+                            <el-option label="发送中" :value="3" />
                         </el-select>
                         <el-select
                             v-model="logSearch.scene"
@@ -913,7 +914,8 @@ const getSendStatusType = (status: number) => {
     const map = {
         0: 'info',
         1: 'success',
-        2: 'danger'
+        2: 'danger',
+        3: 'warning'
     } as const
     return map[status as keyof typeof map] ?? 'info'
 }

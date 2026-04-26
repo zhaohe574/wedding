@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\model\subscribe;
 
 use app\common\model\BaseModel;
+use think\facade\Db;
 
 /**
  * 用户订阅记录模型
@@ -77,6 +78,7 @@ class UserSubscribe extends BaseModel
             'template_id' => $templateId,
             'scene' => $scene,
             'accept_count' => $accepted ? 1 : 0,
+            'reserved_count' => 0,
             'reject_count' => $accepted ? 0 : 1,
             'last_accept_time' => $accepted ? $time : 0,
             'last_reject_time' => $accepted ? 0 : $time,
@@ -120,7 +122,8 @@ class UserSubscribe extends BaseModel
         }
 
         // 永久订阅或有可用的一次性订阅次数
-        return $record->status == self::STATUS_PERMANENT || $record->accept_count > 0;
+        return $record->status == self::STATUS_PERMANENT
+            || (int) $record->accept_count > (int) ($record->reserved_count ?? 0);
     }
 
     /**
@@ -144,7 +147,133 @@ class UserSubscribe extends BaseModel
             return true;
         }
 
-        return (int) $record->accept_count > max($reservedCount, 0);
+        $reserved = max((int) ($record->reserved_count ?? 0), max($reservedCount, 0));
+        return (int) $record->accept_count > $reserved;
+    }
+
+    /**
+     * @notes 预占一次订阅授权
+     * @param int $userId
+     * @param string $templateId
+     * @return bool
+     */
+    public static function reserveSubscription(int $userId, string $templateId): bool
+    {
+        return (bool) Db::transaction(function () use ($userId, $templateId) {
+            $record = self::where('user_id', $userId)
+                ->where('template_id', $templateId)
+                ->lock(true)
+                ->find();
+
+            if (!$record) {
+                return false;
+            }
+
+            if ((int) $record->status === self::STATUS_PERMANENT) {
+                return true;
+            }
+
+            $reservedCount = (int) ($record->reserved_count ?? 0);
+            if ((int) $record->accept_count <= $reservedCount) {
+                return false;
+            }
+
+            $record->reserved_count = $reservedCount + 1;
+            $record->update_time = time();
+            $record->save();
+
+            return true;
+        });
+    }
+
+    /**
+     * @notes 发送成功后消费一次已预占授权
+     * @param int $userId
+     * @param string $templateId
+     * @return bool
+     */
+    public static function consumeReservedSubscription(int $userId, string $templateId): bool
+    {
+        return (bool) Db::transaction(function () use ($userId, $templateId) {
+            $record = self::where('user_id', $userId)
+                ->where('template_id', $templateId)
+                ->lock(true)
+                ->find();
+
+            if (!$record) {
+                return false;
+            }
+
+            if ((int) $record->status === self::STATUS_PERMANENT) {
+                return true;
+            }
+
+            $reservedCount = (int) ($record->reserved_count ?? 0);
+            if ($reservedCount > 0) {
+                $record->reserved_count = $reservedCount - 1;
+            }
+
+            if ((int) $record->accept_count > 0) {
+                $record->accept_count = (int) $record->accept_count - 1;
+                $record->update_time = time();
+                $record->save();
+                return true;
+            }
+
+            $record->update_time = time();
+            $record->save();
+            return false;
+        });
+    }
+
+    /**
+     * @notes 释放一次已预占授权
+     * @param int $userId
+     * @param string $templateId
+     * @return bool
+     */
+    public static function releaseReservedSubscription(int $userId, string $templateId): bool
+    {
+        return (bool) Db::transaction(function () use ($userId, $templateId) {
+            $record = self::where('user_id', $userId)
+                ->where('template_id', $templateId)
+                ->lock(true)
+                ->find();
+
+            if (!$record || (int) $record->status === self::STATUS_PERMANENT) {
+                return true;
+            }
+
+            $reservedCount = (int) ($record->reserved_count ?? 0);
+            if ($reservedCount <= 0) {
+                return true;
+            }
+
+            $record->reserved_count = $reservedCount - 1;
+            $record->update_time = time();
+            $record->save();
+
+            return true;
+        });
+    }
+
+    /**
+     * @notes 清空本地可用授权次数，用于微信返回用户拒收/无额度时校正
+     * @param int $userId
+     * @param string $templateId
+     * @return bool
+     */
+    public static function clearAvailableSubscription(int $userId, string $templateId): bool
+    {
+        return self::where('user_id', $userId)
+            ->where('template_id', $templateId)
+            ->where('status', '<>', self::STATUS_PERMANENT)
+            ->update([
+                'accept_count' => 0,
+                'reserved_count' => 0,
+                'status' => self::STATUS_REJECTED,
+                'update_time' => time(),
+            ]) >= 0;
     }
 
     /**
@@ -163,20 +292,7 @@ class UserSubscribe extends BaseModel
             return false;
         }
 
-        // 永久订阅不消耗次数
-        if ($record->status == self::STATUS_PERMANENT) {
-            return true;
-        }
-
-        // 一次性订阅消耗次数
-        if ($record->accept_count > 0) {
-            $record->accept_count -= 1;
-            $record->update_time = time();
-            $record->save();
-            return true;
-        }
-
-        return false;
+        return self::consumeReservedSubscription($userId, $templateId);
     }
 
     /**
@@ -197,7 +313,9 @@ class UserSubscribe extends BaseModel
             $result[$record['template_id']] = [
                 'status' => $record['status'],
                 'accept_count' => $record['accept_count'],
-                'can_send' => $record['status'] == self::STATUS_PERMANENT || $record['accept_count'] > 0,
+                'reserved_count' => (int) ($record['reserved_count'] ?? 0),
+                'can_send' => $record['status'] == self::STATUS_PERMANENT
+                    || (int) $record['accept_count'] > (int) ($record['reserved_count'] ?? 0),
             ];
         }
 
@@ -207,6 +325,7 @@ class UserSubscribe extends BaseModel
                 $result[$templateId] = [
                     'status' => -1,
                     'accept_count' => 0,
+                    'reserved_count' => 0,
                     'can_send' => false,
                 ];
             }

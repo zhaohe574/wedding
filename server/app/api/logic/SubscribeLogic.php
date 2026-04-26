@@ -54,11 +54,17 @@ class SubscribeLogic extends BaseLogic
     public static function recordSubscribe(array $params): bool
     {
         try {
+            $templateId = (string) ($params['template_id'] ?? '');
+            $scene = (string) ($params['scene'] ?? '');
+            if (!self::isRecordableTemplate($templateId, $scene)) {
+                return false;
+            }
+
             $accepted = ($params['result'] ?? '') === 'accept';
             UserSubscribe::recordSubscribe(
                 (int)$params['user_id'],
-                $params['template_id'],
-                $params['scene'] ?? '',
+                $templateId,
+                $scene,
                 $accepted
             );
             return true;
@@ -71,18 +77,121 @@ class SubscribeLogic extends BaseLogic
     /**
      * @notes 批量记录订阅结果
      * @param array $params
-     * @return int
+     * @return array
      */
-    public static function batchRecordSubscribe(array $params): int
+    public static function batchRecordSubscribe(array $params): array
     {
         $subscribeResults = $params['results'] ?? [];
         $scene = $params['scene'] ?? '';
-        
-        return UserSubscribe::batchRecordSubscribe(
-            (int)$params['user_id'],
-            $subscribeResults,
-            $scene
-        );
+        $count = 0;
+        $failed = 0;
+        $errors = [];
+
+        foreach ($subscribeResults as $templateId => $result) {
+            $templateId = (string) $templateId;
+            $result = (string) $result;
+            if (!in_array($result, ['accept', 'reject'], true)) {
+                $failed++;
+                $errors[] = $templateId . ': 订阅结果值无效';
+                continue;
+            }
+
+            if (!self::isRecordableTemplate($templateId, (string) $scene)) {
+                $failed++;
+                $errors[] = $templateId . ': ' . self::getError();
+                continue;
+            }
+
+            UserSubscribe::recordSubscribe((int) $params['user_id'], $templateId, (string) $scene, $result === 'accept');
+            $count++;
+        }
+
+        return [
+            'count' => $count,
+            'failed' => $failed,
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * @notes 校验客户端上报的模板是否来自已启用场景
+     * @param string $templateId
+     * @param string $scene
+     * @return bool
+     */
+    protected static function isRecordableTemplate(string $templateId, string $scene = ''): bool
+    {
+        if (!SubscribeMessageTemplate::isUsableTemplateId($templateId)) {
+            self::setError('模板ID未配置或无效');
+            return false;
+        }
+
+        $template = SubscribeMessageTemplate::where('template_id', $templateId)
+            ->where('status', SubscribeMessageTemplate::STATUS_ENABLED)
+            ->find();
+        if (!$template) {
+            self::setError('模板不存在或未启用');
+            return false;
+        }
+
+        $allowedScenes = self::getRecordSceneScope($scene);
+        if ($scene !== '' && empty($allowedScenes)) {
+            self::setError('订阅场景无效');
+            return false;
+        }
+
+        $sceneQuery = SubscribeMessageScene::where('template_id', $templateId)
+            ->where('status', SubscribeMessageScene::STATUS_ENABLED);
+        if (!empty($allowedScenes)) {
+            $sceneQuery->whereIn('scene', $allowedScenes);
+        }
+        $sceneConfigs = $sceneQuery->select();
+        if (count($sceneConfigs) === 0) {
+            self::setError('模板未绑定启用场景');
+            return false;
+        }
+
+        foreach ($sceneConfigs as $sceneConfig) {
+            if (SubscribeMessageTemplate::canTemplateBindToScene((string) $template->scene, (string) $sceneConfig->scene)) {
+                return true;
+            }
+        }
+
+        self::setError('模板场景与订阅场景不一致');
+        return false;
+    }
+
+    /**
+     * @notes 获取前端上报场景的允许范围
+     * @param string $scene
+     * @return array
+     */
+    protected static function getRecordSceneScope(string $scene): array
+    {
+        if ($scene === '') {
+            return [];
+        }
+
+        if (SubscribeMessageTemplate::isActiveScene($scene)) {
+            return [$scene];
+        }
+
+        $groups = [
+            'order' => [
+                SubscribeMessageTemplate::SCENE_ORDER_CONFIRM,
+                SubscribeMessageTemplate::SCENE_SCHEDULE_REMIND,
+            ],
+            'aftersale' => [
+                SubscribeMessageTemplate::SCENE_REFUND_RESULT,
+                SubscribeMessageTemplate::SCENE_TICKET_UPDATE,
+            ],
+            'waitlist' => [
+                SubscribeMessageTemplate::SCENE_WAITLIST_RELEASE,
+                SubscribeMessageTemplate::SCENE_WAITLIST_EXPIRED,
+            ],
+        ];
+
+        return $groups[$scene] ?? [];
     }
 
     /**
@@ -124,7 +233,9 @@ class SubscribeLogic extends BaseLogic
             $item['template_name'] = $template['name'] ?? '未知模板';
             $item['scene_desc'] = $template ? SubscribeMessageTemplate::getSceneDesc($template['scene']) : '';
             $item['status_desc'] = self::getStatusDesc($item['status']);
-            $item['can_send'] = $item['status'] == UserSubscribe::STATUS_PERMANENT || $item['accept_count'] > 0;
+            $item['reserved_count'] = (int) ($item['reserved_count'] ?? 0);
+            $item['can_send'] = $item['status'] == UserSubscribe::STATUS_PERMANENT
+                || (int) $item['accept_count'] > $item['reserved_count'];
         }
 
         return $subscriptions;
@@ -285,6 +396,7 @@ class SubscribeLogic extends BaseLogic
             SubscribeMessageLog::SEND_STATUS_PENDING => '待发送',
             SubscribeMessageLog::SEND_STATUS_SUCCESS => '已发送',
             SubscribeMessageLog::SEND_STATUS_FAILED => '发送失败',
+            SubscribeMessageLog::SEND_STATUS_SENDING => '发送中',
         ];
         return $map[$status] ?? '未知';
     }

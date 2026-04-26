@@ -218,17 +218,36 @@ class OrderRefundService
     {
         $refundStatus = strtoupper((string)($message['refund_status'] ?? ''));
         $outRefundNo = trim((string)($message['out_refund_no'] ?? ''));
-        if ($refundStatus !== 'SUCCESS' || $outRefundNo === '') {
+        if ($outRefundNo === '') {
             return false;
         }
 
-        $result = self::completeRefundItemByOutRefundNo(
-            $outRefundNo,
-            (string)($message['refund_id'] ?? $outRefundNo),
-            json_encode($message, JSON_UNESCAPED_UNICODE)
-        );
+        $messageJson = json_encode($message, JSON_UNESCAPED_UNICODE) ?: '';
+        if ($refundStatus === 'SUCCESS') {
+            $result = self::completeRefundItemByOutRefundNo(
+                $outRefundNo,
+                (string)($message['refund_id'] ?? $outRefundNo),
+                $messageJson
+            );
 
-        return (bool)($result['success'] ?? false);
+            return (bool)($result['success'] ?? false);
+        }
+
+        if (in_array($refundStatus, ['ABNORMAL', 'CLOSED'], true)) {
+            $refundItem = RefundItem::where('out_refund_no', $outRefundNo)->find();
+            if (!$refundItem) {
+                return false;
+            }
+
+            $result = self::failRefundItem(
+                (int)$refundItem->id,
+                '微信退款失败：' . $refundStatus . ($messageJson ? '；' . $messageJson : '')
+            );
+
+            return (bool)($result['success'] ?? false);
+        }
+
+        return false;
     }
 
     /**

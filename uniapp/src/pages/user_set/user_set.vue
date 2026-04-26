@@ -80,6 +80,12 @@
                     </view>
                     <!-- #endif -->
                 </view>
+
+                <view class="settings-section__logout">
+                    <view class="settings-logout-button" @click="showLogout = true">
+                        <text class="settings-logout-button__text">退出登录</text>
+                    </view>
+                </view>
             </BaseCard>
 
             <BaseCard variant="surface" class="settings-section">
@@ -158,12 +164,6 @@
                 </view>
             </BaseCard>
 
-            <view class="user-set-page__logout">
-                <BaseButton block size="lg" variant="danger" @click="showLogout = true">
-                    退出登录
-                </BaseButton>
-            </view>
-
             <BaseOverlayMask :show="show" @close="show = false" />
             <tn-popup
                 v-model="show"
@@ -230,20 +230,17 @@
                     <text class="logout-popup__title">确认退出登录？</text>
                     <text class="logout-popup__desc"> 退出后需重新登录。 </text>
                     <view class="logout-popup__actions">
-                        <view class="logout-popup__action">
-                            <BaseButton
-                                block
-                                variant="secondary"
-                                size="md"
-                                @click="showLogout = false"
-                            >
-                                取消
-                            </BaseButton>
+                        <view
+                            class="logout-popup__button logout-popup__button--secondary"
+                            @click="showLogout = false"
+                        >
+                            <text class="logout-popup__button-text">取消</text>
                         </view>
-                        <view class="logout-popup__action">
-                            <BaseButton block variant="danger" size="md" @click="logoutHandle">
-                                确认退出
-                            </BaseButton>
+                        <view
+                            class="logout-popup__button logout-popup__button--danger"
+                            @click="logoutHandle"
+                        >
+                            <text class="logout-popup__button-text">确认退出</text>
                         </view>
                     </view>
                 </view>
@@ -524,8 +521,33 @@ onLoad(async (options) => {
     color: var(--wm-text-tertiary, #9a9388);
 }
 
-.user-set-page__logout {
-    margin-top: 8rpx;
+.settings-section__logout {
+    margin-top: 24rpx;
+    padding-top: 24rpx;
+    border-top: 1rpx solid var(--wm-color-border, #e7e2d6);
+}
+
+.settings-logout-button {
+    width: 100%;
+    min-height: 88rpx;
+    border-radius: 999rpx;
+    background: var(--wm-color-danger, #8a4b45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10rpx 20rpx rgba(138, 75, 69, 0.16);
+
+    &:active {
+        opacity: 0.92;
+        transform: translateY(2rpx) scale(0.99);
+    }
+}
+
+.settings-logout-button__text {
+    font-size: 28rpx;
+    line-height: 1;
+    font-weight: 700;
+    color: #ffffff;
 }
 
 .settings-popup {
@@ -612,14 +634,53 @@ onLoad(async (options) => {
 }
 
 .logout-popup__actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16rpx;
     width: 100%;
     margin-top: 32rpx;
 }
 
-.logout-popup__action {
-    flex: 1;
+.logout-popup__button {
+    min-width: 0;
+    min-height: 76rpx;
+    border-radius: 999rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+        opacity: 0.9;
+        transform: translateY(1rpx);
+    }
+}
+
+.logout-popup__button--secondary {
+    background: #ffffff;
+    border: 1rpx solid rgba(11, 11, 11, 0.12);
+}
+
+.logout-popup__button--secondary .logout-popup__button-text {
+    color: var(--wm-text-primary, #111111);
+}
+
+.logout-popup__button--danger {
+    background: var(--wm-color-danger, #8a4b45);
+    box-shadow: 0 8rpx 16rpx rgba(138, 75, 69, 0.14);
+}
+
+.logout-popup__button--danger .logout-popup__button-text {
+    color: #ffffff;
+}
+
+.logout-popup__button-text {
+    max-width: 100%;
+    font-size: 26rpx;
+    line-height: 1;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 @media (prefers-reduced-motion: reduce) {

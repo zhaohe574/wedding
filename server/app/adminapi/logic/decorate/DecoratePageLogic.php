@@ -353,8 +353,15 @@ class DecoratePageLogic extends BaseLogic
      */
     private static function normalizeHomeWidget(string $widgetName, array $widget): array
     {
+        $hasRawContentData = isset($widget['content'])
+            && is_array($widget['content'])
+            && array_key_exists('data', $widget['content']);
+        $rawContentData = $hasRawContentData ? $widget['content']['data'] : null;
         $defaultWidget = self::buildDefaultHomeWidget($widgetName);
         $widget = array_replace_recursive($defaultWidget, $widget);
+        if ($widgetName === 'home-service-categories' && $hasRawContentData) {
+            $widget['content']['data'] = $rawContentData;
+        }
 
         return match ($widgetName) {
             'banner' => self::normalizeHomeBannerWidget($widget),

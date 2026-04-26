@@ -93,6 +93,7 @@
         {
             "path": "pages/user_set/user_set",
             "style": {
+                "navigationStyle": "custom",
                 "navigationBarTitleText": "个人设置"
             },
             "meta": {

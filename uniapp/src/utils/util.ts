@@ -1,5 +1,7 @@
 import { isObject } from '@vue/shared'
 import { parseQuery } from 'uniapp-router-next'
+import { DYNAMIC_LIST_NAV_QUERY_KEY } from '@/enums/constantEnums'
+import cache from '@/utils/cache'
 
 /**
  * @description 获取元素节点信息（在组件中的元素必须要传ctx）
@@ -155,6 +157,7 @@ export const getLinkPath = (link: LinkInput) => resolveAppLink(link)?.path || ''
 export const hasConfiguredLink = (link: LinkInput) => Boolean(getLinkPath(link))
 
 const TABBAR_PATHS = new Set(['/pages/index/index', '/pages/dynamic/dynamic', '/pages/user/user'])
+const DYNAMIC_LIST_PATH = '/pages/dynamic/dynamic'
 
 const buildUrl = (path: string, query?: Record<string, any>) => {
     if (!query || !Object.keys(query).length) {
@@ -169,6 +172,14 @@ const handleNavigateFail = (error: any) => {
         title: '页面跳转失败，请稍后重试',
         icon: 'none'
     })
+}
+
+const bridgeDynamicListQuery = (path: string, query?: Record<string, any>) => {
+    if (path !== DYNAMIC_LIST_PATH || !query || !Object.keys(query).length) {
+        return
+    }
+
+    cache.set(DYNAMIC_LIST_NAV_QUERY_KEY, query, 60)
 }
 
 export function navigateTo(
@@ -220,6 +231,7 @@ export function navigateTo(
     const url = buildUrl(path, query)
 
     if (shouldSwitchTab) {
+        bridgeDynamicListQuery(path, query)
         uni.switchTab({
             url: path,
             fail: handleNavigateFail

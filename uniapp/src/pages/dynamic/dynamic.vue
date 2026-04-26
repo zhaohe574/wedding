@@ -162,7 +162,7 @@ import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import DynamicCard from '@/components/business/DynamicCard.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { getDynamicList, likeDynamic } from '@/api/dynamic'
-import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
+import { DYNAMIC_LIST_NAV_QUERY_KEY, DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import cache from '@/utils/cache'
@@ -199,6 +199,7 @@ const page = ref(1)
 const hasMore = ref(true)
 const hasInitialized = ref(false)
 const tabbarRefreshKey = ref(0)
+let skipNextTypeWatch = false
 
 const currentType = computed(() => typeTabs[currentTypeIndex.value]?.value ?? '')
 const sortIsActive = computed(() => currentSort.value !== 'latest')
@@ -232,6 +233,55 @@ const shouldRefreshOnShow = () => Boolean(cache.get(DYNAMIC_LIST_REFRESH_KEY))
 
 const consumeRefreshFlag = () => {
     cache.remove(DYNAMIC_LIST_REFRESH_KEY)
+}
+
+const consumeNavigationQuery = () => {
+    const query = cache.get(DYNAMIC_LIST_NAV_QUERY_KEY)
+    if (query) {
+        cache.remove(DYNAMIC_LIST_NAV_QUERY_KEY)
+    }
+    return query && typeof query === 'object' && !Array.isArray(query) ? query : null
+}
+
+const safeDecode = (value: unknown) => {
+    const text = String(value ?? '')
+    try {
+        return decodeURIComponent(text)
+    } catch (error) {
+        return text
+    }
+}
+
+const getTypeIndexByValue = (value: unknown) => {
+    const matchedIndex = typeTabs.findIndex((item) => String(item.value) === String(value ?? ''))
+    return matchedIndex >= 0 ? matchedIndex : 0
+}
+
+const applyNavigationQuery = (query: Record<string, any> | null | undefined) => {
+    if (!query || typeof query !== 'object') {
+        return false
+    }
+
+    const hasDynamicType =
+        Object.prototype.hasOwnProperty.call(query, 'dynamic_type') ||
+        Object.prototype.hasOwnProperty.call(query, 'type')
+    const hasTag = Object.prototype.hasOwnProperty.call(query, 'tag')
+    if (!hasDynamicType && !hasTag) {
+        return false
+    }
+
+    if (hasDynamicType) {
+        const nextTypeIndex = getTypeIndexByValue(query.dynamic_type ?? query.type)
+        if (currentTypeIndex.value !== nextTypeIndex) {
+            skipNextTypeWatch = true
+            currentTypeIndex.value = nextTypeIndex
+        }
+    }
+    if (hasTag) {
+        currentTag.value = safeDecode(query.tag)
+    }
+
+    return true
 }
 
 const fetchDynamics = async (refresh = false) => {
@@ -320,21 +370,32 @@ const selectSort = (sort: string) => {
 }
 
 watch(currentTypeIndex, () => {
+    if (skipNextTypeWatch) {
+        skipNextTypeWatch = false
+        return
+    }
     showSortPicker.value = false
     fetchDynamics(true)
 })
 
 onLoad((options: any) => {
     $theme.setScene('consumer')
-    if (options?.tag) {
-        currentTag.value = decodeURIComponent(options.tag)
-    }
+    applyNavigationQuery(options)
 })
 
 onShow(() => {
     $theme.setScene('consumer')
     tabbarRefreshKey.value += 1
     showSortPicker.value = false
+
+    const navigationQuery = consumeNavigationQuery()
+    if (applyNavigationQuery(navigationQuery)) {
+        if (shouldRefreshOnShow()) {
+            consumeRefreshFlag()
+        }
+        fetchDynamics(true)
+        return
+    }
 
     if (shouldRefreshOnShow()) {
         consumeRefreshFlag()

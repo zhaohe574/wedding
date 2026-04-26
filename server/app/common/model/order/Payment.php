@@ -10,6 +10,7 @@ namespace app\common\model\order;
 use app\common\model\BaseModel;
 use app\common\model\financial\FinancialFlow;
 use app\common\model\order\Refund;
+use app\common\service\MoneyService;
 use app\common\service\OrderConfirmLetterService;
 use app\common\service\OrderRefundService;
 
@@ -227,6 +228,12 @@ class Payment extends BaseModel
             ]];
         }
 
+        $callbackError = self::validatePaidCallback($payment, $callbackData);
+        if ($callbackError !== '') {
+            self::rejectPaidCallback($payment, $transactionId, $callbackData, $callbackError);
+            return [false, $callbackError, []];
+        }
+
         // 更新订单状态
         $order = Order::where('id', $payment->order_id)->lock(true)->find();
         if (!$order) {
@@ -411,6 +418,69 @@ class Payment extends BaseModel
         ]);
 
         return mb_substr(implode('；', array_unique($parts)), 0, 255);
+    }
+
+    /**
+     * @notes 校验三方支付回调金额
+     */
+    protected static function validatePaidCallback(self $payment, array $callbackData): string
+    {
+        if ((int)$payment->pay_way !== self::WAY_WECHAT) {
+            return '';
+        }
+
+        $amount = (array)($callbackData['amount'] ?? []);
+        if (!array_key_exists('total', $amount)) {
+            return '微信支付回调缺少金额信息';
+        }
+
+        $currency = strtoupper(trim((string)($amount['currency'] ?? 'CNY')));
+        if ($currency !== '' && $currency !== 'CNY') {
+            return '微信支付回调币种不支持：' . $currency;
+        }
+
+        try {
+            $expectedFen = MoneyService::yuanToFen($payment->pay_amount);
+        } catch (\Throwable $e) {
+            return '本地支付金额格式错误';
+        }
+
+        $actualFen = (int)$amount['total'];
+        if ($actualFen !== $expectedFen) {
+            return '微信支付回调金额不一致，应付' . $expectedFen . '分，实付' . $actualFen . '分';
+        }
+
+        return '';
+    }
+
+    /**
+     * @notes 登记被拒绝的支付回调
+     */
+    protected static function rejectPaidCallback(
+        self $payment,
+        string $transactionId,
+        array $callbackData,
+        string $reason
+    ): void {
+        $payment->transaction_id = $transactionId;
+        $payment->callback_time = time();
+        $payment->callback_data = json_encode($callbackData, JSON_UNESCAPED_UNICODE);
+        $payment->remark = self::appendRemark((string)($payment->remark ?? ''), $reason);
+        $payment->update_time = time();
+        $payment->save();
+
+        $order = Order::where('id', (int)$payment->order_id)->find();
+        if ($order) {
+            OrderLog::addLog(
+                (int)$order->id,
+                OrderLog::OPERATOR_SYSTEM,
+                0,
+                'pay_callback_reject',
+                (int)$order->order_status,
+                (int)$order->order_status,
+                $reason
+            );
+        }
     }
 
     /**

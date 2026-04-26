@@ -54,7 +54,7 @@ class SubscribeController extends BaseApiController
         $params = (new SubscribeValidate())->post()->goCheck('batchRecord');
         $params['user_id'] = $this->userId;
         $result = SubscribeLogic::batchRecordSubscribe($params);
-        return $this->data(['count' => $result]);
+        return $this->data($result);
     }
 
     /**

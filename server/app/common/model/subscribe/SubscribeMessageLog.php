@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\model\subscribe;
 
 use app\common\model\BaseModel;
+use think\facade\Db;
 
 /**
  * 订阅消息发送日志模型
@@ -22,6 +23,9 @@ class SubscribeMessageLog extends BaseModel
     const SEND_STATUS_PENDING = 0;   // 待发送
     const SEND_STATUS_SUCCESS = 1;   // 发送成功
     const SEND_STATUS_FAILED = 2;    // 发送失败
+    const SEND_STATUS_SENDING = 3;   // 发送中
+
+    const DEFAULT_LOCK_SECONDS = 300;
 
     // 业务类型
     const BIZ_TYPE_ORDER = 'order';
@@ -63,6 +67,7 @@ class SubscribeMessageLog extends BaseModel
             self::SEND_STATUS_PENDING => '待发送',
             self::SEND_STATUS_SUCCESS => '发送成功',
             self::SEND_STATUS_FAILED => '发送失败',
+            self::SEND_STATUS_SENDING => '发送中',
         ];
         return $map[$data['send_status']] ?? '未知';
     }
@@ -89,7 +94,8 @@ class SubscribeMessageLog extends BaseModel
         array $content,
         string $page = '',
         int $plannedSendTime = 0,
-        string $miniprogramState = 'formal'
+        string $miniprogramState = 'formal',
+        ?string $dedupeKey = null
     ): SubscribeMessageLog {
         $createTime = time();
         return self::create([
@@ -103,6 +109,10 @@ class SubscribeMessageLog extends BaseModel
             'page' => $page,
             'miniprogram_state' => $miniprogramState,
             'planned_send_time' => $plannedSendTime > 0 ? $plannedSendTime : $createTime,
+            'next_retry_time' => 0,
+            'lock_until' => 0,
+            'retry_count' => 0,
+            'dedupe_key' => $dedupeKey,
             'send_status' => self::SEND_STATUS_PENDING,
             'create_time' => $createTime,
         ]);
@@ -127,10 +137,104 @@ class SubscribeMessageLog extends BaseModel
         return self::where('id', $logId)->update([
             'send_status' => $success ? self::SEND_STATUS_SUCCESS : self::SEND_STATUS_FAILED,
             'error_code' => $errorCode,
+            'last_error_code' => $errorCode,
             'error_msg' => $errorMsg,
             'request_id' => $requestId,
+            'lock_until' => 0,
+            'next_retry_time' => 0,
             'send_time' => time(),
         ]) > 0;
+    }
+
+    /**
+     * @notes 标记临时失败并安排重试
+     * @param int $logId
+     * @param string $errorCode
+     * @param string $errorMsg
+     * @param string $requestId
+     * @param int $nextRetryTime
+     * @return bool
+     */
+    public static function markTransientFailure(
+        int $logId,
+        string $errorCode,
+        string $errorMsg,
+        string $requestId,
+        int $nextRetryTime
+    ): bool {
+        return self::where('id', $logId)->update([
+            'send_status' => self::SEND_STATUS_PENDING,
+            'error_code' => $errorCode,
+            'last_error_code' => $errorCode,
+            'error_msg' => $errorMsg,
+            'request_id' => $requestId,
+            'retry_count' => Db::raw('retry_count + 1'),
+            'next_retry_time' => $nextRetryTime,
+            'lock_until' => 0,
+        ]) > 0;
+    }
+
+    /**
+     * @notes 按幂等键查找发送记录
+     * @param string $dedupeKey
+     * @return SubscribeMessageLog|null
+     */
+    public static function findByDedupeKey(string $dedupeKey): ?SubscribeMessageLog
+    {
+        if ($dedupeKey === '') {
+            return null;
+        }
+
+        return self::where('dedupe_key', $dedupeKey)
+            ->order('id', 'desc')
+            ->find();
+    }
+
+    /**
+     * @notes 抢占单条发送日志
+     * @param int $logId
+     * @param bool $force
+     * @param int $lockSeconds
+     * @return SubscribeMessageLog|null
+     */
+    public static function claimLog(int $logId, bool $force = false, int $lockSeconds = self::DEFAULT_LOCK_SECONDS): ?SubscribeMessageLog
+    {
+        return Db::transaction(function () use ($logId, $force, $lockSeconds) {
+            $now = time();
+            $log = self::where('id', $logId)->lock(true)->find();
+            if (!$log) {
+                return null;
+            }
+
+            $status = (int) $log->send_status;
+            if ($status === self::SEND_STATUS_SUCCESS) {
+                return null;
+            }
+
+            if (!$force) {
+                if ($status === self::SEND_STATUS_PENDING) {
+                    $plannedSendTime = (int) ($log->planned_send_time ?? 0);
+                    $nextRetryTime = (int) ($log->next_retry_time ?? 0);
+                    if (($plannedSendTime > 0 && $plannedSendTime > $now)
+                        || ($nextRetryTime > 0 && $nextRetryTime > $now)
+                    ) {
+                        return null;
+                    }
+                } elseif ($status === self::SEND_STATUS_SENDING) {
+                    if ((int) ($log->lock_until ?? 0) > $now) {
+                        return null;
+                    }
+                } else {
+                    return null;
+                }
+            }
+
+            $log->send_status = self::SEND_STATUS_SENDING;
+            $log->lock_until = $now + max($lockSeconds, 60);
+            $log->save();
+
+            return $log;
+        });
     }
 
     /**
@@ -155,6 +259,7 @@ class SubscribeMessageLog extends BaseModel
         $stats = [
             'total' => 0,
             'pending' => 0,
+            'sending' => 0,
             'success' => 0,
             'failed' => 0,
             'success_rate' => 0,
@@ -171,6 +276,9 @@ class SubscribeMessageLog extends BaseModel
                     break;
                 case self::SEND_STATUS_FAILED:
                     $stats['failed'] = $item['count'];
+                    break;
+                case self::SEND_STATUS_SENDING:
+                    $stats['sending'] = $item['count'];
                     break;
             }
         }
@@ -210,6 +318,7 @@ class SubscribeMessageLog extends BaseModel
                     'total' => 0,
                     'success' => 0,
                     'failed' => 0,
+                    'sending' => 0,
                 ];
             }
             $stats[$scene]['total'] += $item['count'];
@@ -217,6 +326,8 @@ class SubscribeMessageLog extends BaseModel
                 $stats[$scene]['success'] = $item['count'];
             } elseif ($item['send_status'] == self::SEND_STATUS_FAILED) {
                 $stats[$scene]['failed'] = $item['count'];
+            } elseif ($item['send_status'] == self::SEND_STATUS_SENDING) {
+                $stats[$scene]['sending'] = $item['count'];
             }
         }
 
@@ -247,6 +358,7 @@ class SubscribeMessageLog extends BaseModel
                 'total' => 0,
                 'success' => 0,
                 'failed' => 0,
+                'sending' => 0,
             ];
         }
 
@@ -257,6 +369,8 @@ class SubscribeMessageLog extends BaseModel
                     $trend[$item['date']]['success'] = $item['count'];
                 } elseif ($item['send_status'] == self::SEND_STATUS_FAILED) {
                     $trend[$item['date']]['failed'] = $item['count'];
+                } elseif ($item['send_status'] == self::SEND_STATUS_SENDING) {
+                    $trend[$item['date']]['sending'] = $item['count'];
                 }
             }
         }
@@ -303,7 +417,11 @@ class SubscribeMessageLog extends BaseModel
             ->update([
                 'send_status' => self::SEND_STATUS_PENDING,
                 'planned_send_time' => time(),
+                'next_retry_time' => 0,
+                'lock_until' => 0,
+                'retry_count' => 0,
                 'error_code' => '',
+                'last_error_code' => '',
                 'error_msg' => '',
                 'send_time' => 0,
             ]) > 0;
@@ -319,7 +437,7 @@ class SubscribeMessageLog extends BaseModel
     {
         return self::where('user_id', $userId)
             ->where('template_id', $templateId)
-            ->where('send_status', self::SEND_STATUS_PENDING)
+            ->whereIn('send_status', [self::SEND_STATUS_PENDING, self::SEND_STATUS_SENDING])
             ->count();
     }
 
@@ -330,15 +448,50 @@ class SubscribeMessageLog extends BaseModel
      */
     public static function getDuePendingLogs(int $limit = 100): array
     {
-        return self::where('send_status', self::SEND_STATUS_PENDING)
-            ->where(function ($query) {
-                $query->where('planned_send_time', 0)
-                    ->whereOr('planned_send_time', '<=', time());
-            })
-            ->order('planned_send_time', 'asc')
-            ->order('id', 'asc')
-            ->limit($limit)
-            ->select()
-            ->toArray();
+        return self::claimDuePendingLogs($limit);
+    }
+
+    /**
+     * @notes 抢占到期待发送日志
+     * @param int $limit
+     * @param int $lockSeconds
+     * @return array
+     */
+    public static function claimDuePendingLogs(int $limit = 100, int $lockSeconds = self::DEFAULT_LOCK_SECONDS): array
+    {
+        return Db::transaction(function () use ($limit, $lockSeconds) {
+            $now = time();
+            $logs = self::where(function ($query) use ($now) {
+                    $query->where(function ($query) use ($now) {
+                        $query->where('send_status', self::SEND_STATUS_PENDING)
+                            ->where(function ($query) use ($now) {
+                                $query->where('planned_send_time', 0)
+                                    ->whereOr('planned_send_time', '<=', $now);
+                            })
+                            ->where(function ($query) use ($now) {
+                                $query->where('next_retry_time', 0)
+                                    ->whereOr('next_retry_time', '<=', $now);
+                            });
+                    })->whereOr(function ($query) use ($now) {
+                        $query->where('send_status', self::SEND_STATUS_SENDING)
+                            ->where('lock_until', '<=', $now);
+                    });
+                })
+                ->lock(true)
+                ->order('planned_send_time', 'asc')
+                ->order('id', 'asc')
+                ->limit(max($limit, 1))
+                ->select();
+
+            $result = [];
+            foreach ($logs as $log) {
+                $log->send_status = self::SEND_STATUS_SENDING;
+                $log->lock_until = $now + max($lockSeconds, 60);
+                $log->save();
+                $result[] = $log->toArray();
+            }
+
+            return $result;
+        });
     }
 }

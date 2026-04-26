@@ -244,20 +244,32 @@ class SubscribeLogic extends BaseLogic
                 return false;
             }
 
-            SubscribeMessageScene::updateScene($sceneId, [
+            $dataMapping = self::normalizeDataMapping($params['data_mapping'] ?? []);
+            if ($dataMapping === null) {
+                self::setError('数据映射必须是合法JSON对象');
+                return false;
+            }
+
+            $updateData = [
                 'name' => $params['name'] ?? $scene->name,
                 'description' => $params['description'] ?? '',
                 'template_id' => $params['template_id'] ?? '',
                 'trigger_event' => $params['trigger_event'] ?? '',
-                'data_mapping' => is_array($params['data_mapping'] ?? null) 
-                    ? json_encode($params['data_mapping'], JSON_UNESCAPED_UNICODE) 
-                    : ($params['data_mapping'] ?? ''),
+                'data_mapping' => json_encode($dataMapping, JSON_UNESCAPED_UNICODE),
                 'page_path' => $params['page_path'] ?? '',
                 'is_auto' => (int) ($params['is_auto'] ?? 1),
                 'delay_seconds' => (int) ($params['delay_seconds'] ?? 0),
                 'status' => (int) ($params['status'] ?? 1),
                 'sort' => (int) ($params['sort'] ?? 0),
-            ]);
+            ];
+
+            if ((int) $updateData['status'] === SubscribeMessageScene::STATUS_ENABLED
+                && !self::validateSceneConfiguration((string) $scene->scene, $updateData, $dataMapping)
+            ) {
+                return false;
+            }
+
+            SubscribeMessageScene::updateScene($sceneId, $updateData);
 
             return true;
         } catch (\Exception $e) {
@@ -274,6 +286,20 @@ class SubscribeLogic extends BaseLogic
     public static function toggleSceneStatus(int $id): bool
     {
         try {
+            $scene = SubscribeMessageScene::find($id);
+            if (!$scene) {
+                self::setError('场景配置不存在');
+                return false;
+            }
+
+            if ((int) $scene->status !== SubscribeMessageScene::STATUS_ENABLED) {
+                $data = $scene->toArray();
+                $mapping = self::normalizeDataMapping($data['data_mapping'] ?? []);
+                if ($mapping === null || !self::validateSceneConfiguration((string) $scene->scene, $data, $mapping)) {
+                    return false;
+                }
+            }
+
             return SubscribeMessageScene::toggleStatus($id);
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -308,11 +334,113 @@ class SubscribeLogic extends BaseLogic
                 return false;
             }
 
+            if ((int) $scene->status === SubscribeMessageScene::STATUS_ENABLED) {
+                $data = $scene->toArray();
+                $data['template_id'] = $templateId;
+                $mapping = self::normalizeDataMapping($data['data_mapping'] ?? []);
+                if ($mapping === null || !self::validateSceneConfiguration((string) $scene->scene, $data, $mapping)) {
+                    return false;
+                }
+            }
+
             return SubscribeMessageScene::bindTemplate($sceneId, $templateId);
         } catch (\Exception $e) {
             self::setError($e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * @notes 归一化数据映射
+     * @param mixed $mapping
+     * @return array|null
+     */
+    protected static function normalizeDataMapping(mixed $mapping): ?array
+    {
+        if (is_array($mapping)) {
+            return $mapping;
+        }
+
+        $mapping = trim((string) $mapping);
+        if ($mapping === '') {
+            return [];
+        }
+
+        $decoded = json_decode($mapping, true);
+        return is_array($decoded) && self::isAssocArray($decoded) ? $decoded : null;
+    }
+
+    /**
+     * @notes 判断是否为JSON对象结构
+     * @param array $value
+     * @return bool
+     */
+    protected static function isAssocArray(array $value): bool
+    {
+        if ($value === []) {
+            return true;
+        }
+
+        return array_keys($value) !== range(0, count($value) - 1);
+    }
+
+    /**
+     * @notes 校验启用场景配置
+     * @param string $sceneKey
+     * @param array $data
+     * @param array $dataMapping
+     * @return bool
+     */
+    protected static function validateSceneConfiguration(string $sceneKey, array $data, array $dataMapping): bool
+    {
+        $templateId = trim((string) ($data['template_id'] ?? ''));
+        if (!SubscribeMessageTemplate::isUsableTemplateId($templateId)) {
+            self::setError('启用场景必须绑定真实微信模板ID');
+            return false;
+        }
+
+        $template = SubscribeMessageTemplate::where('template_id', $templateId)->find();
+        if (!$template || (int) $template->status !== SubscribeMessageTemplate::STATUS_ENABLED) {
+            self::setError('启用场景绑定的模板不存在或未启用');
+            return false;
+        }
+
+        if (!SubscribeMessageTemplate::canTemplateBindToScene((string) $template->scene, $sceneKey)) {
+            self::setError('模板场景与订阅场景不一致，不能启用');
+            return false;
+        }
+
+        $templateContent = $template->content;
+        if (empty($templateContent)) {
+            self::setError('启用场景的模板内容不能为空');
+            return false;
+        }
+
+        $availableParams = array_column(SubscribeMessageTemplate::getSceneAvailableParams($sceneKey), 'key');
+        foreach (array_keys($templateContent) as $keyword) {
+            if (empty($dataMapping[$keyword])) {
+                self::setError('数据映射缺少模板字段：' . $keyword);
+                return false;
+            }
+
+            if (!in_array($dataMapping[$keyword], $availableParams, true)) {
+                self::setError('数据映射字段不可用：' . $keyword . ' => ' . $dataMapping[$keyword]);
+                return false;
+            }
+        }
+
+        $pagePath = trim((string) ($data['page_path'] ?? ''));
+        if ($pagePath === '' || str_contains($pagePath, '..') || preg_match('#^(?:https?:)?//#i', $pagePath)) {
+            self::setError('小程序页面路径无效');
+            return false;
+        }
+
+        if (!preg_match('#^[A-Za-z0-9_\\-/\\?=&.%]+$#', $pagePath)) {
+            self::setError('小程序页面路径格式非法');
+            return false;
+        }
+
+        return true;
     }
 
     // ==================== 发送记录 ====================

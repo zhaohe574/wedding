@@ -18,15 +18,17 @@ class AfterSaleValidate extends BaseValidate
 {
     protected $rule = [
         'id' => 'require|integer|gt:0',
-        'order_id' => 'require|integer|gt:0',
+        'order_id' => 'integer|egt:0',
         'staff_id' => 'integer|egt:0',
         'type' => 'require|in:1,2,3,4,5',
+        'priority' => 'integer|in:1,2,3,4',
         'title' => 'require|max:200',
         'content' => 'max:5000',
         'images' => 'array',
         'videos' => 'array',
-        'contact_name' => 'require|max:50',
-        'contact_mobile' => 'require|mobile',
+        'contact_name' => 'max:50',
+        'contact_mobile' => 'mobile',
+        'contact_phone' => 'mobile',
         'satisfaction' => 'integer|between:1,5',
         'remark' => 'max:500',
         'level' => 'in:1,2,3',
@@ -62,9 +64,28 @@ class AfterSaleValidate extends BaseValidate
 
     protected $scene = [
         'detail' => ['id'],
-        'createTicket' => ['type', 'title'],
+        'createTicket' => [
+            'order_id',
+            'type',
+            'priority',
+            'title',
+            'content',
+            'images',
+            'contact_name',
+            'contact_phone',
+        ],
         'confirm' => ['id'],
-        'submitComplaint' => [
+        'rate' => ['id', 'satisfaction'],
+        'submitQuestionnaire' => ['id'],
+    ];
+
+    /**
+     * @notes 提交投诉场景
+     * @return AfterSaleValidate
+     */
+    public function sceneSubmitComplaint(): AfterSaleValidate
+    {
+        return $this->only([
             'order_id',
             'type',
             'title',
@@ -75,8 +96,8 @@ class AfterSaleValidate extends BaseValidate
             'expect_result',
             'contact_name',
             'contact_mobile',
-        ],
-        'rate' => ['id', 'satisfaction'],
-        'submitQuestionnaire' => ['id'],
-    ];
+        ])->append('order_id', 'require|gt:0')
+            ->append('contact_name', 'require')
+            ->append('contact_mobile', 'require');
+    }
 }

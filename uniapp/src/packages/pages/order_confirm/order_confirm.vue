@@ -473,7 +473,7 @@ const initContact = async () => {
     await userStore.getUser()
     const info = userStore.userInfo || {}
     if (!form.contact_name) {
-        form.contact_name = info.real_name || info.nickname || ''
+        form.contact_name = info.real_name || ''
     }
     if (!form.contact_mobile) {
         form.contact_mobile = info.mobile || ''

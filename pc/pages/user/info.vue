@@ -38,14 +38,14 @@
                 </div>
             </div>
             <div class="info-item leading-10">
-                <div class="item-name">昵称</div>
+                <div class="item-name">新人称呼</div>
                 <div>
-                    {{ userInfo.nickname }}
+                    {{ userInfo.real_name || '-' }}
                     <ClientOnly>
                         <PopoverInput
                             class="inline-block"
                             @confirm="
-                                setUserInfo($event, UserFieldEnum.NICKNAME)
+                                setUserInfo($event, UserFieldEnum.REAL_NAME)
                             "
                             :limit="30"
                             show-limit
@@ -132,7 +132,7 @@ enum UserFieldEnum {
     NONE = '',
     AVATAR = 'avatar',
     USERNAME = 'account',
-    NICKNAME = 'nickname',
+    REAL_NAME = 'real_name',
     SEX = 'sex'
 }
 

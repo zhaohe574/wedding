@@ -68,9 +68,7 @@ const avatarUrl = computed(() => {
 
 const displayName = computed(() => {
     const realName = String(props.user?.real_name || '').trim()
-    if (realName) return realName
-    const nickname = String(props.user?.nickname || '').trim()
-    return nickname || '未填写称呼'
+    return realName || '未填写称呼'
 })
 
 const profileName = computed(() => {

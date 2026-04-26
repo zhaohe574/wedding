@@ -360,13 +360,14 @@
                     <el-select v-model="complaintHandleForm.action" placeholder="请选择处理动作">
                         <el-option label="无" :value="0" />
                         <el-option label="警告" :value="1" />
-                        <el-option label="扣款" :value="2" />
+                        <el-option label="记录扣款" :value="2" />
                         <el-option label="禁用" :value="3" />
                         <el-option label="其他" :value="4" />
                     </el-select>
                 </el-form-item>
-                <el-form-item v-if="complaintHandleForm.action === 2" label="扣款金额">
+                <el-form-item v-if="complaintHandleForm.action === 2" label="记录金额">
                     <el-input-number v-model="complaintHandleForm.amount" :min="0" :precision="2" />
+                    <div class="form-tip">仅记录服务处理金额，不会自动发起客户退款。</div>
                 </el-form-item>
                 <el-form-item label="处理结果" required>
                     <el-input v-model="complaintHandleForm.result" type="textarea" :rows="4" placeholder="请输入处理结果" />
@@ -738,6 +739,7 @@ const viewComplaint = async (row: any) => {
         contact_mobile: { label: '联系电话' },
         content: { label: '内容', span: 2 },
         expect_result: { label: '期望结果', span: 2 },
+        handle_amount: { label: '记录扣款金额' },
         handle_result: { label: '处理结果', span: 2 },
         create_time: { label: '创建时间', type: 'time' }
     }
@@ -1017,6 +1019,12 @@ onMounted(() => {
 .text-danger { color: #f56c6c; }
 .text-primary { color: #409eff; }
 .text-muted { color: #909399; }
+
+.form-tip {
+    margin-left: 12px;
+    font-size: 12px;
+    color: #909399;
+}
 
 .mb-4 { margin-bottom: 16px; }
 </style>

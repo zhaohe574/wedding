@@ -287,18 +287,24 @@ CREATE TABLE IF NOT EXISTS `la_staff_certificate` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '证书ID',
   `staff_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '工作人员ID',
   `name` varchar(100) NOT NULL DEFAULT '' COMMENT '证书名称',
+  `type` varchar(50) NOT NULL DEFAULT '' COMMENT '证书类型',
+  `sn` varchar(100) NOT NULL DEFAULT '' COMMENT '证书编号',
   `image` varchar(255) NOT NULL DEFAULT '' COMMENT '证书图片',
   `issue_org` varchar(100) NOT NULL DEFAULT '' COMMENT '颁发机构',
   `issue_date` date NULL DEFAULT NULL COMMENT '颁发日期',
   `expire_date` date NULL DEFAULT NULL COMMENT '有效期至',
+  `reject_reason` varchar(255) NOT NULL DEFAULT '' COMMENT '拒绝原因',
   `certificate_no` varchar(100) NOT NULL DEFAULT '' COMMENT '证书编号',
   `sort` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
   `audit_status` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '审核状态:0-待审核,1-已通过,2-已拒绝',
+  `verify_status` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核状态:0-待审核,1-已通过,2-已拒绝',
   `create_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
   `update_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
   `delete_time` int(10) UNSIGNED NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE,
-  KEY `idx_staff_id` (`staff_id`) USING BTREE
+  KEY `idx_staff_id` (`staff_id`) USING BTREE,
+  KEY `idx_verify_status` (`verify_status`) USING BTREE,
+  KEY `idx_sn` (`sn`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='工作人员证书表';
 
 -- la_staff_tag
@@ -362,7 +368,8 @@ CREATE TABLE IF NOT EXISTS `la_schedule` (
     UNIQUE KEY `uk_staff_date_slot` (`staff_id`, `schedule_date`, `time_slot`),
     KEY `idx_schedule_date` (`schedule_date`),
     KEY `idx_status` (`status`),
-    KEY `idx_order_id` (`order_id`)
+    KEY `idx_order_id` (`order_id`),
+    KEY `idx_staff_date_status` (`staff_id`, `schedule_date`, `status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='档期表';
 
 -- la_schedule_lock
@@ -465,7 +472,9 @@ CREATE TABLE IF NOT EXISTS `la_package_booking` (
   INDEX `idx_order_id` (`order_id`),
   INDEX `idx_user_id` (`user_id`),
   INDEX `idx_lock_expire` (`lock_expire_time`),
-  INDEX `idx_booking_date` (`booking_date`)
+  INDEX `idx_booking_date` (`booking_date`),
+  INDEX `idx_package_date_status` (`package_id`, `booking_date`, `status`),
+  INDEX `idx_staff_date_status` (`staff_id`, `booking_date`, `status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='套餐预订记录表（用于单日唯一限制）';
 
 -- la_order
@@ -499,6 +508,7 @@ CREATE TABLE IF NOT EXISTS `la_order` (
     `pay_voucher_audit_remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '凭证审核备注',
     `pay_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付时间',
     `pay_deadline_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付截止时间',
+    `confirm_deadline_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '确认截止时间',
     -- 服务信息
     `service_date` DATE DEFAULT NULL COMMENT '服务日期',
     `service_time_slot` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务时间段',
@@ -536,6 +546,7 @@ CREATE TABLE IF NOT EXISTS `la_order` (
     KEY `idx_pay_status` (`pay_status`),
     KEY `idx_service_date` (`service_date`),
     KEY `idx_pay_deadline_time` (`order_status`, `pay_deadline_time`),
+    KEY `idx_confirm_deadline_time` (`order_status`, `confirm_deadline_time`),
     KEY `idx_create_time` (`create_time`),
     KEY `idx_is_paused` (`is_paused`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单表';
@@ -570,7 +581,8 @@ CREATE TABLE IF NOT EXISTS `la_order_item` (
     PRIMARY KEY (`id`),
     KEY `idx_order_id` (`order_id`),
     KEY `idx_staff_id` (`staff_id`),
-    KEY `idx_service_date` (`service_date`)
+    KEY `idx_service_date` (`service_date`),
+    KEY `idx_order_staff` (`order_id`, `staff_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单项表';
 
 -- la_order_item_addon
@@ -753,6 +765,7 @@ CREATE TABLE IF NOT EXISTS `la_order_change` (
     KEY `idx_user_id` (`user_id`),
     KEY `idx_change_type` (`change_type`),
     KEY `idx_change_status` (`change_status`),
+    KEY `idx_order_status` (`order_id`, `change_status`),
     KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单变更申请表';
 
@@ -991,6 +1004,7 @@ CREATE TABLE IF NOT EXISTS `la_user_subscribe` (
     `template_id` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '微信模板ID',
     `scene` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '使用场景',
     `accept_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '累计授权次数',
+    `reserved_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '已预占授权次数',
     `reject_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '累计拒绝次数',
     `last_accept_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '最后授权时间',
     `last_reject_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '最后拒绝时间',
@@ -1004,6 +1018,21 @@ CREATE TABLE IF NOT EXISTS `la_user_subscribe` (
     KEY `idx_scene` (`scene`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户订阅记录表';
 
+SET @add_user_subscribe_reserved_count_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_user_subscribe'
+          AND COLUMN_NAME = 'reserved_count'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_user_subscribe` ADD COLUMN `reserved_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT ''已预占授权次数'' AFTER `accept_count`'
+);
+PREPARE stmt FROM @add_user_subscribe_reserved_count_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 -- la_subscribe_message_log
 CREATE TABLE IF NOT EXISTS `la_subscribe_message_log` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -1013,22 +1042,29 @@ CREATE TABLE IF NOT EXISTS `la_subscribe_message_log` (
     `scene` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '使用场景',
     `business_type` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '业务类型',
     `business_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '业务ID',
+    `dedupe_key` VARCHAR(128) DEFAULT NULL COMMENT '幂等键',
     `content` TEXT COMMENT '发送内容(JSON格式)',
     `page` VARCHAR(200) NOT NULL DEFAULT '' COMMENT '跳转页面路径',
     `miniprogram_state` VARCHAR(20) NOT NULL DEFAULT 'formal' COMMENT '小程序状态',
     `planned_send_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '计划发送时间',
-    `send_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发送状态：0-待发送，1-发送成功，2-发送失败',
+    `next_retry_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '下次重试时间',
+    `lock_until` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '派发锁定截止时间',
+    `retry_count` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '重试次数',
+    `send_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发送状态：0-待发送，1-发送成功，2-发送失败，3-发送中',
     `error_code` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '错误码',
+    `last_error_code` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '最后错误码',
     `error_msg` VARCHAR(500) NOT NULL DEFAULT '' COMMENT '错误信息',
     `request_id` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '请求ID',
     `send_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发送时间',
     `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
     PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_dedupe_key` (`dedupe_key`),
     KEY `idx_user_id` (`user_id`),
     KEY `idx_template_id` (`template_id`),
     KEY `idx_scene` (`scene`),
     KEY `idx_business` (`business_type`, `business_id`),
     KEY `idx_send_plan` (`send_status`, `planned_send_time`),
+    KEY `idx_send_queue` (`send_status`, `next_retry_time`, `planned_send_time`, `lock_until`, `id`),
     KEY `idx_send_status` (`send_status`),
     KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订阅消息发送日志表';
@@ -1048,6 +1084,81 @@ PREPARE stmt FROM @add_subscribe_log_planned_send_time_sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+SET @add_subscribe_log_dedupe_key_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_subscribe_message_log'
+          AND COLUMN_NAME = 'dedupe_key'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_subscribe_message_log` ADD COLUMN `dedupe_key` VARCHAR(128) DEFAULT NULL COMMENT ''幂等键'' AFTER `business_id`'
+);
+PREPARE stmt FROM @add_subscribe_log_dedupe_key_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_subscribe_log_next_retry_time_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_subscribe_message_log'
+          AND COLUMN_NAME = 'next_retry_time'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_subscribe_message_log` ADD COLUMN `next_retry_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT ''下次重试时间'' AFTER `planned_send_time`'
+);
+PREPARE stmt FROM @add_subscribe_log_next_retry_time_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_subscribe_log_lock_until_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_subscribe_message_log'
+          AND COLUMN_NAME = 'lock_until'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_subscribe_message_log` ADD COLUMN `lock_until` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT ''派发锁定截止时间'' AFTER `next_retry_time`'
+);
+PREPARE stmt FROM @add_subscribe_log_lock_until_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_subscribe_log_retry_count_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_subscribe_message_log'
+          AND COLUMN_NAME = 'retry_count'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_subscribe_message_log` ADD COLUMN `retry_count` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT ''重试次数'' AFTER `lock_until`'
+);
+PREPARE stmt FROM @add_subscribe_log_retry_count_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_subscribe_log_last_error_code_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_subscribe_message_log'
+          AND COLUMN_NAME = 'last_error_code'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_subscribe_message_log` ADD COLUMN `last_error_code` VARCHAR(50) NOT NULL DEFAULT '''' COMMENT ''最后错误码'' AFTER `error_code`'
+);
+PREPARE stmt FROM @add_subscribe_log_last_error_code_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 SET @add_subscribe_log_send_plan_index_sql = IF(
     EXISTS(
         SELECT 1
@@ -1060,6 +1171,36 @@ SET @add_subscribe_log_send_plan_index_sql = IF(
     'ALTER TABLE `la_subscribe_message_log` ADD KEY `idx_send_plan` (`send_status`, `planned_send_time`)'
 );
 PREPARE stmt FROM @add_subscribe_log_send_plan_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_subscribe_log_dedupe_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_subscribe_message_log'
+          AND INDEX_NAME = 'uk_dedupe_key'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_subscribe_message_log` ADD UNIQUE KEY `uk_dedupe_key` (`dedupe_key`)'
+);
+PREPARE stmt FROM @add_subscribe_log_dedupe_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_subscribe_log_send_queue_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_subscribe_message_log'
+          AND INDEX_NAME = 'idx_send_queue'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_subscribe_message_log` ADD KEY `idx_send_queue` (`send_status`, `next_retry_time`, `planned_send_time`, `lock_until`, `id`)'
+);
+PREPARE stmt FROM @add_subscribe_log_send_queue_index_sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
@@ -2111,24 +2252,301 @@ INSERT INTO `la_dict_data` (`id`, `name`, `value`, `type_id`, `type_value`, `sor
 (16, '个人原因', '3', 6, '3', 3, 1, '订单暂停类型-个人原因', 1773413105, 1773413105, NULL),
 (17, '其他', '4', 6, '4', 4, 1, '订单暂停类型-其他', 1773413105, 1773413105, NULL);
 
--- la_subscribe_message_scene
-DELETE FROM `la_subscribe_message_scene`;
-INSERT INTO `la_subscribe_message_scene` (`id`, `scene`, `name`, `description`, `template_id`, `trigger_event`, `data_mapping`, `page_path`, `is_auto`, `delay_seconds`, `status`, `sort`, `create_time`, `update_time`) VALUES
-(1, 'order_confirm', '订单确认通知', '订单确认后通知用户', 'TEMPLATE_ID_ORDER_CONFIRM', 'OrderConfirmed', '{"character_string1":"order_sn","thing2":"status_text","amount3":"pay_amount","time4":"service_date"}', 'pages/order_detail/order_detail', 1, 0, 1, 110, 1773413107, 1773413107),
-(2, 'schedule_remind', '服务提醒通知', '服务开始前提醒用户', 'TEMPLATE_ID_SERVICE_REMIND', 'ScheduleRemind', '{"thing1":"service_name","time2":"service_date","thing3":"address","thing4":"staff_name"}', 'pages/order_detail/order_detail', 1, 0, 1, 109, 1773413107, 1773413107),
-(3, 'refund_result', '退款结果通知', '退款审核结果通知', 'TEMPLATE_ID_REFUND_RESULT', 'RefundProcessed', '{"character_string1":"order_sn","amount2":"refund_amount","phrase3":"status_text","thing4":"reason"}', 'pages/order_detail/order_detail', 1, 0, 1, 108, 1773413107, 1773413107),
-(4, 'ticket_update', '工单进度通知', '售后工单状态更新通知', 'TEMPLATE_ID_TICKET_UPDATE', 'TicketUpdated', '{"character_string1":"ticket_sn","phrase2":"status_text","thing3":"handle_note","time4":"update_time"}', 'packages/pages/aftersale/ticket_detail', 1, 0, 1, 107, 1773413107, 1773413107),
-(5, 'waitlist_release', '候补释放通知', '档期释放后通知候补用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 106, 1773413107, 1773413107),
-(6, 'waitlist_expired', '候补失效通知', '候补超过预约日期后通知用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistExpired', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 105, 1773413107, 1773413107);
+-- la_subscribe_message_scene / la_subscribe_message_template
+SET @subscribe_now = UNIX_TIMESTAMP();
 
--- la_subscribe_message_template
-DELETE FROM `la_subscribe_message_template`;
-INSERT INTO `la_subscribe_message_template` (`id`, `template_id`, `name`, `title`, `scene`, `content`, `example`, `keywords`, `category_id`, `status`, `sort`, `remark`, `create_time`, `update_time`, `delete_time`) VALUES
-(1, 'TEMPLATE_ID_ORDER_CONFIRM', '订单确认通知', '订单确认通知', 'order_confirm', '{"character_string1":{"key":"订单编号","value":""},"thing2":{"key":"确认状态","value":""},"amount3":{"key":"订单金额","value":""},"time4":{"key":"服务日期","value":""}}', NULL, '订单编号,确认状态,订单金额,服务日期', '', 1, 100, '订单确认后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
-(2, 'TEMPLATE_ID_SERVICE_REMIND', '服务提醒通知', '服务提醒', 'schedule_remind', '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}', NULL, '服务内容,服务时间,服务地点,服务人员', '', 1, 99, '服务开始前提醒，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
-(3, 'TEMPLATE_ID_REFUND_RESULT', '退款结果通知', '退款通知', 'refund_result', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}', NULL, '订单编号,退款金额,退款状态,退款原因', '', 1, 98, '退款审核后发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
-(4, 'TEMPLATE_ID_TICKET_UPDATE', '工单进度通知', '工单状态更新', 'ticket_update', '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}', NULL, '工单编号,工单状态,处理说明,更新时间', '', 1, 97, '工单状态变更时发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL),
-(5, 'TEMPLATE_ID_WAITLIST_RELEASE', '候补状态通知', '候补状态通知', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"状态说明","value":""}}', NULL, '服务人员,档期日期,套餐名称,状态说明', '', 1, 96, '候补释放或失效时发送，需在微信后台申请模板后更新template_id', 1773413107, 1773413107, NULL);
+SET @order_confirm_template_id = COALESCE(
+    (
+        SELECT `template_id`
+        FROM `la_subscribe_message_template`
+        WHERE `scene` = 'order_confirm'
+          AND `template_id` <> ''
+          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
+          AND (`delete_time` IS NULL OR `delete_time` = 0)
+        ORDER BY `id` DESC
+        LIMIT 1
+    ),
+    (
+        SELECT `template_id`
+        FROM `la_subscribe_message_scene`
+        WHERE `scene` = 'order_confirm'
+          AND `template_id` <> ''
+          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
+        ORDER BY `id` DESC
+        LIMIT 1
+    ),
+    'TEMPLATE_ID_ORDER_CONFIRM'
+);
+
+SET @schedule_remind_template_id = COALESCE(
+    (
+        SELECT `template_id`
+        FROM `la_subscribe_message_template`
+        WHERE `scene` = 'schedule_remind'
+          AND `template_id` <> ''
+          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
+          AND (`delete_time` IS NULL OR `delete_time` = 0)
+        ORDER BY `id` DESC
+        LIMIT 1
+    ),
+    (
+        SELECT `template_id`
+        FROM `la_subscribe_message_scene`
+        WHERE `scene` = 'schedule_remind'
+          AND `template_id` <> ''
+          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
+        ORDER BY `id` DESC
+        LIMIT 1
+    ),
+    'TEMPLATE_ID_SERVICE_REMIND'
+);
+
+SET @refund_result_template_id = COALESCE(
+    (
+        SELECT `template_id`
+        FROM `la_subscribe_message_template`
+        WHERE `scene` = 'refund_result'
+          AND `template_id` <> ''
+          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
+          AND (`delete_time` IS NULL OR `delete_time` = 0)
+        ORDER BY `id` DESC
+        LIMIT 1
+    ),
+    (
+        SELECT `template_id`
+        FROM `la_subscribe_message_scene`
+        WHERE `scene` = 'refund_result'
+          AND `template_id` <> ''
+          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
+        ORDER BY `id` DESC
+        LIMIT 1
+    ),
+    'TEMPLATE_ID_REFUND_RESULT'
+);
+
+SET @ticket_update_template_id = COALESCE(
+    (
+        SELECT `template_id`
+        FROM `la_subscribe_message_template`
+        WHERE `scene` = 'ticket_update'
+          AND `template_id` <> ''
+          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
+          AND (`delete_time` IS NULL OR `delete_time` = 0)
+        ORDER BY `id` DESC
+        LIMIT 1
+    ),
+    (
+        SELECT `template_id`
+        FROM `la_subscribe_message_scene`
+        WHERE `scene` = 'ticket_update'
+          AND `template_id` <> ''
+          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
+        ORDER BY `id` DESC
+        LIMIT 1
+    ),
+    'TEMPLATE_ID_TICKET_UPDATE'
+);
+
+SET @waitlist_template_id = COALESCE(
+    (
+        SELECT `template_id`
+        FROM `la_subscribe_message_template`
+        WHERE `scene` = 'waitlist_release'
+          AND `template_id` <> ''
+          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
+          AND (`delete_time` IS NULL OR `delete_time` = 0)
+        ORDER BY `id` DESC
+        LIMIT 1
+    ),
+    (
+        SELECT `template_id`
+        FROM `la_subscribe_message_scene`
+        WHERE `scene` = 'waitlist_release'
+          AND `template_id` <> ''
+          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
+        ORDER BY `id` DESC
+        LIMIT 1
+    ),
+    (
+        SELECT `template_id`
+        FROM `la_subscribe_message_template`
+        WHERE `scene` = 'waitlist_expired'
+          AND `template_id` <> ''
+          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
+          AND (`delete_time` IS NULL OR `delete_time` = 0)
+        ORDER BY `id` DESC
+        LIMIT 1
+    ),
+    (
+        SELECT `template_id`
+        FROM `la_subscribe_message_scene`
+        WHERE `scene` = 'waitlist_expired'
+          AND `template_id` <> ''
+          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
+        ORDER BY `id` DESC
+        LIMIT 1
+    ),
+    'TEMPLATE_ID_WAITLIST_RELEASE'
+);
+
+DELETE FROM `la_subscribe_message_scene`
+WHERE `scene` IN ('order_create', 'order_paid', 'order_complete', 'callback_remind', 'change_result', 'schedule_change');
+
+INSERT INTO `la_subscribe_message_scene`
+(`scene`, `name`, `description`, `template_id`, `trigger_event`, `data_mapping`, `page_path`, `is_auto`, `delay_seconds`, `status`, `sort`, `create_time`, `update_time`)
+VALUES
+('order_confirm', '订单确认通知', '订单确认后通知用户', @order_confirm_template_id, 'OrderConfirmed', '{"character_string1":"order_sn","thing2":"status_text","amount3":"pay_amount","time4":"service_date"}', 'pages/order_detail/order_detail', 1, 0, 1, 110, @subscribe_now, @subscribe_now),
+('schedule_remind', '服务提醒通知', '服务开始前提醒用户', @schedule_remind_template_id, 'ScheduleRemind', '{"thing1":"service_name","time2":"service_date","thing3":"address","thing4":"staff_name"}', 'pages/order_detail/order_detail', 1, 0, 1, 109, @subscribe_now, @subscribe_now),
+('refund_result', '退款结果通知', '退款审核结果通知', @refund_result_template_id, 'RefundProcessed', '{"character_string1":"order_sn","amount2":"refund_amount","phrase3":"status_text","thing4":"reason"}', 'pages/order_detail/order_detail', 1, 0, 1, 108, @subscribe_now, @subscribe_now),
+('ticket_update', '工单进度通知', '售后工单状态更新通知', @ticket_update_template_id, 'TicketUpdated', '{"character_string1":"ticket_sn","phrase2":"status_text","thing3":"handle_note","time4":"update_time"}', 'packages/pages/aftersale/ticket_detail', 1, 0, 1, 107, @subscribe_now, @subscribe_now),
+('waitlist_release', '候补释放通知', '档期释放后通知候补用户', @waitlist_template_id, 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 106, @subscribe_now, @subscribe_now),
+('waitlist_expired', '候补失效通知', '候补超过预约日期后通知用户', @waitlist_template_id, 'WaitlistExpired', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 105, @subscribe_now, @subscribe_now)
+ON DUPLICATE KEY UPDATE
+`name` = VALUES(`name`),
+`description` = VALUES(`description`),
+`template_id` = VALUES(`template_id`),
+`trigger_event` = VALUES(`trigger_event`),
+`data_mapping` = VALUES(`data_mapping`),
+`page_path` = VALUES(`page_path`),
+`is_auto` = VALUES(`is_auto`),
+`delay_seconds` = VALUES(`delay_seconds`),
+`status` = VALUES(`status`),
+`sort` = VALUES(`sort`),
+`update_time` = VALUES(`update_time`);
+
+UPDATE `la_subscribe_message_template`
+SET `status` = 0,
+    `remark` = CONCAT(IFNULL(NULLIF(`remark`, ''), '历史模板'), '（已从客户订阅消息下线）'),
+    `update_time` = @subscribe_now
+WHERE `scene` IN ('order_create', 'order_paid', 'order_complete', 'callback_remind', 'change_result', 'schedule_change')
+  AND (`delete_time` IS NULL OR `delete_time` = 0);
+
+UPDATE `la_subscribe_message_template`
+SET `scene` = 'waitlist_release',
+    `name` = '候补状态通知',
+    `title` = '候补状态通知',
+    `content` = '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"状态说明","value":""}}',
+    `keywords` = '服务人员,档期日期,套餐名称,状态说明',
+    `status` = 1,
+    `sort` = 96,
+    `remark` = '候补释放或失效时发送，需在微信后台申请模板后更新template_id',
+    `update_time` = @subscribe_now
+WHERE `template_id` = @waitlist_template_id
+  AND (`delete_time` IS NULL OR `delete_time` = 0);
+
+UPDATE `la_subscribe_message_template`
+SET `status` = 0,
+    `remark` = CONCAT(IFNULL(NULLIF(`remark`, ''), '历史模板'), '（已合并至候补状态通知）'),
+    `update_time` = @subscribe_now
+WHERE `scene` = 'waitlist_release'
+  AND `template_id` <> @waitlist_template_id
+  AND (`delete_time` IS NULL OR `delete_time` = 0);
+
+UPDATE `la_subscribe_message_template`
+SET `name` = '订单确认通知',
+    `title` = '订单确认通知',
+    `content` = '{"character_string1":{"key":"订单编号","value":""},"thing2":{"key":"确认状态","value":""},"amount3":{"key":"订单金额","value":""},"time4":{"key":"服务日期","value":""}}',
+    `keywords` = '订单编号,确认状态,订单金额,服务日期',
+    `status` = 1,
+    `sort` = 100,
+    `remark` = '订单确认后发送，需在微信后台申请模板后更新template_id',
+    `update_time` = @subscribe_now
+WHERE `scene` = 'order_confirm'
+  AND (`delete_time` IS NULL OR `delete_time` = 0);
+
+INSERT INTO `la_subscribe_message_template`
+(`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`)
+SELECT @order_confirm_template_id, '订单确认通知', '订单确认通知', 'order_confirm', '{"character_string1":{"key":"订单编号","value":""},"thing2":{"key":"确认状态","value":""},"amount3":{"key":"订单金额","value":""},"time4":{"key":"服务日期","value":""}}', '订单编号,确认状态,订单金额,服务日期', 1, 100, '订单确认后发送，需在微信后台申请模板后更新template_id', @subscribe_now, @subscribe_now
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `la_subscribe_message_template`
+    WHERE `scene` = 'order_confirm'
+      AND (`delete_time` IS NULL OR `delete_time` = 0)
+);
+
+UPDATE `la_subscribe_message_template`
+SET `name` = '服务提醒通知',
+    `title` = '服务提醒',
+    `content` = '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}',
+    `keywords` = '服务内容,服务时间,服务地点,服务人员',
+    `status` = 1,
+    `sort` = 99,
+    `remark` = '服务开始前提醒，需在微信后台申请模板后更新template_id',
+    `update_time` = @subscribe_now
+WHERE `scene` = 'schedule_remind'
+  AND (`delete_time` IS NULL OR `delete_time` = 0);
+
+INSERT INTO `la_subscribe_message_template`
+(`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`)
+SELECT @schedule_remind_template_id, '服务提醒通知', '服务提醒', 'schedule_remind', '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}', '服务内容,服务时间,服务地点,服务人员', 1, 99, '服务开始前提醒，需在微信后台申请模板后更新template_id', @subscribe_now, @subscribe_now
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `la_subscribe_message_template`
+    WHERE `scene` = 'schedule_remind'
+      AND (`delete_time` IS NULL OR `delete_time` = 0)
+);
+
+UPDATE `la_subscribe_message_template`
+SET `name` = '退款结果通知',
+    `title` = '退款通知',
+    `content` = '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}',
+    `keywords` = '订单编号,退款金额,退款状态,退款原因',
+    `status` = 1,
+    `sort` = 98,
+    `remark` = '退款审核后发送，需在微信后台申请模板后更新template_id',
+    `update_time` = @subscribe_now
+WHERE `scene` = 'refund_result'
+  AND (`delete_time` IS NULL OR `delete_time` = 0);
+
+INSERT INTO `la_subscribe_message_template`
+(`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`)
+SELECT @refund_result_template_id, '退款结果通知', '退款通知', 'refund_result', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}', '订单编号,退款金额,退款状态,退款原因', 1, 98, '退款审核后发送，需在微信后台申请模板后更新template_id', @subscribe_now, @subscribe_now
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `la_subscribe_message_template`
+    WHERE `scene` = 'refund_result'
+      AND (`delete_time` IS NULL OR `delete_time` = 0)
+);
+
+UPDATE `la_subscribe_message_template`
+SET `name` = '工单进度通知',
+    `title` = '工单状态更新',
+    `content` = '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}',
+    `keywords` = '工单编号,工单状态,处理说明,更新时间',
+    `status` = 1,
+    `sort` = 97,
+    `remark` = '工单状态变更时发送，需在微信后台申请模板后更新template_id',
+    `update_time` = @subscribe_now
+WHERE `scene` = 'ticket_update'
+  AND (`delete_time` IS NULL OR `delete_time` = 0);
+
+INSERT INTO `la_subscribe_message_template`
+(`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`)
+SELECT @ticket_update_template_id, '工单进度通知', '工单状态更新', 'ticket_update', '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}', '工单编号,工单状态,处理说明,更新时间', 1, 97, '工单状态变更时发送，需在微信后台申请模板后更新template_id', @subscribe_now, @subscribe_now
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `la_subscribe_message_template`
+    WHERE `scene` = 'ticket_update'
+      AND (`delete_time` IS NULL OR `delete_time` = 0)
+);
+
+INSERT INTO `la_subscribe_message_template`
+(`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`)
+SELECT @waitlist_template_id, '候补状态通知', '候补状态通知', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"状态说明","value":""}}', '服务人员,档期日期,套餐名称,状态说明', 1, 96, '候补释放或失效时发送，需在微信后台申请模板后更新template_id', @subscribe_now, @subscribe_now
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `la_subscribe_message_template`
+    WHERE `template_id` = @waitlist_template_id
+      AND (`delete_time` IS NULL OR `delete_time` = 0)
+);
+
+UPDATE `la_subscribe_message_template`
+SET `status` = 0,
+    `remark` = CONCAT(IFNULL(NULLIF(`remark`, ''), '历史模板'), '（已合并至候补状态通知）'),
+    `update_time` = @subscribe_now
+WHERE `scene` = 'waitlist_expired'
+  AND `template_id` <> @waitlist_template_id
+  AND (`delete_time` IS NULL OR `delete_time` = 0);
 
 -- la_system_role
 DELETE FROM `la_system_role`;
@@ -2282,7 +2700,7 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (170, 166, 'C', '退款记录', 'local-icon-heshoujilu', 0, 'finance.refund/record', 'refund_record', 'finance/refund_record', '', '', 0, 1, 0, 1677811271, 1677811271),
 (171, 170, 'A', '重新退款', '', 0, 'recharge.recharge/refundAgain', '', '', '', '', 0, 1, 0, 1677811295, 1677811295),
 (172, 170, 'A', '退款日志', '', 0, 'finance.refund/log', '', '', '', '', 0, 1, 0, 1677811361, 1677811361),
-(173, 175, 'C', '系统风格', 'el-icon-Brush', 80, '', 'style', 'decoration/style/style', '', '', 0, 1, 0, 1681635044, 1710929278),
+(173, 175, 'C', '系统风格', 'el-icon-Brush', 80, '', 'style', 'decoration/style/style', '', '', 0, 0, 1, 1681635044, 1710929278),
 (175, 96, 'M', '移动端', '', 100, '', 'mobile', '', '', '', 0, 1, 0, 1710901543, 1710929294),
 (176, 96, 'M', 'PC端', '', 90, '', 'pc', '', '', '', 0, 1, 0, 1710901592, 1710929299),
 (177, 29, 'C', '站点统计', '', 0, 'setting.web.web_setting/getSiteStatistics', 'statistics', 'setting/website/statistics', '', '', 0, 1, 0, 1726841481, 1726843434),
@@ -2339,6 +2757,8 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (237, 232, 'A', '删除', '', 0, 'ops.work/delete', '', '', '', '', 0, 1, 0, 1773413108, 1773413108),
 (238, 28, 'C', '功能开关', 'el-icon-Switch', 55, 'setting.feature_switch/getConfig', 'feature_switch', 'setting/feature_switch/index', '', '', 0, 1, 0, 1773413108, 1773413108),
 (239, 238, 'A', '保存', '', 0, 'setting.feature_switch/setConfig', '', '', '', '', 0, 1, 0, 1773413108, 1773413108),
+(290, 238, 'A', '获取订单超时设置', '', 0, 'setting.transaction_settings/getConfig', '', '', '', '', 0, 1, 0, 1776200000, 1776200000),
+(291, 238, 'A', '保存订单超时设置', '', 0, 'setting.transaction_settings/setConfig', '', '', '', '', 0, 1, 0, 1776200000, 1776200000),
 (240, 179, 'C', '服务地区', '', 85, 'ops.region/lists', 'region', 'service/region/index', '', '', 0, 1, 0, 1773650000, 1773650000),
 (241, 240, 'A', '城市选项', '', 0, 'ops.region/cityOptions', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
 (242, 240, 'A', '启用城市选项', '', 0, 'ops.region/enabledCityOptions', '', '', '', '', 0, 0, 0, 1773650000, 1773650000),
@@ -2604,7 +3024,9 @@ INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (2, 286),
 (2, 287),
 (2, 238),
-(2, 239);
+(2, 239),
+(2, 290),
+(2, 291);
 
 -- la_config feature_switch
 DELETE FROM `la_config` WHERE `type` = 'feature_switch';
@@ -2616,12 +3038,31 @@ INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) 
 ('feature_switch', 'staff_detail_style', 'classic', 1773556898, 1773556898),
 ('feature_switch', 'staff_tag_review_enabled', '0', 1775001600, 1775001600);
 
+-- la_config transaction
+INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`)
+SELECT 'transaction', 'staff_confirm_timeout_enabled', '0', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+WHERE NOT EXISTS (
+    SELECT 1 FROM `la_config` WHERE `type` = 'transaction' AND `name` = 'staff_confirm_timeout_enabled'
+);
+
+INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`)
+SELECT 'transaction', 'staff_confirm_timeout_action', 'cancel', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+WHERE NOT EXISTS (
+    SELECT 1 FROM `la_config` WHERE `type` = 'transaction' AND `name` = 'staff_confirm_timeout_action'
+);
+
+INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`)
+SELECT 'transaction', 'staff_confirm_timeout_minutes', '60', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+WHERE NOT EXISTS (
+    SELECT 1 FROM `la_config` WHERE `type` = 'transaction' AND `name` = 'staff_confirm_timeout_minutes'
+);
+
 -- =============================================================================
 -- Part 4: 定时任务
 -- =============================================================================
 
 DELETE FROM `la_dev_crontab`
-WHERE `command` IN ('cancel_unpaid_orders', 'send_station_reminders', 'expire_waitlists', 'send_subscribe_messages');
+WHERE `command` IN ('cancel_unpaid_orders', 'send_station_reminders', 'expire_waitlists', 'send_subscribe_messages', 'handle_pending_confirm_orders', 'query_refund');
 
 INSERT INTO `la_dev_crontab` (
     `name`,
@@ -2639,7 +3080,9 @@ INSERT INTO `la_dev_crontab` (
 ('超时未支付订单自动取消', 1, 1, '每分钟扫描待支付首笔订单并自动取消超时单', 'cancel_unpaid_orders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
 ('站内提醒发送', 1, 1, '每分钟扫描服务前一天提醒与暂停到期提醒的站内消息', 'send_station_reminders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
 ('候补超期自动失效', 1, 1, '每天扫描预约日期已过的候补并自动标记为已过期', 'expire_waitlists', '', 1, '10 0 * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-('订阅消息派发', 1, 1, '每分钟扫描并派发到期的小程序订阅消息', 'send_subscribe_messages', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL);
+('订阅消息派发', 1, 1, '每分钟扫描并派发到期的小程序订阅消息', 'send_subscribe_messages', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+('服务人员确认超时自动处理', 1, 1, '每分钟扫描待确认订单并按配置自动取消或自动同意', 'handle_pending_confirm_orders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
+('预约订单退款查询', 1, 1, '每分钟查询处理中微信退款并同步订单退款状态', 'query_refund', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL);
 
 -- =============================================================================
 -- Part 5: 订单付款渠道
@@ -2757,5 +3200,436 @@ INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) 
 DELETE FROM `la_config`
 WHERE `type` = 'feature_switch'
   AND `name` = 'staff_detail_style';
+
+-- =============================================================================
+-- Part 7: 分步脚本补齐与兼容升级
+-- =============================================================================
+
+-- 旧结构收敛：服务分类层级、服务人员主表价格、订单冗余婚礼字段
+SET @drop_service_category_level_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_service_category'
+          AND INDEX_NAME = 'idx_level'
+    ),
+    'ALTER TABLE `la_service_category` DROP INDEX `idx_level`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @drop_service_category_level_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @drop_service_category_level_column_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_service_category'
+          AND COLUMN_NAME = 'level'
+    ),
+    'ALTER TABLE `la_service_category` DROP COLUMN `level`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @drop_service_category_level_column_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @drop_staff_price_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_staff'
+          AND INDEX_NAME = 'idx_price'
+    ),
+    'ALTER TABLE `la_staff` DROP INDEX `idx_price`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @drop_staff_price_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @drop_staff_price_column_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_staff'
+          AND COLUMN_NAME = 'price'
+    ),
+    'ALTER TABLE `la_staff` DROP COLUMN `price`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @drop_staff_price_column_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @drop_order_wedding_date_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order'
+          AND COLUMN_NAME = 'wedding_date'
+    ),
+    'ALTER TABLE `la_order` DROP COLUMN `wedding_date`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @drop_order_wedding_date_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @drop_order_wedding_venue_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order'
+          AND COLUMN_NAME = 'wedding_venue'
+    ),
+    'ALTER TABLE `la_order` DROP COLUMN `wedding_venue`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @drop_order_wedding_venue_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 订单确认超时字段与索引
+SET @add_confirm_deadline_time_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order'
+          AND COLUMN_NAME = 'confirm_deadline_time'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_order` ADD COLUMN `confirm_deadline_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT ''确认截止时间'' AFTER `pay_deadline_time`'
+);
+PREPARE stmt FROM @add_confirm_deadline_time_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_confirm_deadline_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order'
+          AND INDEX_NAME = 'idx_confirm_deadline_time'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_order` ADD KEY `idx_confirm_deadline_time` (`order_status`, `confirm_deadline_time`)'
+);
+PREPARE stmt FROM @add_confirm_deadline_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 人员证书字段、兼容回填与索引
+SET @add_staff_certificate_type_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_staff_certificate'
+          AND COLUMN_NAME = 'type'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_staff_certificate` ADD COLUMN `type` VARCHAR(50) NOT NULL DEFAULT '''' COMMENT ''证书类型'' AFTER `name`'
+);
+PREPARE stmt FROM @add_staff_certificate_type_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_staff_certificate_sn_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_staff_certificate'
+          AND COLUMN_NAME = 'sn'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_staff_certificate` ADD COLUMN `sn` VARCHAR(100) NOT NULL DEFAULT '''' COMMENT ''证书编号'' AFTER `type`'
+);
+PREPARE stmt FROM @add_staff_certificate_sn_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_staff_certificate_reject_reason_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_staff_certificate'
+          AND COLUMN_NAME = 'reject_reason'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_staff_certificate` ADD COLUMN `reject_reason` VARCHAR(255) NOT NULL DEFAULT '''' COMMENT ''拒绝原因'' AFTER `expire_date`'
+);
+PREPARE stmt FROM @add_staff_certificate_reject_reason_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_staff_certificate_verify_status_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_staff_certificate'
+          AND COLUMN_NAME = 'verify_status'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_staff_certificate` ADD COLUMN `verify_status` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT ''审核状态:0-待审核,1-已通过,2-已拒绝'' AFTER `audit_status`'
+);
+PREPARE stmt FROM @add_staff_certificate_verify_status_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+UPDATE `la_staff_certificate`
+SET `sn` = `certificate_no`
+WHERE `sn` = ''
+  AND `certificate_no` <> '';
+
+UPDATE `la_staff_certificate`
+SET `certificate_no` = `sn`
+WHERE `certificate_no` = ''
+  AND `sn` <> '';
+
+UPDATE `la_staff_certificate`
+SET `verify_status` = `audit_status`
+WHERE `verify_status` = 0
+  AND `audit_status` <> 0;
+
+SET @add_staff_certificate_verify_status_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_staff_certificate'
+          AND INDEX_NAME = 'idx_verify_status'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_staff_certificate` ADD KEY `idx_verify_status` (`verify_status`)'
+);
+PREPARE stmt FROM @add_staff_certificate_verify_status_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_staff_certificate_sn_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_staff_certificate'
+          AND INDEX_NAME = 'idx_sn'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_staff_certificate` ADD KEY `idx_sn` (`sn`)'
+);
+PREPARE stmt FROM @add_staff_certificate_sn_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 高频查询复合索引
+SET @add_schedule_staff_date_status_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_schedule'
+          AND INDEX_NAME = 'idx_staff_date_status'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_schedule` ADD KEY `idx_staff_date_status` (`staff_id`, `schedule_date`, `status`)'
+);
+PREPARE stmt FROM @add_schedule_staff_date_status_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_package_booking_package_date_status_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_package_booking'
+          AND INDEX_NAME = 'idx_package_date_status'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_package_booking` ADD KEY `idx_package_date_status` (`package_id`, `booking_date`, `status`)'
+);
+PREPARE stmt FROM @add_package_booking_package_date_status_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_package_booking_staff_date_status_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_package_booking'
+          AND INDEX_NAME = 'idx_staff_date_status'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_package_booking` ADD KEY `idx_staff_date_status` (`staff_id`, `booking_date`, `status`)'
+);
+PREPARE stmt FROM @add_package_booking_staff_date_status_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_order_item_order_staff_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order_item'
+          AND INDEX_NAME = 'idx_order_staff'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_order_item` ADD KEY `idx_order_staff` (`order_id`, `staff_id`)'
+);
+PREPARE stmt FROM @add_order_item_order_staff_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @add_order_change_order_status_index_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'la_order_change'
+          AND INDEX_NAME = 'idx_order_status'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `la_order_change` ADD KEY `idx_order_status` (`order_id`, `change_status`)'
+);
+PREPARE stmt FROM @add_order_change_order_status_index_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 旧服务人员固定预约附加项迁移到服务附加项
+SET @now_ts = UNIX_TIMESTAMP();
+
+INSERT INTO `la_service_addon` (
+    `staff_id`,
+    `category_id`,
+    `name`,
+    `price`,
+    `original_price`,
+    `image`,
+    `description`,
+    `sort`,
+    `is_show`,
+    `create_time`,
+    `update_time`
+)
+SELECT
+    `s`.`id`,
+    IFNULL(`s`.`category_id`, 0),
+    TRIM(IFNULL(`s`.`booking_option_1_name`, '')),
+    IFNULL(`s`.`booking_option_1_price`, 0.00),
+    IFNULL(`s`.`booking_option_1_price`, 0.00),
+    '',
+    '',
+    20,
+    1,
+    @now_ts,
+    @now_ts
+FROM `la_staff` `s`
+WHERE `s`.`delete_time` IS NULL
+  AND TRIM(IFNULL(`s`.`booking_option_1_name`, '')) <> ''
+  AND NOT EXISTS (
+      SELECT 1
+      FROM `la_service_addon` `a`
+      WHERE `a`.`delete_time` IS NULL
+        AND `a`.`staff_id` = `s`.`id`
+        AND `a`.`name` = TRIM(IFNULL(`s`.`booking_option_1_name`, ''))
+        AND `a`.`price` = IFNULL(`s`.`booking_option_1_price`, 0.00)
+  );
+
+INSERT INTO `la_service_addon` (
+    `staff_id`,
+    `category_id`,
+    `name`,
+    `price`,
+    `original_price`,
+    `image`,
+    `description`,
+    `sort`,
+    `is_show`,
+    `create_time`,
+    `update_time`
+)
+SELECT
+    `s`.`id`,
+    IFNULL(`s`.`category_id`, 0),
+    TRIM(IFNULL(`s`.`booking_option_2_name`, '')),
+    IFNULL(`s`.`booking_option_2_price`, 0.00),
+    IFNULL(`s`.`booking_option_2_price`, 0.00),
+    '',
+    '',
+    10,
+    1,
+    @now_ts,
+    @now_ts
+FROM `la_staff` `s`
+WHERE `s`.`delete_time` IS NULL
+  AND TRIM(IFNULL(`s`.`booking_option_2_name`, '')) <> ''
+  AND NOT EXISTS (
+      SELECT 1
+      FROM `la_service_addon` `a`
+      WHERE `a`.`delete_time` IS NULL
+        AND `a`.`staff_id` = `s`.`id`
+        AND `a`.`name` = TRIM(IFNULL(`s`.`booking_option_2_name`, ''))
+        AND `a`.`price` = IFNULL(`s`.`booking_option_2_price`, 0.00)
+  );
+
+-- 下线系统风格入口，补齐移动端开屏广告装修页
+UPDATE `la_system_menu`
+SET `is_show` = 0,
+    `is_disable` = 1,
+    `update_time` = UNIX_TIMESTAMP()
+WHERE `component` = 'decoration/style/style';
+
+INSERT INTO `la_decorate_page` (`id`, `type`, `name`, `data`, `meta`, `create_time`, `update_time`)
+SELECT 6, 6, '开屏广告页',
+       '[{"id":"splash_ad_default","title":"开屏广告页","name":"splash-ad","disabled":1,"content":{"enabled":0,"image":"","auto_enter_enabled":1,"auto_seconds":3,"frequency":"session","button_text":"点击进入"},"styles":{"button_bg_color":"#FFFFFF","button_text_color":"#333333","button_border_color":"#FFFFFF","button_border_radius":24}}]',
+       '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
+WHERE NOT EXISTS (
+    SELECT 1 FROM `la_decorate_page` WHERE `id` = 6 OR `type` = 6
+);
+
+-- =============================================================================
+-- Part 8: 预约订单退款查询定时任务兜底
+-- =============================================================================
+
+SET @upsert_query_refund_crontab_sql = IF(
+    EXISTS(
+        SELECT 1
+        FROM `la_dev_crontab`
+        WHERE `command` = 'query_refund'
+          AND `delete_time` IS NULL
+    ),
+    'UPDATE `la_dev_crontab`
+        SET `name` = ''预约订单退款查询'',
+            `type` = 1,
+            `system` = 1,
+            `remark` = ''每分钟查询处理中微信退款并同步订单退款状态'',
+            `params` = '''',
+            `status` = 1,
+            `expression` = ''* * * * *'',
+            `update_time` = UNIX_TIMESTAMP()
+      WHERE `command` = ''query_refund''
+        AND `delete_time` IS NULL',
+    'INSERT INTO `la_dev_crontab`
+        (`name`, `type`, `system`, `remark`, `command`, `params`, `status`, `expression`, `create_time`, `update_time`)
+      VALUES
+        (''预约订单退款查询'', 1, 1, ''每分钟查询处理中微信退款并同步订单退款状态'', ''query_refund'', '''', 1, ''* * * * *'', UNIX_TIMESTAMP(), UNIX_TIMESTAMP())'
+);
+PREPARE query_refund_crontab_stmt FROM @upsert_query_refund_crontab_sql;
+EXECUTE query_refund_crontab_stmt;
+DEALLOCATE PREPARE query_refund_crontab_stmt;
 
 SET FOREIGN_KEY_CHECKS = 1;

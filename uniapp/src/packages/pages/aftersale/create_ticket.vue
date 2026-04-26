@@ -313,11 +313,10 @@ const buildTicketContent = () => {
 
 const fillContactDefaults = () => {
     const realName = String(userStore.userInfo?.real_name || '').trim()
-    const nickname = String(userStore.userInfo?.nickname || '').trim()
     const mobile = String(userStore.userInfo?.mobile || '').trim()
 
     if (!form.contact_name) {
-        form.contact_name = realName || nickname
+        form.contact_name = realName
     }
 
     if (!form.contact_phone) {
@@ -430,7 +429,7 @@ const handleSubmit = async () => {
 }
 
 watch(
-    () => [userStore.userInfo?.real_name, userStore.userInfo?.nickname, userStore.userInfo?.mobile],
+    () => [userStore.userInfo?.real_name, userStore.userInfo?.mobile],
     () => {
         fillContactDefaults()
     },

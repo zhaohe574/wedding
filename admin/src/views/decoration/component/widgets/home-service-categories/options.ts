@@ -1,3 +1,11 @@
+export interface HomeServiceCategoryLink {
+    path?: string
+    name?: string
+    type?: string
+    query?: Record<string, string | number | boolean | null | undefined>
+    [key: string]: any
+}
+
 export interface HomeServiceCategoryItem {
     is_show: '0' | '1'
     title: string
@@ -5,7 +13,7 @@ export interface HomeServiceCategoryItem {
     image: string
     size: 'large' | 'small' | 'wide'
     text_position: 'top' | 'middle' | 'bottom'
-    link: Record<string, any>
+    link: HomeServiceCategoryLink
 }
 
 export default () => ({

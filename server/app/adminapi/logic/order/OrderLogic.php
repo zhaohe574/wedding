@@ -1183,6 +1183,12 @@ class OrderLogic extends BaseLogic
 
             $payType = (int)$payContext['pay_type'];
             $payAmount = round((float)$payContext['pay_amount'], 2);
+            if (isset($params['pay_type']) && (int)$params['pay_type'] !== $payType) {
+                throw new \RuntimeException('支付阶段已变化，请刷新订单后重试');
+            }
+            if (isset($params['pay_amount']) && round((float)$params['pay_amount'], 2) !== $payAmount) {
+                throw new \RuntimeException('支付金额已变化，请刷新订单后重试');
+            }
 
             // 创建支付记录
             $payment = Payment::create([
