@@ -460,8 +460,8 @@ const homeBrand = computed<HomeBrandView>(() => {
     const content = homeBrandWidget.value?.content || {}
     return {
         greeting: normalizeText(content.greeting, 'Hello,'),
-        teamName: normalizeText(content.team_name, '我们是星意主持人工作室'),
-        subtitle: normalizeText(content.subtitle, '选星意，有心意'),
+        teamName: normalizeText(content.team_name, '主持人'),
+        subtitle: normalizeText(content.subtitle, '专业主持，用心服务'),
         ctaText: normalizeText(content.cta_text, '立即预定'),
         ctaLink: content.cta_link || DEFAULT_SCHEDULE_LINK,
         stats: normalizeHomeBrandStats(content.stats)

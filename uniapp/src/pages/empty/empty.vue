@@ -7,7 +7,6 @@
                     title="当前页面暂不可访问"
                     description="页面暂不可访问，请稍后再试。"
                     action-text="返回首页"
-                    @action="goHome"
                 />
             </view>
         </view>

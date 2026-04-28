@@ -4,10 +4,10 @@
             <div class="home-brand-preview__copy">
                 <div class="home-brand-preview__hello">{{ content.greeting || 'Hello,' }}</div>
                 <div class="home-brand-preview__title">
-                    {{ content.team_name || '我们是星意主持人工作室' }}
+                    {{ content.team_name || '主持人' }}
                 </div>
                 <div class="home-brand-preview__subtitle">
-                    {{ content.subtitle || '选星意，有心意' }}
+                    {{ content.subtitle || '专业主持，用心服务' }}
                 </div>
             </div>
             <div class="home-brand-preview__button">

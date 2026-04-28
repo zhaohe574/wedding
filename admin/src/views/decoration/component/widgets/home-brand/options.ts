@@ -18,8 +18,8 @@ export default () => ({
     content: {
         enabled: 1,
         greeting: 'Hello,',
-        team_name: '我们是星意主持人工作室',
-        subtitle: '选星意，有心意',
+        team_name: '主持人',
+        subtitle: '专业主持，用心服务',
         cta_text: '立即预定',
         cta_link: {
             path: '/pages/schedule_query/schedule_query',
