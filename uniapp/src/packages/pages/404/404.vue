@@ -4,7 +4,7 @@
     <PageShell scene="consumer">
         <BaseNavbar title="404" />
 
-        <view class="wm-empty-shell not-found-page">
+        <view class="wm-empty-shell not-found-page wm-page-content">
             <view class="wm-page-card wm-page-card--soft not-found-page__card">
                 <EmptyState title="页面不存在" description="页面不存在或链接有误。" />
 

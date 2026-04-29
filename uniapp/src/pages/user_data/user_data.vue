@@ -1,6 +1,6 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer">
+    <PageShell scene="consumer" hasSafeBottom>
         <BaseNavbar title="资料编辑" @back="handleBack" />
 
         <view class="user-data-page">

@@ -1,6 +1,6 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" class="schedule-query-page">
+    <PageShell scene="consumer" class="schedule-query-page" hasSafeBottom>
         <BaseNavbar class="schedule-query-page__navbar" title="档期查询" />
         <view class="content wm-page-content">
             <view class="card wm-form-block" @tap="openDatePicker">
