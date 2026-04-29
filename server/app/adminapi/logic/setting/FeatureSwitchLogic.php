@@ -26,6 +26,7 @@ class FeatureSwitchLogic extends BaseLogic
             'staff_center' => (int) ConfigService::get('feature_switch', 'staff_center', 1),
             'staff_admin' => (int) ConfigService::get('feature_switch', 'staff_admin', 1),
             'staff_tag_review_enabled' => (int) ConfigService::get('feature_switch', 'staff_tag_review_enabled', 0),
+            'comment_review_enabled' => (int) ConfigService::get('feature_switch', 'comment_review_enabled', 0),
             'admin_dashboard' => (int) ConfigService::get('feature_switch', 'admin_dashboard', 1),
             'order_complete_by_user' => (int) ConfigService::get('feature_switch', 'order_complete_by_user', 0),
             'order_complete_by_staff' => (int) ConfigService::get('feature_switch', 'order_complete_by_staff', 0),
@@ -47,6 +48,7 @@ class FeatureSwitchLogic extends BaseLogic
         ConfigService::set('feature_switch', 'staff_center', (int) $params['staff_center']);
         ConfigService::set('feature_switch', 'staff_admin', (int) $params['staff_admin']);
         ConfigService::set('feature_switch', 'staff_tag_review_enabled', (int) $params['staff_tag_review_enabled']);
+        ConfigService::set('feature_switch', 'comment_review_enabled', (int) $params['comment_review_enabled']);
         ConfigService::set('feature_switch', 'admin_dashboard', (int) $params['admin_dashboard']);
         ConfigService::set('feature_switch', 'order_complete_by_user', (int) ($params['order_complete_by_user'] ?? 0));
         ConfigService::set('feature_switch', 'order_complete_by_staff', (int) ($params['order_complete_by_staff'] ?? 0));

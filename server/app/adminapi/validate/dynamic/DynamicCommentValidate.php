@@ -20,7 +20,6 @@ class DynamicCommentValidate extends BaseValidate
         'id' => 'require|integer',
         'ids' => 'require|array',
         'remark' => 'max:255',
-        'enabled' => 'require|integer|in:0,1',
     ];
 
     protected $message = [
@@ -29,9 +28,6 @@ class DynamicCommentValidate extends BaseValidate
         'ids.require' => '请选择评论',
         'ids.array' => '评论ID格式错误',
         'remark.max' => '备注不能超过255个字符',
-        'enabled.require' => '请选择配置值',
-        'enabled.integer' => '配置值格式错误',
-        'enabled.in' => '配置值参数错误',
     ];
 
     /**
@@ -77,15 +73,6 @@ class DynamicCommentValidate extends BaseValidate
     public function sceneBatchReject()
     {
         return $this->only(['ids', 'remark']);
-    }
-
-    /**
-     * @notes 设置配置场景
-     * @return DynamicCommentValidate
-     */
-    public function sceneSetConfig()
-    {
-        return $this->only(['enabled']);
     }
 
     /**

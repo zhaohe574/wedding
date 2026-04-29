@@ -9,7 +9,6 @@ namespace app\adminapi\logic\dynamic;
 
 use app\common\logic\BaseLogic;
 use app\common\model\dynamic\DynamicComment;
-use app\common\service\ConfigService;
 
 /**
  * 动态评论审核逻辑
@@ -222,31 +221,6 @@ class DynamicCommentLogic extends BaseLogic
             'success_count' => $successCount,
             'fail_count' => $failCount,
         ];
-    }
-
-    /**
-     * @notes 获取评论审核配置
-     * @return int
-     */
-    public static function getReviewConfig(): int
-    {
-        return (int)ConfigService::get('dynamic', 'comment_review_enabled', 0);
-    }
-
-    /**
-     * @notes 设置评论审核配置
-     * @param int $enabled
-     * @return bool
-     */
-    public static function setReviewConfig(int $enabled): bool
-    {
-        try {
-            ConfigService::set('dynamic', 'comment_review_enabled', $enabled);
-            return true;
-        } catch (\Exception $e) {
-            self::setError($e->getMessage());
-            return false;
-        }
     }
 
     /**

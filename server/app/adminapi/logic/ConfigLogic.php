@@ -64,6 +64,7 @@ class ConfigLogic
                 'staff_center' => (int) ConfigService::get('feature_switch', 'staff_center', 1),
                 'staff_admin' => (int) ConfigService::get('feature_switch', 'staff_admin', 1),
                 'staff_tag_review_enabled' => (int) ConfigService::get('feature_switch', 'staff_tag_review_enabled', 0),
+                'comment_review_enabled' => (int) ConfigService::get('feature_switch', 'comment_review_enabled', 0),
                 'admin_dashboard' => (int) ConfigService::get('feature_switch', 'admin_dashboard', 1),
                 'admin_dashboard_user_ids' => (string) ConfigService::get('feature_switch', 'admin_dashboard_user_ids', ''),
             ],

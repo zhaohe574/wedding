@@ -96,30 +96,6 @@ class DynamicCommentController extends BaseAdminController
     }
 
     /**
-     * @notes 获取评论审核配置
-     * @return \think\response\Json
-     */
-    public function getReviewConfig()
-    {
-        $config = DynamicCommentLogic::getReviewConfig();
-        return $this->data(['enabled' => $config]);
-    }
-
-    /**
-     * @notes 设置评论审核配置
-     * @return \think\response\Json
-     */
-    public function setReviewConfig()
-    {
-        $params = (new DynamicCommentValidate())->post()->goCheck('setConfig');
-        $result = DynamicCommentLogic::setReviewConfig((int)$params['enabled']);
-        if ($result) {
-            return $this->success('设置成功');
-        }
-        return $this->fail(DynamicCommentLogic::getError());
-    }
-
-    /**
      * @notes 删除评论
      * @return \think\response\Json
      */

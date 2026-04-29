@@ -4,11 +4,12 @@
             <div>
                 <div class="feature-switch__page-title">功能开关</div>
                 <div class="feature-switch__page-desc">
-                    按业务环节拆分配置项，方便快速定位人员入口、看板访问、支付规则与订单超时策略。
+                    按业务环节拆分配置项，方便快速定位人员入口、内容审核、看板访问、支付规则与订单超时策略。
                 </div>
             </div>
             <div class="feature-switch__intro-tags">
                 <span class="feature-switch__intro-tag">服务人员工作台</span>
+                <span class="feature-switch__intro-tag">动态评论审核</span>
                 <span class="feature-switch__intro-tag">管理员看板访问</span>
                 <span class="feature-switch__intro-tag">服务完成确认</span>
                 <span class="feature-switch__intro-tag">定金支付</span>
@@ -17,6 +18,20 @@
         </div>
 
         <el-form :model="formData" label-width="140px" class="feature-switch__form">
+            <el-card shadow="never" class="feature-switch__card !border-none">
+                <div class="feature-switch__section-header">
+                    <div class="feature-switch__section-title">动态社区</div>
+                    <div class="feature-switch__section-desc">控制动态评论发布后的审核策略，影响评论是否需要后台审核后展示。</div>
+                </div>
+
+                <el-form-item label="评论审核">
+                    <div class="feature-switch__inline-control">
+                        <el-switch v-model="formData.comment_review_enabled" :active-value="1" :inactive-value="0" />
+                        <span class="feature-switch__helper">开启后，用户发表的评论需要管理员审核通过后才能显示。</span>
+                    </div>
+                </el-form-item>
+            </el-card>
+
             <el-card shadow="never" class="feature-switch__card !border-none">
                 <div class="feature-switch__section-header">
                     <div class="feature-switch__section-title">服务人员工作台</div>
@@ -205,6 +220,7 @@ import {
 } from '@/api/setting/transaction'
 
 const formData = reactive({
+    comment_review_enabled: 0,
     staff_center: 1,
     staff_admin: 1,
     staff_tag_review_enabled: 0,
@@ -236,6 +252,7 @@ const getData = async () => {
 const handleSubmit = async () => {
     await Promise.all([
         setFeatureSwitchConfig({
+            comment_review_enabled: formData.comment_review_enabled,
             staff_center: formData.staff_center,
             staff_admin: formData.staff_admin,
             staff_tag_review_enabled: formData.staff_tag_review_enabled,

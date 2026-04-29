@@ -9,5 +9,6 @@
 /config/install.lock
 
 /public/*
+!/public/install
 /public/admin/*
 /public/admin/assets/*

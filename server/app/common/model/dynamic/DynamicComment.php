@@ -120,7 +120,7 @@ class DynamicComment extends BaseModel
         $content = $filterResult['filtered'];
 
         // 获取审核配置
-        $reviewEnabled = (int)\app\common\service\ConfigService::get('dynamic', 'comment_review_enabled', 0);
+        $reviewEnabled = (int)\app\common\service\ConfigService::get('feature_switch', 'comment_review_enabled', 0);
         $reviewStatus = $reviewEnabled ? self::REVIEW_STATUS_PENDING : self::REVIEW_STATUS_APPROVED;
 
         try {

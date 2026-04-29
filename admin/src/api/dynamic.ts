@@ -79,16 +79,6 @@ export function dynamicStatusOptions() {
 
 // ==================== 评论审核 ====================
 
-// 获取评论审核配置
-export function apiGetReviewConfig() {
-    return request.get({ url: '/growth.dynamicComment/getReviewConfig' })
-}
-
-// 设置评论审核配置
-export function apiSetReviewConfig(params: { enabled: number }) {
-    return request.post({ url: '/growth.dynamicComment/setReviewConfig', params })
-}
-
 // 获取待审核评论列表
 export function apiGetReviewList(params: any) {
     return request.get({ url: '/growth.dynamicComment/reviewList', params })
