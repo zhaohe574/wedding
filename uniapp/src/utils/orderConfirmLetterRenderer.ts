@@ -64,15 +64,15 @@ export const ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF =
     'Noto Serif SC, Georgia, Times New Roman, serif'
 
 const DEFAULT_TITLE = '订单确认函'
-const DEFAULT_HERO_EYEBROW = 'ORDER CONFIRMATION LETTER'
+const DEFAULT_HERO_EYEBROW = '订单确认函'
 const DEFAULT_HERO_DESC =
-    '为保证婚礼现场执行准确无误，系统已根据当前订单信息自动生成本次正式确认函。'
-const DEFAULT_BRAND_NAME = '喜遇婚礼服务'
-const DEFAULT_FOOTER_NOTE = '请保存此确认函图片，作为婚礼服务安排与付款确认的纸本凭证。'
-const V3_DEFAULT_HERO_EYEBROW = 'MAISON DE MARIAGE · CONFIRMATION'
-const V3_DEFAULT_SUBTITLE = 'Wedding Order Confirmation'
-const V3_DEFAULT_HERO_DESC = '以法式纸本礼仪的方式，确认本次婚礼档期、服务内容与付款安排。'
-const V3_FOOTER_KICKER = 'Avec amour et promesse.'
+    '为保证服务现场执行准确无误，系统已根据当前订单信息自动生成本次正式确认函。'
+const DEFAULT_BRAND_NAME = '服务团队'
+const DEFAULT_FOOTER_NOTE = '请保存此确认函图片，作为服务安排与付款确认的纸本凭证。'
+const V3_DEFAULT_HERO_EYEBROW = '订单确认'
+const V3_DEFAULT_SUBTITLE = '服务确认函'
+const V3_DEFAULT_HERO_DESC = '确认本次服务档期、服务内容与付款安排。'
+const V3_FOOTER_KICKER = '感谢信任与确认。'
 
 const escapeXml = (value: string) =>
     String(value || '')
@@ -866,7 +866,7 @@ const renderV3OrderConfirmLetterSvg = (
         drawTextBlock({
             x: centerX,
             y: sealY + sealSize / 2 + (small ? 5 : 9),
-            lines: ['LW'],
+            lines: ['服务'],
             fontSize: small ? 16 : 28,
             lineHeight: small ? 16 : 28,
             fill: '#9F7A2E',
@@ -949,7 +949,7 @@ const renderV3OrderConfirmLetterSvg = (
         drawTextBlock({
             x: contentX,
             y: currentY + infoSectionPaddingY + sectionLabelSize,
-            lines: ['CEREMONY DETAILS'],
+            lines: ['服务信息'],
             fontSize: sectionLabelSize,
             lineHeight: sectionLabelSize,
             fill: '#C8A45D',
@@ -972,7 +972,7 @@ const renderV3OrderConfirmLetterSvg = (
         drawTextBlock({
             x: contentX + columnWidth + columnGap,
             y: currentY + infoSectionPaddingY + sectionLabelSize,
-            lines: ['ATELIER SERVICE'],
+            lines: ['服务团队'],
             fontSize: sectionLabelSize,
             lineHeight: sectionLabelSize,
             fill: '#C8A45D',
@@ -1006,7 +1006,7 @@ const renderV3OrderConfirmLetterSvg = (
         drawTextBlock({
             x: contentX + (small ? 20 : 30),
             y: amountLabelY,
-            lines: ['FEE MEMO'],
+            lines: ['费用确认'],
             fontSize: amountLabelSize,
             lineHeight: amountLabelSize,
             fill: '#C8A45D',
@@ -1062,7 +1062,7 @@ const renderV3OrderConfirmLetterSvg = (
         drawTextBlock({
             x: contentX,
             y: currentY + ackSectionPaddingY + sectionLabelSize,
-            lines: ['ACKNOWLEDGEMENT'],
+            lines: ['确认说明'],
             fontSize: sectionLabelSize,
             lineHeight: sectionLabelSize,
             fill: '#C8A45D',
@@ -1085,7 +1085,7 @@ const renderV3OrderConfirmLetterSvg = (
         drawTextBlock({
             x: contentX + columnWidth + columnGap,
             y: currentY + ackSectionPaddingY + sectionLabelSize,
-            lines: ['CONTACT ATELIER'],
+            lines: ['联系信息'],
             fontSize: sectionLabelSize,
             lineHeight: sectionLabelSize,
             fill: '#C8A45D',

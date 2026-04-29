@@ -8,7 +8,7 @@
         <!-- 订单抬头 -->
         <view class="order-card__header">
             <view class="order-card__order-info">
-                <text class="order-card__eyebrow">Wedding Service Order</text>
+                <text class="order-card__eyebrow">服务订单</text>
                 <text class="order-card__order-sn">订单号：{{ order.orderNo }}</text>
                 <text class="order-card__order-time">{{ order.createTime }}</text>
             </view>

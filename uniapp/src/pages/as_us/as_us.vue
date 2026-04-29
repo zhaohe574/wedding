@@ -98,7 +98,7 @@
                     ></view>
                 </view>
                 <text class="about-text">
-                    {{ appStore.getWebsiteConfig.shop_intro || '专注婚礼服务，提供专业团队支持。' }}
+                    {{ appStore.getWebsiteConfig.shop_intro || '提供专业服务与团队支持。' }}
                 </text>
             </view>
 
@@ -129,8 +129,8 @@
 
             <!-- 底部版权信息 -->
             <view class="footer">
-                <text class="copyright">© {{ currentYear }} {{ brandName || '婚庆服务平台' }}</text>
-                <text class="copyright-sub">All Rights Reserved</text>
+                <text class="copyright">© {{ currentYear }} {{ brandName || '服务中心' }}</text>
+                <text class="copyright-sub">感谢信任与支持</text>
             </view>
         </view>
     </PageShell>

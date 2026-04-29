@@ -413,7 +413,7 @@ onReachBottom(() => {
 })
 
 onShareAppMessage(() => ({
-    title: '婚庆服务动态广场',
+    title: '动态广场',
     path: '/pages/dynamic/dynamic'
 }))
 </script>

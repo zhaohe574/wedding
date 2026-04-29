@@ -4,7 +4,7 @@
         <BaseNavbar title="婚礼资讯" />
         <view class="news-page cinema-page">
             <view class="news-page__hero">
-                <view class="news-page__hero-badge">Wedding Journal</view>
+                <view class="news-page__hero-badge">资讯精选</view>
                 <text class="news-page__hero-title">灵感、案例与攻略</text>
                 <text class="news-page__hero-desc"> 精选婚礼内容。 </text>
                 <view class="news-page__hero-stats glass-card">

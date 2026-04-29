@@ -684,7 +684,7 @@
 	}],
     "globalStyle": {
         "navigationBarTextStyle": "white",
-        "navigationBarTitleText": "商城",
+        "navigationBarTitleText": "服务中心",
         "navigationBarBackgroundColor": "#000000",
         "navigationStyle": "custom",
         "h5": {

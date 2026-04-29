@@ -10,13 +10,13 @@
                         class="auth-hero__logo"
                     />
                     <view v-else class="auth-hero__logo auth-hero__logo--fallback">
-                        <text>{{ (websiteConfig.shop_name || '婚礼').slice(0, 2) }}</text>
+                        <text>{{ (websiteConfig.shop_name || '服务').slice(0, 2) }}</text>
                     </view>
                 </view>
-                <text class="auth-hero__eyebrow">Welcome Back</text>
+                <text class="auth-hero__eyebrow">欢迎回来</text>
                 <text class="auth-hero__title">登录您的账号</text>
                 <text class="auth-hero__desc">
-                    {{ websiteConfig.shop_name || '婚礼服务平台' }}
+                    {{ websiteConfig.shop_name || '服务中心' }}
                 </text>
             </view>
         </template>

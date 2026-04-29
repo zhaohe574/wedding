@@ -543,7 +543,7 @@ const categoryTiles = computed<HomeCategoryTile[]>(() => {
         .map((item: any, index: number) => ({
             key: String(item?.id ?? `${item?.title || 'category'}-${index}`),
             title: normalizeText(item?.title, DEFAULT_CATEGORY_CONFIG[index]?.title || '服务分类'),
-            subtitle: normalizeText(item?.subtitle, DEFAULT_CATEGORY_CONFIG[index]?.subtitle || 'SERVICE'),
+            subtitle: normalizeText(item?.subtitle, DEFAULT_CATEGORY_CONFIG[index]?.subtitle || '服务'),
             image:
                 appStore.getImageUrl(item?.image || '') ||
                 DEFAULT_CATEGORY_CONFIG[index]?.image ||

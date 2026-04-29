@@ -13,7 +13,7 @@
                     lazy-load
                 />
                 <view v-else class="news-cover news-cover--placeholder">
-                    <text class="news-cover__placeholder-text">Wedding Story</text>
+                    <text class="news-cover__placeholder-text">资讯封面</text>
                 </view>
                 <view class="news-cover-mask" />
                 <view class="news-cover-badge">灵感特辑</view>

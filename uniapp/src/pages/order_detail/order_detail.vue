@@ -1238,7 +1238,7 @@ const serviceRelatedRows = computed(() =>
 )
 
 const serviceCardTitle = computed(() => {
-    return String(primaryPackageName.value || '').trim() || '婚礼服务订单'
+    return String(primaryPackageName.value || '').trim() || '服务订单'
 })
 
 const paymentChannel = computed(() => resolvePaymentChannel(order.value))

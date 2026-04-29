@@ -294,7 +294,7 @@ const getOrderPrimaryTitle = (items: Array<any>) => {
         return `${packageName}｜${staffName}`
     }
 
-    return packageName || staffName || '婚礼服务订单'
+    return packageName || staffName || '服务订单'
 }
 
 const getOrderMetaText = (locationText: string, items: Array<any>) => {
