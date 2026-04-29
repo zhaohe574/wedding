@@ -9,54 +9,32 @@
                 v-model="packageList"
                 :auto="false"
                 :hide-empty-view="true"
-                :paging-style="pagingStyle"
+                :paging-style="resolvedPagingStyle"
                 @query="queryList"
             >
                 <template #top>
                     <view class="page-section page-section--top">
-                        <BaseCard variant="hero" scene="staff" class="hero-card">
-                            <view class="hero-card__head">
-                                <view class="hero-card__copy">
-                                    <text class="hero-card__eyebrow">服务人员中心</text>
-                                    <text class="hero-card__title">套餐管理</text>
-                                    <text class="hero-card__meta">维护主推套餐与价格层级</text>
-                                </view>
-
-                                <view class="hero-card__action" @click="goCreate">
-                                    <text class="hero-card__action-text">新增套餐</text>
-                                </view>
-                            </view>
-
-                            <view class="hero-metrics">
-                                <view
-                                    v-for="item in heroMetrics"
-                                    :key="item.key"
-                                    :class="[
-                                        'hero-metric',
-                                        'wm-soft-card',
-                                        {
-                                            'hero-metric--selected':
-                                                currentMetricFilter === item.key
-                                        }
-                                    ]"
-                                    @click="switchMetricFilter(item.key)"
-                                >
-                                    <text class="hero-metric__label">{{ item.label }}</text>
-                                    <text class="hero-metric__value">{{ item.value }}</text>
-                                </view>
-                            </view>
-                        </BaseCard>
+                        <StaffWorkspaceHero
+                            eyebrow="服务人员中心"
+                            title="套餐管理"
+                            description="维护主推套餐与价格层级"
+                            action-text="新增套餐"
+                            @action="goCreate"
+                        >
+                            <StaffFilterBar
+                                :items="packageFilterItems"
+                                :model-value="currentMetricFilter"
+                                @select="handleMetricFilterSelect"
+                            />
+                        </StaffWorkspaceHero>
                     </view>
                 </template>
 
                 <view class="page-section page-section--list">
-                    <view class="section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title">{{ listSectionTitle }}</text>
-                            <text class="section-head__desc">{{ listSectionDesc }}</text>
-                        </view>
-                        <text class="section-head__meta">{{ listSectionMeta }}</text>
-                    </view>
+                    <StaffSectionHeader
+                        :title="listSectionTitle"
+                        :description="listSectionDesc"
+                    />
 
                     <LoadingState v-if="loading && !hasLoaded" text="正在同步套餐库..." />
 
@@ -183,6 +161,9 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
+import StaffFilterBar from '@/packages/components/staff-workspace/staff-filter-bar.vue'
+import StaffSectionHeader from '@/packages/components/staff-workspace/staff-section-header.vue'
+import StaffWorkspaceHero from '@/packages/components/staff-workspace/staff-workspace-hero.vue'
 import { staffCenterPackageLists, staffCenterPackageRemove } from '@/api/staffCenter'
 import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { useThemeStore } from '@/stores/theme'
@@ -198,6 +179,12 @@ interface HeroMetric {
 
 const $theme = useThemeStore()
 const pagingStyle = useFixedNavbarPagingStyle()
+const resolvedPagingStyle = computed(() => ({
+    ...pagingStyle.value,
+    paddingLeft: 'var(--wm-space-page-x, 37rpx)',
+    paddingRight: 'var(--wm-space-page-x, 37rpx)',
+    boxSizing: 'border-box'
+}))
 const pagingRef = ref<any>(null)
 const packageList = ref<any[]>([])
 const loading = ref(false)
@@ -216,6 +203,14 @@ const heroMetrics = computed<HeroMetric[]>(() => [
     { key: 'recommend', label: '推荐款', value: metricCounts.value.recommend },
     { key: 'inactive', label: '已下架', value: metricCounts.value.inactive }
 ])
+
+const packageFilterItems = computed(() =>
+    heroMetrics.value.map((item) => ({
+        label: item.label,
+        value: item.key,
+        count: item.value
+    }))
+)
 
 const emptyStateTitle = computed(() => {
     const titleMap: Record<PackageFilter, string> = {
@@ -323,6 +318,10 @@ const switchMetricFilter = (filter: PackageFilter) => {
     currentMetricFilter.value = filter
     hasLoaded.value = false
     pagingRef.value?.reload()
+}
+
+const handleMetricFilterSelect = (value: string | number) => {
+    switchMetricFilter(String(value) as PackageFilter)
 }
 
 const handleRemove = (item: any) => {

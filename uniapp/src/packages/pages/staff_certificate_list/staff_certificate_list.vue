@@ -9,51 +9,32 @@
                 v-model="certificateList"
                 :auto="false"
                 :hide-empty-view="true"
-                :paging-style="pagingStyle"
+                :paging-style="resolvedPagingStyle"
                 @query="queryList"
             >
                 <template #top>
                     <view class="page-section page-section--top">
-                        <BaseCard variant="hero" scene="staff" class="hero-card">
-                            <view class="hero-card__head">
-                                <view class="hero-card__copy">
-                                    <text class="hero-card__eyebrow">服务人员中心</text>
-                                    <text class="hero-card__title">证书管理</text>
-                                    <text class="hero-card__meta">提交资质，等待审核</text>
-                                </view>
-
-                                <view class="hero-card__action" @click="handleAdd">
-                                    <text class="hero-card__action-text">新增证书</text>
-                                </view>
-                            </view>
-
-                            <view class="hero-metrics">
-                                <view
-                                    v-for="item in heroMetrics"
-                                    :key="item.key"
-                                    :class="[
-                                        'hero-metric',
-                                        'wm-soft-card',
-                                        { 'hero-metric--selected': currentFilter === item.key }
-                                    ]"
-                                    @click="switchFilter(item.key)"
-                                >
-                                    <text class="hero-metric__label">{{ item.label }}</text>
-                                    <text class="hero-metric__value">{{ item.value }}</text>
-                                </view>
-                            </view>
-                        </BaseCard>
+                        <StaffWorkspaceHero
+                            eyebrow="服务人员中心"
+                            title="证书管理"
+                            description="维护资质资料与审核反馈"
+                            action-text="新增证书"
+                            @action="handleAdd"
+                        >
+                            <StaffFilterBar
+                                :items="certificateFilterItems"
+                                :model-value="currentFilter"
+                                @select="handleFilterSelect"
+                            />
+                        </StaffWorkspaceHero>
                     </view>
                 </template>
 
                 <view class="page-section page-section--list">
-                    <view class="section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title">{{ listSectionTitle }}</text>
-                            <text class="section-head__desc">{{ listSectionDesc }}</text>
-                        </view>
-                        <text class="section-head__meta">{{ listSectionMeta }}</text>
-                    </view>
+                    <StaffSectionHeader
+                        :title="listSectionTitle"
+                        :description="listSectionDesc"
+                    />
 
                     <LoadingState v-if="loading && !hasLoaded" text="正在同步证书资料..." />
 
@@ -155,6 +136,9 @@ import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
+import StaffFilterBar from '@/packages/components/staff-workspace/staff-filter-bar.vue'
+import StaffSectionHeader from '@/packages/components/staff-workspace/staff-section-header.vue'
+import StaffWorkspaceHero from '@/packages/components/staff-workspace/staff-workspace-hero.vue'
 import { staffCenterCertificateDelete, staffCenterCertificateLists } from '@/api/staffCenter'
 import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
@@ -172,6 +156,12 @@ interface SummaryState {
 
 const $theme = useThemeStore()
 const pagingStyle = useFixedNavbarPagingStyle()
+const resolvedPagingStyle = computed(() => ({
+    ...pagingStyle.value,
+    paddingLeft: 'var(--wm-space-page-x, 37rpx)',
+    paddingRight: 'var(--wm-space-page-x, 37rpx)',
+    boxSizing: 'border-box'
+}))
 const pagingRef = ref<any>(null)
 const certificateList = ref<any[]>([])
 const loading = ref(false)
@@ -191,6 +181,14 @@ const heroMetrics = computed(() => [
     { key: 'approved' as FilterKey, label: '已通过', value: summary.value.approved_count },
     { key: 'rejected' as FilterKey, label: '已拒绝', value: summary.value.rejected_count }
 ])
+
+const certificateFilterItems = computed(() =>
+    heroMetrics.value.map((item) => ({
+        label: item.label,
+        value: item.key,
+        count: item.value
+    }))
+)
 
 const emptyStateTitle = computed(() => {
     const titleMap: Record<FilterKey, string> = {
@@ -293,6 +291,10 @@ const switchFilter = (filter: FilterKey) => {
     hasLoaded.value = false
     loading.value = true
     pagingRef.value?.reload()
+}
+
+const handleFilterSelect = (value: string | number) => {
+    switchFilter(String(value) as FilterKey)
 }
 
 const handleAdd = () => {

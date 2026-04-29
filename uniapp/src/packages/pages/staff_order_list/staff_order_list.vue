@@ -14,95 +14,37 @@
             >
                 <template #top>
                     <view class="page-section page-section--top">
-                        <BaseCard
-                            variant="hero"
-                            scene="staff"
-                            class="hero-card"
-                            :style="heroCardStyle"
+                        <StaffWorkspaceHero
+                            eyebrow="履约工作台"
+                            title="订单管理"
+                            :description="heroHeadline"
+                            :meta-text="orderHeroMeta"
                         >
-                            <view class="hero-card__head">
-                                <view class="hero-card__copy">
-                                    <text class="hero-card__eyebrow">履约工作台</text>
-                                    <text class="hero-card__title">订单管理</text>
-                                    <text class="hero-card__desc">{{ heroHeadline }}</text>
-                                </view>
-
-                                <view class="hero-card__total">
-                                    <text class="hero-card__total-label">总订单</text>
-                                    <text class="hero-card__total-value">
-                                        {{ Number(orderStats.all || 0) }}
-                                    </text>
-                                    <text class="hero-card__total-unit">单</text>
-                                </view>
-                            </view>
-
-                            <view class="hero-focus-strip">
-                                <view
-                                    v-for="item in focusCards"
-                                    :key="item.key"
-                                    :class="[
-                                        'hero-focus-card',
-                                        { 'hero-focus-card--accent': item.accent }
-                                    ]"
-                                    @click="switchStatusByValue(item.status)"
+                            <template #badges>
+                                <StatusBadge
+                                    v-if="Number(orderStats.pending_confirm || 0) > 0"
+                                    tone="warning"
+                                    size="sm"
                                 >
-                                    <text class="hero-focus-card__label">{{ item.label }}</text>
-                                    <view class="hero-focus-card__value-row">
-                                        <text class="hero-focus-card__value">{{ item.value }}</text>
-                                        <text class="hero-focus-card__unit">{{ item.unit }}</text>
-                                    </view>
-                                    <text class="hero-focus-card__hint">{{ item.hint }}</text>
-                                </view>
-                            </view>
+                                    待确认 {{ Number(orderStats.pending_confirm || 0) }}
+                                </StatusBadge>
+                            </template>
 
-                            <view class="hero-metrics">
-                                <view
-                                    v-for="item in summaryCards"
-                                    :key="item.key"
-                                    :class="[
-                                        'summary-chip',
-                                        { 'summary-chip--accent': item.accent }
-                                    ]"
-                                    @click="switchStatusByValue(item.status)"
-                                >
-                                    <text class="summary-chip__label">{{ item.label }}</text>
-                                    <view class="summary-chip__value-row">
-                                        <text class="summary-chip__value">{{ item.value }}</text>
-                                        <text class="summary-chip__unit">{{ item.unit }}</text>
-                                    </view>
-                                </view>
-                            </view>
-
-                            <view class="summary-bar__scope">
-                                <tn-icon name="tip" size="18" color="#C8A45D" />
-                                <text class="summary-bar__scope-text">只显示履约相关订单</text>
-                            </view>
-
-                            <scroll-view scroll-x class="summary-tabs" show-scrollbar="false">
-                                <view class="summary-tabs__row">
-                                    <FilterChip
-                                        v-for="tab in statusTabs"
-                                        :key="String(tab.value)"
-                                        scene="staff"
-                                        :selected="currentStatus === tab.value"
-                                        @click="switchStatusByValue(tab.value)"
-                                    >
-                                        {{ `${tab.label} ${tab.count}` }}
-                                    </FilterChip>
-                                </view>
-                            </scroll-view>
-                        </BaseCard>
+                            <StaffFilterBar
+                                :items="statusTabs"
+                                :model-value="currentStatus"
+                                @select="handleStatusFilterSelect"
+                            />
+                        </StaffWorkspaceHero>
                     </view>
                 </template>
 
                 <view class="page-section page-section--list">
-                    <view class="section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title">{{ listSectionTitle }}</text>
-                            <text class="section-head__desc">{{ listSectionDesc }}</text>
-                        </view>
-                        <text class="section-head__meta">{{ listSectionMeta }}</text>
-                    </view>
+                    <StaffSectionHeader
+                        :title="listSectionTitle"
+                        :description="listSectionDesc"
+                        :meta="listSectionMeta"
+                    />
 
                     <LoadingState v-if="loading && !hasLoaded" text="正在同步订单工作台..." />
 
@@ -233,10 +175,12 @@ import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
-import FilterChip from '@/components/base/FilterChip.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
+import StaffFilterBar from '@/packages/components/staff-workspace/staff-filter-bar.vue'
+import StaffSectionHeader from '@/packages/components/staff-workspace/staff-section-header.vue'
+import StaffWorkspaceHero from '@/packages/components/staff-workspace/staff-workspace-hero.vue'
 import {
     staffCenterOrderComplete,
     staffCenterOrderConfirm,
@@ -452,6 +396,8 @@ const heroHeadline = computed(() => {
 
     return '订单按服务节奏分层展示，优先处理最临近的履约任务'
 })
+
+const orderHeroMeta = computed(() => `总订单 ${Number(orderStats.value.all || 0)} 单`)
 
 const focusCards = computed(() => [
     {
@@ -752,6 +698,10 @@ const switchStatusByValue = (value: StatusValue) => {
     currentStatus.value = value
     hasLoaded.value = false
     pagingRef.value?.reload()
+}
+
+const handleStatusFilterSelect = (value: string | number) => {
+    switchStatusByValue(value === '' ? '' : Number(value))
 }
 
 const goDetail = (id: number) => {

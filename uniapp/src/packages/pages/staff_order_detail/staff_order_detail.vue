@@ -31,13 +31,6 @@
                         <text class="staff-order-hero__desc">{{ statusInfo.description }}</text>
                     </view>
 
-                    <view class="hero-chip-list">
-                        <view v-for="item in heroChips" :key="item.label" class="hero-chip">
-                            <text class="hero-chip__label">{{ item.label }}</text>
-
-                            <text class="hero-chip__value">{{ item.value }}</text>
-                        </view>
-                    </view>
                 </view>
 
                 <view class="staff-section-card wm-form-block">

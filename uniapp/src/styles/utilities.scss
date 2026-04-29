@@ -516,3 +516,89 @@
     line-height: 1.2;
     color: var(--wm-text-primary, #111111);
 }
+
+.wm-staff-workspace-page {
+    min-height: 100vh;
+    padding-top: 18rpx;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, var(--wm-color-bg-page, #ffffff) 0%, #f7f7f7 100%);
+}
+
+.wm-staff-workspace-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 18rpx;
+}
+
+.wm-staff-panel {
+    background: #ffffff;
+    border: 1rpx solid var(--wm-color-border, #e5e5e5);
+    border-radius: var(--wm-radius-card, 16rpx);
+}
+
+.wm-staff-filter-panel {
+    padding: 20rpx 0;
+}
+
+.wm-staff-list-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    padding-bottom: calc(46rpx + env(safe-area-inset-bottom));
+}
+
+.wm-staff-form-page {
+    min-height: 100vh;
+    padding: 18rpx var(--wm-space-page-x, 37rpx)
+        calc(180rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    background: linear-gradient(180deg, var(--wm-color-bg-page, #ffffff) 0%, #f7f7f7 100%);
+}
+
+.wm-staff-form-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 18rpx;
+}
+
+.wm-staff-form-card {
+    background: #ffffff;
+    border: 1rpx solid var(--wm-color-border, #e5e5e5);
+    border-radius: var(--wm-radius-card, 16rpx);
+    box-shadow: none;
+}
+
+.wm-staff-soft-field {
+    background: var(--wm-color-bg-soft, #f7f7f7);
+    border: 1rpx solid var(--wm-color-border, #e5e5e5);
+    border-radius: var(--wm-radius-card-soft, 14rpx);
+}
+
+.wm-staff-inline-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 56rpx;
+    padding: 0 20rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-text-inverse, #ffffff);
+    font-size: 22rpx;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.wm-staff-muted-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 56rpx;
+    padding: 0 20rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: #ffffff;
+    border: 1rpx solid rgba(11, 11, 11, 0.16);
+    color: var(--wm-color-primary, #0b0b0b);
+    font-size: 22rpx;
+    font-weight: 700;
+    line-height: 1;
+}

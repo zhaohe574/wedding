@@ -305,32 +305,14 @@
                 </BaseCard>
             </view>
 
-            <view class="bottom-bar">
-                <view class="bottom-bar__inner">
-                    <view
-                        class="bottom-bar__action bottom-bar__action--ghost"
-                        @click="handleCancel"
-                    >
-                        <text class="bottom-bar__action-text bottom-bar__action-text--ghost"
-                            >取消</text
-                        >
-                    </view>
-                    <view
-                        class="bottom-bar__action bottom-bar__action--primary"
-                        :style="{ opacity: canSave && !saving ? 1 : 0.66 }"
-                        @click="handleSave"
-                    >
-                        <tn-icon
-                            v-if="saving"
-                            name="loading"
-                            size="26"
-                            color="#ffffff"
-                            class="bottom-bar__loading"
-                        />
-                        <text class="bottom-bar__action-text">{{ saveButtonText }}</text>
-                    </view>
-                </view>
-            </view>
+            <StaffActionBar
+                :primary-text="saveButtonText"
+                secondary-text="取消"
+                :loading="saving"
+                :disabled="!canSave"
+                @secondary="handleCancel"
+                @primary="handleSave"
+            />
         </view>
     </PageShell>
 </template>
@@ -347,6 +329,7 @@ import {
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import StaffActionBar from '@/packages/components/staff-workspace/staff-action-bar.vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'

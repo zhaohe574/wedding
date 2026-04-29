@@ -41,17 +41,6 @@
                         </view>
                     </view>
 
-                    <view class="hero-metrics">
-                        <view
-                            v-for="item in heroMetrics"
-                            :key="item.label"
-                            :class="['hero-metric', { 'hero-metric--accent': item.accent }]"
-                        >
-                            <text class="hero-metric__label">{{ item.label }}</text>
-                            <text class="hero-metric__value">{{ item.value }}</text>
-                        </view>
-                    </view>
-
                     <view class="hero-tip">
                         <view class="hero-tip__badge">
                             <tn-icon name="calendar" size="24" color="#0B0B0B" />

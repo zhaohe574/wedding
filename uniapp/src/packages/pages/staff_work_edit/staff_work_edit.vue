@@ -248,34 +248,13 @@
                 </BaseCard>
             </view>
 
-            <view class="bottom-bar">
-                <view class="bottom-bar__inner">
-                    <view
-                        class="bottom-bar__action bottom-bar__action--ghost"
-                        @click="handleCancel"
-                    >
-                        <text class="bottom-bar__action-text bottom-bar__action-text--ghost">
-                            取消
-                        </text>
-                    </view>
-                    <view
-                        class="bottom-bar__action bottom-bar__action--primary"
-                        :style="{ opacity: submitting ? 0.66 : 1 }"
-                        @click="handleSubmit"
-                    >
-                        <tn-icon
-                            v-if="submitting"
-                            name="loading"
-                            size="26"
-                            color="#ffffff"
-                            class="bottom-bar__loading"
-                        />
-                        <text class="bottom-bar__action-text">
-                            {{ submitButtonText }}
-                        </text>
-                    </view>
-                </view>
-            </view>
+            <StaffActionBar
+                :primary-text="submitButtonText"
+                secondary-text="取消"
+                :loading="submitting"
+                @secondary="handleCancel"
+                @primary="handleSubmit"
+            />
         </view>
     </PageShell>
 </template>
@@ -287,6 +266,7 @@ import { uploadImage, uploadVideo } from '@/api/app'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import StaffActionBar from '@/packages/components/staff-workspace/staff-action-bar.vue'
 import { staffCenterWorkAdd, staffCenterWorkDetail, staffCenterWorkEdit } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'

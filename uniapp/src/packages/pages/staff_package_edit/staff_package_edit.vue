@@ -122,29 +122,7 @@
                 <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">地区价格</text>
-                    </view>
-
-                    <view class="metric-row">
-                        <view class="metric-chip">
-                            <text class="metric-chip__label">共</text>
-                            <text class="metric-chip__value">{{ regionSummary.total }}</text>
-                        </view>
-                        <view class="metric-chip">
-                            <text class="metric-chip__label">省</text>
-                            <text class="metric-chip__value">{{
-                                regionSummary.provinceCount
-                            }}</text>
-                        </view>
-                        <view class="metric-chip">
-                            <text class="metric-chip__label">市</text>
-                            <text class="metric-chip__value">{{ regionSummary.cityCount }}</text>
-                        </view>
-                        <view class="metric-chip">
-                            <text class="metric-chip__label">区</text>
-                            <text class="metric-chip__value">{{
-                                regionSummary.districtCount
-                            }}</text>
-                        </view>
+                        <text class="field-side-text">已配置 {{ regionSummary.total }} 条</text>
                     </view>
 
                     <view class="action-chip-row">
@@ -313,32 +291,13 @@
                 </BaseCard>
             </view>
 
-            <view class="bottom-bar">
-                <view class="bottom-bar__inner">
-                    <view
-                        class="bottom-bar__action bottom-bar__action--ghost"
-                        @click="handleCancel"
-                    >
-                        <text class="bottom-bar__action-text bottom-bar__action-text--ghost"
-                            >取消</text
-                        >
-                    </view>
-                    <view
-                        class="bottom-bar__action bottom-bar__action--primary"
-                        :style="{ opacity: saving ? 0.66 : 1 }"
-                        @click="handleSave"
-                    >
-                        <tn-icon
-                            v-if="saving"
-                            name="loading"
-                            size="26"
-                            color="#ffffff"
-                            class="bottom-bar__loading"
-                        />
-                        <text class="bottom-bar__action-text">{{ saveButtonText }}</text>
-                    </view>
-                </view>
-            </view>
+            <StaffActionBar
+                :primary-text="saveButtonText"
+                secondary-text="取消"
+                :loading="saving"
+                @secondary="handleCancel"
+                @primary="handleSave"
+            />
 
             <BaseOverlayMask :show="showRulePopup" @close="closeRulePopup" />
             <tn-popup
@@ -473,6 +432,7 @@ import { getServiceRegionTree } from '@/api/service'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import StaffActionBar from '@/packages/components/staff-workspace/staff-action-bar.vue'
 import { useThemeStore } from '@/stores/theme'
 import { alphaColor } from '@/utils/color'
 import {

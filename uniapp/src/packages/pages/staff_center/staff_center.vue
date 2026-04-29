@@ -64,23 +64,6 @@
 
                     <text class="workbench-hero__headline">{{ heroHeadline }}</text>
 
-                    <view class="workbench-focus-strip">
-                        <view
-                            v-for="item in focusHighlights"
-                            :key="item.key"
-                            :class="['focus-pill', { 'focus-pill--active': item.active }]"
-                        >
-                            <text class="focus-pill__label">{{ item.label }}</text>
-
-                            <view class="focus-pill__value-row">
-                                <text class="focus-pill__value">{{ item.value }}</text>
-                                <text class="focus-pill__unit">{{ item.unit }}</text>
-                            </view>
-
-                            <text class="focus-pill__hint">{{ item.hint }}</text>
-                        </view>
-                    </view>
-
                     <view class="primary-action" @click="primaryAction.action()">
                         <view class="primary-action__main">
                             <view class="primary-action__icon">
@@ -127,34 +110,6 @@
                             </view>
 
                             <text class="secondary-action__hint">{{ item.hint }}</text>
-                        </view>
-                    </view>
-                </BaseCard>
-
-                <BaseCard variant="glass" scene="staff" class="overview-panel">
-                    <view class="section-head wm-section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title wm-section-title">今日概览</text>
-                            <text class="section-head__desc wm-section-desc">先看履约节奏</text>
-                        </view>
-
-                        <text class="section-head__meta wm-helper-text">{{
-                            overviewMetaText
-                        }}</text>
-                    </view>
-
-                    <view class="metric-grid">
-                        <view
-                            v-for="item in overviewMetrics"
-                            :key="item.label"
-                            :class="['metric-card', { 'metric-card--accent': item.accent }]"
-                        >
-                            <text class="metric-card__label">{{ item.label }}</text>
-                            <view class="metric-card__value-row">
-                                <text class="metric-card__value">{{ item.value }}</text>
-                                <text class="metric-card__unit">{{ item.unit }}</text>
-                            </view>
-                            <text class="metric-card__caption">{{ item.caption }}</text>
                         </view>
                     </view>
                 </BaseCard>

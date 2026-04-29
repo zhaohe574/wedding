@@ -240,22 +240,11 @@
                 </BaseCard>
             </view>
 
-            <view class="bottom-bar">
-                <view class="bottom-bar__inner">
-                    <view
-                        class="bottom-bar__action bottom-bar__action--primary"
-                        :style="{
-                            backgroundColor: $theme.primaryColor,
-                            color: $theme.btnColor,
-                            opacity: saving ? 0.7 : 1
-                        }"
-                        @click="handleSave"
-                    >
-                        <tn-icon v-if="saving" name="loading" size="30" :color="$theme.btnColor" />
-                        <text>{{ saving ? '保存中...' : '保存资料' }}</text>
-                    </view>
-                </view>
-            </view>
+            <StaffActionBar
+                :primary-text="saving ? '保存中...' : '保存资料'"
+                :loading="saving"
+                @primary="handleSave"
+            />
         </view>
     </PageShell>
 </template>
@@ -266,6 +255,7 @@ import { onShow } from '@dcloudio/uni-app'
 import BaseCard from '@/components/base/BaseCard.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import StaffActionBar from '@/packages/components/staff-workspace/staff-action-bar.vue'
 import StaffLongDetailEditor from '@/packages/components/staff-long-detail/staff-long-detail-editor.vue'
 import { staffCenterProfile, staffCenterUpdateProfile } from '@/api/staffCenter'
 import { getServiceCategories, getStyleTags } from '@/api/service'

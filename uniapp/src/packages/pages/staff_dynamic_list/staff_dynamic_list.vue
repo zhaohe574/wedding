@@ -9,43 +9,24 @@
                 v-model="dynamicList"
                 :auto="false"
                 :hide-empty-view="true"
-                :paging-style="pagingStyle"
+                :paging-style="resolvedPagingStyle"
                 @query="queryList"
             >
                 <template #top>
                     <view class="page-section page-section--top">
-                        <BaseCard variant="hero" scene="staff" class="hero-card">
-                            <view class="hero-card__head">
-                                <view class="hero-card__copy">
-                                    <text class="hero-card__eyebrow">服务人员中心</text>
-                                    <text class="hero-card__title">动态管理</text>
-                                    <text class="hero-card__meta">统一管理展示内容与审核节奏</text>
-                                </view>
-
-                                <view class="hero-card__action" @click="handleAdd">
-                                    <text class="hero-card__action-text">发布动态</text>
-                                </view>
-                            </view>
-
-                            <view class="hero-metrics">
-                                <view
-                                    v-for="item in heroMetrics"
-                                    :key="item.key"
-                                    :class="[
-                                        'hero-metric',
-                                        'wm-soft-card',
-                                        {
-                                            'hero-metric--selected':
-                                                currentStatusFilter === item.key
-                                        }
-                                    ]"
-                                    @click="switchStatusFilter(item.key)"
-                                >
-                                    <text class="hero-metric__label">{{ item.label }}</text>
-                                    <text class="hero-metric__value">{{ item.value }}</text>
-                                </view>
-                            </view>
-                        </BaseCard>
+                        <StaffWorkspaceHero
+                            eyebrow="服务人员中心"
+                            title="动态管理"
+                            description="管理展示内容与审核反馈"
+                            action-text="发布动态"
+                            @action="handleAdd"
+                        >
+                            <StaffFilterBar
+                                :items="dynamicStatusFilterItems"
+                                :model-value="currentStatusFilter"
+                                @select="handleStatusFilterSelect"
+                            />
+                        </StaffWorkspaceHero>
 
                         <BaseCard variant="glass" scene="staff" class="filter-panel">
                             <view class="section-head">
@@ -70,13 +51,10 @@
                 </template>
 
                 <view class="page-section page-section--list">
-                    <view class="section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title">{{ listSectionTitle }}</text>
-                            <text class="section-head__desc">{{ listSectionDesc }}</text>
-                        </view>
-                        <text class="section-head__meta">{{ listSectionMeta }}</text>
-                    </view>
+                    <StaffSectionHeader
+                        :title="listSectionTitle"
+                        :description="listSectionDesc"
+                    />
 
                     <LoadingState v-if="loading && !hasLoaded" text="正在同步动态内容..." />
 
@@ -196,25 +174,6 @@
                                     </text>
                                 </view>
 
-                                <view class="stats-row">
-                                    <view class="metric-chip">
-                                        <tn-icon
-                                            name="eye"
-                                            size="18"
-                                            color="var(--wm-color-secondary, #C8A45D)"
-                                        />
-                                        <text>浏览 {{ Number(item.view_count || 0) }}</text>
-                                    </view>
-                                    <view class="metric-chip metric-chip--accent">
-                                        <tn-icon
-                                            name="like"
-                                            size="18"
-                                            color="var(--wm-color-primary, #0B0B0B)"
-                                        />
-                                        <text>点赞 {{ Number(item.like_count || 0) }}</text>
-                                    </view>
-                                </view>
-
                                 <view class="action-row">
                                     <view
                                         class="action-btn action-btn--ghost"
@@ -256,6 +215,9 @@ import FilterChip from '@/components/base/FilterChip.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
+import StaffFilterBar from '@/packages/components/staff-workspace/staff-filter-bar.vue'
+import StaffSectionHeader from '@/packages/components/staff-workspace/staff-section-header.vue'
+import StaffWorkspaceHero from '@/packages/components/staff-workspace/staff-workspace-hero.vue'
 import { staffCenterDynamicDelete, staffCenterDynamicLists } from '@/api/staffCenter'
 import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { useThemeStore } from '@/stores/theme'
@@ -286,6 +248,12 @@ interface DynamicListSummary {
 
 const $theme = useThemeStore()
 const pagingStyle = useFixedNavbarPagingStyle()
+const resolvedPagingStyle = computed(() => ({
+    ...pagingStyle.value,
+    paddingLeft: 'var(--wm-space-page-x, 37rpx)',
+    paddingRight: 'var(--wm-space-page-x, 37rpx)',
+    boxSizing: 'border-box'
+}))
 const pagingRef = ref<any>(null)
 const dynamicList = ref<any[]>([])
 const loading = ref(false)
@@ -306,6 +274,14 @@ const heroMetrics = computed<HeroMetric[]>(() => [
     { key: 'offline', label: '已下架', value: summary.value.offline_count },
     { key: 'rejected', label: '已拒绝', value: summary.value.rejected_count }
 ])
+
+const dynamicStatusFilterItems = computed(() =>
+    heroMetrics.value.map((item) => ({
+        label: item.label,
+        value: item.key,
+        count: item.value
+    }))
+)
 
 const typeFilterOptions = computed<TypeFilterOption[]>(() => [
     { key: 'all', label: '全部' },
@@ -618,6 +594,10 @@ const switchStatusFilter = (filterKey: DynamicStatusFilter) => {
     if (currentStatusFilter.value === filterKey) return
     currentStatusFilter.value = filterKey
     reloadList()
+}
+
+const handleStatusFilterSelect = (value: string | number) => {
+    switchStatusFilter(String(value) as DynamicStatusFilter)
 }
 
 const switchTypeFilter = (filterKey: DynamicTypeFilter) => {
