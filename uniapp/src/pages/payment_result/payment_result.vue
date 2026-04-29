@@ -1,7 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
 
-    <PageShell scene="consumer">
+    <PageShell scene="consumer" hasSafeBottom>
         <BaseNavbar title="支付结果" />
 
         <page-status :status="status">

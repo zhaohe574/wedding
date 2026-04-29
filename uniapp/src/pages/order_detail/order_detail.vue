@@ -1,7 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
 
-    <PageShell scene="consumer" tone="workspace">
+    <PageShell scene="consumer" tone="workspace" hasSafeBottom>
         <BaseNavbar title="订单详情" title-align="left" />
 
         <view v-if="order" class="order-detail">

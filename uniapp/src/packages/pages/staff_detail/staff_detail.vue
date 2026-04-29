@@ -1,7 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
 
-    <PageShell scene="consumer" tone="editorial">
+    <PageShell scene="consumer" tone="editorial" hasSafeBottom>
         <BaseNavbar title="人员详情" :back="!isShareEntry" title-align="left" />
 
         <view class="staff-detail" v-if="staffInfo">

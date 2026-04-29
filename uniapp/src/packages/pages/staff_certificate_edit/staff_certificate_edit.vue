@@ -1,10 +1,10 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="staff">
+    <PageShell scene="staff" hasSafeBottom>
         <BaseNavbar :title="pageTitle" />
 
         <view class="page-container">
-            <view class="page-section page-section--content">
+            <view class="page-section page-section--content wm-page-content">
                 <BaseCard
                     v-if="isEdit"
                     variant="glass"
