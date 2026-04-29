@@ -159,6 +159,7 @@
 }
 
 .page-with-tabbar-safe-bottom {
+    padding-bottom: var(--wm-safe-bottom-tabbar, calc(177rpx + constant(safe-area-inset-bottom)));
     padding-bottom: var(--wm-safe-bottom-tabbar, calc(177rpx + env(safe-area-inset-bottom)));
 }
 
@@ -276,10 +277,6 @@
     border: 1rpx solid var(--wm-color-border, #e2ded5);
     border-radius: var(--wm-radius-card, 16rpx);
     box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
-}
-
-.wm-page-content {
-    padding: 0 var(--wm-space-page-x, 37rpx);
 }
 
 .wm-page-stack {

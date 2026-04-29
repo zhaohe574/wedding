@@ -17,7 +17,7 @@ $order-change-border: rgba(231, 226, 214, 0.92);
     display: flex;
     flex-direction: column;
     gap: 20rpx;
-    padding: 10rpx 0 calc(var(--wm-safe-bottom-action, 160rpx) + 18rpx);
+    padding: 10rpx 0 calc(var(--wm-safe-bottom-action, calc(150rpx + env(safe-area-inset-bottom))) + 18rpx);
 }
 
 .order-change-page__center {
@@ -631,6 +631,7 @@ $order-change-border: rgba(231, 226, 214, 0.92);
 }
 
 .order-change-sheet {
+    padding: 30rpx var(--wm-space-page-x, 37rpx) calc(constant(safe-area-inset-bottom) + 34rpx);
     padding: 30rpx var(--wm-space-page-x, 37rpx) calc(env(safe-area-inset-bottom) + 34rpx);
     background: linear-gradient(180deg, rgba(248, 247, 242, 0.98) 0%, #ffffff 100%);
     border-radius: 52rpx 52rpx 0 0;
