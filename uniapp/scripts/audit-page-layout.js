@@ -100,8 +100,10 @@ function summarizeNotes(route, routeEntry, scan, tabBarRoutes) {
     const meta = routeEntry.meta || {}
     if (!scan.fileExists) notes.push('missing source file')
     if (scan.shellType === 'none') notes.push('no PageShell/AuthPageShell')
-    if (scan.shellType === 'PageShell' && scan.wmPageContentCount === 0) notes.push('no wm-page-content')
-    if (tabBarRoutes.has(route) && !scan.hasTabbar) notes.push('tabBar route without hasTabbar prop')
+    if (scan.shellType === 'PageShell' && scan.wmPageContentCount === 0)
+        notes.push('no wm-page-content')
+    if (tabBarRoutes.has(route) && !scan.hasTabbar)
+        notes.push('tabBar route without hasTabbar prop')
     if (!tabBarRoutes.has(route) && scan.hasTabbar) notes.push('hasTabbar on non-tabBar route')
     if (meta.scene_lock && scan.scene && meta.scene_lock !== scan.scene) {
         notes.push(`scene_lock(${meta.scene_lock}) differs from shell scene(${scan.scene})`)
@@ -138,7 +140,8 @@ const rows = routes.map((routeInfo) => {
     const pageShellCount = countMatches(content, /<PageShell\b/g)
     const authShellCount = countMatches(content, /<AuthPageShell\b/g)
     const pageShellAttrs = getTagAttributes(content, 'PageShell')
-    const shellType = authShellCount > 0 ? 'AuthPageShell' : pageShellCount > 0 ? 'PageShell' : 'none'
+    const shellType =
+        authShellCount > 0 ? 'AuthPageShell' : pageShellCount > 0 ? 'PageShell' : 'none'
     const scan = {
         fileExists,
         shellType,
@@ -186,12 +189,20 @@ const unregisteredPageFiles = fs
     .map((dirent) => path.join(dirent.path, dirent.name))
     .filter((file) => /\/src\/(?:pages|packages\/pages)\//.test(file))
     .filter((file) => !/\/(?:component|components)\//.test(file))
-    .map((file) => `/${path.relative(path.join(repoRoot, 'src'), file).replace(/\\/g, '/').replace(/\.vue$/, '')}`)
+    .map(
+        (file) =>
+            `/${path
+                .relative(path.join(repoRoot, 'src'), file)
+                .replace(/\\/g, '/')
+                .replace(/\.vue$/, '')}`
+    )
     .filter((route) => !rows.some((row) => row.route === route))
     .sort()
 
 function mdCell(value) {
-    return String(value || '').replace(/\|/g, '\\|').replace(/\n/g, '<br>')
+    return String(value || '')
+        .replace(/\|/g, '\\|')
+        .replace(/\n/g, '<br>')
 }
 
 const lines = []
@@ -208,17 +219,47 @@ lines.push(`  - Sub-package routes: ${rows.length - (pagesJson.pages || []).leng
 lines.push(`- Custom tabBar routes: ${tabBarRoutes.size}`)
 lines.push(`- Duplicate registered routes: ${duplicateRoutes.length}`)
 lines.push(`- Registered routes missing source files: ${missingFiles.length}`)
-lines.push(`- Unregistered top-level page source files under \`src/pages\` or \`src/packages/pages\`: ${unregisteredPageFiles.length}`)
+lines.push(
+    `- Unregistered top-level page source files under \`src/pages\` or \`src/packages/pages\`: ${unregisteredPageFiles.length}`
+)
 lines.push(`- Auth-gated registered routes (\`meta.auth\`): ${authCount}`)
 lines.push(`- White-listed registered routes (\`meta.white\`): ${whiteCount}`)
-lines.push(`- Navigation style counts: ${Object.entries(navCounts).map(([key, value]) => `${key}=${value}`).join(', ')}`)
-lines.push(`- Shell counts: ${Object.entries(shellCounts).map(([key, value]) => `${key}=${value}`).join(', ')}`)
-lines.push(`- Routes with \`wm-page-content\`: ${rows.filter((row) => row.scan.wmPageContentCount > 0).length}`)
-lines.push(`- Routes with \`PageShell hasTabbar\`: ${rows.filter((row) => row.scan.hasTabbar).length}`)
-lines.push(`- Routes with \`PageShell hasSafeBottom\`: ${rows.filter((row) => row.scan.hasSafeBottom).length}`)
-lines.push(`- Routes with \`ActionArea\`: ${rows.filter((row) => row.scan.actionAreaCount > 0).length}`)
-lines.push(`- Routes with \`ActionArea safeBottom\`: ${rows.filter((row) => row.scan.actionAreaSafeBottomCount > 0).length}`)
-lines.push(`- Routes with legacy \`.safe-bottom\` markers: ${rows.filter((row) => row.scan.legacySafeBottomCount > 0).length}`)
+lines.push(
+    `- Navigation style counts: ${Object.entries(navCounts)
+        .map(([key, value]) => `${key}=${value}`)
+        .join(', ')}`
+)
+lines.push(
+    `- Shell counts: ${Object.entries(shellCounts)
+        .map(([key, value]) => `${key}=${value}`)
+        .join(', ')}`
+)
+lines.push(
+    `- Routes with \`wm-page-content\`: ${
+        rows.filter((row) => row.scan.wmPageContentCount > 0).length
+    }`
+)
+lines.push(
+    `- Routes with \`PageShell hasTabbar\`: ${rows.filter((row) => row.scan.hasTabbar).length}`
+)
+lines.push(
+    `- Routes with \`PageShell hasSafeBottom\`: ${
+        rows.filter((row) => row.scan.hasSafeBottom).length
+    }`
+)
+lines.push(
+    `- Routes with \`ActionArea\`: ${rows.filter((row) => row.scan.actionAreaCount > 0).length}`
+)
+lines.push(
+    `- Routes with \`ActionArea safeBottom\`: ${
+        rows.filter((row) => row.scan.actionAreaSafeBottomCount > 0).length
+    }`
+)
+lines.push(
+    `- Routes with legacy \`.safe-bottom\` markers: ${
+        rows.filter((row) => row.scan.legacySafeBottomCount > 0).length
+    }`
+)
 lines.push('')
 lines.push('### Route class counts')
 lines.push('')
@@ -228,34 +269,63 @@ Object.entries(classCounts)
 lines.push('')
 lines.push('## Audit matrix')
 lines.push('')
-lines.push('| # | Route | Class | Title | Auth/white | Nav | Shell | Scene | Content | Safe/action scan | Notes |')
+lines.push(
+    '| # | Route | Class | Title | Auth/white | Nav | Shell | Scene | Content | Safe/action scan | Notes |'
+)
 lines.push('| -: | --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- |')
 rows.forEach((row) => {
     const meta = row.entry.meta || {}
     const title = (row.entry.style && row.entry.style.navigationBarTitleText) || '—'
     const nav = (row.entry.style && row.entry.style.navigationStyle) || 'default'
-    const authWhite = [meta.auth ? 'auth' : '', meta.white ? 'white' : ''].filter(Boolean).join('+') || '—'
+    const authWhite =
+        [meta.auth ? 'auth' : '', meta.white ? 'white' : ''].filter(Boolean).join('+') || '—'
     const safe = [
         row.scan.hasTabbar ? 'hasTabbar' : '',
         row.scan.hasSafeBottom ? 'hasSafeBottom' : '',
         row.scan.actionAreaCount ? `ActionArea=${row.scan.actionAreaCount}` : '',
-        row.scan.actionAreaSafeBottomCount ? `ActionArea.safe=${row.scan.actionAreaSafeBottomCount}` : '',
+        row.scan.actionAreaSafeBottomCount
+            ? `ActionArea.safe=${row.scan.actionAreaSafeBottomCount}`
+            : '',
         row.scan.legacySafeBottomCount ? `legacySafe=${row.scan.legacySafeBottomCount}` : '',
         row.scan.safeBottomTokenCount ? `safeTokens=${row.scan.safeBottomTokenCount}` : ''
     ]
         .filter(Boolean)
         .join('; ')
     lines.push(
-        `| ${row.index} | \`${mdCell(row.route)}\` | ${mdCell(row.routeClass)} | ${mdCell(title)} | ${mdCell(authWhite)} | ${mdCell(nav)} | ${mdCell(row.scan.shellType)} | ${mdCell(row.scan.scene || '—')} | ${row.scan.wmPageContentCount} | ${mdCell(safe || '—')} | ${mdCell(row.notes || '—')} |`
+        `| ${row.index} | \`${mdCell(row.route)}\` | ${mdCell(row.routeClass)} | ${mdCell(
+            title
+        )} | ${mdCell(authWhite)} | ${mdCell(nav)} | ${mdCell(row.scan.shellType)} | ${mdCell(
+            row.scan.scene || '—'
+        )} | ${row.scan.wmPageContentCount} | ${mdCell(safe || '—')} | ${mdCell(
+            row.notes || '—'
+        )} |`
     )
 })
 lines.push('')
 lines.push('## Completeness checks')
 lines.push('')
-lines.push(`- Every registered page is represented exactly once in the matrix: ${rows.length === new Set(rows.map((row) => row.route)).size ? 'PASS' : 'FAIL'}.`)
-lines.push(`- Registered source-file existence: ${missingFiles.length === 0 ? 'PASS' : `FAIL (${missingFiles.map((row) => row.route).join(', ')})`}.`)
-lines.push(`- Duplicate registered route check: ${duplicateRoutes.length === 0 ? 'PASS' : `FAIL (${duplicateRoutes.join(', ')})`}.`)
-lines.push(`- Unregistered page-source check: ${unregisteredPageFiles.length === 0 ? 'PASS' : `REVIEW (${unregisteredPageFiles.join(', ')})`}.`)
+lines.push(
+    `- Every registered page is represented exactly once in the matrix: ${
+        rows.length === new Set(rows.map((row) => row.route)).size ? 'PASS' : 'FAIL'
+    }.`
+)
+lines.push(
+    `- Registered source-file existence: ${
+        missingFiles.length === 0
+            ? 'PASS'
+            : `FAIL (${missingFiles.map((row) => row.route).join(', ')})`
+    }.`
+)
+lines.push(
+    `- Duplicate registered route check: ${
+        duplicateRoutes.length === 0 ? 'PASS' : `FAIL (${duplicateRoutes.join(', ')})`
+    }.`
+)
+lines.push(
+    `- Unregistered page-source check: ${
+        unregisteredPageFiles.length === 0 ? 'PASS' : `REVIEW (${unregisteredPageFiles.join(', ')})`
+    }.`
+)
 lines.push('')
 
 fs.writeFileSync(outPath, `${lines.join('\n')}\n`)
