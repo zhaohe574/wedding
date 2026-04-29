@@ -546,8 +546,7 @@
 
 .wm-staff-form-page {
     min-height: 100vh;
-    padding: 18rpx var(--wm-space-page-x, 37rpx)
-        calc(180rpx + env(safe-area-inset-bottom));
+    padding: 18rpx var(--wm-space-page-x, 37rpx) calc(180rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
     background: linear-gradient(180deg, var(--wm-color-bg-page, #ffffff) 0%, #f7f7f7 100%);
 }
