@@ -1,339 +1,181 @@
+#!/usr/bin/env node
 const fs = require('fs')
 const path = require('path')
 
-const repoRoot = path.resolve(__dirname, '..')
-const pagesJsonPath = path.join(repoRoot, 'src/pages.json')
-const outPath = path.join(repoRoot, 'docs/page-layout-audit-matrix.md')
+const root = path.resolve(__dirname, '..')
+const srcRoot = path.join(root, 'src')
 
-function stripJsonComments(input) {
+const stripJsonComments = (source) => {
     let output = ''
     let inString = false
-    let quote = ''
     let escaped = false
-    for (let i = 0; i < input.length; i += 1) {
-        const ch = input[i]
-        const next = input[i + 1]
-
+    for (let index = 0; index < source.length; index += 1) {
+        const char = source[index]
+        const next = source[index + 1]
         if (inString) {
-            output += ch
+            output += char
             if (escaped) {
                 escaped = false
-            } else if (ch === '\\') {
+            } else if (char === '\\') {
                 escaped = true
-            } else if (ch === quote) {
+            } else if (char === '"') {
                 inString = false
-                quote = ''
             }
             continue
         }
-
-        if (ch === '"' || ch === "'") {
+        if (char === '"') {
             inString = true
-            quote = ch
-            output += ch
+            output += char
             continue
         }
-
-        if (ch === '/' && next === '/') {
-            while (i < input.length && input[i] !== '\n') i += 1
+        if (char === '/' && next === '/') {
+            while (index < source.length && source[index] !== '\n') {
+                index += 1
+            }
             output += '\n'
             continue
         }
-
-        if (ch === '/' && next === '*') {
-            i += 2
-            while (i < input.length && !(input[i] === '*' && input[i + 1] === '/')) i += 1
-            i += 1
-            continue
-        }
-
-        output += ch
+        output += char
     }
     return output
 }
 
-function readPagesJson() {
-    return JSON.parse(stripJsonComments(fs.readFileSync(pagesJsonPath, 'utf8')))
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
+const pagesConfig = JSON.parse(stripJsonComments(read('src/pages.json')))
+const contractSource = read('src/constants/page-contract.ts')
+
+const extractArray = (name) => {
+    const match = contractSource.match(new RegExp(`export const ${name} = \\[([\\s\\S]*?)\\] as const`))
+    if (!match) return new Set()
+    return new Set([...match[1].matchAll(/'([^']+)'/g)].map((item) => item[1]))
 }
 
-function countMatches(text, regexp) {
-    return (text.match(regexp) || []).length
-}
-
-function routeToSourcePath(route) {
-    return path.join(repoRoot, 'src', `${route.replace(/^\//, '')}.vue`)
-}
-
-function getTagAttributes(content, tagName) {
-    const match = content.match(new RegExp(`<${tagName}\\b([^>]*)>`, 's'))
-    return match ? match[1] : ''
-}
-
-function getScene(content, shellType) {
-    if (shellType === 'AuthPageShell') return 'consumer'
-    const attrs = getTagAttributes(content, 'PageShell')
-    const sceneMatch = attrs.match(/\bscene\s*=\s*["']([^"']+)["']/)
-    return sceneMatch ? sceneMatch[1] : ''
-}
-
-function hasProp(attrs, propName) {
-    return new RegExp(`(?:^|\\s|:)${propName}(?:\\s|=|>|$)`).test(attrs)
-}
-
-function classifyRoute(route, routeEntry, scan, tabBarRoutes) {
-    const meta = routeEntry.meta || {}
-    if (tabBarRoutes.has(route)) return 'tabbar-contract'
-    if (meta.white) return 'white-list-public'
-    if (meta.experience_contract === 'consumer-compatible-touchpoint') {
-        return 'consumer-compatible-touchpoint'
-    }
-    if (meta.experience_contract === 'staff-center-workspace') return 'staff-workspace-entry'
-    if (meta.experience_contract === 'admin-dashboard-workspace') return 'admin-workspace-entry'
-    if (scan.scene === 'staff') return 'staff-workspace-child'
-    if (scan.scene === 'admin') return 'admin-workspace-child'
-    if (meta.auth) return 'auth-consumer-page'
-    return 'public-consumer-page'
-}
-
-function summarizeNotes(route, routeEntry, scan, tabBarRoutes) {
-    const notes = []
-    const meta = routeEntry.meta || {}
-    if (!scan.fileExists) notes.push('missing source file')
-    if (scan.shellType === 'none') notes.push('no PageShell/AuthPageShell')
-    if (scan.shellType === 'PageShell' && scan.wmPageContentCount === 0)
-        notes.push('no wm-page-content')
-    if (tabBarRoutes.has(route) && !scan.hasTabbar)
-        notes.push('tabBar route without hasTabbar prop')
-    if (!tabBarRoutes.has(route) && scan.hasTabbar) notes.push('hasTabbar on non-tabBar route')
-    if (meta.scene_lock && scan.scene && meta.scene_lock !== scan.scene) {
-        notes.push(`scene_lock(${meta.scene_lock}) differs from shell scene(${scan.scene})`)
-    }
-    if (scan.legacySafeBottomCount > 0) notes.push('legacy .safe-bottom marker')
-    return notes.join('; ')
-}
-
-const pagesJson = readPagesJson()
-const routes = []
-;(pagesJson.pages || []).forEach((page, index) => {
-    routes.push({ index: index + 1, root: 'main', route: `/${page.path}`, entry: page })
-})
-;(pagesJson.subPackages || []).forEach((subPackage) => {
-    ;(subPackage.pages || []).forEach((page, index) => {
-        routes.push({
-            index: routes.length + 1,
-            root: subPackage.root,
-            route: `/${subPackage.root}/${page.path}`,
-            entry: page,
-            subIndex: index + 1
-        })
-    })
-})
-
-const tabBarRoutes = new Set(
-    ((pagesJson.tabBar && pagesJson.tabBar.list) || []).map((item) => `/${item.pagePath}`)
+const tabbarPaths = extractArray('TABBAR_PAGE_PATHS')
+const consumerCompatPaths = extractArray('CONSUMER_COMPAT_TOUCHPOINT_PATHS')
+const explicitContracts = new Set(
+    [...contractSource.matchAll(/routePath:\s*'([^']+)'/g)].map((item) => item[1])
 )
 
-const rows = routes.map((routeInfo) => {
-    const sourcePath = routeToSourcePath(routeInfo.route)
-    const fileExists = fs.existsSync(sourcePath)
-    const content = fileExists ? fs.readFileSync(sourcePath, 'utf8') : ''
-    const pageShellCount = countMatches(content, /<PageShell\b/g)
-    const authShellCount = countMatches(content, /<AuthPageShell\b/g)
-    const pageShellAttrs = getTagAttributes(content, 'PageShell')
-    const shellType =
-        authShellCount > 0 ? 'AuthPageShell' : pageShellCount > 0 ? 'PageShell' : 'none'
-    const scan = {
-        fileExists,
-        shellType,
-        pageShellCount,
-        authShellCount,
-        scene: getScene(content, shellType),
-        hasTabbar: hasProp(pageShellAttrs, 'hasTabbar'),
-        hasSafeBottom: hasProp(pageShellAttrs, 'hasSafeBottom'),
-        wmPageContentCount: countMatches(content, /\bwm-page-content\b/g),
-        actionAreaCount: countMatches(content, /<ActionArea\b/g),
-        actionAreaSafeBottomCount: countMatches(content, /<ActionArea\b[^>]*\bsafeBottom\b/gs),
-        legacySafeBottomCount: countMatches(content, /\bsafe-bottom\b/g),
-        safeBottomTokenCount: countMatches(content, /--wm-safe-bottom-(?:action|tabbar)/g)
+const normalizeRoute = (route) => `/${String(route || '').replace(/^\/+/, '')}`
+const routeFileExists = (routePath) => fs.existsSync(path.join(srcRoot, `${routePath.replace(/^\//, '')}.vue`))
+
+const pages = []
+for (const page of pagesConfig.pages || []) {
+    pages.push({ root: '', ...page })
+}
+for (const subPackage of pagesConfig.subPackages || pagesConfig.subpackages || []) {
+    for (const page of subPackage.pages || []) {
+        pages.push({ root: subPackage.root || '', ...page })
     }
-    const routeClass = classifyRoute(routeInfo.route, routeInfo.entry, scan, tabBarRoutes)
-    const notes = summarizeNotes(routeInfo.route, routeInfo.entry, scan, tabBarRoutes)
-    return { ...routeInfo, sourcePath, scan, routeClass, notes }
+}
+
+const classify = (routePath, meta = {}) => {
+    if (tabbarPaths.has(routePath)) return 'tabbar-contract'
+    if (consumerCompatPaths.has(routePath)) return 'consumer-compatible-touchpoint'
+    if (explicitContracts.has(routePath)) return meta.scene_lock ? `${meta.scene_lock}-workspace-contract` : 'explicit-contract'
+    return 'fallback-consumer-page'
+}
+
+const rows = pages.map((page) => {
+    const routePath = normalizeRoute(path.posix.join(page.root || '', page.path))
+    const meta = page.meta || {}
+    const title = page.style?.navigationBarTitleText || ''
+    const navStyle = page.style?.navigationStyle || 'global/default'
+    return {
+        routePath,
+        title,
+        file: routeFileExists(routePath) ? 'yes' : 'NO',
+        auth: meta.auth ? 'auth' : meta.white ? 'white' : 'public',
+        navigation: navStyle,
+        classification: classify(routePath, meta),
+        sceneLock: meta.scene_lock || '',
+        experienceContract: meta.experience_contract || ''
+    }
 })
 
-const classCounts = rows.reduce((acc, row) => {
-    acc[row.routeClass] = (acc[row.routeClass] || 0) + 1
-    return acc
-}, {})
+const styleFiles = [
+    'src/App.vue',
+    'src/styles/index.scss',
+    'src/styles/tokens.scss',
+    'src/styles/public.scss',
+    'src/styles/uview-compat.scss',
+    'src/styles/animations.scss',
+    'src/styles/utilities.scss',
+    'src/uni.scss'
+]
 
-const shellCounts = rows.reduce((acc, row) => {
-    acc[row.scan.shellType] = (acc[row.scan.shellType] || 0) + 1
-    return acc
-}, {})
-
-const navCounts = rows.reduce((acc, row) => {
-    const nav = (row.entry.style && row.entry.style.navigationStyle) || 'default'
-    acc[nav] = (acc[nav] || 0) + 1
-    return acc
-}, {})
-
-const authCount = rows.filter((row) => row.entry.meta && row.entry.meta.auth).length
-const whiteCount = rows.filter((row) => row.entry.meta && row.entry.meta.white).length
-const duplicateRoutes = rows
-    .map((row) => row.route)
-    .filter((route, index, all) => all.indexOf(route) !== index)
-const missingFiles = rows.filter((row) => !row.scan.fileExists)
-const unregisteredPageFiles = fs
-    .readdirSync(path.join(repoRoot, 'src'), { recursive: true, withFileTypes: true })
-    .filter((dirent) => dirent.isFile() && dirent.name.endsWith('.vue'))
-    .map((dirent) => path.join(dirent.path, dirent.name))
-    .filter((file) => /\/src\/(?:pages|packages\/pages)\//.test(file))
-    .filter((file) => !/\/(?:component|components)\//.test(file))
-    .map(
-        (file) =>
-            `/${path
-                .relative(path.join(repoRoot, 'src'), file)
-                .replace(/\\/g, '/')
-                .replace(/\.vue$/, '')}`
-    )
-    .filter((route) => !rows.some((row) => row.route === route))
-    .sort()
-
-function mdCell(value) {
-    return String(value || '')
-        .replace(/\|/g, '\\|')
-        .replace(/\n/g, '<br>')
+const importCounts = new Map()
+for (const relativePath of styleFiles) {
+    const absolutePath = path.join(root, relativePath)
+    if (!fs.existsSync(absolutePath)) continue
+    const content = fs.readFileSync(absolutePath, 'utf8')
+    for (const match of content.matchAll(/@import\s+['"]([^'"]+)['"]/g)) {
+        const key = match[1]
+        importCounts.set(key, (importCounts.get(key) || 0) + 1)
+    }
 }
+
+const duplicateImports = [...importCounts.entries()].filter(([, count]) => count > 1)
+const missingFiles = rows.filter((row) => row.file !== 'yes')
+const fallbackRows = rows.filter((row) => row.classification === 'fallback-consumer-page')
+const contractRows = rows.filter((row) => row.classification !== 'fallback-consumer-page')
 
 const lines = []
-lines.push('# Uniapp page layout audit matrix')
+lines.push('# Uniapp Page Layout Audit Matrix')
 lines.push('')
-lines.push('Generated by `node scripts/audit-page-layout.js` from the current working tree.')
+lines.push('Generated by `node scripts/audit-page-layout.js`.')
 lines.push('')
-lines.push('## Exact route inventory metrics')
+lines.push('## Summary')
 lines.push('')
-lines.push(`- Registered routes in \`src/pages.json\`: ${rows.length}`)
-lines.push(`  - Main-package routes: ${(pagesJson.pages || []).length}`)
-lines.push(`  - Sub-package roots: ${(pagesJson.subPackages || []).length}`)
-lines.push(`  - Sub-package routes: ${rows.length - (pagesJson.pages || []).length}`)
-lines.push(`- Custom tabBar routes: ${tabBarRoutes.size}`)
-lines.push(`- Duplicate registered routes: ${duplicateRoutes.length}`)
-lines.push(`- Registered routes missing source files: ${missingFiles.length}`)
-lines.push(
-    `- Unregistered top-level page source files under \`src/pages\` or \`src/packages/pages\`: ${unregisteredPageFiles.length}`
-)
-lines.push(`- Auth-gated registered routes (\`meta.auth\`): ${authCount}`)
-lines.push(`- White-listed registered routes (\`meta.white\`): ${whiteCount}`)
-lines.push(
-    `- Navigation style counts: ${Object.entries(navCounts)
-        .map(([key, value]) => `${key}=${value}`)
-        .join(', ')}`
-)
-lines.push(
-    `- Shell counts: ${Object.entries(shellCounts)
-        .map(([key, value]) => `${key}=${value}`)
-        .join(', ')}`
-)
-lines.push(
-    `- Routes with \`wm-page-content\`: ${
-        rows.filter((row) => row.scan.wmPageContentCount > 0).length
-    }`
-)
-lines.push(
-    `- Routes with \`PageShell hasTabbar\`: ${rows.filter((row) => row.scan.hasTabbar).length}`
-)
-lines.push(
-    `- Routes with \`PageShell hasSafeBottom\`: ${
-        rows.filter((row) => row.scan.hasSafeBottom).length
-    }`
-)
-lines.push(
-    `- Routes with \`ActionArea\`: ${rows.filter((row) => row.scan.actionAreaCount > 0).length}`
-)
-lines.push(
-    `- Routes with \`ActionArea safeBottom\`: ${
-        rows.filter((row) => row.scan.actionAreaSafeBottomCount > 0).length
-    }`
-)
-lines.push(
-    `- Routes with legacy \`.safe-bottom\` markers: ${
-        rows.filter((row) => row.scan.legacySafeBottomCount > 0).length
-    }`
-)
+lines.push(`- Total registered routes: ${rows.length}`)
+lines.push(`- Route files missing: ${missingFiles.length}`)
+lines.push(`- Explicit/tabbar/compatible contract routes: ${contractRows.length}`)
+lines.push(`- Fallback consumer routes: ${fallbackRows.length}`)
+lines.push(`- Duplicate style-chain imports across checked style entrypoints: ${duplicateImports.length}`)
 lines.push('')
-lines.push('### Route class counts')
+lines.push('## Route classification')
 lines.push('')
-Object.entries(classCounts)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .forEach(([key, value]) => lines.push(`- ${key}: ${value}`))
-lines.push('')
-lines.push('## Audit matrix')
-lines.push('')
-lines.push(
-    '| # | Route | Class | Title | Auth/white | Nav | Shell | Scene | Content | Safe/action scan | Notes |'
-)
-lines.push('| -: | --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- |')
-rows.forEach((row) => {
-    const meta = row.entry.meta || {}
-    const title = (row.entry.style && row.entry.style.navigationBarTitleText) || '—'
-    const nav = (row.entry.style && row.entry.style.navigationStyle) || 'default'
-    const authWhite =
-        [meta.auth ? 'auth' : '', meta.white ? 'white' : ''].filter(Boolean).join('+') || '—'
-    const safe = [
-        row.scan.hasTabbar ? 'hasTabbar' : '',
-        row.scan.hasSafeBottom ? 'hasSafeBottom' : '',
-        row.scan.actionAreaCount ? `ActionArea=${row.scan.actionAreaCount}` : '',
-        row.scan.actionAreaSafeBottomCount
-            ? `ActionArea.safe=${row.scan.actionAreaSafeBottomCount}`
-            : '',
-        row.scan.legacySafeBottomCount ? `legacySafe=${row.scan.legacySafeBottomCount}` : '',
-        row.scan.safeBottomTokenCount ? `safeTokens=${row.scan.safeBottomTokenCount}` : ''
-    ]
-        .filter(Boolean)
-        .join('; ')
+lines.push('| # | Route | Title | File | Access | Navigation | Classification | Scene lock | Experience contract |')
+lines.push('| -: | --- | --- | --- | --- | --- | --- | --- | --- |')
+rows.forEach((row, index) => {
     lines.push(
-        `| ${row.index} | \`${mdCell(row.route)}\` | ${mdCell(row.routeClass)} | ${mdCell(
-            title
-        )} | ${mdCell(authWhite)} | ${mdCell(nav)} | ${mdCell(row.scan.shellType)} | ${mdCell(
-            row.scan.scene || '—'
-        )} | ${row.scan.wmPageContentCount} | ${mdCell(safe || '—')} | ${mdCell(
-            row.notes || '—'
-        )} |`
+        `| ${index + 1} | \`${row.routePath}\` | ${row.title || '—'} | ${row.file} | ${row.auth} | ${row.navigation} | ${row.classification} | ${row.sceneLock || '—'} | ${row.experienceContract || '—'} |`
     )
 })
 lines.push('')
-lines.push('## Completeness checks')
+lines.push('## Style-chain duplicate/conflict checks')
 lines.push('')
-lines.push(
-    `- Every registered page is represented exactly once in the matrix: ${
-        rows.length === new Set(rows.map((row) => row.route)).size ? 'PASS' : 'FAIL'
-    }.`
-)
-lines.push(
-    `- Registered source-file existence: ${
-        missingFiles.length === 0
-            ? 'PASS'
-            : `FAIL (${missingFiles.map((row) => row.route).join(', ')})`
-    }.`
-)
-lines.push(
-    `- Duplicate registered route check: ${
-        duplicateRoutes.length === 0 ? 'PASS' : `FAIL (${duplicateRoutes.join(', ')})`
-    }.`
-)
-lines.push(
-    `- Unregistered page-source check: ${
-        unregisteredPageFiles.length === 0 ? 'PASS' : `REVIEW (${unregisteredPageFiles.join(', ')})`
-    }.`
-)
+if (duplicateImports.length) {
+    lines.push('| Import | Count |')
+    lines.push('| --- | ---: |')
+    duplicateImports.forEach(([importPath, count]) => lines.push(`| \`${importPath}\` | ${count} |`))
+} else {
+    lines.push('- No duplicate `@import` targets found across checked style entrypoints.')
+}
+lines.push(`- Tuniao base CSS import count: ${importCounts.get('@tuniao/tn-style/dist/uniapp/index.css') || 0}`)
+lines.push(`- Tuniao icon CSS import count: ${importCounts.get('@tuniao/tn-icon/dist/index.css') || 0}`)
+lines.push('- Checked files:')
+styleFiles.forEach((file) => lines.push(`  - \`${file}\``))
 lines.push('')
+lines.push('## Visual spot-check checklist')
+lines.push('')
+lines.push('- [ ] `/pages/index/index` home tab: page shell, tabbar selection, and custom navigation spacing remain usable.')
+lines.push('- [ ] `/pages/dynamic/dynamic` dynamic tab: scroll/list state and custom navigation spacing remain usable.')
+lines.push('- [ ] `/pages/user/user` user tab: consumer hub, role entries, and switchTab-only behavior remain usable.')
+lines.push('- [ ] `/packages/pages/staff_center/staff_center` staff workspace: role-gated entry and staff scene header remain usable.')
+lines.push('- [ ] `/packages/pages/admin_dashboard/admin_dashboard` admin dashboard: role-gated entry and admin scene header remain usable.')
+lines.push('')
+lines.push('## Exceptions and follow-up risks')
+lines.push('')
+if (missingFiles.length) {
+    missingFiles.forEach((row) => lines.push(`- Missing route file for \`${row.routePath}\`.`))
+} else {
+    lines.push('- No missing registered route files detected.')
+}
+lines.push('- Fallback consumer routes are expected for ordinary public/auth pages not listed in `PAGE_SCOPE_MATRIX`. Route-contract defects, if suspected, should be handled as follow-up work because the contract files were read-only for this lane.')
 
-fs.writeFileSync(outPath, `${lines.join('\n')}\n`)
-console.log(`Wrote ${path.relative(process.cwd(), outPath)}`)
-console.log(`registered_routes=${rows.length}`)
-console.log(`main_routes=${(pagesJson.pages || []).length}`)
-console.log(`subpackage_routes=${rows.length - (pagesJson.pages || []).length}`)
-console.log(`duplicate_routes=${duplicateRoutes.length}`)
-console.log(`missing_files=${missingFiles.length}`)
-console.log(`unregistered_page_files=${unregisteredPageFiles.length}`)
-console.log(`route_classes=${JSON.stringify(classCounts)}`)
+fs.writeFileSync(path.join(root, 'docs/page-layout-audit-matrix.md'), `${lines.join('\n')}\n`)
+
+console.log(`Wrote docs/page-layout-audit-matrix.md with ${rows.length} routes`)
+console.log(`Missing route files: ${missingFiles.length}`)
+console.log(`Duplicate style-chain imports: ${duplicateImports.length}`)
