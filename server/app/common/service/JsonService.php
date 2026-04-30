@@ -27,6 +27,12 @@ use think\exception\HttpResponseException;
 
 class JsonService
 {
+    private const JSON_HEADER = [
+        'Content-Type' => 'application/json; charset=utf-8',
+    ];
+    private const JSON_OPTIONS = [
+        'json_encode_param' => JSON_UNESCAPED_SLASHES,
+    ];
 
     /**
      * @notes 接口操作成功，返回信息
@@ -87,7 +93,7 @@ class JsonService
     private static function result(int $code, int $show, string $msg = 'OK', array $data = [], int $httpStatus = 200): Json
     {
         $result = compact('code', 'show', 'msg', 'data');
-        return json($result, $httpStatus);
+        return json($result, $httpStatus, self::JSON_HEADER, self::JSON_OPTIONS);
     }
 
 
@@ -104,7 +110,9 @@ class JsonService
     public static function throw(string $msg = 'fail', array $data = [], int $code = 0, int $show = 1): Json
     {
         $data = compact('code', 'show', 'msg', 'data');
-        $response = Response::create($data, 'json', 200);
+        $response = Response::create($data, 'json', 200)
+            ->header(self::JSON_HEADER)
+            ->options(self::JSON_OPTIONS);
         throw new HttpResponseException($response);
     }
 

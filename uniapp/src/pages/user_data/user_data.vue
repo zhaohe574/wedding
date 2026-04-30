@@ -815,10 +815,19 @@ onUnload(() => {
 }
 
 .code-btn {
-    padding: 10rpx 20rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 132rpx;
+    height: 56rpx;
+    padding: 0 16rpx;
+    box-sizing: border-box;
     border-radius: 18rpx;
     font-size: 26rpx;
     font-weight: 500;
+    line-height: 1;
+    text-align: center;
     white-space: nowrap;
     color: #0b0b0b;
 }

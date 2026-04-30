@@ -1,298 +1,656 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" hasTabbar>
-        <BaseNavbar title="婚礼资讯" />
-        <view class="news-page cinema-page">
-            <view class="news-page__hero">
-                <view class="news-page__hero-badge">资讯精选</view>
-                <text class="news-page__hero-title">灵感、案例与攻略</text>
-                <text class="news-page__hero-desc"> 精选婚礼内容。 </text>
-                <view class="news-page__hero-stats glass-card">
-                    <view class="news-page__hero-stat">
-                        <text class="news-page__hero-stat-value">{{ tabList.length || 1 }}</text>
-                        <text class="news-page__hero-stat-label">栏目分类</text>
-                    </view>
-                    <view class="news-page__hero-divider" />
-                    <view class="news-page__hero-stat">
-                        <text class="news-page__hero-stat-value">{{ activeTabName }}</text>
-                        <text class="news-page__hero-stat-label">当前频道</text>
-                    </view>
-                </view>
-            </view>
+        <view class="news-page">
+            <MpPageHeader title="婚礼资讯" surface="glass" title-align="left" title-size="large" />
 
-            <view class="news-page__surface cinema-surface wm-page-content">
-                <navigator
-                    class="news-page__search glass-card wm-panel-card"
-                    url="/pages/search/search"
-                >
-                    <view class="news-page__search-head">
-                        <view>
-                            <text class="news-page__search-label">灵感检索</text>
-                            <text class="news-page__search-title">搜索关键词</text>
-                        </view>
-                        <text class="news-page__search-side">搜索</text>
-                    </view>
-                    <tn-search-box placeholder="请输入关键词搜索" :disabled="true"></tn-search-box>
-                </navigator>
-
-                <view class="news-page__tabs cinema-panel wm-panel-card">
-                    <view class="news-page__tabs-head">
-                        <view>
-                            <text class="news-page__section-title">精选栏目</text>
-                            <text class="news-page__section-desc"> 按分类查看 </text>
-                        </view>
-                    </view>
-                    <tabs
-                        :current="current"
-                        @change="handleChange"
-                        height="82"
-                        bar-width="60"
-                        :barStyle="{ bottom: '0' }"
+            <view class="news-page__body">
+                <view class="news-page__filters-shell">
+                    <scroll-view
+                        :scroll-x="true"
+                        class="news-page__filter-scroll"
+                        :show-scrollbar="false"
                     >
-                        <tab v-for="(item, i) in tabList" :key="i" :name="item.name">
-                            <view class="news-list">
-                                <news-list :cid="item.id" :i="i" :index="current"></news-list>
+                        <view class="news-page__filter-track">
+                            <view
+                                v-for="(tab, index) in categoryTabs"
+                                :key="`${tab.id}-${tab.name}`"
+                                class="news-page__type-chip"
+                                :class="{ 'is-active': currentCategoryIndex === index }"
+                                @click="currentCategoryIndex = index"
+                            >
+                                {{ tab.name }}
                             </view>
-                        </tab>
-                    </tabs>
+                        </view>
+                    </scroll-view>
+
+                    <view class="news-page__filter-actions">
+                        <view
+                            v-if="showResetAction"
+                            class="news-page__reset-chip"
+                            @click="handleResetFilters"
+                        >
+                            重置
+                        </view>
+                        <view class="news-page__search-chip" @click="goSearch">
+                            <tn-icon name="search" size="22" color="#4A4A4A" />
+                        </view>
+                        <view
+                            class="news-page__sort-chip"
+                            :class="{ 'is-active': sortIsActive }"
+                            @click="showSortPicker = true"
+                        >
+                            <tn-icon
+                                name="sort"
+                                size="20"
+                                :color="sortIsActive ? '#FFFFFF' : '#4A4A4A'"
+                            />
+                            <text>{{ currentSortLabel }}</text>
+                            <tn-icon
+                                name="arrow-down"
+                                size="16"
+                                :color="sortIsActive ? '#FFFFFF' : '#4A4A4A'"
+                            />
+                        </view>
+                    </view>
+                </view>
+
+                <view class="news-page__content">
+                    <view v-if="loading && articles.length === 0" class="news-page__loading">
+                        <tn-loading size="52" mode="flower" color="#0B0B0B" />
+                        <text class="news-page__loading-text">加载中...</text>
+                    </view>
+
+                    <view v-else-if="articles.length === 0" class="news-page__empty">
+                        <view class="news-page__empty-icon">
+                            <tn-icon name="inbox" size="96" color="#C8A45D" />
+                        </view>
+                        <text class="news-page__empty-title">暂无资讯</text>
+                        <text class="news-page__empty-desc">换个分类或排序试试</text>
+                        <view
+                            v-if="showResetAction"
+                            class="news-page__empty-action"
+                            @click="handleResetFilters"
+                        >
+                            重置筛选
+                        </view>
+                    </view>
+
+                    <view v-else class="news-page__list">
+                        <NewsCard
+                            v-for="item in articles"
+                            :key="item.id"
+                            :item="item"
+                            :news-id="Number(item.id || 0)"
+                            variant="editorial"
+                        />
+
+                        <view class="news-page__load-more">
+                            <text v-if="loading" class="news-page__load-more-text">加载中...</text>
+                            <text
+                                v-else-if="hasMore"
+                                class="news-page__load-more-text news-page__load-more-text--action"
+                                @click="loadMore"
+                            >
+                                加载更多
+                            </text>
+                            <text v-else class="news-page__load-more-text">没有更多了</text>
+                        </view>
+                    </view>
                 </view>
             </view>
+
+            <BaseOverlayMask
+                :show="showSortPicker"
+                :z-index="sortPopupMaskZIndex"
+                :background="$theme.maskColor || 'rgba(11, 11, 11, 0.58)'"
+                @close="showSortPicker = false"
+            />
+
+            <TnPopup
+                v-model="showSortPicker"
+                open-direction="bottom"
+                :radius="24"
+                :overlay="false"
+                :safe-area-inset-bottom="true"
+                :z-index="sortPopupZIndex"
+            >
+                <view class="news-page__picker">
+                    <view class="news-page__picker-head">
+                        <text class="news-page__picker-title">排序方式</text>
+                        <view class="news-page__picker-close" @click="showSortPicker = false">
+                            <tn-icon name="close" size="30" color="#111111" />
+                        </view>
+                    </view>
+
+                    <view class="news-page__picker-grid">
+                        <view
+                            v-for="item in sortOptions"
+                            :key="item.value"
+                            class="news-page__picker-item"
+                            :class="{ 'is-active': currentSort === item.value }"
+                            @click="selectSort(item.value)"
+                        >
+                            <view class="news-page__picker-item-mark"></view>
+                            <text>{{ item.label }}</text>
+                        </view>
+                    </view>
+                </view>
+            </TnPopup>
+
+            <tabbar :badge-refresh-key="tabbarRefreshKey" />
         </view>
-        <tabbar :badge-refresh-key="tabbarRefreshKey" />
     </PageShell>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
-import NewsList from './component/news-list.vue'
-import { getArticleCate } from '@/api/news'
-import { useThemeStore } from '@/stores/theme'
+import { computed, ref, watch } from 'vue'
+import { onLoad, onReachBottom, onShareAppMessage, onShow } from '@dcloudio/uni-app'
+import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
+import NewsCard from '@/components/news-card/news-card.vue'
+import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import { getArticleCate, getArticleList } from '@/api/news'
+import { useThemeStore } from '@/stores/theme'
 
-const tabList = ref<any>([])
-const current = ref<number>(0)
+interface ArticleCateItem {
+    id: number | string
+    name: string
+}
+
+interface ArticleItem {
+    id: number | string
+    title?: string
+    desc?: string
+    image?: string
+    click?: number | string
+    create_time?: string
+    collect?: boolean
+}
+
+type ArticleSort = 'default' | 'new' | 'hot'
+
+const $theme = useThemeStore()
+const sortPopupMaskZIndex = 20108
+const sortPopupZIndex = 20110
+const pageSize = 10
+const defaultCategory: ArticleCateItem = { name: '全部', id: '' }
+
+const categoryTabs = ref<ArticleCateItem[]>([defaultCategory])
+const currentCategoryIndex = ref(0)
+const currentSort = ref<ArticleSort>('default')
+const showSortPicker = ref(false)
+const articles = ref<ArticleItem[]>([])
+const loading = ref(false)
+const page = ref(1)
+const hasMore = ref(true)
+const hasInitialized = ref(false)
 const tabbarRefreshKey = ref(0)
-useThemeStore()
 
-const activeTabName = computed(() => tabList.value[current.value]?.name || '全部')
+const sortOptions: { label: string; value: ArticleSort }[] = [
+    { label: '综合推荐', value: 'default' },
+    { label: '最新发布', value: 'new' },
+    { label: '热门浏览', value: 'hot' }
+]
 
-const handleChange = (index: number) => {
-    current.value = Number(index)
+const currentCategory = computed(
+    () => categoryTabs.value[currentCategoryIndex.value] || defaultCategory
+)
+const sortIsActive = computed(() => currentSort.value !== 'default')
+const showResetAction = computed(() => Boolean(currentCategory.value.id) || sortIsActive.value)
+const currentSortOption = computed(
+    () => sortOptions.find((item) => item.value === currentSort.value) || sortOptions[0]
+)
+const currentSortLabel = computed(() => currentSortOption.value.label)
+
+const buildQueryParams = () => {
+    const params: Record<string, any> = {
+        page_no: page.value,
+        page_size: pageSize,
+        sort: currentSort.value
+    }
+
+    if (currentCategory.value.id !== '') {
+        params.cid = currentCategory.value.id
+    }
+
+    return params
 }
 
-const getData = async () => {
-    const data = await getArticleCate()
-    tabList.value = [{ name: '全部', id: '' }].concat(data)
+const loadCategories = async () => {
+    try {
+        const data = await getArticleCate()
+        const list = Array.isArray(data) ? data : []
+        categoryTabs.value = [defaultCategory].concat(list)
+
+        if (currentCategoryIndex.value >= categoryTabs.value.length) {
+            currentCategoryIndex.value = 0
+        }
+    } catch (error) {
+        console.error(error)
+        categoryTabs.value = [defaultCategory]
+    }
 }
+
+const fetchArticles = async (refresh = false) => {
+    if (loading.value) {
+        return
+    }
+
+    loading.value = true
+    try {
+        if (refresh) {
+            page.value = 1
+            articles.value = []
+        }
+
+        const { lists = [] } = await getArticleList(buildQueryParams())
+        const list = Array.isArray(lists) ? lists : []
+        hasInitialized.value = true
+
+        if (refresh) {
+            articles.value = list
+        } else {
+            articles.value.push(...list)
+        }
+
+        hasMore.value = list.length === pageSize
+    } catch (error) {
+        console.error(error)
+        if (refresh) {
+            articles.value = []
+        }
+        hasMore.value = false
+        hasInitialized.value = true
+    } finally {
+        loading.value = false
+    }
+}
+
+const loadMore = () => {
+    if (!hasMore.value || loading.value) {
+        return
+    }
+
+    page.value += 1
+    fetchArticles()
+}
+
+const handleResetFilters = () => {
+    currentSort.value = 'default'
+    showSortPicker.value = false
+
+    if (currentCategoryIndex.value !== 0) {
+        currentCategoryIndex.value = 0
+        return
+    }
+
+    fetchArticles(true)
+}
+
+const selectSort = (sort: ArticleSort) => {
+    currentSort.value = sort
+    showSortPicker.value = false
+    fetchArticles(true)
+}
+
+const goSearch = () => {
+    uni.navigateTo({ url: '/pages/search/search?type=article' })
+}
+
+watch(currentCategoryIndex, () => {
+    showSortPicker.value = false
+    fetchArticles(true)
+})
 
 onLoad(() => {
-    getData()
+    $theme.setScene('consumer')
+    loadCategories()
 })
 
 onShow(() => {
+    $theme.setScene('consumer')
     tabbarRefreshKey.value += 1
+    showSortPicker.value = false
+
+    if (!hasInitialized.value) {
+        fetchArticles(true)
+    }
 })
+
+onReachBottom(() => {
+    loadMore()
+})
+
+onShareAppMessage(() => ({
+    title: '婚礼资讯',
+    path: '/pages/news/news'
+}))
 </script>
 
 <style lang="scss" scoped>
+@import '../../styles/dynamic.scss';
+
 .news-page {
-    &__hero {
-        position: relative;
-        padding: 24rpx 24rpx 196rpx;
-        background: radial-gradient(circle at top right, rgba(11, 11, 11, 0.12) 0, transparent 34%),
-            linear-gradient(180deg, #ffffff 0%, #ffffff 72%, #f8f7f2 100%);
-        overflow: hidden;
+    --wm-space-page-x: 32rpx;
+    --news-page-body-bottom: 32rpx;
+    --news-page-panel-radius: 16rpx;
+    --news-page-panel-border-width: 1rpx;
+    --news-page-shell-bg: #ffffff;
+    --news-page-shell-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.04);
+
+    position: relative;
+    min-height: 100%;
+    background: #ffffff;
+
+    &::before {
+        display: none;
     }
 
-    &__hero::after {
-        content: '';
-        position: absolute;
-        right: -40rpx;
-        top: 44rpx;
-        width: 260rpx;
-        height: 260rpx;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(11, 11, 11, 0.12) 0, transparent 72%);
-        pointer-events: none;
-    }
-
-    &__hero-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 10rpx 18rpx;
-        border-radius: 999rpx;
-        border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
-        background: rgba(255, 255, 255, 0.74);
-        font-size: 22rpx;
-        font-weight: 600;
-        letter-spacing: 0;
-        text-transform: uppercase;
-        color: var(--wm-color-primary, #0b0b0b);
-    }
-
-    &__hero-title {
-        display: block;
-        margin-top: 26rpx;
-        font-size: 50rpx;
-        font-weight: 700;
-        line-height: 1.2;
-        letter-spacing: 0;
-        color: var(--wm-text-primary, #111111);
-    }
-
-    &__hero-desc {
-        display: block;
-        margin-top: 20rpx;
-        max-width: 620rpx;
-        font-size: 26rpx;
-        line-height: 1.7;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-
-    &__hero-stats {
+    &__body {
         position: relative;
         z-index: 1;
         display: flex;
-        align-items: center;
-        gap: 20rpx;
-        margin-top: 32rpx;
-        padding: 22rpx 24rpx;
-        background: rgba(255, 255, 255, 0.76);
+        flex-direction: column;
+        gap: 24rpx;
+        padding: 24rpx var(--wm-space-page-x, 32rpx) var(--news-page-body-bottom, 32rpx);
     }
 
-    &__hero-stat {
+    &__filters-shell,
+    &__loading,
+    &__empty {
+        position: relative;
+        overflow: hidden;
+        border-radius: var(--news-page-panel-radius, 16rpx);
+        border: var(--news-page-panel-border-width, 1rpx) solid var(--wm-color-border, #e5e5e5);
+        background: var(--news-page-shell-bg, #ffffff);
+        box-shadow: var(--news-page-shell-shadow, 0 8rpx 18rpx rgba(17, 17, 17, 0.04));
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    &__filters-shell {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 12rpx;
+        padding: 12rpx 12rpx 12rpx 18rpx;
+        border-radius: 999rpx;
+        background: #ffffff;
+        box-shadow: none;
+    }
+
+    &__filter-scroll {
         flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    &__filter-track {
+        display: inline-flex;
+        align-items: center;
+        gap: 8rpx;
+        width: max-content;
         min-width: 0;
     }
 
-    &__hero-stat-value {
-        display: block;
-        font-size: 32rpx;
-        font-weight: 700;
-        color: var(--wm-text-primary, #111111);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    &__filter-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 12rpx;
+        flex-shrink: 0;
     }
 
-    &__hero-stat-label {
-        display: block;
-        margin-top: 8rpx;
+    &__reset-chip,
+    &__type-chip,
+    &__sort-chip,
+    &__search-chip {
+        @include dynamic-pill(#ffffff, var(--wm-text-secondary, #4a4a4a));
+        min-height: 52rpx;
+        border-color: transparent;
+        background: #ffffff;
+        box-shadow: none;
+        transition: all 0.2s ease;
+    }
+
+    &__reset-chip {
+        padding: 0 16rpx;
+        color: var(--wm-color-secondary, #c8a45d);
         font-size: 22rpx;
-        color: var(--wm-text-secondary, #5f5a50);
+        font-weight: 600;
     }
 
-    &__hero-divider {
-        width: 1rpx;
-        height: 64rpx;
-        background: var(--wm-color-border, #e7e2d6);
+    &__type-chip {
+        min-width: auto;
+        padding: 0 22rpx;
+        font-size: 23rpx;
+        font-weight: 600;
+        flex-shrink: 0;
+
+        &.is-active {
+            color: #ffffff;
+            border-color: $dynamic-accent;
+            background: $dynamic-accent;
+            box-shadow: none;
+        }
     }
 
-    &__surface {
+    &__search-chip {
+        width: 52rpx;
+        min-width: 52rpx;
+        padding: 0;
+        border-color: var(--wm-color-border, #e5e5e5);
+        background: var(--wm-color-bg-soft, #f7f7f7);
+    }
+
+    &__sort-chip {
+        gap: 8rpx;
+        padding: 0 18rpx;
+        flex-shrink: 0;
+        border-color: var(--wm-color-border, #e5e5e5);
+        background: var(--wm-color-bg-soft, #f7f7f7);
+
+        text {
+            font-size: 23rpx;
+            font-weight: 600;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        &.is-active {
+            color: #ffffff;
+            border-color: $dynamic-accent;
+            background: $dynamic-accent;
+            box-shadow: none;
+        }
+    }
+
+    &__content {
         position: relative;
-        margin-top: -148rpx;
-        border-radius: 67rpx 67rpx 0 0;
-        padding: 0 37rpx 37rpx;
-        box-shadow: 0 -20rpx 40rpx rgba(17, 17, 17, 0.14);
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        overflow: visible;
     }
 
-    &__search {
-        padding: 30rpx;
-    }
-
-    &__search-head {
+    &__loading,
+    &__empty {
+        min-height: 42vh;
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16rpx;
-        margin-bottom: 18rpx;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 96rpx 32rpx;
+        background: #ffffff;
     }
 
-    &__search-label {
-        display: block;
-        font-size: 22rpx;
+    &__loading-text {
+        margin-top: 20rpx;
+        font-size: 25rpx;
         font-weight: 600;
-        letter-spacing: 0;
-        text-transform: uppercase;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: $dynamic-text-muted;
     }
 
-    &__search-title {
-        display: block;
-        margin-top: 8rpx;
-        font-size: 30rpx;
-        font-weight: 600;
-        line-height: 1.35;
-        color: var(--wm-text-primary, #111111);
+    &__empty {
+        text-align: center;
     }
 
-    &__search-side {
-        padding-top: 6rpx;
-        font-size: 22rpx;
-        color: var(--wm-color-primary, #0b0b0b);
+    &__empty-icon {
+        margin-bottom: 24rpx;
     }
 
-    &__tabs {
-        margin-top: 22rpx;
-        overflow: hidden;
+    &__empty-title {
+        font-size: 34rpx;
+        font-weight: 700;
+        color: $dynamic-text;
     }
 
-    &__tabs-head {
+    &__empty-desc {
+        margin-top: 10rpx;
+        max-width: 420rpx;
+        font-size: 24rpx;
+        line-height: 1.6;
+        color: $dynamic-text-muted;
+    }
+
+    &__empty-action {
+        margin-top: 32rpx;
+        min-width: 224rpx;
+        height: 82rpx;
+        padding: 0 34rpx;
+        border-radius: $dynamic-radius-pill;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: $dynamic-accent;
+        border: 1rpx solid $dynamic-accent;
+        color: #ffffff;
+        font-size: 26rpx;
+        font-weight: 700;
+        transition: all 0.2s ease;
+
+        &:active {
+            transform: translateY(1rpx);
+            opacity: 0.92;
+        }
+    }
+
+    &__list {
+        display: flex;
+        flex-direction: column;
+        gap: 24rpx;
+        --news-editorial-card-radius: 16rpx;
+        --news-editorial-card-bg: #ffffff;
+        --news-editorial-card-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.04);
+        --news-editorial-cover-height: 360rpx;
+    }
+
+    &__load-more {
+        padding: 8rpx 0 10rpx;
+        text-align: center;
+    }
+
+    &__load-more-text {
+        font-size: 24rpx;
+        color: $dynamic-text-muted;
+
+        &--action {
+            color: var(--wm-text-primary, #111111);
+            font-weight: 600;
+        }
+    }
+
+    &__picker {
+        width: 100vw;
+        max-width: 100vw;
+        padding: 28rpx 28rpx 36rpx;
+        background: #ffffff;
+        border-radius: 24rpx 24rpx 0 0;
+        border-top: 1rpx solid var(--wm-color-border, #e5e5e5);
+        box-shadow: 0 -10rpx 24rpx rgba(17, 17, 17, 0.1);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
+    &__picker-head {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16rpx;
-        padding: 26rpx 24rpx 10rpx;
+        margin-bottom: 18rpx;
     }
 
-    &__section-title {
-        display: block;
-        font-size: 30rpx;
+    &__picker-title {
+        font-size: 32rpx;
         font-weight: 700;
-        color: var(--wm-text-primary, #111111);
+        color: $dynamic-text;
     }
 
-    &__section-desc {
-        display: block;
-        margin-top: 8rpx;
-        font-size: 22rpx;
-        line-height: 1.6;
-        color: var(--wm-text-secondary, #5f5a50);
+    &__picker-close {
+        width: 64rpx;
+        height: 64rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: var(--wm-color-bg-soft, #f7f7f7);
+        border: 1rpx solid var(--wm-color-border, #e5e5e5);
+    }
+
+    &__picker-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border-top: 1rpx solid var(--wm-color-border, #e5e5e5);
+    }
+
+    &__picker-item {
+        height: 96rpx;
+        border-radius: 0;
+        border: 0;
+        border-bottom: 1rpx solid var(--wm-color-border, #e5e5e5);
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 18rpx;
+        padding: 0 4rpx;
+        color: $dynamic-text-secondary;
+        font-size: 26rpx;
+        font-weight: 600;
+
+        &.is-active {
+            color: $dynamic-text;
+            background: #ffffff;
+            box-shadow: none;
+            font-weight: 700;
+        }
+    }
+
+    &__picker-item-mark {
+        width: 6rpx;
+        height: 30rpx;
+        border-radius: 999rpx;
+        background: var(--wm-color-secondary, #c8a45d);
+        opacity: 0;
+    }
+
+    &__picker-item.is-active &__picker-item-mark {
+        opacity: 1;
     }
 }
 
-.news-list {
-    height: calc(100vh - 612rpx - env(safe-area-inset-bottom));
+.news-page :deep(.tn-popup) {
+    pointer-events: none;
 }
 
-.news-page :deep(.tabs__nav),
-.news-page :deep(.tabs__header),
-.news-page :deep(.tabs__tab) {
-    background: transparent !important;
-}
-
-.news-page :deep(.tabs__header) {
-    padding: 0 18rpx;
-}
-
-.news-page :deep(.tabs__tab) {
-    color: var(--wm-text-secondary, #5f5a50) !important;
-    font-size: 26rpx !important;
-    font-weight: 500 !important;
-}
-
-.news-page :deep(.tabs__tab.is-active) {
-    color: var(--wm-color-primary, #0b0b0b) !important;
-}
-
-.news-page :deep(.tabs__line) {
-    background: linear-gradient(
-        135deg,
-        var(--wm-color-primary, #0b0b0b) 0%,
-        var(--wm-color-secondary, #c8a45d) 100%
-    ) !important;
-    border-radius: 999rpx;
+.news-page :deep(.tn-popup__content) {
+    pointer-events: auto;
 }
 </style>

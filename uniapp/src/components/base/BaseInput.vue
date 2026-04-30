@@ -107,17 +107,38 @@ export default {
     transition: all var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 
     :deep(.tn-input) {
+        display: flex;
+        align-items: center;
         min-height: 104rpx;
         padding: 0 var(--wm-space-card-padding, 30rpx);
+        box-sizing: border-box;
         border-radius: var(--wm-radius-control, 16rpx);
         font-size: 28rpx;
         color: var(--wm-text-primary, #111111);
         border: 1rpx solid var(--wm-color-border, #e2ded5);
+        overflow: hidden;
         transition: all var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 
         &::placeholder {
             color: var(--wm-text-tertiary, #9a9388);
         }
+    }
+
+    :deep(.tn-input__base) {
+        flex: 1;
+        min-width: 0;
+    }
+
+    :deep(.tn-input__slot--left),
+    :deep(.tn-input__slot--right),
+    :deep(.tn-input__icon) {
+        display: inline-flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    :deep(.tn-input__slot--right) {
+        white-space: nowrap;
     }
 
     &--filled {

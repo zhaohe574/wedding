@@ -647,6 +647,7 @@ CREATE TABLE `la_user`  (
   `login_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '最后登录时间',
   `is_new_user` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否是新注册用户: [1-是, 0-否]',
   `user_money` decimal(10, 2) UNSIGNED NULL DEFAULT 0.00 COMMENT '用户余额',
+  `user_points` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '用户积分',
   `total_recharge_amount` decimal(10, 2) UNSIGNED NULL DEFAULT 0.00 COMMENT '累计充值',
   `create_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
   `update_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
@@ -747,11 +748,16 @@ CREATE TABLE `la_service_package` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '套餐ID',
   `category_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务分类ID',
   `staff_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '所属服务人员ID',
+  `package_type` tinyint(3) UNSIGNED NOT NULL DEFAULT 1 COMMENT '套餐类型：1=全局套餐,2=人员专属套餐',
   `name` varchar(100) NOT NULL DEFAULT '' COMMENT '套餐名称',
   `price` decimal(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '套餐价格',
+  `slot_prices` text COMMENT '时段价格配置JSON：[{\"start_time\":\"08:00\",\"end_time\":\"12:00\",\"price\":1000}]',
+  `booking_type` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT '预约类型：0=全天套餐,1=分场次套餐',
+  `allowed_time_slots` text COMMENT '允许场次(JSON数组)',
   `original_price` decimal(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '原价',
   `duration` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务时长(小时)',
   `description` text COMMENT '套餐描述',
+  `content` text COMMENT '套餐内容(JSON格式)',
   `image` varchar(255) NOT NULL DEFAULT '' COMMENT '套餐图片',
   `sort` int(11) NOT NULL DEFAULT 0 COMMENT '排序',
   `is_recommend` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否推荐:0-否,1-是',
@@ -762,7 +768,8 @@ CREATE TABLE `la_service_package` (
   PRIMARY KEY (`id`) USING BTREE,
   KEY `idx_category_id` (`category_id`) USING BTREE,
   KEY `idx_staff_id` (`staff_id`),
-  KEY `idx_is_recommend` (`is_recommend`) USING BTREE
+  KEY `idx_is_recommend` (`is_recommend`) USING BTREE,
+  KEY `idx_package_type` (`package_type`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='服务套餐表';
 DROP TABLE IF EXISTS `la_service_addon`;
 CREATE TABLE `la_service_addon` (
@@ -887,6 +894,26 @@ CREATE TABLE `la_staff` (
   KEY `idx_is_recommend` (`is_recommend`) USING BTREE,
   KEY `idx_rating` (`rating`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='工作人员表';
+DROP TABLE IF EXISTS `la_staff_package`;
+CREATE TABLE `la_staff_package` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `staff_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '工作人员ID',
+  `package_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '套餐ID',
+  `custom_price` decimal(10,2) DEFAULT NULL COMMENT '个人定制价格（覆盖套餐默认价格）',
+  `custom_slot_prices` text COMMENT '个人时段价格配置JSON',
+  `custom_area_prices` text COMMENT '员工自定义区域价格JSON',
+  `booking_type` tinyint(3) UNSIGNED DEFAULT NULL COMMENT '预约类型覆盖：0=全天套餐,1=分场次套餐',
+  `allowed_time_slots` text COMMENT '允许场次覆盖(JSON数组)',
+  `status` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '状态：0=禁用,1=启用',
+  `price` decimal(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '该人员的套餐价格(可覆盖默认价格)',
+  `original_price` decimal(10,2) DEFAULT NULL COMMENT '原价（用于显示划线价）',
+  `is_default` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否默认套餐:0-否,1-是',
+  `create_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+  `update_time` int(10) UNSIGNED DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `uk_staff_package` (`staff_id`,`package_id`) USING BTREE,
+  KEY `idx_package_id` (`package_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='工作人员套餐关联表';
 DROP TABLE IF EXISTS `la_staff_banner`;
 CREATE TABLE `la_staff_banner` (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -1125,6 +1152,7 @@ CREATE TABLE `la_package_booking` (
   `create_time` INT UNSIGNED NOT NULL COMMENT '创建时间',
   `update_time` INT UNSIGNED DEFAULT NULL COMMENT '更新时间',
   UNIQUE KEY `uk_staff_package_date_slot` (`staff_id`, `package_id`, `booking_date`, `time_slot`),
+  INDEX `idx_staff_id` (`staff_id`),
   INDEX `idx_order_id` (`order_id`),
   INDEX `idx_user_id` (`user_id`),
   INDEX `idx_lock_expire` (`lock_expire_time`),
@@ -1739,6 +1767,7 @@ CREATE TABLE `la_review` (
     `reward_points` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '奖励积分',
     `reward_grant_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '评价奖励发放时间',
     `is_rewarded` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否已发放奖励',
+    `reward_time` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '奖励发放时间',
     `like_count` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '点赞数',
     `reply_count` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '回复数',
     `is_show` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '是否显示',
@@ -2032,7 +2061,8 @@ CREATE TABLE `la_financial_daily` (
     `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
     `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_report_date` (`report_date`)
+    UNIQUE KEY `uk_report_date` (`report_date`),
+    KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='财务日报表';
 DROP TABLE IF EXISTS `la_financial_monthly`;
 CREATE TABLE `la_financial_monthly` (
@@ -2141,7 +2171,8 @@ CREATE TABLE `la_sales_advisor` (
     PRIMARY KEY (`id`),
     KEY `idx_admin_id` (`admin_id`),
     KEY `idx_wecom_userid` (`wecom_userid`),
-    KEY `idx_status` (`status`)
+    KEY `idx_status` (`status`),
+    KEY `idx_current_customer_count` (`current_customer_count`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='销售顾问表';
 DROP TABLE IF EXISTS `la_customer`;
 CREATE TABLE `la_customer` (
@@ -2356,6 +2387,33 @@ CREATE TABLE `la_complaint` (
     KEY `idx_handle_admin_id` (`handle_admin_id`),
     KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='投诉表';
+DROP TABLE IF EXISTS `la_reshoot`;
+CREATE TABLE `la_reshoot` (
+    `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '补拍ID',
+    `reshoot_sn` varchar(32) NOT NULL DEFAULT '' COMMENT '补拍编号',
+    `order_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '关联订单ID',
+    `order_item_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '关联订单项ID',
+    `user_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '用户ID',
+    `staff_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务人员ID',
+    `reason` text COMMENT '补拍原因',
+    `images` text COMMENT '图片凭证 JSON数组',
+    `status` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态 0待审核 1已通过 2已拒绝 3已完成 4已取消',
+    `audit_admin_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核人ID',
+    `audit_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核时间',
+    `audit_remark` varchar(255) NOT NULL DEFAULT '' COMMENT '审核备注',
+    `reject_reason` varchar(255) NOT NULL DEFAULT '' COMMENT '拒绝原因',
+    `schedule_date` date DEFAULT NULL COMMENT '补拍日期',
+    `time_slot` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '补拍时间段 0全天 1早礼 2午宴 3晚宴',
+    `create_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    `delete_time` int(11) UNSIGNED DEFAULT NULL COMMENT '删除时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_reshoot_sn` (`reshoot_sn`),
+    KEY `idx_order_id` (`order_id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_staff_id` (`staff_id`),
+    KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='补拍申请表';
 DROP TABLE IF EXISTS `la_service_callback`;
 CREATE TABLE `la_service_callback` (
     `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '回访ID',
@@ -2452,6 +2510,8 @@ CREATE TABLE `la_after_sale_daily_stats` (
     `ticket_overtime` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '超时工单数',
     `complaint_total` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '投诉总数',
     `complaint_handled` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '已处理投诉数',
+    `reshoot_total` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '补拍申请总数',
+    `reshoot_approved` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '已通过补拍数',
     `callback_total` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '回访总数',
     `callback_completed` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '已完成回访数',
     `avg_handle_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '平均处理时长（秒）',

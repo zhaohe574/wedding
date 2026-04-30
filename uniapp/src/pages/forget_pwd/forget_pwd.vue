@@ -8,7 +8,7 @@
             </view>
         </template>
 
-        <view class="auth-form wm-form-block">
+        <view class="auth-form">
             <view class="auth-form__group">
                 <text class="auth-form__label">手机号</text>
                 <BaseInput v-model="formData.mobile" type="tel" placeholder="请输入手机号码">
@@ -187,9 +187,19 @@ const handleConfirm = async () => {
 }
 
 .auth-code-btn {
-    padding-left: 20rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 132rpx;
+    height: 48rpx;
+    padding-left: 16rpx;
+    box-sizing: border-box;
     font-size: 24rpx;
     font-weight: 500;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
     color: var(--wm-text-tertiary, #9a9388);
 }
 

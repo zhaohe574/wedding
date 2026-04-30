@@ -8,7 +8,7 @@
             </view>
         </template>
 
-        <view class="auth-form wm-form-block">
+        <view class="auth-form">
             <view class="auth-form__group">
                 <text class="auth-form__label">账号</text>
                 <BaseInput v-model="formData.account" placeholder="请输入账号">

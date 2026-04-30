@@ -56,7 +56,7 @@
                 </view>
             </view>
 
-            <view v-if="showLocalLoginForm" class="auth-form wm-form-block">
+            <view v-if="showLocalLoginForm" class="auth-form">
                 <view class="auth-form__head">
                     <text class="auth-form__title">
                         {{ formData.scene == LoginWayEnum.ACCOUNT ? '账号密码登录' : '验证码登录' }}
@@ -788,9 +788,19 @@ onLoad(async () => {
 }
 
 .auth-code-btn {
-    padding-left: 20rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 132rpx;
+    height: 48rpx;
+    padding-left: 16rpx;
+    box-sizing: border-box;
     font-size: 24rpx;
     font-weight: 500;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
     color: var(--wm-text-tertiary, #9a9388);
 }
 
