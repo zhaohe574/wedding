@@ -139,6 +139,15 @@ export default {
         padding: 24rpx;
     }
 
+    &--media {
+        padding: 0;
+        overflow: hidden;
+        border-radius: var(--wm-radius-card-lg, 20rpx);
+        background: #ffffff;
+        border: 1rpx solid var(--wm-color-border, #e5e5e5);
+        box-shadow: var(--wm-shadow-soft, 0 8rpx 18rpx rgba(17, 17, 17, 0.04));
+    }
+
     &--quiet,
     &--bare {
         box-shadow: none;
