@@ -15,5 +15,6 @@ export interface Link {
     path: string
     name?: string
     type: string
+    canTab?: boolean
     query?: Record<string, any>
 }

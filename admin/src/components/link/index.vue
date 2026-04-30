@@ -62,29 +62,29 @@ const emit = defineEmits<{
 
 const menus = ref([
     {
-        name: '商城页面',
+        name: '移动端页面',
         type: MenuTypeEnum.SHOP_PAGES,
         children: [
             {
-                name: '基础页面',
+                name: '页面选择',
                 type: LinkTypeEnum.SHOP_PAGES,
                 link: {}
             }
         ]
     },
     {
-        name: '应用工具',
+        name: '内容数据',
         type: MenuTypeEnum.APPTOOL,
         children: [
             {
-                name: '文章资讯',
+                name: '文章详情',
                 type: LinkTypeEnum.ARTICLE_LIST,
                 link: {}
             }
         ]
     },
     {
-        name: '其他',
+        name: '外部跳转',
         type: MenuTypeEnum.OTHER_LINK,
         children: [
             {

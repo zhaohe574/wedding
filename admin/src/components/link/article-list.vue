@@ -80,7 +80,7 @@ const emit = defineEmits<{
 }>()
 
 const selectData = ref<any>({
-    path: '/pages/news_detail/news_detail',
+    path: '/packages/pages/news_detail/news_detail',
     name: '',
     query: {},
     type: LinkTypeEnum.ARTICLE_LIST
@@ -106,7 +106,7 @@ const handleSelectItem = (event: any) => {
     selectData.value = {
         id: event.id,
         name: event.title,
-        path: '/pages/news_detail/news_detail',
+        path: '/packages/pages/news_detail/news_detail',
         query: {
             id: event.id
         },
@@ -122,7 +122,7 @@ watch(
             return (selectData.value = {
                 id: '',
                 name: '',
-                path: '/pages/news_detail/news_detail',
+                path: '/packages/pages/news_detail/news_detail',
                 type: LinkTypeEnum.SHOP_PAGES
             })
         }
