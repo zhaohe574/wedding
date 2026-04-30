@@ -50,7 +50,7 @@
                 <view class="aftersale-home__section">
                     <view class="aftersale-home__section-head">
                         <text class="aftersale-home__section-title">主要入口</text>
-                        <text class="aftersale-home__section-meta">选择最匹配的问题类型</text>
+                        <text class="aftersale-home__section-meta">快速处理</text>
                     </view>
 
                     <view class="aftersale-home__primary-grid">
@@ -58,7 +58,7 @@
                             variant="surface"
                             scene="consumer"
                             interactive
-                            padding="0"
+                            padding="26rpx 24rpx"
                             class="aftersale-primary-card aftersale-primary-card--ticket"
                             @click="goCreateTicket"
                         >
@@ -71,12 +71,10 @@
                             </view>
 
                             <text class="aftersale-primary-card__title">提交工单</text>
-                            <text class="aftersale-primary-card__desc">
-                                档期、流程、交付、费用问题
-                            </text>
+                            <text class="aftersale-primary-card__desc">问题协助</text>
 
                             <view class="aftersale-primary-card__footer">
-                                <text class="aftersale-primary-card__footer-text">平台跟进</text>
+                                <text class="aftersale-primary-card__footer-text">跟进</text>
                                 <tn-icon
                                     name="right"
                                     :size="22"
@@ -89,7 +87,7 @@
                             variant="surface"
                             scene="consumer"
                             interactive
-                            padding="0"
+                            padding="26rpx 24rpx"
                             class="aftersale-primary-card aftersale-primary-card--complaint"
                             @click="goCreateComplaint"
                         >
@@ -102,10 +100,10 @@
                             </view>
 
                             <text class="aftersale-primary-card__title">发起投诉</text>
-                            <text class="aftersale-primary-card__desc"> 态度、履约、沟通问题 </text>
+                            <text class="aftersale-primary-card__desc">服务反馈</text>
 
                             <view class="aftersale-primary-card__footer">
-                                <text class="aftersale-primary-card__footer-text">正式投诉</text>
+                                <text class="aftersale-primary-card__footer-text">投诉</text>
                                 <tn-icon
                                     name="right"
                                     :size="22"
@@ -312,7 +310,8 @@ onShow(() => {
 .aftersale-home__wrapper {
     @include aftersale-page-wrapper;
     gap: 22rpx;
-    padding: 20rpx var(--wm-space-page-x, 37rpx) calc(var(--wm-safe-bottom-action, 160rpx) + 18rpx);
+    padding-top: 20rpx;
+    padding-bottom: var(--wm-space-section-gap-lg, 30rpx);
 }
 
 .aftersale-status-panel {
@@ -460,7 +459,7 @@ onShow(() => {
 .aftersale-primary-card {
     min-width: 0;
     min-height: 264rpx;
-    padding: 24rpx;
+    padding: 26rpx 24rpx;
     display: flex;
     flex-direction: column;
     gap: 12rpx;

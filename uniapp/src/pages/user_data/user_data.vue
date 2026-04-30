@@ -1,98 +1,121 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" hasSafeBottom>
-        <BaseNavbar title="资料编辑" @back="handleBack" />
+        <BaseNavbar title="个人资料" @back="handleBack" />
 
         <view class="user-data-page">
             <view class="page-content wm-page-content">
-                <view class="sync-card wm-panel-card">
-                    <view class="sync-tag">资料同步</view>
-                    <view class="sync-profile">
-                        <view class="sync-avatar">
-                            <avatar-upload
-                                :modelValue="form.avatar"
-                                file-key="url"
-                                :round="true"
-                                @update:modelValue="handleAvatarChange"
-                            />
-                        </view>
-                        <view class="sync-profile__main">
-                            <text class="sync-name">{{ displayName }}</text>
-                            <text class="sync-subtitle">{{ weddingMainDateText }}</text>
-                        </view>
+                <view class="profile-card wm-panel-card">
+                    <view class="profile-card__avatar">
+                        <avatar-upload
+                            :modelValue="form.avatar"
+                            file-key="url"
+                            :round="true"
+                            :size="116"
+                            @update:modelValue="handleAvatarChange"
+                        />
                     </view>
-                    <text class="sync-tip">保存后会同步资料。</text>
+                    <view class="profile-card__body">
+                        <view class="profile-card__tag">个人信息</view>
+                        <text class="profile-card__name">{{ displayName }}</text>
+                        <text class="profile-card__meta">{{ profileMetaText }}</text>
+                    </view>
                 </view>
 
                 <view class="section-card wm-form-block">
-                    <text class="section-title">基本信息</text>
+                    <view class="section-head">
+                        <text class="section-title">账号信息</text>
+                        <text class="section-desc">账号和手机号用于登录与安全验证</text>
+                    </view>
+
+                    <view class="info-row wm-soft-card">
+                        <view class="info-row__main">
+                            <text class="field-label">账号</text>
+                            <text class="field-value">{{ accountText }}</text>
+                        </view>
+                        <view class="inline-action" @click="handleAccountClick">修改</view>
+                    </view>
+
+                    <view class="info-row wm-soft-card">
+                        <view class="info-row__main">
+                            <text class="field-label">用户编号</text>
+                            <text class="field-value">{{ userSnText }}</text>
+                        </view>
+                    </view>
+
+                    <view class="info-row wm-soft-card">
+                        <view class="info-row__main">
+                            <text class="field-label">手机号</text>
+                            <text class="field-value">{{ mobileText }}</text>
+                        </view>
+                        <!-- #ifdef MP-WEIXIN -->
+                        <button
+                            class="inline-action inline-action--button"
+                            open-type="getPhoneNumber"
+                            hover-class="none"
+                            :disabled="mobileAuthDisabled"
+                            @getphonenumber="getPhoneNumber"
+                        >
+                            {{ mobileSaving ? '处理中' : userInfo.mobile ? '更换' : '绑定' }}
+                        </button>
+                        <!-- #endif -->
+                        <!-- #ifndef MP-WEIXIN -->
+                        <view class="inline-action" @click="handleMobileClick">
+                            {{ userInfo.mobile ? '更换' : '绑定' }}
+                        </view>
+                        <!-- #endif -->
+                    </view>
+
+                    <view class="info-row wm-soft-card">
+                        <view class="info-row__main">
+                            <text class="field-label">注册时间</text>
+                            <text class="field-value">{{ createTimeText }}</text>
+                        </view>
+                    </view>
+                </view>
+
+                <view class="section-card wm-form-block">
+                    <view class="section-head">
+                        <text class="section-title">人员信息</text>
+                        <text class="section-desc">完善昵称、称呼和性别，便于服务沟通</text>
+                    </view>
+
                     <view class="field-card wm-soft-card">
-                        <text class="field-label">新人称呼</text>
+                        <text class="field-label">昵称</text>
                         <input
-                            v-model="form.real_name"
+                            v-model="form.nickname"
                             class="field-input"
-                            placeholder="请输入新人称呼"
+                            placeholder="请输入昵称"
                             placeholder-class="field-placeholder"
+                            maxlength="32"
                         />
                     </view>
 
                     <view class="field-card wm-soft-card">
-                        <text class="field-label">联系方式</text>
-                        <view class="contact-value">{{ contactText }}</view>
-                        <view class="contact-actions">
-                            <view class="contact-action" @click="handleAccountClick">修改账号</view>
-                            <!-- #ifdef MP-WEIXIN -->
-                            <button
-                                class="contact-action contact-action--button"
-                                open-type="getPhoneNumber"
-                                @getphonenumber="getPhoneNumber"
-                            >
-                                {{ userInfo.mobile ? '更换手机号' : '绑定手机号' }}
-                            </button>
-                            <!-- #endif -->
-                            <!-- #ifndef MP-WEIXIN -->
-                            <view class="contact-action" @click="handleMobileClick">
-                                {{ userInfo.mobile ? '更换手机号' : '绑定手机号' }}
-                            </view>
-                            <!-- #endif -->
-                        </view>
+                        <text class="field-label">姓名 / 称呼</text>
+                        <input
+                            v-model="form.real_name"
+                            class="field-input"
+                            placeholder="请输入姓名或称呼"
+                            placeholder-class="field-placeholder"
+                            maxlength="32"
+                        />
                     </view>
 
                     <view class="field-card field-card--click wm-soft-card" @click="handleSexClick">
-                        <text class="field-label">性别</text>
-                        <view class="field-click-value">
-                            <text>{{ getSexText(form.sex) }}</text>
-                            <tn-icon name="right" size="26" color="#9A9388" />
+                        <view class="field-card__main">
+                            <text class="field-label">性别</text>
+                            <text class="field-value">{{ getSexText(form.sex) }}</text>
                         </view>
-                    </view>
-                </view>
-
-                <view class="section-card wm-form-block">
-                    <text class="section-title">婚礼信息</text>
-                    <view class="field-card wm-soft-card">
-                        <text class="field-label">婚礼日期</text>
-                        <text class="field-readonly">{{ weddingDateText }}</text>
-                    </view>
-                    <view class="field-card wm-soft-card">
-                        <text class="field-label">婚礼城市 / 场地</text>
-                        <text class="field-readonly field-readonly--wrap">{{
-                            weddingVenueText
-                        }}</text>
+                        <tn-icon name="right" size="26" color="#9a9388" />
                     </view>
                 </view>
             </view>
 
-            <ActionArea class="user-data-page__actions" sticky safeBottom layout="split">
-                <view class="user-data-page__action">
-                    <BaseButton block size="lg" variant="secondary" @click="handleCancelEdit">
-                        取消编辑
-                    </BaseButton>
-                </view>
-                <view class="user-data-page__action">
-                    <BaseButton block size="lg" :loading="saving" @click="handleSaveProfile">
-                        保存资料
-                    </BaseButton>
-                </view>
+            <ActionArea class="user-data-page__actions" sticky safeBottom>
+                <BaseButton block size="lg" :loading="saving" @click="handleSaveProfile">
+                    保存资料
+                </BaseButton>
             </ActionArea>
 
             <BaseOverlayMask :show="showUserName" @close="showUserName = false" />
@@ -108,18 +131,19 @@
                     <view class="popup-title">修改账号</view>
                     <view class="popup-input-wrapper">
                         <input
-                            class="popup-input"
                             v-model="newUsername"
+                            class="popup-input"
                             placeholder="请输入账号"
                             placeholder-class="input-placeholder"
+                            maxlength="30"
                         />
                     </view>
                     <view class="popup-actions">
                         <button
                             class="popup-btn popup-btn-primary"
                             :disabled="accountSaving"
-                            @click="changeUserNameConfirm"
                             hover-class="none"
+                            @click="changeUserNameConfirm"
                         >
                             {{ accountSaving ? '保存中...' : '确定' }}
                         </button>
@@ -142,17 +166,18 @@
                     </view>
                     <view class="popup-input-wrapper">
                         <input
-                            class="popup-input"
                             v-model="newMobile"
+                            class="popup-input"
                             type="number"
                             placeholder="请输入新的手机号码"
                             placeholder-class="input-placeholder"
+                            maxlength="11"
                         />
                     </view>
                     <view class="popup-input-wrapper code-input-wrapper">
                         <input
-                            class="flex-1 popup-input"
                             v-model="mobileCode"
+                            class="flex-1 popup-input"
                             type="number"
                             placeholder="请输入验证码"
                             placeholder-class="input-placeholder"
@@ -169,8 +194,8 @@
                         <button
                             class="popup-btn popup-btn-primary"
                             :disabled="mobileSaving"
-                            @click="changeCodeMobile"
                             hover-class="none"
+                            @click="changeCodeMobile"
                         >
                             {{ mobileSaving ? '保存中...' : '确定' }}
                         </button>
@@ -190,13 +215,7 @@
 
 <script lang="ts" setup>
 import { smsSend } from '@/api/app'
-import {
-    getUserWeddingDate,
-    getUserInfo,
-    userBindMobile,
-    userEdit,
-    userMnpMobile
-} from '@/api/user'
+import { getUserInfo, userBindMobile, userEdit, userMnpMobile } from '@/api/user'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import { FieldType, SMSEnum } from '@/enums/appEnums'
@@ -213,17 +232,20 @@ const saving = ref(false)
 const accountSaving = ref(false)
 const mobileSaving = ref(false)
 const smsSending = ref(false)
+const phoneAuthCooling = ref(false)
 const mobileReg = /^1\d{10}$/
+let phoneAuthCooldownTimer: ReturnType<typeof setTimeout> | null = null
 
 const userInfo = reactive<any>({})
-const weddingInfo = reactive<any>({})
 const form = reactive({
     avatar: '',
+    nickname: '',
     real_name: '',
     sex: 0
 })
 const originalForm = reactive({
     avatar: '',
+    nickname: '',
     real_name: '',
     sex: 0
 })
@@ -247,28 +269,27 @@ const sexPickerData = [
 
 const displayName = computed(() => {
     const realName = String(form.real_name || '').trim()
-    return realName || '未填写称呼'
+    const nickname = String(form.nickname || '').trim()
+    const account = String(userInfo.account || '').trim()
+    return realName || nickname || account || '未填写资料'
 })
 
-const weddingMainDateText = computed(() => {
-    const date = String(weddingInfo.wedding_date || '').trim()
-    return date ? `婚期：${date}` : '婚期待补充'
+const profileMetaText = computed(() => {
+    const sex = getSexText(form.sex)
+    const mobile = String(userInfo.mobile || '').trim()
+    return `${sex} · ${mobile ? '已绑定手机号' : '未绑定手机号'}`
 })
 
-const weddingDateText = computed(() => {
-    const date = String(weddingInfo.wedding_date || '').trim()
-    return date || '未填写婚期'
-})
+const accountText = computed(() => String(userInfo.account || '').trim() || '未设置账号')
 
-const weddingVenueText = computed(() => {
-    const venue = String(weddingInfo.wedding_venue || '').trim()
-    return venue || '待补充场地'
-})
+const userSnText = computed(() => String(userInfo.sn || userInfo.id || '').trim() || '暂无编号')
 
-const contactText = computed(() => {
-    const mobile = String(userInfo.mobile || '').trim() || '未绑定手机号'
-    const account = String(userInfo.account || '').trim() || '未设置账号'
-    return `${mobile} / ${account}`
+const mobileText = computed(() => String(userInfo.mobile || '').trim() || '未绑定手机号')
+
+const mobileAuthDisabled = computed(() => mobileSaving.value || phoneAuthCooling.value)
+
+const createTimeText = computed(() => {
+    return String(userInfo.create_time || userInfo.createTime || '').trim() || '暂无记录'
 })
 
 const normalizeSex = (sex: any): number => {
@@ -285,24 +306,21 @@ const getSexText = (sex: any): string => {
 
 const resetFormByUserInfo = (info: any) => {
     form.avatar = String(info?.avatar || '')
+    form.nickname = String(info?.nickname || '')
     form.real_name = String(info?.real_name || '')
     form.sex = normalizeSex(info?.sex)
 
     originalForm.avatar = form.avatar
+    originalForm.nickname = form.nickname
     originalForm.real_name = form.real_name
     originalForm.sex = form.sex
 }
 
 const loadPageData = async () => {
-    const [info, wedding] = await Promise.all([
-        getUserInfo(),
-        getUserWeddingDate().catch(() => ({}))
-    ])
+    const info = await getUserInfo()
 
     Object.keys(userInfo).forEach((key) => delete userInfo[key])
     Object.assign(userInfo, info || {})
-    Object.keys(weddingInfo).forEach((key) => delete weddingInfo[key])
-    Object.assign(weddingInfo, wedding || {})
 
     resetFormByUserInfo(info)
     selectedSex.value = form.sex
@@ -332,6 +350,15 @@ const handleMobileClick = () => {
     showMobilePop.value = true
     newMobile.value = String(userInfo.mobile || '')
     mobileCode.value = ''
+}
+
+const startPhoneAuthCooldown = () => {
+    phoneAuthCooling.value = true
+    if (phoneAuthCooldownTimer) clearTimeout(phoneAuthCooldownTimer)
+    phoneAuthCooldownTimer = setTimeout(() => {
+        phoneAuthCooling.value = false
+        phoneAuthCooldownTimer = null
+    }, 1200)
 }
 
 const handleSexClick = () => {
@@ -438,8 +465,8 @@ const changeUserNameConfirm = async () => {
         uni.$u.toast('账号不能为空')
         return
     }
-    if (value.length > 10) {
-        uni.$u.toast('账号长度不得超过十位数')
+    if (value.length > 30) {
+        uni.$u.toast('账号长度不得超过30位')
         return
     }
 
@@ -460,17 +487,23 @@ const changeUserNameConfirm = async () => {
     }
 }
 
-const getPhoneNumber = async (e: any): Promise<void> => {
-    const { encryptedData, iv, code } = e.detail || {}
-    if (!encryptedData) return
+const getPhoneNumber = async (event: any): Promise<void> => {
+    if (mobileSaving.value || phoneAuthCooling.value) return
+    startPhoneAuthCooldown()
+
+    const detail = event?.detail || {}
+    const code = String(detail.code || '').trim()
+    if (!code) {
+        const errMsg = String(detail.errMsg || '')
+        if (errMsg && !errMsg.includes(':ok')) {
+            uni.$u.toast('未授权获取手机号')
+        }
+        return
+    }
 
     try {
         mobileSaving.value = true
-        await userMnpMobile({
-            code,
-            encrypted_data: encryptedData,
-            iv
-        })
+        await userMnpMobile({ code })
         uni.$u.toast('操作成功')
         await loadPageData()
         await userStore.getUser()
@@ -487,6 +520,9 @@ const getDirtyFields = () => {
     if (form.avatar !== originalForm.avatar) {
         payloads.push({ field: FieldType.AVATAR, value: form.avatar })
     }
+    if (form.nickname !== originalForm.nickname) {
+        payloads.push({ field: FieldType.NICKNAME, value: form.nickname.trim() })
+    }
     if (form.real_name !== originalForm.real_name) {
         payloads.push({ field: FieldType.REAL_NAME, value: form.real_name.trim() })
     }
@@ -498,12 +534,12 @@ const getDirtyFields = () => {
 }
 
 const validateProfileForm = () => {
-    if (!form.real_name.trim()) {
-        uni.$u.toast('请填写新人称呼')
+    if (form.nickname.trim().length > 32) {
+        uni.$u.toast('昵称长度不能超过32位')
         return false
     }
     if (form.real_name.trim().length > 32) {
-        uni.$u.toast('新人称呼长度不能超过32位')
+        uni.$u.toast('姓名或称呼长度不能超过32位')
         return false
     }
     return true
@@ -537,15 +573,6 @@ const handleSaveProfile = async () => {
     }
 }
 
-const handleCancelEdit = () => {
-    if (saving.value) return
-    form.avatar = originalForm.avatar
-    form.real_name = originalForm.real_name
-    form.sex = originalForm.sex
-    selectedSex.value = form.sex
-    uni.$u.toast('已取消编辑')
-}
-
 onShow(async () => {
     $theme.setScene('consumer')
     await loadPageData()
@@ -555,6 +582,10 @@ onUnload(() => {
     if (codeTimer) {
         clearInterval(codeTimer)
         codeTimer = null
+    }
+    if (phoneAuthCooldownTimer) {
+        clearTimeout(phoneAuthCooldownTimer)
+        phoneAuthCooldownTimer = null
     }
 })
 </script>
@@ -567,18 +598,38 @@ onUnload(() => {
 }
 
 .page-content {
-    padding: 15rpx 37rpx 0;
+    padding: 15rpx var(--wm-space-page-x, 37rpx) 0;
 }
 
-.sync-card {
+.profile-card {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
     border-radius: var(--wm-radius-card, 45rpx);
     border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
     background: linear-gradient(135deg, #ffffff 0%, #f7f0df 100%);
-    padding: var(--wm-space-card-padding, 30rpx);
+    padding: 30rpx;
     box-shadow: var(--wm-shadow-soft, 0 16rpx 34rpx rgba(17, 17, 17, 0.14));
 }
 
-.sync-tag {
+.profile-card__avatar {
+    width: 116rpx;
+    height: 116rpx;
+    border-radius: 999rpx;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--wm-color-primary-soft, #f3f2ee);
+}
+
+.profile-card__body {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.profile-card__tag {
     align-self: flex-start;
     display: inline-flex;
     border-radius: 999rpx;
@@ -589,168 +640,140 @@ onUnload(() => {
     font-weight: 700;
 }
 
-.sync-profile {
-    margin-top: 12rpx;
-    display: flex;
-    align-items: center;
-    gap: 16rpx;
-}
-
-.sync-avatar {
-    width: 88rpx;
-    height: 88rpx;
-    border-radius: 999rpx;
-    overflow: hidden;
-    flex-shrink: 0;
-    background: var(--wm-color-primary-soft, #f3f2ee);
-}
-
-.sync-profile__main {
-    min-width: 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
-}
-
-.sync-name {
-    font-size: 36rpx;
+.profile-card__name {
+    font-size: 38rpx;
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.25;
     color: var(--wm-text-primary, #111111);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.sync-subtitle {
+.profile-card__meta {
     font-size: 22rpx;
     line-height: 1.5;
     color: var(--wm-text-secondary, #5f5a50);
 }
 
-.sync-tip {
-    display: block;
-    margin-top: 10rpx;
-    font-size: 22rpx;
-    line-height: 1.55;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
 .section-card {
-    margin-top: 12rpx;
+    margin-top: 14rpx;
     border-radius: var(--wm-radius-card-soft, 37rpx);
     border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: var(--wm-color-bg-card, rgba(255, 255, 255, 0.84));
-    padding: 20rpx;
+    padding: 22rpx;
     box-shadow: var(--wm-shadow-soft, 0 14rpx 30rpx rgba(17, 17, 17, 0.1));
+}
+
+.section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+    margin-bottom: 16rpx;
 }
 
 .section-title {
     display: block;
-    font-size: 24rpx;
+    font-size: 26rpx;
     font-weight: 700;
     color: var(--wm-text-primary, #111111);
-    margin-bottom: 12rpx;
 }
 
-.field-card {
-    border-radius: var(--wm-radius-control, 34rpx);
+.section-desc {
+    display: block;
+    font-size: 22rpx;
+    line-height: 1.45;
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.field-card,
+.info-row {
+    border-radius: var(--wm-radius-control, 30rpx);
     border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(248, 247, 242, 0.92);
-    padding: 16rpx;
+    padding: 18rpx 20rpx;
+    box-sizing: border-box;
 }
 
-.field-card + .field-card {
+.field-card + .field-card,
+.info-row + .info-row {
     margin-top: 12rpx;
 }
 
-.field-card--click {
+.field-card--click,
+.info-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 18rpx;
+}
+
+.field-card__main,
+.info-row__main {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
 }
 
 .field-label {
     display: block;
-    font-size: 20rpx;
+    font-size: 22rpx;
     font-weight: 600;
     color: var(--wm-text-secondary, #5f5a50);
-    margin-bottom: 8rpx;
 }
 
 .field-input {
     width: 100%;
-    min-height: 48rpx;
-    font-size: 26rpx;
+    min-height: 54rpx;
+    font-size: 28rpx;
     color: var(--wm-text-primary, #111111);
     line-height: 1.4;
 }
 
 .field-placeholder {
-    color: var(--wm-text-tertiary, #9A9388);
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
-.field-readonly {
+.field-value {
     display: block;
-    font-size: 26rpx;
+    min-width: 0;
+    font-size: 28rpx;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.45;
     color: var(--wm-text-primary, #111111);
-}
-
-.field-readonly--wrap {
-    white-space: normal;
     word-break: break-word;
 }
 
-.field-click-value {
-    display: inline-flex;
-    align-items: center;
-    gap: 8rpx;
-    font-size: 26rpx;
-    font-weight: 600;
-    color: var(--wm-text-primary, #111111);
-}
-
-.contact-value {
-    font-size: 24rpx;
-    line-height: 1.45;
-    color: var(--wm-text-primary, #111111);
-}
-
-.contact-actions {
-    margin-top: 10rpx;
-    display: flex;
-    gap: 12rpx;
-    flex-wrap: wrap;
-}
-
-.contact-action {
-    padding: 8rpx 16rpx;
+.inline-action {
+    flex-shrink: 0;
+    min-width: 96rpx;
+    min-height: 56rpx;
+    padding: 0 18rpx;
     border-radius: 999rpx;
     border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: #fff;
-    font-size: 20rpx;
+    background: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    font-size: 22rpx;
+    font-weight: 600;
+    line-height: 1;
     color: var(--wm-text-primary, #111111);
 }
 
-.contact-action--button {
-    line-height: 1.2;
+.inline-action--button {
     margin: 0;
 }
 
-.contact-action--button::after {
+.inline-action--button::after {
     border: none;
 }
 
 .user-data-page__actions {
     z-index: 30;
-}
-
-.user-data-page__action {
-    flex: 1;
-    min-width: 0;
 }
 
 .edit-popup {
@@ -761,17 +784,17 @@ onUnload(() => {
 }
 
 .popup-title {
+    margin-bottom: 32rpx;
     font-size: 36rpx;
     font-weight: 600;
     color: #111111;
     text-align: center;
-    margin-bottom: 32rpx;
 }
 
 .popup-input-wrapper {
-    padding-bottom: 16rpx;
-    border-bottom: 2rpx solid #E7E2D6;
     margin-bottom: 24rpx;
+    padding-bottom: 16rpx;
+    border-bottom: 2rpx solid #e7e2d6;
 }
 
 .code-input-wrapper {
@@ -793,10 +816,10 @@ onUnload(() => {
 
 .code-btn {
     padding: 10rpx 20rpx;
+    border-radius: 18rpx;
     font-size: 26rpx;
     font-weight: 500;
     white-space: nowrap;
-    border-radius: 18rpx;
     color: #0b0b0b;
 }
 
@@ -811,10 +834,10 @@ onUnload(() => {
 .popup-btn {
     width: 100%;
     height: 72rpx;
+    border: none;
     border-radius: 20rpx;
     font-size: 30rpx;
     font-weight: 600;
-    border: none;
 }
 
 .popup-btn::after {

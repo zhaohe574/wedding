@@ -10,9 +10,15 @@ $aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
 @mixin aftersale-page-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 22rpx;
-    padding: 10rpx 0
-        calc(var(--wm-safe-bottom-action, calc(150rpx + env(safe-area-inset-bottom))) + 18rpx);
+    width: 100%;
+    gap: var(--wm-space-section-gap-sm, 22rpx);
+    padding: 18rpx var(--wm-space-page-x, 37rpx) var(--wm-space-section-gap-lg, 30rpx);
+    box-sizing: border-box;
+}
+
+@mixin aftersale-page-wrapper-with-action {
+    @include aftersale-page-wrapper;
+    padding-bottom: calc(var(--wm-space-section-gap-lg, 30rpx) + 24rpx);
 }
 
 @mixin aftersale-page-head {
@@ -86,6 +92,12 @@ $aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
     box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
 }
 
+@mixin aftersale-form-surface {
+    @include aftersale-input-surface;
+    background: rgba(248, 247, 242, 0.92);
+    box-sizing: border-box;
+}
+
 @mixin aftersale-choice-chip {
     min-height: 62rpx;
     padding: 0 22rpx;
@@ -127,7 +139,7 @@ $aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 72rpx 40rpx 180rpx;
+    padding: 72rpx 40rpx 96rpx;
     text-align: center;
 }
 
@@ -233,7 +245,7 @@ $aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
 
 @mixin aftersale-gallery-image {
     width: 100%;
-    height: 180rpx;
+    height: 196rpx;
     border-radius: var(--wm-radius-card-soft, 14rpx);
     display: block;
 }
@@ -343,10 +355,17 @@ $aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
     border: 1rpx solid rgba(231, 226, 214, 0.92);
 }
 
-@mixin aftersale-action-row {
+@mixin aftersale-action-row($gap: 16rpx) {
     display: flex;
     width: 100%;
-    gap: 16rpx;
+    align-items: stretch;
+    gap: $gap;
+
+    :deep(.base-button) {
+        flex: 1 1 0;
+        min-width: 0;
+        width: auto;
+    }
 }
 
 @mixin aftersale-bottom-sheet {

@@ -5,27 +5,28 @@
             <text v-if="headingMeta" class="profile-quick-meta">{{ headingMeta }}</text>
         </view>
 
-        <scroll-view
-            v-if="isRoleEntry"
-            :scroll-x="true"
-            class="profile-role-scroll"
-            :show-scrollbar="false"
-        >
+        <view v-if="isRoleEntry" class="profile-role-panel">
             <view class="profile-role-track">
                 <view
                     v-for="(item, index) in showList"
                     :key="item.key || index"
                     class="profile-role-pill"
-                    :class="{ 'profile-role-pill--disabled': !!item.disabled }"
+                    :class="[
+                        item.key ? `profile-role-pill--${item.key}` : '',
+                        { 'profile-role-pill--disabled': !!item.disabled }
+                    ]"
                     @click="handleClick(item)"
                 >
-                    <text class="profile-role-title">{{ item.title }}</text>
-                    <text v-if="getItemDetail(item)" class="profile-role-desc">
-                        {{ getItemDetail(item) }}
-                    </text>
+                    <view class="profile-role-copy">
+                        <text class="profile-role-title">{{ item.title }}</text>
+                        <text v-if="getItemDetail(item)" class="profile-role-desc">
+                            {{ getItemDetail(item) }}
+                        </text>
+                    </view>
+                    <view class="profile-role-arrow">›</view>
                 </view>
             </view>
-        </scroll-view>
+        </view>
 
         <view v-else class="profile-entry-panel">
             <view
@@ -185,55 +186,93 @@ const handleClick = (item: QuickEntryItem) => {
     color: var(--wm-color-secondary, #c8a45d);
 }
 
-.profile-role-scroll {
-    white-space: nowrap;
-
-    &::-webkit-scrollbar {
-        display: none;
-    }
+.profile-role-panel {
+    width: 100%;
 }
 
 .profile-role-track {
-    display: inline-flex;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14rpx;
-    width: max-content;
 }
 
 .profile-role-pill {
-    min-width: 220rpx;
-    max-width: 280rpx;
-    padding: 20rpx 22rpx;
-    border-radius: 16rpx;
-    border: 1rpx solid var(--wm-color-border, #e5e5e5);
-    background: #ffffff;
+    min-height: 104rpx;
+    padding: 22rpx 20rpx;
+    border-radius: 22rpx;
+    border: 1rpx solid rgba(216, 194, 138, 0.68);
+    background: linear-gradient(135deg, #ffffff 0%, #f8f7f2 100%);
+    box-shadow: 0 10rpx 22rpx rgba(17, 17, 17, 0.06);
     box-sizing: border-box;
-    display: inline-flex;
-    flex-direction: column;
-    gap: 8rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14rpx;
 
     &:active {
         transform: translateY(1rpx);
-        opacity: 0.92;
+        opacity: 0.94;
     }
+}
+
+.profile-role-pill--staff-center {
+    border-color: rgba(11, 11, 11, 0.16);
+    background: var(--wm-color-primary, #0b0b0b);
+
+    .profile-role-title,
+    .profile-role-desc,
+    .profile-role-arrow {
+        color: #ffffff;
+    }
+
+    .profile-role-desc {
+        opacity: 0.72;
+    }
+}
+
+.profile-role-pill--admin-dashboard {
+    background: linear-gradient(135deg, #fffaf0 0%, #f7f0df 100%);
 }
 
 .profile-role-pill--disabled {
     opacity: 0.54;
 }
 
+.profile-role-copy {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
 .profile-role-title {
-    font-size: 26rpx;
+    font-size: 27rpx;
     line-height: 1.35;
     font-weight: 700;
     color: var(--wm-text-primary, #111111);
 }
 
 .profile-role-desc {
-    font-size: 22rpx;
-    line-height: 1.4;
+    font-size: 21rpx;
+    line-height: 1.35;
     font-weight: 600;
     color: var(--wm-text-secondary, #4a4a4a);
+    white-space: normal;
+}
+
+.profile-role-arrow {
+    width: 42rpx;
+    height: 42rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 34rpx;
+    line-height: 1;
+    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .profile-entry-panel {

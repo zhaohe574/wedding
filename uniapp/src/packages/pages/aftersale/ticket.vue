@@ -129,7 +129,8 @@ onLoad((options: any) => {
 .aftersale-list-page__wrapper {
     @include aftersale-page-wrapper;
     gap: 16rpx;
-    padding: 12rpx 0 calc(var(--wm-safe-bottom-action, 160rpx) + 18rpx);
+    padding-top: 12rpx;
+    padding-bottom: var(--wm-space-section-gap-lg, 30rpx);
 }
 
 .aftersale-list-page__filters {

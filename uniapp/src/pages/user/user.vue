@@ -126,14 +126,6 @@ const visibleRoleEntryItems = computed<QuickEntryItem[]>(() => {
         }))
 })
 
-const weddingProfileSubtitle = computed(() => {
-    const weddingDateText = String(weddingInfo.value?.wedding_date || '').trim()
-    if (weddingDateText) {
-        return `婚期：${weddingDateText}`
-    }
-    return ''
-})
-
 const widgetMap = computed(() => {
     return state.pages.reduce((record, item) => {
         if (item?.name) {
@@ -187,15 +179,6 @@ const buildQuickEntryData = (): QuickEntryItem[] => {
             disabled: false,
             requiresLogin: true,
             link: { path: '/packages/pages/notification/index', type: 'shop' }
-        },
-        {
-            key: 'profile',
-            title: '资料与婚期',
-            subtitle: weddingProfileSubtitle.value,
-            is_show: '1',
-            disabled: false,
-            requiresLogin: true,
-            link: { path: '/pages/user_data/user_data', type: 'shop' }
         },
         {
             key: 'favorite',

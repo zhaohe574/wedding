@@ -241,11 +241,8 @@ onLoad((options: any) => {
 }
 
 .aftersale-detail-card__video {
-    width: 100%;
-    height: 180rpx;
-    border-radius: 28rpx;
-    display: block;
-    background: #0B0B0B;
+    @include aftersale-gallery-image;
+    background: #0b0b0b;
 }
 
 .aftersale-detail-page__actions {

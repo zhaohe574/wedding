@@ -8,8 +8,8 @@
                 <BaseCard
                     variant="surface"
                     scene="consumer"
-                    padding="24rpx 26rpx"
-                    border-radius="44rpx"
+                    padding="var(--wm-space-card-padding, 30rpx)"
+                    border-radius="var(--wm-radius-card-lg, 20rpx)"
                 >
                     <view class="aftersale-create-section">
                         <text class="aftersale-create-section__title">投诉对象</text>
@@ -34,8 +34,8 @@
                 <BaseCard
                     variant="surface"
                     scene="consumer"
-                    padding="24rpx 26rpx"
-                    border-radius="44rpx"
+                    padding="var(--wm-space-card-padding, 30rpx)"
+                    border-radius="var(--wm-radius-card-lg, 20rpx)"
                 >
                     <view class="aftersale-create-section">
                         <view class="aftersale-create-section__head">
@@ -61,8 +61,8 @@
                 <BaseCard
                     variant="surface"
                     scene="consumer"
-                    padding="24rpx 26rpx"
-                    border-radius="44rpx"
+                    padding="var(--wm-space-card-padding, 30rpx)"
+                    border-radius="var(--wm-radius-card-lg, 20rpx)"
                 >
                     <view class="aftersale-create-section">
                         <view
@@ -112,8 +112,8 @@
                 <BaseCard
                     variant="surface"
                     scene="consumer"
-                    padding="24rpx 26rpx"
-                    border-radius="44rpx"
+                    padding="var(--wm-space-card-padding, 30rpx)"
+                    border-radius="var(--wm-radius-card-lg, 20rpx)"
                 >
                     <view class="aftersale-create-section">
                         <view
@@ -137,8 +137,8 @@
                 <BaseCard
                     variant="surface"
                     scene="consumer"
-                    padding="24rpx 26rpx"
-                    border-radius="44rpx"
+                    padding="var(--wm-space-card-padding, 30rpx)"
+                    border-radius="var(--wm-radius-card-lg, 20rpx)"
                 >
                     <view class="aftersale-create-section">
                         <view
@@ -180,17 +180,15 @@
         </view>
 
         <ActionArea class="aftersale-create-page__action-bar" sticky safeBottom>
-            <view class="aftersale-create-page__action-slot">
-                <BaseButton
-                    block
-                    size="lg"
-                    :disabled="submitDisabled"
-                    :loading="submitting"
-                    @click="handleSubmit"
-                >
-                    提交投诉
-                </BaseButton>
-            </view>
+            <BaseButton
+                block
+                size="lg"
+                :disabled="submitDisabled"
+                :loading="submitting"
+                @click="handleSubmit"
+            >
+                提交投诉
+            </BaseButton>
         </ActionArea>
 
         <tn-picker
@@ -390,9 +388,9 @@ onLoad((options: any) => {
 }
 
 .aftersale-create-page__wrapper {
-    @include aftersale-page-wrapper;
+    @include aftersale-page-wrapper-with-action;
     gap: 18rpx;
-    padding: 12rpx 0 calc(var(--wm-safe-bottom-action, 160rpx) + 78rpx);
+    padding-top: 12rpx;
 }
 
 .aftersale-create-section {
@@ -432,25 +430,16 @@ onLoad((options: any) => {
 }
 
 .aftersale-object-chip {
+    @include aftersale-choice-chip;
+    width: 100%;
     min-height: 68rpx;
     padding: 0 12rpx;
-    border-radius: 999rpx;
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
-    background: rgba(248, 247, 242, 0.96);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    font-size: 24rpx;
     line-height: 1.4;
     font-weight: 600;
-    color: var(--wm-text-secondary, #5f5a50);
     text-align: center;
 
     &.is-active {
-        background: rgba(247, 240, 223, 0.98);
-        border-color: rgba(216, 194, 138, 0.96);
-        color: var(--wm-color-primary, #0b0b0b);
+        @include aftersale-choice-chip-active;
         font-weight: 700;
     }
 }
@@ -458,10 +447,7 @@ onLoad((options: any) => {
 .aftersale-create-panel,
 .aftersale-create-input,
 .aftersale-contact-panel {
-    border-radius: 34rpx;
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
-    background: rgba(248, 247, 242, 0.92);
-    box-sizing: border-box;
+    @include aftersale-form-surface;
 }
 
 .aftersale-create-panel {
@@ -489,10 +475,7 @@ onLoad((options: any) => {
     width: 100%;
     min-height: 180rpx;
     padding: 24rpx;
-    border-radius: 34rpx;
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
-    background: rgba(248, 247, 242, 0.92);
-    box-sizing: border-box;
+    @include aftersale-form-surface;
     font-size: 26rpx;
     line-height: 1.7;
     color: var(--wm-text-primary, #111111);
@@ -517,24 +500,15 @@ onLoad((options: any) => {
 }
 
 .aftersale-level-chip {
+    @include aftersale-choice-chip;
     min-width: 122rpx;
     min-height: 58rpx;
     padding: 0 20rpx;
-    border-radius: 999rpx;
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
-    background: rgba(255, 255, 255, 0.88);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
     font-size: 22rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #5f5a50);
 
     &.is-active {
-        background: rgba(247, 240, 223, 0.98);
-        border-color: rgba(216, 194, 138, 0.96);
-        color: var(--wm-color-primary, #0b0b0b);
+        @include aftersale-choice-chip-active;
     }
 }
 
@@ -574,10 +548,5 @@ onLoad((options: any) => {
     font-size: 22rpx;
     line-height: 1.45;
     color: var(--wm-text-secondary, #5f5a50);
-}
-
-.aftersale-create-page__action-slot {
-    flex: 1;
-    width: 100%;
 }
 </style>

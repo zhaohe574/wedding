@@ -3,6 +3,10 @@
         :class="buttonClass"
         :style="buttonVars"
         :size="computedSize"
+        :width="computedWidth"
+        :height="computedHeight"
+        :font-size="computedFontSize"
+        :custom-style="buttonCustomStyle"
         :shape="shape"
         :disabled="disabled"
         :loading="loading"
@@ -86,14 +90,36 @@ const buttonClass = computed(() => {
     return classes.join(' ')
 })
 
-const computedSize = computed(() => {
-    const sizeMap = {
-        lg: 'lg',
-        md: 'md',
-        sm: 'sm'
+const buttonSizeStyleMap = {
+    lg: {
+        tnSize: 'lg',
+        height: '88rpx',
+        fontSize: '28rpx',
+        padding: '0 32rpx'
+    },
+    md: {
+        tnSize: '',
+        height: '76rpx',
+        fontSize: '26rpx',
+        padding: '0 28rpx'
+    },
+    sm: {
+        tnSize: 'sm',
+        height: '60rpx',
+        fontSize: '24rpx',
+        padding: '0 22rpx'
     }
-    return sizeMap[props.size]
-})
+} as const
+
+const currentSizeStyle = computed(() => buttonSizeStyleMap[props.size])
+
+const computedSize = computed(() => currentSizeStyle.value.tnSize)
+
+const computedWidth = computed(() => (props.block ? '100%' : ''))
+
+const computedHeight = computed(() => props.height || currentSizeStyle.value.height)
+
+const computedFontSize = computed(() => props.fontSize || currentSizeStyle.value.fontSize)
 
 const bgColor = computed(() => {
     if (resolvedVariant.value === 'secondary' || resolvedVariant.value === 'ghost') {
@@ -179,10 +205,8 @@ const buttonVars = computed(() => {
             ...sharedVars,
             '--button-bg-start': themeStore.ctaColor || '#0B0B0B',
             '--button-bg-end': themeStore.ctaColor || '#0B0B0B',
-            '--button-shadow':
-                props.shadow || '0 12rpx 24rpx rgba(11, 11, 11, 0.16)',
-            '--button-shadow-active':
-                props.activeShadow || '0 6rpx 12rpx rgba(11, 11, 11, 0.12)'
+            '--button-shadow': props.shadow || '0 12rpx 24rpx rgba(11, 11, 11, 0.16)',
+            '--button-shadow-active': props.activeShadow || '0 6rpx 12rpx rgba(11, 11, 11, 0.12)'
         }
     }
 
@@ -215,6 +239,42 @@ const buttonVars = computed(() => {
     }
 })
 
+const buttonCustomStyle = computed<Record<string, string>>(() => {
+    const style: Record<string, string> = {
+        width: props.block ? '100%' : 'auto',
+        height: computedHeight.value,
+        minHeight: computedHeight.value,
+        padding: currentSizeStyle.value.padding,
+        borderRadius: props.radius || 'var(--wm-radius-pill, 999rpx)',
+        boxSizing: 'border-box',
+        fontWeight: '600',
+        letterSpacing: '0',
+        lineHeight: '1',
+        transition: 'all var(--wm-motion-base, 220ms) ease'
+    }
+
+    if (
+        resolvedVariant.value === 'primary' ||
+        resolvedVariant.value === 'cta' ||
+        resolvedVariant.value === 'danger'
+    ) {
+        style.backgroundImage =
+            'linear-gradient(135deg, var(--button-bg-start) 0%, var(--button-bg-end) 100%)'
+        style.boxShadow = 'var(--button-current-shadow, var(--button-shadow))'
+        style.border = 'none'
+    } else if (resolvedVariant.value === 'secondary') {
+        style.backgroundColor = 'rgba(255, 255, 255, 0.94)'
+        style.border = '1rpx solid rgba(11, 11, 11, 0.12)'
+        style.boxShadow = 'none'
+    } else if (resolvedVariant.value === 'ghost') {
+        style.backgroundColor = '#F7F7F7'
+        style.border = '1rpx solid rgba(11, 11, 11, 0.1)'
+        style.boxShadow = 'none'
+    }
+
+    return style
+})
+
 const handleClick = (event: Event) => {
     if (!props.disabled && !props.loading) {
         emit('click', event)
@@ -232,89 +292,115 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.base-button {
-    transition: all var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
+@mixin base-button-frame {
+    width: auto;
+    min-width: 88rpx;
     border-radius: var(--button-radius, var(--wm-radius-pill, 999rpx));
+    box-sizing: border-box;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1;
+    transition: all var(--wm-motion-base, 220ms) ease;
+}
+
+@mixin base-button-filled {
+    background-image: linear-gradient(135deg, var(--button-bg-start) 0%, var(--button-bg-end) 100%);
+    box-shadow: var(--button-current-shadow, var(--button-shadow));
+    border: none;
+}
+
+@mixin base-button-subtle($background, $border) {
+    background: $background;
+    border: 1rpx solid $border;
+    box-shadow: none;
+}
+
+.base-button {
+    @include base-button-frame;
+    transition: all var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
 
     &:active {
         transform: translateY(2rpx) scale(0.99);
     }
 
+    /* 兼容 tn-button 被额外 wrapper 包住的端；普通端样式直接落在当前根节点。 */
     :deep(.tn-button) {
-        width: auto;
-        border-radius: var(--button-radius, var(--wm-radius-pill, 999rpx));
-        font-weight: 600;
-        letter-spacing: 0;
-        transition: all var(--wm-motion-base, 220ms) ease;
-        min-width: 88rpx;
+        @include base-button-frame;
     }
+}
 
-    &--block {
+.base-button.base-button--block {
+    width: 100%;
+
+    :deep(.tn-button) {
         width: 100%;
+    }
+}
 
-        :deep(.tn-button) {
-            width: 100%;
-        }
+.base-button.base-button--primary,
+.base-button.base-button--cta,
+.base-button.base-button--danger {
+    @include base-button-filled;
+
+    &:active {
+        --button-current-shadow: var(--button-shadow-active);
+        box-shadow: var(--button-shadow-active);
     }
 
-    &--primary,
-    &--cta,
-    &--danger {
-        :deep(.tn-button) {
-            background: linear-gradient(
-                135deg,
-                var(--button-bg-start) 0%,
-                var(--button-bg-end) 100%
-            );
-            box-shadow: var(--button-shadow);
-            border: none;
-
-            &:active {
-                box-shadow: var(--button-shadow-active);
-            }
-        }
+    :deep(.tn-button) {
+        @include base-button-filled;
     }
+}
 
-    &--secondary {
-        :deep(.tn-button) {
-            background: rgba(255, 255, 255, 0.94);
-            border-width: 1rpx;
-            border-color: rgba(11, 11, 11, 0.12);
-            box-shadow: none;
-        }
+.base-button.base-button--secondary {
+    @include base-button-subtle(rgba(255, 255, 255, 0.94), rgba(11, 11, 11, 0.12));
+
+    :deep(.tn-button) {
+        @include base-button-subtle(rgba(255, 255, 255, 0.94), rgba(11, 11, 11, 0.12));
     }
+}
 
-    &--ghost {
-        :deep(.tn-button) {
-            background: #f7f7f7;
-            border-width: 1rpx;
-            border-color: rgba(11, 11, 11, 0.1);
-            box-shadow: none;
-        }
+.base-button.base-button--ghost {
+    @include base-button-subtle(#f7f7f7, rgba(11, 11, 11, 0.1));
+
+    :deep(.tn-button) {
+        @include base-button-subtle(#f7f7f7, rgba(11, 11, 11, 0.1));
     }
+}
 
-    &--lg {
-        :deep(.tn-button) {
-            min-height: var(--button-height, 88rpx);
-            padding: 0 32rpx;
-            font-size: var(--button-font-size, 28rpx);
-        }
+.base-button.base-button--lg {
+    min-height: var(--button-height, 88rpx);
+    padding: 0 32rpx;
+    font-size: var(--button-font-size, 28rpx);
+
+    :deep(.tn-button) {
+        min-height: var(--button-height, 88rpx);
+        padding: 0 32rpx;
+        font-size: var(--button-font-size, 28rpx);
     }
+}
 
-    &--md {
-        :deep(.tn-button) {
-            min-height: var(--button-height, 76rpx);
-            padding: 0 28rpx;
-            font-size: var(--button-font-size, 26rpx);
-        }
+.base-button.base-button--md {
+    min-height: var(--button-height, 76rpx);
+    padding: 0 28rpx;
+    font-size: var(--button-font-size, 26rpx);
+
+    :deep(.tn-button) {
+        min-height: var(--button-height, 76rpx);
+        padding: 0 28rpx;
+        font-size: var(--button-font-size, 26rpx);
     }
+}
 
-    &--sm {
-        :deep(.tn-button) {
-            min-height: var(--button-height, 60rpx);
-            padding: 0 22rpx;
-            font-size: var(--button-font-size, 24rpx);
-        }
+.base-button.base-button--sm {
+    min-height: var(--button-height, 60rpx);
+    padding: 0 22rpx;
+    font-size: var(--button-font-size, 24rpx);
+
+    :deep(.tn-button) {
+        min-height: var(--button-height, 60rpx);
+        padding: 0 22rpx;
+        font-size: var(--button-font-size, 24rpx);
     }
 }
 </style>

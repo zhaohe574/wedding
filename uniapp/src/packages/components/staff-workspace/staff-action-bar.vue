@@ -3,7 +3,10 @@
         <view class="staff-action-bar">
             <view
                 v-if="secondaryText"
-                class="staff-action-bar__btn staff-action-bar__btn--secondary"
+                :class="[
+                    'staff-action-bar__btn staff-action-bar__btn--secondary',
+                    { 'is-feedback-disabled': disableFeedback }
+                ]"
                 @click="emit('secondary')"
             >
                 <text class="staff-action-bar__btn-text staff-action-bar__btn-text--secondary">
@@ -13,7 +16,10 @@
 
             <view
                 class="staff-action-bar__btn staff-action-bar__btn--primary"
-                :class="{ 'is-disabled': disabled || loading }"
+                :class="{
+                    'is-disabled': disabled || loading,
+                    'is-feedback-disabled': disableFeedback
+                }"
                 :style="{ opacity: disabled || loading ? 0.66 : 1 }"
                 @click="handlePrimary"
             >
@@ -22,7 +28,10 @@
                     name="loading"
                     size="26"
                     color="#ffffff"
-                    class="staff-action-bar__loading"
+                    :class="[
+                        'staff-action-bar__loading',
+                        { 'staff-action-bar__loading--static': disableFeedback }
+                    ]"
                 />
                 <text class="staff-action-bar__btn-text">{{ primaryText }}</text>
             </view>
@@ -38,12 +47,14 @@ interface Props {
     secondaryText?: string
     loading?: boolean
     disabled?: boolean
+    disableFeedback?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
     secondaryText: '',
     loading: false,
-    disabled: false
+    disabled: false,
+    disableFeedback: false
 })
 
 const emit = defineEmits<{
@@ -73,15 +84,19 @@ const handlePrimary = () => {
     justify-content: center;
     gap: 8rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    transition: opacity var(--wm-motion-base, 220ms) ease,
-        transform var(--wm-motion-base, 220ms) ease;
 
-    &:active {
+    &:not(.is-feedback-disabled) {
+        transition: opacity var(--wm-motion-base, 220ms) ease,
+            transform var(--wm-motion-base, 220ms) ease;
+    }
+
+    &:not(.is-feedback-disabled):active {
         transform: translateY(2rpx);
         opacity: 0.9;
     }
 
-    &.is-disabled:active {
+    &.is-disabled:active,
+    &.is-feedback-disabled:active {
         transform: none;
     }
 }
@@ -108,6 +123,10 @@ const handlePrimary = () => {
 
 .staff-action-bar__loading {
     animation: staff-action-rotate 1s linear infinite;
+}
+
+.staff-action-bar__loading--static {
+    animation: none;
 }
 
 @keyframes staff-action-rotate {

@@ -3,7 +3,7 @@
     <PageShell scene="staff" hasSafeBottom>
         <BaseNavbar title="个人资料" />
 
-        <view class="staff-profile-page">
+        <view class="staff-profile-page staff-profile-page--static">
             <view class="staff-profile-page__content wm-page-content">
                 <BaseCard
                     variant="glass"
@@ -243,6 +243,7 @@
             <StaffActionBar
                 :primary-text="saving ? '保存中...' : '保存资料'"
                 :loading="saving"
+                disable-feedback
                 @primary="handleSave"
             />
         </view>
@@ -558,6 +559,17 @@ onShow(async () => {
     box-sizing: border-box;
 }
 
+.staff-profile-page--static,
+.staff-profile-page--static :deep(*) {
+    -webkit-tap-highlight-color: transparent;
+    animation: none !important;
+    transition: none !important;
+}
+
+.staff-profile-page--static :deep(*:active) {
+    transform: none !important;
+}
+
 .tag-group-list {
     display: flex;
     flex-direction: column;
@@ -592,7 +604,6 @@ onShow(async () => {
     border-radius: 999rpx;
     border: 2rpx solid rgba(216, 194, 138, 0.34);
     background: rgba(255, 255, 255, 0.78);
-    transition: all 0.2s ease;
 }
 
 .tag-chip--active {
@@ -620,17 +631,17 @@ onShow(async () => {
 
 .status-tip--info {
     background: rgba(154, 147, 136, 0.12);
-    color: #5F5A50;
+    color: #5f5a50;
 }
 
 .status-tip--warning {
     background: rgba(159, 122, 46, 0.12);
-    color: #9F7A2E;
+    color: #9f7a2e;
 }
 
 .status-tip--danger {
     background: rgba(90, 68, 51, 0.12);
-    color: #5A4433;
+    color: #5a4433;
 }
 
 .status-tip__text {
@@ -766,7 +777,7 @@ onShow(async () => {
     }
 
     &--neutral .hero-pill__text {
-        color: #6C665C;
+        color: #6c665c;
     }
 }
 

@@ -138,7 +138,6 @@ const handleCancel = () => {
 }
 
 .aftersale-sheet__actions {
-    display: flex;
-    gap: 18rpx;
+    @include aftersale-action-row(18rpx);
 }
 </style>

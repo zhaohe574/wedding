@@ -6,39 +6,36 @@
 
         <view class="dashboard-page wm-page-content">
             <view class="dashboard-page__stack">
-                <view class="hero-card wm-panel-card" :style="heroCardStyle">
-                    <view class="hero-top">
-                        <view class="hero-main">
-                            <text class="hero-eyebrow">经营驾驶舱</text>
-
-                            <text class="hero-title">先看结果</text>
-
-                            <text class="hero-period">{{ periodLabel }}</text>
+                <view class="decision-card wm-panel-card" :style="decisionCardStyle">
+                    <view class="decision-card__top">
+                        <view class="decision-card__copy">
+                            <text class="decision-card__eyebrow">{{ decisionFocus.label }}</text>
+                            <text class="decision-card__title">{{ decisionFocus.title }}</text>
+                            <text class="decision-card__desc">{{ decisionFocus.description }}</text>
                         </view>
 
-                        <view class="hero-refresh" :style="heroRefreshStyle" @click="loadData">
-                            <text class="hero-refresh-text">{{
-                                loading ? '更新中' : '刷新数据'
+                        <view class="refresh-pill" @click="loadData">
+                            <text class="refresh-pill__text">{{
+                                loading ? '更新中' : '刷新'
                             }}</text>
                         </view>
                     </view>
 
-                    <view class="hero-meta">
-                        <text class="hero-meta-text">更新时间：{{ lastUpdated || '--' }}</text>
-
-                        <text class="hero-meta-text">范围：{{ activeRangeLabel }}</text>
+                    <view class="decision-card__meta">
+                        <text>{{ activeRangeLabel }}</text>
+                        <text>{{ periodLabel }}</text>
+                        <text>更新 {{ lastUpdated || '--' }}</text>
                     </view>
 
-                    <view class="hero-chip-list">
+                    <view class="decision-metrics">
                         <view
-                            v-for="item in summaryChips"
+                            v-for="item in decisionMetrics"
                             :key="item.label"
-                            class="hero-chip"
-                            :style="heroChipStyle"
+                            class="decision-metric"
                         >
-                            <text class="hero-chip-label">{{ item.label }}</text>
-
-                            <text class="hero-chip-value">{{ item.value }}</text>
+                            <text class="decision-metric__label">{{ item.label }}</text>
+                            <text class="decision-metric__value">{{ item.value }}</text>
+                            <text class="decision-metric__hint">{{ item.hint }}</text>
                         </view>
                     </view>
                 </view>
@@ -55,255 +52,147 @@
                     </view>
                 </view>
 
-                <view class="section-card wm-panel-card" :style="panelStyle">
+                <view class="section-card wm-panel-card">
                     <view class="section-header">
                         <view>
-                            <text class="section-title">经营核心</text>
+                            <text class="section-title">关键指标</text>
+                            <text class="section-subtitle">只保留收入、订单、转化与今日结果</text>
                         </view>
                     </view>
 
-                    <view class="metric-grid">
+                    <view class="signal-grid">
                         <view
-                            v-for="item in coreMetrics"
+                            v-for="item in keyMetrics"
                             :key="item.label"
-                            class="metric-card"
-                            :style="getMetricCardStyle(item.color)"
+                            class="signal-card"
+                            :class="'signal-card--' + item.tone"
                         >
-                            <text class="metric-label">{{ item.label }}</text>
-
-                            <text class="metric-value">{{ item.value }}</text>
-
-                            <text class="metric-hint">{{ item.hint }}</text>
-                        </view>
-                    </view>
-
-                    <view class="snapshot-row">
-                        <view
-                            v-for="item in todaySnapshots"
-                            :key="item.label"
-                            class="snapshot-item"
-                        >
-                            <text class="snapshot-label">{{ item.label }}</text>
-
-                            <text class="snapshot-value">{{ item.value }}</text>
+                            <text class="signal-card__label">{{ item.label }}</text>
+                            <text class="signal-card__value">{{ item.value }}</text>
+                            <text class="signal-card__hint">{{ item.hint }}</text>
                         </view>
                     </view>
                 </view>
 
-                <view class="section-card wm-panel-card" :style="panelStyle">
+                <view class="section-card wm-panel-card">
                     <view class="section-header">
                         <view>
-                            <text class="section-title">团队总览</text>
-
-                            <text class="section-subtitle">
-                                本月档期占用 {{ formatPercent(capacityStats.booking_rate) }}，已占
-
-                                {{ capacityStats.month_occupied_slots }} /
-
-                                {{ capacityStats.month_total_slots }}
-                            </text>
+                            <text class="section-title">今日优先处理</text>
+                            <text class="section-subtitle">{{ prioritySummary }}</text>
                         </view>
                     </view>
 
-                    <view class="team-grid">
+                    <view class="priority-list">
                         <view
-                            v-for="item in teamStatsCards"
+                            v-for="item in priorityCards"
                             :key="item.label"
-                            class="team-stat-item"
-                            :style="teamStatStyle"
+                            class="priority-card"
+                            :class="'priority-card--' + item.tone"
                         >
-                            <text class="team-stat-label">{{ item.label }}</text>
-
-                            <text class="team-stat-value">{{ item.value }}</text>
+                            <view class="priority-card__head">
+                                <text class="priority-card__label">{{ item.label }}</text>
+                                <text class="priority-card__value">{{ item.value }}</text>
+                            </view>
+                            <text class="priority-card__action">{{ item.action }}</text>
                         </view>
                     </view>
                 </view>
 
-                <view class="section-card wm-panel-card" :style="panelStyle">
+                <view class="section-card wm-panel-card">
                     <view class="section-header">
                         <view>
-                            <text class="section-title">成员负载</text>
+                            <text class="section-title">收入与产能</text>
+                            <text class="section-subtitle"
+                                >日均 {{ formatAmount(trendSummary.avg) }}，峰值
+                                {{ formatAmount(trendSummary.peak) }}</text
+                            >
                         </view>
                     </view>
 
-                    <view v-if="memberCards.length === 0" class="panel-empty"
-                        >暂无成员负载数据</view
-                    >
+                    <view class="trend-capacity">
+                        <view class="trend-pane">
+                            <view v-if="trendList.length === 0" class="panel-empty"
+                                >暂无收入趋势</view
+                            >
 
-                    <scroll-view v-else class="member-scroll" scroll-x show-scrollbar="false">
-                        <view class="member-list">
-                            <view v-for="item in memberCards" :key="item.id" class="member-card">
-                                <view class="member-top">
-                                    <image
-                                        class="member-avatar"
-                                        :src="item.avatar"
-                                        mode="aspectFill"
-                                    />
-
-                                    <view class="member-main">
-                                        <view class="member-name-row">
-                                            <text class="member-name">{{ item.name }}</text>
-
-                                            <view
-                                                v-if="item.isRecommend"
-                                                class="member-recommend"
-                                                :style="memberRecommendStyle"
-                                            >
-                                                推荐
-                                            </view>
-                                        </view>
-
-                                        <text class="member-role">{{
-                                            item.categoryName || '服务人员'
-                                        }}</text>
+                            <view v-else class="trend-bars">
+                                <view
+                                    v-for="item in trendList"
+                                    :key="item.date"
+                                    class="trend-column"
+                                >
+                                    <view class="trend-track">
+                                        <view
+                                            class="trend-fill"
+                                            :style="getTrendFillStyle(item.height)"
+                                        />
                                     </view>
-
-                                    <view
-                                        class="member-load-tag"
-                                        :style="getLoadTagStyle(item.loadLevel)"
-                                    >
-                                        {{ item.loadLevel }}
-                                    </view>
-                                </view>
-
-                                <view class="member-data-grid">
-                                    <view class="member-data-item">
-                                        <text class="member-data-label">近30天订单</text>
-
-                                        <text class="member-data-value">{{
-                                            item.recentOrderCount
-                                        }}</text>
-                                    </view>
-
-                                    <view class="member-data-item">
-                                        <text class="member-data-label">未来30天占用</text>
-
-                                        <text class="member-data-value">{{
-                                            item.upcomingBookedSlots
-                                        }}</text>
-                                    </view>
-
-                                    <view class="member-data-item">
-                                        <text class="member-data-label">待跟进</text>
-
-                                        <text class="member-data-value">{{
-                                            item.followUpCount
-                                        }}</text>
-                                    </view>
+                                    <text class="trend-label">{{ item.label }}</text>
+                                    <text class="trend-value">{{ formatAmount(item.value) }}</text>
                                 </view>
                             </view>
                         </view>
-                    </scroll-view>
-                </view>
 
-                <view class="section-card wm-panel-card" :style="panelStyle">
-                    <view class="section-header">
-                        <view>
-                            <text class="section-title">业务推进</text>
-
-                            <text class="section-subtitle">
-                                总订单 {{ totalOrders }} 单，支付推进率
-
-                                {{ formatPercent(paidProgressRate) }}
-                            </text>
-                        </view>
-                    </view>
-
-                    <view class="todo-grid">
-                        <view
-                            v-for="item in todoCards"
-                            :key="item.label"
-                            class="todo-card"
-                            :style="getTodoCardStyle(item.color)"
-                        >
-                            <text class="todo-label">{{ item.label }}</text>
-
-                            <text class="todo-value">{{ item.value }}</text>
-
-                            <text v-if="item.hint" class="todo-hint">{{ item.hint }}</text>
-                        </view>
-                    </view>
-
-                    <view v-if="statusItems.length === 0" class="panel-empty">暂无订单统计</view>
-
-                    <view v-else class="status-list">
-                        <view v-for="item in statusItems" :key="item.status" class="status-item">
-                            <view class="status-title">
-                                <view class="status-label-wrap">
-                                    <view
-                                        class="status-dot"
-                                        :style="{ backgroundColor: item.color }"
-                                    />
-
-                                    <text class="status-label">{{ item.label }}</text>
+                        <view class="capacity-pane">
+                            <view class="capacity-pane__head">
+                                <view>
+                                    <text class="capacity-pane__label">本月档期占用</text>
+                                    <text class="capacity-pane__value">{{
+                                        formatPercent(capacityStats.booking_rate)
+                                    }}</text>
                                 </view>
-
-                                <text class="status-meta"
-                                    >{{ item.count }} 单 · {{ formatPercent(item.percent) }}</text
+                                <text class="capacity-pane__meta"
+                                    >{{ capacityStats.month_occupied_slots }} /
+                                    {{ capacityStats.month_total_slots }}</text
                                 >
                             </view>
 
-                            <view class="status-track">
-                                <view
-                                    class="status-fill"
-                                    :style="getStatusFillStyle(item.color, item.percent)"
-                                />
+                            <view class="capacity-track">
+                                <view class="capacity-fill" :style="capacityFillStyle" />
+                            </view>
+
+                            <view class="capacity-summary">
+                                <text>在岗 {{ teamStats.active_staff || 0 }} 人</text>
+                                <text>推荐 {{ teamStats.recommended_staff || 0 }} 人</text>
                             </view>
                         </view>
                     </view>
                 </view>
 
-                <view class="section-card wm-panel-card" :style="panelStyle">
+                <view class="section-card wm-panel-card">
                     <view class="section-header">
                         <view>
-                            <text class="section-title">收入趋势</text>
-
-                            <text class="section-subtitle">
-                                峰值 ¥{{ formatMoney(trendSummary.peak) }}，日均 ¥{{
-                                    formatMoney(trendSummary.avg)
-                                }}
-                            </text>
+                            <text class="section-title">团队与风险</text>
+                            <text class="section-subtitle">只展示需要经营者关注的成员与提醒</text>
                         </view>
                     </view>
 
-                    <view v-if="trendList.length === 0" class="panel-empty">暂无趋势数据</view>
-
-                    <view v-else class="trend-chart">
-                        <view class="trend-bars">
-                            <view v-for="item in trendList" :key="item.date" class="trend-column">
-                                <view class="trend-track">
-                                    <view
-                                        class="trend-fill"
-                                        :style="getTrendFillStyle(item.height)"
-                                    />
-                                </view>
-
-                                <text class="trend-amount">{{ formatMoney(item.value) }}</text>
-
-                                <text class="trend-label">{{ item.label }}</text>
+                    <view v-if="focusMembers.length" class="member-focus-list">
+                        <view v-for="item in focusMembers" :key="item.id" class="member-focus-item">
+                            <image class="member-avatar" :src="item.avatar" mode="aspectFill" />
+                            <view class="member-focus-main">
+                                <text class="member-name">{{ item.name }}</text>
+                                <text class="member-meta"
+                                    >{{ item.categoryName || '服务人员' }} · 待跟进
+                                    {{ item.followUpCount }}</text
+                                >
+                            </view>
+                            <view class="member-load-tag" :class="'member-load-tag--' + item.tone">
+                                {{ item.loadLevel }}
                             </view>
                         </view>
                     </view>
-                </view>
 
-                <view class="section-card wm-panel-card" :style="panelStyle">
-                    <view class="section-header">
-                        <view>
-                            <text class="section-title">经营提醒</text>
-                        </view>
-                    </view>
+                    <view v-else class="panel-empty">暂无重点成员</view>
 
                     <view class="insight-list">
                         <view
                             v-for="item in insights"
                             :key="item.text"
                             class="insight-item"
-                            :style="item.style"
+                            :class="'insight-item--' + item.tone"
                         >
-                            <view class="insight-tag" :style="item.tagStyle">{{
-                                item.levelText
-                            }}</view>
-
+                            <view class="insight-tag">{{ item.levelText }}</view>
                             <text class="insight-text">{{ item.text }}</text>
                         </view>
                     </view>
@@ -318,164 +207,120 @@ import { computed, ref } from 'vue'
 
 import { onShow } from '@dcloudio/uni-app'
 
-import PageShell from '@/components/base/PageShell.vue'
-
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
-
+import PageShell from '@/components/base/PageShell.vue'
 import {
     adminDashboardIncomeTrend,
     adminDashboardOrderStats,
     adminDashboardOverview,
     adminDashboardTeamOverview
 } from '@/packages/common/api/adminDashboard'
-
 import { useAppStore } from '@/stores/app'
-
+import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 
-import { useThemeStore } from '@/stores/theme'
-
 type RangeKey = '7d' | '30d' | 'month'
-
-type InsightLevel = 'good' | 'warning' | 'risk'
+type Tone = 'good' | 'warning' | 'risk' | 'neutral'
 
 interface TrendItem {
     date: string
-
     label: string
-
     value: number
-
     height: number
 }
 
 interface TeamOverviewData {
     team: {
         total_staff: number
-
         active_staff: number
-
         recommended_staff: number
     }
-
     capacity: {
         month_label: string
-
         month_total_slots: number
-
         month_booked_slots: number
-
         month_occupied_slots: number
-
         booking_rate: number
     }
-
     todo: {
         pending_confirm: number
-
         pending_pay: number
-
         in_service: number
-
         waitlist_total: number
-
         total: number
     }
-
     members: Array<{
         id: number
-
         name: string
-
         avatar: string
-
         category_name: string
-
         is_recommend: number
-
         recent_order_count: number
-
         upcoming_booked_slots: number
-
         follow_up_count: number
-
         load_level: string
     }>
 }
 
+interface MetricItem {
+    label: string
+    value: string
+    hint: string
+    tone: Tone
+}
+
+interface PriorityItem {
+    label: string
+    value: string
+    action: string
+    tone: Tone
+}
+
 interface InsightItem {
     levelText: string
-
     text: string
-
-    style: Record<string, string>
-
-    tagStyle: Record<string, string>
+    tone: Tone
 }
 
 const appStore = useAppStore()
-
 const userStore = useUserStore()
-
 const $theme = useThemeStore()
 
 const createEmptyTeamOverview = (): TeamOverviewData => ({
     team: {
         total_staff: 0,
-
         active_staff: 0,
-
         recommended_staff: 0
     },
-
     capacity: {
         month_label: '',
-
         month_total_slots: 0,
-
         month_booked_slots: 0,
-
         month_occupied_slots: 0,
-
         booking_rate: 0
     },
-
     todo: {
         pending_confirm: 0,
-
         pending_pay: 0,
-
         in_service: 0,
-
         waitlist_total: 0,
-
         total: 0
     },
-
     members: []
 })
 
-const overview = ref<any>({})
-
-const orderStats = ref<any>({})
-
+const overview = ref<Record<string, any>>({})
+const orderStats = ref<Record<string, any>>({})
 const trendList = ref<TrendItem[]>([])
-
 const teamOverview = ref<TeamOverviewData>(createEmptyTeamOverview())
-
 const loading = ref(false)
-
 const lastUpdated = ref('')
-
 const rangeKey = ref<RangeKey>('7d')
-
 const dateRange = ref({ startDate: '', endDate: '' })
 
 const rangeTabs: Array<{ key: RangeKey; label: string }> = [
     { key: '7d', label: '近7天' },
-
     { key: '30d', label: '近30天' },
-
     { key: 'month', label: '本月' }
 ]
 
@@ -486,9 +331,7 @@ const hexToRgb = (hexColor: string) => {
 
     return {
         r: parseInt(hex.slice(0, 2), 16),
-
         g: parseInt(hex.slice(2, 4), 16),
-
         b: parseInt(hex.slice(4, 6), 16)
     }
 }
@@ -501,35 +344,19 @@ const toRgba = (hexColor: string, alpha: number) => {
     return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`
 }
 
-const mixColor = (hexColor: string, mixHex: string, weight: number) => {
-    const a = hexToRgb(hexColor)
+const toNumber = (value: any) => Number(value || 0)
+const formatInteger = (value: any) => String(Math.round(toNumber(value)))
+const formatPercent = (value: any) => `${toNumber(value).toFixed(1)}%`
 
-    const b = hexToRgb(mixHex)
+const formatAmount = (value: any) => {
+    const amount = toNumber(value)
 
-    if (!a || !b) return hexColor
+    if (Math.abs(amount) >= 10000) {
+        return `¥${(amount / 10000).toFixed(1)}万`
+    }
 
-    const w = Math.min(1, Math.max(0, weight))
-
-    const r = Math.round(a.r * (1 - w) + b.r * w)
-
-    const g = Math.round(a.g * (1 - w) + b.g * w)
-
-    const bVal = Math.round(a.b * (1 - w) + b.b * w)
-
-    return `#${[r, g, bVal]
-
-        .map((value) => {
-            const hex = value.toString(16)
-
-            return hex.length === 1 ? `0${hex}` : hex
-        })
-
-        .join('')}`
+    return `¥${Math.round(amount)}`
 }
-
-const formatMoney = (value: any) => Number(value || 0).toFixed(2)
-
-const formatPercent = (value: any) => `${Number(value || 0).toFixed(1)}%`
 
 const padZero = (value: number) => String(value).padStart(2, '0')
 
@@ -541,7 +368,6 @@ const formatDateTime = (date: Date) =>
 
 const getDateRange = (key: RangeKey) => {
     const endDate = new Date()
-
     const startDate = new Date(endDate)
 
     if (key === 'month') {
@@ -554,7 +380,6 @@ const getDateRange = (key: RangeKey) => {
 
     return {
         startDate: formatDate(startDate),
-
         endDate: formatDate(endDate)
     }
 }
@@ -571,71 +396,35 @@ const periodLabel = computed(() => {
     return `${dateRange.value.startDate} 至 ${dateRange.value.endDate}`
 })
 
-const heroCardStyle = computed(() => ({
-    background: 'linear-gradient(145deg, #111111 0%, #000000 58%, #2f2924 100%)',
-
+const decisionCardStyle = computed(() => ({
+    background: `linear-gradient(145deg, #111111 0%, #1d1b18 58%, ${toRgba(
+        $theme.primaryColor,
+        0.42
+    )} 100%)`,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-
     boxShadow: '0 18rpx 42rpx rgba(11, 11, 11, 0.18)'
-}))
-
-const heroRefreshStyle = computed(() => ({
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-
-    borderColor: 'rgba(255, 255, 255, 0.14)'
-}))
-
-const heroChipStyle = computed(() => ({
-    backgroundColor: 'rgba(255, 255, 255, 0.09)',
-
-    borderColor: 'rgba(255, 255, 255, 0.12)'
-}))
-
-const panelStyle = computed(() => ({
-    backgroundColor: '#FFFFFF',
-
-    borderColor: 'var(--wm-color-border, #E2DED5)',
-
-    boxShadow: 'none'
 }))
 
 const activeTabStyle = computed(() => ({
     background: $theme.primaryColor,
-
     color: '#FFFFFF',
-
     borderColor: $theme.primaryColor,
-
     boxShadow: `0 8rpx 18rpx ${toRgba($theme.primaryColor, 0.14)}`
 }))
 
 const defaultTabStyle = computed(() => ({
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
     color: 'var(--wm-text-secondary, #5F5A50)',
-
     borderColor: 'var(--wm-color-border, #E2DED5)'
 }))
 
-const teamStatStyle = computed(() => ({
-    backgroundColor: 'var(--wm-color-bg-soft, #FFFFFF)',
-
-    borderColor: 'var(--wm-color-border, #E2DED5)'
-}))
-
-const memberRecommendStyle = computed(() => ({
-    color: $theme.primaryColor,
-
-    backgroundColor: 'var(--wm-color-primary-soft, #F3F2EE)'
-}))
-
-const totalOrders = computed(() => Number(orderStats.value?.total_orders || 0))
+const totalOrders = computed(() => toNumber(orderStats.value?.total_orders))
 
 const paidProgressOrders = computed(() => {
     const paidLabels = ['待服务', '服务中', '已完成', '已评价']
 
     return (orderStats.value?.status_counts || []).reduce((total: number, item: any) => {
-        return paidLabels.includes(item.label) ? total + Number(item.count || 0) : total
+        return paidLabels.includes(item.label) ? total + toNumber(item.count) : total
     }, 0)
 })
 
@@ -645,251 +434,170 @@ const paidProgressRate = computed(() => {
     return (paidProgressOrders.value / totalOrders.value) * 100
 })
 
-const capacityStats = computed(
-    () => teamOverview.value.capacity || createEmptyTeamOverview().capacity
-)
-
-const teamStats = computed(() => teamOverview.value.team || createEmptyTeamOverview().team)
-
-const todoStats = computed(() => teamOverview.value.todo || createEmptyTeamOverview().todo)
-
-const summaryChips = computed(() => [
-    {
-        label: '团队人数',
-
-        value: `${teamStats.value.total_staff || 0} 人`
-    },
-
-    {
-        label: '当月档期占用',
-
-        value: formatPercent(capacityStats.value.booking_rate)
-    },
-
-    {
-        label: '待处理事项',
-
-        value: `${todoStats.value.total || 0} 项`
-    }
-])
-
-const formatGrowthText = (value: any, prefix: string) => {
-    const amount = Number(value || 0)
-
-    if (amount > 0) return `${prefix} +${amount.toFixed(1)}%`
-
-    if (amount < 0) return `${prefix} ${amount.toFixed(1)}%`
-
-    return `${prefix} 持平`
-}
-
-const coreMetrics = computed(() => [
-    {
-        label: '总收入',
-
-        value: `¥${formatMoney(overview.value?.total_income)}`,
-
-        hint: formatGrowthText(overview.value?.income_growth, '较上期'),
-
-        color: $theme.primaryColor
-    },
-
-    {
-        label: '净收入',
-
-        value: `¥${formatMoney(overview.value?.net_income)}`,
-
-        hint: `退款 ¥${formatMoney(overview.value?.total_refund)}`,
-
-        color: $theme.secondaryColor
-    },
-
-    {
-        label: '支付订单',
-
-        value: `${Number(overview.value?.order_count || 0)} 单`,
-
-        hint: `支付推进率 ${formatPercent(paidProgressRate.value)}`,
-
-        color: '#4D4A42'
-    },
-
-    {
-        label: '客单价',
-
-        value: `¥${formatMoney(overview.value?.avg_order_amount)}`,
-
-        hint: `今日收款 ¥${formatMoney(orderStats.value?.today?.amount)}`,
-
-        color: '#9F7A2E'
-    }
-])
-
-const todaySnapshots = computed(() => [
-    {
-        label: '今日新增订单',
-
-        value: `${Number(orderStats.value?.today?.orders || 0)} 单`
-    },
-
-    {
-        label: '今日已支付',
-
-        value: `${Number(orderStats.value?.today?.paid_orders || 0)} 单`
-    },
-
-    {
-        label: '候补跟进',
-
-        value: `${todoStats.value.waitlist_total || 0} 条`
-    }
-])
-
-const teamStatsCards = computed(() => [
-    {
-        label: '团队人数',
-
-        value: `${teamStats.value.total_staff || 0} 人`
-    },
-
-    {
-        label: '在岗可排班',
-
-        value: `${teamStats.value.active_staff || 0} 人`
-    },
-
-    {
-        label: '推荐成员',
-
-        value: `${teamStats.value.recommended_staff || 0} 人`
-    },
-
-    {
-        label: '候补跟进',
-
-        value: `${todoStats.value.waitlist_total || 0} 条`
-    },
-
-    {
-        label: '待确认订单',
-
-        value: `${todoStats.value.pending_confirm || 0} 单`
-    },
-
-    {
-        label: '服务中订单',
-
-        value: `${todoStats.value.in_service || 0} 单`
-    }
-])
-
-const memberCards = computed(() =>
-    (teamOverview.value.members || []).map((item) => ({
-        id: item.id,
-
-        name: item.name,
-
-        avatar: item.avatar || '/static/images/user/default_avatar.png',
-
-        categoryName: item.category_name,
-
-        isRecommend: item.is_recommend === 1,
-
-        recentOrderCount: item.recent_order_count || 0,
-
-        upcomingBookedSlots: item.upcoming_booked_slots || 0,
-
-        followUpCount: item.follow_up_count || 0,
-
-        loadLevel: item.load_level || '可分配'
-    }))
-)
-
-const todoCards = computed(() => [
-    {
-        label: '待确认',
-
-        value: `${todoStats.value.pending_confirm || 0}`,
-
-        hint: '',
-
-        color: '#C8A45D'
-    },
-
-    {
-        label: '待支付',
-
-        value: `${todoStats.value.pending_pay || 0}`,
-
-        hint: '',
-
-        color: '#C8A45D'
-    },
-
-    {
-        label: '服务中',
-
-        value: `${todoStats.value.in_service || 0}`,
-
-        hint: '',
-
-        color: '#6C665C'
-    },
-
-    {
-        label: '候补跟进',
-
-        value: `${todoStats.value.waitlist_total || 0}`,
-
-        hint: '',
-
-        color: '#6C665C'
-    }
-])
-
-const statusColorMap: Record<string, string> = {
-    待确认: '#C8A45D',
-
-    待支付: '#C8A45D',
-
-    待服务: '#4D4A42',
-
-    服务中: '#6C665C',
-
-    已完成: '#5F5A50',
-
-    已评价: '#C8A45D',
-
-    已取消: '#8A4B45',
-
-    已暂停: '#9F7A2E',
-
-    已退款: '#8A4B45',
-
-    用户已删除: '#C8A45D'
-}
-
-const statusItems = computed(() => {
-    const list = (orderStats.value?.status_counts || []).map((item: any) => {
-        const count = Number(item.count || 0)
-
+const statusItems = computed(() =>
+    (orderStats.value?.status_counts || []).map((item: any) => {
+        const count = toNumber(item.count)
         const percent = totalOrders.value ? (count / totalOrders.value) * 100 : 0
 
         return {
             status: item.status,
-
             label: item.label,
-
             count,
-
-            percent: Number(percent.toFixed(1)),
-
-            color: statusColorMap[item.label] || '#9A9388'
+            percent: Number(percent.toFixed(1))
         }
     })
+)
 
-    return list.sort((a: any, b: any) => b.count - a.count)
+const capacityStats = computed(
+    () => teamOverview.value.capacity || createEmptyTeamOverview().capacity
+)
+const teamStats = computed(() => teamOverview.value.team || createEmptyTeamOverview().team)
+const todoStats = computed(() => teamOverview.value.todo || createEmptyTeamOverview().todo)
+
+const pendingConfirmCount = computed(() => toNumber(todoStats.value.pending_confirm))
+const pendingPayCount = computed(() => toNumber(todoStats.value.pending_pay))
+const waitlistCount = computed(() => toNumber(todoStats.value.waitlist_total))
+const todoTotal = computed(
+    () => pendingConfirmCount.value + pendingPayCount.value + waitlistCount.value
+)
+
+const getStatusPercent = (label: string) => {
+    return statusItems.value.find((item: any) => item.label === label)?.percent || 0
+}
+
+const incomeGrowthText = computed(() => {
+    const growth = toNumber(overview.value?.income_growth)
+
+    if (growth > 0) return `较上期 +${growth.toFixed(1)}%`
+    if (growth < 0) return `较上期 ${growth.toFixed(1)}%`
+    return '较上期持平'
 })
+
+const decisionFocus = computed(() => {
+    const bookingRate = toNumber(capacityStats.value.booking_rate)
+    const incomeGrowth = toNumber(overview.value?.income_growth)
+
+    if (pendingConfirmCount.value > 0) {
+        return {
+            label: '优先决策',
+            title: '先确认档期',
+            description: `${pendingConfirmCount.value} 单待确认，优先锁定人员与档期，避免转化流失。`
+        }
+    }
+
+    if (pendingPayCount.value > 0) {
+        return {
+            label: '优先决策',
+            title: '催付待支付订单',
+            description: `${pendingPayCount.value} 单待支付，先推动收款，让收入更确定。`
+        }
+    }
+
+    if (waitlistCount.value > 0 && bookingRate < 85) {
+        return {
+            label: '增长机会',
+            title: '转化候补需求',
+            description: `${waitlistCount.value} 条候补可跟进，结合可用档期做快速分配。`
+        }
+    }
+
+    if (bookingRate >= 85) {
+        return {
+            label: '产能提醒',
+            title: '档期接近满载',
+            description: `本月占用 ${formatPercent(bookingRate)}，优先保障高价值订单与交付质量。`
+        }
+    }
+
+    if (incomeGrowth < 0) {
+        return {
+            label: '经营提醒',
+            title: '收入较上期下降',
+            description: `收入${incomeGrowth.toFixed(1)}%，重点看新增订单与待支付转化。`
+        }
+    }
+
+    return {
+        label: '经营状态',
+        title: '经营平稳',
+        description: '暂无高优先级风险，继续关注新增订单、待支付转化与档期占用。'
+    }
+})
+
+const decisionMetrics = computed<MetricItem[]>(() => [
+    {
+        label: '本期收入',
+        value: formatAmount(overview.value?.total_income),
+        hint: incomeGrowthText.value,
+        tone: 'neutral'
+    },
+    {
+        label: '待处理',
+        value: `${todoTotal.value} 项`,
+        hint: `确认 ${pendingConfirmCount.value} · 支付 ${pendingPayCount.value}`,
+        tone: todoTotal.value > 0 ? 'warning' : 'good'
+    },
+    {
+        label: '档期占用',
+        value: formatPercent(capacityStats.value.booking_rate),
+        hint: `在岗 ${teamStats.value.active_staff || 0} 人`,
+        tone: toNumber(capacityStats.value.booking_rate) >= 85 ? 'warning' : 'good'
+    }
+])
+
+const keyMetrics = computed<MetricItem[]>(() => [
+    {
+        label: '净收入',
+        value: formatAmount(overview.value?.net_income),
+        hint: `退款 ${formatAmount(overview.value?.total_refund)}`,
+        tone: 'neutral'
+    },
+    {
+        label: '今日收款',
+        value: formatAmount(orderStats.value?.today?.amount),
+        hint: `今日新增 ${formatInteger(orderStats.value?.today?.orders)} 单`,
+        tone: 'good'
+    },
+    {
+        label: '总订单',
+        value: `${formatInteger(totalOrders.value)} 单`,
+        hint: `支付订单 ${formatInteger(paidProgressOrders.value)} 单`,
+        tone: 'neutral'
+    },
+    {
+        label: '支付推进',
+        value: formatPercent(paidProgressRate.value),
+        hint: `客单价 ${formatAmount(overview.value?.avg_order_amount)}`,
+        tone: paidProgressRate.value >= 70 ? 'good' : 'warning'
+    }
+])
+
+const prioritySummary = computed(() => {
+    if (todoTotal.value === 0) return '暂无紧急待办，保持日常巡检。'
+
+    return `共 ${todoTotal.value} 项待推进，优先确认档期，其次推动收款。`
+})
+
+const priorityCards = computed<PriorityItem[]>(() => [
+    {
+        label: '待确认',
+        value: `${pendingConfirmCount.value}`,
+        action: pendingConfirmCount.value > 0 ? '先确认人员与档期' : '无待确认订单',
+        tone: pendingConfirmCount.value > 0 ? 'risk' : 'good'
+    },
+    {
+        label: '待支付',
+        value: `${pendingPayCount.value}`,
+        action: pendingPayCount.value > 0 ? '跟进付款与尾款' : '待支付稳定',
+        tone: pendingPayCount.value > 0 ? 'warning' : 'good'
+    },
+    {
+        label: '候补',
+        value: `${waitlistCount.value}`,
+        action: waitlistCount.value > 0 ? '匹配空档并回访' : '暂无候补压力',
+        tone: waitlistCount.value > 0 ? 'warning' : 'good'
+    }
+])
 
 const trendSummary = computed(() => {
     const values = trendList.value.map((item) => item.value)
@@ -900,143 +608,104 @@ const trendSummary = computed(() => {
 
     return {
         peak: Math.max(...values),
-
         avg: total / values.length
     }
 })
 
-const insights = computed<InsightItem[]>(() => {
-    const result: InsightItem[] = []
+const capacityFillStyle = computed(() => ({
+    width: `${Math.min(100, Math.max(0, toNumber(capacityStats.value.booking_rate)))}%`,
+    background: `linear-gradient(90deg, ${$theme.primaryColor} 0%, ${$theme.secondaryColor} 100%)`
+}))
 
-    const totalIncome = Number(overview.value?.total_income || 0)
-
-    const totalRefund = Number(overview.value?.total_refund || 0)
-
-    const refundRate = totalIncome > 0 ? (totalRefund / totalIncome) * 100 : 0
-
-    const pendingPayRate = statusItems.value.find((item) => item.label === '待支付')?.percent || 0
-
-    const cancelledRate = statusItems.value.find((item) => item.label === '已取消')?.percent || 0
-
-    const waitlistTotal = Number(todoStats.value.waitlist_total || 0)
-
-    const bookingRate = Number(capacityStats.value.booking_rate || 0)
-
-    const activeStaff = Number(teamStats.value.active_staff || 0)
-
-    const buildInsight = (level: InsightLevel, text: string): InsightItem => {
-        const config = {
-            good: {
-                levelText: '稳定',
-
-                color: '#4D4A42'
-            },
-
-            warning: {
-                levelText: '关注',
-
-                color: '#C8A45D'
-            },
-
-            risk: {
-                levelText: '重点',
-
-                color: '#8A4B45'
-            }
-        }[level]
+const memberCards = computed(() =>
+    (teamOverview.value.members || []).map((item) => {
+        const loadLevel = item.load_level || '可分配'
+        const tone: Tone =
+            loadLevel === '高负载' ? 'risk' : loadLevel === '平稳' ? 'warning' : 'good'
 
         return {
-            levelText: config.levelText,
-
-            text,
-
-            style: {
-                backgroundColor: toRgba(config.color, 0.08),
-
-                borderColor: toRgba(config.color, 0.14)
-            },
-
-            tagStyle: {
-                color: config.color,
-
-                backgroundColor: toRgba(config.color, 0.12)
-            }
+            id: item.id,
+            name: item.name || '未命名成员',
+            avatar: item.avatar || '/static/images/user/default_avatar.png',
+            categoryName: item.category_name,
+            upcomingBookedSlots: item.upcoming_booked_slots || 0,
+            followUpCount: item.follow_up_count || 0,
+            loadLevel,
+            tone
         }
+    })
+)
+
+const focusMembers = computed(() =>
+    memberCards.value
+        .filter(
+            (item) => item.tone !== 'good' || item.followUpCount > 0 || item.upcomingBookedSlots > 0
+        )
+        .slice(0, 3)
+)
+
+const insights = computed<InsightItem[]>(() => {
+    const result: InsightItem[] = []
+    const totalIncome = toNumber(overview.value?.total_income)
+    const totalRefund = toNumber(overview.value?.total_refund)
+    const refundRate = totalIncome > 0 ? (totalRefund / totalIncome) * 100 : 0
+    const pendingPayRate = getStatusPercent('待支付')
+    const cancelledRate = getStatusPercent('已取消')
+    const bookingRate = toNumber(capacityStats.value.booking_rate)
+    const activeStaff = toNumber(teamStats.value.active_staff)
+
+    const pushInsight = (tone: Tone, levelText: string, text: string) => {
+        result.push({ tone, levelText, text })
     }
 
     if (activeStaff <= 0) {
-        result.push(buildInsight('risk', '暂无可排班成员'))
+        pushInsight('risk', '重点', '暂无可排班成员，需要先恢复团队可用状态。')
     }
 
     if (bookingRate >= 85) {
-        result.push(buildInsight('warning', `本月档期占用 ${formatPercent(bookingRate)}`))
+        pushInsight(
+            'warning',
+            '关注',
+            `本月档期占用 ${formatPercent(bookingRate)}，后续接单需注意交付压力。`
+        )
     }
 
-    if (waitlistTotal >= Math.max(3, activeStaff * 2) && activeStaff > 0) {
-        result.push(buildInsight('risk', `候补跟进 ${waitlistTotal} 条`))
+    if (waitlistCount.value >= Math.max(3, activeStaff * 2) && activeStaff > 0) {
+        pushInsight('risk', '重点', `候补 ${waitlistCount.value} 条偏高，需要尽快分配可用档期。`)
     }
 
     if (refundRate > 5) {
-        result.push(buildInsight('warning', `退款率 ${formatPercent(refundRate)}`))
+        pushInsight('warning', '关注', `退款率 ${formatPercent(refundRate)}，建议复盘退款原因。`)
     }
 
     if (cancelledRate > 10) {
-        result.push(buildInsight('risk', `取消订单占比 ${formatPercent(cancelledRate)}`))
+        pushInsight(
+            'risk',
+            '重点',
+            `取消订单占比 ${formatPercent(cancelledRate)}，需检查线索质量。`
+        )
     }
 
     if (pendingPayRate > 20) {
-        result.push(buildInsight('warning', `待支付占比 ${formatPercent(pendingPayRate)}`))
+        pushInsight(
+            'warning',
+            '关注',
+            `待支付占比 ${formatPercent(pendingPayRate)}，建议集中催付。`
+        )
     }
 
     if (!result.length) {
-        result.push(buildInsight('good', '经营状态平稳'))
+        pushInsight('good', '稳定', '暂无明显经营风险，保持当前节奏。')
     }
 
     return result.slice(0, 3)
 })
 
-const getMetricCardStyle = (color: string) => ({
-    backgroundColor: mixColor(color, '#FFFFFF', 0.95),
-
-    borderColor: toRgba(color, 0.14)
-})
-
-const getTodoCardStyle = (color: string) => ({
-    backgroundColor: mixColor(color, '#FFFFFF', 0.95),
-
-    borderColor: toRgba(color, 0.14)
-})
-
-const getLoadTagStyle = (level: string) => {
-    const toneMap: Record<string, { color: string }> = {
-        高负载: { color: '#8A4B45' },
-
-        平稳: { color: '#C8A45D' },
-
-        可分配: { color: '#4D4A42' }
-    }
-
-    const tone = toneMap[level] || toneMap['可分配']
-
-    return {
-        color: tone.color,
-
-        backgroundColor: toRgba(tone.color, 0.1)
-    }
-}
-
 const getTrendFillStyle = (height: number) => ({
     height: `${height}rpx`,
-
-    background: `linear-gradient(180deg, ${toRgba($theme.secondaryColor, 0.9)} 0%, ${
+    background: `linear-gradient(180deg, ${toRgba($theme.secondaryColor, 0.92)} 0%, ${
         $theme.primaryColor
     } 100%)`
-})
-
-const getStatusFillStyle = (color: string, percent: number) => ({
-    width: `${Math.max(percent, 4)}%`,
-
-    backgroundColor: color
 })
 
 const buildTrend = (data: Record<string, number>) => {
@@ -1044,35 +713,28 @@ const buildTrend = (data: Record<string, number>) => {
 
     if (!entries.length) {
         trendList.value = []
-
         return
     }
 
-    const maxPoints = 8
-
+    const maxPoints = 7
     let sampled = entries
 
     if (entries.length > maxPoints) {
         const step = Math.ceil(entries.length / maxPoints)
-
         sampled = entries.filter((_, index) => index % step === 0 || index === entries.length - 1)
     }
 
-    const values = sampled.map(([, value]) => Number(value || 0))
-
+    const values = sampled.map(([, value]) => toNumber(value))
     const maxValue = Math.max(...values, 1)
 
     trendList.value = sampled.map(([date, value]) => {
-        const amount = Number(value || 0)
+        const amount = toNumber(value)
 
         return {
             date,
-
             label: date.slice(5),
-
             value: amount,
-
-            height: Math.max(26, Math.round((amount / maxValue) * 160))
+            height: Math.max(24, Math.round((amount / maxValue) * 150))
         }
     })
 }
@@ -1080,22 +742,16 @@ const buildTrend = (data: Record<string, number>) => {
 const normalizeTeamOverview = (data: any): TeamOverviewData => ({
     team: {
         ...createEmptyTeamOverview().team,
-
         ...(data?.team || {})
     },
-
     capacity: {
         ...createEmptyTeamOverview().capacity,
-
         ...(data?.capacity || {})
     },
-
     todo: {
         ...createEmptyTeamOverview().todo,
-
         ...(data?.todo || {})
     },
-
     members: Array.isArray(data?.members) ? data.members : []
 })
 
@@ -1107,11 +763,8 @@ const getAllowedUserIds = () => {
     const idSet = new Set<number>()
 
     rawUserIds
-
         .split(/[\s,，]+/)
-
         .map((item) => Number(item))
-
         .forEach((id) => {
             if (Number.isInteger(id) && id > 0) idSet.add(id)
         })
@@ -1129,28 +782,20 @@ const loadData = async () => {
 
         const params = {
             start_date: dateRange.value.startDate,
-
             end_date: dateRange.value.endDate
         }
 
         const [overviewRes, trendRes, orderRes, teamRes] = await Promise.all([
             adminDashboardOverview(params),
-
             adminDashboardIncomeTrend({ type: 'daily', ...params }),
-
             adminDashboardOrderStats(params),
-
             adminDashboardTeamOverview(params)
         ])
 
         overview.value = overviewRes || {}
-
         orderStats.value = orderRes || {}
-
         teamOverview.value = normalizeTeamOverview(teamRes)
-
         buildTrend(trendRes?.data || {})
-
         lastUpdated.value = formatDateTime(new Date())
     } catch (e: any) {
         const msg = typeof e === 'string' ? e : e?.msg || e?.message || '加载失败'
@@ -1165,7 +810,6 @@ const changeRange = (nextRange: RangeKey) => {
     if (rangeKey.value === nextRange) return
 
     rangeKey.value = nextRange
-
     loadData()
 }
 
@@ -1176,7 +820,6 @@ const ensureAccess = async () => {
 
     if (!userStore.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
-
         return false
     }
 
@@ -1184,23 +827,18 @@ const ensureAccess = async () => {
         await userStore.getUser()
     }
 
-    if (appStore.config?.feature_switch?.admin_dashboard !== 1) {
+    if (Number(appStore.config?.feature_switch?.admin_dashboard ?? 1) !== 1) {
         uni.showToast({ title: '管理员看板已关闭', icon: 'none' })
-
         setTimeout(() => uni.navigateBack(), 1200)
-
         return false
     }
 
     const currentUserId = Number(userStore.userInfo?.id || userStore.userInfo?.user_id || 0)
-
     const allowedUserIds = getAllowedUserIds()
 
     if (currentUserId <= 0 || !allowedUserIds.includes(currentUserId)) {
         uni.showToast({ title: '暂无权限访问管理员看板', icon: 'none' })
-
         setTimeout(() => uni.navigateBack(), 1200)
-
         return false
     }
 
@@ -1223,201 +861,158 @@ onShow(async () => {
 
 .dashboard-page__stack {
     display: flex;
-
     flex-direction: column;
-
     gap: 20rpx;
 }
 
-.hero-card,
+.decision-card,
 .section-card {
     border-radius: var(--wm-radius-card, 16rpx);
-
     border-width: 1rpx;
-
     border-style: solid;
 }
 
-.hero-card {
-    padding: 28rpx;
+.decision-card {
+    padding: 30rpx;
 }
 
-.hero-top {
+.decision-card__top {
     display: flex;
-
     align-items: flex-start;
-
     justify-content: space-between;
-
     gap: 20rpx;
 }
 
-.hero-main {
+.decision-card__copy {
     flex: 1;
-
     min-width: 0;
 }
 
-.hero-eyebrow {
+.decision-card__eyebrow,
+.decision-card__title,
+.decision-card__desc {
     display: block;
+}
 
+.decision-card__eyebrow {
     font-size: 22rpx;
-
     line-height: 1.4;
-
     color: var(--wm-color-secondary, #c8a45d);
 }
 
-.hero-title {
-    display: block;
-
-    margin-top: 8rpx;
-
-    font-size: 38rpx;
-
-    line-height: 1.35;
-
+.decision-card__title {
+    margin-top: 10rpx;
+    font-size: 42rpx;
+    line-height: 1.28;
     color: #ffffff;
-
-    font-weight: 700;
+    font-weight: 800;
 }
 
-.hero-period {
-    display: block;
-
-    margin-top: 12rpx;
-
-    font-size: 24rpx;
-
-    line-height: 1.5;
-
-    color: rgba(255, 255, 255, 0.72);
+.decision-card__desc {
+    margin-top: 14rpx;
+    font-size: 25rpx;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.76);
 }
 
-.hero-refresh {
+.refresh-pill {
     flex-shrink: 0;
-
-    min-width: 148rpx;
-
-    padding: 18rpx 24rpx;
-
+    padding: 16rpx 24rpx;
     border-radius: 999rpx;
-
-    border-width: 1rpx;
-
-    border-style: solid;
-
-    text-align: center;
+    border: 1rpx solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.1);
 }
 
-.hero-refresh-text {
+.refresh-pill__text {
     font-size: 24rpx;
-
-    color: #ffffff;
-
     line-height: 1;
+    color: #ffffff;
 }
 
-.hero-meta {
+.decision-card__meta {
     display: flex;
-
     flex-wrap: wrap;
+    gap: 10rpx 22rpx;
+    margin-top: 22rpx;
 
-    gap: 12rpx 24rpx;
+    text {
+        font-size: 22rpx;
+        line-height: 1.45;
+        color: rgba(255, 255, 255, 0.62);
+    }
+}
 
+.decision-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14rpx;
     margin-top: 24rpx;
 }
 
-.hero-meta-text {
-    font-size: 22rpx;
-
-    color: rgba(255, 255, 255, 0.66);
-
-    line-height: 1.5;
-}
-
-.hero-chip-list {
-    display: flex;
-
-    flex-wrap: wrap;
-
-    gap: 16rpx;
-
-    margin-top: 24rpx;
-}
-
-.hero-chip {
-    min-width: 180rpx;
-
-    padding: 18rpx 20rpx;
-
+.decision-metric {
+    min-width: 0;
+    padding: 18rpx 16rpx;
     border-radius: var(--wm-radius-card-soft, 14rpx);
-
-    border-width: 1rpx;
-
-    border-style: solid;
+    border: 1rpx solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.09);
 }
 
-.hero-chip-label,
-.hero-chip-value {
+.decision-metric__label,
+.decision-metric__value,
+.decision-metric__hint {
     display: block;
 }
 
-.hero-chip-label {
-    font-size: 22rpx;
-
-    color: rgba(255, 255, 255, 0.64);
+.decision-metric__label {
+    font-size: 21rpx;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.62);
 }
 
-.hero-chip-value {
+.decision-metric__value {
     margin-top: 8rpx;
-
     font-size: 30rpx;
-
-    line-height: 1.3;
-
+    line-height: 1.25;
     color: #ffffff;
+    font-weight: 800;
+}
 
-    font-weight: 700;
+.decision-metric__hint {
+    margin-top: 8rpx;
+    font-size: 20rpx;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.56);
 }
 
 .range-tabs {
     display: flex;
-
     gap: 16rpx;
-
     padding: 12rpx;
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
+    border-radius: var(--wm-radius-card, 16rpx);
 }
 
 .range-tab-item {
     flex: 1;
-
     padding: 20rpx 0;
-
     border-radius: var(--wm-radius-card-soft, 14rpx);
-
     border-width: 1rpx;
-
     border-style: solid;
-
     font-size: 26rpx;
-
     line-height: 1;
-
     text-align: center;
 }
 
 .section-card {
     padding: 28rpx;
+    border-color: var(--wm-color-border, #e2ded5);
+    background: #ffffff;
 }
 
 .section-header {
     display: flex;
-
     align-items: flex-start;
-
     justify-content: space-between;
-
     gap: 16rpx;
 }
 
@@ -1427,484 +1022,390 @@ onShow(async () => {
 }
 
 .section-title {
-    font-size: 30rpx;
-
+    font-size: 31rpx;
     line-height: 1.35;
-
     color: var(--wm-text-primary, #111111);
-
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .section-subtitle {
     margin-top: 8rpx;
-
-    font-size: 22rpx;
-
+    font-size: 23rpx;
     line-height: 1.5;
-
     color: var(--wm-text-secondary, #5f5a50);
 }
 
-.metric-grid,
-.team-grid,
-.todo-grid {
+.signal-grid {
     display: grid;
-
-    gap: 16rpx;
-
-    margin-top: 24rpx;
-
     grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.metric-card,
-.todo-card,
-.team-stat-item {
-    border-radius: var(--wm-radius-card-soft, 14rpx);
-
-    border-width: 1rpx;
-
-    border-style: solid;
-}
-
-.metric-card,
-.todo-card {
-    padding: 24rpx;
-}
-
-.team-stat-item {
-    padding: 22rpx;
-}
-
-.metric-label,
-.metric-value,
-.metric-hint,
-.todo-label,
-.todo-value,
-.todo-hint,
-.team-stat-label,
-.team-stat-value {
-    display: block;
-}
-
-.metric-label,
-.todo-label,
-.team-stat-label {
-    font-size: 22rpx;
-
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.metric-value,
-.todo-value,
-.team-stat-value {
-    margin-top: 10rpx;
-
-    font-size: 34rpx;
-
-    line-height: 1.3;
-
-    color: var(--wm-text-primary, #111111);
-
-    font-weight: 700;
-}
-
-.metric-hint,
-.todo-hint {
-    margin-top: 10rpx;
-
-    font-size: 22rpx;
-
-    line-height: 1.5;
-
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.snapshot-row {
-    display: flex;
-
     gap: 16rpx;
-
-    margin-top: 20rpx;
-}
-
-.snapshot-item {
-    flex: 1;
-
-    padding-top: 20rpx;
-
-    border-top: 1rpx solid var(--wm-color-border, #e2ded5);
-}
-
-.snapshot-label,
-.snapshot-value {
-    display: block;
-}
-
-.snapshot-label {
-    font-size: 22rpx;
-
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.snapshot-value {
-    margin-top: 8rpx;
-
-    font-size: 28rpx;
-
-    color: var(--wm-text-primary, #111111);
-
-    font-weight: 700;
-}
-
-.member-scroll {
     margin-top: 24rpx;
-
-    white-space: nowrap;
 }
 
-.member-list {
-    display: inline-flex;
-
-    gap: 16rpx;
-
-    padding-right: 8rpx;
-}
-
-.member-card {
-    width: 420rpx;
-
-    padding: 24rpx;
-
-    border-radius: var(--wm-radius-card, 16rpx);
-
-    background: linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
-
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
-
-    box-sizing: border-box;
-}
-
-.member-top {
-    display: flex;
-
-    align-items: center;
-
-    gap: 16rpx;
-}
-
-.member-avatar {
-    width: 84rpx;
-
-    height: 84rpx;
-
-    border-radius: 50%;
-
-    flex-shrink: 0;
-
-    background: var(--wm-color-bg-soft, #ffffff);
-}
-
-.member-main {
-    flex: 1;
-
+.signal-card {
     min-width: 0;
-}
-
-.member-name-row {
-    display: flex;
-
-    align-items: center;
-
-    gap: 10rpx;
-}
-
-.member-name {
-    max-width: 160rpx;
-
-    font-size: 28rpx;
-
-    line-height: 1.35;
-
-    color: var(--wm-text-primary, #111111);
-
-    font-weight: 700;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-
-    white-space: nowrap;
-}
-
-.member-recommend,
-.member-load-tag {
-    padding: 6rpx 12rpx;
-
-    border-radius: 999rpx;
-
-    font-size: 20rpx;
-
-    line-height: 1.2;
-}
-
-.member-role {
-    display: block;
-
-    margin-top: 8rpx;
-
-    font-size: 22rpx;
-
-    color: var(--wm-text-secondary, #5f5a50);
-
-    line-height: 1.4;
-}
-
-.member-data-grid {
-    display: grid;
-
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-
-    gap: 12rpx;
-
-    margin-top: 24rpx;
-}
-
-.member-data-item {
-    padding: 16rpx 12rpx;
-
+    padding: 24rpx;
     border-radius: var(--wm-radius-card-soft, 14rpx);
-
-    background: rgba(255, 255, 255, 0.92);
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
+    background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
 }
 
-.member-data-label,
-.member-data-value {
+.signal-card--good {
+    background: #fbfaf4;
+}
+
+.signal-card--warning {
+    border-color: rgba(200, 164, 93, 0.32);
+    background: rgba(200, 164, 93, 0.08);
+}
+
+.signal-card--risk {
+    border-color: rgba(138, 75, 69, 0.28);
+    background: rgba(138, 75, 69, 0.08);
+}
+
+.signal-card__label,
+.signal-card__value,
+.signal-card__hint {
     display: block;
-
-    text-align: center;
 }
 
-.member-data-label {
-    font-size: 20rpx;
-
+.signal-card__label {
+    font-size: 22rpx;
     color: var(--wm-text-secondary, #5f5a50);
-
-    line-height: 1.4;
 }
 
-.member-data-value {
-    margin-top: 8rpx;
-
-    font-size: 28rpx;
-
+.signal-card__value {
+    margin-top: 10rpx;
+    font-size: 35rpx;
+    line-height: 1.28;
     color: var(--wm-text-primary, #111111);
-
-    font-weight: 700;
+    font-weight: 800;
 }
 
-.status-list {
+.signal-card__hint {
+    margin-top: 10rpx;
+    font-size: 22rpx;
+    line-height: 1.45;
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.priority-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
     margin-top: 24rpx;
 }
 
-.status-item + .status-item {
-    margin-top: 20rpx;
+.priority-card {
+    padding: 22rpx 24rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
+    background: #ffffff;
 }
 
-.status-title {
+.priority-card--good {
+    background: #fbfaf7;
+}
+
+.priority-card--warning {
+    border-color: rgba(200, 164, 93, 0.32);
+    background: rgba(200, 164, 93, 0.08);
+}
+
+.priority-card--risk {
+    border-color: rgba(138, 75, 69, 0.28);
+    background: rgba(138, 75, 69, 0.08);
+}
+
+.priority-card__head {
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
     gap: 16rpx;
 }
 
-.status-label-wrap {
-    display: flex;
-
-    align-items: center;
-
-    gap: 10rpx;
-}
-
-.status-dot {
-    width: 14rpx;
-
-    height: 14rpx;
-
-    border-radius: 50%;
-
-    flex-shrink: 0;
-}
-
-.status-label,
-.status-meta {
-    font-size: 24rpx;
-
-    line-height: 1.5;
-}
-
-.status-label {
+.priority-card__label {
+    font-size: 26rpx;
+    line-height: 1.4;
     color: var(--wm-text-primary, #111111);
+    font-weight: 700;
 }
 
-.status-meta {
+.priority-card__value {
+    font-size: 36rpx;
+    line-height: 1;
+    color: var(--wm-text-primary, #111111);
+    font-weight: 800;
+}
+
+.priority-card__action {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 23rpx;
+    line-height: 1.45;
     color: var(--wm-text-secondary, #5f5a50);
 }
 
-.status-track {
-    width: 100%;
-
-    height: 14rpx;
-
-    margin-top: 10rpx;
-
-    background: var(--wm-color-bg-soft, #ffffff);
-
-    border-radius: 999rpx;
-
-    overflow: hidden;
-}
-
-.status-fill {
-    height: 100%;
-
-    border-radius: 999rpx;
-}
-
-.trend-chart {
+.trend-capacity {
     margin-top: 24rpx;
+}
+
+.trend-pane {
+    padding: 22rpx 18rpx 18rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
+    background: #fbfaf7;
 }
 
 .trend-bars {
     display: flex;
-
     align-items: flex-end;
-
     justify-content: space-between;
-
-    gap: 12rpx;
+    gap: 10rpx;
 }
 
 .trend-column {
     flex: 1;
-
+    min-width: 0;
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
 }
 
 .trend-track {
     width: 100%;
-
-    height: 180rpx;
-
+    height: 160rpx;
     display: flex;
-
     align-items: flex-end;
-
     justify-content: center;
-
-    padding: 0 6rpx;
-
-    background: linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
-
-    border-radius: var(--wm-radius-card-soft, 14rpx);
+    padding: 0 5rpx;
+    border-radius: 12rpx;
+    background: rgba(255, 255, 255, 0.92);
+    box-sizing: border-box;
 }
 
 .trend-fill {
     width: 100%;
-
     border-radius: 10rpx 10rpx 0 0;
 }
 
-.trend-amount,
-.trend-label {
+.trend-label,
+.trend-value {
     display: block;
-
+    max-width: 86rpx;
     text-align: center;
-}
-
-.trend-amount {
-    margin-top: 10rpx;
-
-    font-size: 20rpx;
-
-    color: var(--wm-text-secondary, #5f5a50);
-
-    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .trend-label {
-    margin-top: 6rpx;
-
+    margin-top: 10rpx;
     font-size: 20rpx;
-
     color: var(--wm-text-tertiary, #9a9388);
+}
 
+.trend-value {
+    margin-top: 4rpx;
+    font-size: 20rpx;
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.capacity-pane {
+    margin-top: 16rpx;
+    padding: 24rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
+    background: #ffffff;
+}
+
+.capacity-pane__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16rpx;
+}
+
+.capacity-pane__label,
+.capacity-pane__value,
+.capacity-pane__meta {
+    display: block;
+}
+
+.capacity-pane__label {
+    font-size: 23rpx;
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.capacity-pane__value {
+    margin-top: 8rpx;
+    font-size: 36rpx;
+    line-height: 1.2;
+    color: var(--wm-text-primary, #111111);
+    font-weight: 800;
+}
+
+.capacity-pane__meta {
+    font-size: 23rpx;
+    line-height: 1.45;
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.capacity-track {
+    width: 100%;
+    height: 16rpx;
+    margin-top: 18rpx;
+    overflow: hidden;
+    border-radius: 999rpx;
+    background: var(--wm-color-bg-soft, #f7f4ef);
+}
+
+.capacity-fill {
+    height: 100%;
+    border-radius: 999rpx;
+}
+
+.capacity-summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-top: 16rpx;
+
+    text {
+        font-size: 22rpx;
+        line-height: 1.45;
+        color: var(--wm-text-secondary, #5f5a50);
+    }
+}
+
+.member-focus-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    margin-top: 24rpx;
+}
+
+.member-focus-item {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    padding: 20rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
+    background: #fbfaf7;
+}
+
+.member-avatar {
+    width: 74rpx;
+    height: 74rpx;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--wm-color-bg-soft, #f7f4ef);
+}
+
+.member-focus-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.member-name,
+.member-meta {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.member-name {
+    font-size: 27rpx;
     line-height: 1.4;
+    color: var(--wm-text-primary, #111111);
+    font-weight: 700;
+}
+
+.member-meta {
+    margin-top: 6rpx;
+    font-size: 22rpx;
+    line-height: 1.4;
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.member-load-tag {
+    flex-shrink: 0;
+    padding: 8rpx 14rpx;
+    border-radius: 999rpx;
+    font-size: 22rpx;
+    line-height: 1.2;
+}
+
+.member-load-tag--good {
+    color: #4d4a42;
+    background: rgba(77, 74, 66, 0.1);
+}
+
+.member-load-tag--warning {
+    color: #9f7a2e;
+    background: rgba(200, 164, 93, 0.14);
+}
+
+.member-load-tag--risk {
+    color: #8a4b45;
+    background: rgba(138, 75, 69, 0.12);
 }
 
 .insight-list {
-    margin-top: 24rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    margin-top: 20rpx;
 }
 
 .insight-item {
     display: flex;
-
     align-items: flex-start;
-
-    gap: 16rpx;
-
-    padding: 22rpx 20rpx;
-
-    border-radius: var(--wm-radius-card, 16rpx);
-
-    border-width: 1rpx;
-
-    border-style: solid;
+    gap: 14rpx;
+    padding: 20rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
+    background: #ffffff;
 }
 
-.insight-item + .insight-item {
-    margin-top: 16rpx;
+.insight-item--good {
+    background: #fbfaf7;
+}
+
+.insight-item--warning {
+    border-color: rgba(200, 164, 93, 0.28);
+    background: rgba(200, 164, 93, 0.08);
+}
+
+.insight-item--risk {
+    border-color: rgba(138, 75, 69, 0.24);
+    background: rgba(138, 75, 69, 0.08);
 }
 
 .insight-tag {
     flex-shrink: 0;
-
-    padding: 8rpx 16rpx;
-
+    padding: 8rpx 14rpx;
     border-radius: 999rpx;
-
+    background: rgba(11, 11, 11, 0.06);
     font-size: 22rpx;
-
     line-height: 1.2;
+    color: var(--wm-text-primary, #111111);
 }
 
 .insight-text {
     flex: 1;
-
     font-size: 24rpx;
-
-    line-height: 1.6;
-
+    line-height: 1.55;
     color: var(--wm-text-primary, #111111);
 }
 
 .panel-empty {
-    padding: 36rpx 0 12rpx;
-
+    padding: 34rpx 0 12rpx;
     font-size: 24rpx;
-
     line-height: 1.5;
-
     color: var(--wm-text-tertiary, #9a9388);
-
     text-align: center;
 }
 </style>

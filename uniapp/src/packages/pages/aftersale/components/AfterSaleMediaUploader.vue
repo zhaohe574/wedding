@@ -194,6 +194,12 @@ const chooseFile = () => {
 <style lang="scss" scoped>
 @import '../../../../styles/aftersale.scss';
 
+.aftersale-media {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+}
+
 .aftersale-media__grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -203,22 +209,19 @@ const chooseFile = () => {
 .aftersale-media__entry-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10rpx;
+    gap: 12rpx;
 }
 
 .aftersale-media__entry {
-    min-height: 119rpx;
-    border-radius: 34rpx;
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
-    background: rgba(248, 247, 242, 0.96);
+    @include aftersale-form-surface;
+    min-height: 112rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0 10rpx;
-    box-sizing: border-box;
 
     &.is-primary {
-        background: rgba(247, 240, 223, 0.98);
+        background: var(--wm-color-secondary-soft, #f8f3e7);
         border-color: rgba(216, 194, 138, 0.96);
     }
 
@@ -243,7 +246,7 @@ const chooseFile = () => {
 .aftersale-media__adder {
     position: relative;
     min-height: 196rpx;
-    border-radius: 26rpx;
+    border-radius: var(--wm-radius-card-lg, 20rpx);
     overflow: hidden;
 }
 
@@ -261,7 +264,7 @@ const chooseFile = () => {
 }
 
 .aftersale-media__video-card {
-    background: #0B0B0B;
+    background: #0b0b0b;
 }
 
 .aftersale-media__remove {
