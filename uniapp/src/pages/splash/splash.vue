@@ -1,28 +1,29 @@
 <template>
     <view class="splash-page" :style="pageStyle">
-        <image
-            v-if="displayConfig.image"
-            class="splash-page__image"
-            :src="displayImage"
-            mode="aspectFill"
-        />
-        <view v-else class="splash-page__fallback" />
-        <view class="splash-page__content">
-            <view v-if="displayConfig.logoImage" class="splash-page__logo-wrap">
-                <image
-                    class="splash-page__logo"
-                    :src="displayLogoImage"
-                    mode="widthFix"
-                />
+        <view v-if="ready" class="splash-page__ready">
+            <image
+                v-if="displayConfig.image"
+                class="splash-page__image"
+                :src="displayImage"
+                mode="aspectFill"
+            />
+            <view class="splash-page__content">
+                <view v-if="displayConfig.logoImage" class="splash-page__logo-wrap">
+                    <image
+                        class="splash-page__logo"
+                        :src="displayLogoImage"
+                        mode="widthFix"
+                    />
+                </view>
+                <view class="splash-page__spacer" />
+                <button
+                    class="splash-page__button"
+                    hover-class="splash-page__button--hover"
+                    @tap="enterHome"
+                >
+                    {{ buttonLabel }}
+                </button>
             </view>
-            <view class="splash-page__spacer" />
-            <button
-                class="splash-page__button"
-                hover-class="splash-page__button--hover"
-                @tap="enterHome"
-            >
-                {{ buttonLabel }}
-            </button>
         </view>
     </view>
 </template>
@@ -44,6 +45,7 @@ import {
 const appStore = useAppStore()
 const displayConfig = ref<SplashAdConfig>(getDefaultSplashConfig())
 const countdown = ref(0)
+const ready = ref(false)
 let timer: ReturnType<typeof setInterval> | null = null
 let entered = false
 
@@ -96,6 +98,7 @@ onLoad(async (query = {}) => {
             return
         }
 
+        ready.value = true
         markSplashShown(config.frequency)
         void appStore.getConfig().catch(() => ({}))
         if (config.autoEnterEnabled) {
@@ -120,16 +123,12 @@ onUnload(() => {
     overflow: hidden;
 }
 
-.splash-page__image,
-.splash-page__fallback {
+.splash-page__ready,
+.splash-page__image {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-}
-
-.splash-page__fallback {
-    background: linear-gradient(180deg, #111111 0%, #34291d 100%);
 }
 
 .splash-page__content {

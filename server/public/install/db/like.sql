@@ -138,6 +138,22 @@ CREATE TABLE `la_config`  (
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '配置表';
 -- ----------------------------
+-- Records of la_config
+-- ----------------------------
+BEGIN;
+INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) VALUES
+('feature_switch', 'admin_dashboard', '1', 1773413108, 1773413108),
+('feature_switch', 'admin_dashboard_user_ids', '1', 1773556898, 1773556898),
+('feature_switch', 'comment_review_enabled', '0', 1773413108, 1773413108),
+('feature_switch', 'staff_admin', '1', 1773413108, 1773413108),
+('feature_switch', 'staff_center', '1', 1773413108, 1773413108),
+('feature_switch', 'staff_tag_review_enabled', '0', 1775001600, 1775001600),
+('transaction', 'staff_confirm_timeout_enabled', '0', 1776200000, 1776200000),
+('transaction', 'staff_confirm_timeout_action', 'cancel', 1776200000, 1776200000),
+('transaction', 'staff_confirm_timeout_minutes', '60', 1776200000, 1776200000),
+('order_confirmation_letter', 'remark_template', '请您认真核对确认函中的服务日期、地点、金额与联系人信息，如有变更请及时联系订单服务人员。', 1776200000, 1776200000);
+COMMIT;
+-- ----------------------------
 -- Table structure for la_decorate_page
 -- ----------------------------
 DROP TABLE IF EXISTS `la_decorate_page`;
@@ -156,6 +172,10 @@ CREATE TABLE `la_decorate_page`  (
 -- ----------------------------
 BEGIN;
 INSERT INTO `la_decorate_page` VALUES (1, 1, '商城首页', '[{\"title\":\"搜索\",\"name\":\"search\",\"disabled\":1,\"content\":{},\"styles\":{}},{\"title\":\"首页轮播图\",\"name\":\"banner\",\"content\":{\"enabled\":1,\"data\":[{\"image\":\"/resource/image/adminapi/default/banner001.png\",\"name\":\"\",\"link\":{\"id\":6,\"name\":\"来自瓷器的爱\",\"path\":\"/pages/news_detail/news_detail\",\"query\":{\"id\":6},\"type\":\"article\"},\"is_show\":\"1\",\"bg\":\"/resource/image/adminapi/default/banner001_bg.png\"},{\"image\":\"/resource/image/adminapi/default/banner002.png\",\"name\":\"\",\"link\":{\"id\":3,\"name\":\"金山电池公布“沪广深市民绿色生活方式”调查结果\",\"path\":\"/pages/news_detail/news_detail\",\"query\":{\"id\":3},\"type\":\"article\"},\"is_show\":\"1\",\"bg\":\"/resource/image/adminapi/default/banner002_bg.png\"},{\"is_show\":\"1\",\"image\":\"/resource/image/adminapi/default/banner003.png\",\"name\":\"\",\"link\":{\"id\":1,\"name\":\"让生活更精致！五款居家好物推荐，实用性超高\",\"path\":\"/pages/news_detail/news_detail\",\"query\":{\"id\":1},\"type\":\"article\"},\"bg\":\"/resource/image/adminapi/default/banner003_bg.png\"}],\"style\":1,\"bg_style\":1},\"styles\":{}},{\"title\":\"导航菜单\",\"name\":\"nav\",\"content\":{\"enabled\":1,\"data\":[{\"image\":\"/resource/image/adminapi/default/nav01.png\",\"name\":\"资讯中心\",\"link\":{\"path\":\"/pages/news/news\",\"name\":\"文章资讯\",\"type\":\"shop\",\"canTab\":true},\"is_show\":\"1\"},{\"image\":\"/resource/image/adminapi/default/nav03.png\",\"name\":\"个人设置\",\"link\":{\"path\":\"/pages/user_set/user_set\",\"name\":\"个人设置\",\"type\":\"shop\"},\"is_show\":\"1\"},{\"image\":\"/resource/image/adminapi/default/nav02.png\",\"name\":\"我的收藏\",\"link\":{\"path\":\"/pages/collection/collection\",\"name\":\"我的收藏\",\"type\":\"shop\"},\"is_show\":\"1\"},{\"image\":\"/resource/image/adminapi/default/nav05.png\",\"name\":\"关于我们\",\"link\":{\"path\":\"/pages/as_us/as_us\",\"name\":\"关于我们\",\"type\":\"shop\"},\"is_show\":\"1\"},{\"image\":\"/resource/image/adminapi/default/nav04.png\",\"name\":\"联系客服\",\"link\":{\"path\":\"/pages/customer_service/customer_service\",\"name\":\"联系客服\",\"type\":\"shop\"},\"is_show\":\"1\"}],\"style\":2,\"per_line\":5,\"show_line\":2},\"styles\":{}},{\"title\":\"首页中部轮播图\",\"name\":\"middle-banner\",\"content\":{\"enabled\":1,\"data\":[{\"is_show\":\"1\",\"image\":\"/resource/image/adminapi/default/index_ad01.png\",\"name\":\"\",\"link\":{\"path\":\"/pages/agreement/agreement\",\"name\":\"隐私政策\",\"query\":{\"type\":\"privacy\"},\"type\":\"shop\"}}]},\"styles\":{}},{\"id\":\"l84almsk2uhyf\",\"title\":\"资讯\",\"name\":\"news\",\"disabled\":1,\"content\":{},\"styles\":{}}]', '[{\"title\":\"页面设置\",\"name\":\"page-meta\",\"content\":{\"title\":\"首页\",\"bg_type\":\"2\",\"bg_color\":\"#2F80ED\",\"bg_image\":\"/resource/image/adminapi/default/page_meta_bg01.png\",\"text_color\":\"2\",\"title_type\":\"2\",\"title_img\":\"/resource/image/adminapi/default/page_mate_title.png\"},\"styles\":{}}]', 1661757188, 1710989700), (2, 2, '个人中心', '[{\"title\":\"用户信息\",\"name\":\"user-info\",\"disabled\":1,\"content\":{},\"styles\":{}},{\"title\":\"我的服务\",\"name\":\"my-service\",\"content\":{\"style\":1,\"title\":\"我的服务\",\"data\":[{\"image\":\"/resource/image/adminapi/default/user_collect.png\",\"name\":\"我的收藏\",\"link\":{\"path\":\"/pages/collection/collection\",\"name\":\"我的收藏\",\"type\":\"shop\"},\"is_show\":\"1\"},{\"image\":\"/resource/image/adminapi/default/user_setting.png\",\"name\":\"个人设置\",\"link\":{\"path\":\"/pages/user_set/user_set\",\"name\":\"个人设置\",\"type\":\"shop\"},\"is_show\":\"1\"},{\"image\":\"/resource/image/adminapi/default/user_kefu.png\",\"name\":\"联系客服\",\"link\":{\"path\":\"/pages/customer_service/customer_service\",\"name\":\"联系客服\",\"type\":\"shop\"},\"is_show\":\"1\"},{\"image\":\"/resource/image/adminapi/default/wallet.png\",\"name\":\"我的钱包\",\"link\":{\"path\":\"/packages/pages/user_wallet/user_wallet\",\"name\":\"我的钱包\",\"type\":\"shop\"},\"is_show\":\"1\"}],\"enabled\":1},\"styles\":{}},{\"title\":\"个人中心广告图\",\"name\":\"user-banner\",\"content\":{\"enabled\":1,\"data\":[{\"image\":\"/resource/image/adminapi/default/user_ad01.png\",\"name\":\"\",\"link\":{\"path\":\"/pages/customer_service/customer_service\",\"name\":\"联系客服\",\"type\":\"shop\"},\"is_show\":\"1\"},{\"image\":\"/resource/image/adminapi/default/user_ad02.png\",\"name\":\"\",\"link\":{\"path\":\"/pages/customer_service/customer_service\",\"name\":\"联系客服\",\"type\":\"shop\"},\"is_show\":\"1\"}]},\"styles\":{}}]', '[{\"title\":\"页面设置\",\"name\":\"page-meta\",\"content\":{\"title\":\"个人中心\",\"bg_type\":\"1\",\"bg_color\":\"#2F80ED\",\"bg_image\":\"\",\"text_color\":\"1\",\"title_type\":\"2\",\"title_img\":\"/resource/image/adminapi/default/page_mate_title.png\"},\"styles\":{}}]', 1661757188, 1710933097), (3, 3, '客服设置', '[{\"title\":\"客服设置\",\"name\":\"customer-service\",\"content\":{\"title\":\"添加客服二维码\",\"time\":\"早上 9:30 - 19:00\",\"mobile\":\"1888888888\",\"qrcode\":\"/resource/image/adminapi/default/kefu01.png\",\"remark\":\"长按添加客服或拨打客服热线\"},\"styles\":{}}]', '', 1661757188, 1710929953), (4, 4, 'PC设置', '[{\"id\":\"lajcn8d0hzhed\",\"title\":\"首页轮播图\",\"name\":\"pc-banner\",\"content\":{\"enabled\":1,\"data\":[{\"image\":\"/resource/image/adminapi/default/banner003.png\",\"name\":\"\",\"link\":{\"path\":\"/pages/news/news\",\"name\":\"文章资讯\",\"type\":\"shop\"}},{\"image\":\"/resource/image/adminapi/default/banner002.png\",\"name\":\"\",\"link\":{\"path\":\"/pages/collection/collection\",\"name\":\"我的收藏\",\"type\":\"shop\"}},{\"image\":\"/resource/image/adminapi/default/banner001.png\",\"name\":\"\",\"link\":{}}]},\"styles\":{\"position\":\"absolute\",\"left\":\"40\",\"top\":\"75px\",\"width\":\"750px\",\"height\":\"340px\"}}]', '', 1661757188, 1710990175), (5, 5, '系统风格', '{\"themeColorId\":3,\"topTextColor\":\"white\",\"navigationBarColor\":\"#A74BFD\",\"themeColor1\":\"#A74BFD\",\"themeColor2\":\"#CB60FF\",\"buttonColor\":\"white\"}', '', 1710410915, 1710990415);
+COMMIT;
+BEGIN;
+INSERT INTO `la_decorate_page` (`id`, `type`, `name`, `data`, `meta`, `create_time`, `update_time`) VALUES
+(6, 6, '开屏广告页', '[{"id":"splash_ad_default","title":"开屏广告页","name":"splash-ad","disabled":1,"content":{"enabled":0,"image":"","auto_enter_enabled":1,"auto_seconds":3,"frequency":"session","button_text":"点击进入"},"styles":{"button_bg_color":"#FFFFFF","button_text_color":"#333333","button_border_color":"#FFFFFF","button_border_radius":24}}]', '', 1776200000, 1776200000);
 COMMIT;
 -- ----------------------------
 -- Table structure for la_decorate_tabbar
@@ -225,6 +245,18 @@ CREATE TABLE `la_dev_crontab`  (
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '计划任务表';
 -- ----------------------------
+-- Records of la_dev_crontab
+-- ----------------------------
+BEGIN;
+INSERT INTO `la_dev_crontab` (`name`, `type`, `system`, `remark`, `command`, `params`, `status`, `expression`, `create_time`, `update_time`, `delete_time`) VALUES
+('超时未支付订单自动取消', 1, 1, '每分钟扫描待支付首笔订单并自动取消超时单', 'cancel_unpaid_orders', '', 1, '* * * * *', 1776200000, 1776200000, NULL),
+('站内提醒发送', 1, 1, '每分钟扫描服务前一天提醒与暂停到期提醒的站内消息', 'send_station_reminders', '', 1, '* * * * *', 1776200000, 1776200000, NULL),
+('候补超期自动失效', 1, 1, '每天扫描预约日期已过的候补并自动标记为已过期', 'expire_waitlists', '', 1, '10 0 * * *', 1776200000, 1776200000, NULL),
+('订阅消息派发', 1, 1, '每分钟扫描并派发到期的小程序订阅消息', 'send_subscribe_messages', '', 1, '* * * * *', 1776200000, 1776200000, NULL),
+('服务人员确认超时自动处理', 1, 1, '每分钟扫描待确认订单并按配置自动取消或自动同意', 'handle_pending_confirm_orders', '', 1, '* * * * *', 1776200000, 1776200000, NULL),
+('预约订单退款查询', 1, 1, '每分钟查询处理中微信退款并同步订单退款状态', 'query_refund', '', 1, '* * * * *', 1776200000, 1776200000, NULL);
+COMMIT;
+-- ----------------------------
 -- Table structure for la_dev_pay_config
 -- ----------------------------
 DROP TABLE IF EXISTS `la_dev_pay_config`;
@@ -279,12 +311,12 @@ CREATE TABLE `la_dict_data`  (
   `update_time` int(10) NULL DEFAULT NULL COMMENT '修改时间',
   `delete_time` int(10) NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典数据表';
+) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典数据表';
 -- ----------------------------
 -- Records of la_dict_data
 -- ----------------------------
 BEGIN;
-INSERT INTO `la_dict_data` VALUES (1, '隐藏', '0', 1, 'show_status', 0, 1, '', 1656381543, 1656381543, NULL), (2, '显示', '1', 1, 'show_status', 0, 1, '', 1656381550, 1656381550, NULL), (3, '进行中', '0', 2, 'business_status', 0, 1, '', 1656381410, 1656381410, NULL), (4, '成功', '1', 2, 'business_status', 0, 1, '', 1656381437, 1656381437, NULL), (5, '失败', '2', 2, 'business_status', 0, 1, '', 1656381449, 1656381449, NULL), (6, '待处理', '0', 3, 'event_status', 0, 1, '', 1656381212, 1656381212, NULL), (7, '已处理', '1', 3, 'event_status', 0, 1, '', 1656381315, 1656381315, NULL), (8, '拒绝处理', '2', 3, 'event_status', 0, 1, '', 1656381331, 1656381331, NULL), (9, '禁用', '1', 4, 'system_disable', 0, 1, '', 1656312030, 1656312030, NULL), (10, '正常', '0', 4, 'system_disable', 0, 1, '', 1656312040, 1656312040, NULL), (11, '未知', '0', 5, 'sex', 0, 1, '', 1656062988, 1656062988, NULL), (12, '男', '1', 5, 'sex', 0, 1, '', 1656062999, 1656062999, NULL), (13, '女', '2', 5, 'sex', 0, 1, '', 1656063009, 1656063009, NULL);
+INSERT INTO `la_dict_data` VALUES (1, '隐藏', '0', 1, 'show_status', 0, 1, '', 1656381543, 1656381543, NULL), (2, '显示', '1', 1, 'show_status', 0, 1, '', 1656381550, 1656381550, NULL), (3, '进行中', '0', 2, 'business_status', 0, 1, '', 1656381410, 1656381410, NULL), (4, '成功', '1', 2, 'business_status', 0, 1, '', 1656381437, 1656381437, NULL), (5, '失败', '2', 2, 'business_status', 0, 1, '', 1656381449, 1656381449, NULL), (6, '待处理', '0', 3, 'event_status', 0, 1, '', 1656381212, 1656381212, NULL), (7, '已处理', '1', 3, 'event_status', 0, 1, '', 1656381315, 1656381315, NULL), (8, '拒绝处理', '2', 3, 'event_status', 0, 1, '', 1656381331, 1656381331, NULL), (9, '禁用', '1', 4, 'system_disable', 0, 1, '', 1656312030, 1656312030, NULL), (10, '正常', '0', 4, 'system_disable', 0, 1, '', 1656312040, 1656312040, NULL), (11, '未知', '0', 5, 'sex', 0, 1, '', 1656062988, 1656062988, NULL), (12, '男', '1', 5, 'sex', 0, 1, '', 1656062999, 1656062999, NULL), (13, '女', '2', 5, 'sex', 0, 1, '', 1656063009, 1656063009, NULL), (14, '疫情', '1', 6, 'order_pause_type', 1, 1, '订单暂停类型-疫情', 1773413105, 1773413105, NULL), (15, '突发事件', '2', 6, 'order_pause_type', 2, 1, '订单暂停类型-突发事件', 1773413105, 1773413105, NULL), (16, '个人原因', '3', 6, 'order_pause_type', 3, 1, '订单暂停类型-个人原因', 1773413105, 1773413105, NULL), (17, '其他', '4', 6, 'order_pause_type', 4, 1, '订单暂停类型-其他', 1773413105, 1773413105, NULL);
 COMMIT;
 -- ----------------------------
 -- Table structure for la_dict_type
@@ -300,12 +332,12 @@ CREATE TABLE `la_dict_type`  (
   `update_time` int(10) NULL DEFAULT NULL COMMENT '修改时间',
   `delete_time` int(10) NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典类型表';
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '字典类型表';
 -- ----------------------------
 -- Records of la_dict_type
 -- ----------------------------
 BEGIN;
-INSERT INTO `la_dict_type` VALUES (1, '显示状态', 'show_status', 1, '', 1656381520, 1656381520, NULL), (2, '业务状态', 'business_status', 1, '', 1656381393, 1656381393, NULL), (3, '事件状态', 'event_status', 1, '', 1656381075, 1656381075, NULL), (4, '禁用状态', 'system_disable', 1, '', 1656311838, 1656311838, NULL), (5, '用户性别', 'sex', 1, '', 1656062946, 1656380925, NULL);
+INSERT INTO `la_dict_type` VALUES (1, '显示状态', 'show_status', 1, '', 1656381520, 1656381520, NULL), (2, '业务状态', 'business_status', 1, '', 1656381393, 1656381393, NULL), (3, '事件状态', 'event_status', 1, '', 1656381075, 1656381075, NULL), (4, '禁用状态', 'system_disable', 1, '', 1656311838, 1656312040, NULL), (5, '用户性别', 'sex', 1, '', 1656062946, 1656380925, NULL), (6, '订单暂停类型', 'order_pause_type', 1, '', 1773413105, 1773413105, NULL);
 COMMIT;
 -- ----------------------------
 -- Table structure for la_file
@@ -603,6 +635,11 @@ CREATE TABLE `la_system_menu`  (
 -- ----------------------------
 BEGIN;
 INSERT INTO `la_system_menu` VALUES (4, 0, 'M', '权限管理', 'el-icon-Lock', 300, '', 'permission', '', '', '', 0, 1, 0, 1656664556, 1710472802), (5, 0, 'C', '工作台', 'el-icon-Monitor', 1000, 'workbench/index', 'workbench', 'workbench/index', '', '', 0, 1, 0, 1656664793, 1664354981), (6, 4, 'C', '菜单', 'el-icon-Operation', 100, 'auth.menu/lists', 'menu', 'permission/menu/index', '', '', 1, 1, 0, 1656664960, 1710472994), (7, 4, 'C', '管理员', 'local-icon-shouyiren', 80, 'auth.admin/lists', 'admin', 'permission/admin/index', '', '', 0, 1, 0, 1656901567, 1710473013), (8, 4, 'C', '角色', 'el-icon-Female', 90, 'auth.role/lists', 'role', 'permission/role/index', '', '', 0, 1, 0, 1656901660, 1710473000), (12, 8, 'A', '新增', '', 1, 'auth.role/add', '', '', '', '', 0, 1, 0, 1657001790, 1663750625), (14, 8, 'A', '编辑', '', 1, 'auth.role/edit', '', '', '', '', 0, 1, 0, 1657001924, 1663750631), (15, 8, 'A', '删除', '', 1, 'auth.role/delete', '', '', '', '', 0, 1, 0, 1657001982, 1663750637), (16, 6, 'A', '新增', '', 1, 'auth.menu/add', '', '', '', '', 0, 1, 0, 1657072523, 1663750565), (17, 6, 'A', '编辑', '', 1, 'auth.menu/edit', '', '', '', '', 0, 1, 0, 1657073955, 1663750570), (18, 6, 'A', '删除', '', 1, 'auth.menu/delete', '', '', '', '', 0, 1, 0, 1657073987, 1663750578), (19, 7, 'A', '新增', '', 1, 'auth.admin/add', '', '', '', '', 0, 1, 0, 1657074035, 1663750596), (20, 7, 'A', '编辑', '', 1, 'auth.admin/edit', '', '', '', '', 0, 1, 0, 1657074071, 1663750603), (21, 7, 'A', '删除', '', 1, 'auth.admin/delete', '', '', '', '', 0, 1, 0, 1657074108, 1663750609), (23, 28, 'M', '开发工具', 'el-icon-EditPen', 40, '', 'dev_tools', '', '', '', 0, 1, 0, 1657097744, 1710473127), (24, 23, 'C', '代码生成器', 'el-icon-DocumentAdd', 1, 'tools.generator/generateTable', 'code', 'dev_tools/code/index', '', '', 0, 1, 0, 1657098110, 1658989423), (25, 0, 'M', '组织管理', 'el-icon-OfficeBuilding', 400, '', 'organization', '', '', '', 0, 1, 0, 1657099914, 1710472797), (26, 25, 'C', '部门管理', 'el-icon-Coordinate', 100, 'dept.dept/lists', 'department', 'organization/department/index', '', '', 1, 1, 0, 1657099989, 1710472962), (27, 25, 'C', '岗位管理', 'el-icon-PriceTag', 90, 'dept.jobs/lists', 'post', 'organization/post/index', '', '', 0, 1, 0, 1657100044, 1710472967), (28, 0, 'M', '系统设置', 'el-icon-Setting', 200, '', 'setting', '', '', '', 0, 1, 0, 1657100164, 1710472807), (29, 28, 'M', '网站设置', 'el-icon-Basketball', 100, '', 'website', '', '', '', 0, 1, 0, 1657100230, 1710473049), (30, 29, 'C', '网站信息', '', 1, 'setting.web.web_setting/getWebsite', 'information', 'setting/website/information', '', '', 0, 1, 0, 1657100306, 1657164412), (31, 29, 'C', '网站备案', '', 1, 'setting.web.web_setting/getCopyright', 'filing', 'setting/website/filing', '', '', 0, 1, 0, 1657100434, 1657164723), (32, 29, 'C', '政策协议', '', 1, 'setting.web.web_setting/getAgreement', 'protocol', 'setting/website/protocol', '', '', 0, 1, 0, 1657100571, 1657164770), (33, 28, 'C', '存储设置', 'el-icon-FolderOpened', 70, 'setting.storage/lists', 'storage', 'setting/storage/index', '', '', 0, 1, 0, 1657160959, 1710473095), (34, 23, 'C', '字典管理', 'el-icon-Box', 1, 'setting.dict.dict_type/lists', 'dict', 'setting/dict/type/index', '', '', 0, 1, 0, 1657161211, 1663225935), (35, 28, 'M', '系统维护', 'el-icon-SetUp', 50, '', 'system', '', '', '', 0, 1, 0, 1657161569, 1710473122), (36, 35, 'C', '系统日志', '', 90, 'setting.system.log/lists', 'journal', 'setting/system/journal', '', '', 0, 1, 0, 1657161696, 1710473253), (37, 35, 'C', '系统缓存', '', 80, '', 'cache', 'setting/system/cache', '', '', 0, 1, 0, 1657161896, 1710473258), (38, 35, 'C', '系统环境', '', 70, 'setting.system.system/info', 'environment', 'setting/system/environment', '', '', 0, 1, 0, 1657162000, 1710473265), (39, 24, 'A', '导入数据表', '', 1, 'tools.generator/selectTable', '', '', '', '', 0, 1, 0, 1657162736, 1657162736), (40, 24, 'A', '代码生成', '', 1, 'tools.generator/generate', '', '', '', '', 0, 1, 0, 1657162806, 1657162806), (41, 23, 'C', '编辑数据表', '', 1, 'tools.generator/edit', 'code/edit', 'dev_tools/code/edit', '/dev_tools/code', '', 1, 0, 0, 1657162866, 1663748668), (42, 24, 'A', '同步表结构', '', 1, 'tools.generator/syncColumn', '', '', '', '', 0, 1, 0, 1657162934, 1657162934), (43, 24, 'A', '删除数据表', '', 1, 'tools.generator/delete', '', '', '', '', 0, 1, 0, 1657163015, 1657163015), (44, 24, 'A', '预览代码', '', 1, 'tools.generator/preview', '', '', '', '', 0, 1, 0, 1657163263, 1657163263), (45, 26, 'A', '新增', '', 1, 'dept.dept/add', '', '', '', '', 0, 1, 0, 1657163548, 1663750492), (46, 26, 'A', '编辑', '', 1, 'dept.dept/edit', '', '', '', '', 0, 1, 0, 1657163599, 1663750498), (47, 26, 'A', '删除', '', 1, 'dept.dept/delete', '', '', '', '', 0, 1, 0, 1657163687, 1663750504), (48, 27, 'A', '新增', '', 1, 'dept.jobs/add', '', '', '', '', 0, 1, 0, 1657163778, 1663750524), (49, 27, 'A', '编辑', '', 1, 'dept.jobs/edit', '', '', '', '', 0, 1, 0, 1657163800, 1663750530), (50, 27, 'A', '删除', '', 1, 'dept.jobs/delete', '', '', '', '', 0, 1, 0, 1657163820, 1663750535), (51, 30, 'A', '保存', '', 1, 'setting.web.web_setting/setWebsite', '', '', '', '', 0, 1, 0, 1657164469, 1663750649), (52, 31, 'A', '保存', '', 1, 'setting.web.web_setting/setCopyright', '', '', '', '', 0, 1, 0, 1657164692, 1663750657), (53, 32, 'A', '保存', '', 1, 'setting.web.web_setting/setAgreement', '', '', '', '', 0, 1, 0, 1657164824, 1663750665), (54, 33, 'A', '设置', '', 1, 'setting.storage/setup', '', '', '', '', 0, 1, 0, 1657165303, 1663750673), (55, 34, 'A', '新增', '', 1, 'setting.dict.dict_type/add', '', '', '', '', 0, 1, 0, 1657166966, 1663750783), (56, 34, 'A', '编辑', '', 1, 'setting.dict.dict_type/edit', '', '', '', '', 0, 1, 0, 1657166997, 1663750789), (57, 34, 'A', '删除', '', 1, 'setting.dict.dict_type/delete', '', '', '', '', 0, 1, 0, 1657167038, 1663750796), (58, 62, 'A', '新增', '', 1, 'setting.dict.dict_data/add', '', '', '', '', 0, 1, 0, 1657167317, 1663750758), (59, 62, 'A', '编辑', '', 1, 'setting.dict.dict_data/edit', '', '', '', '', 0, 1, 0, 1657167371, 1663750751), (60, 62, 'A', '删除', '', 1, 'setting.dict.dict_data/delete', '', '', '', '', 0, 1, 0, 1657167397, 1663750768), (61, 37, 'A', '清除系统缓存', '', 1, 'setting.system.cache/clear', '', '', '', '', 0, 1, 0, 1657173837, 1657173939), (62, 23, 'C', '字典数据管理', '', 1, 'setting.dict.dict_data/lists', 'dict/data', 'setting/dict/data/index', '/dev_tools/dict', '', 1, 0, 0, 1657174351, 1663745617), (63, 158, 'M', '素材管理', 'el-icon-Picture', 0, '', 'material', '', '', '', 0, 1, 0, 1657507133, 1710472243), (64, 63, 'C', '素材中心', 'el-icon-PictureRounded', 0, '', 'index', 'material/index', '', '', 0, 1, 0, 1657507296, 1664355653), (66, 26, 'A', '详情', '', 0, 'dept.dept/detail', '', '', '', '', 0, 1, 0, 1663725459, 1663750516), (67, 27, 'A', '详情', '', 0, 'dept.jobs/detail', '', '', '', '', 0, 1, 0, 1663725514, 1663750559), (68, 6, 'A', '详情', '', 0, 'auth.menu/detail', '', '', '', '', 0, 1, 0, 1663725564, 1663750584), (69, 7, 'A', '详情', '', 0, 'auth.admin/detail', '', '', '', '', 0, 1, 0, 1663725623, 1663750615), (70, 158, 'M', '文章资讯', 'el-icon-ChatLineSquare', 90, '', 'article', '', '', '', 0, 1, 0, 1663749965, 1710471867), (71, 70, 'C', '文章管理', 'el-icon-ChatDotSquare', 0, 'article.article/lists', 'lists', 'article/lists/index', '', '', 0, 1, 0, 1663750101, 1664354615), (72, 70, 'C', '文章添加/编辑', '', 0, 'article.article/add:edit', 'lists/edit', 'article/lists/edit', '/article/lists', '', 0, 0, 0, 1663750153, 1664356275), (73, 70, 'C', '文章栏目', 'el-icon-CollectionTag', 0, 'article.articleCate/lists', 'column', 'article/column/index', '', '', 1, 1, 0, 1663750287, 1664354678), (74, 71, 'A', '新增', '', 0, 'article.article/add', '', '', '', '', 0, 1, 0, 1663750335, 1663750335), (75, 71, 'A', '详情', '', 0, 'article.article/detail', '', '', '', '', 0, 1, 0, 1663750354, 1663750383), (76, 71, 'A', '删除', '', 0, 'article.article/delete', '', '', '', '', 0, 1, 0, 1663750413, 1663750413), (77, 71, 'A', '修改状态', '', 0, 'article.article/updateStatus', '', '', '', '', 0, 1, 0, 1663750442, 1663750442), (78, 73, 'A', '添加', '', 0, 'article.articleCate/add', '', '', '', '', 0, 1, 0, 1663750483, 1663750483), (79, 73, 'A', '删除', '', 0, 'article.articleCate/delete', '', '', '', '', 0, 1, 0, 1663750895, 1663750895), (80, 73, 'A', '详情', '', 0, 'article.articleCate/detail', '', '', '', '', 0, 1, 0, 1663750913, 1663750913), (81, 73, 'A', '修改状态', '', 0, 'article.articleCate/updateStatus', '', '', '', '', 0, 1, 0, 1663750936, 1663750936), (82, 0, 'M', '渠道设置', 'el-icon-Message', 500, '', 'channel', '', '', '', 0, 1, 0, 1663754084, 1710472649), (83, 82, 'C', 'h5设置', 'el-icon-Cellphone', 100, 'channel.web_page_setting/getConfig', 'h5', 'channel/h5', '', '', 0, 1, 0, 1663754158, 1710472929), (84, 83, 'A', '保存', '', 0, 'channel.web_page_setting/setConfig', '', '', '', '', 0, 1, 0, 1663754259, 1663754259), (85, 82, 'M', '微信公众号', 'local-icon-dingdan', 80, '', 'wx_oa', '', '', '', 0, 1, 0, 1663755470, 1710472946), (86, 85, 'C', '公众号配置', '', 0, 'channel.official_account_setting/getConfig', 'config', 'channel/wx_oa/config', '', '', 0, 1, 0, 1663755663, 1664355450), (87, 85, 'C', '菜单管理', '', 0, 'channel.official_account_menu/detail', 'menu', 'channel/wx_oa/menu', '', '', 0, 1, 0, 1663755767, 1664355456), (88, 86, 'A', '保存', '', 0, 'channel.official_account_setting/setConfig', '', '', '', '', 0, 1, 0, 1663755799, 1663755799), (89, 86, 'A', '保存并发布', '', 0, 'channel.official_account_menu/save', '', '', '', '', 0, 1, 0, 1663756490, 1663756490), (90, 85, 'C', '关注回复', '', 0, 'channel.official_account_reply/lists', 'follow', 'channel/wx_oa/reply/follow_reply', '', '', 0, 1, 0, 1663818358, 1663818366), (91, 85, 'C', '关键字回复', '', 0, '', 'keyword', 'channel/wx_oa/reply/keyword_reply', '', '', 0, 1, 0, 1663818445, 1663818445), (93, 85, 'C', '默认回复', '', 0, '', 'default', 'channel/wx_oa/reply/default_reply', '', '', 0, 1, 0, 1663818580, 1663818580), (94, 82, 'C', '微信小程序', 'local-icon-weixin', 90, 'channel.mnp_settings/getConfig', 'weapp', 'channel/weapp', '', '', 0, 1, 0, 1663831396, 1710472941), (95, 94, 'A', '保存', '', 0, 'channel.mnp_settings/setConfig', '', '', '', '', 0, 1, 0, 1663831436, 1663831436), (96, 0, 'M', '装修管理', 'el-icon-Brush', 600, '', 'decoration', '', '', '', 0, 1, 0, 1663834825, 1710472099), (97, 175, 'C', '页面装修', 'el-icon-CopyDocument', 100, 'decorate.page/detail', 'pages', 'decoration/pages/index', '', '', 0, 1, 0, 1663834879, 1710929256), (98, 97, 'A', '保存', '', 0, 'decorate.page/save', '', '', '', '', 0, 1, 0, 1663834956, 1663834956), (99, 175, 'C', '底部导航', 'el-icon-Position', 90, 'decorate.tabbar/detail', 'tabbar', 'decoration/tabbar', '', '', 0, 1, 0, 1663835004, 1710929262), (100, 99, 'A', '保存', '', 0, 'decorate.tabbar/save', '', '', '', '', 0, 1, 0, 1663835018, 1663835018), (101, 158, 'M', '消息管理', 'el-icon-ChatDotRound', 80, '', 'message', '', '', '', 0, 1, 0, 1663838602, 1710471874), (102, 101, 'C', '通知设置', '', 0, 'notice.notice/settingLists', 'notice', 'message/notice/index', '', '', 0, 1, 0, 1663839195, 1663839195), (103, 102, 'A', '详情', '', 0, 'notice.notice/detail', '', '', '', '', 0, 1, 0, 1663839537, 1663839537), (104, 101, 'C', '通知设置编辑', '', 0, 'notice.notice/set', 'notice/edit', 'message/notice/edit', '/message/notice', '', 0, 0, 0, 1663839873, 1663898477), (105, 71, 'A', '编辑', '', 0, 'article.article/edit', '', '', '', '', 0, 1, 0, 1663840043, 1663840053),  (107, 101, 'C', '短信设置', '', 0, 'notice.sms_config/getConfig', 'short_letter', 'message/short_letter/index', '', '', 0, 1, 0, 1663898591, 1664355708), (108, 107, 'A', '设置', '', 0, 'notice.sms_config/setConfig', '', '', '', '', 0, 1, 0, 1663898644, 1663898644), (109, 107, 'A', '详情', '', 0, 'notice.sms_config/detail', '', '', '', '', 0, 1, 0, 1663898661, 1663898661), (110, 28, 'C', '热门搜索', 'el-icon-Search', 60, 'setting.hot_search/getConfig', 'search', 'setting/search/index', '', '', 0, 1, 0, 1663901821, 1710473109), (111, 110, 'A', '保存', '', 0, 'setting.hot_search/setConfig', '', '', '', '', 0, 1, 0, 1663901856, 1663901856), (112, 28, 'M', '用户设置', 'local-icon-keziyuyue', 90, '', 'user', '', '', '', 0, 1, 0, 1663903302, 1710473056), (113, 112, 'C', '用户设置', '', 0, 'setting.user.user/getConfig', 'setup', 'setting/user/setup', '', '', 0, 1, 0, 1663903506, 1663903506), (114, 113, 'A', '保存', '', 0, 'setting.user.user/setConfig', '', '', '', '', 0, 1, 0, 1663903522, 1663903522), (115, 112, 'C', '登录注册', '', 0, 'setting.user.user/getRegisterConfig', 'login_register', 'setting/user/login_register', '', '', 0, 1, 0, 1663903832, 1663903832), (116, 115, 'A', '保存', '', 0, 'setting.user.user/setRegisterConfig', '', '', '', '', 0, 1, 0, 1663903852, 1663903852), (117, 0, 'M', '用户管理', 'el-icon-User', 900, '', 'consumer', '', '', '', 0, 1, 0, 1663904351, 1710472074), (118, 117, 'C', '用户列表', 'local-icon-user_guanli', 100, 'user.user/lists', 'lists', 'consumer/lists/index', '', '', 0, 1, 0, 1663904392, 1710471845), (119, 117, 'C', '用户详情', '', 90, 'user.user/detail', 'lists/detail', 'consumer/lists/detail', '/consumer/lists', '', 0, 0, 0, 1663904470, 1710471851), (120, 119, 'A', '编辑', '', 0, 'user.user/edit', '', '', '', '', 0, 1, 0, 1663904499, 1663904499), (140, 82, 'C', '微信开发平台', 'local-icon-notice_buyer', 70, 'channel.open_setting/getConfig', 'open_setting', 'channel/open_setting', '', '', 0, 1, 0, 1666085713, 1710472951), (141, 140, 'A', '保存', '', 0, 'channel.open_setting/setConfig', '', '', '', '', 0, 1, 0, 1666085751, 1666085776), (142, 176, 'C', 'PC端装修', 'el-icon-Monitor', 8, '', 'pc', 'decoration/pc', '', '', 0, 1, 0, 1668423284, 1710901602), (143, 35, 'C', '定时任务', '', 100, 'crontab.crontab/lists', 'scheduled_task', 'setting/system/scheduled_task/index', '', '', 0, 1, 0, 1669357509, 1710473246), (144, 35, 'C', '定时任务添加/编辑', '', 0, 'crontab.crontab/add:edit', 'scheduled_task/edit', 'setting/system/scheduled_task/edit', '/setting/system/scheduled_task', '', 0, 0, 0, 1669357670, 1669357765), (145, 143, 'A', '添加', '', 0, 'crontab.crontab/add', '', '', '', '', 0, 1, 0, 1669358282, 1669358282), (146, 143, 'A', '编辑', '', 0, 'crontab.crontab/edit', '', '', '', '', 0, 1, 0, 1669358303, 1669358303), (147, 143, 'A', '删除', '', 0, 'crontab.crontab/delete', '', '', '', '', 0, 1, 0, 1669358334, 1669358334), (148, 0, 'M', '模板示例', 'el-icon-SetUp', 100, '', 'template', '', '', '', 0, 1, 0, 1670206819, 1710472811), (149, 148, 'M', '组件示例', 'el-icon-Coin', 0, '', 'component', '', '', '', 0, 1, 0, 1670207182, 1670207244), (150, 149, 'C', '富文本', '', 90, '', 'rich_text', 'template/component/rich_text', '', '', 0, 1, 0, 1670207751, 1710473315), (151, 149, 'C', '上传文件', '', 80, '', 'upload', 'template/component/upload', '', '', 0, 1, 0, 1670208925, 1710473322), (152, 149, 'C', '图标', '', 100, '', 'icon', 'template/component/icon', '', '', 0, 1, 0, 1670230069, 1710473306), (153, 149, 'C', '文件选择器', '', 60, '', 'file', 'template/component/file', '', '', 0, 1, 0, 1670232129, 1710473341), (154, 149, 'C', '链接选择器', '', 50, '', 'link', 'template/component/link', '', '', 0, 1, 0, 1670292636, 1710473346), (155, 149, 'C', '超出自动打点', '', 40, '', 'overflow', 'template/component/overflow', '', '', 0, 1, 0, 1670292883, 1710473351), (156, 149, 'C', '悬浮input', '', 70, '', 'popover_input', 'template/component/popover_input', '', '', 0, 1, 0, 1670293336, 1710473329), (157, 119, 'A', '余额调整', '', 0, 'user.user/adjustMoney', '', '', '', '', 0, 1, 0, 1677143088, 1677143088), (158, 0, 'M', '应用管理', 'el-icon-Postcard', 800, '', 'app', '', '', '', 0, 1, 0, 1677143430, 1710472079), (159, 158, 'C', '用户充值', 'local-icon-fukuan', 100, 'recharge.recharge/getConfig', 'recharge', 'app/recharge/index', '', '', 0, 1, 0, 1677144284, 1710471860), (160, 159, 'A', '保存', '', 0, 'recharge.recharge/setConfig', '', '', '', '', 0, 1, 0, 1677145012, 1677145012), (161, 28, 'M', '支付设置', 'local-icon-set_pay', 80, '', 'pay', '', '', '', 0, 1, 0, 1677148075, 1710473061), (162, 161, 'C', '支付方式', '', 0, 'setting.pay.pay_way/getPayWay', 'method', 'setting/pay/method/index', '', '', 0, 1, 0, 1677148207, 1677148207), (163, 161, 'C', '支付配置', '', 0, 'setting.pay.pay_config/lists', 'config', 'setting/pay/config/index', '', '', 0, 1, 0, 1677148260, 1677148374), (164, 162, 'A', '设置支付方式', '', 0, 'setting.pay.pay_way/setPayWay', '', '', '', '', 0, 1, 0, 1677219624, 1677219624), (165, 163, 'A', '配置', '', 0, 'setting.pay.pay_config/setConfig', '', '', '', '', 0, 1, 0, 1677219655, 1677219655), (166, 0, 'M', '财务管理', 'local-icon-user_gaikuang', 700, '', 'finance', '', '', '', 0, 1, 0, 1677552269, 1710472085), (167, 166, 'C', '充值记录', 'el-icon-Wallet', 90, 'recharge.recharge/lists', 'recharge_record', 'finance/recharge_record', '', '', 0, 1, 0, 1677552757, 1710472902), (168, 166, 'C', '余额明细', 'local-icon-qianbao', 100, 'finance.account_log/lists', 'balance_details', 'finance/balance_details', '', '', 0, 1, 0, 1677552976, 1710472894), (169, 167, 'A', '退款', '', 0, 'recharge.recharge/refund', '', '', '', '', 0, 1, 0, 1677809715, 1677809715), (170, 166, 'C', '退款记录', 'local-icon-heshoujilu', 0, 'finance.refund/record', 'refund_record', 'finance/refund_record', '', '', 0, 1, 0, 1677811271, 1677811271), (171, 170, 'A', '重新退款', '', 0, 'recharge.recharge/refundAgain', '', '', '', '', 0, 1, 0, 1677811295, 1677811295), (172, 170, 'A', '退款日志', '', 0, 'finance.refund/log', '', '', '', '', 0, 1, 0, 1677811361, 1677811361), (173, 175, 'C', '系统风格', 'el-icon-Brush', 80, '', 'style', 'decoration/style/style', '', '', 0, 1, 0, 1681635044, 1710929278), (175, 96, 'M', '移动端', '', 100, '', 'mobile', '', '', '', 0, 1, 0, 1710901543, 1710929294), (176, 96, 'M', 'PC端', '', 90, '', 'pc', '', '', '', 0, 1, 0, 1710901592, 1710929299),(177, 29, 'C', '站点统计', '', 0, 'setting.web.web_setting/getSiteStatistics', 'statistics', 'setting/website/statistics', '', '', 0, 1, 0, 1726841481, 1726843434),(178, 177, 'A', '保存', '', 0, 'setting.web.web_setting/saveSiteStatistics', '', '', '', '', 1, 1, 0, 1726841507, 1726841507);
+UPDATE `la_system_menu`
+SET `is_show` = 0,
+    `is_disable` = 1,
+    `update_time` = 1710929278
+WHERE `id` = 173;
 COMMIT;
 -- ----------------------------
 -- Table structure for la_system_role
@@ -1034,6 +1071,13 @@ CREATE TABLE `la_schedule_rule` (
     PRIMARY KEY (`id`),
     KEY `idx_staff_id` (`staff_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='档期规则表';
+-- ----------------------------
+-- Records of la_schedule_rule
+-- ----------------------------
+BEGIN;
+INSERT INTO `la_schedule_rule` (`id`, `staff_id`, `advance_days`, `max_orders_per_day`, `interval_hours`, `work_start_time`, `work_end_time`, `rest_days`, `is_enabled`, `create_time`, `update_time`) VALUES
+(1, 0, 3, 1, 0, '08:00', '20:00', '', 1, 1773413104, 1773413104);
+COMMIT;
 DROP TABLE IF EXISTS `la_schedule`;
 CREATE TABLE `la_schedule` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -1113,6 +1157,17 @@ CREATE TABLE `la_calendar_event` (
     KEY `idx_is_lucky_day` (`is_lucky_day`),
     KEY `idx_is_holiday` (`is_holiday`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='黄历/吉日表';
+-- ----------------------------
+-- Records of la_calendar_event
+-- ----------------------------
+BEGIN;
+INSERT INTO `la_calendar_event` (`id`, `event_date`, `lunar_date`, `is_lucky_day`, `lucky_events`, `unlucky_events`, `is_holiday`, `holiday_name`, `congestion_level`, `remark`, `create_time`, `update_time`) VALUES
+(1, '2026-01-01', '十一月十二', 0, '', '', 1, '元旦', 3, '', 1773413104, 1773413104),
+(2, '2026-02-17', '正月初一', 1, '祈福,嫁娶,订盟', '动土,破土', 1, '春节', 3, '', 1773413104, 1773413104),
+(3, '2026-05-01', '三月十五', 1, '嫁娶,订盟,纳采', '开市,动土', 1, '劳动节', 3, '', 1773413104, 1773413104),
+(4, '2026-05-20', '四月初四', 1, '嫁娶,订盟,纳采', '安葬,破土', 0, '', 3, '', 1773413104, 1773413104),
+(5, '2026-10-01', '八月廿一', 1, '嫁娶,祈福,订盟', '安葬,动土', 1, '国庆节', 3, '', 1773413104, 1773413104);
+COMMIT;
 DROP TABLE IF EXISTS `la_waitlist`;
 CREATE TABLE `la_waitlist` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -1666,6 +1721,18 @@ CREATE TABLE `la_subscribe_message_template` (
     KEY `idx_scene` (`scene`),
     KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订阅消息模板表';
+-- ----------------------------
+-- Records of la_subscribe_message_template
+-- ----------------------------
+BEGIN;
+INSERT INTO `la_subscribe_message_template`
+(`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`) VALUES
+('TEMPLATE_ID_ORDER_CONFIRM', '订单确认通知', '订单确认通知', 'order_confirm', '{"character_string1":{"key":"订单编号","value":""},"thing2":{"key":"确认状态","value":""},"amount3":{"key":"订单金额","value":""},"time4":{"key":"服务日期","value":""}}', '订单编号,确认状态,订单金额,服务日期', 1, 100, '订单确认后发送，需在微信后台申请模板后更新template_id', 1776200000, 1776200000),
+('TEMPLATE_ID_SERVICE_REMIND', '服务提醒通知', '服务提醒', 'schedule_remind', '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}', '服务内容,服务时间,服务地点,服务人员', 1, 99, '服务开始前提醒，需在微信后台申请模板后更新template_id', 1776200000, 1776200000),
+('TEMPLATE_ID_REFUND_RESULT', '退款结果通知', '退款通知', 'refund_result', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}', '订单编号,退款金额,退款状态,退款原因', 1, 98, '退款审核后发送，需在微信后台申请模板后更新template_id', 1776200000, 1776200000),
+('TEMPLATE_ID_TICKET_UPDATE', '工单进度通知', '工单状态更新', 'ticket_update', '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}', '工单编号,工单状态,处理说明,更新时间', 1, 97, '工单状态变更时发送，需在微信后台申请模板后更新template_id', 1776200000, 1776200000),
+('TEMPLATE_ID_WAITLIST_RELEASE', '候补状态通知', '候补状态通知', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"状态说明","value":""}}', '服务人员,档期日期,套餐名称,状态说明', 1, 96, '候补释放或失效时发送，需在微信后台申请模板后更新template_id', 1776200000, 1776200000);
+COMMIT;
 DROP TABLE IF EXISTS `la_user_subscribe`;
 CREATE TABLE `la_user_subscribe` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -1742,6 +1809,19 @@ CREATE TABLE `la_subscribe_message_scene` (
     KEY `idx_template_id` (`template_id`),
     KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订阅消息场景配置表';
+-- ----------------------------
+-- Records of la_subscribe_message_scene
+-- ----------------------------
+BEGIN;
+INSERT INTO `la_subscribe_message_scene`
+(`scene`, `name`, `description`, `template_id`, `trigger_event`, `data_mapping`, `page_path`, `is_auto`, `delay_seconds`, `status`, `sort`, `create_time`, `update_time`) VALUES
+('order_confirm', '订单确认通知', '订单确认后通知用户', 'TEMPLATE_ID_ORDER_CONFIRM', 'OrderConfirmed', '{"character_string1":"order_sn","thing2":"status_text","amount3":"pay_amount","time4":"service_date"}', 'pages/order_detail/order_detail', 1, 0, 1, 110, 1776200000, 1776200000),
+('schedule_remind', '服务提醒通知', '服务开始前提醒用户', 'TEMPLATE_ID_SERVICE_REMIND', 'ScheduleRemind', '{"thing1":"service_name","time2":"service_date","thing3":"address","thing4":"staff_name"}', 'pages/order_detail/order_detail', 1, 0, 1, 109, 1776200000, 1776200000),
+('refund_result', '退款结果通知', '退款审核结果通知', 'TEMPLATE_ID_REFUND_RESULT', 'RefundProcessed', '{"character_string1":"order_sn","amount2":"refund_amount","phrase3":"status_text","thing4":"reason"}', 'pages/order_detail/order_detail', 1, 0, 1, 108, 1776200000, 1776200000),
+('ticket_update', '工单进度通知', '售后工单状态更新通知', 'TEMPLATE_ID_TICKET_UPDATE', 'TicketUpdated', '{"character_string1":"ticket_sn","phrase2":"status_text","thing3":"handle_note","time4":"update_time"}', 'packages/pages/aftersale/ticket_detail', 1, 0, 1, 107, 1776200000, 1776200000),
+('waitlist_release', '候补释放通知', '档期释放后通知候补用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 106, 1776200000, 1776200000),
+('waitlist_expired', '候补失效通知', '候补超过预约日期后通知用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistExpired', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 105, 1776200000, 1776200000);
+COMMIT;
 DROP TABLE IF EXISTS `la_review`;
 CREATE TABLE `la_review` (
     `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '评价ID',
@@ -1803,6 +1883,26 @@ CREATE TABLE `la_review_tag` (
     KEY `idx_type` (`type`),
     KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评价标签表';
+-- ----------------------------
+-- Records of la_review_tag
+-- ----------------------------
+BEGIN;
+INSERT INTO `la_review_tag` (`id`, `name`, `type`, `icon`, `color`, `sort`, `use_count`, `status`, `create_time`, `update_time`, `delete_time`) VALUES
+(1, '服务热情', 1, '', '#52c41a', 1, 0, 1, 1773413105, 1773413105, NULL),
+(2, '专业细致', 1, '', '#52c41a', 2, 0, 1, 1773413105, 1773413105, NULL),
+(3, '准时守约', 1, '', '#52c41a', 3, 0, 1, 1773413105, 1773413105, NULL),
+(4, '效果满意', 1, '', '#52c41a', 4, 0, 1, 1773413105, 1773413105, NULL),
+(5, '沟通顺畅', 1, '', '#52c41a', 5, 0, 1, 1773413105, 1773413105, NULL),
+(6, '性价比高', 1, '', '#52c41a', 6, 0, 1, 1773413105, 1773413105, NULL),
+(7, '耐心负责', 1, '', '#52c41a', 7, 0, 1, 1773413105, 1773413105, NULL),
+(8, '创意独特', 1, '', '#52c41a', 8, 0, 1, 1773413105, 1773413105, NULL),
+(9, '一般般', 2, '', '#faad14', 10, 0, 1, 1773413105, 1773413105, NULL),
+(10, '有待改进', 2, '', '#faad14', 11, 0, 1, 1773413105, 1773413105, NULL),
+(11, '服务冷淡', 3, '', '#ff4d4f', 20, 0, 1, 1773413105, 1773413105, NULL),
+(12, '不够专业', 3, '', '#ff4d4f', 21, 0, 1, 1773413105, 1773413105, NULL),
+(13, '迟到早退', 3, '', '#ff4d4f', 22, 0, 1, 1773413105, 1773413105, NULL),
+(14, '效果不佳', 3, '', '#ff4d4f', 23, 0, 1, 1773413105, 1773413105, NULL);
+COMMIT;
 DROP TABLE IF EXISTS `la_review_tag_relation`;
 CREATE TABLE `la_review_tag_relation` (
     `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
@@ -1858,6 +1958,15 @@ CREATE TABLE `la_review_reward_config` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_reward_type` (`reward_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评价奖励配置表';
+-- ----------------------------
+-- Records of la_review_reward_config
+-- ----------------------------
+BEGIN;
+INSERT INTO `la_review_reward_config` (`id`, `reward_type`, `reward_points`, `min_content_length`, `min_images`, `min_video_duration`, `extra_points_for_good`, `status`, `create_time`, `update_time`) VALUES
+(1, 1, 10, 20, 0, 0, 5, 1, 1773413105, 1773413105),
+(2, 2, 30, 20, 3, 0, 10, 1, 1773413105, 1773413105),
+(3, 3, 50, 10, 0, 15, 20, 1, 1773413105, 1773413105);
+COMMIT;
 DROP TABLE IF EXISTS `la_review_share_reward`;
 CREATE TABLE `la_review_share_reward` (
     `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
@@ -2119,6 +2228,13 @@ CREATE TABLE `la_staff_settlement_config` (
     KEY `idx_category_id` (`category_id`),
     KEY `idx_is_default` (`is_default`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='服务人员结算配置表';
+-- ----------------------------
+-- Records of la_staff_settlement_config
+-- ----------------------------
+BEGIN;
+INSERT INTO `la_staff_settlement_config` (`id`, `staff_id`, `category_id`, `settlement_rate`, `min_amount`, `settle_cycle`, `settle_delay_days`, `is_default`, `status`, `remark`, `create_time`, `update_time`, `delete_time`) VALUES
+(1, 0, 0, '70.00', '100.00', 1, 7, 1, 1, '默认结算配置：70%分成，月结，服务完成后7天可结算', 1773413106, 1773413106, NULL);
+COMMIT;
 DROP TABLE IF EXISTS `la_financial_reconciliation`;
 CREATE TABLE `la_financial_reconciliation` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -2473,6 +2589,13 @@ CREATE TABLE `la_callback_questionnaire` (
     KEY `idx_type` (`type`),
     KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='回访问卷配置表';
+-- ----------------------------
+-- Records of la_callback_questionnaire
+-- ----------------------------
+BEGIN;
+INSERT INTO `la_callback_questionnaire` (`id`, `title`, `description`, `type`, `questions`, `sort`, `status`, `create_time`, `update_time`, `delete_time`) VALUES
+(1, '服务后满意度调查', '感谢您使用我们的服务，请花1分钟完成以下问卷', 3, '[{"id":1,"type":"rating","title":"整体服务满意度","required":true},{"id":2,"type":"rating","title":"服务人员态度"},{"id":3,"type":"rating","title":"专业水平"},{"id":4,"type":"rating","title":"时间守约"},{"id":5,"type":"text","title":"您的建议","placeholder":"请输入您的宝贵意见..."}]', 1, 1, 1773413107, 1773413107, NULL);
+COMMIT;
 DROP TABLE IF EXISTS `la_callback_answer`;
 CREATE TABLE `la_callback_answer` (
     `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
@@ -2500,6 +2623,16 @@ CREATE TABLE `la_escalate_rule` (
     PRIMARY KEY (`id`),
     KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='问题升级规则配置表';
+-- ----------------------------
+-- Records of la_escalate_rule
+-- ----------------------------
+BEGIN;
+INSERT INTO `la_escalate_rule` (`id`, `name`, `ticket_type`, `priority`, `timeout_hours`, `escalate_to`, `notify_method`, `status`, `create_time`, `update_time`) VALUES
+(1, '紧急工单2小时升级', 0, 4, 2, 0, 'system,sms', 1, 1773413107, 1773413107),
+(2, '高优先级工单4小时升级', 0, 3, 4, 0, 'system', 1, 1773413107, 1773413107),
+(3, '普通工单24小时升级', 0, 2, 24, 0, 'system', 1, 1773413107, 1773413107),
+(4, '投诉48小时升级', 1, 0, 48, 0, 'system,sms', 1, 1773413107, 1773413107);
+COMMIT;
 DROP TABLE IF EXISTS `la_after_sale_daily_stats`;
 CREATE TABLE `la_after_sale_daily_stats` (
     `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'ID',
@@ -2566,497 +2699,10 @@ CREATE TABLE `la_order_confirm_letter_push_log` (
   KEY `idx_letter_time` (`letter_id`,`create_time`),
   KEY `idx_order_user` (`order_id`,`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订单确认函推送日志';
-/* 2.0.0 wedding business install baseline: seed data */
-INSERT INTO `la_schedule_rule` (`id`, `staff_id`, `advance_days`, `max_orders_per_day`, `interval_hours`, `work_start_time`, `work_end_time`, `rest_days`, `is_enabled`, `create_time`, `update_time`) VALUES
-(1, 0, 3, 1, 0, '08:00', '20:00', '', 1, 1773413104, 1773413104)
-ON DUPLICATE KEY UPDATE `staff_id`=VALUES(`staff_id`), `advance_days`=VALUES(`advance_days`), `max_orders_per_day`=VALUES(`max_orders_per_day`), `interval_hours`=VALUES(`interval_hours`), `work_start_time`=VALUES(`work_start_time`), `work_end_time`=VALUES(`work_end_time`), `rest_days`=VALUES(`rest_days`), `is_enabled`=VALUES(`is_enabled`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`);
-INSERT INTO `la_calendar_event` (`id`, `event_date`, `lunar_date`, `is_lucky_day`, `lucky_events`, `unlucky_events`, `is_holiday`, `holiday_name`, `congestion_level`, `remark`, `create_time`, `update_time`) VALUES
-(1, '2026-01-01', '十一月十二', 0, '', '', 1, '元旦', 3, '', 1773413104, 1773413104),
-(2, '2026-02-17', '正月初一', 1, '祈福,嫁娶,订盟', '动土,破土', 1, '春节', 3, '', 1773413104, 1773413104),
-(3, '2026-05-01', '三月十五', 1, '嫁娶,订盟,纳采', '开市,动土', 1, '劳动节', 3, '', 1773413104, 1773413104),
-(4, '2026-05-20', '四月初四', 1, '嫁娶,订盟,纳采', '安葬,破土', 0, '', 3, '', 1773413104, 1773413104),
-(5, '2026-10-01', '八月廿一', 1, '嫁娶,祈福,订盟', '安葬,动土', 1, '国庆节', 3, '', 1773413104, 1773413104)
-ON DUPLICATE KEY UPDATE `event_date`=VALUES(`event_date`), `lunar_date`=VALUES(`lunar_date`), `is_lucky_day`=VALUES(`is_lucky_day`), `lucky_events`=VALUES(`lucky_events`), `unlucky_events`=VALUES(`unlucky_events`), `is_holiday`=VALUES(`is_holiday`), `holiday_name`=VALUES(`holiday_name`), `congestion_level`=VALUES(`congestion_level`), `remark`=VALUES(`remark`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`);
-INSERT INTO `la_review_tag` (`id`, `name`, `type`, `icon`, `color`, `sort`, `use_count`, `status`, `create_time`, `update_time`, `delete_time`) VALUES
-(1, '服务热情', 1, '', '#52c41a', 1, 0, 1, 1773413105, 1773413105, NULL),
-(2, '专业细致', 1, '', '#52c41a', 2, 0, 1, 1773413105, 1773413105, NULL),
-(3, '准时守约', 1, '', '#52c41a', 3, 0, 1, 1773413105, 1773413105, NULL),
-(4, '效果满意', 1, '', '#52c41a', 4, 0, 1, 1773413105, 1773413105, NULL),
-(5, '沟通顺畅', 1, '', '#52c41a', 5, 0, 1, 1773413105, 1773413105, NULL),
-(6, '性价比高', 1, '', '#52c41a', 6, 0, 1, 1773413105, 1773413105, NULL),
-(7, '耐心负责', 1, '', '#52c41a', 7, 0, 1, 1773413105, 1773413105, NULL),
-(8, '创意独特', 1, '', '#52c41a', 8, 0, 1, 1773413105, 1773413105, NULL),
-(9, '一般般', 2, '', '#faad14', 10, 0, 1, 1773413105, 1773413105, NULL),
-(10, '有待改进', 2, '', '#faad14', 11, 0, 1, 1773413105, 1773413105, NULL),
-(11, '服务冷淡', 3, '', '#ff4d4f', 20, 0, 1, 1773413105, 1773413105, NULL),
-(12, '不够专业', 3, '', '#ff4d4f', 21, 0, 1, 1773413105, 1773413105, NULL),
-(13, '迟到早退', 3, '', '#ff4d4f', 22, 0, 1, 1773413105, 1773413105, NULL),
-(14, '效果不佳', 3, '', '#ff4d4f', 23, 0, 1, 1773413105, 1773413105, NULL)
-ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `type`=VALUES(`type`), `icon`=VALUES(`icon`), `color`=VALUES(`color`), `sort`=VALUES(`sort`), `use_count`=VALUES(`use_count`), `status`=VALUES(`status`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`), `delete_time`=VALUES(`delete_time`);
-INSERT INTO `la_review_reward_config` (`id`, `reward_type`, `reward_points`, `min_content_length`, `min_images`, `min_video_duration`, `extra_points_for_good`, `status`, `create_time`, `update_time`) VALUES
-(1, 1, 10, 20, 0, 0, 5, 1, 1773413105, 1773413105),
-(2, 2, 30, 20, 3, 0, 10, 1, 1773413105, 1773413105),
-(3, 3, 50, 10, 0, 15, 20, 1, 1773413105, 1773413105)
-ON DUPLICATE KEY UPDATE `reward_type`=VALUES(`reward_type`), `reward_points`=VALUES(`reward_points`), `min_content_length`=VALUES(`min_content_length`), `min_images`=VALUES(`min_images`), `min_video_duration`=VALUES(`min_video_duration`), `extra_points_for_good`=VALUES(`extra_points_for_good`), `status`=VALUES(`status`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`);
-INSERT INTO `la_staff_settlement_config` (`id`, `staff_id`, `category_id`, `settlement_rate`, `min_amount`, `settle_cycle`, `settle_delay_days`, `is_default`, `status`, `remark`, `create_time`, `update_time`, `delete_time`) VALUES
-(1, 0, 0, '70.00', '100.00', 1, 7, 1, 1, '默认结算配置：70%分成，月结，服务完成后7天可结算', 1773413106, 1773413106, NULL)
-ON DUPLICATE KEY UPDATE `staff_id`=VALUES(`staff_id`), `category_id`=VALUES(`category_id`), `settlement_rate`=VALUES(`settlement_rate`), `min_amount`=VALUES(`min_amount`), `settle_cycle`=VALUES(`settle_cycle`), `settle_delay_days`=VALUES(`settle_delay_days`), `is_default`=VALUES(`is_default`), `status`=VALUES(`status`), `remark`=VALUES(`remark`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`), `delete_time`=VALUES(`delete_time`);
-INSERT INTO `la_escalate_rule` (`id`, `name`, `ticket_type`, `priority`, `timeout_hours`, `escalate_to`, `notify_method`, `status`, `create_time`, `update_time`) VALUES
-(1, '紧急工单2小时升级', 0, 4, 2, 0, 'system,sms', 1, 1773413107, 1773413107),
-(2, '高优先级工单4小时升级', 0, 3, 4, 0, 'system', 1, 1773413107, 1773413107),
-(3, '普通工单24小时升级', 0, 2, 24, 0, 'system', 1, 1773413107, 1773413107),
-(4, '投诉48小时升级', 1, 0, 48, 0, 'system,sms', 1, 1773413107, 1773413107)
-ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `ticket_type`=VALUES(`ticket_type`), `priority`=VALUES(`priority`), `timeout_hours`=VALUES(`timeout_hours`), `escalate_to`=VALUES(`escalate_to`), `notify_method`=VALUES(`notify_method`), `status`=VALUES(`status`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`);
-INSERT INTO `la_callback_questionnaire` (`id`, `title`, `description`, `type`, `questions`, `sort`, `status`, `create_time`, `update_time`, `delete_time`) VALUES
-(1, '服务后满意度调查', '感谢您使用我们的服务，请花1分钟完成以下问卷', 3, '[{"id":1,"type":"rating","title":"整体服务满意度","required":true},{"id":2,"type":"rating","title":"服务人员态度"},{"id":3,"type":"rating","title":"专业水平"},{"id":4,"type":"rating","title":"时间守约"},{"id":5,"type":"text","title":"您的建议","placeholder":"请输入您的宝贵意见..."}]', 1, 1, 1773413107, 1773413107, NULL)
-ON DUPLICATE KEY UPDATE `title`=VALUES(`title`), `description`=VALUES(`description`), `type`=VALUES(`type`), `questions`=VALUES(`questions`), `sort`=VALUES(`sort`), `status`=VALUES(`status`), `create_time`=VALUES(`create_time`), `update_time`=VALUES(`update_time`), `delete_time`=VALUES(`delete_time`);
-DELETE FROM `la_dict_data`;
-INSERT INTO `la_dict_data` (`id`, `name`, `value`, `type_id`, `type_value`, `sort`, `status`, `remark`, `create_time`, `update_time`, `delete_time`) VALUES
-(1, '隐藏', '0', 1, 'show_status', 0, 1, '', 1656381543, 1656381543, NULL),
-(2, '显示', '1', 1, 'show_status', 0, 1, '', 1656381550, 1656381550, NULL),
-(3, '进行中', '0', 2, 'business_status', 0, 1, '', 1656381410, 1656381410, NULL),
-(4, '成功', '1', 2, 'business_status', 0, 1, '', 1656381437, 1656381437, NULL),
-(5, '失败', '2', 2, 'business_status', 0, 1, '', 1656381449, 1656381449, NULL),
-(6, '待处理', '0', 3, 'event_status', 0, 1, '', 1656381212, 1656381212, NULL),
-(7, '已处理', '1', 3, 'event_status', 0, 1, '', 1656381315, 1656381315, NULL),
-(8, '拒绝处理', '2', 3, 'event_status', 0, 1, '', 1656381331, 1656381331, NULL),
-(9, '禁用', '1', 4, 'system_disable', 0, 1, '', 1656312030, 1656312030, NULL),
-(10, '正常', '0', 4, 'system_disable', 0, 1, '', 1656312040, 1656312040, NULL),
-(11, '未知', '0', 5, 'sex', 0, 1, '', 1656062988, 1656062988, NULL),
-(12, '男', '1', 5, 'sex', 0, 1, '', 1656062999, 1656062999, NULL),
-(13, '女', '2', 5, 'sex', 0, 1, '', 1656063009, 1656063009, NULL),
-(14, '疫情', '1', 6, '1', 1, 1, '订单暂停类型-疫情', 1773413105, 1773413105, NULL),
-(15, '突发事件', '2', 6, '2', 2, 1, '订单暂停类型-突发事件', 1773413105, 1773413105, NULL),
-(16, '个人原因', '3', 6, '3', 3, 1, '订单暂停类型-个人原因', 1773413105, 1773413105, NULL),
-(17, '其他', '4', 6, '4', 4, 1, '订单暂停类型-其他', 1773413105, 1773413105, NULL);
-SET @subscribe_now = UNIX_TIMESTAMP();
-SET @order_confirm_template_id = CONVERT(COALESCE(
-    (
-        SELECT `template_id`
-        FROM `la_subscribe_message_template`
-        WHERE `scene` = 'order_confirm'
-          AND `template_id` <> ''
-          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
-          AND (`delete_time` IS NULL OR `delete_time` = 0)
-        ORDER BY `id` DESC
-        LIMIT 1
-    ),
-    (
-        SELECT `template_id`
-        FROM `la_subscribe_message_scene`
-        WHERE `scene` = 'order_confirm'
-          AND `template_id` <> ''
-          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
-        ORDER BY `id` DESC
-        LIMIT 1
-    ),
-    'TEMPLATE_ID_ORDER_CONFIRM'
-) USING utf8mb4) COLLATE utf8mb4_unicode_ci;
-SET @schedule_remind_template_id = CONVERT(COALESCE(
-    (
-        SELECT `template_id`
-        FROM `la_subscribe_message_template`
-        WHERE `scene` = 'schedule_remind'
-          AND `template_id` <> ''
-          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
-          AND (`delete_time` IS NULL OR `delete_time` = 0)
-        ORDER BY `id` DESC
-        LIMIT 1
-    ),
-    (
-        SELECT `template_id`
-        FROM `la_subscribe_message_scene`
-        WHERE `scene` = 'schedule_remind'
-          AND `template_id` <> ''
-          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
-        ORDER BY `id` DESC
-        LIMIT 1
-    ),
-    'TEMPLATE_ID_SERVICE_REMIND'
-) USING utf8mb4) COLLATE utf8mb4_unicode_ci;
-SET @refund_result_template_id = CONVERT(COALESCE(
-    (
-        SELECT `template_id`
-        FROM `la_subscribe_message_template`
-        WHERE `scene` = 'refund_result'
-          AND `template_id` <> ''
-          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
-          AND (`delete_time` IS NULL OR `delete_time` = 0)
-        ORDER BY `id` DESC
-        LIMIT 1
-    ),
-    (
-        SELECT `template_id`
-        FROM `la_subscribe_message_scene`
-        WHERE `scene` = 'refund_result'
-          AND `template_id` <> ''
-          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
-        ORDER BY `id` DESC
-        LIMIT 1
-    ),
-    'TEMPLATE_ID_REFUND_RESULT'
-) USING utf8mb4) COLLATE utf8mb4_unicode_ci;
-SET @ticket_update_template_id = CONVERT(COALESCE(
-    (
-        SELECT `template_id`
-        FROM `la_subscribe_message_template`
-        WHERE `scene` = 'ticket_update'
-          AND `template_id` <> ''
-          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
-          AND (`delete_time` IS NULL OR `delete_time` = 0)
-        ORDER BY `id` DESC
-        LIMIT 1
-    ),
-    (
-        SELECT `template_id`
-        FROM `la_subscribe_message_scene`
-        WHERE `scene` = 'ticket_update'
-          AND `template_id` <> ''
-          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
-        ORDER BY `id` DESC
-        LIMIT 1
-    ),
-    'TEMPLATE_ID_TICKET_UPDATE'
-) USING utf8mb4) COLLATE utf8mb4_unicode_ci;
-SET @waitlist_template_id = CONVERT(COALESCE(
-    (
-        SELECT `template_id`
-        FROM `la_subscribe_message_template`
-        WHERE `scene` = 'waitlist_release'
-          AND `template_id` <> ''
-          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
-          AND (`delete_time` IS NULL OR `delete_time` = 0)
-        ORDER BY `id` DESC
-        LIMIT 1
-    ),
-    (
-        SELECT `template_id`
-        FROM `la_subscribe_message_scene`
-        WHERE `scene` = 'waitlist_release'
-          AND `template_id` <> ''
-          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
-        ORDER BY `id` DESC
-        LIMIT 1
-    ),
-    (
-        SELECT `template_id`
-        FROM `la_subscribe_message_template`
-        WHERE `scene` = 'waitlist_expired'
-          AND `template_id` <> ''
-          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
-          AND (`delete_time` IS NULL OR `delete_time` = 0)
-        ORDER BY `id` DESC
-        LIMIT 1
-    ),
-    (
-        SELECT `template_id`
-        FROM `la_subscribe_message_scene`
-        WHERE `scene` = 'waitlist_expired'
-          AND `template_id` <> ''
-          AND LEFT(`template_id`, 12) <> 'TEMPLATE_ID_'
-        ORDER BY `id` DESC
-        LIMIT 1
-    ),
-    'TEMPLATE_ID_WAITLIST_RELEASE'
-) USING utf8mb4) COLLATE utf8mb4_unicode_ci;
-DELETE FROM `la_subscribe_message_scene`
-WHERE `scene` IN ('order_create', 'order_paid', 'order_complete', 'callback_remind', 'change_result', 'schedule_change');
-INSERT INTO `la_subscribe_message_scene`
-(`scene`, `name`, `description`, `template_id`, `trigger_event`, `data_mapping`, `page_path`, `is_auto`, `delay_seconds`, `status`, `sort`, `create_time`, `update_time`)
-VALUES
-('order_confirm', '订单确认通知', '订单确认后通知用户', @order_confirm_template_id, 'OrderConfirmed', '{"character_string1":"order_sn","thing2":"status_text","amount3":"pay_amount","time4":"service_date"}', 'pages/order_detail/order_detail', 1, 0, 1, 110, @subscribe_now, @subscribe_now),
-('schedule_remind', '服务提醒通知', '服务开始前提醒用户', @schedule_remind_template_id, 'ScheduleRemind', '{"thing1":"service_name","time2":"service_date","thing3":"address","thing4":"staff_name"}', 'pages/order_detail/order_detail', 1, 0, 1, 109, @subscribe_now, @subscribe_now),
-('refund_result', '退款结果通知', '退款审核结果通知', @refund_result_template_id, 'RefundProcessed', '{"character_string1":"order_sn","amount2":"refund_amount","phrase3":"status_text","thing4":"reason"}', 'pages/order_detail/order_detail', 1, 0, 1, 108, @subscribe_now, @subscribe_now),
-('ticket_update', '工单进度通知', '售后工单状态更新通知', @ticket_update_template_id, 'TicketUpdated', '{"character_string1":"ticket_sn","phrase2":"status_text","thing3":"handle_note","time4":"update_time"}', 'packages/pages/aftersale/ticket_detail', 1, 0, 1, 107, @subscribe_now, @subscribe_now),
-('waitlist_release', '候补释放通知', '档期释放后通知候补用户', @waitlist_template_id, 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 106, @subscribe_now, @subscribe_now),
-('waitlist_expired', '候补失效通知', '候补超过预约日期后通知用户', @waitlist_template_id, 'WaitlistExpired', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 105, @subscribe_now, @subscribe_now)
-ON DUPLICATE KEY UPDATE
-`name` = VALUES(`name`),
-`description` = VALUES(`description`),
-`template_id` = VALUES(`template_id`),
-`trigger_event` = VALUES(`trigger_event`),
-`data_mapping` = VALUES(`data_mapping`),
-`page_path` = VALUES(`page_path`),
-`is_auto` = VALUES(`is_auto`),
-`delay_seconds` = VALUES(`delay_seconds`),
-`status` = VALUES(`status`),
-`sort` = VALUES(`sort`),
-`update_time` = VALUES(`update_time`);
-UPDATE `la_subscribe_message_template`
-SET `status` = 0,
-    `remark` = CONCAT(IFNULL(NULLIF(`remark`, ''), '历史模板'), '（已从客户订阅消息下线）'),
-    `update_time` = @subscribe_now
-WHERE `scene` IN ('order_create', 'order_paid', 'order_complete', 'callback_remind', 'change_result', 'schedule_change')
-  AND (`delete_time` IS NULL OR `delete_time` = 0);
-UPDATE `la_subscribe_message_template`
-SET `scene` = 'waitlist_release',
-    `name` = '候补状态通知',
-    `title` = '候补状态通知',
-    `content` = '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"状态说明","value":""}}',
-    `keywords` = '服务人员,档期日期,套餐名称,状态说明',
-    `status` = 1,
-    `sort` = 96,
-    `remark` = '候补释放或失效时发送，需在微信后台申请模板后更新template_id',
-    `update_time` = @subscribe_now
-WHERE `template_id` = CONVERT(@waitlist_template_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
-  AND (`delete_time` IS NULL OR `delete_time` = 0);
-UPDATE `la_subscribe_message_template`
-SET `status` = 0,
-    `remark` = CONCAT(IFNULL(NULLIF(`remark`, ''), '历史模板'), '（已合并至候补状态通知）'),
-    `update_time` = @subscribe_now
-WHERE `scene` = 'waitlist_release'
-  AND `template_id` <> CONVERT(@waitlist_template_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
-  AND (`delete_time` IS NULL OR `delete_time` = 0);
-UPDATE `la_subscribe_message_template`
-SET `name` = '订单确认通知',
-    `title` = '订单确认通知',
-    `content` = '{"character_string1":{"key":"订单编号","value":""},"thing2":{"key":"确认状态","value":""},"amount3":{"key":"订单金额","value":""},"time4":{"key":"服务日期","value":""}}',
-    `keywords` = '订单编号,确认状态,订单金额,服务日期',
-    `status` = 1,
-    `sort` = 100,
-    `remark` = '订单确认后发送，需在微信后台申请模板后更新template_id',
-    `update_time` = @subscribe_now
-WHERE `scene` = 'order_confirm'
-  AND (`delete_time` IS NULL OR `delete_time` = 0);
-INSERT INTO `la_subscribe_message_template`
-(`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`)
-SELECT @order_confirm_template_id, '订单确认通知', '订单确认通知', 'order_confirm', '{"character_string1":{"key":"订单编号","value":""},"thing2":{"key":"确认状态","value":""},"amount3":{"key":"订单金额","value":""},"time4":{"key":"服务日期","value":""}}', '订单编号,确认状态,订单金额,服务日期', 1, 100, '订单确认后发送，需在微信后台申请模板后更新template_id', @subscribe_now, @subscribe_now
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM `la_subscribe_message_template`
-    WHERE `scene` = 'order_confirm'
-      AND (`delete_time` IS NULL OR `delete_time` = 0)
-);
-UPDATE `la_subscribe_message_template`
-SET `name` = '服务提醒通知',
-    `title` = '服务提醒',
-    `content` = '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}',
-    `keywords` = '服务内容,服务时间,服务地点,服务人员',
-    `status` = 1,
-    `sort` = 99,
-    `remark` = '服务开始前提醒，需在微信后台申请模板后更新template_id',
-    `update_time` = @subscribe_now
-WHERE `scene` = 'schedule_remind'
-  AND (`delete_time` IS NULL OR `delete_time` = 0);
-INSERT INTO `la_subscribe_message_template`
-(`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`)
-SELECT @schedule_remind_template_id, '服务提醒通知', '服务提醒', 'schedule_remind', '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}', '服务内容,服务时间,服务地点,服务人员', 1, 99, '服务开始前提醒，需在微信后台申请模板后更新template_id', @subscribe_now, @subscribe_now
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM `la_subscribe_message_template`
-    WHERE `scene` = 'schedule_remind'
-      AND (`delete_time` IS NULL OR `delete_time` = 0)
-);
-UPDATE `la_subscribe_message_template`
-SET `name` = '退款结果通知',
-    `title` = '退款通知',
-    `content` = '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}',
-    `keywords` = '订单编号,退款金额,退款状态,退款原因',
-    `status` = 1,
-    `sort` = 98,
-    `remark` = '退款审核后发送，需在微信后台申请模板后更新template_id',
-    `update_time` = @subscribe_now
-WHERE `scene` = 'refund_result'
-  AND (`delete_time` IS NULL OR `delete_time` = 0);
-INSERT INTO `la_subscribe_message_template`
-(`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`)
-SELECT @refund_result_template_id, '退款结果通知', '退款通知', 'refund_result', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}', '订单编号,退款金额,退款状态,退款原因', 1, 98, '退款审核后发送，需在微信后台申请模板后更新template_id', @subscribe_now, @subscribe_now
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM `la_subscribe_message_template`
-    WHERE `scene` = 'refund_result'
-      AND (`delete_time` IS NULL OR `delete_time` = 0)
-);
-UPDATE `la_subscribe_message_template`
-SET `name` = '工单进度通知',
-    `title` = '工单状态更新',
-    `content` = '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}',
-    `keywords` = '工单编号,工单状态,处理说明,更新时间',
-    `status` = 1,
-    `sort` = 97,
-    `remark` = '工单状态变更时发送，需在微信后台申请模板后更新template_id',
-    `update_time` = @subscribe_now
-WHERE `scene` = 'ticket_update'
-  AND (`delete_time` IS NULL OR `delete_time` = 0);
-INSERT INTO `la_subscribe_message_template`
-(`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`)
-SELECT @ticket_update_template_id, '工单进度通知', '工单状态更新', 'ticket_update', '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}', '工单编号,工单状态,处理说明,更新时间', 1, 97, '工单状态变更时发送，需在微信后台申请模板后更新template_id', @subscribe_now, @subscribe_now
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM `la_subscribe_message_template`
-    WHERE `scene` = 'ticket_update'
-      AND (`delete_time` IS NULL OR `delete_time` = 0)
-);
-INSERT INTO `la_subscribe_message_template`
-(`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`)
-SELECT @waitlist_template_id, '候补状态通知', '候补状态通知', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"状态说明","value":""}}', '服务人员,档期日期,套餐名称,状态说明', 1, 96, '候补释放或失效时发送，需在微信后台申请模板后更新template_id', @subscribe_now, @subscribe_now
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM `la_subscribe_message_template`
-    WHERE `template_id` = CONVERT(@waitlist_template_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
-      AND (`delete_time` IS NULL OR `delete_time` = 0)
-);
-UPDATE `la_subscribe_message_template`
-SET `status` = 0,
-    `remark` = CONCAT(IFNULL(NULLIF(`remark`, ''), '历史模板'), '（已合并至候补状态通知）'),
-    `update_time` = @subscribe_now
-WHERE `scene` = 'waitlist_expired'
-  AND `template_id` <> CONVERT(@waitlist_template_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
-  AND (`delete_time` IS NULL OR `delete_time` = 0);
-DELETE FROM `la_system_role`;
 INSERT INTO `la_system_role` (`id`, `name`, `desc`, `sort`, `create_time`, `update_time`, `delete_time`) VALUES
 (1, '服务人员', '服务人员', 0, 1773413108, 1773560454, NULL),
 (2, '管理员', '', 0, 1773563523, 1773563576, NULL);
-DELETE FROM `la_system_role_menu`;
-DELETE FROM `la_system_menu`;
 INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`) VALUES
-(4, 0, 'M', '权限管理', 'el-icon-Lock', 300, '', 'permission', '', '', '', 0, 1, 0, 1656664556, 1710472802),
-(5, 0, 'C', '工作台', 'el-icon-Monitor', 1000, 'workbench/index', 'workbench', 'workbench/index', '', '', 0, 1, 0, 1656664793, 1664354981),
-(6, 4, 'C', '菜单', 'el-icon-Operation', 100, 'auth.menu/lists', 'menu', 'permission/menu/index', '', '', 1, 1, 0, 1656664960, 1710472994),
-(7, 4, 'C', '管理员', 'local-icon-shouyiren', 80, 'auth.admin/lists', 'admin', 'permission/admin/index', '', '', 0, 1, 0, 1656901567, 1710473013),
-(8, 4, 'C', '角色', 'el-icon-Female', 90, 'auth.role/lists', 'role', 'permission/role/index', '', '', 0, 1, 0, 1656901660, 1710473000),
-(12, 8, 'A', '新增', '', 1, 'auth.role/add', '', '', '', '', 0, 1, 0, 1657001790, 1663750625),
-(14, 8, 'A', '编辑', '', 1, 'auth.role/edit', '', '', '', '', 0, 1, 0, 1657001924, 1663750631),
-(15, 8, 'A', '删除', '', 1, 'auth.role/delete', '', '', '', '', 0, 1, 0, 1657001982, 1663750637),
-(16, 6, 'A', '新增', '', 1, 'auth.menu/add', '', '', '', '', 0, 1, 0, 1657072523, 1663750565),
-(17, 6, 'A', '编辑', '', 1, 'auth.menu/edit', '', '', '', '', 0, 1, 0, 1657073955, 1663750570),
-(18, 6, 'A', '删除', '', 1, 'auth.menu/delete', '', '', '', '', 0, 1, 0, 1657073987, 1663750578),
-(19, 7, 'A', '新增', '', 1, 'auth.admin/add', '', '', '', '', 0, 1, 0, 1657074035, 1663750596),
-(20, 7, 'A', '编辑', '', 1, 'auth.admin/edit', '', '', '', '', 0, 1, 0, 1657074071, 1663750603),
-(21, 7, 'A', '删除', '', 1, 'auth.admin/delete', '', '', '', '', 0, 1, 0, 1657074108, 1663750609),
-(23, 28, 'M', '开发工具', 'el-icon-EditPen', 40, '', 'dev_tools', '', '', '', 0, 1, 0, 1657097744, 1710473127),
-(24, 23, 'C', '代码生成器', 'el-icon-DocumentAdd', 1, 'tools.generator/generateTable', 'code', 'dev_tools/code/index', '', '', 0, 1, 0, 1657098110, 1658989423),
-(25, 0, 'M', '组织管理', 'el-icon-OfficeBuilding', 400, '', 'organization', '', '', '', 0, 1, 0, 1657099914, 1710472797),
-(26, 25, 'C', '部门管理', 'el-icon-Coordinate', 100, 'dept.dept/lists', 'department', 'organization/department/index', '', '', 1, 1, 0, 1657099989, 1710472962),
-(27, 25, 'C', '岗位管理', 'el-icon-PriceTag', 90, 'dept.jobs/lists', 'post', 'organization/post/index', '', '', 0, 1, 0, 1657100044, 1710472967),
-(28, 0, 'M', '系统设置', 'el-icon-Setting', 200, '', 'setting', '', '', '', 0, 1, 0, 1657100164, 1710472807),
-(29, 28, 'M', '网站设置', 'el-icon-Basketball', 100, '', 'website', '', '', '', 0, 1, 0, 1657100230, 1710473049),
-(30, 29, 'C', '网站信息', '', 1, 'setting.web.web_setting/getWebsite', 'information', 'setting/website/information', '', '', 0, 1, 0, 1657100306, 1657164412),
-(31, 29, 'C', '网站备案', '', 1, 'setting.web.web_setting/getCopyright', 'filing', 'setting/website/filing', '', '', 0, 1, 0, 1657100434, 1657164723),
-(32, 29, 'C', '政策协议', '', 1, 'setting.web.web_setting/getAgreement', 'protocol', 'setting/website/protocol', '', '', 0, 1, 0, 1657100571, 1657164770),
-(33, 28, 'C', '存储设置', 'el-icon-FolderOpened', 70, 'setting.storage/lists', 'storage', 'setting/storage/index', '', '', 0, 1, 0, 1657160959, 1710473095),
-(34, 23, 'C', '字典管理', 'el-icon-Box', 1, 'setting.dict.dict_type/lists', 'dict', 'setting/dict/type/index', '', '', 0, 1, 0, 1657161211, 1663225935),
-(35, 28, 'M', '系统维护', 'el-icon-SetUp', 50, '', 'system', '', '', '', 0, 1, 0, 1657161569, 1710473122),
-(36, 35, 'C', '系统日志', '', 90, 'setting.system.log/lists', 'journal', 'setting/system/journal', '', '', 0, 1, 0, 1657161696, 1710473253),
-(37, 35, 'C', '系统缓存', '', 80, '', 'cache', 'setting/system/cache', '', '', 0, 1, 0, 1657161896, 1710473258),
-(38, 35, 'C', '系统环境', '', 70, 'setting.system.system/info', 'environment', 'setting/system/environment', '', '', 0, 1, 0, 1657162000, 1710473265),
-(39, 24, 'A', '导入数据表', '', 1, 'tools.generator/selectTable', '', '', '', '', 0, 1, 0, 1657162736, 1657162736),
-(40, 24, 'A', '代码生成', '', 1, 'tools.generator/generate', '', '', '', '', 0, 1, 0, 1657162806, 1657162806),
-(41, 23, 'C', '编辑数据表', '', 1, 'tools.generator/edit', 'code/edit', 'dev_tools/code/edit', '/dev_tools/code', '', 1, 0, 0, 1657162866, 1663748668),
-(42, 24, 'A', '同步表结构', '', 1, 'tools.generator/syncColumn', '', '', '', '', 0, 1, 0, 1657162934, 1657162934),
-(43, 24, 'A', '删除数据表', '', 1, 'tools.generator/delete', '', '', '', '', 0, 1, 0, 1657163015, 1657163015),
-(44, 24, 'A', '预览代码', '', 1, 'tools.generator/preview', '', '', '', '', 0, 1, 0, 1657163263, 1657163263),
-(45, 26, 'A', '新增', '', 1, 'dept.dept/add', '', '', '', '', 0, 1, 0, 1657163548, 1663750492),
-(46, 26, 'A', '编辑', '', 1, 'dept.dept/edit', '', '', '', '', 0, 1, 0, 1657163599, 1663750498),
-(47, 26, 'A', '删除', '', 1, 'dept.dept/delete', '', '', '', '', 0, 1, 0, 1657163687, 1663750504),
-(48, 27, 'A', '新增', '', 1, 'dept.jobs/add', '', '', '', '', 0, 1, 0, 1657163778, 1663750524),
-(49, 27, 'A', '编辑', '', 1, 'dept.jobs/edit', '', '', '', '', 0, 1, 0, 1657163800, 1663750530),
-(50, 27, 'A', '删除', '', 1, 'dept.jobs/delete', '', '', '', '', 0, 1, 0, 1657163820, 1663750535),
-(51, 30, 'A', '保存', '', 1, 'setting.web.web_setting/setWebsite', '', '', '', '', 0, 1, 0, 1657164469, 1663750649),
-(52, 31, 'A', '保存', '', 1, 'setting.web.web_setting/setCopyright', '', '', '', '', 0, 1, 0, 1657164692, 1663750657),
-(53, 32, 'A', '保存', '', 1, 'setting.web.web_setting/setAgreement', '', '', '', '', 0, 1, 0, 1657164824, 1663750665),
-(54, 33, 'A', '设置', '', 1, 'setting.storage/setup', '', '', '', '', 0, 1, 0, 1657165303, 1663750673),
-(55, 34, 'A', '新增', '', 1, 'setting.dict.dict_type/add', '', '', '', '', 0, 1, 0, 1657166966, 1663750783),
-(56, 34, 'A', '编辑', '', 1, 'setting.dict.dict_type/edit', '', '', '', '', 0, 1, 0, 1657166997, 1663750789),
-(57, 34, 'A', '删除', '', 1, 'setting.dict.dict_type/delete', '', '', '', '', 0, 1, 0, 1657167038, 1663750796),
-(58, 62, 'A', '新增', '', 1, 'setting.dict.dict_data/add', '', '', '', '', 0, 1, 0, 1657167317, 1663750758),
-(59, 62, 'A', '编辑', '', 1, 'setting.dict.dict_data/edit', '', '', '', '', 0, 1, 0, 1657167371, 1663750751),
-(60, 62, 'A', '删除', '', 1, 'setting.dict.dict_data/delete', '', '', '', '', 0, 1, 0, 1657167397, 1663750768),
-(61, 37, 'A', '清除系统缓存', '', 1, 'setting.system.cache/clear', '', '', '', '', 0, 1, 0, 1657173837, 1657173939),
-(62, 23, 'C', '字典数据管理', '', 1, 'setting.dict.dict_data/lists', 'dict/data', 'setting/dict/data/index', '/dev_tools/dict', '', 1, 0, 0, 1657174351, 1663745617),
-(63, 158, 'M', '素材管理', 'el-icon-Picture', 0, '', 'material', '', '', '', 0, 1, 0, 1657507133, 1710472243),
-(64, 63, 'C', '素材中心', 'el-icon-PictureRounded', 0, '', 'index', 'material/index', '', '', 0, 1, 0, 1657507296, 1664355653),
-(66, 26, 'A', '详情', '', 0, 'dept.dept/detail', '', '', '', '', 0, 1, 0, 1663725459, 1663750516),
-(67, 27, 'A', '详情', '', 0, 'dept.jobs/detail', '', '', '', '', 0, 1, 0, 1663725514, 1663750559),
-(68, 6, 'A', '详情', '', 0, 'auth.menu/detail', '', '', '', '', 0, 1, 0, 1663725564, 1663750584),
-(69, 7, 'A', '详情', '', 0, 'auth.admin/detail', '', '', '', '', 0, 1, 0, 1663725623, 1663750615),
-(70, 158, 'M', '文章资讯', 'el-icon-ChatLineSquare', 90, '', 'article', '', '', '', 0, 1, 0, 1663749965, 1710471867),
-(71, 70, 'C', '文章管理', 'el-icon-ChatDotSquare', 0, 'article.article/lists', 'lists', 'article/lists/index', '', '', 0, 1, 0, 1663750101, 1664354615),
-(72, 70, 'C', '文章添加/编辑', '', 0, 'article.article/add:edit', 'lists/edit', 'article/lists/edit', '/article/lists', '', 0, 0, 0, 1663750153, 1664356275),
-(73, 70, 'C', '文章栏目', 'el-icon-CollectionTag', 0, 'article.articleCate/lists', 'column', 'article/column/index', '', '', 1, 1, 0, 1663750287, 1664354678),
-(74, 71, 'A', '新增', '', 0, 'article.article/add', '', '', '', '', 0, 1, 0, 1663750335, 1663750335),
-(75, 71, 'A', '详情', '', 0, 'article.article/detail', '', '', '', '', 0, 1, 0, 1663750354, 1663750383),
-(76, 71, 'A', '删除', '', 0, 'article.article/delete', '', '', '', '', 0, 1, 0, 1663750413, 1663750413),
-(77, 71, 'A', '修改状态', '', 0, 'article.article/updateStatus', '', '', '', '', 0, 1, 0, 1663750442, 1663750442),
-(78, 73, 'A', '添加', '', 0, 'article.articleCate/add', '', '', '', '', 0, 1, 0, 1663750483, 1663750483),
-(79, 73, 'A', '删除', '', 0, 'article.articleCate/delete', '', '', '', '', 0, 1, 0, 1663750895, 1663750895),
-(80, 73, 'A', '详情', '', 0, 'article.articleCate/detail', '', '', '', '', 0, 1, 0, 1663750913, 1663750913),
-(81, 73, 'A', '修改状态', '', 0, 'article.articleCate/updateStatus', '', '', '', '', 0, 1, 0, 1663750936, 1663750936),
-(82, 0, 'M', '渠道设置', 'el-icon-Message', 500, '', 'channel', '', '', '', 0, 1, 0, 1663754084, 1710472649),
-(83, 82, 'C', 'h5设置', 'el-icon-Cellphone', 100, 'channel.web_page_setting/getConfig', 'h5', 'channel/h5', '', '', 0, 1, 0, 1663754158, 1710472929),
-(84, 83, 'A', '保存', '', 0, 'channel.web_page_setting/setConfig', '', '', '', '', 0, 1, 0, 1663754259, 1663754259),
-(85, 82, 'M', '微信公众号', 'local-icon-dingdan', 80, '', 'wx_oa', '', '', '', 0, 1, 0, 1663755470, 1710472946),
-(86, 85, 'C', '公众号配置', '', 0, 'channel.official_account_setting/getConfig', 'config', 'channel/wx_oa/config', '', '', 0, 1, 0, 1663755663, 1664355450),
-(87, 85, 'C', '菜单管理', '', 0, 'channel.official_account_menu/detail', 'menu', 'channel/wx_oa/menu', '', '', 0, 1, 0, 1663755767, 1664355456),
-(88, 86, 'A', '保存', '', 0, 'channel.official_account_setting/setConfig', '', '', '', '', 0, 1, 0, 1663755799, 1663755799),
-(89, 86, 'A', '保存并发布', '', 0, 'channel.official_account_menu/save', '', '', '', '', 0, 1, 0, 1663756490, 1663756490),
-(90, 85, 'C', '关注回复', '', 0, 'channel.official_account_reply/lists', 'follow', 'channel/wx_oa/reply/follow_reply', '', '', 0, 1, 0, 1663818358, 1663818366),
-(91, 85, 'C', '关键字回复', '', 0, '', 'keyword', 'channel/wx_oa/reply/keyword_reply', '', '', 0, 1, 0, 1663818445, 1663818445),
-(93, 85, 'C', '默认回复', '', 0, '', 'default', 'channel/wx_oa/reply/default_reply', '', '', 0, 1, 0, 1663818580, 1663818580),
-(94, 82, 'C', '微信小程序', 'local-icon-weixin', 90, 'channel.mnp_settings/getConfig', 'weapp', 'channel/weapp', '', '', 0, 1, 0, 1663831396, 1710472941),
-(95, 94, 'A', '保存', '', 0, 'channel.mnp_settings/setConfig', '', '', '', '', 0, 1, 0, 1663831436, 1663831436),
-(96, 0, 'M', '装修管理', 'el-icon-Brush', 600, '', 'decoration', '', '', '', 0, 1, 0, 1663834825, 1710472099),
-(97, 175, 'C', '页面装修', 'el-icon-CopyDocument', 100, 'decorate.page/detail', 'pages', 'decoration/pages/index', '', '', 0, 1, 0, 1663834879, 1710929256),
-(98, 97, 'A', '保存', '', 0, 'decorate.page/save', '', '', '', '', 0, 1, 0, 1663834956, 1663834956),
-(99, 175, 'C', '底部导航', 'el-icon-Position', 90, 'decorate.tabbar/detail', 'tabbar', 'decoration/tabbar', '', '', 0, 1, 0, 1663835004, 1710929262),
-(100, 99, 'A', '保存', '', 0, 'decorate.tabbar/save', '', '', '', '', 0, 1, 0, 1663835018, 1663835018),
-(101, 158, 'M', '消息管理', 'el-icon-ChatDotRound', 80, '', 'message', '', '', '', 0, 1, 0, 1663838602, 1710471874),
-(102, 101, 'C', '通知设置', '', 0, 'notice.notice/settingLists', 'notice', 'message/notice/index', '', '', 0, 1, 0, 1663839195, 1663839195),
-(103, 102, 'A', '详情', '', 0, 'notice.notice/detail', '', '', '', '', 0, 1, 0, 1663839537, 1663839537),
-(104, 101, 'C', '通知设置编辑', '', 0, 'notice.notice/set', 'notice/edit', 'message/notice/edit', '/message/notice', '', 0, 0, 0, 1663839873, 1663898477),
-(105, 71, 'A', '编辑', '', 0, 'article.article/edit', '', '', '', '', 0, 1, 0, 1663840043, 1663840053),
-(107, 101, 'C', '短信设置', '', 0, 'notice.sms_config/getConfig', 'short_letter', 'message/short_letter/index', '', '', 0, 1, 0, 1663898591, 1664355708),
-(108, 107, 'A', '设置', '', 0, 'notice.sms_config/setConfig', '', '', '', '', 0, 1, 0, 1663898644, 1663898644),
-(109, 107, 'A', '详情', '', 0, 'notice.sms_config/detail', '', '', '', '', 0, 1, 0, 1663898661, 1663898661),
-(110, 28, 'C', '热门搜索', 'el-icon-Search', 60, 'setting.hot_search/getConfig', 'search', 'setting/search/index', '', '', 0, 1, 0, 1663901821, 1710473109),
-(111, 110, 'A', '保存', '', 0, 'setting.hot_search/setConfig', '', '', '', '', 0, 1, 0, 1663901856, 1663901856),
-(112, 28, 'M', '用户设置', 'local-icon-keziyuyue', 90, '', 'user', '', '', '', 0, 1, 0, 1663903302, 1710473056),
-(113, 112, 'C', '用户设置', '', 0, 'setting.user.user/getConfig', 'setup', 'setting/user/setup', '', '', 0, 1, 0, 1663903506, 1663903506),
-(114, 113, 'A', '保存', '', 0, 'setting.user.user/setConfig', '', '', '', '', 0, 1, 0, 1663903522, 1663903522),
-(115, 112, 'C', '登录注册', '', 0, 'setting.user.user/getRegisterConfig', 'login_register', 'setting/user/login_register', '', '', 0, 1, 0, 1663903832, 1663903832),
-(116, 115, 'A', '保存', '', 0, 'setting.user.user/setRegisterConfig', '', '', '', '', 0, 1, 0, 1663903852, 1663903852),
-(117, 0, 'M', '用户管理', 'el-icon-User', 900, '', 'consumer', '', '', '', 0, 1, 0, 1663904351, 1710472074),
-(118, 117, 'C', '用户列表', 'local-icon-user_guanli', 100, 'user.user/lists', 'lists', 'consumer/lists/index', '', '', 0, 1, 0, 1663904392, 1710471845),
-(119, 117, 'C', '用户详情', '', 90, 'user.user/detail', 'lists/detail', 'consumer/lists/detail', '/consumer/lists', '', 0, 0, 0, 1663904470, 1710471851),
-(120, 119, 'A', '编辑', '', 0, 'user.user/edit', '', '', '', '', 0, 1, 0, 1663904499, 1663904499),
-(140, 82, 'C', '微信开发平台', 'local-icon-notice_buyer', 70, 'channel.open_setting/getConfig', 'open_setting', 'channel/open_setting', '', '', 0, 1, 0, 1666085713, 1710472951),
-(141, 140, 'A', '保存', '', 0, 'channel.open_setting/setConfig', '', '', '', '', 0, 1, 0, 1666085751, 1666085776),
-(142, 176, 'C', 'PC端装修', 'el-icon-Monitor', 8, '', 'pc', 'decoration/pc', '', '', 0, 1, 0, 1668423284, 1710901602),
-(143, 35, 'C', '定时任务', '', 100, 'crontab.crontab/lists', 'scheduled_task', 'setting/system/scheduled_task/index', '', '', 0, 1, 0, 1669357509, 1710473246),
-(144, 35, 'C', '定时任务添加/编辑', '', 0, 'crontab.crontab/add:edit', 'scheduled_task/edit', 'setting/system/scheduled_task/edit', '/setting/system/scheduled_task', '', 0, 0, 0, 1669357670, 1669357765),
-(145, 143, 'A', '添加', '', 0, 'crontab.crontab/add', '', '', '', '', 0, 1, 0, 1669358282, 1669358282),
-(146, 143, 'A', '编辑', '', 0, 'crontab.crontab/edit', '', '', '', '', 0, 1, 0, 1669358303, 1669358303),
-(147, 143, 'A', '删除', '', 0, 'crontab.crontab/delete', '', '', '', '', 0, 1, 0, 1669358334, 1669358334),
-(148, 0, 'M', '模板示例', 'el-icon-SetUp', 100, '', 'template', '', '', '', 0, 1, 0, 1670206819, 1710472811),
-(149, 148, 'M', '组件示例', 'el-icon-Coin', 0, '', 'component', '', '', '', 0, 1, 0, 1670207182, 1670207244),
-(150, 149, 'C', '富文本', '', 90, '', 'rich_text', 'template/component/rich_text', '', '', 0, 1, 0, 1670207751, 1710473315),
-(151, 149, 'C', '上传文件', '', 80, '', 'upload', 'template/component/upload', '', '', 0, 1, 0, 1670208925, 1710473322),
-(152, 149, 'C', '图标', '', 100, '', 'icon', 'template/component/icon', '', '', 0, 1, 0, 1670230069, 1710473306),
-(153, 149, 'C', '文件选择器', '', 60, '', 'file', 'template/component/file', '', '', 0, 1, 0, 1670232129, 1710473341),
-(154, 149, 'C', '链接选择器', '', 50, '', 'link', 'template/component/link', '', '', 0, 1, 0, 1670292636, 1710473346),
-(155, 149, 'C', '超出自动打点', '', 40, '', 'overflow', 'template/component/overflow', '', '', 0, 1, 0, 1670292883, 1710473351),
-(156, 149, 'C', '悬浮input', '', 70, '', 'popover_input', 'template/component/popover_input', '', '', 0, 1, 0, 1670293336, 1710473329),
-(157, 119, 'A', '余额调整', '', 0, 'user.user/adjustMoney', '', '', '', '', 0, 1, 0, 1677143088, 1677143088),
-(158, 0, 'M', '应用管理', 'el-icon-Postcard', 800, '', 'app', '', '', '', 0, 1, 0, 1677143430, 1710472079),
-(159, 158, 'C', '用户充值', 'local-icon-fukuan', 100, 'recharge.recharge/getConfig', 'recharge', 'app/recharge/index', '', '', 0, 1, 0, 1677144284, 1710471860),
-(160, 159, 'A', '保存', '', 0, 'recharge.recharge/setConfig', '', '', '', '', 0, 1, 0, 1677145012, 1677145012),
-(161, 28, 'M', '支付设置', 'local-icon-set_pay', 80, '', 'pay', '', '', '', 0, 1, 0, 1677148075, 1710473061),
-(162, 161, 'C', '支付方式', '', 0, 'setting.pay.pay_way/getPayWay', 'method', 'setting/pay/method/index', '', '', 0, 1, 0, 1677148207, 1677148207),
-(163, 161, 'C', '支付配置', '', 0, 'setting.pay.pay_config/lists', 'config', 'setting/pay/config/index', '', '', 0, 1, 0, 1677148260, 1677148374),
-(164, 162, 'A', '设置支付方式', '', 0, 'setting.pay.pay_way/setPayWay', '', '', '', '', 0, 1, 0, 1677219624, 1677219624),
-(165, 163, 'A', '配置', '', 0, 'setting.pay.pay_config/setConfig', '', '', '', '', 0, 1, 0, 1677219655, 1677219655),
-(166, 0, 'M', '财务管理', 'local-icon-user_gaikuang', 700, '', 'finance', '', '', '', 0, 1, 0, 1677552269, 1710472085),
-(167, 166, 'C', '充值记录', 'el-icon-Wallet', 90, 'recharge.recharge/lists', 'recharge_record', 'finance/recharge_record', '', '', 0, 1, 0, 1677552757, 1710472902),
-(168, 166, 'C', '余额明细', 'local-icon-qianbao', 100, 'finance.account_log/lists', 'balance_details', 'finance/balance_details', '', '', 0, 1, 0, 1677552976, 1710472894),
-(169, 167, 'A', '退款', '', 0, 'recharge.recharge/refund', '', '', '', '', 0, 1, 0, 1677809715, 1677809715),
-(170, 166, 'C', '退款记录', 'local-icon-heshoujilu', 0, 'finance.refund/record', 'refund_record', 'finance/refund_record', '', '', 0, 1, 0, 1677811271, 1677811271),
-(171, 170, 'A', '重新退款', '', 0, 'recharge.recharge/refundAgain', '', '', '', '', 0, 1, 0, 1677811295, 1677811295),
-(172, 170, 'A', '退款日志', '', 0, 'finance.refund/log', '', '', '', '', 0, 1, 0, 1677811361, 1677811361),
-(173, 175, 'C', '系统风格', 'el-icon-Brush', 80, '', 'style', 'decoration/style/style', '', '', 0, 0, 1, 1681635044, 1710929278),
-(175, 96, 'M', '移动端', '', 100, '', 'mobile', '', '', '', 0, 1, 0, 1710901543, 1710929294),
-(176, 96, 'M', 'PC端', '', 90, '', 'pc', '', '', '', 0, 1, 0, 1710901592, 1710929299),
-(177, 29, 'C', '站点统计', '', 0, 'setting.web.web_setting/getSiteStatistics', 'statistics', 'setting/website/statistics', '', '', 0, 1, 0, 1726841481, 1726843434),
-(178, 177, 'A', '保存', '', 0, 'setting.web.web_setting/saveSiteStatistics', '', '', '', '', 1, 1, 0, 1726841507, 1726841507),
 (179, 0, 'M', '服务管理', 'el-icon-User', 900, '', 'service', '', '', '', 0, 1, 0, 1773413107, 1773413107),
 (180, 179, 'C', '服务人员', '', 100, 'ops.staff/lists', 'staff', 'staff/lists/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (181, 179, 'C', '服务分类', '', 95, 'ops.category/lists', 'category', 'service/category/index', '', '', 0, 1, 0, 1773413107, 1773413107),
@@ -3155,7 +2801,8 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (284, 282, 'A', '新增', '', 20, 'ops.staffCertificate/add', '', '', '', '', 0, 0, 0, 1775923200, 1775923200),
 (285, 282, 'A', '编辑', '', 30, 'ops.staffCertificate/edit', '', '', '', '', 0, 0, 0, 1775923200, 1775923200),
 (286, 282, 'A', '删除', '', 40, 'ops.staffCertificate/delete', '', '', '', '', 0, 0, 0, 1775923200, 1775923200),
-(287, 282, 'A', '审核', '', 50, 'ops.staffCertificate/audit', '', '', '', '', 0, 0, 0, 1775923200, 1775923200);
+(287, 282, 'A', '审核', '', 50, 'ops.staffCertificate/audit', '', '', '', '', 0, 0, 0, 1775923200, 1775923200),
+(300, 259, 'A', '发送企微测试消息', '', 0, 'setting.customer_service/testWecomMessage', '', '', '', '', 0, 0, 0, 1776200000, 1776200000);
 INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (1, 223),
 (1, 224),
@@ -3351,157 +2998,6 @@ INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (2, 238),
 (2, 239),
 (2, 290),
-(2, 291);
-DELETE FROM `la_config` WHERE `type` = 'feature_switch';
-INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) VALUES
-('feature_switch', 'admin_dashboard', '1', 1773413108, 1773413108),
-('feature_switch', 'admin_dashboard_user_ids', '1', 1773556898, 1773556898),
-('feature_switch', 'comment_review_enabled', '0', 1773413108, 1773413108),
-('feature_switch', 'staff_admin', '1', 1773413108, 1773413108),
-('feature_switch', 'staff_center', '1', 1773413108, 1773413108),
-('feature_switch', 'staff_detail_style', 'classic', 1773556898, 1773556898),
-('feature_switch', 'staff_tag_review_enabled', '0', 1775001600, 1775001600);
-INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`)
-SELECT 'transaction', 'staff_confirm_timeout_enabled', '0', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
-WHERE NOT EXISTS (
-    SELECT 1 FROM `la_config` WHERE `type` = 'transaction' AND `name` = 'staff_confirm_timeout_enabled'
-);
-INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`)
-SELECT 'transaction', 'staff_confirm_timeout_action', 'cancel', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
-WHERE NOT EXISTS (
-    SELECT 1 FROM `la_config` WHERE `type` = 'transaction' AND `name` = 'staff_confirm_timeout_action'
-);
-INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`)
-SELECT 'transaction', 'staff_confirm_timeout_minutes', '60', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
-WHERE NOT EXISTS (
-    SELECT 1 FROM `la_config` WHERE `type` = 'transaction' AND `name` = 'staff_confirm_timeout_minutes'
-);
-DELETE FROM `la_dev_crontab`
-WHERE `command` IN ('cancel_unpaid_orders', 'send_station_reminders', 'expire_waitlists', 'send_subscribe_messages', 'handle_pending_confirm_orders', 'query_refund');
-INSERT INTO `la_dev_crontab` (
-    `name`,
-    `type`,
-    `system`,
-    `remark`,
-    `command`,
-    `params`,
-    `status`,
-    `expression`,
-    `create_time`,
-    `update_time`,
-    `delete_time`
-) VALUES
-('超时未支付订单自动取消', 1, 1, '每分钟扫描待支付首笔订单并自动取消超时单', 'cancel_unpaid_orders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-('站内提醒发送', 1, 1, '每分钟扫描服务前一天提醒与暂停到期提醒的站内消息', 'send_station_reminders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-('候补超期自动失效', 1, 1, '每天扫描预约日期已过的候补并自动标记为已过期', 'expire_waitlists', '', 1, '10 0 * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-('订阅消息派发', 1, 1, '每分钟扫描并派发到期的小程序订阅消息', 'send_subscribe_messages', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-('服务人员确认超时自动处理', 1, 1, '每分钟扫描待确认订单并按配置自动取消或自动同意', 'handle_pending_confirm_orders', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL),
-('预约订单退款查询', 1, 1, '每分钟查询处理中微信退款并同步订单退款状态', 'query_refund', '', 1, '* * * * *', UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), NULL);
-DELETE FROM `la_config` WHERE `type` = 'order_confirmation_letter' AND `name` = 'remark_template';
-INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) VALUES
-('order_confirmation_letter', 'remark_template', '请您认真核对确认函中的服务日期、地点、金额与联系人信息，如有变更请及时联系订单服务人员。', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
-DELETE FROM `la_config`
-WHERE `type` = 'feature_switch'
-  AND `name` = 'staff_detail_style';
-SET @now_ts = UNIX_TIMESTAMP();
-INSERT INTO `la_service_addon` (
-    `staff_id`,
-    `category_id`,
-    `name`,
-    `price`,
-    `original_price`,
-    `image`,
-    `description`,
-    `sort`,
-    `is_show`,
-    `create_time`,
-    `update_time`
-)
-SELECT
-    `s`.`id`,
-    IFNULL(`s`.`category_id`, 0),
-    CONVERT(TRIM(IFNULL(`s`.`booking_option_1_name`, '')) USING utf8mb4) COLLATE utf8mb4_general_ci,
-    IFNULL(`s`.`booking_option_1_price`, 0.00),
-    IFNULL(`s`.`booking_option_1_price`, 0.00),
-    '',
-    '',
-    20,
-    1,
-    @now_ts,
-    @now_ts
-FROM `la_staff` `s`
-WHERE `s`.`delete_time` IS NULL
-  AND CONVERT(TRIM(IFNULL(`s`.`booking_option_1_name`, '')) USING utf8mb4) COLLATE utf8mb4_general_ci <> ''
-  AND NOT EXISTS (
-      SELECT 1
-      FROM `la_service_addon` `a`
-      WHERE `a`.`delete_time` IS NULL
-        AND `a`.`staff_id` = `s`.`id`
-        AND `a`.`name` = CONVERT(TRIM(IFNULL(`s`.`booking_option_1_name`, '')) USING utf8mb4) COLLATE utf8mb4_general_ci
-        AND `a`.`price` = IFNULL(`s`.`booking_option_1_price`, 0.00)
-  );
-INSERT INTO `la_service_addon` (
-    `staff_id`,
-    `category_id`,
-    `name`,
-    `price`,
-    `original_price`,
-    `image`,
-    `description`,
-    `sort`,
-    `is_show`,
-    `create_time`,
-    `update_time`
-)
-SELECT
-    `s`.`id`,
-    IFNULL(`s`.`category_id`, 0),
-    CONVERT(TRIM(IFNULL(`s`.`booking_option_2_name`, '')) USING utf8mb4) COLLATE utf8mb4_general_ci,
-    IFNULL(`s`.`booking_option_2_price`, 0.00),
-    IFNULL(`s`.`booking_option_2_price`, 0.00),
-    '',
-    '',
-    10,
-    1,
-    @now_ts,
-    @now_ts
-FROM `la_staff` `s`
-WHERE `s`.`delete_time` IS NULL
-  AND CONVERT(TRIM(IFNULL(`s`.`booking_option_2_name`, '')) USING utf8mb4) COLLATE utf8mb4_general_ci <> ''
-  AND NOT EXISTS (
-      SELECT 1
-      FROM `la_service_addon` `a`
-      WHERE `a`.`delete_time` IS NULL
-        AND `a`.`staff_id` = `s`.`id`
-        AND `a`.`name` = CONVERT(TRIM(IFNULL(`s`.`booking_option_2_name`, '')) USING utf8mb4) COLLATE utf8mb4_general_ci
-        AND `a`.`price` = IFNULL(`s`.`booking_option_2_price`, 0.00)
-  );
-UPDATE `la_system_menu`
-SET `is_show` = 0,
-    `is_disable` = 1,
-    `update_time` = UNIX_TIMESTAMP()
-WHERE `component` = 'decoration/style/style';
-INSERT INTO `la_decorate_page` (`id`, `type`, `name`, `data`, `meta`, `create_time`, `update_time`)
-SELECT 6, 6, '开屏广告页',
-       '[{"id":"splash_ad_default","title":"开屏广告页","name":"splash-ad","disabled":1,"content":{"enabled":0,"image":"","auto_enter_enabled":1,"auto_seconds":3,"frequency":"session","button_text":"点击进入"},"styles":{"button_bg_color":"#FFFFFF","button_text_color":"#333333","button_border_color":"#FFFFFF","button_border_radius":24}}]',
-       '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
-WHERE NOT EXISTS (
-    SELECT 1 FROM `la_decorate_page` WHERE `id` = 6 OR `type` = 6
-);
-SET @wecom_menu_id := (
-    SELECT `id`
-    FROM `la_system_menu`
-    WHERE `perms` = 'setting.customer_service/getConfig'
-    LIMIT 1
-);
-INSERT INTO `la_system_menu`
-    (`pid`, `type`, `name`, `icon`, `sort`, `perms`, `paths`, `component`, `selected`, `params`, `is_cache`, `is_show`, `is_disable`, `create_time`, `update_time`)
-SELECT
-    @wecom_menu_id, 'A', '发送企微测试消息', '', 0, 'setting.customer_service/testWecomMessage', '', '', '', '', 0, 0, 0, UNIX_TIMESTAMP(), UNIX_TIMESTAMP()
-WHERE @wecom_menu_id IS NOT NULL
-  AND NOT EXISTS (
-      SELECT 1
-      FROM `la_system_menu`
-      WHERE `perms` = 'setting.customer_service/testWecomMessage'
-  );
+(2, 291),
+(2, 300);
 SET FOREIGN_KEY_CHECKS = 1;
