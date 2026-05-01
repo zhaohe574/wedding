@@ -82,6 +82,36 @@ class OrderPauseController extends BaseAdminController
     }
 
     /**
+     * @notes 延长暂停时间
+     * @return \think\response\Json
+     */
+    public function extend()
+    {
+        $params = (new OrderPauseValidate())->post()->goCheck('extend');
+        $result = OrderPauseLogic::extend(
+            $params['id'],
+            $this->adminId,
+            $params['new_end_date'],
+            $params['remark'] ?? ''
+        );
+        if (true === $result) {
+            return $this->success('延期成功');
+        }
+        return $this->fail(OrderPauseLogic::getError());
+    }
+
+    /**
+     * @notes 暂停操作日志列表
+     * @return \think\response\Json
+     */
+    public function logs()
+    {
+        $params = (new OrderPauseValidate())->get()->goCheck('logs');
+        $result = OrderPauseLogic::logs($params['id']);
+        return $this->data($result);
+    }
+
+    /**
      * @notes 即将到期的暂停订单
      * @return \think\response\Json
      */

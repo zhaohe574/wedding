@@ -274,6 +274,27 @@
                         class="w-20 h-20 mr-2 rounded"
                     />
                 </div>
+
+                <div class="mt-4">
+                    <h4 class="font-bold mb-2">操作日志</h4>
+                    <el-empty v-if="changeLogs.length === 0" description="暂无操作日志" :image-size="80" />
+                    <el-timeline v-else>
+                        <el-timeline-item
+                            v-for="log in changeLogs"
+                            :key="log.id || `${log.action}-${log.create_time}`"
+                            :timestamp="formatLogTime(log.create_time)"
+                            placement="top"
+                        >
+                            <div class="operation-log">
+                                <div class="operation-log__meta">
+                                    <span>{{ getLogOperator(log) }}</span>
+                                    <span v-if="log.action_desc || log.action"> / {{ log.action_desc || log.action }}</span>
+                                </div>
+                                <div class="operation-log__content">{{ log.content || '-' }}</div>
+                            </div>
+                        </el-timeline-item>
+                    </el-timeline>
+                </div>
             </div>
         </el-dialog>
 
@@ -316,9 +337,11 @@ import {
     orderChangeDetail, 
     orderChangeStatistics,
     orderChangeAudit,
-    orderChangeExecute
+    orderChangeExecute,
+    orderChangeLogs
 } from '@/api/order/change'
 import { usePaging } from '@/hooks/usePaging'
+import { timeFormat } from '@/utils/util'
 import feedback from '@/utils/feedback'
 
 const router = useRouter()
@@ -333,6 +356,7 @@ const queryParams = reactive({
 const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentChange = ref<any>(null)
+const changeLogs = ref<any[]>([])
 const auditVisible = ref(false)
 const auditForm = reactive({
     id: 0,
@@ -437,7 +461,23 @@ const viewOrder = (orderId: number) => {
 const handleDetail = async (row: any) => {
     const res = await orderChangeDetail({ id: row.id })
     currentChange.value = res
+    changeLogs.value = await orderChangeLogs({ id: row.id })
     detailVisible.value = true
+}
+
+const formatLogTime = (value: number | string) => {
+    if (!value) {
+        return '-'
+    }
+    const numericValue = Number(value)
+    if (!Number.isNaN(numericValue)) {
+        return timeFormat(numericValue, 'yyyy-mm-dd hh:MM:ss')
+    }
+    return String(value)
+}
+
+const getLogOperator = (log: any) => {
+    return log.operator_name || log.operator_type_desc || '系统'
 }
 
 const handleAudit = (row: any, approved: boolean) => {
@@ -485,5 +525,19 @@ getStatistics()
 <style scoped>
 .change-detail :deep(.el-descriptions__label) {
     width: 100px;
+}
+
+.operation-log {
+    line-height: 1.6;
+}
+
+.operation-log__meta {
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: var(--admin-color-muted);
+}
+
+.operation-log__content {
+    color: var(--admin-color-title);
 }
 </style>

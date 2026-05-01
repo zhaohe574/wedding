@@ -1,7 +1,8 @@
 <template>
-    <div class="order-pause-lists">
-        <el-card class="!border-none" shadow="never">
-            <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
+    <admin-page-shell class="order-pause-lists" title="订单暂停">
+        <template #search>
+            <search-panel>
+                <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item class="w-[180px]" label="暂停单号">
                     <el-input
                         v-model="queryParams.pause_sn"
@@ -51,45 +52,17 @@
                     <el-button type="primary" @click="resetPage">查询</el-button>
                     <el-button @click="resetParams">重置</el-button>
                 </el-form-item>
-            </el-form>
-        </el-card>
+                </el-form>
+            </search-panel>
+        </template>
 
-        <!-- 统计卡片 -->
-        <div class="mt-4 grid grid-cols-5 gap-4">
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">待审核</div>
-                    <div class="text-2xl font-bold mt-2 text-orange-500">{{ getStatusCount(0) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">暂停中</div>
-                    <div class="text-2xl font-bold mt-2 text-blue-500">{{ getStatusCount(1) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">即将到期</div>
-                    <div class="text-2xl font-bold mt-2 text-red-500">{{ statistics.expiring_count || 0 }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">已恢复</div>
-                    <div class="text-2xl font-bold mt-2 text-green-500">{{ getStatusCount(2) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">平均暂停天数</div>
-                    <div class="text-2xl font-bold mt-2 text-purple-500">{{ statistics.avg_pause_days || 0 }}</div>
-                </div>
-            </el-card>
-        </div>
+        <template #stats>
+            <stat-panel :items="pauseStatItems" :columns="5" />
+        </template>
 
-        <el-card class="!border-none mt-4" shadow="never">
-            <el-table size="large" v-loading="pager.loading" :data="pager.lists">
+        <div class="admin-page-section">
+            <el-card class="!border-none" shadow="never">
+                <el-table size="large" v-loading="pager.loading" :data="pager.lists">
                 <el-table-column label="暂停单号" prop="pause_sn" min-width="160" />
                 <el-table-column label="订单编号" min-width="160">
                     <template #default="{ row }">
@@ -166,11 +139,12 @@
                         >延期</el-button>
                     </template>
                 </el-table-column>
-            </el-table>
-            <div class="flex justify-end mt-4">
-                <pagination v-model="pager" @change="getLists" />
-            </div>
-        </el-card>
+                </el-table>
+                <div class="flex justify-end mt-4">
+                    <pagination v-model="pager" @change="getLists" />
+                </div>
+            </el-card>
+        </div>
 
         <!-- 详情弹窗 -->
         <el-dialog v-model="detailVisible" title="暂停详情" width="700px">
@@ -228,6 +202,27 @@
                         fit="cover"
                         class="w-20 h-20 mr-2 rounded"
                     />
+                </div>
+
+                <div class="mt-4">
+                    <h4 class="font-bold mb-2">操作日志</h4>
+                    <el-empty v-if="pauseLogs.length === 0" description="暂无操作日志" :image-size="80" />
+                    <el-timeline v-else>
+                        <el-timeline-item
+                            v-for="log in pauseLogs"
+                            :key="log.id || `${log.action}-${log.create_time}`"
+                            :timestamp="formatLogTime(log.create_time)"
+                            placement="top"
+                        >
+                            <div class="operation-log">
+                                <div class="operation-log__meta">
+                                    <span>{{ getLogOperator(log) }}</span>
+                                    <span v-if="log.action_desc || log.action"> / {{ log.action_desc || log.action }}</span>
+                                </div>
+                                <div class="operation-log__content">{{ log.content || '-' }}</div>
+                            </div>
+                        </el-timeline-item>
+                    </el-timeline>
                 </div>
             </div>
         </el-dialog>
@@ -316,7 +311,7 @@
                 <el-button type="primary" @click="submitExtend">确认延期</el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="orderPause">
@@ -326,10 +321,15 @@ import {
     orderPauseStatistics,
     orderPauseAudit,
     orderPauseResume,
-    orderPauseExtend
+    orderPauseExtend,
+    orderPauseLogs
 } from '@/api/order/pause'
 import { usePaging } from '@/hooks/usePaging'
+import { timeFormat } from '@/utils/util'
 import feedback from '@/utils/feedback'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const queryParams = reactive({
     pause_sn: '',
@@ -342,6 +342,7 @@ const queryParams = reactive({
 const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentPause = ref<any>(null)
+const pauseLogs = ref<any[]>([])
 const auditVisible = ref(false)
 const auditForm = reactive({
     id: 0,
@@ -379,35 +380,98 @@ const getStatusCount = (status: number) => {
     return item ? item.count : 0
 }
 
-const getTypeTagType = (type: number) => {
-    const types = {
+type StatAccent = 'primary' | 'success' | 'warning' | 'danger' | 'muted'
+type StatusTagType = 'success' | 'warning' | 'info' | 'primary' | 'danger'
+
+interface PauseStatItem {
+    label: string
+    value: number
+    suffix?: string
+    accent: StatAccent
+}
+
+const pauseStatItems = computed<PauseStatItem[]>(() => [
+    {
+        label: '待审核',
+        value: getStatusCount(0),
+        accent: 'warning'
+    },
+    {
+        label: '暂停中',
+        value: getStatusCount(1),
+        accent: 'primary'
+    },
+    {
+        label: '即将到期',
+        value: Number(statistics.value.expiring_count || 0),
+        accent: 'danger'
+    },
+    {
+        label: '已恢复',
+        value: getStatusCount(2),
+        accent: 'success'
+    },
+    {
+        label: '平均暂停天数',
+        value: Number(statistics.value.avg_pause_days || 0),
+        suffix: '天',
+        accent: 'muted'
+    }
+])
+
+const getTypeTagType = (type: number): StatusTagType => {
+    const types: Record<number, StatusTagType> = {
         1: 'danger',
         2: 'warning',
         3: 'info',
         4: 'info'
-    } as const
-    return types[type as keyof typeof types] ?? 'info'
+    }
+    return types[type] ?? 'info'
 }
 
-const getStatusTagType = (status: number) => {
-    const types = {
+const getStatusTagType = (status: number): StatusTagType => {
+    const types: Record<number, StatusTagType> = {
         0: 'warning',
         1: 'primary',
         2: 'success',
         3: 'danger',
         4: 'info'
-    } as const
-    return types[status as keyof typeof types] ?? 'info'
+    }
+    return types[status] ?? 'info'
 }
 
 const viewOrder = (orderId: number) => {
-    window.open(`/admin/order/lists?id=${orderId}`, '_blank')
+    if (!orderId) {
+        return
+    }
+    router.push({
+        path: '/order/lists',
+        query: {
+            detail_id: String(orderId)
+        }
+    })
 }
 
 const handleDetail = async (row: any) => {
     const res = await orderPauseDetail({ id: row.id })
     currentPause.value = res
+    pauseLogs.value = await orderPauseLogs({ id: row.id })
     detailVisible.value = true
+}
+
+const formatLogTime = (value: number | string) => {
+    if (!value) {
+        return '-'
+    }
+    const numericValue = Number(value)
+    if (!Number.isNaN(numericValue)) {
+        return timeFormat(numericValue, 'yyyy-mm-dd hh:MM:ss')
+    }
+    return String(value)
+}
+
+const getLogOperator = (log: any) => {
+    return log.operator_name || log.operator_type_desc || '系统'
 }
 
 const handleAudit = (row: any, approved: boolean) => {
@@ -482,5 +546,19 @@ getStatistics()
 <style scoped>
 .pause-detail :deep(.el-descriptions__label) {
     width: 100px;
+}
+
+.operation-log {
+    line-height: 1.6;
+}
+
+.operation-log__meta {
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: var(--admin-color-muted);
+}
+
+.operation-log__content {
+    color: var(--admin-color-title);
 }
 </style>
