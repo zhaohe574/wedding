@@ -85,11 +85,8 @@ class Schedule extends BaseModel
      */
     public static function isAvailable(int $staffId, string $date, int $timeSlot = 0): bool
     {
-        if (!self::checkRuleAvailable($staffId, $date)) {
-            return false;
-        }
-
-        return self::isScheduleRecordAvailable(self::findDateSchedule($staffId, $date));
+        [$available] = self::checkAvailabilityForUserWithReason($staffId, $date, 0, $timeSlot);
+        return $available;
     }
 
     /**
@@ -126,7 +123,7 @@ class Schedule extends BaseModel
      */
     public static function checkAvailabilityForUserWithReason(int $staffId, string $date, int $userId = 0, int $timeSlot = 0): array
     {
-        [$ruleAllowed, $ruleReason] = ScheduleRule::checkDate($staffId, $date);
+        [$ruleAllowed, $ruleReason] = ScheduleRule::checkBookingRule($staffId, $date);
         if (!$ruleAllowed) {
             return [false, $ruleReason];
         }
@@ -158,8 +155,9 @@ class Schedule extends BaseModel
         int $lockAcquireRetryDelay = 100
     ): array
     {
-        if (!self::checkRuleAvailable($staffId, $date)) {
-            return [false, '该日期不可预约'];
+        [$ruleAllowed, $ruleReason] = ScheduleRule::checkBookingRule($staffId, $date);
+        if (!$ruleAllowed) {
+            return [false, $ruleReason ?: '该日期不可预约'];
         }
 
         $schedule = self::findDateSchedule($staffId, $date);
@@ -244,8 +242,9 @@ class Schedule extends BaseModel
      */
     public static function lockSchedule(int $staffId, string $date, int $timeSlot, int $userId, int $lockType = self::LOCK_TYPE_NORMAL, int $lockDuration = 900): array
     {
-        if (!self::checkRuleAvailable($staffId, $date)) {
-            return [false, '该日期不可预约'];
+        [$ruleAllowed, $ruleReason] = ScheduleRule::checkBookingRule($staffId, $date);
+        if (!$ruleAllowed) {
+            return [false, $ruleReason ?: '该日期不可预约'];
         }
 
         $schedule = self::findDateSchedule($staffId, $date);
@@ -255,7 +254,7 @@ class Schedule extends BaseModel
                 $schedule = self::findDateSchedule($staffId, $date);
             }
 
-            if ($schedule && !in_array((int)$schedule->status, [self::STATUS_AVAILABLE, self::STATUS_LOCKED], true)) {
+            if ($schedule && !in_array((int)$schedule->status, [self::STATUS_AVAILABLE, self::STATUS_LOCKED, self::STATUS_BOOKED], true)) {
                 return [false, self::buildUnavailableReason((int)$schedule->status)];
             }
 
@@ -385,7 +384,7 @@ class Schedule extends BaseModel
             return [false, '该日期已被其他用户锁定'];
         }
 
-        if ($schedule && !in_array((int)$schedule->status, [self::STATUS_AVAILABLE, self::STATUS_LOCKED], true)) {
+        if ($schedule && !in_array((int)$schedule->status, [self::STATUS_AVAILABLE, self::STATUS_LOCKED, self::STATUS_BOOKED], true)) {
             return [false, self::buildUnavailableReason((int)$schedule->status)];
         }
 
@@ -503,7 +502,7 @@ class Schedule extends BaseModel
             return true;
         }
 
-        return (int)$schedule->status === self::STATUS_AVAILABLE;
+        return in_array((int)$schedule->status, [self::STATUS_AVAILABLE, self::STATUS_BOOKED], true);
     }
 
     /**
@@ -523,6 +522,10 @@ class Schedule extends BaseModel
         }
 
         if ((int)$schedule->status === self::STATUS_AVAILABLE) {
+            return [true, ''];
+        }
+
+        if ((int)$schedule->status === self::STATUS_BOOKED) {
             return [true, ''];
         }
 
@@ -563,34 +566,8 @@ class Schedule extends BaseModel
      */
     protected static function checkRuleAvailable(int $staffId, string $date): bool
     {
-        $rule = ScheduleRule::where('staff_id', $staffId)
-            ->where('is_enabled', 1)
-            ->find();
-
-        if (!$rule) {
-            $rule = ScheduleRule::where('staff_id', 0)
-                ->where('is_enabled', 1)
-                ->find();
-        }
-
-        if (!$rule) {
-            return true;
-        }
-
-        $daysDiff = (strtotime($date) - strtotime(date('Y-m-d'))) / 86400;
-        if ($daysDiff < 1) {
-            return false;
-        }
-
-        if ($rule->rest_days) {
-            $weekDay = date('w', strtotime($date));
-            $restDays = explode(',', (string)$rule->rest_days);
-            if (in_array((string)$weekDay, $restDays, true) || in_array($weekDay, $restDays, true)) {
-                return false;
-            }
-        }
-
-        return true;
+        [$allowed] = ScheduleRule::checkBookingRule($staffId, $date);
+        return $allowed;
     }
 
     /**

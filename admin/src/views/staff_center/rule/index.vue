@@ -14,9 +14,9 @@
                 <span class="font-bold">全局模板（只读）</span>
             </template>
             <el-descriptions :column="3" border>
-                <el-descriptions-item label="提前预约天数">{{ globalTemplate.advance_days ?? '-' }}</el-descriptions-item>
+                <el-descriptions-item label="提前预约">至少提前 {{ globalTemplate.advance_days ?? '-' }} 天</el-descriptions-item>
                 <el-descriptions-item label="单日最大接单">{{ globalTemplate.max_orders_per_day ?? '-' }}</el-descriptions-item>
-                <el-descriptions-item label="间隔小时">{{ globalTemplate.interval_hours ?? '-' }}</el-descriptions-item>
+                <el-descriptions-item label="订单间隔">{{ globalTemplate.interval_hours ?? '-' }} 小时</el-descriptions-item>
                 <el-descriptions-item label="工作时间">
                     {{ globalTemplate.work_start_time || '-' }} - {{ globalTemplate.work_end_time || '-' }}
                 </el-descriptions-item>
@@ -36,7 +36,13 @@
                         </el-tag>
                     </template>
                 </el-table-column>
+                <el-table-column label="提前预约" width="140">
+                    <template #default="{ row }">至少提前 {{ row.advance_days ?? 0 }} 天</template>
+                </el-table-column>
                 <el-table-column prop="max_orders_per_day" label="单日最大接单" width="140" />
+                <el-table-column label="订单间隔" width="120">
+                    <template #default="{ row }">{{ row.interval_hours ?? 0 }} 小时</template>
+                </el-table-column>
                 <el-table-column label="工作时间" width="170">
                     <template #default="{ row }">
                         {{ row.work_start_time }} - {{ row.work_end_time }}
@@ -84,12 +90,14 @@
             <el-form ref="formRef" :model="formData" :rules="formRules" label-width="120px">
                 <el-form-item label="提前预约天数">
                     <el-input-number v-model="formData.advance_days" :min="0" :max="365" style="width: 100%" />
+                    <div class="text-gray-400 text-xs mt-1">配置为 3 时，只允许预约第 3 天及以后日期。</div>
                 </el-form-item>
                 <el-form-item label="单日最大接单" prop="max_orders_per_day">
                     <el-input-number v-model="formData.max_orders_per_day" :min="1" :max="10" style="width: 100%" />
                 </el-form-item>
                 <el-form-item label="订单间隔(小时)">
                     <el-input-number v-model="formData.interval_hours" :min="0" :max="24" style="width: 100%" />
+                    <div class="text-gray-400 text-xs mt-1">当前为全天预约模型，仅作为规则展示，不单独阻塞下单。</div>
                 </el-form-item>
                 <el-form-item label="工作时间">
                     <div class="flex items-center gap-2 w-full">
@@ -159,7 +167,7 @@ const formRef = ref<FormInstance>()
 
 const formData = reactive({
     id: 0,
-    advance_days: 1,
+    advance_days: 3,
     max_orders_per_day: 1,
     interval_hours: 0,
     work_start_time: '09:00',
@@ -202,7 +210,7 @@ const fetchTemplate = async () => {
 const resetFormData = () => {
     Object.assign(formData, {
         id: 0,
-        advance_days: 1,
+        advance_days: 3,
         max_orders_per_day: 1,
         interval_hours: 0,
         work_start_time: '09:00',
@@ -226,7 +234,7 @@ const handleEdit = (row: any) => {
     isEdit.value = true
     Object.assign(formData, {
         id: row.id,
-        advance_days: row.advance_days ?? 1,
+        advance_days: row.advance_days ?? 3,
         max_orders_per_day: row.max_orders_per_day ?? 1,
         interval_hours: row.interval_hours ?? 0,
         work_start_time: row.work_start_time || '09:00',

@@ -354,19 +354,8 @@ class ScheduleLogic extends BaseLogic
      */
     protected static function checkDateAvailable(int $staffId, string $date, ?array $rule): bool
     {
-        if (strtotime($date) <= strtotime(date('Y-m-d'))) {
-            return false;
-        }
-
-        if ($rule && !empty($rule['rest_days'])) {
-            $weekDay = date('w', strtotime($date));
-            $restDays = is_array($rule['rest_days']) ? $rule['rest_days'] : explode(',', (string)$rule['rest_days']);
-            if (in_array($weekDay, $restDays) || in_array((string)$weekDay, $restDays, true)) {
-                return false;
-            }
-        }
-
-        return true;
+        [$allowed] = ScheduleRule::checkBookingRule($staffId, $date);
+        return $allowed;
     }
 
     /**
@@ -382,7 +371,11 @@ class ScheduleLogic extends BaseLogic
 
         $schedule = $daySchedules[Schedule::TIME_SLOT_ALL];
         if ((int)($schedule['status'] ?? Schedule::STATUS_AVAILABLE) !== Schedule::STATUS_LOCKED) {
-            return (int)($schedule['status'] ?? Schedule::STATUS_AVAILABLE) === Schedule::STATUS_AVAILABLE;
+            return in_array(
+                (int)($schedule['status'] ?? Schedule::STATUS_AVAILABLE),
+                [Schedule::STATUS_AVAILABLE, Schedule::STATUS_BOOKED],
+                true
+            );
         }
 
         $lockExpireTime = (int)($schedule['lock_expire_time'] ?? 0);

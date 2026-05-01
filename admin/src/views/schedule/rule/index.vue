@@ -5,7 +5,7 @@
                 <div class="flex items-center justify-between">
                     <span class="text-lg font-bold">档期规则管理</span>
                     <el-button type="primary" @click="handleAdd">
-                        <el-icon class="mr-1"><Plus /></el-icon>添加规则
+                        <el-icon class="mr-1"><Plus /></el-icon>新增接单规则
                     </el-button>
                 </div>
             </template>
@@ -24,12 +24,17 @@
                         {{ row.staff_id === 0 ? '全局默认' : (row.staff?.name || '-') }}
                     </template>
                 </el-table-column>
-                <el-table-column label="预约限制" width="140">
-                    <template #default>
-                        当日不可预约
+                <el-table-column label="提前预约" width="140">
+                    <template #default="{ row }">
+                        至少提前 {{ row.advance_days ?? 0 }} 天
                     </template>
                 </el-table-column>
                 <el-table-column prop="max_orders_per_day" label="单日最大接单" width="120" />
+                <el-table-column label="订单间隔" width="120">
+                    <template #default="{ row }">
+                        {{ row.interval_hours ?? 0 }} 小时
+                    </template>
+                </el-table-column>
                 <el-table-column label="工作时间" width="140">
                     <template #default="{ row }">
                         {{ row.work_start_time }} - {{ row.work_end_time }}
@@ -64,7 +69,7 @@
         </el-card>
 
         <!-- 添加/编辑弹窗 -->
-        <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑规则' : '添加规则'" width="600px">
+        <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑接单规则' : '新增接单规则'" width="600px">
             <el-form :model="formData" :rules="formRules" ref="formRef" label-width="120px">
                 <el-form-item label="适用对象" prop="staff_id">
                     <el-select v-model="formData.staff_id" :disabled="isEdit" style="width: 100%">
@@ -77,16 +82,16 @@
                         />
                     </el-select>
                 </el-form-item>
-                <el-form-item label="预约限制">
-                    <el-input-number v-model="formData.advance_days" :min="1" :max="1" disabled style="width: 100%" />
-                    <div class="text-gray-400 text-xs mt-1">仅限制当天不可预约</div>
+                <el-form-item label="提前预约天数">
+                    <el-input-number v-model="formData.advance_days" :min="0" :max="365" style="width: 100%" />
+                    <div class="text-gray-400 text-xs mt-1">配置为 3 时，只允许预约第 3 天及以后日期。</div>
                 </el-form-item>
                 <el-form-item label="单日最大接单" prop="max_orders_per_day">
                     <el-input-number v-model="formData.max_orders_per_day" :min="1" :max="10" style="width: 100%" />
                 </el-form-item>
                 <el-form-item label="订单间隔时间" prop="interval_hours">
                     <el-input-number v-model="formData.interval_hours" :min="0" :max="24" style="width: 100%" />
-                    <div class="text-gray-400 text-xs mt-1">两个订单之间的最小间隔(小时)</div>
+                    <div class="text-gray-400 text-xs mt-1">当前为全天预约模型，仅作为规则展示，不单独阻塞下单。</div>
                 </el-form-item>
                 <el-form-item label="工作时间">
                     <div class="flex items-center gap-2 w-full">
@@ -158,7 +163,7 @@ const formRef = ref<FormInstance>()
 const formData = ref({
     id: 0,
     staff_id: 0,
-    advance_days: 1,
+    advance_days: 3,
     max_orders_per_day: 1,
     interval_hours: 0,
     work_start_time: '09:00',
@@ -194,7 +199,7 @@ const handleAdd = () => {
     formData.value = {
         id: 0,
         staff_id: 0,
-        advance_days: 1,
+        advance_days: 3,
         max_orders_per_day: 1,
         interval_hours: 0,
         work_start_time: '09:00',
@@ -211,7 +216,7 @@ const handleEdit = (row: any) => {
     formData.value = {
         id: row.id,
         staff_id: row.staff_id,
-        advance_days: 1,
+        advance_days: row.advance_days ?? 3,
         max_orders_per_day: row.max_orders_per_day,
         interval_hours: row.interval_hours,
         work_start_time: row.work_start_time,
