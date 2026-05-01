@@ -255,6 +255,12 @@ import {
     getRewardRules
 } from '@/packages/common/api/review'
 import { useThemeStore } from '@/stores/theme'
+import {
+    ensureMiniProgramReviewModeConfig,
+    isMiniProgramReviewMode,
+    leaveBlockedMiniProgramReviewPage,
+    showMiniProgramReviewModeTip
+} from '@/utils/miniProgramReviewMode'
 
 const $theme = useThemeStore()
 
@@ -265,6 +271,7 @@ const mediaUploading = ref(false)
 const tags = ref<any[]>([])
 const selectedTags = ref<number[]>([])
 const rewardConfig = ref<any[]>([])
+const miniProgramReviewMode = computed(() => isMiniProgramReviewMode())
 
 const formData = reactive({
     score: 5,
@@ -451,6 +458,11 @@ const handleAnonymousChange = (event: Event) => {
 
 // 提交评价
 const handleSubmit = async () => {
+    if (miniProgramReviewMode.value) {
+        showMiniProgramReviewModeTip('小程序送审模式已开启，暂不支持发表评价')
+        return
+    }
+
     if (formData.score < 1) {
         uni.showToast({ title: '请选择评分', icon: 'none' })
         return
@@ -497,7 +509,13 @@ const handleSubmit = async () => {
     }
 }
 
-onLoad((options: any) => {
+onLoad(async (options: any) => {
+    const reviewModeEnabled = await ensureMiniProgramReviewModeConfig()
+    if (reviewModeEnabled) {
+        leaveBlockedMiniProgramReviewPage()
+        return
+    }
+
     if (options.order_item_id) {
         orderItemId.value = Number(options.order_item_id)
         loadOrderItem()

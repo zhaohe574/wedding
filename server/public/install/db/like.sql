@@ -145,6 +145,7 @@ INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) 
 ('feature_switch', 'admin_dashboard', '1', 1773413108, 1773413108),
 ('feature_switch', 'admin_dashboard_user_ids', '1', 1773556898, 1773556898),
 ('feature_switch', 'comment_review_enabled', '0', 1773413108, 1773413108),
+('feature_switch', 'mini_program_review_mode', '0', 1776200000, 1776200000),
 ('feature_switch', 'staff_admin', '1', 1773413108, 1773413108),
 ('feature_switch', 'staff_center', '1', 1773413108, 1773413108),
 ('feature_switch', 'staff_tag_review_enabled', '0', 1775001600, 1775001600),

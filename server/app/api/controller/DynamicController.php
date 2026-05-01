@@ -9,6 +9,7 @@ namespace app\api\controller;
 
 use app\api\logic\DynamicLogic;
 use app\api\validate\DynamicValidate;
+use app\common\service\MiniProgramReviewModeService;
 
 /**
  * 小程序端动态控制器
@@ -119,6 +120,10 @@ class DynamicController extends BaseApiController
      */
     public function addComment()
     {
+        if (MiniProgramReviewModeService::enabled()) {
+            return $this->fail(MiniProgramReviewModeService::message('评论'));
+        }
+
         $params = (new DynamicValidate())->post()->goCheck('comment');
         $result = DynamicLogic::addComment((int)$params['dynamic_id'], $this->userId, $params);
         if ($result['success']) {

@@ -56,12 +56,19 @@
                             <view class="staff-info">
                                 <view class="staff-name">{{ item.staff_name }}</view>
                                 <view class="package-name">{{ item.package_name }}</view>
-                                <view class="pending-note"> 服务已完成，可去评价 </view>
+                            <view class="pending-note">
+                                {{
+                                    miniProgramReviewMode
+                                        ? '送审期间暂不支持发表评价'
+                                        : '服务已完成，可去评价'
+                                }}
                             </view>
-                            <button
-                                class="btn-review"
-                                :style="$theme.btnReview.value"
-                                @click="goReview(item)"
+                        </view>
+                        <button
+                            v-if="!miniProgramReviewMode"
+                            class="btn-review"
+                            :style="$theme.btnReview.value"
+                            @click="goReview(item)"
                             >
                                 去评价
                             </button>
@@ -147,6 +154,11 @@ import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { getMyReviews, getPendingOrders } from '@/packages/common/api/review'
 import { useThemeStore } from '@/stores/theme'
+import {
+    ensureMiniProgramReviewModeConfig,
+    isMiniProgramReviewMode,
+    showMiniProgramReviewModeTip
+} from '@/utils/miniProgramReviewMode'
 
 const themeStore = useThemeStore()
 const $theme = {
@@ -175,6 +187,7 @@ const reviewedPage = ref(1)
 const hasMorePending = ref(true)
 const hasMoreReviewed = ref(true)
 const hasInitialized = ref(false)
+const miniProgramReviewMode = computed(() => isMiniProgramReviewMode())
 
 const getStatusClass = (status: number) => {
     const map: Record<number, string> = {
@@ -273,6 +286,11 @@ const refreshCurrentTab = () => {
 }
 
 const goReview = (item: any) => {
+    if (miniProgramReviewMode.value) {
+        showMiniProgramReviewModeTip('小程序送审模式已开启，暂不支持发表评价')
+        return
+    }
+
     uni.navigateTo({
         url: `/packages/pages/review/publish?order_item_id=${item.id}`
     })
@@ -293,6 +311,7 @@ onReachBottom(() => {
 })
 
 onMounted(() => {
+    ensureMiniProgramReviewModeConfig()
     loadPendingList(true)
 })
 

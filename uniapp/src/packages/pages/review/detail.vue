@@ -143,7 +143,7 @@
                 <view class="section-header">
                     <view class="section-title">晒单奖励</view>
                     <view
-                        v-if="review.can_apply_share_reward"
+                        v-if="review.can_apply_share_reward && !miniProgramReviewMode"
                         class="apply-btn"
                         :style="{ background: primaryGradient }"
                         @click="openSharePopup"
@@ -155,6 +155,7 @@
                 <text class="section-tip">
                     {{
                         review.can_apply_share_reward
+                            && !miniProgramReviewMode
                             ? '审核通过后可申请晒单奖励。'
                             : shareRewardDisabledText
                     }}
@@ -305,12 +306,18 @@ import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import { getReviewDetail, applyShareReward } from '@/packages/common/api/review'
 import { uploadImage } from '@/api/app'
 import { useThemeStore } from '@/stores/theme'
+import {
+    ensureMiniProgramReviewModeConfig,
+    isMiniProgramReviewMode,
+    showMiniProgramReviewModeTip
+} from '@/utils/miniProgramReviewMode'
 
 const $theme = useThemeStore()
 
 const reviewId = ref(0)
 const review = ref<any>(null)
 const showSharePopup = ref(false)
+const miniProgramReviewMode = computed(() => isMiniProgramReviewMode())
 const shareForm = reactive({
     share_platform: '',
     verify_image: '',
@@ -374,6 +381,10 @@ const rewardPendingText = computed(() => {
 })
 
 const shareRewardDisabledText = computed(() => {
+    if (miniProgramReviewMode.value) {
+        return '送审期间暂不支持申请晒单奖励。'
+    }
+
     if (Number(review.value?.status) === 2) {
         return '当前不可申请晒单奖励。'
     }
@@ -430,6 +441,11 @@ const fetchDetail = async () => {
 }
 
 const openSharePopup = () => {
+    if (miniProgramReviewMode.value) {
+        showMiniProgramReviewModeTip('小程序送审模式已开启，暂不支持申请晒单奖励')
+        return
+    }
+
     resetShareForm()
     showSharePopup.value = true
 }
@@ -472,6 +488,11 @@ const chooseVerifyImage = () => {
 }
 
 const submitShareReward = async () => {
+    if (miniProgramReviewMode.value) {
+        showMiniProgramReviewModeTip('小程序送审模式已开启，暂不支持申请晒单奖励')
+        return
+    }
+
     if (shareForm.submitting || shareForm.uploading) {
         return
     }
@@ -503,6 +524,7 @@ const submitShareReward = async () => {
 
 onLoad((options: any) => {
     reviewId.value = Number(options?.id || 0)
+    ensureMiniProgramReviewModeConfig()
     fetchDetail()
 })
 

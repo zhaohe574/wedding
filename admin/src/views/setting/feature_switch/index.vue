@@ -9,6 +9,7 @@
             </div>
             <div class="feature-switch__intro-tags">
                 <span class="feature-switch__intro-tag">服务人员工作台</span>
+                <span class="feature-switch__intro-tag">小程序送审模式</span>
                 <span class="feature-switch__intro-tag">动态评论审核</span>
                 <span class="feature-switch__intro-tag">管理员看板访问</span>
                 <span class="feature-switch__intro-tag">服务完成确认</span>
@@ -21,9 +22,15 @@
             <el-card shadow="never" class="feature-switch__card !border-none">
                 <div class="feature-switch__section-header">
                     <div class="feature-switch__section-title">动态社区</div>
-                    <div class="feature-switch__section-desc">控制动态评论发布后的审核策略，影响评论是否需要后台审核后展示。</div>
+                    <div class="feature-switch__section-desc">控制小程序送审期间的新增内容入口，以及动态评论发布后的审核策略。</div>
                 </div>
 
+                <el-form-item label="小程序送审模式">
+                    <div class="feature-switch__inline-control">
+                        <el-switch v-model="formData.mini_program_review_mode" :active-value="1" :inactive-value="0" />
+                        <span class="feature-switch__helper">开启后，小程序端隐藏并拦截发布动态、发表评论、发表评价、追评和晒单奖励申请；已有内容继续展示。</span>
+                    </div>
+                </el-form-item>
                 <el-form-item label="评论审核">
                     <div class="feature-switch__inline-control">
                         <el-switch v-model="formData.comment_review_enabled" :active-value="1" :inactive-value="0" />
@@ -221,6 +228,7 @@ import {
 
 const formData = reactive({
     comment_review_enabled: 0,
+    mini_program_review_mode: 0,
     staff_center: 1,
     staff_admin: 1,
     staff_tag_review_enabled: 0,
@@ -253,6 +261,7 @@ const handleSubmit = async () => {
     await Promise.all([
         setFeatureSwitchConfig({
             comment_review_enabled: formData.comment_review_enabled,
+            mini_program_review_mode: formData.mini_program_review_mode,
             staff_center: formData.staff_center,
             staff_admin: formData.staff_admin,
             staff_tag_review_enabled: formData.staff_tag_review_enabled,

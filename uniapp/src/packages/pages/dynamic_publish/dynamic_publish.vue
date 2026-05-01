@@ -251,6 +251,13 @@ import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
 
 import cache from '@/utils/cache'
 
+import {
+    ensureMiniProgramReviewModeConfig,
+    isMiniProgramReviewMode,
+    leaveBlockedMiniProgramReviewPage,
+    showMiniProgramReviewModeTip
+} from '@/utils/miniProgramReviewMode'
+
 const $theme = useThemeStore()
 
 const dynamicTypes = [
@@ -302,6 +309,8 @@ const tagInput = ref('')
 const showVisiblePicker = ref(false)
 
 const publishing = ref(false)
+
+const miniProgramReviewMode = computed(() => isMiniProgramReviewMode())
 
 const pageStyle = computed(() => {
     const base = String($theme.pageStyle || '').trim()
@@ -478,6 +487,11 @@ const selectVisible = (index: number) => {
 }
 
 const handlePublish = async () => {
+    if (miniProgramReviewMode.value) {
+        showMiniProgramReviewModeTip('小程序送审模式已开启，暂不支持发布动态')
+        return
+    }
+
     if (!canPublish.value) return
 
     if (publishing.value) return
@@ -537,7 +551,13 @@ const handlePublish = async () => {
     }
 }
 
-onLoad(() => {
+onLoad(async () => {
+    const reviewModeEnabled = await ensureMiniProgramReviewModeConfig()
+    if (reviewModeEnabled) {
+        leaveBlockedMiniProgramReviewPage()
+        return
+    }
+
     fetchHotTags()
 })
 </script>

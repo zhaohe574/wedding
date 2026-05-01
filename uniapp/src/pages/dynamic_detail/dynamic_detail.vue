@@ -135,7 +135,11 @@
                                     {{ formatCount(detail.like_count) }}
                                 </text>
                             </view>
-                            <view class="dynamic-detail__stat-pill" @click="showCommentInput">
+                            <view
+                                class="dynamic-detail__stat-pill"
+                                :class="{ 'is-disabled': miniProgramReviewMode }"
+                                @click="handleCommentStatClick"
+                            >
                                 <text class="dynamic-detail__stat-label">评论</text>
                                 <text class="dynamic-detail__stat-text">
                                     {{ formatCount(detail.comment_count) }}
@@ -232,6 +236,7 @@
                                         </text>
                                         <view class="dynamic-detail__comment-actions">
                                             <text
+                                                v-if="!miniProgramReviewMode"
                                                 class="dynamic-detail__comment-action"
                                                 @tap.stop="replyComment(item)"
                                             >
@@ -293,6 +298,7 @@
                                                 </text>
                                                 <view class="dynamic-detail__comment-actions">
                                                     <text
+                                                        v-if="!miniProgramReviewMode"
                                                         class="dynamic-detail__comment-action"
                                                         @tap.stop="replyComment(reply)"
                                                     >
@@ -448,6 +454,11 @@ import {
 } from '@/api/dynamic'
 import { toggleStaffFavorite } from '@/api/staff'
 import cache from '@/utils/cache'
+import {
+    ensureMiniProgramReviewModeConfig,
+    isMiniProgramReviewMode,
+    showMiniProgramReviewModeTip
+} from '@/utils/miniProgramReviewMode'
 
 const $theme = useThemeStore()
 const userStore = useUserStore()
@@ -455,6 +466,7 @@ const navBarMetrics = useNavBarMetrics()
 const commentPopupMaskZIndex = 20118
 const commentPopupZIndex = 20120
 const userId = computed(() => userStore.userInfo?.id)
+const miniProgramReviewMode = computed(() => isMiniProgramReviewMode())
 
 type DynamicReplyItem = {
     id: string | number
@@ -1023,6 +1035,11 @@ const insertEmoji = (emoji: string) => {
 }
 
 const showCommentInput = () => {
+    if (miniProgramReviewMode.value) {
+        showMiniProgramReviewModeTip('小程序送审模式已开启，暂不支持评论')
+        return
+    }
+
     if (detail.value.allow_comment !== 1) {
         uni.showToast({
             title: '该动态不允许评论',
@@ -1045,7 +1062,20 @@ const showCommentInput = () => {
     showComment.value = true
 }
 
+const handleCommentStatClick = () => {
+    if (miniProgramReviewMode.value) {
+        return
+    }
+
+    showCommentInput()
+}
+
 const replyComment = (comment: DynamicCommentItem | DynamicReplyItem) => {
+    if (miniProgramReviewMode.value) {
+        showMiniProgramReviewModeTip('小程序送审模式已开启，暂不支持回复')
+        return
+    }
+
     if (detail.value.allow_comment !== 1) {
         uni.showToast({
             title: '该动态不允许评论',
@@ -1069,6 +1099,11 @@ const replyComment = (comment: DynamicCommentItem | DynamicReplyItem) => {
 }
 
 const submitComment = async () => {
+    if (miniProgramReviewMode.value) {
+        showMiniProgramReviewModeTip('小程序送审模式已开启，暂不支持评论')
+        return
+    }
+
     const submittedContent = commentContent.value.trim()
     if (!submittedContent) return
 
@@ -1196,6 +1231,7 @@ const previewImage = (images: string[], current: number) => {
 }
 
 onLoad((options: any) => {
+    ensureMiniProgramReviewModeConfig()
     if (options.id) {
         dynamicId.value = Number(options.id)
         fetchDetail()

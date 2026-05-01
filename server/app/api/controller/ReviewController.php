@@ -9,6 +9,7 @@ namespace app\api\controller;
 
 use app\api\logic\ReviewLogic;
 use app\api\validate\ReviewValidate;
+use app\common\service\MiniProgramReviewModeService;
 
 /**
  * 小程序端评价控制器
@@ -76,6 +77,10 @@ class ReviewController extends BaseApiController
      */
     public function publish()
     {
+        if (MiniProgramReviewModeService::enabled()) {
+            return $this->fail(MiniProgramReviewModeService::message('发表评价'));
+        }
+
         $params = (new ReviewValidate())->post()->goCheck('publish');
         $params['user_id'] = $this->userId;
         $result = ReviewLogic::publish($params);
@@ -91,6 +96,10 @@ class ReviewController extends BaseApiController
      */
     public function append()
     {
+        if (MiniProgramReviewModeService::enabled()) {
+            return $this->fail(MiniProgramReviewModeService::message('追评'));
+        }
+
         $params = (new ReviewValidate())->post()->goCheck('append');
         $params['user_id'] = $this->userId;
         $result = ReviewLogic::append($params);
@@ -138,6 +147,10 @@ class ReviewController extends BaseApiController
      */
     public function applyShareReward()
     {
+        if (MiniProgramReviewModeService::enabled()) {
+            return $this->fail(MiniProgramReviewModeService::message('晒单奖励申请'));
+        }
+
         $params = (new ReviewValidate())->post()->goCheck('shareReward');
         $params['user_id'] = $this->userId;
         $result = ReviewLogic::applyShareReward($params);
