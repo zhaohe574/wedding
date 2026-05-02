@@ -21,9 +21,6 @@ class ScheduleRuleValidate extends BaseValidate
         'staff_id' => 'integer|egt:0',
         'advance_days' => 'integer|between:0,365',
         'max_orders_per_day' => 'integer|between:1,10',
-        'interval_hours' => 'integer|between:0,24',
-        'work_start_time' => 'date_format:H:i',
-        'work_end_time' => 'date_format:H:i',
         'rest_days' => 'array|max:7',
         'is_enabled' => 'in:0,1',
     ];
@@ -35,9 +32,6 @@ class ScheduleRuleValidate extends BaseValidate
         'staff_id.egt' => '工作人员ID不能为负数',
         'advance_days.between' => '提前预约天数应在0-365之间',
         'max_orders_per_day.between' => '单日最大接单数应在1-10之间',
-        'interval_hours.between' => '订单间隔时间应在0-24小时之间',
-        'work_start_time.date_format' => '工作开始时间格式错误',
-        'work_end_time.date_format' => '工作结束时间格式错误',
         'rest_days.array' => '休息日格式错误',
         'rest_days.max' => '休息日最多7天',
         'is_enabled.in' => '启用状态参数错误',
@@ -58,7 +52,7 @@ class ScheduleRuleValidate extends BaseValidate
      */
     public function sceneAdd()
     {
-        return $this->only(['staff_id', 'advance_days', 'max_orders_per_day', 'interval_hours', 'work_start_time', 'work_end_time', 'rest_days', 'is_enabled']);
+        return $this->only(['staff_id', 'advance_days', 'max_orders_per_day', 'rest_days', 'is_enabled']);
     }
 
     /**
@@ -67,7 +61,7 @@ class ScheduleRuleValidate extends BaseValidate
      */
     public function sceneEdit()
     {
-        return $this->only(['id', 'advance_days', 'max_orders_per_day', 'interval_hours', 'work_start_time', 'work_end_time', 'rest_days', 'is_enabled']);
+        return $this->only(['id', 'advance_days', 'max_orders_per_day', 'rest_days', 'is_enabled']);
     }
 
     /**

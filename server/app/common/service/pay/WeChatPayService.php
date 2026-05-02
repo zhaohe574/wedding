@@ -27,6 +27,8 @@ use app\common\model\user\UserAuth;
 use app\common\service\wechat\WeChatConfigService;
 use EasyWeChat\Pay\Application;
 use EasyWeChat\Pay\Message;
+use Nyholm\Psr7\Response;
+use think\facade\Log;
 
 
 /**
@@ -400,6 +402,54 @@ class WeChatPayService extends BasePayService
         return $this->app->getUtils()->buildBridgeConfig($prepayId, $appId);
     }
 
+    /**
+     * @notes 微信支付回调失败响应
+     * @param string $message
+     * @return Response
+     */
+    protected function failNotifyResponse(string $message): Response
+    {
+        return new Response(
+            500,
+            [],
+            json_encode([
+                'code' => 'ERROR',
+                'message' => $message,
+            ], JSON_UNESCAPED_UNICODE)
+        );
+    }
+
+    /**
+     * @notes 记录微信支付回调异常上下文
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    protected function logNotifyError(string $message, array $context = []): void
+    {
+        Log::write('微信支付回调处理失败：' . json_encode(array_merge([
+            'message' => $message,
+            'terminal' => $this->terminal,
+        ], $context), JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * @notes 构造微信支付回调日志上下文
+     * @param Message $message
+     * @return array
+     */
+    protected function buildNotifyLogContext(Message $message): array
+    {
+        $outTradeNo = (string)($message['out_trade_no'] ?? '');
+        return [
+            'payment_sn' => $outTradeNo,
+            'out_trade_no' => $outTradeNo,
+            'transaction_id' => (string)($message['transaction_id'] ?? ''),
+            'attach' => (string)($message['attach'] ?? ''),
+            'trade_state' => (string)($message['trade_state'] ?? ''),
+        ];
+    }
+
 
     /**
      * @notes 支付回调
@@ -437,15 +487,48 @@ class WeChatPayService extends BasePayService
                         if($order->isEmpty() || $order->pay_status == PayEnum::ISPAID) {
                             return true;
                         }
-                        PayNotifyLogic::handle('recharge', $rechargeSn, $extra);
-                        break;
+                        $result = PayNotifyLogic::handle('recharge', $rechargeSn, $extra);
+                        if ($result !== true) {
+                            $reason = is_string($result) && $result !== '' ? $result : '充值支付回调处理失败';
+                            $this->logNotifyError($reason, array_merge(
+                                $this->buildNotifyLogContext($message),
+                                ['recharge_sn' => $rechargeSn]
+                            ));
+                            return $this->failNotifyResponse($reason);
+                        }
+                        return true;
                     case 'order':
                         $payment = OrderPayment::where(['payment_sn' => $message['out_trade_no']])->findOrEmpty();
-                        if ($payment->isEmpty() || (int)$payment->pay_status === OrderPayment::STATUS_PAID) {
+                        if ($payment->isEmpty()) {
+                            $reason = '订单支付流水不存在';
+                            $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
+                            return $this->failNotifyResponse($reason);
+                        }
+                        if ((int)$payment->pay_status === OrderPayment::STATUS_PAID) {
                             return true;
                         }
-                        PayNotifyLogic::handle('order', $message['out_trade_no'], $extra);
-                        break;
+                        $result = PayNotifyLogic::handle('order', $message['out_trade_no'], $extra);
+                        if (is_array($result) && !empty($result['late_callback_exception'])) {
+                            $reason = '订单支付回调状态异常';
+                            $this->logNotifyError($reason, array_merge(
+                                $this->buildNotifyLogContext($message),
+                                [
+                                    'order_id' => (int)($result['order_id'] ?? 0),
+                                    'refund_id' => (int)($result['refund_id'] ?? 0),
+                                ]
+                            ));
+                            return $this->failNotifyResponse($reason);
+                        }
+                        if (!is_array($result)) {
+                            $reason = is_string($result) && $result !== '' ? $result : '订单支付回调处理失败';
+                            $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
+                            return $this->failNotifyResponse($reason);
+                        }
+                        return true;
+                    default:
+                        $reason = '微信支付回调attach异常';
+                        $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
+                        return $this->failNotifyResponse($reason);
                 }
             }
             return true;

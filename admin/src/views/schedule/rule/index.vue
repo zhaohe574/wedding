@@ -30,16 +30,6 @@
                     </template>
                 </el-table-column>
                 <el-table-column prop="max_orders_per_day" label="单日最大接单" width="120" />
-                <el-table-column label="订单间隔" width="120">
-                    <template #default="{ row }">
-                        {{ row.interval_hours ?? 0 }} 小时
-                    </template>
-                </el-table-column>
-                <el-table-column label="工作时间" width="140">
-                    <template #default="{ row }">
-                        {{ row.work_start_time }} - {{ row.work_end_time }}
-                    </template>
-                </el-table-column>
                 <el-table-column prop="rest_days_desc" label="休息日" min-width="150" />
                 <el-table-column label="状态" width="80">
                     <template #default="{ row }">
@@ -88,31 +78,6 @@
                 </el-form-item>
                 <el-form-item label="单日最大接单" prop="max_orders_per_day">
                     <el-input-number v-model="formData.max_orders_per_day" :min="1" :max="10" style="width: 100%" />
-                </el-form-item>
-                <el-form-item label="订单间隔时间" prop="interval_hours">
-                    <el-input-number v-model="formData.interval_hours" :min="0" :max="24" style="width: 100%" />
-                    <div class="text-gray-400 text-xs mt-1">当前为全天预约模型，仅作为规则展示，不单独阻塞下单。</div>
-                </el-form-item>
-                <el-form-item label="工作时间">
-                    <div class="flex items-center gap-2 w-full">
-                        <el-time-select
-                            v-model="formData.work_start_time"
-                            start="06:00"
-                            end="23:00"
-                            step="00:30"
-                            placeholder="开始时间"
-                            style="width: 45%"
-                        />
-                        <span>至</span>
-                        <el-time-select
-                            v-model="formData.work_end_time"
-                            start="06:00"
-                            end="23:00"
-                            step="00:30"
-                            placeholder="结束时间"
-                            style="width: 45%"
-                        />
-                    </div>
                 </el-form-item>
                 <el-form-item label="休息日">
                     <el-checkbox-group v-model="formData.rest_days">
@@ -165,9 +130,6 @@ const formData = ref({
     staff_id: 0,
     advance_days: 3,
     max_orders_per_day: 1,
-    interval_hours: 0,
-    work_start_time: '09:00',
-    work_end_time: '18:00',
     rest_days: [] as number[],
     is_enabled: 1
 })
@@ -201,9 +163,6 @@ const handleAdd = () => {
         staff_id: 0,
         advance_days: 3,
         max_orders_per_day: 1,
-        interval_hours: 0,
-        work_start_time: '09:00',
-        work_end_time: '18:00',
         rest_days: [],
         is_enabled: 1
     }
@@ -218,9 +177,6 @@ const handleEdit = (row: any) => {
         staff_id: row.staff_id,
         advance_days: row.advance_days ?? 3,
         max_orders_per_day: row.max_orders_per_day,
-        interval_hours: row.interval_hours,
-        work_start_time: row.work_start_time,
-        work_end_time: row.work_end_time,
         rest_days: row.rest_days_arr || [],
         is_enabled: row.is_enabled
     }

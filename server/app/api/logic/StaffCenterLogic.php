@@ -68,7 +68,7 @@ class StaffCenterLogic extends BaseLogic
         $data['price_text'] = $displayPrice['price_text'];
 
         // 统计数据
-        $data['orderCount'] = (int) self::buildStaffRelatedOrderBaseQuery((int) $staff->id)->count();
+        $data['orderCount'] = (int) self::buildStaffFollowableOrderBaseQuery((int) $staff->id)->count();
 
         $data['workCount'] = StaffWork::where('staff_id', $staff->id)
             ->where('delete_time', null)
@@ -335,6 +335,19 @@ class StaffCenterLogic extends BaseLogic
         return Order::whereIn('id', function ($subQuery) use ($staffId) {
             self::applyStaffOrderIdSubQuery($subQuery, $staffId);
         });
+    }
+
+    /**
+     * @notes 构造服务人员可跟进订单基础查询
+     */
+    private static function buildStaffFollowableOrderBaseQuery(int $staffId)
+    {
+        return self::buildStaffRelatedOrderBaseQuery($staffId)
+            ->whereNotIn('order_status', [
+                Order::STATUS_CANCELLED,
+                Order::STATUS_REFUNDED,
+                Order::STATUS_USER_DELETED,
+            ]);
     }
 
     /**

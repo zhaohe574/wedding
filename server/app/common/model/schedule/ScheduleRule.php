@@ -98,9 +98,6 @@ class ScheduleRule extends BaseModel
             return [
                 'advance_days' => 3,
                 'max_orders_per_day' => 1,
-                'interval_hours' => 0,
-                'work_start_time' => '09:00',
-                'work_end_time' => '18:00',
                 'rest_days' => [],
             ];
         }

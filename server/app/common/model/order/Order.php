@@ -1283,6 +1283,7 @@ class Order extends BaseModel
                     '订单%s因服务人员确认超时，系统已自动同意，请尽快完成支付。',
                     '订单已自动同意，请支付'
                 );
+                OrderNotificationService::notifyStaffOnOrderAutoConfirmed($orderId);
             }
 
             return [true, '订单已自动同意'];

@@ -50,7 +50,7 @@ class ScheduleRuleLists extends BaseAdminDataLists
             ->toArray();
 
         foreach ($lists as &$item) {
-            $item['rest_days_arr'] = $item['rest_days'] ? explode(',', $item['rest_days']) : [];
+            $item['rest_days_arr'] = ScheduleRule::normalizeRestDays($item['rest_days'] ?? '');
             $item['rest_days_desc'] = $this->getRestDaysDesc($item['rest_days_arr']);
             $item['type_desc'] = $item['staff_id'] == 0 ? '全局规则' : '个人规则';
         }

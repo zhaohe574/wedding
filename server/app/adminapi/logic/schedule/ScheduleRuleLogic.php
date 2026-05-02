@@ -29,7 +29,7 @@ class ScheduleRuleLogic extends BaseLogic
             return [];
         }
         $data = $rule->toArray();
-        $data['rest_days_arr'] = $rule->rest_days ? explode(',', $rule->rest_days) : [];
+        $data['rest_days_arr'] = ScheduleRule::normalizeRestDays($rule->rest_days ?? '');
         return $data;
     }
 
@@ -61,9 +61,6 @@ class ScheduleRuleLogic extends BaseLogic
                 'staff_id' => $params['staff_id'] ?? 0,
                 'advance_days' => $params['advance_days'] ?? 3,
                 'max_orders_per_day' => $params['max_orders_per_day'] ?? 1,
-                'interval_hours' => $params['interval_hours'] ?? 0,
-                'work_start_time' => $params['work_start_time'] ?? '09:00',
-                'work_end_time' => $params['work_end_time'] ?? '18:00',
                 'rest_days' => is_array($params['rest_days'] ?? '') ? implode(',', $params['rest_days']) : ($params['rest_days'] ?? ''),
                 'is_enabled' => $params['is_enabled'] ?? 1,
                 'create_time' => time(),
@@ -92,9 +89,6 @@ class ScheduleRuleLogic extends BaseLogic
 
             $rule->advance_days = $params['advance_days'] ?? $rule->advance_days;
             $rule->max_orders_per_day = $params['max_orders_per_day'] ?? $rule->max_orders_per_day;
-            $rule->interval_hours = $params['interval_hours'] ?? $rule->interval_hours;
-            $rule->work_start_time = $params['work_start_time'] ?? $rule->work_start_time;
-            $rule->work_end_time = $params['work_end_time'] ?? $rule->work_end_time;
             $rule->rest_days = is_array($params['rest_days'] ?? '') ? implode(',', $params['rest_days']) : ($params['rest_days'] ?? $rule->rest_days);
             $rule->is_enabled = $params['is_enabled'] ?? $rule->is_enabled;
             $rule->update_time = time();
@@ -171,7 +165,7 @@ class ScheduleRuleLogic extends BaseLogic
             return [];
         }
         $data = $rule->toArray();
-        $data['rest_days_arr'] = $rule->rest_days ? explode(',', $rule->rest_days) : [];
+        $data['rest_days_arr'] = ScheduleRule::normalizeRestDays($rule->rest_days ?? '');
         return $data;
     }
 
@@ -199,7 +193,7 @@ class ScheduleRuleLogic extends BaseLogic
         }
 
         $data = $rule->toArray();
-        $data['rest_days_arr'] = $rule->rest_days ? explode(',', $rule->rest_days) : [];
+        $data['rest_days_arr'] = ScheduleRule::normalizeRestDays($rule->rest_days ?? '');
         $data['is_global'] = $rule->staff_id == 0;
         return $data;
     }

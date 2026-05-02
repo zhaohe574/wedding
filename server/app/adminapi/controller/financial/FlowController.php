@@ -60,6 +60,8 @@ class FlowController extends BaseAdminController
         
         $stats = FinancialFlow::getFlowStats($startDate, $endDate);
         $incomeByPayWay = FinancialFlow::getIncomeByPayWay($startDate, $endDate);
+        $totalIncome = (float)$stats['total_income'];
+        $totalExpense = (float)$stats['total_expense'];
         
         $payWayLabels = FinancialFlow::getPayWayDesc();
         $payWayStats = [];
@@ -67,15 +69,15 @@ class FlowController extends BaseAdminController
             $payWayStats[] = [
                 'pay_way' => $way,
                 'label' => $label,
-                'amount' => round($incomeByPayWay[$way] ?? 0, 2),
+                'amount' => round((float)($incomeByPayWay[$way] ?? 0), 2),
             ];
         }
         
         return $this->success('获取成功', [
-            'total_count' => $stats['total_count'],
-            'total_income' => round($stats['total_income'], 2),
-            'total_expense' => round($stats['total_expense'], 2),
-            'net_amount' => round($stats['total_income'] - $stats['total_expense'], 2),
+            'total_count' => (int)$stats['total_count'],
+            'total_income' => round($totalIncome, 2),
+            'total_expense' => round($totalExpense, 2),
+            'net_amount' => round($totalIncome - $totalExpense, 2),
             'by_pay_way' => $payWayStats,
         ]);
     }

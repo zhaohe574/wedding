@@ -29,7 +29,7 @@ use app\common\service\pay\WeChatPayService;
 class PayController extends BaseApiController
 {
 
-    public array $notNeedLogin = ['notifyMnp', 'notifyOa', 'aliNotify'];
+    public array $notNeedLogin = ['notifyMnp', 'notifyOa', 'notifyApp', 'aliNotify'];
 
     /**
      * @notes 支付方式
@@ -119,6 +119,19 @@ class PayController extends BaseApiController
     public function notifyOa()
     {
         return (new WeChatPayService(UserTerminalEnum::WECHAT_OA))->notify();
+    }
+
+    /**
+     * @notes App支付回调
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \EasyWeChat\Kernel\Exceptions\InvalidArgumentException
+     * @throws \EasyWeChat\Kernel\Exceptions\RuntimeException
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    public function notifyApp()
+    {
+        return (new WeChatPayService(UserTerminalEnum::IOS))->notify();
     }
 
     /**

@@ -1062,9 +1062,6 @@ CREATE TABLE `la_schedule_rule` (
     `staff_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '工作人员ID（0=全局规则）',
     `advance_days` INT UNSIGNED NOT NULL DEFAULT 3 COMMENT '提前预约天数',
     `max_orders_per_day` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '单日最大接单数',
-    `interval_hours` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单间隔时间（小时）',
-    `work_start_time` VARCHAR(10) NOT NULL DEFAULT '09:00' COMMENT '工作开始时间',
-    `work_end_time` VARCHAR(10) NOT NULL DEFAULT '18:00' COMMENT '工作结束时间',
     `rest_days` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '休息日（逗号分隔，0=周日,1=周一...）',
     `is_enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '是否启用：0=否,1=是',
     `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
@@ -1076,8 +1073,8 @@ CREATE TABLE `la_schedule_rule` (
 -- Records of la_schedule_rule
 -- ----------------------------
 BEGIN;
-INSERT INTO `la_schedule_rule` (`id`, `staff_id`, `advance_days`, `max_orders_per_day`, `interval_hours`, `work_start_time`, `work_end_time`, `rest_days`, `is_enabled`, `create_time`, `update_time`) VALUES
-(1, 0, 3, 1, 0, '08:00', '20:00', '', 1, 1773413104, 1773413104);
+INSERT INTO `la_schedule_rule` (`id`, `staff_id`, `advance_days`, `max_orders_per_day`, `rest_days`, `is_enabled`, `create_time`, `update_time`) VALUES
+(1, 0, 3, 1, '', 1, 1773413104, 1773413104);
 COMMIT;
 DROP TABLE IF EXISTS `la_schedule`;
 CREATE TABLE `la_schedule` (

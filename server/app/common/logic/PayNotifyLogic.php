@@ -38,7 +38,7 @@ class PayNotifyLogic extends BaseLogic
             $result = self::$action($orderSn, $extra);
             Db::commit();
             self::dispatchAfterCommit($action, $result);
-            return true;
+            return $action === 'order' ? $result : true;
         } catch (\Exception $e) {
             Db::rollback();
             Log::write(implode('-', [

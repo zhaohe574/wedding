@@ -581,7 +581,7 @@ class OrderNotificationService
      */
     public static function notifyUserAndStaffOnOrderCancelled(int $orderId, int $operatorType, string $reason = ''): void
     {
-        $order = Order::find($orderId);
+        $order = Order::with(['items'])->find($orderId);
         if (!$order) {
             return;
         }
@@ -600,7 +600,39 @@ class OrderNotificationService
             );
         }
 
-        self::sendStaffOrderNotice($orderId, '订单已取消', $content, $reasonText);
+        self::sendStaffOrderNotice($orderId, '订单已取消', $content, $reasonText, [
+            'use_wecom_card' => true,
+            'card_order' => $order,
+            'card_action' => '订单已取消',
+            'card_notice' => '请关注客户沟通与后续档期安排。',
+            'card_reason' => $reasonText,
+        ]);
+    }
+
+    /**
+     * 订单自动同意后通知服务人员。
+     */
+    public static function notifyStaffOnOrderAutoConfirmed(int $orderId): void
+    {
+        $order = Order::with(['items'])->find($orderId);
+        if (!$order) {
+            return;
+        }
+
+        self::sendStaffOrderNotice(
+            $orderId,
+            '订单已自动同意',
+            sprintf('订单%s因服务人员确认超时，系统已自动同意，订单进入待支付。', (string)$order->order_sn),
+            '服务人员确认超时，系统已自动同意，订单进入待支付',
+            [
+                'skip_station' => true,
+                'use_wecom_card' => true,
+                'card_order' => $order,
+                'card_action' => '订单已自动同意',
+                'card_notice' => '系统已将订单推进到待支付，请关注客户支付进展。',
+                'card_reason' => '服务人员确认超时，系统已自动同意',
+            ]
+        );
     }
 
     /**
@@ -1576,9 +1608,18 @@ class OrderNotificationService
     /**
      * 给订单关联服务人员发送站内消息与企微内部提醒。
      */
-    private static function sendStaffOrderNotice(int $orderId, string $title, string $content, string $summary = ''): void
+    private static function sendStaffOrderNotice(
+        int $orderId,
+        string $title,
+        string $content,
+        string $summary = '',
+        array $options = []
+    ): void
     {
-        $order = Order::find($orderId);
+        $order = $options['card_order'] ?? null;
+        if (!$order instanceof Order) {
+            $order = Order::find($orderId);
+        }
         if (!$order) {
             return;
         }
@@ -1589,7 +1630,7 @@ class OrderNotificationService
         }
 
         $staffUserIds = self::getOrderStaffUserIds($staffIds);
-        if (!empty($staffUserIds)) {
+        if (empty($options['skip_station']) && !empty($staffUserIds)) {
             try {
                 StationNotificationService::batchSend(
                     $staffUserIds,
@@ -1605,6 +1646,24 @@ class OrderNotificationService
         }
 
         try {
+            if (!empty($options['use_wecom_card'])) {
+                $card = self::buildOrderWecomTextCard(
+                    $order,
+                    $title,
+                    (string)($options['card_action'] ?? $title),
+                    (string)($options['card_reason'] ?? ($summary !== '' ? $summary : $content)),
+                    (string)($options['card_notice'] ?? '请登录系统查看详情。')
+                );
+                WeComMessageService::sendTextCardToStaff(
+                    $staffIds,
+                    $card['title'],
+                    $card['description'],
+                    $card['url'],
+                    $card['button_text']
+                );
+                return;
+            }
+
             $message = $title . "\n"
                 . '订单号：' . (string) $order->order_sn . "\n"
                 . '摘要：' . ($summary !== '' ? $summary : $content) . "\n"
@@ -1613,6 +1672,135 @@ class OrderNotificationService
         } catch (\Throwable $e) {
             Log::error('服务人员订单企微提醒失败：' . $e->getMessage());
         }
+    }
+
+    /**
+     * 组装订单企业微信卡片。
+     */
+    private static function buildOrderWecomTextCard(
+        Order $order,
+        string $title,
+        string $actionText,
+        string $reasonText,
+        string $noticeText
+    ): array {
+        $serviceDate = self::resolveServiceDate($order);
+        $serviceName = self::resolveServiceName($order);
+        $contactName = trim((string)($order->contact_name ?? ''));
+        $contactMobile = trim((string)($order->contact_mobile ?? ''));
+        $payAmount = number_format((float)($order->pay_amount ?? 0), 2, '.', '');
+        $handledAt = date('Y-m-d H:i:s');
+
+        $lines = [
+            '<div class="gray">订单状态更新</div>',
+            '<div class="normal">' . self::escapeWecomCardText($actionText) . '</div>',
+            '订单号：' . self::escapeWecomCardText((string)($order->order_sn ?? '')),
+        ];
+
+        if ($serviceDate !== '') {
+            $lines[] = '服务日期：' . self::escapeWecomCardText($serviceDate);
+        }
+        if ($serviceName !== '') {
+            $lines[] = '服务项目：' . self::escapeWecomCardText($serviceName);
+        }
+        if ($contactName !== '') {
+            $lines[] = '联系人：' . self::escapeWecomCardText($contactName);
+        }
+        if ($contactMobile !== '') {
+            $lines[] = '手机号：' . self::escapeWecomCardText($contactMobile);
+        }
+        $lines[] = '订单金额：￥' . self::escapeWecomCardText($payAmount);
+        if (trim($reasonText) !== '') {
+            $lines[] = '处理说明：' . self::escapeWecomCardText($reasonText);
+        }
+        $lines[] = '处理时间：' . self::escapeWecomCardText($handledAt);
+        if (trim($noticeText) !== '') {
+            $lines[] = '<div class="highlight">' . self::escapeWecomCardText($noticeText) . '</div>';
+        }
+
+        return [
+            'title' => $title,
+            'description' => implode('<br>', $lines),
+            'url' => self::buildStaffOrderDetailUrl((int)$order->id),
+            'button_text' => '查看订单',
+        ];
+    }
+
+    /**
+     * 构造服务人员订单详情跳转地址。
+     */
+    private static function buildStaffOrderDetailUrl(int $orderId): string
+    {
+        $path = '/admin/staff_center/order?detail_id=' . $orderId;
+        $domain = self::resolveRequestDomain();
+        if ($domain !== '') {
+            return rtrim($domain, '/') . $path;
+        }
+
+        return $path;
+    }
+
+    /**
+     * 解析当前可用域名，兼容命令行定时任务。
+     */
+    private static function resolveRequestDomain(): string
+    {
+        try {
+            $domain = trim((string)request()->domain());
+            if ($domain !== '') {
+                return $domain;
+            }
+        } catch (\Throwable $e) {
+        }
+
+        $candidates = [
+            ConfigService::get('web_page', 'page_url', ''),
+        ];
+
+        foreach ($candidates as $candidate) {
+            $domain = self::normalizeDomain($candidate);
+            if ($domain !== '') {
+                return $domain;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * 规范化域名配置。
+     */
+    private static function normalizeDomain($value): string
+    {
+        $value = trim((string)$value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (!str_starts_with($value, 'http://') && !str_starts_with($value, 'https://')) {
+            $value = 'https://' . $value;
+        }
+
+        $parts = parse_url($value);
+        if (empty($parts['host'])) {
+            return '';
+        }
+
+        $scheme = $parts['scheme'] ?? 'https';
+        $domain = $scheme . '://' . $parts['host'];
+        if (!empty($parts['port'])) {
+            $domain .= ':' . $parts['port'];
+        }
+
+        return $domain;
+    }
+
+    /**
+     * 转义企业微信卡片描述文本。
+     */
+    private static function escapeWecomCardText(string $text): string
+    {
+        return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
     /**
@@ -1740,23 +1928,19 @@ class OrderNotificationService
     private static function resolveCancelReasonText(int $operatorType, string $reason = ''): string
     {
         $reason = trim($reason);
-        if ($reason !== '') {
-            return $reason;
-        }
-
         if ($operatorType === OrderLog::OPERATOR_USER) {
-            return '用户主动取消';
+            return $reason !== '' ? '用户主动取消：' . $reason : '用户主动取消';
         }
 
         if ($operatorType === OrderLog::OPERATOR_ADMIN) {
-            return '后台取消';
+            return $reason !== '' ? '后台取消：' . $reason : '后台取消';
         }
 
         if ($operatorType === OrderLog::OPERATOR_SYSTEM) {
-            return '支付超时自动取消';
+            return $reason !== '' ? $reason : '支付超时自动取消';
         }
 
-        return '订单已取消';
+        return $reason !== '' ? $reason : '订单已取消';
     }
 
     /**

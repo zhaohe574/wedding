@@ -704,7 +704,8 @@ class OrderRefundService
             return;
         }
 
-        $paymentQuery = Payment::where('order_id', (int)$order->id);
+        $paymentQuery = Payment::where('order_id', (int)$order->id)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED]);
         $totalRefunded = round((float)(clone $paymentQuery)->sum('refund_amount'), 2);
         $totalPaidAmount = round((float)(clone $paymentQuery)->sum('pay_amount'), 2);
         $isFullyRefunded = $totalPaidAmount > 0 && $totalRefunded >= $totalPaidAmount;

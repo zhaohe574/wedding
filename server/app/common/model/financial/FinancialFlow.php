@@ -217,9 +217,9 @@ class FinancialFlow extends BaseModel
         }
         
         return [
-            'total_count' => $query->count(),
-            'total_income' => (clone $query)->where('direction', self::DIRECTION_IN)->sum('amount'),
-            'total_expense' => (clone $query)->where('direction', self::DIRECTION_OUT)->sum('amount'),
+            'total_count' => (int)$query->count(),
+            'total_income' => (float)(clone $query)->where('direction', self::DIRECTION_IN)->sum('amount'),
+            'total_expense' => (float)(clone $query)->where('direction', self::DIRECTION_OUT)->sum('amount'),
         ];
     }
 
@@ -228,11 +228,18 @@ class FinancialFlow extends BaseModel
      */
     public static function getIncomeByPayWay(string $startDate, string $endDate): array
     {
-        return self::whereBetweenTime('create_time', $startDate, $endDate . ' 23:59:59')
+        $rows = self::whereBetweenTime('create_time', $startDate, $endDate . ' 23:59:59')
             ->where('direction', self::DIRECTION_IN)
             ->where('flow_type', self::FLOW_TYPE_INCOME)
             ->group('pay_way')
             ->column('SUM(amount) as amount', 'pay_way');
+
+        $result = [];
+        foreach ($rows as $payWay => $amount) {
+            $result[(int)$payWay] = (float)$amount;
+        }
+
+        return $result;
     }
 
     /**

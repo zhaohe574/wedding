@@ -63,46 +63,108 @@ class WeComMessageService
     }
 
     /**
+     * 给服务人员发送内部卡片消息。
+     */
+    public static function sendTextCardToStaff(
+        int|array $staffIds,
+        string $title,
+        string $description,
+        string $url,
+        string $buttonText = '查看详情'
+    ): bool {
+        $ids = is_array($staffIds) ? $staffIds : [$staffIds];
+        if (empty($ids)) {
+            return false;
+        }
+
+        $userIds = Staff::whereIn('id', array_map('intval', $ids))
+            ->where('wecom_userid', '<>', '')
+            ->column('wecom_userid');
+
+        return self::sendTextCardToUsers($userIds, $title, $description, $url, $buttonText);
+    }
+
+    /**
      * 批量发送企业微信文本消息。
      */
     public static function sendTextToUsers(array $userIds, string $content): bool
+    {
+        return self::sendMessageToUsers(
+            $userIds,
+            '文本消息',
+            static fn (array $config, array $normalizedUserIds): array => self::sendTextToUsersWithConfig(
+                $config,
+                $normalizedUserIds,
+                $content
+            )
+        );
+    }
+
+    /**
+     * 批量发送企业微信卡片消息。
+     */
+    public static function sendTextCardToUsers(
+        array $userIds,
+        string $title,
+        string $description,
+        string $url,
+        string $buttonText = '查看详情'
+    ): bool {
+        return self::sendMessageToUsers(
+            $userIds,
+            '卡片消息',
+            static fn (array $config, array $normalizedUserIds): array => self::sendTextCardToUsersWithConfig(
+                $config,
+                $normalizedUserIds,
+                $title,
+                $description,
+                $url,
+                $buttonText
+            )
+        );
+    }
+
+    /**
+     * 统一执行企业微信内部消息发送。
+     */
+    private static function sendMessageToUsers(array $userIds, string $messageType, callable $sender): bool
     {
         self::$lastError = '';
         $userIds = array_values(array_unique(array_filter(array_map(static fn ($item) => trim((string) $item), $userIds))));
         if (empty($userIds)) {
             self::setLastError('未找到可发送成员');
-            Log::info('企业微信内部消息跳过：' . self::$lastError);
+            Log::info('企业微信内部' . $messageType . '跳过：' . self::$lastError);
             return false;
         }
 
         $config = self::getConfig();
         if (!$config['enabled']) {
             self::setLastError('企业微信内部通知未启用');
-            Log::info('企业微信内部消息跳过：' . self::$lastError);
+            Log::info('企业微信内部' . $messageType . '跳过：' . self::$lastError);
             return false;
         }
 
         if (empty($config['corp_id']) || empty($config['secret']) || empty($config['agent_id'])) {
             self::setLastError('缺少 corp_id / secret / agent_id 配置');
-            Log::info('企业微信内部消息跳过：' . self::$lastError);
+            Log::info('企业微信内部' . $messageType . '跳过：' . self::$lastError);
             return false;
         }
 
-        $result = self::sendTextToUsersWithConfig($config, $userIds, $content);
+        $result = $sender($config, $userIds);
         if (in_array((int) ($result['errcode'] ?? -1), self::TOKEN_INVALID_ERRCODES, true)) {
             Cache::delete(self::getTokenCacheKey($config));
-            Log::warning('企业微信内部消息 token 失效，已清理缓存并重试一次：' . ($result['errmsg'] ?? ''));
-            $result = self::sendTextToUsersWithConfig($config, $userIds, $content);
+            Log::warning('企业微信内部' . $messageType . ' token 失效，已清理缓存并重试一次：' . ($result['errmsg'] ?? ''));
+            $result = $sender($config, $userIds);
         }
 
         if (($result['errcode'] ?? -1) !== 0) {
             $detail = self::formatSendError($result);
             self::setLastError($detail);
-            Log::error('企业微信内部消息发送失败：' . $detail);
+            Log::error('企业微信内部' . $messageType . '发送失败：' . $detail);
             return false;
         }
 
-        Log::info('企业微信内部消息发送成功：touser=' . implode('|', $userIds));
+        Log::info('企业微信内部' . $messageType . '发送成功：touser=' . implode('|', $userIds));
         return true;
     }
 
@@ -119,6 +181,40 @@ class WeComMessageService
             'agentid' => (int) $config['agent_id'],
             'text' => [
                 'content' => $content,
+            ],
+            'safe' => 0,
+            'enable_id_trans' => 0,
+            'enable_duplicate_check' => 0,
+        ];
+
+        return self::httpPostJson(
+            'https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=' . $accessToken,
+            $payload
+        );
+    }
+
+    private static function sendTextCardToUsersWithConfig(
+        array $config,
+        array $userIds,
+        string $title,
+        string $description,
+        string $url,
+        string $buttonText
+    ): array {
+        $accessToken = self::getAccessToken($config);
+        if (empty($accessToken)) {
+            return ['errcode' => -1, 'errmsg' => '获取 access_token 失败'];
+        }
+
+        $payload = [
+            'touser' => implode('|', $userIds),
+            'msgtype' => 'textcard',
+            'agentid' => (int) $config['agent_id'],
+            'textcard' => [
+                'title' => $title,
+                'description' => $description,
+                'url' => $url,
+                'btntxt' => $buttonText,
             ],
             'safe' => 0,
             'enable_id_trans' => 0,
