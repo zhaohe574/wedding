@@ -16,6 +16,9 @@ export interface OrderConfirmLetterSnapshot {
     remark_content?: string
     brand_name?: string
     brand_tagline?: string
+    brand_logo?: string
+    brand_logo_data_uri?: string
+    payment_node?: string
     footer_note?: string
 }
 
@@ -73,6 +76,7 @@ const V3_DEFAULT_HERO_EYEBROW = '订单确认'
 const V3_DEFAULT_SUBTITLE = '服务确认函'
 const V3_DEFAULT_HERO_DESC = '确认本次服务档期、服务内容与付款安排。'
 const V3_FOOTER_KICKER = '感谢信任与确认。'
+const V4_DEFAULT_SUBTITLE = 'Wedding Order Confirmation'
 
 const escapeXml = (value: string) =>
     String(value || '')
@@ -137,6 +141,7 @@ const resolveRenderOptions = (
 }
 
 const isV3Spec = (version?: string) => normalizeVersion(version).startsWith('v3')
+const isV4Spec = (version?: string) => normalizeVersion(version).startsWith('v4')
 const isV2Spec = (version?: string) => normalizeVersion(version).startsWith('v2')
 
 const wrapText = (text: string, maxCharsPerLine: number, maxLines: number) => {
@@ -181,13 +186,30 @@ const wrapText = (text: string, maxCharsPerLine: number, maxLines: number) => {
     }
 
     const visibleLines = lines.slice(0, maxLines)
-    if (truncated && visibleLines.length) {
-        const lastIndex = visibleLines.length - 1
-        const lastLine = visibleLines[lastIndex]
-        visibleLines[lastIndex] = `${lastLine.slice(0, Math.max(maxCharsPerLine - 3, 0))}...`
-    }
 
     return visibleLines.length ? visibleLines : ['']
+}
+
+const fitTextLine = (
+    text: string,
+    maxCharsPerLine: number,
+    baseFontSize: number,
+    minFontSize: number
+) => {
+    const value = toText(text)
+    const length = Math.max(value.length, 1)
+    if (length <= maxCharsPerLine) {
+        return {
+            lines: [value],
+            fontSize: baseFontSize,
+            lineHeight: baseFontSize
+        }
+    }
+    return {
+        lines: [value],
+        fontSize: Math.max(minFontSize, (baseFontSize * maxCharsPerLine) / length),
+        lineHeight: baseFontSize
+    }
 }
 
 const drawTextBlock = ({
@@ -1188,11 +1210,408 @@ const renderV3OrderConfirmLetterSvg = (
     )}</svg>`
 }
 
+const drawV4OrnamentLine = (centerX: number, y: number, width: number, color: string, scale: number) =>
+    `<path d="M${centerX - width / 2} ${y} H${centerX - 34 * scale}" stroke="${color}" stroke-width="${Math.max(
+        0.8,
+        scale
+    )}" /><path d="M${centerX + 34 * scale} ${y} C${centerX + 52 * scale} ${y - 16 * scale} ${
+        centerX + 74 * scale
+    } ${y - 12 * scale} ${centerX + 86 * scale} ${y} C${centerX + 74 * scale} ${
+        y + 12 * scale
+    } ${centerX + 52 * scale} ${y + 16 * scale} ${centerX + 34 * scale} ${y}" fill="none" stroke="${color}" stroke-width="${Math.max(
+        0.8,
+        scale
+    )}" /><circle cx="${centerX}" cy="${y}" r="${4 * scale}" fill="${color}" /><path d="M${
+        centerX + 34 * scale
+    } ${y} H${centerX + width / 2}" stroke="${color}" stroke-width="${Math.max(0.8, scale)}" />`
+
+const drawV4Seal = (
+    centerX: number,
+    topY: number,
+    size: number,
+    brandName: string,
+    brandTagline: string,
+    logoDataUri: string,
+    brandInitial: string,
+    small: boolean
+) => {
+    const centerY = topY + size / 2
+    const scale = size / 122
+    const logoSize = 52 * scale
+    const logoSvg = logoDataUri
+        ? `<defs><clipPath id="v4LogoClip"><circle cx="${centerX}" cy="${centerY - 8 * scale}" r="${
+              logoSize / 2
+          }" /></clipPath></defs><image href="${escapeXml(logoDataUri)}" x="${
+              centerX - logoSize / 2
+          }" y="${centerY - 8 * scale - logoSize / 2}" width="${logoSize}" height="${logoSize}" preserveAspectRatio="xMidYMid meet" clip-path="url(#v4LogoClip)" />`
+        : drawTextBlock({
+              x: centerX,
+              y: centerY - 8 * scale + 9 * scale,
+              lines: [brandInitial],
+              fontSize: 26 * scale,
+              lineHeight: 26 * scale,
+              fill: '#A87023',
+              fontWeight: 700,
+              textAnchor: 'middle',
+              fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF
+          }).svg
+
+    return `<circle cx="${centerX}" cy="${centerY}" r="${size / 2}" fill="#FFF9EC" stroke="url(#v4Gold)" stroke-width="${Math.max(
+        1,
+        3 * scale
+    )}" /><circle cx="${centerX}" cy="${centerY}" r="${size / 2 - 10 * scale}" fill="none" stroke="#E8CD82" stroke-width="${Math.max(
+        0.8,
+        1.4 * scale
+    )}" /><path d="M${centerX - 45 * scale} ${centerY + 26 * scale} C${centerX - 20 * scale} ${
+        centerY + 50 * scale
+    } ${centerX + 20 * scale} ${centerY + 50 * scale} ${centerX + 45 * scale} ${
+        centerY + 26 * scale
+    }" fill="none" stroke="#D2A34B" stroke-width="${Math.max(0.8, 1.4 * scale)}" />${logoSvg}${drawTextBlock({
+        x: centerX,
+        y: centerY + 31 * scale,
+        lines: wrapText(brandName, small ? 8 : 8, 1),
+        fontSize: 15 * scale,
+        lineHeight: 15 * scale,
+        fill: '#B17A24',
+        fontWeight: 700,
+        textAnchor: 'middle',
+        letterSpacing: 1.2 * scale
+    }).svg}${drawTextBlock({
+        x: centerX,
+        y: centerY + 48 * scale,
+        lines: wrapText(brandTagline.toUpperCase(), small ? 16 : 18, 1),
+        fontSize: 8.5 * scale,
+        lineHeight: 8.5 * scale,
+        fill: '#C0923D',
+        fontWeight: 500,
+        textAnchor: 'middle',
+        fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF
+    }).svg}`
+}
+
+const drawV4Icon = (type: string, x: number, y: number, size: number) => {
+    const stroke = '#B9812B'
+    const sw = Math.max(1, size / 10)
+    if (type === 'user') {
+        return `<circle cx="${x}" cy="${y - size * 0.22}" r="${size * 0.23}" fill="none" stroke="${stroke}" stroke-width="${sw}" /><path d="M${x - size * 0.48} ${y + size * 0.52} C${x - size * 0.32} ${
+            y + size * 0.12
+        } ${x + size * 0.32} ${y + size * 0.12} ${x + size * 0.48} ${
+            y + size * 0.52
+        }" fill="none" stroke="${stroke}" stroke-width="${sw}" />`
+    }
+    if (type === 'calendar') {
+        return `<rect x="${x - size * 0.45}" y="${y - size * 0.38}" width="${size * 0.9}" height="${
+            size * 0.82
+        }" rx="${size * 0.08}" fill="none" stroke="${stroke}" stroke-width="${sw}" /><path d="M${
+            x - size * 0.45
+        } ${y - size * 0.14} H${x + size * 0.45} M${x - size * 0.24} ${
+            y - size * 0.52
+        } V${y - size * 0.25} M${x + size * 0.24} ${y - size * 0.52} V${
+            y - size * 0.25
+        }" stroke="${stroke}" stroke-width="${sw}" />`
+    }
+    if (type === 'pin') {
+        return `<path d="M${x} ${y + size * 0.55} C${x - size * 0.44} ${y + size * 0.05} ${
+            x - size * 0.36
+        } ${y - size * 0.48} ${x} ${y - size * 0.48} C${x + size * 0.36} ${
+            y - size * 0.48
+        } ${x + size * 0.44} ${y + size * 0.05} ${x} ${y + size * 0.55} Z" fill="none" stroke="${stroke}" stroke-width="${sw}" /><circle cx="${x}" cy="${
+            y - size * 0.16
+        }" r="${size * 0.13}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`
+    }
+    if (type === 'phone') {
+        return `<path d="M${x - size * 0.36} ${y - size * 0.48} C${x - size * 0.52} ${
+            y - size * 0.28
+        } ${x - size * 0.34} ${y + size * 0.34} ${x + size * 0.18} ${y + size * 0.52}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" />`
+    }
+    if (type === 'clock') {
+        return `<circle cx="${x}" cy="${y}" r="${size * 0.45}" fill="none" stroke="${stroke}" stroke-width="${sw}" /><path d="M${x} ${
+            y - size * 0.24
+        } V${y} H${x + size * 0.22}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" />`
+    }
+    if (type === 'team') {
+        return `<circle cx="${x}" cy="${y - size * 0.18}" r="${size * 0.18}" fill="none" stroke="${stroke}" stroke-width="${sw}" /><circle cx="${
+            x - size * 0.28
+        }" cy="${y - size * 0.04}" r="${size * 0.14}" fill="none" stroke="${stroke}" stroke-width="${sw}" /><circle cx="${
+            x + size * 0.28
+        }" cy="${y - size * 0.04}" r="${size * 0.14}" fill="none" stroke="${stroke}" stroke-width="${sw}" />`
+    }
+    return `<rect x="${x - size * 0.36}" y="${y - size * 0.46}" width="${size * 0.72}" height="${
+        size * 0.9
+    }" rx="${size * 0.06}" fill="none" stroke="${stroke}" stroke-width="${sw}" /><path d="M${
+        x - size * 0.18
+    } ${y - size * 0.18} H${x + size * 0.18} M${x - size * 0.18} ${y + size * 0.04} H${
+        x + size * 0.18
+    } M${x - size * 0.18} ${y + size * 0.26} H${x + size * 0.18}" stroke="${stroke}" stroke-width="${sw}" />`
+}
+
+const drawV4InfoPanel = (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    rows: Array<{ icon: string; label: string; value: string }>,
+    scale: number
+) => {
+    const rowHeight = height / rows.length
+    let svg = `<path d="M${x} ${y} H${x + width - 30 * scale} Q${x + width - 12 * scale} ${y} ${
+        x + width - 12 * scale
+    } ${y + 30 * scale} V${y + height} H${x + 24 * scale} Q${x} ${y + height} ${x} ${
+        y + height - 24 * scale
+    } V${y} Z" fill="#FFFDF8" fill-opacity="0.78" stroke="#D6A04B" stroke-width="${Math.max(
+        1,
+        1.4 * scale
+    )}" />`
+    rows.forEach((row, index) => {
+        const rowY = y + index * rowHeight
+        const cy = rowY + rowHeight / 2
+        if (index > 0) {
+            svg += `<path d="M${x + 86 * scale} ${rowY} H${x + width - 52 * scale}" stroke="#D9BD87" stroke-width="${Math.max(
+                0.6,
+                0.8 * scale
+            )}" stroke-dasharray="${5 * scale} ${5 * scale}" />`
+        }
+        const valueFit = fitTextLine(row.value, scale < 1 ? 16 : 24, 24 * scale, 14 * scale)
+        svg += drawV4Icon(row.icon, x + 58 * scale, cy, 18 * scale)
+        svg += drawTextBlock({
+            x: x + 105 * scale,
+            y: cy + 9 * scale,
+            lines: [row.label],
+            fontSize: 25 * scale,
+            lineHeight: 25 * scale,
+            fill: '#49372C',
+            fontWeight: 500
+        }).svg
+        svg += drawTextBlock({
+            x: x + 238 * scale,
+            y: cy + 9 * scale,
+            lines: valueFit.lines,
+            fontSize: valueFit.fontSize,
+            lineHeight: valueFit.lineHeight,
+            fill: '#2E2A27',
+            fontWeight: 500
+        }).svg
+    })
+    return svg
+}
+
+const renderV4OrderConfirmLetterSvg = (
+    snapshot: OrderConfirmLetterSnapshot,
+    small = false
+) => {
+    const width = small ? 540 : 1080
+    const height = small ? 960 : 1920
+    const scale = small ? 0.5 : 1
+    const paperX = 62 * scale
+    const paperY = 56 * scale
+    const paperWidth = width - paperX * 2
+    const paperHeight = height - paperY * 2
+    const contentX = paperX + 70 * scale
+    const contentWidth = paperWidth - 140 * scale
+    const centerX = width / 2
+    const brandName = toText(snapshot.brand_name) || DEFAULT_BRAND_NAME
+    const brandTagline = toText(snapshot.brand_tagline) || V3_DEFAULT_HERO_EYEBROW
+    const brandInitial = brandName.slice(0, Math.min(Math.max(brandName.length, 1), 4))
+    const title = toText(snapshot.title) || DEFAULT_TITLE
+    const paymentNode = toText(snapshot.payment_node) || '婚礼前 3 日'
+    const serviceTeamLines = toStringArray(snapshot.service_team_lines)
+    const staffNames = toStringArray(snapshot.service_staff_names)
+    const teamText = serviceTeamLines.length
+        ? serviceTeamLines.slice(0, 3).join('、')
+        : staffNames.length
+          ? staffNames.join('、')
+          : '待确认'
+    const rows = [
+        { icon: 'clipboard', label: '订单编号：', value: toText(snapshot.order_sn) || '-' },
+        { icon: 'user', label: '新人姓名：', value: toText(snapshot.customer_name) || '-' },
+        {
+            icon: 'calendar',
+            label: '婚礼日期：',
+            value: toText(snapshot.service_date_label) || toText(snapshot.service_date) || '-'
+        },
+        { icon: 'pin', label: '举办地点：', value: toText(snapshot.service_address) || '-' },
+        { icon: 'team', label: '服务团队：', value: teamText },
+        { icon: 'phone', label: '联系电话：', value: toText(snapshot.contact_mobile) || '-' },
+        { icon: 'clock', label: '确认日期：', value: toText(snapshot.confirm_date) || '-' }
+    ]
+    const tipLines = wrapText(toText(snapshot.footer_note) || DEFAULT_FOOTER_NOTE, small ? 24 : 34, 2)
+
+    const amountY = 1192 * scale
+    const amountHeight = 296 * scale
+    const third = contentWidth / 3
+    const amountDetails = [
+        [toText(snapshot.paid_label) || '已付定金', `¥ ${toText(snapshot.paid_amount) || '0.00'}`],
+        ['待付尾款', `¥ ${toText(snapshot.remain_amount) || '0.00'}`],
+        ['支付节点：', paymentNode]
+    ]
+    let amountSvg = `<rect x="${contentX}" y="${amountY}" width="${contentWidth}" height="${amountHeight}" rx="${
+        10 * scale
+    }" fill="url(#v4Amount)" stroke="#D6A04B" stroke-width="${Math.max(
+        1,
+        1.4 * scale
+    )}" /><path d="M${contentX + 46 * scale} ${amountY + 168 * scale} H${
+        contentX + contentWidth - 46 * scale
+    }" stroke="#B88937" stroke-width="${Math.max(0.8, scale)}" />${drawV4OrnamentLine(
+        contentX + contentWidth / 2,
+        amountY + 30 * scale,
+        170 * scale,
+        '#D1A24B',
+        scale
+    )}`
+    amountSvg += drawTextBlock({
+        x: contentX + contentWidth / 2,
+        y: amountY + 62 * scale,
+        lines: ['合同合计金额'],
+        fontSize: 28 * scale,
+        lineHeight: 28 * scale,
+        fill: '#2E241D',
+        fontWeight: 600,
+        textAnchor: 'middle'
+    }).svg
+    amountSvg += drawTextBlock({
+        x: contentX + contentWidth / 2,
+        y: amountY + 142 * scale,
+        lines: [`¥ ${toText(snapshot.order_total_amount) || '0.00'}`],
+        fontSize: 72 * scale,
+        lineHeight: 72 * scale,
+        fill: '#B98226',
+        fontWeight: 700,
+        textAnchor: 'middle',
+        fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF
+    }).svg
+    amountDetails.forEach((item, index) => {
+        const cx = contentX + third * index + third / 2
+        const valueFit = fitTextLine(item[1], index === 2 ? 8 : 12, 23 * scale, 15 * scale)
+        if (index > 0) {
+            amountSvg += `<path d="M${contentX + third * index} ${amountY + 204 * scale} V${
+                amountY + amountHeight - 40 * scale
+            }" stroke="#B88937" stroke-width="${Math.max(0.8, scale)}" stroke-opacity="0.65" />`
+        }
+        amountSvg += drawTextBlock({
+            x: cx,
+            y: amountY + 230 * scale,
+            lines: [item[0]],
+            fontSize: 23 * scale,
+            lineHeight: 23 * scale,
+            fill: '#322820',
+            fontWeight: 600,
+            textAnchor: 'middle'
+        }).svg
+        amountSvg += drawTextBlock({
+            x: cx,
+            y: amountY + 266 * scale,
+            lines: valueFit.lines,
+            fontSize: valueFit.fontSize,
+            lineHeight: valueFit.lineHeight,
+            fill: '#322820',
+            fontWeight: 500,
+            textAnchor: 'middle'
+        }).svg
+    })
+
+    const sections = [
+        drawV4Seal(
+            centerX,
+            112 * scale,
+            122 * scale,
+            brandName,
+            brandTagline,
+            toText(snapshot.brand_logo_data_uri),
+            brandInitial,
+            small
+        ),
+        drawV4OrnamentLine(centerX, 328 * scale, 260 * scale, '#C99842', scale),
+        drawTextBlock({
+            x: centerX,
+            y: 436 * scale,
+            lines: [title],
+            fontSize: 72 * scale,
+            lineHeight: 72 * scale,
+            fill: '#3B2116',
+            fontWeight: 700,
+            textAnchor: 'middle',
+            fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF,
+            letterSpacing: 10 * scale
+        }).svg,
+        drawTextBlock({
+            x: centerX,
+            y: 532 * scale,
+            lines: [V4_DEFAULT_SUBTITLE],
+            fontSize: 27 * scale,
+            lineHeight: 27 * scale,
+            fill: '#8D6F50',
+            fontWeight: 500,
+            textAnchor: 'middle',
+            fontFamily: ORDER_CONFIRM_LETTER_FONT_FAMILY_SERIF
+        }).svg,
+        drawV4InfoPanel(contentX, 604 * scale, contentWidth, 538 * scale, rows, scale),
+        amountSvg,
+        `<rect x="${contentX}" y="${1532 * scale}" width="${contentWidth}" height="${
+            104 * scale
+        }" rx="${10 * scale}" fill="#FFFDF8" fill-opacity="0.72" stroke="#D9B96E" stroke-width="${Math.max(
+            0.8,
+            scale
+        )}" stroke-dasharray="${5 * scale} ${5 * scale}" />`,
+        drawTextBlock({
+            x: centerX,
+            y: 1554 * scale,
+            lines: ['温馨提示'],
+            fontSize: 24 * scale,
+            lineHeight: 24 * scale,
+            fill: '#7C5C2B',
+            fontWeight: 600,
+            textAnchor: 'middle'
+        }).svg,
+        drawTextBlock({
+            x: centerX,
+            y: 1600 * scale,
+            lines: tipLines,
+            fontSize: 22 * scale,
+            lineHeight: 28 * scale,
+            fill: '#4C4035',
+            fontWeight: 500,
+            textAnchor: 'middle'
+        }).svg,
+        drawTextBlock({
+            x: contentX + contentWidth * 0.25,
+            y: 1696 * scale,
+            lines: ['客户签名'],
+            fontSize: 24 * scale,
+            lineHeight: 24 * scale,
+            fill: '#342A23',
+            fontWeight: 500,
+            textAnchor: 'middle'
+        }).svg,
+        drawTextBlock({
+            x: contentX + contentWidth * 0.75,
+            y: 1696 * scale,
+            lines: ['婚礼顾问签署'],
+            fontSize: 24 * scale,
+            lineHeight: 24 * scale,
+            fill: '#342A23',
+            fontWeight: 500,
+            textAnchor: 'middle'
+        }).svg,
+        `<path d="M${contentX + 32 * scale} ${1760 * scale} H${
+            contentX + contentWidth / 2 - 70 * scale
+        } M${contentX + contentWidth / 2 + 70 * scale} ${1760 * scale} H${
+            contentX + contentWidth - 32 * scale
+        }" stroke="#927863" stroke-width="${Math.max(0.8, scale)}" />`
+    ]
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><linearGradient id="v4Bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F3E1C9" /><stop offset="48%" stop-color="#FFF6EA" /><stop offset="100%" stop-color="#D7BE9E" /></linearGradient><linearGradient id="v4Paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFFDF7" /><stop offset="100%" stop-color="#FFF7E9" /></linearGradient><linearGradient id="v4Gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#E9C66A" /><stop offset="42%" stop-color="#B57A23" /><stop offset="100%" stop-color="#F0D27D" /></linearGradient><linearGradient id="v4Amount" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFF8E9" /><stop offset="100%" stop-color="#F9E8C4" /></linearGradient><filter id="v4Shadow" x="-20%" y="-20%" width="150%" height="150%"><feDropShadow dx="${10 * scale}" dy="${24 * scale}" stdDeviation="${14 * scale}" flood-color="#7D5434" flood-opacity="0.22" /></filter></defs><rect width="100%" height="100%" fill="url(#v4Bg)" /><rect x="${paperX}" y="${paperY}" width="${paperWidth}" height="${paperHeight}" fill="url(#v4Paper)" filter="url(#v4Shadow)" />${sections.join(
+        ''
+    )}</svg>`
+}
+
 export function renderOrderConfirmLetterSvg(
     snapshot: OrderConfirmLetterSnapshot,
     options?: RenderOptionsInput
 ) {
     const resolved = resolveRenderOptions(options)
+    if (isV4Spec(resolved.renderSpecVersion)) {
+        return renderV4OrderConfirmLetterSvg(snapshot, resolved.small)
+    }
     if (isV3Spec(resolved.renderSpecVersion)) {
         return renderV3OrderConfirmLetterSvg(snapshot, resolved.small)
     }

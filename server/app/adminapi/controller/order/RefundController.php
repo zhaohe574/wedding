@@ -50,7 +50,13 @@ class RefundController extends BaseAdminController
      */
     public function audit()
     {
-        $params = (new RefundValidate())->post()->goCheck('audit');
+        $approved = $this->request->post('approved', null);
+        $validateData = [];
+        if (is_bool($approved)) {
+            $validateData['approved'] = $approved ? 1 : 0;
+        }
+
+        $params = (new RefundValidate())->post()->goCheck('audit', $validateData);
         $approved = filter_var($params['approved'], FILTER_VALIDATE_BOOLEAN);
         $result = RefundLogic::audit((int)$params['id'], $this->adminId, $approved, $params['remark'] ?? '');
         if (true === $result) {

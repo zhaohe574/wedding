@@ -100,14 +100,6 @@
                         <text class="card__title">订单确认函</text>
 
                         <view class="card__title-actions">
-                            <view
-                                v-if="confirmLetterHistoryAvailable"
-                                class="inline-copy"
-                                @click="handleOpenConfirmLetterHistory"
-                            >
-                                <text class="inline-copy__text">版本记录</text>
-                            </view>
-
                             <view class="inline-copy" @click="handleOpenConfirmLetter">
                                 <text class="inline-copy__text">查看订单确认函</text>
                             </view>
@@ -119,14 +111,6 @@
                             <text class="sub-panel__label">版本</text>
 
                             <text class="sub-panel__value">v{{ confirmLetter?.version }}</text>
-                        </view>
-
-                        <view v-if="confirmLetterHistoryAvailable" class="sub-panel__row">
-                            <text class="sub-panel__label">版本记录</text>
-
-                            <text class="sub-panel__value"
-                                >共 {{ confirmLetterHistory.length }} 个版本</text
-                            >
                         </view>
 
                         <view class="sub-panel__row">
@@ -736,7 +720,6 @@ import {
     deleteOrder,
     getOrderConfirmLetterById,
     getOrderConfirmLetterCurrent,
-    getOrderConfirmLetterHistory,
     getOrderDetail,
     uploadPayVoucher
 } from '@/api/order'
@@ -762,8 +745,6 @@ const confirmLetterFromNotification = ref(false)
 const shouldOpenConfirmLetter = ref(false)
 
 const confirmLetter = ref<any>(null)
-
-const confirmLetterHistory = ref<any[]>([])
 
 const confirmLetterEntry = ref('')
 
@@ -814,8 +795,6 @@ const CONFIRM_LETTER_NOTIFICATION_ENTRY = 'confirm_letter_notification'
 const formatAmount = (value: any) => Number(value || 0).toFixed(2)
 
 const confirmLetterAvailable = computed(() => !!confirmLetter.value?.letter_id)
-
-const confirmLetterHistoryAvailable = computed(() => confirmLetterHistory.value.length > 0)
 
 const refundApplyAmount = computed(() =>
     Number(order.value?.refund_apply_amount ?? order.value?.refundable_amount ?? 0)
@@ -1693,10 +1672,6 @@ const moreActionItems = computed(() => {
 
     const items: Array<{ label: string; onClick: () => void }> = []
 
-    if ([2, 3].includes(status)) {
-        items.push({ label: '申请变更', onClick: openChangeActions })
-    }
-
     if ([0, 1].includes(status)) {
         items.push({ label: '取消订单', onClick: handleCancel })
     }
@@ -1890,22 +1865,6 @@ const fetchConfirmLetter = async () => {
     }
 }
 
-const fetchConfirmLetterHistory = async () => {
-    if (orderId.value <= 0) {
-        confirmLetterHistory.value = []
-
-        return
-    }
-
-    try {
-        const history = await getOrderConfirmLetterHistory({ id: orderId.value })
-
-        confirmLetterHistory.value = Array.isArray(history) ? history : []
-    } catch {
-        confirmLetterHistory.value = []
-    }
-}
-
 const fetchDetail = async () => {
     if (orderId.value <= 0) return
 
@@ -1925,8 +1884,6 @@ const fetchDetail = async () => {
                 showConfirmLetterFallbackHint('当前暂无可查看确认函，请在订单详情查看最新状态')
             }
 
-            await fetchConfirmLetterHistory()
-
             syncPayCountdown(order.value?.pay_remain_seconds || 0)
 
             syncConfirmCountdown(order.value?.confirm_remain_seconds || 0)
@@ -1934,8 +1891,6 @@ const fetchDetail = async () => {
             hasLoadedOnce = true
         } catch (e: any) {
             confirmLetter.value = null
-
-            confirmLetterHistory.value = []
 
             clearPayCountdown()
 
@@ -1973,59 +1928,6 @@ const handleOpenConfirmLetter = () => {
     })
 }
 
-const handleOpenConfirmLetterHistory = () => {
-    if (!confirmLetterHistory.value.length) {
-        uni.showToast({ title: '暂无确认函版本记录', icon: 'none' })
-
-        return
-    }
-
-    uni.showActionSheet({
-        itemList: confirmLetterHistory.value.map((item) => {
-            const tags = [
-                item?.is_current ? '当前' : '',
-
-                item?.is_pushed ? '已推送' : '未推送',
-
-                item?.can_view ? '' : '仅保留记录'
-            ].filter(Boolean)
-
-            return `v${item?.version || 0}${tags.length ? `（${tags.join('·')}）` : ''}`
-        }),
-
-        success: async ({ tapIndex }) => {
-            const target = confirmLetterHistory.value[tapIndex]
-
-            if (!target) {
-                return
-            }
-
-            if (!Number(target?.can_view || 0)) {
-                uni.showToast({
-                    title: '历史版本仅保留记录，当前仅支持查看有效版本',
-
-                    icon: 'none'
-                })
-
-                return
-            }
-
-            try {
-                confirmLetter.value = await getOrderConfirmLetterById({
-                    letter_id: Number(target.letter_id || 0)
-                })
-                confirmLetterId.value = Number(
-                    confirmLetter.value?.letter_id || target.letter_id || 0
-                )
-
-                handleOpenConfirmLetter()
-            } catch (error: any) {
-                uni.showToast({ title: error?.message || '加载确认函失败', icon: 'none' })
-            }
-        }
-    })
-}
-
 const copyOrderSn = () => {
     if (!order.value?.order_sn) return
 
@@ -2039,27 +1941,6 @@ const copyOrderSn = () => {
 const handleContactAdvisor = () =>
     uni.navigateTo({
         url: `/packages/pages/customer_service/customer_service?scene=order_detail&order_id=${orderId.value}`
-    })
-
-const openChangeActions = () =>
-    uni.showActionSheet({
-        itemList: ['申请改期', '申请暂停', '申请加项', '我的申请'],
-
-        success: ({ tapIndex }) => {
-            const routes = [
-                `/packages/pages/order_change/apply_date?order_id=${orderId.value}`,
-
-                `/packages/pages/order_change/apply_pause?order_id=${orderId.value}`,
-
-                `/packages/pages/order_change/apply_add_item?order_id=${orderId.value}`,
-
-                '/packages/pages/order_change/list?type=change'
-            ]
-
-            const url = routes[tapIndex]
-
-            if (url) uni.navigateTo({ url })
-        }
     })
 
 const handlePay = () => {

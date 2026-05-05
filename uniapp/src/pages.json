@@ -357,6 +357,15 @@
                 }
             },
             {
+                "path": "pages/wecom_notice/wecom_notice",
+                "style": {
+                    "navigationBarTitleText": "企微通知"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
                 "path": "pages/aftersale/index",
                 "style": {
                     "navigationBarTitleText": "售后服务"

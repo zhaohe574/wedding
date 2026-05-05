@@ -63,7 +63,7 @@ abstract class Server
      * 设置上传的文件信息
      * @param string $filePath
      */
-    public function setUploadFileByReal($filePath)
+    public function setUploadFileByReal($filePath, ?string $fileName = null)
     {
         if (!is_string($filePath) || $filePath === '' || !is_file($filePath)) {
             throw new Exception('未找到上传文件的信息');
@@ -87,7 +87,8 @@ abstract class Server
             'realPath' => $realPath,
         ];
         // 生成保存文件名
-        $this->fileName = $this->buildSaveName();
+        $normalizedFileName = trim((string) $fileName);
+        $this->fileName = $normalizedFileName !== '' ? basename($normalizedFileName) : $this->buildSaveName();
     }
 
     /**

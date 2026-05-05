@@ -9,6 +9,23 @@
                         <span class="text-gray-500 text-xs">开启后，咨询分配和订单内部提醒会尝试发送企业微信消息。</span>
                     </div>
                 </el-form-item>
+                <el-form-item label="小程序 AppID">
+                    <div class="flex items-center gap-3">
+                        <el-tag :type="configForm.mnp_app_id_filled ? 'success' : 'warning'">
+                            {{ configForm.mnp_app_id_filled ? '已配置' : '未配置' }}
+                        </el-tag>
+                        <span class="text-gray-500 text-xs">读取渠道管理中的小程序设置，不在此处重复维护。</span>
+                    </div>
+                </el-form-item>
+                <el-form-item label="卡片跳转方式">
+                    <div class="flex flex-col gap-2">
+                        <el-radio-group v-model="configForm.wecom_card_mode">
+                            <el-radio-button label="mini_first">优先跳小程序</el-radio-button>
+                            <el-radio-button label="backend_only">仅跳后台链接</el-radio-button>
+                        </el-radio-group>
+                        <span class="text-gray-500 text-xs">优先跳小程序时，发送失败会自动降级为后台链接卡片。</span>
+                    </div>
+                </el-form-item>
                 <el-form-item label="Corp ID">
                     <div class="w-[420px] flex flex-col gap-2">
                         <el-input v-model="configForm.wecom_corp_id" placeholder="请输入企业微信 Corp ID" />
@@ -154,7 +171,9 @@ const configForm = reactive({
     wecom_corp_id: '',
     wecom_secret: '',
     wecom_secret_filled: 0,
-    wecom_agent_id: 0
+    wecom_agent_id: 0,
+    wecom_card_mode: 'mini_first',
+    mnp_app_id_filled: 0
 })
 
 const testForm = reactive({
@@ -178,6 +197,10 @@ const fetchConfig = async () => {
     configForm.wecom_secret = String(data?.wecom_secret || '')
     configForm.wecom_secret_filled = Number(data?.wecom_secret_filled || 0)
     configForm.wecom_agent_id = Number(data?.wecom_agent_id || 0)
+    configForm.wecom_card_mode = ['mini_first', 'backend_only'].includes(String(data?.wecom_card_mode || ''))
+        ? String(data?.wecom_card_mode)
+        : 'mini_first'
+    configForm.mnp_app_id_filled = Number(data?.mnp_app_id_filled || 0)
 }
 
 const fetchRecipients = async () => {
@@ -200,7 +223,8 @@ const handleSaveConfig = async () => {
             wecom_enabled: configForm.wecom_enabled,
             wecom_corp_id: configForm.wecom_corp_id.trim(),
             wecom_secret: configForm.wecom_secret.trim(),
-            wecom_agent_id: Number(configForm.wecom_agent_id || 0)
+            wecom_agent_id: Number(configForm.wecom_agent_id || 0),
+            wecom_card_mode: configForm.wecom_card_mode
         })
         ElMessage.success('企微配置已保存')
         await fetchConfig()
@@ -240,11 +264,11 @@ const handleSendTestMessage = async () => {
 
     testSubmitting.value = true
     try {
-        await testWecomMessage({
+        const res = await testWecomMessage({
             wecom_userid: wecomUserid,
             content: testForm.content.trim()
         })
-        ElMessage.success('测试消息已发送')
+        ElMessage.success(res?.message || res?.send_channel_desc || '测试消息已发送')
         testDialogVisible.value = false
     } finally {
         testSubmitting.value = false

@@ -33,44 +33,23 @@ class OrderNotificationService
     public static function notifyStaffOnOrderCreated(int $orderId): void
     {
         try {
-            $order = Order::find($orderId);
+            $order = Order::with(['items'])->find($orderId);
             if (!$order) {
                 return;
             }
 
-            $staffIds = OrderItem::where('order_id', $orderId)
-                ->where('staff_id', '>', 0)
-                ->distinct(true)
-                ->column('staff_id');
-            if (empty($staffIds)) {
-                return;
-            }
-
-            $staffUserIds = Staff::whereIn('id', array_map('intval', $staffIds))
-                ->where('user_id', '>', 0)
-                ->distinct(true)
-                ->column('user_id');
-            if (empty($staffUserIds)) {
-                return;
-            }
-
-            StationNotificationService::batchSend(
-                array_values(array_unique(array_map('intval', $staffUserIds))),
-                Notification::TYPE_ORDER,
+            self::sendStaffOrderNotice(
+                $orderId,
                 '您有新的待确认订单',
                 sprintf('订单%s已提交，请尽快确认。', (string) $order->order_sn),
-                StationNotificationService::TARGET_STAFF_ORDER,
-                $orderId
+                '订单已提交，等待服务人员确认',
+                [
+                    'card_order' => $order,
+                    'card_action' => '新订单待确认',
+                    'card_reason' => '客户已提交订单，等待服务人员确认。',
+                    'card_notice' => '请尽快确认订单，避免客户等待。',
+                ]
             );
-
-            $contactName = trim((string) ($order->contact_name ?? ''));
-            $contactMobile = trim((string) ($order->contact_mobile ?? ''));
-            $message = "您有新的待确认订单\n"
-                . '订单号：' . (string) $order->order_sn . "\n"
-                . ($contactName !== '' ? '联系人：' . $contactName . "\n" : '')
-                . ($contactMobile !== '' ? '联系电话：' . $contactMobile . "\n" : '')
-                . '请尽快登录系统处理。';
-            WeComMessageService::sendToStaff(array_map('intval', $staffIds), trim($message));
         } catch (\Throwable $e) {
             Log::error('订单创建通知服务人员失败：' . $e->getMessage());
         }
@@ -601,7 +580,6 @@ class OrderNotificationService
         }
 
         self::sendStaffOrderNotice($orderId, '订单已取消', $content, $reasonText, [
-            'use_wecom_card' => true,
             'card_order' => $order,
             'card_action' => '订单已取消',
             'card_notice' => '请关注客户沟通与后续档期安排。',
@@ -626,7 +604,6 @@ class OrderNotificationService
             '服务人员确认超时，系统已自动同意，订单进入待支付',
             [
                 'skip_station' => true,
-                'use_wecom_card' => true,
                 'card_order' => $order,
                 'card_action' => '订单已自动同意',
                 'card_notice' => '系统已将订单推进到待支付，请关注客户支付进展。',
@@ -1646,29 +1623,21 @@ class OrderNotificationService
         }
 
         try {
-            if (!empty($options['use_wecom_card'])) {
-                $card = self::buildOrderWecomTextCard(
-                    $order,
-                    $title,
-                    (string)($options['card_action'] ?? $title),
-                    (string)($options['card_reason'] ?? ($summary !== '' ? $summary : $content)),
-                    (string)($options['card_notice'] ?? '请登录系统查看详情。')
-                );
-                WeComMessageService::sendTextCardToStaff(
-                    $staffIds,
-                    $card['title'],
-                    $card['description'],
-                    $card['url'],
-                    $card['button_text']
-                );
-                return;
-            }
-
-            $message = $title . "\n"
-                . '订单号：' . (string) $order->order_sn . "\n"
-                . '摘要：' . ($summary !== '' ? $summary : $content) . "\n"
-                . '请登录系统查看详情。';
-            WeComMessageService::sendToStaff($staffIds, trim($message));
+            $card = self::buildOrderWecomTextCard(
+                $order,
+                $title,
+                (string) ($options['card_action'] ?? $title),
+                (string) ($options['card_reason'] ?? ($summary !== '' ? $summary : $content)),
+                (string) ($options['card_notice'] ?? '请登录系统查看详情。')
+            );
+            WeComMessageService::sendTextCardToStaff(
+                $staffIds,
+                $card['title'],
+                $card['description'],
+                $card['url'],
+                $card['button_text'],
+                $card['options'] ?? []
+            );
         } catch (\Throwable $e) {
             Log::error('服务人员订单企微提醒失败：' . $e->getMessage());
         }
@@ -1691,38 +1660,28 @@ class OrderNotificationService
         $payAmount = number_format((float)($order->pay_amount ?? 0), 2, '.', '');
         $handledAt = date('Y-m-d H:i:s');
 
-        $lines = [
-            '<div class="gray">订单状态更新</div>',
-            '<div class="normal">' . self::escapeWecomCardText($actionText) . '</div>',
-            '订单号：' . self::escapeWecomCardText((string)($order->order_sn ?? '')),
+        $fields = [
+            '订单号' => (string)($order->order_sn ?? ''),
+            '服务日期' => $serviceDate,
+            '服务项目' => $serviceName,
+            '联系人' => $contactName,
+            '手机号' => $contactMobile,
+            '订单金额' => '￥' . $payAmount,
+            '处理说明' => trim($reasonText),
+            '处理时间' => $handledAt,
         ];
-
-        if ($serviceDate !== '') {
-            $lines[] = '服务日期：' . self::escapeWecomCardText($serviceDate);
-        }
-        if ($serviceName !== '') {
-            $lines[] = '服务项目：' . self::escapeWecomCardText($serviceName);
-        }
-        if ($contactName !== '') {
-            $lines[] = '联系人：' . self::escapeWecomCardText($contactName);
-        }
-        if ($contactMobile !== '') {
-            $lines[] = '手机号：' . self::escapeWecomCardText($contactMobile);
-        }
-        $lines[] = '订单金额：￥' . self::escapeWecomCardText($payAmount);
-        if (trim($reasonText) !== '') {
-            $lines[] = '处理说明：' . self::escapeWecomCardText($reasonText);
-        }
-        $lines[] = '处理时间：' . self::escapeWecomCardText($handledAt);
-        if (trim($noticeText) !== '') {
-            $lines[] = '<div class="highlight">' . self::escapeWecomCardText($noticeText) . '</div>';
-        }
 
         return [
             'title' => $title,
-            'description' => implode('<br>', $lines),
+            'description' => WeComMessageService::buildTextCardDescription('订单状态更新', $actionText, $fields, $noticeText),
             'url' => self::buildStaffOrderDetailUrl((int)$order->id),
             'button_text' => '查看订单',
+            'options' => [
+                'mini_pagepath' => WeComMessageService::buildMiniProgramPagePath(
+                    'packages/pages/staff_order_detail/staff_order_detail',
+                    ['id' => (int)$order->id]
+                ),
+            ],
         ];
     }
 
@@ -1731,76 +1690,7 @@ class OrderNotificationService
      */
     private static function buildStaffOrderDetailUrl(int $orderId): string
     {
-        $path = '/admin/staff_center/order?detail_id=' . $orderId;
-        $domain = self::resolveRequestDomain();
-        if ($domain !== '') {
-            return rtrim($domain, '/') . $path;
-        }
-
-        return $path;
-    }
-
-    /**
-     * 解析当前可用域名，兼容命令行定时任务。
-     */
-    private static function resolveRequestDomain(): string
-    {
-        try {
-            $domain = trim((string)request()->domain());
-            if ($domain !== '') {
-                return $domain;
-            }
-        } catch (\Throwable $e) {
-        }
-
-        $candidates = [
-            ConfigService::get('web_page', 'page_url', ''),
-        ];
-
-        foreach ($candidates as $candidate) {
-            $domain = self::normalizeDomain($candidate);
-            if ($domain !== '') {
-                return $domain;
-            }
-        }
-
-        return '';
-    }
-
-    /**
-     * 规范化域名配置。
-     */
-    private static function normalizeDomain($value): string
-    {
-        $value = trim((string)$value);
-        if ($value === '') {
-            return '';
-        }
-
-        if (!str_starts_with($value, 'http://') && !str_starts_with($value, 'https://')) {
-            $value = 'https://' . $value;
-        }
-
-        $parts = parse_url($value);
-        if (empty($parts['host'])) {
-            return '';
-        }
-
-        $scheme = $parts['scheme'] ?? 'https';
-        $domain = $scheme . '://' . $parts['host'];
-        if (!empty($parts['port'])) {
-            $domain .= ':' . $parts['port'];
-        }
-
-        return $domain;
-    }
-
-    /**
-     * 转义企业微信卡片描述文本。
-     */
-    private static function escapeWecomCardText(string $text): string
-    {
-        return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        return WeComMessageService::buildBackendUrl('/admin/staff_center/order?detail_id=' . $orderId);
     }
 
     /**

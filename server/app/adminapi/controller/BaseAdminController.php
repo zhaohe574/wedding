@@ -18,6 +18,7 @@ namespace app\adminapi\controller;
 
 use think\App;
 use app\common\controller\BaseLikeAdminController;
+use app\common\service\CrmAdvisorScopeService;
 use app\common\service\StaffService;
 
 /**
@@ -52,5 +53,21 @@ class BaseAdminController extends BaseLikeAdminController
     protected function failRequiredStaffScope()
     {
         return $this->fail($this->getRequiredStaffScopeDeniedMessage());
+    }
+
+    /**
+     * @notes 获取CRM顾问数据范围ID（0=不限制，-1=顾问角色未绑定资料）
+     */
+    protected function getCrmAdvisorScopeId(): int
+    {
+        return CrmAdvisorScopeService::getAdvisorScopeId($this->adminId, $this->adminInfo);
+    }
+
+    /**
+     * @notes 返回CRM顾问数据范围缺失响应
+     */
+    protected function failRequiredCrmAdvisorScope()
+    {
+        return $this->fail(CrmAdvisorScopeService::getAdvisorScopeAccessDeniedMessage($this->adminInfo));
     }
 }

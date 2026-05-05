@@ -91,6 +91,16 @@ class SalesAdvisor extends BaseModel
     }
 
     /**
+     * @notes 头像设置器
+     * @param $value
+     * @return string
+     */
+    public function setAvatarAttr($value): string
+    {
+        return $this->setImageAttr($value);
+    }
+
+    /**
      * @notes 对外联系二维码获取器
      * @param $value
      * @return string

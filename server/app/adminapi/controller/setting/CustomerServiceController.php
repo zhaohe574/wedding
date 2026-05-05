@@ -58,7 +58,7 @@ class CustomerServiceController extends BaseAdminController
         $params = $this->request->post();
         $result = CustomerServiceLogic::testWecomMessage($params);
         if ($result['success']) {
-            return $this->success($result['message']);
+            return $this->success($result['message'], $result, 1, 0);
         }
         return $this->fail($result['message']);
     }

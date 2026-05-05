@@ -16,6 +16,6 @@ export function updateWecomAdvisor(params: { id: number; wecom_userid: string })
     return request.post({ url: '/setting.wecom_recipient/updateAdvisor', params })
 }
 
-export function testWecomMessage(params: { wecom_userid: string; content?: string }) {
+export function testWecomMessage(params: { wecom_userid: string; content?: string }): Promise<any> {
     return request.post({ url: '/setting.customer_service/testWecomMessage', params })
 }

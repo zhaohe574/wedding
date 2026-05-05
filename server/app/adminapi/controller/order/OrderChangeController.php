@@ -36,7 +36,7 @@ class OrderChangeController extends BaseAdminController
     public function detail()
     {
         $params = (new OrderChangeValidate())->get()->goCheck('detail');
-        $result = OrderChangeLogic::detail($params['id']);
+        $result = OrderChangeLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('变更记录不存在');
         }
@@ -50,15 +50,16 @@ class OrderChangeController extends BaseAdminController
     public function audit()
     {
         $params = (new OrderChangeValidate())->post()->goCheck('audit');
+        $approved = (int)$params['approved'];
         $result = OrderChangeLogic::audit(
-            $params['id'],
+            (int)$params['id'],
             $this->adminId,
-            $params['approved'],
+            $approved,
             $params['remark'] ?? '',
             $params['reject_reason'] ?? ''
         );
         if (true === $result) {
-            return $this->success($params['approved'] ? '审核通过' : '已拒绝');
+            return $this->success($approved ? '审核通过' : '已拒绝');
         }
         return $this->fail(OrderChangeLogic::getError());
     }
@@ -69,8 +70,8 @@ class OrderChangeController extends BaseAdminController
      */
     public function execute()
     {
-        $params = (new OrderChangeValidate())->post()->goCheck('detail');
-        $result = OrderChangeLogic::execute($params['id'], $this->adminId);
+        $params = (new OrderChangeValidate())->post()->goCheck('execute');
+        $result = OrderChangeLogic::execute((int)$params['id'], $this->adminId);
         if (true === $result) {
             return $this->success('执行成功');
         }
@@ -84,7 +85,7 @@ class OrderChangeController extends BaseAdminController
     public function logs()
     {
         $params = (new OrderChangeValidate())->get()->goCheck('logs');
-        $result = OrderChangeLogic::logs($params['id']);
+        $result = OrderChangeLogic::logs((int)$params['id']);
         return $this->data($result);
     }
 

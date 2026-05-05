@@ -28,8 +28,6 @@ const permissionAliasMap = [
     ['order.order/', 'ops.order/'],
     ['order.orderChange/', 'ops.orderChange/'],
     ['order.order_change/', 'ops.orderChange/'],
-    ['order.orderPause/', 'ops.orderPause/'],
-    ['order.order_pause/', 'ops.orderPause/'],
     ['order.refund/', 'ops.refund/'],
     ['order.payment/', 'ops.payment/'],
     ['aftersale.aftersale/', 'ops.aftersaleTicket/'],

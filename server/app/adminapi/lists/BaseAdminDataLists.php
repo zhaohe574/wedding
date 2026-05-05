@@ -44,5 +44,13 @@ abstract class BaseAdminDataLists extends BaseDataLists
         return \app\common\service\StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
     }
 
+    /**
+     * @notes 获取CRM顾问数据范围ID（0=不限制，-1=顾问角色未绑定资料）
+     */
+    protected function getCrmAdvisorScopeId(): int
+    {
+        return \app\common\service\CrmAdvisorScopeService::getAdvisorScopeId($this->adminId, $this->adminInfo);
+    }
+
 
 }

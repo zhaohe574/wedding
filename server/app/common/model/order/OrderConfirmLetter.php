@@ -15,6 +15,8 @@ class OrderConfirmLetter extends BaseModel
 
     protected $json = ['rendered_snapshot'];
 
+    protected $jsonAssoc = true;
+
     public const STATUS_ACTIVE = 0;
     public const STATUS_OUTDATED = 1;
 

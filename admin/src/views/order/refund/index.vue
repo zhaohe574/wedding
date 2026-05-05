@@ -339,7 +339,11 @@ const handleAudit = (row: any, approved: boolean) => {
 }
 
 const submitAudit = async () => {
-    await refundAudit(auditForm)
+    await refundAudit({
+        id: auditForm.id,
+        approved: auditForm.approved ? 1 : 0,
+        remark: auditForm.remark
+    })
     feedback.msgSuccess('审核成功')
     auditVisible.value = false
     getLists()

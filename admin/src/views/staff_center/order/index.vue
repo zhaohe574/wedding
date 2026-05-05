@@ -220,7 +220,7 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="创建时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="220" fixed="right">
+                <el-table-column label="操作" width="260" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
                         <el-button
@@ -246,6 +246,14 @@
                             @click="handleComplete(row)"
                         >
                             完成
+                        </el-button>
+                        <el-button
+                            v-if="Number(row.can_direct_reschedule || 0) === 1"
+                            type="primary"
+                            link
+                            @click="handleDirectReschedule(row)"
+                        >
+                            改期
                         </el-button>
                     </template>
                 </el-table-column>
@@ -451,11 +459,54 @@
             </div>
         </el-dialog>
 
+        <el-dialog v-model="directRescheduleVisible" title="订单改期" width="520px">
+            <el-form
+                ref="directRescheduleFormRef"
+                :model="directRescheduleForm"
+                :rules="directRescheduleRules"
+                label-width="96px"
+            >
+                <el-form-item label="订单编号">
+                    <span>{{ directRescheduleForm.order_sn || '-' }}</span>
+                </el-form-item>
+                <el-form-item label="当前日期">
+                    <span>{{ directRescheduleForm.current_service_date || '-' }}</span>
+                </el-form-item>
+                <el-form-item label="新服务日期" prop="service_date">
+                    <el-date-picker
+                        v-model="directRescheduleForm.service_date"
+                        type="date"
+                        value-format="YYYY-MM-DD"
+                        placeholder="请选择新服务日期"
+                        :disabled-date="disableTodayAndPastDate"
+                        class="w-full"
+                    />
+                </el-form-item>
+                <el-form-item label="改期原因" prop="reason">
+                    <el-input
+                        v-model="directRescheduleForm.reason"
+                        type="textarea"
+                        :rows="3"
+                        maxlength="255"
+                        show-word-limit
+                        placeholder="请输入改期原因"
+                    />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="directRescheduleVisible = false">取消</el-button>
+                <el-button type="primary" :loading="directRescheduleSubmitting" @click="submitDirectReschedule">
+                    确认改期
+                </el-button>
+            </template>
+        </el-dialog>
+
     </admin-page-shell>
 </template>
 
 <script setup lang="ts" name="staffCenterOrder">
 import { computed, onActivated, onDeactivated, onUnmounted, reactive, ref, watch } from 'vue'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
@@ -463,6 +514,7 @@ import {
     myOrderConfirm,
     myOrderComplete,
     myOrderDetail,
+    myOrderDirectReschedule,
     myOrders,
     myOrderStartService,
     myOrderStatistics
@@ -496,6 +548,20 @@ const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentOrder = ref<any>(null)
 const countdownNowTs = ref(Date.now())
+const directRescheduleVisible = ref(false)
+const directRescheduleSubmitting = ref(false)
+const directRescheduleFormRef = ref<FormInstance>()
+const directRescheduleForm = reactive({
+    id: 0,
+    order_sn: '',
+    current_service_date: '',
+    service_date: '',
+    reason: ''
+})
+const directRescheduleRules = reactive<FormRules>({
+    service_date: [{ required: true, message: '请选择新服务日期', trigger: 'change' }],
+    reason: [{ max: 255, message: '改期原因最多255个字符', trigger: 'blur' }]
+})
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let countdownRefreshing = false
 
@@ -932,6 +998,47 @@ const handleComplete = async (row: any) => {
     feedback.msgSuccess('操作成功')
     getLists()
     getStatistics()
+}
+
+const disableTodayAndPastDate = (date: Date) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return date.getTime() <= today.getTime()
+}
+
+const handleDirectReschedule = (row: any) => {
+    directRescheduleForm.id = Number(row.id || 0)
+    directRescheduleForm.order_sn = row.order_sn || ''
+    directRescheduleForm.current_service_date = row.service_date || ''
+    directRescheduleForm.service_date = ''
+    directRescheduleForm.reason = ''
+    directRescheduleVisible.value = true
+    directRescheduleFormRef.value?.clearValidate()
+}
+
+const submitDirectReschedule = async () => {
+    await directRescheduleFormRef.value?.validate()
+    if (directRescheduleForm.service_date === directRescheduleForm.current_service_date) {
+        feedback.msgError('新服务日期不能与当前服务日期相同')
+        return
+    }
+
+    directRescheduleSubmitting.value = true
+    try {
+        await myOrderDirectReschedule({
+            id: directRescheduleForm.id,
+            service_date: directRescheduleForm.service_date,
+            reason: directRescheduleForm.reason
+        })
+        feedback.msgSuccess('改期成功')
+        directRescheduleVisible.value = false
+        await Promise.all([getLists(), getStatistics()])
+        if (detailVisible.value && Number(currentOrder.value?.id || 0) === directRescheduleForm.id) {
+            currentOrder.value = await myOrderDetail({ id: directRescheduleForm.id })
+        }
+    } finally {
+        directRescheduleSubmitting.value = false
+    }
 }
 
 onActivated(() => {

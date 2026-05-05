@@ -242,6 +242,193 @@ class OrderChange extends BaseModel
     }
 
     /**
+     * @notes 检查订单是否存在待处理变更
+     * @param int $orderId
+     * @return bool
+     */
+    public static function hasPendingChange(int $orderId): bool
+    {
+        if ($orderId <= 0) {
+            return false;
+        }
+
+        return self::where('order_id', $orderId)
+            ->whereIn('change_status', [self::STATUS_PENDING, self::STATUS_APPROVED])
+            ->count() > 0;
+    }
+
+    /**
+     * @notes 根据订单状态判断是否允许后台直接改期
+     * @param int $orderStatus
+     * @param bool $isPaused
+     * @param bool $hasPendingChange
+     * @param int $staffScopeId
+     * @param bool $canManageWholeOrder
+     * @return bool
+     */
+    public static function canDirectRescheduleByState(
+        int $orderStatus,
+        bool $isPaused,
+        bool $hasPendingChange,
+        int $staffScopeId = 0,
+        bool $canManageWholeOrder = true
+    ): bool {
+        if (!in_array($orderStatus, [Order::STATUS_PAID, Order::STATUS_IN_SERVICE], true)) {
+            return false;
+        }
+
+        if ($isPaused || $hasPendingChange) {
+            return false;
+        }
+
+        if ($staffScopeId > 0 && !$canManageWholeOrder) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @notes 后台直接执行整单改期
+     * @param int $orderId
+     * @param string $newDate
+     * @param int $adminId
+     * @param string $reason
+     * @param int $staffScopeId
+     * @return array [bool $success, string $message, int $changeId]
+     */
+    public static function directDateReschedule(
+        int $orderId,
+        string $newDate,
+        int $adminId,
+        string $reason = '',
+        int $staffScopeId = 0
+    ): array {
+        $newDate = trim($newDate);
+        $reason = trim($reason);
+        if ($newDate === '' || strtotime($newDate) === false) {
+            return [false, '请选择新服务日期', 0];
+        }
+
+        $newDate = date('Y-m-d', strtotime($newDate));
+        if (strtotime($newDate) <= strtotime(date('Y-m-d'))) {
+            return [false, '新服务日期必须大于今天', 0];
+        }
+
+        Db::startTrans();
+        try {
+            /** @var Order|null $order */
+            $order = Order::where('id', $orderId)->lock(true)->find();
+            if (!$order) {
+                throw new \RuntimeException('订单不存在');
+            }
+
+            if (!in_array((int)$order->order_status, [Order::STATUS_PAID, Order::STATUS_IN_SERVICE], true)) {
+                throw new \RuntimeException('当前订单状态不支持变更');
+            }
+
+            if ((int)$order->is_paused === 1) {
+                throw new \RuntimeException('订单已暂停，请先恢复订单');
+            }
+
+            if (self::hasPendingChange($orderId)) {
+                throw new \RuntimeException('存在未处理的变更申请，请等待处理完成后再申请');
+            }
+
+            if ($staffScopeId > 0 && !Order::isWholeOrderOwnedByStaff($orderId, $staffScopeId)) {
+                throw new \RuntimeException('共享订单不支持服务人员直接改期，请联系管理员处理');
+            }
+
+            $items = OrderItem::where('order_id', $orderId)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->lock(true)
+                ->select();
+            if ($items->isEmpty()) {
+                throw new \RuntimeException('订单项不存在');
+            }
+
+            $firstItem = $items[0] ?? null;
+            $oldServiceDate = (string)($firstItem->service_date ?? $order->service_date ?? '');
+            if ($oldServiceDate === $newDate) {
+                throw new \RuntimeException('新服务日期不能与当前服务日期相同');
+            }
+
+            $now = time();
+            $change = self::create([
+                'change_sn' => self::generateChangeSn(),
+                'order_id' => $orderId,
+                'order_sn' => $order->order_sn,
+                'user_id' => $order->user_id,
+                'change_type' => self::TYPE_DATE,
+                'change_status' => self::STATUS_APPROVED,
+                'old_service_date' => $oldServiceDate ?: null,
+                'new_service_date' => $newDate,
+                'old_time_slot' => 0,
+                'new_time_slot' => 0,
+                'apply_reason' => $reason,
+                'audit_admin_id' => $adminId,
+                'audit_time' => $now,
+                'audit_remark' => '后台直接改期，无需审核',
+                'attach_images' => [],
+                'create_time' => $now,
+                'update_time' => $now,
+            ]);
+
+            $result = self::executeDateChange($change, $order);
+            if (!$result['success']) {
+                Db::rollback();
+                return [false, (string)($result['message'] ?? '改期失败'), 0];
+            }
+
+            OrderConfirmLetterService::invalidateCurrentLetter($order, false);
+
+            $change->change_status = self::STATUS_EXECUTED;
+            $change->execute_time = time();
+            $change->execute_admin_id = $adminId;
+            $change->update_time = time();
+            $change->save();
+
+            Order::where('id', $orderId)->inc('change_count')->update([
+                'has_changed' => 1,
+                'update_time' => time(),
+            ]);
+
+            $logContent = "后台直接改期：{$oldServiceDate} → {$newDate}";
+            if ($reason !== '') {
+                $logContent .= "，原因：{$reason}";
+            }
+
+            OrderChangeLog::addLog(
+                $orderId,
+                OrderChangeLog::RELATED_TYPE_CHANGE,
+                (int)$change->id,
+                OrderChangeLog::OPERATOR_ADMIN,
+                $adminId,
+                'execute',
+                self::STATUS_APPROVED,
+                self::STATUS_EXECUTED,
+                $logContent
+            );
+
+            OrderLog::addLog(
+                $orderId,
+                OrderLog::OPERATOR_ADMIN,
+                $adminId,
+                'direct_reschedule',
+                (int)$order->order_status,
+                (int)$order->order_status,
+                $logContent
+            );
+
+            Db::commit();
+            return [true, '改期成功', (int)$change->id];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return [false, $e->getMessage(), 0];
+        }
+    }
+
+    /**
      * @notes 申请改期
      * @param int $userId
      * @param int $orderId
@@ -767,7 +954,12 @@ class OrderChange extends BaseModel
      */
     private static function executeDateChange(OrderChange $change, Order $order): array
     {
-        $items = OrderItem::where('order_id', $order->id)->select();
+        $items = OrderItem::where('order_id', $order->id)
+            ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->select();
+        if ($items->isEmpty()) {
+            return ['success' => false, 'message' => '订单项不存在'];
+        }
 
         // 二次验证所有订单项的新档期可用性
         foreach ($items as $item) {

@@ -13,14 +13,17 @@ use app\common\model\order\OrderConfirmLetterPushLog;
 use app\common\model\order\OrderItem;
 use app\common\model\order\Payment;
 use app\common\model\order\Refund;
+use app\common\service\storage\Driver as StorageDriver;
 use think\facade\Db;
+use think\facade\Log;
 
 class OrderConfirmLetterService
 {
-    public const RENDER_SPEC_VERSION = 'v3';
+    public const RENDER_SPEC_VERSION = 'v4.1';
     public const LEGACY_RENDER_SPEC_VERSION = 'v1';
     public const CONFIG_GROUP = 'order_confirmation_letter';
     public const CONFIG_KEY_REMARK_TEMPLATE = 'remark_template';
+    public const CONFIG_KEY_PAYMENT_NODE = 'payment_node';
     public const ERROR_TEMPLATE = 'REMARK_TEMPLATE_MISSING';
     public const ERROR_CONTACT_NAME = 'CONTACT_NAME_MISSING';
     public const ERROR_CONTACT_MOBILE = 'CONTACT_MOBILE_MISSING';
@@ -34,7 +37,14 @@ class OrderConfirmLetterService
     public const ERROR_ASSETS_MISSING = 'ASSETS_MISSING';
     public const ERROR_ASSET_RUNTIME = 'ASSET_RUNTIME_UNAVAILABLE';
     public const ERROR_ASSET_FONT = 'ASSET_FONT_MISSING';
+    public const ERROR_ASSET_FONT_FILE_MISSING = 'ASSET_FONT_FILE_MISSING';
+    public const ERROR_ASSET_FONT_FILE_UNREADABLE = 'ASSET_FONT_FILE_UNREADABLE';
+    public const ERROR_ASSET_FONT_RENDER = 'ASSET_FONT_RENDER_FAILED';
+    public const ERROR_ASSET_FONT_UNRECOGNIZED = 'ASSET_FONT_UNRECOGNIZED';
     public const ERROR_ASSET_RENDER = 'ASSET_RENDER_FAILED';
+    public const ERROR_ASSET_LOCAL_DIRECTORY = 'ASSET_LOCAL_DIRECTORY_FAILED';
+    public const ERROR_ASSET_TEMP_DIRECTORY = 'ASSET_TEMP_DIRECTORY_FAILED';
+    public const ERROR_ASSET_UPLOAD = 'ASSET_UPLOAD_FAILED';
     protected const ASSET_FONTS = [
         [
             'family' => 'Noto Sans SC',
@@ -48,21 +58,32 @@ class OrderConfirmLetterService
         ],
     ];
     protected const ASSET_FONT_DIR = 'app/common/resource/fonts';
+    protected const ASSET_STORAGE_DIR = 'uploads/order-confirm-letter';
+    protected const ASSET_TEMP_DIR = 'order-confirm-letter';
     protected const ASSET_PNG_RESOLUTION = 144;
     protected const DEFAULT_BRAND_NAME = '喜遇婚礼服务';
     protected const DEFAULT_BRAND_TAGLINE = 'MAISON DE MARIAGE · CONFIRMATION';
     protected const DEFAULT_FOOTER_NOTE = '请保存此确认函图片，作为婚礼服务安排与付款确认的纸本凭证。';
+    protected const BRAND_LOGO_MAX_BYTES = 1048576;
 
     public static function getTemplateConfig(): array
     {
         return [
             'remark_template' => (string) ConfigService::get(self::CONFIG_GROUP, self::CONFIG_KEY_REMARK_TEMPLATE, ''),
+            'payment_node' => self::getPaymentNodeConfig(),
         ];
     }
 
     public static function setTemplateConfig(array $params): void
     {
         ConfigService::set(self::CONFIG_GROUP, self::CONFIG_KEY_REMARK_TEMPLATE, trim((string) ($params['remark_template'] ?? '')));
+        if (array_key_exists('payment_node', $params)) {
+            ConfigService::set(
+                self::CONFIG_GROUP,
+                self::CONFIG_KEY_PAYMENT_NODE,
+                self::normalizePaymentNode((string) ($params['payment_node'] ?? ''))
+            );
+        }
     }
 
     public static function getRenderData(int $orderId, ?int $staffId = null): array
@@ -318,36 +339,7 @@ class OrderConfirmLetterService
 
     public static function historyForUser(int $orderId, int $userId): array
     {
-        $order = Order::where('id', $orderId)->where('user_id', $userId)->find();
-        if (!$order || self::calculateEffectivePaidAmount($orderId) <= 0) {
-            return [];
-        }
-
-        $currentLetterId = (int)($order->current_confirm_letter_id ?? 0);
-
-        return OrderConfirmLetter::where('order_id', $orderId)
-            ->order('version', 'desc')
-            ->select()
-            ->map(function (OrderConfirmLetter $letter) use ($currentLetterId) {
-                $isCurrent = (int)$letter->id === $currentLetterId
-                    && (int)$letter->is_outdated === OrderConfirmLetter::STATUS_ACTIVE;
-
-                return [
-                    'letter_id' => (int)$letter->id,
-                    'order_id' => (int)$letter->order_id,
-                    'version' => (int)$letter->version,
-                    'confirm_date' => (string)$letter->confirm_date,
-                    'is_current' => $isCurrent ? 1 : 0,
-                    'is_outdated' => (int)$letter->is_outdated,
-                    'is_pushed' => (int)$letter->is_pushed,
-                    'render_spec_version' => self::normalizeRenderSpecVersion((string) $letter->render_spec_version),
-                    'snapshot_hash' => (string) $letter->snapshot_hash,
-                    'full_image_url' => self::formatPublicImageUrl((string) $letter->full_image_url),
-                    'thumb_image_url' => self::formatPublicImageUrl((string) $letter->thumb_image_url),
-                    'can_view' => ($isCurrent && (int)$letter->is_pushed === 1) ? 1 : 0,
-                ];
-            })
-            ->toArray();
+        return [];
     }
 
     public static function detailForOrder(int $letterId, int $orderId): ?array
@@ -429,7 +421,14 @@ class OrderConfirmLetterService
             self::ERROR_ASSETS_MISSING => '请先完成确认函图片保存后再推送或查看',
             self::ERROR_ASSET_RUNTIME => '确认函图片生成环境缺少 Imagick 支持，请联系管理员处理',
             self::ERROR_ASSET_FONT => '确认函图片字体资源缺失，请联系管理员处理',
+            self::ERROR_ASSET_FONT_FILE_MISSING => '确认函图片字体文件不存在，请到订单确认函设置中检查字体配置',
+            self::ERROR_ASSET_FONT_FILE_UNREADABLE => '确认函图片字体文件不可读，请检查字体文件权限',
+            self::ERROR_ASSET_FONT_RENDER => '确认函图片中文渲染检测失败，请到订单确认函设置中检查字体检测结果',
+            self::ERROR_ASSET_FONT_UNRECOGNIZED => '确认函图片字体未被 ImageMagick 系统字体库识别，已尝试应用内字体绘制',
             self::ERROR_ASSET_RENDER => '确认函图片生成失败，请稍后重试',
+            self::ERROR_ASSET_LOCAL_DIRECTORY => '确认函图片目录创建失败，请检查 public/uploads 写入权限',
+            self::ERROR_ASSET_TEMP_DIRECTORY => '确认函图片临时目录创建失败，请检查 runtime 写入权限',
+            self::ERROR_ASSET_UPLOAD => '确认函图片上传云存储失败，请检查存储配置',
             default => $message,
         };
     }
@@ -502,6 +501,9 @@ class OrderConfirmLetterService
         $remainAmount = round(max($totalAmount - $paidAmount, 0), 2);
         $paidLabel = $paidAmount >= $totalAmount ? '已付全款' : '已付定金';
         $serviceDate = self::normalizeServiceDate((string) $order->service_date);
+        $brandConfig = self::resolveBrandConfig();
+        $fontSignature = OrderConfirmLetterFontService::getActiveFontSignature();
+        $remarkContent = trim((string) $qualification['remark_template']);
         return [
             'title' => '订单确认函',
             'order_sn' => trim((string) ($order->order_sn ?? '')),
@@ -517,11 +519,168 @@ class OrderConfirmLetterService
             'remain_amount' => number_format($remainAmount, 2, '.', ''),
             'confirm_date' => date('Y-m-d'),
             'contact_mobile' => trim((string) $order->contact_mobile),
-            'remark_content' => trim((string) $qualification['remark_template']),
-            'brand_name' => self::DEFAULT_BRAND_NAME,
-            'brand_tagline' => self::DEFAULT_BRAND_TAGLINE,
-            'footer_note' => self::DEFAULT_FOOTER_NOTE,
+            'remark_content' => $remarkContent,
+            'brand_name' => $brandConfig['brand_name'],
+            'brand_tagline' => $brandConfig['brand_tagline'],
+            'brand_logo' => $brandConfig['brand_logo'],
+            'brand_logo_data_uri' => $brandConfig['brand_logo_data_uri'],
+            'payment_node' => self::getPaymentNodeConfig(),
+            'footer_note' => $remarkContent !== '' ? $remarkContent : self::DEFAULT_FOOTER_NOTE,
+            'font_signature' => $fontSignature,
         ];
+    }
+
+    protected static function getPaymentNodeConfig(): string
+    {
+        return self::normalizePaymentNode((string) ConfigService::get(
+            self::CONFIG_GROUP,
+            self::CONFIG_KEY_PAYMENT_NODE,
+            ''
+        ));
+    }
+
+    protected static function normalizePaymentNode(string $paymentNode): string
+    {
+        $paymentNode = trim($paymentNode);
+        return $paymentNode !== '' ? $paymentNode : '婚礼前 3 日';
+    }
+
+    protected static function resolveBrandConfig(): array
+    {
+        $shopName = trim((string) ConfigService::get('website', 'shop_name', ''));
+        $shopSlogan = trim((string) ConfigService::get('website', 'shop_slogan', ''));
+        $shopLogo = trim((string) ConfigService::get('website', 'shop_logo', ''));
+
+        return [
+            'brand_name' => $shopName !== '' ? $shopName : self::DEFAULT_BRAND_NAME,
+            'brand_tagline' => $shopSlogan !== '' ? $shopSlogan : self::DEFAULT_BRAND_TAGLINE,
+            'brand_logo' => $shopLogo,
+            'brand_logo_data_uri' => self::resolveBrandLogoDataUri($shopLogo),
+        ];
+    }
+
+    protected static function resolveBrandLogoDataUri(string $logo): string
+    {
+        $logo = trim($logo);
+        if ($logo === '') {
+            return '';
+        }
+
+        if (preg_match('/^https?:\/\//i', $logo) === 1) {
+            $dataUri = self::readLogoDataUriFromUrl($logo);
+            if ($dataUri === '') {
+                self::logAssetFailure('确认函品牌 logo 远程读取失败，已降级为文字章', [
+                    'logo' => $logo,
+                ]);
+            }
+            return $dataUri;
+        }
+
+        $localPath = self::resolveStoredAssetAbsolutePath($logo);
+        if ($localPath !== '' && is_file($localPath)) {
+            $dataUri = self::readLogoDataUriFromPath($localPath);
+            if ($dataUri === '') {
+                self::logAssetFailure('确认函品牌 logo 本地读取失败，已降级为文字章', [
+                    'logo' => $logo,
+                    'path' => $localPath,
+                ]);
+            }
+            return $dataUri;
+        }
+
+        try {
+            $url = FileService::getFileUrl($logo);
+            if (preg_match('/^https?:\/\//i', $url) === 1) {
+                $dataUri = self::readLogoDataUriFromUrl($url);
+                if ($dataUri === '') {
+                    self::logAssetFailure('确认函品牌 logo 存储域名读取失败，已降级为文字章', [
+                        'logo' => $logo,
+                        'url' => $url,
+                    ]);
+                }
+                return $dataUri;
+            }
+        } catch (\Throwable $e) {
+            self::logAssetFailure('确认函品牌 logo 解析异常，已降级为文字章', [
+                'logo' => $logo,
+                'error' => $e->getMessage(),
+            ]);
+            return '';
+        }
+
+        self::logAssetFailure('确认函品牌 logo 路径不存在，已降级为文字章', [
+            'logo' => $logo,
+            'path' => $localPath,
+        ]);
+        return '';
+    }
+
+    protected static function readLogoDataUriFromPath(string $path): string
+    {
+        clearstatcache(true, $path);
+        $size = is_file($path) ? (int) filesize($path) : 0;
+        if ($size <= 0 || $size > self::BRAND_LOGO_MAX_BYTES || !is_readable($path)) {
+            return '';
+        }
+
+        $contents = @file_get_contents($path);
+        if (!is_string($contents) || $contents === '') {
+            return '';
+        }
+
+        $mime = self::detectLogoMime($path, $contents);
+        return $mime !== '' ? 'data:' . $mime . ';base64,' . base64_encode($contents) : '';
+    }
+
+    protected static function readLogoDataUriFromUrl(string $url): string
+    {
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 2,
+                'follow_location' => 1,
+            ],
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+        ]);
+        $contents = @file_get_contents($url, false, $context, 0, self::BRAND_LOGO_MAX_BYTES + 1);
+        if (!is_string($contents) || $contents === '' || strlen($contents) > self::BRAND_LOGO_MAX_BYTES) {
+            return '';
+        }
+
+        $mime = self::detectLogoMime($url, $contents);
+        return $mime !== '' ? 'data:' . $mime . ';base64,' . base64_encode($contents) : '';
+    }
+
+    protected static function detectLogoMime(string $source, string $contents): string
+    {
+        $path = parse_url($source, PHP_URL_PATH);
+        $extension = strtolower((string) pathinfo(is_string($path) ? $path : $source, PATHINFO_EXTENSION));
+        $mimes = [
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'webp' => 'image/webp',
+            'gif' => 'image/gif',
+            'svg' => 'image/svg+xml',
+        ];
+        if (isset($mimes[$extension])) {
+            return $mimes[$extension];
+        }
+
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo) {
+                $mime = (string) finfo_buffer($finfo, $contents);
+                finfo_close($finfo);
+                if (in_array($mime, $mimes, true)) {
+                    return $mime;
+                }
+            }
+        }
+
+        return '';
     }
 
     protected static function buildSnapshotHash(array $snapshot): string
@@ -622,10 +781,47 @@ class OrderConfirmLetterService
             'snapshot_hash' => (string) $letter->snapshot_hash,
             'full_image_url' => self::formatPublicImageUrl((string) $letter->full_image_url),
             'thumb_image_url' => self::formatPublicImageUrl((string) $letter->thumb_image_url),
-            'rendered_snapshot' => is_array($letter->rendered_snapshot) ? $letter->rendered_snapshot : [],
+            'rendered_snapshot' => self::normalizeRenderedSnapshot($letter),
         ];
 
         return array_merge($payload, $extra);
+    }
+
+    protected static function normalizeRenderedSnapshot(OrderConfirmLetter $letter): array
+    {
+        $snapshot = $letter->rendered_snapshot;
+        if ($snapshot instanceof \stdClass) {
+            $snapshot = self::decodeSnapshotObject($snapshot);
+        } elseif (is_string($snapshot)) {
+            $decoded = json_decode($snapshot, true);
+            $snapshot = is_array($decoded) ? $decoded : [];
+        } elseif (is_object($snapshot)) {
+            $snapshot = self::decodeSnapshotObject($snapshot);
+        }
+
+        return is_array($snapshot) ? $snapshot : [];
+    }
+
+    protected static function decodeSnapshotObject(object $snapshot): array
+    {
+        $encoded = json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (!is_string($encoded) || $encoded === '') {
+            return [];
+        }
+
+        $decoded = json_decode($encoded, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    protected static function logEmptyRenderedSnapshot(OrderConfirmLetter $letter): void
+    {
+        self::logAssetFailure('确认函渲染快照为空或无法解析', [
+            'letter_id' => (int) $letter->id,
+            'order_id' => (int) $letter->order_id,
+            'snapshot_hash' => (string) $letter->snapshot_hash,
+            'render_spec_version' => (string) $letter->render_spec_version,
+            'snapshot_type' => get_debug_type($letter->rendered_snapshot),
+        ]);
     }
 
     protected static function resolveCurrentEffectiveLetter(Order $order): ?OrderConfirmLetter
@@ -669,6 +865,14 @@ class OrderConfirmLetterService
             return '';
         }
 
+        if (preg_match('/^https?:\/\//i', $normalized) === 1) {
+            return FileService::getFileUrl($normalized);
+        }
+
+        if (!self::isLocalStorage() && is_file(self::resolveStoredAssetAbsolutePath($normalized))) {
+            return self::formatLocalPublicImageUrl($normalized);
+        }
+
         return FileService::getFileUrl($normalized);
     }
 
@@ -710,13 +914,15 @@ class OrderConfirmLetterService
 
     protected static function renderSvgForLetter(OrderConfirmLetter $letter): string
     {
-        $snapshot = is_array($letter->rendered_snapshot) ? $letter->rendered_snapshot : [];
+        $snapshot = self::normalizeRenderedSnapshot($letter);
         if (empty($snapshot)) {
+            self::logEmptyRenderedSnapshot($letter);
             throw new \RuntimeException(self::ERROR_ASSET_RENDER);
         }
 
         $svgContent = OrderConfirmLetterRenderer::render($snapshot, [
             'render_spec_version' => self::normalizeRenderSpecVersion((string) $letter->render_spec_version),
+            'font_options' => OrderConfirmLetterFontService::getActiveFontOptions(),
         ]);
         if (trim($svgContent) === '') {
             throw new \RuntimeException(self::ERROR_ASSET_RENDER);
@@ -759,6 +965,10 @@ class OrderConfirmLetterService
             return true;
         }
 
+        if (!self::isLocalStorage()) {
+            return true;
+        }
+
         $absolutePath = self::resolveStoredAssetAbsolutePath($storedPath);
         return $absolutePath !== '' && is_file($absolutePath);
     }
@@ -790,7 +1000,18 @@ class OrderConfirmLetterService
             return '';
         }
 
-        return FileService::getFileUrl(ltrim($normalized, '/'), 'public_path');
+        return rtrim(public_path(), '/\\')
+            . DIRECTORY_SEPARATOR
+            . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim($normalized, '/\\'));
+    }
+
+    protected static function formatLocalPublicImageUrl(string $url): string
+    {
+        try {
+            return FileService::format(request()->domain(), $url);
+        } catch (\Throwable $e) {
+            return '/' . ltrim($url, '/');
+        }
     }
 
     protected static function persistSvgAssets(int $orderId, string $snapshotHash, string $svgContent): array
@@ -800,15 +1021,29 @@ class OrderConfirmLetterService
             throw new \RuntimeException(self::ERROR_ASSETS_MISSING);
         }
 
-        $folder = 'uploads/order-confirm-letter/' . date('Ym');
+        $folder = self::ASSET_STORAGE_DIR . '/' . date('Ym');
         $hash = preg_replace('/[^a-z0-9]/i', '', $snapshotHash);
         $hash = $hash !== '' ? substr($hash, 0, 24) : substr(md5($svgContent), 0, 24);
-        $relativePath = sprintf('%s/order-%d-%s.png', $folder, $orderId, $hash);
+        $fileName = sprintf('order-%d-%s.png', $orderId, $hash);
+
+        if (!self::isLocalStorage()) {
+            return self::persistSvgAssetsToCloud($folder, $fileName, $svgContent);
+        }
+
+        return self::persistSvgAssetsToLocal($folder, $fileName, $svgContent);
+    }
+
+    protected static function persistSvgAssetsToLocal(string $folder, string $fileName, string $svgContent): array
+    {
+        $relativePath = $folder . '/' . $fileName;
         $absolutePath = FileService::getFileUrl($relativePath, 'public_path');
         $directory = dirname($absolutePath);
-        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
-            throw new \RuntimeException('确认函图片目录创建失败');
-        }
+        self::ensureAssetDirectory($directory, self::ERROR_ASSET_LOCAL_DIRECTORY, [
+            'storage' => 'local',
+            'folder' => $folder,
+            'file_name' => $fileName,
+            'public_path' => public_path(),
+        ]);
         self::rasterizeSvgAssets($svgContent, $absolutePath);
 
         return [
@@ -817,23 +1052,168 @@ class OrderConfirmLetterService
         ];
     }
 
+    protected static function persistSvgAssetsToCloud(string $folder, string $fileName, string $svgContent): array
+    {
+        $storage = self::getStorageDefault();
+        $tempPath = self::buildTempAssetPath($fileName, $storage);
+
+        try {
+            self::rasterizeSvgAssets($svgContent, $tempPath);
+
+            $storageConfig = ConfigService::get('storage') ?? ['local' => []];
+            if (empty($storageConfig[$storage]) || !is_array($storageConfig[$storage])) {
+                self::logAssetFailure('确认函图片云存储配置缺失', [
+                    'storage' => $storage,
+                    'folder' => $folder,
+                    'file_name' => $fileName,
+                ]);
+                throw new \RuntimeException(self::ERROR_ASSET_UPLOAD);
+            }
+
+            $storageDriver = new StorageDriver([
+                'default' => $storage,
+                'engine' => $storageConfig,
+            ]);
+            $storageDriver->setUploadFileByReal($tempPath, $fileName);
+            $uploadedFileName = str_replace('\\', '/', (string) $storageDriver->getFileName());
+            if (!$storageDriver->upload($folder)) {
+                self::logAssetFailure('确认函图片上传云存储失败', [
+                    'storage' => $storage,
+                    'folder' => $folder,
+                    'file_name' => $uploadedFileName,
+                    'driver_error' => $storageDriver->getError(),
+                ]);
+                throw new \RuntimeException(self::ERROR_ASSET_UPLOAD);
+            }
+
+            $relativePath = $folder . '/' . $uploadedFileName;
+            return [
+                'full_image_url' => $relativePath,
+                'thumb_image_url' => $relativePath,
+            ];
+        } catch (\Throwable $e) {
+            if ($e instanceof \RuntimeException && in_array($e->getMessage(), [
+                self::ERROR_ASSET_RUNTIME,
+                self::ERROR_ASSET_FONT,
+                self::ERROR_ASSET_FONT_FILE_MISSING,
+                self::ERROR_ASSET_FONT_FILE_UNREADABLE,
+                self::ERROR_ASSET_FONT_RENDER,
+                self::ERROR_ASSET_FONT_UNRECOGNIZED,
+                self::ERROR_ASSET_RENDER,
+                self::ERROR_ASSET_TEMP_DIRECTORY,
+                self::ERROR_ASSET_UPLOAD,
+            ], true)) {
+                throw $e;
+            }
+
+            self::logAssetFailure('确认函图片上传云存储异常', [
+                'storage' => $storage,
+                'folder' => $folder,
+                'file_name' => $fileName,
+                'error' => $e->getMessage(),
+            ]);
+            throw new \RuntimeException(self::ERROR_ASSET_UPLOAD, 0, $e);
+        } finally {
+            if (is_file($tempPath)) {
+                @unlink($tempPath);
+            }
+        }
+    }
+
+    protected static function buildTempAssetPath(string $fileName, string $storage): string
+    {
+        $directory = rtrim(runtime_path(), '/\\') . DIRECTORY_SEPARATOR . self::ASSET_TEMP_DIR;
+        self::ensureAssetDirectory($directory, self::ERROR_ASSET_TEMP_DIRECTORY, [
+            'storage' => $storage,
+            'folder' => self::ASSET_TEMP_DIR,
+            'file_name' => $fileName,
+            'runtime_path' => runtime_path(),
+        ]);
+
+        $pathInfo = pathinfo($fileName);
+        $baseName = preg_replace('/[^a-z0-9_-]/i', '', (string) ($pathInfo['filename'] ?? 'confirm-letter'));
+        $baseName = $baseName !== '' ? $baseName : 'confirm-letter';
+        return $directory . DIRECTORY_SEPARATOR . $baseName . '-' . uniqid('', true) . '.png';
+    }
+
+    protected static function ensureAssetDirectory(string $directory, string $errorCode, array $context = []): void
+    {
+        clearstatcache(true, $directory);
+        if (is_dir($directory)) {
+            if (!is_writable($directory)) {
+                self::logAssetFailure('确认函图片目录不可写', array_merge($context, [
+                    'directory' => $directory,
+                    'parent_directory' => dirname($directory),
+                    'parent_exists' => is_dir(dirname($directory)) ? 1 : 0,
+                    'parent_writable' => is_writable(dirname($directory)) ? 1 : 0,
+                ]));
+                throw new \RuntimeException($errorCode);
+            }
+            return;
+        }
+
+        $created = @mkdir($directory, 0775, true);
+        clearstatcache(true, $directory);
+        if ($created && is_dir($directory)) {
+            @chmod($directory, 0775);
+            if (!is_writable($directory)) {
+                self::logAssetFailure('确认函图片目录创建后不可写', array_merge($context, [
+                    'directory' => $directory,
+                    'parent_directory' => dirname($directory),
+                    'parent_exists' => is_dir(dirname($directory)) ? 1 : 0,
+                    'parent_writable' => is_writable(dirname($directory)) ? 1 : 0,
+                ]));
+                throw new \RuntimeException($errorCode);
+            }
+            return;
+        }
+
+        self::logAssetFailure('确认函图片目录创建失败', array_merge($context, [
+            'directory' => $directory,
+            'parent_directory' => dirname($directory),
+            'parent_exists' => is_dir(dirname($directory)) ? 1 : 0,
+            'parent_writable' => is_writable(dirname($directory)) ? 1 : 0,
+            'last_error' => error_get_last(),
+        ]));
+        throw new \RuntimeException($errorCode);
+    }
+
+    protected static function getStorageDefault(): string
+    {
+        $storage = strtolower(trim((string) ConfigService::get('storage', 'default', 'local')));
+        return $storage !== '' ? $storage : 'local';
+    }
+
+    protected static function isLocalStorage(): bool
+    {
+        return self::getStorageDefault() === 'local';
+    }
+
+    protected static function logAssetFailure(string $message, array $context = []): void
+    {
+        try {
+            Log::write('订单确认函图片资产处理失败：' . $message . '，上下文：' . json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        } catch (\Throwable $e) {
+            // 日志失败不应覆盖确认函生成的真实异常。
+        }
+    }
+
     protected static function rasterizeSvgAssets(string $svgContent, string $absolutePath): void
     {
         if (!extension_loaded('imagick') || !class_exists(\Imagick::class)) {
             throw new \RuntimeException(self::ERROR_ASSET_RUNTIME);
         }
 
-        $fontDirectory = self::resolveAssetFontDirectory();
-        $previousFontPath = getenv('MAGICK_FONT_PATH');
         $imagick = new \Imagick();
 
         try {
-            putenv('MAGICK_FONT_PATH=' . $fontDirectory);
             self::ensureImagickFontReady();
             $imagick->setResolution(self::ASSET_PNG_RESOLUTION, self::ASSET_PNG_RESOLUTION);
             $imagick->setBackgroundColor(new \ImagickPixel('transparent'));
-            $imagick->readImageBlob($svgContent);
+            [$backgroundSvg, $textItems, $canvas] = self::stripSvgTextItems($svgContent);
+            $imagick->readImageBlob($backgroundSvg);
             $imagick->setImageFormat('png');
+            self::drawSvgTextItems($imagick, $textItems, $canvas);
             if (!$imagick->writeImage($absolutePath)) {
                 throw new \RuntimeException(self::ERROR_ASSET_RENDER);
             }
@@ -842,6 +1222,10 @@ class OrderConfirmLetterService
             if ($e instanceof \RuntimeException && in_array($e->getMessage(), [
                 self::ERROR_ASSET_RUNTIME,
                 self::ERROR_ASSET_FONT,
+                self::ERROR_ASSET_FONT_FILE_MISSING,
+                self::ERROR_ASSET_FONT_FILE_UNREADABLE,
+                self::ERROR_ASSET_FONT_RENDER,
+                self::ERROR_ASSET_FONT_UNRECOGNIZED,
                 self::ERROR_ASSET_RENDER,
             ], true)) {
                 throw $e;
@@ -851,48 +1235,276 @@ class OrderConfirmLetterService
         } finally {
             $imagick->clear();
             $imagick->destroy();
-            if ($previousFontPath === false || $previousFontPath === '') {
-                putenv('MAGICK_FONT_PATH');
-            } else {
-                putenv('MAGICK_FONT_PATH=' . $previousFontPath);
+        }
+    }
+
+    protected static function stripSvgTextItems(string $svgContent): array
+    {
+        if (!class_exists(\DOMDocument::class)) {
+            return [$svgContent, []];
+        }
+
+        $previous = libxml_use_internal_errors(true);
+        $document = new \DOMDocument('1.0', 'UTF-8');
+        $loaded = $document->loadXML($svgContent);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        if (!$loaded) {
+            return [$svgContent, [], []];
+        }
+
+        $xpath = new \DOMXPath($document);
+        $xpath->registerNamespace('svg', 'http://www.w3.org/2000/svg');
+        $root = $document->documentElement;
+        $canvas = [
+            'width' => self::readSvgRootNumber($root, 'width', 0.0),
+            'height' => self::readSvgRootNumber($root, 'height', 0.0),
+        ];
+        if ($root instanceof \DOMElement) {
+            $viewBox = trim($root->getAttribute('viewBox'));
+            $viewBoxParts = preg_split('/[\s,]+/', $viewBox) ?: [];
+            if (count($viewBoxParts) === 4) {
+                $canvas['width'] = (float) $viewBoxParts[2];
+                $canvas['height'] = (float) $viewBoxParts[3];
             }
         }
+
+        $nodes = [];
+        foreach ($xpath->query('//svg:text') ?: [] as $node) {
+            if ($node instanceof \DOMElement) {
+                $nodes[] = $node;
+            }
+        }
+
+        $textItems = [];
+        foreach ($nodes as $node) {
+            $text = trim((string) $node->textContent);
+            if ($text === '') {
+                $node->parentNode?->removeChild($node);
+                continue;
+            }
+
+            $textItems[] = [
+                'text' => html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8'),
+                'x' => self::readSvgNumber($node, 'x', 0.0),
+                'y' => self::readSvgNumber($node, 'y', 0.0),
+                'font_size' => max(1.0, self::readSvgNumber($node, 'font-size', 16.0)),
+                'fill' => self::normalizeSvgColor($node->getAttribute('fill') ?: '#000000'),
+                'font_family' => $node->getAttribute('font-family'),
+                'text_anchor' => $node->getAttribute('text-anchor') ?: 'start',
+                'letter_spacing' => self::readSvgNumber($node, 'letter-spacing', 0.0),
+                'translate' => self::resolveSvgTranslate($node),
+            ];
+
+            $node->parentNode?->removeChild($node);
+        }
+
+        $backgroundSvg = $document->saveXML($document->documentElement);
+        return [is_string($backgroundSvg) ? $backgroundSvg : $svgContent, $textItems, $canvas];
+    }
+
+    protected static function drawSvgTextItems(\Imagick $imagick, array $textItems, array $canvas = []): void
+    {
+        if (empty($textItems)) {
+            return;
+        }
+
+        $scaleX = !empty($canvas['width']) ? $imagick->getImageWidth() / (float) $canvas['width'] : 1.0;
+        $scaleY = !empty($canvas['height']) ? $imagick->getImageHeight() / (float) $canvas['height'] : $scaleX;
+        $scale = ($scaleX + $scaleY) / 2;
+        $fontOptions = OrderConfirmLetterFontService::getActiveFontOptions();
+        foreach ($textItems as $item) {
+            $text = (string) ($item['text'] ?? '');
+            if ($text === '') {
+                continue;
+            }
+
+            $draw = new \ImagickDraw();
+            try {
+                $fontPath = self::resolveTextItemFontPath((string) ($item['font_family'] ?? ''), $fontOptions);
+                if ($fontPath === '' || !is_file($fontPath)) {
+                    self::logAssetFailure('确认函图片字体文件不存在', [
+                        'render_spec_version' => self::RENDER_SPEC_VERSION,
+                        'font_family' => (string) ($item['font_family'] ?? ''),
+                        'font_options' => self::formatFontOptionsForLog($fontOptions),
+                    ]);
+                    throw new \RuntimeException(self::ERROR_ASSET_FONT_FILE_MISSING);
+                }
+                if (!is_readable($fontPath)) {
+                    self::logAssetFailure('确认函图片字体文件不可读', [
+                        'render_spec_version' => self::RENDER_SPEC_VERSION,
+                        'font_family' => (string) ($item['font_family'] ?? ''),
+                        'font_path' => $fontPath,
+                    ]);
+                    throw new \RuntimeException(self::ERROR_ASSET_FONT_FILE_UNREADABLE);
+                }
+                $fontSize = max(1.0, (float) ($item['font_size'] ?? 16.0) * $scale);
+                $draw->setFont($fontPath);
+                $draw->setFontSize($fontSize);
+                $draw->setFillColor(new \ImagickPixel((string) ($item['fill'] ?? '#000000')));
+
+                $x = ((float) ($item['x'] ?? 0.0) + (float) ($item['translate']['x'] ?? 0.0)) * $scaleX;
+                $y = ((float) ($item['y'] ?? 0.0) + (float) ($item['translate']['y'] ?? 0.0)) * $scaleY;
+                $letterSpacing = (float) ($item['letter_spacing'] ?? 0.0) * $scale;
+                $textAnchor = (string) ($item['text_anchor'] ?? 'start');
+                if ($letterSpacing !== 0.0 && self::isAsciiText($text)) {
+                    self::drawTextWithLetterSpacing($imagick, $draw, $text, $x, $y, $letterSpacing, $textAnchor);
+                    continue;
+                }
+
+                if ($textAnchor === 'middle') {
+                    $metrics = $imagick->queryFontMetrics($draw, $text);
+                    $x -= (float) ($metrics['textWidth'] ?? 0) / 2;
+                } elseif ($textAnchor === 'end') {
+                    $metrics = $imagick->queryFontMetrics($draw, $text);
+                    $x -= (float) ($metrics['textWidth'] ?? 0);
+                }
+                $imagick->annotateImage($draw, $x, $y, 0, $text);
+            } finally {
+                $draw->clear();
+                $draw->destroy();
+            }
+        }
+    }
+
+    protected static function formatFontOptionsForLog(array $fontOptions): array
+    {
+        return [
+            'sans_file' => (string) ($fontOptions['sans_file'] ?? ''),
+            'serif_file' => (string) ($fontOptions['serif_file'] ?? ''),
+            'sans_path' => (string) ($fontOptions['sans_path'] ?? ''),
+            'serif_path' => (string) ($fontOptions['serif_path'] ?? ''),
+            'font_hash' => (string) (OrderConfirmLetterFontService::getActiveFontSignature($fontOptions)['hash'] ?? ''),
+        ];
+    }
+
+    protected static function drawTextWithLetterSpacing(
+        \Imagick $imagick,
+        \ImagickDraw $draw,
+        string $text,
+        float $x,
+        float $y,
+        float $letterSpacing,
+        string $textAnchor
+    ): void {
+        $chars = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if (empty($chars)) {
+            return;
+        }
+
+        $width = 0.0;
+        $charMetrics = [];
+        foreach ($chars as $char) {
+            $metrics = $imagick->queryFontMetrics($draw, $char);
+            $advance = (float) ($metrics['textWidth'] ?? 0);
+            $charMetrics[] = [$char, $advance];
+            $width += $advance;
+        }
+        $width += max(count($chars) - 1, 0) * $letterSpacing;
+        if ($textAnchor === 'middle') {
+            $x -= $width / 2;
+        } elseif ($textAnchor === 'end') {
+            $x -= $width;
+        }
+
+        foreach ($charMetrics as [$char, $advance]) {
+            $imagick->annotateImage($draw, $x, $y, 0, (string) $char);
+            $x += (float) $advance + $letterSpacing;
+        }
+    }
+
+    protected static function resolveTextItemFontPath(string $fontFamily, array $fontOptions): string
+    {
+        $serifFamily = (string) ($fontOptions['serif_family'] ?? 'OrderConfirmLetterSerif');
+        $sansPath = (string) ($fontOptions['sans_path'] ?? '');
+        $serifPath = (string) ($fontOptions['serif_path'] ?? '');
+        if (str_contains($fontFamily, $serifFamily)
+            || str_contains($fontFamily, 'Noto Serif SC')
+            || str_contains($fontFamily, 'Georgia')
+            || str_contains($fontFamily, 'Times New Roman')
+        ) {
+            return $serifPath !== '' ? $serifPath : $sansPath;
+        }
+        return $sansPath !== '' ? $sansPath : $serifPath;
+    }
+
+    protected static function readSvgNumber(\DOMElement $node, string $attribute, float $default): float
+    {
+        $value = trim($node->getAttribute($attribute));
+        if ($value === '' || preg_match('/-?\d+(?:\.\d+)?/', $value, $matches) !== 1) {
+            return $default;
+        }
+        return (float) $matches[0];
+    }
+
+    protected static function readSvgRootNumber(?\DOMElement $node, string $attribute, float $default): float
+    {
+        if (!$node) {
+            return $default;
+        }
+        return self::readSvgNumber($node, $attribute, $default);
+    }
+
+    protected static function resolveSvgTranslate(\DOMElement $node): array
+    {
+        $x = 0.0;
+        $y = 0.0;
+        $current = $node->parentNode;
+        while ($current instanceof \DOMElement) {
+            $transform = $current->getAttribute('transform');
+            if ($transform !== '' && preg_match_all('/translate\(([^)]*)\)/', $transform, $matches)) {
+                foreach ($matches[1] as $translate) {
+                    $parts = preg_split('/[\s,]+/', trim((string) $translate)) ?: [];
+                    $x += isset($parts[0]) ? (float) $parts[0] : 0.0;
+                    $y += isset($parts[1]) ? (float) $parts[1] : 0.0;
+                }
+            }
+            $current = $current->parentNode;
+        }
+        return ['x' => $x, 'y' => $y];
+    }
+
+    protected static function normalizeSvgColor(string $color): string
+    {
+        $color = trim($color);
+        if ($color === '' || strtolower($color) === 'none') {
+            return '#000000';
+        }
+        return $color;
+    }
+
+    protected static function isAsciiText(string $text): bool
+    {
+        return preg_match('/^[\x20-\x7E]+$/', $text) === 1;
     }
 
     protected static function resolveAssetFontDirectory(): string
     {
-        $fontDirectory = rtrim((string) root_path(), '/\\')
-            . DIRECTORY_SEPARATOR
-            . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, self::ASSET_FONT_DIR);
-        foreach (self::ASSET_FONTS as $font) {
-            $fontFilePath = $fontDirectory . DIRECTORY_SEPARATOR . (string) ($font['file'] ?? '');
-            if (!is_file($fontFilePath)) {
-                throw new \RuntimeException(self::ERROR_ASSET_FONT);
-            }
-        }
-
-        return $fontDirectory;
+        return OrderConfirmLetterFontService::getFontDirectory();
     }
 
     protected static function ensureImagickFontReady(): void
     {
-        if (!method_exists(\Imagick::class, 'queryFonts')) {
-            return;
+        $fontOptions = OrderConfirmLetterFontService::getActiveFontOptions();
+        foreach (['sans_path', 'serif_path'] as $pathKey) {
+            $path = (string) ($fontOptions[$pathKey] ?? '');
+            if ($path === '' || !is_file($path)) {
+                throw new \RuntimeException(self::ERROR_ASSET_FONT_FILE_MISSING);
+            }
+            if (!is_readable($path)) {
+                throw new \RuntimeException(self::ERROR_ASSET_FONT_FILE_UNREADABLE);
+            }
         }
 
         try {
-            foreach (self::ASSET_FONTS as $font) {
-                $fonts = \Imagick::queryFonts((string) ($font['query'] ?? '*'));
-                if (empty($fonts)) {
-                    throw new \RuntimeException(self::ERROR_ASSET_FONT);
-                }
-            }
+            OrderConfirmLetterFontService::assertActiveFontsRenderable($fontOptions);
         } catch (\Throwable $e) {
-            if ($e instanceof \RuntimeException && $e->getMessage() === self::ERROR_ASSET_FONT) {
-                throw $e;
-            }
-
-            throw new \RuntimeException(self::ERROR_ASSET_FONT, 0, $e);
+            self::logAssetFailure('确认函图片中文渲染检测失败', [
+                'sans_file' => (string) ($fontOptions['sans_file'] ?? ''),
+                'serif_file' => (string) ($fontOptions['serif_file'] ?? ''),
+                'error' => $e->getMessage(),
+            ]);
+            throw new \RuntimeException(self::ERROR_ASSET_FONT_RENDER, 0, $e);
         }
     }
 }

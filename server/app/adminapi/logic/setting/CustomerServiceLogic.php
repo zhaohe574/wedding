@@ -50,6 +50,8 @@ class CustomerServiceLogic extends BaseLogic
             'wecom_secret' => ConfigService::get('customer_service', 'wecom_secret', '') ? self::SECRET_MASK : '',
             'wecom_secret_filled' => ConfigService::get('customer_service', 'wecom_secret', '') ? 1 : 0,
             'wecom_agent_id' => (int) ConfigService::get('customer_service', 'wecom_agent_id', 0),
+            'wecom_card_mode' => self::normalizeWecomCardMode(ConfigService::get('customer_service', 'wecom_card_mode', 'mini_first')),
+            'mnp_app_id_filled' => ConfigService::get('mnp_setting', 'app_id', '') ? 1 : 0,
         ];
         return $config;
     }
@@ -62,7 +64,7 @@ class CustomerServiceLogic extends BaseLogic
      */
     public static function setConfig($params)
     {
-        $allowField = ['qr_code','wechat','phone','service_time','contact_link','tips', 'wecom_enabled', 'wecom_corp_id', 'wecom_secret', 'wecom_agent_id'];
+        $allowField = ['qr_code','wechat','phone','service_time','contact_link','tips', 'wecom_enabled', 'wecom_corp_id', 'wecom_secret', 'wecom_agent_id', 'wecom_card_mode'];
         foreach($params as $key => $value) {
             if(in_array($key, $allowField)) {
                 if ($key == 'qr_code') {
@@ -76,6 +78,9 @@ class CustomerServiceLogic extends BaseLogic
                 }
                 if (in_array($key, ['wecom_enabled', 'wecom_agent_id'], true)) {
                     $value = (int) $value;
+                }
+                if ($key === 'wecom_card_mode') {
+                    $value = self::normalizeWecomCardMode($value);
                 }
                 ConfigService::set('customer_service', $key, $value);
             }
@@ -100,7 +105,27 @@ class CustomerServiceLogic extends BaseLogic
             return ['success' => false, 'message' => '测试内容不能超过500个字符'];
         }
 
-        $success = WeComMessageService::sendTextToUsers([$wecomUserid], $content);
+        $description = WeComMessageService::buildTextCardDescription(
+            '企业微信通知测试',
+            '收到此卡片说明企业微信应用消息可用。',
+            [
+                '测试内容' => $content,
+                '接收成员ID' => $wecomUserid,
+                '发送时间' => date('Y-m-d H:i:s'),
+            ],
+            '请确认卡片内容、跳转和接收成员均符合预期。'
+        );
+
+        $success = WeComMessageService::sendTextCardToUsers(
+            [$wecomUserid],
+            '企业微信通知测试',
+            $description,
+            WeComMessageService::buildBackendUrl('/admin/setting/wecom'),
+            '查看配置',
+            [
+                'mini_pagepath' => WeComMessageService::buildWecomNoticePagePath('wecom_test'),
+            ]
+        );
         if (!$success) {
             return [
                 'success' => false,
@@ -108,6 +133,18 @@ class CustomerServiceLogic extends BaseLogic
             ];
         }
 
-        return ['success' => true, 'message' => '测试消息已发送'];
+        $channelDesc = WeComMessageService::getLastSendChannelDesc();
+        return [
+            'success' => true,
+            'message' => $channelDesc !== '' ? '测试消息已发送：' . $channelDesc : '测试消息已发送',
+            'send_channel' => WeComMessageService::getLastSendChannel(),
+            'send_channel_desc' => $channelDesc,
+        ];
+    }
+
+    private static function normalizeWecomCardMode($value): string
+    {
+        $value = trim((string) $value);
+        return in_array($value, ['mini_first', 'backend_only'], true) ? $value : 'mini_first';
     }
 }

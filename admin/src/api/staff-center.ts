@@ -204,6 +204,10 @@ export function myOrderComplete(params: any) {
     return request.post({ url: '/ops.order/myOrderComplete', params })
 }
 
+export function myOrderDirectReschedule(params: any) {
+    return request.post({ url: '/ops.order/myOrderDirectReschedule', params })
+}
+
 export function myOrderStatistics(params?: any) {
     return request.get({ url: '/ops.order/myOrderStatistics', params })
 }

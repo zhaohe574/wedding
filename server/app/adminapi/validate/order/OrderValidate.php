@@ -66,6 +66,7 @@ class OrderValidate extends BaseValidate
         'items.require' => '请添加订单项',
         'items.array' => '订单项格式错误',
         'items.min' => '至少添加一个订单项',
+        'service_date.require' => '请选择服务日期',
         'service_date.date' => '服务日期格式错误',
         'service_address.max' => '服务地址最多255个字符',
         'contact_name.require' => '请填写联系人',
@@ -280,6 +281,16 @@ class OrderValidate extends BaseValidate
     public function sceneCancel()
     {
         return $this->only(['id', 'reason']);
+    }
+
+    /**
+     * @notes 直接改期场景
+     * @return OrderValidate
+     */
+    public function sceneDirectReschedule()
+    {
+        return $this->only(['id', 'service_date', 'reason'])
+            ->append('service_date', 'require');
     }
 
     /**

@@ -11,6 +11,7 @@ class OrderConfirmLetterRenderer
 {
     public const FONT_FAMILY_SANS = 'Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif';
     public const FONT_FAMILY_SERIF = 'Noto Serif SC, Georgia, Times New Roman, serif';
+    protected static array $fontOptions = [];
 
     protected const DEFAULT_TITLE = '订单确认函';
     protected const DEFAULT_HERO_EYEBROW = 'ORDER CONFIRMATION LETTER';
@@ -21,11 +22,17 @@ class OrderConfirmLetterRenderer
     protected const V3_DEFAULT_SUBTITLE = 'Wedding Order Confirmation';
     protected const V3_DEFAULT_HERO_DESC = '以法式纸本礼仪的方式，确认本次婚礼档期、服务内容与付款安排。';
     protected const V3_FOOTER_KICKER = 'Avec amour et promesse.';
+    protected const V4_DEFAULT_SUBTITLE = 'Wedding Order Confirmation';
 
     public static function render(array $snapshot, array $options = []): string
     {
         $renderSpecVersion = (string) ($options['render_spec_version'] ?? $options['renderSpecVersion'] ?? 'v1');
         $small = (bool) ($options['small'] ?? false);
+        self::$fontOptions = is_array($options['font_options'] ?? null) ? $options['font_options'] : [];
+
+        if (self::isV4Spec($renderSpecVersion)) {
+            return self::renderV4OrderConfirmLetterSvg($snapshot, $small);
+        }
 
         if (self::isV3Spec($renderSpecVersion)) {
             return self::renderV3OrderConfirmLetterSvg($snapshot, $small);
@@ -39,6 +46,11 @@ class OrderConfirmLetterRenderer
     protected static function isV3Spec(string $renderSpecVersion): bool
     {
         return str_starts_with(strtolower(trim($renderSpecVersion)), 'v3');
+    }
+
+    protected static function isV4Spec(string $renderSpecVersion): bool
+    {
+        return str_starts_with(strtolower(trim($renderSpecVersion)), 'v4');
     }
 
     protected static function isV2Spec(string $renderSpecVersion): bool
@@ -75,7 +87,55 @@ class OrderConfirmLetterRenderer
 
     protected static function getTextFontAttr(?string $fontFamily = null): string
     {
-        return ' font-family="' . self::escapeXml($fontFamily ?: self::FONT_FAMILY_SANS) . '"';
+        $resolvedFamily = self::resolveFontFamily($fontFamily ?: self::FONT_FAMILY_SANS);
+        return ' font-family="' . self::escapeXml($resolvedFamily) . '"';
+    }
+
+    protected static function resolveFontFamily(string $fontFamily): string
+    {
+        $sansFamily = trim((string) (self::$fontOptions['sans_family'] ?? ''));
+        $serifFamily = trim((string) (self::$fontOptions['serif_family'] ?? ''));
+        if ($fontFamily === self::FONT_FAMILY_SANS && $sansFamily !== '') {
+            return $sansFamily . ', ' . self::FONT_FAMILY_SANS;
+        }
+        if ($fontFamily === self::FONT_FAMILY_SERIF && $serifFamily !== '') {
+            return $serifFamily . ', ' . self::FONT_FAMILY_SERIF;
+        }
+        return $fontFamily;
+    }
+
+    protected static function buildFontFaceDefs(): string
+    {
+        $defs = '';
+        foreach ([
+            'sans' => 'sans_path',
+            'serif' => 'serif_path',
+        ] as $type => $pathKey) {
+            $family = trim((string) (self::$fontOptions[$type . '_family'] ?? ''));
+            $path = trim((string) (self::$fontOptions[$pathKey] ?? ''));
+            if ($family === '' || $path === '' || !is_file($path)) {
+                continue;
+            }
+            $format = strtolower((string) pathinfo($path, PATHINFO_EXTENSION)) === 'otf'
+                ? 'opentype'
+                : 'truetype';
+            $defs .= sprintf(
+                '<style type="text/css"><![CDATA[@font-face{font-family:"%s";src:url("%s") format("%s");font-weight:100 900;font-style:normal;}]]></style>',
+                self::escapeXml($family),
+                self::formatFontFileUri($path),
+                $format
+            );
+        }
+        return $defs;
+    }
+
+    protected static function formatFontFileUri(string $path): string
+    {
+        $normalized = str_replace('\\', '/', $path);
+        if (preg_match('/^[a-zA-Z]:\//', $normalized) === 1) {
+            return 'file:///' . $normalized;
+        }
+        return 'file://' . $normalized;
     }
 
     protected static function strLength(string $value): int
@@ -138,13 +198,28 @@ class OrderConfirmLetterRenderer
         }
 
         $visibleLines = array_slice($lines, 0, $maxLines);
-        if ($truncated && !empty($visibleLines)) {
-            $lastIndex = count($visibleLines) - 1;
-            $lastLine = (string) $visibleLines[$lastIndex];
-            $visibleLines[$lastIndex] = self::strSlice($lastLine, 0, max($maxCharsPerLine - 3, 0)) . '...';
-        }
 
         return !empty($visibleLines) ? $visibleLines : [''];
+    }
+
+    protected static function fitTextLine(string $text, int $maxCharsPerLine, float $baseFontSize, float $minFontSize): array
+    {
+        $text = self::toText($text);
+        $length = max(self::strLength($text), 1);
+        if ($length <= $maxCharsPerLine) {
+            return [
+                'lines' => [$text],
+                'fontSize' => $baseFontSize,
+                'lineHeight' => $baseFontSize,
+            ];
+        }
+
+        $fontSize = max($minFontSize, $baseFontSize * $maxCharsPerLine / $length);
+        return [
+            'lines' => [$text],
+            'fontSize' => $fontSize,
+            'lineHeight' => $baseFontSize,
+        ];
     }
 
     protected static function drawTextBlock(array $options): array
@@ -344,11 +419,12 @@ class OrderConfirmLetterRenderer
         }
 
         return sprintf(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s"><rect width="100%%" height="100%%" fill="#ffffff" rx="24" />%s</svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s"><defs>%s</defs><rect width="100%%" height="100%%" fill="#ffffff" rx="24" />%s</svg>',
             $width,
             $height,
             $width,
             $height,
+            self::buildFontFaceDefs(),
             implode('', $texts)
         );
     }
@@ -674,11 +750,12 @@ class OrderConfirmLetterRenderer
         );
 
         return sprintf(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s"><defs><linearGradient id="pageGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FCFBF9" /><stop offset="100%%" stop-color="#FFF4EF" /></linearGradient><linearGradient id="heroGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0%%" stop-color="#FFF7F4" /><stop offset="100%%" stop-color="#FDE9E2" /></linearGradient><filter id="paperShadow" x="-20%%" y="-20%%" width="140%%" height="160%%"><feDropShadow dx="0" dy="24" stdDeviation="18" flood-color="#DAB5A6" flood-opacity="0.18" /></filter></defs><rect width="100%%" height="100%%" fill="url(#pageGradient)" /><rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="#FFFDFB" stroke="#EFE6E1" stroke-width="2" filter="url(#paperShadow)" />%s</svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s"><defs>%s<linearGradient id="pageGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FCFBF9" /><stop offset="100%%" stop-color="#FFF4EF" /></linearGradient><linearGradient id="heroGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0%%" stop-color="#FFF7F4" /><stop offset="100%%" stop-color="#FDE9E2" /></linearGradient><filter id="paperShadow" x="-20%%" y="-20%%" width="140%%" height="160%%"><feDropShadow dx="0" dy="24" stdDeviation="18" flood-color="#DAB5A6" flood-opacity="0.18" /></filter></defs><rect width="100%%" height="100%%" fill="url(#pageGradient)" /><rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="#FFFDFB" stroke="#EFE6E1" stroke-width="2" filter="url(#paperShadow)" />%s</svg>',
             $width,
             $height,
             $width,
             $height,
+            self::buildFontFaceDefs(),
             $paperX,
             $paperY,
             $paperWidth,
@@ -1221,11 +1298,12 @@ class OrderConfirmLetterRenderer
         ])['svg'];
 
         return sprintf(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s"><defs><linearGradient id="v3PageGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FAF5EF" /><stop offset="100%%" stop-color="#F3E8DC" /></linearGradient><linearGradient id="v3PaperGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FFFDFC" /><stop offset="100%%" stop-color="#FAF4EC" /></linearGradient><linearGradient id="v3HeroGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FBF6F0" /><stop offset="100%%" stop-color="#F7EEE3" /></linearGradient><linearGradient id="v3AmountGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FCF6EF" /><stop offset="100%%" stop-color="#F8EDE2" /></linearGradient><filter id="v3PaperShadow" x="-20%%" y="-20%%" width="140%%" height="160%%"><feDropShadow dx="0" dy="20" stdDeviation="14" flood-color="#C9B397" flood-opacity="0.12" /></filter></defs><rect width="100%%" height="100%%" fill="url(#v3PageGradient)" /><rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="url(#v3PaperGradient)" stroke="#D8C3A7" stroke-width="1" filter="url(#v3PaperShadow)" />%s</svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s"><defs>%s<linearGradient id="v3PageGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FAF5EF" /><stop offset="100%%" stop-color="#F3E8DC" /></linearGradient><linearGradient id="v3PaperGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FFFDFC" /><stop offset="100%%" stop-color="#FAF4EC" /></linearGradient><linearGradient id="v3HeroGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FBF6F0" /><stop offset="100%%" stop-color="#F7EEE3" /></linearGradient><linearGradient id="v3AmountGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FCF6EF" /><stop offset="100%%" stop-color="#F8EDE2" /></linearGradient><filter id="v3PaperShadow" x="-20%%" y="-20%%" width="140%%" height="160%%"><feDropShadow dx="0" dy="20" stdDeviation="14" flood-color="#C9B397" flood-opacity="0.12" /></filter></defs><rect width="100%%" height="100%%" fill="url(#v3PageGradient)" /><rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="url(#v3PaperGradient)" stroke="#D8C3A7" stroke-width="1" filter="url(#v3PaperShadow)" />%s</svg>',
             $width,
             $height,
             $width,
             $height,
+            self::buildFontFaceDefs(),
             $paperX,
             $paperY,
             $paperWidth,
@@ -1233,5 +1311,608 @@ class OrderConfirmLetterRenderer
             $small ? 8 : 14,
             implode('', $sections)
         );
+    }
+
+    protected static function renderV4OrderConfirmLetterSvg(array $snapshot, bool $small): string
+    {
+        $width = $small ? 540 : 1080;
+        $height = $small ? 960 : 1920;
+        $scale = $small ? 0.5 : 1.0;
+        $paperX = 62 * $scale;
+        $paperY = 56 * $scale;
+        $paperWidth = $width - $paperX * 2;
+        $paperHeight = $height - $paperY * 2;
+        $contentX = $paperX + 70 * $scale;
+        $contentWidth = $paperWidth - 140 * $scale;
+        $centerX = $width / 2;
+        $gold = '#C99842';
+        $goldDark = '#9F6F1F';
+        $brown = '#3B2116';
+        $muted = '#7C6756';
+
+        $brandName = self::toText($snapshot['brand_name'] ?? '') ?: self::DEFAULT_BRAND_NAME;
+        $brandTagline = self::toText($snapshot['brand_tagline'] ?? '') ?: self::V3_DEFAULT_HERO_EYEBROW;
+        $brandInitial = self::strSlice($brandName, 0, min(max(self::strLength($brandName), 1), 4));
+        $title = self::toText($snapshot['title'] ?? '') ?: self::DEFAULT_TITLE;
+        $subtitle = self::V4_DEFAULT_SUBTITLE;
+        $paymentNode = self::toText($snapshot['payment_node'] ?? '') ?: '婚礼前 3 日';
+        $staffNames = self::toStringArray($snapshot['service_staff_names'] ?? []);
+        $teamText = !empty($staffNames) ? implode('、', $staffNames) : '待确认';
+        $serviceTeamLines = self::toStringArray($snapshot['service_team_lines'] ?? []);
+        if (!empty($serviceTeamLines)) {
+            $teamText = implode('、', array_slice($serviceTeamLines, 0, 3));
+        }
+
+        $infoRows = [
+            ['icon' => 'clipboard', 'label' => '订单编号：', 'value' => self::toText($snapshot['order_sn'] ?? '') ?: '-'],
+            ['icon' => 'user', 'label' => '新人姓名：', 'value' => self::toText($snapshot['customer_name'] ?? '') ?: '-'],
+            ['icon' => 'calendar', 'label' => '婚礼日期：', 'value' => self::toText($snapshot['service_date_label'] ?? '') ?: (self::toText($snapshot['service_date'] ?? '') ?: '-')],
+            ['icon' => 'pin', 'label' => '举办地点：', 'value' => self::toText($snapshot['service_address'] ?? '') ?: '-'],
+            ['icon' => 'team', 'label' => '服务团队：', 'value' => $teamText],
+            ['icon' => 'phone', 'label' => '联系电话：', 'value' => self::toText($snapshot['contact_mobile'] ?? '') ?: '-'],
+            ['icon' => 'clock', 'label' => '确认日期：', 'value' => self::toText($snapshot['confirm_date'] ?? '') ?: '-'],
+        ];
+        $tipLines = self::wrapText(
+            self::toText($snapshot['footer_note'] ?? '') ?: self::DEFAULT_FOOTER_NOTE,
+            $small ? 24 : 34,
+            2
+        );
+
+        $sections = [];
+        $sections[] = self::drawV4Texture($width, $height, $scale);
+        $sections[] = self::drawV4Seal($centerX, 112 * $scale, 122 * $scale, $brandName, $brandTagline, self::toText($snapshot['brand_logo_data_uri'] ?? ''), $brandInitial, $small);
+        $sections[] = self::drawV4OrnamentLine($centerX, 328 * $scale, 260 * $scale, $gold, $scale);
+        $sections[] = self::drawTextBlock([
+            'x' => $centerX,
+            'y' => 436 * $scale,
+            'lines' => [$title],
+            'fontSize' => 72 * $scale,
+            'lineHeight' => 72 * $scale,
+            'fill' => $brown,
+            'fontWeight' => 700,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SERIF,
+            'letterSpacing' => 10 * $scale,
+        ])['svg'];
+        $sections[] = self::drawV4TitleSubtitle($centerX, 532 * $scale, $subtitle, $scale);
+
+        $infoY = 604 * $scale;
+        $infoHeight = 538 * $scale;
+        $sections[] = self::drawV4InfoPanel($contentX, $infoY, $contentWidth, $infoHeight, $infoRows, $scale);
+        $sections[] = self::drawV4Leaf($contentX - 34 * $scale, $infoY - 22 * $scale, $scale, false);
+        $sections[] = self::drawV4Leaf($contentX + $contentWidth - 92 * $scale, $infoY + $infoHeight - 132 * $scale, $scale, true);
+
+        $amountY = 1192 * $scale;
+        $amountHeight = 296 * $scale;
+        $sections[] = self::drawV4AmountPanel(
+            $contentX,
+            $amountY,
+            $contentWidth,
+            $amountHeight,
+            self::toText($snapshot['order_total_amount'] ?? '') ?: '0.00',
+            self::toText($snapshot['paid_label'] ?? '') ?: '已付定金',
+            self::toText($snapshot['paid_amount'] ?? '') ?: '0.00',
+            self::toText($snapshot['remain_amount'] ?? '') ?: '0.00',
+            $paymentNode,
+            $scale
+        );
+
+        $tipY = 1532 * $scale;
+        $sections[] = self::drawV4TipPanel($contentX, $tipY, $contentWidth, 104 * $scale, $tipLines, $scale);
+        $sections[] = self::drawV4Signature($contentX + 32 * $scale, 1696 * $scale, ($contentWidth - 120 * $scale) / 2, '客户签名', $scale);
+        $sections[] = self::drawV4Signature($centerX + 36 * $scale, 1696 * $scale, ($contentWidth - 120 * $scale) / 2, '婚礼顾问签署', $scale);
+        $sections[] = self::drawV4BottomOrnament($centerX, 1848 * $scale, 330 * $scale, $gold, $scale);
+
+        return sprintf(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s"><defs>%s<linearGradient id="v4Bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%%" stop-color="#F3E1C9" /><stop offset="48%%" stop-color="#FFF6EA" /><stop offset="100%%" stop-color="#D7BE9E" /></linearGradient><linearGradient id="v4Paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FFFDF7" /><stop offset="100%%" stop-color="#FFF7E9" /></linearGradient><linearGradient id="v4Gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0%%" stop-color="#E9C66A" /><stop offset="42%%" stop-color="#B57A23" /><stop offset="100%%" stop-color="#F0D27D" /></linearGradient><linearGradient id="v4Amount" x1="0" y1="0" x2="0" y2="1"><stop offset="0%%" stop-color="#FFF8E9" /><stop offset="100%%" stop-color="#F9E8C4" /></linearGradient><filter id="v4Shadow" x="-20%%" y="-20%%" width="150%%" height="150%%"><feDropShadow dx="%s" dy="%s" stdDeviation="%s" flood-color="#7D5434" flood-opacity="0.22" /></filter></defs><rect width="100%%" height="100%%" fill="url(#v4Bg)" /><rect x="%s" y="%s" width="%s" height="%s" fill="url(#v4Paper)" filter="url(#v4Shadow)" />%s</svg>',
+            $width,
+            $height,
+            $width,
+            $height,
+            self::buildFontFaceDefs(),
+            10 * $scale,
+            24 * $scale,
+            14 * $scale,
+            $paperX,
+            $paperY,
+            $paperWidth,
+            $paperHeight,
+            implode('', $sections)
+        );
+    }
+
+    protected static function drawV4Texture(float $width, float $height, float $scale): string
+    {
+        $lines = '';
+        for ($i = 0; $i < 34; $i++) {
+            $y = (28 + $i * 54) * $scale;
+            $opacity = $i % 2 === 0 ? 0.1 : 0.06;
+            $lines .= sprintf(
+                '<path d="M%s %s C%s %s %s %s %s %s" fill="none" stroke="#D8B98E" stroke-width="%s" stroke-opacity="%s" />',
+                0,
+                $y,
+                $width * 0.26,
+                $y - 18 * $scale,
+                $width * 0.72,
+                $y + 18 * $scale,
+                $width,
+                $y,
+                max(0.4, 0.8 * $scale),
+                $opacity
+            );
+        }
+        return $lines;
+    }
+
+    protected static function drawV4Seal(
+        float $centerX,
+        float $topY,
+        float $size,
+        string $brandName,
+        string $brandTagline,
+        string $logoDataUri,
+        string $brandInitial,
+        bool $small
+    ): string {
+        $centerY = $topY + $size / 2;
+        $scale = $size / 122;
+        $svg = sprintf(
+            '<circle cx="%s" cy="%s" r="%s" fill="#FFF9EC" stroke="url(#v4Gold)" stroke-width="%s" /><circle cx="%s" cy="%s" r="%s" fill="none" stroke="#E8CD82" stroke-width="%s" /><path d="M%s %s C%s %s %s %s %s %s" fill="none" stroke="#D2A34B" stroke-width="%s" /><path d="M%s %s C%s %s %s %s %s %s" fill="none" stroke="#D2A34B" stroke-width="%s" />',
+            $centerX,
+            $centerY,
+            $size / 2,
+            max(1, 3 * $scale),
+            $centerX,
+            $centerY,
+            $size / 2 - 10 * $scale,
+            max(0.8, 1.4 * $scale),
+            $centerX - 45 * $scale,
+            $centerY + 26 * $scale,
+            $centerX - 20 * $scale,
+            $centerY + 50 * $scale,
+            $centerX + 20 * $scale,
+            $centerY + 50 * $scale,
+            $centerX + 45 * $scale,
+            $centerY + 26 * $scale,
+            max(0.8, 1.4 * $scale),
+            $centerX - 30 * $scale,
+            $centerY - 40 * $scale,
+            $centerX - 8 * $scale,
+            $centerY - 54 * $scale,
+            $centerX + 8 * $scale,
+            $centerY - 54 * $scale,
+            $centerX + 30 * $scale,
+            $centerY - 40 * $scale,
+            max(0.8, 1.2 * $scale)
+        );
+
+        if ($logoDataUri !== '') {
+            $clipId = 'v4LogoClip' . md5($logoDataUri);
+            $logoSize = 52 * $scale;
+            $svg .= sprintf(
+                '<defs><clipPath id="%s"><circle cx="%s" cy="%s" r="%s" /></clipPath></defs><image href="%s" x="%s" y="%s" width="%s" height="%s" preserveAspectRatio="xMidYMid meet" clip-path="url(#%s)" />',
+                $clipId,
+                $centerX,
+                $centerY - 8 * $scale,
+                $logoSize / 2,
+                self::escapeXml($logoDataUri),
+                $centerX - $logoSize / 2,
+                $centerY - 8 * $scale - $logoSize / 2,
+                $logoSize,
+                $logoSize,
+                $clipId
+            );
+        } else {
+            $svg .= self::drawTextBlock([
+                'x' => $centerX,
+                'y' => $centerY - 8 * $scale + 9 * $scale,
+                'lines' => [$brandInitial],
+                'fontSize' => 26 * $scale,
+                'lineHeight' => 26 * $scale,
+                'fill' => '#A87023',
+                'fontWeight' => 700,
+                'textAnchor' => 'middle',
+                'fontFamily' => self::FONT_FAMILY_SERIF,
+            ])['svg'];
+        }
+
+        $svg .= self::drawTextBlock([
+            'x' => $centerX,
+            'y' => $centerY + 31 * $scale,
+            'lines' => self::wrapText($brandName, $small ? 8 : 8, 1),
+            'fontSize' => 15 * $scale,
+            'lineHeight' => 15 * $scale,
+            'fill' => '#B17A24',
+            'fontWeight' => 700,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SANS,
+            'letterSpacing' => 1.2 * $scale,
+        ])['svg'];
+        $svg .= self::drawTextBlock([
+            'x' => $centerX,
+            'y' => $centerY + 48 * $scale,
+            'lines' => self::wrapText(strtoupper($brandTagline), $small ? 16 : 18, 1),
+            'fontSize' => 8.5 * $scale,
+            'lineHeight' => 8.5 * $scale,
+            'fill' => '#C0923D',
+            'fontWeight' => 500,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SERIF,
+        ])['svg'];
+        return $svg;
+    }
+
+    protected static function drawV4OrnamentLine(float $centerX, float $y, float $width, string $color, float $scale): string
+    {
+        return sprintf(
+            '<path d="M%s %s H%s" stroke="%s" stroke-width="%s" /><path d="M%s %s C%s %s %s %s %s %s C%s %s %s %s %s %s" fill="none" stroke="%s" stroke-width="%s" /><circle cx="%s" cy="%s" r="%s" fill="%s" />',
+            $centerX - $width / 2,
+            $y,
+            $centerX - 34 * $scale,
+            $color,
+            max(0.8, 1 * $scale),
+            $centerX + 34 * $scale,
+            $y,
+            $centerX + 52 * $scale,
+            $y - 16 * $scale,
+            $centerX + 74 * $scale,
+            $y - 12 * $scale,
+            $centerX + 86 * $scale,
+            $y,
+            $centerX + 74 * $scale,
+            $y + 12 * $scale,
+            $centerX + 52 * $scale,
+            $y + 16 * $scale,
+            $centerX + 34 * $scale,
+            $y,
+            $color,
+            max(0.8, 1 * $scale),
+            $centerX,
+            $y,
+            4 * $scale,
+            $color
+        ) . sprintf(
+            '<path d="M%s %s H%s" stroke="%s" stroke-width="%s" />',
+            $centerX + 34 * $scale,
+            $y,
+            $centerX + $width / 2,
+            $color,
+            max(0.8, 1 * $scale)
+        );
+    }
+
+    protected static function drawV4TitleSubtitle(float $centerX, float $y, string $subtitle, float $scale): string
+    {
+        return sprintf(
+            '<path d="M%s %s H%s" stroke="#C99842" stroke-width="%s" /><path d="M%s %s H%s" stroke="#C99842" stroke-width="%s" /><rect x="%s" y="%s" width="%s" height="%s" fill="#C99842" transform="rotate(45 %s %s)" /><rect x="%s" y="%s" width="%s" height="%s" fill="#C99842" transform="rotate(45 %s %s)" />',
+            $centerX - 265 * $scale,
+            $y - 9 * $scale,
+            $centerX - 172 * $scale,
+            max(0.8, 1 * $scale),
+            $centerX + 172 * $scale,
+            $y - 9 * $scale,
+            $centerX + 265 * $scale,
+            max(0.8, 1 * $scale),
+            $centerX - 282 * $scale,
+            $y - 13 * $scale,
+            8 * $scale,
+            8 * $scale,
+            $centerX - 278 * $scale,
+            $y - 9 * $scale,
+            $centerX + 274 * $scale,
+            $y - 13 * $scale,
+            8 * $scale,
+            8 * $scale,
+            $centerX + 278 * $scale,
+            $y - 9 * $scale
+        ) . self::drawTextBlock([
+            'x' => $centerX,
+            'y' => $y,
+            'lines' => [$subtitle],
+            'fontSize' => 27 * $scale,
+            'lineHeight' => 27 * $scale,
+            'fill' => '#8D6F50',
+            'fontWeight' => 500,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SERIF,
+        ])['svg'];
+    }
+
+    protected static function drawV4InfoPanel(float $x, float $y, float $width, float $height, array $rows, float $scale): string
+    {
+        $svg = sprintf(
+            '<path d="M%s %s H%s Q%s %s %s %s V%s H%s Q%s %s %s %s V%s Z" fill="#FFFDF8" fill-opacity="0.78" stroke="#D6A04B" stroke-width="%s" />',
+            $x,
+            $y,
+            $x + $width - 30 * $scale,
+            $x + $width - 12 * $scale,
+            $y,
+            $x + $width - 12 * $scale,
+            $y + 30 * $scale,
+            $y + $height,
+            $x + 24 * $scale,
+            $x,
+            $y + $height,
+            $x,
+            $y + $height - 24 * $scale,
+            $y,
+            max(1, 1.4 * $scale)
+        );
+        $rowHeight = $height / count($rows);
+        foreach (array_values($rows) as $index => $row) {
+            $rowY = $y + $index * $rowHeight;
+            if ($index > 0) {
+                $svg .= sprintf(
+                    '<path d="M%s %s H%s" stroke="#D9BD87" stroke-width="%s" stroke-dasharray="%s %s" />',
+                    $x + 86 * $scale,
+                    $rowY,
+                    $x + $width - 52 * $scale,
+                    max(0.6, 0.8 * $scale),
+                    5 * $scale,
+                    5 * $scale
+                );
+            }
+            $iconCenterX = $x + 58 * $scale;
+            $iconCenterY = $rowY + $rowHeight / 2;
+            $labelX = $x + 105 * $scale;
+            $valueX = $x + 238 * $scale;
+            $textY = $iconCenterY + 9 * $scale;
+            $valueFit = self::fitTextLine(
+                (string) ($row['value'] ?? '-'),
+                $scale < 1 ? 16 : 24,
+                24 * $scale,
+                14 * $scale
+            );
+            $svg .= self::drawV4Icon((string) ($row['icon'] ?? ''), $iconCenterX, $iconCenterY, 18 * $scale);
+            $svg .= self::drawTextBlock([
+                'x' => $labelX,
+                'y' => $textY,
+                'lines' => [(string) ($row['label'] ?? '')],
+                'fontSize' => 25 * $scale,
+                'lineHeight' => 25 * $scale,
+                'fill' => '#49372C',
+                'fontWeight' => 500,
+                'fontFamily' => self::FONT_FAMILY_SANS,
+            ])['svg'];
+            $svg .= self::drawTextBlock([
+                'x' => $valueX,
+                'y' => $textY,
+                'lines' => $valueFit['lines'],
+                'fontSize' => $valueFit['fontSize'],
+                'lineHeight' => $valueFit['lineHeight'],
+                'fill' => '#2E2A27',
+                'fontWeight' => 500,
+                'fontFamily' => self::FONT_FAMILY_SANS,
+            ])['svg'];
+        }
+        return $svg;
+    }
+
+    protected static function drawV4Icon(string $type, float $x, float $y, float $size): string
+    {
+        $stroke = '#B9812B';
+        $sw = max(1, $size / 10);
+        return match ($type) {
+            'user' => sprintf('<circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" stroke-width="%s" /><path d="M%s %s C%s %s %s %s %s %s" fill="none" stroke="%s" stroke-width="%s" />', $x, $y - $size * 0.22, $size * 0.23, $stroke, $sw, $x - $size * 0.48, $y + $size * 0.52, $x - $size * 0.32, $y + $size * 0.12, $x + $size * 0.32, $y + $size * 0.12, $x + $size * 0.48, $y + $size * 0.52, $stroke, $sw),
+            'calendar' => sprintf('<rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="none" stroke="%s" stroke-width="%s" /><path d="M%s %s H%s M%s %s V%s M%s %s V%s" stroke="%s" stroke-width="%s" />', $x - $size * 0.45, $y - $size * 0.38, $size * 0.9, $size * 0.82, $size * 0.08, $stroke, $sw, $x - $size * 0.45, $y - $size * 0.14, $x + $size * 0.45, $x - $size * 0.24, $y - $size * 0.52, $y - $size * 0.25, $x + $size * 0.24, $y - $size * 0.52, $y - $size * 0.25, $stroke, $sw),
+            'pin' => sprintf('<path d="M%s %s C%s %s %s %s %s %s C%s %s %s %s %s %s Z" fill="none" stroke="%s" stroke-width="%s" /><circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" stroke-width="%s" /><path d="M%s %s H%s" stroke="%s" stroke-width="%s" />', $x, $y + $size * 0.55, $x - $size * 0.44, $y + $size * 0.05, $x - $size * 0.36, $y - $size * 0.48, $x, $y - $size * 0.48, $x + $size * 0.36, $y - $size * 0.48, $x + $size * 0.44, $y + $size * 0.05, $x, $y + $size * 0.55, $stroke, $sw, $x, $y - $size * 0.16, $size * 0.13, $stroke, $sw, $x - $size * 0.42, $y + $size * 0.64, $x + $size * 0.42, $stroke, $sw),
+            'team' => sprintf('<circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" stroke-width="%s" /><circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" stroke-width="%s" /><circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" stroke-width="%s" /><path d="M%s %s H%s M%s %s C%s %s %s %s %s %s" fill="none" stroke="%s" stroke-width="%s" />', $x, $y - $size * 0.18, $size * 0.18, $stroke, $sw, $x - $size * 0.28, $y - $size * 0.04, $size * 0.14, $stroke, $sw, $x + $size * 0.28, $y - $size * 0.04, $size * 0.14, $stroke, $sw, $x - $size * 0.5, $y + $size * 0.52, $x + $size * 0.5, $x - $size * 0.34, $y + $size * 0.52, $x - $size * 0.2, $y + $size * 0.18, $x + $size * 0.2, $y + $size * 0.18, $x + $size * 0.34, $y + $size * 0.52, $stroke, $sw),
+            'phone' => sprintf('<path d="M%s %s C%s %s %s %s %s %s L%s %s C%s %s %s %s %s %s C%s %s %s %s %s %s" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round" />', $x - $size * 0.36, $y - $size * 0.48, $x - $size * 0.52, $y - $size * 0.28, $x - $size * 0.34, $y + $size * 0.34, $x + $size * 0.18, $y + $size * 0.52, $x + $size * 0.34, $y + $size * 0.32, $x + $size * 0.42, $y + $size * 0.2, $x + $size * 0.18, $y + $size * 0.02, $x + $size * 0.06, $y + $size * 0.12, $x - $size * 0.08, $y - $size * 0.12, $x + $size * 0.04, $y - $size * 0.24, $x - $size * 0.18, $y - $size * 0.5, $stroke, $sw),
+            'clock' => sprintf('<circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" stroke-width="%s" /><path d="M%s %s V%s H%s" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round" />', $x, $y, $size * 0.45, $stroke, $sw, $x, $y - $size * 0.24, $y, $x + $size * 0.22, $stroke, $sw),
+            default => sprintf('<rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="none" stroke="%s" stroke-width="%s" /><path d="M%s %s H%s M%s %s H%s M%s %s H%s" stroke="%s" stroke-width="%s" />', $x - $size * 0.36, $y - $size * 0.46, $size * 0.72, $size * 0.9, $size * 0.06, $stroke, $sw, $x - $size * 0.18, $y - $size * 0.18, $x + $size * 0.18, $x - $size * 0.18, $y + $size * 0.04, $x + $size * 0.18, $x - $size * 0.18, $y + $size * 0.26, $x + $size * 0.18, $stroke, $sw),
+        };
+    }
+
+    protected static function drawV4AmountPanel(float $x, float $y, float $width, float $height, string $total, string $paidLabel, string $paidAmount, string $remainAmount, string $paymentNode, float $scale): string
+    {
+        $third = $width / 3;
+        $svg = sprintf(
+            '<rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="url(#v4Amount)" stroke="#D6A04B" stroke-width="%s" /><path d="M%s %s H%s" stroke="#B88937" stroke-width="%s" /><path d="M%s %s V%s M%s %s V%s" stroke="#B88937" stroke-width="%s" stroke-opacity="0.65" />',
+            $x,
+            $y,
+            $width,
+            $height,
+            10 * $scale,
+            max(1, 1.4 * $scale),
+            $x + 46 * $scale,
+            $y + 168 * $scale,
+            $x + $width - 46 * $scale,
+            max(0.8, 1 * $scale),
+            $x + $third,
+            $y + 204 * $scale,
+            $y + $height - 40 * $scale,
+            $x + $third * 2,
+            $y + 204 * $scale,
+            $y + $height - 40 * $scale,
+            max(0.8, 1 * $scale)
+        );
+        $svg .= self::drawV4OrnamentLine($x + $width / 2, $y + 30 * $scale, 170 * $scale, '#D1A24B', $scale);
+        $svg .= self::drawTextBlock([
+            'x' => $x + $width / 2,
+            'y' => $y + 62 * $scale,
+            'lines' => ['合同合计金额'],
+            'fontSize' => 28 * $scale,
+            'lineHeight' => 28 * $scale,
+            'fill' => '#2E241D',
+            'fontWeight' => 600,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+        $svg .= self::drawTextBlock([
+            'x' => $x + $width / 2,
+            'y' => $y + 142 * $scale,
+            'lines' => ['¥ ' . $total],
+            'fontSize' => 72 * $scale,
+            'lineHeight' => 72 * $scale,
+            'fill' => '#B98226',
+            'fontWeight' => 700,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SERIF,
+        ])['svg'];
+        foreach ([[$paidLabel, '¥ ' . $paidAmount], ['待付尾款', '¥ ' . $remainAmount], ['支付节点：', $paymentNode]] as $index => $item) {
+            $cx = $x + $third * $index + $third / 2;
+            $valueFit = self::fitTextLine((string) $item[1], $index === 2 ? 8 : 12, 23 * $scale, 15 * $scale);
+            $svg .= self::drawTextBlock([
+                'x' => $cx,
+                'y' => $y + 230 * $scale,
+                'lines' => [$item[0]],
+                'fontSize' => 23 * $scale,
+                'lineHeight' => 23 * $scale,
+                'fill' => '#322820',
+                'fontWeight' => 600,
+                'textAnchor' => 'middle',
+                'fontFamily' => self::FONT_FAMILY_SANS,
+            ])['svg'];
+            $svg .= self::drawTextBlock([
+                'x' => $cx,
+                'y' => $y + 266 * $scale,
+                'lines' => $valueFit['lines'],
+                'fontSize' => $valueFit['fontSize'],
+                'lineHeight' => $valueFit['lineHeight'],
+                'fill' => '#322820',
+                'fontWeight' => 500,
+                'textAnchor' => 'middle',
+                'fontFamily' => self::FONT_FAMILY_SANS,
+            ])['svg'];
+        }
+        return $svg;
+    }
+
+    protected static function drawV4TipPanel(float $x, float $y, float $width, float $height, array $lines, float $scale): string
+    {
+        $svg = sprintf(
+            '<rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="#FFFDF8" fill-opacity="0.72" stroke="#D9B96E" stroke-width="%s" stroke-dasharray="%s %s" />',
+            $x,
+            $y,
+            $width,
+            $height,
+            10 * $scale,
+            max(0.8, 1 * $scale),
+            5 * $scale,
+            5 * $scale
+        );
+        $svg .= self::drawV4OrnamentLine($x + $width / 2, $y - 16 * $scale, 154 * $scale, '#D1A24B', $scale);
+        $svg .= self::drawTextBlock([
+            'x' => $x + $width / 2,
+            'y' => $y + 22 * $scale,
+            'lines' => ['温馨提示'],
+            'fontSize' => 24 * $scale,
+            'lineHeight' => 24 * $scale,
+            'fill' => '#7C5C2B',
+            'fontWeight' => 600,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+        $svg .= self::drawTextBlock([
+            'x' => $x + $width / 2,
+            'y' => $y + 68 * $scale,
+            'lines' => $lines,
+            'fontSize' => 22 * $scale,
+            'lineHeight' => 28 * $scale,
+            'fill' => '#4C4035',
+            'fontWeight' => 500,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'];
+        return $svg;
+    }
+
+    protected static function drawV4Signature(float $x, float $y, float $width, string $label, float $scale): string
+    {
+        return self::drawTextBlock([
+            'x' => $x + $width / 2,
+            'y' => $y,
+            'lines' => [$label],
+            'fontSize' => 24 * $scale,
+            'lineHeight' => 24 * $scale,
+            'fill' => '#342A23',
+            'fontWeight' => 500,
+            'textAnchor' => 'middle',
+            'fontFamily' => self::FONT_FAMILY_SANS,
+        ])['svg'] . sprintf(
+            '<path d="M%s %s H%s" stroke="#927863" stroke-width="%s" /><path d="M%s %s C%s %s %s %s %s %s" fill="none" stroke="#D3A44B" stroke-width="%s" />',
+            $x,
+            $y + 64 * $scale,
+            $x + $width,
+            max(0.8, 1 * $scale),
+            $x + $width / 2 - 36 * $scale,
+            $y + 76 * $scale,
+            $x + $width / 2 - 12 * $scale,
+            $y + 88 * $scale,
+            $x + $width / 2 + 12 * $scale,
+            $y + 88 * $scale,
+            $x + $width / 2 + 36 * $scale,
+            $y + 76 * $scale,
+            max(0.8, 1 * $scale)
+        );
+    }
+
+    protected static function drawV4BottomOrnament(float $centerX, float $y, float $width, string $color, float $scale): string
+    {
+        return sprintf(
+            '<path d="M%s %s H%s M%s %s H%s" stroke="%s" stroke-width="%s" /><path d="M%s %s C%s %s %s %s %s %s C%s %s %s %s %s %s" fill="none" stroke="%s" stroke-width="%s" /><circle cx="%s" cy="%s" r="%s" fill="none" stroke="%s" stroke-width="%s" />',
+            $centerX - $width / 2,
+            $y,
+            $centerX - 68 * $scale,
+            $centerX + 68 * $scale,
+            $y,
+            $centerX + $width / 2,
+            $color,
+            max(0.8, 1 * $scale),
+            $centerX - 58 * $scale,
+            $y,
+            $centerX - 24 * $scale,
+            $y - 34 * $scale,
+            $centerX - 8 * $scale,
+            $y - 18 * $scale,
+            $centerX,
+            $y,
+            $centerX + 8 * $scale,
+            $y - 18 * $scale,
+            $centerX + 24 * $scale,
+            $y - 34 * $scale,
+            $centerX + 58 * $scale,
+            $y,
+            $color,
+            max(0.8, 1 * $scale),
+            $centerX,
+            $y,
+            5 * $scale,
+            $color,
+            max(0.8, 1 * $scale)
+        );
+    }
+
+    protected static function drawV4Leaf(float $x, float $y, float $scale, bool $flip): string
+    {
+        $sign = $flip ? -1 : 1;
+        $svg = sprintf(
+            '<path d="M%s %s C%s %s %s %s %s %s" fill="none" stroke="#E9A690" stroke-width="%s" stroke-opacity="0.58" />',
+            $x,
+            $y + 120 * $scale,
+            $x + $sign * 18 * $scale,
+            $y + 70 * $scale,
+            $x + $sign * 42 * $scale,
+            $y + 30 * $scale,
+            $x + $sign * 74 * $scale,
+            $y,
+            max(0.8, 1.2 * $scale)
+        );
+        for ($i = 0; $i < 7; $i++) {
+            $leafY = $y + (104 - $i * 16) * $scale;
+            $leafX = $x + $sign * (11 + $i * 8) * $scale;
+            $svg .= sprintf(
+                '<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="#E9A690" fill-opacity="%s" transform="rotate(%s %s %s)" />',
+                $leafX,
+                $leafY,
+                6 * $scale,
+                17 * $scale,
+                0.28 + $i * 0.025,
+                $sign * (36 - $i * 3),
+                $leafX,
+                $leafY
+            );
+        }
+        return $svg;
     }
 }

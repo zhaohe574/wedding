@@ -17,6 +17,8 @@ return [
         'send_station_reminders' => 'app\common\command\SendStationReminders',
         // 订阅消息派发
         'send_subscribe_messages' => 'app\common\command\SendSubscribeMessages',
+        // CRM流失预警生成与企微推送
+        'generate_loss_warnings' => 'app\common\command\GenerateLossWarnings',
         // 退款查询
         'query_refund' => 'app\common\command\QueryRefund',
         // 重建订单确认函图片资产

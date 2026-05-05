@@ -12,6 +12,7 @@ use app\adminapi\logic\order\OrderLogic;
 use app\common\lists\ListsExcelInterface;
 use app\common\lists\ListsSearchInterface;
 use app\common\model\order\Order;
+use app\common\model\order\OrderChange;
 use app\common\model\order\OrderItem;
 use app\common\service\OrderRefundService;
 
@@ -134,9 +135,11 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
 
         $pendingCounts = [];
         $orderItemTotals = [];
+        $pendingChangeMap = [];
         if (!empty($lists)) {
             $orderIds = array_column($lists, 'id');
             $totalRows = OrderItem::whereIn('order_id', $orderIds)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
                 ->field('order_id, COUNT(*) as total_count')
                 ->group('order_id')
                 ->select()
@@ -154,6 +157,10 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
                 ->select()
                 ->toArray();
             $pendingCounts = array_column($pendingRows, 'pending_confirm_count', 'order_id');
+            $pendingChangeOrderIds = OrderChange::whereIn('order_id', $orderIds)
+                ->whereIn('change_status', [OrderChange::STATUS_PENDING, OrderChange::STATUS_APPROVED])
+                ->column('order_id');
+            $pendingChangeMap = array_fill_keys(array_map('intval', $pendingChangeOrderIds), true);
         }
 
         foreach ($lists as &$item) {
@@ -180,9 +187,11 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
             $item['can_staff_start'] = 0;
             $item['can_staff_complete'] = 0;
             if ($staffScopeId > 0) {
-                $visibleItemCount = count($item['items'] ?? []);
-                $totalItemCount = (int)($orderItemTotals[$item['id']] ?? $visibleItemCount);
-                $canManageWholeOrder = $totalItemCount > 0 && $totalItemCount === $visibleItemCount;
+                $visibleActiveItemCount = count(array_filter($item['items'] ?? [], static function ($orderItem) {
+                    return (int)($orderItem['item_status'] ?? 0) !== OrderItem::STATUS_CANCELLED;
+                }));
+                $totalItemCount = (int)($orderItemTotals[$item['id']] ?? $visibleActiveItemCount);
+                $canManageWholeOrder = $totalItemCount > 0 && $totalItemCount === $visibleActiveItemCount;
                 $item['can_staff_manage_payment'] = $canManageWholeOrder;
                 $item['can_staff_start'] = (int)($item['order_status'] ?? -1) === Order::STATUS_PENDING_SERVICE
                     && $canManageWholeOrder
@@ -194,6 +203,13 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
                     ? 1
                     : 0;
             }
+            $item['can_direct_reschedule'] = OrderChange::canDirectRescheduleByState(
+                (int)($item['order_status'] ?? -1),
+                !empty($item['is_paused']),
+                !empty($pendingChangeMap[(int)$item['id']]),
+                $staffScopeId,
+                !empty($item['can_staff_manage_payment'])
+            ) ? 1 : 0;
             $item = array_merge(
                 $item,
                 Order::buildPayTimeoutSummaryFromState(

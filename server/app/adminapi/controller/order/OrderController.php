@@ -12,6 +12,7 @@ use app\adminapi\lists\order\OrderLists;
 use app\adminapi\lists\order\OrderLogLists;
 use app\adminapi\logic\order\OrderLogic;
 use app\adminapi\validate\order\OrderValidate;
+use app\common\model\order\OrderChange;
 use app\common\model\order\OrderConfirmLetter;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
@@ -57,10 +58,12 @@ class OrderController extends BaseAdminController
             return $this->fail('订单不存在');
         }
         $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        $canManageWholeOrder = true;
         if ($staffScopeId > 0) {
             $result = $this->applyStaffVisibleOrderAmounts($result, $staffScopeId);
             $items = $result['items'] ?? [];
-            $result['can_staff_manage_payment'] = $this->canStaffManageWholeOrder($result, $staffScopeId);
+            $canManageWholeOrder = $this->canStaffManageWholeOrder($result, $staffScopeId);
+            $result['can_staff_manage_payment'] = $canManageWholeOrder;
             foreach ($items as $index => $item) {
                 if ((int)($item['staff_id'] ?? 0) === $staffScopeId) {
                     continue;
@@ -84,6 +87,7 @@ class OrderController extends BaseAdminController
                 && !empty($result['can_admin_refund'])
                 && !empty($result['can_staff_manage_payment']);
         }
+        $result = $this->appendDirectRescheduleFlag($result, $staffScopeId, $canManageWholeOrder);
         return $this->data($result);
     }
 
@@ -309,6 +313,26 @@ class OrderController extends BaseAdminController
         $result = OrderLogic::complete((int)$params['id'], $this->adminId);
         if (true === $result) {
             return $this->success('操作成功');
+        }
+        return $this->fail(OrderLogic::getError());
+    }
+
+    /**
+     * @notes 后台直接改期
+     * @return \think\response\Json
+     */
+    public function directReschedule()
+    {
+        $params = (new OrderValidate())->post()->goCheck('directReschedule');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+
+        $params['admin_id'] = $this->adminId;
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        $result = OrderLogic::directReschedule($params, $staffScopeId);
+        if ($result !== false) {
+            return $this->success('改期成功', $result, 1, 1);
         }
         return $this->fail(OrderLogic::getError());
     }
@@ -591,12 +615,33 @@ class OrderController extends BaseAdminController
         if (empty($items)) {
             return false;
         }
+        $activeCount = 0;
         foreach ($items as $item) {
+            if ((int)($item['item_status'] ?? 0) === OrderItem::STATUS_CANCELLED) {
+                continue;
+            }
+            $activeCount++;
             if ((int)($item['staff_id'] ?? 0) !== $staffScopeId) {
                 return false;
             }
         }
-        return true;
+        return $activeCount > 0;
+    }
+
+    /**
+     * @notes 补充直接改期权限标记
+     */
+    protected function appendDirectRescheduleFlag(array $order, int $staffScopeId = 0, bool $canManageWholeOrder = true): array
+    {
+        $order['can_direct_reschedule'] = OrderChange::canDirectRescheduleByState(
+            (int)($order['order_status'] ?? -1),
+            !empty($order['is_paused']),
+            OrderChange::hasPendingChange((int)($order['id'] ?? 0)),
+            $staffScopeId,
+            $canManageWholeOrder
+        ) ? 1 : 0;
+
+        return $order;
     }
 
     /**
@@ -652,6 +697,8 @@ class OrderController extends BaseAdminController
         }
 
         $result = OrderLogic::applyStaffVisibleOrderAmounts($result, $staffScopeId);
+        $canManageWholeOrder = $this->canStaffManageWholeOrder($result, $staffScopeId);
+        $result['can_staff_manage_payment'] = $canManageWholeOrder;
 
         if (!empty($result['items']) && is_array($result['items'])) {
             foreach ($result['items'] as $index => $item) {
@@ -672,6 +719,7 @@ class OrderController extends BaseAdminController
             }
         }
 
+        $result = $this->appendDirectRescheduleFlag($result, $staffScopeId, $canManageWholeOrder);
         return $this->data($result);
     }
 
@@ -760,6 +808,32 @@ class OrderController extends BaseAdminController
         $result = OrderLogic::complete((int)$params['id'], $this->adminId);
         if (true === $result) {
             return $this->success('操作成功', [], 1, 1);
+        }
+        return $this->fail(OrderLogic::getError());
+    }
+
+    /**
+     * @notes 我的订单直接改期
+     * @return \think\response\Json
+     */
+    public function myOrderDirectReschedule()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+        $params = (new OrderValidate())->post()->goCheck('directReschedule');
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+        if ($response = $this->checkWholeOrderManageScope((int)$params['id'], '共享订单不支持服务人员直接改期，请联系管理员处理')) {
+            return $response;
+        }
+
+        $params['admin_id'] = $this->adminId;
+        $result = OrderLogic::directReschedule($params, $staffScopeId);
+        if ($result !== false) {
+            return $this->success('改期成功', $result, 1, 1);
         }
         return $this->fail(OrderLogic::getError());
     }

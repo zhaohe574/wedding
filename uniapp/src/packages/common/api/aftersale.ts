@@ -6,7 +6,14 @@ import request from '@/utils/request'
  * 获取我的售后统计
  */
 export function getMyStatistics() {
-    return request.get('/aftersale/myStatistics')
+    return request.get({ url: '/after_sale/myStatistics' })
+}
+
+/**
+ * 获取售后关联订单列表
+ */
+export function getAftersaleOrderList(params?: any) {
+    return request.get({ url: '/order/lists', params })
 }
 
 // ==================== 工单管理 ====================
@@ -15,14 +22,14 @@ export function getMyStatistics() {
  * 我的工单列表
  */
 export function getTicketLists(params: { page?: number; limit?: number; status?: number }) {
-    return request.get('/aftersale/ticketLists', params)
+    return request.get({ url: '/after_sale/ticketLists', params })
 }
 
 /**
  * 工单详情
  */
 export function getTicketDetail(id: number) {
-    return request.get('/aftersale/ticketDetail', { id })
+    return request.get({ url: '/after_sale/ticketDetail', params: { id } })
 }
 
 /**
@@ -38,21 +45,21 @@ export function createTicket(data: {
     contact_name?: string
     contact_phone?: string
 }) {
-    return request.post('/aftersale/createTicket', data)
+    return request.post({ url: '/after_sale/createTicket', data })
 }
 
 /**
  * 取消工单
  */
 export function cancelTicket(id: number) {
-    return request.post('/aftersale/cancelTicket', { id })
+    return request.post({ url: '/after_sale/cancelTicket', data: { id } })
 }
 
 /**
  * 确认完成
  */
 export function confirmComplete(data: { id: number; satisfaction?: number; remark?: string }) {
-    return request.post('/aftersale/confirmComplete', data)
+    return request.post({ url: '/after_sale/confirmComplete', data })
 }
 
 // ==================== 投诉管理 ====================
@@ -61,14 +68,14 @@ export function confirmComplete(data: { id: number; satisfaction?: number; remar
  * 我的投诉列表
  */
 export function getComplaintLists(params: { page?: number; limit?: number; status?: number }) {
-    return request.get('/aftersale/complaintLists', params)
+    return request.get({ url: '/after_sale/complaintLists', params })
 }
 
 /**
  * 投诉详情
  */
 export function getComplaintDetail(id: number) {
-    return request.get('/aftersale/complaintDetail', { id })
+    return request.get({ url: '/after_sale/complaintDetail', params: { id } })
 }
 
 /**
@@ -87,14 +94,14 @@ export function submitComplaint(data: {
     contact_name: string
     contact_mobile: string
 }) {
-    return request.post('/aftersale/submitComplaint', data)
+    return request.post({ url: '/after_sale/submitComplaint', data })
 }
 
 /**
  * 评价投诉处理
  */
 export function rateComplaint(data: { id: number; satisfaction: number }) {
-    return request.post('/aftersale/rateComplaint', data)
+    return request.post({ url: '/after_sale/rateComplaint', data })
 }
 
 // ==================== 回访问卷 ====================
@@ -103,14 +110,14 @@ export function rateComplaint(data: { id: number; satisfaction: number }) {
  * 我的回访列表
  */
 export function getCallbackLists(params: { page?: number; limit?: number; status?: number }) {
-    return request.get('/aftersale/callbackLists', params)
+    return request.get({ url: '/after_sale/callbackLists', params })
 }
 
 /**
  * 获取回访问卷
  */
 export function getQuestionnaire(id: number) {
-    return request.get('/aftersale/getQuestionnaire', { id })
+    return request.get({ url: '/after_sale/getQuestionnaire', params: { id } })
 }
 
 /**
@@ -127,5 +134,5 @@ export function submitQuestionnaire(data: {
     questionnaire_id?: number
     answers?: any[]
 }) {
-    return request.post('/aftersale/submitQuestionnaire', data)
+    return request.post({ url: '/after_sale/submitQuestionnaire', data })
 }

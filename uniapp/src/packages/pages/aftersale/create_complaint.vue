@@ -203,8 +203,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { getOrderList } from '@/api/order'
-import { submitComplaint } from '@/packages/common/api/aftersale'
+import { getAftersaleOrderList, submitComplaint } from '@/packages/common/api/aftersale'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -274,7 +273,7 @@ const fillContactDefaults = () => {
 
 const loadOrders = async () => {
     try {
-        const res = await getOrderList()
+        const res = await getAftersaleOrderList()
         const lists = res?.lists || res?.data?.lists || []
         orderOptions.value = toOrderOptions(lists)
         if (form.order_id) {

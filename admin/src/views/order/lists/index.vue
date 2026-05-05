@@ -196,7 +196,7 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="创建时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="500" fixed="right">
+                <el-table-column label="操作" width="560" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
                         <el-button
@@ -217,6 +217,7 @@
                         </el-button>
                         <el-button v-if="canAuditVoucher(row)" type="warning" link @click="handleAuditVoucher(row)">审核凭证</el-button>
                         <el-button v-if="canConfirmOfflinePay(row)" type="success" link @click="handleConfirmOfflinePay(row)">确认线下收款</el-button>
+                        <el-button v-if="Number(row.can_direct_reschedule || 0) === 1" type="primary" link @click="handleDirectReschedule(row)">改期</el-button>
                         <el-button v-if="row.order_status === 2" type="warning" link @click="handleStartService(row)">开始服务</el-button>
                         <el-button v-if="row.order_status === 3" type="success" link @click="handleComplete(row)">完成</el-button>
                         <el-button v-if="row.can_admin_refund" type="danger" link @click="handleRefund(row)">退款</el-button>
@@ -609,11 +610,13 @@
                                 </el-tag>
                             </div>
                             <el-image
+                                v-if="getConfirmLetterPreviewSrc(currentLetter)"
                                 :src="getConfirmLetterPreviewSrc(currentLetter)"
                                 fit="contain"
                                 :preview-src-list="[getConfirmLetterPreviewSrc(currentLetter)]"
                                 class="confirm-letter-preview__image"
                             />
+                            <el-empty v-else description="确认函图片未生成，请重新生成当前版本" />
                         </div>
                         <el-empty v-else description="当前订单还没有确认函版本" />
                     </div>
@@ -738,6 +741,48 @@
                 </el-button>
             </template>
         </el-dialog>
+
+        <el-dialog v-model="directRescheduleVisible" title="订单改期" width="520px">
+            <el-form
+                ref="directRescheduleFormRef"
+                :model="directRescheduleForm"
+                :rules="directRescheduleRules"
+                label-width="96px"
+            >
+                <el-form-item label="订单编号">
+                    <span>{{ directRescheduleForm.order_sn || '-' }}</span>
+                </el-form-item>
+                <el-form-item label="当前日期">
+                    <span>{{ directRescheduleForm.current_service_date || '-' }}</span>
+                </el-form-item>
+                <el-form-item label="新服务日期" prop="service_date">
+                    <el-date-picker
+                        v-model="directRescheduleForm.service_date"
+                        type="date"
+                        value-format="YYYY-MM-DD"
+                        placeholder="请选择新服务日期"
+                        :disabled-date="disableTodayAndPastDate"
+                        class="w-full"
+                    />
+                </el-form-item>
+                <el-form-item label="改期原因" prop="reason">
+                    <el-input
+                        v-model="directRescheduleForm.reason"
+                        type="textarea"
+                        :rows="3"
+                        maxlength="255"
+                        show-word-limit
+                        placeholder="请输入改期原因"
+                    />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="directRescheduleVisible = false">取消</el-button>
+                <el-button type="primary" :loading="directRescheduleSubmitting" @click="submitDirectReschedule">
+                    确认改期
+                </el-button>
+            </template>
+        </el-dialog>
     </admin-page-shell>
 </template>
 
@@ -758,6 +803,7 @@ import {
     orderConfirmOfflinePay,
     orderDelete,
     orderDetail,
+    orderDirectReschedule,
     orderEstimateOffline,
     orderLists,
     orderOfflineMainPackages,
@@ -944,6 +990,20 @@ const refundForm = reactive({
     refundable_amount: 0,
     refund_amount: 0,
     reason: ''
+})
+const directRescheduleVisible = ref(false)
+const directRescheduleSubmitting = ref(false)
+const directRescheduleFormRef = ref<FormInstance>()
+const directRescheduleForm = reactive({
+    id: 0,
+    order_sn: '',
+    current_service_date: '',
+    service_date: '',
+    reason: ''
+})
+const directRescheduleRules = reactive<FormRules>({
+    service_date: [{ required: true, message: '请选择新服务日期', trigger: 'change' }],
+    reason: [{ max: 255, message: '改期原因最多255个字符', trigger: 'blur' }]
 })
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let countdownRefreshing = false
@@ -1791,6 +1851,48 @@ const handleComplete = async (row: any) => {
     feedback.msgSuccess('操作成功')
     getLists()
     getStatistics()
+}
+
+const disableTodayAndPastDate = (date: Date) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return date.getTime() <= today.getTime()
+}
+
+const handleDirectReschedule = (row: any) => {
+    directRescheduleForm.id = Number(row.id || 0)
+    directRescheduleForm.order_sn = row.order_sn || ''
+    directRescheduleForm.current_service_date = row.service_date || ''
+    directRescheduleForm.service_date = ''
+    directRescheduleForm.reason = ''
+    directRescheduleVisible.value = true
+    directRescheduleFormRef.value?.clearValidate()
+}
+
+const submitDirectReschedule = async () => {
+    await directRescheduleFormRef.value?.validate()
+    if (directRescheduleForm.service_date === directRescheduleForm.current_service_date) {
+        feedback.msgError('新服务日期不能与当前服务日期相同')
+        return
+    }
+
+    directRescheduleSubmitting.value = true
+    try {
+        await orderDirectReschedule({
+            id: directRescheduleForm.id,
+            service_date: directRescheduleForm.service_date,
+            reason: directRescheduleForm.reason
+        })
+        feedback.msgSuccess('改期成功')
+        directRescheduleVisible.value = false
+        await Promise.all([
+            getLists(),
+            getStatistics(),
+            refreshCurrentOrderDetail(Number(directRescheduleForm.id || 0))
+        ])
+    } finally {
+        directRescheduleSubmitting.value = false
+    }
 }
 
 const handleRefund = (row: any) => {

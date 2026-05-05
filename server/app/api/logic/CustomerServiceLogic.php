@@ -72,7 +72,7 @@ class CustomerServiceLogic extends BaseLogic
         $isNewAssignment = false;
         $isReactivated = false;
         $shouldNotifyAdvisor = false;
-        $notifyBody = '';
+        $notifyCard = [];
 
         Db::startTrans();
         try {
@@ -154,7 +154,7 @@ class CustomerServiceLogic extends BaseLogic
                 $shouldNotifyAdvisor = $isNewAssignment || $isReactivated;
                 if ($shouldNotifyAdvisor) {
                     $notifyTitle = $isNewAssignment ? '新咨询已分配' : '客户重新发起咨询';
-                    $notifyBody = self::buildAdvisorNotifyMessage($notifyTitle, $user, $context, $scene);
+                    $notifyCard = self::buildAdvisorNotifyCard($notifyTitle, $user, $context, $scene);
                 }
             }
 
@@ -166,9 +166,16 @@ class CustomerServiceLogic extends BaseLogic
             return false;
         }
 
-        if ($shouldNotifyAdvisor && $advisorId > 0 && $notifyBody !== '') {
+        if ($shouldNotifyAdvisor && $advisorId > 0 && !empty($notifyCard)) {
             try {
-                WeComMessageService::sendToAdvisor($advisorId, $notifyBody);
+                WeComMessageService::sendTextCardToAdvisor(
+                    $advisorId,
+                    $notifyCard['title'],
+                    $notifyCard['description'],
+                    $notifyCard['url'],
+                    $notifyCard['button_text'],
+                    $notifyCard['options'] ?? []
+                );
             } catch (\Throwable $e) {
                 Log::error('顾问企微提醒发送失败：' . $e->getMessage());
             }
@@ -431,35 +438,45 @@ class CustomerServiceLogic extends BaseLogic
     }
 
     /**
-     * @notes 组装顾问通知文案
+     * @notes 组装顾问通知卡片
      * @param string $title
      * @param User $user
      * @param array $context
      * @param string $scene
-     * @return string
+     * @return array
      */
-    private static function buildAdvisorNotifyMessage(string $title, User $user, array $context, string $scene): string
+    private static function buildAdvisorNotifyCard(string $title, User $user, array $context, string $scene): array
     {
-        $lines = [$title];
         $customerName = self::resolveCustomerName($user, $context);
         $customerMobile = trim((string) ($user->mobile ?? ''));
+        $sceneText = self::SCENE_TEXT_MAP[$scene] ?? '用户咨询';
+        $fields = [
+            '客户' => $customerName,
+            '电话' => $customerMobile,
+            '咨询场景' => $sceneText,
+            '城市' => (string) ($context['area'] ?? ''),
+            '服务偏好' => (string) ($context['specialty'] ?? ''),
+            '触发时间' => date('Y-m-d H:i:s'),
+        ];
 
-        if ($customerName !== '') {
-            $lines[] = '客户：' . $customerName;
-        }
-        if ($customerMobile !== '') {
-            $lines[] = '电话：' . $customerMobile;
-        }
-        $lines[] = '场景：' . (self::SCENE_TEXT_MAP[$scene] ?? '用户咨询');
-        if ($context['area'] !== '') {
-            $lines[] = '城市：' . $context['area'];
-        }
-        if ($context['specialty'] !== '') {
-            $lines[] = '服务偏好：' . $context['specialty'];
-        }
-        $lines[] = '请尽快在企业微信中跟进客户。';
-
-        return implode("\n", $lines);
+        return [
+            'title' => $title,
+            'description' => WeComMessageService::buildTextCardDescription(
+                '客户咨询提醒',
+                $title . '，请及时跟进客户需求。',
+                $fields,
+                '请尽快在企业微信中跟进客户。'
+            ),
+            'url' => WeComMessageService::buildBackendUrl('/admin/workbench'),
+            'button_text' => '查看工作台',
+            'options' => [
+                'mini_pagepath' => WeComMessageService::buildWecomNoticePagePath(
+                    'advisor_consult',
+                    (int)$user->id,
+                    ['notice_type' => $scene]
+                ),
+            ],
+        ];
     }
 
     /**

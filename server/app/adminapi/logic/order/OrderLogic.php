@@ -11,6 +11,7 @@ use app\common\logic\BaseLogic;
 use app\common\logic\OrderPayLogic;
 use app\common\model\financial\FinancialFlow;
 use app\common\model\order\Order;
+use app\common\model\order\OrderChange;
 use app\common\model\order\OrderItem;
 use app\common\model\order\OrderItemAddon;
 use app\common\model\order\OrderLog;
@@ -1096,6 +1097,40 @@ class OrderLogic extends BaseLogic
             return false;
         }
         return true;
+    }
+
+    /**
+     * @notes 后台直接改期
+     * @param array $params
+     * @param int $staffScopeId
+     * @return array|false
+     */
+    public static function directReschedule(array $params, int $staffScopeId = 0)
+    {
+        $orderId = (int)($params['id'] ?? 0);
+        $serviceDate = (string)($params['service_date'] ?? '');
+        $adminId = (int)($params['admin_id'] ?? 0);
+        $reason = (string)($params['reason'] ?? '');
+
+        [$success, $message, $changeId] = OrderChange::directDateReschedule(
+            $orderId,
+            $serviceDate,
+            $adminId,
+            $reason,
+            $staffScopeId
+        );
+        if (!$success) {
+            self::setError($message);
+            return false;
+        }
+
+        OrderNotificationService::notifyUserOnDateChangeExecuted($changeId);
+        OrderNotificationService::notifyStaffOnDateChangeExecuted($changeId);
+
+        return [
+            'change_id' => $changeId,
+            'service_date' => date('Y-m-d', strtotime($serviceDate)),
+        ];
     }
 
     /**

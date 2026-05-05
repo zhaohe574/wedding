@@ -82,7 +82,7 @@
                         <view
                             v-if="contact.wechat_alias"
                             class="action-btn primary"
-                            @click="copyWechatAlias"
+                            @tap.stop="copyWechatAlias"
                         >
                             复制企微号
                         </view>
@@ -96,7 +96,7 @@
                         <view
                             v-if="contact.contact_link"
                             class="action-btn secondary"
-                            @click="openContactLink"
+                            @tap.stop="openContactLink"
                         >
                             打开联系入口
                         </view>
@@ -187,11 +187,19 @@ const loadConsultContact = async () => {
 }
 
 const copyWechatAlias = () => {
-    if (!contact.value.wechat_alias) return
+    const wechatAlias = String(contact.value.wechat_alias || '').trim()
+    if (!wechatAlias) {
+        uni.showToast({ title: '暂无可复制企微号', icon: 'none' })
+        return
+    }
+
     uni.setClipboardData({
-        data: contact.value.wechat_alias,
+        data: wechatAlias,
         success: () => {
             uni.showToast({ title: '企微号已复制', icon: 'success' })
+        },
+        fail: () => {
+            uni.showToast({ title: '复制失败，请长按企微号手动复制', icon: 'none' })
         }
     })
 }
@@ -204,16 +212,20 @@ const handleCall = () => {
 }
 
 const openContactLink = () => {
-    if (!contact.value.contact_link) return
+    const contactLink = String(contact.value.contact_link || '').trim()
+    if (!contactLink) return
     // #ifdef H5
-    window.open(contact.value.contact_link, '_blank')
+    window.open(contactLink, '_blank')
     // #endif
 
     // #ifndef H5
     uni.setClipboardData({
-        data: contact.value.contact_link,
+        data: contactLink,
         success: () => {
             uni.showToast({ title: '链接已复制', icon: 'none' })
+        },
+        fail: () => {
+            uni.showToast({ title: '复制失败，请长按联系入口手动复制', icon: 'none' })
         }
     })
     // #endif

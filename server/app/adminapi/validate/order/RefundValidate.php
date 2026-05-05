@@ -19,7 +19,7 @@ class RefundValidate extends BaseValidate
     protected $rule = [
         'id' => 'require|integer|gt:0',
         'order_id' => 'require|integer|gt:0',
-        'approved' => 'require|boolean',
+        'approved' => 'require|in:0,1',
         'remark' => 'max:500',
         'reason' => 'max:255',
         'refund_amount' => 'require|float|gt:0',
@@ -32,7 +32,7 @@ class RefundValidate extends BaseValidate
         'order_id.require' => '请选择订单',
         'order_id.integer' => '订单ID格式错误',
         'approved.require' => '请选择审核结果',
-        'approved.boolean' => '审核结果格式错误',
+        'approved.in' => '审核结果格式错误',
         'remark.max' => '备注最多500个字符',
         'reason.max' => '原因最多255个字符',
         'refund_amount.require' => '请填写退款金额',

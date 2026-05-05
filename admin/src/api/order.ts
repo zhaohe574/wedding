@@ -42,6 +42,11 @@ export function orderComplete(params: any) {
     return request.post({ url: '/ops.order/complete', params })
 }
 
+// 直接改期
+export function orderDirectReschedule(params: any) {
+    return request.post({ url: '/ops.order/directReschedule', params })
+}
+
 // 删除订单
 export function orderDelete(params: any) {
     return request.post({ url: '/ops.order/delete', params })
